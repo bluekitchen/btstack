@@ -166,9 +166,9 @@ static const char * avrcp_ctype_name[] = {
     "RESERVED5",
     "RESERVED6",
     "RESERVED7",
-    "NOT_IMPLEMENTED",
-    "ACCEPTED",
-    "REJECTED",
+    "NOT IMPLEMENTED IN REMOTE",
+    "ACCEPTED BY REMOTE",
+    "REJECTED BY REMOTE",
     "IN_TRANSITION", 
     "IMPLEMENTED_STABLE",
     "CHANGED_STABLE",
@@ -467,7 +467,7 @@ static void request_pass_through_press_control_cmd(uint16_t con_handle, avrcp_op
     }
     if (connection->state != AVCTP_CONNECTION_OPENED) return;
     connection->state = AVCTP_W2_SEND_PRESS_COMMAND;
-    connection->cmd_to_send =  AVRCP_CMD_OPCODE_PASS_THROUGH;
+    connection->command_opcode =  AVRCP_CMD_OPCODE_PASS_THROUGH;
     connection->command_type = AVRCP_CTYPE_CONTROL;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL; 
     connection->subunit_id =   0;
@@ -509,7 +509,7 @@ static int avrcp_send_cmd(uint16_t cid, avrcp_connection_t * connection){
     // subunit_type | subunit ID
     command[pos++] = (connection->subunit_type << 3) | connection->subunit_id;
     // opcode
-    command[pos++] = (uint8_t)connection->cmd_to_send;
+    command[pos++] = (uint8_t)connection->command_opcode;
     // operands
     memcpy(command+pos, connection->cmd_operands, connection->cmd_operands_length);
     pos += connection->cmd_operands_length;
@@ -531,7 +531,7 @@ static void avrcp_prepare_notification(avrcp_connection_t * connection, avrcp_no
     connection->state = AVCTP_W2_SEND_COMMAND;
     
     connection->transaction_label++;
-    connection->cmd_to_send = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_NOTIFY;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
     connection->subunit_id = 0;
@@ -550,27 +550,13 @@ static void avrcp_prepare_notification(avrcp_connection_t * connection, avrcp_no
     // answer page 61
 }
 
-static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
-    switch (connection->state){
-        case AVCTP_W2_RECEIVE_PRESS_RESPONSE:
-            switch (connection->cmd_operands[0]){
-                case AVRCP_OPERATION_ID_REWIND:
-                case AVRCP_OPERATION_ID_FAST_FORWARD:
-                    connection->state = AVCTP_W4_STOP;
-                    break;
-                default:
-                    connection->state = AVCTP_W2_SEND_RELEASE_COMMAND;
-                    break;
-            }
-            break;
-        case AVCTP_W2_RECEIVE_RESPONSE:
-            connection->state = AVCTP_CONNECTION_OPENED;
-            break;
-        default:
-            // check for notifications? move state transition down
-            break;
-    }
+static uint8_t avrcp_cmd_opcode(uint8_t *packet, uint16_t size){
+    uint8_t cmd_opcode_index = 5;
+    if (cmd_opcode_index > size) return AVRCP_CMD_OPCODE_UNDEFINED;
+    return packet[cmd_opcode_index];
+}
 
+static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
     avrcp_command_type_t ctype;
     avrcp_subunit_type_t subunit_type;
     avrcp_subunit_type_t subunit_id;
@@ -590,9 +576,11 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     // printf("    Transport header 0x%02x (transaction_label %d, packet_type %d, frame_type %d, ipid %d), pid 0x%4x\n", 
     //     transport_header, transaction_label, packet_type, frame_type, ipid, pid);
     // // printf_hexdump(packet+pos, size-pos);
-            
-    switch (connection->cmd_to_send){
+    switch (avrcp_cmd_opcode(packet,size)){
         case AVRCP_CMD_OPCODE_UNIT_INFO:{
+            if (connection->state == AVCTP_W2_RECEIVE_RESPONSE){
+                connection->state = AVCTP_CONNECTION_OPENED;
+            }
             ctype = packet[pos++];
             byte_value = packet[pos++];
             subunit_type = byte_value >> 3;
@@ -609,6 +597,9 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             break;
         }
         case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:
+            if (connection->state == AVCTP_W2_RECEIVE_RESPONSE){
+                connection->state = AVCTP_CONNECTION_OPENED;
+            }
             ctype = packet[pos++];
             byte_value = packet[pos++];
             subunit_type = byte_value >> 3;
@@ -980,7 +971,25 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             subunit_id = byte_value & 0x07;
             opcode = packet[pos++];
             uint8_t operation_id = packet[pos++];
-            
+            switch (connection->state){
+                case AVCTP_W2_RECEIVE_PRESS_RESPONSE:
+                    switch (connection->cmd_operands[0]){
+                        case AVRCP_OPERATION_ID_REWIND:
+                        case AVRCP_OPERATION_ID_FAST_FORWARD:
+                            connection->state = AVCTP_W4_STOP;
+                            break;
+                        default:
+                            connection->state = AVCTP_W2_SEND_RELEASE_COMMAND;
+                            break;
+                    }
+                    break;
+                case AVCTP_W2_RECEIVE_RESPONSE:
+                    connection->state = AVCTP_CONNECTION_OPENED;
+                    break;
+                default:
+                    // check for notifications? move state transition down
+                    break;
+            }
             if (connection->state == AVCTP_W4_STOP){
                 avrcp_emit_operation_status(avrcp_callback, AVRCP_SUBEVENT_OPERATION_START, connection->con_handle, ctype, operation_id);
             }
@@ -1167,7 +1176,7 @@ void avrcp_unit_info(uint16_t con_handle){
     connection->state = AVCTP_W2_SEND_COMMAND;
     
     connection->transaction_label++;
-    connection->cmd_to_send = AVRCP_CMD_OPCODE_UNIT_INFO;
+    connection->command_opcode = AVRCP_CMD_OPCODE_UNIT_INFO;
     connection->command_type = AVRCP_CTYPE_STATUS;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_UNIT; //vendor unique
     connection->subunit_id =   AVRCP_SUBUNIT_ID_IGNORE;
@@ -1186,7 +1195,7 @@ static void avrcp_get_capabilities(uint16_t con_handle, uint8_t capability_id){
     connection->state = AVCTP_W2_SEND_COMMAND;
     
     connection->transaction_label++;
-    connection->cmd_to_send = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_STATUS;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
     connection->subunit_id = 0;
@@ -1282,7 +1291,7 @@ void avrcp_get_play_status(uint16_t con_handle){
     connection->state = AVCTP_W2_SEND_COMMAND;
 
     connection->transaction_label++;
-    connection->cmd_to_send = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_STATUS;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
     connection->subunit_id = 0;
@@ -1322,7 +1331,7 @@ void avrcp_get_now_playing_info(uint16_t con_handle){
     connection->state = AVCTP_W2_SEND_COMMAND;
     
     connection->transaction_label++;
-    connection->cmd_to_send = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_STATUS;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
     connection->subunit_id = 0;
@@ -1358,7 +1367,7 @@ void avrcp_set_absolute_volume(uint16_t con_handle, uint8_t volume){
     connection->state = AVCTP_W2_SEND_COMMAND;
 
     connection->transaction_label++;
-    connection->cmd_to_send = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_CONTROL;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
     connection->subunit_id = 0;
@@ -1387,7 +1396,7 @@ void avrcp_query_shuffle_and_repeat_modes(uint16_t con_handle){
     connection->state = AVCTP_W2_SEND_COMMAND;
     
     connection->transaction_label++;
-    connection->cmd_to_send = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_STATUS;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
     connection->subunit_id = 0;
@@ -1416,7 +1425,7 @@ static void avrcp_set_current_player_application_setting_value(uint16_t con_hand
     connection->state = AVCTP_W2_SEND_COMMAND;
 
     connection->transaction_label++;
-    connection->cmd_to_send = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_CONTROL;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
     connection->subunit_id = 0;

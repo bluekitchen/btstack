@@ -113,18 +113,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     if (connection_handle != avrcp_con_handle) return;
 
                     // avoid printing INTERIM status
-                    switch (packet[2]){
-                        case AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED:
-                        case AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED:
-                        case AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED:
-                        case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
-                        case AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED:
-                            if (status == AVRCP_CTYPE_RESPONSE_INTERIM) return;
-                            break;
-                        default:
-                            break;
-                    }
-                    
+                    if (status == AVRCP_CTYPE_RESPONSE_INTERIM) return;
+                            
                     printf("AVRCP: command status: %s, ", avrcp_ctype2str(status));
                     switch (packet[2]){
                         case AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED:

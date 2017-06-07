@@ -146,12 +146,13 @@ typedef enum {
 
 typedef enum {
     AVRCP_CMD_OPCODE_VENDOR_DEPENDENT = 0x00,
-    AVRCP_CMD_OPCODE_RESERVE = 0x01,
+    // AVRCP_CMD_OPCODE_RESERVE = 0x01,
     AVRCP_CMD_OPCODE_UNIT_INFO = 0x30,
-    AVRCP_CMD_OPCODE_SUBUNIT_INFO = 0x31,
+    // AVRCP_CMD_OPCODE_SUBUNIT_INFO = 0x31,
     AVRCP_CMD_OPCODE_PASS_THROUGH = 0x7C,
-    AVRCP_CMD_OPCODE_VERSION = 0xB0,
-    AVRCP_CMD_OPCODE_POWER = 0xB2
+    // AVRCP_CMD_OPCODE_VERSION = 0xB0,
+    // AVRCP_CMD_OPCODE_POWER = 0xB2,
+    AVRCP_CMD_OPCODE_UNDEFINED = 0xFF
 } avrcp_command_opcode_t;
 
 typedef enum {
@@ -166,7 +167,8 @@ typedef enum {
     AVRCP_OPERATION_ID_REWIND = 0x48,
     AVRCP_OPERATION_ID_FAST_FORWARD = 0x49,
     AVRCP_OPERATION_ID_FORWARD = 0x4B,
-    AVRCP_OPERATION_ID_BACKWARD = 0x4C
+    AVRCP_OPERATION_ID_BACKWARD = 0x4C,
+    AVRCP_OPERATION_ID_UNDEFINED = 0xFF
 } avrcp_operation_id_t;
 
 typedef enum {
@@ -193,7 +195,7 @@ typedef struct {
 
     // command
     uint8_t transaction_label;
-    avrcp_command_opcode_t cmd_to_send;
+    avrcp_command_opcode_t command_opcode;
     avrcp_command_type_t command_type;
     avrcp_subunit_type_t subunit_type;
     avrcp_subunit_id_t   subunit_id;
