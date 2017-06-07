@@ -185,17 +185,19 @@ param_read = {
     'H' : 'return little_endian_read_16(event, {offset});',
     'B' : 'reverse_bd_addr(&event[{offset}], {result_name});',
     'R' : 'return &event[{offset}];',
+    'N' : 'return (const char *) &event[{offset}];',
     'T' : 'return (const char *) &event[{offset}];',
     'Q' : 'reverse_bytes(&event[{offset}], {result_name}, 32);',
     'V' : 'return &event[{offset}];',
     'X' : 'gatt_client_deserialize_service(event, {offset}, {result_name});',
     'Y' : 'gatt_client_deserialize_characteristic(event, {offset}, {result_name});',
     'Z' : 'gatt_client_deserialize_characteristic_descriptor(event, {offset}, {result_name});',
+    'V' : 'return &event[{offset}];',
 }
 
 def c_type_for_btstack_type(type):
     param_types = { '1' : 'uint8_t', '2' : 'uint16_t', '3' : 'uint32_t', '4' : 'uint32_t', 'H' : 'hci_con_handle_t', 'B' : 'bd_addr_t',
-                    'D' : 'const uint8_t *', 'E' : 'const uint8_t * ', 'N' : 'String' , 'P' : 'const uint8_t *', 'A' : 'const uint8_t *',
+                    'D' : 'const uint8_t *', 'E' : 'const uint8_t * ', 'N' : 'const char *' , 'P' : 'const uint8_t *', 'A' : 'const uint8_t *',
                     'R' : 'const uint8_t *', 'S' : 'const uint8_t *',
                     'J' : 'int', 'L' : 'int', 'V' : 'const uint8_t *', 'U' : 'BT_UUID',
                     'Q' : 'uint8_t *',

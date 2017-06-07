@@ -32,6 +32,7 @@
 #include "btstack_tlv_flash_sector.h"
 #include "btstack_debug.h"
 #include "btstack_util.h"
+#include "btstack_debug.h"
 
 #include <string.h>
 
@@ -96,7 +97,7 @@ static int btstack_tlv_flash_sector_get_latest_bank(btstack_tlv_flash_sector_t *
  	uint8_t header1[BTSTACK_TLV_HEADER_LEN];
  	self->hal_flash_sector_impl->read(self->hal_flash_sector_context, 0, 0, &header0[0], BTSTACK_TLV_HEADER_LEN);
  	self->hal_flash_sector_impl->read(self->hal_flash_sector_context, 1, 0, &header1[0], BTSTACK_TLV_HEADER_LEN);
- 	int valid0 = memcmp(header1, btstack_tlv_header_magic, BTSTACK_TLV_HEADER_LEN-1) == 0;
+ 	int valid0 = memcmp(header0, btstack_tlv_header_magic, BTSTACK_TLV_HEADER_LEN-1) == 0;
  	int valid1 = memcmp(header1, btstack_tlv_header_magic, BTSTACK_TLV_HEADER_LEN-1) == 0;
 	if (!valid0 && !valid1) return -1;
 	if ( valid0 && !valid1) return 0;
