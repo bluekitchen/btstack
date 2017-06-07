@@ -350,27 +350,27 @@ static inline uint16_t hci_event_authentication_complete_event_get_connection_ha
  * @return status
  * @note: btstack_type 1
  */
-//  static inline uint8_t hci_event_remote_name_request_complete_get_status(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint8_t hci_event_remote_name_request_complete_get_status(const uint8_t * event){
+    return event[2];
+}
 /**
  * @brief Get field bd_addr from event HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
  * @param event packet
- * @return bd_addr
+ * @param Pointer to storage for bd_addr
  * @note: btstack_type B
  */
-//  static inline bd_addr_t hci_event_remote_name_request_complete_get_bd_addr(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline void hci_event_remote_name_request_complete_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[3], bd_addr);    
+}
 /**
  * @brief Get field remote_name from event HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
  * @param event packet
  * @return remote_name
  * @note: btstack_type N
  */
-//  static inline String hci_event_remote_name_request_complete_get_remote_name(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline const char * hci_event_remote_name_request_complete_get_remote_name(const uint8_t * event){
+    return (const char *) &event[9];
+}
 
 /**
  * @brief Get field status from event HCI_EVENT_ENCRYPTION_CHANGE
