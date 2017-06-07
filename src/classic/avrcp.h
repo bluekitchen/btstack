@@ -180,8 +180,7 @@ typedef enum {
     AVCTP_W4_STOP,
     AVCTP_W2_SEND_COMMAND,
     AVCTP_W2_RECEIVE_PRESS_RESPONSE,
-    AVCTP_W2_RECEIVE_RESPONSE,
-    AVCTP_CONNECTION_W4_L2CAP_DISCONNECTED
+    AVCTP_W2_RECEIVE_RESPONSE
 } avctp_connection_state_t;
 
 typedef struct {
@@ -206,8 +205,6 @@ typedef struct {
     uint16_t notifications_enabled;
     uint16_t notifications_to_register;
     uint16_t notifications_to_deregister; 
-
-    uint8_t disconnect;
 } avrcp_connection_t;
 
 typedef enum {

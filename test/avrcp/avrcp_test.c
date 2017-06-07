@@ -102,8 +102,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
                             printf("Channel successfully opened: %s, handle 0x%02x, local cid 0x%02x\n", bd_addr_to_str(event_addr), avrcp_con_handle, local_cid);
                             // automatically enable notifications
-                            avrcp_enable_notification(avrcp_con_handle, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
-                            avrcp_enable_notification(avrcp_con_handle, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
+                            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
+                            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
                             return;
                         }
                         case AVRCP_SUBEVENT_CONNECTION_RELEASED:

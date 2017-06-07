@@ -516,9 +516,6 @@ static int avrcp_register_notification(avrcp_connection_t * connection, avrcp_no
 }
 
 static void avrcp_prepare_notification(avrcp_connection_t * connection, avrcp_notification_event_id_t event_id){
-    if (connection->state != AVCTP_CONNECTION_OPENED) return;
-    connection->state = AVCTP_W2_SEND_COMMAND;
-    
     connection->transaction_label++;
     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_NOTIFY;
@@ -568,9 +565,9 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     // // printf_hexdump(packet+pos, size-pos);
     switch (avrcp_cmd_opcode(packet,size)){
         case AVRCP_CMD_OPCODE_UNIT_INFO:{
-            if (connection->state == AVCTP_W2_RECEIVE_RESPONSE){
-                connection->state = AVCTP_CONNECTION_OPENED;
-            }
+            if (connection->state != AVCTP_W2_RECEIVE_RESPONSE) return;
+            connection->state = AVCTP_CONNECTION_OPENED;
+            
             // operands:
             memcpy(operands, packet+pos, 5);
             uint8_t unit_type = operands[1] >> 3;
@@ -581,10 +578,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             break;
         }
         case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:
-            if (connection->state == AVCTP_W2_RECEIVE_RESPONSE){
-                connection->state = AVCTP_CONNECTION_OPENED;
-            }
-
             if (size - pos < 7) {
                 log_error("avrcp: wrong packet size");
                 return;
@@ -594,6 +587,14 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             pos += 7;
             // uint32_t company_id = operands[0] << 16 | operands[1] << 8 | operands[2];
             uint8_t pdu_id = operands[3];
+
+            if (connection->state != AVCTP_W2_RECEIVE_RESPONSE && pdu_id != AVRCP_PDU_ID_REGISTER_NOTIFICATION){
+                printf("AVRCP_CMD_OPCODE_VENDOR_DEPENDENT state %d \n", connection->state);
+                return;
+            } 
+            connection->state = AVCTP_CONNECTION_OPENED;
+
+            
             // uint8_t unit_type = operands[4] >> 3;
             // uint8_t unit = operands[4] & 0x07;
             uint16_t param_length = big_endian_read_16(operands, 5);
@@ -706,7 +707,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                         case AVRCP_CTYPE_RESPONSE_INTERIM:
                             // register as enabled
                             connection->notifications_enabled |= event_mask;
-                            connection->state = AVCTP_CONNECTION_OPENED;
                             // printf("INTERIM notifications_enabled 0x%2x, notifications_to_register 0x%2x\n", connection->notifications_enabled,  connection->notifications_to_register);
                             break;
                         case AVRCP_CTYPE_RESPONSE_CHANGED_STABLE:
@@ -962,6 +962,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
                 default:
                     // check for notifications? move state transition down
+                    printf("AVRCP_CMD_OPCODE_PASS_THROUGH state %d\n", connection->state);
                     break;
             }
             if (connection->state == AVCTP_W4_STOP){
@@ -996,19 +997,13 @@ static void avrcp_handle_can_send_now(avrcp_connection_t * connection){
             avrcp_send_cmd(connection->l2cap_signaling_cid, connection);
             break;
         case AVCTP_CONNECTION_OPENED:
-            if (connection->disconnect){
-                connection->wait_to_send = 0;
-                connection->disconnect = 0;
-                connection->state = AVCTP_CONNECTION_W4_L2CAP_DISCONNECTED;
-                l2cap_disconnect(connection->l2cap_signaling_cid, 0);
-                return;
-            }
             if (connection->notifications_to_register != 0){
                 for (i = 1; i < 13; i++){
                     if (connection->notifications_to_register & (1<<i)){
                          // clear registration bit before sending command
-                        connection->notifications_to_register &= ~ (1 <<i);
+                        connection->notifications_to_register &= ~ (1 << i);
                         avrcp_prepare_notification(connection, i);
+                        connection->state = AVCTP_W2_RECEIVE_RESPONSE;
                         avrcp_send_cmd(connection->l2cap_signaling_cid, connection);
                         return;    
                     }
@@ -1450,8 +1445,5 @@ void avrcp_disconnect(uint16_t avrcp_cid){
         return;
     }
     if (connection->state != AVCTP_CONNECTION_OPENED) return;
-    if (connection->state == AVCTP_CONNECTION_W4_L2CAP_DISCONNECTED) return;
-    
-    connection->disconnect = 1;
-    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    l2cap_disconnect(connection->l2cap_signaling_cid, 0);
 }
