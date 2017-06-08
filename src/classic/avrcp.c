@@ -327,14 +327,14 @@ void avrcp_target_create_sdp_record(uint8_t * service, uint32_t service_record_h
     avrcp_create_sdp_record(0, service, service_record_handle, browsing, supported_features, service_name, service_provider_name);
 }
 
-static void avrcp_emit_connection_established(btstack_packet_handler_t callback, uint8_t status, bd_addr_t addr, uint16_t con_handle, uint16_t avrcp_cid){
+static void avrcp_emit_connection_established(btstack_packet_handler_t callback, uint8_t ctype, bd_addr_t addr, uint16_t con_handle, uint16_t avrcp_cid){
     if (!callback) return;
     uint8_t event[14];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = AVRCP_SUBEVENT_CONNECTION_ESTABLISHED;
-    event[pos++] = status;
+    event[pos++] = ctype;
     reverse_bd_addr(addr,&event[pos]);
     pos += 6;
     little_endian_store_16(event, pos, con_handle);
@@ -344,7 +344,7 @@ static void avrcp_emit_connection_established(btstack_packet_handler_t callback,
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void avrcp_emit_repeat_and_shuffle_mode(btstack_packet_handler_t callback, uint16_t avrcp_cid, uint8_t status, avrcp_repeat_mode_t repeat_mode, avrcp_shuffle_mode_t shuffle_mode){
+static void avrcp_emit_repeat_and_shuffle_mode(btstack_packet_handler_t callback, uint16_t avrcp_cid, uint8_t ctype, avrcp_repeat_mode_t repeat_mode, avrcp_shuffle_mode_t shuffle_mode){
     if (!callback) return;
     uint8_t event[8];
     int pos = 0;
@@ -353,13 +353,13 @@ static void avrcp_emit_repeat_and_shuffle_mode(btstack_packet_handler_t callback
     event[pos++] = AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE;
     little_endian_store_16(event, pos, avrcp_cid);
     pos += 2;
-    event[pos++] = status;
+    event[pos++] = ctype;
     event[pos++] = repeat_mode;
     event[pos++] = shuffle_mode;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void avrcp_emit_operation_status(btstack_packet_handler_t callback, uint8_t subevent, uint16_t avrcp_cid, uint8_t status, uint8_t operation_id){
+static void avrcp_emit_operation_status(btstack_packet_handler_t callback, uint8_t subevent, uint16_t avrcp_cid, uint8_t ctype, uint8_t operation_id){
     if (!callback) return;
     uint8_t event[7];
     int pos = 0;
@@ -368,7 +368,7 @@ static void avrcp_emit_operation_status(btstack_packet_handler_t callback, uint8
     event[pos++] = subevent;
     little_endian_store_16(event, pos, avrcp_cid);
     pos += 2;
-    event[pos++] = status;
+    event[pos++] = ctype;
     event[pos++] = operation_id;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }

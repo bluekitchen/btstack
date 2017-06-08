@@ -1473,7 +1473,7 @@ typedef uint8_t sm_key_t[16];
  * @format 121114JVJVJVJV
  * @param subevent_code
  * @param avrcp_cid
- * @param status
+ * @param command_type
  * @param track
  * @param total_tracks
  * @param song_length in ms
@@ -1492,7 +1492,7 @@ typedef uint8_t sm_key_t[16];
  * @format 12111
  * @param subevent_code
  * @param avrcp_cid
- * @param status
+ * @param command_type
  * @param repeat_mode
  * @param shuffle_mode
  */
@@ -1502,7 +1502,7 @@ typedef uint8_t sm_key_t[16];
  * @format 121441
  * @param subevent_code
  * @param avrcp_cid
- * @param status
+ * @param command_type
  * @param song_length
  * @param song_position
  * @param play_status
@@ -1513,7 +1513,7 @@ typedef uint8_t sm_key_t[16];
  * @format 1211
  * @param subevent_code
  * @param avrcp_cid
- * @param status
+ * @param command_type
  * @param playback_status
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED             0x06
@@ -1522,7 +1522,7 @@ typedef uint8_t sm_key_t[16];
  * @format 1211
  * @param subevent_code
  * @param avrcp_cid
- * @param status
+ * @param command_type
  * @param track_status
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED                       0x07
@@ -1531,7 +1531,7 @@ typedef uint8_t sm_key_t[16];
  * @format 121
  * @param subevent_code
  * @param avrcp_cid
- * @param status
+ * @param command_type
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED          0x08
 
@@ -1539,7 +1539,7 @@ typedef uint8_t sm_key_t[16];
  * @format 121
  * @param subevent_code
  * @param avrcp_cid
- * @param status
+ * @param command_type
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED            0x09
 
@@ -1547,7 +1547,7 @@ typedef uint8_t sm_key_t[16];
  * @format 1211
  * @param subevent_code
  * @param avrcp_cid
- * @param status
+ * @param command_type
  * @param absolute_volume
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED                       0x0A
@@ -1556,7 +1556,7 @@ typedef uint8_t sm_key_t[16];
  * @format 1211
  * @param subevent_code
  * @param avrcp_cid
- * @param status
+ * @param command_type
  * @param absolute_volume
  */
 #define AVRCP_SUBEVENT_SET_ABSOLUTE_VOLUME_RESPONSE                      0x0B
@@ -1565,7 +1565,7 @@ typedef uint8_t sm_key_t[16];
  * @format 1211
  * @param subevent_code
  * @param avrcp_cid
- * @param status
+ * @param command_type
  * @param notification_id
  */
 #define AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE                       0x0C
@@ -1574,7 +1574,7 @@ typedef uint8_t sm_key_t[16];
  * @format 1211
  * @param subevent_code
  * @param avrcp_cid
- * @param status
+ * @param command_type
  * @param operation_id
  */
 #define AVRCP_SUBEVENT_OPERATION_START                                    0x0D
@@ -1583,7 +1583,7 @@ typedef uint8_t sm_key_t[16];
  * @format 1211
  * @param subevent_code
  * @param avrcp_cid
- * @param status
+ * @param command_type
  * @param operation_id
  */
 #define AVRCP_SUBEVENT_OPERATION_COMPLETE                                 0x0E
@@ -1592,7 +1592,7 @@ typedef uint8_t sm_key_t[16];
  * @format 121
  * @param subevent_code
  * @param avrcp_cid
- * @param status
+ * @param command_type
  */
 #define AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE                   0x0F
 
