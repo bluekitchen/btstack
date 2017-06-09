@@ -1029,9 +1029,8 @@ static avrcp_connection_t * avrcp_create_connection(bd_addr_t remote_addr){
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     bd_addr_t event_addr;
-    hci_con_handle_t con_handle;
-    uint16_t psm;
     uint16_t local_cid;
+    uint8_t status;
     avrcp_connection_t * connection = NULL;
    
     switch (packet_type) {
@@ -1046,51 +1045,50 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 case L2CAP_EVENT_INCOMING_CONNECTION:
                     l2cap_event_incoming_connection_get_address(packet, event_addr);
                     local_cid = l2cap_event_incoming_connection_get_local_cid(packet);
-
-                    connection = get_avrcp_connection_for_bd_addr(event_addr);
-                    if (!connection){
-                        connection = avrcp_create_connection(event_addr);
-                        connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
-                        l2cap_accept_connection(local_cid);
+                    connection = avrcp_create_connection(event_addr);
+                    if (!connection) {
+                        log_error("Failed to alloc connection structure");
+                        l2cap_decline_connection(local_cid);
                         break;
                     }
+                    connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
+                    connection->l2cap_signaling_cid = local_cid;
+                    l2cap_accept_connection(local_cid);
                     break;
                     
                 case L2CAP_EVENT_CHANNEL_OPENED:
                     l2cap_event_channel_opened_get_address(packet, event_addr);
-                    
-                    if (l2cap_event_channel_opened_get_status(packet)){
-                        log_error("L2CAP connection to connection %s failed. status code 0x%02x", 
-                            bd_addr_to_str(event_addr), l2cap_event_channel_opened_get_status(packet));
-                        break;
-                    }
-                    psm = l2cap_event_channel_opened_get_psm(packet); 
-                    if (psm != BLUETOOTH_PROTOCOL_AVCTP){
-                        log_error("L2CAP_EVENT_CHANNEL_OPENED avrcp: unexpected PSM");
-                        return;
-                    }
-                    
+
                     connection = get_avrcp_connection_for_bd_addr(event_addr);
-                    if (!connection) break;
-
-                    con_handle = l2cap_event_channel_opened_get_handle(packet);
+                    status = l2cap_event_channel_opened_get_status(packet);
                     local_cid  = l2cap_event_channel_opened_get_local_cid(packet);
-                    
-                    if (connection->l2cap_signaling_cid != local_cid) {
-                        log_info("Connection is not established, expected 0x%02X l2cap cid, received 0x%02X\n", connection->l2cap_signaling_cid, local_cid);
-                        break;
+
+                    if (connection){
+                        // outgoing connection
+                        if (l2cap_event_channel_opened_get_status(packet)){
+                            log_error("L2CAP connection to connection %s failed. status code 0x%02x", 
+                                bd_addr_to_str(event_addr), l2cap_event_channel_opened_get_status(packet));
+                            if (connection->state == AVCTP_CONNECTION_W4_L2CAP_CONNECTED){
+                                avrcp_emit_connection_established(avrcp_callback, status, event_addr, HCI_CON_HANDLE_INVALID, local_cid);
+                            }
+                            // free connection
+                            btstack_memory_avrcp_connection_free(connection);
+                            break;
+                        }
+                    } else {
+                        // incoming connection
+                        connection = avrcp_create_connection(event_addr);
+                        if (!connection) {
+                            log_error("Failed to alloc connection structure");
+                            l2cap_disconnect(local_cid, 0); // reason isn't used
+                            break;
+                        }
                     }
 
-                    // printf("L2CAP_EVENT_CHANNEL_OPENED: Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
-                    //        bd_addr_to_str(event_addr), con_handle, psm, local_cid,  l2cap_event_channel_opened_get_remote_cid(packet));
-
-                    if (connection->con_handle == 0) {
-                        connection->l2cap_signaling_cid = local_cid;
-                        connection->con_handle = con_handle;
-                        connection->state = AVCTP_CONNECTION_OPENED;
-                        avrcp_emit_connection_established(avrcp_callback, 0, event_addr, con_handle, local_cid);
-                        break;
-                    }
+                    connection->l2cap_signaling_cid = local_cid;
+                    connection->con_handle = l2cap_event_channel_opened_get_handle(packet);
+                    connection->state = AVCTP_CONNECTION_OPENED;
+                    avrcp_emit_connection_established(avrcp_callback, ERROR_CODE_SUCCESS, event_addr, connection->con_handle, local_cid);
                     break;
                 
                 case L2CAP_EVENT_CAN_SEND_NOW:
