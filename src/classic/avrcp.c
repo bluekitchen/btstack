@@ -745,7 +745,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             break;
                         }
                         case AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED:{
-                            uint8_t event[7];
+                            uint8_t event[6];
                             int offset = 0;
                             event[offset++] = HCI_EVENT_AVRCP_META;
                             event[offset++] = sizeof(event) - 2;
@@ -753,7 +753,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             little_endian_store_16(event, offset, connection->con_handle);
                             offset += 2;
                             event[offset++] = ctype;
-                            event[offset++] = packet[pos];
                             (*avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
                             break;
                         }

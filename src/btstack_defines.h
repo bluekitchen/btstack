@@ -1519,11 +1519,10 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED             0x06
 
 /**
- * @format 1211
+ * @format 121
  * @param subevent_code
  * @param avrcp_cid
  * @param command_type
- * @param track_status
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED                       0x07
   

@@ -4993,15 +4993,6 @@ static inline uint16_t avrcp_subevent_notification_track_changed_get_avrcp_cid(c
 static inline uint8_t avrcp_subevent_notification_track_changed_get_command_type(const uint8_t * event){
     return event[5];
 }
-/**
- * @brief Get field track_status from event AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED
- * @param event packet
- * @return track_status
- * @note: btstack_type 1
- */
-static inline uint8_t avrcp_subevent_notification_track_changed_get_track_status(const uint8_t * event){
-    return event[6];
-}
 
 /**
  * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED
