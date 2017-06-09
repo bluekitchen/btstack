@@ -45,6 +45,9 @@
 #include "classic/core.h"
 
 // NVM_NUM_LINK_KEYS defines number of stored link keys
+#ifndef NVM_NUM_LINK_KEYS
+#define NVM_NUM_LINK_KEYS 1
+#endif
 
 typedef struct {
     const btstack_tlv_t * btstack_tlv_impl;
