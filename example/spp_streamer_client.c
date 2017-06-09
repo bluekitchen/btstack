@@ -83,13 +83,13 @@ static uint16_t  rfcomm_cid = 0;
 #define INQUIRY_INTERVAL 5
 static void start_scan(void){
     printf("Starting inquiry scan..\n");
-    hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
     state = W4_PEER_COD;
+    gap_inquiry_start(INQUIRY_INTERVAL);
 }
 static void stop_scan(void){
     printf("Stopping inquiry scan..\n");
-    hci_send_cmd(&hci_inquiry_cancel);
     state = W4_SCAN_COMPLETE;
+    gap_inquiry_stop();
 }
 /*
  * @section Track throughput
@@ -204,7 +204,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     }                        
                     break;
                     
-                case HCI_EVENT_INQUIRY_COMPLETE:
+                case GAP_EVENT_INQUIRY_COMPLETE:
                     printf("Inquiry complete\n");
                     printf("Peer not found, starting scan again\n");
                     start_scan();
