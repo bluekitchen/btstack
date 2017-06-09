@@ -1514,7 +1514,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param avrcp_cid
  * @param command_type
- * @param playback_status
+ * @param play_status
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED             0x06
 

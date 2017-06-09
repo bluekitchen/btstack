@@ -4966,12 +4966,12 @@ static inline uint8_t avrcp_subevent_notification_playback_status_changed_get_co
     return event[5];
 }
 /**
- * @brief Get field playback_status from event AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED
+ * @brief Get field play_status from event AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED
  * @param event packet
- * @return playback_status
+ * @return play_status
  * @note: btstack_type 1
  */
-static inline uint8_t avrcp_subevent_notification_playback_status_changed_get_playback_status(const uint8_t * event){
+static inline uint8_t avrcp_subevent_notification_playback_status_changed_get_play_status(const uint8_t * event){
     return event[6];
 }
 
