@@ -135,7 +135,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             printf("notification, playing content changed\n");
                             return;
                         case AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED:
-                            printf("notification track changed %d\n", avrcp_subevent_notification_track_changed_get_track_status(packet));
+                            printf("notification track changed\n");
                             return;
                         case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
                             printf("notification absolute volume changed %d\n", avrcp_subevent_notification_volume_changed_get_absolute_volume(packet));
