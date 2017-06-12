@@ -36,4 +36,11 @@ endif
 # CFLAGS  += -I/usr/local/include -DHAVE_PORTAUDIO
 # LDFLAGS += -L/sw/lib -lportaudio -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,AudioUnit -Wl,-framework,Carbon
 
+clean_src:
+	rm -rf * ${BTSTACK_ROOT}/src/*.o
+	rm -rf * ${BTSTACK_ROOT}/src/classic/*.o
+	rm -rf * ${BTSTACK_ROOT}/src/ble/*.o
+	rm -rf * ${BTSTACK_ROOT}/platform/embedded/*.o
+
 all: ${EXAMPLES}
+
