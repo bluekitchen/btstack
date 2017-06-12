@@ -131,10 +131,10 @@ typedef enum {
  */
 
 //
-// Error Codes
+// Error Codes rfom Bluetooth Core Specification
 //
 
-// from Bluetooth Core Specification
+/* ENUM_START: BLUETOOTH_ERROR_CODE */
 #define ERROR_CODE_SUCCESS                                 0x00 
 #define ERROR_CODE_UNKNOWN_HCI_COMMAND                     0x01
 #define ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER           0x02
@@ -200,6 +200,7 @@ typedef enum {
 #define ERROR_CODE_CONNECTION_FAILED_TO_BE_ESTABLISHED     0x3E
 #define ERROR_CODE_MAC_CONNECTION_FAILED                   0x3F
 #define ERROR_CODE_COARSE_CLOCK_ADJUSTMENT_REJECTED_BUT_WILL_TRY_TO_ADJUST_USING_CLOCK_DRAGGING 0x40
+/* ENUM_END */
 
 // HCI roles
 #define HCI_ROLE_MASTER 0

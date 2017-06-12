@@ -116,8 +116,9 @@ typedef uint8_t sm_key_t[16];
 
 
 // ERRORS
-
 // last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors
+
+/* ENUM_START: BTSTACK_ERROR_CODE */
 #define BTSTACK_CONNECTION_TO_BTDAEMON_FAILED              0x50
 #define BTSTACK_ACTIVATION_FAILED_SYSTEM_BLUETOOTH         0x51
 #define BTSTACK_ACTIVATION_POWERON_FAILED                  0x52
@@ -156,7 +157,7 @@ typedef uint8_t sm_key_t[16];
 #define SDP_HANDLE_INVALID                                 0x83
 #define SDP_QUERY_BUSY                                     0x84
 
-#define ATT_HANDLE_VALUE_INDICATION_IN_PORGRESS            0x90 
+#define ATT_HANDLE_VALUE_INDICATION_IN_PROGRESS            0x90 
 #define ATT_HANDLE_VALUE_INDICATION_TIMEOUT                0x91
 
 #define GATT_CLIENT_NOT_CONNECTED                          0x93
@@ -170,6 +171,13 @@ typedef uint8_t sm_key_t[16];
 #define BNEP_SERVICE_ALREADY_REGISTERED                    0xA0
 #define BNEP_CHANNEL_NOT_CONNECTED                         0xA1
 #define BNEP_DATA_LEN_EXCEEDS_MTU                          0xA2
+
+// OBEX ERRORS
+#define OBEX_UNKNOWN_ERROR                                 0xB0
+#define OBEX_CONNECT_FAILED                                0xB1
+#define OBEX_DISCONNECTED                                  0xB2
+#define OBEX_NOT_FOUND                                     0xB3
+/* ENUM_END */
 
 // DAEMON COMMANDS
 
@@ -276,11 +284,6 @@ typedef uint8_t sm_key_t[16];
 #define GATT_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION           0X81
 #define GATT_GET_MTU                                             0x82
 
-// OBEX ERRORS
-#define OBEX_UNKNOWN_ERROR       0x90
-#define OBEX_CONNECT_FAILED      0x91
-#define OBEX_DISCONNECTED        0x92
-#define OBEX_NOT_FOUND           0x93
 
 // EVENTS
 
@@ -938,7 +941,7 @@ typedef uint8_t sm_key_t[16];
  * @param page_scan_repetition_mode
  * @param class_of_device
  * @param clock_offset
- * @param rssi_availabe
+ * @param rssi_available
  * @param rssi
  * @param name_available
  * @param name_len
@@ -1450,27 +1453,27 @@ typedef uint8_t sm_key_t[16];
 /** AVRCP Subevent */
 
 /**
- * @format 1H12B
+ * @format 11BH2
  * @param subevent_code
- * @param con_handle
  * @param status 0 == OK
- * @param local_cid
  * @param bd_addr
+ * @param con_handle
+ * @param avrcp_cid
  */
 #define AVRCP_SUBEVENT_CONNECTION_ESTABLISHED                           0x01
 
 /**
- * @format 1H
+ * @format 12
  * @param subevent_code
- * @param con_handle
+ * @param avrcp_cid
  */
 #define AVRCP_SUBEVENT_CONNECTION_RELEASED                              0x02
 
 /**
- * @format 1H1114JVJVJVJV
+ * @format 121114JVJVJVJV
  * @param subevent_code
- * @param con_handle
- * @param status
+ * @param avrcp_cid
+ * @param command_type
  * @param track
  * @param total_tracks
  * @param song_length in ms
@@ -1486,20 +1489,20 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_NOW_PLAYING_INFO                                 0x03
 
 /**
- * @format 1H111
+ * @format 12111
  * @param subevent_code
- * @param con_handle
- * @param status
+ * @param avrcp_cid
+ * @param command_type
  * @param repeat_mode
  * @param shuffle_mode
  */
 #define AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE                          0x04
 
 /**
- * @format 1H1441
+ * @format 121441
  * @param subevent_code
- * @param con_handle
- * @param status
+ * @param avrcp_cid
+ * @param command_type
  * @param song_length
  * @param song_position
  * @param play_status
@@ -1507,89 +1510,88 @@ typedef uint8_t sm_key_t[16];
  #define AVRCP_SUBEVENT_PLAY_STATUS                                     0x05
 
 /**
- * @format 1H11
+ * @format 1211
  * @param subevent_code
- * @param con_handle
- * @param status
- * @param playback_status
+ * @param avrcp_cid
+ * @param command_type
+ * @param play_status
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED             0x06
 
 /**
- * @format 1H11
+ * @format 121
  * @param subevent_code
- * @param con_handle
- * @param status
- * @param track_status
+ * @param avrcp_cid
+ * @param command_type
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED                       0x07
   
 /**
- * @format 1H1
+ * @format 121
  * @param subevent_code
- * @param con_handle
- * @param status
+ * @param avrcp_cid
+ * @param command_type
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED          0x08
 
 /**
- * @format 1H1
+ * @format 121
  * @param subevent_code
- * @param con_handle
- * @param status
+ * @param avrcp_cid
+ * @param command_type
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED            0x09
 
 /**
- * @format 1H11
+ * @format 1211
  * @param subevent_code
- * @param con_handle
- * @param status
+ * @param avrcp_cid
+ * @param command_type
  * @param absolute_volume
  */
 #define AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED                       0x0A
 
 /**
- * @format 1H11
+ * @format 1211
  * @param subevent_code
- * @param con_handle
- * @param status
+ * @param avrcp_cid
+ * @param command_type
  * @param absolute_volume
  */
 #define AVRCP_SUBEVENT_SET_ABSOLUTE_VOLUME_RESPONSE                      0x0B
 
 /**
- * @format 1H11
+ * @format 1211
  * @param subevent_code
- * @param con_handle
- * @param status
+ * @param avrcp_cid
+ * @param command_type
  * @param notification_id
  */
 #define AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE                       0x0C
 
 /**
- * @format 1H11
+ * @format 1211
  * @param subevent_code
- * @param con_handle
- * @param status
+ * @param avrcp_cid
+ * @param command_type
  * @param operation_id
  */
 #define AVRCP_SUBEVENT_OPERATION_START                                    0x0D
 
 /**
- * @format 1H11
+ * @format 1211
  * @param subevent_code
- * @param con_handle
- * @param status
+ * @param avrcp_cid
+ * @param command_type
  * @param operation_id
  */
 #define AVRCP_SUBEVENT_OPERATION_COMPLETE                                 0x0E
 
 /**
- * @format 1H1
+ * @format 121
  * @param subevent_code
- * @param con_handle
- * @param status
+ * @param avrcp_cid
+ * @param command_type
  */
 #define AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE                   0x0F
 

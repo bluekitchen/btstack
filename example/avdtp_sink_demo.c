@@ -40,7 +40,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "btstack_config.h"
 #include "btstack_debug.h"
@@ -188,17 +187,8 @@ static avdtp_capabilities_t remote_configuration;
 
 typedef enum {
     AVDTP_APPLICATION_IDLE,
-    AVDTP_APPLICATION_W2_DISCOVER_SEPS,
-    AVDTP_APPLICATION_W2_GET_CAPABILITIES,
-    AVDTP_APPLICATION_W2_GET_ALL_CAPABILITIES,
-    AVDTP_APPLICATION_W2_SET_CONFIGURATION,
-    AVDTP_APPLICATION_W2_SUSPEND_STREAM_WITH_SEID,
-    AVDTP_APPLICATION_W2_RECONFIGURE_WITH_SEID,
-    AVDTP_APPLICATION_W2_OPEN_STREAM_WITH_SEID,
-    AVDTP_APPLICATION_W2_START_STREAM_WITH_SEID,
-    AVDTP_APPLICATION_W2_ABORT_STREAM_WITH_SEID,
-    AVDTP_APPLICATION_W2_STOP_STREAM_WITH_SEID,
-    AVDTP_APPLICATION_W2_GET_CONFIGURATION
+    AVDTP_APPLICATION_CONNECTED,
+    AVDTP_APPLICATION_STREAMING
 } avdtp_application_state_t;
 
 avdtp_application_state_t app_state = AVDTP_APPLICATION_IDLE;
@@ -600,17 +590,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     break;
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     // connection closed -> quit test app
+                    app_state = AVDTP_APPLICATION_IDLE;
                     printf("\n --- avdtp_test: HCI_EVENT_DISCONNECTION_COMPLETE ---\n");
                     media_processing_close();
                     break;
                 case HCI_EVENT_AVDTP_META:
                     switch (packet[2]){
                         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
+                            app_state = AVDTP_APPLICATION_CONNECTED;
                             avdtp_cid = avdtp_subevent_signaling_connection_established_get_avdtp_cid(packet);
                             printf("\n --- avdtp_test: AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED, cid 0x%02x ---\n", avdtp_cid);
                             break;
                         case AVDTP_SUBEVENT_SIGNALING_SEP_FOUND:
-                            if (app_state != AVDTP_APPLICATION_W2_DISCOVER_SEPS) return;
+                            if (app_state < AVDTP_APPLICATION_CONNECTED) return;
                             sep.seid = avdtp_subevent_signaling_sep_found_get_seid(packet);
                             sep.in_use = avdtp_subevent_signaling_sep_found_get_in_use(packet);
                             sep.media_type = avdtp_subevent_signaling_sep_found_get_media_type(packet);
@@ -618,7 +610,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             printf("Found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)\n", sep.seid, sep.in_use, sep.media_type, sep.type);
                             break;
                         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:
-                            app_state = AVDTP_APPLICATION_IDLE;
+                            if (app_state < AVDTP_APPLICATION_CONNECTED) return;
                             sbc_capability.sampling_frequency_bitmap = avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(packet);
                             sbc_capability.channel_mode_bitmap = avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(packet);
                             sbc_capability.block_length_bitmap = avdtp_subevent_signaling_media_codec_sbc_capability_get_block_length_bitmap(packet);
@@ -629,7 +621,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             dump_sbc_capability(sbc_capability);
                             break;
                         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
-                            app_state = AVDTP_APPLICATION_IDLE;
+                            if (app_state < AVDTP_APPLICATION_CONNECTED) return;
                             sbc_configuration.reconfigure = avdtp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
                             sbc_configuration.num_channels = avdtp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(packet);
                             sbc_configuration.sampling_frequency = avdtp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
@@ -653,12 +645,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         }  
                         case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
+                            app_state = AVDTP_APPLICATION_STREAMING;
                             break;
                         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY:
                             printf(" received non SBC codec. not implemented\n");
                             break;
                         case AVDTP_SUBEVENT_SIGNALING_ACCEPT:
-                            app_state = AVDTP_APPLICATION_IDLE;
                             break;
                         default:
                             printf(" not implemented\n");
@@ -729,23 +721,18 @@ static void stdin_process(char cmd){
             avdtp_sink_disconnect(avdtp_cid);
             break;
         case 'd':
-            app_state = AVDTP_APPLICATION_W2_DISCOVER_SEPS;
             avdtp_sink_discover_stream_endpoints(avdtp_cid);
             break;
         case 'g':
-            app_state = AVDTP_APPLICATION_W2_GET_CAPABILITIES;
             avdtp_sink_get_capabilities(avdtp_cid, sep.seid);
             break;
         case 'a':
-            app_state = AVDTP_APPLICATION_W2_GET_ALL_CAPABILITIES;
             avdtp_sink_get_all_capabilities(avdtp_cid, sep.seid);
             break;
         case 'f':
-            app_state = AVDTP_APPLICATION_W2_GET_CONFIGURATION;
             avdtp_sink_get_configuration(avdtp_cid, sep.seid);
             break;
         case 's':
-            app_state = AVDTP_APPLICATION_W2_SET_CONFIGURATION;
             remote_configuration_bitmap = store_bit16(remote_configuration_bitmap, AVDTP_MEDIA_CODEC, 1);
             remote_configuration.media_codec.media_type = AVDTP_AUDIO;
             remote_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
@@ -754,7 +741,6 @@ static void stdin_process(char cmd){
             avdtp_sink_set_configuration(avdtp_cid, local_stream_endpoint->sep.seid, sep.seid, remote_configuration_bitmap, remote_configuration);
             break;
         case 'R':
-            app_state = AVDTP_APPLICATION_W2_RECONFIGURE_WITH_SEID;
             remote_configuration_bitmap = store_bit16(remote_configuration_bitmap, AVDTP_MEDIA_CODEC, 1);
             remote_configuration.media_codec.media_type = AVDTP_AUDIO;
             remote_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
@@ -763,24 +749,18 @@ static void stdin_process(char cmd){
             avdtp_sink_reconfigure(avdtp_cid, local_stream_endpoint->sep.seid, sep.seid, remote_configuration_bitmap, remote_configuration);
             break;
         case 'o':
-            app_state = AVDTP_APPLICATION_W2_OPEN_STREAM_WITH_SEID;
             avdtp_sink_open_stream(avdtp_cid, local_stream_endpoint->sep.seid, sep.seid);
             break;
         case 'm': 
-            printf("AVDTP_APPLICATION_W2_START_STREAM_WITH_SEID \n");
-            app_state = AVDTP_APPLICATION_W2_START_STREAM_WITH_SEID;
             avdtp_sink_start_stream(local_stream_endpoint->sep.seid);
             break;
         case 'A':
-            app_state = AVDTP_APPLICATION_W2_ABORT_STREAM_WITH_SEID;
             avdtp_sink_abort_stream(local_stream_endpoint->sep.seid);
             break;
         case 'S':
-            app_state = AVDTP_APPLICATION_W2_STOP_STREAM_WITH_SEID;
             avdtp_sink_stop_stream(local_stream_endpoint->sep.seid);
             break;
         case 'P':
-            app_state = AVDTP_APPLICATION_W2_SUSPEND_STREAM_WITH_SEID;
             avdtp_sink_suspend(local_stream_endpoint->sep.seid);
             break;
 

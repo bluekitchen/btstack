@@ -55,7 +55,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "btstack.h"
 #include "sco_demo_util.h"
@@ -407,7 +406,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     // print info
                     printf("Device found: %s ",  bd_addr_to_str(addr));
                     printf("with COD: 0x%06x, ", (unsigned int) gap_event_inquiry_result_get_class_of_device(event));
-                    if (gap_event_inquiry_result_get_rssi_availabe(event)){
+                    if (gap_event_inquiry_result_get_rssi_available(event)){
                         printf(", rssi %d dBm", (int8_t) gap_event_inquiry_result_get_rssi(event));
                     }
                     if (gap_event_inquiry_result_get_name_available(event)){

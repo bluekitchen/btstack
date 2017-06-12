@@ -41,4 +41,7 @@
 #define MAX_NR_AVDTP_CONNECTIONS 1
 #define MAX_NR_AVRCP_CONNECTIONS 1
 
+// Link Key DB using TLV on top of Flash Sector interface
+#define NVM_NUM_LINK_KEYS 16
+
 #endif

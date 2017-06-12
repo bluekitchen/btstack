@@ -358,7 +358,8 @@ static hfp_connection_t * create_hfp_connection_context(void){
 }
 
 static void remove_hfp_connection_context(hfp_connection_t * hfp_connection){
-    btstack_linked_list_remove(&hfp_connections, (btstack_linked_item_t*) hfp_connection);   
+    btstack_linked_list_remove(&hfp_connections, (btstack_linked_item_t*) hfp_connection);
+    btstack_memory_hfp_connection_free(hfp_connection);
 }
 
 static hfp_connection_t * provide_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr){

@@ -64,6 +64,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 
 static bd_addr_t device_addr;
+static uint16_t avrcp_cid = 0;
 // iPhone SE
 // static const char * device_addr_string = "BC:EC:5D:E6:15:03";
 
@@ -90,19 +91,29 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 case HCI_EVENT_AVRCP_META:
                     switch (packet[2]){
                         case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
+                            local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
+                            if (avrcp_cid != local_cid) {
+                                printf("Connection is not established, expected 0x%02X l2cap cid, received 0x%02X\n", avrcp_cid, local_cid);
+                                break;
+                            }
+
                             status = avrcp_subevent_connection_established_get_status(packet);
                             avrcp_con_handle = avrcp_subevent_connection_established_get_con_handle(packet);
-                            local_cid = avrcp_subevent_connection_established_get_local_cid(packet);
                             avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
+                            if (status != ERROR_CODE_SUCCESS){
+                                printf("AVRCP Connection failed: status 0x%02x\n", status);
+                                avrcp_cid = 0;
+                                break;
+                            }
                             printf("Channel successfully opened: %s, handle 0x%02x, local cid 0x%02x\n", bd_addr_to_str(event_addr), avrcp_con_handle, local_cid);
                             // automatically enable notifications
-                            avrcp_enable_notification(avrcp_con_handle, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
-                            //avrcp_enable_notification(avrcp_con_handle, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
+                            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
+                            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
                             return;
                         }
                         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
-                            printf("Channel released: con_handle 0x%02x\n", avrcp_subevent_connection_released_get_con_handle(packet));
-                            avrcp_con_handle = 0;
+                            printf("Channel released: avrcp_cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
+                            avrcp_cid = 0;
                             return;
                         default:
                             break;
@@ -113,28 +124,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     if (connection_handle != avrcp_con_handle) return;
 
                     // avoid printing INTERIM status
-                    switch (packet[2]){
-                        case AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED:
-                        case AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED:
-                        case AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED:
-                        case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
-                        case AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED:
-                            if (status == AVRCP_CTYPE_RESPONSE_INTERIM) return;
-                            break;
-                        default:
-                            break;
-                    }
-                    
+                    if (status == AVRCP_CTYPE_RESPONSE_INTERIM) return;
+                            
                     printf("AVRCP: command status: %s, ", avrcp_ctype2str(status));
                     switch (packet[2]){
                         case AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED:
-                            printf("notification, playback status changed %s\n", avrcp_play_status2str(avrcp_subevent_notification_playback_status_changed_get_playback_status(packet)));
+                            printf("notification, playback status changed %s\n", avrcp_play_status2str(avrcp_subevent_notification_playback_status_changed_get_play_status(packet)));
                             return;
                         case AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED:
                             printf("notification, playing content changed\n");
                             return;
                         case AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED:
-                            printf("notification track changed %d\n", avrcp_subevent_notification_track_changed_get_track_status(packet));
+                            printf("notification track changed\n");
                             return;
                         case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
                             printf("notification absolute volume changed %d\n", avrcp_subevent_notification_volume_changed_get_absolute_volume(packet));
@@ -243,99 +244,99 @@ static void stdin_process(char cmd){
     switch (cmd){
         case 'c':
             printf(" - Create AVRCP connection to addr %s.\n", bd_addr_to_str(device_addr));
-            avrcp_connect(device_addr);
+            avrcp_connect(device_addr, &avrcp_cid);
             break;
         case 'D':
             printf(" - Disconnect\n");
-            avrcp_disconnect(avrcp_con_handle);
+            avrcp_disconnect(avrcp_cid);
             break;
         case 'i':
             printf(" - get play status\n");
-            avrcp_get_play_status(avrcp_con_handle);
+            avrcp_get_play_status(avrcp_cid);
             break;
         case 'j':
             printf(" - get now playing info\n");
-            avrcp_get_now_playing_info(avrcp_con_handle);
+            avrcp_get_now_playing_info(avrcp_cid);
             break;
         case 'k':
             printf(" - play\n");
-            avrcp_play(avrcp_con_handle);
+            avrcp_play(avrcp_cid);
             break;
         case 'K':
             printf(" - stop\n");
-            avrcp_stop(avrcp_con_handle);
+            avrcp_stop(avrcp_cid);
             break;
         case 'L':
             printf(" - pause\n");
-            avrcp_pause(avrcp_con_handle);
+            avrcp_pause(avrcp_cid);
             break;
         case 'm':
             printf(" - start fast forward\n");
-            avrcp_start_fast_forward(avrcp_con_handle);
+            avrcp_start_fast_forward(avrcp_cid);
             break;
         case 'M':
             printf(" - stop fast forward\n");
-            avrcp_stop_fast_forward(avrcp_con_handle);
+            avrcp_stop_fast_forward(avrcp_cid);
             break;
         case 'n':
             printf(" - start rewind\n");
-            avrcp_start_rewind(avrcp_con_handle);
+            avrcp_start_rewind(avrcp_cid);
             break;
         case 'N':
             printf(" - stop rewind\n");
-            avrcp_stop_rewind(avrcp_con_handle);
+            avrcp_stop_rewind(avrcp_cid);
             break;
         case 'o':
             printf(" - forward\n");
-            avrcp_forward(avrcp_con_handle); 
+            avrcp_forward(avrcp_cid); 
             break;
         case 'O':
             printf(" - backward\n");
-            avrcp_backward(avrcp_con_handle);
+            avrcp_backward(avrcp_cid);
             break;
         case 'p':
             printf(" - volume up\n");
-            avrcp_volume_up(avrcp_con_handle);
+            avrcp_volume_up(avrcp_cid);
             break;
         case 'P':
             printf(" - volume down\n");
-            avrcp_volume_down(avrcp_con_handle);
+            avrcp_volume_down(avrcp_cid);
             break;
         case 'r':
             printf(" - absolute volume of 50 percent\n");
-            avrcp_set_absolute_volume(avrcp_con_handle, 50);
+            avrcp_set_absolute_volume(avrcp_cid, 50);
             break;
         case 's':
             printf(" - mute\n");
-            avrcp_mute(avrcp_con_handle);
+            avrcp_mute(avrcp_cid);
             break;
         case 't':
             printf(" - skip\n");
-            avrcp_skip(avrcp_con_handle);
+            avrcp_skip(avrcp_cid);
             break;
         case 'u':
             printf(" - query repeat and shuffle mode\n");
-            avrcp_query_shuffle_and_repeat_modes(avrcp_con_handle);
+            avrcp_query_shuffle_and_repeat_modes(avrcp_cid);
             break;
         case 'v':
             printf(" - repeat single track\n");
-            avrcp_set_repeat_mode(avrcp_con_handle, AVRCP_REPEAT_MODE_SINGLE_TRACK);
+            avrcp_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_SINGLE_TRACK);
             break;
         case 'x':
             printf(" - repeat all tracks\n");
-            avrcp_set_repeat_mode(avrcp_con_handle, AVRCP_REPEAT_MODE_ALL_TRACKS);
+            avrcp_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_ALL_TRACKS);
             break;
         case 'X':
             printf(" - disable repeat mode\n");
-            avrcp_set_repeat_mode(avrcp_con_handle, AVRCP_REPEAT_MODE_OFF);
+            avrcp_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_OFF);
             break;
         case 'z':
             printf(" - shuffle all tracks\n");
-            avrcp_set_shuffle_mode(avrcp_con_handle, AVRCP_SHUFFLE_MODE_ALL_TRACKS);
+            avrcp_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_ALL_TRACKS);
             break;
         case 'Z':
             printf(" - disable shuffle mode\n");
-            avrcp_set_shuffle_mode(avrcp_con_handle, AVRCP_SHUFFLE_MODE_OFF);
+            avrcp_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_OFF);
             break;
         default:
             show_usage();
@@ -347,7 +348,6 @@ int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     UNUSED(argc);
     (void)argv;
-    avrcp_con_handle = 0;
     /* Register for HCI events */
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);

@@ -83,13 +83,13 @@ static uint16_t  rfcomm_cid = 0;
 #define INQUIRY_INTERVAL 5
 static void start_scan(void){
     printf("Starting inquiry scan..\n");
-    hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
     state = W4_PEER_COD;
+    gap_inquiry_start(INQUIRY_INTERVAL);
 }
 static void stop_scan(void){
     printf("Stopping inquiry scan..\n");
-    hci_send_cmd(&hci_inquiry_cancel);
     state = W4_SCAN_COMPLETE;
+    gap_inquiry_stop();
 }
 /*
  * @section Track throughput
@@ -189,25 +189,35 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
 
                 case GAP_EVENT_INQUIRY_RESULT:
+                    if (state != W4_PEER_COD) break;
                     class_of_device = gap_event_inquiry_result_get_class_of_device(packet);
                     gap_event_inquiry_result_get_bd_addr(packet, event_addr);
                     if (class_of_device == TEST_COD){
                         memcpy(peer_addr, event_addr, 6);
                         printf("Peer found: %s\n", bd_addr_to_str(peer_addr));
                         stop_scan();
-
-                        printf("Start to connect\n");
-                        state = W4_RFCOMM_CHANNEL;
-                        rfcomm_create_channel(packet_handler, peer_addr, RFCOMM_SERVER_CHANNEL, NULL); 
                     } else {
                         printf("Device found: %s with COD: 0x%06x\n", bd_addr_to_str(event_addr), (int) class_of_device);
                     }                        
                     break;
                     
-                case HCI_EVENT_INQUIRY_COMPLETE:
-                    printf("Inquiry complete\n");
-                    printf("Peer not found, starting scan again\n");
-                    start_scan();
+                case GAP_EVENT_INQUIRY_COMPLETE:
+                    switch (state){
+                        case W4_PEER_COD:                        
+                            printf("Inquiry complete\n");
+                            printf("Peer not found, starting scan again\n");
+                            start_scan();
+                            break;                        
+                        case W4_SCAN_COMPLETE:
+                            printf("Start to connect\n");
+                            state = W4_RFCOMM_CHANNEL;
+                            rfcomm_create_channel(packet_handler, peer_addr, RFCOMM_SERVER_CHANNEL, NULL); 
+                            break;
+                        default:
+                            break;
+                    }
+                    if (state == W4_PEER_COD){
+                    }
                     break;
 
                 default:
@@ -217,6 +227,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         
         case RFCOMM_DATA_PACKET:
             test_track_transferred(size);
+            
 #if 0
             printf("RCV: '");
             for (i=0;i<size;i++){
