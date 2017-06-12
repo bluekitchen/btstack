@@ -556,8 +556,9 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                         btstack_linked_list_iterator_init(&it, stream_endpoints);
                         while (btstack_linked_list_iterator_has_next(&it)){
                             avdtp_stream_endpoint_t * _stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
-                            avdtp_initialize_stream_endpoint(_stream_endpoint);
+                            btstack_memory_avdtp_stream_endpoint_free(_stream_endpoint);
                         }
+                        btstack_memory_avdtp_connection_free(connection);
                         break;
                     }
                     break;
