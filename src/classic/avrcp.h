@@ -188,7 +188,6 @@ typedef enum {
 typedef struct {
     btstack_linked_item_t    item;
     bd_addr_t remote_addr;
-    hci_con_handle_t con_handle;
     uint16_t l2cap_signaling_cid;
    
     avctp_connection_state_t state;

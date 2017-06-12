@@ -626,7 +626,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                                 break;
                         }
                     }
-                    avrcp_emit_repeat_and_shuffle_mode(avrcp_callback, connection->avrcp_cid, ctype, repeat_mode, shuffle_mode);
+                    avrcp_emit_repeat_and_shuffle_mode(avrcp_callback, connection->l2cap_signaling_cid, ctype, repeat_mode, shuffle_mode);
                     break;
                 }
                 case AVRCP_PDU_ID_SetPlayerApplicationSettingValue:{
@@ -635,7 +635,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     event[offset++] = HCI_EVENT_AVRCP_META;
                     event[offset++] = sizeof(event) - 2;
                     event[offset++] = AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE;
-                    little_endian_store_16(event, offset, connection->avrcp_cid);
+                    little_endian_store_16(event, offset, connection->l2cap_signaling_cid);
                     offset += 2;
                     event[offset++] = ctype;
                     (*avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -647,7 +647,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     event[offset++] = HCI_EVENT_AVRCP_META;
                     event[offset++] = sizeof(event) - 2;
                     event[offset++] = AVRCP_SUBEVENT_SET_ABSOLUTE_VOLUME_RESPONSE;
-                    little_endian_store_16(event, offset, connection->avrcp_cid);
+                    little_endian_store_16(event, offset, connection->l2cap_signaling_cid);
                     offset += 2;
                     event[offset++] = ctype;
                     event[offset++] = packet[pos++];
@@ -690,7 +690,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     event[offset++] = HCI_EVENT_AVRCP_META;
                     event[offset++] = sizeof(event) - 2;
                     event[offset++] = AVRCP_SUBEVENT_PLAY_STATUS;
-                    little_endian_store_16(event, offset, connection->avrcp_cid);
+                    little_endian_store_16(event, offset, connection->l2cap_signaling_cid);
                     offset += 2;
                     event[offset++] = ctype;
                     little_endian_store_32(event, offset, song_length);
@@ -737,7 +737,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             event[offset++] = HCI_EVENT_AVRCP_META;
                             event[offset++] = sizeof(event) - 2;
                             event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED;
-                            little_endian_store_16(event, offset, connection->avrcp_cid);
+                            little_endian_store_16(event, offset, connection->l2cap_signaling_cid);
                             offset += 2;
                             event[offset++] = ctype;
                             event[offset++] = packet[pos];
@@ -750,7 +750,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             event[offset++] = HCI_EVENT_AVRCP_META;
                             event[offset++] = sizeof(event) - 2;
                             event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED;
-                            little_endian_store_16(event, offset, connection->avrcp_cid);
+                            little_endian_store_16(event, offset, connection->l2cap_signaling_cid);
                             offset += 2;
                             event[offset++] = ctype;
                             (*avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -762,7 +762,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             event[offset++] = HCI_EVENT_AVRCP_META;
                             event[offset++] = sizeof(event) - 2;
                             event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED;
-                            little_endian_store_16(event, offset, connection->avrcp_cid);
+                            little_endian_store_16(event, offset, connection->l2cap_signaling_cid);
                             offset += 2;
                             event[offset++] = ctype;
                             (*avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -774,7 +774,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             event[offset++] = HCI_EVENT_AVRCP_META;
                             event[offset++] = sizeof(event) - 2;
                             event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED;
-                            little_endian_store_16(event, offset, connection->avrcp_cid);
+                            little_endian_store_16(event, offset, connection->l2cap_signaling_cid);
                             offset += 2;
                             event[offset++] = ctype;
                             (*avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -786,7 +786,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             event[offset++] = HCI_EVENT_AVRCP_META;
                             event[offset++] = sizeof(event) - 2;
                             event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED;
-                            little_endian_store_16(event, offset, connection->avrcp_cid);
+                            little_endian_store_16(event, offset, connection->l2cap_signaling_cid);
                             offset += 2;
                             event[offset++] = ctype;
                             event[offset++] = packet[pos++] & 0x7F;
@@ -895,7 +895,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     event[0] = HCI_EVENT_AVRCP_META;
                     pos = 2;
                     event[pos++] = AVRCP_SUBEVENT_NOW_PLAYING_INFO;
-                    little_endian_store_16(event, pos, connection->avrcp_cid);
+                    little_endian_store_16(event, pos, connection->l2cap_signaling_cid);
                     pos += 2;
                     event[pos++] = ctype;
                     for (i = 0; i < sizeof(attribute_order); i++){
@@ -967,12 +967,12 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
             }
             if (connection->state == AVCTP_W4_STOP){
-                avrcp_emit_operation_status(avrcp_callback, AVRCP_SUBEVENT_OPERATION_START, connection->avrcp_cid, ctype, operation_id);
+                avrcp_emit_operation_status(avrcp_callback, AVRCP_SUBEVENT_OPERATION_START, connection->l2cap_signaling_cid, ctype, operation_id);
             }
             if (connection->state == AVCTP_CONNECTION_OPENED) {
                 // RELEASE response
                 operation_id = operation_id & 0x7F;
-                avrcp_emit_operation_status(avrcp_callback, AVRCP_SUBEVENT_OPERATION_COMPLETE, connection->avrcp_cid, ctype, operation_id);
+                avrcp_emit_operation_status(avrcp_callback, AVRCP_SUBEVENT_OPERATION_COMPLETE, connection->l2cap_signaling_cid, ctype, operation_id);
             }
             if (connection->state == AVCTP_W2_SEND_RELEASE_COMMAND){
                 // PRESS response
@@ -1103,7 +1103,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     local_cid = l2cap_event_channel_closed_get_local_cid(packet);
                     connection = get_avrcp_connection_for_l2cap_signaling_cid(local_cid);
                     if (connection){
-                        avrcp_emit_connection_closed(avrcp_callback, connection->avrcp_cid);
+                        avrcp_emit_connection_closed(avrcp_callback, connection->l2cap_signaling_cid);
                         // free connection
                         btstack_linked_list_remove(&avrcp_connections, (btstack_linked_item_t*) connection); 
                         btstack_memory_avrcp_connection_free(connection);
