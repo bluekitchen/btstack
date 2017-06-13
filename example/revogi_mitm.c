@@ -74,7 +74,7 @@ const uint8_t adv_data[] = {
     // Service 16-bit: FFF0
     0x03, 0x02, 0xF0, 0xFF,
     // Manufacturer specific data (aa bb - address 78:A5:04:82:1B:A4)
-    0x09, 0xFF, 0x04, 0x1E, 0x78, 0xA5, 0x04, 0x82, 0x1B, 0xA4,    
+    0x09, 0xFF, 0x04, 0x1E, 0x78, 0xA5, 0x04, 0x82, 0x1A, 0xAA,    
     // Name
     0x08, 0x09, 'D', 'E', 'L', 'I', 'G', 'H', 'T',  
 };
@@ -273,6 +273,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         printf("All clients disconnected, starting color wheel\n");
                         color_wheel_active = 1;
                     }
+                    break;
+
                 case ATT_EVENT_CAN_SEND_NOW:
                     // att_server_notify(con_handle, ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
                     break;
