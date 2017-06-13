@@ -64,6 +64,7 @@ typedef enum {
     W4_QUERY_SERVICE_COMPLETED,
     W4_QUERY_CHARACTERISTICS_COMPLETED,
     CONNECTED,
+    W2_RECONNECT,
 } state_t;
 
 #define HEARTBEAT_PERIOD_MS 100
@@ -168,6 +169,13 @@ static void set_rgb_and_brightness(uint8_t red, uint8_t green, uint8_t blue, uin
         fff0_characteristics[FFF3_CHARACTERISTIC].value_handle, 17, message_buffer);
 }
 
+static void start_connecting(void){
+        sscanf_bd_addr(bulb_addr_string, bulb_addr);
+        printf("Start connecting...\n");
+        state = W4_OUTGOING_CONNECTED;
+        gap_connect(bulb_addr, BD_ADDR_TYPE_LE_PUBLIC);
+}
+
 static void heartbeat_handler(struct btstack_timer_source *ts){
 
     btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
@@ -178,6 +186,12 @@ static void heartbeat_handler(struct btstack_timer_source *ts){
     if (counter == 10){
         printf("(beat)\n");
         counter = 0;
+    }
+
+    if (state == W2_RECONNECT){
+        start_connecting();
+        return;
+
     }
 
     if (!color_wheel_active) return;
@@ -237,10 +251,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case BTSTACK_EVENT_STATE:
                     // BTstack activated, get started
                     if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
-                    sscanf_bd_addr(bulb_addr_string, bulb_addr);
-                    printf("BTstack activated, start connecting...\n");
-                    state = W4_OUTGOING_CONNECTED;
-                    gap_connect(bulb_addr, BD_ADDR_TYPE_LE_PUBLIC);
+                    start_connecting();
                     break;
                 case HCI_EVENT_LE_META:
                     // wait for connection complete
@@ -262,8 +273,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         printf("Bulb disconnected\n");
                         bulb_con_handle = 0;
                         color_wheel_active = 0;
+                        // try to connect again
+                        state = W2_RECONNECT;
                     }
                     break;
+#if 1
                 case BTSTACK_EVENT_NR_CONNECTIONS_CHANGED:
                     if (state != CONNECTED) break;
                     if (btstack_event_nr_connections_changed_get_number_connections(packet) > 1){
@@ -274,6 +288,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         color_wheel_active = 1;
                     }
                     break;
+#endif
 
                 case ATT_EVENT_CAN_SEND_NOW:
                     // att_server_notify(con_handle, ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
