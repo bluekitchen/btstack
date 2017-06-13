@@ -58,7 +58,6 @@
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 // mac 2011: static bd_addr_t device_addr = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
-// pts: static bd_addr_t device_addr = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
 // mac 2013: static bd_addr_t device_addr = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
 // phone: static bd_addr_t device_addr = {0xD8, 0xBB, 0x2C, 0xDF, 0xF1, 0x08};
 
@@ -68,8 +67,9 @@ static uint16_t avrcp_cid = 0;
 // iPhone SE
 // static const char * device_addr_string = "BC:EC:5D:E6:15:03";
 
-// iPhone 6
-static const char * device_addr_string = "D8:BB:2C:DF:F1:08";
+// iPhone 6: static const char * device_addr_string = "D8:BB:2C:DF:F1:08";
+// pts: 
+static const char * device_addr_string = "00:1B:DC:08:0A:A5";
 
 static uint16_t avrcp_con_handle = 0;
 static uint8_t sdp_avrcp_controller_service_buffer[200];
@@ -242,11 +242,11 @@ static void show_usage(void){
 
 static void stdin_process(char cmd){
     switch (cmd){
-        case 'c':
+        case 'b':
             printf(" - Create AVRCP connection to addr %s.\n", bd_addr_to_str(device_addr));
             avrcp_connect(device_addr, &avrcp_cid);
             break;
-        case 'D':
+        case 'B':
             printf(" - Disconnect\n");
             avrcp_disconnect(avrcp_cid);
             break;
@@ -354,7 +354,7 @@ int btstack_main(int argc, const char * argv[]){
 
     l2cap_init();
     
-    // Initialize AVDTP Sink
+    // Initialize AVRCP COntroller
     avrcp_init();
     avrcp_register_packet_handler(&packet_handler);
 
@@ -366,7 +366,7 @@ int btstack_main(int argc, const char * argv[]){
     
     gap_set_local_name("BTstack AVRCP Test");
     gap_discoverable_control(1);
-//     gap_set_class_of_device(0x200408);
+    // gap_set_class_of_device(0x200408);
     
     // parse human readable Bluetooth address
     sscanf_bd_addr(device_addr_string, device_addr);
