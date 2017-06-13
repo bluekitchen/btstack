@@ -248,7 +248,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     if (state == W4_OUTGOING_CONNECTED) {
                         printf("Connected, query services for FFF0...\n");
                         bulb_con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
-                        gap_update_connection_parameters(bulb_con_handle, 80, 80, 20, 500);
+                        // gap_update_connection_parameters(bulb_con_handle, 80, 80, 20, 500);
                         // query primary services
                         state = W4_QUERY_SERVICE_COMPLETED;
                         gatt_client_discover_primary_services_by_uuid16(handle_gatt_client_event, bulb_con_handle, 0xfff0);
@@ -302,6 +302,7 @@ static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t a
     UNUSED(offset);
     UNUSED(buffer);
     UNUSED(buffer_size);
+    UNUSED(att_handle);
 #if 0
     switch (att_handle){
         case ATT_CHARACTERISTIC_FFF1_01_VALUE_HANDLE:
