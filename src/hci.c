@@ -2773,9 +2773,9 @@ static void hci_run(void){
                  null_addr, // peer bd addr
                  hci_stack->le_own_addr_type, // our addr type:
                  0x0008,    // conn interval min
-                 0x0018,    // conn interval max
-                 0,         // conn latency
-                 0x0048,    // supervision timeout
+                 0x0050,    // conn interval max
+                 4,         // conn latency
+                 0x0064,    // supervision timeout
                  0x0001,    // min ce length
                  0x0001     // max ce length
                  );
