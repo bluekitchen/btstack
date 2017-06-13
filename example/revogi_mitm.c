@@ -253,7 +253,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         state = W4_QUERY_SERVICE_COMPLETED;
                         gatt_client_discover_primary_services_by_uuid16(handle_gatt_client_event, bulb_con_handle, 0xfff0);
                     } else {
-                        gap_request_connection_parameter_update(hci_subevent_le_connection_complete_get_connection_handle(packet), 80, 80, 20, 500);                   
+                        // gap_request_connection_parameter_update(hci_subevent_le_connection_complete_get_connection_handle(packet), 80, 80, 20, 500);                   
                     }
                     break;
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
