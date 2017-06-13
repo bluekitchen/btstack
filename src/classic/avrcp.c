@@ -590,7 +590,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             uint8_t pdu_id = operands[3];
 
             if (connection->state != AVCTP_W2_RECEIVE_RESPONSE && pdu_id != AVRCP_PDU_ID_REGISTER_NOTIFICATION){
-                printf("AVRCP_CMD_OPCODE_VENDOR_DEPENDENT state %d \n", connection->state);
+                log_info("AVRCP_CMD_OPCODE_VENDOR_DEPENDENT state %d", connection->state);
                 return;
             } 
             connection->state = AVCTP_CONNECTION_OPENED;
@@ -962,7 +962,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
                 default:
                     // check for notifications? move state transition down
-                    printf("AVRCP_CMD_OPCODE_PASS_THROUGH state %d\n", connection->state);
+                    // log_info("AVRCP_CMD_OPCODE_PASS_THROUGH state %d\n", connection->state);
                     break;
             }
             if (connection->state == AVCTP_W4_STOP){
