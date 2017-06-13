@@ -573,6 +573,7 @@ static void le_conn_update(btstack_buf_t *buf, btstack_buf_t *evt)
 	cmd_status(evt, (!status) ? 0x00 : BT_HCI_ERR_CMD_DISALLOWED);
 }
 
+#if defined(CONFIG_BLUETOOTH_CONTROLLER_ROLE_MASTER)
 static void le_set_host_ch_classif(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_set_host_ch_classif *cmd = (void *)buf->data;
@@ -584,6 +585,7 @@ static void le_set_host_ch_classif(btstack_buf_t *buf, btstack_buf_t *evt)
 	ccst = cmd_complete(evt, sizeof(*ccst));
 	ccst->status = (!status) ? 0x00 : BT_HCI_ERR_CMD_DISALLOWED;
 }
+#endif
 
 static void le_read_remote_features(btstack_buf_t *buf, btstack_buf_t *evt)
 {
@@ -627,6 +629,7 @@ static void le_rand(btstack_buf_t *buf, btstack_buf_t *evt)
 	}
 }
 
+#if defined(CONFIG_BLUETOOTH_CONTROLLER_ROLE_MASTER)
 static void le_start_encryption(btstack_buf_t *buf, btstack_buf_t *evt)
 {
 	struct bt_hci_cp_le_start_encryption *cmd = (void *)buf->data;
@@ -641,6 +644,7 @@ static void le_start_encryption(btstack_buf_t *buf, btstack_buf_t *evt)
 
 	cmd_status(evt, (!status) ? 0x00 : BT_HCI_ERR_CMD_DISALLOWED);
 }
+#endif
 
 static void le_ltk_req_reply(btstack_buf_t *buf, btstack_buf_t *evt)
 {
@@ -825,9 +829,11 @@ static int controller_cmd_handle(uint8_t ocf, btstack_buf_t *cmd,
 		le_conn_update(cmd, evt);
 		break;
 
+#ifdef ENABLE_LE_CENTRAL
 	case BT_OCF(BT_HCI_OP_LE_SET_HOST_CH_CLASSIF):
 		le_set_host_ch_classif(cmd, evt);
 		break;
+#endif
 
 	case BT_OCF(BT_HCI_OP_LE_READ_REMOTE_FEATURES):
 		le_read_remote_features(cmd, evt);
@@ -841,10 +847,12 @@ static int controller_cmd_handle(uint8_t ocf, btstack_buf_t *cmd,
 		le_rand(cmd, evt);
 		break;
 
+#ifdef ENABLE_LE_CENTRAL
 	case BT_OCF(BT_HCI_OP_LE_START_ENCRYPTION):
 		le_start_encryption(cmd, evt);
 		break;
-
+#endif
+		
 	case BT_OCF(BT_HCI_OP_LE_LTK_REQ_REPLY):
 		le_ltk_req_reply(cmd, evt);
 		break;
