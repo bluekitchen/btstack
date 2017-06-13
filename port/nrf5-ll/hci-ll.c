@@ -852,7 +852,7 @@ static int controller_cmd_handle(uint8_t ocf, btstack_buf_t *cmd,
 		le_start_encryption(cmd, evt);
 		break;
 #endif
-		
+
 	case BT_OCF(BT_HCI_OP_LE_LTK_REQ_REPLY):
 		le_ltk_req_reply(cmd, evt);
 		break;
@@ -1156,9 +1156,11 @@ static void encode_control(struct radio_pdu_node_rx *node_rx,
 		break;
 #endif
 
+#ifdef CONFIG_BLUETOOTH_CONTROLLER_CONN_RSSI
 	case NODE_RX_TYPE_RSSI:
 		/** @todo */
 		return;
+#endif
 
 	case NODE_RX_TYPE_PROFILE:
 		/** @todo */
