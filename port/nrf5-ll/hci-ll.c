@@ -1162,9 +1162,11 @@ static void encode_control(struct radio_pdu_node_rx *node_rx,
 		return;
 #endif
 
+#ifdef CONFIG_BLUETOOTH_CONTROLLER_PROFILE_ISR
 	case NODE_RX_TYPE_PROFILE:
 		/** @todo */
 		return;
+#endif
 
 #ifdef ENABLE_LE_PERIPHERAL
 #if defined (CONFIG_BLUETOOTH_CONTROLLER_ADV_INDICATION)
