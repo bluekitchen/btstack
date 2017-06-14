@@ -60,7 +60,7 @@ static bd_addr_t device_addr;
 static uint16_t avrcp_cid = 0;
 
 // iPhone SE: static const char * device_addr_string = "BC:EC:5D:E6:15:03";
-// iPhone 6: static const char * device_addr_string = "D8:BB:2C:DF:F1:08";
+// iPhone 6:  static const char * device_addr_string = "D8:BB:2C:DF:F1:08";
 // pts: 
 static const char * device_addr_string = "00:1B:DC:08:0A:A5";
 
@@ -235,7 +235,7 @@ static void show_usage(void){
 
 static void stdin_process(char cmd){
     switch (cmd){
-        case 'b':
+        case 'c':
             printf(" - Create AVRCP connection to addr %s.\n", bd_addr_to_str(device_addr));
             avrcp_connect(device_addr, &avrcp_cid);
             break;
