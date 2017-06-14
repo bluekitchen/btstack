@@ -3814,21 +3814,21 @@ static inline const char * hfp_subevent_call_waiting_notification_get_number(con
 }
 
 /**
- * @brief Get field type from event HFP_SUBEVENT_CALLING_LINE_INDETIFICATION_NOTIFICATION
+ * @brief Get field type from event HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION
  * @param event packet
  * @return type
  * @note: btstack_type 1
  */
-static inline uint8_t hfp_subevent_calling_line_indetification_notification_get_type(const uint8_t * event){
+static inline uint8_t hfp_subevent_calling_line_identification_notification_get_type(const uint8_t * event){
     return event[3];
 }
 /**
- * @brief Get field number from event HFP_SUBEVENT_CALLING_LINE_INDETIFICATION_NOTIFICATION
+ * @brief Get field number from event HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION
  * @param event packet
  * @return number
  * @note: btstack_type T
  */
-static inline const char * hfp_subevent_calling_line_indetification_notification_get_number(const uint8_t * event){
+static inline const char * hfp_subevent_calling_line_identification_notification_get_number(const uint8_t * event){
     return (const char *) &event[4];
 }
 

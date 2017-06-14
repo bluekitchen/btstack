@@ -69,7 +69,12 @@
 uint8_t hfp_service_buffer[150];
 const uint8_t   rfcomm_channel_nr = 1;
 const char hfp_hf_service_name[] = "BTstack HFP HF Demo";
-static bd_addr_t device_addr = {0x80,0xbe,0x05,0xd5,0x28,0x48};
+
+#ifdef HAVE_BTSTACK_STDIN
+static const char * device_addr_string = "00:1B:DC:08:0A:A5";
+#endif
+
+static bd_addr_t device_addr;
 
 #ifdef HAVE_BTSTACK_STDIN
 // 80:BE:05:D5:28:48
@@ -529,6 +534,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                         case HFP_SUBEVENT_MICROPHONE_VOLUME:
                             printf("Microphone volume: %u\n", event[3]);
                             break;
+                        case HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION:
+                            printf("Caller ID, number %s\n", hfp_subevent_calling_line_identification_notification_get_number(event));
+                            break;
                         default:
                             printf("event not handled %u\n", event[2]);
                             break;
@@ -544,7 +552,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
             break;
     }
 
-    if (event[0] != HCI_EVENT_HFP_META) return;
 }
 
 /* @section Main Application Setup
@@ -598,10 +605,11 @@ int btstack_main(int argc, const char * argv[]){
     printf("SDP service record size: %u\n", de_get_len(hfp_service_buffer));
     sdp_register_service(hfp_service_buffer);
 
-    
 #ifdef HAVE_BTSTACK_STDIN
+    // parse human readable Bluetooth address
+    sscanf_bd_addr(device_addr_string, device_addr);
     btstack_stdin_setup(stdin_process);
-#endif    
+#endif
     // turn on!
     hci_power_control(HCI_POWER_ON);
     return 0;
