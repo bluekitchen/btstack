@@ -214,7 +214,12 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     log_info("    ACP .. seid %d, index %d", sep.seid, stream_endpoint->remote_sep_index);
                     
                     if (stream_endpoint->remote_sep_index != AVDTP_INVALID_SEP_INDEX){
-                        if (stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].in_use){
+                         if (stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].in_use){
+                            if (stream_endpoint->state < AVDTP_STREAM_ENDPOINT_OPENED){
+                                stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index] = sep;
+                                log_info("    ACP: update seid %d, to %p", stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
+                                break;
+                            } 
                             // reject if already configured
                             connection->error_code = SEP_IN_USE;
                             // find first registered category and fire the error
