@@ -512,7 +512,6 @@ static int avrcp_register_notification(avrcp_connection_t * connection, avrcp_no
     if (connection->notifications_enabled & (1 << event_id)) return 0;
     if (connection->notifications_to_register & (1 << event_id)) return 0;
     connection->notifications_to_register |= (1 << event_id);
-    printf("register %d\n", event_id);
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return 1;
 }
@@ -997,7 +996,6 @@ static void avrcp_handle_can_send_now(avrcp_connection_t * connection){
             if (connection->notifications_to_register != 0){
                 for (i = 1; i <= AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED; i++){
                     if (connection->notifications_to_register & (1<<i)){
-                        printf("clear registration bit before sending command");
                         connection->notifications_to_register &= ~ (1 << i);
                         avrcp_prepare_notification(connection, i);
                         connection->state = AVCTP_W2_RECEIVE_RESPONSE;
