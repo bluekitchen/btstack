@@ -202,7 +202,7 @@ typedef struct {
     uint8_t cmd_operands[20];
     uint8_t cmd_operands_length;
     btstack_timer_source_t press_and_hold_cmd_timer;
-
+    uint8_t  continuous_fast_forward_cmd;
     uint16_t notifications_enabled;
     uint16_t notifications_to_register;
     uint16_t notifications_to_deregister; 
@@ -336,6 +336,13 @@ uint8_t avrcp_start_fast_forward(uint16_t avrcp_cid);
 uint8_t avrcp_stop_fast_forward(uint16_t avrcp_cid);
 
 /**
+ * @brief Single step - fast forward. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
+ * @param avrcp_cid
+ * @returns status
+ */
+uint8_t avrcp_fast_forward(uint16_t avrcp_cid);
+
+/**
  * @brief Stop Rewind. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
  * @param avrcp_cid
  * @returns status
@@ -348,6 +355,13 @@ uint8_t avrcp_start_rewind(uint16_t avrcp_cid);
  * @returns status
  */
 uint8_t avrcp_stop_rewind(uint16_t avrcp_cid);
+
+/**
+ * @brief Single step rewind. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
+ * @param avrcp_cid
+ * @returns status
+ */
+uint8_t avrcp_rewind(uint16_t avrcp_cid);
 
 /**
  * @brief Forward. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
