@@ -39,7 +39,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "btstack_config.h"
 #include "btstack_debug.h"
@@ -57,16 +56,10 @@
 #define AVRCP_BROWSING_ENABLED 0
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-// mac 2011: static bd_addr_t device_addr = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
-// mac 2013: static bd_addr_t device_addr = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
-// phone: static bd_addr_t device_addr = {0xD8, 0xBB, 0x2C, 0xDF, 0xF1, 0x08};
-
-
 static bd_addr_t device_addr;
 static uint16_t avrcp_cid = 0;
-// iPhone SE
-// static const char * device_addr_string = "BC:EC:5D:E6:15:03";
 
+// iPhone SE: static const char * device_addr_string = "BC:EC:5D:E6:15:03";
 // iPhone 6: static const char * device_addr_string = "D8:BB:2C:DF:F1:08";
 // pts: 
 static const char * device_addr_string = "00:1B:DC:08:0A:A5";
@@ -205,7 +198,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 }
 
-
+#ifdef HAVE_BTSTACK_STDIN
 static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
@@ -343,6 +336,7 @@ static void stdin_process(char cmd){
             break;
     }
 }
+#endif
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
@@ -374,6 +368,8 @@ int btstack_main(int argc, const char * argv[]){
     // turn on!
     hci_power_control(HCI_POWER_ON);
 
+#ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
+#endif
     return 0;
 }
