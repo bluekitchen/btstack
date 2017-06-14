@@ -834,9 +834,9 @@ static void show_usage(void){
     printf("j - get now playing info\n");
     printf("k - play\n");
     printf("K - stop\n");
-    printf("u - pause\n");
-    printf("U - start fast forward\n");
-    printf("M - stop  fast forward\n");
+    printf("L - pause\n");
+    printf("u - start fast forward\n");
+    printf("U - stop  fast forward\n");
     printf("n - start rewind\n");
     printf("N - stop rewind\n");
     printf("i - forward\n");
@@ -852,7 +852,7 @@ static void show_usage(void){
     printf("X - disable repeat mode\n");
     printf("z - shuffle all tracks\n");
     printf("Z - disable shuffle mode\n");
-
+ 
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
