@@ -636,6 +636,9 @@ static void hfp_run_for_context(hfp_connection_t * hfp_connection){
         done = call_setup_state_machine(hfp_connection);
     }
 
+    // don't send a new command while ok still pending
+    if (hfp_connection->ok_pending) return;
+
     if (hfp_connection->send_microphone_gain){
         hfp_connection->send_microphone_gain = 0;
         hfp_connection->ok_pending = 1;
