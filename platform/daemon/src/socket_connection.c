@@ -137,10 +137,15 @@ static btstack_linked_list_t parked = NULL;
 static int (*socket_connection_packet_callback)(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t length) = socket_connection_dummy_handler;
 
 static int socket_connection_dummy_handler(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t length){
+    UNUSED(connection); 
+    UNUSED(packet_type); 
+    UNUSED(channel); 
+    UNUSED(data); 
+    UNUSED(length);
     return 0;
 }
 
-void socket_connection_free_connection(connection_t *conn){
+static void socket_connection_free_connection(connection_t *conn){
     // remove from run_loop 
     btstack_run_loop_remove_data_source(&conn->ds);
     
@@ -151,14 +156,14 @@ void socket_connection_free_connection(connection_t *conn){
     free(conn);
 }
 
-void socket_connection_init_statemachine(connection_t *connection){
+static void socket_connection_init_statemachine(connection_t *connection){
     // wait for next packet
     connection->state = SOCKET_W4_HEADER;
     connection->bytes_read = 0;
     connection->bytes_to_read = sizeof(packet_header_t);
 }
 
-connection_t * socket_connection_register_new_connection(int fd){
+static connection_t * socket_connection_register_new_connection(int fd){
     // create connection objec 
     connection_t * conn = malloc( sizeof(connection_t));
     if (conn == NULL) return 0;
@@ -195,6 +200,7 @@ void static socket_connection_emit_connection_closed(connection_t *connection){
 }
 
 void socket_connection_hci_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
+    UNUSED(callback_type);
     connection_t *conn = (connection_t *) ds;
     int fd = btstack_run_loop_get_data_source_fd(ds);
     int bytes_read = read(fd, &conn->buffer[conn->bytes_read], conn->bytes_to_read);
@@ -277,6 +283,7 @@ int  socket_connection_has_parked_connections(void){
 }
 
 static void socket_connection_accept(btstack_data_source_t *socket_ds, btstack_data_source_callback_type_t callback_type) {
+    UNUSED(callback_type);
     struct sockaddr_storage ss;
     socklen_t slen = sizeof(ss);
     int socket_fd = btstack_run_loop_get_data_source_fd(socket_ds);
