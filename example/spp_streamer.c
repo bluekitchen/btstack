@@ -185,6 +185,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             spp_test_data_len = sizeof(test_data);
                         }
 
+                        // disable page/inquiry scan to get max performance
+                        gap_discoverable_control(0);
+                        gap_connectable_control(0);
+
                         test_reset();
                         rfcomm_request_can_send_now_event(rfcomm_cid);
                     }
@@ -197,6 +201,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case RFCOMM_EVENT_CHANNEL_CLOSED:
                     printf("RFCOMM channel closed\n");
                     rfcomm_cid = 0;
+
+                    // re-enable page/inquiry scan again
+                    gap_discoverable_control(1);
+                    gap_connectable_control(1);
                     break;
 
                 default:

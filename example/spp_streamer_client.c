@@ -172,14 +172,19 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         rfcomm_mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
                         printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_cid, rfcomm_mtu);
                         test_reset();
-                        // disable page and inquiry scan
+
+                        // disable page/inquiry scan to get max performance
+                        gap_discoverable_control(0);
                         gap_connectable_control(0);
                     }
 					break;
 
                 case RFCOMM_EVENT_CHANNEL_CLOSED:
                     printf("RFCOMM channel closed\n");
-                    rfcomm_cid = 0; // re-enable page scan 
+                    rfcomm_cid = 0;
+
+                    // re-enable page/inquiry scan again
+                    gap_discoverable_control(1);
                     gap_connectable_control(1);
                     break;
 

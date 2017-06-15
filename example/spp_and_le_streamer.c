@@ -213,6 +213,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
+                    // re-enable page/inquiry scan again
+                    gap_discoverable_control(1);
+                    gap_connectable_control(1);
+                    // re-enable advertisements
+                    gap_advertisements_enable(1);
                     le_notification_enabled = 0;
                     break;
 
@@ -260,6 +265,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         if (spp_test_data_len > sizeof(test_data)){
                             spp_test_data_len = sizeof(test_data);
                         }
+
+                        // disable page/inquiry scan to get max performance
+                        gap_discoverable_control(0);
+                        gap_connectable_control(0);
+                        // disable advertisements
+                        gap_advertisements_enable(0);
 
                         test_reset();
                         rfcomm_request_can_send_now_event(rfcomm_cid);
@@ -324,6 +335,11 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
             if (le_notification_enabled){
                 att_server_request_can_send_now_event(le_connection_handle);
             }
+
+            // disable page/inquiry scan to get max performance
+            gap_discoverable_control(0);
+            gap_connectable_control(0);
+
             test_reset();
             break;
         default:
