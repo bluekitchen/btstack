@@ -1203,7 +1203,7 @@ typedef uint8_t sm_key_t[16];
  * @param type
  * @param number
  */
-#define HFP_SUBEVENT_CALLING_LINE_INDETIFICATION_NOTIFICATION 0x17
+#define HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION 0x17
 
 /**
  * @format 111111T

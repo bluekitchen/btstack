@@ -449,7 +449,9 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
             }
 
             if (channel == stream_endpoint->l2cap_media_cid){
-                (*handle_media_data)(stream_endpoint, packet, size);
+                if (handle_media_data){
+                    (*handle_media_data)(stream_endpoint, packet, size);
+                }               
                 break;
             } 
 
@@ -552,11 +554,15 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     if (connection){
                         log_info(" -> AVDTP_STREAM_ENDPOINT_IDLE, connection closed");
                         btstack_linked_list_remove(avdtp_connections, (btstack_linked_item_t*) connection); 
+
                         btstack_linked_list_iterator_t it;    
                         btstack_linked_list_iterator_init(&it, stream_endpoints);
                         while (btstack_linked_list_iterator_has_next(&it)){
                             avdtp_stream_endpoint_t * _stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
-                            btstack_memory_avdtp_stream_endpoint_free(_stream_endpoint);
+                            
+                            if (_stream_endpoint->connection == connection){
+                                avdtp_initialize_stream_endpoint(_stream_endpoint);
+                            }
                         }
                         btstack_memory_avdtp_connection_free(connection);
                         break;
