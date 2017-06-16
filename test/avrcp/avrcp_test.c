@@ -57,14 +57,14 @@
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static bd_addr_t device_addr;
-static uint16_t avrcp_cid = 0;
 
 // iPhone SE: static const char * device_addr_string = "BC:EC:5D:E6:15:03";
 // iPhone 6:  static const char * device_addr_string = "D8:BB:2C:DF:F1:08";
-// pts: 
-static const char * device_addr_string = "00:1B:DC:08:0A:A5";
+// Wiko Sunny:
+static const char * device_addr_string = "A0-4C-5B-0F-B2-42";
+// pts: static const char * device_addr_string = "00:1B:DC:08:0A:A5";
 
-static uint16_t avrcp_con_handle = 0;
+static uint16_t avrcp_cid = 0;
 static uint8_t sdp_avrcp_controller_service_buffer[200];
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -72,8 +72,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(size);
     bd_addr_t event_addr;
     uint16_t local_cid;
-    uint16_t connection_handle = 0;
     uint8_t  status = 0xFF;
+    hci_con_handle_t avrcp_con_handle;
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
@@ -87,17 +87,17 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
                             if (avrcp_cid != local_cid) {
                                 printf("Connection is not established, expected 0x%02X l2cap cid, received 0x%02X\n", avrcp_cid, local_cid);
-                                break;
+                                return;
                             }
 
                             status = avrcp_subevent_connection_established_get_status(packet);
-                            avrcp_con_handle = avrcp_subevent_connection_established_get_con_handle(packet);
                             avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
                             if (status != ERROR_CODE_SUCCESS){
                                 printf("AVRCP Connection failed: status 0x%02x\n", status);
                                 avrcp_cid = 0;
-                                break;
+                                return;
                             }
+                            avrcp_con_handle = avrcp_subevent_connection_established_get_con_handle(packet);
                             printf("Channel successfully opened: %s, handle 0x%02x, local cid 0x%02x\n", bd_addr_to_str(event_addr), avrcp_con_handle, local_cid);
                             // automatically enable notifications
                             avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
@@ -113,8 +113,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     }
 
                     status = packet[5];
-                    connection_handle = little_endian_read_16(packet, 3);
-                    if (connection_handle != avrcp_con_handle) return;
+                    local_cid = little_endian_read_16(packet, 3);
+                    if (avrcp_cid != local_cid) return;
 
                     // avoid printing INTERIM status
                     if (status == AVRCP_CTYPE_RESPONSE_INTERIM) return;
