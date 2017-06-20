@@ -36,11 +36,13 @@
  */
 
 /**
- * interface to provide link key storage
+ *  Static Link Key implementation to use during development/porting:
+ *  - Link keys have to be manually added to this file to make them usable
+ *  + Link keys are preserved on reflash in constrast to the program flash based link key store
  */
 
-#ifndef __BTSTACK_LINK_KEY_DB_FIXED_H
-#define __BTSTACK_LINK_KEY_DB_FIXED_H
+#ifndef __BTSTACK_LINK_KEY_DB_STATIC_H
+#define __BTSTACK_LINK_KEY_DB_STATIC_H
 
 #include "btstack_link_key_db.h"
 
@@ -51,7 +53,7 @@ extern "C" {
 /*
  * @brief
  */
-const btstack_link_key_db_t * btstack_link_key_db_fixed_instance(void);
+const btstack_link_key_db_t * btstack_link_key_db_static_instance(void);
 
 /* API_END */
 
@@ -59,4 +61,4 @@ const btstack_link_key_db_t * btstack_link_key_db_fixed_instance(void);
 }
 #endif
 
-#endif // __BTSTACK_LINK_KEY_DB_FIXED_H
+#endif // __BTSTACK_LINK_KEY_DB_STATIC_H
