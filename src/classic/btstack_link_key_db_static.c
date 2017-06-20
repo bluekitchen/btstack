@@ -35,13 +35,14 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_link_key_db_fixed.c"
+#define __BTSTACK_FILE__ "btstack_link_key_db_static.c"
 
 /*
- *  btstack_link_key_db_fixed.c
+ *  btstack_link_key_db_static.c
  *
- *  Fixed Link Key implemenetation to use during development/porting
- *  Link keys have to be manually added to this file to make them usable
+ *  Static Link Key implementation to use during development/porting:
+ *  - Link keys have to be manually added to this file to make them usable
+ *  + Link keys are preserved on reflash in constrast to the program flash based link key store
  */
 
 #include "classic/btstack_link_key_db.h"
@@ -76,7 +77,7 @@ static char *link_key_to_str(link_key_t link_key){
     return (char *) link_key_to_str_buffer;
 }
 
-static int sscanf_link_key(char * link_key_string, link_key_t link_key){
+static int sscanf_link_key(const char * link_key_string, link_key_t link_key){
     unsigned int buffer[LINK_KEY_LEN];
 
     // reset result buffer
@@ -133,7 +134,7 @@ static void link_key_db_put_link_key(bd_addr_t bd_addr, link_key_t link_key, lin
 static void link_key_db_set_local_bd_addr(bd_addr_t bd_addr){
 }
 
-const btstack_link_key_db_t btstack_link_key_db_fixed = {
+const btstack_link_key_db_t btstack_link_key_db_static = {
     link_key_db_init,
     link_key_db_set_local_bd_addr,	
     link_key_db_close,
@@ -142,6 +143,6 @@ const btstack_link_key_db_t btstack_link_key_db_fixed = {
     link_key_db_delete_link_key,
 };
 
-const btstack_link_key_db_t * btstack_link_key_db_fixed_instance(void){
-    return &btstack_link_key_db_fixed;
+const btstack_link_key_db_t * btstack_link_key_db_static_instance(void){
+    return &btstack_link_key_db_static;
 }

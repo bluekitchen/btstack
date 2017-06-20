@@ -3,7 +3,7 @@
 #include "btstack_debug.h"
 #include "btstack_chipset_cc256x.h"
 #include "btstack_run_loop_embedded.h"
-#include "classic/btstack_link_key_db_fixed.h"
+#include "classic/btstack_link_key_db_static.h"
 #include "classic/btstack_link_key_db_tlv.h"
 #include "hal_flash_sector.h"
 #include "btstack_tlv.h"
