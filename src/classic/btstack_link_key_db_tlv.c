@@ -38,7 +38,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "btstack_link_key_db_tlv.h"
+#include "classic/btstack_link_key_db_tlv.h"
 
 #include "btstack_debug.h"
 #include "btstack_util.h"
@@ -64,8 +64,12 @@ typedef struct link_key_nvm {
 static btstack_link_key_db_tlv_h singleton;
 static btstack_link_key_db_tlv_h * self = &singleton;
 
+static const char tag_0 = 'B';
+static const char tag_1 = 'T';
+static const char tag_2 = 'L';
+
 static uint32_t btstack_link_key_db_tag_for_index(uint8_t index){
-    return ('B' << 24) | ('T' << 16) | ('L' << 8) | index;
+    return (tag_0 << 24) | (tag_1 << 16) | (tag_2 << 8) | index;
 }
 
 // Device info
