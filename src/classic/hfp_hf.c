@@ -1072,6 +1072,8 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
                         hfp_callsetup_status = (hfp_callsetup_status_t) hfp_connection->ag_indicators[i].status;
                     } else if (strcmp(hfp_connection->ag_indicators[i].name, "callheld") == 0){
                         hfp_callheld_status = (hfp_callheld_status_t) hfp_connection->ag_indicators[i].status;
+                        // avoid set but not used warning
+                        (void) hfp_callheld_status;
                     } else if (strcmp(hfp_connection->ag_indicators[i].name, "call") == 0){
                         hfp_call_status = (hfp_call_status_t) hfp_connection->ag_indicators[i].status;
                     }

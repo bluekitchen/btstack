@@ -455,7 +455,7 @@ static inline uint8_t request_pass_through_press_control_cmd(uint16_t avrcp_cid,
     connection->command_opcode =  AVRCP_CMD_OPCODE_PASS_THROUGH;
     connection->command_type = AVRCP_CTYPE_CONTROL;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL; 
-    connection->subunit_id =   0;
+    connection->subunit_id =   AVRCP_SUBUNIT_ID;
     connection->cmd_operands_length = 0;
 
     connection->continuous_fast_forward_cmd = continuous_fast_forward_cmd;
@@ -521,7 +521,7 @@ static void avrcp_prepare_notification(avrcp_connection_t * connection, avrcp_no
     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_NOTIFY;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
-    connection->subunit_id = 0;
+    connection->subunit_id = AVRCP_SUBUNIT_ID;
     int pos = 0;
     big_endian_store_24(connection->cmd_operands, pos, BT_SIG_COMPANY_ID);
     pos += 3;
@@ -555,15 +555,18 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     // uint8_t byte_value = packet[2];
     // uint16_t pid = (byte_value << 8) | packet[2];
     
-    avrcp_command_type_t ctype = packet[pos++];
+    avrcp_command_type_t ctype = (avrcp_command_type_t) packet[pos++];
     uint8_t byte_value = packet[pos++];
-    avrcp_subunit_type_t subunit_type = byte_value >> 3;
-    avrcp_subunit_type_t subunit_id = byte_value & 0x07;
+    avrcp_subunit_type_t subunit_type = (avrcp_subunit_type_t) (byte_value >> 3);
+    avrcp_subunit_type_t subunit_id = (avrcp_subunit_type_t)   (byte_value & 0x07);
     opcode = packet[pos++];
     
     // printf("    Transport header 0x%02x (transaction_label %d, packet_type %d, frame_type %d, ipid %d), pid 0x%4x\n", 
     //     transport_header, transaction_label, packet_type, frame_type, ipid, pid);
     // // printf_hexdump(packet+pos, size-pos);
+    
+    uint8_t pdu_id;
+    uint16_t param_length;
     switch (avrcp_cmd_opcode(packet,size)){
         case AVRCP_CMD_OPCODE_UNIT_INFO:{
             if (connection->state != AVCTP_W2_RECEIVE_RESPONSE) return;
@@ -587,7 +590,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             memcpy(operands, packet+pos, 7);
             pos += 7;
             // uint32_t company_id = operands[0] << 16 | operands[1] << 8 | operands[2];
-            uint8_t pdu_id = operands[3];
+            pdu_id = operands[3];
 
             if (connection->state != AVCTP_W2_RECEIVE_RESPONSE && pdu_id != AVRCP_PDU_ID_REGISTER_NOTIFICATION){
                 log_info("AVRCP_CMD_OPCODE_VENDOR_DEPENDENT state %d", connection->state);
@@ -598,7 +601,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             
             // uint8_t unit_type = operands[4] >> 3;
             // uint8_t unit = operands[4] & 0x07;
-            uint16_t param_length = big_endian_read_16(operands, 5);
+            param_length = big_endian_read_16(operands, 5);
 
             // printf("    VENDOR DEPENDENT response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), unit_type 0x%02x, unit %d, company_id 0x%06x\n",
             //     ctype, subunit_type, subunit_id, opcode, unit_type, unit, company_id );
@@ -609,17 +612,17 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 case AVRCP_PDU_ID_GetCurrentPlayerApplicationSettingValue:{
                     uint8_t num_attributes = packet[pos++];
                     int i;
-                    uint8_t repeat_mode = 0;
-                    uint8_t shuffle_mode = 0;
+                    avrcp_repeat_mode_t  repeat_mode =  AVRCP_REPEAT_MODE_INVALID;
+                    avrcp_shuffle_mode_t shuffle_mode = AVRCP_SHUFFLE_MODE_INVALID;
                     for (i = 0; i < num_attributes; i++){
                         uint8_t attribute_id    = packet[pos++];
                         uint8_t attribute_value = packet[pos++];
                         switch (attribute_id){
                             case 0x02:
-                                repeat_mode = attribute_value;
+                                repeat_mode = (avrcp_repeat_mode_t) attribute_value;
                                 break;
                             case 0x03:
-                                shuffle_mode = attribute_value;
+                                shuffle_mode = (avrcp_shuffle_mode_t) attribute_value;
                                 break;
                             default:
                                 break;
@@ -654,7 +657,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
                 }
                 case AVRCP_PDU_ID_GET_CAPABILITIES:{
-                    avrcp_capability_id_t capability_id = packet[pos++];
+                    avrcp_capability_id_t capability_id = (avrcp_capability_id_t) packet[pos++];
                     uint8_t capability_count = packet[pos++];
                     int i;
                     switch (capability_id){
@@ -701,7 +704,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
                 }
                 case AVRCP_PDU_ID_REGISTER_NOTIFICATION:{
-                    uint8_t  event_id = packet[pos++];
+                    avrcp_notification_event_id_t  event_id = (avrcp_notification_event_id_t) packet[pos++];
                     uint16_t event_mask = (1 << event_id);
                     uint16_t reset_event_mask = ~event_mask;
                     switch (ctype){
@@ -836,7 +839,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     uint16_t max_string_attribute_value_len = 0;
                     if (ctype == AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE || ctype == AVRCP_CTYPE_RESPONSE_CHANGED_STABLE){
                         for (i = 0; i < num_attributes; i++){
-                            avrcp_media_attribute_id_t attr_id = big_endian_read_32(packet, pos);
+                            avrcp_media_attribute_id_t attr_id = (avrcp_media_attribute_id_t) big_endian_read_32(packet, pos);
                             pos += 4;
                             // uint16_t character_set = big_endian_read_16(packet, pos);
                             pos += 2;
@@ -898,7 +901,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     pos += 2;
                     event[pos++] = ctype;
                     for (i = 0; i < sizeof(attribute_order); i++){
-                        avrcp_media_attribute_id_t attr_id = attribute_order[i];
+                        avrcp_media_attribute_id_t attr_id = (avrcp_media_attribute_id_t) attribute_order[i];
                         uint16_t value_len = 0;
                         switch (attr_id){
                             case AVRCP_MEDIA_ATTR_TITLE:
@@ -997,7 +1000,7 @@ static void avrcp_handle_can_send_now(avrcp_connection_t * connection){
                 for (i = 1; i <= AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED; i++){
                     if (connection->notifications_to_register & (1<<i)){
                         connection->notifications_to_register &= ~ (1 << i);
-                        avrcp_prepare_notification(connection, i);
+                        avrcp_prepare_notification(connection, (avrcp_notification_event_id_t) i);
                         connection->state = AVCTP_W2_RECEIVE_RESPONSE;
                         avrcp_send_cmd(connection->l2cap_signaling_cid, connection);
                         return;    
@@ -1179,7 +1182,7 @@ static uint8_t avrcp_get_capabilities(uint16_t avrcp_cid, uint8_t capability_id)
     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_STATUS;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
-    connection->subunit_id = 0;
+    connection->subunit_id = AVRCP_SUBUNIT_ID;
     big_endian_store_24(connection->cmd_operands, 0, BT_SIG_COMPANY_ID);
     connection->cmd_operands[3] = AVRCP_PDU_ID_GET_CAPABILITIES; // PDU ID
     connection->cmd_operands[4] = 0;
@@ -1285,7 +1288,7 @@ uint8_t avrcp_get_play_status(uint16_t avrcp_cid){
     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_STATUS;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
-    connection->subunit_id = 0;
+    connection->subunit_id = AVRCP_SUBUNIT_ID;
     big_endian_store_24(connection->cmd_operands, 0, BT_SIG_COMPANY_ID);
     connection->cmd_operands[3] = AVRCP_PDU_ID_GET_PLAY_STATUS;
     connection->cmd_operands[4] = 0;                     // reserved(upper 6) | packet_type -> 0
@@ -1329,7 +1332,7 @@ uint8_t avrcp_get_now_playing_info(uint16_t avrcp_cid){
     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_STATUS;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
-    connection->subunit_id = 0;
+    connection->subunit_id = AVRCP_SUBUNIT_ID;
     int pos = 0;
     big_endian_store_24(connection->cmd_operands, pos, BT_SIG_COMPANY_ID);
     pos += 3;
@@ -1365,7 +1368,7 @@ uint8_t avrcp_set_absolute_volume(uint16_t avrcp_cid, uint8_t volume){
     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_CONTROL;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
-    connection->subunit_id = 0;
+    connection->subunit_id = AVRCP_SUBUNIT_ID;
     int pos = 0;
     big_endian_store_24(connection->cmd_operands, pos, BT_SIG_COMPANY_ID);
     pos += 3;
@@ -1395,7 +1398,7 @@ uint8_t avrcp_query_shuffle_and_repeat_modes(uint16_t avrcp_cid){
     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_STATUS;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
-    connection->subunit_id = 0;
+    connection->subunit_id = AVRCP_SUBUNIT_ID;
     big_endian_store_24(connection->cmd_operands, 0, BT_SIG_COMPANY_ID);
     connection->cmd_operands[3] = AVRCP_PDU_ID_GetCurrentPlayerApplicationSettingValue; // PDU ID
     connection->cmd_operands[4] = 0;
@@ -1424,7 +1427,7 @@ static uint8_t avrcp_set_current_player_application_setting_value(uint16_t avrcp
     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type = AVRCP_CTYPE_CONTROL;
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
-    connection->subunit_id = 0;
+    connection->subunit_id = AVRCP_SUBUNIT_ID;
     int pos = 0;
     big_endian_store_24(connection->cmd_operands, pos, BT_SIG_COMPANY_ID);
     pos += 3;
