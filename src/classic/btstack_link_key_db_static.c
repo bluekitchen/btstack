@@ -134,7 +134,7 @@ static void link_key_db_put_link_key(bd_addr_t bd_addr, link_key_t link_key, lin
 static void link_key_db_set_local_bd_addr(bd_addr_t bd_addr){
 }
 
-const btstack_link_key_db_t btstack_link_key_db_static = {
+static const btstack_link_key_db_t btstack_link_key_db_static = {
     link_key_db_init,
     link_key_db_set_local_bd_addr,	
     link_key_db_close,
