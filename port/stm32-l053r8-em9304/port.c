@@ -1,7 +1,7 @@
 #include <string.h>
 #include "stm32l0xx_hal.h"
 #include "port.h"
-#include "main.h"	// pin definitions
+#include "main.h"   // pin definitions
 
 // retarget printf
 #include <stdio.h>
@@ -72,70 +72,76 @@ void port_main(void){
     uint8_t status[2];
     uint8_t event[10];
 
-	while (1){
-		printf("CMD: Select\n");
-	    // HAL_GPIO_WritePin( GPIOB, GPIO_PIN_6, GPIO_PIN_RESET );
-	    // HAL_GPIO_WritePin( GPIOB, GPIO_PIN_6, GPIO_PIN_SET ); 
-	    
-		// chip select
-	    HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_RESET);
+    while (1){
 
-	    // wait for RDY
-		printf("CMD: Wait for ready\n");
-	    while (HAL_GPIO_ReadPin(SPI1_RDY_GPIO_Port, SPI1_RDY_Pin) == GPIO_PIN_RESET){};
+        printf("Reset: \n");
+        HAL_GPIO_WritePin(EN_GPIO_Port, EN_Pin, GPIO_PIN_RESET);
+        HAL_Delay(10);
+        HAL_GPIO_WritePin(EN_GPIO_Port, EN_Pin, GPIO_PIN_SET);
 
-		printf("CMD: Send write request\n");
+        printf("CMD: Select\n");
+        // HAL_GPIO_WritePin( GPIOB, GPIO_PIN_6, GPIO_PIN_RESET );
+        // HAL_GPIO_WritePin( GPIOB, GPIO_PIN_6, GPIO_PIN_SET ); 
+        
+        // chip select
+        HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_RESET);
 
-	    // send write command
-	    HAL_SPI_TransmitReceive(&hspi1, (uint8_t*) write_command, status, sizeof(write_command), HAL_MAX_DELAY);
+        // wait for RDY
+        printf("CMD: Wait for ready\n");
+        while (HAL_GPIO_ReadPin(SPI1_RDY_GPIO_Port, SPI1_RDY_Pin) == GPIO_PIN_RESET){};
 
-	    printf("CMD: STS1 0x%02X, STS2 0x%02X\n", status[0], status[1]);
+        printf("CMD: Send write request\n");
 
-	    // check slave status
-	    if (status[0] != STS_SLAVE_READY) continue;
+        // send write command
+        HAL_SPI_TransmitReceive(&hspi1, (uint8_t*) write_command, status, sizeof(write_command), HAL_MAX_DELAY);
 
-	    printf("CMD: Slave ready\n");
+        printf("CMD: STS1 0x%02X, STS2 0x%02X\n", status[0], status[1]);
 
-	    // check size
-	    if (status[1] < sizeof(hci_reset)) continue;
+        // check slave status
+        if (status[0] != STS_SLAVE_READY) continue;
 
-	    printf("CMD: Enough buffer, send\n");
+        printf("CMD: Slave ready\n");
 
-	    // send command
-	    HAL_SPI_Transmit(&hspi1, (uint8_t*) hci_reset, sizeof(hci_reset), HAL_MAX_DELAY);
+        // check size
+        if (status[1] < sizeof(hci_reset)) continue;
 
-	    // done
-	    HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_SET);
+        printf("CMD: Enough buffer, send\n");
 
-	    printf("CMD: Done\n");
+        // send command
+        HAL_SPI_Transmit(&hspi1, (uint8_t*) hci_reset, sizeof(hci_reset), HAL_MAX_DELAY);
 
-	    // wait for RDY
-		printf("EVT: Wait for ready\n");
-	    while (HAL_GPIO_ReadPin(SPI1_RDY_GPIO_Port, SPI1_RDY_Pin) == GPIO_PIN_RESET){};
+        // done
+        HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_SET);
 
-		// chip select
-		printf("EVT: Select\n");
-	    HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_RESET);
+        printf("CMD: Done\n");
 
-	    // send read command
-		printf("EVT: Send read request\n");
-	    HAL_SPI_TransmitReceive(&hspi1, (uint8_t*) read_command, status, sizeof(read_command), HAL_MAX_DELAY);
+        // wait for RDY
+        printf("EVT: Wait for ready\n");
+        while (HAL_GPIO_ReadPin(SPI1_RDY_GPIO_Port, SPI1_RDY_Pin) == GPIO_PIN_RESET){};
 
-	    printf("EVT: STS1 0x%02X, STS2 0x%02X\n", status[0], status[1]);
+        // chip select
+        printf("EVT: Select\n");
+        HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_RESET);
 
-	    // read all data
-	    HAL_SPI_Receive(&hspi1, &event[0], status[1], HAL_MAX_DELAY);
+        // send read command
+        printf("EVT: Send read request\n");
+        HAL_SPI_TransmitReceive(&hspi1, (uint8_t*) read_command, status, sizeof(read_command), HAL_MAX_DELAY);
 
-	    HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_SET);
+        printf("EVT: STS1 0x%02X, STS2 0x%02X\n", status[0], status[1]);
 
-	    // dump
-	    int i;
-	    for (i=0;i<status[1];i++){
-	    	printf("%02x ", event[i]);
-	    }
-	    printf("\n");
+        // read all data
+        HAL_SPI_Receive(&hspi1, &event[0], status[1], HAL_MAX_DELAY);
 
-	    printf("EVT: Done\n");
+        HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_SET);
 
-   	}
+        // dump
+        int i;
+        for (i=0;i<status[1];i++){
+            printf("%02x ", event[i]);
+        }
+        printf("\n");
+
+        printf("EVT: Done\n");
+
+    }
 }
