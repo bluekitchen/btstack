@@ -92,10 +92,15 @@ static uint16_t hal_spi_em9304_rx_pos;
 static const uint8_t  * hal_spi_em9304_tx_data;
 static uint16_t   hal_spi_em9304_tx_size;
 
+static void dummy_handler(void);
+
+// handlers
+static void (*rx_done_handler)(void) = &dummy_handler;
+static void (*tx_done_handler)(void) = &dummy_handler;
+
 // test
 static int test_done;
 static int event_received;
-static int command_sent;
 static volatile int run_loop_triggered;
 
 static inline void hal_spi_em9304_trigger_run_loop(void){
@@ -256,12 +261,54 @@ static void hal_spi_em9304_process(void){
             HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_SET);
 
             hal_spi_em9304_state = SPI_EM9304_IDLE;
-            command_sent = 1;
+            (*tx_done_handler)();
             break;
 
         default:
             break;
     }
+}
+
+//
+// #include "hal_uart_dma.h"
+
+static void dummy_handler(void){};
+
+void hal_uart_dma_init(void){
+    hal_spi_em9304_reset();
+}
+
+void hal_uart_dma_set_block_received( void (*the_block_handler)(void)){
+    rx_done_handler = the_block_handler;
+}
+
+void hal_uart_dma_set_block_sent( void (*the_block_handler)(void)){
+    tx_done_handler = the_block_handler;
+}
+
+int  hal_uart_dma_set_baud(uint32_t baud){
+    return 0;
+}
+
+void hal_uart_dma_send_block(const uint8_t *buffer, uint16_t length){
+    hal_spi_em9304_tx_data = hci_reset;
+    hal_spi_em9304_tx_size = sizeof(hci_reset);
+    hal_spi_em9304_process();
+}
+
+void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len){
+}
+
+void hal_uart_dma_set_csr_irq_handler( void (*csr_irq_handler)(void)){
+}
+
+void hal_uart_dma_set_sleep(uint8_t sleep){
+}
+
+//
+
+void port_tx_done(void){
+
 }
 
 void port_main(void){
@@ -273,7 +320,9 @@ void port_main(void){
         HAL_GPIO_WritePin(EN_GPIO_Port, EN_Pin, GPIO_PIN_SET);
 
         // GO
-        hal_spi_em9304_reset();
+        hal_uart_dma_init();
+        hal_uart_dma_set_block_sent(&port_tx_done);
+
         int step = 0;
         while (!test_done){
 
@@ -294,23 +343,18 @@ void port_main(void){
                     printf("Active State Entered\n");
                     hal_spi_em9304_reset();
                     //
-                    hal_spi_em9304_tx_data = hci_reset;
-                    hal_spi_em9304_tx_size = sizeof(hci_reset);
-                    hal_spi_em9304_trigger_run_loop();
+                    hal_uart_dma_send_block(hci_reset, sizeof(hci_reset));
                     step++;
                     break;
                 case 1:
-                    if (!command_sent) continue;
-                    command_sent = 0;
-                    step++;
-                    break;
-                case 2:
                     if (!event_received) continue;
                     event_received = 0;
                     hal_spi_em9304_reset();
                     printf("HCI Command Complete Event Received\n");
                     test_done = 1;
                     break;                
+                default:
+                    break;
             }
         }
         test_done = 0;
