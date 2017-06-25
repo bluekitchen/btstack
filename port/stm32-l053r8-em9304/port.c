@@ -3,6 +3,15 @@
 #include "port.h"
 #include "main.h"   // pin definitions
 
+#include "bluetooth.h"
+#include "btstack_run_loop.h"
+#include "btstack_run_loop_embedded.h"
+#include "btstack_defines.h"
+#include "btstack_event.h"
+#include "btstack_memory.h"
+#include "hci_dump.h"
+#include "btstack_debug.h"
+
 // retarget printf
 #include <stdio.h>
 #include <unistd.h>
@@ -51,6 +60,28 @@ int _fstat(int file){
     return -1;
 }
 
+// hal_time_ms.h
+#include "hal_time_ms.h"
+uint32_t hal_time_ms(void){
+    return HAL_GetTick();
+}
+
+// hal_cpu.h implementation
+#include "hal_cpu.h"
+
+void hal_cpu_disable_irqs(void){
+    __disable_irq();
+}
+
+void hal_cpu_enable_irqs(void){
+    __enable_irq();
+}
+
+void hal_cpu_enable_irqs_and_sleep(void){
+    __enable_irq();
+    __asm__("wfe"); // go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
+}
+
 // EM 9304 SPI Master HCI Implementation
 
 #define STS_SLAVE_READY 0xc0
@@ -67,7 +98,7 @@ static const uint8_t hal_spi_em9304_read_command[] = {
     0x00,
 };
 
-const uint8_t hci_reset[] = { 0x01, 0x03, 0x0c, 0x00 };
+const uint8_t hci_reset_2[] = { 0x01, 0x03, 0x0c, 0x00 };
 
 static volatile enum {
     SPI_EM9304_IDLE,
@@ -103,10 +134,11 @@ static void (*tx_done_handler)(void) = &dummy_handler;
 
 // test
 static int test_done;
-static volatile int run_loop_triggered;
+// static volatile int run_loop_triggered;
 
 static inline void hal_spi_em9304_trigger_run_loop(void){
-    run_loop_triggered = 1;
+    btstack_run_loop_embedded_trigger();
+    // run_loop_triggered = 1;
 }
 
 static inline int hal_spi_em9304_rdy(void){
@@ -165,7 +197,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 }
 
 static void hal_spi_em9304_transfer_rx_data(void){
-    // log_info("hal_spi_em9304_transfer_rx_data: rx buffer %u -> hci buffer %u\n", hal_spi_em9304_rx_pos, hal_uart_dma_rx_len);
+    log_info("transfer_rx_data: spi rx buffer has %u -> hci buffer needs %u", hal_spi_em9304_rx_pos, hal_uart_dma_rx_len);
     while (hal_spi_em9304_rx_pos && hal_uart_dma_rx_len){
         uint16_t bytes_to_copy = hal_uart_dma_rx_len;
         if (hal_uart_dma_rx_len > hal_spi_em9304_rx_pos){
@@ -178,7 +210,7 @@ static void hal_spi_em9304_transfer_rx_data(void){
 
         // shift rest of data - could be skipped if ring buffer is used
         if (hal_spi_em9304_rx_pos){
-            // log_info("move %u bytes down\n", hal_spi_em9304_rx_pos);
+            log_info("transfer_rx_data: move %u bytes down", hal_spi_em9304_rx_pos);
             memmove(hal_spi_em9304_rx_buffer, &hal_spi_em9304_rx_buffer[bytes_to_copy], hal_spi_em9304_rx_pos);
         }
 
@@ -188,7 +220,10 @@ static void hal_spi_em9304_transfer_rx_data(void){
     }
 }
 
-static void hal_spi_em9304_process(void){
+static void hal_spi_em9304_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
+    (void) ds;
+    (void) callback_type;
+
     uint16_t bytes_to_read;
     uint16_t bytes_ready;
     uint16_t max_bytes_to_send;
@@ -201,13 +236,15 @@ static void hal_spi_em9304_process(void){
                 // chip select
                 HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_RESET);
 
+                // hack
+                HAL_Delay(1);
+
                 // wait for read command sent
                 hal_spi_em9304_state = SPI_EM9304_RX_W4_READ_COMMAND_SENT;
 
                 // send read command
                 HAL_SPI_TransmitReceive_DMA(&hspi1, (uint8_t*) hal_spi_em9304_read_command, hal_spi_em9304_slave_status, sizeof(hal_spi_em9304_read_command));
-            }
-            if (hal_uart_dma_tx_size){
+            } else if (hal_uart_dma_tx_size){
                 // chip select
                 HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_RESET);
     
@@ -217,6 +254,7 @@ static void hal_spi_em9304_process(void){
             break;
 
         case SPI_EM9304_RX_READ_COMMAND_SENT:
+            log_info("RX: STS1 0x%02X, STS2 0x%02X", hal_spi_em9304_slave_status[0], hal_spi_em9304_slave_status[1]);
             bytes_ready = hal_spi_em9304_slave_status[1];
             bytes_to_read = bytes_ready;
             if (bytes_to_read > hal_spi_em9304_rx_free_bytes()){
@@ -254,7 +292,7 @@ static void hal_spi_em9304_process(void){
             break;
 
         case SPI_EM9304_TX_WRITE_COMMAND_SENT:
-            // log_info("TX: STS1 0x%02X, STS2 0x%02X\n", hal_spi_em9304_slave_status[0], hal_spi_em9304_slave_status[1]);
+            log_info("TX: STS1 0x%02X, STS2 0x%02X", hal_spi_em9304_slave_status[0], hal_spi_em9304_slave_status[1]);
 
             // check slave status and rx buffer space
             max_bytes_to_send = hal_spi_em9304_slave_status[1];
@@ -263,6 +301,7 @@ static void hal_spi_em9304_process(void){
                 HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_SET);
                 // retry
                 hal_spi_em9304_state = SPI_EM9304_IDLE;
+                break;
             }
 
             bytes_to_send = hal_uart_dma_tx_size;
@@ -296,7 +335,14 @@ static void hal_spi_em9304_process(void){
 
 static void dummy_handler(void){};
 
+void hal_spi_em9304_power_cycle(void){
+    HAL_GPIO_WritePin(EN_GPIO_Port, EN_Pin, GPIO_PIN_RESET);
+    HAL_Delay(10);
+    HAL_GPIO_WritePin(EN_GPIO_Port, EN_Pin, GPIO_PIN_SET);
+}
+
 void hal_uart_dma_init(void){
+    hal_spi_em9304_power_cycle();
     hal_spi_em9304_reset();
 }
 
@@ -315,15 +361,15 @@ int  hal_uart_dma_set_baud(uint32_t baud){
 void hal_uart_dma_send_block(const uint8_t *buffer, uint16_t length){
     hal_uart_dma_tx_data = buffer;
     hal_uart_dma_tx_size = length;
-    hal_spi_em9304_process();
+    hal_spi_em9304_process(NULL, 0);
 }
 
 void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t length){
-    // log_info("hal_uart_dma_receive_block: len %u\n", length);
+    log_info("hal_uart_dma_receive_block: len %u", length);
     hal_uart_dma_rx_buffer = buffer;
     hal_uart_dma_rx_len    = length;
     hal_spi_em9304_transfer_rx_data();
-    hal_spi_em9304_process();
+    hal_spi_em9304_process(NULL, 0);
 }
 
 void hal_uart_dma_set_csr_irq_handler( void (*csr_irq_handler)(void)){
@@ -361,7 +407,7 @@ void port_rx_done(void){
             hal_uart_dma_receive_block(event, port_test_event_len);
 
             // next step: send reset
-            hal_uart_dma_send_block(hci_reset, sizeof(hci_reset));
+            hal_uart_dma_send_block(hci_reset_2, sizeof(hci_reset_2));
             break;
         case 1:
             printf("HCI Command Complete Event Received\n");
@@ -372,40 +418,104 @@ void port_rx_done(void){
     }
 }
 
-void port_main(void){
-    while (1){
-        // setp 1: reset
-        printf("1. Reset: \n");
-        HAL_GPIO_WritePin(EN_GPIO_Port, EN_Pin, GPIO_PIN_RESET);
-        HAL_Delay(10);
-        HAL_GPIO_WritePin(EN_GPIO_Port, EN_Pin, GPIO_PIN_SET);
+// dummy config
+static const hci_transport_config_uart_t config = {
+    HCI_TRANSPORT_CONFIG_UART,
+    115200,
+    4000000,
+    1,
+    NULL
+};
 
-        // setup hal_uart_dma
-        hal_uart_dma_init();
-        hal_uart_dma_set_block_sent(&port_tx_done);
-        hal_uart_dma_set_block_received(&port_rx_done);
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+int btstack_main(int argc, char ** argv);
 
-        // GO
-        port_test_state = 0;
-        test_done = 0;
-
-        // read active state entered event (hard coded event length)
-        port_test_event_len = 4;
-        hal_uart_dma_receive_block(event, port_test_event_len);
-        port_test_state = 0;
-
-        while (!test_done){
-
-            // wait for event / sleep
-            HAL_GPIO_WritePin(DEBUG_0_GPIO_Port, DEBUG_0_Pin, GPIO_PIN_SET);
-            while (!run_loop_triggered){};
-            HAL_GPIO_WritePin(DEBUG_0_GPIO_Port, DEBUG_0_Pin, GPIO_PIN_RESET);
-            run_loop_triggered = 0;
-
-            // handle event
-            hal_spi_em9304_process();
-        }
-
-        HAL_Delay(1000);
+// main.c
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(size);
+    UNUSED(channel);
+    if (packet_type != HCI_EVENT_PACKET) return;
+    switch(hci_event_packet_get_type(packet)){
+        case BTSTACK_EVENT_STATE:
+            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
+            printf("BTstack up and running.\n");
+            break;
+        default:
+            break;
     }
+}
+
+// data source to keep SPI transport working
+static btstack_data_source_t transport_data_source;
+
+void port_main(void){
+
+    // start with BTstack init - especially configure HCI Transport
+    btstack_memory_init();
+    btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
+
+    hci_dump_open( NULL, HCI_DUMP_STDOUT );
+
+    // set up polling data_source
+    btstack_run_loop_set_data_source_handler(&transport_data_source, &hal_spi_em9304_process);
+    btstack_run_loop_enable_data_source_callbacks(&transport_data_source, DATA_SOURCE_CALLBACK_POLL);
+    btstack_run_loop_add_data_source(&transport_data_source);
+
+    // init HCI
+    hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), &config);
+
+#if 0
+    // setup Link Key DB
+    const hal_flash_sector_t * hal_flash_sector_impl = hal_flash_sector_stm32_init_instance(
+            &hal_flash_sector_context,
+            HAL_FLASH_SECTOR_SIZE,
+            HAL_FLASH_SECTOR_BANK_0_SECTOR,
+            HAL_FLASH_SECTOR_BANK_1_SECTOR,
+            HAL_FLASH_SECTOR_BANK_0_ADDR,
+            HAL_FLASH_SECTOR_BANK_1_ADDR);
+    const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(
+            &btstack_tlv_flash_sector_context,
+            hal_flash_sector_impl,
+            &hal_flash_sector_context);
+    const btstack_link_key_db_t * btstack_link_key_db = btstack_link_key_db_tlv_get_instance(btstack_tlv_impl, &btstack_tlv_flash_sector_context);
+    hci_set_link_key_db(btstack_link_key_db);
+#endif
+
+    // inform about BTstack state
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    // hand over to btstack embedded code
+    btstack_main(0, NULL);
+
+    // go
+    btstack_run_loop_execute();
+
+#if 0
+    // setup hal_uart_dma
+    hal_uart_dma_init();
+    hal_uart_dma_set_block_sent(&port_tx_done);
+    hal_uart_dma_set_block_received(&port_rx_done);
+
+    // GO
+    port_test_state = 0;
+    test_done = 0;
+
+    // read active state entered event (hard coded event length)
+    port_test_event_len = 4;
+    hal_uart_dma_receive_block(event, port_test_event_len);
+    port_test_state = 0;
+
+    while (!test_done){
+
+        // wait for event / sleep
+        HAL_GPIO_WritePin(DEBUG_0_GPIO_Port, DEBUG_0_Pin, GPIO_PIN_SET);
+        while (!run_loop_triggered){};
+        HAL_GPIO_WritePin(DEBUG_0_GPIO_Port, DEBUG_0_Pin, GPIO_PIN_RESET);
+        run_loop_triggered = 0;
+
+        // handle event
+        hal_spi_em9304_process(NULL, 0);
+    }
+#endif
 }

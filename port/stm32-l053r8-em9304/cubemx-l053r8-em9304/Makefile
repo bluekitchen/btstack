@@ -22,7 +22,7 @@ TARGET = cubemx-l053r8-em9304
 # debug build?
 DEBUG = 1
 # optimization
-OPT = -Og
+OPT = -Os
 
 
 #######################################
@@ -42,6 +42,15 @@ PERIFLIB_PATH =
 
 # Build path
 BUILD_DIR = build
+
+BTSTACK_ROOT = ../../..
+VPATH += ${BTSTACK_ROOT}/src
+VPATH += ${BTSTACK_ROOT}/src/ble
+VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service
+VPATH += ${BTSTACK_ROOT}/src/classic
+VPATH += ${BTSTACK_ROOT}/platform/embedded
+VPATH += ${BTSTACK_ROOT}/example
+VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
 
 ######################################
 # source
@@ -70,9 +79,30 @@ Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_spi.c \
 Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal.c \
 Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_rcc_ex.c \
 Src/stm32l0xx_it.c \
-../hal_spi_em9304.c \
-../port.c
-
+	../port.c \
+	btstack_memory.c            \
+	btstack_linked_list.c	    \
+	btstack_memory_pool.c       \
+	btstack_run_loop.c		    \
+	btstack_util.c 	            \
+	ad_parser.c                 \
+	hci.c			            \
+	hci_cmd.c		            \
+	hci_dump.c		            \
+	l2cap.c			            \
+	l2cap_signaling.c	        \
+	att_dispatch.c       	    \
+	att_db.c 				 	    \
+	att_server.c        	    \
+	gatt_client.c        	    \
+	sm.c 				 	    \
+	uECC.c                      \
+	le_counter.c                \
+	btstack_run_loop_embedded.c \
+	hci_transport_h4.c          \
+	btstack_uart_block_embedded.c \
+	le_device_db_memory.c       \
+	battery_service_server.c    \
 
 # ASM sources
 ASM_SOURCES =  \
@@ -135,6 +165,13 @@ C_INCLUDES =  \
 -IDrivers/CMSIS/Include \
 -I..
 
+C_INCLUDES += -I.
+C_INCLUDES += -I${BTSTACK_ROOT}/src/ble
+C_INCLUDES += -I${BTSTACK_ROOT}/src/classic
+C_INCLUDES += -I${BTSTACK_ROOT}/src
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
+C_INCLUDES += -I${BTSTACK_ROOT}/platform/embedded
+
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
 
@@ -161,8 +198,10 @@ LIBDIR =
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all
-all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
+all: le_counter.h $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin 
 
+le_counter.h: le_counter.gatt
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
 #######################################
 # build the application
