@@ -48,6 +48,7 @@
 
 #define B1_Pin GPIO_PIN_13
 #define B1_GPIO_Port GPIOC
+#define B1_EXTI_IRQn EXTI4_15_IRQn
 #define DEBUG_0_Pin GPIO_PIN_0
 #define DEBUG_0_GPIO_Port GPIOC
 #define USART_TX_Pin GPIO_PIN_2
@@ -58,6 +59,7 @@
 #define EN_GPIO_Port GPIOB
 #define SPI1_RDY_Pin GPIO_PIN_9
 #define SPI1_RDY_GPIO_Port GPIOA
+#define SPI1_RDY_EXTI_IRQn EXTI4_15_IRQn
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14

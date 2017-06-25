@@ -96,6 +96,11 @@ static uint16_t   hal_spi_em9304_tx_size;
 static int test_done;
 static int event_received;
 static int command_sent;
+static volatile int run_loop_triggered;
+
+static inline void hal_spi_em9304_trigger_run_loop(void){
+    run_loop_triggered = 1;
+}
 
 static inline int hal_spi_em9304_rdy(void){
     return HAL_GPIO_ReadPin(SPI1_RDY_GPIO_Port, SPI1_RDY_Pin) == GPIO_PIN_SET;
@@ -113,11 +118,11 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi){
     switch (hal_spi_em9304_state){
         case SPI_EM9304_RX_W4_READ_COMMAND_SENT:
             hal_spi_em9304_state = SPI_EM9304_RX_READ_COMMAND_SENT;
-            // trigger run loop;
+            hal_spi_em9304_trigger_run_loop();
             break;
         case SPI_EM9304_TX_W4_WRITE_COMMAND_SENT:
             hal_spi_em9304_state = SPI_EM9304_TX_WRITE_COMMAND_SENT;
-            // trigger run loop;
+            hal_spi_em9304_trigger_run_loop();
             break;
         default:
             break;
@@ -128,7 +133,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi){
     switch (hal_spi_em9304_state){
         case SPI_EM9304_RX_W4_DATA_RECEIVED:
             hal_spi_em9304_state = SPI_EM9304_RX_DATA_RECEIVED;
-            // trigger run loop;
+            hal_spi_em9304_trigger_run_loop();
             break;
         default:
             break;
@@ -139,10 +144,16 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi){
     switch (hal_spi_em9304_state){
         case SPI_EM9304_TX_W4_DATA_SENT:
             hal_spi_em9304_state = SPI_EM9304_TX_DATA_SENT;
-            // trigger run loop;
+            hal_spi_em9304_trigger_run_loop();
             break;
         default:
             break;
+    }
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
+    if (hal_spi_em9304_rdy()){
+        hal_spi_em9304_trigger_run_loop();
     }
 }
 
@@ -265,7 +276,17 @@ void port_main(void){
         hal_spi_em9304_reset();
         int step = 0;
         while (!test_done){
+
+            // wait for event / sleep
+            HAL_GPIO_WritePin(DEBUG_0_GPIO_Port, DEBUG_0_Pin, GPIO_PIN_SET);
+            while (!run_loop_triggered){};
+            HAL_GPIO_WritePin(DEBUG_0_GPIO_Port, DEBUG_0_Pin, GPIO_PIN_RESET);
+            run_loop_triggered = 0;
+
+            // handle event
             hal_spi_em9304_process();
+
+            // simulate stack
             switch (step){
                 case 0:
                     if (!event_received) continue;
@@ -275,6 +296,7 @@ void port_main(void){
                     //
                     hal_spi_em9304_tx_data = hci_reset;
                     hal_spi_em9304_tx_size = sizeof(hci_reset);
+                    hal_spi_em9304_trigger_run_loop();
                     step++;
                     break;
                 case 1:
