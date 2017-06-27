@@ -228,6 +228,7 @@ static void hal_spi_em9304_process(btstack_data_source_t *ds, btstack_data_sourc
     switch (hal_spi_em9304_state){
         case SPI_EM9304_IDLE:
             // RDY && space in RX Buffer
+            // if (hal_spi_em9304_rdy() && hal_spi_em9304_rx_free_bytes() && hal_uart_dma_rx_len){
             if (hal_spi_em9304_rdy() && hal_spi_em9304_rx_free_bytes()){
                 // chip select
                 HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_RESET);
@@ -247,7 +248,16 @@ static void hal_spi_em9304_process(btstack_data_source_t *ds, btstack_data_sourc
             break;
 
         case SPI_EM9304_RX_READ_COMMAND_SENT:
+            // check slave status
             log_debug("RX: STS1 0x%02X, STS2 0x%02X", hal_spi_em9304_slave_status[0], hal_spi_em9304_slave_status[1]);
+            if ((hal_spi_em9304_slave_status[0] != STS_SLAVE_READY)){
+                // chip deselect
+                HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_SET);
+                // retry
+                hal_spi_em9304_state = SPI_EM9304_IDLE;
+                break;
+            }
+
             bytes_ready = hal_spi_em9304_slave_status[1];
             bytes_to_read = bytes_ready;
             if (bytes_to_read > hal_spi_em9304_rx_free_bytes()){
@@ -285,9 +295,9 @@ static void hal_spi_em9304_process(btstack_data_source_t *ds, btstack_data_sourc
             break;
 
         case SPI_EM9304_TX_WRITE_COMMAND_SENT:
-            log_debug("TX: STS1 0x%02X, STS2 0x%02X", hal_spi_em9304_slave_status[0], hal_spi_em9304_slave_status[1]);
 
             // check slave status and rx buffer space
+            log_debug("TX: STS1 0x%02X, STS2 0x%02X", hal_spi_em9304_slave_status[0], hal_spi_em9304_slave_status[1]);
             max_bytes_to_send = hal_spi_em9304_slave_status[1];
             if ((hal_spi_em9304_slave_status[0] != STS_SLAVE_READY) || (max_bytes_to_send == 0)){
                 // chip deselect
