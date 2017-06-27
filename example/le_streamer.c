@@ -166,6 +166,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     UNUSED(size);
     
     int mtu;
+    uint16_t conn_interval;
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
@@ -177,6 +178,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                             test_data_len = ATT_DEFAULT_MTU - 3;
                             connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                            // print connection parameters (without using float operations)
+                            conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
+                            printf("Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
+                            printf("Connection Latency: %u\n", hci_subevent_le_connection_complete_get_conn_latency(packet));                            break;
                             // min con interval 20 ms 
                             // gap_request_connection_parameter_update(connection_handle, 0x10, 0x18, 0, 0x0048);
                             // printf("Connected, requesting conn param update for handle 0x%04x\n", connection_handle);

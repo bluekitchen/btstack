@@ -185,6 +185,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 
     if (packet_type != HCI_EVENT_PACKET) return;
     
+    uint16_t conn_interval;
     uint8_t event = hci_event_packet_get_type(packet);
     switch (event) {
         case BTSTACK_EVENT_STATE:
@@ -219,6 +220,10 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
             if (state != TC_W4_CONNECT) return;
             connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+            // print connection parameters (without using float operations)
+            conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
+            printf("Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
+            printf("Connection Latency: %u\n", hci_subevent_le_connection_complete_get_conn_latency(packet));                            break;
             // initialize gatt client context with handle, and add it to the list of active clients
             // query primary services
             printf("Search for LE Streamer service.\n");
