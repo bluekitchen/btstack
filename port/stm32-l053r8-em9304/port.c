@@ -228,8 +228,8 @@ static void hal_spi_em9304_process(btstack_data_source_t *ds, btstack_data_sourc
     switch (hal_spi_em9304_state){
         case SPI_EM9304_IDLE:
             // RDY && space in RX Buffer
-            // if (hal_spi_em9304_rdy() && hal_spi_em9304_rx_free_bytes() && hal_uart_dma_rx_len){
-            if (hal_spi_em9304_rdy() && hal_spi_em9304_rx_free_bytes()){
+            if (hal_spi_em9304_rdy() && hal_spi_em9304_rx_free_bytes() && hal_uart_dma_rx_len){
+            // if (hal_spi_em9304_rdy() && hal_spi_em9304_rx_free_bytes()){
                 // chip select
                 HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_RESET);
 
