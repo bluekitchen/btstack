@@ -166,6 +166,7 @@ static uint8_t  hal_spi_em9304_slave_status[2];
 
 static uint8_t  hal_spi_em9304_rx_buffer[SPI_EM9304_RX_BUFFER_SIZE];
 static uint16_t hal_spi_em9304_rx_pos;
+static uint16_t hal_spi_em9304_rx_request_len;
 
 static const uint8_t  * hal_uart_dma_tx_data;
 static uint16_t         hal_uart_dma_tx_size;
@@ -181,7 +182,6 @@ static void (*tx_done_handler)(void) = &dummy_handler;
 
 static inline void hal_spi_em9304_trigger_run_loop(void){
     btstack_run_loop_embedded_trigger();
-    // run_loop_triggered = 1;
 }
 
 static inline int hal_spi_em9304_rdy(void){
@@ -280,11 +280,10 @@ static void hal_spi_em9304_process(btstack_data_source_t *ds, btstack_data_sourc
                 // chip select
                 HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_RESET);
 
-                // wait for read command sent
-                hal_spi_em9304_state = SPI_EM9304_RX_W4_READ_COMMAND_SENT;
-
                 // send read command
+                hal_spi_em9304_state = SPI_EM9304_RX_W4_READ_COMMAND_SENT;
                 HAL_SPI_TransmitReceive_DMA(&hspi1, (uint8_t*) hal_spi_em9304_read_command, hal_spi_em9304_slave_status, sizeof(hal_spi_em9304_read_command));
+
             } else if (hal_uart_dma_tx_size){
                 // chip select
                 HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_RESET);
@@ -311,15 +310,18 @@ static void hal_spi_em9304_process(btstack_data_source_t *ds, btstack_data_sourc
                 bytes_to_read = hal_spi_em9304_rx_free_bytes();
             }
 
-            // wait for data received
-            hal_spi_em9304_state = SPI_EM9304_RX_W4_DATA_RECEIVED;
-
             // read all data
+            hal_spi_em9304_state = SPI_EM9304_RX_W4_DATA_RECEIVED;
+            hal_spi_em9304_rx_request_len = bytes_to_read;
+            // HAL_SPI_TransmitReceive_DMA(&hspi1, spi_sequence, &hal_spi_em9304_rx_buffer[hal_spi_em9304_rx_pos], bytes_to_read);
             HAL_SPI_Receive_DMA(&hspi1, &hal_spi_em9304_rx_buffer[hal_spi_em9304_rx_pos], bytes_to_read);
-            hal_spi_em9304_rx_pos += bytes_to_read;
             break;
 
         case SPI_EM9304_RX_DATA_RECEIVED:
+
+            // now, data is available
+            hal_spi_em9304_rx_pos += hal_spi_em9304_rx_request_len;
+
             // chip deselect
             HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_SET);
 
