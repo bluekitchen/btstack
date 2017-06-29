@@ -82,6 +82,7 @@ Src/stm32l0xx_it.c \
 	../port.c \
 	btstack_memory.c \
 	btstack_linked_list.c \
+	btstack_ring_buffer.c \
 	btstack_memory_pool.c \
 	btstack_run_loop.c \
 	btstack_util.c \

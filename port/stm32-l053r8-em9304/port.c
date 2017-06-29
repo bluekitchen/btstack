@@ -154,19 +154,24 @@ static volatile enum {
     SPI_EM9304_RX_W4_DATA_RECEIVED,
     SPI_EM9304_RX_DATA_RECEIVED,
     SPI_EM9304_TX_W4_RDY,
+    SPI_EM9304_TX_RDY,
     SPI_EM9304_TX_W4_WRITE_COMMAND_SENT,
     SPI_EM9304_TX_WRITE_COMMAND_SENT,
     SPI_EM9304_TX_W4_DATA_SENT,
     SPI_EM9304_TX_DATA_SENT,
 } hal_spi_em9304_state;
 
-#define SPI_EM9304_RX_BUFFER_SIZE 64
+#define SPI_EM9304_RX_BUFFER_SIZE     64
+#define SPI_EM9304_RING_BUFFER_SIZE  128
 
 static uint8_t  hal_spi_em9304_slave_status[2];
 
 static uint8_t  hal_spi_em9304_rx_buffer[SPI_EM9304_RX_BUFFER_SIZE];
-static uint16_t hal_spi_em9304_rx_pos;
 static uint16_t hal_spi_em9304_rx_request_len;
+static uint16_t hal_spi_em9304_tx_request_len;
+
+static btstack_ring_buffer_t hal_uart_dma_rx_ring_buffer;
+static uint8_t hal_uart_dma_rx_ring_buffer_storage[SPI_EM9304_RING_BUFFER_SIZE];
 
 static const uint8_t  * hal_uart_dma_tx_data;
 static uint16_t         hal_uart_dma_tx_size;
@@ -188,12 +193,8 @@ static inline int hal_spi_em9304_rdy(void){
     return HAL_GPIO_ReadPin(SPI1_RDY_GPIO_Port, SPI1_RDY_Pin) == GPIO_PIN_SET;
 }
 
-static inline uint16_t hal_spi_em9304_rx_free_bytes(void){
-    return SPI_EM9304_RX_BUFFER_SIZE - hal_spi_em9304_rx_pos;
-}
-
 static void hal_spi_em9304_reset(void){
-    hal_spi_em9304_rx_pos = 0;
+    btstack_ring_buffer_init(&hal_uart_dma_rx_ring_buffer, &hal_uart_dma_rx_ring_buffer_storage[0], SPI_EM9304_RING_BUFFER_SIZE);
 }
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi){
@@ -234,28 +235,31 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi){
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
-    if (hal_spi_em9304_rdy()){
-        hal_spi_em9304_trigger_run_loop();
+    switch (hal_spi_em9304_state){
+        case SPI_EM9304_TX_W4_RDY:
+            if (hal_spi_em9304_rdy()){
+                hal_spi_em9304_state = SPI_EM9304_TX_RDY;
+                hal_spi_em9304_trigger_run_loop();
+            }
+            break;
+        default:
+            break;
     }
 }
 
 static void hal_spi_em9304_transfer_rx_data(void){
-    log_debug("transfer_rx_data: spi rx buffer has %u -> hci buffer needs %u", hal_spi_em9304_rx_pos, hal_uart_dma_rx_len);
-    while (hal_spi_em9304_rx_pos && hal_uart_dma_rx_len){
-        uint16_t bytes_to_copy = hal_uart_dma_rx_len;
-        if (hal_uart_dma_rx_len > hal_spi_em9304_rx_pos){
-            bytes_to_copy = hal_spi_em9304_rx_pos;
-        }
-        memcpy(hal_uart_dma_rx_buffer, hal_spi_em9304_rx_buffer, bytes_to_copy);
-        hal_uart_dma_rx_buffer += bytes_to_copy;
-        hal_uart_dma_rx_len    -= bytes_to_copy;
-        hal_spi_em9304_rx_pos  -= bytes_to_copy;
+    while (1){
+        int bytes_available = btstack_ring_buffer_bytes_available(&hal_uart_dma_rx_ring_buffer);
+        log_debug("transfer_rx_data: ring buffer has %u -> hci buffer needs %u", bytes_available, hal_uart_dma_rx_len);
 
-        // shift rest of data - could be skipped if ring buffer is used
-        if (hal_spi_em9304_rx_pos){
-            log_debug("transfer_rx_data: move %u bytes down", hal_spi_em9304_rx_pos);
-            memmove(hal_spi_em9304_rx_buffer, &hal_spi_em9304_rx_buffer[bytes_to_copy], hal_spi_em9304_rx_pos);
-        }
+        if (!bytes_available) return;
+        if (!hal_uart_dma_rx_len) return;
+
+        int bytes_to_copy = btstack_min(bytes_available, hal_uart_dma_rx_len);
+        uint32_t bytes_read;
+        btstack_ring_buffer_read(&hal_uart_dma_rx_ring_buffer, hal_uart_dma_rx_buffer, bytes_to_copy, &bytes_read);
+        hal_uart_dma_rx_buffer += bytes_read;
+        hal_uart_dma_rx_len    -= bytes_read;
 
         if (hal_uart_dma_rx_len == 0){
             (*rx_done_handler)();
@@ -263,20 +267,26 @@ static void hal_spi_em9304_transfer_rx_data(void){
     }
 }
 
+static void hal_spi_em9304_start_tx_transaction(void){
+    // chip select
+    HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_RESET);
+
+    // wait for RDY
+    hal_spi_em9304_state = SPI_EM9304_TX_W4_RDY;
+}
+
 static void hal_spi_em9304_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
     (void) ds;
     (void) callback_type;
 
-    uint16_t bytes_to_read;
-    uint16_t bytes_ready;
     uint16_t max_bytes_to_send;
-    uint16_t bytes_to_send;
 
     switch (hal_spi_em9304_state){
         case SPI_EM9304_IDLE:
             // RDY && space in RX Buffer
-            if (hal_spi_em9304_rdy() && hal_spi_em9304_rx_free_bytes() && hal_uart_dma_rx_len){
-            // if (hal_spi_em9304_rdy() && hal_spi_em9304_rx_free_bytes()){
+            if (hal_spi_em9304_rdy() 
+            && (btstack_ring_buffer_bytes_free(&hal_uart_dma_rx_ring_buffer) >= SPI_EM9304_RX_BUFFER_SIZE) ){
+
                 // chip select
                 HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_RESET);
 
@@ -285,96 +295,92 @@ static void hal_spi_em9304_process(btstack_data_source_t *ds, btstack_data_sourc
                 HAL_SPI_TransmitReceive_DMA(&hspi1, (uint8_t*) hal_spi_em9304_read_command, hal_spi_em9304_slave_status, sizeof(hal_spi_em9304_read_command));
 
             } else if (hal_uart_dma_tx_size){
-                // chip select
-                HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_RESET);
-    
-                // wait for RDY
-                hal_spi_em9304_state = SPI_EM9304_TX_W4_RDY;
+                hal_spi_em9304_start_tx_transaction();
             }
             break;
 
         case SPI_EM9304_RX_READ_COMMAND_SENT:
             // check slave status
             log_debug("RX: STS1 0x%02X, STS2 0x%02X", hal_spi_em9304_slave_status[0], hal_spi_em9304_slave_status[1]);
+
+            // check if ready
             if ((hal_spi_em9304_slave_status[0] != STS_SLAVE_READY)){
-                // chip deselect
+                // chip deselect & retry
                 HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_SET);
-                // retry
                 hal_spi_em9304_state = SPI_EM9304_IDLE;
                 break;
-            }
-
-            bytes_ready = hal_spi_em9304_slave_status[1];
-            bytes_to_read = bytes_ready;
-            if (bytes_to_read > hal_spi_em9304_rx_free_bytes()){
-                bytes_to_read = hal_spi_em9304_rx_free_bytes();
             }
 
             // read all data
             hal_spi_em9304_state = SPI_EM9304_RX_W4_DATA_RECEIVED;
-            hal_spi_em9304_rx_request_len = bytes_to_read;
-            // HAL_SPI_TransmitReceive_DMA(&hspi1, spi_sequence, &hal_spi_em9304_rx_buffer[hal_spi_em9304_rx_pos], bytes_to_read);
-            HAL_SPI_Receive_DMA(&hspi1, &hal_spi_em9304_rx_buffer[hal_spi_em9304_rx_pos], bytes_to_read);
+            hal_spi_em9304_rx_request_len = hal_spi_em9304_slave_status[1];
+            HAL_SPI_Receive_DMA(&hspi1, &hal_spi_em9304_rx_buffer[0], hal_spi_em9304_rx_request_len);
             break;
 
         case SPI_EM9304_RX_DATA_RECEIVED:
 
-            // now, data is available
-            hal_spi_em9304_rx_pos += hal_spi_em9304_rx_request_len;
-
-            // chip deselect
+            // chip deselect & done
             HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_SET);
-
-            // done
             hal_spi_em9304_state = SPI_EM9304_IDLE;
 
-            // transfer data
+            // move data into ring buffer
+            btstack_ring_buffer_write(&hal_uart_dma_rx_ring_buffer, hal_spi_em9304_rx_buffer, hal_spi_em9304_rx_request_len);
+            hal_spi_em9304_rx_request_len = 0;
+
+            // deliver new data
             hal_spi_em9304_transfer_rx_data();
             break;
 
-        case SPI_EM9304_TX_W4_RDY:
-            if (!hal_spi_em9304_rdy()) break;
-
-            // wait for write command sent
-            hal_spi_em9304_state = SPI_EM9304_TX_W4_WRITE_COMMAND_SENT;
+        case SPI_EM9304_TX_RDY:
+            if (!hal_spi_em9304_rdy()){
+                log_error("RDY should be '1', but isn't");
+                break;
+            }
 
             // send write command
+            hal_spi_em9304_state = SPI_EM9304_TX_W4_WRITE_COMMAND_SENT;
             HAL_SPI_TransmitReceive_DMA(&hspi1, (uint8_t*) hal_spi_em9304_write_command, hal_spi_em9304_slave_status, sizeof(hal_spi_em9304_write_command));
-
             break;
 
         case SPI_EM9304_TX_WRITE_COMMAND_SENT:
 
-            // check slave status and rx buffer space
+            // check slave status and em9304 rx buffer space
             log_debug("TX: STS1 0x%02X, STS2 0x%02X", hal_spi_em9304_slave_status[0], hal_spi_em9304_slave_status[1]);
             max_bytes_to_send = hal_spi_em9304_slave_status[1];
             if ((hal_spi_em9304_slave_status[0] != STS_SLAVE_READY) || (max_bytes_to_send == 0)){
-                // chip deselect
+                // chip deselect & retry
                 HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_SET);
-                // retry
                 hal_spi_em9304_state = SPI_EM9304_IDLE;
                 break;
             }
 
-            bytes_to_send = hal_uart_dma_tx_size;
-            if (bytes_to_send > max_bytes_to_send){
-                bytes_to_send = max_bytes_to_send;
-            }
-
-            // wait for tx data sent
-            hal_spi_em9304_state = SPI_EM9304_TX_W4_DATA_SENT;
+            // number bytes to send
+            hal_spi_em9304_tx_request_len = btstack_min(hal_uart_dma_tx_size, max_bytes_to_send);
 
             // send command
-            HAL_SPI_Transmit_DMA(&hspi1, (uint8_t*) hal_uart_dma_tx_data, bytes_to_send);
-            hal_uart_dma_tx_size -= bytes_to_send;
+            hal_spi_em9304_state = SPI_EM9304_TX_W4_DATA_SENT;
+            HAL_SPI_Transmit_DMA(&hspi1, (uint8_t*) hal_uart_dma_tx_data, hal_spi_em9304_tx_request_len);
             break;
 
         case SPI_EM9304_TX_DATA_SENT:
-            // chip deselect
-            HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_SET);
 
+            // chip deselect & done
+            HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_SET);
             hal_spi_em9304_state = SPI_EM9304_IDLE;
-            (*tx_done_handler)();
+
+            // chunk processed
+            hal_uart_dma_tx_size -= hal_spi_em9304_tx_request_len;
+            hal_uart_dma_tx_data += hal_spi_em9304_tx_request_len;
+            hal_spi_em9304_tx_request_len = 0;
+
+            // handle TX Complete
+            if (hal_uart_dma_tx_size){
+                // more data to send
+                hal_spi_em9304_start_tx_transaction();
+            } else {
+                // notify higher layer
+                (*tx_done_handler)();
+            }
             break;
 
         default:
@@ -417,7 +423,7 @@ void hal_uart_dma_send_block(const uint8_t *buffer, uint16_t length){
 }
 
 void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t length){
-    log_debug("hal_uart_dma_receive_block: len %u", length);
+    log_debug("hal_uart_dma_receive_block: len %u, ring buffer has %u, UART_RX_LEN %u", length, btstack_ring_buffer_bytes_available(&hal_uart_dma_rx_ring_buffer), hal_uart_dma_rx_len);
     hal_uart_dma_rx_buffer = buffer;
     hal_uart_dma_rx_len    = length;
     hal_spi_em9304_transfer_rx_data();
