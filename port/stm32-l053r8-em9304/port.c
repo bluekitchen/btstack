@@ -154,7 +154,6 @@ static volatile enum {
     SPI_EM9304_RX_W4_DATA_RECEIVED,
     SPI_EM9304_RX_DATA_RECEIVED,
     SPI_EM9304_TX_W4_RDY,
-    SPI_EM9304_TX_RDY,
     SPI_EM9304_TX_W4_WRITE_COMMAND_SENT,
     SPI_EM9304_TX_WRITE_COMMAND_SENT,
     SPI_EM9304_TX_W4_DATA_SENT,
@@ -235,15 +234,8 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi){
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
-    switch (hal_spi_em9304_state){
-        case SPI_EM9304_TX_W4_RDY:
-            if (hal_spi_em9304_rdy()){
-                hal_spi_em9304_state = SPI_EM9304_TX_RDY;
-                hal_spi_em9304_trigger_run_loop();
-            }
-            break;
-        default:
-            break;
+    if (hal_spi_em9304_rdy()){
+        hal_spi_em9304_trigger_run_loop();
     }
 }
 
@@ -268,11 +260,11 @@ static void hal_spi_em9304_transfer_rx_data(void){
 }
 
 static void hal_spi_em9304_start_tx_transaction(void){
-    // chip select
-    HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_RESET);
-
     // wait for RDY
     hal_spi_em9304_state = SPI_EM9304_TX_W4_RDY;
+
+    // chip select
+    HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_RESET);
 }
 
 static void hal_spi_em9304_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type){
@@ -331,11 +323,9 @@ static void hal_spi_em9304_process(btstack_data_source_t *ds, btstack_data_sourc
             hal_spi_em9304_transfer_rx_data();
             break;
 
-        case SPI_EM9304_TX_RDY:
-            if (!hal_spi_em9304_rdy()){
-                log_error("RDY should be '1', but isn't");
-                break;
-            }
+        case SPI_EM9304_TX_W4_RDY:
+            // check if ready
+            if (!hal_spi_em9304_rdy()) break;
 
             // send write command
             hal_spi_em9304_state = SPI_EM9304_TX_W4_WRITE_COMMAND_SENT;
