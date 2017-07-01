@@ -161,9 +161,12 @@ static volatile enum {
 } hal_spi_em9304_state;
 
 #define SPI_EM9304_RX_BUFFER_SIZE     64
+#define SPI_EM9304_TX_BUFFER_SIZE     64
 #define SPI_EM9304_RING_BUFFER_SIZE  128
 
 static uint8_t  hal_spi_em9304_slave_status[2];
+
+static const uint8_t hal_spi_em9304_zeros[SPI_EM9304_TX_BUFFER_SIZE];
 
 static uint8_t  hal_spi_em9304_rx_buffer[SPI_EM9304_RX_BUFFER_SIZE];
 static uint16_t hal_spi_em9304_rx_request_len;
@@ -204,6 +207,10 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi){
             break;
         case SPI_EM9304_TX_W4_WRITE_COMMAND_SENT:
             hal_spi_em9304_state = SPI_EM9304_TX_WRITE_COMMAND_SENT;
+            hal_spi_em9304_trigger_run_loop();
+            break;
+        case SPI_EM9304_RX_W4_DATA_RECEIVED:
+            hal_spi_em9304_state = SPI_EM9304_RX_DATA_RECEIVED;
             hal_spi_em9304_trigger_run_loop();
             break;
         default:
@@ -303,10 +310,10 @@ static void hal_spi_em9304_process(btstack_data_source_t *ds, btstack_data_sourc
                 break;
             }
 
-            // read all data
+            // read data and send '0's
             hal_spi_em9304_state = SPI_EM9304_RX_W4_DATA_RECEIVED;
             hal_spi_em9304_rx_request_len = hal_spi_em9304_slave_status[1];
-            HAL_SPI_Receive_DMA(&hspi1, &hal_spi_em9304_rx_buffer[0], hal_spi_em9304_rx_request_len);
+            HAL_SPI_TransmitReceive_DMA(&hspi1, (uint8_t*) hal_spi_em9304_zeros, &hal_spi_em9304_rx_buffer[0], hal_spi_em9304_rx_request_len);
             break;
 
         case SPI_EM9304_RX_DATA_RECEIVED:
