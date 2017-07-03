@@ -968,12 +968,11 @@ static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t pac
  * @param local_cid
  */
 
-uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd_addr_t address, uint16_t psm, uint16_t local_mtu, uint16_t * out_local_cid){
-    log_info("L2CAP_CREATE_CHANNEL addr %s psm 0x%x mtu %u", bd_addr_to_str(address), psm, local_mtu);
-    
-    if (local_mtu > l2cap_max_mtu()) {
-        local_mtu = l2cap_max_mtu();
-    }
+uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu, uint16_t * out_local_cid){
+    // limit MTU to the size of our outtgoing HCI buffer
+    uint16_t local_mtu = btstack_min(mtu, l2cap_max_mtu());
+
+    log_info("L2CAP_CREATE_CHANNEL addr %s psm 0x%x mtu %u -> local mtu %u", bd_addr_to_str(address), psm, mtu, local_mtu);
 
     l2cap_channel_t * channel = l2cap_create_channel_entry(channel_packet_handler, address, BD_ADDR_TYPE_CLASSIC, psm, local_mtu, LEVEL_0);
     if (!channel) {
@@ -1361,7 +1360,10 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
         // MTU { type(8): 1, len(8):2, MTU(16) }
         if (option_type == 1 && length == 2){
             channel->remote_mtu = little_endian_read_16(command, pos);
-            // log_info("l2cap cid 0x%02x, remote mtu %u", channel->local_cid, channel->remote_mtu);
+            if (channel->remote_mtu > l2cap_max_mtu()){
+                log_info("Remote MTU %u larger than outgoing buffer, only using MTU = %u", channel->remote_mtu, l2cap_max_mtu());
+                channel->remote_mtu = l2cap_max_mtu();
+            }
             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
         }
         // Flush timeout { type(8):2, len(8): 2, Flush Timeout(16)}
