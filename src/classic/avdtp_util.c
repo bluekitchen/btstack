@@ -47,10 +47,6 @@
 #include "avdtp.h"
 #include "avdtp_util.h"
 
-inline uint8_t avdtp_header(uint8_t tr_label, avdtp_packet_type_t packet_type, avdtp_message_type_t msg_type){
-    return (tr_label<<4) | ((uint8_t)packet_type<<2) | (uint8_t)msg_type;
-}
-
 void avdtp_initialize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint){
     stream_endpoint->connection = NULL;
     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;

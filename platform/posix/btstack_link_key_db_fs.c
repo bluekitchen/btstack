@@ -79,7 +79,7 @@ static char * bd_addr_to_dash_str(bd_addr_t addr){
 }
 
 static char link_key_to_str_buffer[LINK_KEY_STR_LEN+1];  // 11223344556677889900112233445566\0
-char *link_key_to_str(link_key_t link_key){
+static char *link_key_to_str(link_key_t link_key){
     char * p = link_key_to_str_buffer;
     int i;
     for (i = 0; i < LINK_KEY_LEN ; i++) {
@@ -91,12 +91,12 @@ char *link_key_to_str(link_key_t link_key){
 }
 
 static char link_key_type_to_str_buffer[2];
-char *link_key_type_to_str(link_key_type_t link_key){
+static char *link_key_type_to_str(link_key_type_t link_key){
     snprintf(link_key_type_to_str_buffer, sizeof(link_key_type_to_str_buffer), "%d", link_key);
     return (char *) link_key_type_to_str_buffer;
 }
 
-int sscanf_link_key(char * addr_string, link_key_t link_key){
+static int sscanf_link_key(char * addr_string, link_key_t link_key){
     unsigned int buffer[LINK_KEY_LEN];
 
     // reset result buffer
@@ -190,7 +190,7 @@ static void delete_link_key(bd_addr_t bd_addr){
     }
 }
 
-const btstack_link_key_db_t btstack_link_key_db_fs = {
+static const btstack_link_key_db_t btstack_link_key_db_fs = {
     &db_open,
     &db_set_local_bd_addr,
     &db_close,

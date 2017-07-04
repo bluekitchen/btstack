@@ -61,6 +61,10 @@ avdtp_stream_endpoint_t * avdtp_stream_endpoint_with_seid(uint8_t seid, avdtp_co
 avdtp_stream_endpoint_t * avdtp_stream_endpoint_associated_with_acp_seid(uint16_t acp_seid, avdtp_context_t * context);
 avdtp_stream_endpoint_t * avdtp_stream_endpoint_for_seid(uint16_t seid, avdtp_context_t * context);
 
+static inline uint8_t avdtp_header(uint8_t tr_label, avdtp_packet_type_t packet_type, avdtp_message_type_t msg_type){
+    return (tr_label<<4) | ((uint8_t)packet_type<<2) | (uint8_t)msg_type;
+}
+
 uint8_t avdtp_header(uint8_t tr_label, avdtp_packet_type_t packet_type, avdtp_message_type_t msg_type);
 int     avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, uint8_t * packet, uint16_t size);
 

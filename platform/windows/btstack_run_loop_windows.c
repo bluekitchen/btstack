@@ -216,7 +216,7 @@ static void btstack_run_loop_windows_execute(void) {
             log_debug("btstack_run_loop_windows_execute: process timer %p\n", ts);
             
             // remove timer before processing it to allow handler to re-register with run loop
-            btstack_run_loop_remove_timer(ts);
+            btstack_run_loop_windows_remove_timer(ts);
             ts->process(ts);
         }
     }

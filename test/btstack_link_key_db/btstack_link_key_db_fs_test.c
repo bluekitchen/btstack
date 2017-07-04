@@ -39,7 +39,7 @@ TEST(RemoteDeviceDB, SinglePutGetDeleteKey){
 	btstack_link_key_db_fs_instance()->put_link_key(bd_addr, link_key, link_key_type);
     CHECK(btstack_link_key_db_fs_instance()->get_link_key(bd_addr, test_link_key, &test_link_key_type) == 1);
     
-    CHECK(strcmp(link_key_to_str(link_key), link_key_to_str(test_link_key)) == 0);
+    CHECK(memcmp(link_key, test_link_key, 16) == 0);
     
     btstack_link_key_db_fs_instance()->delete_link_key(bd_addr);
     CHECK(btstack_link_key_db_fs_instance()->get_link_key(bd_addr, test_link_key, &test_link_key_type) == 0);

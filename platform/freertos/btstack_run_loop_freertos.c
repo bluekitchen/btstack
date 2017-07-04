@@ -192,7 +192,7 @@ static void btstack_run_loop_freertos_task(void *pvParameter){
                 break;
             }
             // remove timer before processing it to allow handler to re-register with run loop
-            btstack_run_loop_remove_timer(ts);
+            btstack_run_loop_freertos_remove_timer(ts);
             log_debug("RL: first timer %p", ts->process);
             ts->process(ts);
         }

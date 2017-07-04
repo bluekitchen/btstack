@@ -49,29 +49,6 @@ extern "C" {
  */
 const btstack_link_key_db_t * btstack_link_key_db_fs_instance(void);
 
-/**
- * @brief Create human readable represenationt of link key
- * @note uses fixed global buffer
- * @return pointer to Bluetooth address string
- */
-char * link_key_to_str(link_key_t link_key);
-
-/**
- * @brief return string for link key type
- * @note uses fixed global buffer
- * @param link_key_type
- * @return link_key_type as string
- */
-char *link_key_type_to_str(link_key_type_t link_key_type);
-
-/**
- * @brief Parse link key string
- * @param addr_strings
- * @param link_key buffer for result
- * @return 1 on success
- */
-int sscanf_link_key(char * addr_string, link_key_t link_key);
-
 /* API_END */
 
 #if defined __cplusplus

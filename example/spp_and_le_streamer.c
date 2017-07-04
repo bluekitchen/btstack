@@ -194,7 +194,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
     bd_addr_t event_addr;
     uint8_t   rfcomm_channel_nr;
-
+    uint16_t  conn_interval;
+    
 	switch (packet_type) {
 		case HCI_EVENT_PACKET:
 			switch (hci_event_packet_get_type(packet)) {
@@ -226,7 +227,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                             le_test_data_len = ATT_DEFAULT_MTU - 3;
                             le_connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
-                            break;
+                            // print connection parameters (without using float operations)
+                            conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
+                            printf("Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
+                            printf("Connection Latency: %u\n", hci_subevent_le_connection_complete_get_conn_latency(packet));                            break;
                     }
                     break;  
 

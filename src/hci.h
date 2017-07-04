@@ -1109,6 +1109,11 @@ uint16_t hci_get_manufacturer(void);
  */
 void hci_disable_l2cap_timeout_check(void);
 
+/**
+ * Get state
+ */
+HCI_STATE hci_get_state(void);
+
 #if defined __cplusplus
 }
 #endif
