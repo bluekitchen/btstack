@@ -223,7 +223,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             // print connection parameters (without using float operations)
             conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
             printf("Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
-            printf("Connection Latency: %u\n", hci_subevent_le_connection_complete_get_conn_latency(packet));                            break;
+            printf("Connection Latency: %u\n", hci_subevent_le_connection_complete_get_conn_latency(packet));  
             // initialize gatt client context with handle, and add it to the list of active clients
             // query primary services
             printf("Search for LE Streamer service.\n");
