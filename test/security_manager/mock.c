@@ -253,3 +253,7 @@ int hci_non_flushable_packet_boundary_flag_supported(void){
 
 void l2cap_run(void){
 }
+
+HCI_STATE hci_get_state(void){
+	return HCI_STATE_WORKING;
+}
