@@ -1148,7 +1148,6 @@ static avrcp_connection_t * avrcp_create_connection(bd_addr_t remote_addr, avrcp
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avrcp_context_t * context){
     bd_addr_t event_addr;
     uint16_t local_cid;
-    uint8_t status;
     avrcp_connection_t * connection = NULL;
     
     switch (packet_type) {
@@ -1178,7 +1177,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     l2cap_event_channel_opened_get_address(packet, event_addr);
 
                     connection = get_avrcp_connection_for_bd_addr(event_addr, context);
-                    status = l2cap_event_channel_opened_get_status(packet);
                     local_cid  = l2cap_event_channel_opened_get_local_cid(packet);
                     
                     if (!connection){
