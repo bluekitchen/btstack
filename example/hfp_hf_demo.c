@@ -584,6 +584,7 @@ int btstack_main(int argc, const char * argv[]){
 
     uint16_t hf_supported_features          =
         (1<<HFP_HFSF_ESCO_S4)               |
+        (1<<HFP_HFSF_CLI_PRESENTATION_CAPABILITY) |
         (1<<HFP_HFSF_HF_INDICATORS)         |
         (1<<HFP_HFSF_CODEC_NEGOTIATION)     |
         (1<<HFP_HFSF_ENHANCED_CALL_STATUS)  |
