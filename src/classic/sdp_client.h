@@ -112,6 +112,9 @@ uint8_t sdp_client_service_attribute_search(btstack_packet_handler_t callback, b
  */
 uint8_t sdp_client_service_search(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t * des_service_search_pattern);
 
+#ifdef ENABLE_SDP_EXTRA_QUERIES
+void sdp_client_parse_service_record_handle_list(uint8_t* packet, uint16_t total_count, uint16_t current_count);
+#endif
 
 /* API_END */
 

@@ -715,7 +715,7 @@ uint8_t sdp_client_query_uuid128(btstack_packet_handler_t callback, bd_addr_t re
 }
 
 #ifdef ENABLE_SDP_EXTRA_QUERIES
-uint8_t sdp_client_service_attribute_search(btstack_packet_handler_t callback, bd_addr_t remote, uint32_t search_service_record_handle, uint8_t * des_attribute_id_list){
+uint8_t sdp_client_service_attribute_search(btstack_packet_handler_t callback, bd_addr_t remote, uint32_t search_service_record_handle, const uint8_t * des_attribute_id_list){
 
     if (!sdp_client_ready()) return SDP_QUERY_BUSY;
 
@@ -730,7 +730,7 @@ uint8_t sdp_client_service_attribute_search(btstack_packet_handler_t callback, b
     return 0;
 }
 
-uint8_t sdp_client_service_search(btstack_packet_handler_t callback, bd_addr_t remote, uint8_t * des_service_search_pattern){
+uint8_t sdp_client_service_search(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t * des_service_search_pattern){
 
     if (!sdp_client_ready()) return SDP_QUERY_BUSY;
 
