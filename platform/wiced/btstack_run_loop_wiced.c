@@ -133,7 +133,7 @@ static void btstack_run_loop_wiced_execute(void) {
             uint32_t now = btstack_run_loop_wiced_get_time_ms();
             if (ts->timeout < now){
                 // remove timer before processing it to allow handler to re-register with run loop
-                btstack_run_loop_remove_timer(ts);
+                btstack_run_loop_wiced_remove_timer(ts);
                 // printf("RL: timer %p\n", ts->process);
                 ts->process(ts);
                 continue;

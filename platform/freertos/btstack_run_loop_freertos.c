@@ -39,6 +39,8 @@
  *  btstack_run_loop_freertos.c
  *
  *  Run loop on dedicated thread on FreeRTOS
+ *  The run loop is triggered from other task/ISRs either via Event Groups
+ *  or Task Notifications if HAVE_FREERTOS_TASK_NOTIFICATIONS is defined
  */
 
 #include <stddef.h> // NULL
@@ -63,7 +65,11 @@ typedef struct function_call {
 static const btstack_run_loop_t btstack_run_loop_freertos;
 
 static QueueHandle_t        btstack_run_loop_queue;
+#ifdef HAVE_FREERTOS_TASK_NOTIFICATIONS
+static TaskHandle_t    		btstack_run_loop_task;
+#else
 static EventGroupHandle_t   btstack_run_loop_event_group;
+#endif
 
 // bit 0 event group reserved to wakeup run loop
 #define EVENT_GROUP_FLAG_RUN_LOOP 1
@@ -120,7 +126,11 @@ static void btstack_run_loop_freertos_dump_timer(void){
 
 // schedules execution from regular thread
 void btstack_run_loop_freertos_trigger(void){
+#ifdef HAVE_FREERTOS_TASK_NOTIFICATIONS
+    xTaskNotify(btstack_run_loop_task, EVENT_GROUP_FLAG_RUN_LOOP, eSetBits);
+#else
     xEventGroupSetBits(btstack_run_loop_event_group, EVENT_GROUP_FLAG_RUN_LOOP);
+#endif
 }
 
 void btstack_run_loop_freertos_execute_code_on_main_thread(void (*fn)(void *arg), void * arg){
@@ -134,10 +144,17 @@ void btstack_run_loop_freertos_execute_code_on_main_thread(void (*fn)(void *arg)
     btstack_run_loop_freertos_trigger();
 }
 
-#if (INCLUDE_xEventGroupSetBitFromISR == 1)
+#if defined(HAVE_FREERTOS_TASK_NOTIFICATIONS) || (INCLUDE_xEventGroupSetBitFromISR == 1)
 void btstack_run_loop_freertos_trigger_from_isr(void){
     BaseType_t xHigherPriorityTaskWoken;
+#ifdef HAVE_FREERTOS_TASK_NOTIFICATIONS
+    xTaskNotifyFromISR(btstack_run_loop_task, EVENT_GROUP_FLAG_RUN_LOOP, eSetBits, &xHigherPriorityTaskWoken);
+    if (xHigherPriorityTaskWoken) {
+        portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+    }
+#else
     xEventGroupSetBitsFromISR(btstack_run_loop_event_group, EVENT_GROUP_FLAG_RUN_LOOP, &xHigherPriorityTaskWoken);
+#endif
 }
 
 void btstack_run_loop_freertos_execute_code_on_main_thread_from_isr(void (*fn)(void *arg), void * arg){
@@ -158,6 +175,10 @@ static void btstack_run_loop_freertos_task(void *pvParameter){
 
     log_debug("RL: execute");
 
+#ifdef HAVE_FREERTOS_TASK_NOTIFICATIONS
+    btstack_run_loop_task = xTaskGetCurrentTaskHandle();
+#endif
+    
     while (1) {
 
         // process data sources
@@ -192,14 +213,18 @@ static void btstack_run_loop_freertos_task(void *pvParameter){
                 break;
             }
             // remove timer before processing it to allow handler to re-register with run loop
-            btstack_run_loop_remove_timer(ts);
+            btstack_run_loop_freertos_remove_timer(ts);
             log_debug("RL: first timer %p", ts->process);
             ts->process(ts);
         }
 
-        // wait for timeout or event group
+        // wait for timeout or event group/task notification
         log_debug("RL: wait with timeout %u", (int) timeout_ms);
+#ifdef HAVE_FREERTOS_TASK_NOTIFICATIONS
+        xTaskNotifyWait(pdFALSE, 0xffffffff, NULL, pdMS_TO_TICKS(timeout_ms));
+#else
         xEventGroupWaitBits(btstack_run_loop_event_group, EVENT_GROUP_FLAG_RUN_LOOP, 1, 0, pdMS_TO_TICKS(timeout_ms));
+#endif
     }
 }
 
@@ -231,8 +256,10 @@ static void btstack_run_loop_freertos_init(void){
     // queue to receive events: up to 2 calls from transport, up to 3 for app
     btstack_run_loop_queue = xQueueCreate(20, sizeof(function_call_t));
 
+#ifndef HAVE_FREERTOS_TASK_NOTIFICATIONS
     // event group to wake run loop
     btstack_run_loop_event_group = xEventGroupCreate();
+#endif
 
     log_info("run loop init, queue item size %u", (int) sizeof(function_call_t));
 }

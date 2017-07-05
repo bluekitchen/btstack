@@ -4367,6 +4367,12 @@ int hci_get_sco_packet_length(void){
 }
 #endif
 
+
+HCI_STATE hci_get_state(void){
+    return hci_stack->state;
+}
+
+
 /**
  * @brief Set callback for Bluetooth Hardware Error
  */

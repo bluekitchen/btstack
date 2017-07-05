@@ -89,6 +89,7 @@
 // --> support only a single SCO connection
 // #define ALT_SETTING (1)
 
+#ifdef ENABLE_SCO_OVER_HCI
 // alt setting for 1-3 connections and 8/16 bit
 static const int alt_setting_8_bit[]  = {1,2,3};      
 static const int alt_setting_16_bit[] = {2,4,5};
@@ -106,6 +107,7 @@ static const uint16_t iso_packet_size_for_alt_setting[] = {
     49,
     63,
 };
+#endif
 
 // 49 bytes is the max usb packet size for alternate setting 5 (Three 8 kHz 16-bit channels or one 8 kHz 16-bit channel and one 16 kHz 16-bit channel)
 // note: alt setting 6 has max packet size of 63 every 7.5 ms = 472.5 bytes / HCI packet, while max SCO packet has 255 byte payload

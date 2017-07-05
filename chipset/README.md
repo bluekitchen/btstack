@@ -25,6 +25,9 @@ The predecessor of H5. The main difference to H5 is that Even Parity is used for
 ### eHCILL
 Finally, Texas Instruments extended H4 to create the "eHCILL transport" layer that allows both sides to enter sleep mode without loosing synchronisation. While it is easier to implement than H5, it it is only supported by TI chipsets and cannot handle packet loss or bit-errors.
 
+### H4 over SPI
+Chipsets from Dialog Semiconductor and EM Marin allow to send H4 formatted HCI packets via SPI. SPI has the benefit of a simpler implementation for both Host Controller and Host as it does not require an exact clock. The SPI Master, here the Host, provides the SPI Clock and the SPI Slave (Host Controller) only has to read and update it's data lines when the clock line changes. The EM9304 supports an SPI clock of up to 8 Mhz. However, an additional protocol is needed to let the Host know when the Host Controller has HCI packet for it. Often, an additional GPIO is used to signal this.
+
 ### HCI Shortcomings
 
 Unfortunately, the HCI standard misses a few relevant details:
@@ -55,8 +58,8 @@ Broadcom USB Dongles | Dual mode | USB            | Yes          | Yes          
 CSR UART             | Dual mode | H4, H5, BCSP   | Rarely       | No (didn't work) | No     |         No           | csr            |
 CSR USB Dongles      | Dual mode | USB            | Mostly       | Yes              | No     |         No           | csr            |
 Dialog DA14581       | LE        | H4, SPI        | No           | n.a.             | No     |         No           | da14581        | Official HCI firmware included in BTstack
-EM 9301              | LE        | SPI            | No           | n.a.             | No     |         No           | em9301         | Custom HCI SPI implementation
-EM 9304              | LE        | SPI, H4        | ?            | n.a.             | Yes    |         No           |                | Waiting for dev kit
+EM 9301              | LE        | SPI, H4        | No           | n.a.             | No     |         No           | em9301         | Custom HCI SPI implementation
+EM 9304              | LE        | SPI, H4        | No           | n.a.             | Yes    |     Probably (4)     | em9301         | Custom HCI SPI implementation
 Nordic nRF           | LE        | H4             | Fixed Random | n.a.             | Yes    |         Yes          |                | Requires custom HCI firmware
 STM STLC2500D        | Classic   | H4             | No           | No (didn't try)  | n.a    |         n.a.         | stlc2500d      | Custom deep sleep management not supported
 Toshiba TC35661      | Dual mode | H4             | No           | No (didn't try)  | No     |         No           | tc3566         | HCI version not tested. See below
@@ -68,6 +71,7 @@ TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL | Yes          | Yes          
   2. SCO over HCI: All Bluetooth Classic chipsets support SCO over HCI, for those that are marked with No, we either didn't try or didn't found enough information to configure it correctly.
   3. Multiple LE Roles: Apple uses Broadcom Bluetooth+Wifi in their iOS devices and newer iOS versions support multiple concurrent LE roles,
   so at least some Broadcom models support multiple concurrent LE roles.
+  4. Datasheet doesn't mention it, while tech support stated that multiple roles are supported. Doc will be updated after some basic tests on this.
 
 ## Broadcom
 
@@ -129,7 +133,9 @@ IT does not implement the Data Length Extension or supports multiple concurrent 
 
 For a long time, the EM9301 has been the only Bluetooth Single-Mode LE chipset with an HCI interface. The EM9301 can be connected via SPI or UART. The UART interface does not support hardware flow control and is not recommended for use with BTstack. The SPI mode uses a proprietary but documented extension to implement flow control and signal if the EM9301 has data to send.
 
-**Update:** EM has just announced a new EM9304 that also features an HCI mode and supports the Bluetooth 4.2. specification. It seems to support the Data Length Extension but not and multiple concurrent roles.
+In December 2016, EM released the new EM9304 that also features an HCI mode and supports the Bluetooth 4.2. specification. It seems to support the Data Length Extension and probably also supports multiple LE roles. The EM9304 is a larger MCU that allows to run custom code on it. For this, an advanced mechanism to upload configuration and firmware to RAM or into an One-Time-Programmable area of 128 kB is supported. It supports a superset of the vendor specific commands of the EM9301.
+
+EM9304 is used by the 'stm32-l053r8-em9304' port in BTstack. The port.c file also contains an IRQ driven implementation of the SPI H4 protocol specified in the [datasheet](http://www.emmicroelectronic.com/sites/default/files/public/products/datasheets/9304-ds_0.pdf).
 
 **BD Addr** must be set during startup since it does not have a stored fix address.
 
@@ -137,9 +143,9 @@ For a long time, the EM9301 has been the only Bluetooth Single-Mode LE chipset w
 
 **Baud rate** could be set for UART mode. For SPI, the master controls the speed via the SPI Clock line.
 
-**Init scripts** are not required although it is possible to upload small firmware patches.
+**Init scripts** are not required although it is possible to upload small firmware patches to RAM or the OTP memory.
 
-**BTstack integration**: The common code for the EM9301 is provided by *btstack_chipset_em9301.c*. During the setup, *btstack_chipset_em9301_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. It enables to set the BD Addr during start.
+**BTstack integration**: The common code for the EM9301 is provided by *btstack_chipset_em9301.c*. During the setup, *btstack_chipset_em9301_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. It enables to set the BD Addr during start. The chipset support can be used with the newer EM9304 as well.
 
 
 ## Nordic nRF5 series

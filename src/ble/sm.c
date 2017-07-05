@@ -1881,6 +1881,9 @@ static void sm_run(void){
 
     btstack_linked_list_iterator_t it;    
 
+    // assert that stack has already bootet
+    if (hci_get_state() != HCI_STATE_WORKING) return;
+
     // assert that we can send at least commands
     if (!hci_can_send_command_packet_now()) return;
 
