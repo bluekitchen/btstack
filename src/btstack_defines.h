@@ -1453,11 +1453,10 @@ typedef uint8_t sm_key_t[16];
 /** AVRCP Subevent */
 
 /**
- * @format 11BH2
+ * @format 11B2
  * @param subevent_code
  * @param status 0 == OK
  * @param bd_addr
- * @param con_handle
  * @param avrcp_cid
  */
 #define AVRCP_SUBEVENT_CONNECTION_ESTABLISHED                           0x01

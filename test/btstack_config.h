@@ -14,7 +14,7 @@
 // BTstack features that can be enabled
 #define ENABLE_BLE
 #define ENABLE_CLASSIC
-#define ENABLE_LOG_DEBUG
+// #define ENABLE_LOG_DEBUG
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO 
 #define ENABLE_SDP_DES_DUMP
@@ -23,6 +23,7 @@
 #define ENABLE_LE_SIGNED_WRITE
 #define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_CENTRAL
+#define ENABLE_SDP_EXTRA_QUERIES
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 52

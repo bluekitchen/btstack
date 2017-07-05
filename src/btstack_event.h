@@ -4718,22 +4718,13 @@ static inline void avrcp_subevent_connection_established_get_bd_addr(const uint8
     reverse_bd_addr(&event[4], bd_addr);    
 }
 /**
- * @brief Get field con_handle from event AVRCP_SUBEVENT_CONNECTION_ESTABLISHED
- * @param event packet
- * @return con_handle
- * @note: btstack_type H
- */
-static inline hci_con_handle_t avrcp_subevent_connection_established_get_con_handle(const uint8_t * event){
-    return little_endian_read_16(event, 10);
-}
-/**
  * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_CONNECTION_ESTABLISHED
  * @param event packet
  * @return avrcp_cid
  * @note: btstack_type 2
  */
 static inline uint16_t avrcp_subevent_connection_established_get_avrcp_cid(const uint8_t * event){
-    return little_endian_read_16(event, 12);
+    return little_endian_read_16(event, 10);
 }
 
 /**

@@ -175,6 +175,7 @@ typedef enum {
 
 typedef enum {
     AVCTP_CONNECTION_IDLE,
+    AVCTP_SIGNALING_W4_SDP_QUERY_COMPLETE,
     AVCTP_CONNECTION_W4_L2CAP_CONNECTED,
     AVCTP_CONNECTION_OPENED,
     AVCTP_W2_SEND_PRESS_COMMAND,
@@ -189,7 +190,8 @@ typedef struct {
     btstack_linked_item_t    item;
     bd_addr_t remote_addr;
     uint16_t l2cap_signaling_cid;
-   
+    uint16_t avrcp_cid;
+
     avctp_connection_state_t state;
     uint8_t wait_to_send;
 
@@ -232,6 +234,27 @@ typedef enum {
     AVRCP_REPEAT_MODE_GROUP
 } avrcp_repeat_mode_t;
 
+typedef enum{
+    AVRCP_CONTROLLER = 0,
+    AVRCP_TARGET
+} avrcp_role_t;
+
+typedef struct {
+    avrcp_role_t role;
+    btstack_linked_list_t connections;
+    btstack_packet_handler_t avrcp_callback;
+    btstack_packet_handler_t packet_handler;
+} avrcp_context_t; 
+
+typedef struct {
+    avrcp_connection_t * connection;
+    avrcp_context_t * avrcp_context;
+    uint16_t avrcp_l2cap_psm;
+    uint16_t avrcp_version;
+    uint8_t  role_supported;
+} avrcp_sdp_query_context_t;
+
+
 /**
  * @brief AVDTP Sink service record. 
  * @param service
@@ -258,7 +281,7 @@ void avrcp_target_create_sdp_record(uint8_t * service, uint32_t service_record_h
 /**
  * @brief Set up AVDTP Sink device.
  */
-void avrcp_init(void);
+void avrcp_controller_init(void);
 
 /**
  * @brief Register callback for the AVRCP Sink client. 
@@ -272,7 +295,10 @@ void avrcp_register_packet_handler(btstack_packet_handler_t callback);
  * @param avrcp_cid
  * @returns status
  */
-uint8_t avrcp_connect(bd_addr_t bd_addr, uint16_t * avrcp_cid);
+
+
+uint8_t avrcp_connect(bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * avrcp_cid);
+uint8_t avrcp_controller_connect(bd_addr_t bd_addr, uint16_t * avrcp_cid);
 
 /**
  * @brief Disconnect from AVRCP target

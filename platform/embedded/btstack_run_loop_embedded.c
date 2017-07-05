@@ -233,7 +233,7 @@ void btstack_run_loop_embedded_execute_once(void) {
         uint32_t timeout_low = ts->timeout;
         int      timeout_high = btstack_run_loop_embedded_reconstruct_higher_bits(now, timeout_low);
         if (timeout_high > 0 || ((timeout_high == 0) && (timeout_low > now))) break;
-        btstack_run_loop_remove_timer(ts);
+        btstack_run_loop_embedded_remove_timer(ts);
         ts->process(ts);
     }
 #endif

@@ -26,6 +26,7 @@ COMMON += \
 	l2cap_signaling.c	        \
 	le_device_db_fs.c           \
 	sdp_server.c			    \
+	sdp_client.c 				\
 	sdp_util.c	                \
 	wav_util.c 					\
 
