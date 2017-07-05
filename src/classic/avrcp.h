@@ -246,6 +246,15 @@ typedef struct {
     btstack_packet_handler_t packet_handler;
 } avrcp_context_t; 
 
+typedef struct {
+    avrcp_connection_t * connection;
+    avrcp_context_t * avrcp_context;
+    uint16_t avrcp_l2cap_psm;
+    uint16_t avrcp_version;
+    uint8_t  role_supported;
+} avrcp_sdp_query_context_t;
+
+
 /**
  * @brief AVDTP Sink service record. 
  * @param service

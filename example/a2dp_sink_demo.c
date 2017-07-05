@@ -202,7 +202,6 @@ static int media_initialized = 0;
 
 static bd_addr_t device_addr;
 static uint16_t avrcp_cid = 0;
-static uint16_t avrcp_con_handle = 0;
 static uint8_t sdp_avrcp_controller_service_buffer[200];
 
 #ifdef HAVE_PORTAUDIO
@@ -583,7 +582,6 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
     UNUSED(size);
     bd_addr_t event_addr;
     uint16_t local_cid;
-    uint16_t connection_handle = 0;
     uint8_t  status = 0xFF;
     switch (packet_type) {
         case HCI_EVENT_PACKET:
@@ -596,22 +594,20 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                     switch (packet[2]){
                         case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
                             local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
-                            if (!avrcp_cid){
-                                avrcp_cid = local_cid;
-                            } else if (avrcp_cid != local_cid) {
-                                printf("Connection is not established, expected 0x%02X l2cap cid, received 0x%02X\n", avrcp_cid, local_cid);
-                                break;
+                            if (avrcp_cid != local_cid) {
+                                printf("AVRCP Connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", avrcp_cid, local_cid);
+                                return;
                             }
 
                             status = avrcp_subevent_connection_established_get_status(packet);
-                            avrcp_con_handle = avrcp_subevent_connection_established_get_con_handle(packet);
-                            avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
                             if (status != ERROR_CODE_SUCCESS){
                                 printf("AVRCP Connection failed: status 0x%02x\n", status);
                                 avrcp_cid = 0;
-                                break;
+                                return;
                             }
-                            printf("Channel successfully opened: %s, handle 0x%02x, local cid 0x%02x\n", bd_addr_to_str(event_addr), avrcp_con_handle, local_cid);
+                            avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
+                            printf("Channel successfully opened: %s, avrcp_cid 0x%02x\n", bd_addr_to_str(event_addr), avrcp_cid);
+
                             // automatically enable notifications
                             avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
                             avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
@@ -626,8 +622,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                     }
 
                     status = packet[5];
-                    connection_handle = little_endian_read_16(packet, 3);
-                    if (connection_handle != avrcp_con_handle) return;
+                    if (!avrcp_cid) return;
 
                     // avoid printing INTERIM status
                     if (status == AVRCP_CTYPE_RESPONSE_INTERIM) return;
@@ -890,7 +885,7 @@ static void stdin_process(char cmd){
             break;
         case 'c':
             printf(" - Create AVRCP connection to addr %s.\n", bd_addr_to_str(device_addr));
-            avrcp_connect(device_addr, &avrcp_cid);
+            avrcp_controller_connect(device_addr, &avrcp_cid);
             printf(" assigned avrcp cid 0x%02x\n", avrcp_cid);
             break;
         case 'C':
@@ -1070,7 +1065,7 @@ int btstack_main(int argc, const char * argv[]){
     printf("reistered media handler\n");
 
     // Initialize AVRCP COntroller
-    avrcp_init();
+    avrcp_controller_init();
     avrcp_register_packet_handler(&avrcp_packet_handler);
     
     // Initialize SDP 
