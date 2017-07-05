@@ -2821,7 +2821,7 @@ static void hci_run(void){
     if (hci_stack->remote_name_state == GAP_REMOTE_NAME_STATE_W2_SEND){
         hci_stack->remote_name_state = GAP_REMOTE_NAME_STATE_W4_COMPLETE;
         hci_send_cmd(&hci_remote_name_request, hci_stack->remote_name_addr, 
-            hci_stack->remote_name_page_scan_repetition_mode, hci_stack->remote_name_clock_offset);
+            hci_stack->remote_name_page_scan_repetition_mode, 0, hci_stack->remote_name_clock_offset);
         return;
     }
     // pairing
