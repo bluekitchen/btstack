@@ -60,8 +60,9 @@ static bd_addr_t device_addr;
 
 // iPhone SE: static const char * device_addr_string = "BC:EC:5D:E6:15:03";
 // iPhone 6:  static const char * device_addr_string = "D8:BB:2C:DF:F1:08";
-// Wiko Sunny:
-static const char * device_addr_string = "A0-4C-5B-0F-B2-42";
+// iPhone 5S:  
+static const char * device_addr_string = "54:E4:3A:26:A2:39";
+// Wiko Sunny: static const char * device_addr_string = "A0-4C-5B-0F-B2-42";
 // pts: static const char * device_addr_string = "00:1B:DC:08:0A:A5";
 
 static uint16_t avrcp_cid = 0;
@@ -73,7 +74,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     bd_addr_t event_addr;
     uint16_t local_cid;
     uint8_t  status = 0xFF;
-    hci_con_handle_t avrcp_con_handle;
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
@@ -97,8 +97,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                 avrcp_cid = 0;
                                 return;
                             }
-                            avrcp_con_handle = avrcp_subevent_connection_established_get_con_handle(packet);
-                            printf("Channel successfully opened: %s, handle 0x%02x, local cid 0x%02x\n", bd_addr_to_str(event_addr), avrcp_con_handle, local_cid);
+                            printf("Channel successfully opened: %s, avrcp_cid 0x%02x\n", bd_addr_to_str(event_addr), avrcp_cid);
                             // automatically enable notifications
                             avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
                             avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
@@ -237,7 +236,7 @@ static void stdin_process(char cmd){
     switch (cmd){
         case 'c':
             printf(" - Create AVRCP connection to addr %s.\n", bd_addr_to_str(device_addr));
-            avrcp_connect(device_addr, &avrcp_cid);
+            avrcp_controller_connect(device_addr, &avrcp_cid);
             break;
         case 'B':
             printf(" - Disconnect\n");
@@ -349,7 +348,7 @@ int btstack_main(int argc, const char * argv[]){
     l2cap_init();
     
     // Initialize AVRCP COntroller
-    avrcp_init();
+    avrcp_controller_init();
     avrcp_register_packet_handler(&packet_handler);
 
     // Initialize SDP 
