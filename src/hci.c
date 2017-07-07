@@ -1297,15 +1297,19 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED;
             hci_send_cmd(&hci_write_le_host_supported, 1, 0);
             break;
+#endif
+
+#ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
         case HCI_INIT_LE_READ_MAX_DATA_LENGTH:
             hci_stack->substate = HCI_INIT_W4_LE_READ_MAX_DATA_LENGTH;
             hci_send_cmd(&hci_le_read_maximum_data_length);
             break;
         case HCI_INIT_LE_WRITE_SUGGESTED_DATA_LENGTH:
             hci_stack->substate = HCI_INIT_W4_LE_WRITE_SUGGESTED_DATA_LENGTH;
-            // TODO: use values from read max data length
-            hci_send_cmd(&hci_le_write_suggested_default_data_length, 251, 2120);
+            hci_send_cmd(&hci_le_write_suggested_default_data_length, hci_stack->le_supported_max_tx_octets, hci_stack->le_supported_max_tx_time);
             break;
+#endif
+
 #ifdef ENABLE_LE_CENTRAL
         case HCI_INIT_READ_WHITE_LIST_SIZE:
             hci_stack->substate = HCI_INIT_W4_READ_WHITE_LIST_SIZE;
@@ -1316,7 +1320,6 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_LE_SET_SCAN_PARAMETERS;
             hci_send_cmd(&hci_le_set_scan_parameters, 1, 0x1e0, 0x30, hci_stack->le_own_addr_type, 0);
             break;
-#endif
 #endif
         default:
             return;
@@ -1558,13 +1561,25 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         case HCI_INIT_W4_LE_READ_BUFFER_SIZE:
             // skip write le host if not supported (e.g. on LE only EM9301)
             if (hci_stack->local_supported_commands[0] & 0x02) break;
+            // explicit fall through to reduce repetitions
+
+#ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
+        case HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED:
+            if ((hci_stack->local_supported_commands[0] & 0x30) == 0x30){
+                hci_stack->substate = HCI_INIT_LE_READ_MAX_DATA_LENGTH;
+                return;
+            }
+            // explicit fall through to reduce repetitions
+#endif
+
 #ifdef ENABLE_LE_CENTRAL
-            hci_stack->substate = HCI_INIT_LE_READ_MAX_DATA_LENGTH;
+            hci_stack->substate = HCI_INIT_READ_WHITE_LIST_SIZE;
 #else
             hci_init_done();
 #endif
             return;
 #endif
+            
         case HCI_INIT_W4_WRITE_LOCAL_NAME:
             // skip write eir data if no eir data set
             if (hci_stack->eir_data) break;
@@ -1684,17 +1699,19 @@ static void event_handler(uint8_t *packet, int size){
                 }
                 log_info("hci_le_read_buffer_size: size %u, count %u", hci_stack->le_data_packets_length, hci_stack->le_acl_packets_total_num);
             }
+#endif
+#ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_read_maximum_data_length)){
                 hci_stack->le_supported_max_tx_octets = little_endian_read_16(packet, 6);
                 hci_stack->le_supported_max_tx_time = little_endian_read_16(packet, 8);
                 log_info("hci_le_read_maximum_data_length: tx octets %u, tx time %u us", hci_stack->le_supported_max_tx_octets, hci_stack->le_supported_max_tx_time);
             }
+#endif
 #ifdef ENABLE_LE_CENTRAL
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_read_white_list_size)){
                 hci_stack->le_whitelist_capacity = packet[6];
                 log_info("hci_le_read_white_list_size: size %u", hci_stack->le_whitelist_capacity);
             }   
-#endif
 #endif
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_bd_addr)) {
                 reverse_bd_addr(&packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1],

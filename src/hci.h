@@ -598,6 +598,9 @@ typedef enum hci_init_state{
     HCI_INIT_W4_LE_READ_BUFFER_SIZE,
     HCI_INIT_WRITE_LE_HOST_SUPPORTED,
     HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED,
+#endif
+
+#ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
     HCI_INIT_LE_READ_MAX_DATA_LENGTH,
     HCI_INIT_W4_LE_READ_MAX_DATA_LENGTH,
     HCI_INIT_LE_WRITE_SUGGESTED_DATA_LENGTH,
@@ -820,9 +823,11 @@ typedef struct {
     bd_addr_t le_advertisements_direct_address;
 #endif
 
+#ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
     // LE Data Length
     uint16_t le_supported_max_tx_octets;
     uint16_t le_supported_max_tx_time;
+#endif
 
     // custom BD ADDR
     bd_addr_t custom_bd_addr; 
