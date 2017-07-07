@@ -1262,12 +1262,11 @@ typedef uint8_t sm_key_t[16];
 /** AVDTP Subevent */
 
 /**
- * @format 12111
+ * @format 1211
  * @param subevent_code
  * @param avdtp_cid
- * @param int_seid
+ * @param local_seid
  * @param signal_identifier
- * @param status 0 == OK
  */
 #define AVDTP_SUBEVENT_SIGNALING_ACCEPT                     0x01
 
@@ -1421,10 +1420,43 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 121            Sent only by A2DP source.
  * @param subevent_code
- * @param avdtp_cid
+ * @param a2dp_cid
  * @param local_seid
  */
 #define A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW         0x01
+
+/**
+ * @format 12111121111111
+ * @param subevent_code
+ * @param a2dp_cid
+ * @param int_seid
+ * @param acp_seid
+ * @param reconfigure
+ * @param media_type
+ * @param sampling_frequency
+ * @param channel_mode
+ * @param num_channels
+ * @param block_length
+ * @param subbands
+ * @param allocation_method
+ * @param min_bitpool_value
+ * @param max_bitpool_value
+ */
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION      0x02
+
+/**
+ * @format 1211112LV
+ * @param subevent_code
+ * @param a2dp_cid
+ * @param int_seid
+ * @param acp_seid
+ * @param reconfigure
+ * @param media_type
+ * @param media_codec_type
+ * @param media_codec_information_len
+ * @param media_codec_information
+ */
+#define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION    0x03
 
 /**
  * @format 12111          Stream is opened byt not started.
@@ -1434,31 +1466,34 @@ typedef uint8_t sm_key_t[16];
  * @param remote_seid
  * @param status
  */
-#define A2DP_SUBEVENT_STREAM_ESTABLISHED                           0x02
+#define A2DP_SUBEVENT_STREAM_ESTABLISHED                           0x04
 
 /**
- * @format 121            Indicates that media transfer is started.
+ * @format 1211            Indicates that media transfer is started.
  * @param subevent_code
  * @param a2dp_cid
  * @param local_seid
+ * @param status
  */
-#define A2DP_SUBEVENT_STREAM_STARTED                               0x03
+#define A2DP_SUBEVENT_STREAM_STARTED                               0x05
 
 /**
- * @format 121            Stream is paused.
+ * @format 1211            Stream is paused.
  * @param subevent_code
  * @param a2dp_cid
  * @param local_seid
+ * @param status
  */
-#define A2DP_SUBEVENT_STREAM_SUSPENDED                              0x04
+#define A2DP_SUBEVENT_STREAM_SUSPENDED                              0x06
 
 /**
- * @format 121            Stream is released.
+ * @format 1211            Stream is released.
  * @param subevent_code
- * @param avdtp_cid
+ * @param a2dp_cid
  * @param local_seid
+ * @param status
  */
-#define A2DP_SUBEVENT_STREAM_RELEASED                               0x05
+#define A2DP_SUBEVENT_STREAM_RELEASED                               0x07
 
 
 

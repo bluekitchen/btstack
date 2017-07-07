@@ -3989,12 +3989,12 @@ static inline uint16_t avdtp_subevent_signaling_accept_get_avdtp_cid(const uint8
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field int_seid from event AVDTP_SUBEVENT_SIGNALING_ACCEPT
+ * @brief Get field local_seid from event AVDTP_SUBEVENT_SIGNALING_ACCEPT
  * @param event packet
- * @return int_seid
+ * @return local_seid
  * @note: btstack_type 1
  */
-static inline uint8_t avdtp_subevent_signaling_accept_get_int_seid(const uint8_t * event){
+static inline uint8_t avdtp_subevent_signaling_accept_get_local_seid(const uint8_t * event){
     return event[5];
 }
 /**
@@ -4005,15 +4005,6 @@ static inline uint8_t avdtp_subevent_signaling_accept_get_int_seid(const uint8_t
  */
 static inline uint8_t avdtp_subevent_signaling_accept_get_signal_identifier(const uint8_t * event){
     return event[6];
-}
-/**
- * @brief Get field status from event AVDTP_SUBEVENT_SIGNALING_ACCEPT
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t avdtp_subevent_signaling_accept_get_status(const uint8_t * event){
-    return event[7];
 }
 
 /**
@@ -4587,12 +4578,12 @@ static inline uint16_t avdtp_subevent_streaming_can_send_media_packet_now_get_se
 }
 
 /**
- * @brief Get field avdtp_cid from event A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW
+ * @brief Get field a2dp_cid from event A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW
  * @param event packet
- * @return avdtp_cid
+ * @return a2dp_cid
  * @note: btstack_type 2
  */
-static inline uint16_t a2dp_subevent_streaming_can_send_media_packet_now_get_avdtp_cid(const uint8_t * event){
+static inline uint16_t a2dp_subevent_streaming_can_send_media_packet_now_get_a2dp_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -4603,6 +4594,197 @@ static inline uint16_t a2dp_subevent_streaming_can_send_media_packet_now_get_avd
  */
 static inline uint8_t a2dp_subevent_streaming_can_send_media_packet_now_get_local_seid(const uint8_t * event){
     return event[5];
+}
+
+/**
+ * @brief Get field a2dp_cid from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
+ * @param event packet
+ * @return a2dp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t a2dp_subevent_signaling_media_codec_sbc_configuration_get_a2dp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field int_seid from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
+ * @param event packet
+ * @return int_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_media_codec_sbc_configuration_get_int_seid(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field acp_seid from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
+ * @param event packet
+ * @return acp_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_media_codec_sbc_configuration_get_acp_seid(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field reconfigure from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
+ * @param event packet
+ * @return reconfigure
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field media_type from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
+ * @param event packet
+ * @return media_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_media_codec_sbc_configuration_get_media_type(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field sampling_frequency from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
+ * @param event packet
+ * @return sampling_frequency
+ * @note: btstack_type 2
+ */
+static inline uint16_t a2dp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(const uint8_t * event){
+    return little_endian_read_16(event, 9);
+}
+/**
+ * @brief Get field channel_mode from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
+ * @param event packet
+ * @return channel_mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(const uint8_t * event){
+    return event[11];
+}
+/**
+ * @brief Get field num_channels from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
+ * @param event packet
+ * @return num_channels
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(const uint8_t * event){
+    return event[12];
+}
+/**
+ * @brief Get field block_length from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
+ * @param event packet
+ * @return block_length
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_media_codec_sbc_configuration_get_block_length(const uint8_t * event){
+    return event[13];
+}
+/**
+ * @brief Get field subbands from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
+ * @param event packet
+ * @return subbands
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_media_codec_sbc_configuration_get_subbands(const uint8_t * event){
+    return event[14];
+}
+/**
+ * @brief Get field allocation_method from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
+ * @param event packet
+ * @return allocation_method
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(const uint8_t * event){
+    return event[15];
+}
+/**
+ * @brief Get field min_bitpool_value from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
+ * @param event packet
+ * @return min_bitpool_value
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_media_codec_sbc_configuration_get_min_bitpool_value(const uint8_t * event){
+    return event[16];
+}
+/**
+ * @brief Get field max_bitpool_value from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION
+ * @param event packet
+ * @return max_bitpool_value
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(const uint8_t * event){
+    return event[17];
+}
+
+/**
+ * @brief Get field a2dp_cid from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION
+ * @param event packet
+ * @return a2dp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t a2dp_subevent_signaling_media_codec_other_configuration_get_a2dp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field int_seid from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION
+ * @param event packet
+ * @return int_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_media_codec_other_configuration_get_int_seid(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field acp_seid from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION
+ * @param event packet
+ * @return acp_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_media_codec_other_configuration_get_acp_seid(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field reconfigure from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION
+ * @param event packet
+ * @return reconfigure
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_media_codec_other_configuration_get_reconfigure(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field media_type from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION
+ * @param event packet
+ * @return media_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_media_codec_other_configuration_get_media_type(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field media_codec_type from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION
+ * @param event packet
+ * @return media_codec_type
+ * @note: btstack_type 2
+ */
+static inline uint16_t a2dp_subevent_signaling_media_codec_other_configuration_get_media_codec_type(const uint8_t * event){
+    return little_endian_read_16(event, 9);
+}
+/**
+ * @brief Get field media_codec_information_len from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION
+ * @param event packet
+ * @return media_codec_information_len
+ * @note: btstack_type L
+ */
+static inline int a2dp_subevent_signaling_media_codec_other_configuration_get_media_codec_information_len(const uint8_t * event){
+    return little_endian_read_16(event, 11);
+}
+/**
+ * @brief Get field media_codec_information from event A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION
+ * @param event packet
+ * @return media_codec_information
+ * @note: btstack_type V
+ */
+static inline const uint8_t * a2dp_subevent_signaling_media_codec_other_configuration_get_media_codec_information(const uint8_t * event){
+    return &event[13];
 }
 
 /**
@@ -4660,6 +4842,15 @@ static inline uint16_t a2dp_subevent_stream_started_get_a2dp_cid(const uint8_t *
 static inline uint8_t a2dp_subevent_stream_started_get_local_seid(const uint8_t * event){
     return event[5];
 }
+/**
+ * @brief Get field status from event A2DP_SUBEVENT_STREAM_STARTED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_stream_started_get_status(const uint8_t * event){
+    return event[6];
+}
 
 /**
  * @brief Get field a2dp_cid from event A2DP_SUBEVENT_STREAM_SUSPENDED
@@ -4679,14 +4870,23 @@ static inline uint16_t a2dp_subevent_stream_suspended_get_a2dp_cid(const uint8_t
 static inline uint8_t a2dp_subevent_stream_suspended_get_local_seid(const uint8_t * event){
     return event[5];
 }
+/**
+ * @brief Get field status from event A2DP_SUBEVENT_STREAM_SUSPENDED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_stream_suspended_get_status(const uint8_t * event){
+    return event[6];
+}
 
 /**
- * @brief Get field avdtp_cid from event A2DP_SUBEVENT_STREAM_RELEASED
+ * @brief Get field a2dp_cid from event A2DP_SUBEVENT_STREAM_RELEASED
  * @param event packet
- * @return avdtp_cid
+ * @return a2dp_cid
  * @note: btstack_type 2
  */
-static inline uint16_t a2dp_subevent_stream_released_get_avdtp_cid(const uint8_t * event){
+static inline uint16_t a2dp_subevent_stream_released_get_a2dp_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -4697,6 +4897,15 @@ static inline uint16_t a2dp_subevent_stream_released_get_avdtp_cid(const uint8_t
  */
 static inline uint8_t a2dp_subevent_stream_released_get_local_seid(const uint8_t * event){
     return event[5];
+}
+/**
+ * @brief Get field status from event A2DP_SUBEVENT_STREAM_RELEASED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_stream_released_get_status(const uint8_t * event){
+    return event[6];
 }
 
 /**

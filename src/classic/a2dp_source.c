@@ -269,7 +269,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         
                         case AVDTP_SUBEVENT_SIGNALING_ACCEPT:
                             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
-                            status = avdtp_subevent_signaling_accept_get_status(packet);
                             log_info(" --- a2dp source ---  Accepted %d", signal_identifier);
                             
                             switch (app_state){
