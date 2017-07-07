@@ -3956,6 +3956,26 @@ uint8_t gap_connect_cancel(void){
 #endif
 
 /**
+ * @brief Set connection parameters for outgoing connections
+ * @param conn_interval_min (unit: 1.25ms), default: 10 ms
+ * @param conn_interval_max (unit: 1.25ms), default: 30 ms
+ * @param conn_latency, default: 4
+ * @param supervision_timeout (unit: 10ms), default: 720 ms
+ * @param min_ce_length (unit: 0.625ms), default: 10 ms
+ * @param max_ce_length (unit: 0.625ms), default: 30 ms
+ */
+
+void gap_set_connection_parameters(uint16_t conn_interval_min, uint16_t conn_interval_max,
+    uint16_t conn_latency, uint16_t supervision_timeout, uint16_t min_ce_length, uint16_t max_ce_length){
+    hci_stack->le_connection_interval_min = conn_interval_min;
+    hci_stack->le_connection_interval_max = conn_interval_max;
+    hci_stack->le_connection_latency = conn_latency;
+    hci_stack->le_supervision_timeout = supervision_timeout;
+    hci_stack->le_minimum_ce_length = min_ce_length;
+    hci_stack->le_maximum_ce_length = max_ce_length;
+}
+
+/**
  * @brief Updates the connection parameters for a given LE connection
  * @param handle
  * @param conn_interval_min (unit: 1.25ms)
