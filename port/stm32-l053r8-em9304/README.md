@@ -1,6 +1,7 @@
-# BTstack port for STM32 Nucleo-L053R8 Board with an EM9304 Shield
+# BTstack port for STM32 Nucleo-L053R8 Board with an EM9304 Shield - EM9304 DVK
 
 This port uses the STM32 Nucleo-L053R8 Board with EM's EM9304 Shield. STM32CubeMX was used to provide the HAL, initialize the device, and create a basic Makefile. The Makefile has been exteneded to compile all BTstack LE examples. An examples can be uploaded onto the device by copying it to the Nucleo virtual mass storage drive.
+
 
 ## Hardware
 
@@ -29,7 +30,7 @@ Also, the full packet log can be enabled in port.c by uncommenting the hci_dump_
 In BTstack, the GATT Database is defined via the .gatt file in the example folder. During the build, the .gatt file is converted into a .h file with a binary representation of the GATT Database and useful defines for the application.
 
 ## Stability
-When sending at full speed, it's possible that the EM9304 hangs up. A patch is available from EM Technical Support and from [this post](https://forums.emdeveloper.com/index.php?threads/em9304-seems-to-hang-up-streaming-data-in-hci-mode.484/#post-2083) in the EM Developer Forum. You can get access to the forum via the EM Technical Support as well.
+When sending at full speed, it's possible that the EM9304 hangs up. This [patch (connection_event_overlay.emp)](https://bluekitchen-gmbh.com/files/em/patches/connection_event_overlay.emp) fixes this problems in our tests. It can be applied with the EM ConfigEditor available via the EM Technical Support.
 
 ## Multiple LE Peripheral/Central Roles
 It should be possible to use the EM9304 in multiple roles. In the default configuration, it only supports a single connection. For multiple roles, it needs to be configured for more connections at least.
