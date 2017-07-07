@@ -782,6 +782,14 @@ typedef struct {
     // LE Whitelist Management
     uint8_t               le_whitelist_capacity;
     btstack_linked_list_t le_whitelist;
+
+    // Connection parameters
+    uint16_t le_connection_interval_min;
+    uint16_t le_connection_interval_max;
+    uint16_t le_connection_latency;
+    uint16_t le_supervision_timeout;
+    uint16_t le_minimum_ce_length;
+    uint16_t le_maximum_ce_length;
 #endif
 
     le_connection_parameter_range_t le_connection_parameter_range;
