@@ -280,8 +280,8 @@ a2dp_sink_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_ENC
 
 clean:
 	rm -f ${EXAMPLES}
-	rm -f  *.o *.out *.hex *.exe
-	rm -f  ancs_client_demo.h profile.h spp_and_le_counter.h le_counter.h le_streamer.h
+	rm -f  *.o *.out *.hex *.exe *.wav *.sbc
+	rm -f  ancs_client_demo.h profile.h spp_and_le_counter.h le_counter.h le_streamer.h 
 	rm -f  gatt_battery_query.h gatt_browser.h sm_pairing_peripheral.h
 	rm -rf *.dSYM
 	rm -rf ${BTSTACK_ROOT}/src/*.o

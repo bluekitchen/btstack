@@ -1,4 +1,7 @@
 ancs_client
+avdtp_sink_test
+avdtp_source_test
+avrcp_test
 ble_central_test
 ble_central_test.h
 ble_peripheral_test
@@ -9,11 +12,9 @@ hfp_ag_test
 hfp_hf_test
 hsp_ag_test
 hsp_hs_test
-l2cap_test
-profile.h
-sco_loopbackiopt
-sco_loopback
 iopt
+l2cap_test
 le_data_channel
-avdtp_sink_test
-avdtp_source_test
+profile.h
+sco_loopback
+sco_loopbackiopt
