@@ -3955,6 +3955,7 @@ uint8_t gap_connect_cancel(void){
 }
 #endif
 
+#ifdef ENABLE_LE_CENTRAL
 /**
  * @brief Set connection parameters for outgoing connections
  * @param conn_interval_min (unit: 1.25ms), default: 10 ms
@@ -3974,6 +3975,7 @@ void gap_set_connection_parameters(uint16_t conn_interval_min, uint16_t conn_int
     hci_stack->le_minimum_ce_length = min_ce_length;
     hci_stack->le_maximum_ce_length = max_ce_length;
 }
+#endif
 
 /**
  * @brief Updates the connection parameters for a given LE connection
