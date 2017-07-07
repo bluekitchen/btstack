@@ -1099,7 +1099,7 @@ OPCODE(OGF_LE_CONTROLLER, 0x23), ""
  * @param suggested_max_tx_time
  */
 const hci_cmd_t hci_le_write_suggested_default_data_length = {
-OPCODE(OGF_LE_CONTROLLER, 0x24), ""
+OPCODE(OGF_LE_CONTROLLER, 0x24), "22"
 // return: status
 };
 

@@ -1297,6 +1297,15 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED;
             hci_send_cmd(&hci_write_le_host_supported, 1, 0);
             break;
+        case HCI_INIT_LE_READ_MAX_DATA_LENGTH:
+            hci_stack->substate = HCI_INIT_W4_LE_READ_MAX_DATA_LENGTH;
+            hci_send_cmd(&hci_le_read_maximum_data_length);
+            break;
+        case HCI_INIT_LE_WRITE_SUGGESTED_DATA_LENGTH:
+            hci_stack->substate = HCI_INIT_W4_LE_WRITE_SUGGESTED_DATA_LENGTH;
+            // TODO: use values from read max data length
+            hci_send_cmd(&hci_le_write_suggested_default_data_length, 251, 2120);
+            break;
 #ifdef ENABLE_LE_CENTRAL
         case HCI_INIT_READ_WHITE_LIST_SIZE:
             hci_stack->substate = HCI_INIT_W4_READ_WHITE_LIST_SIZE;
@@ -1550,7 +1559,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             // skip write le host if not supported (e.g. on LE only EM9301)
             if (hci_stack->local_supported_commands[0] & 0x02) break;
 #ifdef ENABLE_LE_CENTRAL
-            hci_stack->substate = HCI_INIT_READ_WHITE_LIST_SIZE;
+            hci_stack->substate = HCI_INIT_LE_READ_MAX_DATA_LENGTH;
 #else
             hci_init_done();
 #endif
@@ -1669,12 +1678,17 @@ static void event_handler(uint8_t *packet, int size){
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_read_buffer_size)){
                 hci_stack->le_data_packets_length = little_endian_read_16(packet, 6);
                 hci_stack->le_acl_packets_total_num  = packet[8];
-                    // determine usable ACL payload size
-                    if (HCI_ACL_PAYLOAD_SIZE < hci_stack->le_data_packets_length){
-                        hci_stack->le_data_packets_length = HCI_ACL_PAYLOAD_SIZE;
-                    }
+                // determine usable ACL payload size
+                if (HCI_ACL_PAYLOAD_SIZE < hci_stack->le_data_packets_length){
+                    hci_stack->le_data_packets_length = HCI_ACL_PAYLOAD_SIZE;
+                }
                 log_info("hci_le_read_buffer_size: size %u, count %u", hci_stack->le_data_packets_length, hci_stack->le_acl_packets_total_num);
-            }         
+            }
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_read_maximum_data_length)){
+                hci_stack->le_supported_max_tx_octets = little_endian_read_16(packet, 6);
+                hci_stack->le_supported_max_tx_time = little_endian_read_16(packet, 8);
+                log_info("hci_le_read_maximum_data_length: tx octets %u, tx time %u us", hci_stack->le_supported_max_tx_octets, hci_stack->le_supported_max_tx_time);
+            }
 #ifdef ENABLE_LE_CENTRAL
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_read_white_list_size)){
                 hci_stack->le_whitelist_capacity = packet[6];
