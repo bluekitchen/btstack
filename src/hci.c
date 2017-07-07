@@ -2293,6 +2293,14 @@ static void hci_state_reset(void){
     hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
     hci_stack->le_whitelist = 0;
     hci_stack->le_whitelist_capacity = 0;
+
+    // connection parameter to use for outgoing connections
+    hci_stack->le_connection_interval_min = 0x0008;    // 10 ms
+    hci_stack->le_connection_interval_max = 0x0018;    // 30 ms
+    hci_stack->le_connection_latency      = 4;         // 4
+    hci_stack->le_supervision_timeout     = 0x0048;    // 720 ms
+    hci_stack->le_minimum_ce_length       = 2;         // 1.25 ms
+    hci_stack->le_maximum_ce_length       = 0x0030;    // 30 ms
 #endif
 
     // connection parameter range used to answer connection parameter update requests in l2cap
@@ -2302,14 +2310,6 @@ static void hci_state_reset(void){
     hci_stack->le_connection_parameter_range.le_conn_latency_max =         500;
     hci_stack->le_connection_parameter_range.le_supervision_timeout_min =   10;
     hci_stack->le_connection_parameter_range.le_supervision_timeout_max = 3200;
-
-    // connection parameter to use for outgoing connections
-    hci_stack->le_connection_interval_min = 0x0008;    // 10 ms
-    hci_stack->le_connection_interval_max = 0x0018;    // 30 ms
-    hci_stack->le_connection_latency      = 4;         // 4
-    hci_stack->le_supervision_timeout     = 0x0048;    // 720 ms
-    hci_stack->le_minimum_ce_length       = 2;         // 1.25 ms
-    hci_stack->le_maximum_ce_length       = 0x0030;    // 30 ms
 }
 
 #ifdef ENABLE_CLASSIC
