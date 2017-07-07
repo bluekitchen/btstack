@@ -339,7 +339,7 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                                     case BLUETOOTH_SERVICE_CLASS_AUDIO_SOURCE:
                                         if (sdp_query_context.query_role != AVDTP_SOURCE) {
                                             sdp_query_context.connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
-                                            avdtp_signaling_emit_connection_established(sdp_query_context.avdtp_callback, sdp_query_context.connection->l2cap_signaling_cid, sdp_query_context.connection->remote_addr, 0);
+                                            avdtp_signaling_emit_connection_established(sdp_query_context.avdtp_callback, sdp_query_context.connection->l2cap_signaling_cid, sdp_query_context.connection->remote_addr, SDP_SERVICE_NOT_FOUND);
                                             break;
                                         }
                                         // log_info("SDP Attribute 0x%04x: AVDTP SOURCE protocol UUID: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet), uuid);
@@ -348,7 +348,7 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                                     case BLUETOOTH_SERVICE_CLASS_AUDIO_SINK:
                                         if (sdp_query_context.query_role != AVDTP_SINK) {
                                             sdp_query_context.connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
-                                            avdtp_signaling_emit_connection_established(sdp_query_context.avdtp_callback, sdp_query_context.connection->l2cap_signaling_cid, sdp_query_context.connection->remote_addr, 0);
+                                            avdtp_signaling_emit_connection_established(sdp_query_context.avdtp_callback, sdp_query_context.connection->l2cap_signaling_cid, sdp_query_context.connection->remote_addr, SDP_SERVICE_NOT_FOUND);
                                             break;
                                         }
                                         // log_info("SDP Attribute 0x%04x: AVDTP SINK protocol UUID: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet), uuid);
@@ -498,7 +498,9 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 case L2CAP_EVENT_CHANNEL_OPENED:
                     // inform about new l2cap connection
                     l2cap_event_channel_opened_get_address(packet, event_addr);
+                    local_cid = l2cap_event_channel_opened_get_local_cid(packet);
                     if (l2cap_event_channel_opened_get_status(packet)){
+                        avdtp_signaling_emit_connection_established(context->avdtp_callback, connection->l2cap_signaling_cid, event_addr, l2cap_event_channel_opened_get_status(packet));
                         log_error("L2CAP connection to connection %s failed. status code 0x%02x", 
                             bd_addr_to_str(event_addr), l2cap_event_channel_opened_get_status(packet));
                         break;
@@ -510,7 +512,6 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     }
                     
                     con_handle = l2cap_event_channel_opened_get_handle(packet);
-                    local_cid = l2cap_event_channel_opened_get_local_cid(packet);
 
                     log_info("L2CAP_EVENT_CHANNEL_OPENED: Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x",
                            bd_addr_to_str(event_addr), con_handle, psm, local_cid,  l2cap_event_channel_opened_get_remote_cid(packet));

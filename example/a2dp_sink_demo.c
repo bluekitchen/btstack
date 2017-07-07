@@ -169,8 +169,9 @@ typedef struct {
 #ifdef HAVE_BTSTACK_STDIN
 // mac 2011: static bd_addr_t remote = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
 // pts: static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
-// mac 2013: 
-static const char * device_addr_string = "00:1B:DC:08:0A:A5";
+// mac 2013: static const char * device_addr_string = "00:1B:DC:08:0A:A5";
+// iPhone 5S:
+static const char * device_addr_string = "54:E4:3A:26:A2:39";
 #endif
 
 // bt dongle: -u 02-02 static bd_addr_t remote = {0x00, 0x02, 0x72, 0xDC, 0x31, 0xC1};
@@ -182,6 +183,8 @@ static avdtp_sep_t sep;
 static adtvp_media_codec_information_sbc_t sbc_capability;
 static avdtp_media_codec_configuration_sbc_t sbc_configuration;
 static avdtp_stream_endpoint_t * local_stream_endpoint;
+
+static uint8_t  local_seid = 0;
 
 #ifdef HAVE_BTSTACK_STDIN
 static uint16_t remote_configuration_bitmap;
@@ -1049,20 +1052,11 @@ int btstack_main(int argc, const char * argv[]){
 
     l2cap_init();
     // Initialize AVDTP Sink
-    avdtp_sink_init();
-    avdtp_sink_register_packet_handler(&packet_handler);
+    a2dp_sink_init();
+    a2dp_sink_register_packet_handler(&packet_handler);
+    a2dp_sink_register_media_handler(&handle_l2cap_media_data_packet);
 
-//#ifndef SMG_BI
-    local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
-    local_stream_endpoint->sep.seid = 1;
-    avdtp_sink_register_media_transport_category(local_stream_endpoint->sep.seid);
-    avdtp_sink_register_media_codec_category(local_stream_endpoint->sep.seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));
-//#endif
-    // uint8_t cp_type_lsb,  uint8_t cp_type_msb, const uint8_t * cp_type_value, uint8_t cp_type_value_len
-    // avdtp_sink_register_content_protection_category(seid, 2, 2, NULL, 0);
-
-    avdtp_sink_register_media_handler(&handle_l2cap_media_data_packet);
-    printf("reistered media handler\n");
+    local_seid = a2dp_sink_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
 
     // Initialize AVRCP COntroller
     avrcp_controller_init();

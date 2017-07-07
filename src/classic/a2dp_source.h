@@ -101,7 +101,7 @@ void a2dp_source_pause_stream(uint8_t int_seid);
 void a2dp_source_release_stream(uint8_t int_seid);
 
 /**
- * @brief Disconnect from device with connection handle. 
+ * @brief Disconnect from device with cid. 
  * @param avdtp_cid
  */
 void a2dp_source_disconnect(uint16_t avdtp_cid);
