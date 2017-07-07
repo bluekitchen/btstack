@@ -212,6 +212,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     context = connection_for_conn_handle(hci_event_disconnection_complete_get_connection_handle(packet));
                     if (!context) break;
                     // free connection
+                    printf("%c: Disconnect, reason %02x\n", context->name, hci_event_disconnection_complete_get_reason(packet));                    
                     context->le_notification_enabled = 0;
                     context->connection_handle = HCI_CON_HANDLE_INVALID;
                     break;
@@ -239,7 +240,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     context = connection_for_conn_handle(att_event_mtu_exchange_complete_get_handle(packet));
                     if (!context) break;
                     context->test_data_len = btstack_min(mtu - 3, sizeof(context->test_data));
-                    printf("%c: ATT MTU = %u, test_data_len %u\n", context->name, mtu, context->test_data_len);
+                    printf("%c: ATT MTU = %u => use test data of len %u\n", context->name, mtu, context->test_data_len);
                     break;
                 case ATT_EVENT_CAN_SEND_NOW:
                     streamer();
