@@ -2295,12 +2295,21 @@ static void hci_state_reset(void){
     hci_stack->le_whitelist_capacity = 0;
 #endif
 
+    // connection parameter range used to answer connection parameter update requests in l2cap
     hci_stack->le_connection_parameter_range.le_conn_interval_min =          6; 
     hci_stack->le_connection_parameter_range.le_conn_interval_max =       3200;
     hci_stack->le_connection_parameter_range.le_conn_latency_min =           0;
     hci_stack->le_connection_parameter_range.le_conn_latency_max =         500;
     hci_stack->le_connection_parameter_range.le_supervision_timeout_min =   10;
     hci_stack->le_connection_parameter_range.le_supervision_timeout_max = 3200;
+
+    // connection parameter to use for outgoing connections
+    hci_stack->le_connection_interval_min = 0x0008;    // 10 ms
+    hci_stack->le_connection_interval_max = 0x0018;    // 30 ms
+    hci_stack->le_connection_latency      = 4;         // 4
+    hci_stack->le_supervision_timeout     = 0x0048;    // 720 ms
+    hci_stack->le_minimum_ce_length       = 2;         // 1.25 ms
+    hci_stack->le_maximum_ce_length       = 0x0030;    // 30 ms
 }
 
 #ifdef ENABLE_CLASSIC
@@ -2981,13 +2990,13 @@ static void hci_run(void){
                  0,         // peer address type
                  null_addr, // peer bd addr
                  hci_stack->le_own_addr_type, // our addr type:
-                 0x0008,    // conn interval min
-                 0x0018,    // conn interval max
-                 0,         // conn latency
-                 0x0048,    // supervision timeout
-                 0x0001,    // min ce length
-                 0x0001     // max ce length
-                 );
+                 hci_stack->le_connection_interval_min,    // conn interval min
+                 hci_stack->le_connection_interval_max,    // conn interval max
+                 hci_stack->le_connection_latency,         // conn latency
+                 hci_stack->le_supervision_timeout,        // conn latency
+                 hci_stack->le_minimum_ce_length,          // min ce length
+                 hci_stack->le_maximum_ce_length           // max ce length
+                );
             return;
         }
 #endif
@@ -3012,20 +3021,19 @@ static void hci_run(void){
 #ifdef ENABLE_LE_CENTRAL
                         log_info("sending hci_le_create_connection");
                         hci_send_cmd(&hci_le_create_connection,
-                                     0x0060,    // scan interval: 60 ms
-                                     0x0030,    // scan interval: 30 ms
-                                     0,         // don't use whitelist
-                                     connection->address_type, // peer address type
-                                     connection->address,      // peer bd addr
-                                     hci_stack->le_own_addr_type,  // our addr type:
-                                     0x0008,    // conn interval min
-                                     0x0018,    // conn interval max
-                                     0,         // conn latency
-                                     0x0048,    // supervision timeout
-                                     0x0001,    // min ce length
-                                     0x0001     // max ce length
-                                     );
-                        
+                             0x0060,    // scan interval: 60 ms
+                             0x0030,    // scan interval: 30 ms
+                             0,         // don't use whitelist
+                             connection->address_type, // peer address type
+                             connection->address,      // peer bd addr
+                             hci_stack->le_own_addr_type, // our addr type:
+                             hci_stack->le_connection_interval_min,    // conn interval min
+                             hci_stack->le_connection_interval_max,    // conn interval max
+                             hci_stack->le_connection_latency,         // conn latency
+                             hci_stack->le_supervision_timeout,        // conn latency
+                             hci_stack->le_minimum_ce_length,          // min ce length
+                             hci_stack->le_maximum_ce_length          // max ce length
+                             );
                         connection->state = SENT_CREATE_CONNECTION;
 #endif
 #endif
