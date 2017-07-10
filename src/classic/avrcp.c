@@ -46,7 +46,7 @@
 #include "classic/avrcp.h"
 
 #define PSM_AVCTP                       BLUETOOTH_PROTOCOL_AVCTP
-#define PSM_AVCTP_BROWSING              0xFF17
+#define PSM_AVCTP_BROWSING              0x001b
 
 /* 
 Category 1: Player/Recorder
@@ -249,27 +249,6 @@ static void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint3
             de_add_number(avctpProtocol,  DE_UINT, DE_SIZE_16,  0x0103);    // version
         }
         de_pop_sequence(attribute, avctpProtocol);
-
-        if (browsing){
-            de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST);
-            attribute = de_push_sequence(service);
-            {
-                uint8_t* browsing_l2cpProtocol = de_push_sequence(attribute);
-                {
-                    de_add_number(browsing_l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
-                    de_add_number(browsing_l2cpProtocol,  DE_UINT, DE_SIZE_16, PSM_AVCTP_BROWSING);  
-                }
-                de_pop_sequence(attribute, browsing_l2cpProtocol);
-                
-                uint8_t* browsing_avctpProtocol = de_push_sequence(attribute);
-                {
-                    de_add_number(browsing_avctpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_AVCTP);  // browsing_avctpProtocol_service
-                    de_add_number(browsing_avctpProtocol,  DE_UINT, DE_SIZE_16,  0x0103);    // version
-                }
-                de_pop_sequence(attribute, browsing_avctpProtocol);
-            }
-            de_pop_sequence(service, attribute);
-        }
     }
     de_pop_sequence(service, attribute);
 
@@ -291,6 +270,26 @@ static void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint3
             de_add_number(avrcProfile,  DE_UINT, DE_SIZE_16, 0x0105); 
         }
         de_pop_sequence(attribute, avrcProfile);
+    }
+    de_pop_sequence(service, attribute);
+
+    // 0x000d "Additional Bluetooth Profile Descriptor List"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_ADDITIONAL_PROTOCOL_DESCRIPTOR_LISTS);
+    attribute = de_push_sequence(service);
+    if (browsing){
+        uint8_t* browsing_l2cpProtocol = de_push_sequence(attribute);
+        {
+            de_add_number(browsing_l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
+            de_add_number(browsing_l2cpProtocol,  DE_UINT, DE_SIZE_16, PSM_AVCTP_BROWSING);  
+        }
+        de_pop_sequence(attribute, browsing_l2cpProtocol);
+        
+        uint8_t* browsing_avctpProtocol = de_push_sequence(attribute);
+        {
+            de_add_number(browsing_avctpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_AVCTP);  // browsing_avctpProtocol_service
+            de_add_number(browsing_avctpProtocol,  DE_UINT, DE_SIZE_16,  0x0103);    // version
+        }
+        de_pop_sequence(attribute, browsing_avctpProtocol);
     }
     de_pop_sequence(service, attribute);
 
@@ -657,7 +656,8 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                 sdp_query_context.connection->state = AVCTP_CONNECTION_IDLE;
                 avrcp_emit_connection_established(sdp_query_context.avrcp_context->avrcp_callback, sdp_query_context.connection->avrcp_cid, sdp_query_context.connection->remote_addr, SDP_SERVICE_NOT_FOUND);
                 break;                
-            }
+            } 
+            log_info("AVRCP Control PSM 0x%02x", sdp_query_context.avrcp_l2cap_psm);
 
             sdp_query_context.connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
             l2cap_create_channel(sdp_query_context.avrcp_context->packet_handler, sdp_query_context.connection->remote_addr, sdp_query_context.avrcp_l2cap_psm, l2cap_max_mtu(), NULL);
@@ -1244,7 +1244,7 @@ void avrcp_controller_init(void){
     avrcp_controller_context.connections = NULL;
     avrcp_controller_context.avrcp_callback = avrcp_callback;
     avrcp_controller_context.packet_handler = avrcp_controller_packet_handler;
-    l2cap_register_service(&avrcp_controller_packet_handler, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, LEVEL_0);
+    l2cap_register_service(&avrcp_controller_packet_handler, BLUETOOTH_PROTOCOL_AVCTP, 0xffff, LEVEL_0);
 }
 
 void avrcp_register_packet_handler(btstack_packet_handler_t callback){
