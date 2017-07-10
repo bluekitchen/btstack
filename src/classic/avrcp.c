@@ -580,7 +580,6 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                 attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
                 
                 if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) == sdp_event_query_attribute_byte_get_attribute_length(packet)) {
-
                     switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
                         case BLUETOOTH_ATTRIBUTE_SERVICE_CLASS_ID_LIST:
                             if (de_get_element_type(attribute_value) != DE_DES) break;
@@ -641,6 +640,47 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                                 }
                             }
                             break;
+                        case BLUETOOTH_ATTRIBUTE_ADDITIONAL_PROTOCOL_DESCRIPTOR_LISTS: {
+                                // log_info("SDP Attribute: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet));
+                                if (de_get_element_type(attribute_value) != DE_DES) break;
+
+                                des_iterator_t des_list_0_it;
+                                uint8_t       *element_0; 
+
+                                des_iterator_init(&des_list_0_it, attribute_value);
+                                element_0 = des_iterator_get_element(&des_list_0_it);
+
+                                for (des_iterator_init(&des_list_it, element_0); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {                                    
+                                    uint8_t       *des_element;
+                                    uint8_t       *element;
+                                    uint32_t       uuid;
+
+                                    if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
+
+                                    des_element = des_iterator_get_element(&des_list_it);
+                                    des_iterator_init(&prot_it, des_element);
+                                    element = des_iterator_get_element(&prot_it);
+
+                                    if (de_get_element_type(element) != DE_UUID) continue;
+                                    
+                                    uuid = de_get_uuid32(element);
+                                    switch (uuid){
+                                        case BLUETOOTH_PROTOCOL_L2CAP:
+                                            if (!des_iterator_has_more(&prot_it)) continue;
+                                            des_iterator_next(&prot_it);
+                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_query_context.avrcp_browsing_l2cap_psm);
+                                            break;
+                                        case BLUETOOTH_PROTOCOL_AVCTP:
+                                            if (!des_iterator_has_more(&prot_it)) continue;
+                                            des_iterator_next(&prot_it);
+                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_query_context.avrcp_browsing_version);
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                }
+                            }
+                            break;
                         default:
                             break;
                     }
@@ -657,7 +697,7 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                 avrcp_emit_connection_established(sdp_query_context.avrcp_context->avrcp_callback, sdp_query_context.connection->avrcp_cid, sdp_query_context.connection->remote_addr, SDP_SERVICE_NOT_FOUND);
                 break;                
             } 
-            log_info("AVRCP Control PSM 0x%02x", sdp_query_context.avrcp_l2cap_psm);
+            log_info("AVRCP Control PSM 0x%02x, Browsing PSM 0x%02x", sdp_query_context.avrcp_l2cap_psm, sdp_query_context.avrcp_browsing_l2cap_psm);
 
             sdp_query_context.connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
             l2cap_create_channel(sdp_query_context.avrcp_context->packet_handler, sdp_query_context.connection->remote_addr, sdp_query_context.avrcp_l2cap_psm, l2cap_max_mtu(), NULL);
