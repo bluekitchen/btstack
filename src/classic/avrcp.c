@@ -274,24 +274,30 @@ static void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint3
     de_pop_sequence(service, attribute);
 
     // 0x000d "Additional Bluetooth Profile Descriptor List"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_ADDITIONAL_PROTOCOL_DESCRIPTOR_LISTS);
-    attribute = de_push_sequence(service);
     if (browsing){
-        uint8_t* browsing_l2cpProtocol = de_push_sequence(attribute);
+        de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_ADDITIONAL_PROTOCOL_DESCRIPTOR_LISTS);
+        attribute = de_push_sequence(service);
         {
-            de_add_number(browsing_l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
-            de_add_number(browsing_l2cpProtocol,  DE_UINT, DE_SIZE_16, PSM_AVCTP_BROWSING);  
+            uint8_t * des = de_push_sequence(attribute);
+            {
+                uint8_t* browsing_l2cpProtocol = de_push_sequence(des);
+                {
+                    de_add_number(browsing_l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
+                    de_add_number(browsing_l2cpProtocol,  DE_UINT, DE_SIZE_16, PSM_AVCTP_BROWSING);  
+                }
+                de_pop_sequence(des, browsing_l2cpProtocol);
+                
+                uint8_t* browsing_avctpProtocol = de_push_sequence(des);
+                {
+                    de_add_number(browsing_avctpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_AVCTP);  // browsing_avctpProtocol_service
+                    de_add_number(browsing_avctpProtocol,  DE_UINT, DE_SIZE_16,  0x0103);    // version
+                }
+                de_pop_sequence(des, browsing_avctpProtocol);
+            }
+            de_pop_sequence(attribute, des);
         }
-        de_pop_sequence(attribute, browsing_l2cpProtocol);
-        
-        uint8_t* browsing_avctpProtocol = de_push_sequence(attribute);
-        {
-            de_add_number(browsing_avctpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_AVCTP);  // browsing_avctpProtocol_service
-            de_add_number(browsing_avctpProtocol,  DE_UINT, DE_SIZE_16,  0x0103);    // version
-        }
-        de_pop_sequence(attribute, browsing_avctpProtocol);
+        de_pop_sequence(service, attribute);
     }
-    de_pop_sequence(service, attribute);
 
 
     // 0x0100 "Service Name"
@@ -1246,6 +1252,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     log_info("L2CAP_EVENT_CHANNEL_OPENED avrcp_cid 0x%02x, l2cap_signaling_cid 0x%02x",connection->avrcp_cid, connection->l2cap_signaling_cid);
                     connection->state = AVCTP_CONNECTION_OPENED;
                     avrcp_emit_connection_established(avrcp_callback, connection->avrcp_cid, event_addr, ERROR_CODE_SUCCESS);
+
+                    // hack 
+                    // l2cap_create_channel(avrcp_controller_context.packet_handler, connection->remote_addr, 0x001b, l2cap_max_mtu(), NULL);
                     break;
                 
                 case L2CAP_EVENT_CAN_SEND_NOW:
