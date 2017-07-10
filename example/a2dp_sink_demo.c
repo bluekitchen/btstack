@@ -369,6 +369,8 @@ static void hal_audio_dma_process(btstack_data_source_t * ds, btstack_data_sourc
 
 static int media_processing_init(avdtp_media_codec_configuration_sbc_t configuration){
     
+    if (media_initialized) return 0;
+
 #ifdef DECODE_SBC
     btstack_sbc_decoder_init(&state, mode, handle_pcm_data, NULL);
 #endif
@@ -385,6 +387,7 @@ static int media_processing_init(avdtp_media_codec_configuration_sbc_t configura
     // int frames_per_buffer = configuration.frames_per_buffer;
     PaError err;
     PaStreamParameters outputParameters;
+    const PaDeviceInfo *deviceInfo;
 
     /* -- initialize PortAudio -- */
     err = Pa_Initialize();
@@ -398,6 +401,9 @@ static int media_processing_init(avdtp_media_codec_configuration_sbc_t configura
     outputParameters.sampleFormat = PA_SAMPLE_TYPE;
     outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultHighOutputLatency;
     outputParameters.hostApiSpecificStreamInfo = NULL;
+    deviceInfo = Pa_GetDeviceInfo( outputParameters.device );
+    printf("PortAudio: Output device: %s\n", deviceInfo->name);
+    log_info("PortAudio: Output device: %s", deviceInfo->name);
     /* -- setup stream -- */
     err = Pa_OpenStream(
            &stream,
@@ -413,6 +419,8 @@ static int media_processing_init(avdtp_media_codec_configuration_sbc_t configura
         printf("Error initializing portaudio: \"%s\"\n",  Pa_GetErrorText(err));
         return err;
     }
+    log_info("PortAudio: stream opened");
+    printf("PortAudio: stream opened\n");
 #endif
 #ifdef HAVE_AUDIO_DMA
     audio_stream_paused  = 1;
@@ -434,14 +442,16 @@ static int media_processing_init(avdtp_media_codec_configuration_sbc_t configura
 static void media_processing_close(void){
     if (!media_initialized) return;
     media_initialized = 0;
+
 #ifdef STORE_SBC_TO_WAV_FILE 
-    printf(" Close wav writer.\n");                   
+    printf("WAV Writer: close file.\n");                   
     wav_writer_close();
     int total_frames_nr = state.good_frames_nr + state.bad_frames_nr + state.zero_frames_nr;
 
-    printf(" Decoding done. Processed totaly %d frames:\n - %d good\n - %d bad\n - %d zero frames\n", total_frames_nr, state.good_frames_nr, state.bad_frames_nr, state.zero_frames_nr);
-    printf(" Written %d frames to wav file: %s\n\n", frame_count, wav_filename);
+    printf("WAV Writer: Decoding done. Processed totaly %d frames:\n - %d good\n - %d bad\n - %d zero frames\n", total_frames_nr, state.good_frames_nr, state.bad_frames_nr, state.zero_frames_nr);
+    printf("WAV Writer: Written %d frames to wav file: %s\n", frame_count, wav_filename);
 #endif
+
 #ifdef STORE_SBC_TO_SBC_FILE
     fclose(sbc_file);
 #endif     
@@ -451,22 +461,29 @@ static void media_processing_close(void){
 #endif
 
 #ifdef HAVE_PORTAUDIO
+    printf("PortAudio: Steram closed\n");
+    log_info("PortAudio: Stream closed");
+
     PaError err = Pa_StopStream(stream);
     if (err != paNoError){
         printf("Error stopping the stream: \"%s\"\n",  Pa_GetErrorText(err));
+        log_error("Error stopping the stream: \"%s\"",  Pa_GetErrorText(err));
         return;
     } 
     err = Pa_CloseStream(stream);
     if (err != paNoError){
         printf("Error closing the stream: \"%s\"\n",  Pa_GetErrorText(err));
+        log_error("Error closing the stream: \"%s\"",  Pa_GetErrorText(err));
         return;
     } 
     err = Pa_Terminate();
     if (err != paNoError){
         printf("Error terminating portaudio: \"%s\"\n",  Pa_GetErrorText(err));
+        log_error("Error terminating portaudio: \"%s\"",  Pa_GetErrorText(err));
         return;
     } 
 #endif
+
 #ifdef HAVE_AUDIO_DMA
     hal_audio_dma_close();
 #endif
@@ -721,10 +738,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
                             if (sbc_configuration.reconfigure){
                                 media_processing_close();
-                                media_processing_init(sbc_configuration);
-                            } else {
-                                media_processing_init(sbc_configuration);
                             }
+
+                            // prepare media processing
+                            media_processing_init(sbc_configuration);
                             break;
                         }  
                         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
@@ -734,6 +751,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                 app_state = AVDTP_APPLICATION_IDLE;
                                 break;
                             }
+
                             // TODO: check it it the correct a2dp cid
                             a2dp_cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
                             printf(" -- a2dp sink demo: streaming connection is established, a2dp cid 0x%02X\n", status);
@@ -747,9 +765,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                 app_state = AVDTP_APPLICATION_IDLE;
                                 break;
                             }
+
                             // TODO: check it it the correct a2dp cid
                             a2dp_cid = a2dp_subevent_stream_started_get_a2dp_cid(packet);
                             printf(" -- a2dp sink demo: streaming, a2dp cid 0x%02X\n", status);
+
+                            // started
+                            // media_processing_init(sbc_configuration);
                             break;
                         
                         case A2DP_SUBEVENT_STREAM_SUSPENDED:
@@ -761,7 +783,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             // TODO: check it it the correct a2dp cid
                             a2dp_cid = a2dp_subevent_stream_started_get_a2dp_cid(packet);
                             printf(" -- a2dp sink demo: stream paused, a2dp cid 0x%02X\n", status);
-                            break;
+                            
+                            // paused/stopped
+                            // media_processing_close();
+                           break;
                         
                         case A2DP_SUBEVENT_STREAM_RELEASED:
                             status = a2dp_subevent_stream_released_get_status(packet);
@@ -769,10 +794,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                 printf(" -- a2dp sink demo: stream cannot be released, status 0x%02X\n", status);
                                 break;
                             }
+                            
                             // TODO: check it it the correct a2dp cid
                             a2dp_cid = a2dp_subevent_stream_released_get_a2dp_cid(packet);
                             app_state = AVDTP_APPLICATION_IDLE;
                             printf(" -- a2dp sink demo: stream released, a2dp cid 0x%02X\n", status);
+
+                            // paused/stopped
                             media_processing_close();
                             break;
                         
