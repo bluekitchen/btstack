@@ -614,6 +614,9 @@ static void l2cap_run(void){
                     case 2: { // Extended Features Supported
                             // extended features request supported, features: fixed channels, unicast connectionless data reception
                             uint32_t features = 0x280;
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+                            features |= 0x0008;
+#endif
                             l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, sizeof(features), &features);
                         }
                         break;
