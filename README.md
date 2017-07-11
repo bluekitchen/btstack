@@ -16,8 +16,7 @@ If a RTOS is already provided, BTstack can be integrated and run as a single thr
 On larger systems, BTstack provides a daemon that connects to a Bluetooth module.
 Multiple applications can communicate with this daemon over different inter-process communication methods.
 
-BTstack supports the Central and the Peripheral Role of Bluetooth 4.2 Low Energy specification.
-It can be configured to run as either single-mode stack or a dual-mode stack.
+BTstack supports the Central and the Peripheral Role of Bluetooth 4.2 Low Energy specification incl. LE Secure Connections, LE Data Channels, and LE Data Lenght Extension. It can be configured to run as either single-mode stack or a dual-mode stack.
 
 BTstack is free for non-commercial use. However, for commercial use, <a href="mailto:contact@bluekitchen-gmbh.com">tell us</a> a bit about your project to get a quote.
 
