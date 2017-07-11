@@ -89,6 +89,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 show_usage();
             }
             break;
+        case HCI_EVENT_CONNECTION_COMPLETE:
+            handle = hci_event_connection_complete_get_connection_handle(packet);
+            break;
         case L2CAP_EVENT_CHANNEL_OPENED:
             // inform about new l2cap connection
             reverse_bd_addr(&packet[3], event_addr);
@@ -129,6 +132,7 @@ static void show_usage(void){
     printf("e      - send echo request\n");
     printf("E      - enable ERTM mode\n");
     printf("d      - disconnect\n");
+    printf("t      - terminate ACL connection\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -137,7 +141,11 @@ static void stdin_process(char buffer){
     switch (buffer){
         case 'c':
             printf("Creating L2CAP Connection to %s, PSM SDP\n", bd_addr_to_str(remote));
-            l2cap_create_channel(packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, 100, NULL);
+            if (l2cap_ertm){
+                l2cap_create_ertm_channel(packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, 100, NULL);
+            } else {
+                l2cap_create_channel(packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, 100, NULL);
+            }
             break;
         case 's':
             printf("Send L2CAP Data\n");
@@ -154,6 +162,9 @@ static void stdin_process(char buffer){
         case 'E':
             printf("L2CAP Enhanced Retransmission Mode (ERTM) enabled\n");
             l2cap_ertm = 1;
+            break;
+        case 't':
+            gap_disconnect(handle);
             break;
         case '\n':
         case '\r':

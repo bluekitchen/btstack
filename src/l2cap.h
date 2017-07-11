@@ -77,6 +77,7 @@ typedef enum {
     L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES,
     L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE,
     L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE,
+    L2CAP_STATE_WAIT_OUTGOING_EXTENDED_FEATURES,    // only for Enhanced Retransmission Mode
     L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT,
     L2CAP_STATE_WAIT_CONNECT_RSP, // from peer
     L2CAP_STATE_CONFIG,
@@ -256,6 +257,18 @@ uint16_t l2cap_max_le_mtu(void);
  * @return status
  */
 uint8_t l2cap_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu, uint16_t * out_local_cid);
+
+/** 
+ * @brief Creates L2CAP channel to the PSM of a remote device with baseband address using Enhanced Retransmission Mode. 
+ *        A new baseband connection will be initiated if necessary.
+ * @param packet_handler
+ * @param address
+ * @param psm
+ * @param mtu
+ * @param local_cid
+ * @return status
+ */
+uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu, uint16_t * out_local_cid);
 
 /** 
  * @brief Disconnects L2CAP channel with given identifier. 

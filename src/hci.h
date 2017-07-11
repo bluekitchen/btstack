@@ -446,6 +446,20 @@ typedef struct {
 
 #endif
 
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+typedef enum {
+    L2CAP_INFORMATION_STATE_IDLE = 0,
+    L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST,
+    L2CAP_INFORMATION_STATE_W4_EXTENDED_FEATURE_RESPONSE,
+    L2CAP_INFORMATION_STATE_DONE
+} l2cap_information_state_t;
+
+typedef struct {
+    l2cap_information_state_t information_state;
+    uint16_t                  extended_feature_mask;
+} l2cap_state_t;
+#endif
+
 //
 typedef struct {
     // linked list - assert: first field
@@ -513,6 +527,10 @@ typedef struct {
 
     // ATT Server
     att_server_t    att_server;
+#endif
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    l2cap_state_t l2cap_state;
 #endif
 
 } hci_connection_t;
