@@ -169,9 +169,10 @@ typedef struct {
 #ifdef HAVE_BTSTACK_STDIN
 // mac 2011: static bd_addr_t remote = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
 // pts: static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
-// mac 2013: static const char * device_addr_string = "00:1B:DC:08:0A:A5";
-// iPhone 5S:
-static const char * device_addr_string = "54:E4:3A:26:A2:39";
+// mac 2013: 
+// mac 2013: 
+static const char * device_addr_string = "84:38:35:65:d1:15";
+// iPhone 5S: static const char * device_addr_string = "54:E4:3A:26:A2:39";
 #endif
 
 // bt dongle: -u 02-02 static bd_addr_t remote = {0x00, 0x02, 0x72, 0xDC, 0x31, 0xC1};
@@ -719,6 +720,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(channel);
     UNUSED(size);
     uint8_t status;
+    uint16_t cid;
 
     switch (packet_type) {
         case HCI_EVENT_PACKET:
@@ -750,60 +752,61 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         }  
                         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
+                            cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
+                            if (cid != a2dp_cid) break;
                             status = a2dp_subevent_stream_established_get_status(packet);
                             if (status != 0){
                                 printf(" -- a2dp sink demo: streaming connection cannot be established, status 0x%02X\n", status);
                                 app_state = AVDTP_APPLICATION_IDLE;
                                 break;
                             }
-
-                            // TODO: check it it the correct a2dp cid
-                            a2dp_cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
-                            printf(" -- a2dp sink demo: streaming connection is established, a2dp cid 0x%02X\n", status);
+                            local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
+                            printf(" -- a2dp sink demo: streaming connection is established, a2dp cid 0x%02X, local_seid %d\n", a2dp_cid, local_seid);
                             app_state = AVDTP_APPLICATION_STREAMING;
                             break;
                         
                         case A2DP_SUBEVENT_STREAM_STARTED:
+                            cid = a2dp_subevent_stream_started_get_a2dp_cid(packet);
+                            if (cid != a2dp_cid) break;
                             status = a2dp_subevent_stream_started_get_status(packet);
                             if (status != 0){
                                 printf(" -- a2dp sink demo: stream cannot be started, status 0x%02X\n", status);
                                 app_state = AVDTP_APPLICATION_IDLE;
                                 break;
                             }
-
-                            // TODO: check it it the correct a2dp cid
-                            a2dp_cid = a2dp_subevent_stream_started_get_a2dp_cid(packet);
-                            printf(" -- a2dp sink demo: streaming, a2dp cid 0x%02X\n", status);
+                            local_seid = a2dp_subevent_stream_started_get_local_seid(packet);
+                            printf(" -- a2dp sink demo: stream started, a2dp cid 0x%02X, local_seid %d\n", a2dp_cid, local_seid);
 
                             // started
                             // media_processing_init(sbc_configuration);
                             break;
                         
                         case A2DP_SUBEVENT_STREAM_SUSPENDED:
+                            cid = a2dp_subevent_stream_suspended_get_a2dp_cid(packet);
+                            if (cid != a2dp_cid) break;
                             status = a2dp_subevent_stream_suspended_get_status(packet);
                             if (status != 0){
                                 printf(" -- a2dp sink demo: stream cannot be paused, status 0x%02X\n", status);
                                 break;
                             }
-                            // TODO: check it it the correct a2dp cid
-                            a2dp_cid = a2dp_subevent_stream_started_get_a2dp_cid(packet);
-                            printf(" -- a2dp sink demo: stream paused, a2dp cid 0x%02X\n", status);
-                            
+                            local_seid = a2dp_subevent_stream_suspended_get_local_seid(packet);
+                            printf(" -- a2dp sink demo: stream paused, a2dp cid 0x%02X, local_seid %d\n", a2dp_cid, local_seid);
+
                             // paused/stopped
                             // media_processing_close();
-                           break;
+                            break;
                         
                         case A2DP_SUBEVENT_STREAM_RELEASED:
+                            cid = a2dp_subevent_stream_released_get_a2dp_cid(packet);
+                            if (cid != a2dp_cid) break;
                             status = a2dp_subevent_stream_released_get_status(packet);
                             if (status != 0){
                                 printf(" -- a2dp sink demo: stream cannot be released, status 0x%02X\n", status);
                                 break;
                             }
-                            
-                            // TODO: check it it the correct a2dp cid
-                            a2dp_cid = a2dp_subevent_stream_released_get_a2dp_cid(packet);
+                            local_seid = a2dp_subevent_stream_released_get_local_seid(packet);
                             app_state = AVDTP_APPLICATION_IDLE;
-                            printf(" -- a2dp sink demo: stream released, a2dp cid 0x%02X\n", status);
+                            printf(" -- a2dp sink demo: stream released, a2dp cid 0x%02X, local_seid %d\n", a2dp_cid, local_seid);
 
                             // paused/stopped
                             media_processing_close();
@@ -881,7 +884,7 @@ static void stdin_process(char cmd){
     switch (cmd){
         case 'b':
             printf("Creating L2CAP Connection to %s, PSM_AVDTP\n", bd_addr_to_str(device_addr));
-            a2dp_sink_establish_stream(device_addr, local_seid);
+            a2dp_sink_establish_stream(device_addr, local_seid, &a2dp_cid);
             break;
         case 'B':
             printf("Disconnect\n");

@@ -70,14 +70,15 @@ void avdtp_source_register_packet_handler(btstack_packet_handler_t callback);
 /**
  * @brief Connect to device with a bluetooth address. (and perform configuration?)
  * @param bd_addr
+ * @param avdtp_cid Assigned avdtp cid
  */
-void avdtp_source_connect(bd_addr_t bd_addr);
+uint8_t avdtp_source_connect(bd_addr_t bd_addr, uint16_t * avdtp_cid);
 
 /**
  * @brief Disconnect from device with connection handle. 
  * @param avdtp_cid
  */
-void avdtp_source_disconnect(uint16_t avdtp_cid);
+uint8_t avdtp_source_disconnect(uint16_t avdtp_cid);
 
 /**
  * @brief Discover stream endpoints
@@ -122,31 +123,31 @@ void avdtp_source_get_configuration(uint16_t avdtp_cid, uint8_t acp_seid);
  * @param avdtp_cid
  * @param seid
  */
-void avdtp_source_open_stream(uint16_t con_handle, uint8_t int_seid, uint8_t acp_seid);
+uint8_t avdtp_source_open_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid);
 
 /**
  * @brief Start stream
  * @param local_seid
  */
-void avdtp_source_start_stream(uint8_t local_seid);
+uint8_t avdtp_source_start_stream(uint16_t avdtp_cid, uint8_t local_seid);
 
 /**
  * @brief Abort stream
  * @param local_seid
  */
-void avdtp_source_abort_stream(uint8_t local_seid);
+uint8_t avdtp_source_abort_stream(uint16_t avdtp_cid, uint8_t local_seid);
 
 /**
  * @brief Start stream
  * @param local_seid
  */
-void avdtp_source_stop_stream(uint8_t local_seid);
+uint8_t avdtp_source_stop_stream(uint16_t avdtp_cid, uint8_t local_seid);
 
 /**
  * @brief Suspend stream
  * @param local_seid
  */
-void avdtp_source_suspend(uint8_t local_seid);
+uint8_t avdtp_source_suspend(uint16_t avdtp_cid, uint8_t local_seid);
 
 
 avdtp_stream_endpoint_t * avdtp_source_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);

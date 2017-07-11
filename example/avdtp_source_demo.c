@@ -171,7 +171,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         
                         case A2DP_SUBEVENT_STREAM_STARTED:
                             if (local_seid != media_tracker.local_seid) break;
-                            if (!a2dp_source_stream_endpoint_ready(media_tracker.local_seid)) break;
+                            if (!a2dp_source_stream_endpoint_ready(media_tracker.a2dp_cid, media_tracker.local_seid)) break;
                             a2dp_fill_audio_buffer_timer_start(&media_tracker);
                             printf(" --- application ---  A2DP_SUBEVENT_STREAM_START_ACCEPTED, local seid %d\n", media_tracker.local_seid);
                             break;
@@ -349,7 +349,7 @@ static void stdin_process(char cmd){
     switch (cmd){
         case 'c':
             printf("Creating L2CAP Connection to %s, PSM_AVDTP\n", bd_addr_to_str(remote));
-            a2dp_source_establish_stream(remote, local_seid);
+            a2dp_source_establish_stream(remote, local_seid, &media_tracker.a2dp_cid);
             break;
         case 'C':
             printf("Disconnect\n");
@@ -358,20 +358,20 @@ static void stdin_process(char cmd){
         case 'x':
             printf("Stream sine, local seid %d\n", media_tracker.local_seid);
             data_source = STREAM_SINE;
-            a2dp_source_start_stream(media_tracker.local_seid);
+            a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
         case 'z':
             printf("Stream mode, local seid %d\n", media_tracker.local_seid);
             data_source = STREAM_MOD;
-            a2dp_source_start_stream(media_tracker.local_seid);
+            a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
         case 'p':
             printf("Pause stream, local seid %d\n", media_tracker.local_seid);
-            a2dp_source_pause_stream(media_tracker.local_seid);
+            a2dp_source_pause_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
         case 'X':
             printf("Close stream, local seid %d\n", media_tracker.local_seid);
-            a2dp_source_release_stream(media_tracker.local_seid);
+            a2dp_source_release_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
         default:
             show_usage();
