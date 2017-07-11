@@ -655,7 +655,7 @@ static void l2cap_run(void){
     UNUSED(it);
 
 #ifdef ENABLE_CLASSIC
-    uint8_t  config_options[4];
+    uint8_t  config_options[10];
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
 
@@ -733,10 +733,30 @@ static void l2cap_run(void){
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ);
                     channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_REQ);
                     channel->local_sig_id = l2cap_next_sig_id();
-                    config_options[0] = 1; // MTU
-                    config_options[1] = 2; // len param
-                    little_endian_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
-                    l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_REQUEST, channel->local_sig_id, channel->remote_cid, 0, 4, &config_options);
+                    int send_retransmission_and_flow_control_option = 0;
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+                    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+                        send_retransmission_and_flow_control_option = 1;
+                    }
+#endif
+                    if (send_retransmission_and_flow_control_option){
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+                        config_options[0] = 0x04;   // RETRANSMISSION AND FLOW CONTROL OPTION
+                        config_options[1] = 9;      // length
+                        config_options[2] = (uint8_t) channel->mode;
+                        config_options[3] = 1;      // TxWindows size
+                        config_options[4] = 1;      // max retransmit
+                        little_endian_store_16( config_options, 5, 100); // Retransmission timeout: 100 ms
+                        little_endian_store_16( config_options, 5, 300); // Monitor timeout: 300 ms
+                        little_endian_store_16( config_options, 7, channel->local_mtu); // Max PDU size
+                        l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_REQUEST, channel->local_sig_id, channel->remote_cid, 0, 10, &config_options);
+#endif
+                    } else {
+                        config_options[0] = 1; // MTU
+                        config_options[1] = 2; // len param
+                        little_endian_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
+                        l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_REQUEST, channel->local_sig_id, channel->remote_cid, 0, 4, &config_options);
+                    }
                     l2cap_start_rtx(channel);
                 }
                 if (l2cap_channel_ready_for_open(channel)){
@@ -1324,11 +1344,37 @@ void l2cap_accept_connection(uint16_t local_cid){
         return;
     }
 
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    // configure L2CAP Basic mode
+    channel->mode  = L2CAP_CHANNEL_MODE_BASIC;
+#endif
+
     channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT;
 
     // process
     l2cap_run();
 }
+
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+void l2cap_accept_ertm_connection(uint16_t local_cid){
+    log_info("L2CAP_ACCEPT_ERTM_CONNECTION local_cid 0x%x", local_cid);
+    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
+    if (!channel) {
+        log_error("l2cap_accept_connection called but local_cid 0x%x not found", local_cid);
+        return;
+    }
+
+    // configure L2CAP ERTM
+    channel->mode  = L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION;
+
+    channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT;
+
+    // process
+    l2cap_run();
+}
+#endif
+
 
 void l2cap_decline_connection(uint16_t local_cid){
     log_info("L2CAP_DECLINE_CONNECTION local_cid 0x%x", local_cid);

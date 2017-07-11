@@ -176,6 +176,10 @@ typedef struct {
     // automatic credits incoming
     uint16_t automatic_credits;
 
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    // l2cap channel mode: basic or enhanced retransmission mode
+    l2cap_channel_mode_t mode;
+#endif    
 } l2cap_channel_t;
 
 // info regarding potential connections
@@ -274,7 +278,7 @@ int l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len);
 uint8_t l2cap_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level);
 
 /** 
- * @brief Unregisters L2CAP service with given PSM.  On embedded systems, use NULL for connection parameter.
+ * @brief Unregisters L2CAP service with given PSM.
  */
 uint8_t l2cap_unregister_service(uint16_t psm);
 
@@ -282,6 +286,11 @@ uint8_t l2cap_unregister_service(uint16_t psm);
  * @brief Accepts incoming L2CAP connection.
  */
 void l2cap_accept_connection(uint16_t local_cid);
+
+/** 
+ * @brief Accepts incoming L2CAP connection for Enhanced Retransmission Mode
+ */
+void l2cap_accept_ertm_connection(uint16_t local_cid);
 
 /** 
  * @brief Deny incoming L2CAP connection.

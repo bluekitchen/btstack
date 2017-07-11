@@ -74,6 +74,14 @@ typedef enum {
     COMMAND_REJECT_LE = 0x1F  // internal to BTstack
 } L2CAP_SIGNALING_COMMANDS;
 
+typedef enum {
+    L2CAP_CHANNEL_MODE_BASIC                   = 0,
+    L2CAP_CHANNEL_MODE_RETRANSMISSION          = 1,
+    L2CAP_CHANNEL_MODE_FLOW_CONTROL            = 2,
+    L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION = 3,
+    L2CAP_CHANNEL_MODE_STREAMING_MODE          = 4,
+} l2cap_channel_mode_t;
+
 uint16_t l2cap_create_signaling_classic(uint8_t * acl_buffer,hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr);
 uint16_t l2cap_create_signaling_le(uint8_t * acl_buffer, hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr);
 uint8_t  l2cap_next_sig_id(void);
