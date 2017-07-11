@@ -106,10 +106,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case L2CAP_EVENT_INCOMING_CONNECTION: {
             uint16_t l2cap_cid  = little_endian_read_16(packet, 12);
             if (l2cap_ertm){
-                printf("L2CAP Accepting incoming connection request in Basic Mode\n"); 
+                printf("L2CAP Accepting incoming connection request in ERTM\n"); 
                 l2cap_accept_ertm_connection(l2cap_cid);
             } else {
-                printf("L2CAP Accepting incoming connection request in ERTM\n"); 
+                printf("L2CAP Accepting incoming connection request in Basic Mode\n"); 
                 l2cap_accept_connection(l2cap_cid);
             }
             break;
