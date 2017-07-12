@@ -645,33 +645,37 @@ uint16_t l2cap_max_le_mtu(void){
     return l2cap_max_mtu();
 }
 
+static uint16_t l2cap_setup_options_mtu(l2cap_channel_t * channel, uint8_t * config_options){
+    config_options[0] = 1; // MTU
+    config_options[1] = 2; // len param
+    little_endian_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
+    return 4;
+}
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+static uint16_t l2cap_setup_options_ertm(l2cap_channel_t * channel, uint8_t * config_options){
+    config_options[0] = 0x04;   // RETRANSMISSION AND FLOW CONTROL OPTION
+    config_options[1] = 9;      // length
+    config_options[2] = (uint8_t) channel->mode;
+    config_options[3] = 1;      // TxWindows size
+    config_options[4] = 1;      // max retransmit
+    little_endian_store_16( config_options, 5, 100); // Retransmission timeout: 100 ms
+    little_endian_store_16( config_options, 7, 300); // Monitor timeout: 300 ms
+    little_endian_store_16( config_options, 9, channel->local_mtu); // Max PDU size // TODO: use real MTU
+    return 11;
+}
+#endif
+
 static uint16_t l2cap_setup_options(l2cap_channel_t * channel, uint8_t * config_options){
-    int send_retransmission_and_flow_control_option = 0;
-    int options_size;
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-    // if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
-    send_retransmission_and_flow_control_option = 1;
-    // }
-#endif
-    if (send_retransmission_and_flow_control_option){
-#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-        config_options[0] = 0x04;   // RETRANSMISSION AND FLOW CONTROL OPTION
-        config_options[1] = 9;      // length
-        config_options[2] = (uint8_t) channel->mode;
-        config_options[3] = 1;      // TxWindows size
-        config_options[4] = 1;      // max retransmit
-        little_endian_store_16( config_options, 5, 100); // Retransmission timeout: 100 ms
-        little_endian_store_16( config_options, 7, 300); // Monitor timeout: 300 ms
-        little_endian_store_16( config_options, 9, channel->local_mtu); // Max PDU size // TODO: use real MTU
-        options_size = 11;
-#endif
-    } else {
-        config_options[0] = 1; // MTU
-        config_options[1] = 2; // len param
-        little_endian_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
-        options_size = 4;
+    // use ERTM options if supported
+    hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
+    if ((connection->l2cap_state.information_state == L2CAP_INFORMATION_STATE_DONE) && (connection->l2cap_state.extended_feature_mask & 0x08)){
+        return l2cap_setup_options_ertm(channel, config_options);
+
     }
-    return options_size;
+#endif
+    return l2cap_setup_options_mtu(channel, config_options);
 }
 
 static uint32_t l2cap_extended_features_mask(void){
