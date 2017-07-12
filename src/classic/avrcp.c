@@ -595,14 +595,14 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                                 uint32_t uuid = de_get_uuid32(element);
                                 switch (uuid){
                                     case BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL_TARGET:
-                                        if (sdp_query_context.avrcp_context->role == AVRCP_TARGET) {
+                                        if (sdp_query_context.avrcp_context->role == AVRCP_CONTROLLER) {
                                             sdp_query_context.role_supported = 1;
                                             break;
                                         }
                                         break;
                                     case BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL:
                                     case BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL_CONTROLLER:
-                                        if (sdp_query_context.avrcp_context->role == AVRCP_CONTROLLER) {
+                                        if (sdp_query_context.avrcp_context->role == AVRCP_TARGET) {
                                             sdp_query_context.role_supported = 1;
                                             break;
                                         }
@@ -697,7 +697,7 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
             break;
             
         case SDP_EVENT_QUERY_COMPLETE:
-            log_info("General query done with status %d.", sdp_event_query_complete_get_status(packet));
+            log_info("General query done with status %d, role supported %d.\n", sdp_event_query_complete_get_status(packet), sdp_query_context.role_supported);
             if (!sdp_query_context.role_supported || !sdp_query_context.avrcp_l2cap_psm){
                 sdp_query_context.connection->state = AVCTP_CONNECTION_IDLE;
                 avrcp_emit_connection_established(sdp_query_context.avrcp_context->avrcp_callback, sdp_query_context.connection->avrcp_cid, sdp_query_context.connection->remote_addr, SDP_SERVICE_NOT_FOUND);
