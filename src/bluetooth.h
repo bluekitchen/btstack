@@ -108,6 +108,27 @@ typedef enum {
   INQUIRY_MODE_RSSI_AND_EIR,
 } inquiry_mode_t;
 
+
+/*
+ * @brief L2CAP Segmentation And Reassembly packet type in I-Frames
+ */
+typedef enum {
+    L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU = 0,
+    L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU,
+    L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU,
+    L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU
+} l2cap_segmentation_and_reassembly_t;
+
+/*
+ * @brief L2CAP Supervisory function in S-Frames
+ */
+typedef enum {
+    L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY = 0,
+    L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT,
+    L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY,
+    L2CAP_SUPERVISORY_FUNCTION_SREJ_SELECTIVE_REJECT
+} l2cap_supervisory_function_t;
+
 /**
  * HCI Transport 
  */

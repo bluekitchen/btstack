@@ -138,6 +138,41 @@ static l2cap_fixed_channel_t fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_SIZE];
 static btstack_packet_handler_t l2cap_event_packet_handler;
 #endif
 
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+
+/*
+ * CRC lookup table for generator polynom D^16 + D^15 + D^2 + 1
+ */
+static const uint16_t crc16_table[256] = {
+    0x0000, 0xc0c1, 0xc181, 0x0140, 0xc301, 0x03c0, 0x0280, 0xc241, 0xc601, 0x06c0, 0x0780, 0xc741, 0x0500, 0xc5c1, 0xc481, 0x0440,
+    0xcc01, 0x0cc0, 0x0d80, 0xcd41, 0x0f00, 0xcfc1, 0xce81, 0x0e40, 0x0a00, 0xcac1, 0xcb81, 0x0b40, 0xc901, 0x09c0, 0x0880, 0xc841,
+    0xd801, 0x18c0, 0x1980, 0xd941, 0x1b00, 0xdbc1, 0xda81, 0x1a40, 0x1e00, 0xdec1, 0xdf81, 0x1f40, 0xdd01, 0x1dc0, 0x1c80, 0xdc41,
+    0x1400, 0xd4c1, 0xd581, 0x1540, 0xd701, 0x17c0, 0x1680, 0xd641, 0xd201, 0x12c0, 0x1380, 0xd341, 0x1100, 0xd1c1, 0xd081, 0x1040,
+    0xf001, 0x30c0, 0x3180, 0xf141, 0x3300, 0xf3c1, 0xf281, 0x3240, 0x3600, 0xf6c1, 0xf781, 0x3740, 0xf501, 0x35c0, 0x3480, 0xf441,
+    0x3c00, 0xfcc1, 0xfd81, 0x3d40, 0xff01, 0x3fc0, 0x3e80, 0xfe41, 0xfa01, 0x3ac0, 0x3b80, 0xfb41, 0x3900, 0xf9c1, 0xf881, 0x3840,
+    0x2800, 0xe8c1, 0xe981, 0x2940, 0xeb01, 0x2bc0, 0x2a80, 0xea41, 0xee01, 0x2ec0, 0x2f80, 0xef41, 0x2d00, 0xedc1, 0xec81, 0x2c40,
+    0xe401, 0x24c0, 0x2580, 0xe541, 0x2700, 0xe7c1, 0xe681, 0x2640, 0x2200, 0xe2c1, 0xe381, 0x2340, 0xe101, 0x21c0, 0x2080, 0xe041,
+    0xa001, 0x60c0, 0x6180, 0xa141, 0x6300, 0xa3c1, 0xa281, 0x6240, 0x6600, 0xa6c1, 0xa781, 0x6740, 0xa501, 0x65c0, 0x6480, 0xa441,
+    0x6c00, 0xacc1, 0xad81, 0x6d40, 0xaf01, 0x6fc0, 0x6e80, 0xae41, 0xaa01, 0x6ac0, 0x6b80, 0xab41, 0x6900, 0xa9c1, 0xa881, 0x6840,
+    0x7800, 0xb8c1, 0xb981, 0x7940, 0xbb01, 0x7bc0, 0x7a80, 0xba41, 0xbe01, 0x7ec0, 0x7f80, 0xbf41, 0x7d00, 0xbdc1, 0xbc81, 0x7c40,
+    0xb401, 0x74c0, 0x7580, 0xb541, 0x7700, 0xb7c1, 0xb681, 0x7640, 0x7200, 0xb2c1, 0xb381, 0x7340, 0xb101, 0x71c0, 0x7080, 0xb041,
+    0x5000, 0x90c1, 0x9181, 0x5140, 0x9301, 0x53c0, 0x5280, 0x9241, 0x9601, 0x56c0, 0x5780, 0x9741, 0x5500, 0x95c1, 0x9481, 0x5440,
+    0x9c01, 0x5cc0, 0x5d80, 0x9d41, 0x5f00, 0x9fc1, 0x9e81, 0x5e40, 0x5a00, 0x9ac1, 0x9b81, 0x5b40, 0x9901, 0x59c0, 0x5880, 0x9841,
+    0x8801, 0x48c0, 0x4980, 0x8941, 0x4b00, 0x8bc1, 0x8a81, 0x4a40, 0x4e00, 0x8ec1, 0x8f81, 0x4f40, 0x8d01, 0x4dc0, 0x4c80, 0x8c41,
+    0x4400, 0x84c1, 0x8581, 0x4540, 0x8701, 0x47c0, 0x4680, 0x8641, 0x8201, 0x42c0, 0x4380, 0x8341, 0x4100, 0x81c1, 0x8081, 0x4040, 
+};
+
+static uint16_t crc16_calc(uint8_t * data, uint16_t len){
+    uint16_t crc = 0;   // initial value = 0 
+    while (len--){
+        crc = (crc >> 8) ^ crc16_table[ (crc ^ ((uint16_t) *data++)) & 0x00FF ];
+    }
+    return crc;
+}
+
+#endif
+
+
 static uint16_t l2cap_fixed_channel_table_channel_id_for_index(int index){
     switch (index){
         case L2CAP_FIXED_CHANNEL_TABLE_INDEX_ATTRIBUTE_PROTOCOL:
@@ -171,6 +206,9 @@ static int l2cap_fixed_channel_table_index_is_le(int index){
 void l2cap_init(void){
     signaling_responses_pending = 0;
     
+    uint8_t test[] = {0x0E, 0x00, 0x40, 0x00, 0x02, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09 };
+    printf("crc16: %04x\n", crc16_calc(test, sizeof(test)));
+
 #ifdef ENABLE_CLASSIC
     l2cap_channels = NULL;
     l2cap_services = NULL;
@@ -486,13 +524,45 @@ int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     
     log_debug("l2cap_send_prepared cid 0x%02x, handle %u, 1 credit used", local_cid, channel->con_handle);
     
+    int fcs_size = 0;
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+        fcs_size = 2;
+    }
+#endif
+
     // set non-flushable packet boundary flag if supported on Controller
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
     uint8_t packet_boundary_flag = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
-    l2cap_setup_header(acl_buffer, channel->con_handle, packet_boundary_flag, channel->remote_cid, len);
+    l2cap_setup_header(acl_buffer, channel->con_handle, packet_boundary_flag, channel->remote_cid, len + fcs_size);
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+        // calculate FCS over l2cap data
+        uint16_t fcs = crc16_calc(acl_buffer + 4, 4 + len);
+        log_info("I-Frame: fcs 0x%04x", fcs);
+        little_endian_store_16(acl_buffer, 8 + len, fcs);
+    }
+#endif
+
     // send
-    return hci_send_acl_packet_buffer(len+8);
+    return hci_send_acl_packet_buffer(len+8+fcs_size);
 }
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+static inline uint16_t l2cap_encanced_control_field_for_information_frame(uint8_t tx_seq, int final, uint8_t req_seq, l2cap_segmentation_and_reassembly_t sar){
+    return (((uint16_t) sar) << 14) | (req_seq << 8) | (final << 7) | (tx_seq << 1) | 0; 
+}
+#if 0
+static inline uint16_t l2cap_encanced_control_field_for_supevisor_frame(l2cap_supervisory_function_t supervisory_function, int poll, int final, uint8_t req_seq){
+    return (((uint16_t) sar) << 14) | (req_seq << 8) | (final << 7) | 1; 
+}
+#endif
+static int l2cap_next_ertm_seq_nr(int seq_nr){
+    return (seq_nr + 1) & 0x3f;
+}
+#endif
 
 // assumption - only on Classic connections
 int l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len){
@@ -516,9 +586,21 @@ int l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len){
     hci_reserve_packet_buffer();
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
 
-    memcpy(&acl_buffer[8], data, len);
+    int control_size = 0;
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    // hack to send i-frames
+    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+        uint16_t control = l2cap_encanced_control_field_for_information_frame(channel->next_tx_seq, 0, 0, L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU);
+        log_info("I-Frame: control 0x%04x", control);
+        little_endian_store_16(acl_buffer, 8, control);
+        channel->next_tx_seq = l2cap_next_ertm_seq_nr(channel->next_tx_seq);
+        control_size = 2;
+    }
+#endif
 
-    return l2cap_send_prepared(local_cid, len);
+    memcpy(&acl_buffer[8+control_size], data, len);
+
+    return l2cap_send_prepared(local_cid, len+control_size);
 }
 
 int l2cap_send_echo_request(hci_con_handle_t con_handle, uint8_t *data, uint16_t len){

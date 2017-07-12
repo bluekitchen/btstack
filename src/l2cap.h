@@ -180,7 +180,12 @@ typedef struct {
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     // l2cap channel mode: basic or enhanced retransmission mode
     l2cap_channel_mode_t mode;
+    
+    // if ertm is not mandatory, allow fallback to L2CAP Basic Mode
     uint8_t ertm_mandatory;
+
+    // next seq nr used for sending
+    uint8_t next_tx_seq;
 #endif    
 } l2cap_channel_t;
 
