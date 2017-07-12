@@ -1510,6 +1510,7 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
         if (option_type == 2 && length == 2){
             channel->flush_timeout = little_endian_read_16(command, pos);
         }
+
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
         // Retransmission and Flow Control Option
         if (option_type == 4 && length == 9){
@@ -1534,10 +1535,11 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
     }
 }
 
-static void l2cap_signaling_handle_configure_response(l2cap_channel_t *channel, uint8_t *command){
+static void l2cap_signaling_handle_configure_response(l2cap_channel_t *channel, uint8_t result, uint8_t *command){
+    log_info("l2cap_signaling_handle_configure_response");
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     uint16_t end_pos = 4 + little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
-    uint16_t pos     = 8;
+    uint16_t pos     = 10;
     while (pos < end_pos){
         uint8_t option_hint = command[pos] >> 7;
         uint8_t option_type = command[pos] & 0x7f;
@@ -1545,18 +1547,19 @@ static void l2cap_signaling_handle_configure_response(l2cap_channel_t *channel, 
         pos++;
         uint8_t length = command[pos++];
 
-#if 0
         // Retransmission and Flow Control Option
         if (option_type == 4 && length == 9){
-            if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION && channel->ertm_mandatory){
-                // ertm mandatory, but remote doens't offer ERTM -> disconnect
-                l2cap_channel_mode_t mode = (l2cap_channel_mode_t) command[pos];
-                if (mode != L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
-                    channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+            if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+                if (channel->ertm_mandatory){
+                    //
+                } else {
+                    // On 'Reject - Unacceptable Parameters', fall back to BASIC mode
+                    if (result == 1){
+                        channel->mode = L2CAP_CHANNEL_MODE_BASIC;
+                    }
                 }
             }
         }
-#endif
 
         // check for unknown options
         if (option_hint == 0 && (option_type == 0 || option_type >= 0x07)){
@@ -1660,9 +1663,9 @@ static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *c
                     break;
                 case CONFIGURE_RESPONSE:
                     l2cap_stop_rtx(channel);
+                    l2cap_signaling_handle_configure_response(channel, result, command);
                     switch (result){
                         case 0: // success
-                            l2cap_signaling_handle_configure_response(channel, command);
                             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_RSP);
                             break;
                         case 4: // pending
