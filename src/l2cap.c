@@ -1513,9 +1513,16 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
         // Retransmission and Flow Control Option
         if (option_type == 4 && length == 9){
-            // TODO store and evaluate configuration
-            // TODO Use different enum name
-            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
+            if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION && channel->ertm_mandatory){
+                // ertm mandatory, but remote doens't offer ERTM -> disconnect
+                l2cap_channel_mode_t mode = (l2cap_channel_mode_t) command[pos];
+                if (mode != L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+                    channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+                }
+            } else {
+                // TODO store and evaluate configuration
+                channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
+            }
         }        
 #endif        
         // check for unknown options
@@ -1525,6 +1532,41 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
         }
         pos += length;
     }
+}
+
+static void l2cap_signaling_handle_configure_response(l2cap_channel_t *channel, uint8_t *command){
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    uint16_t end_pos = 4 + little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
+    uint16_t pos     = 8;
+    while (pos < end_pos){
+        uint8_t option_hint = command[pos] >> 7;
+        uint8_t option_type = command[pos] & 0x7f;
+        log_info("l2cap cid %u, hint %u, type %u", channel->local_cid, option_hint, option_type);
+        pos++;
+        uint8_t length = command[pos++];
+
+#if 0
+        // Retransmission and Flow Control Option
+        if (option_type == 4 && length == 9){
+            if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION && channel->ertm_mandatory){
+                // ertm mandatory, but remote doens't offer ERTM -> disconnect
+                l2cap_channel_mode_t mode = (l2cap_channel_mode_t) command[pos];
+                if (mode != L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+                    channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+                }
+            }
+        }
+#endif
+
+        // check for unknown options
+        if (option_hint == 0 && (option_type == 0 || option_type >= 0x07)){
+            log_info("l2cap cid %u, unknown options", channel->local_cid);
+            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID);
+        }
+
+        pos += length;
+    }
+#endif        
 }
 
 static int l2cap_channel_ready_for_open(l2cap_channel_t *channel){
@@ -1620,6 +1662,7 @@ static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *c
                     l2cap_stop_rtx(channel);
                     switch (result){
                         case 0: // success
+                            l2cap_signaling_handle_configure_response(channel, command);
                             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_RSP);
                             break;
                         case 4: // pending
