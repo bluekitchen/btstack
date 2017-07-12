@@ -1090,7 +1090,7 @@ uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t channel_packet_handle
 
     channel->mode = L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION;
     channel->ertm_mandatory = 1;
-    
+
     // add to connections list
     btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) channel);
 
@@ -1626,6 +1626,13 @@ static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *c
                             l2cap_start_ertx(channel);
                             break;
                         default:
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+                            if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION && channel->ertm_mandatory){
+                                // remote does not offer ertm but it's required
+                                channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+                                break;
+                            } 
+#endif                     
                             // retry on negative result
                             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ);
                             break;
