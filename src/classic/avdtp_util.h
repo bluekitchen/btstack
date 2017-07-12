@@ -56,7 +56,7 @@ extern "C" {
 
 avdtp_connection_t * avdtp_connection_for_bd_addr(bd_addr_t addr, avdtp_context_t * context);
 avdtp_connection_t * avdtp_connection_for_avdtp_cid(uint16_t l2cap_cid, avdtp_context_t * context);
-avdtp_connection_t * avdtp_connection_for_tl2cap_signaling_cid(uint16_t l2cap_cid, avdtp_context_t * context);
+avdtp_connection_t * avdtp_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid, avdtp_context_t * context);
 avdtp_stream_endpoint_t * avdtp_stream_endpoint_for_l2cap_cid(uint16_t l2cap_cid, avdtp_context_t * context);
 avdtp_stream_endpoint_t * avdtp_stream_endpoint_with_seid(uint8_t seid, avdtp_context_t * context);
 avdtp_stream_endpoint_t * avdtp_stream_endpoint_associated_with_acp_seid(uint16_t acp_seid, avdtp_context_t * context);

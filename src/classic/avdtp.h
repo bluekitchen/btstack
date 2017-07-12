@@ -362,16 +362,16 @@ typedef enum {
 } avdtp_initiator_connection_state_t;
 
 typedef struct {
-    uint8_t command[200];
+    uint8_t  command[200];
     uint16_t size;
     uint16_t offset;
-    avdtp_signal_identifier_t signal_identifier;
-    avdtp_message_type_t message_type;
-    avdtp_packet_type_t  packet_type;
-    uint8_t acp_seid;
-    uint8_t int_seid;
+    uint8_t  acp_seid;
+    uint8_t  int_seid;
     uint16_t transaction_label;
     uint16_t num_packets;
+    avdtp_signal_identifier_t   signal_identifier;
+    avdtp_message_type_t        message_type;
+    avdtp_packet_type_t         packet_type;
 } avdtp_signaling_packet_t;
 
 typedef struct {
@@ -379,7 +379,7 @@ typedef struct {
     bd_addr_t remote_addr;
     
     uint16_t avdtp_cid;
-    uint16_t tl2cap_signaling_cid;
+    uint16_t l2cap_signaling_cid;
     avdtp_service_mode_t service_mode;
     
     avdtp_connection_state_t state;
@@ -392,11 +392,11 @@ typedef struct {
 
     uint8_t disconnect;
 
+    uint8_t local_seid;
+    uint8_t remote_seid;
+
     uint8_t initiator_transaction_label;
     uint8_t acceptor_transaction_label;
-    uint8_t local_seid;
-    uint8_t acp_seid;
-
     uint8_t wait_to_send_acceptor;
     uint8_t wait_to_send_initiator;
     uint8_t wait_to_send_self;

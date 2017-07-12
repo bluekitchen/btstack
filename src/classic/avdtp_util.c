@@ -92,12 +92,12 @@ avdtp_connection_t * avdtp_connection_for_avdtp_cid(uint16_t avdtp_cid, avdtp_co
     return NULL;
 }
 
-avdtp_connection_t * avdtp_connection_for_tl2cap_signaling_cid(uint16_t l2cap_cid, avdtp_context_t * context){
+avdtp_connection_t * avdtp_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid, avdtp_context_t * context){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &context->connections);
     while (btstack_linked_list_iterator_has_next(&it)){
         avdtp_connection_t * connection = (avdtp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (connection->tl2cap_signaling_cid != l2cap_cid) continue;
+        if (connection->l2cap_signaling_cid != l2cap_cid) continue;
         return connection;
     }
     return NULL;

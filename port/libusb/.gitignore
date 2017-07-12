@@ -1,11 +1,10 @@
 a2dp_sink_demo
+a2dp_source_demo
 ancs_client_demo
 ancs_client_demo.h
 avdtp_sink.sbc
 avdtp_sink.sbc
 avdtp_sink.wav
-avdtp_sink_demo
-avdtp_source_demo
 ble_central_test
 ble_peripheral_test
 bnep_test
