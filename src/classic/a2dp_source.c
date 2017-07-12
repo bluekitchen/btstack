@@ -199,7 +199,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
     switch (packet[2]){
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
-            // TODO cmp bt addr
             avdtp_subevent_signaling_connection_established_get_bd_addr(packet, address);
             if (memcmp(address, &sc.remote_addr, 6) != 0) break;
 
@@ -407,6 +406,20 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             app_state = A2DP_IDLE;
             signal_identifier = avdtp_subevent_signaling_general_reject_get_signal_identifier(packet);
             log_info("Rejected %d", signal_identifier);
+            break;
+        case AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED:{
+            uint8_t event[6];
+            int pos = 0;
+            event[pos++] = HCI_EVENT_AVDTP_META;
+            event[pos++] = sizeof(event) - 2;
+            event[pos++] = A2DP_SUBEVENT_STREAM_RELEASED;
+            little_endian_store_16(event, pos, avdtp_subevent_streaming_connection_released_get_avdtp_cid(packet));
+            pos += 2;
+            event[pos++] = avdtp_subevent_streaming_connection_released_get_local_seid(packet);
+            (*a2dp_source_context.a2dp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+            break;
+        }
+        case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
             break;
         default:
             app_state = A2DP_IDLE;

@@ -4548,6 +4548,15 @@ static inline uint8_t avdtp_subevent_streaming_connection_established_get_status
 static inline uint16_t avdtp_subevent_streaming_connection_released_get_avdtp_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
+/**
+ * @brief Get field local_seid from event AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED
+ * @param event packet
+ * @return local_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t avdtp_subevent_streaming_connection_released_get_local_seid(const uint8_t * event){
+    return event[5];
+}
 
 /**
  * @brief Get field avdtp_cid from event AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW
@@ -4842,15 +4851,6 @@ static inline uint16_t a2dp_subevent_stream_started_get_a2dp_cid(const uint8_t *
 static inline uint8_t a2dp_subevent_stream_started_get_local_seid(const uint8_t * event){
     return event[5];
 }
-/**
- * @brief Get field status from event A2DP_SUBEVENT_STREAM_STARTED
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t a2dp_subevent_stream_started_get_status(const uint8_t * event){
-    return event[6];
-}
 
 /**
  * @brief Get field a2dp_cid from event A2DP_SUBEVENT_STREAM_SUSPENDED
@@ -4870,15 +4870,6 @@ static inline uint16_t a2dp_subevent_stream_suspended_get_a2dp_cid(const uint8_t
 static inline uint8_t a2dp_subevent_stream_suspended_get_local_seid(const uint8_t * event){
     return event[5];
 }
-/**
- * @brief Get field status from event A2DP_SUBEVENT_STREAM_SUSPENDED
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t a2dp_subevent_stream_suspended_get_status(const uint8_t * event){
-    return event[6];
-}
 
 /**
  * @brief Get field a2dp_cid from event A2DP_SUBEVENT_STREAM_RELEASED
@@ -4897,15 +4888,6 @@ static inline uint16_t a2dp_subevent_stream_released_get_a2dp_cid(const uint8_t 
  */
 static inline uint8_t a2dp_subevent_stream_released_get_local_seid(const uint8_t * event){
     return event[5];
-}
-/**
- * @brief Get field status from event A2DP_SUBEVENT_STREAM_RELEASED
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t a2dp_subevent_stream_released_get_status(const uint8_t * event){
-    return event[6];
 }
 
 /**

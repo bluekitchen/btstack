@@ -706,6 +706,8 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
             log_info("AVRCP Control PSM 0x%02x, Browsing PSM 0x%02x", sdp_query_context.avrcp_l2cap_psm, sdp_query_context.avrcp_browsing_l2cap_psm);
 
             sdp_query_context.connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
+            printf("sdp_query_context.packet_handler %p\n",sdp_query_context.avrcp_context->packet_handler);
+                                
             l2cap_create_channel(sdp_query_context.avrcp_context->packet_handler, sdp_query_context.connection->remote_addr, sdp_query_context.avrcp_l2cap_psm, l2cap_max_mtu(), NULL);
             break;
     }
@@ -1205,6 +1207,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
+                case HCI_EVENT_DISCONNECTION_COMPLETE:
+                    // connection closed -> quit test app
+                    // status = hci_event_disconnection_complete_get_status(packet);
+                    avrcp_emit_connection_closed(avrcp_callback, 0);
+                    break;
                 case L2CAP_EVENT_INCOMING_CONNECTION:
                     l2cap_event_incoming_connection_get_address(packet, event_addr);
                     local_cid = l2cap_event_incoming_connection_get_local_cid(packet);
@@ -1268,7 +1275,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     local_cid = l2cap_event_channel_closed_get_local_cid(packet);
                     connection = get_avrcp_connection_for_l2cap_signaling_cid(local_cid, context);
                     if (connection){
-                        avrcp_emit_connection_closed(avrcp_callback, connection->avrcp_cid);
+                        avrcp_emit_connection_closed(avrcp_callback, local_cid);
                         // free connection
                         btstack_linked_list_remove(&context->connections, (btstack_linked_item_t*) connection); 
                         btstack_memory_avrcp_connection_free(connection);

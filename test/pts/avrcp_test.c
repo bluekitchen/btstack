@@ -72,7 +72,6 @@ static uint8_t sdp_avrcp_controller_service_buffer[200];
 static uint16_t avdtp_cid = 0;
 static avdtp_sep_t sep;
 static avdtp_stream_endpoint_t * local_stream_endpoint;
-static avrcp_context_t avrcp_controller_context;
 static avdtp_context_t a2dp_sink_context;
 
 static uint16_t avrcp_cid = 0;
@@ -87,10 +86,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
-                case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    // connection closed -> quit test app
-                    printf("AVRCP: HCI_EVENT_DISCONNECTION_COMPLETE\n");
-                    break;
+                
                 case HCI_EVENT_AVRCP_META:
                     switch (packet[2]){
                         case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
@@ -277,8 +273,7 @@ static void stdin_process(char cmd){
             break;
         case 'c':
             printf(" - Create AVRCP connection to addr %s.\n", bd_addr_to_str(device_addr));
-            avrcp_connect(device_addr, &avrcp_controller_context, &avrcp_cid);
-            printf(" assigned avrcp cid 0x%02x\n", avrcp_cid);
+            avrcp_controller_connect(device_addr, &avrcp_cid);
             break;
         case 'C':
             printf(" - Disconnect\n");

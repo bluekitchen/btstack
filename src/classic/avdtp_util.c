@@ -517,6 +517,31 @@ void avdtp_streaming_emit_can_send_media_packet_now(btstack_packet_handler_t cal
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+void avdtp_signaling_emit_connection_released(btstack_packet_handler_t callback, uint16_t avdtp_cid){
+    if (!callback) return;
+    uint8_t event[5];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED;
+    little_endian_store_16(event, pos, avdtp_cid);
+    pos += 2;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+void avdtp_streaming_emit_connection_released(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid){
+    if (!callback) return;
+    uint8_t event[6];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED;
+    little_endian_store_16(event, pos, avdtp_cid);
+    pos += 2;
+    event[pos++] = local_seid;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 void avdtp_streaming_emit_connection_established(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint8_t status){
     if (!callback) return;
     uint8_t event[8];

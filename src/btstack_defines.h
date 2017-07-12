@@ -1396,9 +1396,10 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED     0x0B
 
 /**
- * @format 12
+ * @format 121
  * @param subevent_code
  * @param avdtp_cid
+ * @param local_seid
  */
 #define AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED        0x0C
 
@@ -1476,33 +1477,46 @@ typedef uint8_t sm_key_t[16];
 #define A2DP_SUBEVENT_STREAM_ESTABLISHED                           0x04
 
 /**
- * @format 1211            Indicates that media transfer is started.
+ * @format 121            Indicates that media transfer is started.
  * @param subevent_code
  * @param a2dp_cid
  * @param local_seid
- * @param status
  */
 #define A2DP_SUBEVENT_STREAM_STARTED                               0x05
 
 /**
- * @format 1211            Stream is paused.
+ * @format 121           Stream is paused.
  * @param subevent_code
  * @param a2dp_cid
  * @param local_seid
- * @param status
  */
 #define A2DP_SUBEVENT_STREAM_SUSPENDED                              0x06
 
 /**
- * @format 1211            Stream is released.
+ * @format 121            Stream is released.
  * @param subevent_code
  * @param a2dp_cid
  * @param local_seid
- * @param status
  */
 #define A2DP_SUBEVENT_STREAM_RELEASED                               0x07
 
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param a2dp_cid
+ * @param local_seid
+ * @param signal_identifier
+ */
+#define A2DP_SUBEVENT_COMMAND_ACCEPTED                              0x08
 
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param a2dp_cid
+ * @param local_seid
+ * @param signal_identifier 
+ */
+#define A2DP_SUBEVENT_COMMAND_REJECTED                              0x09
 
 /** AVRCP Subevent */
 

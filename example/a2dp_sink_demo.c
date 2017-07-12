@@ -719,7 +719,6 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    uint8_t status;
     uint16_t cid;
 
     switch (packet_type) {
@@ -754,12 +753,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
                             cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
                             if (cid != a2dp_cid) break;
-                            status = a2dp_subevent_stream_established_get_status(packet);
-                            if (status != 0){
-                                printf(" -- a2dp sink demo: streaming connection cannot be established, status 0x%02X\n", status);
-                                app_state = AVDTP_APPLICATION_IDLE;
-                                break;
-                            }
                             local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
                             printf(" -- a2dp sink demo: streaming connection is established, a2dp cid 0x%02X, local_seid %d\n", a2dp_cid, local_seid);
                             app_state = AVDTP_APPLICATION_STREAMING;
@@ -768,12 +761,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         case A2DP_SUBEVENT_STREAM_STARTED:
                             cid = a2dp_subevent_stream_started_get_a2dp_cid(packet);
                             if (cid != a2dp_cid) break;
-                            status = a2dp_subevent_stream_started_get_status(packet);
-                            if (status != 0){
-                                printf(" -- a2dp sink demo: stream cannot be started, status 0x%02X\n", status);
-                                app_state = AVDTP_APPLICATION_IDLE;
-                                break;
-                            }
                             local_seid = a2dp_subevent_stream_started_get_local_seid(packet);
                             printf(" -- a2dp sink demo: stream started, a2dp cid 0x%02X, local_seid %d\n", a2dp_cid, local_seid);
 
@@ -784,11 +771,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         case A2DP_SUBEVENT_STREAM_SUSPENDED:
                             cid = a2dp_subevent_stream_suspended_get_a2dp_cid(packet);
                             if (cid != a2dp_cid) break;
-                            status = a2dp_subevent_stream_suspended_get_status(packet);
-                            if (status != 0){
-                                printf(" -- a2dp sink demo: stream cannot be paused, status 0x%02X\n", status);
-                                break;
-                            }
                             local_seid = a2dp_subevent_stream_suspended_get_local_seid(packet);
                             printf(" -- a2dp sink demo: stream paused, a2dp cid 0x%02X, local_seid %d\n", a2dp_cid, local_seid);
 
@@ -799,11 +781,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         case A2DP_SUBEVENT_STREAM_RELEASED:
                             cid = a2dp_subevent_stream_released_get_a2dp_cid(packet);
                             if (cid != a2dp_cid) break;
-                            status = a2dp_subevent_stream_released_get_status(packet);
-                            if (status != 0){
-                                printf(" -- a2dp sink demo: stream cannot be released, status 0x%02X\n", status);
-                                break;
-                            }
                             local_seid = a2dp_subevent_stream_released_get_local_seid(packet);
                             app_state = AVDTP_APPLICATION_IDLE;
                             printf(" -- a2dp sink demo: stream released, a2dp cid 0x%02X, local_seid %d\n", a2dp_cid, local_seid);
