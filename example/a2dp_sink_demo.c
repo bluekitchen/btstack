@@ -883,11 +883,11 @@ static void stdin_process(char cmd){
     sep.seid = 1;
     switch (cmd){
         case 'b':
-            printf("Creating L2CAP Connection to %s, PSM_AVDTP\n", bd_addr_to_str(device_addr));
+            printf(" - Create AVDTP connection to addr %s.\n", bd_addr_to_str(device_addr));
             a2dp_sink_establish_stream(device_addr, local_seid, &a2dp_cid);
             break;
         case 'B':
-            printf("Disconnect\n");
+            printf(" - Disconnect\n");
             avdtp_sink_disconnect(a2dp_cid);
             break;
         case 'c':

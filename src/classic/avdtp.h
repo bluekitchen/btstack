@@ -394,7 +394,6 @@ typedef struct {
 
     uint8_t initiator_transaction_label;
     uint8_t acceptor_transaction_label;
-    uint8_t query_seid;
     uint8_t local_seid;
     uint8_t acp_seid;
 
@@ -471,6 +470,8 @@ typedef struct avdtp_stream_endpoint {
 
 typedef struct {
 // to app
+    bd_addr_t remote_addr;
+    
     uint32_t fill_audio_ring_buffer_timeout_ms;
     uint32_t time_audio_data_sent; // ms
     uint32_t acc_num_missed_samples;

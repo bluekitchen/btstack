@@ -41,23 +41,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack_config.h"
-#include "btstack_debug.h"
-#include "btstack_event.h"
-#include "btstack_memory.h"
-#include "btstack_run_loop.h"
-#include "gap.h"
-#include "hci.h"
-#include "hci_cmd.h"
-#include "hci_dump.h"
-#include "l2cap.h"
-#include "btstack_stdin.h"
-#include "classic/a2dp_source.h"
-#include "classic/avdtp_source.h"
-#include "classic/avdtp_util.h"
-#include "classic/btstack_sbc.h"
+#include "btstack.h"
 
-#include "sbc_encoder.h"
 #include "hxcmod.h"
 #include "mods/mod.h"
 
@@ -155,7 +140,7 @@ static void a2dp_fill_audio_buffer_timer_pause(a2dp_media_sending_context_t * co
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-
+    uint8_t status;
     switch (packet_type) {
  
         case HCI_EVENT_PACKET:
@@ -163,17 +148,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 case HCI_EVENT_A2DP_META:
                     switch (packet[2]){
                         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
+                            status = a2dp_subevent_stream_established_get_status(packet);
+                            if (status){
+                                printf("Stream establishment failed: status 0x%02x.\n", status);
+                                break;
+                            }
                             media_tracker.local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
                             media_tracker.a2dp_cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
-                            printf(" --- application --- A2DP_SUBEVENT_STREAM_ESTABLISHED, a2dp_cid 0x%02x, local seid %d, remote seid %d\n", 
+                            printf("Stream established: a2dp cid 0x%02x, local seid %d, remote seid %d.\n", 
                                 media_tracker.a2dp_cid, media_tracker.local_seid, a2dp_subevent_stream_established_get_remote_seid(packet));
-                            break;
-                        
-                        case A2DP_SUBEVENT_STREAM_STARTED:
-                            if (local_seid != media_tracker.local_seid) break;
-                            if (!a2dp_source_stream_endpoint_ready(media_tracker.a2dp_cid, media_tracker.local_seid)) break;
-                            a2dp_fill_audio_buffer_timer_start(&media_tracker);
-                            printf(" --- application ---  A2DP_SUBEVENT_STREAM_START_ACCEPTED, local seid %d\n", media_tracker.local_seid);
                             break;
                         
                         case A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW:{
@@ -188,17 +171,24 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             media_tracker.sbc_ready_to_send = 0;
                             break;        
                         }
+                        case A2DP_SUBEVENT_STREAM_STARTED:
+                            if (local_seid != media_tracker.local_seid) break;
+                            if (!a2dp_source_stream_endpoint_ready(media_tracker.a2dp_cid, media_tracker.local_seid)) break;
+                            a2dp_fill_audio_buffer_timer_start(&media_tracker);
+                            printf("Stream started.\n");
+                            break;
+
                         case A2DP_SUBEVENT_STREAM_SUSPENDED:
-                            printf(" --- application ---  A2DP_SUBEVENT_STREAM_SUSPENDED, local seid %d\n", media_tracker.local_seid);
+                            printf("Stream paused.\n");
                             a2dp_fill_audio_buffer_timer_pause(&media_tracker);
                             break;
 
                         case A2DP_SUBEVENT_STREAM_RELEASED:
-                            printf(" --- application ---  A2DP_SUBEVENT_STREAM_RELEASED, local seid %d\n", media_tracker.local_seid);
+                            printf("Stream released.\n");
                             a2dp_fill_audio_buffer_timer_stop(&media_tracker);
                             break;
                         default:
-                            printf(" --- application ---  not implemented\n");
+                            printf("AVDTP Source demo: event 0x%02x is not implemented\n", packet[2]);
                             break; 
                     }
                     break;   
@@ -334,13 +324,12 @@ static void show_usage(void){
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth AVDTP SOURCE Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("c      - create connection to addr %s\n", bd_addr_to_str(remote));
-    printf("C      - disconnect\n");
     printf("x      - start streaming sine\n");
     if (hxcmod_initialized){
         printf("z      - start streaming '%s'\n", mod_name);
     }
     printf("p      - pause streaming\n");
-    printf("X      - stop streaming\n");
+    printf("C      - disconnect\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -351,27 +340,23 @@ static void stdin_process(char cmd){
             printf("Creating L2CAP Connection to %s, PSM_AVDTP\n", bd_addr_to_str(remote));
             a2dp_source_establish_stream(remote, local_seid, &media_tracker.a2dp_cid);
             break;
-        case 'C':
-            printf("Disconnect\n");
-            a2dp_source_disconnect(media_tracker.a2dp_cid);
-            break;
         case 'x':
-            printf("Stream sine, local seid %d\n", media_tracker.local_seid);
+            printf("Playing sine.\n");
             data_source = STREAM_SINE;
             a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
         case 'z':
-            printf("Stream mode, local seid %d\n", media_tracker.local_seid);
+            printf("Playing mod.\n");
             data_source = STREAM_MOD;
             a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
         case 'p':
-            printf("Pause stream, local seid %d\n", media_tracker.local_seid);
+            printf("Pause stream.\n");
             a2dp_source_pause_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
-        case 'X':
-            printf("Close stream, local seid %d\n", media_tracker.local_seid);
-            a2dp_source_release_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
+        case 'C':
+            printf("Disconnect\n");
+            a2dp_source_disconnect(media_tracker.a2dp_cid);
             break;
         default:
             show_usage();
