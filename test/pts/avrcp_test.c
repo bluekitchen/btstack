@@ -41,21 +41,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack_config.h"
-#include "btstack_debug.h"
-#include "btstack_event.h"
-#include "btstack_memory.h"
-#include "btstack_run_loop.h"
-#include "gap.h"
-#include "hci.h"
-#include "hci_cmd.h"
-#include "hci_dump.h"
-#include "l2cap.h"
-#include "classic/avdtp_sink.h"
-#include "classic/a2dp_sink.h"
-#include "classic/btstack_sbc.h"
-#include "classic/avdtp_util.h"
-#include "classic/avrcp.h"
+#include "btstack.h"
+// #include "wav_util.h"
 
 #define AVRCP_BROWSING_ENABLED 0
 
@@ -64,8 +51,17 @@
 #endif
 
 #ifdef HAVE_BTSTACK_STDIN
+// mac 2011:    static const char * device_addr_string = "04:0C:CE:E4:85:D3";
+// pts:         
 static const char * device_addr_string = "00:1B:DC:08:0A:A5";
+// mac 2013:    static const char * device_addr_string = "84:38:35:65:d1:15";
+// phone 2013:  static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
+// minijambox:  static const char * device_addr_string = "00:21:3C:AC:F7:38";
+// head phones: static const char * device_addr_string = "00:18:09:28:50:18";
+// bt dongle:   static const char * device_addr_string = "00:15:83:5F:9D:46";
 #endif
+static bd_addr_t device_addr;
+
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static bd_addr_t device_addr;
@@ -76,9 +72,10 @@ static uint8_t sdp_avrcp_controller_service_buffer[200];
 static uint16_t avdtp_cid = 0;
 static avdtp_sep_t sep;
 static avdtp_stream_endpoint_t * local_stream_endpoint;
+static avrcp_context_t avrcp_controller_context;
+static avdtp_context_t a2dp_sink_context;
 
 static uint16_t avrcp_cid = 0;
-static uint16_t avrcp_con_handle = 0;
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
@@ -98,22 +95,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     switch (packet[2]){
                         case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
                             local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
-                            if (!avrcp_cid){
-                                avrcp_cid = local_cid;
-                            } else if (avrcp_cid != local_cid) {
+                            if (avrcp_cid != local_cid) {
                                 printf("Connection is not established, expected 0x%02X l2cap cid, received 0x%02X\n", avrcp_cid, local_cid);
                                 break;
                             }
 
                             status = avrcp_subevent_connection_established_get_status(packet);
-                            avrcp_con_handle = avrcp_subevent_connection_established_get_con_handle(packet);
                             avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
                             if (status != ERROR_CODE_SUCCESS){
                                 printf("AVRCP Connection failed: status 0x%02x\n", status);
                                 avrcp_cid = 0;
                                 break;
                             }
-                            printf("Channel successfully opened: %s, handle 0x%02x, local cid 0x%02x\n", bd_addr_to_str(event_addr), avrcp_con_handle, local_cid);
+                            printf("Channel successfully opened: %s, cid 0x%02x, local cid 0x%02x\n", bd_addr_to_str(event_addr), avrcp_cid, local_cid);
                             return;
                         }
                         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
@@ -126,7 +120,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
                     status = packet[5];
                     connection_handle = little_endian_read_16(packet, 3);
-                    if (connection_handle != avrcp_con_handle) return;
+                    if (connection_handle != avrcp_cid) return;
 
                     // avoid printing INTERIM status
                     if (status == AVRCP_CTYPE_RESPONSE_INTERIM) return;
@@ -275,7 +269,7 @@ static void stdin_process(char cmd){
     switch (cmd){
         case 'b':
             printf("Creating L2CAP Connection to %s, BLUETOOTH_PROTOCOL_AVDTP\n", device_addr_string);
-            avdtp_sink_connect(device_addr);
+            avdtp_sink_connect(device_addr, &avdtp_cid);
             break;
         case 'B':
             printf("Disconnect\n");
@@ -283,7 +277,7 @@ static void stdin_process(char cmd){
             break;
         case 'c':
             printf(" - Create AVRCP connection to addr %s.\n", bd_addr_to_str(device_addr));
-            avrcp_connect(device_addr, &avrcp_cid);
+            avrcp_connect(device_addr, &avrcp_controller_context, &avrcp_cid);
             printf(" assigned avrcp cid 0x%02x\n", avrcp_cid);
             break;
         case 'C':
@@ -483,7 +477,7 @@ int btstack_main(int argc, const char * argv[]){
 
     l2cap_init();
     // Initialize AVDTP Sink
-    avdtp_sink_init();
+    avdtp_sink_init(&a2dp_sink_context);
     avdtp_sink_register_packet_handler(&packet_handler);
 
     local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
@@ -492,7 +486,7 @@ int btstack_main(int argc, const char * argv[]){
     avdtp_sink_register_media_codec_category(local_stream_endpoint->sep.seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));
 
     // Initialize AVRCP COntroller
-    avrcp_init();
+    avrcp_controller_init();
     avrcp_register_packet_handler(&packet_handler);
     
     // Initialize SDP 
@@ -510,16 +504,13 @@ int btstack_main(int argc, const char * argv[]){
     gap_set_local_name("BTstack A2DP Sink Test");
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);
-    printf("sdp, gap done\n");
-
-    // turn on!
-    hci_power_control(HCI_POWER_ON);
 
 #ifdef HAVE_BTSTACK_STDIN
     // parse human readable Bluetooth address
     sscanf_bd_addr(device_addr_string, device_addr);
     btstack_stdin_setup(stdin_process);
 #endif
-
+    // turn on!
+    hci_power_control(HCI_POWER_ON);
     return 0;
 }

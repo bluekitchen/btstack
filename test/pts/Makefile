@@ -24,6 +24,7 @@ COMMON += \
 	wav_util.c 					\
 	sdp_util.c	                \
 	sdp_server.c		        \
+	sdp_client.c 				\
 	sm.c 						\
 	uECC.c 					    \
 

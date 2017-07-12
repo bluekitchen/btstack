@@ -89,6 +89,7 @@
 #include "classic/avdtp_initiator.h"
 #include "classic/avdtp_sink.h"
 #include "classic/avdtp_source.h"
+#include "classic/avdtp_util.h"
 #include "classic/avrcp.h"
 #include "classic/bnep.h"
 #include "classic/btstack_link_key_db.h"
