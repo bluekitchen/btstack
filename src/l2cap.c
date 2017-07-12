@@ -1771,14 +1771,19 @@ static void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t *
                 if (channel->con_handle != handle) continue;
                 // bail if ERTM was requested but is not supported
                 if ((channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) && ((connection->l2cap_state.extended_feature_mask & 0x08) == 0)){
-                    // channel closed
-                    channel->state = L2CAP_STATE_CLOSED;
-                    // map l2cap connection response result to BTstack status enumeration
-                    l2cap_emit_channel_opened(channel, L2CAP_CONNECTION_RESPONSE_RESULT_ERTM_NOT_SUPPORTD);
-                    // discard channel
-                    btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
-                    btstack_memory_l2cap_channel_free(channel);
-                    continue;
+                    if (channel->ertm_mandatory){
+                        // channel closed
+                        channel->state = L2CAP_STATE_CLOSED;
+                        // map l2cap connection response result to BTstack status enumeration
+                        l2cap_emit_channel_opened(channel, L2CAP_CONNECTION_RESPONSE_RESULT_ERTM_NOT_SUPPORTD);
+                        // discard channel
+                        btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
+                        btstack_memory_l2cap_channel_free(channel);
+                        continue;
+                    } else {
+                        // fallback to Basic mode
+                        channel->mode = L2CAP_CHANNEL_MODE_BASIC;
+                    }
                 }
                 // start connecting
                 if (channel->state == L2CAP_STATE_WAIT_OUTGOING_EXTENDED_FEATURES){
