@@ -1077,7 +1077,7 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
 }
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t channel_packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu, uint16_t * out_local_cid){
+uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t channel_packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu, int ertm_mandatory, uint16_t * out_local_cid){
     // limit MTU to the size of our outtgoing HCI buffer
     uint16_t local_mtu = btstack_min(mtu, l2cap_max_mtu());
 
@@ -1089,7 +1089,7 @@ uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t channel_packet_handle
     }
 
     channel->mode = L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION;
-    channel->ertm_mandatory = 1;
+    channel->ertm_mandatory = ertm_mandatory;
 
     // add to connections list
     btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) channel);
@@ -1447,7 +1447,7 @@ void l2cap_accept_connection(uint16_t local_cid){
 
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-void l2cap_accept_ertm_connection(uint16_t local_cid){
+void l2cap_accept_ertm_connection(uint16_t local_cid, int ertm_mandatory){
     log_info("L2CAP_ACCEPT_ERTM_CONNECTION local_cid 0x%x", local_cid);
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
@@ -1457,7 +1457,7 @@ void l2cap_accept_ertm_connection(uint16_t local_cid){
 
     // configure L2CAP ERTM
     channel->mode  = L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION;
-    channel->ertm_mandatory = 1;
+    channel->ertm_mandatory = ertm_mandatory;
 
     channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT;
 

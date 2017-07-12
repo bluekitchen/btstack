@@ -68,6 +68,7 @@ static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x07, 0x32, 0xef};;
 static uint16_t handle;
 static uint16_t local_cid;
 static int l2cap_ertm;
+static int l2cap_ertm_mandatory;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -110,7 +111,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             uint16_t l2cap_cid  = little_endian_read_16(packet, 12);
             if (l2cap_ertm){
                 printf("L2CAP Accepting incoming connection request in ERTM\n"); 
-                l2cap_accept_ertm_connection(l2cap_cid);
+                l2cap_accept_ertm_connection(l2cap_cid, l2cap_ertm_mandatory);
             } else {
                 printf("L2CAP Accepting incoming connection request in Basic Mode\n"); 
                 l2cap_accept_connection(l2cap_cid);
@@ -129,8 +130,9 @@ static void show_usage(void){
     printf("L2CAP Channel Mode %s\n", l2cap_ertm ? "Enahnced Retransmission" : "Basic");
     printf("c      - create connection to SDP at addr %s\n", bd_addr_to_str(remote));
     printf("s      - send data\n");
-    printf("e      - send echo request\n");
-    printf("E      - enable ERTM mode\n");
+    printf("p      - send echo request\n");
+    printf("e      - optional ERTM mode\n");
+    printf("E      - mandatory ERTM mode\n");
     printf("d      - disconnect\n");
     printf("t      - terminate ACL connection\n");
     printf("Ctrl-c - exit\n");
@@ -142,7 +144,7 @@ static void stdin_process(char buffer){
         case 'c':
             printf("Creating L2CAP Connection to %s, PSM SDP\n", bd_addr_to_str(remote));
             if (l2cap_ertm){
-                l2cap_create_ertm_channel(packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, 100, NULL);
+                l2cap_create_ertm_channel(packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, 100, l2cap_ertm_mandatory, NULL);
             } else {
                 l2cap_create_channel(packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, 100, NULL);
             }
@@ -151,19 +153,26 @@ static void stdin_process(char buffer){
             printf("Send L2CAP Data\n");
             l2cap_send(local_cid, (uint8_t *) "0123456789", 10);
             break;
-        case 'e':
-            printf("Send L2CAP ECHO Request\n");
-            l2cap_send_echo_request(handle, (uint8_t *)  "Hello World!", 13);
-            break;
         case 'd':
             printf("L2CAP Channel Closed\n");
             l2cap_disconnect(local_cid, 0);
             break;
-        case 'E':
-            printf("L2CAP Enhanced Retransmission Mode (ERTM) enabled\n");
+        case 'e':
+            printf("L2CAP Enhanced Retransmission Mode (ERTM) optional\n");
             l2cap_ertm = 1;
+            l2cap_ertm_mandatory = 0;
+            break;
+        case 'E':
+            printf("L2CAP Enhanced Retransmission Mode (ERTM) mandatory\n");
+            l2cap_ertm = 1;
+            l2cap_ertm_mandatory = 1;
+            break;
+        case 'p':
+            printf("Send L2CAP ECHO Request\n");
+            l2cap_send_echo_request(handle, (uint8_t *)  "Hello World!", 13);
             break;
         case 't':
+            printf("Disconnect ACL handle\n");
             gap_disconnect(handle);
             break;
         case '\n':

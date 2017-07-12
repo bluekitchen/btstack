@@ -266,10 +266,11 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t 
  * @param address
  * @param psm
  * @param mtu
+ * @param ertm_mandatory If not mandatory, the use of ERTM can be decided by the remote 
  * @param local_cid
  * @return status
  */
-uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu, uint16_t * out_local_cid);
+uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu, int ertm_mandatory, uint16_t * out_local_cid);
 
 /** 
  * @brief Disconnects L2CAP channel with given identifier. 
@@ -303,8 +304,9 @@ void l2cap_accept_connection(uint16_t local_cid);
 
 /** 
  * @brief Accepts incoming L2CAP connection for Enhanced Retransmission Mode
+ * @param ertm_mandatory If not mandatory, the use of ERTM can be decided by the remote 
  */
-void l2cap_accept_ertm_connection(uint16_t local_cid);
+void l2cap_accept_ertm_connection(uint16_t local_cid, int ertm_mandatory);
 
 /** 
  * @brief Deny incoming L2CAP connection.
