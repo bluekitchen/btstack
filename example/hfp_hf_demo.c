@@ -62,10 +62,6 @@
 
 #include "sco_demo_util.h"
 
-#ifdef HAVE_BTSTACK_STDIN
-#include "btstack_stdin.h"
-#endif
-
 uint8_t hfp_service_buffer[150];
 const uint8_t   rfcomm_channel_nr = 1;
 const char hfp_hf_service_name[] = "BTstack HFP HF Demo";

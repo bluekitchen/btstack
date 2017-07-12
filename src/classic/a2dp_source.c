@@ -459,10 +459,6 @@ uint8_t a2dp_source_start_stream(uint16_t avdtp_cid, uint8_t local_seid){
     return avdtp_start_stream(avdtp_cid, local_seid, &a2dp_source_context);
 }
 
-uint8_t a2dp_source_release_stream(uint16_t avdtp_cid, uint8_t local_seid){
-    return avdtp_stop_stream(avdtp_cid, local_seid, &a2dp_source_context);
-}
-
 uint8_t a2dp_source_pause_stream(uint16_t avdtp_cid, uint8_t local_seid){
     return avdtp_suspend_stream(avdtp_cid, local_seid, &a2dp_source_context);
 }
@@ -476,7 +472,6 @@ uint8_t a2dp_source_stream_endpoint_ready(uint16_t avdtp_cid, uint8_t local_seid
     if (!stream_endpoint->connection || stream_endpoint->connection->avdtp_cid != avdtp_cid) return 0;
     return (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING);
 }
-
 
 static void a2dp_source_setup_media_header(uint8_t * media_packet, int size, int *offset, uint8_t marker, uint16_t sequence_number){
     if (size < AVDTP_MEDIA_PAYLOAD_HEADER_SIZE){

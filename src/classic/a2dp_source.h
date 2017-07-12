@@ -96,13 +96,6 @@ uint8_t a2dp_source_start_stream(uint16_t avdtp_cid, uint8_t local_seid);
 uint8_t a2dp_source_pause_stream(uint16_t avdtp_cid, uint8_t local_seid);
 
 /**
- * @brief Close stream
- * @param avdtp_cid
- * @param seid
- */
-uint8_t a2dp_source_release_stream(uint16_t avdtp_cid, uint8_t local_seid);
-
-/**
  * @brief Disconnect from device with cid. 
  * @param avdtp_cid
  */
