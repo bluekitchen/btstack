@@ -97,19 +97,21 @@ typedef enum {
 } L2CAP_STATE;
 
 typedef enum {
-    L2CAP_CHANNEL_STATE_VAR_NONE                  = 0,
-    L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_REQ         = 1 << 0,
-    L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_RSP         = 1 << 1,
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ         = 1 << 2,
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP         = 1 << 3,
-    L2CAP_CHANNEL_STATE_VAR_SENT_CONF_REQ         = 1 << 4,
-    L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP         = 1 << 5,
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU     = 1 << 6,   // in CONF RSP, add MTU field
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_CONT    = 1 << 7,   // in CONF RSP, set CONTINUE flag
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID = 1 << 8,   // in CONF RSP, send UNKNOWN OPTIONS
-    L2CAP_CHANNEL_STATE_VAR_SEND_CMD_REJ_UNKNOWN  = 1 << 9,   // send CMD_REJ with reason unknown
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND   = 1 << 10,  // send Connection Respond with pending
-    L2CAP_CHANNEL_STATE_VAR_INCOMING              = 1 << 15,  // channel is incoming
+    L2CAP_CHANNEL_STATE_VAR_NONE                   = 0,
+    L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_REQ          = 1 << 0,
+    L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_RSP          = 1 << 1,
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ          = 1 << 2,
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP          = 1 << 3,
+    L2CAP_CHANNEL_STATE_VAR_SENT_CONF_REQ          = 1 << 4,
+    L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP          = 1 << 5,
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU      = 1 << 6,   // in CONF RSP, add MTU field
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_CONT     = 1 << 7,   // in CONF RSP, set CONTINUE flag
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID  = 1 << 8,   // in CONF RSP, send UNKNOWN OPTIONS
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED = 1 << 9,   // in CONF RSP, send Unacceptable Parameters (ERTM)
+    L2CAP_CHANNEL_STATE_VAR_BASIC_FALLBACK_TRIED   = 1 << 10,  // set when ERTM was requested but we want only Basic mode (ERM)
+    L2CAP_CHANNEL_STATE_VAR_SEND_CMD_REJ_UNKNOWN   = 1 << 11,  // send CMD_REJ with reason unknown
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND    = 1 << 12,  // send Connection Respond with pending
+    L2CAP_CHANNEL_STATE_VAR_INCOMING               = 1 << 15,  // channel is incoming
 } L2CAP_CHANNEL_STATE_VAR;
 
 // info regarding an actual connection

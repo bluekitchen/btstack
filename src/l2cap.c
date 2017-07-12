@@ -649,9 +649,9 @@ static uint16_t l2cap_setup_options(l2cap_channel_t * channel, uint8_t * config_
     int send_retransmission_and_flow_control_option = 0;
     int options_size;
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
-        send_retransmission_and_flow_control_option = 1;
-    }
+    // if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+    send_retransmission_and_flow_control_option = 1;
+    // }
 #endif
     if (send_retransmission_and_flow_control_option){
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
@@ -849,13 +849,21 @@ static void l2cap_run(void){
                         channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP);
                     }
                     if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID){
+                        channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP);
                         l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_UNKNOWN_OPTIONS, 0, NULL);
-                    } else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU){
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+                    } else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED){
+                        channelStateVarClearFlag(channel,L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED);
+                        channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP);
                         uint16_t options_size = l2cap_setup_options(channel, config_options);
-                        l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, 0, options_size, &config_options);
+                        l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_UNACCEPTABLE_PARAMETERS, options_size, &config_options);
+#endif
+                    } else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU){
                         channelStateVarClearFlag(channel,L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
+                        uint16_t options_size = l2cap_setup_options(channel, config_options);
+                        l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_SUCCESS, options_size, &config_options);
                     } else {
-                        l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, 0, 0, NULL);
+                        l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_SUCCESS, 0, NULL);
                     }
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_CONT);
                 }
@@ -1596,15 +1604,41 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
         // Retransmission and Flow Control Option
         if (option_type == 4 && length == 9){
-            if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION && channel->ertm_mandatory){
-                // ertm mandatory, but remote doens't offer ERTM -> disconnect
-                l2cap_channel_mode_t mode = (l2cap_channel_mode_t) command[pos];
-                if (mode != L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
-                    channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
-                }
-            } else {
-                // TODO store and evaluate configuration
-                channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
+            l2cap_channel_mode_t mode = (l2cap_channel_mode_t) command[pos];
+            switch(channel->mode){
+                case L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION:
+                    if (channel->ertm_mandatory){
+                        // ERTM mandatory, but remote doens't offer ERTM -> disconnect
+                        if (mode != L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+                            channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+                        } else {
+                            // Both sides selected ERTM
+                            // TODO store and evaluate configuration
+                            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
+                        }
+                    } else {
+                        // ERTM is optional                        
+                        channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
+                    }
+                    break;
+                case L2CAP_CHANNEL_MODE_BASIC:
+                    switch (mode){
+                        case L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION:
+                            // remote asks for ERTM, but we want basic mode. disconnect if this happens a second time
+                            if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_BASIC_FALLBACK_TRIED){
+                                channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+                            }
+                            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_BASIC_FALLBACK_TRIED);
+                            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED);
+                            break;
+                        default: // case L2CAP_CHANNEL_MODE_BASIC:
+                            // TODO store and evaluate configuration
+                            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
+                            break;
+                    }
+                    break;
+                default:
+                    break;
             }
         }        
 #endif        
@@ -1631,15 +1665,25 @@ static void l2cap_signaling_handle_configure_response(l2cap_channel_t *channel, 
 
         // Retransmission and Flow Control Option
         if (option_type == 4 && length == 9){
-            if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
-                if (channel->ertm_mandatory){
-                    //
-                } else {
-                    // On 'Reject - Unacceptable Parameters', fall back to BASIC mode
-                    if (result == 1){
-                        channel->mode = L2CAP_CHANNEL_MODE_BASIC;
+            switch (channel->mode){
+                case L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION:
+                    if (channel->ertm_mandatory){
+                        // ??
+                    } else {
+                        // On 'Reject - Unacceptable Parameters' to our optional ERTM request, fall back to BASIC mode
+                        if (result == L2CAP_CONF_RESULT_UNACCEPTABLE_PARAMETERS){
+                            channel->mode = L2CAP_CHANNEL_MODE_BASIC;
+                        }
                     }
-                }
+                    break;
+                case L2CAP_CHANNEL_MODE_BASIC:
+                    if (result == L2CAP_CONF_RESULT_UNACCEPTABLE_PARAMETERS){
+                        // On 'Reject - Unacceptable Parameters' to our Basic mode request, disconnect
+                        channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+                    }
+                    break;
+                default:
+                    break;
             }
         }
 
