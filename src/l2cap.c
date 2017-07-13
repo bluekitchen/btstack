@@ -1052,17 +1052,13 @@ static void l2cap_handle_connection_complete(hci_con_handle_t con_handle, l2cap_
 
 static void l2cap_ready_to_connect(l2cap_channel_t * channel){
 
-    
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-    // TODO: we assume outgoing connection
-    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
-        // get hci_connection
-        hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
-        if (connection->l2cap_state.information_state == L2CAP_INFORMATION_STATE_IDLE){
-            connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;        
-            channel->state = L2CAP_STATE_WAIT_OUTGOING_EXTENDED_FEATURES;
-            return;
-        }
+    // assumption: outgoing connection
+    hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
+    if (connection->l2cap_state.information_state == L2CAP_INFORMATION_STATE_IDLE){
+        connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;        
+        channel->state = L2CAP_STATE_WAIT_OUTGOING_EXTENDED_FEATURES;
+        return;
     }
 #endif
 
@@ -2314,6 +2310,44 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             // Find channel for this channel_id and connection handle
             l2cap_channel = l2cap_get_channel_for_local_cid(channel_id);
             if (l2cap_channel) {
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+                if (l2cap_channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+
+                    // verify FCS
+                    uint16_t fcs_calculated = crc16_calc(&packet[4], size - (4+2));
+                    uint16_t fcs_packet     = little_endian_read_16(packet, size-2);
+                    log_info("Packet FCS 0x%04x, calculated FCS 0x%04x", fcs_packet, fcs_calculated);
+                    if (fcs_calculated != fcs_packet){
+                        log_error("FCS mismatch! Packet 0x%04x, calculated 0x%04x", fcs_packet, fcs_calculated);
+                        // TODO: trigger retransmission or something like that
+                        break;
+                    }
+
+                    // switch on packet type
+                    uint16_t control = little_endian_read_16(packet, COMPLETE_L2CAP_HEADER);
+                    if (control & 1){
+                        log_info("S-Frame not not implemented yet");
+                        // S-Frame
+                        break;
+                    } else {
+                        // I-Frame
+                        // get control
+                        l2cap_segmentation_and_reassembly_t sar = (l2cap_segmentation_and_reassembly_t) (control >> 14);
+                        log_info("Control: 0x%04x, SAR type %u", control, (int) sar);
+                        switch (sar){
+                            case L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU:
+                                l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER+2], size-(COMPLETE_L2CAP_HEADER+2+2));
+                                break;
+                            case L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU:
+                            case L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU:
+                            case L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU:
+                                log_info("SAR type %u not implemented yet", (int) sar);
+                                break;
+                            }
+                    }
+                    break;
+                }
+#endif                
                 l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
             }
 #endif
