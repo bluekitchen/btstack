@@ -2366,15 +2366,39 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                         // I-Frame
                         // get control
                         l2cap_segmentation_and_reassembly_t sar = (l2cap_segmentation_and_reassembly_t) (control >> 14);
-                        log_info("Control: 0x%04x, SAR type %u", control, (int) sar);
+                        log_info("Control: 0x%04x, SAR type %u, pos %u", control, (int) sar, l2cap_channel->rx_packets_state->pos);
+                        uint16_t sdu_length;
+                        uint16_t segment_length;
+                        uint16_t payload_offset;
                         switch (sar){
                             case L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU:
-                                l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER+2], size-(COMPLETE_L2CAP_HEADER+2+2));
+                                payload_offset = COMPLETE_L2CAP_HEADER+2;
+                                segment_length = payload_offset-2;
+                                l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER+2], segment_length);
                                 break;
                             case L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU:
+                                // TODO: use current packet
+                                // TODO: check if reassembly started
+                                // TODO: check len against local mtu
+                                sdu_length = little_endian_read_16(packet, COMPLETE_L2CAP_HEADER+2);
+                                payload_offset = COMPLETE_L2CAP_HEADER+4;
+                                segment_length = size - payload_offset-2;
+                                memcpy(&l2cap_channel->rx_packets_data[0], &packet[payload_offset], segment_length);
+                                l2cap_channel->rx_packets_state->sdu_length = sdu_length;
+                                l2cap_channel->rx_packets_state->pos = segment_length;
+                                break;
                             case L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU:
+                                payload_offset = COMPLETE_L2CAP_HEADER+2;
+                                segment_length = size - payload_offset-2;
+                                memcpy(&l2cap_channel->rx_packets_data[l2cap_channel->rx_packets_state->pos], &packet[payload_offset], segment_length);
+                                l2cap_channel->rx_packets_state->pos += segment_length;
+                                l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, l2cap_channel->rx_packets_data, l2cap_channel->rx_packets_state[0].pos);
+                                break; 
                             case L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU:
-                                log_info("SAR type %u not implemented yet", (int) sar);
+                                payload_offset = COMPLETE_L2CAP_HEADER+2;
+                                segment_length = size - payload_offset-2;
+                                memcpy(&l2cap_channel->rx_packets_data[l2cap_channel->rx_packets_state->pos], &packet[payload_offset], segment_length);
+                                l2cap_channel->rx_packets_state->pos += segment_length;
                                 break;
                             }
                     }
