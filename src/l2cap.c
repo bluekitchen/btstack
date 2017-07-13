@@ -657,11 +657,11 @@ static uint16_t l2cap_setup_options_ertm(l2cap_channel_t * channel, uint8_t * co
     config_options[0] = 0x04;   // RETRANSMISSION AND FLOW CONTROL OPTION
     config_options[1] = 9;      // length
     config_options[2] = (uint8_t) channel->mode;
-    config_options[3] = 1;      // TxWindows size
-    config_options[4] = 1;      // max retransmit
-    little_endian_store_16( config_options, 5, 100); // Retransmission timeout: 100 ms
-    little_endian_store_16( config_options, 7, 300); // Monitor timeout: 300 ms
-    little_endian_store_16( config_options, 9, channel->local_mtu); // Max PDU size // TODO: use real MTU
+    config_options[3] = channel->num_rx_buffers;    // == TxWindows size
+    config_options[4] = channel->max_transmit;
+    little_endian_store_16( config_options, 5, channel->retransmission_timeout_ms); 
+    little_endian_store_16( config_options, 7, channel->monitor_timeout_ms);
+    little_endian_store_16( config_options, 9, channel->local_mtu);
     return 11;
 }
 #endif
@@ -1167,17 +1167,36 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
 }
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+
+static void l2cap_ertm_configure_channel(l2cap_channel_t * channel, int ertm_mandatory, uint8_t max_transmit,
+    uint16_t retransmission_timeout_ms, uint16_t monitor_timeout_ms, uint8_t num_tx_buffers, uint8_t num_rx_buffers, uint8_t * buffer, uint32_t size){
+
+    channel->mode  = L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION;
+    channel->ertm_mandatory = ertm_mandatory;
+    channel->max_transmit = max_transmit;
+    channel->retransmission_timeout_ms = retransmission_timeout_ms;
+    channel->monitor_timeout_ms = monitor_timeout_ms;
+    channel->num_rx_buffers = num_rx_buffers;
+    channel->num_tx_buffers = num_tx_buffers;
+
+    // TODO: align buffer pointer
+    uint32_t pos = 0;
+    channel->rx_packets_state = (l2cap_ertm_rx_packet_state_t *) &buffer[pos];
+    pos += num_rx_buffers * sizeof(l2cap_ertm_rx_packet_state_t);
+    channel->tx_packets_state = (l2cap_ertm_tx_packet_state_t *) &buffer[pos];
+    pos += num_tx_buffers * sizeof(l2cap_ertm_tx_packet_state_t);
+    // calculate MTU
+    channel->local_mtu = (size - pos) / (num_rx_buffers + num_tx_buffers);
+    log_info("Local ERTM MTU: %u", channel->local_mtu);
+    channel->rx_packets_data = &buffer[pos];
+    pos += num_rx_buffers * channel->local_mtu;
+    channel->tx_packets_data = &buffer[pos];
+    log_info("RX packets %p, TX packets %p", channel->rx_packets_data, channel->tx_packets_data);
+}
+
 uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, 
     int ertm_mandatory, uint8_t max_transmit, uint16_t retransmission_timeout_ms, uint16_t monitor_timeout_ms,
     uint8_t num_tx_buffers, uint8_t num_rx_buffers, uint8_t * buffer, uint32_t size, uint16_t * out_local_cid){
-
-    UNUSED(max_transmit);
-    UNUSED(retransmission_timeout_ms);
-    UNUSED(monitor_timeout_ms);
-    UNUSED(num_rx_buffers);
-    UNUSED(num_tx_buffers);
-    UNUSED(buffer);
-    UNUSED(size);
 
     // limit MTU to the size of our outtgoing HCI buffer
     uint16_t local_mtu = l2cap_max_mtu();
@@ -1189,8 +1208,9 @@ uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_ad
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
 
-    channel->mode = L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION;
-    channel->ertm_mandatory = ertm_mandatory;
+    // configure ERTM
+    l2cap_ertm_configure_channel(channel, ertm_mandatory, max_transmit, retransmission_timeout_ms,
+        monitor_timeout_ms, num_tx_buffers, num_rx_buffers, buffer, size);
 
     // add to connections list
     btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) channel);
@@ -1558,14 +1578,6 @@ void l2cap_accept_connection(uint16_t local_cid){
 void l2cap_accept_ertm_connection(uint16_t local_cid, int ertm_mandatory, uint8_t max_transmit,
     uint16_t retransmission_timeout_ms, uint16_t monitor_timeout_ms, uint8_t num_tx_buffers, uint8_t num_rx_buffers, uint8_t * buffer, uint32_t size){
 
-    UNUSED(max_transmit);
-    UNUSED(retransmission_timeout_ms);
-    UNUSED(monitor_timeout_ms);
-    UNUSED(num_rx_buffers);
-    UNUSED(num_tx_buffers);
-    UNUSED(buffer);
-    UNUSED(size);
-
     log_info("L2CAP_ACCEPT_ERTM_CONNECTION local_cid 0x%x", local_cid);
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
@@ -1574,9 +1586,9 @@ void l2cap_accept_ertm_connection(uint16_t local_cid, int ertm_mandatory, uint8_
     }
 
     // configure L2CAP ERTM
-    channel->mode  = L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION;
-    channel->ertm_mandatory = ertm_mandatory;
+    l2cap_ertm_configure_channel(channel, ertm_mandatory, max_transmit, retransmission_timeout_ms, monitor_timeout_ms, num_tx_buffers, num_rx_buffers, buffer, size);
 
+    // continue
     channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT;
 
     // process

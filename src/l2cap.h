@@ -115,6 +115,17 @@ typedef enum {
     L2CAP_CHANNEL_STATE_VAR_INCOMING               = 1 << 15,  // channel is incoming
 } L2CAP_CHANNEL_STATE_VAR;
 
+typedef struct {
+    uint8_t tx_seq;
+    uint16_t pos;
+    uint16_t sdu_length;
+} l2cap_ertm_rx_packet_state_t;
+
+typedef struct {
+    uint8_t tx_seq;
+} l2cap_ertm_tx_packet_state_t;
+
+
 // info regarding an actual connection
 typedef struct {
     // linked list - assert: first field
@@ -184,11 +195,36 @@ typedef struct {
     // l2cap channel mode: basic or enhanced retransmission mode
     l2cap_channel_mode_t mode;
     
+    // timer config
+    uint16_t retransmission_timeout_ms;
+    uint16_t monitor_timeout_ms;
+
+    // max transmit
+    uint8_t max_transmit;
+    
     // if ertm is not mandatory, allow fallback to L2CAP Basic Mode
     uint8_t ertm_mandatory;
 
     // next seq nr used for sending
     uint8_t next_tx_seq;
+
+    // max um out-of-order packets // tx_window
+    uint8_t num_rx_buffers;
+
+    // max num of unacknowledged outgoing packets
+    uint8_t num_tx_buffers;
+
+    // re-assembly state
+    l2cap_ertm_rx_packet_state_t * rx_packets_state;
+
+    // retransmission state
+    l2cap_ertm_tx_packet_state_t * tx_packets_state;
+
+    // data, each of size local_mtu
+    uint8_t * rx_packets_data;
+
+    // data, each of size local_mtu
+    uint8_t * tx_packets_data;
 #endif    
 } l2cap_channel_t;
 
@@ -219,7 +255,7 @@ typedef struct l2cap_signaling_response {
     uint16_t cid;  // source cid for CONNECTION REQUEST
     uint16_t data; // infoType for INFORMATION REQUEST, result for CONNECTION REQUEST and COMMAND UNKNOWN
 } l2cap_signaling_response_t;
-    
+
 
 void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id);
 int  l2cap_can_send_fixed_channel_packet_now(hci_con_handle_t con_handle, uint16_t channel_id);
