@@ -77,124 +77,137 @@ static avdtp_context_t a2dp_sink_context;
 static uint16_t avrcp_cid = 0;
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    if (packet_type != HCI_EVENT_PACKET) return;
     UNUSED(channel);
     UNUSED(size);
     bd_addr_t event_addr;
     uint16_t local_cid;
-    uint16_t connection_handle = 0;
     uint8_t  status = 0xFF;
-    switch (packet_type) {
-        case HCI_EVENT_PACKET:
-            switch (hci_event_packet_get_type(packet)) {
-                
-                case HCI_EVENT_AVRCP_META:
-                    switch (packet[2]){
-                        case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
-                            local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
-                            if (avrcp_cid != local_cid) {
-                                printf("Connection is not established, expected 0x%02X l2cap cid, received 0x%02X\n", avrcp_cid, local_cid);
-                                break;
-                            }
-
-                            status = avrcp_subevent_connection_established_get_status(packet);
-                            avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
-                            if (status != ERROR_CODE_SUCCESS){
-                                printf("AVRCP Connection failed: status 0x%02x\n", status);
-                                avrcp_cid = 0;
-                                break;
-                            }
-                            printf("Channel successfully opened: %s, cid 0x%02x, local cid 0x%02x\n", bd_addr_to_str(event_addr), avrcp_cid, local_cid);
-                            return;
-                        }
-                        case AVRCP_SUBEVENT_CONNECTION_RELEASED:
-                            printf("Channel released: avrcp_cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
-                            avrcp_cid = 0;
-                            return;
-                        default:
-                            break;
+    
+    switch (hci_event_packet_get_type(packet)) {   
+        case HCI_EVENT_AVDTP_META:
+            switch (packet[2]){
+                case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
+                    avdtp_cid = avdtp_subevent_signaling_connection_established_get_avdtp_cid(packet);
+                    status    = avdtp_subevent_signaling_connection_established_get_status(packet);
+                    if (status != ERROR_CODE_SUCCESS){
+                        printf("AVDTP connection establishment failed: status 0x%02x.\n", status);
+                        break;    
                     }
-
-                    status = packet[5];
-                    connection_handle = little_endian_read_16(packet, 3);
-                    if (connection_handle != avrcp_cid) return;
-
-                    // avoid printing INTERIM status
-                    if (status == AVRCP_CTYPE_RESPONSE_INTERIM) return;
-                            
-                    printf("AVRCP: command status: %s, ", avrcp_ctype2str(status));
-                    switch (packet[2]){
-                        case AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED:
-                            printf("notification, playback status changed %s\n", avrcp_play_status2str(avrcp_subevent_notification_playback_status_changed_get_play_status(packet)));
-                            return;
-                        case AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED:
-                            printf("notification, playing content changed\n");
-                            return;
-                        case AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED:
-                            printf("notification track changed\n");
-                            return;
-                        case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
-                            printf("notification absolute volume changed %d\n", avrcp_subevent_notification_volume_changed_get_absolute_volume(packet));
-                            return;
-                        case AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED:
-                            printf("notification changed\n");
-                            return; 
-                        case AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE:{
-                            uint8_t shuffle_mode = avrcp_subevent_shuffle_and_repeat_mode_get_shuffle_mode(packet);
-                            uint8_t repeat_mode  = avrcp_subevent_shuffle_and_repeat_mode_get_repeat_mode(packet);
-                            printf("%s, %s\n", avrcp_shuffle2str(shuffle_mode), avrcp_repeat2str(repeat_mode));
-                            break;
-                        }
-                        case AVRCP_SUBEVENT_NOW_PLAYING_INFO:{
-                            uint8_t value[100];
-                            printf("now playing: \n");
-                            if (avrcp_subevent_now_playing_info_get_title_len(packet) > 0){
-                                memcpy(value, avrcp_subevent_now_playing_info_get_title(packet), avrcp_subevent_now_playing_info_get_title_len(packet));
-                                printf("    Title: %s\n", value);
-                            }    
-                            if (avrcp_subevent_now_playing_info_get_album_len(packet) > 0){
-                                memcpy(value, avrcp_subevent_now_playing_info_get_album(packet), avrcp_subevent_now_playing_info_get_album_len(packet));
-                                printf("    Album: %s\n", value);
-                            }
-                            if (avrcp_subevent_now_playing_info_get_artist_len(packet) > 0){
-                                memcpy(value, avrcp_subevent_now_playing_info_get_artist(packet), avrcp_subevent_now_playing_info_get_artist_len(packet));
-                                printf("    Artist: %s\n", value);
-                            }
-                            if (avrcp_subevent_now_playing_info_get_genre_len(packet) > 0){
-                                memcpy(value, avrcp_subevent_now_playing_info_get_genre(packet), avrcp_subevent_now_playing_info_get_genre_len(packet));
-                                printf("    Genre: %s\n", value);
-                            }
-                            printf("    Track: %d\n", avrcp_subevent_now_playing_info_get_track(packet));
-                            printf("    Total nr. tracks: %d\n", avrcp_subevent_now_playing_info_get_total_tracks(packet));
-                            printf("    Song length: %d ms\n", avrcp_subevent_now_playing_info_get_song_length(packet));
-                            break;
-                        }
-                        case AVRCP_SUBEVENT_PLAY_STATUS:
-                            printf("song length: %d ms, song position: %d ms, play status: %s\n", 
-                                avrcp_subevent_play_status_get_song_length(packet), 
-                                avrcp_subevent_play_status_get_song_position(packet),
-                                avrcp_play_status2str(avrcp_subevent_play_status_get_play_status(packet)));
-                            break;
-                        case AVRCP_SUBEVENT_OPERATION_COMPLETE:
-                            printf("operation done %s\n", avrcp_operation2str(avrcp_subevent_operation_complete_get_operation_id(packet)));
-                            break;
-                        case AVRCP_SUBEVENT_OPERATION_START:
-                            printf("operation start %s\n", avrcp_operation2str(avrcp_subevent_operation_complete_get_operation_id(packet)));
-                            break;
-                        case AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE:
-                            // response to set shuffle and repeat mode
-                            printf("\n");
-                            break;
-                        default:
-                            printf("Not implemented\n");
-                            break;
-                    }  
-                    break;   
+                    printf("AVDTP connection established: avdtp_cid 0x%02x.\n", avdtp_cid);
+                    break;
+                case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
+                    avdtp_cid = avdtp_subevent_signaling_connection_released_get_avdtp_cid(packet);
+                    printf("AVDTP connection released: avdtp_cid 0x%02x.\n", avdtp_cid);
+                    break;
+                default:
+                    printf("AVDTP event not parsed.\n");
+                    break; 
+            }
+            break;   
+          
+        case HCI_EVENT_AVRCP_META:
+            switch (packet[2]){
+                case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
+                    status = avrcp_subevent_connection_established_get_status(packet);
+                    avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
+                    if (status != ERROR_CODE_SUCCESS){
+                        printf("AVRCP connection establishment failed: status 0x%02x\n", status);
+                        avrcp_cid = 0;
+                        return;
+                    }
+                    local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
+                    if (avrcp_cid != 0 && avrcp_cid != local_cid) {
+                        printf("AVRCP connection establishment failed: expected avrcp_cid 0x%02X, received 0x%02X\n", avrcp_cid, local_cid);
+                        return;
+                    }
+                    avrcp_cid = local_cid;
+                    printf("AVRCP connection established: %s, avrcp_cid 0x%02x\n", bd_addr_to_str(event_addr), avrcp_cid);
+                    return;
+                }
+                case AVRCP_SUBEVENT_CONNECTION_RELEASED:
+                    printf("AVRCP connection released: avrcp_cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
+                    avrcp_cid = 0;
+                    return;
                 default:
                     break;
             }
-            break;
+
+            local_cid = little_endian_read_16(packet, 3);
+            if (local_cid != avrcp_cid) return;
+            // avoid printing INTERIM status
+            status = packet[5];
+            if (status == AVRCP_CTYPE_RESPONSE_INTERIM) return;
+            printf("AVRCP: command status: %s, ", avrcp_ctype2str(status));
+            
+            switch (packet[2]){
+                case AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED:
+                    printf("notification, playback status changed %s\n", avrcp_play_status2str(avrcp_subevent_notification_playback_status_changed_get_play_status(packet)));
+                    return;
+                case AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED:
+                    printf("notification, playing content changed\n");
+                    return;
+                case AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED:
+                    printf("notification track changed\n");
+                    return;
+                case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
+                    printf("notification absolute volume changed %d\n", avrcp_subevent_notification_volume_changed_get_absolute_volume(packet));
+                    return;
+                case AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED:
+                    printf("notification changed\n");
+                    return; 
+                case AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE:{
+                    uint8_t shuffle_mode = avrcp_subevent_shuffle_and_repeat_mode_get_shuffle_mode(packet);
+                    uint8_t repeat_mode  = avrcp_subevent_shuffle_and_repeat_mode_get_repeat_mode(packet);
+                    printf("%s, %s\n", avrcp_shuffle2str(shuffle_mode), avrcp_repeat2str(repeat_mode));
+                    break;
+                }
+                case AVRCP_SUBEVENT_NOW_PLAYING_INFO:{
+                    uint8_t value[100];
+                    printf("now playing: \n");
+                    if (avrcp_subevent_now_playing_info_get_title_len(packet) > 0){
+                        memcpy(value, avrcp_subevent_now_playing_info_get_title(packet), avrcp_subevent_now_playing_info_get_title_len(packet));
+                        printf("    Title: %s\n", value);
+                    }    
+                    if (avrcp_subevent_now_playing_info_get_album_len(packet) > 0){
+                        memcpy(value, avrcp_subevent_now_playing_info_get_album(packet), avrcp_subevent_now_playing_info_get_album_len(packet));
+                        printf("    Album: %s\n", value);
+                    }
+                    if (avrcp_subevent_now_playing_info_get_artist_len(packet) > 0){
+                        memcpy(value, avrcp_subevent_now_playing_info_get_artist(packet), avrcp_subevent_now_playing_info_get_artist_len(packet));
+                        printf("    Artist: %s\n", value);
+                    }
+                    if (avrcp_subevent_now_playing_info_get_genre_len(packet) > 0){
+                        memcpy(value, avrcp_subevent_now_playing_info_get_genre(packet), avrcp_subevent_now_playing_info_get_genre_len(packet));
+                        printf("    Genre: %s\n", value);
+                    }
+                    printf("    Track: %d\n", avrcp_subevent_now_playing_info_get_track(packet));
+                    printf("    Total nr. tracks: %d\n", avrcp_subevent_now_playing_info_get_total_tracks(packet));
+                    printf("    Song length: %d ms\n", avrcp_subevent_now_playing_info_get_song_length(packet));
+                    break;
+                }
+                case AVRCP_SUBEVENT_PLAY_STATUS:
+                    printf("song length: %d ms, song position: %d ms, play status: %s\n", 
+                        avrcp_subevent_play_status_get_song_length(packet), 
+                        avrcp_subevent_play_status_get_song_position(packet),
+                        avrcp_play_status2str(avrcp_subevent_play_status_get_play_status(packet)));
+                    break;
+                case AVRCP_SUBEVENT_OPERATION_COMPLETE:
+                    printf("operation done %s\n", avrcp_operation2str(avrcp_subevent_operation_complete_get_operation_id(packet)));
+                    break;
+                case AVRCP_SUBEVENT_OPERATION_START:
+                    printf("operation start %s\n", avrcp_operation2str(avrcp_subevent_operation_complete_get_operation_id(packet)));
+                    break;
+                case AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE:
+                    // response to set shuffle and repeat mode
+                    printf("\n");
+                    break;
+                default:
+                    printf("AVRCP event not parsed.\n");
+                    break;
+            }  
+            break;   
         default:
-            // other packet type
             break;
     }
 
@@ -264,19 +277,19 @@ static void stdin_process(char cmd){
     sep.seid = 1;
     switch (cmd){
         case 'b':
-            printf("Creating L2CAP Connection to %s, BLUETOOTH_PROTOCOL_AVDTP\n", device_addr_string);
+            printf("Establish AVDTP sink connection to %s\n", device_addr_string);
             avdtp_sink_connect(device_addr, &avdtp_cid);
             break;
         case 'B':
-            printf("Disconnect\n");
+            printf("Disconnect AVDTP sink\n");
             avdtp_sink_disconnect(avdtp_cid);
             break;
         case 'c':
-            printf(" - Create AVRCP connection to addr %s.\n", bd_addr_to_str(device_addr));
+            printf("Establish AVRCP connection to %s.\n", bd_addr_to_str(device_addr));
             avrcp_controller_connect(device_addr, &avrcp_cid);
             break;
         case 'C':
-            printf(" - Disconnect\n");
+            printf("Disconnect AVRCP\n");
             avrcp_disconnect(avrcp_cid);
             break;
 
@@ -284,171 +297,197 @@ static void stdin_process(char cmd){
         case '\r':
             break;
         case 'q': 
-            printf(" - get capabilities: supported events\n");
+            printf("AVRCP: get capabilities: supported events\n");
             avrcp_get_supported_events(avrcp_cid);
             break;
         case 'w':
-            printf(" - get unit info\n");
+            printf("AVRCP: get unit info\n");
             avrcp_unit_info(avrcp_cid);
             break;
         case 'r':
-            printf(" - get play status\n");
+            printf("AVRCP: get play status\n");
             avrcp_get_play_status(avrcp_cid);
             break;
         case 't':
-            printf(" - get now playing info\n");
+            printf("AVRCP: get now playing info\n");
             avrcp_get_now_playing_info(avrcp_cid);
             break;
         case '1':
-            printf(" - play\n");
+            printf("AVRCP: play\n");
             avrcp_play(avrcp_cid);
             break;
         case '2':
-            printf(" - stop\n");
+            printf("AVRCP: stop\n");
             avrcp_stop(avrcp_cid);
             break;
         case '3':
-            printf(" - pause\n");
+            printf("AVRCP: pause\n");
             avrcp_pause(avrcp_cid);
             break;
         case '4':
-            printf(" - fast forward\n");
+            printf("AVRCP: fast forward\n");
             avrcp_fast_forward(avrcp_cid);
             break;
         case '5':
-            printf(" - rewind\n");
+            printf("AVRCP: rewind\n");
             avrcp_rewind(avrcp_cid);
             break;
         case '6':
-            printf(" - forward\n");
+            printf("AVRCP: forward\n");
             avrcp_forward(avrcp_cid); 
             break;
         case '7':
-            printf(" - backward\n");
+            printf("AVRCP: backward\n");
             avrcp_backward(avrcp_cid);
             break;
         case '8':
-            printf(" - volume up\n");
+            printf("AVRCP: volume up\n");
             avrcp_volume_up(avrcp_cid);
             break;
         case '9':
-            printf(" - volume down\n");
+            printf("AVRCP: volume down\n");
             avrcp_volume_down(avrcp_cid);
             break;
         case '0':
-            printf(" - mute\n");
+            printf("AVRCP: mute\n");
             avrcp_mute(avrcp_cid);
             break;
         case 'R':
-            printf(" - absolute volume of 50 percent\n");
+            printf("AVRCP: absolute volume of 50 percent\n");
             avrcp_set_absolute_volume(avrcp_cid, 50);
             break;
         case 'u':
-            printf(" - skip\n");
+            printf("AVRCP: skip\n");
             avrcp_skip(avrcp_cid);
             break;
         case 'i':
-            printf(" - query repeat and shuffle mode\n");
+            printf("AVRCP: query repeat and shuffle mode\n");
             avrcp_query_shuffle_and_repeat_modes(avrcp_cid);
             break;
         case 'o':
-            printf(" - repeat single track\n");
+            printf("AVRCP: repeat single track\n");
             avrcp_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_SINGLE_TRACK);
             break;
         case 'x':
-            printf(" - repeat all tracks\n");
+            printf("AVRCP: repeat all tracks\n");
             avrcp_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_ALL_TRACKS);
             break;
         case 'X':
-            printf(" - disable repeat mode\n");
+            printf("AVRCP: disable repeat mode\n");
             avrcp_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_OFF);
             break;
         case 'z':
-            printf(" - shuffle all tracks\n");
+            printf("AVRCP: shuffle all tracks\n");
             avrcp_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_ALL_TRACKS);
             break;
         case 'Z':
-            printf(" - disable shuffle mode\n");
+            printf("AVRCP: disable shuffle mode\n");
             avrcp_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_OFF);
             break;
 
         case 'a':
+            printf("AVRCP: enable notification PLAYBACK_STATUS_CHANGED\n");
             avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
             break;
         case 's':
+            printf("AVRCP: enable notification TRACK_CHANGED\n");
             avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
             break;
         case 'd':
+            printf("AVRCP: enable notification TRACK_REACHED_END\n");
             avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END);
             break;
         case 'f':
+            printf("AVRCP: enable notification TRACK_REACHED_START\n");
             avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_START);
             break;
         case 'g':
+            printf("AVRCP: enable notification PLAYBACK_POS_CHANGED\n");
             avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED);
             break;
         case 'h':
+            printf("AVRCP: enable notification BATT_STATUS_CHANGED\n");
             avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED);
             break;
         case 'j':
+            printf("AVRCP: enable notification SYSTEM_STATUS_CHANGED\n");
             avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED);
             break;
         case 'k':
+            printf("AVRCP: enable notification PLAYER_APPLICATION_SETTING_CHANGED\n");
             avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED);
             break;
         case 'l':
+            printf("AVRCP: enable notification NOW_PLAYING_CONTENT_CHANGED\n");
             avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
             break;
         case 'm':
+            printf("AVRCP: enable notification AVAILABLE_PLAYERS_CHANGED\n");
             avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED);
             break;
         case 'n':
+            printf("AVRCP: enable notification ADDRESSED_PLAYER_CHANGED\n");
             avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED);
             break;
         case 'y':
+            printf("AVRCP: enable notification UIDS_CHANGED\n");
             avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED);
             break;
         case 'v':
+            printf("AVRCP: enable notification VOLUME_CHANGED\n");
             avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
             break;
 
         case 'A':
+            printf("AVRCP: disable notification PLAYBACK_STATUS_CHANGED\n");
             avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
             break;
         case 'S':
+            printf("AVRCP: disable notification TRACK_CHANGED\n");
             avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
             break;
         case 'D':
+            printf("AVRCP: disable notification TRACK_REACHED_END\n");
             avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END);
             break;
         case 'F':
+            printf("AVRCP: disable notification TRACK_REACHED_START\n");
             avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_START);
             break;
         case 'G':
+            printf("AVRCP: disable notification PLAYBACK_POS_CHANGED\n");
             avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED);
             break;
         case 'H':
+            printf("AVRCP: disable notification BATT_STATUS_CHANGED\n");
             avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED);
             break;
         case 'J':
+            printf("AVRCP: disable notification SYSTEM_STATUS_CHANGED\n");
             avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED);
             break;
         case 'K':
+            printf("AVRCP: disable notification PLAYER_APPLICATION_SETTING_CHANGED\n");
             avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED);
             break;
         case 'L':
+            printf("AVRCP: disable notification NOW_PLAYING_CONTENT_CHANGED\n");
             avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
             break;
         case 'M':
+            printf("AVRCP: disable notification AVAILABLE_PLAYERS_CHANGED\n");
             avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED);
             break;
         case 'N':
+            printf("AVRCP: disable notification ADDRESSED_PLAYER_CHANGED\n");
             avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED);
             break;
         case 'Y':
+            printf("AVRCP: disable notification UIDS_CHANGED\n");
             avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED);
             break;
         case 'V':
+            printf("AVRCP: disable notification VOLUME_CHANGED\n");
             avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
             break;
         default:

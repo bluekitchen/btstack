@@ -497,6 +497,7 @@ typedef struct {
     btstack_linked_list_t connections;
     btstack_linked_list_t stream_endpoints;
     uint16_t stream_endpoints_id_counter;
+    uint16_t initiator_transaction_id_counter;
     btstack_packet_handler_t avdtp_callback;
     btstack_packet_handler_t a2dp_callback;
     void (*handle_media_data)(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size);

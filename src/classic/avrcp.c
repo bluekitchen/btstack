@@ -79,8 +79,6 @@ Bit 8-15 = RFA
 The bits for supported categories are set to 1. Others are set to 0.
 */
 
-static uint16_t avrcp_cid_counter = 1;
-
 // TODO: merge with avdtp_packet_type_t
 typedef enum {
     AVRCP_SINGLE_PACKET= 0,
@@ -95,6 +93,7 @@ typedef enum {
 } avrcp_frame_type_t;
 
 static int record_id = -1;
+static uint16_t  avrcp_cid_counter = 0;
 static uint8_t   attribute_value[1000];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
@@ -704,10 +703,7 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                 break;                
             } 
             log_info("AVRCP Control PSM 0x%02x, Browsing PSM 0x%02x", sdp_query_context.avrcp_l2cap_psm, sdp_query_context.avrcp_browsing_l2cap_psm);
-
             sdp_query_context.connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
-            printf("sdp_query_context.packet_handler %p\n",sdp_query_context.avrcp_context->packet_handler);
-                                
             l2cap_create_channel(sdp_query_context.avrcp_context->packet_handler, sdp_query_context.connection->remote_addr, sdp_query_context.avrcp_l2cap_psm, l2cap_max_mtu(), NULL);
             break;
     }
@@ -1183,11 +1179,20 @@ static void avrcp_handle_can_send_now(avrcp_connection_t * connection){
     }
 }
 
+static uint16_t avdtp_get_next_avrcp_cid(){
+    avrcp_cid_counter++;
+    if (avrcp_cid_counter == 0){
+        avrcp_cid_counter = 1;
+    }
+    return avrcp_cid_counter;
+}
+
 static avrcp_connection_t * avrcp_create_connection(bd_addr_t remote_addr, avrcp_context_t * context){
     avrcp_connection_t * connection = btstack_memory_avrcp_connection_get();
     memset(connection, 0, sizeof(avrcp_connection_t));
     connection->state = AVCTP_CONNECTION_IDLE;
     connection->transaction_label = 0xFF;
+    connection->avrcp_cid = avdtp_get_next_avrcp_cid();
     memcpy(connection->remote_addr, remote_addr, 6);
     btstack_linked_list_add(&context->connections, (btstack_linked_item_t *) connection);
     return connection;
@@ -1196,6 +1201,7 @@ static avrcp_connection_t * avrcp_create_connection(bd_addr_t remote_addr, avrcp
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avrcp_context_t * context){
     bd_addr_t event_addr;
     uint16_t local_cid;
+    uint8_t  status;
     avrcp_connection_t * connection = NULL;
     
     switch (packet_type) {
@@ -1223,45 +1229,33 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     }
                     connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
                     connection->l2cap_signaling_cid = local_cid;
+                    log_info("L2CAP_EVENT_INCOMING_CONNECTION avrcp_cid 0x%02x, l2cap_signaling_cid 0x%02x", connection->avrcp_cid, connection->l2cap_signaling_cid);
                     l2cap_accept_connection(local_cid);
                     break;
                     
                 case L2CAP_EVENT_CHANNEL_OPENED:
                     l2cap_event_channel_opened_get_address(packet, event_addr);
-
+                    status = l2cap_event_channel_opened_get_status(packet);
+                    local_cid = l2cap_event_channel_opened_get_local_cid(packet);
+                    
                     connection = get_avrcp_connection_for_bd_addr(event_addr, context);
-                    local_cid  = l2cap_event_channel_opened_get_local_cid(packet);
-                    
                     if (!connection){
-                        // incoming connection
-                        connection = avrcp_create_connection(event_addr, context);
-                        if (!connection) {
-                            log_error("Failed to alloc connection structure");
-                            l2cap_disconnect(local_cid, 0); // reason isn't used
-                            break;
-                        }
-                        connection->l2cap_signaling_cid = local_cid;
-                        connection->avrcp_cid = avrcp_cid_counter++;
+                        log_error("Failed to alloc AVRCP connection structure");
+                        avrcp_emit_connection_established(avrcp_callback, connection->avrcp_cid, event_addr, BTSTACK_MEMORY_ALLOC_FAILED);
+                        l2cap_disconnect(local_cid, 0); // reason isn't used
+                        break;
                     }
-                    
-                    if (l2cap_event_channel_opened_get_status(packet)){
-                        log_info("L2CAP connection to connection %s failed. status code 0x%02x", 
-                            bd_addr_to_str(event_addr), l2cap_event_channel_opened_get_status(packet));
-                        if (connection->state == AVCTP_CONNECTION_W4_L2CAP_CONNECTED && connection->l2cap_signaling_cid == local_cid){
-                            avrcp_emit_connection_established(avrcp_callback, connection->avrcp_cid, event_addr, l2cap_event_channel_opened_get_status(packet));
-                        }
-                        // free connection
+                    if (status != ERROR_CODE_SUCCESS){
+                        log_info("L2CAP connection to connection %s failed. status code 0x%02x", bd_addr_to_str(event_addr), status);
+                        avrcp_emit_connection_established(avrcp_callback, connection->avrcp_cid, event_addr, status);
                         btstack_linked_list_remove(&context->connections, (btstack_linked_item_t*) connection); 
                         btstack_memory_avrcp_connection_free(connection);
                         break;
                     }
                     connection->l2cap_signaling_cid = local_cid;
-                    log_info("L2CAP_EVENT_CHANNEL_OPENED avrcp_cid 0x%02x, l2cap_signaling_cid 0x%02x",connection->avrcp_cid, connection->l2cap_signaling_cid);
+                    log_info("L2CAP_EVENT_CHANNEL_OPENED avrcp_cid 0x%02x, l2cap_signaling_cid 0x%02x", connection->avrcp_cid, connection->l2cap_signaling_cid);
                     connection->state = AVCTP_CONNECTION_OPENED;
                     avrcp_emit_connection_established(avrcp_callback, connection->avrcp_cid, event_addr, ERROR_CODE_SUCCESS);
-
-                    // hack 
-                    // l2cap_create_channel(avrcp_controller_context.packet_handler, connection->remote_addr, 0x001b, l2cap_max_mtu(), NULL);
                     break;
                 
                 case L2CAP_EVENT_CAN_SEND_NOW:
@@ -1275,7 +1269,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     local_cid = l2cap_event_channel_closed_get_local_cid(packet);
                     connection = get_avrcp_connection_for_l2cap_signaling_cid(local_cid, context);
                     if (connection){
-                        avrcp_emit_connection_closed(avrcp_callback, local_cid);
+                        avrcp_emit_connection_closed(avrcp_callback, connection->avrcp_cid);
                         // free connection
                         btstack_linked_list_remove(&context->connections, (btstack_linked_item_t*) connection); 
                         btstack_memory_avrcp_connection_free(connection);
@@ -1326,9 +1320,7 @@ uint8_t avrcp_connect(bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * a
 
     if (!avrcp_cid) return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
 
-    *avrcp_cid = avrcp_cid_counter++;
-    connection->avrcp_cid = *avrcp_cid;
-    
+    *avrcp_cid = connection->avrcp_cid; 
     connection->state = AVCTP_SIGNALING_W4_SDP_QUERY_COMPLETE;
     sdp_query_context.avrcp_context = context;
     sdp_query_context.avrcp_l2cap_psm = 0;
