@@ -47,6 +47,8 @@
 #include "avdtp.h"
 #include "avdtp_util.h"
 
+#define MAX_MEDIA_CODEC_INFORMATION_LENGTH 100
+
 void avdtp_initialize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint){
     stream_endpoint->connection = NULL;
     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;
@@ -752,7 +754,7 @@ void avdtp_signaling_emit_media_codec_sbc_reconfiguration(btstack_packet_handler
 }
 
 static inline void avdtp_signaling_emit_media_codec_other(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, adtvp_media_codec_capabilities_t media_codec, uint8_t reconfigure){
-    uint8_t event[112];
+    uint8_t event[MAX_MEDIA_CODEC_INFORMATION_LENGTH + 13];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
     event[pos++] = sizeof(event) - 2;
@@ -762,18 +764,15 @@ static inline void avdtp_signaling_emit_media_codec_other(btstack_packet_handler
     event[pos++] = local_seid;
     event[pos++] = remote_seid;
     event[pos++] = reconfigure;
-    
     event[pos++] = media_codec.media_type;
     little_endian_store_16(event, pos, media_codec.media_codec_type);
     pos += 2;
     little_endian_store_16(event, pos, media_codec.media_codec_information_len);
     pos += 2;
 
-    if (media_codec.media_codec_information_len < 100){
-        memcpy(event+pos, media_codec.media_codec_information, media_codec.media_codec_information_len);
-    } else {
-        memcpy(event+pos, media_codec.media_codec_information, 100);
-    }
+    int media_codec_len = btstack_min(MAX_MEDIA_CODEC_INFORMATION_LENGTH, media_codec.media_codec_information_len);
+    memcpy(event+pos, media_codec.media_codec_information, media_codec_len);
+    
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 

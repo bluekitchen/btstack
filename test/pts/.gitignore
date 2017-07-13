@@ -1,4 +1,6 @@
 ancs_client
+avdtp_sink.sbc
+avdtp_sink.wav
 avdtp_sink_test
 avdtp_source_test
 avrcp_test

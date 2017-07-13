@@ -223,7 +223,7 @@ static inline void a2dp_signaling_emit_media_codec_sbc(btstack_packet_handler_t 
 
 static inline void avdtp_signaling_emit_media_codec_other(btstack_packet_handler_t callback, uint8_t * event, uint16_t event_size){
     if (!callback) return;
-    if (event_size < 112) return;
+    if (event_size < 113) return;
     event[0] = HCI_EVENT_A2DP_META;
     event[2] = A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION;
 }

@@ -215,11 +215,11 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     
                     if (stream_endpoint->remote_sep_index != AVDTP_INVALID_SEP_INDEX){
                          if (stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].in_use){
-                            if (stream_endpoint->state < AVDTP_STREAM_ENDPOINT_OPENED){
-                                stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index] = sep;
-                                log_info("    ACP: update seid %d, to %p", stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
-                                break;
-                            } 
+                            // if (stream_endpoint->state < AVDTP_STREAM_ENDPOINT_OPENED){
+                            //     stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index] = sep;
+                            //     log_info("    ACP: update seid %d, to %p", stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
+                            //     break;
+                            // } 
                             // reject if already configured
                             connection->error_code = SEP_IN_USE;
                             // find first registered category and fire the error
@@ -261,14 +261,11 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                 case AVDTP_SI_RECONFIGURE:{
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE;
                     connection->reject_service_category = 0;
-                    
+
                     avdtp_sep_t sep;
                     sep.seid = connection->local_seid;
                     log_info("    ACP: AVDTP_ACCEPTOR_W2_ANSWER_RECONFIGURE seid %d", sep.seid);
-                    // log_info_hexdump(connection->signaling_packet.command, packet_size);
-
                     sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, connection->signaling_packet.command+offset, packet_size-offset);
-                    
                     if (connection->error_code){
                         // fire configuration parsing errors 
                         connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
@@ -277,7 +274,6 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     }
 
                     // find sep or raise error
-
                     stream_endpoint->remote_sep_index = avdtp_find_remote_sep(stream_endpoint->connection, sep.seid);
                     if (stream_endpoint->remote_sep_index == AVDTP_INVALID_SEP_INDEX){
                         log_info("    ACP: REJECT AVDTP_SI_RECONFIGURE, BAD_ACP_SEID");
@@ -292,10 +288,10 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     if (get_bit16(sep.configured_service_categories, AVDTP_MEDIA_CODEC)){
                         switch (sep.capabilities.media_codec.media_codec_type){
                             case AVDTP_CODEC_SBC: 
-                                avdtp_signaling_emit_media_codec_sbc_reconfiguration(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), sep.capabilities.media_codec);
+                                avdtp_signaling_emit_media_codec_sbc_reconfiguration(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), sep.configuration.media_codec);
                                 break;
                             default:
-                                avdtp_signaling_emit_media_codec_other_reconfiguration(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), sep.capabilities.media_codec);
+                                avdtp_signaling_emit_media_codec_other_reconfiguration(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), sep.configuration.media_codec);
                                 break;
                         }
                     }
