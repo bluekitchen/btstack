@@ -1422,8 +1422,15 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
                 switch (channel->state){
                     case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
                         if (actual_level >= required_level){
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+                            // we need to know if ERTM is supported before sending a config response
+                            hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
+                            connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;        
+                            channel->state = L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES;
+#else
                             channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
-                            l2cap_emit_incoming_connection(channel);                
+                            l2cap_emit_incoming_connection(channel);
+#endif
                         } else {
                             channel->reason = 0x0003; // security block
                             channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
@@ -1918,6 +1925,11 @@ static void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t *
                 // start connecting
                 if (channel->state == L2CAP_STATE_WAIT_OUTGOING_EXTENDED_FEATURES){
                     channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST;
+                }
+                // respond to connection request
+                if (channel->state == L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES){
+                    channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
+                    l2cap_emit_incoming_connection(channel);    
                 }
             }
             return;
