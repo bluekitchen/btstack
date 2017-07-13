@@ -16,7 +16,7 @@ CORE += \
 	le_device_db_fs.c \
 	main.c \
 	wav_util.c 					\
-	btstack_stdin.c \
+	btstack_stdin_posix.c \
 
 # TI-WL183x requires TIInit_11.8.32.c
 
