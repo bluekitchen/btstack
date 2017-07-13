@@ -80,49 +80,58 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     bd_addr_t event_addr;
     uint16_t psm;
 
+    switch (packet_type){
+        case HCI_EVENT_PACKET:
+            switch (packet[0]) {
+                case BTSTACK_EVENT_STATE:
+                    // bt stack activated, get started 
+                    if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
+                        printf("BTstack L2CAP Test Ready\n");
+                        show_usage();
+                    }
+                    break;
+                case HCI_EVENT_CONNECTION_COMPLETE:
+                    handle = hci_event_connection_complete_get_connection_handle(packet);
+                    break;
+
+                case L2CAP_EVENT_CHANNEL_OPENED:
+                    // inform about new l2cap connection
+                    reverse_bd_addr(&packet[3], event_addr);
+                    psm = little_endian_read_16(packet, 11); 
+                    local_cid = little_endian_read_16(packet, 13); 
+                    handle = little_endian_read_16(packet, 9);
+                    if (packet[2] == 0) {
+                        printf("Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
+                               bd_addr_to_str(event_addr), handle, psm, local_cid,  little_endian_read_16(packet, 15));
+                    } else {
+                        printf("L2CAP connection to device %s failed. status code %u\n", bd_addr_to_str(event_addr), packet[2]);
+                    }
+                    break;
+
+                case L2CAP_EVENT_INCOMING_CONNECTION: {
+                    uint16_t l2cap_cid  = little_endian_read_16(packet, 12);
+                    if (l2cap_ertm){
+                        printf("L2CAP Accepting incoming connection request in ERTM\n"); 
+                        l2cap_accept_ertm_connection(l2cap_cid, l2cap_ertm_mandatory);
+                    } else {
+                        printf("L2CAP Accepting incoming connection request in Basic Mode\n"); 
+                        l2cap_accept_connection(l2cap_cid);
+                    }
+                    break;
+                }
+                default:
+                    break;
+            }
+            break;
+
+        case L2CAP_DATA_PACKET:
+            printf_hexdump(packet, size);
+            break;
+
+    }
     if (packet_type != HCI_EVENT_PACKET) return;
 
-    switch (packet[0]) {
-        case BTSTACK_EVENT_STATE:
-            // bt stack activated, get started 
-            if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-                printf("BTstack L2CAP Test Ready\n");
-                show_usage();
-            }
-            break;
-        case HCI_EVENT_CONNECTION_COMPLETE:
-            handle = hci_event_connection_complete_get_connection_handle(packet);
-            break;
-        case L2CAP_EVENT_CHANNEL_OPENED:
-            // inform about new l2cap connection
-            reverse_bd_addr(&packet[3], event_addr);
-            psm = little_endian_read_16(packet, 11); 
-            local_cid = little_endian_read_16(packet, 13); 
-            handle = little_endian_read_16(packet, 9);
-            if (packet[2] == 0) {
-                printf("Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
-                       bd_addr_to_str(event_addr), handle, psm, local_cid,  little_endian_read_16(packet, 15));
-            } else {
-                printf("L2CAP connection to device %s failed. status code %u\n", bd_addr_to_str(event_addr), packet[2]);
-            }
-            break;
 
-        case L2CAP_EVENT_INCOMING_CONNECTION: {
-            uint16_t l2cap_cid  = little_endian_read_16(packet, 12);
-            if (l2cap_ertm){
-                printf("L2CAP Accepting incoming connection request in ERTM\n"); 
-                l2cap_accept_ertm_connection(l2cap_cid, l2cap_ertm_mandatory);
-            } else {
-                printf("L2CAP Accepting incoming connection request in Basic Mode\n"); 
-                l2cap_accept_connection(l2cap_cid);
-            }
-            break;
-        }
-
-
-        default:
-            break;
-    }
 }
 
 static void show_usage(void){
