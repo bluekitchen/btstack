@@ -73,7 +73,8 @@ static uint8_t le_streamer_characteristic_uuid[16] = { 0x00, 0x00, 0xFF, 0x11, 0
 static gatt_client_service_t le_streamer_service;
 static gatt_client_characteristic_t le_streamer_characteristic;
 
-static gatt_client_notification_t notification_registration;
+static gatt_client_notification_t notification_listener;
+static int listener_registered;
 
 static gc_state_t state = TC_IDLE;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -148,7 +149,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         break;  
                     } 
                     // register handler for notifications
-                    gatt_client_listen_for_characteristic_value_updates(&notification_registration, handle_gatt_client_event, connection_handle, &le_streamer_characteristic);
+                    listener_registered = 1;
+                    gatt_client_listen_for_characteristic_value_updates(&notification_listener, handle_gatt_client_event, connection_handle, &le_streamer_characteristic);
                     // enable notifications
                     state = TC_W4_TEST_DATA;
                     printf("Start streaming - enable notify on test characteristic.\n");
@@ -179,6 +181,20 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     
 }
 
+// Either connect to remote specified on command line or start scan for device with "LE Streamer" in advertisement
+static void le_streamer_client_start(void){
+    if (cmdline_addr_found){
+        printf("Connect to %s\n", bd_addr_to_str(cmdline_addr));
+        state = TC_W4_CONNECT;
+        gap_connect(cmdline_addr, 0);
+    } else {
+        printf("Start scanning!\n");
+        state = TC_W4_SCAN_RESULT;
+        gap_set_scan_parameters(0,0x0030, 0x0030);
+        gap_start_scan();
+    }
+}
+
 static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -191,16 +207,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
-            if (cmdline_addr_found){
-                printf("Connect to %s\n", bd_addr_to_str(cmdline_addr));
-                state = TC_W4_CONNECT;
-                gap_connect(cmdline_addr, 0);
-                break;
-            }
-            printf("Start scanning!\n");
-            state = TC_W4_SCAN_RESULT;
-            gap_set_scan_parameters(0,0x0030, 0x0030);
-            gap_start_scan();
+            le_streamer_client_start();
             break;
         case GAP_EVENT_ADVERTISING_REPORT:
             if (state != TC_W4_SCAN_RESULT) return;
@@ -231,11 +238,17 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             gatt_client_discover_primary_services_by_uuid128(handle_gatt_client_event, connection_handle, le_streamer_service_uuid);
             break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
+            // unregister listener
+            if (listener_registered){
+                listener_registered = 0;
+                gatt_client_stop_listening_for_characteristic_value_updates(&notification_listener);
+            }
             if (cmdline_addr_found){
                 printf("Disconnected %s\n", bd_addr_to_str(cmdline_addr));
                 return;
             }
             printf("Disconnected %s\n", bd_addr_to_str(le_streamer_addr));
+            le_streamer_client_start();
             break;
         default:
             break;
