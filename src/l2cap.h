@@ -364,8 +364,9 @@ void l2cap_accept_connection(uint16_t local_cid);
  * @param num_rx_buffers Number of packets that can be received out of order (-> our tx_window size)
  * @param buffer to store out-of-order packets and unacknowledged outgoing packets with their tretransmission timers
  * @param size of buffer
+ * @return status
  */
-void l2cap_accept_ertm_connection(uint16_t local_cid, int ertm_mandatory, uint8_t max_transmit,
+uint8_t l2cap_accept_ertm_connection(uint16_t local_cid, int ertm_mandatory, uint8_t max_transmit,
     uint16_t retransmission_timeout_ms, uint16_t monitor_timeout_ms, uint8_t num_tx_buffers, uint8_t num_rx_buffers, uint8_t * buffer, uint32_t size);
 
 /** 
