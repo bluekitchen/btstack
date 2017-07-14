@@ -170,9 +170,7 @@ void btstack_run_loop_freertos_execute_code_on_main_thread_from_isr(void (*fn)(v
 /**
  * Execute run_loop
  */
-static void btstack_run_loop_freertos_task(void *pvParameter){
-    UNUSED(pvParameter);
-
+static void btstack_run_loop_freertos_execute(void) {
     log_debug("RL: execute");
 
 #ifdef HAVE_FREERTOS_TASK_NOTIFICATIONS
@@ -226,12 +224,6 @@ static void btstack_run_loop_freertos_task(void *pvParameter){
         xEventGroupWaitBits(btstack_run_loop_event_group, EVENT_GROUP_FLAG_RUN_LOOP, 1, 0, pdMS_TO_TICKS(timeout_ms));
 #endif
     }
-}
-
-static void btstack_run_loop_freertos_execute(void) {
-    // use dedicated task, might not be needed in all cases
-    xTaskCreate(&btstack_run_loop_freertos_task, "btstack_task", 3072, NULL, 5, NULL);
-    // btstack_run_loop_freertos_task(NULL);
 }
 
 static void btstack_run_loop_freertos_add_data_source(btstack_data_source_t *ds){

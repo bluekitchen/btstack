@@ -287,7 +287,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     switch(hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
-            printf("BTstack up and running.\n");
+            printf("BTstack: up and running.\n");
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
@@ -299,7 +299,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-static void btstack_setup(void){
+extern int btstack_main(int argc, const char * argv[]);
+
+// main
+int app_main(void){
+
+    printf("BTstack: setup\n");
 
     // enable packet logger
     // hci_dump_open(NULL, HCI_DUMP_STDOUT);
@@ -315,27 +320,10 @@ static void btstack_setup(void){
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-}
 
-extern int btstack_main(int argc, const char * argv[]);
-
-// main
-int app_main(void){
-
-    printf("btstack_task start\n");
-
-    printf("-------------- btstack_setup\n");
-    btstack_setup();
-    printf("-------------- btstack_setup end\n");
-
-    printf("-------------- btstack_main\n");
     btstack_main(0, NULL);
-    printf("-------------- btstack_main end\n");
 
-    // printf("Entering btstack run loop!\n");
-    // btstack_run_loop_execute();
-    // printf("Run loop exited...this is unexpected\n");
-
+    printf("BTstack: execute run loop\n");
     btstack_run_loop_execute();
     return 0;
 }
