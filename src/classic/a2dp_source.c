@@ -49,34 +49,11 @@
 #include "avdtp_source.h"
 #include "a2dp_source.h"
 
+#define AVDTP_MEDIA_PAYLOAD_HEADER_SIZE 12
+
 static const char * default_a2dp_source_service_name = "BTstack A2DP Source Service";
 static const char * default_a2dp_source_service_provider_name = "BTstack A2DP Source Service Provider";
 static avdtp_context_t a2dp_source_context;
-
-#define AVDTP_MEDIA_PAYLOAD_HEADER_SIZE 12
-
-typedef struct {
-// to app
-    uint32_t fill_audio_ring_buffer_timeout_ms;
-    uint32_t time_audio_data_sent; // ms
-    uint32_t acc_num_missed_samples;
-    uint32_t samples_ready;
-    btstack_timer_source_t fill_audio_ring_buffer_timer;
-    btstack_ring_buffer_t sbc_ring_buffer;
-    btstack_sbc_encoder_state_t sbc_encoder_state;
-    
-    int reconfigure;
-    int num_channels;
-    int sampling_frequency;
-    int channel_mode;
-    int block_length;
-    int subbands;
-    int allocation_method;
-    int min_bitpool_value;
-    int max_bitpool_value;
-    avdtp_stream_endpoint_t * local_stream_endpoint;
-    avdtp_sep_t * active_remote_sep;
-} avdtp_stream_endpoint_context_t;
 
 static a2dp_state_t app_state = A2DP_IDLE;
 static avdtp_stream_endpoint_context_t sc;
@@ -292,7 +269,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         
                         case AVDTP_SUBEVENT_SIGNALING_ACCEPT:
                             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
-                            status = avdtp_subevent_signaling_accept_get_status(packet);
                             log_info(" --- a2dp source ---  Accepted %d", signal_identifier);
                             
                             switch (app_state){
@@ -340,22 +316,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                             int pos = 0;
                                             event[pos++] = HCI_EVENT_A2DP_META;
                                             event[pos++] = sizeof(event) - 2;
-                                            event[pos++] = A2DP_SUBEVENT_STREAM_START_ACCEPTED;
+                                            event[pos++] = A2DP_SUBEVENT_STREAM_STARTED;
                                             little_endian_store_16(event, pos, avdtp_cid);
                                             pos += 2;
-                                            event[pos++] = avdtp_stream_endpoint_seid(sc.local_stream_endpoint);
-                                            (*a2dp_source_context.a2dp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-                                            break;
-                                        }
-                                        case AVDTP_SI_CLOSE:{
-                                            uint8_t event[6];
-                                            int pos = 0;
-                                            event[pos++] = HCI_EVENT_A2DP_META;
-                                            event[pos++] = sizeof(event) - 2;
-                                            event[pos++] = A2DP_SUBEVENT_STREAM_RELEASED;
-                                            little_endian_store_16(event, pos, avdtp_cid);
-                                            pos += 2;
-                                            log_info("send A2DP_SUBEVENT_STREAM_RELEASED to app");
                                             event[pos++] = avdtp_stream_endpoint_seid(sc.local_stream_endpoint);
                                             (*a2dp_source_context.a2dp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
                                             break;
@@ -368,6 +331,20 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                             event[pos++] = A2DP_SUBEVENT_STREAM_SUSPENDED;
                                             little_endian_store_16(event, pos, avdtp_cid);
                                             pos += 2;
+                                            event[pos++] = avdtp_stream_endpoint_seid(sc.local_stream_endpoint);
+                                            (*a2dp_source_context.a2dp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+                                            break;
+                                        }
+                                        case AVDTP_SI_ABORT:
+                                        case AVDTP_SI_CLOSE:{
+                                            uint8_t event[6];
+                                            int pos = 0;
+                                            event[pos++] = HCI_EVENT_A2DP_META;
+                                            event[pos++] = sizeof(event) - 2;
+                                            event[pos++] = A2DP_SUBEVENT_STREAM_RELEASED;
+                                            little_endian_store_16(event, pos, avdtp_cid);
+                                            pos += 2;
+                                            log_info("send A2DP_SUBEVENT_STREAM_RELEASED to app");
                                             event[pos++] = avdtp_stream_endpoint_seid(sc.local_stream_endpoint);
                                             (*a2dp_source_context.a2dp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
                                             break;
@@ -443,8 +420,8 @@ void a2dp_source_establish_stream(bd_addr_t bd_addr, uint8_t local_seid){
     avdtp_source_connect(bd_addr);
 }
 
-void a2dp_source_disconnect(uint16_t con_handle){
-    avdtp_disconnect(con_handle, &a2dp_source_context);
+void a2dp_source_disconnect(uint16_t local_seid){
+    avdtp_disconnect(local_seid, &a2dp_source_context);
 }
 
 void a2dp_source_start_stream(uint8_t int_seid){

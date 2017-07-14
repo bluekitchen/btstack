@@ -58,13 +58,62 @@ extern "C" {
  * @brief A2DP Sink service record. 
  * @param service
  * @param service_record_handle
- * @param supported_features 16-bit bitmap, see AVDTP_SINK_SF_* values in avdtp.h
+ * @param supported_features 16-bit bitmap, see a2dp_SINK_SF_* values in avdtp.h
  * @param service_name
  * @param service_provider_name
  */
 void a2dp_sink_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name);
 
+/**
+ * @brief Set up A2DP Sink device.
+ */
+void a2dp_sink_init(void);
+
+uint8_t a2dp_sink_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, 
+	uint8_t * codec_capabilities, uint16_t codec_capabilities_len,
+	uint8_t * codec_configuration, uint16_t codec_configuration_len);
+
+/**
+ * @brief Register callback for the A2DP Sink client. 
+ * @param callback
+ */
+void a2dp_sink_register_packet_handler(btstack_packet_handler_t callback);
+
+
+/**
+ * @brief Register media handler for the A2DP Sink client. 
+ * @param callback
+ */
+void a2dp_sink_register_media_handler(void (*callback)(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size));
+
+/**
+ * @brief Open stream
+ * @param avdtp_cid
+ * @param local_seid
+ */
+void a2dp_sink_establish_stream(bd_addr_t bd_addr, uint8_t local_seid);
+
+/**
+ * @brief Start stream
+ * @param local_seid
+ */
+void a2dp_sink_start_stream(uint8_t local_seid);
+
+/**
+ * @brief Suspend stream
+ * @param local_seid
+ */
+void a2dp_sink_pause(uint8_t local_seid);
+
+/**
+ * @brief Abort stream
+ * @param local_seid
+ */
+void a2dp_sink_stop_stream(uint8_t local_seid);
+
+void a2dp_sink_disconnect(uint16_t a2dp_cid);
 /* API_END */
+
 
 #if defined __cplusplus
 }

@@ -176,6 +176,8 @@ static uint16_t avdtp_cid = 0;
 static uint8_t sdp_avdtp_sink_service_buffer[150];
 static avdtp_sep_t sep;
 
+static avdtp_context_t adtvp_sink_context;
+
 static adtvp_media_codec_information_sbc_t sbc_capability;
 static avdtp_media_codec_configuration_sbc_t sbc_configuration;
 static avdtp_stream_endpoint_t * local_stream_endpoint;
@@ -788,7 +790,7 @@ int btstack_main(int argc, const char * argv[]){
 
     l2cap_init();
     // Initialize AVDTP Sink
-    avdtp_sink_init();
+    avdtp_sink_init(&adtvp_sink_context);
     avdtp_sink_register_packet_handler(&packet_handler);
 
 //#ifndef SMG_BI

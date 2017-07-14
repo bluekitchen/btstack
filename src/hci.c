@@ -1297,6 +1297,19 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED;
             hci_send_cmd(&hci_write_le_host_supported, 1, 0);
             break;
+#endif
+
+#ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
+        case HCI_INIT_LE_READ_MAX_DATA_LENGTH:
+            hci_stack->substate = HCI_INIT_W4_LE_READ_MAX_DATA_LENGTH;
+            hci_send_cmd(&hci_le_read_maximum_data_length);
+            break;
+        case HCI_INIT_LE_WRITE_SUGGESTED_DATA_LENGTH:
+            hci_stack->substate = HCI_INIT_W4_LE_WRITE_SUGGESTED_DATA_LENGTH;
+            hci_send_cmd(&hci_le_write_suggested_default_data_length, hci_stack->le_supported_max_tx_octets, hci_stack->le_supported_max_tx_time);
+            break;
+#endif
+
 #ifdef ENABLE_LE_CENTRAL
         case HCI_INIT_READ_WHITE_LIST_SIZE:
             hci_stack->substate = HCI_INIT_W4_READ_WHITE_LIST_SIZE;
@@ -1307,7 +1320,6 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_LE_SET_SCAN_PARAMETERS;
             hci_send_cmd(&hci_le_set_scan_parameters, 1, 0x1e0, 0x30, hci_stack->le_own_addr_type, 0);
             break;
-#endif
 #endif
         default:
             return;
@@ -1549,6 +1561,17 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         case HCI_INIT_W4_LE_READ_BUFFER_SIZE:
             // skip write le host if not supported (e.g. on LE only EM9301)
             if (hci_stack->local_supported_commands[0] & 0x02) break;
+            // explicit fall through to reduce repetitions
+
+#ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
+        case HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED:
+            if ((hci_stack->local_supported_commands[0] & 0x30) == 0x30){
+                hci_stack->substate = HCI_INIT_LE_READ_MAX_DATA_LENGTH;
+                return;
+            }
+            // explicit fall through to reduce repetitions
+#endif
+
 #ifdef ENABLE_LE_CENTRAL
             hci_stack->substate = HCI_INIT_READ_WHITE_LIST_SIZE;
 #else
@@ -1556,6 +1579,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 #endif
             return;
 #endif
+            
         case HCI_INIT_W4_WRITE_LOCAL_NAME:
             // skip write eir data if no eir data set
             if (hci_stack->eir_data) break;
@@ -1669,18 +1693,25 @@ static void event_handler(uint8_t *packet, int size){
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_read_buffer_size)){
                 hci_stack->le_data_packets_length = little_endian_read_16(packet, 6);
                 hci_stack->le_acl_packets_total_num  = packet[8];
-                    // determine usable ACL payload size
-                    if (HCI_ACL_PAYLOAD_SIZE < hci_stack->le_data_packets_length){
-                        hci_stack->le_data_packets_length = HCI_ACL_PAYLOAD_SIZE;
-                    }
+                // determine usable ACL payload size
+                if (HCI_ACL_PAYLOAD_SIZE < hci_stack->le_data_packets_length){
+                    hci_stack->le_data_packets_length = HCI_ACL_PAYLOAD_SIZE;
+                }
                 log_info("hci_le_read_buffer_size: size %u, count %u", hci_stack->le_data_packets_length, hci_stack->le_acl_packets_total_num);
-            }         
+            }
+#endif
+#ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_read_maximum_data_length)){
+                hci_stack->le_supported_max_tx_octets = little_endian_read_16(packet, 6);
+                hci_stack->le_supported_max_tx_time = little_endian_read_16(packet, 8);
+                log_info("hci_le_read_maximum_data_length: tx octets %u, tx time %u us", hci_stack->le_supported_max_tx_octets, hci_stack->le_supported_max_tx_time);
+            }
+#endif
 #ifdef ENABLE_LE_CENTRAL
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_read_white_list_size)){
                 hci_stack->le_whitelist_capacity = packet[6];
                 log_info("hci_le_read_white_list_size: size %u", hci_stack->le_whitelist_capacity);
             }   
-#endif
 #endif
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_bd_addr)) {
                 reverse_bd_addr(&packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1],
@@ -1731,7 +1762,9 @@ static void event_handler(uint8_t *packet, int size){
                     (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+14] & 0x80) >> 7 |  // bit 0 = Octet 14, bit 7
                     (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+24] & 0x40) >> 5 |  // bit 1 = Octet 24, bit 6
                     (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+10] & 0x10) >> 2 |  // bit 2 = Octet 10, bit 4
-                    (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+18] & 0x08);        // bit 3 = Octet 18, bit 3
+                    (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+18] & 0x08)      |  // bit 3 = Octet 18, bit 3
+                    (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+34] & 0x01) << 4 |  // bit 4 = Octet 34, bit 0
+                    (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+35] & 0x08) << 2;   // bit 5 = Octet 35, bit 3
                     log_info("Local supported commands summary 0x%02x", hci_stack->local_supported_commands[0]); 
             }
 #ifdef ENABLE_CLASSIC
@@ -2293,8 +2326,17 @@ static void hci_state_reset(void){
     hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
     hci_stack->le_whitelist = 0;
     hci_stack->le_whitelist_capacity = 0;
+
+    // connection parameter to use for outgoing connections
+    hci_stack->le_connection_interval_min = 0x0008;    // 10 ms
+    hci_stack->le_connection_interval_max = 0x0018;    // 30 ms
+    hci_stack->le_connection_latency      = 4;         // 4
+    hci_stack->le_supervision_timeout     = 0x0048;    // 720 ms
+    hci_stack->le_minimum_ce_length       = 2;         // 1.25 ms
+    hci_stack->le_maximum_ce_length       = 0x0030;    // 30 ms
 #endif
 
+    // connection parameter range used to answer connection parameter update requests in l2cap
     hci_stack->le_connection_parameter_range.le_conn_interval_min =          6; 
     hci_stack->le_connection_parameter_range.le_conn_interval_max =       3200;
     hci_stack->le_connection_parameter_range.le_conn_latency_min =           0;
@@ -2981,13 +3023,13 @@ static void hci_run(void){
                  0,         // peer address type
                  null_addr, // peer bd addr
                  hci_stack->le_own_addr_type, // our addr type:
-                 0x0008,    // conn interval min
-                 0x0018,    // conn interval max
-                 0,         // conn latency
-                 0x0048,    // supervision timeout
-                 0x0001,    // min ce length
-                 0x0001     // max ce length
-                 );
+                 hci_stack->le_connection_interval_min,    // conn interval min
+                 hci_stack->le_connection_interval_max,    // conn interval max
+                 hci_stack->le_connection_latency,         // conn latency
+                 hci_stack->le_supervision_timeout,        // conn latency
+                 hci_stack->le_minimum_ce_length,          // min ce length
+                 hci_stack->le_maximum_ce_length           // max ce length
+                );
             return;
         }
 #endif
@@ -3012,20 +3054,19 @@ static void hci_run(void){
 #ifdef ENABLE_LE_CENTRAL
                         log_info("sending hci_le_create_connection");
                         hci_send_cmd(&hci_le_create_connection,
-                                     0x0060,    // scan interval: 60 ms
-                                     0x0030,    // scan interval: 30 ms
-                                     0,         // don't use whitelist
-                                     connection->address_type, // peer address type
-                                     connection->address,      // peer bd addr
-                                     hci_stack->le_own_addr_type,  // our addr type:
-                                     0x0008,    // conn interval min
-                                     0x0018,    // conn interval max
-                                     0,         // conn latency
-                                     0x0048,    // supervision timeout
-                                     0x0001,    // min ce length
-                                     0x0001     // max ce length
-                                     );
-                        
+                             0x0060,    // scan interval: 60 ms
+                             0x0030,    // scan interval: 30 ms
+                             0,         // don't use whitelist
+                             connection->address_type, // peer address type
+                             connection->address,      // peer bd addr
+                             hci_stack->le_own_addr_type, // our addr type:
+                             hci_stack->le_connection_interval_min,    // conn interval min
+                             hci_stack->le_connection_interval_max,    // conn interval max
+                             hci_stack->le_connection_latency,         // conn latency
+                             hci_stack->le_supervision_timeout,        // conn latency
+                             hci_stack->le_minimum_ce_length,          // min ce length
+                             hci_stack->le_maximum_ce_length          // max ce length
+                             );
                         connection->state = SENT_CREATE_CONNECTION;
 #endif
 #endif
@@ -3944,6 +3985,28 @@ uint8_t gap_connect_cancel(void){
             break;
     }
     return 0;
+}
+#endif
+
+#ifdef ENABLE_LE_CENTRAL
+/**
+ * @brief Set connection parameters for outgoing connections
+ * @param conn_interval_min (unit: 1.25ms), default: 10 ms
+ * @param conn_interval_max (unit: 1.25ms), default: 30 ms
+ * @param conn_latency, default: 4
+ * @param supervision_timeout (unit: 10ms), default: 720 ms
+ * @param min_ce_length (unit: 0.625ms), default: 10 ms
+ * @param max_ce_length (unit: 0.625ms), default: 30 ms
+ */
+
+void gap_set_connection_parameters(uint16_t conn_interval_min, uint16_t conn_interval_max,
+    uint16_t conn_latency, uint16_t supervision_timeout, uint16_t min_ce_length, uint16_t max_ce_length){
+    hci_stack->le_connection_interval_min = conn_interval_min;
+    hci_stack->le_connection_interval_max = conn_interval_max;
+    hci_stack->le_connection_latency = conn_latency;
+    hci_stack->le_supervision_timeout = supervision_timeout;
+    hci_stack->le_minimum_ce_length = min_ce_length;
+    hci_stack->le_maximum_ce_length = max_ce_length;
 }
 #endif
 

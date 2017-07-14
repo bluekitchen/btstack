@@ -58,6 +58,7 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "btstack_stdin.h"
+#include "bluetooth_sdp.h"
  
 static void show_usage(void);
 
@@ -70,6 +71,9 @@ static uint16_t local_cid;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+
+    UNUSED(channel);
+    UNUSED(size);
 
     bd_addr_t event_addr;
     uint16_t psm;
@@ -124,7 +128,7 @@ static void stdin_process(char buffer){
     switch (buffer){
         case 'c':
             printf("Creating L2CAP Connection to %s, PSM SDP\n", bd_addr_to_str(remote));
-            l2cap_create_channel(packet_handler, remote, PSM_SDP, 100, NULL);
+            l2cap_create_channel(packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, 100, NULL);
             break;
         case 's':
             printf("Send L2CAP Data\n");
@@ -152,6 +156,9 @@ static void stdin_process(char buffer){
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
+    UNUSED(argc);
+    (void) argv;
+    
     gap_set_class_of_device(0x220404);
     gap_discoverable_control(1);
 

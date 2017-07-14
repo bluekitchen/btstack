@@ -342,6 +342,12 @@ uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_han
 void gatt_client_listen_for_characteristic_value_updates(gatt_client_notification_t * notification, btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic);
 
 /**
+ * @brief Stop listening to characteristic value updates registered with gatt_client_listen_for_characteristic_value_updates
+ * @param notification struct used in gatt_client_listen_for_characteristic_value_updates
+ */
+void gatt_client_stop_listening_for_characteristic_value_updates(gatt_client_notification_t * notification);
+
+/**
  * @brief -> gatt complete event
  */
 uint8_t gatt_client_prepare_write(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint16_t length, uint8_t * data);

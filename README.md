@@ -16,8 +16,7 @@ If a RTOS is already provided, BTstack can be integrated and run as a single thr
 On larger systems, BTstack provides a daemon that connects to a Bluetooth module.
 Multiple applications can communicate with this daemon over different inter-process communication methods.
 
-BTstack supports the Central and the Peripheral Role of Bluetooth 4.2 Low Energy specification.
-It can be configured to run as either single-mode stack or a dual-mode stack.
+BTstack supports the Central and the Peripheral Role of Bluetooth 4.2 Low Energy specification incl. LE Secure Connections, LE Data Channels, and LE Data Lenght Extension. It can be configured to run as either single-mode stack or a dual-mode stack.
 
 BTstack is free for non-commercial use. However, for commercial use, <a href="mailto:contact@bluekitchen-gmbh.com">tell us</a> a bit about your project to get a quote.
 
@@ -48,9 +47,13 @@ Status               | Platform
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-msp-exp430f5438-cc2564b-master">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-msp-exp430f5438-cc2564b-master) | [MSP430F5438 Experimenter Board for MSP430](http://www.ti.com/tool/msp-exp430f5438) with [Bluetooth CC2564 Module Evaluation Board](http://www.ti.com/tool/cc2564modnem)
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-msp430f5229lp-cc2564b-master">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-msp430f5229lp-cc2564b-master)     | [MSP-EXP430F5529LP LaunchPad](http://www.ti.com/ww/en/launchpad/launchpads-msp430-msp-exp430f5529lp.html#tabs) with [Bluetooth CC2564 Module Evaluation Board](http://www.ti.com/tool/cc2564modnem) and [EM Adapter BoosterPack](http://www.ti.com/tool/boost-ccemadapter) with additional 32768Hz quartz oscillator
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-stm32-f103rb-nucleo-master">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-stm32-f103rb-nucleo-master)         | [STM32 Nucleo development board NUCLEO-F103RB](http://www.st.com/web/catalog/tools/FM116/SC959/SS1532/LN1847/PF259875) with [Bluetooth CC2564 Module Evaluation Board](http://www.ti.com/tool/cc2564modnem) and [EM Adapter BoosterPack](http://www.ti.com/tool/boost-ccemadapter) with additional 32768Hz quartz oscillator
-.. | [STM32 F4 Discovery Board](http://www.st.com/en/evaluation-tools/stm32f4discovery.html) with [CC256xEM Bluetooth Adatper Kit for ST](https://store.ti.com/CC256XEM-STADAPT-CC256xEM-Bluetooth-Adapter-Kit-P45158.aspx) and [CC2564B Dual-mode Bluetooth® Controller Evaluation Module](https://store.ti.com/cc2564modnem.aspx)
+No build server | [STM32 F4 Discovery Board](http://www.st.com/en/evaluation-tools/stm32f4discovery.html) with [CC256xEM Bluetooth Adatper Kit for ST](https://store.ti.com/CC256XEM-STADAPT-CC256xEM-Bluetooth-Adapter-Kit-P45158.aspx) and [CC2564B Dual-mode Bluetooth® Controller Evaluation Module](https://store.ti.com/cc2564modnem.aspx)
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-pic32-harmony-master">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-pic32-harmony-master)                     | [Microchip's PIC32 Bluetooth Audio Development Kit](http://www.microchip.com/Developmenttools/ProductDetails.aspx?PartNO=DV320032)
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-wiced-h4-master">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-wiced-h4-master)                                     | [RedBear Duo](https://github.com/redbear/WICED-SDK) with Broadcom BCM43438 A1
+No build server | [STM32 F4 Discovery Board](http://www.st.com/en/evaluation-tools/stm32f4discovery.html) with [CC256xEM Bluetooth Adatper Kit for ST](https://store.ti.com/CC256XEM-STADAPT-CC256xEM-Bluetooth-Adapter-Kit-P45158.aspx) and [CC2564B Dual-mode Bluetooth® Controller Evaluation Module](https://store.ti.com/cc2564modnem.aspx)
+No build server | EM9304 DVK consisting of an STM32 Nucleo L053R board with an EM9304 in an Arduino form-factor
+[<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-pic32-harmony-develop">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-pic32-harmony-develop)                     | [Microchip's PIC32 Bluetooth Audio Development Kit](http://www.microchip.com/Developmenttools/ProductDetails.aspx?PartNO=DV320032)
+[<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-wiced-h4-develop">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-wiced-h4-develop)                                     | [RedBear Duo](https://github.com/redbear/WICED-SDK) with Broadcom BCM43438 A1
 
 #### Other Platforms:     
 Status               | Platform
@@ -61,6 +64,7 @@ No build server | posix-h5: Unix-based system connected to Bluetooth module via 
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-libusb-master">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-libusb-master)   | libusb: Unix-based system talking via USB Bluetooth dongle
 No build server | windows-h4: Win32-based system connected to Bluetooth module via serial port   
 No build server | windows-winusb: Win32-based system with dedicated USB Bluetooth dongle
+No build server | [FreeRTOS](http://www.freertos.org): Run BTstack on a dedicated thread, not thread-safe.
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-daemon-master">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-daemon-master)   | daemon: TCP and Unix domain named socket client-server architecture supporting multiple clients
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=java-master">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/java-master)          | java: Java wrapper for daemon
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badge.png?builder=port-ios-master">](https://buildbot.bluekitchen-gmbh.com/btstack/builders/port-ios-master)      | iOS: daemon for iOS jailbreak devices, C client-server API
@@ -76,7 +80,7 @@ Broadcom USB Dongles         | Dual mode | USB             | Yes              | 
 CSR UART                     | Dual mode | H4, H5, BCSP    | No (didn't work) | csr            |
 CSR USB Dongles              | Dual mode | USB             | Yes              | csr            |
 Dialog Semiconductor DA14581 | LE        | H4, SPI         | n.a.             | da14581        | Official HCI firmware used
-EM 9301                      | LE        | SPI             | n.a.             | em9301         | Custom HCI SPI implementation
+EM 9301, 9304                | LE        | SPI             | n.a.             | em9301         | Custom HCI SPI implementation
 Nordic nRF                   | LE        | H4              | n.a.             |                | Requires custom HCI firmware
 STM STLC2500D                | Classic   | H4              | No (didn't try)  | stlc2500d      | Custom deep sleep management not supported
 Toshiba TC35661              | Dual mode | H4              | No (didn't try)  | tc3566         | HCI version not tested.

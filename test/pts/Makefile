@@ -24,6 +24,9 @@ COMMON += \
 	wav_util.c 					\
 	sdp_util.c	                \
 	sdp_server.c		        \
+	sm.c 						\
+	uECC.c 					    \
+
 
 SBC_DECODER += \
 	${BTSTACK_ROOT}/src/classic/btstack_sbc_plc.c \

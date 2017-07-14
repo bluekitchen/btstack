@@ -168,7 +168,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                 media_tracker.a2dp_cid, media_tracker.local_seid, a2dp_subevent_stream_established_get_remote_seid(packet));
                             break;
                         
-                        case A2DP_SUBEVENT_STREAM_START_ACCEPTED:
+                        case A2DP_SUBEVENT_STREAM_STARTED:
                             if (local_seid != media_tracker.local_seid) break;
                             if (!a2dp_source_stream_endpoint_ready(media_tracker.local_seid)) break;
                             a2dp_fill_audio_buffer_timer_start(&media_tracker);
@@ -386,11 +386,10 @@ int btstack_main(int argc, const char * argv[]){
     hci_add_event_handler(&hci_event_callback_registration);
 
     l2cap_init();
-    // Initialize AVDTP Sink
+    // Initialize AVDTP Source
     a2dp_source_init();
     a2dp_source_register_packet_handler(&packet_handler);
 
-    //#ifndef SMG_BI
     local_seid = a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
 
     // Initialize SDP 

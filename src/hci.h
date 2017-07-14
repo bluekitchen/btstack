@@ -599,6 +599,13 @@ typedef enum hci_init_state{
     HCI_INIT_WRITE_LE_HOST_SUPPORTED,
     HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED,
 #endif
+
+#ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
+    HCI_INIT_LE_READ_MAX_DATA_LENGTH,
+    HCI_INIT_W4_LE_READ_MAX_DATA_LENGTH,
+    HCI_INIT_LE_WRITE_SUGGESTED_DATA_LENGTH,
+    HCI_INIT_W4_LE_WRITE_SUGGESTED_DATA_LENGTH,
+#endif
     
 #ifdef ENABLE_LE_CENTRAL
     HCI_INIT_READ_WHITE_LIST_SIZE,
@@ -704,10 +711,12 @@ typedef struct {
     uint8_t local_supported_features[8];
 
     /* local supported commands summary - complete info is 64 bytes */
-    /* 0 - read buffer size */
-    /* 1 - write le host supported */
+    /* 0 - Read Buffer Size */
+    /* 1 - Write Le Host Supported */
     /* 2 - Write Synchronous Flow Control Enable (Octet 10/bit 4) */
-    /* 3 - Write Default Erroneous Data Reporting (Octect 18/bit 3) */
+    /* 3 - Write Default Erroneous Data Reporting (Octet 18/bit 3) */
+    /* 4 - LE Write Suggested Default Data Length (Octet 34/bit 0) */
+    /* 5 - LE Read Maximum Data Length (Octet 35/bit 3) */
     uint8_t local_supported_commands[1];
 
     /* bluetooth device information from hci read local version information */
@@ -782,6 +791,14 @@ typedef struct {
     // LE Whitelist Management
     uint8_t               le_whitelist_capacity;
     btstack_linked_list_t le_whitelist;
+
+    // Connection parameters
+    uint16_t le_connection_interval_min;
+    uint16_t le_connection_interval_max;
+    uint16_t le_connection_latency;
+    uint16_t le_supervision_timeout;
+    uint16_t le_minimum_ce_length;
+    uint16_t le_maximum_ce_length;
 #endif
 
     le_connection_parameter_range_t le_connection_parameter_range;
@@ -804,6 +821,12 @@ typedef struct {
     uint8_t  le_advertisements_channel_map;
     uint8_t  le_advertisements_filter_policy;
     bd_addr_t le_advertisements_direct_address;
+#endif
+
+#ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
+    // LE Data Length
+    uint16_t le_supported_max_tx_octets;
+    uint16_t le_supported_max_tx_time;
 #endif
 
     // custom BD ADDR

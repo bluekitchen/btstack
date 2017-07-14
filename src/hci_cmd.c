@@ -1077,6 +1077,33 @@ OPCODE(OGF_LE_CONTROLLER, 0x1f), "1"
 };
 
 /**
+ * @param con_handle
+ * @param tx_octets
+ * @param tx_time
+ */
+const hci_cmd_t hci_le_set_data_length = {
+OPCODE(OGF_LE_CONTROLLER, 0x22), "H22"
+// return: status, connection handle
+};
+
+
+/**
+ */
+const hci_cmd_t hci_le_read_suggested_default_data_length = {
+OPCODE(OGF_LE_CONTROLLER, 0x23), ""
+// return: status, suggested max tx octets, suggested max tx time
+};
+
+/**
+ * @param suggested_max_tx_octets
+ * @param suggested_max_tx_time
+ */
+const hci_cmd_t hci_le_write_suggested_default_data_length = {
+OPCODE(OGF_LE_CONTROLLER, 0x24), "22"
+// return: status
+};
+
+/**
  */
 const hci_cmd_t hci_le_read_local_p256_public_key = {
 OPCODE(OGF_LE_CONTROLLER, 0x25), ""
@@ -1092,6 +1119,13 @@ OPCODE(OGF_LE_CONTROLLER, 0x26), "QQ"
 // LE Generate DHKey Complete is generated on completion
 };
 #endif
+
+/**
+ */
+const hci_cmd_t hci_le_read_maximum_data_length = {
+OPCODE(OGF_LE_CONTROLLER, 0x2F), ""
+// return: status, supported max tx octets, supported max tx time, supported max rx octets, supported max rx time
+};
 
 #endif
 

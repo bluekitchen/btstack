@@ -198,7 +198,7 @@ static void sdp_parser_process_byte(uint8_t eventByte){
         case GET_ATTRIBUTE_ID_HEADER_LENGTH:
             if (!de_state_size(eventByte, &de_header_state)) break;
             attribute_id = 0;
-            log_info("ID data is stored in %d bytes.", (int) de_header_state.de_size);
+            log_debug("ID data is stored in %d bytes.", (int) de_header_state.de_size);
             state = GET_ATTRIBUTE_ID;
             break;
         
@@ -206,7 +206,7 @@ static void sdp_parser_process_byte(uint8_t eventByte){
             attribute_id = (attribute_id << 8) | eventByte;
             de_header_state.de_size--;
             if (de_header_state.de_size > 0) break;
-            log_info("parser: Attribute ID: %04x.", attribute_id);
+            log_debug("parser: Attribute ID: %04x.", attribute_id);
 
             state = GET_ATTRIBUTE_VALUE_LENGTH;
             attribute_bytes_received  = 0;
@@ -230,29 +230,29 @@ static void sdp_parser_process_byte(uint8_t eventByte){
             attribute_bytes_received++;
             sdp_parser_emit_value_byte(eventByte);
             attribute_bytes_delivered++;
-            // log_info("paser: attribute_bytes_received %u, attribute_value_size %u", attribute_bytes_received, attribute_value_size);
+            // log_debug("paser: attribute_bytes_received %u, attribute_value_size %u", attribute_bytes_received, attribute_value_size);
 
             if (attribute_bytes_received < attribute_value_size) break;
-            // log_info("parser: Record offset %u, record size %u", record_offset, record_size);
+            // log_debug("parser: Record offset %u, record size %u", record_offset, record_size);
             if (record_offset != record_size){
                 state = GET_ATTRIBUTE_ID_HEADER_LENGTH;
-                // log_info("Get next attribute");
+                // log_debug("Get next attribute");
                 break;
             } 
             record_offset = 0;
-            // log_info("parser: List offset %u, list size %u", list_offset, list_size);
+            // log_debug("parser: List offset %u, list size %u", list_offset, list_size);
             
             if (list_size > 0 && list_offset != list_size){
                 record_counter++;
                 state = GET_RECORD_LENGTH;
-                log_info("parser: END_OF_RECORD");
+                log_debug("parser: END_OF_RECORD");
                 break;
             }
             list_offset = 0;
             de_state_init(&de_header_state);
             state = GET_LIST_LENGTH;
             record_counter = 0;
-            log_info("parser: END_OF_RECORD & DONE");
+            log_debug("parser: END_OF_RECORD & DONE");
             break;
         default:
             break;
@@ -413,7 +413,7 @@ void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         }
 
         PDU_ID = (SDP_PDU_ID_t)packet[0];
-        log_info("SDP Client :: PDU ID. %u ,%u", PDU_ID, packet[0]);
+        log_debug("SDP Client :: PDU ID. %u ,%u", PDU_ID, packet[0]);
         switch (PDU_ID){
 #ifdef ENABLE_SDP_EXTRA_QUERIES
             case SDP_ServiceSearchResponse:
@@ -433,7 +433,7 @@ void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
         // continuation set or DONE?
         if (continuationStateLen == 0){
-            log_info("SDP Client Query DONE! ");
+            log_debug("SDP Client Query DONE! ");
             sdp_client_state = QUERY_COMPLETE;
             l2cap_disconnect(sdp_cid, 0);
             // sdp_parser_handle_done(0);
@@ -459,7 +459,7 @@ void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             sdp_cid = channel;
             mtu = little_endian_read_16(packet, 17);
             // handle = little_endian_read_16(packet, 9);
-            log_info("SDP Client Connected, cid %x, mtu %u.", sdp_cid, mtu);
+            log_debug("SDP Client Connected, cid %x, mtu %u.", sdp_cid, mtu);
 
             sdp_client_state = W2_SEND;
             l2cap_request_can_send_now_event(sdp_cid);

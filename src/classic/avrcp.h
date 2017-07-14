@@ -251,6 +251,8 @@ typedef struct {
     avrcp_context_t * avrcp_context;
     uint16_t avrcp_l2cap_psm;
     uint16_t avrcp_version;
+    uint16_t avrcp_browsing_l2cap_psm;
+    uint16_t avrcp_browsing_version;
     uint8_t  role_supported;
 } avrcp_sdp_query_context_t;
 

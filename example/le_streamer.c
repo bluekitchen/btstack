@@ -59,11 +59,12 @@
 #include "btstack.h"
 #include "le_streamer.h"
 
-static int   le_notification_enabled;
+#define REPORT_INTERVAL_MS 3000
+#define MAX_NR_CONNECTIONS 3 
+
 static void  packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static int   att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
 static void  streamer(void);
-static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 const uint8_t adv_data[] = {
     // Flags general discoverable, BR/EDR not supported
@@ -75,11 +76,47 @@ const uint8_t adv_data[] = {
 };
 const uint8_t adv_data_len = sizeof(adv_data);
 
-static int  counter = 'A';
-static char test_data[200];
-static int  test_data_len;
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-static hci_con_handle_t connection_handle;
+// support for multiple clients
+typedef struct {
+    char name;
+    int le_notification_enabled;
+    hci_con_handle_t connection_handle;
+    int  counter;
+    char test_data[200];
+    int  test_data_len;
+    uint32_t test_data_sent;
+    uint32_t test_data_start;
+} le_streamer_connection_t;
+static le_streamer_connection_t le_streamer_connections[MAX_NR_CONNECTIONS];
+
+// round robin sending
+static int connection_index;
+
+static void init_connections(void){
+    // track connections
+    int i;
+    for (i=0;i<MAX_NR_CONNECTIONS;i++){
+        le_streamer_connections[i].connection_handle = HCI_CON_HANDLE_INVALID;
+        le_streamer_connections[i].name = 'A' + i;
+    }
+}
+
+static le_streamer_connection_t * connection_for_conn_handle(hci_con_handle_t conn_handle){
+    int i;
+    for (i=0;i<MAX_NR_CONNECTIONS;i++){
+        if (le_streamer_connections[i].connection_handle == conn_handle) return &le_streamer_connections[i];
+    }
+    return NULL;
+}
+
+static void next_connection_index(void){
+    connection_index++;
+    if (connection_index == MAX_NR_CONNECTIONS){
+        connection_index = 0;
+    }
+}
 
 /* @section Main Application Setup
  *
@@ -118,6 +155,9 @@ static void le_streamer_setup(void){
     gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
     gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
     gap_advertisements_enable(1);
+
+    // init client state
+    init_connections();
 }
 /* LISTING_END */
 
@@ -129,28 +169,25 @@ static void le_streamer_setup(void){
  */
 
 /* LISTING_START(tracking): Tracking throughput */
-#define REPORT_INTERVAL_MS 3000
-static uint32_t test_data_sent;
-static uint32_t test_data_start;
 
-static void test_reset(void){
-    test_data_start = btstack_run_loop_get_time_ms();
-    test_data_sent = 0;
+static void test_reset(le_streamer_connection_t * context){
+    context->test_data_start = btstack_run_loop_get_time_ms();
+    context->test_data_sent = 0;
 }
 
-static void test_track_sent(int bytes_sent){
-    test_data_sent += bytes_sent;
+static void test_track_sent(le_streamer_connection_t * context, int bytes_sent){
+    context->test_data_sent += bytes_sent;
     // evaluate
     uint32_t now = btstack_run_loop_get_time_ms();
-    uint32_t time_passed = now - test_data_start;
+    uint32_t time_passed = now - context->test_data_start;
     if (time_passed < REPORT_INTERVAL_MS) return;
     // print speed
-    int bytes_per_second = test_data_sent * 1000 / time_passed;
-    printf("%u bytes sent-> %u.%03u kB/s\n", test_data_sent, bytes_per_second / 1000, bytes_per_second % 1000);
+    int bytes_per_second = context->test_data_sent * 1000 / time_passed;
+    printf("%c: %u bytes sent-> %u.%03u kB/s\n", context->name, context->test_data_sent, bytes_per_second / 1000, bytes_per_second % 1000);
 
     // restart
-    test_data_start = now;
-    test_data_sent  = 0;
+    context->test_data_start = now;
+    context->test_data_sent  = 0;
 }
 /* LISTING_END(tracking): Tracking throughput */
 
@@ -169,21 +206,31 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     
     int mtu;
     uint16_t conn_interval;
+    le_streamer_connection_t * context;
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    le_notification_enabled = 0;
+                    context = connection_for_conn_handle(hci_event_disconnection_complete_get_connection_handle(packet));
+                    if (!context) break;
+                    // free connection
+                    printf("%c: Disconnect, reason %02x\n", context->name, hci_event_disconnection_complete_get_reason(packet));                    
+                    context->le_notification_enabled = 0;
+                    context->connection_handle = HCI_CON_HANDLE_INVALID;
                     break;
                 case HCI_EVENT_LE_META:
                     switch (hci_event_le_meta_get_subevent_code(packet)) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                            test_data_len = ATT_DEFAULT_MTU - 3;
-                            connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                            // setup new 
+                            context = connection_for_conn_handle(HCI_CON_HANDLE_INVALID);
+                            if (!context) break;
+                            context->counter = 'A';
+                            context->test_data_len = ATT_DEFAULT_MTU - 3;
+                            context->connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
                             // print connection parameters (without using float operations)
                             conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
-                            printf("Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
-                            printf("Connection Latency: %u\n", hci_subevent_le_connection_complete_get_conn_latency(packet));                            break;
+                            printf("%c: Connection Interval: %u.%02u ms\n", context->name, conn_interval * 125 / 100, 25 * (conn_interval & 3));
+                            printf("%c: Connection Latency: %u\n", context->name, hci_subevent_le_connection_complete_get_conn_latency(packet));
                             // min con interval 20 ms 
                             // gap_request_connection_parameter_update(connection_handle, 0x10, 0x18, 0, 0x0048);
                             // printf("Connected, requesting conn param update for handle 0x%04x\n", connection_handle);
@@ -192,11 +239,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;  
                 case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
                     mtu = att_event_mtu_exchange_complete_get_MTU(packet) - 3;
-                    printf("ATT MTU = %u\n", mtu);
-                    test_data_len = mtu - 3;
-                    if (test_data_len > sizeof(test_data)){
-                        test_data_len = sizeof(test_data);
-                    }
+                    context = connection_for_conn_handle(att_event_mtu_exchange_complete_get_handle(packet));
+                    if (!context) break;
+                    context->test_data_len = btstack_min(mtu - 3, sizeof(context->test_data));
+                    printf("%c: ATT MTU = %u => use test data of len %u\n", context->name, mtu, context->test_data_len);
                     break;
                 case ATT_EVENT_CAN_SEND_NOW:
                     streamer();
@@ -215,22 +261,39 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
  /* LISTING_START(streamer): Streaming code */
 static void streamer(void){
-    // check if we can send
-    if (!le_notification_enabled) return;
+
+    // find next active streaming connection
+    int old_connection_index = connection_index;
+    while (1){
+        // active found?
+        if ((le_streamer_connections[connection_index].connection_handle != HCI_CON_HANDLE_INVALID) &&
+            (le_streamer_connections[connection_index].le_notification_enabled)) break;
+        
+        // check next
+        next_connection_index();
+
+        // none found
+        if (connection_index == old_connection_index) return;
+    }
+
+    le_streamer_connection_t * context = &le_streamer_connections[connection_index];
 
     // create test data
-    counter++;
-    if (counter > 'Z') counter = 'A';
-    memset(test_data, counter, sizeof(test_data));
+    context->counter++;
+    if (context->counter > 'Z') context->counter = 'A';
+    memset(context->test_data, context->counter, context->test_data_len);
 
     // send
-    att_server_notify(connection_handle, ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) test_data, test_data_len);
+    att_server_notify(context->connection_handle, ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) context->test_data, context->test_data_len);
 
     // track
-    test_track_sent(test_data_len);
+    test_track_sent(context, context->test_data_len);
 
     // request next send event
-    att_server_request_can_send_now_event(connection_handle);
+    att_server_request_can_send_now_event(context->connection_handle);
+
+    // check next
+    next_connection_index();
 } 
 /* LISTING_END */
 
@@ -244,22 +307,22 @@ static void streamer(void){
 
 /* LISTING_START(attWrite): ATT Write */
 static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-    UNUSED(con_handle);
     UNUSED(offset);
 
     // printf("att_write_callback att_handle %04x, transaction mode %u\n", att_handle, transaction_mode);
     if (transaction_mode != ATT_TRANSACTION_MODE_NONE) return 0;
+    le_streamer_connection_t * context = connection_for_conn_handle(con_handle);
     switch(att_handle){
         case ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_CLIENT_CONFIGURATION_HANDLE:
-            le_notification_enabled = little_endian_read_16(buffer, 0) == GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION;
-            printf("Notifications enabled %u\n", le_notification_enabled); 
-            if (le_notification_enabled){
-                att_server_request_can_send_now_event(connection_handle);
+            context->le_notification_enabled = little_endian_read_16(buffer, 0) == GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION;
+            printf("%c: Notifications enabled %u\n", context->name, context->le_notification_enabled); 
+            if (context->le_notification_enabled){
+                att_server_request_can_send_now_event(context->connection_handle);
             }
-            test_reset();
+            test_reset(context);
             break;
         case ATT_CHARACTERISTIC_0000FF12_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE:
-            printf("Write to ...FF12...: ");
+            printf("%c: Write to ...FF12... : ", context->name);
             printf_hexdump(buffer, buffer_size);
             break;       
     }
