@@ -470,6 +470,10 @@ void gatt_client_listen_for_characteristic_value_updates(gatt_client_notificatio
     btstack_linked_list_add(&gatt_client_value_listeners, (btstack_linked_item_t*) notification);
 }
 
+void gatt_client_stop_listening_for_characteristic_value_updates(gatt_client_notification_t * notification){
+    btstack_linked_list_remove(&gatt_client_value_listeners, (btstack_linked_item_t*) notification);
+}
+
 static void emit_event_to_registered_listeners(hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t * packet, uint16_t size){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &gatt_client_value_listeners);
