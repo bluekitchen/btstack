@@ -195,12 +195,17 @@ typedef struct {
     // l2cap channel mode: basic or enhanced retransmission mode
     l2cap_channel_mode_t mode;
     
-    // timer config
-    uint16_t retransmission_timeout_ms;
-    uint16_t monitor_timeout_ms;
+    // local/remote config options
+    uint16_t local_retransmission_timeout_ms;
+    uint16_t local_monitor_timeout_ms;
 
-    // max transmit
-    uint8_t max_transmit;
+    uint16_t remote_retransmission_timeout_ms;
+    uint16_t remote_monitor_timeout_ms;
+
+    uint8_t remote_tx_window_size;
+
+    uint8_t local_max_transmit;
+    uint8_t remote_max_transmit;
     
     // if ertm is not mandatory, allow fallback to L2CAP Basic Mode
     uint8_t ertm_mandatory;

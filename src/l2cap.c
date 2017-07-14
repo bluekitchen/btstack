@@ -658,9 +658,9 @@ static uint16_t l2cap_setup_options_ertm(l2cap_channel_t * channel, uint8_t * co
     config_options[1] = 9;      // length
     config_options[2] = (uint8_t) channel->mode;
     config_options[3] = channel->num_rx_buffers;    // == TxWindows size
-    config_options[4] = channel->max_transmit;
-    little_endian_store_16( config_options, 5, channel->retransmission_timeout_ms); 
-    little_endian_store_16( config_options, 7, channel->monitor_timeout_ms);
+    config_options[4] = channel->local_max_transmit;
+    little_endian_store_16( config_options, 5, channel->local_retransmission_timeout_ms); 
+    little_endian_store_16( config_options, 7, channel->local_monitor_timeout_ms);
     little_endian_store_16( config_options, 9, channel->local_mtu);
     return 11;
 }
@@ -1202,9 +1202,9 @@ static void l2cap_ertm_configure_channel(l2cap_channel_t * channel, int ertm_man
 
     channel->mode  = L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION;
     channel->ertm_mandatory = ertm_mandatory;
-    channel->max_transmit = max_transmit;
-    channel->retransmission_timeout_ms = retransmission_timeout_ms;
-    channel->monitor_timeout_ms = monitor_timeout_ms;
+    channel->local_max_transmit = max_transmit;
+    channel->local_retransmission_timeout_ms = retransmission_timeout_ms;
+    channel->local_monitor_timeout_ms = monitor_timeout_ms;
     channel->num_rx_buffers = num_rx_buffers;
     channel->num_tx_buffers = num_tx_buffers;
 
@@ -1692,7 +1692,17 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
                             channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
                         } else {
                             // Both sides selected ERTM
-                            // TODO store and evaluate configuration
+                            channel->remote_tx_window_size = command[pos+1];
+                            channel->remote_max_transmit   = command[pos+2];
+                            channel->remote_retransmission_timeout_ms = little_endian_read_16(command, pos + 3);
+                            channel->remote_monitor_timeout_ms = little_endian_read_16(command, pos + 5);
+                            log_info("FC&C config: tx window: %u, max transmit %u, retrans timeout %u, monitor timeout %u",
+                                channel->remote_tx_window_size,
+                                channel->remote_max_transmit,
+                                channel->remote_retransmission_timeout_ms,
+                                channel->remote_monitor_timeout_ms);
+                            // we store remote MPS in remote_mtu, might need to get re-evaluated
+                            channel->remote_mtu = little_endian_read_16(command, pos + 7);
                             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
                         }
                     } else {
