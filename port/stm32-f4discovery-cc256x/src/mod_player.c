@@ -46,7 +46,7 @@ void mod_player(void){
 			__asm__("wfe");
 		}
 		hxcmod_fillbuffer(&mod_context, (unsigned short *) &audio_samples1[0], NUM_SAMPLES, NULL);
-		while (active_buffer == 0){
+		while (active_buffer == 1){
 			__asm__("wfe");
 		}
 	}
