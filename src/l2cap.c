@@ -554,11 +554,9 @@ int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
 static inline uint16_t l2cap_encanced_control_field_for_information_frame(uint8_t tx_seq, int final, uint8_t req_seq, l2cap_segmentation_and_reassembly_t sar){
     return (((uint16_t) sar) << 14) | (req_seq << 8) | (final << 7) | (tx_seq << 1) | 0; 
 }
-#if 0
 static inline uint16_t l2cap_encanced_control_field_for_supevisor_frame(l2cap_supervisory_function_t supervisory_function, int poll, int final, uint8_t req_seq){
-    return (((uint16_t) sar) << 14) | (req_seq << 8) | (final << 7) | 1; 
+    return (req_seq << 8) | (final << 7) | (poll << 4) | (((int) supervisory_function) << 2) | 1; 
 }
-#endif
 static int l2cap_next_ertm_seq_nr(int seq_nr){
     return (seq_nr + 1) & 0x3f;
 }
@@ -663,6 +661,13 @@ static uint16_t l2cap_setup_options_ertm(l2cap_channel_t * channel, uint8_t * co
     little_endian_store_16( config_options, 7, channel->local_monitor_timeout_ms);
     little_endian_store_16( config_options, 9, channel->local_mtu);
     return 11;
+}
+static int l2cap_ertm_send_supervisor_frame(l2cap_channel_t * channel, uint16_t control){
+    hci_reserve_packet_buffer();
+    uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
+    log_info("S-Frame: control 0x%04x", control);
+    little_endian_store_16(acl_buffer, 8, control);
+    return l2cap_send_prepared(channel->local_cid, 2);
 }
 #endif
 
@@ -902,6 +907,18 @@ static void l2cap_run(void){
             default:
                 break;
         }
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+        // send s-frame to acknowledge received packets
+        if (!hci_can_send_acl_packet_now(channel->con_handle)) continue;
+        if (channel->req_seq != 0xff){
+            log_info("try to send s-frame");
+            uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY, 0, 0, channel->req_seq);
+            channel->req_seq = 0xff;
+            l2cap_ertm_send_supervisor_frame(channel, control);
+        }
+#endif
+
     }
 #endif
 
@@ -1112,6 +1129,11 @@ static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t pac
     channel->state_var = L2CAP_CHANNEL_STATE_VAR_NONE;
     channel->remote_sig_id = L2CAP_SIG_ID_INVALID;
     channel->local_sig_id = L2CAP_SIG_ID_INVALID;
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    channel->req_seq = 0xff;
+#endif
+
     return channel;
 }
 #endif
@@ -2407,7 +2429,9 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 
                     // switch on packet type
                     uint16_t control = little_endian_read_16(packet, COMPLETE_L2CAP_HEADER);
+                    uint8_t  req_seq = (control >> 8) & 0x3f;
                     if (control & 1){
+                        // int poll = (control >> 7) & 0x01;
                         log_info("S-Frame not not implemented yet");
                         // S-Frame
                         break;
@@ -2415,42 +2439,51 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                         // I-Frame
                         // get control
                         l2cap_segmentation_and_reassembly_t sar = (l2cap_segmentation_and_reassembly_t) (control >> 14);
-                        log_info("Control: 0x%04x, SAR type %u, pos %u", control, (int) sar, l2cap_channel->rx_packets_state->pos);
-                        uint16_t sdu_length;
-                        uint16_t segment_length;
-                        uint16_t payload_offset;
-                        switch (sar){
-                            case L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU:
-                                payload_offset = COMPLETE_L2CAP_HEADER+2;
-                                segment_length = payload_offset-2;
-                                l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER+2], segment_length);
-                                break;
-                            case L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU:
-                                // TODO: use current packet
-                                // TODO: check if reassembly started
-                                // TODO: check len against local mtu
-                                sdu_length = little_endian_read_16(packet, COMPLETE_L2CAP_HEADER+2);
-                                payload_offset = COMPLETE_L2CAP_HEADER+4;
-                                segment_length = size - payload_offset-2;
-                                memcpy(&l2cap_channel->rx_packets_data[0], &packet[payload_offset], segment_length);
-                                l2cap_channel->rx_packets_state->sdu_length = sdu_length;
-                                l2cap_channel->rx_packets_state->pos = segment_length;
-                                break;
-                            case L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU:
-                                payload_offset = COMPLETE_L2CAP_HEADER+2;
-                                segment_length = size - payload_offset-2;
-                                memcpy(&l2cap_channel->rx_packets_data[l2cap_channel->rx_packets_state->pos], &packet[payload_offset], segment_length);
-                                l2cap_channel->rx_packets_state->pos += segment_length;
-                                l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, l2cap_channel->rx_packets_data, l2cap_channel->rx_packets_state[0].pos);
-                                break; 
-                            case L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU:
-                                payload_offset = COMPLETE_L2CAP_HEADER+2;
-                                segment_length = size - payload_offset-2;
-                                memcpy(&l2cap_channel->rx_packets_data[l2cap_channel->rx_packets_state->pos], &packet[payload_offset], segment_length);
-                                l2cap_channel->rx_packets_state->pos += segment_length;
-                                break;
+                        uint8_t tx_seq = (control >> 1) & 0x3f;
+                        log_info("Control: 0x%04x => SAR %u, ReqSeq %02u, R?, TxSeq %02u", control, (int) sar, req_seq, tx_seq);
+                        log_info("SAR: pos %u", l2cap_channel->rx_packets_state->pos);
+                        log_info("State: expected_tx_seq %02u, req_seq %02u", l2cap_channel->expected_tx_seq, l2cap_channel->req_seq);
+                        // check ordering
+                        if (l2cap_channel->expected_tx_seq == tx_seq){
+                            log_info("Received expected frame with TxSeq == ExpectedTxSeq == %02u", tx_seq);
+                            l2cap_channel->req_seq = tx_seq;
+                            l2cap_channel->expected_tx_seq = l2cap_next_ertm_seq_nr(l2cap_channel->expected_tx_seq);
+                            uint16_t sdu_length;
+                            uint16_t segment_length;
+                            uint16_t payload_offset;
+                            switch (sar){
+                                case L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU:
+                                    payload_offset = COMPLETE_L2CAP_HEADER+2;
+                                    segment_length = payload_offset-2;
+                                    l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER+2], segment_length);
+                                    break;
+                                case L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU:
+                                    // TODO: use current packet
+                                    // TODO: check if reassembly started
+                                    // TODO: check len against local mtu
+                                    sdu_length = little_endian_read_16(packet, COMPLETE_L2CAP_HEADER+2);
+                                    payload_offset = COMPLETE_L2CAP_HEADER+4;
+                                    segment_length = size - payload_offset-2;
+                                    memcpy(&l2cap_channel->rx_packets_data[0], &packet[payload_offset], segment_length);
+                                    l2cap_channel->rx_packets_state->sdu_length = sdu_length;
+                                    l2cap_channel->rx_packets_state->pos = segment_length;
+                                    break;
+                                case L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU:
+                                    payload_offset = COMPLETE_L2CAP_HEADER+2;
+                                    segment_length = size - payload_offset-2;
+                                    memcpy(&l2cap_channel->rx_packets_data[l2cap_channel->rx_packets_state->pos], &packet[payload_offset], segment_length);
+                                    l2cap_channel->rx_packets_state->pos += segment_length;
+                                    l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, l2cap_channel->rx_packets_data, l2cap_channel->rx_packets_state[0].pos);
+                                    break; 
+                                case L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU:
+                                    payload_offset = COMPLETE_L2CAP_HEADER+2;
+                                    segment_length = size - payload_offset-2;
+                                    memcpy(&l2cap_channel->rx_packets_data[l2cap_channel->rx_packets_state->pos], &packet[payload_offset], segment_length);
+                                    l2cap_channel->rx_packets_state->pos += segment_length;
+                                    break;
+                                }
                             }
-                    }
+                        }
                     break;
                 }
 #endif                
