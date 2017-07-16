@@ -1708,27 +1708,22 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
             l2cap_channel_mode_t mode = (l2cap_channel_mode_t) command[pos];
             switch(channel->mode){
                 case L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION:
-                    if (channel->ertm_mandatory){
-                        // ERTM mandatory, but remote doens't offer ERTM -> disconnect
-                        if (mode != L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
-                            channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
-                        } else {
-                            // Both sides selected ERTM
-                            channel->remote_tx_window_size = command[pos+1];
-                            channel->remote_max_transmit   = command[pos+2];
-                            channel->remote_retransmission_timeout_ms = little_endian_read_16(command, pos + 3);
-                            channel->remote_monitor_timeout_ms = little_endian_read_16(command, pos + 5);
-                            log_info("FC&C config: tx window: %u, max transmit %u, retrans timeout %u, monitor timeout %u",
-                                channel->remote_tx_window_size,
-                                channel->remote_max_transmit,
-                                channel->remote_retransmission_timeout_ms,
-                                channel->remote_monitor_timeout_ms);
-                            // we store remote MPS in remote_mtu, might need to get re-evaluated
-                            channel->remote_mtu = little_endian_read_16(command, pos + 7);
-                            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
-                        }
+                    // Store remote config
+                    channel->remote_tx_window_size = command[pos+1];
+                    channel->remote_max_transmit   = command[pos+2];
+                    channel->remote_retransmission_timeout_ms = little_endian_read_16(command, pos + 3);
+                    channel->remote_monitor_timeout_ms = little_endian_read_16(command, pos + 5);
+                    log_info("FC&C config: tx window: %u, max transmit %u, retrans timeout %u, monitor timeout %u",
+                        channel->remote_tx_window_size,
+                        channel->remote_max_transmit,
+                        channel->remote_retransmission_timeout_ms,
+                        channel->remote_monitor_timeout_ms);
+                    // we store remote MPS in remote_mtu, might need to get re-evaluated
+                    channel->remote_mtu = little_endian_read_16(command, pos + 7);
+                    // If ERTM mandatory, but remote doens't offer ERTM -> disconnect
+                    if (channel->ertm_mandatory && mode != L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+                        channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
                     } else {
-                        // ERTM is optional                        
                         channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
                     }
                     break;
