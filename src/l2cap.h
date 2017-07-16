@@ -207,8 +207,11 @@ typedef struct {
     uint8_t local_max_transmit;
     uint8_t remote_max_transmit;
     
-    // if ertm is not mandatory, allow fallback to L2CAP Basic Mode
+    // if ertm is not mandatory, allow fallback to L2CAP Basic Mode - flag
     uint8_t ertm_mandatory;
+
+    // receiver: send RR frame - flag
+    uint8_t send_supervisor_frame_receiver_ready;
 
     // sender: next seq nr used for sending
     uint8_t next_tx_seq;
@@ -216,7 +219,7 @@ typedef struct {
     // receiver: value of tx_seq in next expected i-frame
     uint8_t expected_tx_seq;
 
-    // receiver: request transmiissoin with tx_seq = req_seq and ack up to and including req_seq - 1, 0xff if no ack to send
+    // receiver: request transmiissoin with tx_seq = req_seq and ack up to and including req_seq
     uint8_t req_seq;
 
     // max um out-of-order packets // tx_window

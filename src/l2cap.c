@@ -911,10 +911,10 @@ static void l2cap_run(void){
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
         // send s-frame to acknowledge received packets
         if (!hci_can_send_acl_packet_now(channel->con_handle)) continue;
-        if (channel->req_seq != 0xff){
-            log_info("try to send s-frame");
+        if (channel->send_supervisor_frame_receiver_ready){
+            channel->send_supervisor_frame_receiver_ready = 0;;
+            log_info("Send S-Frame: RR %u", channel->req_seq);
             uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY, 0, 0, channel->req_seq);
-            channel->req_seq = 0xff;
             l2cap_ertm_send_supervisor_frame(channel, control);
         }
 #endif
@@ -1129,10 +1129,6 @@ static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t pac
     channel->state_var = L2CAP_CHANNEL_STATE_VAR_NONE;
     channel->remote_sig_id = L2CAP_SIG_ID_INVALID;
     channel->local_sig_id = L2CAP_SIG_ID_INVALID;
-
-#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-    channel->req_seq = 0xff;
-#endif
 
     return channel;
 }
@@ -2442,6 +2438,7 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                         if (l2cap_channel->expected_tx_seq == tx_seq){
                             log_info("Received expected frame with TxSeq == ExpectedTxSeq == %02u", tx_seq);
                             l2cap_channel->req_seq = tx_seq;
+                            l2cap_channel->send_supervisor_frame_receiver_ready = 1;
                             l2cap_channel->expected_tx_seq = l2cap_next_ertm_seq_nr(l2cap_channel->expected_tx_seq);
                             uint16_t sdu_length;
                             uint16_t segment_length;
