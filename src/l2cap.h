@@ -230,6 +230,9 @@ typedef struct {
     // receiver: send RR frame with poll bit set
     uint8_t send_supervisor_frame_receiver_ready_poll;
 
+    // receiver: send RR frame with final bit set
+    uint8_t send_supervisor_frame_receiver_ready_final;
+
     // receiver: send RNR frame - flag
     uint8_t send_supervisor_frame_receiver_not_ready;
 

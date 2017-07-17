@@ -978,21 +978,28 @@ static void l2cap_run(void){
         }
 
         if (channel->send_supervisor_frame_receiver_ready){
-            channel->send_supervisor_frame_receiver_ready = 0;;
+            channel->send_supervisor_frame_receiver_ready = 0;
             log_info("Send S-Frame: RR %u", channel->req_seq);
             uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY, 0, 0, channel->req_seq);
             l2cap_ertm_send_supervisor_frame(channel, control);
             continue;
         }
         if (channel->send_supervisor_frame_receiver_ready_poll){
-            channel->send_supervisor_frame_receiver_ready_poll = 0;;
+            channel->send_supervisor_frame_receiver_ready_poll = 0;
             log_info("Send S-Frame: RR %u with poll=1 ", channel->req_seq);
             uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY, 1, 0, channel->req_seq);
             l2cap_ertm_send_supervisor_frame(channel, control);
             continue;
         }
+        if (channel->send_supervisor_frame_receiver_ready_final){
+            channel->send_supervisor_frame_receiver_ready_final = 0;
+            log_info("Send S-Frame: RR %u with final=1 ", channel->req_seq);
+            uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY, 0, 1, channel->req_seq);
+            l2cap_ertm_send_supervisor_frame(channel, control);
+            continue;
+        }
         if (channel->send_supervisor_frame_receiver_not_ready){
-            channel->send_supervisor_frame_receiver_not_ready = 0;;
+            channel->send_supervisor_frame_receiver_not_ready = 0;
             log_info("Send S-Frame: RNR %u", channel->req_seq);
             uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY, 0, 0, channel->req_seq);
             l2cap_ertm_send_supervisor_frame(channel, control);
@@ -2537,11 +2544,14 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     uint8_t  req_seq = (control >> 8) & 0x3f;
                     if (control & 1){
                         // S-Frame
-                        // int poll = (control >> 7) & 0x01;
+                        int poll = (control >> 4) & 0x01;
                         l2cap_supervisory_function_t s = (l2cap_supervisory_function_t) ((control >> 2) & 0x03);
                         switch (s){
                             case L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY:
-                                l2cap_ertm_handle_req_seq(l2cap_channel, req_seq);                                
+                                l2cap_ertm_handle_req_seq(l2cap_channel, req_seq);
+                                if (poll){
+                                    l2cap_channel->send_supervisor_frame_receiver_ready_final = 1;
+                                }                                
                                 break;
                             default:
                                 break;
