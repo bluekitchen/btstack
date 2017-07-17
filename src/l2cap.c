@@ -110,6 +110,9 @@ static void l2cap_le_notify_channel_can_send(l2cap_channel_t *channel);
 static void l2cap_le_finialize_channel_close(l2cap_channel_t *channel);
 static inline l2cap_service_t * l2cap_le_get_service(uint16_t psm);
 #endif
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+static int l2cap_ertm_num_unacknowledged_tx_packets(l2cap_channel_t * channel);
+#endif
 
 typedef struct l2cap_fixed_channel {
     btstack_packet_handler_t callback;
@@ -697,6 +700,13 @@ static int l2cap_ertm_send_supervisor_frame(l2cap_channel_t * channel, uint16_t 
     little_endian_store_16(acl_buffer, 8, control);
     return l2cap_send_prepared(channel->local_cid, 2);
 }
+static int l2cap_ertm_num_unacknowledged_tx_packets(l2cap_channel_t * channel){
+    int unacknowledged_packets = channel->tx_send_index - channel->tx_read_index;
+    if (unacknowledged_packets < 0){
+        unacknowledged_packets += channel->num_tx_buffers;
+    }
+    return unacknowledged_packets; 
+}
 #endif
 
 static uint16_t l2cap_setup_options(l2cap_channel_t * channel, uint8_t * config_options){
@@ -941,14 +951,18 @@ static void l2cap_run(void){
         if (!hci_can_send_acl_packet_now(channel->con_handle)) continue;
 
         if (channel->tx_send_index != channel->tx_write_index){
-            // packet ready to send!
-            int index = channel->tx_send_index;
-            channel->tx_send_index++;
-            if (channel->tx_send_index >= channel->num_tx_buffers){
-                channel->tx_send_index = 0;          
+            int unacknowledged_packets = l2cap_ertm_num_unacknowledged_tx_packets(channel);
+            // check remote tx window
+            log_info("unacknowledged_packets %u, remote tx window size %u", unacknowledged_packets, channel->remote_tx_window_size);
+            if (unacknowledged_packets < channel->remote_tx_window_size){
+                int index = channel->tx_send_index;
+                channel->tx_send_index++;
+                if (channel->tx_send_index >= channel->num_tx_buffers){
+                    channel->tx_send_index = 0;          
+                }
+                l2cap_ertm_send_information_frame(channel, index);
+                continue;
             }
-            l2cap_ertm_send_information_frame(channel, index);
-            continue;
         }
 
         if (channel->send_supervisor_frame_receiver_ready){
