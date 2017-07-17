@@ -122,6 +122,7 @@ typedef struct {
 } l2cap_ertm_rx_packet_state_t;
 
 typedef struct {
+    btstack_timer_source_t retransmission_timer;
     uint8_t tx_seq;
     uint16_t len;
 } l2cap_ertm_tx_packet_state_t;
@@ -225,6 +226,9 @@ typedef struct {
 
     // receiver: send RR frame - flag
     uint8_t send_supervisor_frame_receiver_ready;
+
+    // receiver: send RR frame with poll bit set
+    uint8_t send_supervisor_frame_receiver_ready_poll;
 
     // receiver: send RNR frame - flag
     uint8_t send_supervisor_frame_receiver_not_ready;

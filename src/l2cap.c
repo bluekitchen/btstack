@@ -569,6 +569,13 @@ static void l2cap_ertm_next_tx_write_index(l2cap_channel_t * channel){
     if (channel->tx_write_index < channel->num_tx_buffers) return;
     channel->tx_write_index = 0;
 }
+static void l2cap_ertm_retransmission_timeout_callback(btstack_timer_source_t * ts){
+    UNUSED(ts);
+    log_info("l2cap_ertm_retransmission_timeout_callback");
+    l2cap_channel_t * channel = (l2cap_channel_t *) btstack_run_loop_get_timer_context(ts);
+    channel->send_supervisor_frame_receiver_ready_poll = 1;
+    l2cap_run();
+}
 static int l2cap_ertm_send_information_frame(l2cap_channel_t * channel, int index){
     l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[index];
     hci_reserve_packet_buffer();
@@ -595,6 +602,11 @@ static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t l
     // update
     channel->next_tx_seq = l2cap_next_ertm_seq_nr(channel->next_tx_seq);
     l2cap_ertm_next_tx_write_index(channel);
+    // set retransmission timer
+    btstack_run_loop_set_timer_handler(&tx_state->retransmission_timer, &l2cap_ertm_retransmission_timeout_callback);
+    btstack_run_loop_set_timer_context(&tx_state->retransmission_timer, channel);
+    btstack_run_loop_set_timer(&tx_state->retransmission_timer, channel->local_retransmission_timeout_ms);
+    btstack_run_loop_add_timer(&tx_state->retransmission_timer);
     // try to send
     l2cap_run();
     return 0;
@@ -969,6 +981,13 @@ static void l2cap_run(void){
             channel->send_supervisor_frame_receiver_ready = 0;;
             log_info("Send S-Frame: RR %u", channel->req_seq);
             uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY, 0, 0, channel->req_seq);
+            l2cap_ertm_send_supervisor_frame(channel, control);
+            continue;
+        }
+        if (channel->send_supervisor_frame_receiver_ready_poll){
+            channel->send_supervisor_frame_receiver_ready_poll = 0;;
+            log_info("Send S-Frame: RR %u with poll=1 ", channel->req_seq);
+            uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY, 1, 0, channel->req_seq);
             l2cap_ertm_send_supervisor_frame(channel, control);
             continue;
         }
@@ -1735,6 +1754,8 @@ static void l2cap_ertm_handle_req_seq(l2cap_channel_t * l2cap_channel, uint8_t r
     tx_state = &l2cap_channel->tx_packets_state[l2cap_channel->tx_read_index];
     if ( ((req_seq - 1) & 0x3f) == tx_state->tx_seq){
         log_info("RR seq %u == seq of oldest tx packet -> packet done", req_seq);
+        // stop retransmission timer
+        btstack_run_loop_remove_timer(&tx_state->retransmission_timer);
         l2cap_channel->tx_read_index++;
         if (l2cap_channel->tx_read_index >= l2cap_channel->num_rx_buffers){
             l2cap_channel->tx_read_index = 0;
