@@ -523,6 +523,20 @@ uint8_t l2cap_le_disconnect(uint16_t cid);
 
 /* API_END */
 
+/**
+ * @brief ERTM Set channel as busy.
+ * @note Can be cleared by l2cap_ertm_set_ready
+ * @param local_cid 
+ */
+uint8_t l2cap_ertm_set_busy(uint16_t local_cid);
+
+/**
+ * @brief ERTM Set channel as ready
+ * @note Used after l2cap_ertm_set_busy
+ * @param local_cid 
+ */
+uint8_t l2cap_ertm_set_ready(uint16_t local_cid);
+
 #if defined __cplusplus
 }
 #endif

@@ -1707,6 +1707,16 @@ uint8_t l2cap_accept_ertm_connection(uint16_t local_cid, int ertm_mandatory, uin
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t l2cap_ertm_set_busy(uint16_t local_cid){
+    UNUSED(local_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t l2cap_ertm_set_ready(uint16_t local_cid){
+    return ERROR_CODE_SUCCESS;
+    UNUSED(local_cid);
+}
+
 static void l2cap_ertm_handle_req_seq(l2cap_channel_t * l2cap_channel, uint8_t req_seq){
     l2cap_ertm_tx_packet_state_t * tx_state;
     tx_state = &l2cap_channel->tx_packets_state[l2cap_channel->tx_read_index];
@@ -1719,7 +1729,8 @@ static void l2cap_ertm_handle_req_seq(l2cap_channel_t * l2cap_channel, uint8_t r
     } else {
         log_info("RR seq %u != seq of oldest tx packet %u ???", req_seq, tx_state->tx_seq);
     }
-}                                
+}     
+
 #endif
 
 

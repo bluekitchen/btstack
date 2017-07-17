@@ -143,6 +143,8 @@ static void show_usage(void){
     printf("p      - send echo request\n");
     printf("e      - optional ERTM mode\n");
     printf("E      - mandatory ERTM mode\n");
+    printf("b      - set channel as busy (ERTM)\n");
+    printf("B      - set channel as ready (ERTM)\n");
     printf("d      - disconnect\n");
     printf("t      - terminate ACL connection\n");
     printf("Ctrl-c - exit\n");
@@ -158,6 +160,14 @@ static void stdin_process(char buffer){
             } else {
                 l2cap_create_channel(packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, 100, &local_cid);
             }
+            break;
+        case 'b':
+            printf("Set channel busy\n");
+            l2cap_ertm_set_busy(local_cid);
+            break;
+        case 'B':
+            printf("Set channel ready\n");
+            l2cap_ertm_set_ready(local_cid);
             break;
         case 's':
             printf("Send L2CAP Data\n");
