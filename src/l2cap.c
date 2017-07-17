@@ -586,7 +586,7 @@ static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t l
         return L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU;
     }
     // TODO: check tx_transmit
-    // store int tx packet buffer
+    // store int tx packet bufferx
     int index = channel->tx_write_index;
     l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[index];
     tx_state->tx_seq = channel->next_tx_seq;
@@ -1706,6 +1706,20 @@ uint8_t l2cap_accept_ertm_connection(uint16_t local_cid, int ertm_mandatory, uin
 
     return ERROR_CODE_SUCCESS;
 }
+
+static void l2cap_ertm_handle_req_seq(l2cap_channel_t * l2cap_channel, uint8_t req_seq){
+    l2cap_ertm_tx_packet_state_t * tx_state;
+    tx_state = &l2cap_channel->tx_packets_state[l2cap_channel->tx_read_index];
+    if ( ((req_seq - 1) & 0x3f) == tx_state->tx_seq){
+        log_info("RR seq %u == seq of oldest tx packet -> packet done", req_seq);
+        l2cap_channel->tx_read_index++;
+        if (l2cap_channel->tx_read_index >= l2cap_channel->num_rx_buffers){
+            l2cap_channel->tx_read_index = 0;
+        }
+    } else {
+        log_info("RR seq %u != seq of oldest tx packet %u ???", req_seq, tx_state->tx_seq);
+    }
+}                                
 #endif
 
 
@@ -2480,19 +2494,9 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                         // S-Frame
                         // int poll = (control >> 7) & 0x01;
                         l2cap_supervisory_function_t s = (l2cap_supervisory_function_t) ((control >> 2) & 0x03);
-                        l2cap_ertm_tx_packet_state_t * tx_state;
                         switch (s){
                             case L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY:
-                                tx_state = &l2cap_channel->tx_packets_state[l2cap_channel->tx_read_index];
-                                if ( ((req_seq - 1) & 0x3f) == tx_state->tx_seq){
-                                    log_info("RR seq %u == seq of oldest tx packet -> packet done", req_seq);
-                                    l2cap_channel->tx_read_index++;
-                                    if (l2cap_channel->tx_read_index >= l2cap_channel->num_rx_buffers){
-                                        l2cap_channel->tx_read_index = 0;
-                                    }
-                                } else {
-                                    log_info("RR seq %u != seq of oldest tx packet %u ???", req_seq, tx_state->tx_seq);
-                                }
+                                l2cap_ertm_handle_req_seq(l2cap_channel, req_seq);                                
                                 break;
                             default:
                                 break;
@@ -2506,6 +2510,7 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                         log_info("Control: 0x%04x => SAR %u, ReqSeq %02u, R?, TxSeq %02u", control, (int) sar, req_seq, tx_seq);
                         log_info("SAR: pos %u", l2cap_channel->rx_packets_state->pos);
                         log_info("State: expected_tx_seq %02u, req_seq %02u", l2cap_channel->expected_tx_seq, l2cap_channel->req_seq);
+                        l2cap_ertm_handle_req_seq(l2cap_channel, req_seq);                                
                         // check ordering
                         if (l2cap_channel->expected_tx_seq == tx_seq){
                             log_info("Received expected frame with TxSeq == ExpectedTxSeq == %02u", tx_seq);
