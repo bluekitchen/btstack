@@ -213,7 +213,7 @@ The CC256x chipset is connected via an UART connection and supports the H4, H5 (
 
 The latest generation CC256xC chipsets support multiple LE roles in parallel.
 
-The different CC256x chipset can be identified by the LMP Subversion returned by the *hci_read_local_version_information* command. TI also uses a numeric way (AKA) to identify their chipsets. The table shows the LMP Subversion and AKA number for the main CC256x series.
+The different CC256x chipset can be identified by the LMP Subversion returned by the *hci_read_local_version_information* command. TI also uses a numeric way (AKA) to identify their chipsets. The table shows the LMP Subversion and AKA number for the CC256x and the WL18xx series.
 
 Chipset | LMP Subversion |  AKA
 --------|----------------|-------
@@ -221,6 +221,7 @@ CC2560  |         0x191f | 6.2.31
 CC2560A, CC2564 | 0x1B0F | 6.6.15
 CC256xB |         0x1B90 | 6.7.16
 CC256xC |         0x9a1a | 6.12.26
+WL18xx  |         0xac20 | 11.8.32
 
 **SCO data** is routed to the I2S/PCM interface but can be configured with the [HCI_VS_Write_SCO_Configuration](http://processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands#HCI_VS_Write_SCO_Configuration_.280xFE10.29) command.
 
