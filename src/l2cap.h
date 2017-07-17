@@ -211,11 +211,14 @@ typedef struct {
     // if ertm is not mandatory, allow fallback to L2CAP Basic Mode - flag
     uint8_t ertm_mandatory;
 
-    // sender: buffer index to store tx packet
+    // sender: buffer index of oldest packet
+    uint8_t tx_read_index;
+
+    // sender: buffer index to store next tx packet
     uint8_t tx_write_index;
 
     // sender: buffer index of packet to send next
-    uint8_t tx_read_index;
+    uint8_t tx_send_index;
 
     // sender: next seq nr used for sending
     uint8_t next_tx_seq;
