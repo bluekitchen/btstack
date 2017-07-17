@@ -972,6 +972,13 @@ static void l2cap_run(void){
             l2cap_ertm_send_supervisor_frame(channel, control);
             continue;
         }
+        if (channel->send_supervisor_frame_receiver_not_ready){
+            channel->send_supervisor_frame_receiver_not_ready = 0;;
+            log_info("Send S-Frame: RNR %u", channel->req_seq);
+            uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY, 0, 0, channel->req_seq);
+            l2cap_ertm_send_supervisor_frame(channel, control);
+            continue;
+        }
 #endif
 
     }
@@ -1708,7 +1715,13 @@ uint8_t l2cap_accept_ertm_connection(uint16_t local_cid, int ertm_mandatory, uin
 }
 
 uint8_t l2cap_ertm_set_busy(uint16_t local_cid){
-    UNUSED(local_cid);
+    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid( local_cid);
+    if (!channel) {
+        log_error( "l2cap_decline_connection called but local_cid 0x%x not found", local_cid);
+        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
+    }
+    channel->send_supervisor_frame_receiver_not_ready = 1;
+    l2cap_run();
     return ERROR_CODE_SUCCESS;
 }
 
