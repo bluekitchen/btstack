@@ -11,7 +11,7 @@ import os
 
 usage = '''
 CC256x init script conversion tool for use with BTstack, v0.2
-Copyright 2012-2014 BlueKitchen GmbH
+Copyright 2012-2017 BlueKitchen GmbH
 
 Usage:
 $ ./convert_bts_init_scripts.py main.bts [ble-add-on.bts] output.c
@@ -318,7 +318,8 @@ lmp_subversion_for_aka = {
     '6.2.31'  : 0x191f,
     '6.6.15'  : 0x1B0F,
     '6.7.16'  : 0x1B90,
-    '6.12.26' : 0x9a1a
+    '6.12.26' : 0x9a1a,
+    '11.8.32' : 0xac20,
 }
 
 if aka in lmp_subversion_for_aka:

@@ -64,6 +64,7 @@ SPP = \
     l2cap_signaling.c         \
 	rfcomm.c			      \
     sdp_util.c                \
+    spp_server.c   			  \
 
 SDP_CLIENT += \
     sdp_client.o		      \
@@ -94,7 +95,7 @@ LCD_OBJ    = $(LCD:.c=.o)
 
 # create firmware image from common objects and example source file
 
-all: led_counter.hex 
+all: led_counter.hex
 
 # fetch and convert init scripts
 include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
@@ -115,7 +116,7 @@ include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 led_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${CC2560B} led_counter.o 
 	${CC} $^ ${LDFLAGS} -o $@
 
-ant-test.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} profile.h sdp.o ant_cmds.o ${CC2567} ant-test.o
+ant-test.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} profile.h sdp_server.o ant_cmds.o ${CC2567} ant-test.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 ble_server.out: ${CORE_OBJ} ${COMMON_OBJ} ${BLE_OBJ} ${LCD_OBJ} profile.h ble_server.o
@@ -124,16 +125,16 @@ ble_server.out: ${CORE_OBJ} ${COMMON_OBJ} ${BLE_OBJ} ${LCD_OBJ} profile.h ble_se
 hid_demo.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} ${SPP_OBJ} ${CC2560B} hid_demo.o 
 	${CC} $^ ${LDFLAGS} -o $@
 
-spp_accel.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_accel.o sdp.o hal_adc.o
+spp_accel.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_accel.o sdp_server.o hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-spp_and_le_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${BLE_OBJ} spp_and_le_counter.h spp_and_le_counter.o sdp.o
+spp_and_le_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${BLE_OBJ} spp_and_le_counter.h spp_and_le_counter.o sdp_server.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-spp_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_counter.o sdp.o
+spp_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_counter.o sdp_server.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-spp_flowcontrol.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_flowcontrol.o sdp.o
+spp_flowcontrol.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_flowcontrol.o sdp_server.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 gap_inquiry.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} ad_parser.o gap_inquiry.o
