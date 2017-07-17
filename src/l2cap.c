@@ -560,16 +560,57 @@ static inline uint16_t l2cap_encanced_control_field_for_supevisor_frame(l2cap_su
 static int l2cap_next_ertm_seq_nr(int seq_nr){
     return (seq_nr + 1) & 0x3f;
 }
+static void l2cap_ertm_next_tx_write_index(l2cap_channel_t * channel){
+    channel->tx_write_index++;
+    if (channel->tx_write_index < channel->num_tx_buffers) return;
+    channel->tx_write_index = 0;
+}
+static int l2cap_ertm_send_information_frame(l2cap_channel_t * channel, int index){
+    l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[index];
+    hci_reserve_packet_buffer();
+    uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
+    uint16_t control = l2cap_encanced_control_field_for_information_frame(tx_state->tx_seq, 0, 0, L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU);
+    log_info("I-Frame: control 0x%04x", control);
+    little_endian_store_16(acl_buffer, 8, control);
+    memcpy(&acl_buffer[8+2], &channel->tx_packets_data[index * channel->local_mtu], tx_state->len);
+    // send
+    return l2cap_send_prepared(channel->local_cid, 2 + tx_state->len);
+}
+static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t len){
+    if (len > channel->remote_mtu){
+        log_error("l2cap_send cid 0x%02x, data length exceeds remote MTU.", channel->local_cid);
+        return L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU;
+    }
+    // TODO: check tx_transmit
+    // store int tx packet buffer
+    int index = channel->tx_write_index;
+    l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[index];
+    tx_state->tx_seq = channel->next_tx_seq;
+    tx_state->len = len;
+    memcpy(&channel->tx_packets_data[index * channel->local_mtu], data, len);
+    // update
+    channel->next_tx_seq = l2cap_next_ertm_seq_nr(channel->next_tx_seq);
+    l2cap_ertm_next_tx_write_index(channel);
+    // test sendiging it right away
+    l2cap_ertm_send_information_frame(channel, index);
+    return 0;
+}
 #endif
 
 // assumption - only on Classic connections
 int l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len){
-
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         log_error("l2cap_send no channel for cid 0x%02x", local_cid);
         return -1;   // TODO: define error
     }
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    // send in ERTM
+    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+        return l2cap_ertm_send(channel, data, len);
+    }
+#endif
 
     if (len > channel->remote_mtu){
         log_error("l2cap_send cid 0x%02x, data length exceeds remote MTU.", local_cid);
@@ -583,22 +624,8 @@ int l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len){
 
     hci_reserve_packet_buffer();
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
-
-    int control_size = 0;
-#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-    // hack to send i-frames
-    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
-        uint16_t control = l2cap_encanced_control_field_for_information_frame(channel->next_tx_seq, 0, 0, L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU);
-        log_info("I-Frame: control 0x%04x", control);
-        little_endian_store_16(acl_buffer, 8, control);
-        channel->next_tx_seq = l2cap_next_ertm_seq_nr(channel->next_tx_seq);
-        control_size = 2;
-    }
-#endif
-
-    memcpy(&acl_buffer[8+control_size], data, len);
-
-    return l2cap_send_prepared(local_cid, len+control_size);
+    memcpy(&acl_buffer[8], data, len);
+    return l2cap_send_prepared(local_cid, len);
 }
 
 int l2cap_send_echo_request(hci_con_handle_t con_handle, uint8_t *data, uint16_t len){

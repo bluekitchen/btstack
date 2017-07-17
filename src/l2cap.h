@@ -123,6 +123,7 @@ typedef struct {
 
 typedef struct {
     uint8_t tx_seq;
+    uint16_t len;
 } l2cap_ertm_tx_packet_state_t;
 
 
@@ -210,11 +211,17 @@ typedef struct {
     // if ertm is not mandatory, allow fallback to L2CAP Basic Mode - flag
     uint8_t ertm_mandatory;
 
-    // receiver: send RR frame - flag
-    uint8_t send_supervisor_frame_receiver_ready;
+    // sender: buffer index to store tx packet
+    uint8_t tx_write_index;
+
+    // sender: buffer index of packet to send next
+    uint8_t tx_read_index;
 
     // sender: next seq nr used for sending
     uint8_t next_tx_seq;
+
+    // receiver: send RR frame - flag
+    uint8_t send_supervisor_frame_receiver_ready;
 
     // receiver: value of tx_seq in next expected i-frame
     uint8_t expected_tx_seq;
