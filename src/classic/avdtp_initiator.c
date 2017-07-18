@@ -180,7 +180,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                         stream_endpoint->remote_sep_index = remote_sep_index;
                     } else {
                         stream_endpoint->remote_sep_index = connection->remote_seps_num;
-                        stream_endpoint->connection->remote_seps_num++;
+                        connection->remote_seps_num++;
                     }
                     connection->remote_seps[stream_endpoint->remote_sep_index] = sep;
                     log_info("    INT: configured remote seid %d, to %p", connection->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
