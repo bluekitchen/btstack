@@ -124,8 +124,9 @@ typedef struct {
 typedef struct {
     btstack_timer_source_t retransmission_timer;
     btstack_timer_source_t monitor_timer;
-    uint8_t tx_seq;
     uint16_t len;
+    uint8_t tx_seq;
+    uint8_t retry_count;
 } l2cap_ertm_tx_packet_state_t;
 
 

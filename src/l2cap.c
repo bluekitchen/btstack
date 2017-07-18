@@ -569,16 +569,52 @@ static void l2cap_ertm_next_tx_write_index(l2cap_channel_t * channel){
     if (channel->tx_write_index < channel->num_tx_buffers) return;
     channel->tx_write_index = 0;
 }
-static void l2cap_ertm_retransmission_timeout_callback(btstack_timer_source_t * ts){
-    log_info("l2cap_ertm_retransmission_timeout_callback");
-    l2cap_channel_t * channel = (l2cap_channel_t *) btstack_run_loop_get_timer_context(ts);
-    channel->send_supervisor_frame_receiver_ready_poll = 1;
-    l2cap_run();
-}
 static void l2cap_ertm_monitor_timeout_callback(btstack_timer_source_t * ts){
     log_info("l2cap_ertm_monitor_timeout_callback");
-    l2cap_channel_t * channel = (l2cap_channel_t *) btstack_run_loop_get_timer_context(ts);
-    channel->send_supervisor_frame_receiver_ready_poll = 1;
+    l2cap_channel_t * l2cap_channel = (l2cap_channel_t *) btstack_run_loop_get_timer_context(ts);
+
+    // TODO: we assume that it's the oldest packet
+    l2cap_ertm_tx_packet_state_t * tx_state;
+    tx_state = &l2cap_channel->tx_packets_state[l2cap_channel->tx_read_index];
+
+    // check retry count
+    if (tx_state->retry_count < l2cap_channel->remote_max_transmit){
+        // increment retry count
+        tx_state->retry_count++;
+
+        // start monitor timer
+        btstack_run_loop_set_timer_handler(&tx_state->monitor_timer, &l2cap_ertm_monitor_timeout_callback);
+        btstack_run_loop_set_timer_context(&tx_state->monitor_timer, l2cap_channel);
+        btstack_run_loop_set_timer(&tx_state->monitor_timer, l2cap_channel->local_monitor_timeout_ms);
+        btstack_run_loop_add_timer(&tx_state->monitor_timer);
+
+        // send RR/P=1
+        l2cap_channel->send_supervisor_frame_receiver_ready_poll = 1;
+    } else {
+        log_info("Monitor timer expired & retry count >= max transmit -> disconnect");
+        l2cap_channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+    }
+    l2cap_run();
+}
+static void l2cap_ertm_retransmission_timeout_callback(btstack_timer_source_t * ts){
+    log_info("l2cap_ertm_retransmission_timeout_callback");
+    l2cap_channel_t * l2cap_channel = (l2cap_channel_t *) btstack_run_loop_get_timer_context(ts);
+    
+    // TODO: we assume that it's the oldest packet
+    l2cap_ertm_tx_packet_state_t * tx_state;
+    tx_state = &l2cap_channel->tx_packets_state[l2cap_channel->tx_read_index];
+
+    // set retry count = 1
+    tx_state->retry_count = 1;
+
+    // start monitor timer
+    btstack_run_loop_set_timer_handler(&tx_state->monitor_timer, &l2cap_ertm_monitor_timeout_callback);
+    btstack_run_loop_set_timer_context(&tx_state->monitor_timer, l2cap_channel);
+    btstack_run_loop_set_timer(&tx_state->monitor_timer, l2cap_channel->local_monitor_timeout_ms);
+    btstack_run_loop_add_timer(&tx_state->monitor_timer);
+ 
+    // send RR/P=1
+    l2cap_channel->send_supervisor_frame_receiver_ready_poll = 1;
     l2cap_run();
 }
 static int l2cap_ertm_send_information_frame(l2cap_channel_t * channel, int index){
@@ -603,6 +639,7 @@ static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t l
     l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[index];
     tx_state->tx_seq = channel->next_tx_seq;
     tx_state->len = len;
+    tx_state->retry_count = 0;
     memcpy(&channel->tx_packets_data[index * channel->local_mtu], data, len);
     // update
     channel->next_tx_seq = l2cap_next_ertm_seq_nr(channel->next_tx_seq);
@@ -612,11 +649,6 @@ static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t l
     btstack_run_loop_set_timer_context(&tx_state->retransmission_timer, channel);
     btstack_run_loop_set_timer(&tx_state->retransmission_timer, channel->local_retransmission_timeout_ms);
     btstack_run_loop_add_timer(&tx_state->retransmission_timer);
-    // set monitor timer
-    btstack_run_loop_set_timer_handler(&tx_state->monitor_timer, &l2cap_ertm_monitor_timeout_callback);
-    btstack_run_loop_set_timer_context(&tx_state->monitor_timer, channel);
-    btstack_run_loop_set_timer(&tx_state->monitor_timer, channel->local_monitor_timeout_ms);
-    btstack_run_loop_add_timer(&tx_state->monitor_timer);
     // try to send
     l2cap_run();
     return 0;

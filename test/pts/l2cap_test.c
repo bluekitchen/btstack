@@ -69,6 +69,7 @@ static uint16_t handle;
 static uint16_t local_cid;
 static int l2cap_ertm;
 static int l2cap_ertm_mandatory;
+static int l2cap_max_transmit = 2;  // some tests require > 1
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint8_t ertm_buffer[10000];
@@ -113,7 +114,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     uint16_t l2cap_cid  = little_endian_read_16(packet, 12);
                     if (l2cap_ertm){
                         printf("L2CAP Accepting incoming connection request in ERTM\n"); 
-                        l2cap_accept_ertm_connection(l2cap_cid, l2cap_ertm_mandatory, 1, 2000, 12000, 4, 4, ertm_buffer, sizeof(ertm_buffer));
+                        l2cap_accept_ertm_connection(l2cap_cid, l2cap_ertm_mandatory, l2cap_max_transmit, 2000, 12000, 4, 4, ertm_buffer, sizeof(ertm_buffer));
                     } else {
                         printf("L2CAP Accepting incoming connection request in Basic Mode\n"); 
                         l2cap_accept_connection(l2cap_cid);
@@ -156,7 +157,7 @@ static void stdin_process(char buffer){
         case 'c':
             printf("Creating L2CAP Connection to %s, PSM SDP\n", bd_addr_to_str(remote));
             if (l2cap_ertm){
-                l2cap_create_ertm_channel(packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, l2cap_ertm_mandatory, 1, 2000, 12000, 4, 4, ertm_buffer, sizeof(ertm_buffer), &local_cid);
+                l2cap_create_ertm_channel(packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, l2cap_ertm_mandatory, l2cap_max_transmit, 2000, 12000, 4, 4, ertm_buffer, sizeof(ertm_buffer), &local_cid);
             } else {
                 l2cap_create_channel(packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, 100, &local_cid);
             }
