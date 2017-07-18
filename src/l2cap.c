@@ -1054,6 +1054,13 @@ static void l2cap_run(void){
             l2cap_ertm_send_supervisor_frame(channel, control);
             continue;
         }
+        if (channel->send_supervisor_frame_selective_reject){
+            channel->send_supervisor_frame_selective_reject = 0;
+            log_info("Send S-Frame: SREJ %u", channel->expected_tx_seq);
+            uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_SREJ_SELECTIVE_REJECT, 0, 0, channel->expected_tx_seq);
+            l2cap_ertm_send_supervisor_frame(channel, control);
+            continue;
+        }
 
         if (channel->srej_active){
             int i;
@@ -2716,8 +2723,14 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                                     break;
                             }
                         } else {
-                            log_info("Received unexpected frame TxSeq %u but expected %u", tx_seq, l2cap_channel->expected_tx_seq);
-                            l2cap_channel->send_supervisor_frame_reject = 1;
+                            int delta = (tx_seq - l2cap_channel->expected_tx_seq) & 0x3f;
+                            if (delta < 2){
+                                log_info("Received unexpected frame TxSeq %u but expected %u -> send S-SREJ", tx_seq, l2cap_channel->expected_tx_seq);
+                                l2cap_channel->send_supervisor_frame_selective_reject = 1;
+                            } else {
+                                log_info("Received unexpected frame TxSeq %u but expected %u -> send S-REJ", tx_seq, l2cap_channel->expected_tx_seq);
+                                l2cap_channel->send_supervisor_frame_reject = 1;
+                            }
                         }
                     }
                     break;
