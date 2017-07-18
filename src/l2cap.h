@@ -243,6 +243,9 @@ typedef struct {
     // receiver: send RNR frame - flag
     uint8_t send_supervisor_frame_receiver_not_ready;
 
+    // receiver: send REJ frame - flag
+    uint8_t send_supervisor_frame_reject;
+
     // receiver: value of tx_seq in next expected i-frame
     uint8_t expected_tx_seq;
 

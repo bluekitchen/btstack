@@ -1047,6 +1047,13 @@ static void l2cap_run(void){
             l2cap_ertm_send_supervisor_frame(channel, control);
             continue;
         }
+        if (channel->send_supervisor_frame_reject){
+            channel->send_supervisor_frame_reject = 0;
+            log_info("Send S-Frame: REJ %u", channel->req_seq);
+            uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT, 0, 0, channel->req_seq);
+            l2cap_ertm_send_supervisor_frame(channel, control);
+            continue;
+        }
 
         if (channel->srej_active){
             int i;
@@ -2671,7 +2678,7 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                         // check ordering
                         if (l2cap_channel->expected_tx_seq == tx_seq){
                             log_info("Received expected frame with TxSeq == ExpectedTxSeq == %02u", tx_seq);
-                            l2cap_channel->req_seq = tx_seq;
+                            l2cap_channel->req_seq = (tx_seq+1) & 0x3f;
                             l2cap_channel->send_supervisor_frame_receiver_ready = 1;
                             l2cap_channel->expected_tx_seq = l2cap_next_ertm_seq_nr(l2cap_channel->expected_tx_seq);
                             uint16_t sdu_length;
@@ -2707,9 +2714,12 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                                     memcpy(&l2cap_channel->rx_packets_data[l2cap_channel->rx_packets_state->pos], &packet[payload_offset], segment_length);
                                     l2cap_channel->rx_packets_state->pos += segment_length;
                                     break;
-                                }
                             }
+                        } else {
+                            log_info("Received unexpected frame TxSeq %u but expected %u", tx_seq, l2cap_channel->expected_tx_seq);
+                            l2cap_channel->send_supervisor_frame_reject = 1;
                         }
+                    }
                     break;
                 }
 #endif                
