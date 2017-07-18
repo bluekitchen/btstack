@@ -128,6 +128,7 @@ typedef struct {
     uint8_t tx_seq;
     uint8_t retry_count;
     uint8_t retransmission_requested;
+    uint8_t retransmission_final;
 } l2cap_ertm_tx_packet_state_t;
 
 

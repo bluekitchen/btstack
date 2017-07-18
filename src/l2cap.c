@@ -1054,7 +1054,7 @@ static void l2cap_run(void){
                 l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[i];
                 if (tx_state->retransmission_requested) {
                     tx_state->retransmission_requested = 0;
-                    l2cap_ertm_send_information_frame(channel, i, 1);   // final = 1 as SREJ has poll = 1
+                    l2cap_ertm_send_information_frame(channel, i, tx_state->retransmission_final);
                     break;
                 }
             }
@@ -1819,17 +1819,24 @@ uint8_t l2cap_ertm_set_ready(uint16_t local_cid){
 
 static void l2cap_ertm_handle_req_seq(l2cap_channel_t * l2cap_channel, uint8_t req_seq){
     l2cap_ertm_tx_packet_state_t * tx_state;
-    tx_state = &l2cap_channel->tx_packets_state[l2cap_channel->tx_read_index];
-    if ( ((req_seq - 1) & 0x3f) == tx_state->tx_seq){
-        log_info("RR seq %u == seq of oldest tx packet -> packet done", req_seq);
+    while (1){
+        tx_state = &l2cap_channel->tx_packets_state[l2cap_channel->tx_read_index];
+        // calc delta
+        int delta = (req_seq - tx_state->tx_seq) & 0x03f;
+        if (delta == 0) break;  // all packets acknowledged
+        if (delta > l2cap_channel->remote_tx_window_size) break;   
+
+        log_info("RR seq %u => packet with tx_seq %u done", req_seq, tx_state->tx_seq);
+
         // stop retransmission timer
         btstack_run_loop_remove_timer(&tx_state->retransmission_timer);
         l2cap_channel->tx_read_index++;
         if (l2cap_channel->tx_read_index >= l2cap_channel->num_rx_buffers){
             l2cap_channel->tx_read_index = 0;
         }
-    } else {
-        log_info("RR seq %u != seq of oldest tx packet %u ???", req_seq, tx_state->tx_seq);
+
+        // no unack packages
+        if (l2cap_channel->tx_read_index == l2cap_channel->tx_write_index) break;
     }
 }     
 
@@ -2644,6 +2651,7 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                                 if (tx_state){
                                     log_info("Retransmission for tx_seq %u requested", req_seq);
                                     tx_state->retransmission_requested = 1;
+                                    tx_state->retransmission_final = poll;
                                     l2cap_channel->srej_active = 1;
                                 }         
                                 break;
