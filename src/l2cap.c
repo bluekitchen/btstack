@@ -621,7 +621,7 @@ static int l2cap_ertm_send_information_frame(l2cap_channel_t * channel, int inde
     l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[index];
     hci_reserve_packet_buffer();
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
-    uint16_t control = l2cap_encanced_control_field_for_information_frame(tx_state->tx_seq, final, 0, L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU);
+    uint16_t control = l2cap_encanced_control_field_for_information_frame(tx_state->tx_seq, final, channel->req_seq, L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU);
     log_info("I-Frame: control 0x%04x", control);
     little_endian_store_16(acl_buffer, 8, control);
     memcpy(&acl_buffer[8+2], &channel->tx_packets_data[index * channel->local_mtu], tx_state->len);
