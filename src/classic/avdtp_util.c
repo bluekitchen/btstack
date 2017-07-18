@@ -49,6 +49,27 @@
 
 #define MAX_MEDIA_CODEC_INFORMATION_LENGTH 100
 
+static const char * avdtp_si_name[] = {
+    "ERROR",
+    "AVDTP_SI_DISCOVER",
+    "AVDTP_SI_GET_CAPABILITIES",
+    "AVDTP_SI_SET_CONFIGURATION",
+    "AVDTP_SI_GET_CONFIGURATION",
+    "AVDTP_SI_RECONFIGURE", 
+    "AVDTP_SI_OPEN", 
+    "AVDTP_SI_START", 
+    "AVDTP_SI_CLOSE",
+    "AVDTP_SI_SUSPEND",
+    "AVDTP_SI_ABORT", 
+    "AVDTP_SI_SECURITY_CONTROL",
+    "AVDTP_SI_GET_ALL_CAPABILITIES", 
+    "AVDTP_SI_DELAY_REPORT" 
+};
+const char * avdtp_si2str(uint16_t index){
+    if (index <= 0 || index > sizeof(avdtp_si_name)) return avdtp_si_name[0];
+    return avdtp_si_name[index];
+}
+
 void avdtp_initialize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint){
     stream_endpoint->connection = NULL;
     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;

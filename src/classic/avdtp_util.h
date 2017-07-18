@@ -109,6 +109,7 @@ uint8_t avdtp_find_remote_sep(avdtp_connection_t * connection, uint8_t remote_se
 // uint16_t avdtp_cid(avdtp_stream_endpoint_t * stream_endpoint);
 uint8_t  avdtp_local_seid(avdtp_stream_endpoint_t * stream_endpoint);
 uint8_t  avdtp_remote_seid(avdtp_stream_endpoint_t * stream_endpoint);
+const char * avdtp_si2str(uint16_t index);
 
 #if defined __cplusplus
 }
