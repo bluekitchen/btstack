@@ -2588,12 +2588,26 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                         // S-Frame
                         int poll = (control >> 4) & 0x01;
                         l2cap_supervisory_function_t s = (l2cap_supervisory_function_t) ((control >> 2) & 0x03);
+                        log_info("Control: 0x%04x => Supervisory function %u, ReqSeq %02u", control, (int) s, req_seq);
                         switch (s){
                             case L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY:
+                                log_info("L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY");
                                 l2cap_ertm_handle_req_seq(l2cap_channel, req_seq);
                                 if (poll){
                                     l2cap_channel->send_supervisor_frame_receiver_ready_final = 1;
                                 }                                
+                                break;
+                            case L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT:
+                                log_info("L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT");
+                                l2cap_ertm_handle_req_seq(l2cap_channel, req_seq);
+                                // rsetart transmittion from last unacknowledted packet (earlier packets already freed in l2cap_ertm_handle_req_seq)
+                                l2cap_channel->tx_send_index = l2cap_channel->tx_read_index;
+                                break;
+                            case L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY:
+                                log_error("L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY");
+                                break;
+                            case L2CAP_SUPERVISORY_FUNCTION_SREJ_SELECTIVE_REJECT:
+                                log_error("L2CAP_SUPERVISORY_FUNCTION_SREJ_SELECTIVE_REJECT");
                                 break;
                             default:
                                 break;
