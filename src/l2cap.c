@@ -570,8 +570,13 @@ static void l2cap_ertm_next_tx_write_index(l2cap_channel_t * channel){
     channel->tx_write_index = 0;
 }
 static void l2cap_ertm_retransmission_timeout_callback(btstack_timer_source_t * ts){
-    UNUSED(ts);
     log_info("l2cap_ertm_retransmission_timeout_callback");
+    l2cap_channel_t * channel = (l2cap_channel_t *) btstack_run_loop_get_timer_context(ts);
+    channel->send_supervisor_frame_receiver_ready_poll = 1;
+    l2cap_run();
+}
+static void l2cap_ertm_monitor_timeout_callback(btstack_timer_source_t * ts){
+    log_info("l2cap_ertm_monitor_timeout_callback");
     l2cap_channel_t * channel = (l2cap_channel_t *) btstack_run_loop_get_timer_context(ts);
     channel->send_supervisor_frame_receiver_ready_poll = 1;
     l2cap_run();
@@ -607,6 +612,11 @@ static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t l
     btstack_run_loop_set_timer_context(&tx_state->retransmission_timer, channel);
     btstack_run_loop_set_timer(&tx_state->retransmission_timer, channel->local_retransmission_timeout_ms);
     btstack_run_loop_add_timer(&tx_state->retransmission_timer);
+    // set monitor timer
+    btstack_run_loop_set_timer_handler(&tx_state->monitor_timer, &l2cap_ertm_monitor_timeout_callback);
+    btstack_run_loop_set_timer_context(&tx_state->monitor_timer, channel);
+    btstack_run_loop_set_timer(&tx_state->monitor_timer, channel->local_monitor_timeout_ms);
+    btstack_run_loop_add_timer(&tx_state->monitor_timer);
     // try to send
     l2cap_run();
     return 0;
