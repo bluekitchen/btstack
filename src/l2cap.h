@@ -127,6 +127,7 @@ typedef struct {
     uint16_t len;
     uint8_t tx_seq;
     uint8_t retry_count;
+    uint8_t retransmission_requested;
 } l2cap_ertm_tx_packet_state_t;
 
 
@@ -225,6 +226,9 @@ typedef struct {
 
     // sender: next seq nr used for sending
     uint8_t next_tx_seq;
+
+    // sender: selective retransmission requested
+    uint8_t srej_active;
 
     // receiver: send RR frame - flag
     uint8_t send_supervisor_frame_receiver_ready;

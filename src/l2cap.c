@@ -617,11 +617,11 @@ static void l2cap_ertm_retransmission_timeout_callback(btstack_timer_source_t * 
     l2cap_channel->send_supervisor_frame_receiver_ready_poll = 1;
     l2cap_run();
 }
-static int l2cap_ertm_send_information_frame(l2cap_channel_t * channel, int index){
+static int l2cap_ertm_send_information_frame(l2cap_channel_t * channel, int index, int final){
     l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[index];
     hci_reserve_packet_buffer();
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
-    uint16_t control = l2cap_encanced_control_field_for_information_frame(tx_state->tx_seq, 0, 0, L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU);
+    uint16_t control = l2cap_encanced_control_field_for_information_frame(tx_state->tx_seq, final, 0, L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU);
     log_info("I-Frame: control 0x%04x", control);
     little_endian_store_16(acl_buffer, 8, control);
     memcpy(&acl_buffer[8+2], &channel->tx_packets_data[index * channel->local_mtu], tx_state->len);
@@ -1014,7 +1014,7 @@ static void l2cap_run(void){
                 if (channel->tx_send_index >= channel->num_tx_buffers){
                     channel->tx_send_index = 0;          
                 }
-                l2cap_ertm_send_information_frame(channel, index);
+                l2cap_ertm_send_information_frame(channel, index, 0);   // final = 0
                 continue;
             }
         }
@@ -1046,6 +1046,25 @@ static void l2cap_run(void){
             uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY, 0, 0, channel->req_seq);
             l2cap_ertm_send_supervisor_frame(channel, control);
             continue;
+        }
+
+        if (channel->srej_active){
+            int i;
+            for (i=0;i<channel->num_tx_buffers;i++){
+                l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[i];
+                if (tx_state->retransmission_requested) {
+                    tx_state->retransmission_requested = 0;
+                    l2cap_ertm_send_information_frame(channel, i, 1);   // final = 1 as SREJ has poll = 1
+                    break;
+                }
+            }
+            if (i == channel->num_tx_buffers){
+                // no retransmission request found
+                channel->srej_active = 0;
+            } else {
+                // packet was sent
+                continue;
+            }
         }
 #endif
 
@@ -1814,6 +1833,14 @@ static void l2cap_ertm_handle_req_seq(l2cap_channel_t * l2cap_channel, uint8_t r
     }
 }     
 
+static l2cap_ertm_tx_packet_state_t * l2cap_ertm_get_tx_state(l2cap_channel_t * l2cap_channel, uint8_t tx_seq){
+    int i;
+    for (i=0;i<l2cap_channel->num_tx_buffers;i++){
+        l2cap_ertm_tx_packet_state_t * tx_state = &l2cap_channel->tx_packets_state[i];
+        if (tx_state->tx_seq == tx_seq) return tx_state;
+    }
+    return NULL;
+}
 #endif
 
 
@@ -2589,6 +2616,7 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                         int poll = (control >> 4) & 0x01;
                         l2cap_supervisory_function_t s = (l2cap_supervisory_function_t) ((control >> 2) & 0x03);
                         log_info("Control: 0x%04x => Supervisory function %u, ReqSeq %02u", control, (int) s, req_seq);
+                        l2cap_ertm_tx_packet_state_t * tx_state;
                         switch (s){
                             case L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY:
                                 log_info("L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY");
@@ -2607,7 +2635,17 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                                 log_error("L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY");
                                 break;
                             case L2CAP_SUPERVISORY_FUNCTION_SREJ_SELECTIVE_REJECT:
-                                log_error("L2CAP_SUPERVISORY_FUNCTION_SREJ_SELECTIVE_REJECT");
+                                log_info("L2CAP_SUPERVISORY_FUNCTION_SREJ_SELECTIVE_REJECT");
+                                if (poll){
+                                    l2cap_ertm_handle_req_seq(l2cap_channel, req_seq);
+                                }
+                                // find requested i-frame
+                                tx_state = l2cap_ertm_get_tx_state(l2cap_channel, req_seq);
+                                if (tx_state){
+                                    log_info("Retransmission for tx_seq %u requested", req_seq);
+                                    tx_state->retransmission_requested = 1;
+                                    l2cap_channel->srej_active = 1;
+                                }         
                                 break;
                             default:
                                 break;
