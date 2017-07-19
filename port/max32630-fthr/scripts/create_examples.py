@@ -8,6 +8,24 @@ import shutil
 import subprocess
 import sys
 
+# build all template
+build_all = '''
+SUBDIRS =  \\
+%s
+
+all:
+\techo Building all examples
+\tfor dir in $(SUBDIRS); do \\
+\t$(MAKE) -C $$dir || exit 1; \\
+\tdone
+
+clean:
+\techo Cleaning all ports
+\tfor dir in $(SUBDIRS); do \\
+\t$(MAKE) -C $$dir clean; \\
+\tdone
+'''
+
 # get script path
 script_path = os.path.abspath(os.path.dirname(sys.argv[0])) + '/../'
 
@@ -41,10 +59,13 @@ print("Creating example projects:")
 # iterate over btstack examples
 example_files = os.listdir(examples_embedded)
 
+examples = []
+
 for file in example_files:
     if not file.endswith(".c"):
         continue
     example = file[:-2]
+    examples.append(example)
 
     # create folder
     project_folder = projects_path + example + "/"
@@ -71,5 +92,8 @@ for file in example_files:
                 fout.write(line)
 
     print("- %s" % example)
+
+with open(projects_path+'Makefile', 'wt') as fout:
+    fout.write(build_all % ' \\\n'.join(examples))
 
 print("Projects are ready for compile in example folder. See README for details.")
