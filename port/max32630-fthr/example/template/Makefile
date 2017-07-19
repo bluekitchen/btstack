@@ -92,14 +92,19 @@ IPATH += $(BOARD_DIR)/Include
 
 # BTstack
 BTSTACK_ROOT = ../../../..
+VPATH += $(BTSTACK_ROOT)/chipset/cc256x
+VPATH += $(BTSTACK_ROOT)/example
+VPATH += $(BTSTACK_ROOT)/port/pegasus-max3263x
 VPATH += $(BTSTACK_ROOT)/src
 VPATH += $(BTSTACK_ROOT)/src/ble
 VPATH += $(BTSTACK_ROOT)/src/classic
-VPATH += $(BTSTACK_ROOT)/chipset/cc256x
+VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce 
+VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce
+VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player
+VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods
+VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
 VPATH += ${BTSTACK_ROOT}/platform/embedded
 VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service/
-VPATH += $(BTSTACK_ROOT)/port/pegasus-max3263x
-VPATH += $(BTSTACK_ROOT)/example
 
 PROJ_CFLAGS += \
     -I$(BTSTACK_ROOT)/src \
@@ -109,20 +114,24 @@ PROJ_CFLAGS += \
     -I$(BTSTACK_ROOT)/platform/embedded \
     -I${BTSTACK_ROOT}/port/pegasus-max3263x \
     -I${BTSTACK_ROOT}/src/ble/gatt-service/ \
-    -I${BTSTACK_ROOT}/example
+    -I${BTSTACK_ROOT}/example \
+    -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include \
+	-I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include \
+	-I${BTSTACK_ROOT}/3rd-party/hxcmod-player \
+
 
 CORE = \
-        ad_parser.o \
-        btstack_linked_list.o \
-        btstack_memory.o \
-        btstack_memory_pool.o \
-        btstack_run_loop.o \
-        btstack_util.o \
-        l2cap.o \
-        l2cap_signaling.o \
-        btstack_run_loop_embedded.o \
-		$(CC2564B) \
-        hci_transport_h4.o
+    ad_parser.o \
+    btstack_linked_list.o \
+    btstack_memory.o \
+    btstack_memory_pool.o \
+    btstack_run_loop.o \
+    btstack_util.o \
+    l2cap.o \
+    l2cap_signaling.o \
+    btstack_run_loop_embedded.o \
+	$(CC2564B) \
+    hci_transport_h4.o
 
 COMMON = \
     btstack_chipset_cc256x.o  \
@@ -145,7 +154,42 @@ BLE = \
     att_server.o              \
     le_device_db_memory.o  \
     att_dispatch.o            \
-    sm.o
+    sm.o \
+    ancs_client.o \
+    gatt_client.o \
+    hid_device.o \
+    battery_service_server.o
+
+AVDTP += \
+	avdtp_util.c  		\
+	avdtp.c  			\
+	avdtp_initiator.c 	\
+	avdtp_acceptor.c  	\
+	avdtp_source.c 		\
+	avdtp_sink.c  		\
+	a2dp_source.c 		\
+	a2dp_sink.c  		\
+	btstack_ring_buffer.c \
+	avrcp.c \
+
+HFP_OBJ += sco_demo_util.o btstack_ring_buffer.o hfp.o hfp_gsm_model.o hfp_ag.o hfp_hf.o
+
+# List of files for Bluedroid SBC codec
+include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
+include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
+
+SBC_DECODER += \
+	btstack_sbc_plc.c \
+	btstack_sbc_bludroid.c \
+
+SBC_ENCODER += \
+	btstack_sbc_bludroid.c \
+	hfp_msbc.c \
+
+HXCMOD_PLAYER = \
+	hxcmod.c 						\
+	nao-deceased_by_disease.c 	\
+
 
 ADDITION =
 
@@ -153,11 +197,24 @@ CORE_OBJ   = $(CORE:.c=.o)
 COMMON_OBJ = $(COMMON:.c=.o)
 BLE_OBJ    = $(BLE:.c=.o)
 CLASSIC_OBJ = $(CLASSIC:.c=.o)
+AVDTP_OBJ   = $(AVDTP:.c=.o)
+SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
+SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
+CVSD_PLC_OBJ = $(CVSD_PLC:.c=.o)
+HXCMOD_PLAYER_OBJ = $(HXCMOD_PLAYER:.c=.o)
 
 SRCS += $(CORE_OBJ)
 SRCS += $(COMMON_OBJ)
 SRCS += $(BLE_OBJ)
 SRCS += $(CLASSIC_OBJ)
+SRCS += $(AVDTP_OBJ)
+SRCS += $(SBC_DECODER_OBJ)
+SRCS += $(SBC_ENCODER_OBJ)
+SRCS += $(CVSD_PLC_OBJ)
+SRCS += $(HXCMOD_PLAYER_OBJ)
+SRCS += $(HFP_OBJ)
+SRCS += hsp_hs.o hsp_ag.o 
+SRCS += obex_iterator.o goep_client.o pbap_client.o
 
 # Enable assertion checking for development
 PROJ_CFLAGS+=-DMXC_ASSERT_ENABLE

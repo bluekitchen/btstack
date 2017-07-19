@@ -49,6 +49,9 @@ printf messages are redirected to UART2. UART2 is accessible via the DAPLINK Pro
 Additional debug information can be enabled by uncommenting ENABLE_LOG_INFO in the src/btstack_config.h header file and a clean rebuild.
 
 ## TODOs
+  - Support for BTSTACK_STDIN
   - Add flash-openocd to Makefile template
   - Implement BTstack Flash interface to support link key storage in flash memory.
   - Add Eclipse CDT projects for max32630fthr
+  - Implement hal_led.h to control LED on board
+ 
