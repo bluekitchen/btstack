@@ -461,7 +461,6 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
 
 void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avdtp_context_t * context){
     bd_addr_t event_addr;
-    hci_con_handle_t con_handle;
     uint16_t psm;
     uint16_t local_cid;
     avdtp_stream_endpoint_t * stream_endpoint = NULL;
@@ -553,10 +552,8 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                         return;
                     }
                     
-                    con_handle = l2cap_event_channel_opened_get_handle(packet);
-
                     // log_info("L2CAP_EVENT_CHANNEL_OPENED: Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x",
-                           // bd_addr_to_str(event_addr), con_handle, psm, local_cid, l2cap_event_channel_opened_get_remote_cid(packet));
+                           // bd_addr_to_str(event_addr), l2cap_event_channel_opened_get_handle(packet), psm, local_cid, l2cap_event_channel_opened_get_remote_cid(packet));
 
                     if (psm != BLUETOOTH_PROTOCOL_AVDTP) break;
                     

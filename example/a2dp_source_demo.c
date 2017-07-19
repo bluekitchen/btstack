@@ -154,7 +154,7 @@ static void produce_audio(int16_t * pcm_buffer, int num_samples){
     }    
 }
 
-static int fill_sbc_audio_buffer(a2dp_media_sending_context_t * context){
+static int a2dp_demo_fill_sbc_audio_buffer(a2dp_media_sending_context_t * context){
     // perform sbc encodin
     int total_num_bytes_read = 0;
     int num_audio_samples_per_sbc_buffer = btstack_sbc_encoder_num_audio_frames();
@@ -177,7 +177,7 @@ static int fill_sbc_audio_buffer(a2dp_media_sending_context_t * context){
     return total_num_bytes_read;
 }
 
-static void avdtp_audio_timeout_handler(btstack_timer_source_t * timer){
+static void a2dp_demo_audio_timeout_handler(btstack_timer_source_t * timer){
     a2dp_media_sending_context_t * context = (a2dp_media_sending_context_t *) btstack_run_loop_get_timer_context(timer);
     btstack_run_loop_set_timer(&context->audio_timer, AUDIO_TIMEOUT_MS); 
     btstack_run_loop_add_timer(&context->audio_timer);
@@ -200,7 +200,7 @@ static void avdtp_audio_timeout_handler(btstack_timer_source_t * timer){
 
     if (context->sbc_ready_to_send) return;
 
-    fill_sbc_audio_buffer(context);
+    a2dp_demo_fill_sbc_audio_buffer(context);
 
     if ((context->sbc_storage_count + btstack_sbc_encoder_sbc_buffer_length()) > context->max_media_payload_size){
         // schedule sending
@@ -215,7 +215,7 @@ static void a2dp_demo_timer_start(a2dp_media_sending_context_t * context){
     context->sbc_ready_to_send = 0;
     context->streaming = 1;
     btstack_run_loop_remove_timer(&context->audio_timer);
-    btstack_run_loop_set_timer_handler(&context->audio_timer, avdtp_audio_timeout_handler);
+    btstack_run_loop_set_timer_handler(&context->audio_timer, a2dp_demo_audio_timeout_handler);
     btstack_run_loop_set_timer_context(&context->audio_timer, context);
     btstack_run_loop_set_timer(&context->audio_timer, AUDIO_TIMEOUT_MS); 
     btstack_run_loop_add_timer(&context->audio_timer);
