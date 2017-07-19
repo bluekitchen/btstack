@@ -266,6 +266,15 @@ static hci_transport_config_uart_t config = {
 	    "max32630fthr",
 	};
 
+// hal_led.h implementation
+#include "hal_led.h"
+void hal_led_off(void){
+}
+void hal_led_on(void){
+}
+void hal_led_toggle(void){
+}
+
 int bluetooth_main(void)
 {
 	bt_comm_init();
