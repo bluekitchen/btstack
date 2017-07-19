@@ -178,7 +178,9 @@ static const char * device_addr_string = "54:E4:3A:26:A2:39";
 
 static uint16_t a2dp_cid = 0;
 static uint8_t sdp_avdtp_sink_service_buffer[150];
+#ifdef HAVE_BTSTACK_STDIN
 static avdtp_sep_t sep;
+#endif
 
 static avdtp_media_codec_configuration_sbc_t sbc_configuration;
 
@@ -196,7 +198,10 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static int media_initialized = 0;
 
+#ifdef HAVE_BTSTACK_STDIN
 static bd_addr_t device_addr;
+#endif
+
 static uint16_t avrcp_cid = 0;
 static uint8_t sdp_avrcp_controller_service_buffer[200];
 
@@ -864,13 +869,13 @@ static uint8_t media_sbc_codec_capabilities[] = {
     2, 53
 }; 
 
-#ifdef HAVE_BTSTACK_STDIN
 static uint8_t media_sbc_codec_configuration[] = {
     (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
     (AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
     2, 53
 }; 
 
+#ifdef HAVE_BTSTACK_STDIN
 static void stdin_process(char cmd){
     sep.seid = 1;
     switch (cmd){
