@@ -42,6 +42,8 @@ print("Creating examples in local folder")
 for file in os.listdir(examples_embedded):
     if not file.endswith(".c"):
         continue
+    if file in ['panu_demo.c', 'sco_demo_util.c']:
+        continue
 
     example = file[:-2]
     gatt_path = examples_embedded + example + ".gatt"

@@ -1,11 +1,11 @@
-!*.a
 a2dp_sink_demo
-a2dp_source_demo
 ancs_client_demo
+avdtp_sink_demo
+avdtp_source_demo
 gap_dedicated_bonding
-gap_inquiry/
-gap_le_advertisements/
-gatt_battery_query/
+gap_inquiry
+gap_le_advertisements
+gatt_battery_query
 gatt_browser
 hfp_ag_demo
 hfp_hf_demo
@@ -16,7 +16,6 @@ le_counter
 le_streamer
 le_streamer_client
 led_counter
-panu_demo
 pbap_client_demo
 sdp_bnep_query
 sdp_general_query
@@ -29,4 +28,4 @@ spp_counter
 spp_flowcontrol
 spp_streamer
 spp_streamer_client
-template/sdkconfig.old
+Makefile

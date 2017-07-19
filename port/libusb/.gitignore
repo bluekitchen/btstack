@@ -49,4 +49,7 @@ spp_and_le_streamer.h
 spp_counter
 spp_streamer
 spp_streamer
+spp_streamer_clientavdtp_sink_demo
+avdtp_source_demo
+avdtp_sink_demo
 spp_streamer_client
