@@ -66,7 +66,7 @@ static uint8_t msbc_buffer[2*(MSBC_FRAME_SIZE + MSBC_EXTRA_SIZE)];
 static int msbc_buffer_offset = 0; 
 
 void hfp_msbc_init(void){
-    btstack_sbc_encoder_init(&state, SBC_MODE_mSBC, 16, 8, 0, 16000, 26);
+    btstack_sbc_encoder_init(&state, SBC_MODE_mSBC, 16, 8, 0, 16000, 26, 0);
     msbc_buffer_offset = 0;
     msbc_sequence_number = 0;
 }
