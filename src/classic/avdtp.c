@@ -74,7 +74,7 @@ static uint16_t avdtp_get_next_initiator_transaction_label(avdtp_context_t * con
     return context->initiator_transaction_id_counter;
 }
 
-static uint16_t avdtp_get_next_avdtp_cid(){
+static uint16_t avdtp_get_next_avdtp_cid(void){
     avdtp_cid_counter++;
     if (avdtp_cid_counter == 0){
         avdtp_cid_counter = 1;
