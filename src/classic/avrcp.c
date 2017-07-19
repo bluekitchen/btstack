@@ -1179,7 +1179,7 @@ static void avrcp_handle_can_send_now(avrcp_connection_t * connection){
     }
 }
 
-static uint16_t avdtp_get_next_avrcp_cid(){
+static uint16_t avdtp_get_next_avrcp_cid(void){
     avrcp_cid_counter++;
     if (avrcp_cid_counter == 0){
         avrcp_cid_counter = 1;
