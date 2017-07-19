@@ -63,15 +63,15 @@ endif
 CMSIS_ROOT=$(LIBS_DIR)/CMSIS
 
 # Where to find source files for this test
-VPATH= . ../src
+VPATH= . ../../src
 
 # Where to find header files for this test
-IPATH= . ../src
+IPATH= . ../../src
 
 BOARD_DIR=$(LIBS_DIR)/Boards
 
-IPATH += ../board/
-VPATH += ../board/
+IPATH += ../../board/
+VPATH += ../../board/
 
 # Source files for this test (add path to VPATH below)
 SRCS = main.c
@@ -91,7 +91,7 @@ VPATH += $(BOARD_DIR)/Source
 IPATH += $(BOARD_DIR)/Include
 
 # BTstack
-BTSTACK_ROOT = ../../..
+BTSTACK_ROOT = ../../../..
 VPATH += $(BTSTACK_ROOT)/src
 VPATH += $(BTSTACK_ROOT)/src/ble
 VPATH += $(BTSTACK_ROOT)/src/classic

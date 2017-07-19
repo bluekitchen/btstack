@@ -31,10 +31,10 @@ subprocess.call("make -f ../Makefile -C src " + cc256x_init_script, shell=True)
 examples_embedded = btstack_root + 'example/'
 
 # path to generated example projects
-projects_path = script_path
+projects_path = script_path + "example/"
 
 # path to template
-template_path = script_path + 'Makefile.template'
+template_path = script_path + 'example/template/Makefile'
 
 print("Creating example projects:")
 
@@ -72,4 +72,4 @@ for file in example_files:
 
     print("- %s" % example)
 
-print("Projects are ready for compile. See README for details.")
+print("Projects are ready for compile in example folder. See README for details.")

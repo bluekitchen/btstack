@@ -15,7 +15,7 @@ script_path = os.path.abspath(os.path.dirname(sys.argv[0]))
 examples_embedded = script_path + "/../../../example/"
 
 # path to port/esp32
-apps_btstack = ""
+apps_btstack = "example/"
 
 print("Deleting examples in local folder")
 
