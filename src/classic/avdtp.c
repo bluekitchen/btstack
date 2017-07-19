@@ -862,8 +862,8 @@ void avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t rem
     connection->initiator_transaction_label++;
     connection->remote_seid = remote_seid;
     connection->local_seid = local_seid;
-    stream_endpoint->remote_capabilities_bitmap = configured_services_bitmap;
-    stream_endpoint->remote_capabilities = configuration;
+    stream_endpoint->remote_configuration_bitmap = configured_services_bitmap;
+    stream_endpoint->remote_configuration = configuration;
     stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W2_SET_CONFIGURATION;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
@@ -892,9 +892,10 @@ void avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_se
     connection->initiator_transaction_label++;
     connection->remote_seid = remote_seid;
     connection->local_seid = local_seid;
-    stream_endpoint->remote_capabilities_bitmap = configured_services_bitmap;
-    stream_endpoint->remote_capabilities = configuration;
+    stream_endpoint->remote_configuration_bitmap = configured_services_bitmap;
+    stream_endpoint->remote_configuration = configuration;
     stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W2_RECONFIGURE_STREAM_WITH_SEID;
+    printf("AVDTP_INITIATOR_W2_RECONFIGURE_STREAM_WITH_SEID \n");
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 

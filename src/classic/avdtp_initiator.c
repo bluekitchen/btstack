@@ -357,7 +357,7 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
                 connection->signaling_packet.signal_identifier = AVDTP_SI_RECONFIGURE;
             }
             
-            avdtp_prepare_capabilities(&connection->signaling_packet, connection->initiator_transaction_label, stream_endpoint->remote_capabilities_bitmap, stream_endpoint->remote_capabilities, connection->signaling_packet.signal_identifier);
+            avdtp_prepare_capabilities(&connection->signaling_packet, connection->initiator_transaction_label, stream_endpoint->remote_configuration_bitmap, stream_endpoint->remote_configuration, connection->signaling_packet.signal_identifier);
             l2cap_reserve_packet_buffer();
             uint8_t * out_buffer = l2cap_get_outgoing_buffer();
             uint16_t pos = avdtp_signaling_create_fragment(connection->l2cap_signaling_cid, &connection->signaling_packet, out_buffer);
