@@ -102,6 +102,7 @@ static const int16_t sine_int16[] = {
 
 static char * device_name = "A2DP Source BTstack";
 
+#ifdef HAVE_BTSTACK_STDIN
 // mac 2011: static bd_addr_t remote = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
 // pts: static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
 // mac 2013: static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xd1, 0x15};
@@ -111,7 +112,7 @@ static bd_addr_t remote = {0x00, 0x21, 0x3c, 0xac, 0xf7, 0x38};
 // head phones: static bd_addr_t remote = {0x00, 0x18, 0x09, 0x28, 0x50, 0x18};
 // bt dongle: -u 02-04-01 
 // static bd_addr_t remote = {0x00, 0x15, 0x83, 0x5F, 0x9D, 0x46};
-
+#endif
 
 static uint8_t sdp_avdtp_source_service_buffer[150];
 static uint8_t media_sbc_codec_configuration[4];
@@ -209,22 +210,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             // other packet type
             break;
     }    
-}
-
-static void show_usage(void){
-    bd_addr_t      iut_address;
-    gap_local_bd_addr(iut_address);
-    printf("\n--- Bluetooth AVDTP SOURCE Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("c      - create connection to addr %s\n", bd_addr_to_str(remote));
-    printf("C      - disconnect\n");
-    printf("x      - start streaming sine\n");
-    if (hxcmod_initialized){
-        printf("z      - start streaming '%s'\n", mod_name);
-    }
-    printf("p      - pause streaming\n");
-    printf("X      - stop streaming\n");
-    printf("Ctrl-c - exit\n");
-    printf("---\n");
 }
 
 static void produce_sine_audio(int16_t * pcm_buffer, void *user_data, int num_samples_to_write){
@@ -342,6 +327,24 @@ static void a2dp_fill_audio_buffer_timer_pause(a2dp_media_sending_context_t * co
     btstack_run_loop_remove_timer(&context->fill_audio_buffer_timer);
 } 
 
+#ifdef HAVE_BTSTACK_STDIN
+
+static void show_usage(void){
+    bd_addr_t      iut_address;
+    gap_local_bd_addr(iut_address);
+    printf("\n--- Bluetooth AVDTP SOURCE Test Console %s ---\n", bd_addr_to_str(iut_address));
+    printf("c      - create connection to addr %s\n", bd_addr_to_str(remote));
+    printf("C      - disconnect\n");
+    printf("x      - start streaming sine\n");
+    if (hxcmod_initialized){
+        printf("z      - start streaming '%s'\n", mod_name);
+    }
+    printf("p      - pause streaming\n");
+    printf("X      - stop streaming\n");
+    printf("Ctrl-c - exit\n");
+    printf("---\n");
+}
+
 static void stdin_process(char cmd){
     switch (cmd){
         case 'c':
@@ -375,6 +378,8 @@ static void stdin_process(char cmd){
             break;
     }
 }
+#endif
+
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
@@ -412,6 +417,8 @@ int btstack_main(int argc, const char * argv[]){
     // turn on!
     hci_power_control(HCI_POWER_ON);
 
+#ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
+#endif
     return 0;
 }
