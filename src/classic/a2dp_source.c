@@ -262,6 +262,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             sc.subbands = avdtp_subevent_signaling_media_codec_sbc_configuration_get_subbands(packet);
             sc.allocation_method = avdtp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet) - 1;
             sc.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
+            sc.channel_mode = avdtp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
             // TODO: deal with reconfigure: avdtp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
             break;
         }  
@@ -342,7 +343,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     btstack_sbc_encoder_init(&sc.sbc_encoder_state, SBC_MODE_STANDARD, 
                         sc.block_length, sc.subbands, 
                         sc.allocation_method, sc.sampling_frequency, 
-                        sc.max_bitpool_value);
+                        sc.max_bitpool_value,
+                        sc.channel_mode);
                     avdtp_source_open_stream(cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), sc.active_remote_sep->seid);
                     break;
                 }
