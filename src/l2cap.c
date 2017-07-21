@@ -2688,7 +2688,12 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                         log_info("Control: 0x%04x => SAR %u, ReqSeq %02u, R?, TxSeq %02u", control, (int) sar, req_seq, tx_seq);
                         log_info("SAR: pos %u", l2cap_channel->rx_packets_state->pos);
                         log_info("State: expected_tx_seq %02u, req_seq %02u", l2cap_channel->expected_tx_seq, l2cap_channel->req_seq);
-                        l2cap_ertm_handle_req_seq(l2cap_channel, req_seq);                                
+                        l2cap_ertm_handle_req_seq(l2cap_channel, req_seq);
+                        int final = (control >> 7) & 0x01;
+                        if (final){
+                            // final bit set <- response to RR with poll bit set. All not acknowledged packets need to be retransmitted
+                            l2cap_channel->tx_send_index = l2cap_channel->tx_read_index;
+                        }
                         // check ordering
                         if (l2cap_channel->expected_tx_seq == tx_seq){
                             log_info("Received expected frame with TxSeq == ExpectedTxSeq == %02u", tx_seq);
