@@ -59,8 +59,8 @@ CSR UART             | Dual mode | H4, H5, BCSP   | Rarely       | No (didn't wo
 CSR USB Dongles      | Dual mode | USB            | Mostly       | Yes              | No     |         No           | csr            |
 Dialog DA14581       | LE        | H4, SPI        | No           | n.a.             | No     |         No           | da14581        | Official HCI firmware included in BTstack
 EM 9301              | LE        | SPI, H4        | No           | n.a.             | No     |         No           | em9301         | Custom HCI SPI implementation
-EM 9304              | LE        | SPI, H4        | No           | n.a.             | Yes    |     Probably (4)     | em9301         | Custom HCI SPI implementation
-Nordic nRF           | LE        | H4             | Fixed Random | n.a.             | Yes    |         Yes          |                | Requires custom HCI firmware
+EM 9304              | LE        | SPI, H4        | No           | n.a.             | Yes    |        Yes           | em9301         | Custom HCI SPI implementation
+Nordic nRF           | LE        | H4             | Fixed Random | n.a.             | Yes    |        Yes           |                | Requires custom HCI firmware
 STM STLC2500D        | Classic   | H4             | No           | No (didn't try)  | n.a    |         n.a.         | stlc2500d      | Custom deep sleep management not supported
 Toshiba TC35661      | Dual mode | H4             | No           | No (didn't try)  | No     |         No           | tc3566         | HCI version not tested. See below
 TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL | Yes          | Yes              | No     |    Yes for CC256XC   | cc256x         | Also WL185x, WL187x, and WL189x
@@ -133,19 +133,19 @@ IT does not implement the Data Length Extension or supports multiple concurrent 
 
 For a long time, the EM9301 has been the only Bluetooth Single-Mode LE chipset with an HCI interface. The EM9301 can be connected via SPI or UART. The UART interface does not support hardware flow control and is not recommended for use with BTstack. The SPI mode uses a proprietary but documented extension to implement flow control and signal if the EM9301 has data to send.
 
-In December 2016, EM released the new EM9304 that also features an HCI mode and supports the Bluetooth 4.2. specification. It seems to support the Data Length Extension and probably also supports multiple LE roles. The EM9304 is a larger MCU that allows to run custom code on it. For this, an advanced mechanism to upload configuration and firmware to RAM or into an One-Time-Programmable area of 128 kB is supported. It supports a superset of the vendor specific commands of the EM9301.
+In December 2016, EM released the new EM9304 that also features an HCI mode and adds support for optional Bluetooth 4.2. features. It supports the Data Length Extension and up to 8 LE roles. The EM9304 is a larger MCU that allows to run custom code on it. For this, an advanced mechanism to upload configuration and firmware to RAM or into an One-Time-Programmable area of 128 kB is supported. It supports a superset of the vendor specific commands of the EM9301.
 
-EM9304 is used by the 'stm32-l053r8-em9304' port in BTstack. The port.c file also contains an IRQ driven implementation of the SPI H4 protocol specified in the [datasheet](http://www.emmicroelectronic.com/sites/default/files/public/products/datasheets/9304-ds_0.pdf).
+EM9304 is used by the 'stm32-l053r8-em9304' port in BTstack. The port.c file also contains an IRQ+DMA-driven implementation of the SPI H4 protocol specified in the [datasheet](http://www.emmicroelectronic.com/sites/default/files/public/products/datasheets/9304-ds_0.pdf).
 
 **BD Addr** must be set during startup since it does not have a stored fix address.
 
 **SCO data** is not supported since it is LE only.
 
-**Baud rate** could be set for UART mode. For SPI, the master controls the speed via the SPI Clock line.
+**Baud rate** could be set for UART mode. For SPI, the master controls the speed via the SPI Clock line. With 3.3V, 16 Mhz is supported.
 
 **Init scripts** are not required although it is possible to upload small firmware patches to RAM or the OTP memory.
 
-**BTstack integration**: The common code for the EM9301 is provided by *btstack_chipset_em9301.c*. During the setup, *btstack_chipset_em9301_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. It enables to set the BD Addr during start. The chipset support can be used with the newer EM9304 as well.
+**BTstack integration**: The common code for the EM9304 is provided by *btstack_chipset_em9301.c*. During the setup, *btstack_chipset_em9301_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. It enables to set the BD Addr during start.
 
 
 ## Nordic nRF5 series
