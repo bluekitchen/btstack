@@ -2630,7 +2630,8 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     uint8_t  req_seq = (control >> 8) & 0x3f;
                     if (control & 1){
                         // S-Frame
-                        int poll = (control >> 4) & 0x01;
+                        int poll  = (control >> 4) & 0x01;
+                        int final = (control >> 7) & 0x01;
                         l2cap_supervisory_function_t s = (l2cap_supervisory_function_t) ((control >> 2) & 0x03);
                         log_info("Control: 0x%04x => Supervisory function %u, ReqSeq %02u", control, (int) s, req_seq);
                         l2cap_ertm_tx_packet_state_t * tx_state;
@@ -2638,10 +2639,19 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                             case L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY:
                                 log_info("L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY");
                                 l2cap_ertm_handle_req_seq(l2cap_channel, req_seq);
+                                if (poll && final){
+                                    // S-frames shall not be transmitted with both the F-bit and the P-bit set to 1 at the same time.
+                                    log_error("P=F=1 in S-Frame");
+                                    break;
+                                }
                                 if (poll){
                                     l2cap_channel->set_final_bit_after_packet_with_poll_bit_set = 1;
                                     l2cap_channel->send_supervisor_frame_receiver_ready   = 1;
-                                }                                
+                                }
+                                if (final){
+                                    // final bit set <- response to RR with poll bit set. All not acknowledged packets need to be retransmitted
+                                    l2cap_channel->tx_send_index = l2cap_channel->tx_read_index;
+                                }                       
                                 break;
                             case L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT:
                                 log_info("L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT");
