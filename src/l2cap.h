@@ -257,11 +257,14 @@ typedef struct {
     // local busy condition
     uint8_t local_busy;
 
-    // max um out-of-order packets // tx_window
+    // max num out-of-order packets // tx_window
     uint8_t num_rx_buffers;
 
     // max num of unacknowledged outgoing packets
     uint8_t num_tx_buffers;
+
+    // local mps = size of rx/tx packets
+    uint16_t local_mps;
 
     // re-assembly state
     l2cap_ertm_rx_packet_state_t * rx_packets_state;
@@ -269,11 +272,15 @@ typedef struct {
     // retransmission state
     l2cap_ertm_tx_packet_state_t * tx_packets_state;
 
+    // reassembly buffer
+    uint8_t * reassembly_buffer;
+
     // data, each of size local_mtu
     uint8_t * rx_packets_data;
 
     // data, each of size local_mtu
     uint8_t * tx_packets_data;
+
 #endif    
 } l2cap_channel_t;
 
@@ -362,16 +369,18 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t 
  * @param max_transmit Number of retransmissions that L2CAP is allowed to try before accepting that a packet and the channel is lost.
  * @param retransmission_timeout_ms Recommended : 2000 ms (ACL Flush timeout not used)
  * @param monitor_timeout_ms Recommended: 12000 ms (ACL Flush timeout not used)
+ * @param local_mtu 
  * @param num_tx_buffers Number of unacknowledged packets stored in buffer
  * @param num_rx_buffers Number of packets that can be received out of order (-> our tx_window size)
- * @param buffer to store out-of-order packets and unacknowledged outgoing packets with their tretransmission timers
+ * @param buffer to store reassembled rx packet, out-of-order packets and unacknowledged outgoing packets with their tretransmission timers
  * @param size of buffer
  * @param local_cid
  * @return status
  */
 uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, 
     int ertm_mandatory, uint8_t max_transmit, uint16_t retransmission_timeout_ms, uint16_t monitor_timeout_ms,
-    uint8_t num_tx_buffers, uint8_t num_rx_buffers, uint8_t * buffer, uint32_t size, uint16_t * out_local_cid);
+    uint16_t local_mtu, uint8_t num_tx_buffers, uint8_t num_rx_buffers, uint8_t * buffer, uint32_t size,
+    uint16_t * out_local_cid);
 
 /** 
  * @brief Disconnects L2CAP channel with given identifier. 
@@ -409,14 +418,15 @@ void l2cap_accept_connection(uint16_t local_cid);
  * @param max_transmit Number of retransmissions that L2CAP is allowed to try before accepting that a packet and the channel is lost. Recommended: 1
  * @param retransmission_timeout_ms Recommended : 2000 ms (ACL Flush timeout not used)
  * @param monitor_timeout_ms Recommended: 12000 ms (ACL Flush timeout not used)
+ * @param local_mtu 
  * @param num_tx_buffers Number of unacknowledged packets stored in buffer
  * @param num_rx_buffers Number of packets that can be received out of order (-> our tx_window size)
- * @param buffer to store out-of-order packets and unacknowledged outgoing packets with their tretransmission timers
+ * @param buffer to store reassembled rx packet, out-of-order packets and unacknowledged outgoing packets with their tretransmission timers
  * @param size of buffer
  * @return status
  */
 uint8_t l2cap_accept_ertm_connection(uint16_t local_cid, int ertm_mandatory, uint8_t max_transmit,
-    uint16_t retransmission_timeout_ms, uint16_t monitor_timeout_ms, uint8_t num_tx_buffers, uint8_t num_rx_buffers, uint8_t * buffer, uint32_t size);
+    uint16_t retransmission_timeout_ms, uint16_t monitor_timeout_ms, uint16_t local_mtu, uint8_t num_tx_buffers, uint8_t num_rx_buffers, uint8_t * buffer, uint32_t size);
 
 /** 
  * @brief Deny incoming L2CAP connection.
