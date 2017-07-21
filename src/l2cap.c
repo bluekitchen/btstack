@@ -618,7 +618,7 @@ static int l2cap_ertm_send_information_frame(l2cap_channel_t * channel, int inde
     l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[index];
     hci_reserve_packet_buffer();
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
-    uint16_t control = l2cap_encanced_control_field_for_information_frame(tx_state->tx_seq, final, channel->req_seq, L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU);
+    uint16_t control = l2cap_encanced_control_field_for_information_frame(tx_state->tx_seq, final, channel->req_seq, tx_state->sar);
     log_info("I-Frame: control 0x%04x", control);
     little_endian_store_16(acl_buffer, 8, control);
     memcpy(&acl_buffer[8+2], &channel->tx_packets_data[index * channel->local_mtu], tx_state->len);
@@ -630,22 +630,30 @@ static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t l
         log_error("l2cap_send cid 0x%02x, data length exceeds remote MTU.", channel->local_cid);
         return L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU;
     }
-    // TODO: check tx_transmit
+    // TODO: fragment if neccessary
+
     // store int tx packet bufferx
     int index = channel->tx_write_index;
+
     l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[index];
     tx_state->tx_seq = channel->next_tx_seq;
     tx_state->len = len;
+    tx_state->sar = L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU;
     tx_state->retry_count = 0;
-    memcpy(&channel->tx_packets_data[index * channel->local_mtu], data, len);
+
+    uint8_t * tx_packet = &channel->tx_packets_data[index * channel->local_mtu];
+    memcpy(&tx_packet[0], data, len);
+
     // update
     channel->next_tx_seq = l2cap_next_ertm_seq_nr(channel->next_tx_seq);
     l2cap_ertm_next_tx_write_index(channel);
+
     // set retransmission timer
     btstack_run_loop_set_timer_handler(&tx_state->retransmission_timer, &l2cap_ertm_retransmission_timeout_callback);
     btstack_run_loop_set_timer_context(&tx_state->retransmission_timer, channel);
     btstack_run_loop_set_timer(&tx_state->retransmission_timer, channel->local_retransmission_timeout_ms);
     btstack_run_loop_add_timer(&tx_state->retransmission_timer);
+
     // try to send
     l2cap_run();
     return 0;
