@@ -110,6 +110,8 @@ static uint8_t sdp_a2dp_source_service_buffer[150];
 static uint8_t media_sbc_codec_configuration[4];
 static a2dp_media_sending_context_t media_tracker;
 
+static uint16_t avrcp_cid;
+
 static stream_data_source_t data_source;
 
 static int sine_phase;
@@ -298,29 +300,89 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     }    
 }
 
-#ifdef HAVE_BTSTACK_STDIN
+static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+    bd_addr_t event_addr;
+    uint16_t local_cid;
+    uint8_t  status = 0xFF;
+    
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
+    switch (packet[2]){
+        case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
+            local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
+            if (avrcp_cid != 0 && avrcp_cid != local_cid) {
+                printf("AVRCP Connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", avrcp_cid, local_cid);
+                return;
+            }
 
+            status = avrcp_subevent_connection_established_get_status(packet);
+            if (status != ERROR_CODE_SUCCESS){
+                printf("AVRCP Connection failed: status 0x%02x\n", status);
+                avrcp_cid = 0;
+                return;
+            }
+            avrcp_cid = local_cid;
+            avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
+            printf("Channel successfully opened: %s, avrcp_cid 0x%02x\n", bd_addr_to_str(event_addr), local_cid);
+            return;
+        }
+        case AVRCP_SUBEVENT_CONNECTION_RELEASED:
+            printf("Channel released: avrcp_cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
+            avrcp_cid = 0;
+            return;
+        default:
+            printf("A2DP Source/AVRCP Target event not parsed %02x\n", packet[2]);
+            break;
+    }
+}
+
+#ifdef HAVE_BTSTACK_STDIN
 static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
-    printf("\n--- Bluetooth A2DP Source Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("c      - create connection to addr %s\n", device_addr_string);
+    printf("\n--- Bluetooth A2DP Source/AVRCP Target Demo %s ---\n", bd_addr_to_str(iut_address));
+    printf("b      - AVDTP Source create  connection to addr %s\n", device_addr_string);
+    printf("B      - AVDTP Source disconnect\n");
+    printf("c      - AVRCP Target create connection to addr %s\n", device_addr_string);
+    printf("C      - AVRCP Target disconnect\n");
+
     printf("x      - start streaming sine\n");
     if (hxcmod_initialized){
         printf("z      - start streaming '%s'\n", mod_name);
     }
     printf("p      - pause streaming\n");
-    printf("C      - disconnect\n");
+
+    printf("\n--- Bluetooth  AVRCP Target Commands %s ---\n", bd_addr_to_str(iut_address));
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
 
 static void stdin_process(char cmd){
     switch (cmd){
-        case 'c':
-            printf("Creating L2CAP Connection to %s, PSM_AVDTP\n", device_addr_string);
+        case 'b':
+            printf(" - Create AVDTP Source connection to addr %s.\n", bd_addr_to_str(device_addr));
             a2dp_source_establish_stream(device_addr, media_tracker.local_seid, &media_tracker.a2dp_cid);
             break;
+        case 'B':
+            printf(" - AVDTP Source Disconnect\n");
+            a2dp_source_disconnect(media_tracker.a2dp_cid);
+            break;
+        case 'c':
+            printf(" - Create AVRCP Target connection to addr %s.\n", bd_addr_to_str(device_addr));
+            avrcp_target_connect(device_addr, &avrcp_cid);
+            printf(" assigned avrcp cid 0x%02x\n", avrcp_cid);
+            break;
+        case 'C':
+            printf(" - AVRCP Target disconnect\n");
+            avrcp_target_disconnect(avrcp_cid);
+            break;
+
+        case '\n':
+        case '\r':
+            break;
+
         case 'x':
             printf("Playing sine.\n");
             data_source = STREAM_SINE;
@@ -335,10 +397,7 @@ static void stdin_process(char cmd){
             printf("Pause stream.\n");
             a2dp_source_pause_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
-        case 'C':
-            printf("Disconnect\n");
-            a2dp_source_disconnect(media_tracker.a2dp_cid);
-            break;
+        
         default:
             show_usage();
             break;
@@ -358,6 +417,10 @@ int btstack_main(int argc, const char * argv[]){
     a2dp_source_register_packet_handler(&packet_handler);
 
     media_tracker.local_seid = a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
+
+    // Initialize AVRCP Target
+    avrcp_target_init();
+    avrcp_target_register_packet_handler(&avrcp_target_packet_handler);
 
     // Initialize SDP 
     sdp_init();

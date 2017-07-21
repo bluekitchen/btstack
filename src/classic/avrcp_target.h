@@ -42,8 +42,8 @@
  *
  */
 
-#ifndef __AVRCP_H
-#define __AVRCP_H
+#ifndef __AVRCP_TARGET_H
+#define __AVRCP_TARGET_H
 
 #include <stdint.h>
 #include "avrcp.h"
@@ -56,7 +56,7 @@ extern "C" {
 
 
 /**
- * @brief AVDTP Sink service record. 
+ * @brief AVDTP Source service record. 
  * @param service
  * @param service_record_handle
  * @param browsing  1 - supported, 0 - not supported
@@ -64,11 +64,20 @@ extern "C" {
  * @param service_name
  * @param service_provider_name
  */
-void avrcp_target_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name);
+void    avrcp_target_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name);
+
+void    avrcp_target_init(void);
+
+void    avrcp_target_register_packet_handler(btstack_packet_handler_t callback);
+
+uint8_t avrcp_target_connect(bd_addr_t bd_addr, uint16_t * avrcp_cid);
+
+uint8_t avrcp_target_disconnect(uint16_t avrcp_cid);
+
 
 /* API_END */
 #if defined __cplusplus
 }
 #endif
 
-#endif // __AVRCP_H
+#endif // __AVRCP_TARGET_H

@@ -49,6 +49,37 @@
 #define PSM_AVCTP                       BLUETOOTH_PROTOCOL_AVCTP
 #define PSM_AVCTP_BROWSING              0x001b
 
+/* 
+Category 1: Player/Recorder
+Category 2: Monitor/Amplifier
+Category 3: Tuner
+Category 4: Menu
+*/
+
+/* controller supported features
+Bit 0 = Category 1
+Bit 1 = Category 2
+Bit 2 = Category 3
+Bit 3 = Category 4
+Bit 4-5 = RFA
+Bit 6 = Supports browsing
+Bit 7-15 = RFA
+The bits for supported categories are set to 1. Others are set to 0.
+*/
+
+/* target supported features
+Bit 0 = Category 1 
+Bit 1 = Category 2 
+Bit 2 = Category 3 
+Bit 3 = Category 4
+Bit 4 = Player Application Settings. Bit 0 should be set for this bit to be set.
+Bit 5 = Group Navigation. Bit 0 should be set for this bit to be set.
+Bit 6 = Supports browsing*4
+Bit 7 = Supports multiple media player applications
+Bit 8-15 = RFA
+The bits for supported categories are set to 1. Others are set to 0.
+*/
+
 static const char * default_avrcp_controller_service_name = "BTstack AVRCP Controller Service";
 static const char * default_avrcp_controller_service_provider_name = "BTstack AVRCP Controller Service Provider";
 static const char * default_avrcp_target_service_name = "BTstack AVRCP Target Service";
@@ -304,12 +335,12 @@ avrcp_connection_t * get_avrcp_connection_for_l2cap_signaling_cid(uint16_t l2cap
     return NULL;
 }
 
-avrcp_connection_t * get_avrcp_connection_for_avrcp_cid(uint16_t l2cap_cid, avrcp_context_t * context){
+avrcp_connection_t * get_avrcp_connection_for_avrcp_cid(uint16_t avrcp_cid, avrcp_context_t * context){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *)  &context->connections);
     while (btstack_linked_list_iterator_has_next(&it)){
         avrcp_connection_t * connection = (avrcp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (connection->avrcp_cid != l2cap_cid) continue;
+        if (connection->avrcp_cid != avrcp_cid) continue;
         return connection;
     }
     return NULL;
@@ -370,7 +401,6 @@ void avrcp_emit_connection_closed(btstack_packet_handler_t callback, uint16_t av
 
 static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(sdp_query_context->avrcp_cid, sdp_query_context);
-
     if (!connection) return;
     if (connection->state != AVCTP_SIGNALING_W4_SDP_QUERY_COMPLETE) return;
     UNUSED(packet_type);
@@ -595,15 +625,14 @@ uint8_t avrcp_connect(bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * a
     if (connection){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    
     connection = avrcp_create_connection(bd_addr, context);
     if (!connection){
         log_error("avrcp: could not allocate connection struct.");
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
-
+    
     if (!avrcp_cid) return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
-
+    
     *avrcp_cid = connection->avrcp_cid; 
     connection->state = AVCTP_SIGNALING_W4_SDP_QUERY_COMPLETE;
    

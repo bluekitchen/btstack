@@ -283,7 +283,7 @@ void avrcp_emit_connection_established(btstack_packet_handler_t callback, uint16
 void avrcp_emit_connection_closed(btstack_packet_handler_t callback, uint16_t avrcp_cid);
 
 avrcp_connection_t * get_avrcp_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid, avrcp_context_t * context);
-avrcp_connection_t * get_avrcp_connection_for_avrcp_cid(uint16_t l2cap_cid, avrcp_context_t * context);
+avrcp_connection_t * get_avrcp_connection_for_avrcp_cid(uint16_t avrcp_cid, avrcp_context_t * context);
 void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_cid);
 
 #if defined __cplusplus

@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "avrcp.c"
+#define __BTSTACK_FILE__ "avrcp_controller.c"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -45,38 +45,6 @@
 #include "btstack.h"
 #include "classic/avrcp.h"
 #include "classic/avrcp_controller.h"
-
-
-/* 
-Category 1: Player/Recorder
-Category 2: Monitor/Amplifier
-Category 3: Tuner
-Category 4: Menu
-*/
-
-/* controller supported features
-Bit 0 = Category 1
-Bit 1 = Category 2
-Bit 2 = Category 3
-Bit 3 = Category 4
-Bit 4-5 = RFA
-Bit 6 = Supports browsing
-Bit 7-15 = RFA
-The bits for supported categories are set to 1. Others are set to 0.
-*/
-
-/* target supported features
-Bit 0 = Category 1 
-Bit 1 = Category 2 
-Bit 2 = Category 3 
-Bit 3 = Category 4
-Bit 4 = Player Application Settings. Bit 0 should be set for this bit to be set.
-Bit 5 = Group Navigation. Bit 0 should be set for this bit to be set.
-Bit 6 = Supports browsing*4
-Bit 7 = Supports multiple media player applications
-Bit 8-15 = RFA
-The bits for supported categories are set to 1. Others are set to 0.
-*/
 
 static avrcp_context_t avrcp_controller_context;
 
