@@ -91,6 +91,8 @@
 #include "classic/avdtp_source.h"
 #include "classic/avdtp_util.h"
 #include "classic/avrcp.h"
+#include "classic/avrcp_controller.h"
+#include "classic/avrcp_target.h"
 #include "classic/bnep.h"
 #include "classic/btstack_link_key_db.h"
 #include "classic/device_id_server.h"

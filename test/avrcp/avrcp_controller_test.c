@@ -40,18 +40,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack_config.h"
-#include "btstack_debug.h"
-#include "btstack_event.h"
-#include "btstack_memory.h"
-#include "btstack_run_loop.h"
-#include "gap.h"
-#include "hci.h"
-#include "hci_cmd.h"
-#include "hci_dump.h"
-#include "l2cap.h"
-#include "btstack_stdin.h"
-#include "classic/avrcp.h"
+#include "btstack.h"
 
 #define AVRCP_BROWSING_ENABLED 0
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -99,8 +88,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             }
                             printf("Channel successfully opened: %s, avrcp_cid 0x%02x\n", bd_addr_to_str(event_addr), avrcp_cid);
                             // automatically enable notifications
-                            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
-                            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
+                            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
+                            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
                             return;
                         }
                         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
@@ -240,95 +229,95 @@ static void stdin_process(char cmd){
             break;
         case 'B':
             printf(" - Disconnect\n");
-            avrcp_disconnect(avrcp_cid);
+            avrcp_controller_disconnect(avrcp_cid);
             break;
         case 'i':
             printf(" - get play status\n");
-            avrcp_get_play_status(avrcp_cid);
+            avrcp_controller_get_play_status(avrcp_cid);
             break;
         case 'j':
             printf(" - get now playing info\n");
-            avrcp_get_now_playing_info(avrcp_cid);
+            avrcp_controller_get_now_playing_info(avrcp_cid);
             break;
         case 'k':
             printf(" - play\n");
-            avrcp_play(avrcp_cid);
+            avrcp_controller_play(avrcp_cid);
             break;
         case 'K':
             printf(" - stop\n");
-            avrcp_stop(avrcp_cid);
+            avrcp_controller_stop(avrcp_cid);
             break;
         case 'L':
             printf(" - pause\n");
-            avrcp_pause(avrcp_cid);
+            avrcp_controller_pause(avrcp_cid);
             break;
         case 'm':
             printf(" - start fast forward\n");
-            avrcp_start_fast_forward(avrcp_cid);
+            avrcp_controller_start_fast_forward(avrcp_cid);
             break;
         case 'M':
             printf(" - stop fast forward\n");
-            avrcp_stop_fast_forward(avrcp_cid);
+            avrcp_controller_stop_fast_forward(avrcp_cid);
             break;
         case 'n':
             printf(" - start rewind\n");
-            avrcp_start_rewind(avrcp_cid);
+            avrcp_controller_start_rewind(avrcp_cid);
             break;
         case 'N':
             printf(" - stop rewind\n");
-            avrcp_stop_rewind(avrcp_cid);
+            avrcp_controller_stop_rewind(avrcp_cid);
             break;
         case 'o':
             printf(" - forward\n");
-            avrcp_forward(avrcp_cid); 
+            avrcp_controller_forward(avrcp_cid); 
             break;
         case 'O':
             printf(" - backward\n");
-            avrcp_backward(avrcp_cid);
+            avrcp_controller_backward(avrcp_cid);
             break;
         case 'p':
             printf(" - volume up\n");
-            avrcp_volume_up(avrcp_cid);
+            avrcp_controller_volume_up(avrcp_cid);
             break;
         case 'P':
             printf(" - volume down\n");
-            avrcp_volume_down(avrcp_cid);
+            avrcp_controller_volume_down(avrcp_cid);
             break;
         case 'r':
             printf(" - absolute volume of 50 percent\n");
-            avrcp_set_absolute_volume(avrcp_cid, 50);
+            avrcp_controller_set_absolute_volume(avrcp_cid, 50);
             break;
         case 's':
             printf(" - mute\n");
-            avrcp_mute(avrcp_cid);
+            avrcp_controller_mute(avrcp_cid);
             break;
         case 't':
             printf(" - skip\n");
-            avrcp_skip(avrcp_cid);
+            avrcp_controller_skip(avrcp_cid);
             break;
         case 'u':
             printf(" - query repeat and shuffle mode\n");
-            avrcp_query_shuffle_and_repeat_modes(avrcp_cid);
+            avrcp_controller_query_shuffle_and_repeat_modes(avrcp_cid);
             break;
         case 'v':
             printf(" - repeat single track\n");
-            avrcp_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_SINGLE_TRACK);
+            avrcp_controller_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_SINGLE_TRACK);
             break;
         case 'x':
             printf(" - repeat all tracks\n");
-            avrcp_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_ALL_TRACKS);
+            avrcp_controller_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_ALL_TRACKS);
             break;
         case 'X':
             printf(" - disable repeat mode\n");
-            avrcp_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_OFF);
+            avrcp_controller_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_OFF);
             break;
         case 'z':
             printf(" - shuffle all tracks\n");
-            avrcp_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_ALL_TRACKS);
+            avrcp_controller_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_ALL_TRACKS);
             break;
         case 'Z':
             printf(" - disable shuffle mode\n");
-            avrcp_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_OFF);
+            avrcp_controller_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_OFF);
             break;
         default:
             show_usage();
@@ -349,7 +338,7 @@ int btstack_main(int argc, const char * argv[]){
     
     // Initialize AVRCP COntroller
     avrcp_controller_init();
-    avrcp_register_packet_handler(&packet_handler);
+    avrcp_controller_register_packet_handler(&packet_handler);
 
     // Initialize SDP 
     sdp_init();

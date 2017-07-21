@@ -42,7 +42,6 @@
 #include <string.h>
 
 #include "btstack.h"
-// #include "wav_util.h"
 
 #define AVRCP_BROWSING_ENABLED 0
 
@@ -290,7 +289,7 @@ static void stdin_process(char cmd){
             break;
         case 'C':
             printf("Disconnect AVRCP\n");
-            avrcp_disconnect(avrcp_cid);
+            avrcp_controller_disconnect(avrcp_cid);
             break;
 
         case '\n':
@@ -298,197 +297,197 @@ static void stdin_process(char cmd){
             break;
         case 'q': 
             printf("AVRCP: get capabilities: supported events\n");
-            avrcp_get_supported_events(avrcp_cid);
+            avrcp_controller_get_supported_events(avrcp_cid);
             break;
         case 'w':
             printf("AVRCP: get unit info\n");
-            avrcp_unit_info(avrcp_cid);
+            avrcp_controller_unit_info(avrcp_cid);
             break;
         case 'r':
             printf("AVRCP: get play status\n");
-            avrcp_get_play_status(avrcp_cid);
+            avrcp_controller_get_play_status(avrcp_cid);
             break;
         case 't':
             printf("AVRCP: get now playing info\n");
-            avrcp_get_now_playing_info(avrcp_cid);
+            avrcp_controller_get_now_playing_info(avrcp_cid);
             break;
         case '1':
             printf("AVRCP: play\n");
-            avrcp_play(avrcp_cid);
+            avrcp_controller_play(avrcp_cid);
             break;
         case '2':
             printf("AVRCP: stop\n");
-            avrcp_stop(avrcp_cid);
+            avrcp_controller_stop(avrcp_cid);
             break;
         case '3':
             printf("AVRCP: pause\n");
-            avrcp_pause(avrcp_cid);
+            avrcp_controller_pause(avrcp_cid);
             break;
         case '4':
             printf("AVRCP: fast forward\n");
-            avrcp_fast_forward(avrcp_cid);
+            avrcp_controller_fast_forward(avrcp_cid);
             break;
         case '5':
             printf("AVRCP: rewind\n");
-            avrcp_rewind(avrcp_cid);
+            avrcp_controller_rewind(avrcp_cid);
             break;
         case '6':
             printf("AVRCP: forward\n");
-            avrcp_forward(avrcp_cid); 
+            avrcp_controller_forward(avrcp_cid); 
             break;
         case '7':
             printf("AVRCP: backward\n");
-            avrcp_backward(avrcp_cid);
+            avrcp_controller_backward(avrcp_cid);
             break;
         case '8':
             printf("AVRCP: volume up\n");
-            avrcp_volume_up(avrcp_cid);
+            avrcp_controller_volume_up(avrcp_cid);
             break;
         case '9':
             printf("AVRCP: volume down\n");
-            avrcp_volume_down(avrcp_cid);
+            avrcp_controller_volume_down(avrcp_cid);
             break;
         case '0':
             printf("AVRCP: mute\n");
-            avrcp_mute(avrcp_cid);
+            avrcp_controller_mute(avrcp_cid);
             break;
         case 'R':
             printf("AVRCP: absolute volume of 50 percent\n");
-            avrcp_set_absolute_volume(avrcp_cid, 50);
+            avrcp_controller_set_absolute_volume(avrcp_cid, 50);
             break;
         case 'u':
             printf("AVRCP: skip\n");
-            avrcp_skip(avrcp_cid);
+            avrcp_controller_skip(avrcp_cid);
             break;
         case 'i':
             printf("AVRCP: query repeat and shuffle mode\n");
-            avrcp_query_shuffle_and_repeat_modes(avrcp_cid);
+            avrcp_controller_query_shuffle_and_repeat_modes(avrcp_cid);
             break;
         case 'o':
             printf("AVRCP: repeat single track\n");
-            avrcp_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_SINGLE_TRACK);
+            avrcp_controller_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_SINGLE_TRACK);
             break;
         case 'x':
             printf("AVRCP: repeat all tracks\n");
-            avrcp_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_ALL_TRACKS);
+            avrcp_controller_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_ALL_TRACKS);
             break;
         case 'X':
             printf("AVRCP: disable repeat mode\n");
-            avrcp_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_OFF);
+            avrcp_controller_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_OFF);
             break;
         case 'z':
             printf("AVRCP: shuffle all tracks\n");
-            avrcp_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_ALL_TRACKS);
+            avrcp_controller_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_ALL_TRACKS);
             break;
         case 'Z':
             printf("AVRCP: disable shuffle mode\n");
-            avrcp_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_OFF);
+            avrcp_controller_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_OFF);
             break;
 
         case 'a':
             printf("AVRCP: enable notification PLAYBACK_STATUS_CHANGED\n");
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
             break;
         case 's':
             printf("AVRCP: enable notification TRACK_CHANGED\n");
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
             break;
         case 'd':
             printf("AVRCP: enable notification TRACK_REACHED_END\n");
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END);
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END);
             break;
         case 'f':
             printf("AVRCP: enable notification TRACK_REACHED_START\n");
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_START);
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_START);
             break;
         case 'g':
             printf("AVRCP: enable notification PLAYBACK_POS_CHANGED\n");
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED);
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED);
             break;
         case 'h':
             printf("AVRCP: enable notification BATT_STATUS_CHANGED\n");
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED);
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED);
             break;
         case 'j':
             printf("AVRCP: enable notification SYSTEM_STATUS_CHANGED\n");
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED);
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED);
             break;
         case 'k':
             printf("AVRCP: enable notification PLAYER_APPLICATION_SETTING_CHANGED\n");
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED);
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED);
             break;
         case 'l':
             printf("AVRCP: enable notification NOW_PLAYING_CONTENT_CHANGED\n");
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
             break;
         case 'm':
             printf("AVRCP: enable notification AVAILABLE_PLAYERS_CHANGED\n");
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED);
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED);
             break;
         case 'n':
             printf("AVRCP: enable notification ADDRESSED_PLAYER_CHANGED\n");
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED);
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED);
             break;
         case 'y':
             printf("AVRCP: enable notification UIDS_CHANGED\n");
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED);
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED);
             break;
         case 'v':
             printf("AVRCP: enable notification VOLUME_CHANGED\n");
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
             break;
 
         case 'A':
             printf("AVRCP: disable notification PLAYBACK_STATUS_CHANGED\n");
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
+            avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
             break;
         case 'S':
             printf("AVRCP: disable notification TRACK_CHANGED\n");
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
+            avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
             break;
         case 'D':
             printf("AVRCP: disable notification TRACK_REACHED_END\n");
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END);
+            avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END);
             break;
         case 'F':
             printf("AVRCP: disable notification TRACK_REACHED_START\n");
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_START);
+            avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_START);
             break;
         case 'G':
             printf("AVRCP: disable notification PLAYBACK_POS_CHANGED\n");
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED);
+            avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED);
             break;
         case 'H':
             printf("AVRCP: disable notification BATT_STATUS_CHANGED\n");
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED);
+            avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED);
             break;
         case 'J':
             printf("AVRCP: disable notification SYSTEM_STATUS_CHANGED\n");
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED);
+            avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED);
             break;
         case 'K':
             printf("AVRCP: disable notification PLAYER_APPLICATION_SETTING_CHANGED\n");
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED);
+            avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED);
             break;
         case 'L':
             printf("AVRCP: disable notification NOW_PLAYING_CONTENT_CHANGED\n");
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
+            avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
             break;
         case 'M':
             printf("AVRCP: disable notification AVAILABLE_PLAYERS_CHANGED\n");
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED);
+            avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED);
             break;
         case 'N':
             printf("AVRCP: disable notification ADDRESSED_PLAYER_CHANGED\n");
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED);
+            avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED);
             break;
         case 'Y':
             printf("AVRCP: disable notification UIDS_CHANGED\n");
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED);
+            avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED);
             break;
         case 'V':
             printf("AVRCP: disable notification VOLUME_CHANGED\n");
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
+            avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
             break;
         default:
             show_usage();
@@ -521,7 +520,7 @@ int btstack_main(int argc, const char * argv[]){
 
     // Initialize AVRCP COntroller
     avrcp_controller_init();
-    avrcp_register_packet_handler(&packet_handler);
+    avrcp_controller_register_packet_handler(&packet_handler);
     
     // Initialize SDP 
     sdp_init();

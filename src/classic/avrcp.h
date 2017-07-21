@@ -54,7 +54,19 @@ extern "C" {
 #endif
 
 #define BT_SIG_COMPANY_ID 0x001958
-/* API_START */
+
+typedef enum {
+    AVRCP_SINGLE_PACKET= 0,
+    AVRCP_START_PACKET    ,
+    AVRCP_CONTINUE_PACKET ,
+    AVRCP_END_PACKET
+} avrcp_packet_type_t;
+
+typedef enum {
+    AVRCP_COMMAND_FRAME = 0,
+    AVRCP_RESPONSE_FRAME    
+} avrcp_frame_type_t;
+
 
 typedef enum {
     AVRCP_CAPABILITY_ID_COMPANY = 0x02,
@@ -244,256 +256,15 @@ typedef struct {
     btstack_linked_list_t connections;
     btstack_packet_handler_t avrcp_callback;
     btstack_packet_handler_t packet_handler;
-} avrcp_context_t; 
 
-typedef struct {
-    avrcp_connection_t * connection;
-    avrcp_context_t * avrcp_context;
+    // SDP query
+    uint16_t avrcp_cid;
     uint16_t avrcp_l2cap_psm;
     uint16_t avrcp_version;
     uint16_t avrcp_browsing_l2cap_psm;
     uint16_t avrcp_browsing_version;
     uint8_t  role_supported;
-} avrcp_sdp_query_context_t;
-
-
-/**
- * @brief AVDTP Sink service record. 
- * @param service
- * @param service_record_handle
- * @param browsing  1 - supported, 0 - not supported
- * @param supported_features 16-bit bitmap, see AVDTP_SINK_SF_* values in avdtp.h
- * @param service_name
- * @param service_provider_name
- */
-void avrcp_controller_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name);
-
-/**
- * @brief AVDTP Sink service record. 
- * @param service
- * @param service_record_handle
- * @param browsing  1 - supported, 0 - not supported
- * @param supported_features 16-bit bitmap, see AVDTP_SINK_SF_* values in avdtp.h
- * @param service_name
- * @param service_provider_name
- */
-void avrcp_target_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name);
-
-
-/**
- * @brief Set up AVDTP Sink device.
- */
-void avrcp_controller_init(void);
-
-/**
- * @brief Register callback for the AVRCP Sink client. 
- * @param callback
- */
-void avrcp_register_packet_handler(btstack_packet_handler_t callback);
-
-/**
- * @brief Connect to device with a Bluetooth address.
- * @param bd_addr
- * @param avrcp_cid
- * @returns status
- */
-
-
-uint8_t avrcp_connect(bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * avrcp_cid);
-uint8_t avrcp_controller_connect(bd_addr_t bd_addr, uint16_t * avrcp_cid);
-
-/**
- * @brief Disconnect from AVRCP target
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_disconnect(uint16_t avrcp_cid);
-
-/**
- * @brief Unit info.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_unit_info(uint16_t avrcp_cid);
-
-/**
- * @brief Get capabilities.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_get_supported_company_ids(uint16_t avrcp_cid);
-
-/**
- * @brief Get supported Events.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_get_supported_events(uint16_t avrcp_cid);
-
-/**
- * @brief Play. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_play(uint16_t avrcp_cid);
-
-/**
- * @brief Stop. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_stop(uint16_t avrcp_cid);
-
-/**
- * @brief Pause. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_pause(uint16_t avrcp_cid);
-
-/**
- * @brief Start Fast Forward. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_start_fast_forward(uint16_t avrcp_cid);
-
-/**
- * @brief Stop Fast Forward. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_stop_fast_forward(uint16_t avrcp_cid);
-
-/**
- * @brief Single step - fast forward. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_fast_forward(uint16_t avrcp_cid);
-
-/**
- * @brief Stop Rewind. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_start_rewind(uint16_t avrcp_cid);
-
-/**
- * @brief Stop Rewind. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_stop_rewind(uint16_t avrcp_cid);
-
-/**
- * @brief Single step rewind. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_rewind(uint16_t avrcp_cid);
-
-/**
- * @brief Forward. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_forward(uint16_t avrcp_cid); 
-
-/**
- * @brief Backward. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_backward(uint16_t avrcp_cid);
-
-
-/**
- * @brief Get play status. Returns event of type AVRCP_SUBEVENT_PLAY_STATUS (length, position, play_status).
- * If TG does not support SongLength And SongPosition on TG, then TG shall return 0xFFFFFFFF.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_get_play_status(uint16_t avrcp_cid);
-
-/**
- * @brief Enable notification. Response via AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE.
- * @param avrcp_cid
- * @param event_id
- * @returns status
- */
-uint8_t avrcp_enable_notification(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id);
-
-/**
- * @brief Disable notification. Response via AVRCP_SUBEVENT_ENABLE_NOTIFICATION_COMPLETE.
- * @param avrcp_cid
- * @param event_id
- * @returns status
- */
-uint8_t avrcp_disable_notification(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id);
-
-/**
- * @brief Get info on now playing media.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_get_now_playing_info(uint16_t avrcp_cid);
-
-/**
- * @brief Set absolute volume 0-127 (corresponds to 0-100%). Response via AVRCP_SUBEVENT_SET_ABSOLUTE_VOLUME_RESPONSE
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_set_absolute_volume(uint16_t avrcp_cid, uint8_t volume);
-
-/**
- * @brief Turns the volume to high. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_volume_up(uint16_t avrcp_cid);
-
-/**
- * @brief Turns the volume to low. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_volume_down(uint16_t avrcp_cid);
-
-/**
- * @brief Puts the sound out. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_mute(uint16_t avrcp_cid);
-
-/**
- * @brief Skip to next playing media. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_skip(uint16_t avrcp_cid);
-
-/**
- * @brief Query repeat and shuffle mode. Response via AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_query_shuffle_and_repeat_modes(uint16_t avrcp_cid);
-
-/**
- * @brief Set shuffle mode. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_set_shuffle_mode(uint16_t avrcp_cid, avrcp_shuffle_mode_t mode);
-
-/**
- * @brief Set repeat mode. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_set_repeat_mode(uint16_t avrcp_cid, avrcp_repeat_mode_t mode);
+} avrcp_context_t; 
 
 const char * avrcp_subunit2str(uint16_t index);
 const char * avrcp_event2str(uint16_t index);
@@ -504,7 +275,17 @@ const char * avrcp_ctype2str(uint8_t index);
 const char * avrcp_repeat2str(uint8_t index);
 const char * avrcp_shuffle2str(uint8_t index);
 
-/* API_END */
+void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avrcp_context_t * context);
+
+void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name);
+uint8_t avrcp_connect(bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * avrcp_cid);
+void avrcp_emit_connection_established(btstack_packet_handler_t callback, uint16_t avrcp_cid, bd_addr_t addr, uint8_t status);
+void avrcp_emit_connection_closed(btstack_packet_handler_t callback, uint16_t avrcp_cid);
+
+avrcp_connection_t * get_avrcp_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid, avrcp_context_t * context);
+avrcp_connection_t * get_avrcp_connection_for_avrcp_cid(uint16_t l2cap_cid, avrcp_context_t * context);
+void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_cid);
+
 #if defined __cplusplus
 }
 #endif
