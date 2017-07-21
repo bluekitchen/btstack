@@ -210,9 +210,6 @@ static int l2cap_fixed_channel_table_index_is_le(int index){
 void l2cap_init(void){
     signaling_responses_pending = 0;
     
-    uint8_t test[] = {0x0E, 0x00, 0x40, 0x00, 0x02, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09 };
-    printf("crc16: %04x\n", crc16_calc(test, sizeof(test)));
-
 #ifdef ENABLE_CLASSIC
     l2cap_channels = NULL;
     l2cap_services = NULL;
@@ -728,13 +725,6 @@ uint16_t l2cap_max_le_mtu(void){
     return l2cap_max_mtu();
 }
 
-static uint16_t l2cap_setup_options_mtu(l2cap_channel_t * channel, uint8_t * config_options){
-    config_options[0] = 1; // MTU
-    config_options[1] = 2; // len param
-    little_endian_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
-    return 4;
-}
-
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
 static uint16_t l2cap_setup_options_ertm(l2cap_channel_t * channel, uint8_t * config_options){
     config_options[0] = 0x04;   // RETRANSMISSION AND FLOW CONTROL OPTION
@@ -763,6 +753,15 @@ static int l2cap_ertm_num_unacknowledged_tx_packets(l2cap_channel_t * channel){
 }
 #endif
 
+#ifdef ENABLE_CLASSIC
+
+static uint16_t l2cap_setup_options_mtu(l2cap_channel_t * channel, uint8_t * config_options){
+    config_options[0] = 1; // MTU
+    config_options[1] = 2; // len param
+    little_endian_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
+    return 4;
+}
+
 static uint16_t l2cap_setup_options(l2cap_channel_t * channel, uint8_t * config_options){
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     // use ERTM options if supported
@@ -783,6 +782,7 @@ static uint32_t l2cap_extended_features_mask(void){
 #endif
     return features;
 }
+#endif
 
 // MARK: L2CAP_RUN
 // process outstanding signaling tasks
@@ -1021,8 +1021,9 @@ static void l2cap_run(void){
 
         if (channel->send_supervisor_frame_receiver_ready){
             channel->send_supervisor_frame_receiver_ready = 0;
-            log_info("Send S-Frame: RR %u", channel->req_seq);
-            uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY, 0, 0, channel->req_seq);
+            log_info("Send S-Frame: RR %u, final %u", channel->req_seq, channel->set_final_bit_after_packet_with_poll_bit_set);
+            uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY, 0,  channel->set_final_bit_after_packet_with_poll_bit_set, channel->req_seq);
+            channel->set_final_bit_after_packet_with_poll_bit_set = 0;
             l2cap_ertm_send_supervisor_frame(channel, control);
             continue;
         }
@@ -1030,13 +1031,6 @@ static void l2cap_run(void){
             channel->send_supervisor_frame_receiver_ready_poll = 0;
             log_info("Send S-Frame: RR %u with poll=1 ", channel->req_seq);
             uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY, 1, 0, channel->req_seq);
-            l2cap_ertm_send_supervisor_frame(channel, control);
-            continue;
-        }
-        if (channel->send_supervisor_frame_receiver_ready_final){
-            channel->send_supervisor_frame_receiver_ready_final = 0;
-            log_info("Send S-Frame: RR %u with final=1 ", channel->req_seq);
-            uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY, 0, 1, channel->req_seq);
             l2cap_ertm_send_supervisor_frame(channel, control);
             continue;
         }
@@ -1068,7 +1062,9 @@ static void l2cap_run(void){
                 l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[i];
                 if (tx_state->retransmission_requested) {
                     tx_state->retransmission_requested = 0;
-                    l2cap_ertm_send_information_frame(channel, i, tx_state->retransmission_final);
+                    uint8_t final = channel->set_final_bit_after_packet_with_poll_bit_set;
+                    channel->set_final_bit_after_packet_with_poll_bit_set = 0;
+                    l2cap_ertm_send_information_frame(channel, i, final);
                     break;
                 }
             }
@@ -2643,7 +2639,8 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                                 log_info("L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY");
                                 l2cap_ertm_handle_req_seq(l2cap_channel, req_seq);
                                 if (poll){
-                                    l2cap_channel->send_supervisor_frame_receiver_ready_final = 1;
+                                    l2cap_channel->set_final_bit_after_packet_with_poll_bit_set = 1;
+                                    l2cap_channel->send_supervisor_frame_receiver_ready   = 1;
                                 }                                
                                 break;
                             case L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT:
@@ -2664,8 +2661,8 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                                 tx_state = l2cap_ertm_get_tx_state(l2cap_channel, req_seq);
                                 if (tx_state){
                                     log_info("Retransmission for tx_seq %u requested", req_seq);
+                                    l2cap_channel->set_final_bit_after_packet_with_poll_bit_set = poll;
                                     tx_state->retransmission_requested = 1;
-                                    tx_state->retransmission_final = poll;
                                     l2cap_channel->srej_active = 1;
                                 }         
                                 break;

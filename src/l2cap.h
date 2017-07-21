@@ -128,7 +128,6 @@ typedef struct {
     uint8_t tx_seq;
     uint8_t retry_count;
     uint8_t retransmission_requested;
-    uint8_t retransmission_final;
 } l2cap_ertm_tx_packet_state_t;
 
 
@@ -231,14 +230,11 @@ typedef struct {
     // sender: selective retransmission requested
     uint8_t srej_active;
 
-    // receiver: send RR frame - flag
+    // receiver: send RR frame with optional final flag set - flag
     uint8_t send_supervisor_frame_receiver_ready;
 
     // receiver: send RR frame with poll bit set
     uint8_t send_supervisor_frame_receiver_ready_poll;
-
-    // receiver: send RR frame with final bit set
-    uint8_t send_supervisor_frame_receiver_ready_final;
 
     // receiver: send RNR frame - flag
     uint8_t send_supervisor_frame_receiver_not_ready;
@@ -248,6 +244,9 @@ typedef struct {
 
     // receiver: send SREJ frame - flag
     uint8_t send_supervisor_frame_selective_reject;
+
+    // set final bit after poll packet with poll bit was received
+    uint8_t set_final_bit_after_packet_with_poll_bit_set;
 
     // receiver: value of tx_seq in next expected i-frame
     uint8_t expected_tx_seq;
