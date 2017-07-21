@@ -141,7 +141,8 @@ static void show_usage(void){
     printf("\n--- CLI for L2CAP TEST ---\n");
     printf("L2CAP Channel Mode %s\n", l2cap_ertm ? "Enahnced Retransmission" : "Basic");
     printf("c      - create connection to SDP at addr %s\n", bd_addr_to_str(remote));
-    printf("s      - send data\n");
+    printf("s      - send some data\n");
+    printf("S      - send more data\n");
     printf("p      - send echo request\n");
     printf("e      - optional ERTM mode\n");
     printf("E      - mandatory ERTM mode\n");
@@ -172,8 +173,12 @@ static void stdin_process(char buffer){
             l2cap_ertm_set_ready(local_cid);
             break;
         case 's':
-            printf("Send L2CAP Data\n");
+            printf("Send some L2CAP Data\n");
             l2cap_send(local_cid, (uint8_t *) "0123456789", 10);
+            break;
+        case 'S':
+            printf("Send more L2CAP Data\n");
+            l2cap_send(local_cid, (uint8_t *) "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", 100);
             break;
         case 'd':
             printf("L2CAP Channel Closed\n");

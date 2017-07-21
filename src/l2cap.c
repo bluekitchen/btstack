@@ -625,24 +625,24 @@ static int l2cap_ertm_send_information_frame(l2cap_channel_t * channel, int inde
     // send
     return l2cap_send_prepared(channel->local_cid, 2 + tx_state->len);
 }
-static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t len){
-    if (len > channel->remote_mtu){
-        log_error("l2cap_send cid 0x%02x, data length exceeds remote MTU.", channel->local_cid);
-        return L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU;
-    }
-    // TODO: fragment if neccessary
 
-    // store int tx packet bufferx
+static void l2cap_ertm_store_fragment(l2cap_channel_t * channel, l2cap_segmentation_and_reassembly_t sar, uint16_t sdu_length, uint8_t * data, uint16_t len){
+    // get next index for storing packets
     int index = channel->tx_write_index;
 
     l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[index];
     tx_state->tx_seq = channel->next_tx_seq;
     tx_state->len = len;
-    tx_state->sar = L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU;
+    tx_state->sar = sar;
     tx_state->retry_count = 0;
 
     uint8_t * tx_packet = &channel->tx_packets_data[index * channel->local_mtu];
-    memcpy(&tx_packet[0], data, len);
+    int pos = 0;
+    if (sar == L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU){
+        little_endian_store_16(tx_packet, 0, sdu_length);
+        pos += 2;
+    }
+    memcpy(&tx_packet[pos], data, len);
 
     // update
     channel->next_tx_seq = l2cap_next_ertm_seq_nr(channel->next_tx_seq);
@@ -653,6 +653,44 @@ static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t l
     btstack_run_loop_set_timer_context(&tx_state->retransmission_timer, channel);
     btstack_run_loop_set_timer(&tx_state->retransmission_timer, channel->local_retransmission_timeout_ms);
     btstack_run_loop_add_timer(&tx_state->retransmission_timer);
+}
+
+static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t len){
+    if (len > channel->remote_mtu){
+        log_error("l2cap_send cid 0x%02x, data length exceeds remote MTU.", channel->local_cid);
+        return L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU;
+    }
+
+    // check if it needs to get fragmented
+    if (len > channel->remote_mps){
+        // fragmentation needed.
+        l2cap_segmentation_and_reassembly_t sar =  L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU;
+        int chunk_len;
+        while (len){
+            switch (sar){
+                case L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU:
+                    chunk_len = channel->remote_mps - 2;    // sdu_length
+                    l2cap_ertm_store_fragment(channel, sar, len, data, chunk_len);
+                    len -= chunk_len;
+                    sar = L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU;
+                    break;
+                case L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU:
+                    chunk_len = channel->remote_mps;
+                    if (chunk_len >= len){
+                        sar = L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU; 
+                        chunk_len = len;                       
+                    }
+                    l2cap_ertm_store_fragment(channel, sar, len, data, chunk_len);
+                    len -= chunk_len;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+    } else {
+        l2cap_ertm_store_fragment(channel, L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU, 0, data, len);
+    }
 
     // try to send
     l2cap_run();
