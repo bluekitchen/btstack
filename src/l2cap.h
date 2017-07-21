@@ -254,6 +254,9 @@ typedef struct {
     // receiver: request transmiissoin with tx_seq = req_seq and ack up to and including req_seq
     uint8_t req_seq;
 
+    // local busy condition
+    uint8_t local_busy;
+
     // max um out-of-order packets // tx_window
     uint8_t num_rx_buffers;
 

@@ -1817,14 +1817,26 @@ uint8_t l2cap_ertm_set_busy(uint16_t local_cid){
         log_error( "l2cap_decline_connection called but local_cid 0x%x not found", local_cid);
         return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
     }
-    channel->send_supervisor_frame_receiver_not_ready = 1;
-    l2cap_run();
+    if (!channel->local_busy){
+        channel->local_busy = 1;
+        channel->send_supervisor_frame_receiver_not_ready = 1;
+        l2cap_run();
+    }
     return ERROR_CODE_SUCCESS;
 }
 
 uint8_t l2cap_ertm_set_ready(uint16_t local_cid){
+    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid( local_cid);
+    if (!channel) {
+        log_error( "l2cap_decline_connection called but local_cid 0x%x not found", local_cid);
+        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
+    }
+    if (channel->local_busy){
+        channel->local_busy = 0;
+        channel->send_supervisor_frame_receiver_ready_poll = 1;
+        l2cap_run();
+    }
     return ERROR_CODE_SUCCESS;
-    UNUSED(local_cid);
 }
 
 static void l2cap_ertm_handle_req_seq(l2cap_channel_t * l2cap_channel, uint8_t req_seq){
@@ -2628,10 +2640,10 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                     // switch on packet type
                     uint16_t control = little_endian_read_16(packet, COMPLETE_L2CAP_HEADER);
                     uint8_t  req_seq = (control >> 8) & 0x3f;
+                    int final = (control >> 7) & 0x01;
                     if (control & 1){
                         // S-Frame
                         int poll  = (control >> 4) & 0x01;
-                        int final = (control >> 7) & 0x01;
                         l2cap_supervisory_function_t s = (l2cap_supervisory_function_t) ((control >> 2) & 0x03);
                         log_info("Control: 0x%04x => Supervisory function %u, ReqSeq %02u", control, (int) s, req_seq);
                         l2cap_ertm_tx_packet_state_t * tx_state;
@@ -2689,7 +2701,6 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                         log_info("SAR: pos %u", l2cap_channel->rx_packets_state->pos);
                         log_info("State: expected_tx_seq %02u, req_seq %02u", l2cap_channel->expected_tx_seq, l2cap_channel->req_seq);
                         l2cap_ertm_handle_req_seq(l2cap_channel, req_seq);
-                        int final = (control >> 7) & 0x01;
                         if (final){
                             // final bit set <- response to RR with poll bit set. All not acknowledged packets need to be retransmitted
                             l2cap_channel->tx_send_index = l2cap_channel->tx_read_index;
