@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 BlueKitchen GmbH
+ * Copyright (C) 2017 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,57 +35,33 @@
  *
  */
 
-
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "btstack_config.h"
-#include "btstack_debug.h"
-#include "btstack_event.h"
-#include "btstack_memory.h"
-#include "btstack_run_loop.h"
-#include "gap.h"
-#include "hci.h"
-#include "hci_cmd.h"
-#include "hci_dump.h"
-#include "l2cap.h"
-#include "classic/avdtp_sink.h"
-#include "classic/a2dp_sink.h"
-#include "classic/btstack_sbc.h"
-#include "classic/avdtp_util.h"
-#include "classic/avrcp.h"
+#include "btstack.h"
 
 #define AVRCP_BROWSING_ENABLED 0
-
-#ifdef HAVE_BTSTACK_STDIN
-#include "btstack_stdin.h"
-#endif
-
-#ifdef HAVE_BTSTACK_STDIN
-static const char * device_addr_string = "00:1B:DC:08:0A:A5";
-#endif
-
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+
 static bd_addr_t device_addr;
 
-static uint8_t sdp_avdtp_sink_service_buffer[150];
-static uint8_t sdp_avrcp_controller_service_buffer[200];
-
-static uint16_t avdtp_cid = 0;
-static avdtp_sep_t sep;
-static avdtp_stream_endpoint_t * local_stream_endpoint;
+// iPhone SE: static const char * device_addr_string = "BC:EC:5D:E6:15:03";
+// iPhone 6:  static const char * device_addr_string = "D8:BB:2C:DF:F1:08";
+// iPhone 5S:  
+static const char * device_addr_string = "54:E4:3A:26:A2:39";
+// Wiko Sunny: static const char * device_addr_string = "A0-4C-5B-0F-B2-42";
+// pts: static const char * device_addr_string = "00:1B:DC:08:0A:A5";
 
 static uint16_t avrcp_cid = 0;
-static uint16_t avrcp_con_handle = 0;
+static uint8_t sdp_avrcp_controller_service_buffer[200];
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
     bd_addr_t event_addr;
     uint16_t local_cid;
-    uint16_t connection_handle = 0;
     uint8_t  status = 0xFF;
     switch (packet_type) {
         case HCI_EVENT_PACKET:
@@ -98,22 +74,22 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     switch (packet[2]){
                         case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
                             local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
-                            if (!avrcp_cid){
-                                avrcp_cid = local_cid;
-                            } else if (avrcp_cid != local_cid) {
+                            if (avrcp_cid != local_cid) {
                                 printf("Connection is not established, expected 0x%02X l2cap cid, received 0x%02X\n", avrcp_cid, local_cid);
-                                break;
+                                return;
                             }
 
                             status = avrcp_subevent_connection_established_get_status(packet);
-                            avrcp_con_handle = avrcp_subevent_connection_established_get_con_handle(packet);
                             avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
                             if (status != ERROR_CODE_SUCCESS){
                                 printf("AVRCP Connection failed: status 0x%02x\n", status);
                                 avrcp_cid = 0;
-                                break;
+                                return;
                             }
-                            printf("Channel successfully opened: %s, handle 0x%02x, local cid 0x%02x\n", bd_addr_to_str(event_addr), avrcp_con_handle, local_cid);
+                            printf("Channel successfully opened: %s, avrcp_cid 0x%02x\n", bd_addr_to_str(event_addr), avrcp_cid);
+                            // automatically enable notifications
+                            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
+                            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
                             return;
                         }
                         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
@@ -125,8 +101,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     }
 
                     status = packet[5];
-                    connection_handle = little_endian_read_16(packet, 3);
-                    if (connection_handle != avrcp_con_handle) return;
+                    local_cid = little_endian_read_16(packet, 3);
+                    if (avrcp_cid != local_cid) return;
 
                     // avoid printing INTERIM status
                     if (status == AVRCP_CTYPE_RESPONSE_INTERIM) return;
@@ -210,316 +186,178 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 }
 
-
 #ifdef HAVE_BTSTACK_STDIN
 static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
-    printf("\n--- Bluetooth AVDTP Sink/AVRCP Connection Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("b      - AVDTP Sink create  connection to addr %s\n", device_addr_string);
-    printf("B      - AVDTP Sink disconnect\n");
-    printf("c      - AVRCP create connection to addr %s\n", device_addr_string);
-    printf("C      - AVRCP disconnect\n");
-
-    printf("\n--- Bluetooth AVRCP Commands %s ---\n", bd_addr_to_str(iut_address));
-    printf("q - get capabilities: supported events\n");
-    printf("w - get unit info\n");
-    printf("r - get play status\n");
-    printf("t - get now playing info\n");
-    printf("1 - play\n");
-    printf("2 - stop\n");
-    printf("3 - pause\n");
-    printf("4 - fast forward\n");
-    printf("5 - rewind\n");
-    printf("6 - forward\n");
-    printf("7 - backward\n");
-    printf("8 - volume up\n");
-    printf("9 - volume down\n");
-    printf("0 - mute\n");
-    printf("R - absolute volume of 50 percent\n");
-    printf("u - skip\n");
-    printf("i - query repeat and shuffle mode\n");
-    printf("o - repeat single track\n");
-    printf("x/X - repeat/disable repeat all tracks\n");
-    printf("z/Z - shuffle/disable shuffle all tracks\n");
-    
-    printf("a/A - register/deregister PLAYBACK_STATUS_CHANGED\n");
-    printf("s/S - register/deregister TRACK_CHANGED\n");
-    printf("d/D - register/deregister TRACK_REACHED_END\n");
-    printf("f/F - register/deregister TRACK_REACHED_START\n");
-    printf("g/G - register/deregister PLAYBACK_POS_CHANGED\n");
-    printf("h/H - register/deregister BATT_STATUS_CHANGED\n");
-    printf("j/J - register/deregister SYSTEM_STATUS_CHANGED\n");
-    printf("k/K - register/deregister PLAYER_APPLICATION_SETTING_CHANGED\n");
-    printf("l/L - register/deregister NOW_PLAYING_CONTENT_CHANGED\n");
-    printf("m/M - register/deregister AVAILABLE_PLAYERS_CHANGED\n");
-    printf("n/N - register/deregister ADDRESSED_PLAYER_CHANGED\n");
-    printf("y/Y - register/deregister UIDS_CHANGED\n");
-    printf("v/V - register/deregister VOLUME_CHANGED\n");
+    printf("\n--- Bluetooth AVRCP Test Console %s ---\n", bd_addr_to_str(iut_address));
+    printf("c      - create connection to addr %s\n", bd_addr_to_str(device_addr));
+    printf("D      - disconnect\n");
+    printf("\n--- Bluetooth AVRCP Commands ---\n");
+    printf("i - get play status\n");
+    printf("j - get now playing info\n");
+    printf("k - play\n");
+    printf("K - stop\n");
+    printf("L - pause\n");
+    printf("m - start fast forward\n");
+    printf("M - stop  fast forward\n");
+    printf("n - start rewind\n");
+    printf("N - stop rewind\n");
+    printf("o - forward\n");
+    printf("O - backward\n");
+    printf("p - volume up\n");
+    printf("P - volume down\n");
+    printf("r - absolute volume of 50 percent\n");
+    printf("s - mute\n");
+    printf("t - skip\n");
+    printf("u - query repeat and shuffle mode\n");
+    printf("v - repeat single track\n");
+    printf("x - repeat all tracks\n");
+    printf("X - disable repeat mode\n");
+    printf("z - shuffle all tracks\n");
+    printf("Z - disable shuffle mode\n");
 
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
-#endif
-
-static uint8_t media_sbc_codec_capabilities[] = {
-    0xFF,//(AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
-    0xFF,//(AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
-    2, 53
-}; 
-
-#ifdef HAVE_BTSTACK_STDIN
 
 static void stdin_process(char cmd){
-    sep.seid = 1;
     switch (cmd){
-        case 'b':
-            printf("Creating L2CAP Connection to %s, BLUETOOTH_PROTOCOL_AVDTP\n", device_addr_string);
-            avdtp_sink_connect(device_addr);
-            break;
-        case 'B':
-            printf("Disconnect\n");
-            avdtp_sink_disconnect(avdtp_cid);
-            break;
         case 'c':
             printf(" - Create AVRCP connection to addr %s.\n", bd_addr_to_str(device_addr));
-            avrcp_connect(device_addr, &avrcp_cid);
-            printf(" assigned avrcp cid 0x%02x\n", avrcp_cid);
+            avrcp_controller_connect(device_addr, &avrcp_cid);
             break;
-        case 'C':
+        case 'B':
             printf(" - Disconnect\n");
-            avrcp_disconnect(avrcp_cid);
-            break;
-
-        case '\n':
-        case '\r':
-            break;
-        case 'q': 
-            printf(" - get capabilities: supported events\n");
-            avrcp_get_supported_events(avrcp_cid);
-            break;
-        case 'w':
-            printf(" - get unit info\n");
-            avrcp_unit_info(avrcp_cid);
-            break;
-        case 'r':
-            printf(" - get play status\n");
-            avrcp_get_play_status(avrcp_cid);
-            break;
-        case 't':
-            printf(" - get now playing info\n");
-            avrcp_get_now_playing_info(avrcp_cid);
-            break;
-        case '1':
-            printf(" - play\n");
-            avrcp_play(avrcp_cid);
-            break;
-        case '2':
-            printf(" - stop\n");
-            avrcp_stop(avrcp_cid);
-            break;
-        case '3':
-            printf(" - pause\n");
-            avrcp_pause(avrcp_cid);
-            break;
-        case '4':
-            printf(" - fast forward\n");
-            avrcp_fast_forward(avrcp_cid);
-            break;
-        case '5':
-            printf(" - rewind\n");
-            avrcp_rewind(avrcp_cid);
-            break;
-        case '6':
-            printf(" - forward\n");
-            avrcp_forward(avrcp_cid); 
-            break;
-        case '7':
-            printf(" - backward\n");
-            avrcp_backward(avrcp_cid);
-            break;
-        case '8':
-            printf(" - volume up\n");
-            avrcp_volume_up(avrcp_cid);
-            break;
-        case '9':
-            printf(" - volume down\n");
-            avrcp_volume_down(avrcp_cid);
-            break;
-        case '0':
-            printf(" - mute\n");
-            avrcp_mute(avrcp_cid);
-            break;
-        case 'R':
-            printf(" - absolute volume of 50 percent\n");
-            avrcp_set_absolute_volume(avrcp_cid, 50);
-            break;
-        case 'u':
-            printf(" - skip\n");
-            avrcp_skip(avrcp_cid);
+            avrcp_controller_disconnect(avrcp_cid);
             break;
         case 'i':
-            printf(" - query repeat and shuffle mode\n");
-            avrcp_query_shuffle_and_repeat_modes(avrcp_cid);
+            printf(" - get play status\n");
+            avrcp_controller_get_play_status(avrcp_cid);
+            break;
+        case 'j':
+            printf(" - get now playing info\n");
+            avrcp_controller_get_now_playing_info(avrcp_cid);
+            break;
+        case 'k':
+            printf(" - play\n");
+            avrcp_controller_play(avrcp_cid);
+            break;
+        case 'K':
+            printf(" - stop\n");
+            avrcp_controller_stop(avrcp_cid);
+            break;
+        case 'L':
+            printf(" - pause\n");
+            avrcp_controller_pause(avrcp_cid);
+            break;
+        case 'm':
+            printf(" - start fast forward\n");
+            avrcp_controller_start_fast_forward(avrcp_cid);
+            break;
+        case 'M':
+            printf(" - stop fast forward\n");
+            avrcp_controller_stop_fast_forward(avrcp_cid);
+            break;
+        case 'n':
+            printf(" - start rewind\n");
+            avrcp_controller_start_rewind(avrcp_cid);
+            break;
+        case 'N':
+            printf(" - stop rewind\n");
+            avrcp_controller_stop_rewind(avrcp_cid);
             break;
         case 'o':
+            printf(" - forward\n");
+            avrcp_controller_forward(avrcp_cid); 
+            break;
+        case 'O':
+            printf(" - backward\n");
+            avrcp_controller_backward(avrcp_cid);
+            break;
+        case 'p':
+            printf(" - volume up\n");
+            avrcp_controller_volume_up(avrcp_cid);
+            break;
+        case 'P':
+            printf(" - volume down\n");
+            avrcp_controller_volume_down(avrcp_cid);
+            break;
+        case 'r':
+            printf(" - absolute volume of 50 percent\n");
+            avrcp_controller_set_absolute_volume(avrcp_cid, 50);
+            break;
+        case 's':
+            printf(" - mute\n");
+            avrcp_controller_mute(avrcp_cid);
+            break;
+        case 't':
+            printf(" - skip\n");
+            avrcp_controller_skip(avrcp_cid);
+            break;
+        case 'u':
+            printf(" - query repeat and shuffle mode\n");
+            avrcp_controller_query_shuffle_and_repeat_modes(avrcp_cid);
+            break;
+        case 'v':
             printf(" - repeat single track\n");
-            avrcp_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_SINGLE_TRACK);
+            avrcp_controller_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_SINGLE_TRACK);
             break;
         case 'x':
             printf(" - repeat all tracks\n");
-            avrcp_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_ALL_TRACKS);
+            avrcp_controller_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_ALL_TRACKS);
             break;
         case 'X':
             printf(" - disable repeat mode\n");
-            avrcp_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_OFF);
+            avrcp_controller_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_OFF);
             break;
         case 'z':
             printf(" - shuffle all tracks\n");
-            avrcp_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_ALL_TRACKS);
+            avrcp_controller_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_ALL_TRACKS);
             break;
         case 'Z':
             printf(" - disable shuffle mode\n");
-            avrcp_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_OFF);
-            break;
-
-        case 'a':
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
-            break;
-        case 's':
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
-            break;
-        case 'd':
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END);
-            break;
-        case 'f':
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_START);
-            break;
-        case 'g':
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED);
-            break;
-        case 'h':
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED);
-            break;
-        case 'j':
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED);
-            break;
-        case 'k':
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED);
-            break;
-        case 'l':
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
-            break;
-        case 'm':
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED);
-            break;
-        case 'n':
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED);
-            break;
-        case 'y':
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED);
-            break;
-        case 'v':
-            avrcp_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
-            break;
-
-        case 'A':
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
-            break;
-        case 'S':
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
-            break;
-        case 'D':
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END);
-            break;
-        case 'F':
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_START);
-            break;
-        case 'G':
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED);
-            break;
-        case 'H':
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED);
-            break;
-        case 'J':
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED);
-            break;
-        case 'K':
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED);
-            break;
-        case 'L':
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
-            break;
-        case 'M':
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED);
-            break;
-        case 'N':
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED);
-            break;
-        case 'Y':
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED);
-            break;
-        case 'V':
-            avrcp_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
+            avrcp_controller_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_OFF);
             break;
         default:
             show_usage();
             break;
-
     }
 }
 #endif
 
-
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
-
     UNUSED(argc);
     (void)argv;
-
     /* Register for HCI events */
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     l2cap_init();
-    // Initialize AVDTP Sink
-    avdtp_sink_init();
-    avdtp_sink_register_packet_handler(&packet_handler);
-
-    local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
-    local_stream_endpoint->sep.seid = 1;
-    avdtp_sink_register_media_transport_category(local_stream_endpoint->sep.seid);
-    avdtp_sink_register_media_codec_category(local_stream_endpoint->sep.seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));
-
-    // Initialize AVRCP COntroller
-    avrcp_init();
-    avrcp_register_packet_handler(&packet_handler);
     
+    // Initialize AVRCP COntroller
+    avrcp_controller_init();
+    avrcp_controller_register_packet_handler(&packet_handler);
+
     // Initialize SDP 
     sdp_init();
-    // setup AVDTP sink
-    memset(sdp_avdtp_sink_service_buffer, 0, sizeof(sdp_avdtp_sink_service_buffer));
-    a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, 1, NULL, NULL);
-    sdp_register_service(sdp_avdtp_sink_service_buffer);
-    
-    // setup AVRCP
     memset(sdp_avrcp_controller_service_buffer, 0, sizeof(sdp_avrcp_controller_service_buffer));
     avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10001, AVRCP_BROWSING_ENABLED, 1, NULL, NULL);
     sdp_register_service(sdp_avrcp_controller_service_buffer);
-
-    gap_set_local_name("BTstack A2DP Sink Test");
+    
+    gap_set_local_name("BTstack AVRCP Test");
     gap_discoverable_control(1);
-    gap_set_class_of_device(0x200408);
-    printf("sdp, gap done\n");
+    // gap_set_class_of_device(0x200408);
+    
+    // parse human readable Bluetooth address
+    sscanf_bd_addr(device_addr_string, device_addr);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
 
 #ifdef HAVE_BTSTACK_STDIN
-    // parse human readable Bluetooth address
-    sscanf_bd_addr(device_addr_string, device_addr);
     btstack_stdin_setup(stdin_process);
 #endif
-
     return 0;
 }

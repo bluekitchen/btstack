@@ -53,7 +53,7 @@
 // hack to avoid error for ESP32
 #ifndef ESP_PLATFORM
 
-#if (INCLUDE_xEventGroupSetBitFromISR != 1) && !defined(HAVE_FREERTOS_TASK_NOTIFICATION)
+#if (INCLUDE_xEventGroupSetBitFromISR != 1) && !defined(HAVE_FREERTOS_TASK_NOTIFICATIONS)
 #error "The BTstack HAL UART Run Loop integration (btstack_uart_block_freertos) needs to trigger Run Loop iterations from ISR context," \
 "but 'INCLUDE_xEventGroupSetBitFromISR' is not enabled in your FreeRTOS configuration. Please enable INCLUDE_xEventGroupSetBitFromISR."
 #endif

@@ -21,6 +21,7 @@ SUBDIRS =  \
 			posix-h4 \
 			posix-h5 \
 			stm32-f103rb-nucleo \
+			max32630-fthr \
 
 EXCLUDED = \
 			pic32-harmony/app.X \

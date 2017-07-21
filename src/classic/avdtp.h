@@ -362,24 +362,23 @@ typedef enum {
 } avdtp_initiator_connection_state_t;
 
 typedef struct {
-    uint8_t command[200];
+    uint8_t  command[200];
     uint16_t size;
     uint16_t offset;
-    avdtp_signal_identifier_t signal_identifier;
-    avdtp_message_type_t message_type;
-    avdtp_packet_type_t  packet_type;
-    uint8_t acp_seid;
-    uint8_t int_seid;
+    uint8_t  acp_seid;
+    uint8_t  int_seid;
     uint16_t transaction_label;
     uint16_t num_packets;
+    avdtp_signal_identifier_t   signal_identifier;
+    avdtp_message_type_t        message_type;
+    avdtp_packet_type_t         packet_type;
 } avdtp_signaling_packet_t;
 
 typedef struct {
     btstack_linked_item_t    item;
-
     bd_addr_t remote_addr;
-    hci_con_handle_t con_handle;
     
+    uint16_t avdtp_cid;
     uint16_t l2cap_signaling_cid;
     avdtp_service_mode_t service_mode;
     
@@ -393,12 +392,11 @@ typedef struct {
 
     uint8_t disconnect;
 
+    uint8_t local_seid;
+    uint8_t remote_seid;
+
     uint8_t initiator_transaction_label;
     uint8_t acceptor_transaction_label;
-    uint8_t query_seid;
-    uint8_t int_seid;
-    uint8_t acp_seid;
-
     uint8_t wait_to_send_acceptor;
     uint8_t wait_to_send_initiator;
     uint8_t wait_to_send_self;
@@ -472,6 +470,8 @@ typedef struct avdtp_stream_endpoint {
 
 typedef struct {
 // to app
+    bd_addr_t remote_addr;
+    
     uint32_t fill_audio_ring_buffer_timeout_ms;
     uint32_t time_audio_data_sent; // ms
     uint32_t acc_num_missed_samples;
@@ -497,6 +497,7 @@ typedef struct {
     btstack_linked_list_t connections;
     btstack_linked_list_t stream_endpoints;
     uint16_t stream_endpoints_id_counter;
+    uint16_t initiator_transaction_id_counter;
     btstack_packet_handler_t avdtp_callback;
     btstack_packet_handler_t a2dp_callback;
     void (*handle_media_data)(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size);
@@ -517,20 +518,20 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, avdtp_context_t * context);
 avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type, avdtp_context_t * context);
 
-void avdtp_connect(bd_addr_t remote, avdtp_sep_type_t query_role, avdtp_context_t * context);
-void avdtp_disconnect(uint16_t avdtp_cid, avdtp_context_t * context);
-void avdtp_open_stream(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, avdtp_context_t * context);
-void avdtp_start_stream(uint8_t int_seid, avdtp_context_t * context);
-void avdtp_stop_stream (uint8_t int_seid, avdtp_context_t * context);
-void avdtp_abort_stream(uint8_t int_seid, avdtp_context_t * context);
-void avdtp_suspend_stream(uint8_t int_seid, avdtp_context_t * context);
+uint8_t avdtp_connect(bd_addr_t remote, avdtp_sep_type_t query_role, avdtp_context_t * context, uint16_t * avdtp_cid);
+uint8_t avdtp_disconnect(uint16_t avdtp_cid, avdtp_context_t * context);
+uint8_t avdtp_open_stream(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, avdtp_context_t * context);
+uint8_t avdtp_start_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context_t * context);
+uint8_t avdtp_stop_stream (uint16_t avdtp_cid, uint8_t local_seid, avdtp_context_t * context);
+uint8_t avdtp_abort_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context_t * context);
+uint8_t avdtp_suspend_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context_t * context);
 
 void avdtp_discover_stream_endpoints(uint16_t avdtp_cid, avdtp_context_t * context);
-void avdtp_get_capabilities(uint16_t avdtp_cid, uint8_t acp_seid, avdtp_context_t * context);
-void avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t acp_seid, avdtp_context_t * context);
-void avdtp_get_configuration(uint16_t avdtp_cid, uint8_t acp_seid, avdtp_context_t * context);
-void avdtp_set_configuration(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context);
-void avdtp_reconfigure(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context);
+void avdtp_get_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_context_t * context);
+void avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_context_t * context);
+void avdtp_get_configuration(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_context_t * context);
+void avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context);
+void avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context);
 uint8_t avdtp_remote_seps_num(uint16_t avdtp_cid, avdtp_context_t * context);
 avdtp_sep_t * avdtp_remote_sep(uint16_t avdtp_cid, uint8_t index, avdtp_context_t * context);
 

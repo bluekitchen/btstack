@@ -88,10 +88,12 @@ void a2dp_sink_register_media_handler(void (*callback)(avdtp_stream_endpoint_t *
 
 /**
  * @brief Open stream
- * @param avdtp_cid
+ * @param bd_addr
  * @param local_seid
+ * @param avdtp_cid
  */
-void a2dp_sink_establish_stream(bd_addr_t bd_addr, uint8_t local_seid);
+uint8_t a2dp_sink_establish_stream(bd_addr_t bd_addr, uint8_t local_seid, uint16_t * avdtp_cid);
+
 
 /**
  * @brief Start stream

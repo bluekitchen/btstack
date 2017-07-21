@@ -11,7 +11,7 @@ import os
 
 usage = '''
 CC256x init script conversion tool for use with BTstack, v0.2
-Copyright 2012-2014 BlueKitchen GmbH
+Copyright 2012-2017 BlueKitchen GmbH
 
 Usage:
 $ ./convert_bts_init_scripts.py main.bts [ble-add-on.bts] output.c
@@ -313,19 +313,19 @@ name_parts = re.match('.*TIInit_(\d*\.\d*\.\d*).*.bts', main_bts)
 if name_parts:
     aka = name_parts.group(1)
 
-# get lmp subversion from AKA
-lmp_subversion_for_aka = {
-    '6.2.31'  : 0x191f,
-    '6.6.15'  : 0x1B0F,
-    '6.7.16'  : 0x1B90,
-    '6.12.26' : 0x9a1a
-}
-
-if aka in lmp_subversion_for_aka:
-    lmp_subversion = lmp_subversion_for_aka[aka]
+# calculate subversion from AKA "CHIP.MAJ.MIN"
+# lmp scheme: ABBB BBCC CDDD DDDD
+# - chip = BBB
+# - maj  = ACCC
+# - min  = DDDD DDD
+if len(aka) > 0:
+    nums = aka.split('.')
+    chip     = int(nums[0])
+    maj_ver  = int(nums[1])
+    min_ver  = int(nums[2])
+    lmp_subversion = ((maj_ver & 0x08) << 12) | (chip << 10) | ((maj_ver & 0x07) << 7) | min_ver
 
 # print summary
-
 print ("Main file: %s"% main_bts)
 if add_on != "":
     print ("Add-on file: %s" % add_on)

@@ -66,7 +66,7 @@ SBC_ENCODER += \
 AVRCP += \
 	avrcp.c 			\
 	
-AVRCP_TESTS = avrcp_test
+AVRCP_TESTS = avrcp_controller_test
 
 CORE_OBJ    = $(CORE:.c=.o)
 COMMON_OBJ  = $(COMMON:.c=.o) 
@@ -76,7 +76,7 @@ AVRCP_OBJ  = $(AVRCP:.c=.o)
 
 all: ${AVRCP_TESTS}
 
-avrcp_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVRCP_OBJ} avrcp_test.o
+avrcp_controller_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${AVRCP_OBJ} avrcp_controller.o avrcp_controller_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
