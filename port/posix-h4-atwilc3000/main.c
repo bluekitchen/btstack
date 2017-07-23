@@ -168,7 +168,7 @@ int main(int argc, const char * argv[]){
     printf("Phase 1: Download firmware\n");
 
     // phase #2 start main app
-    btstack_chipset_atwilc3000_download_firmware(uart_driver, atwilc3000_fw_data, atwilc3000_fw_size, &phase2);
+    btstack_chipset_atwilc3000_download_firmware(uart_driver, 921600, atwilc3000_fw_data, atwilc3000_fw_size, &phase2);
     // phase2(0);
 
     // go

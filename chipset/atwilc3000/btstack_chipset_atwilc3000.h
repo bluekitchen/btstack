@@ -60,9 +60,10 @@ const btstack_chipset_t * btstack_chipset_atwilc3000_instance(void);
 /**
  * @brief Download firmware via uart_driver
  * @param uart_driver -- already initialized
+ * @param baudrate for firmware update
  * @param done callback. 0 = Success
  */
-void btstack_chipset_atwilc3000_download_firmware(const btstack_uart_block_t * uart_driver, const uint8_t * fw, uint32_t fw_size, void (*done)(int result));
+void btstack_chipset_atwilc3000_download_firmware(const btstack_uart_block_t * uart_driver, uint32_t baudrate, const uint8_t * fw, uint32_t fw_size, void (*done)(int result));
 
 #if defined __cplusplus
 }

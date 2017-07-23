@@ -67,6 +67,8 @@ static void atwilc3000_w4_command_complete_read_local_version_information(void);
 static void atwilc3000_write_memory(void);
 static void atwilc3000_vendor_specific_reset(void);
 static void atwilc3000_done(void);
+static void atwilc3000_update_uart_params(void);
+static void atwilc3000_w4_baudrate_update(void);
 
 // globals
 static void (*download_complete)(int result);
@@ -78,6 +80,7 @@ static uint8_t command_buffer[260];
 static const uint8_t * fw_data;
 static uint32_t        fw_size;
 static uint32_t        fw_offset;
+static uint32_t        fw_baudrate;
 
 static void atwilc3000_send_command(const uint8_t * data, uint16_t len){
     hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, (uint8_t *) &data[1], len - 1);
@@ -121,9 +124,31 @@ static void atwilc3000_w4_command_complete_read_local_version_information(void){
         return;
     }
     log_info("Running from ROM, start firmware download");
-    // TODO: check if  firmware download can be skipped
+    if (fw_baudrate){
+        atwilc3000_update_uart_params();
+    } else {
+        atwilc3000_write_memory();
+    }
+}
+
+static void atwilc3000_update_uart_params(void){
+    command_buffer[0] = 1;
+    command_buffer[1] = 0x53;
+    command_buffer[2] = 0xfc;
+    command_buffer[3] = 5;
+    little_endian_store_32(command_buffer, 4, fw_baudrate);
+    command_buffer[8] = 0;  // No flow control
+    the_uart_driver->receive_block(&event_buffer[0], 7);
+    the_uart_driver->set_block_received(&atwilc3000_w4_baudrate_update);
+    atwilc3000_send_command(&command_buffer[0], 9);
+}
+
+static void atwilc3000_w4_baudrate_update(void){
+    atwilc3000_log_event();
+    the_uart_driver->set_baudrate(fw_baudrate);
     atwilc3000_write_memory();
 }
+
 
 static void atwilc3000_write_memory(void){
     atwilc3000_log_event();
@@ -164,16 +189,21 @@ static void atwilc3000_vendor_specific_reset(void){
 
 static void atwilc3000_done(void){
     log_info("done");
+    // reset baud rate
+    if (fw_baudrate){
+        the_uart_driver->set_baudrate(115200);
+    }
     download_complete(0);
 }
 
-void btstack_chipset_atwilc3000_download_firmware(const btstack_uart_block_t * uart_driver, const uint8_t * da_fw_data, uint32_t da_fw_size, void (*done)(int result)){
+void btstack_chipset_atwilc3000_download_firmware(const btstack_uart_block_t * uart_driver, uint32_t baudrate, const uint8_t * da_fw_data, uint32_t da_fw_size, void (*done)(int result)){
 
 	the_uart_driver   = uart_driver;
     download_complete = done;
     fw_data = da_fw_data;
     fw_size = da_fw_size;
     fw_offset = 0;
+    fw_baudrate = baudrate;
 
     int res = the_uart_driver->open();
 
