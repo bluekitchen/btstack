@@ -55,6 +55,7 @@
 #include "hci.h"
 
 #define IRAM_START 0x80000000
+#define FIRMWARE_CHUNK_SIZE 4096
 
 // HCI commands
 static const uint8_t hci_reset_command[] = { 0x01, 0x03, 0x0c, 0x00 };
@@ -65,6 +66,7 @@ static const uint8_t hci_vendor_specific_reset_command[] = { 0x01, 0x55, 0xfc, 0
 static void atwilc3000_w4_command_complete_reset(void);
 static void atwilc3000_w4_command_complete_read_local_version_information(void);
 static void atwilc3000_write_memory(void);
+static void atwilc3000_write_firmware(void);
 static void atwilc3000_vendor_specific_reset(void);
 static void atwilc3000_done(void);
 static void atwilc3000_update_uart_params(void);
@@ -76,11 +78,13 @@ static const btstack_uart_block_t * the_uart_driver;
 
 static int     download_count;
 static uint8_t event_buffer[15];
-static uint8_t command_buffer[260];
+static uint8_t command_buffer[12];
 static const uint8_t * fw_data;
 static uint32_t        fw_size;
 static uint32_t        fw_offset;
 static uint32_t        fw_baudrate;
+
+static void dummy(void){}
 
 static void atwilc3000_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buffer){
     hci_cmd_buffer[0] = 0x53;
@@ -172,9 +176,10 @@ static void atwilc3000_write_memory(void){
         atwilc3000_vendor_specific_reset();
         return;
     }
+
     // bytes to write
     log_info("Write pos %u", fw_offset);
-    uint16_t bytes_to_write = btstack_min((fw_size - fw_offset), sizeof(command_buffer) - 12);
+    uint16_t bytes_to_write = btstack_min((fw_size - fw_offset), FIRMWARE_CHUNK_SIZE);
     // setup write command
     command_buffer[0] = 1;
     command_buffer[1] = 0x52;
@@ -182,15 +187,25 @@ static void atwilc3000_write_memory(void){
     command_buffer[3] = 8; // NOTE: this is in violation of the Bluetooth Specification, but documented in the Atmel-NNNNN-ATWIL_Linux_Porting_Guide
     little_endian_store_32(command_buffer, 4, IRAM_START + fw_offset);
     little_endian_store_32(command_buffer, 8, bytes_to_write);
-    memcpy(&command_buffer[12], &fw_data[fw_offset], bytes_to_write);
-    //
-    fw_offset += bytes_to_write;
 
     // send write command - only log write command without the firmware blob
-    the_uart_driver->receive_block(&event_buffer[0], 7);
-    the_uart_driver->set_block_received(&atwilc3000_write_memory);
     hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, (uint8_t *) &command_buffer[1], 12 - 1);
-    the_uart_driver->send_block(&command_buffer[0], 12 + bytes_to_write);
+    the_uart_driver->set_block_sent(&atwilc3000_write_firmware);
+    the_uart_driver->send_block(&command_buffer[0], 12);
+}
+
+static void atwilc3000_write_firmware(void){
+
+    the_uart_driver->set_block_received(&atwilc3000_write_memory);
+    the_uart_driver->receive_block(&event_buffer[0], 7);
+
+    uint16_t bytes_to_write = btstack_min((fw_size - fw_offset), FIRMWARE_CHUNK_SIZE);
+
+    uint32_t offset = fw_offset;
+    fw_offset += bytes_to_write;
+
+    the_uart_driver->set_block_sent(&dummy);
+    the_uart_driver->send_block(&fw_data[offset], bytes_to_write);
 }
 
 static void atwilc3000_vendor_specific_reset(void){
