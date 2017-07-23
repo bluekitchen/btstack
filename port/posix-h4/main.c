@@ -78,7 +78,7 @@ static hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
     0,  // main baudrate
-    0,  // flow control
+    1,  // flow control
     NULL,
 };
 
@@ -219,8 +219,7 @@ int main(int argc, const char * argv[]){
     // config.device_name = "/dev/tty.usbserial-A900K2WS"; // DFROBOT
     // config.device_name = "/dev/tty.usbserial-A50285BI"; // BOOST-CC2564MODA New
     // config.device_name = "/dev/tty.usbserial-A9OVNX5P"; // RedBear IoT pHAT breakout board
-    // config.device_name = "/dev/tty.usbserial-A900K0VK"; // CSR8811 breakout board
-    config.device_name = "/dev/tty.usbserial-A96PXBJ7"; // ATWILC3000 breakout board
+    config.device_name = "/dev/tty.usbserial-A900K0VK"; // CSR8811 breakout board
 
     // init HCI
     const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();
