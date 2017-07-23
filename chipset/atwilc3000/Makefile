@@ -9,8 +9,7 @@ wilc3000_bt_firmware.bin:
 	curl -O https://raw.githubusercontent.com/atwilc3000/firmware/master/wilc3000_bt_firmware.bin
 
 wilc3000_bt_firmware_no_rtc.bin:
-	curl -O https://raw.github.com/atwilc3000/firmware/raw/master/wilc3000_bt_firmware_no_rtc.bin
-
+	curl -O https://raw.githubusercontent.com/atwilc3000/firmware/master/wilc3000_bt_firmware_no_rtc.bin
 clean:
 	rm -f *.h *.c
 
