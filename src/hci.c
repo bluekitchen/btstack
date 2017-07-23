@@ -1518,8 +1518,9 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             hci_stack->substate = HCI_INIT_READ_BD_ADDR;
             return;            
         case HCI_INIT_W4_SET_BD_ADDR:
-            // for STLC2500D, bd addr change only gets active after sending reset command
-            if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_ST_MICROELECTRONICS){
+            // for STLC2500D + ATWILC3000, bd addr change only gets active after sending reset command
+            if ((hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_ST_MICROELECTRONICS)
+            ||  (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_ATMEL_CORPORATION)){
                 hci_stack->substate = HCI_INIT_SEND_RESET_ST_WARM_BOOT;
                 return;
             }

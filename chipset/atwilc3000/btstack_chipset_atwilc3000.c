@@ -94,14 +94,12 @@ static void atwilc3000_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_
     hci_cmd_buffer[7] = 0;  // No flow control
 }
 
-#if 0
 static void atwilc3000_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer){
-    hci_cmd_buffer[0] = 0x06;
+    hci_cmd_buffer[0] = 0x54;
     hci_cmd_buffer[1] = 0xFC;
     hci_cmd_buffer[2] = 0x06;
     reverse_bd_addr(addr, &hci_cmd_buffer[3]);
 }
-#endif
 
 static void atwilc3000_send_command(const uint8_t * data, uint16_t len){
     hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, (uint8_t *) &data[1], len - 1);
@@ -252,7 +250,7 @@ static const btstack_chipset_t btstack_chipset_atwilc3000 = {
     NULL, // chipset_init not used
     NULL, // chipset_next_command not used
     atwilc3000_set_baudrate_command,
-    NULL, // atwilc3000_set_bd_addr_command,
+    atwilc3000_set_bd_addr_command,
 };
 
 // MARK: public API
