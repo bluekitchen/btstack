@@ -82,6 +82,23 @@ static uint32_t        fw_size;
 static uint32_t        fw_offset;
 static uint32_t        fw_baudrate;
 
+static void atwilc3000_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buffer){
+    hci_cmd_buffer[0] = 0x53;
+    hci_cmd_buffer[1] = 0xfc;
+    hci_cmd_buffer[2] = 5;
+    little_endian_store_32(hci_cmd_buffer, 3, fw_baudrate);
+    hci_cmd_buffer[7] = 0;  // No flow control
+}
+
+#if 0
+static void atwilc3000_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer){
+    hci_cmd_buffer[0] = 0x06;
+    hci_cmd_buffer[1] = 0xFC;
+    hci_cmd_buffer[2] = 0x06;
+    reverse_bd_addr(addr, &hci_cmd_buffer[3]);
+}
+#endif
+
 static void atwilc3000_send_command(const uint8_t * data, uint16_t len){
     hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, (uint8_t *) &data[1], len - 1);
     the_uart_driver->send_block(data, len);
@@ -133,11 +150,7 @@ static void atwilc3000_w4_command_complete_read_local_version_information(void){
 
 static void atwilc3000_update_uart_params(void){
     command_buffer[0] = 1;
-    command_buffer[1] = 0x53;
-    command_buffer[2] = 0xfc;
-    command_buffer[3] = 5;
-    little_endian_store_32(command_buffer, 4, fw_baudrate);
-    command_buffer[8] = 0;  // No flow control
+    atwilc3000_set_baudrate_command(fw_baudrate, &command_buffer[1]);
     the_uart_driver->receive_block(&event_buffer[0], 7);
     the_uart_driver->set_block_received(&atwilc3000_w4_baudrate_update);
     atwilc3000_send_command(&command_buffer[0], 9);
@@ -222,8 +235,8 @@ static const btstack_chipset_t btstack_chipset_atwilc3000 = {
     "atwilc3000",
     NULL, // chipset_init not used
     NULL, // chipset_next_command not used
-    NULL, // chipset_set_baudrate_command not needed as we're connected via SPI
-    NULL, // chipset_set_bd_addr not provided
+    atwilc3000_set_baudrate_command,
+    NULL, // atwilc3000_set_bd_addr_command,
 };
 
 // MARK: public API

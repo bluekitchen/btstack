@@ -74,7 +74,7 @@ int btstack_main(int argc, const char * argv[]);
 static hci_transport_config_uart_t transport_config = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
-    0,  // main baudrate
+    921600,  // main baudrate
     0,  // flow control
     NULL,
 };
@@ -128,6 +128,7 @@ static void phase2(int status){
     const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
     const btstack_link_key_db_t * link_key_db = btstack_link_key_db_fs_instance();
     hci_init(transport, (void*) &transport_config);
+    hci_set_chipset(btstack_chipset_atwilc3000_instance());
     hci_set_link_key_db(link_key_db);
     
     // inform about BTstack state
