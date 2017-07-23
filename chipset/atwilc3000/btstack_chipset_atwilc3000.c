@@ -174,7 +174,7 @@ static void atwilc3000_write_memory(void){
     }
     // bytes to write
     log_info("Write pos %u", fw_offset);
-    uint16_t bytes_to_write = btstack_min((fw_size - fw_offset), (255-8));
+    uint16_t bytes_to_write = btstack_min((fw_size - fw_offset), sizeof(command_buffer) - 12);
     // setup write command
     command_buffer[0] = 1;
     command_buffer[1] = 0x52;
@@ -186,10 +186,11 @@ static void atwilc3000_write_memory(void){
     //
     fw_offset += bytes_to_write;
 
-    // send write command
+    // send write command - only log write command without the firmware blob
     the_uart_driver->receive_block(&event_buffer[0], 7);
     the_uart_driver->set_block_received(&atwilc3000_write_memory);
-    atwilc3000_send_command(&command_buffer[0], 12 + bytes_to_write);
+    hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, (uint8_t *) &command_buffer[1], 12 - 1);
+    the_uart_driver->send_block(&command_buffer[0], 12 + bytes_to_write);
 }
 
 static void atwilc3000_vendor_specific_reset(void){
