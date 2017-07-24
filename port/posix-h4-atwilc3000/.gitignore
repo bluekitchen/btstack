@@ -48,3 +48,4 @@ pbap_client_demo
 sm_pairing_central
 sm_pairing_peripheral
 
+spp_and_le_streamer.h
