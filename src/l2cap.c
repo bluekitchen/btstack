@@ -2624,6 +2624,29 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 #endif
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+
+// @param delta number of frames in the future, >= 1
+static void l2cap_ertm_handle_out_of_sequence_sdu(l2cap_channel_t * l2cap_channel, l2cap_segmentation_and_reassembly_t sar, int delta, uint8_t * payload, uint16_t size){
+    log_info("Store SDU with delta %u", delta);
+    // get rx state for packet to store
+    int index = l2cap_channel->rx_store_index + delta - 1;
+    if (index > l2cap_channel->num_rx_buffers){
+        index -= l2cap_channel->num_rx_buffers;
+    }
+    log_info("Index of packet to store %u", index);
+    l2cap_ertm_rx_packet_state_t * rx_state = &l2cap_channel->rx_packets_state[index];
+    // check if buffer is free
+    if (rx_state->valid){
+        log_error("Packet buffer already used");
+        return;
+    }
+    rx_state->valid = 1;
+    rx_state->sar = sar;
+    rx_state->len = size;
+    uint8_t * rx_buffer = &l2cap_channel->rx_packets_data[index];
+    memcpy(rx_buffer, payload, size);
+}
+
 static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l2cap_segmentation_and_reassembly_t sar, uint8_t * payload, uint16_t size){
     switch (sar){
         case L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU:
@@ -2806,9 +2829,26 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                             // process SDU
                             l2cap_ertm_handle_in_sequence_sdu(l2cap_channel, sar, &packet[COMPLETE_L2CAP_HEADER+2], size-(COMPLETE_L2CAP_HEADER+2));
 
+                            // process stored segments
+                            while (1){
+                                int index = l2cap_channel->rx_store_index;
+                                l2cap_ertm_rx_packet_state_t * rx_state = &l2cap_channel->rx_packets_state[index];
+                                if (!rx_state->valid) break;
+                                rx_state->valid = 0;
+                                l2cap_ertm_handle_in_sequence_sdu(l2cap_channel, rx_state->sar, &l2cap_channel->rx_packets_data[index], rx_state->len);
+                                index++;
+                                if (index >= l2cap_channel->num_rx_buffers){
+                                    index = 0;
+                                }
+                                l2cap_channel->rx_store_index = index;
+                            }
+
                         } else {
                             int delta = (tx_seq - l2cap_channel->expected_tx_seq) & 0x3f;
                             if (delta < 2){
+                                // store segment
+                                l2cap_ertm_handle_out_of_sequence_sdu(l2cap_channel, sar, delta, &packet[COMPLETE_L2CAP_HEADER+2], size-(COMPLETE_L2CAP_HEADER+2));
+
                                 log_info("Received unexpected frame TxSeq %u but expected %u -> send S-SREJ", tx_seq, l2cap_channel->expected_tx_seq);
                                 l2cap_channel->send_supervisor_frame_selective_reject = 1;
                             } else {

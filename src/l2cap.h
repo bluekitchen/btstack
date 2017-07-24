@@ -118,7 +118,6 @@ typedef enum {
 typedef struct {
     l2cap_segmentation_and_reassembly_t sar;
     uint16_t len;
-    uint8_t  tx_seq;
     uint8_t  valid;
 } l2cap_ertm_rx_packet_state_t;
 
@@ -267,6 +266,9 @@ typedef struct {
 
     // local mps = size of rx/tx packets
     uint16_t local_mps;
+
+    // receiver: buffer index of to store packet with delta = 1
+    uint8_t rx_store_index;
 
     // receiver - reassemly
     uint16_t reassembly_pos;
