@@ -116,9 +116,9 @@ typedef enum {
 } L2CAP_CHANNEL_STATE_VAR;
 
 typedef struct {
-    uint8_t tx_seq;
-    uint16_t pos;
-    uint16_t sdu_length;
+    l2cap_segmentation_and_reassembly_t sar;
+    uint16_t len;
+    uint8_t  tx_seq;
 } l2cap_ertm_rx_packet_state_t;
 
 typedef struct {
@@ -266,6 +266,12 @@ typedef struct {
 
     // local mps = size of rx/tx packets
     uint16_t local_mps;
+
+    // receiver - reassemly
+    uint16_t reassembly_pos;
+
+    // receiver - reassemly
+    uint16_t reassembly_sdu_length;
 
     // re-assembly state
     l2cap_ertm_rx_packet_state_t * rx_packets_state;
