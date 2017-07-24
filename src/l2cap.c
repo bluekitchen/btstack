@@ -1097,7 +1097,8 @@ static void l2cap_run(void){
         if (channel->send_supervisor_frame_selective_reject){
             channel->send_supervisor_frame_selective_reject = 0;
             log_info("Send S-Frame: SREJ %u", channel->expected_tx_seq);
-            uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_SREJ_SELECTIVE_REJECT, 0, 0, channel->expected_tx_seq);
+            uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_SREJ_SELECTIVE_REJECT, 0, channel->set_final_bit_after_packet_with_poll_bit_set, channel->expected_tx_seq);
+            channel->set_final_bit_after_packet_with_poll_bit_set = 0;
             l2cap_ertm_send_supervisor_frame(channel, control);
             continue;
         }
@@ -2771,8 +2772,24 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                                     break;
                                 }
                                 if (poll){
+                                    // check if we did request selective retransmission before <==> we have stored SDU segments
+                                    int i;
+                                    int num_stored_out_of_order_packets = 0;
+                                    for (i=0;i<l2cap_channel->num_rx_buffers;i++){
+                                        int index = l2cap_channel->rx_store_index + i;
+                                        if (index >= l2cap_channel->num_rx_buffers){
+                                            index -= l2cap_channel->num_rx_buffers;
+                                        }
+                                        l2cap_ertm_rx_packet_state_t * rx_state = &l2cap_channel->rx_packets_state[index];
+                                        if (!rx_state->valid) continue;
+                                        num_stored_out_of_order_packets++;
+                                    }
+                                    if (num_stored_out_of_order_packets){
+                                        l2cap_channel->send_supervisor_frame_selective_reject = 1;
+                                    } else {
+                                        l2cap_channel->send_supervisor_frame_receiver_ready   = 1;
+                                    }
                                     l2cap_channel->set_final_bit_after_packet_with_poll_bit_set = 1;
-                                    l2cap_channel->send_supervisor_frame_receiver_ready   = 1;
                                 }
                                 if (final){
                                     // final bit set <- response to RR with poll bit set. All not acknowledged packets need to be retransmitted
@@ -2822,10 +2839,9 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                         // check ordering
                         if (l2cap_channel->expected_tx_seq == tx_seq){
                             log_info("Received expected frame with TxSeq == ExpectedTxSeq == %02u", tx_seq);
-                            l2cap_channel->req_seq = (tx_seq+1) & 0x3f;
-                            l2cap_channel->send_supervisor_frame_receiver_ready = 1;
                             l2cap_channel->expected_tx_seq = l2cap_next_ertm_seq_nr(l2cap_channel->expected_tx_seq);
-
+                            l2cap_channel->req_seq         = l2cap_channel->expected_tx_seq;
+ 
                             // process SDU
                             l2cap_ertm_handle_in_sequence_sdu(l2cap_channel, sar, &packet[COMPLETE_L2CAP_HEADER+2], size-(COMPLETE_L2CAP_HEADER+2));
 
@@ -2834,14 +2850,24 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                                 int index = l2cap_channel->rx_store_index;
                                 l2cap_ertm_rx_packet_state_t * rx_state = &l2cap_channel->rx_packets_state[index];
                                 if (!rx_state->valid) break;
+
+                                log_info("Processing stored frame with TxSeq == ExpectedTxSeq == %02u", l2cap_channel->expected_tx_seq);
+                                l2cap_channel->expected_tx_seq = l2cap_next_ertm_seq_nr(l2cap_channel->expected_tx_seq);
+                                l2cap_channel->req_seq         = l2cap_channel->expected_tx_seq;
+
                                 rx_state->valid = 0;
                                 l2cap_ertm_handle_in_sequence_sdu(l2cap_channel, rx_state->sar, &l2cap_channel->rx_packets_data[index], rx_state->len);
+
+                                // update rx store index
                                 index++;
                                 if (index >= l2cap_channel->num_rx_buffers){
                                     index = 0;
                                 }
                                 l2cap_channel->rx_store_index = index;
                             }
+
+                            //
+                            l2cap_channel->send_supervisor_frame_receiver_ready = 1;
 
                         } else {
                             int delta = (tx_seq - l2cap_channel->expected_tx_seq) & 0x3f;
