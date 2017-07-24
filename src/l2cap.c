@@ -2623,6 +2623,45 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 }
 #endif
 
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l2cap_segmentation_and_reassembly_t sar, uint8_t * packet, uint16_t size){
+    uint16_t sdu_length;
+    uint16_t segment_length;
+    uint16_t payload_offset;
+    switch (sar){
+        case L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU:
+            payload_offset = COMPLETE_L2CAP_HEADER+2;
+            segment_length = payload_offset-2;
+            l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER+2], segment_length);
+            break;
+        case L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU:
+            // TODO: use current packet
+            // TODO: check if reassembly started
+            // TODO: check len against local mtu
+            sdu_length = little_endian_read_16(packet, COMPLETE_L2CAP_HEADER+2);
+            payload_offset = COMPLETE_L2CAP_HEADER+4;
+            segment_length = size - payload_offset-2;
+            memcpy(&l2cap_channel->rx_packets_data[0], &packet[payload_offset], segment_length);
+            l2cap_channel->rx_packets_state->sdu_length = sdu_length;
+            l2cap_channel->rx_packets_state->pos = segment_length;
+            break;
+        case L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU:
+            payload_offset = COMPLETE_L2CAP_HEADER+2;
+            segment_length = size - payload_offset-2;
+            memcpy(&l2cap_channel->rx_packets_data[l2cap_channel->rx_packets_state->pos], &packet[payload_offset], segment_length);
+            l2cap_channel->rx_packets_state->pos += segment_length;
+            l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, l2cap_channel->rx_packets_data, l2cap_channel->rx_packets_state[0].pos);
+            break; 
+        case L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU:
+            payload_offset = COMPLETE_L2CAP_HEADER+2;
+            segment_length = size - payload_offset-2;
+            memcpy(&l2cap_channel->rx_packets_data[l2cap_channel->rx_packets_state->pos], &packet[payload_offset], segment_length);
+            l2cap_channel->rx_packets_state->pos += segment_length;
+            break;
+    }
+}
+#endif
+
 static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size ){
     UNUSED(packet_type);
     UNUSED(channel);
@@ -2771,40 +2810,9 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                             l2cap_channel->req_seq = (tx_seq+1) & 0x3f;
                             l2cap_channel->send_supervisor_frame_receiver_ready = 1;
                             l2cap_channel->expected_tx_seq = l2cap_next_ertm_seq_nr(l2cap_channel->expected_tx_seq);
-                            uint16_t sdu_length;
-                            uint16_t segment_length;
-                            uint16_t payload_offset;
-                            switch (sar){
-                                case L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU:
-                                    payload_offset = COMPLETE_L2CAP_HEADER+2;
-                                    segment_length = payload_offset-2;
-                                    l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER+2], segment_length);
-                                    break;
-                                case L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU:
-                                    // TODO: use current packet
-                                    // TODO: check if reassembly started
-                                    // TODO: check len against local mtu
-                                    sdu_length = little_endian_read_16(packet, COMPLETE_L2CAP_HEADER+2);
-                                    payload_offset = COMPLETE_L2CAP_HEADER+4;
-                                    segment_length = size - payload_offset-2;
-                                    memcpy(&l2cap_channel->rx_packets_data[0], &packet[payload_offset], segment_length);
-                                    l2cap_channel->rx_packets_state->sdu_length = sdu_length;
-                                    l2cap_channel->rx_packets_state->pos = segment_length;
-                                    break;
-                                case L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU:
-                                    payload_offset = COMPLETE_L2CAP_HEADER+2;
-                                    segment_length = size - payload_offset-2;
-                                    memcpy(&l2cap_channel->rx_packets_data[l2cap_channel->rx_packets_state->pos], &packet[payload_offset], segment_length);
-                                    l2cap_channel->rx_packets_state->pos += segment_length;
-                                    l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, l2cap_channel->rx_packets_data, l2cap_channel->rx_packets_state[0].pos);
-                                    break; 
-                                case L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU:
-                                    payload_offset = COMPLETE_L2CAP_HEADER+2;
-                                    segment_length = size - payload_offset-2;
-                                    memcpy(&l2cap_channel->rx_packets_data[l2cap_channel->rx_packets_state->pos], &packet[payload_offset], segment_length);
-                                    l2cap_channel->rx_packets_state->pos += segment_length;
-                                    break;
-                            }
+
+                            l2cap_ertm_handle_in_sequence_sdu(l2cap_channel, sar, packet, size);
+
                         } else {
                             int delta = (tx_seq - l2cap_channel->expected_tx_seq) & 0x3f;
                             if (delta < 2){
