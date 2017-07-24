@@ -86,12 +86,12 @@ typedef struct {
     int (*close)(void);
 
     /**
-     * set callback for block received
+     * set callback for block received. NULL disables callback
      */
     void (*set_block_received)(void (*block_handler)(void));
 
     /**
-     * set callback for sent
+     * set callback for sent. NULL disables callback
      */
     void (*set_block_sent)(void (*block_handler)(void));
 

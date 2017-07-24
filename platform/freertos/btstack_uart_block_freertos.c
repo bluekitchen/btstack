@@ -86,11 +86,15 @@ static void btstack_uart_block_freertos_process(btstack_data_source_t *ds, btsta
         case DATA_SOURCE_CALLBACK_POLL:
             if (send_complete){
                 send_complete = 0;
-                block_sent();
+                if (block_sent){
+                    block_sent();
+                }
             }
             if (receive_complete){
                 receive_complete = 0;
-                block_received();
+                if (block_received){
+                    block_received();
+                }
             }
             break;
         default:
