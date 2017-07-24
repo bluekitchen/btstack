@@ -304,6 +304,8 @@ static int l2cap_ertm_send_information_frame(l2cap_channel_t * channel, int inde
     log_info("I-Frame: control 0x%04x", control);
     little_endian_store_16(acl_buffer, 8, control);
     memcpy(&acl_buffer[8+2], &channel->tx_packets_data[index * channel->local_mtu], tx_state->len);
+    // (re-)start retransmission timer on 
+    l2cap_ertm_start_retransmission_timer(channel);
     // send
     return l2cap_send_prepared(channel->local_cid, 2 + tx_state->len);
 }
@@ -329,8 +331,6 @@ static void l2cap_ertm_store_fragment(l2cap_channel_t * channel, l2cap_segmentat
     // update
     channel->next_tx_seq = l2cap_next_ertm_seq_nr(channel->next_tx_seq);
     l2cap_ertm_next_tx_write_index(channel);
-
-    l2cap_ertm_start_retransmission_timer(channel);
 }
 
 static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t len){
@@ -569,10 +569,19 @@ uint8_t l2cap_ertm_set_ready(uint16_t local_cid){
     return ERROR_CODE_SUCCESS;
 }
 
-static void l2cap_ertm_handle_req_seq(l2cap_channel_t * l2cap_channel, uint8_t req_seq){
+// Process-ReqSeq
+static void l2cap_ertm_process_req_seq(l2cap_channel_t * l2cap_channel, uint8_t req_seq){
     int num_buffers_acked = 0;
     l2cap_ertm_tx_packet_state_t * tx_state;
     while (1){
+
+        // no unack packages
+        if (l2cap_channel->tx_read_index == l2cap_channel->tx_write_index) {
+            // stop retransmission timer
+            l2cap_ertm_stop_retransmission_timer(l2cap_channel);
+            break;
+        }
+
         tx_state = &l2cap_channel->tx_packets_state[l2cap_channel->tx_read_index];
         // calc delta
         int delta = (req_seq - tx_state->tx_seq) & 0x03f;
@@ -582,16 +591,10 @@ static void l2cap_ertm_handle_req_seq(l2cap_channel_t * l2cap_channel, uint8_t r
         num_buffers_acked++;
         log_info("RR seq %u => packet with tx_seq %u done", req_seq, tx_state->tx_seq);
 
-        // stop retransmission timer
-        l2cap_ertm_stop_retransmission_timer(l2cap_channel);
-
         l2cap_channel->tx_read_index++;
         if (l2cap_channel->tx_read_index >= l2cap_channel->num_rx_buffers){
             l2cap_channel->tx_read_index = 0;
         }
-
-        // no unack packages
-        if (l2cap_channel->tx_read_index == l2cap_channel->tx_write_index) break;
     }
 
     if (num_buffers_acked){
@@ -2832,7 +2835,7 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                         switch (s){
                             case L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY:
                                 log_info("L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY");
-                                l2cap_ertm_handle_req_seq(l2cap_channel, req_seq);
+                                l2cap_ertm_process_req_seq(l2cap_channel, req_seq);
                                 if (poll && final){
                                     // S-frames shall not be transmitted with both the F-bit and the P-bit set to 1 at the same time.
                                     log_error("P=F=1 in S-Frame");
@@ -2865,8 +2868,8 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                                 break;
                             case L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT:
                                 log_info("L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT");
-                                l2cap_ertm_handle_req_seq(l2cap_channel, req_seq);
-                                // rsetart transmittion from last unacknowledted packet (earlier packets already freed in l2cap_ertm_handle_req_seq)
+                                l2cap_ertm_process_req_seq(l2cap_channel, req_seq);
+                                // rsetart transmittion from last unacknowledted packet (earlier packets already freed in l2cap_ertm_process_req_seq)
                                 l2cap_channel->tx_send_index = l2cap_channel->tx_read_index;
                                 break;
                             case L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY:
@@ -2875,7 +2878,7 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                             case L2CAP_SUPERVISORY_FUNCTION_SREJ_SELECTIVE_REJECT:
                                 log_info("L2CAP_SUPERVISORY_FUNCTION_SREJ_SELECTIVE_REJECT");
                                 if (poll){
-                                    l2cap_ertm_handle_req_seq(l2cap_channel, req_seq);
+                                    l2cap_ertm_process_req_seq(l2cap_channel, req_seq);
                                 }
                                 // find requested i-frame
                                 tx_state = l2cap_ertm_get_tx_state(l2cap_channel, req_seq);
@@ -2898,7 +2901,7 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                         log_info("Control: 0x%04x => SAR %u, ReqSeq %02u, R?, TxSeq %02u", control, (int) sar, req_seq, tx_seq);
                         log_info("SAR: pos %u", l2cap_channel->reassembly_pos);
                         log_info("State: expected_tx_seq %02u, req_seq %02u", l2cap_channel->expected_tx_seq, l2cap_channel->req_seq);
-                        l2cap_ertm_handle_req_seq(l2cap_channel, req_seq);
+                        l2cap_ertm_process_req_seq(l2cap_channel, req_seq);
                         if (final){
                             // final bit set <- response to RR with poll bit set. All not acknowledged packets need to be retransmitted
                             l2cap_channel->tx_send_index = l2cap_channel->tx_read_index;
