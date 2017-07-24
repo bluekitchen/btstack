@@ -231,6 +231,7 @@ static void l2cap_ertm_next_tx_write_index(l2cap_channel_t * channel){
 }
 
 static void l2cap_ertm_start_monitor_timer(l2cap_channel_t * channel){
+    log_info("Start Monitor timer");
     btstack_run_loop_remove_timer(&channel->monitor_timer);
     btstack_run_loop_set_timer_handler(&channel->monitor_timer, &l2cap_ertm_monitor_timeout_callback);
     btstack_run_loop_set_timer_context(&channel->monitor_timer, channel);
@@ -238,10 +239,13 @@ static void l2cap_ertm_start_monitor_timer(l2cap_channel_t * channel){
     btstack_run_loop_add_timer(&channel->monitor_timer);
 }
 
-// static void l2cap_ertm_stop_monitor_timer(l2cap_channel_t * channel){
-// }
+static void l2cap_ertm_stop_monitor_timer(l2cap_channel_t * channel){
+    log_info("Stop Monitor timer");
+    btstack_run_loop_remove_timer(&channel->monitor_timer);
+}
 
 static void l2cap_ertm_start_retransmission_timer(l2cap_channel_t * channel){
+    log_info("Start Retransmission timer");
     btstack_run_loop_remove_timer(&channel->retransmission_timer);
     btstack_run_loop_set_timer_handler(&channel->retransmission_timer, &l2cap_ertm_retransmission_timeout_callback);
     btstack_run_loop_set_timer_context(&channel->retransmission_timer, channel);
@@ -250,11 +254,12 @@ static void l2cap_ertm_start_retransmission_timer(l2cap_channel_t * channel){
 }
 
 static void l2cap_ertm_stop_retransmission_timer(l2cap_channel_t * l2cap_channel){
+    log_info("Stop Retransmission timer");
     btstack_run_loop_remove_timer(&l2cap_channel->retransmission_timer);
 }    
 
 static void l2cap_ertm_monitor_timeout_callback(btstack_timer_source_t * ts){
-    log_info("l2cap_ertm_monitor_timeout_callback");
+    log_info("Monitor timeout");
     l2cap_channel_t * l2cap_channel = (l2cap_channel_t *) btstack_run_loop_get_timer_context(ts);
 
     // TODO: we assume that it's the oldest packet
@@ -278,7 +283,7 @@ static void l2cap_ertm_monitor_timeout_callback(btstack_timer_source_t * ts){
 }
 
 static void l2cap_ertm_retransmission_timeout_callback(btstack_timer_source_t * ts){
-    log_info("l2cap_ertm_retransmission_timeout_callback");
+    log_info("Retransmission timeout");
     l2cap_channel_t * l2cap_channel = (l2cap_channel_t *) btstack_run_loop_get_timer_context(ts);
     
     // TODO: we assume that it's the oldest packet
@@ -2862,6 +2867,13 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                                     l2cap_channel->set_final_bit_after_packet_with_poll_bit_set = 1;
                                 }
                                 if (final){
+                                    // Stop-MonitorTimer
+                                    l2cap_ertm_stop_monitor_timer(l2cap_channel);
+                                    // If UnackedFrames > 0 then Start-RetransTimer
+                                    if (l2cap_ertm_num_unacknowledged_tx_packets(l2cap_channel)){
+                                        l2cap_ertm_start_retransmission_timer(l2cap_channel);
+                                    }
+
                                     // final bit set <- response to RR with poll bit set. All not acknowledged packets need to be retransmitted
                                     l2cap_channel->tx_send_index = l2cap_channel->tx_read_index;
                                 }                       
