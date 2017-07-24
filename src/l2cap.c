@@ -111,6 +111,7 @@ static void l2cap_le_finialize_channel_close(l2cap_channel_t *channel);
 static inline l2cap_service_t * l2cap_le_get_service(uint16_t psm);
 #endif
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+static void l2cap_ertm_notify_channel_can_send(l2cap_channel_t * channel);
 static int l2cap_ertm_num_unacknowledged_tx_packets(l2cap_channel_t * channel);
 #endif
 
@@ -407,30 +408,42 @@ void l2cap_request_can_send_now_event(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return;
     channel->waiting_for_can_send_now = 1;
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+        l2cap_ertm_notify_channel_can_send(channel);
+        return;
+    }
+#endif        
     l2cap_notify_channel_can_send();
 }
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+static int l2cap_ertm_can_store_packet_now(l2cap_channel_t * channel){
+     // get num free tx buffers
+    int num_tx_buffers_used = channel->tx_write_index - channel->tx_read_index;
+    if (num_tx_buffers_used < 0){
+        num_tx_buffers_used += channel->num_tx_buffers;
+    }
+    int num_free_tx_buffers = channel->num_tx_buffers - num_tx_buffers_used;
+    // calculate num tx buffers for remote MTU
+    int num_tx_buffers_for_max_remote_mtu;
+    if (channel->remote_mtu <= channel->remote_mps){
+        // MTU fits into single packet
+        num_tx_buffers_for_max_remote_mtu = 1;
+    } else {
+        // include SDU Length
+        num_tx_buffers_for_max_remote_mtu = (channel->remote_mtu + 2 + (channel->remote_mps - 1)) / channel->remote_mps;
+    }
+    return num_tx_buffers_for_max_remote_mtu <= num_free_tx_buffers;
+}
+#endif
 
 int  l2cap_can_send_packet_now(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return 0;
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
-        // get num free tx buffers
-        int num_tx_buffers_used = channel->tx_write_index - channel->tx_read_index;
-        if (num_tx_buffers_used < 0){
-            num_tx_buffers_used += channel->num_tx_buffers;
-        }
-        int num_free_tx_buffers = channel->num_tx_buffers - num_tx_buffers_used;
-        // calculate num tx buffers for remote MTU
-        int num_tx_buffers_for_max_remote_mtu;
-        if (channel->remote_mtu <= channel->remote_mps){
-            // MTU fits into single packet
-            num_tx_buffers_for_max_remote_mtu = 1;
-        } else {
-            // include SDU Length
-            num_tx_buffers_for_max_remote_mtu = (channel->remote_mtu + 2 + (channel->remote_mps - 1)) / channel->remote_mps;
-        }
-        return num_tx_buffers_for_max_remote_mtu <= num_free_tx_buffers;
+        return l2cap_ertm_can_store_packet_now(channel);
     }
 #endif    
     return hci_can_send_acl_packet_now(channel->con_handle);
@@ -1581,6 +1594,15 @@ static void l2cap_handle_connection_success_for_addr(bd_addr_t address, hci_con_
 }
 #endif
 
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+static void l2cap_ertm_notify_channel_can_send(l2cap_channel_t * channel){
+    if (l2cap_ertm_can_store_packet_now(channel)){
+        channel->waiting_for_can_send_now = 0;
+        l2cap_emit_can_send_now(channel->packet_handler, channel->local_cid);
+    }
+}
+#endif
+
 static void l2cap_notify_channel_can_send(void){
 
 #ifdef ENABLE_CLASSIC
@@ -1925,6 +1947,7 @@ uint8_t l2cap_ertm_set_ready(uint16_t local_cid){
 }
 
 static void l2cap_ertm_handle_req_seq(l2cap_channel_t * l2cap_channel, uint8_t req_seq){
+    int num_buffers_acked = 0;
     l2cap_ertm_tx_packet_state_t * tx_state;
     while (1){
         tx_state = &l2cap_channel->tx_packets_state[l2cap_channel->tx_read_index];
@@ -1933,6 +1956,7 @@ static void l2cap_ertm_handle_req_seq(l2cap_channel_t * l2cap_channel, uint8_t r
         if (delta == 0) break;  // all packets acknowledged
         if (delta > l2cap_channel->remote_tx_window_size) break;   
 
+        num_buffers_acked++;
         log_info("RR seq %u => packet with tx_seq %u done", req_seq, tx_state->tx_seq);
 
         // stop retransmission timer
@@ -1944,6 +1968,10 @@ static void l2cap_ertm_handle_req_seq(l2cap_channel_t * l2cap_channel, uint8_t r
 
         // no unack packages
         if (l2cap_channel->tx_read_index == l2cap_channel->tx_write_index) break;
+    }
+
+    if (num_buffers_acked){
+        l2cap_ertm_notify_channel_can_send(l2cap_channel);
     }
 }     
 
