@@ -122,8 +122,6 @@ typedef struct {
 } l2cap_ertm_rx_packet_state_t;
 
 typedef struct {
-    btstack_timer_source_t retransmission_timer;
-    btstack_timer_source_t monitor_timer;
     l2cap_segmentation_and_reassembly_t sar;
     uint16_t len;
     uint8_t tx_seq;
@@ -201,6 +199,12 @@ typedef struct {
     // l2cap channel mode: basic or enhanced retransmission mode
     l2cap_channel_mode_t mode;
     
+    // retransmission timer
+    btstack_timer_source_t retransmission_timer;
+
+    // monitor timer
+    btstack_timer_source_t monitor_timer;
+
     // local/remote config options
     uint16_t local_retransmission_timeout_ms;
     uint16_t local_monitor_timeout_ms;

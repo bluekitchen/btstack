@@ -113,6 +113,7 @@ static inline l2cap_service_t * l2cap_le_get_service(uint16_t psm);
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
 static void l2cap_ertm_notify_channel_can_send(l2cap_channel_t * channel);
 static int l2cap_ertm_num_unacknowledged_tx_packets(l2cap_channel_t * channel);
+static void l2cap_ertm_monitor_timeout_callback(btstack_timer_source_t * ts);
 #endif
 
 typedef struct l2cap_fixed_channel {
@@ -605,6 +606,15 @@ static void l2cap_ertm_next_tx_write_index(l2cap_channel_t * channel){
     if (channel->tx_write_index < channel->num_tx_buffers) return;
     channel->tx_write_index = 0;
 }
+
+static void l2cap_ertm_start_monitor_timer(l2cap_channel_t * channel){
+    btstack_run_loop_remove_timer(&channel->monitor_timer);
+    btstack_run_loop_set_timer_handler(&channel->monitor_timer, &l2cap_ertm_monitor_timeout_callback);
+    btstack_run_loop_set_timer_context(&channel->monitor_timer, channel);
+    btstack_run_loop_set_timer(&channel->monitor_timer, channel->local_monitor_timeout_ms);
+    btstack_run_loop_add_timer(&channel->monitor_timer);
+}
+
 static void l2cap_ertm_monitor_timeout_callback(btstack_timer_source_t * ts){
     log_info("l2cap_ertm_monitor_timeout_callback");
     l2cap_channel_t * l2cap_channel = (l2cap_channel_t *) btstack_run_loop_get_timer_context(ts);
@@ -618,11 +628,7 @@ static void l2cap_ertm_monitor_timeout_callback(btstack_timer_source_t * ts){
         // increment retry count
         tx_state->retry_count++;
 
-        // start monitor timer
-        btstack_run_loop_set_timer_handler(&tx_state->monitor_timer, &l2cap_ertm_monitor_timeout_callback);
-        btstack_run_loop_set_timer_context(&tx_state->monitor_timer, l2cap_channel);
-        btstack_run_loop_set_timer(&tx_state->monitor_timer, l2cap_channel->local_monitor_timeout_ms);
-        btstack_run_loop_add_timer(&tx_state->monitor_timer);
+        l2cap_ertm_start_monitor_timer(l2cap_channel);
 
         // send RR/P=1
         l2cap_channel->send_supervisor_frame_receiver_ready_poll = 1;
@@ -644,10 +650,7 @@ static void l2cap_ertm_retransmission_timeout_callback(btstack_timer_source_t * 
     tx_state->retry_count = 1;
 
     // start monitor timer
-    btstack_run_loop_set_timer_handler(&tx_state->monitor_timer, &l2cap_ertm_monitor_timeout_callback);
-    btstack_run_loop_set_timer_context(&tx_state->monitor_timer, l2cap_channel);
-    btstack_run_loop_set_timer(&tx_state->monitor_timer, l2cap_channel->local_monitor_timeout_ms);
-    btstack_run_loop_add_timer(&tx_state->monitor_timer);
+    l2cap_ertm_start_monitor_timer(l2cap_channel);
  
     // send RR/P=1
     l2cap_channel->send_supervisor_frame_receiver_ready_poll = 1;
@@ -663,6 +666,14 @@ static int l2cap_ertm_send_information_frame(l2cap_channel_t * channel, int inde
     memcpy(&acl_buffer[8+2], &channel->tx_packets_data[index * channel->local_mtu], tx_state->len);
     // send
     return l2cap_send_prepared(channel->local_cid, 2 + tx_state->len);
+}
+
+static void l2cap_ertm_start_retransmission_timer(l2cap_channel_t * channel){
+    btstack_run_loop_remove_timer(&channel->retransmission_timer);
+    btstack_run_loop_set_timer_handler(&channel->retransmission_timer, &l2cap_ertm_retransmission_timeout_callback);
+    btstack_run_loop_set_timer_context(&channel->retransmission_timer, channel);
+    btstack_run_loop_set_timer(&channel->retransmission_timer, channel->local_retransmission_timeout_ms);
+    btstack_run_loop_add_timer(&channel->retransmission_timer);
 }
 
 static void l2cap_ertm_store_fragment(l2cap_channel_t * channel, l2cap_segmentation_and_reassembly_t sar, uint16_t sdu_length, uint8_t * data, uint16_t len){
@@ -687,11 +698,7 @@ static void l2cap_ertm_store_fragment(l2cap_channel_t * channel, l2cap_segmentat
     channel->next_tx_seq = l2cap_next_ertm_seq_nr(channel->next_tx_seq);
     l2cap_ertm_next_tx_write_index(channel);
 
-    // set retransmission timer
-    btstack_run_loop_set_timer_handler(&tx_state->retransmission_timer, &l2cap_ertm_retransmission_timeout_callback);
-    btstack_run_loop_set_timer_context(&tx_state->retransmission_timer, channel);
-    btstack_run_loop_set_timer(&tx_state->retransmission_timer, channel->local_retransmission_timeout_ms);
-    btstack_run_loop_add_timer(&tx_state->retransmission_timer);
+    l2cap_ertm_start_retransmission_timer(channel);
 }
 
 static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t len){
@@ -1960,7 +1967,7 @@ static void l2cap_ertm_handle_req_seq(l2cap_channel_t * l2cap_channel, uint8_t r
         log_info("RR seq %u => packet with tx_seq %u done", req_seq, tx_state->tx_seq);
 
         // stop retransmission timer
-        btstack_run_loop_remove_timer(&tx_state->retransmission_timer);
+        btstack_run_loop_remove_timer(&l2cap_channel->retransmission_timer);
         l2cap_channel->tx_read_index++;
         if (l2cap_channel->tx_read_index >= l2cap_channel->num_rx_buffers){
             l2cap_channel->tx_read_index = 0;
