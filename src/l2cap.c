@@ -2624,40 +2624,32 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 #endif
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l2cap_segmentation_and_reassembly_t sar, uint8_t * packet, uint16_t size){
-    uint16_t sdu_length;
-    uint16_t segment_length;
-    uint16_t payload_offset;
+static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l2cap_segmentation_and_reassembly_t sar, uint8_t * payload, uint16_t size){
     switch (sar){
         case L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU:
-            payload_offset = COMPLETE_L2CAP_HEADER+2;
-            segment_length = payload_offset-2;
-            l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER+2], segment_length);
+            // packet complete -> disapatch
+            l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, payload, size);
             break;
         case L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU:
             // TODO: check if reassembly started
             // TODO: check sdu_len against local mtu
-            sdu_length = little_endian_read_16(packet, COMPLETE_L2CAP_HEADER+2);
-            payload_offset = COMPLETE_L2CAP_HEADER+4;
-            segment_length = size - payload_offset-2;
-            memcpy(&l2cap_channel->reassembly_buffer[0], &packet[payload_offset], segment_length);
-            l2cap_channel->reassembly_sdu_length = sdu_length;
-            l2cap_channel->reassembly_pos = segment_length;
+            l2cap_channel->reassembly_sdu_length = little_endian_read_16(payload, 0);
+            payload += 2;
+            size    -= 2;
+            memcpy(&l2cap_channel->reassembly_buffer[0], payload, size);
+            l2cap_channel->reassembly_pos = size;
+            break;
+        case L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU:
+            memcpy(&l2cap_channel->reassembly_buffer[l2cap_channel->reassembly_pos], payload, size);
+            l2cap_channel->reassembly_pos += size;
             break;
         case L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU:
-            payload_offset = COMPLETE_L2CAP_HEADER+2;
-            segment_length = size - payload_offset-2;
-            memcpy(&l2cap_channel->reassembly_buffer[l2cap_channel->reassembly_pos], &packet[payload_offset], segment_length);
-            l2cap_channel->reassembly_pos += segment_length;
+            memcpy(&l2cap_channel->reassembly_buffer[l2cap_channel->reassembly_pos], payload, size);
+            l2cap_channel->reassembly_pos += size;
+            // packet complete -> disapatch
             l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, l2cap_channel->reassembly_buffer, l2cap_channel->reassembly_pos);
             l2cap_channel->reassembly_pos = 0;    
             break; 
-        case L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU:
-            payload_offset = COMPLETE_L2CAP_HEADER+2;
-            segment_length = size - payload_offset-2;
-            memcpy(&l2cap_channel->reassembly_buffer[l2cap_channel->reassembly_pos], &packet[payload_offset], segment_length);
-            l2cap_channel->reassembly_pos += segment_length;
-            break;
     }
 }
 #endif
@@ -2811,7 +2803,8 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                             l2cap_channel->send_supervisor_frame_receiver_ready = 1;
                             l2cap_channel->expected_tx_seq = l2cap_next_ertm_seq_nr(l2cap_channel->expected_tx_seq);
 
-                            l2cap_ertm_handle_in_sequence_sdu(l2cap_channel, sar, packet, size);
+                            // process SDU
+                            l2cap_ertm_handle_in_sequence_sdu(l2cap_channel, sar, &packet[COMPLETE_L2CAP_HEADER+2], size-(COMPLETE_L2CAP_HEADER+2));
 
                         } else {
                             int delta = (tx_seq - l2cap_channel->expected_tx_seq) & 0x3f;

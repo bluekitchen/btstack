@@ -119,6 +119,7 @@ typedef struct {
     l2cap_segmentation_and_reassembly_t sar;
     uint16_t len;
     uint8_t  tx_seq;
+    uint8_t  valid;
 } l2cap_ertm_rx_packet_state_t;
 
 typedef struct {
