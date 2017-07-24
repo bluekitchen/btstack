@@ -413,14 +413,40 @@ void l2cap_request_can_send_now_event(uint16_t local_cid){
 int  l2cap_can_send_packet_now(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return 0;
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+        // get num free tx buffers
+        int num_tx_buffers_used = channel->tx_write_index - channel->tx_read_index;
+        if (num_tx_buffers_used < 0){
+            num_tx_buffers_used += channel->num_tx_buffers;
+        }
+        int num_free_tx_buffers = channel->num_tx_buffers - num_tx_buffers_used;
+        // calculate num tx buffers for remote MTU
+        int num_tx_buffers_for_max_remote_mtu;
+        if (channel->remote_mtu <= channel->remote_mps){
+            // MTU fits into single packet
+            num_tx_buffers_for_max_remote_mtu = 1;
+        } else {
+            // include SDU Length
+            num_tx_buffers_for_max_remote_mtu = (channel->remote_mtu + 2 + (channel->remote_mps - 1)) / channel->remote_mps;
+        }
+        return num_tx_buffers_for_max_remote_mtu <= num_free_tx_buffers;
+    }
+#endif    
     return hci_can_send_acl_packet_now(channel->con_handle);
 }
 
 int  l2cap_can_send_prepared_packet_now(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return 0;
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+        return 0;
+    }
+#endif
     return hci_can_send_prepared_acl_packet_now(channel->con_handle);
 }
+
 uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (channel) {
