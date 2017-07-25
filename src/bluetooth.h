@@ -130,6 +130,28 @@ typedef enum {
 } l2cap_supervisory_function_t;
 
 /**
+ * @brief L2CAP Information Types used in Information Request & Response
+ */
+typedef enum {
+  L2CAP_INFO_TYPE_CONNECTIONLESS_MTU = 1,
+  L2CAP_INFO_TYPE_EXTENDED_FEATURES_SUPPORTED,
+  L2CAP_INFO_TYPE_FIXED_CHANNELS_SUPPORTED,
+} l2cap_info_type_t;
+
+/**
+ * @brief L2CAP Configuration Option Types used in Configurateion Request & Response
+ */
+typedef enum {
+  L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT = 1,
+  L2CAP_CONFIG_OPTION_TYPE_FLUSH_TIMEOUT,
+  L2CAP_CONFIG_OPTION_TYPE_QUALITY_OF_SERVICE,
+  L2CAP_CONFIG_OPTION_TYPE_RETRANSMISSION_AND_FLOW_CONTROL, 
+  L2CAP_CONFIG_OPTION_TYPE_FRAME_CHECK_SEQUENCE,
+  L2CAP_CONFIG_OPTION_TYPE_EXTENDED_FLOW_SPECIFICATION,
+  L2CAP_CONFIG_OPTION_TYPE_EXTENDED_WINDOW_SIZE,
+} l2cap_config_option_type_t;
+
+/**
  * HCI Transport 
  */
 

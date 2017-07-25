@@ -2088,7 +2088,7 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
         pos++;
         uint8_t length = command[pos++];
         // MTU { type(8): 1, len(8):2, MTU(16) }
-        if (option_type == 1 && length == 2){
+        if (option_type == L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT && length == 2){
             channel->remote_mtu = little_endian_read_16(command, pos);
             log_info("Remote MTU %u", channel->remote_mtu);
             if (channel->remote_mtu > l2cap_max_mtu()){
@@ -2098,14 +2098,14 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
         }
         // Flush timeout { type(8):2, len(8): 2, Flush Timeout(16)}
-        if (option_type == 2 && length == 2){
+        if (option_type == L2CAP_CONFIG_OPTION_TYPE_FLUSH_TIMEOUT && length == 2){
             channel->flush_timeout = little_endian_read_16(command, pos);
             log_info("Flush timeout: %u ms", channel->flush_timeout);
         }
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
         // Retransmission and Flow Control Option
-        if (option_type == 4 && length == 9){
+        if (option_type == L2CAP_CONFIG_OPTION_TYPE_RETRANSMISSION_AND_FLOW_CONTROL && length == 9){
             l2cap_channel_mode_t mode = (l2cap_channel_mode_t) command[pos];
             switch(channel->mode){
                 case L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION:
@@ -2150,7 +2150,7 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
         }        
 #endif        
         // check for unknown options
-        if (option_hint == 0 && (option_type == 0 || option_type >= 0x07)){
+        if (option_hint == 0 && (option_type < L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT || option_type > L2CAP_CONFIG_OPTION_TYPE_EXTENDED_WINDOW_SIZE)){
             log_info("l2cap cid %u, unknown options", channel->local_cid);
             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID);
         }
@@ -2171,7 +2171,7 @@ static void l2cap_signaling_handle_configure_response(l2cap_channel_t *channel, 
         uint8_t length = command[pos++];
 
         // Retransmission and Flow Control Option
-        if (option_type == 4 && length == 9){
+        if (option_type == L2CAP_CONFIG_OPTION_TYPE_RETRANSMISSION_AND_FLOW_CONTROL && length == 9){
             switch (channel->mode){
                 case L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION:
                     if (channel->ertm_mandatory){
@@ -2195,7 +2195,7 @@ static void l2cap_signaling_handle_configure_response(l2cap_channel_t *channel, 
         }
 
         // check for unknown options
-        if (option_hint == 0 && (option_type == 0 || option_type >= 0x07)){
+        if (option_hint == 0 && (option_type < L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT || option_type > L2CAP_CONFIG_OPTION_TYPE_EXTENDED_WINDOW_SIZE)){
             log_info("l2cap cid %u, unknown options", channel->local_cid);
             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID);
         }
