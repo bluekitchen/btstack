@@ -219,9 +219,13 @@ typedef struct {
     uint16_t automatic_credits;
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+
     // l2cap channel mode: basic or enhanced retransmission mode
     l2cap_channel_mode_t mode;
     
+    // local mps = size of rx/tx buffers
+    uint16_t local_mps;
+
     // retransmission timer
     btstack_timer_source_t retransmission_timer;
 
@@ -243,6 +247,9 @@ typedef struct {
     // if ertm is not mandatory, allow fallback to L2CAP Basic Mode - flag
     uint8_t ertm_mandatory;
 
+    // sender: max num of stored outgoing frames
+    uint8_t num_tx_buffers;
+
     // sender: number of unacknowledeged I-Frames - frames have been sent, but not acknowledged yet
     uint8_t unacked_frames;
 
@@ -260,6 +267,22 @@ typedef struct {
 
     // sender: selective retransmission requested
     uint8_t srej_active;
+
+
+    // receiver: max num out-of-order packets // tx_window
+    uint8_t num_rx_buffers;
+
+    // receiver: buffer index of to store packet with delta = 1
+    uint8_t rx_store_index;
+
+    // receiver: value of tx_seq in next expected i-frame
+    uint8_t expected_tx_seq;
+
+    // receiver: request transmission with tx_seq = req_seq and ack up to and including req_seq
+    uint8_t req_seq;
+
+    // receiver: local busy condition
+    uint8_t local_busy;
 
     // receiver: send RR frame with optional final flag set - flag
     uint8_t send_supervisor_frame_receiver_ready;
@@ -279,46 +302,25 @@ typedef struct {
     // set final bit after poll packet with poll bit was received
     uint8_t set_final_bit_after_packet_with_poll_bit_set;
 
-    // receiver: value of tx_seq in next expected i-frame
-    uint8_t expected_tx_seq;
-
-    // receiver: request transmiissoin with tx_seq = req_seq and ack up to and including req_seq
-    uint8_t req_seq;
-
-    // local busy condition
-    uint8_t local_busy;
-
-    // max num out-of-order packets // tx_window
-    uint8_t num_rx_buffers;
-
-    // max num of unacknowledged outgoing packets
-    uint8_t num_tx_buffers;
-
-    // local mps = size of rx/tx packets
-    uint16_t local_mps;
-
-    // receiver: buffer index of to store packet with delta = 1
-    uint8_t rx_store_index;
-
-    // receiver - reassemly
-    uint16_t reassembly_pos;
-
-    // receiver - reassemly
-    uint16_t reassembly_sdu_length;
-
-    // re-assembly state
+    // receiver: meta data for out-of-order frames
     l2cap_ertm_rx_packet_state_t * rx_packets_state;
 
-    // retransmission state
+    // sender: retransmission state
     l2cap_ertm_tx_packet_state_t * tx_packets_state;
 
-    // reassembly buffer
+    // receiver: reassemly pos
+    uint16_t reassembly_pos;
+
+    // receiver: reassemly sdu length
+    uint16_t reassembly_sdu_length;
+
+    // receiver: eassembly buffer
     uint8_t * reassembly_buffer;
 
-    // data, each of size local_mtu
+    // receiver: num_rx_buffers of size local_mps
     uint8_t * rx_packets_data;
 
-    // data, each of size local_mtu
+    // sender: num_tx_buffers of size local_mps
     uint8_t * tx_packets_data;
 
 #endif    
