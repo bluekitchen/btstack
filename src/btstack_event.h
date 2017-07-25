@@ -4891,6 +4891,62 @@ static inline uint8_t a2dp_subevent_stream_released_get_local_seid(const uint8_t
 }
 
 /**
+ * @brief Get field a2dp_cid from event A2DP_SUBEVENT_COMMAND_ACCEPTED
+ * @param event packet
+ * @return a2dp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t a2dp_subevent_command_accepted_get_a2dp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field local_seid from event A2DP_SUBEVENT_COMMAND_ACCEPTED
+ * @param event packet
+ * @return local_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_command_accepted_get_local_seid(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field signal_identifier from event A2DP_SUBEVENT_COMMAND_ACCEPTED
+ * @param event packet
+ * @return signal_identifier
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_command_accepted_get_signal_identifier(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field a2dp_cid from event A2DP_SUBEVENT_COMMAND_REJECTED
+ * @param event packet
+ * @return a2dp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t a2dp_subevent_command_rejected_get_a2dp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field local_seid from event A2DP_SUBEVENT_COMMAND_REJECTED
+ * @param event packet
+ * @return local_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_command_rejected_get_local_seid(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field signal_identifier from event A2DP_SUBEVENT_COMMAND_REJECTED
+ * @param event packet
+ * @return signal_identifier
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_command_rejected_get_signal_identifier(const uint8_t * event){
+    return event[6];
+}
+
+/**
  * @brief Get field status from event AVRCP_SUBEVENT_CONNECTION_ESTABLISHED
  * @param event packet
  * @return status
@@ -5370,6 +5426,35 @@ static inline uint16_t avrcp_subevent_player_application_value_response_get_avrc
  * @note: btstack_type 1
  */
 static inline uint8_t avrcp_subevent_player_application_value_response_get_command_type(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_UNIT_INFO_QUERY
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_unit_info_query_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_SUBUNIT_INFO_QUERY
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_subunit_info_query_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field offset from event AVRCP_SUBEVENT_SUBUNIT_INFO_QUERY
+ * @param event packet
+ * @return offset
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_subunit_info_query_get_offset(const uint8_t * event){
     return event[5];
 }
 

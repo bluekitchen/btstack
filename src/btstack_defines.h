@@ -1665,6 +1665,21 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE                   0x0F
 
 /**
+ * @format 12
+ * @param subevent_code
+ * @param avrcp_cid
+ */
+#define AVRCP_SUBEVENT_UNIT_INFO_QUERY                                     0x10
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param offset      page*4
+ */
+#define AVRCP_SUBEVENT_SUBUNIT_INFO_QUERY                                   0x12
+
+/**
  * @format 121BH1
  * @param subevent_code
  * @param goep_cid

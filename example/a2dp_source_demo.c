@@ -79,6 +79,17 @@ static  uint8_t media_sbc_codec_capabilities[] = {
     2, 53
 }; 
 
+static const uint8_t subunit_info[] = {
+    0,0,0,0,
+    1,1,1,1,
+    2,2,2,2,
+    3,3,3,3,
+    4,4,4,4,
+    5,5,5,5,
+    6,6,6,6,
+    7,7,7,7
+};
+
 static const int16_t sine_int16[] = {
      0,    2057,    4107,    6140,    8149,   10126,   12062,   13952,   15786,   17557,
  19260,   20886,   22431,   23886,   25247,   26509,   27666,   28714,   29648,   30466,
@@ -119,6 +130,8 @@ static int sine_phase;
 static int hxcmod_initialized;
 static modcontext mod_context;
 static tracker_buffer_state trkbuf;
+
+static uint32_t company_id = 0x112233;
 
 static void a2dp_demo_send_media_packet(void){
     int num_bytes_in_frame = btstack_sbc_encoder_sbc_buffer_length();
@@ -328,6 +341,15 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             printf("Channel successfully opened: %s, avrcp_cid 0x%02x\n", bd_addr_to_str(event_addr), local_cid);
             return;
         }
+        
+        case AVRCP_SUBEVENT_UNIT_INFO_QUERY:
+            avrcp_target_unit_info(avrcp_cid, AVRCP_SUBUNIT_TYPE_AUDIO, company_id);
+            break;
+        
+        case AVRCP_SUBEVENT_SUBUNIT_INFO_QUERY:
+            avrcp_target_subunit_info(avrcp_cid, AVRCP_SUBUNIT_TYPE_UNIT, avrcp_subevent_subunit_info_query_get_offset(packet), (uint8_t *)subunit_info);
+            break;
+        
         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
             printf("Channel released: avrcp_cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
             avrcp_cid = 0;

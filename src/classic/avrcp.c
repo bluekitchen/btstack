@@ -195,6 +195,12 @@ const char * avrcp_repeat2str(uint8_t index){
     return "NONE";
 }
 
+uint8_t avrcp_cmd_opcode(uint8_t *packet, uint16_t size){
+    uint8_t cmd_opcode_index = 5;
+    if (cmd_opcode_index > size) return AVRCP_CMD_OPCODE_UNDEFINED;
+    return packet[cmd_opcode_index];
+}
+
 void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name){
     uint8_t* attribute;
     de_create_sequence(service);

@@ -585,7 +585,7 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
     switch (packet[2]){
         case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
             local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
-            if (avrcp_cid != local_cid) {
+            if (avrcp_cid != 0 && avrcp_cid != local_cid) {
                 printf("AVRCP Connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", avrcp_cid, local_cid);
                 return;
             }
@@ -596,6 +596,8 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
                 avrcp_cid = 0;
                 return;
             }
+            
+            avrcp_cid = local_cid;
             avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
             printf("Channel successfully opened: %s, avrcp_cid 0x%02x\n", bd_addr_to_str(event_addr), avrcp_cid);
 

@@ -51,10 +51,138 @@ void avrcp_target_create_sdp_record(uint8_t * service, uint32_t service_record_h
     avrcp_create_sdp_record(0, service, service_record_handle, browsing, supported_features, service_name, service_provider_name);
 }
 
+static void avrcp_target_emit_respond_query(btstack_packet_handler_t callback, uint16_t avrcp_cid, uint8_t subeventID){
+    if (!callback) return;
+    uint8_t event[5];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVRCP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = subeventID; 
+    little_endian_store_16(event, pos, avrcp_cid);
+    pos += 2;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void avrcp_target_emit_respond_subunit_info_query(btstack_packet_handler_t callback, uint16_t avrcp_cid, uint8_t page){
+    if (!callback) return;
+    uint8_t event[6];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVRCP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVRCP_SUBEVENT_SUBUNIT_INFO_QUERY; 
+    little_endian_store_16(event, pos, avrcp_cid);
+    pos += 2;
+    event[pos++] = page; 
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static int avrcp_send_response(uint16_t cid, avrcp_connection_t * connection){
+    uint8_t command[30];
+    int pos = 0; 
+    // transport header
+    // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
+    command[pos++] = (connection->transaction_label << 4) | (AVRCP_SINGLE_PACKET << 2) | (AVRCP_RESPONSE_FRAME << 1) | 0;
+    // Profile IDentifier (PID)
+    command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
+    command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
+
+    // command_type
+    command[pos++] = connection->command_type;
+    // subunit_type | subunit ID
+    command[pos++] = (connection->subunit_type << 3) | connection->subunit_id;
+    // opcode
+    command[pos++] = (uint8_t)connection->command_opcode;
+    // operands
+    memcpy(command+pos, connection->cmd_operands, connection->cmd_operands_length);
+    pos += connection->cmd_operands_length;
+
+    return l2cap_send(cid, command, pos);
+}
+
+uint8_t avrcp_target_unit_info(uint16_t avrcp_cid, avrcp_subunit_type_t unit_type, uint32_t company_id){
+    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(avrcp_cid, &avrcp_target_context);
+    if (!connection){
+        log_error("avrcp_unit_info: could not find a connection.");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    
+    uint8_t unit = 0;
+    connection->command_opcode = AVRCP_CMD_OPCODE_UNIT_INFO;
+    connection->command_type = AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE;
+    connection->subunit_type = AVRCP_SUBUNIT_TYPE_UNIT; //vendor unique
+    connection->subunit_id =   AVRCP_SUBUNIT_ID_IGNORE;
+
+    connection->cmd_operands_length = 5;
+    connection->cmd_operands[0] = 0x07;
+    connection->cmd_operands[1] = (unit_type << 4) | unit;
+    // company id is 3 bytes long
+    little_endian_store_32(connection->cmd_operands, 2, company_id);
+    return avrcp_send_response(connection->l2cap_signaling_cid, connection);
+}
+
+uint8_t avrcp_target_subunit_info(uint16_t avrcp_cid, avrcp_subunit_type_t subunit_type, uint8_t offset, uint8_t * subunit_info_data){
+    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(avrcp_cid, &avrcp_target_context);
+    if (!connection){
+        log_error("avrcp_unit_info: could not find a connection.");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    
+    connection->command_opcode = AVRCP_CMD_OPCODE_SUBUNIT_INFO;
+    connection->command_type = AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE;
+    connection->subunit_type = subunit_type; //vendor unique
+    connection->subunit_id =   AVRCP_SUBUNIT_ID_IGNORE;
+
+    uint8_t page = offset / 4;
+    uint8_t extension_code = 7;
+    connection->cmd_operands_length = 5;
+    connection->cmd_operands[0] = (page << 4) | extension_code;
+    memcpy(connection->cmd_operands+1, subunit_info_data + offset, 4);
+    return avrcp_send_response(connection->l2cap_signaling_cid, connection);
+}
+
 static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
     UNUSED(connection);
     UNUSED(packet);
     UNUSED(size);
+
+    // uint8_t opcode;
+    // int     pos = 3;
+    uint8_t transport_header = packet[0];
+    connection->transaction_label = transport_header >> 4;
+    // uint8_t packet_type = (transport_header & 0x0F) >> 2;
+    // uint8_t frame_type = (transport_header & 0x03) >> 1;
+    // uint8_t ipid = transport_header & 0x01;
+    // uint8_t byte_value = packet[2];
+    // uint16_t pid = (byte_value << 8) | packet[2];
+    
+    // avrcp_command_type_t ctype = (avrcp_command_type_t) packet[pos++];
+    // byte_value = packet[pos++];
+    // avrcp_subunit_type_t subunit_type = (avrcp_subunit_type_t) (byte_value >> 3);
+    // avrcp_subunit_type_t subunit_id = (avrcp_subunit_type_t)   (byte_value & 0x07);
+    // opcode = packet[pos++];
+    
+    // printf("    Transport header 0x%02x (transaction_label %d, packet_type %d, frame_type %d, ipid %d), pid 0x%4x\n", 
+    //     transport_header, transaction_label, packet_type, frame_type, ipid, pid);
+    // printf_hexdump(packet+pos, size-pos);
+    
+    // uint8_t pdu_id;
+    // uint16_t param_length;
+    uint8_t * operands = packet + 6;
+    switch (avrcp_cmd_opcode(packet,size)){
+        case AVRCP_CMD_OPCODE_UNIT_INFO:
+            avrcp_target_emit_respond_query(avrcp_target_context.avrcp_callback, connection->avrcp_cid, AVRCP_SUBEVENT_UNIT_INFO_QUERY);
+            break;
+        case AVRCP_CMD_OPCODE_SUBUNIT_INFO:
+            // printf("operands 0x%02x\n", );
+            // printf_hexdump(packet, size)
+            avrcp_target_emit_respond_subunit_info_query(avrcp_target_context.avrcp_callback, connection->avrcp_cid, 4 * (operands[0]>>4));
+            break;
+        default:
+            printf("AVRCP source: opcode 0x%02x not implemented\n", avrcp_cmd_opcode(packet,size));
+            break;
+    }
 }
 
 static void avrcp_target_handle_can_send_now(avrcp_connection_t * connection){

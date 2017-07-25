@@ -162,7 +162,7 @@ typedef enum {
     AVRCP_CMD_OPCODE_VENDOR_DEPENDENT = 0x00,
     // AVRCP_CMD_OPCODE_RESERVE = 0x01,
     AVRCP_CMD_OPCODE_UNIT_INFO = 0x30,
-    // AVRCP_CMD_OPCODE_SUBUNIT_INFO = 0x31,
+    AVRCP_CMD_OPCODE_SUBUNIT_INFO = 0x31,
     AVRCP_CMD_OPCODE_PASS_THROUGH = 0x7C,
     // AVRCP_CMD_OPCODE_VERSION = 0xB0,
     // AVRCP_CMD_OPCODE_POWER = 0xB2,
@@ -194,6 +194,7 @@ typedef enum {
     AVCTP_W2_SEND_RELEASE_COMMAND,
     AVCTP_W4_STOP,
     AVCTP_W2_SEND_COMMAND,
+    AVCTP_W2_SEND_RESPONSE,
     AVCTP_W2_RECEIVE_PRESS_RESPONSE,
     AVCTP_W2_RECEIVE_RESPONSE
 } avctp_connection_state_t;
@@ -282,6 +283,7 @@ uint8_t avrcp_connect(bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * a
 void avrcp_emit_connection_established(btstack_packet_handler_t callback, uint16_t avrcp_cid, bd_addr_t addr, uint8_t status);
 void avrcp_emit_connection_closed(btstack_packet_handler_t callback, uint16_t avrcp_cid);
 
+uint8_t avrcp_cmd_opcode(uint8_t *packet, uint16_t size);
 avrcp_connection_t * get_avrcp_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid, avrcp_context_t * context);
 avrcp_connection_t * get_avrcp_connection_for_avrcp_cid(uint16_t avrcp_cid, avrcp_context_t * context);
 void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_cid);

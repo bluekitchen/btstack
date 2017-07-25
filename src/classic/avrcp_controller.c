@@ -207,13 +207,6 @@ static void avrcp_prepare_notification(avrcp_connection_t * connection, avrcp_no
     // answer page 61
 }
 
-static uint8_t avrcp_cmd_opcode(uint8_t *packet, uint16_t size){
-    uint8_t cmd_opcode_index = 5;
-    if (cmd_opcode_index > size) return AVRCP_CMD_OPCODE_UNDEFINED;
-    return packet[cmd_opcode_index];
-}
-
-
 static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
     uint8_t operands[20];
     uint8_t opcode;
