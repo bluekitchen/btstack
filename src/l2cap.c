@@ -2197,6 +2197,10 @@ static void l2cap_signaling_handle_configure_response(l2cap_channel_t *channel, 
 
         pos += length;
     }
+#else
+    UNUSED(channel);
+    UNUSED(result);
+    UNUSED(command);
 #endif        
 }
 
