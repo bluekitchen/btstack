@@ -237,20 +237,34 @@ static int btstack_uart_posix_set_baudrate(uint32_t baudrate){
     return 0;
 }
 
+static void btstack_uart_posix_set_parity_option(struct termios * toptions, int parity){
+    if (parity){
+        // enable even parity
+        toptions->c_cflag |= PARENB;
+    } else {
+        // disable even parity
+        toptions->c_cflag &= ~PARENB;
+    }
+}
+
+static void btstack_uart_posix_set_flowcontrol_option(struct termios * toptions, int flowcontrol){
+    if (flowcontrol) {
+        // with flow control
+        toptions->c_cflag |= CRTSCTS;
+    } else {
+        // no flow control
+        toptions->c_cflag &= ~CRTSCTS;
+    }
+}
+
 static int btstack_uart_posix_set_parity(int parity){
-
     int fd = transport_data_source.fd;
-
     struct termios toptions;
     if (tcgetattr(fd, &toptions) < 0) {
         log_error("btstack_uart_posix_set_parity: Couldn't get term attributes");
         return -1;
     }
-    if (parity){
-        toptions.c_cflag |= PARENB; // enable even parity
-    } else {
-        toptions.c_cflag &= ~PARENB; // disable even parity
-    }
+    btstack_uart_posix_set_parity_option(&toptions, parity);
     if(tcsetattr(fd, TCSANOW, &toptions) < 0) {
         log_error("posix_set_parity: Couldn't set term attributes");
         return -1;
@@ -258,22 +272,15 @@ static int btstack_uart_posix_set_parity(int parity){
     return 0;
 }
 
+
 static int btstack_uart_posix_set_flowcontrol(int flowcontrol){
-
     int fd = transport_data_source.fd;
-
     struct termios toptions;
     if (tcgetattr(fd, &toptions) < 0) {
         log_error("btstack_uart_posix_set_parity: Couldn't get term attributes");
         return -1;
     }
-    if (flowcontrol) {
-        // with flow control
-        toptions.c_cflag |= CRTSCTS;
-    } else {
-        // no flow control
-        toptions.c_cflag &= ~CRTSCTS;
-    }
+    btstack_uart_posix_set_flowcontrol_option(&toptions, flowcontrol);
     if(tcsetattr(fd, TCSANOW, &toptions) < 0) {
         log_error("posix_set_flowcontrol: Couldn't set term attributes");
         return -1;
@@ -313,6 +320,12 @@ static int btstack_uart_posix_open(void){
     toptions.c_cc[VMIN]  = 1;
     toptions.c_cc[VTIME] = 0;
     
+    // no parity
+    btstack_uart_posix_set_parity_option(&toptions, 0);
+
+    // flowcontrol
+    btstack_uart_posix_set_flowcontrol_option(&toptions, flowcontrol);
+
     if(tcsetattr(fd, TCSANOW, &toptions) < 0) {
         log_error("posix_open: Couldn't set term attributes");
         return -1;
@@ -323,11 +336,6 @@ static int btstack_uart_posix_open(void){
     
     // also set baudrate
     if (btstack_uart_posix_set_baudrate(baudrate) < 0){
-        return -1;
-    }
-
-    // also set flow control
-    if (btstack_uart_posix_set_flowcontrol(flowcontrol) < 0){
         return -1;
     }
 
