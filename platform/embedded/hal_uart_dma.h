@@ -76,9 +76,17 @@ void hal_uart_dma_set_block_sent( void (*callback)(void));
 /**
  * @brief Set baud rate
  * @note During baud change, TX line should stay high and no data should be received on RX accidentally
- * @param block_received callback
+ * @param baudrate
  */
 int  hal_uart_dma_set_baud(uint32_t baud);
+
+#ifdef HAVE_UART_DMA_SET_FLOWCONTROL
+/**
+ * @brief Set flowcontrol
+ * @param flowcontrol enabled
+ */
+int  hal_uart_dma_set_flowcontrol(uint32_t flowcontrol);
+#endif
 
 /**
  * @brief Send block. When done, callback set by hal_uart_set_block_sent must be called

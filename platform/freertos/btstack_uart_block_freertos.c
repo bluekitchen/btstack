@@ -154,7 +154,11 @@ static const btstack_uart_block_t btstack_uart_block_freertos = {
     /* void (*set_block_sent)(void (*handler)(void)); */              &btstack_uart_block_freertos_set_block_sent,
     /* int  (*set_baudrate)(uint32_t baudrate); */                    &hal_uart_dma_set_baud,
     /* int  (*set_parity)(int parity); */                             &btstack_uart_block_freertos_set_parity,
+#ifdef HAVE_UART_DMA_SET_FLOWCONTROL
+    /* int  (*set_flowcontrol)(int flowcontrol); */                   &hal_uart_dma_set_flowcontrol,
+#else
     /* int  (*set_flowcontrol)(int flowcontrol); */                   NULL,
+#endif
     /* void (*receive_block)(uint8_t *buffer, uint16_t len); */       &hal_uart_dma_receive_block,
     /* void (*send_block)(const uint8_t *buffer, uint16_t length); */ &hal_uart_dma_send_block,    
     /* int (*get_supported_sleep_modes); */                           NULL,
