@@ -120,7 +120,6 @@ static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t pac
 #endif
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
 static void l2cap_ertm_notify_channel_can_send(l2cap_channel_t * channel);
-static int l2cap_ertm_num_unacknowledged_tx_packets(l2cap_channel_t * channel);
 static void l2cap_ertm_monitor_timeout_callback(btstack_timer_source_t * ts);
 static void l2cap_ertm_retransmission_timeout_callback(btstack_timer_source_t * ts);
 #endif
@@ -195,14 +194,6 @@ static inline uint16_t l2cap_encanced_control_field_for_supevisor_frame(l2cap_su
 
 static int l2cap_next_ertm_seq_nr(int seq_nr){
     return (seq_nr + 1) & 0x3f;
-}
-
-static int l2cap_ertm_num_unacknowledged_tx_packets(l2cap_channel_t * channel){
-    int unacknowledged_packets = channel->tx_send_index - channel->tx_read_index;
-    if (unacknowledged_packets < 0){
-        unacknowledged_packets += channel->num_tx_buffers;
-    }
-    return unacknowledged_packets; 
 }
 
 static int l2cap_ertm_can_store_packet_now(l2cap_channel_t * channel){
@@ -336,6 +327,9 @@ static void l2cap_ertm_store_fragment(l2cap_channel_t * channel, l2cap_segmentat
     // update
     channel->next_tx_seq = l2cap_next_ertm_seq_nr(channel->next_tx_seq);
     l2cap_ertm_next_tx_write_index(channel);
+
+    log_info("l2cap_ertm_store_fragment: after store, tx_read_index %u, tx_write_index %u", channel->tx_read_index, channel->tx_write_index);
+
 }
 
 static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t len){
@@ -578,10 +572,11 @@ uint8_t l2cap_ertm_set_ready(uint16_t local_cid){
 static void l2cap_ertm_process_req_seq(l2cap_channel_t * l2cap_channel, uint8_t req_seq){
     int num_buffers_acked = 0;
     l2cap_ertm_tx_packet_state_t * tx_state;
+    log_info("l2cap_ertm_process_req_seq: tx_read_index %u, tx_write_index %u, req_seq %u", l2cap_channel->tx_read_index, l2cap_channel->tx_write_index, req_seq);
     while (1){
 
-        // no unack packages
-        if (l2cap_channel->tx_read_index == l2cap_channel->tx_write_index) {
+        // no unack packets left
+        if (l2cap_channel->unacked_frames == 0) {
             // stop retransmission timer
             l2cap_ertm_stop_retransmission_timer(l2cap_channel);
             break;
@@ -594,6 +589,7 @@ static void l2cap_ertm_process_req_seq(l2cap_channel_t * l2cap_channel, uint8_t 
         if (delta > l2cap_channel->remote_tx_window_size) break;   
 
         num_buffers_acked++;
+        l2cap_channel->unacked_frames--;
         log_info("RR seq %u => packet with tx_seq %u done", req_seq, tx_state->tx_seq);
 
         l2cap_channel->tx_read_index++;
@@ -1386,10 +1382,10 @@ static void l2cap_run(void){
         if (!hci_can_send_acl_packet_now(channel->con_handle)) continue;
 
         if (channel->tx_send_index != channel->tx_write_index){
-            int unacknowledged_packets = l2cap_ertm_num_unacknowledged_tx_packets(channel);
             // check remote tx window
-            log_info("unacknowledged_packets %u, remote tx window size %u", unacknowledged_packets, channel->remote_tx_window_size);
-            if (unacknowledged_packets < channel->remote_tx_window_size){
+            log_info("unacknowledged_packets %u, remote tx window size %u", channel->unacked_frames, channel->remote_tx_window_size);
+            if (channel->unacked_frames < channel->remote_tx_window_size){
+                channel->unacked_frames++;
                 int index = channel->tx_send_index;
                 channel->tx_send_index++;
                 if (channel->tx_send_index >= channel->num_tx_buffers){
@@ -2870,7 +2866,7 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                                     // Stop-MonitorTimer
                                     l2cap_ertm_stop_monitor_timer(l2cap_channel);
                                     // If UnackedFrames > 0 then Start-RetransTimer
-                                    if (l2cap_ertm_num_unacknowledged_tx_packets(l2cap_channel)){
+                                    if (l2cap_channel->unacked_frames){
                                         l2cap_ertm_start_retransmission_timer(l2cap_channel);
                                     }
 

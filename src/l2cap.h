@@ -220,6 +220,9 @@ typedef struct {
     // if ertm is not mandatory, allow fallback to L2CAP Basic Mode - flag
     uint8_t ertm_mandatory;
 
+    // sender: number of unacknowledeged I-Frames - frames have been sent, but not acknowledged yet
+    uint8_t unacked_frames;
+
     // sender: buffer index of oldest packet
     uint8_t tx_read_index;
 
