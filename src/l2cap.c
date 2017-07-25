@@ -1176,12 +1176,12 @@ static void l2cap_run(void){
 
         uint8_t  sig_id        = signaling_responses[0].sig_id;
         uint8_t  response_code = signaling_responses[0].code;
-        uint16_t infoType      = signaling_responses[0].data;  // INFORMATION_REQUEST
+        uint16_t info_type     = signaling_responses[0].data;  // INFORMATION_REQUEST
         uint16_t result        = signaling_responses[0].data;  // CONNECTION_REQUEST, COMMAND_REJECT
 #ifdef ENABLE_CLASSIC
         uint16_t source_cid    = signaling_responses[0].cid;   // CONNECTION_REQUEST
 #endif
-        UNUSED(infoType);
+        UNUSED(info_type);
 
         // remove first item before sending (to avoid sending response mutliple times)
         signaling_responses_pending--;
@@ -1203,27 +1203,27 @@ static void l2cap_run(void){
                 l2cap_send_signaling_packet(handle, ECHO_RESPONSE, sig_id, 0, NULL);
                 break;
             case INFORMATION_REQUEST:
-                switch (infoType){
-                    case 1: { // Connectionless MTU
+                switch (info_type){
+                    case L2CAP_INFO_TYPE_CONNECTIONLESS_MTU: {
                             uint16_t connectionless_mtu = hci_max_acl_data_packet_length();
-                            l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, sizeof(connectionless_mtu), &connectionless_mtu);
+                            l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, info_type, 0, sizeof(connectionless_mtu), &connectionless_mtu);
                         }
                         break;
-                    case 2: {  // Extended Features Supported
+                    case L2CAP_INFO_TYPE_EXTENDED_FEATURES_SUPPORTED: {
                             uint32_t features = l2cap_extended_features_mask();
-                            l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, sizeof(features), &features);
+                            l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, info_type, 0, sizeof(features), &features);
                         }
                         break;
-                    case 3: { // Fixed Channels Supported
+                    case L2CAP_INFO_TYPE_FIXED_CHANNELS_SUPPORTED: {
                             uint8_t map[8];
                             memset(map, 0, 8);
                             map[0] = 0x06;  // L2CAP Signaling Channel (0x02) + Connectionless reception (0x04)
-                            l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, sizeof(map), &map);
+                            l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, info_type, 0, sizeof(map), &map);
                         }
                         break;
                     default:
                         // all other types are not supported
-                        l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 1, 0, NULL);
+                        l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, info_type, 1, 0, NULL);
                         break;                        
                 }
                 break;
@@ -1257,7 +1257,7 @@ static void l2cap_run(void){
             connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W4_EXTENDED_FEATURE_RESPONSE;
             // send information request for extended features
             uint8_t sig_id = l2cap_next_sig_id();
-            uint8_t info_type = 2;
+            uint8_t info_type = L2CAP_INFO_TYPE_EXTENDED_FEATURES_SUPPORTED;
             l2cap_send_signaling_packet(connection->con_handle, INFORMATION_REQUEST, sig_id, info_type);
             return;
         }
@@ -2381,8 +2381,8 @@ static void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t *
             return;
             
         case INFORMATION_REQUEST: {
-            uint16_t infoType = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
-            l2cap_register_signaling_response(handle, code, sig_id, 0, infoType);
+            uint16_t info_type = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
+            l2cap_register_signaling_response(handle, code, sig_id, 0, info_type);
             return;
         }
 
@@ -2393,7 +2393,7 @@ static void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t *
             uint16_t info_type = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
             uint16_t result =  little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+2);
             if (result != 0) return;
-            if (info_type != 0x02) return;
+            if (info_type != L2CAP_INFO_TYPE_EXTENDED_FEATURES_SUPPORTED) return;
             connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_DONE; 
             connection->l2cap_state.extended_feature_mask = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+4);
             log_info("extended features mask 0x%02x", connection->l2cap_state.extended_feature_mask);
