@@ -106,6 +106,11 @@ typedef struct {
     int  (*set_parity)(int parity);
 
     /**
+     * set flowcontrol
+     */
+    int  (*set_flowcontrol)(int flowcontrol);
+
+    /**
      * receive block
      */
     void (*receive_block)(uint8_t *buffer, uint16_t len);
