@@ -73,6 +73,7 @@ No build server | [freertos](https://github.com/bluekitchen/btstack/tree/develop
 
 Chipset                      | Type      | HCI Transport   | SCO over HCI (2) | BTstack folder | Comment
 ---------------------------- |-----------| ----------------|------------------|----------------|---------
+Atmel ATWILC3000             | Dual mode | H4              | Don't know       | atwilc3000     | Required Bluetooth firmware is 270 kB
 Broadcom UART                | Dual mode | H4, H5          | Probably         | bcm            | Max UART baudrate 2 mbps
 Broadcom USB Dongles         | Dual mode | USB             | Yes              | bcm            |
 CSR UART                     | Dual mode | H4, H5, BCSP    | No (didn't work) | csr            |

@@ -53,6 +53,7 @@ CSR, which has been acquired by Qualcomm, provides all relevant information on t
 
 Chipset              | Type      | HCI Transport  | BD_ADDR (1)  | SCO over HCI (2) | LE DLE | Multiple LE Roles    | BTstack folder | Comment
 -------------------- |-----------| ---------------|--------------|------------------|--------|----------------------|----------------|---------
+Atmel ATWILC3000     | Dual mode | H4             | Yes          | Don't know       | No     |         No           | atwilc3000     | Required Bluetooth firmware is 270 kB
 Broadcom UART        | Dual mode | H4, H5         | Rarely       | Probably (2)     | No     |      Maybe (3)       | bcm            | Max UART baudrate 2 mbps
 Broadcom USB Dongles | Dual mode | USB            | Yes          | Yes              | No     |         No           | bcm            |
 CSR UART             | Dual mode | H4, H5, BCSP   | Rarely       | No (didn't work) | No     |         No           | csr            |
@@ -71,7 +72,16 @@ TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL | Yes          | Yes          
   2. SCO over HCI: All Bluetooth Classic chipsets support SCO over HCI, for those that are marked with No, we either didn't try or didn't found enough information to configure it correctly.
   3. Multiple LE Roles: Apple uses Broadcom Bluetooth+Wifi in their iOS devices and newer iOS versions support multiple concurrent LE roles,
   so at least some Broadcom models support multiple concurrent LE roles.
-  4. Datasheet doesn't mention it, while tech support stated that multiple roles are supported. Doc will be updated after some basic tests on this.
+
+## Atmel/Microchip
+
+The ATILC3000 Bluetooth/Wifi combo controller has been used with Linux on embedded devices by Atmel/Microchip. Drivers and documentation are available from a [GitHub repository](https://github.com/atwilc3000). The ATWILC3000 has a basic HCI implementation stored in ROM and requires a firmware image to be uploaded before it can be used. Please note: the Bluetooth firmware is 270 kB.
+
+**BD Addr** seems to be stored in the device. Bluetooth address can be updated via vendor-specific command. (Documentation will be updated after checking the BD Addr of a different board.)
+
+**Baud rate** can be set with a custom command.
+
+**BTstack integration**: *btstack_chipset_atwilc3000.c* contains the code to download the Bluetooth firmware image into the RAM of the ATWILC3000. After that, it can be normally used by BTstack.
 
 ## Broadcom
 
@@ -121,7 +131,7 @@ SCO Data is routed over HCI for USB dongles, but not for UART connections. HSP a
 
 Dialog Semiconductor offers the DA14581, an LE-only SoC that can be programmed with an HCI firmware. The HCI firmware can be uploaded on boot into SRAM or stored in the OTP (One-time programmable) memory, or in an external SPI.
 
-IT does not implement the Data Length Extension or supports multiple concurrent roles.
+It does not implement the Data Length Extension or supports multiple concurrent roles.
 
 **BD Addr** fixed to 80:EA:CA:00:00:01. No command in HCI firmware to set it differently. Random addresses could be used instead.
 
