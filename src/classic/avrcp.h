@@ -56,6 +56,33 @@ extern "C" {
 #define BT_SIG_COMPANY_ID 0x001958
 
 typedef enum {
+    AVRCP_STATUS_INVALID_COMMAND = 0,           // sent if TG received a PDU that it did not understand.
+    AVRCP_STATUS_INVALID_PARAMETER,             // Sent if the TG received a PDU with a parameter ID that it did not understand, or, if there is only one parameter ID in the PDU.
+    AVRCP_STATUS_SPECIFIED_PARAMETER_NOT_FOUND, // sent if the parameter ID is understood, but content is wrong or corrupted.
+    AVRCP_STATUS_INTERNAL_ERROR,                // sent if there are error conditions not covered by a more specific error code.
+    AVRCP_STATUS_SUCCESS,                       // sent if the operation was successful. 
+    AVRCP_STATUS_UID_CHANGED,                   // sent if the UIDs on the device have changed.
+    AVRCP_STATUS_RESERVED_6,
+    AVRCP_STATUS_INVALID_DIRECTION,             // The Direction parameter is invalid. Valid for command: Change Path
+    AVRCP_STATUS_NOT_A_DIRECTORY,               // The UID provided does not refer to a folder item. Valid for command: Change Path
+    AVRCP_STATUS_DOES_NOT_EXIST,                // The UID provided does not refer to any currently valid. Valid for command: Change Path, PlayItem, AddToNowPlaying, GetItemAttributes
+    AVRCP_STATUS_INVALID_SCOPE,                 // The scope parameter is invalid. Valid for command: GetFolderItems, PlayItem, AddToNowPlayer, GetItemAttributes,
+    AVRCP_STATUS_RANGE_OUT_OF_BOUNDS,           // The start of range provided is not valid. Valid for command: GetFolderItems
+    AVRCP_STATUS_UID_IS_A_DIRECTORY,            // The UID provided refers to a directory, which cannot be handled by this media player. Valid for command: PlayItem, AddToNowPlaying
+    AVRCP_STATUS_MEDIA_IN_USE,                  // The media is not able to be used for this operation at this time. Valid for command: PlayItem, AddToNowPlaying
+    AVRCP_STATUS_NOW_PLAYING_LIST_FULL,         // No more items can be added to the Now Playing List. Valid for command: AddToNowPlaying
+    AVRCP_STATUS_SEARCH_NOT_SUPPORTED,          // The Browsed Media Player does not support search. Valid for command: Search
+    AVRCP_STATUS_SEARCH_IN_PROGRESS,            // A search operation is already in progress. Valid for command: Search
+    AVRCP_STATUS_INVALID_PLAYER_ID,             // The specified Player Id does not refer to a valid player. Valid for command: SetAddressedPlayer, SetBrowsedPlayer
+    AVRCP_STATUS_PLAYER_NOT_BROWSABLE,          // The Player Id supplied refers to a Media Player which does not support browsing. Valid for command: SetBrowsedPlayer
+    AVRCP_STATUS_PLAYER_NOT_ADDRESSED,          // The Player Id supplied refers to a player which is not currently addressed, and the command is not able to be performed if the player is not set as addressed. Valid for command: Search SetBrowsedPlayer
+    AVRCP_STATUS_NO_VALID_SEARCH_RESULTS,       // The Search result list does not contain valid entries, e.g. after being invalidated due to change of browsed player. Valid for command: GetFolderItems
+    AVRCP_STATUS_NO_AVAILABLE_PLAYERS,
+    AVRCP_STATUS_ADDRESSED_PLAYER_CHANGED,       // Valid for command: Register Notification
+    AVRCP_STATUS_RESERVED                       // 0x17 - 0xFF
+} avrcp_status_code_t;
+
+typedef enum {
     AVRCP_SINGLE_PACKET= 0,
     AVRCP_START_PACKET    ,
     AVRCP_CONTINUE_PACKET ,

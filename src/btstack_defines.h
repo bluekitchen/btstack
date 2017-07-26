@@ -1677,7 +1677,21 @@ typedef uint8_t sm_key_t[16];
  * @param avrcp_cid
  * @param offset      page*4
  */
-#define AVRCP_SUBEVENT_SUBUNIT_INFO_QUERY                                   0x12
+#define AVRCP_SUBEVENT_SUBUNIT_INFO_QUERY                                   0x11
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param avrcp_cid
+ */
+#define AVRCP_SUBEVENT_COMPANY_IDS_QUERY                                0x12
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param avrcp_cid
+ */
+#define AVRCP_SUBEVENT_EVENT_IDS_QUERY                                  0x13
 
 /**
  * @format 121BH1

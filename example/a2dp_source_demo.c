@@ -133,6 +133,28 @@ static tracker_buffer_state trkbuf;
 
 static uint32_t company_id = 0x112233;
 
+static uint8_t companies_num = 1;
+static uint8_t companies[] = {
+    0x00, 0x19, 0x58 //BT SIG registered CompanyID
+};
+
+static uint8_t events_num = 13;
+static uint8_t events[] = {
+    AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED,
+    AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED,
+    AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END,
+    AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_START,
+    AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED,
+    AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED,
+    AVRCP_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED,
+    AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED,
+    AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED,
+    AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED,
+    AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED,
+    AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED,
+    AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED
+};
+
 static void a2dp_demo_send_media_packet(void){
     int num_bytes_in_frame = btstack_sbc_encoder_sbc_buffer_length();
     int bytes_in_storage = media_tracker.sbc_storage_count;
@@ -345,9 +367,15 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
         case AVRCP_SUBEVENT_UNIT_INFO_QUERY:
             avrcp_target_unit_info(avrcp_cid, AVRCP_SUBUNIT_TYPE_AUDIO, company_id);
             break;
-        
         case AVRCP_SUBEVENT_SUBUNIT_INFO_QUERY:
             avrcp_target_subunit_info(avrcp_cid, AVRCP_SUBUNIT_TYPE_UNIT, avrcp_subevent_subunit_info_query_get_offset(packet), (uint8_t *)subunit_info);
+            break;
+        case AVRCP_SUBEVENT_EVENT_IDS_QUERY:
+            avrcp_target_supported_events(avrcp_cid, events_num, events, sizeof(events));
+            break;
+            
+        case AVRCP_SUBEVENT_COMPANY_IDS_QUERY:
+            avrcp_target_supported_companies(avrcp_cid, companies_num, companies, sizeof(companies));
             break;
         
         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
