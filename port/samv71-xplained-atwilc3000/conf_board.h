@@ -61,6 +61,7 @@
 #define BOARD_USART                USART0
 #define USART_Handler              USART0_Handler
 #define USART_IRQn                 USART0_IRQn
-#define N_SHUTDOWN PIO_PD18_IDX
+#define BLUETOOTH_RESET            PIO_PD26_IDX
+#define BLUETOOTH_CHP_EN           PIO_PA19_IDX
 
 #endif /* CONF_BOARD_H_INCLUDED */
