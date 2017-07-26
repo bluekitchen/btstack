@@ -85,7 +85,7 @@ int  hal_uart_dma_set_baud(uint32_t baud);
  * @brief Set flowcontrol
  * @param flowcontrol enabled
  */
-int  hal_uart_dma_set_flowcontrol(uint32_t flowcontrol);
+int  hal_uart_dma_set_flowcontrol(int flowcontrol);
 #endif
 
 /**
