@@ -3,7 +3,7 @@
  *
  * \brief Board configuration.
  *
- * Copyright (c) 2015-2016 Atmel Corporation. All rights reserved.
+ * Copyright (c) 2015 Atmel Corporation. All rights reserved.
  *
  * \asf_license_start
  *
@@ -47,10 +47,20 @@
 #ifndef CONF_BOARD_H_INCLUDED
 #define CONF_BOARD_H_INCLUDED
 
-/* Enable ICache and DCache */
-#define CONF_BOARD_ENABLE_CACHE_AT_INIT
-
-/** Enable Com Port. */
+/** Enable Com Port, used by board_init(). */
 #define CONF_BOARD_UART_CONSOLE
+
+/** Enable Bluetooth Port for board_init() */
+#define CONF_BOARD_USART_RXD
+#define CONF_BOARD_USART_TXD
+#define CONF_BOARD_USART_CTS
+#define CONF_BOARD_USART_RTS
+
+/** Bluetooth configuration */
+#define BOARD_ID_USART             ID_USART0
+#define BOARD_USART                USART0
+#define USART_Handler              USART0_Handler
+#define USART_IRQn                 USART0_IRQn
+#define N_SHUTDOWN PIO_PD18_IDX
 
 #endif /* CONF_BOARD_H_INCLUDED */
