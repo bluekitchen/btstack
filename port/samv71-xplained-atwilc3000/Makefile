@@ -50,3 +50,6 @@
 # config.mk file.
 MAKEFILE_PATH = ASF/sam/utils/make/Makefile.sam.in
 include $(MAKEFILE_PATH)
+
+flash: getting-started_flash.elf
+	openocd -f interface/cmsis-dap.cfg -f board/atmel_samv71_xplained_ultra.cfg -f upload.cfg
