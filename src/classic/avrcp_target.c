@@ -108,6 +108,7 @@ static int avrcp_send_response(uint16_t cid, avrcp_connection_t * connection){
     // operands
     memcpy(command+pos, connection->cmd_operands, connection->cmd_operands_length);
     pos += connection->cmd_operands_length;
+    connection->wait_to_send = 0;
     return l2cap_send(cid, command, pos);
 }
 
@@ -127,7 +128,10 @@ static uint8_t avrcp_target_response_reject(avrcp_connection_t * connection, avr
     pos += 2;
     connection->cmd_operands[pos++] = status;
     connection->cmd_operands_length = pos;
-    return avrcp_send_response(connection->l2cap_signaling_cid, connection);
+    
+    connection->state = AVCTP_W2_SEND_RESPONSE;
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t avrcp_target_unit_info(uint16_t avrcp_cid, avrcp_subunit_type_t unit_type, uint32_t company_id){
@@ -149,7 +153,10 @@ uint8_t avrcp_target_unit_info(uint16_t avrcp_cid, avrcp_subunit_type_t unit_typ
     connection->cmd_operands[1] = (unit_type << 4) | unit;
     // company id is 3 bytes long
     big_endian_store_32(connection->cmd_operands, 2, company_id);
-    return avrcp_send_response(connection->l2cap_signaling_cid, connection);
+    
+    connection->state = AVCTP_W2_SEND_RESPONSE;
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t avrcp_target_subunit_info(uint16_t avrcp_cid, avrcp_subunit_type_t subunit_type, uint8_t offset, uint8_t * subunit_info_data){
@@ -170,7 +177,10 @@ uint8_t avrcp_target_subunit_info(uint16_t avrcp_cid, avrcp_subunit_type_t subun
     connection->cmd_operands_length = 5;
     connection->cmd_operands[0] = (page << 4) | extension_code;
     memcpy(connection->cmd_operands+1, subunit_info_data + offset, 4);
-    return avrcp_send_response(connection->l2cap_signaling_cid, connection);
+    
+    connection->state = AVCTP_W2_SEND_RESPONSE;
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
 }
 
 static uint8_t avrcp_target_capability(uint16_t avrcp_cid, avrcp_capability_id_t capability_id, uint8_t capabilities_num, uint8_t * capabilities, uint8_t size){
@@ -197,7 +207,9 @@ static uint8_t avrcp_target_capability(uint16_t avrcp_cid, avrcp_capability_id_t
     memcpy(connection->cmd_operands+pos, capabilities, size);
     pos += size;
     connection->cmd_operands_length = pos;
-    return avrcp_send_response(connection->l2cap_signaling_cid, connection);
+    connection->state = AVCTP_W2_SEND_RESPONSE;
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
 }
 
 
@@ -219,7 +231,6 @@ static uint8_t * avrcp_get_pdu(uint8_t *packet, uint16_t size){
     UNUSED(size);
     return packet + 9;
 }
-
 
 static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
     UNUSED(connection);
@@ -295,13 +306,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     }
 }
 
-static void avrcp_target_handle_can_send_now(avrcp_connection_t * connection){
-    switch (connection->state){
-        default:
-            return;
-    }
-}
-
 static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     avrcp_connection_t * connection;
     switch (packet_type) {
@@ -313,9 +317,19 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)){
                 case L2CAP_EVENT_CAN_SEND_NOW:
+                    printf("L2CAP_EVENT_CAN_SEND_NOW \n");
                     connection = get_avrcp_connection_for_l2cap_signaling_cid(channel, &avrcp_target_context);
                     if (!connection) break;
-                    avrcp_target_handle_can_send_now(connection);
+                    switch (connection->state){
+                        case AVCTP_W2_SEND_RESPONSE:
+                            printf("AVCTP_W2_SEND_RESPONSE - > OPEN \n");
+                    
+                            connection->state = AVCTP_CONNECTION_OPENED;
+                            avrcp_send_response(connection->l2cap_signaling_cid, connection);
+                            break;
+                        default:
+                            return;
+                    }
                     break;
             default:
                 avrcp_packet_handler(packet_type, channel, packet, size, &avrcp_target_context);
