@@ -139,6 +139,8 @@ static volatile uint16_t  bytes_to_write = 0;
 static volatile uint8_t * tx_buffer_ptr = 0;
 #endif
 
+static int simulate_flowcontrol;
+
 // handlers
 static void (*rx_done_handler)(void) = dummy_handler;
 static void (*tx_done_handler)(void) = dummy_handler;
@@ -150,10 +152,12 @@ static void (*cts_irq_handler)(void) = dummy_handler;
 // I didn't see RTS going up automatically up, ever. So, at least for RTS, the automatic management
 // is just a glorified GPIO pin control feature, which provides no benefit, but irritates a lot
 
-static void hal_uart_rts_high(void){
+static inline void hal_uart_rts_high(void){
+	if (!simulate_flowcontrol) return;
 	BOARD_USART->US_CR = US_CR_RTSEN;
 }
-static void hal_uart_rts_low(void){
+static inline void hal_uart_rts_low(void){
+	if (!simulate_flowcontrol) return;
 	BOARD_USART->US_CR = US_CR_RTSDIS;
 }
 
@@ -187,12 +191,10 @@ void hal_uart_dma_init(void)
 	};
 
 	/* Configure USART mode. */
-#if 0
-	usart_init_hw_handshaking(BOARD_USART, &bluetooth_settings, sysclk_get_peripheral_hz());
-	hal_uart_rts_low();
-#else
+	simulate_flowcontrol = 0;
 	usart_init_rs232(BOARD_USART, &bluetooth_settings, sysclk_get_peripheral_hz());
-#endif
+	// Set RTS = 0 (normal mode)
+	BOARD_USART->US_CR = US_CR_RTSEN;
 
 	/* Disable all the interrupts. */
 	usart_disable_interrupt(BOARD_USART, ALL_INTERRUPT_MASK);
@@ -296,8 +298,18 @@ int  hal_uart_dma_set_baud(uint32_t baud){
 	return 0;
 }
 
-int  hal_uart_dma_set_flowcontrol(uint32_t flowcontrol){
-	UNUSED(flowcontrol);
+int  hal_uart_dma_set_flowcontrol(int flowcontrol){
+	simulate_flowcontrol = flowcontrol;
+	if (flowcontrol){
+		/* Set hardware handshaking mode. */
+		BOARD_USART->US_MR = (BOARD_USART->US_MR & ~US_MR_USART_MODE_Msk) | US_MR_USART_MODE_HW_HANDSHAKING;
+		hal_uart_rts_low();
+	} else {
+		/* Set nomal mode. */
+		BOARD_USART->US_MR = (BOARD_USART->US_MR & ~US_MR_USART_MODE_Msk) | US_MR_USART_MODE_NORMAL;
+		// Set RTS = 0 (normal mode)
+		BOARD_USART->US_CR = US_CR_RTSEN;
+	}
 	return 0;
 }
 
