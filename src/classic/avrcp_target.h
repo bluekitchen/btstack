@@ -80,6 +80,8 @@ uint8_t avrcp_target_subunit_info(uint16_t avrcp_cid, avrcp_subunit_type_t subun
 uint8_t avrcp_target_supported_companies(uint16_t avrcp_cid, uint8_t capabilities_length, uint8_t * capabilities, uint8_t size);
 uint8_t avrcp_target_supported_events(uint16_t avrcp_cid, uint8_t capabilities_length, uint8_t * capabilities, uint8_t size);
 
+uint8_t avrcp_target_play_status(uint16_t avrcp_cid, uint32_t song_length_ms, uint32_t song_position_ms, avrcp_play_status_t status); 
+
 /* API_END */
 #if defined __cplusplus
 }

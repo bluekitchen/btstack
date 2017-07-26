@@ -79,17 +79,6 @@ static  uint8_t media_sbc_codec_capabilities[] = {
     2, 53
 }; 
 
-static const uint8_t subunit_info[] = {
-    0,0,0,0,
-    1,1,1,1,
-    2,2,2,2,
-    3,3,3,3,
-    4,4,4,4,
-    5,5,5,5,
-    6,6,6,6,
-    7,7,7,7
-};
-
 static const int16_t sine_int16[] = {
      0,    2057,    4107,    6140,    8149,   10126,   12062,   13952,   15786,   17557,
  19260,   20886,   22431,   23886,   25247,   26509,   27666,   28714,   29648,   30466,
@@ -131,6 +120,19 @@ static int hxcmod_initialized;
 static modcontext mod_context;
 static tracker_buffer_state trkbuf;
 
+
+/* AVRCP Target context START */
+static const uint8_t subunit_info[] = {
+    0,0,0,0,
+    1,1,1,1,
+    2,2,2,2,
+    3,3,3,3,
+    4,4,4,4,
+    5,5,5,5,
+    6,6,6,6,
+    7,7,7,7
+};
+
 static uint32_t company_id = 0x112233;
 
 static uint8_t companies_num = 1;
@@ -154,6 +156,16 @@ static uint8_t events[] = {
     AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED,
     AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED
 };
+
+typedef struct {
+    avrcp_play_status_t status;
+    uint32_t song_length_ms;   // 0xFFFFFFFF if not supported
+    uint32_t song_position_ms; // 0xFFFFFFFF if not supported
+} avrcp_play_status_info_t;
+
+avrcp_play_status_info_t play_info;
+
+/* AVRCP Target context END */
 
 static void a2dp_demo_send_media_packet(void){
     int num_bytes_in_frame = btstack_sbc_encoder_sbc_buffer_length();
@@ -303,6 +315,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
 
                         case A2DP_SUBEVENT_STREAM_STARTED:
+                            play_info.status = AVRCP_PLAY_STATUS_PLAYING;
                             a2dp_demo_timer_start(&media_tracker);
                             printf("Stream started.\n");
                             break;
@@ -312,11 +325,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;        
 
                         case A2DP_SUBEVENT_STREAM_SUSPENDED:
+                            play_info.status = AVRCP_PLAY_STATUS_PAUSED;
                             printf("Stream paused.\n");
                             a2dp_demo_timer_pause(&media_tracker);
                             break;
 
                         case A2DP_SUBEVENT_STREAM_RELEASED:
+                            play_info.status = AVRCP_PLAY_STATUS_STOPPED;
                             printf("Stream released.\n");
                             a2dp_demo_timer_stop(&media_tracker);
                             break;
@@ -359,6 +374,10 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                 return;
             }
             avrcp_cid = local_cid;
+            play_info.song_length_ms = 0xFFFFFFFF;
+            play_info.song_position_ms = 0xFFFFFFFF;
+            play_info.status = AVRCP_PLAY_STATUS_ERROR;
+            
             avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
             printf("Channel successfully opened: %s, avrcp_cid 0x%02x\n", bd_addr_to_str(event_addr), local_cid);
             return;
@@ -377,7 +396,9 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
         case AVRCP_SUBEVENT_COMPANY_IDS_QUERY:
             avrcp_target_supported_companies(avrcp_cid, companies_num, companies, sizeof(companies));
             break;
-        
+        case AVRCP_SUBEVENT_PLAY_STATUS_QUERY:
+            avrcp_target_play_status(avrcp_cid, play_info.song_length_ms, play_info.song_position_ms, play_info.status);            
+            break;
         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
             printf("Channel released: avrcp_cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
             avrcp_cid = 0;

@@ -119,7 +119,8 @@ typedef enum {
     AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES = 0x20,
     AVRCP_PDU_ID_GET_PLAY_STATUS = 0x30,
     AVRCP_PDU_ID_REGISTER_NOTIFICATION = 0x31,
-    AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME = 0x50
+    AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME = 0x50,
+    AVRCP_PDU_ID_UNDEFINED = 0xFF
 } avrcp_pdu_id_t;
 
 typedef enum {
@@ -212,6 +213,15 @@ typedef enum {
     AVRCP_OPERATION_ID_UNDEFINED = 0xFF
 } avrcp_operation_id_t;
 
+typedef enum{
+    AVRCP_PLAY_STATUS_STOPPED = 0x00,
+    AVRCP_PLAY_STATUS_PLAYING,
+    AVRCP_PLAY_STATUS_PAUSED,
+    AVRCP_PLAY_STATUS_FWD_SEEK,
+    AVRCP_PLAY_STATUS_REV_SEEK,
+    AVRCP_PLAY_STATUS_ERROR = 0xFF
+} avrcp_play_status_t;
+
 typedef enum {
     AVCTP_CONNECTION_IDLE,
     AVCTP_SIGNALING_W4_SDP_QUERY_COMPLETE,
@@ -249,15 +259,6 @@ typedef struct {
     uint16_t notifications_to_register;
     uint16_t notifications_to_deregister; 
 } avrcp_connection_t;
-
-typedef enum {
-    AVRCP_PLAY_STATUS_STOPPED = 0x00,
-    AVRCP_PLAY_STATUS_PLAYING,
-    AVRCP_PLAY_STATUS_PAUSED,
-    AVRCP_PLAY_STATUS_FWD_SEEK, 
-    AVRCP_PLAY_STATUS_REV_SEEK, 
-    AVRCP_PLAY_STATUS_ERROR = 0xFF
-} avrcp_play_status_t;
 
 typedef enum {
     AVRCP_SHUFFLE_MODE_INVALID,

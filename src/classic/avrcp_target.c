@@ -76,16 +76,14 @@ static void avrcp_target_emit_respond_subunit_info_query(btstack_packet_handler_
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void avrcp_target_emit_respond_get_capabilities(btstack_packet_handler_t callback, uint16_t avrcp_cid, uint8_t subevent_id, uint8_t * company_id){
+static void avrcp_target_emit_respond_vendor_dependent_query(btstack_packet_handler_t callback, uint16_t avrcp_cid, uint8_t subevent_id){
     if (!callback) return;
-    uint8_t event[8];
+    uint8_t event[5];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = subevent_id; 
     little_endian_store_16(event, pos, avrcp_cid);
-    pos += 2;
-    memcpy(event+pos, company_id, 3);
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -124,7 +122,7 @@ static uint8_t avrcp_target_response_reject(avrcp_connection_t * connection, avr
     connection->cmd_operands[pos++] = pdu_id;
     connection->cmd_operands[pos++] = 0;
     // param length
-    big_endian_store_32(connection->cmd_operands, pos, 1);
+    big_endian_store_16(connection->cmd_operands, pos, 1);
     pos += 2;
     connection->cmd_operands[pos++] = status;
     connection->cmd_operands_length = pos;
@@ -212,6 +210,36 @@ static uint8_t avrcp_target_capability(uint16_t avrcp_cid, avrcp_capability_id_t
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t avrcp_target_play_status(uint16_t avrcp_cid, uint32_t song_length_ms, uint32_t song_position_ms, avrcp_play_status_t status){
+    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(avrcp_cid, &avrcp_target_context);
+    if (!connection){
+        log_error("avrcp_unit_info: could not find a connection.");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    
+    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    connection->command_type = AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE;
+    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL; //AVRCP_SUBUNIT_TYPE_UNIT; 
+    connection->subunit_id =   AVRCP_SUBUNIT_ID;
+
+    int pos = connection->cmd_operands_length;
+    connection->cmd_operands[pos++] = AVRCP_PDU_ID_GET_PLAY_STATUS;
+    connection->cmd_operands[pos++] = 0;
+    // param length
+    big_endian_store_16(connection->cmd_operands, pos, 2+4+4+1);
+    pos += 2;
+    big_endian_store_32(connection->cmd_operands, pos, song_length_ms);
+    pos += 4;
+    big_endian_store_32(connection->cmd_operands, pos, song_position_ms);
+    pos += 4;
+    connection->cmd_operands[pos++] = status;
+    connection->cmd_operands_length = pos;
+    connection->state = AVCTP_W2_SEND_RESPONSE;
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
 
 uint8_t avrcp_target_supported_companies(uint16_t avrcp_cid, uint8_t capabilities_num, uint8_t * capabilities, uint8_t size ){
     return avrcp_target_capability(avrcp_cid, AVRCP_CAPABILITY_ID_COMPANY, capabilities_num, capabilities, size);
@@ -262,7 +290,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     uint8_t * company_id = avrcp_get_company_id(packet, size);
     uint8_t * pdu = avrcp_get_pdu(packet, size);
 
-    uint8_t   pdu_id = pdu[0];
+    uint8_t   pdu_id;
+
     connection->cmd_operands_length = 0;
 
     switch (opcode){
@@ -278,17 +307,17 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             pdu_id = pdu[0];
             // 1 - reserved
             // 2-3 param length, 
+            memcpy(connection->cmd_operands, company_id, 3);
+            connection->cmd_operands_length = 3;
             switch (pdu_id){
                 case AVRCP_PDU_ID_GET_CAPABILITIES:{
                     avrcp_capability_id_t capability_id = (avrcp_capability_id_t) pdu[4];
-                    memcpy(connection->cmd_operands, company_id, 3);
-                    connection->cmd_operands_length = 3;
                     switch (capability_id){
                         case AVRCP_CAPABILITY_ID_EVENT:
-                            avrcp_target_emit_respond_get_capabilities(avrcp_target_context.avrcp_callback, connection->avrcp_cid, AVRCP_SUBEVENT_EVENT_IDS_QUERY, company_id);
+                            avrcp_target_emit_respond_vendor_dependent_query(avrcp_target_context.avrcp_callback, connection->avrcp_cid, AVRCP_SUBEVENT_EVENT_IDS_QUERY);
                             break;
                         case AVRCP_CAPABILITY_ID_COMPANY:
-                            avrcp_target_emit_respond_get_capabilities(avrcp_target_context.avrcp_callback, connection->avrcp_cid, AVRCP_SUBEVENT_COMPANY_IDS_QUERY, company_id);
+                            avrcp_target_emit_respond_vendor_dependent_query(avrcp_target_context.avrcp_callback, connection->avrcp_cid, AVRCP_SUBEVENT_COMPANY_IDS_QUERY);
                             break;
                         default:
                             avrcp_target_response_reject(connection, subunit_type, subunit_id, opcode, pdu_id, AVRCP_STATUS_INVALID_PARAMETER);
@@ -296,7 +325,12 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     }
                     break;
                 }
+                case AVRCP_PDU_ID_GET_PLAY_STATUS:
+                    avrcp_target_emit_respond_vendor_dependent_query(avrcp_target_context.avrcp_callback, connection->avrcp_cid, AVRCP_SUBEVENT_PLAY_STATUS_QUERY);
+                    break;
                 default:
+                    printf("unhandled pdu id 0x%02x\n", pdu_id);
+                    avrcp_target_response_reject(connection, subunit_type, subunit_id, opcode, pdu_id, AVRCP_STATUS_INVALID_COMMAND);
                     break;
             }
             break;
@@ -317,13 +351,10 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)){
                 case L2CAP_EVENT_CAN_SEND_NOW:
-                    printf("L2CAP_EVENT_CAN_SEND_NOW \n");
                     connection = get_avrcp_connection_for_l2cap_signaling_cid(channel, &avrcp_target_context);
                     if (!connection) break;
                     switch (connection->state){
                         case AVCTP_W2_SEND_RESPONSE:
-                            printf("AVCTP_W2_SEND_RESPONSE - > OPEN \n");
-                    
                             connection->state = AVCTP_CONNECTION_OPENED;
                             avrcp_send_response(connection->l2cap_signaling_cid, connection);
                             break;
