@@ -150,8 +150,11 @@ CSRCS += \
 	${BTSTACK_ROOT}/src/l2cap_signaling.c \
 	${BTSTACK_ROOT}/src/ble/le_device_db_memory.c \
 	${BTSTACK_ROOT}/src/ble/sm.c \
-	${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c \
-	${BTSTACK_ROOT}/example/led_counter.c \
+	${BTSTACK_ROOT}/example/le_counter.c \
+	${BTSTACK_ROOT}/chipset/atwilc3000/btstack_chipset_atwilc3000.c \
+	${BTSTACK_ROOT}/chipset/atwilc3000/wilc3000_bt_firmware.c \
+
+	# ${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c \
 
 # Additional search paths for libraries.
 LIB_PATH =  \
