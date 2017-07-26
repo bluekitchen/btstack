@@ -54,27 +54,38 @@
 #include <string.h>   /* memcpy */
 #include "hci.h"
 
+#define HCI_DEFAULT_BAUDRATE 115200
+
+// Address to load firmware
 #define IRAM_START 0x80000000
+
+// Larger blocks (e.g. 8192) cause hang
 #define FIRMWARE_CHUNK_SIZE 4096
 
-// HCI commands
+// works with 200 ms, so use 250 ms to stay on the safe side
+#define ATWILC3000_RESET_TIME_MS 250
+
+// HCI commands used for firmware upload
 static const uint8_t hci_reset_command[] = { 0x01, 0x03, 0x0c, 0x00 };
 static const uint8_t hci_read_local_version_information_command[] = { 0x01, 0x01, 0x10, 0x00 };
 static const uint8_t hci_vendor_specific_reset_command[] = { 0x01, 0x55, 0xfc, 0x00 };
 
 // prototypes
-static void atwilc3000_w4_command_complete_reset(void);
-static void atwilc3000_w4_command_complete_read_local_version_information(void);
-static void atwilc3000_write_memory(void);
-static void atwilc3000_write_firmware(void);
-static void atwilc3000_vendor_specific_reset(void);
+static void atwilc3000_configure_uart(btstack_timer_source_t * ts);
 static void atwilc3000_done(void);
 static void atwilc3000_update_uart_params(void);
+static void atwilc3000_vendor_specific_reset(void);
 static void atwilc3000_w4_baudrate_update(void);
+static void atwilc3000_w4_command_complete_read_local_version_information(void);
+static void atwilc3000_w4_command_complete_reset(void);
+static void atwilc3000_wait_for_reset_completed(void);
+static void atwilc3000_write_firmware(void);
+static void atwilc3000_write_memory(void);
 
 // globals
 static void (*download_complete)(int result);
 static const btstack_uart_block_t * the_uart_driver;
+static btstack_timer_source_t reset_timer;
 
 static int     download_count;
 static uint8_t event_buffer[15];
@@ -82,16 +93,22 @@ static uint8_t command_buffer[12];
 static const uint8_t * fw_data;
 static uint32_t        fw_size;
 static uint32_t        fw_offset;
+
+// baudrate for firmware upload
 static uint32_t        fw_baudrate;
 
-static void dummy(void){}
+// flow control requested
+static int             fw_flowtcontrol;
+
+// flow control active
+static int             flowcontrol;
 
 static void atwilc3000_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buffer){
     hci_cmd_buffer[0] = 0x53;
     hci_cmd_buffer[1] = 0xfc;
     hci_cmd_buffer[2] = 5;
-    little_endian_store_32(hci_cmd_buffer, 3, fw_baudrate);
-    hci_cmd_buffer[7] = 0;  // No flow control
+    little_endian_store_32(hci_cmd_buffer, 3, baudrate);
+    hci_cmd_buffer[7] = flowcontrol;    // use global state
 }
 
 static void atwilc3000_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer){
@@ -112,33 +129,28 @@ static void atwilc3000_log_event(void){
 }
 
 static void atwilc3000_start(void){
+    // default after power up
+    flowcontrol = 0;
+
     // send HCI Reset
     the_uart_driver->set_block_received(&atwilc3000_w4_command_complete_reset);
     the_uart_driver->receive_block(&event_buffer[0], 7);
     atwilc3000_send_command(&hci_reset_command[0], sizeof(hci_reset_command));
-    log_info("atwilc3000_start: wait for command complete for HCI Reset");
 }
 
 static void atwilc3000_w4_command_complete_reset(void){
     atwilc3000_log_event();
-    log_info("command complete Reset");
-    // static uint8_t hci_event_command_complete_reset[] = { 0x04, 0x0e, 0x04, 0x01, 0x03, 0x0c, 0x0c };
-    // TODO: check if correct event
-
     // send HCI Read Local Version Information
     the_uart_driver->receive_block(&event_buffer[0], 15);
     the_uart_driver->set_block_received(&atwilc3000_w4_command_complete_read_local_version_information);
     atwilc3000_send_command(&hci_read_local_version_information_command[0], sizeof(hci_read_local_version_information_command));
-    log_info("atwilc3000_start: wait for command complete for HCI Read Local Version Information");
 }
 
 static void atwilc3000_w4_command_complete_read_local_version_information(void){
     atwilc3000_log_event();
-    log_info("command complete Read Local Version Information");
     uint8_t firmware_version = event_buffer[7];
-    log_info("Firmware version 0x%02x", firmware_version);
     if (firmware_version != 0xff){
-        log_info("Firmware already loaded, download complete");
+        log_info("Firmware version 0x%02x already loaded, download complete", firmware_version);
         download_complete(0);
         return;
     }
@@ -164,13 +176,12 @@ static void atwilc3000_w4_baudrate_update(void){
     atwilc3000_write_memory();
 }
 
-
 static void atwilc3000_write_memory(void){
     atwilc3000_log_event();
 
     // done?
     if (fw_offset >= fw_size){
-        log_info("DONE!!!");
+        log_info("Firmware upload complete!!!");
         atwilc3000_vendor_specific_reset();
         return;
     }
@@ -193,7 +204,6 @@ static void atwilc3000_write_memory(void){
 }
 
 static void atwilc3000_write_firmware(void){
-
     the_uart_driver->set_block_received(&atwilc3000_write_memory);
     the_uart_driver->receive_block(&event_buffer[0], 7);
 
@@ -202,28 +212,54 @@ static void atwilc3000_write_firmware(void){
     uint32_t offset = fw_offset;
     fw_offset += bytes_to_write;
 
-    the_uart_driver->set_block_sent(&dummy);
+    the_uart_driver->set_block_sent(NULL);
     the_uart_driver->send_block(&fw_data[offset], bytes_to_write);
 }
 
 static void atwilc3000_vendor_specific_reset(void){
+    log_info("Trigger MCU reboot and wait ");
     // send HCI Vendor Specific Reset
-    // the_uart_driver->receive_block(&event_buffer[0], 7);
-    // the_uart_driver->set_block_received(&atwilc3000_done);
-    the_uart_driver->set_block_sent(&atwilc3000_done);
+    the_uart_driver->set_block_sent(&atwilc3000_wait_for_reset_completed);
     atwilc3000_send_command(&hci_vendor_specific_reset_command[0], sizeof(hci_vendor_specific_reset_command));
 }
 
-static void atwilc3000_done(void){
-    log_info("done");
-    // reset baud rate
+static void atwilc3000_wait_for_reset_completed(void){
+    the_uart_driver->set_block_sent(NULL);
+    btstack_run_loop_set_timer_handler(&reset_timer, &atwilc3000_configure_uart);
+    btstack_run_loop_set_timer(&reset_timer, ATWILC3000_RESET_TIME_MS);
+    btstack_run_loop_add_timer(&reset_timer);
+}
+
+static void atwilc3000_configure_uart(btstack_timer_source_t * ts){
+    // reset baud rate if higher baud rate was requested before
     if (fw_baudrate){
-        the_uart_driver->set_baudrate(115200);
+        the_uart_driver->set_baudrate(HCI_DEFAULT_BAUDRATE);
     }
+    // send baudrate command to enable flow control (using current baud rate) if requested and supported
+    if (fw_flowtcontrol && the_uart_driver->set_flowcontrol){
+        log_info("Send baudrate command (%u) to enable flow control", HCI_DEFAULT_BAUDRATE);
+        flowcontrol = 1;
+        command_buffer[0] = 1;
+        atwilc3000_set_baudrate_command(HCI_DEFAULT_BAUDRATE, &command_buffer[1]);
+        the_uart_driver->set_block_received(&atwilc3000_done);
+        the_uart_driver->receive_block(&event_buffer[0], 7);
+        atwilc3000_send_command(&command_buffer[0], 9);
+    } else {
+        atwilc3000_done();
+    }
+}
+
+static void atwilc3000_done(void){
+    atwilc3000_log_event();
+    // enable our flow control
+    if (flowcontrol){
+        the_uart_driver->set_flowcontrol(flowcontrol);
+    }
+    // done
     download_complete(0);
 }
 
-void btstack_chipset_atwilc3000_download_firmware(const btstack_uart_block_t * uart_driver, uint32_t baudrate, const uint8_t * da_fw_data, uint32_t da_fw_size, void (*done)(int result)){
+void btstack_chipset_atwilc3000_download_firmware(const btstack_uart_block_t * uart_driver, uint32_t baudrate, int flowcontrol, const uint8_t * da_fw_data, uint32_t da_fw_size, void (*done)(int result)){
 
 	the_uart_driver   = uart_driver;
     download_complete = done;
@@ -231,19 +267,18 @@ void btstack_chipset_atwilc3000_download_firmware(const btstack_uart_block_t * u
     fw_size = da_fw_size;
     fw_offset = 0;
     fw_baudrate = baudrate;
+    fw_flowtcontrol = flowcontrol;
 
     int res = the_uart_driver->open();
-
     if (res) {
     	log_error("uart_block init failed %u", res);
     	download_complete(res);
+        return;
     }
 
     download_count = 0;
     atwilc3000_start();
 }
-
-// not used currently
 
 static const btstack_chipset_t btstack_chipset_atwilc3000 = {
     "atwilc3000",
