@@ -1,130 +1,47 @@
-/**
- * \file
- *
- * \brief Getting Started Application.
- *
- * Copyright (c) 2011-2015 Atmel Corporation. All rights reserved.
- *
- * \asf_license_start
- *
- * \page License
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * 3. The name of Atmel may not be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *
- * 4. This software may only be redistributed and used in connection with an
- *    Atmel microcontroller product.
- *
- * THIS SOFTWARE IS PROVIDED BY ATMEL "AS IS" AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT ARE
- * EXPRESSLY AND SPECIFICALLY DISCLAIMED. IN NO EVENT SHALL ATMEL BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- *
- * \asf_license_stop
- *
- */
-
-/**
- * \mainpage Getting Started Application
- *
- * \section Purpose
- *
- * BTstack port for SAM MCUs
- * 
- * \section Requirements
- *
- * This package can be used with SAM evaluation kits.
- *
- * \section Description
- *
- *
- * \section Usage
- *
- * -# Build the program and download it inside the evaluation board.
- * -# On the computer, open and configure a terminal application
- *    (e.g. HyperTerminal on Microsoft Windows) with these settings:
- *   - 115200 bauds
- *   - 8 bits of data
- *   - No parity
- *   - 1 stop bit
- *   - No flow control
- * -# Start the application.
- *
- */
-
 #include "asf.h"
 #include "stdio_serial.h"
 #include "conf_board.h"
 #include "conf_clock.h"
 
 // BTstack
+#include "btstack_chipset_atwilc3000.h"
+#include "btstack_debug.h"
+#include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_embedded.h"
-#include "btstack_debug.h"
-#include "hci.h"
-#include "hci_dump.h"
-#include "btstack_chipset_atwilc3000.h"
-#include "btstack_memory.h"
 #include "classic/btstack_link_key_db.h"
-
 #include "hal_uart_dma.h"
 #include "hal_cpu.h"
 #include "hal_tick.h"
+#include "hci.h"
+#include "hci_dump.h"
+#include "wilc3000_bt_firmware.h"
 
-extern int btstack_main(int argc, const char * argv[]);
-
-#define USE_XDMAC_FOR_USART
+// #define USE_XDMAC_FOR_USART
 #define XDMA_CH_UART_TX   0
 #define XDMA_CH_UART_RX  1
-
-#define STRING_EOL    "\r"
-#define STRING_HEADER "-- Getting Started Example --\r\n" \
-		"-- "BOARD_NAME" --\r\n" \
-		"-- Compiled: "__DATE__" "__TIME__" --"STRING_EOL
 
 /** All interrupt mask. */
 #define ALL_INTERRUPT_MASK   0xffffffff
   
-static void dummy_handler(void){}
-static void (*tick_handler)(void) = &dummy_handler;
-
-/** when porting to different setup, please
- *  disable baudrate change (use 0 instead of 4000000)
- *  and don't enable eHCILL mode (comment line below)
- */
-
-// after HCI Reset, use 115200. Then increase baud rate to X.
-static hci_transport_config_uart_t hci_transport_config = {
-	HCI_TRANSPORT_CONFIG_UART,
-	115200,
-	4000000, // use 0 to skip baud rate change from 115200 to X for debugging purposes
-	1,        // flow control
-	NULL,
-};
-/// @cond 0
-/**INDENT-OFF**/
 #ifdef __cplusplus
 extern "C" {
 #endif
-/**INDENT-ON**/
-/// @endcond
+
+extern int btstack_main(int argc, const char * argv[]);
+
+static void dummy_handler(void){}
+static void (*tick_handler)(void) = &dummy_handler;
+
+static btstack_uart_config_t uart_config;
+
+static hci_transport_config_uart_t transport_config = {
+	HCI_TRANSPORT_CONFIG_UART,
+	115200,
+	921600, // use 0 to skip baud rate change from 115200 to X for debugging purposes
+	1,        // flow control
+	NULL,
+};
 
 /**
  *  \brief Handler for System Tick interrupt.
@@ -244,12 +161,19 @@ static void hal_uart_rts_low(void){
  */
 void hal_uart_dma_init(void)
 {
-	// configure n_shutdown pin, and reset Bluetooth
-	ioport_set_pin_dir(N_SHUTDOWN, IOPORT_DIR_OUTPUT);
-	ioport_set_pin_level(N_SHUTDOWN, IOPORT_PIN_LEVEL_LOW);
-	mdelay(100);
-	ioport_set_pin_level(N_SHUTDOWN, IOPORT_PIN_LEVEL_HIGH);
-	mdelay(500);
+	// power on
+	ioport_set_pin_dir(BLUETOOTH_CHP_EN, IOPORT_DIR_OUTPUT);
+	ioport_set_pin_level(BLUETOOTH_CHP_EN, IOPORT_PIN_LEVEL_HIGH);
+
+	// reset
+	ioport_set_pin_dir(BLUETOOTH_RESET, IOPORT_DIR_OUTPUT);
+	ioport_set_pin_level(BLUETOOTH_RESET, IOPORT_PIN_LEVEL_LOW);
+	mdelay(250);
+	ioport_set_pin_level(BLUETOOTH_RESET, IOPORT_PIN_LEVEL_HIGH);
+	mdelay(250);
+
+	/* Enable the peripheral clock in the PMC. */
+	sysclk_enable_peripheral_clock(BOARD_ID_USART);
 
 	// configure Bluetooth USART
 	const sam_usart_opt_t bluetooth_settings = {
@@ -262,17 +186,16 @@ void hal_uart_dma_init(void)
 		0
 	};
 
-	/* Enable the peripheral clock in the PMC. */
-	sysclk_enable_peripheral_clock(BOARD_ID_USART);
-
 	/* Configure USART mode. */
+#if 0
 	usart_init_hw_handshaking(BOARD_USART, &bluetooth_settings, sysclk_get_peripheral_hz());
+	hal_uart_rts_low();
+#else
+	usart_init_rs232(BOARD_USART, &bluetooth_settings, sysclk_get_peripheral_hz());
+#endif
 
 	/* Disable all the interrupts. */
 	usart_disable_interrupt(BOARD_USART, ALL_INTERRUPT_MASK);
-
-	// RX not ready yet
-	// usart_drive_RTS_pin_high(BOARD_USART);
 
 	/* Enable TX & RX function. */
 	usart_enable_tx(BOARD_USART);
@@ -369,13 +292,18 @@ int  hal_uart_dma_set_baud(uint32_t baud){
 	usart_enable_tx(BOARD_USART);
 	usart_enable_rx(BOARD_USART);
 
-	log_info("Bump baud rate");
+	log_info("set baud rate %u", (int) baud);
+	return 0;
+}
 
+int  hal_uart_dma_set_flowcontrol(uint32_t flowcontrol){
+	UNUSED(flowcontrol);
 	return 0;
 }
 
 void hal_uart_dma_send_block(const uint8_t *data, uint16_t size){
-	
+	// log_info("send %u", size);
+	// log_info_hexdump(data, size);
 #ifdef USE_XDMAC_FOR_USART
 	xdmac_channel_get_interrupt_status( XDMAC, XDMA_CH_UART_TX);
 	xdmac_channel_set_source_addr(XDMAC, XDMA_CH_UART_TX, (uint32_t)data);
@@ -422,7 +350,6 @@ void XDMAC_Handler(void)
 void USART_Handler(void)
 {
 	uint32_t ul_status;
-	uint8_t uc_char;
 
 	/* Read USART status. */
 	ul_status = usart_get_status(BOARD_USART);
@@ -479,6 +406,27 @@ int  hal_tick_get_tick_period_in_ms(void){
 	return 1;
 }
 
+static const btstack_uart_block_t * uart_driver;
+
+static void phase2(int status){
+
+    if (status){
+        printf("Download firmware failed\n");
+        return;
+    }
+
+    printf("Phase 2: Main app\n");
+
+    // init HCI
+    const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
+    // const btstack_link_key_db_t * link_key_db = btstack_link_key_db_fs_instance();
+    hci_init(transport, (void*) &transport_config);
+    hci_set_chipset(btstack_chipset_atwilc3000_instance());
+    // hci_set_link_key_db(link_key_db);
+    
+    // setup app
+    btstack_main(0, NULL);
+}
 
 /**
  *  \brief getting-started Application entry point.
@@ -488,39 +436,44 @@ int  hal_tick_get_tick_period_in_ms(void){
 // [main]
 int main(void)
 {
-//! [main_step_sys_init]
 	/* Initialize the SAM system */
 	sysclk_init();
 	board_init();
-//! [main_step_sys_init]
 
-//! [main_step_console_init]
 	/* Initialize the console uart */
 	configure_console();
-//! [main_step_console_init]
 
-	/* Output example information */
-	puts(STRING_HEADER);
-
+	/* Output boot info */
+	printf("BTstack on SAMV71 Xplained Ultra with ATWILC3000\n");
 	printf("CPU %lu hz, peripheral clock %lu hz\n", sysclk_get_cpu_hz(), sysclk_get_peripheral_hz());
+#ifdef USE_XDMAC_FOR_USART
+	printf("Using XDMA for Bluetooth UART\n");
+#else
+	printf("Using IRQ driver for Bluetooth UART\n");
+#endif
+	printf("--\n");
 
 	// start with BTstack init - especially configure HCI Transport
 	btstack_memory_init();
 	btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 
 	// enable full log output while porting
-	// hci_dump_open(NULL, HCI_DUMP_STDOUT);
+	hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
-	// init HCI
-	// hci_init(hci_transport_h4_instance(), (void*) &hci_transport_config);
-	// hci_set_chipset(btstack_chipset_cc256x_instance());
-	// hci_set_link_key_db(btstack_link_key_db_memory_instance());	
+	// setup UART HAL + Run Loop integration
+	uart_driver = btstack_uart_block_embedded_instance();
 
-	// enable eHCILL
-	// bt_control_cc256x_enable_ehcill(1);
+    // extract UART config from transport config, but disable flow control
+    uart_config.baudrate    = transport_config.baudrate_init;
+    uart_config.flowcontrol = 0;
+    uart_config.device_name = transport_config.device_name;
+    uart_driver->init(&uart_config);
 
-	// hand over to btstack embedded code
-	btstack_main(0, NULL);
+    // phase #1 download firmware
+    printf("Phase 1: Download firmware\n");
+
+    // phase #2 start main app
+    btstack_chipset_atwilc3000_download_firmware(uart_driver, transport_config.baudrate_main, transport_config.flowcontrol, atwilc3000_fw_data, atwilc3000_fw_size, &phase2);
 
 	// go
 	btstack_run_loop_execute();
@@ -528,11 +481,6 @@ int main(void)
 	// compiler happy
 	while(1);
 }
-// [main]
-/// @cond 0
-/**INDENT-OFF**/
 #ifdef __cplusplus
 }
 #endif
-/**INDENT-ON**/
-/// @endcond
