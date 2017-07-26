@@ -234,7 +234,7 @@ static void btstack_uart_windows_set_baudrate_option(DCB * serial_params, uint32
 }
 
 static void btstack_uart_windows_set_parity_option(DCB * serial_params, uint32_t parity){
-    serial_params->Parity = baudrate;
+    serial_params->Parity = parity;
 }
 
 static void btstack_uart_windows_set_flowcontrol_option(DCB * serial_params, uint32_t flowcontrol){
