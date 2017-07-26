@@ -171,7 +171,6 @@ extern const hci_cmd_t hci_le_read_advertising_channel_tx_power;
 extern const hci_cmd_t hci_le_read_buffer_size ;
 extern const hci_cmd_t hci_le_read_channel_map;
 extern const hci_cmd_t hci_le_read_local_p256_public_key;
-extern const hci_cmd_t hci_le_read_local_p256_public_key;
 extern const hci_cmd_t hci_le_read_maximum_data_length;
 extern const hci_cmd_t hci_le_read_remote_used_features;
 extern const hci_cmd_t hci_le_read_suggested_default_data_length;
