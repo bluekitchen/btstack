@@ -61,7 +61,7 @@ void btstack_ring_buffer_init(btstack_ring_buffer_t * ring_buffer, uint8_t * sto
     ring_buffer->full = 0;
 }
 
-int btstack_ring_buffer_bytes_available(btstack_ring_buffer_t * ring_buffer){
+uint32_t btstack_ring_buffer_bytes_available(btstack_ring_buffer_t * ring_buffer){
     if (ring_buffer->full) return ring_buffer->size;
     int diff = ring_buffer->last_written_index - ring_buffer->last_read_index;
     if (diff >= 0) return diff;
@@ -74,7 +74,7 @@ int btstack_ring_buffer_empty(btstack_ring_buffer_t * ring_buffer){
 }
 
 // 
-int btstack_ring_buffer_bytes_free(btstack_ring_buffer_t * ring_buffer){
+uint32_t btstack_ring_buffer_bytes_free(btstack_ring_buffer_t * ring_buffer){
     return ring_buffer->size - btstack_ring_buffer_bytes_available(ring_buffer);
 }
 
