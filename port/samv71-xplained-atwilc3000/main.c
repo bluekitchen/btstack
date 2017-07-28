@@ -382,15 +382,20 @@ void USART_Handler(void)
 
 	// handle byte available for read
 	if (ul_status & US_IER_RXRDY) {
-		uint32_t ch;
-		usart_read(BOARD_USART, (uint32_t *)&ch);
-		*rx_buffer_ptr++ = ch;
-		bytes_to_read--;
-		if (bytes_to_read == 0){
-			// done. disable rx ready interrupt, raise RTS
-			hal_uart_rts_high();
+		if (bytes_to_read){
+			uint32_t ch;
+			usart_read(BOARD_USART, (uint32_t *)&ch);
+			*rx_buffer_ptr++ = ch;
+			bytes_to_read--;
+			if (bytes_to_read == 0){
+				// done. disable rx ready interrupt, raise RTS
+				hal_uart_rts_high();
+				usart_disable_interrupt(BOARD_USART, US_IER_RXRDY);
+				rx_done_handler();
+			}
+		} else {
+			// shoult not happen, disable irq anyway
 			usart_disable_interrupt(BOARD_USART, US_IER_RXRDY);
-			rx_done_handler();
 		}
 	}
 }
