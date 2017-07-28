@@ -137,6 +137,7 @@ static volatile uint8_t * rx_buffer_ptr = 0;
 // TX state
 static volatile uint16_t  bytes_to_write = 0;
 static volatile uint8_t * tx_buffer_ptr = 0;
+static volatile int       tx_notify;
 #endif
 
 static int simulate_flowcontrol;
@@ -161,10 +162,25 @@ static inline void hal_uart_rts_low(void){
 	BOARD_USART->US_CR = US_CR_RTSDIS;
 }
 
+// J505:6
+// #define DEBUG_PIN_1 PIO_PD16_IDX
+// J505:5
+// #define DEBUG_PIN_2 PIO_PD15_IDX
+
 /**
  */
 void hal_uart_dma_init(void)
 {
+
+	// debug
+#ifdef DEBUG_PIN_1
+	ioport_set_pin_dir(DEBUG_PIN_1, IOPORT_DIR_OUTPUT);
+	ioport_set_pin_level(DEBUG_PIN_1, IOPORT_PIN_LEVEL_LOW);
+#endif
+#ifdef DEBUG_PIN_2
+	ioport_set_pin_dir(DEBUG_PIN_2, IOPORT_DIR_OUTPUT);
+	ioport_set_pin_level(DEBUG_PIN_2, IOPORT_PIN_LEVEL_LOW);
+#endif
 	// power on
 	ioport_set_pin_dir(BLUETOOTH_CHP_EN, IOPORT_DIR_OUTPUT);
 	ioport_set_pin_level(BLUETOOTH_CHP_EN, IOPORT_PIN_LEVEL_HIGH);
@@ -314,14 +330,23 @@ int  hal_uart_dma_set_flowcontrol(int flowcontrol){
 }
 
 void hal_uart_dma_send_block(const uint8_t *data, uint16_t size){
-	// log_info("send %u", size);
-	// log_info_hexdump(data, size);
+
+#ifdef DEBUG_PIN_1
+	ioport_set_pin_level(DEBUG_PIN_1, IOPORT_PIN_LEVEL_HIGH);
+#endif
+
+	tx_notify = 1;
+
 #ifdef USE_XDMAC_FOR_USART
 	xdmac_channel_get_interrupt_status( XDMAC, XDMA_CH_UART_TX);
 	xdmac_channel_set_source_addr(XDMAC, XDMA_CH_UART_TX, (uint32_t)data);
 	xdmac_channel_set_microblock_control(XDMAC, XDMA_CH_UART_TX, size);
 	xdmac_channel_enable(XDMAC, XDMA_CH_UART_TX);
 #else
+	if (bytes_to_write){
+		log_error("send block, bytes to write %u", bytes_to_write);
+		return;
+	}
     tx_buffer_ptr = (uint8_t *) data;
     bytes_to_write = size;
 	usart_enable_interrupt(BOARD_USART, US_IER_TXRDY);
@@ -350,7 +375,10 @@ void XDMAC_Handler(void)
 	uint32_t dma_status;
 	dma_status = xdmac_channel_get_interrupt_status(XDMAC, XDMA_CH_UART_TX);
 	if (dma_status & XDMAC_CIS_BIS) {
-		tx_done_handler();
+		if (tx_notify){
+			tx_notify = 0;
+			tx_done_handler();
+		}
 	}
 	dma_status = xdmac_channel_get_interrupt_status(XDMAC, XDMA_CH_UART_RX);
 	if (dma_status & XDMAC_CIS_BIS) {
@@ -361,10 +389,13 @@ void XDMAC_Handler(void)
 #else
 void USART_Handler(void)
 {
-	uint32_t ul_status;
+
+#ifdef DEBUG_PIN_2
+	ioport_set_pin_level(DEBUG_PIN_2, IOPORT_PIN_LEVEL_HIGH);
+#endif
 
 	/* Read USART status. */
-	ul_status = usart_get_status(BOARD_USART);
+	uint32_t ul_status = usart_get_status(BOARD_USART);
 
 	// handle ready to send
 	if(ul_status & US_IER_TXRDY) {
@@ -374,9 +405,16 @@ void USART_Handler(void)
 			tx_buffer_ptr++;
 			bytes_to_write--;
 		} else {
+
+#ifdef DEBUG_PIN_1
+			ioport_set_pin_level(DEBUG_PIN_1, IOPORT_PIN_LEVEL_LOW);
+#endif
 			// done. disable tx ready interrupt to avoid starvation here
 			usart_disable_interrupt(BOARD_USART, US_IER_TXRDY);
-			tx_done_handler();
+			if (tx_notify){
+				tx_notify = 0;
+				tx_done_handler();
+			}
 		}
 	}
 
@@ -398,6 +436,10 @@ void USART_Handler(void)
 			usart_disable_interrupt(BOARD_USART, US_IER_RXRDY);
 		}
 	}
+#ifdef DEBUG_PIN_2
+	ioport_set_pin_level(DEBUG_PIN_2, IOPORT_PIN_LEVEL_LOW);
+#endif
+
 }
 #endif
 
