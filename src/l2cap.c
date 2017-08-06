@@ -1130,7 +1130,7 @@ uint16_t l2cap_max_le_mtu(void){
 static uint16_t l2cap_setup_options_mtu(l2cap_channel_t * channel, uint8_t * config_options){
     config_options[0] = 1; // MTU
     config_options[1] = 2; // len param
-    little_endian_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
+    little_endian_store_16(config_options, 2, channel->local_mtu);
     return 4;
 }
 
