@@ -24,6 +24,7 @@
 #define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_CENTRAL
 #define ENABLE_SDP_EXTRA_QUERIES
+#define ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 52

@@ -372,6 +372,7 @@ static const btstack_uart_block_t btstack_uart_block_wiced = {
     /* void (*set_block_sent)(void (*handler)(void)); */              &btstack_uart_block_wiced_set_block_sent,
     /* int  (*set_baudrate)(uint32_t baudrate); */                    &btstack_uart_block_wiced_set_baudrate,
     /* int  (*set_parity)(int parity); */                             &btstack_uart_block_wiced_set_parity,
+    /* int  (*set_flowcontrol)(int flowcontrol); */                   NULL,
     /* void (*receive_block)(uint8_t *buffer, uint16_t len); */       &btstack_uart_block_wiced_receive_block,
     /* void (*send_block)(const uint8_t *buffer, uint16_t length); */ &btstack_uart_block_wiced_send_block,
     /* int (*get_supported_sleep_modes); */                           NULL,

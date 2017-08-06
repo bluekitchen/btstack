@@ -63,12 +63,23 @@
 static void show_usage(void);
 
 // static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
-static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};
+static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x07, 0x32, 0xef};;
 
 static uint16_t handle;
 static uint16_t local_cid;
+static int l2cap_ertm;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static uint8_t ertm_buffer[10000];
+static l2cap_ertm_config_t ertm_config = {
+    0,  // ertm mandatory
+    2,  // max transmit, some tests require > 1
+    2000,
+    12000,
+    144,    // l2cap ertm mtu
+    4,
+    4,
+};
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
@@ -78,48 +89,73 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     bd_addr_t event_addr;
     uint16_t psm;
 
+    switch (packet_type){
+        case HCI_EVENT_PACKET:
+            switch (packet[0]) {
+                case BTSTACK_EVENT_STATE:
+                    // bt stack activated, get started 
+                    if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
+                        printf("BTstack L2CAP Test Ready\n");
+                        show_usage();
+                    }
+                    break;
+                case HCI_EVENT_CONNECTION_COMPLETE:
+                    handle = hci_event_connection_complete_get_connection_handle(packet);
+                    break;
+
+                case L2CAP_EVENT_CHANNEL_OPENED:
+                    // inform about new l2cap connection
+                    reverse_bd_addr(&packet[3], event_addr);
+                    psm = little_endian_read_16(packet, 11); 
+                    local_cid = little_endian_read_16(packet, 13); 
+                    handle = little_endian_read_16(packet, 9);
+                    if (packet[2] == 0) {
+                        printf("Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
+                               bd_addr_to_str(event_addr), handle, psm, local_cid,  little_endian_read_16(packet, 15));
+                    } else {
+                        printf("L2CAP connection to device %s failed. status code %u\n", bd_addr_to_str(event_addr), packet[2]);
+                    }
+                    break;
+
+                case L2CAP_EVENT_INCOMING_CONNECTION: {
+                    uint16_t l2cap_cid  = little_endian_read_16(packet, 12);
+                    if (l2cap_ertm){
+                        printf("L2CAP Accepting incoming connection request in ERTM\n"); 
+                        l2cap_accept_ertm_connection(l2cap_cid, &ertm_config, ertm_buffer, sizeof(ertm_buffer));
+                    } else {
+                        printf("L2CAP Accepting incoming connection request in Basic Mode\n"); 
+                        l2cap_accept_connection(l2cap_cid);
+                    }
+                    break;
+                }
+                default:
+                    break;
+            }
+            break;
+
+        case L2CAP_DATA_PACKET:
+            printf_hexdump(packet, size);
+            break;
+
+    }
     if (packet_type != HCI_EVENT_PACKET) return;
 
-    switch (packet[0]) {
-        case BTSTACK_EVENT_STATE:
-            // bt stack activated, get started 
-            if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-                printf("BTstack L2CAP Test Ready\n");
-                show_usage();
-            }
-            break;
-        case L2CAP_EVENT_CHANNEL_OPENED:
-            // inform about new l2cap connection
-            reverse_bd_addr(&packet[3], event_addr);
-            psm = little_endian_read_16(packet, 11); 
-            local_cid = little_endian_read_16(packet, 13); 
-            handle = little_endian_read_16(packet, 9);
-            if (packet[2] == 0) {
-                printf("Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
-                       bd_addr_to_str(event_addr), handle, psm, local_cid,  little_endian_read_16(packet, 15));
-            } else {
-                printf("L2CAP connection to device %s failed. status code %u\n", bd_addr_to_str(event_addr), packet[2]);
-            }
-            break;
-        case L2CAP_EVENT_INCOMING_CONNECTION: {
-            uint16_t l2cap_cid  = little_endian_read_16(packet, 12);
-            printf("L2CAP Accepting incoming connection request\n"); 
-            l2cap_accept_connection(l2cap_cid);
-            break;
-        }
 
-
-        default:
-            break;
-    }
 }
 
 static void show_usage(void){
     printf("\n--- CLI for L2CAP TEST ---\n");
+    printf("L2CAP Channel Mode %s\n", l2cap_ertm ? "Enhanced Retransmission" : "Basic");
     printf("c      - create connection to SDP at addr %s\n", bd_addr_to_str(remote));
-    printf("s      - send data\n");
-    printf("e      - send echo request\n");
+    printf("s      - send some data\n");
+    printf("S      - send more data\n");
+    printf("p      - send echo request\n");
+    printf("e      - optional ERTM mode\n");
+    printf("E      - mandatory ERTM mode\n");
+    printf("b      - set channel as busy (ERTM)\n");
+    printf("B      - set channel as ready (ERTM)\n");
     printf("d      - disconnect\n");
+    printf("t      - terminate ACL connection\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -128,19 +164,49 @@ static void stdin_process(char buffer){
     switch (buffer){
         case 'c':
             printf("Creating L2CAP Connection to %s, PSM SDP\n", bd_addr_to_str(remote));
-            l2cap_create_channel(packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, 100, NULL);
+            if (l2cap_ertm){
+                l2cap_create_ertm_channel(packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, &ertm_config, ertm_buffer, sizeof(ertm_buffer), &local_cid);
+            } else {
+                l2cap_create_channel(packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, 100, &local_cid);
+            }
+            break;
+        case 'b':
+            printf("Set channel busy\n");
+            l2cap_ertm_set_busy(local_cid);
+            break;
+        case 'B':
+            printf("Set channel ready\n");
+            l2cap_ertm_set_ready(local_cid);
             break;
         case 's':
-            printf("Send L2CAP Data\n");
+            printf("Send some L2CAP Data\n");
             l2cap_send(local_cid, (uint8_t *) "0123456789", 10);
             break;
-        case 'e':
-            printf("Send L2CAP ECHO Request\n");
-            l2cap_send_echo_request(handle, (uint8_t *)  "Hello World!", 13);
+        case 'S':
+            printf("Send more L2CAP Data\n");
+            l2cap_send(local_cid, (uint8_t *) "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789", 100);
             break;
         case 'd':
             printf("L2CAP Channel Closed\n");
             l2cap_disconnect(local_cid, 0);
+            break;
+        case 'e':
+            printf("L2CAP Enhanced Retransmission Mode (ERTM) optional\n");
+            l2cap_ertm = 1;
+            ertm_config.ertm_mandatory = 0;
+            break;
+        case 'E':
+            printf("L2CAP Enhanced Retransmission Mode (ERTM) mandatory\n");
+            l2cap_ertm = 1;
+            ertm_config.ertm_mandatory = 1;
+            break;
+        case 'p':
+            printf("Send L2CAP ECHO Request\n");
+            l2cap_send_echo_request(handle, (uint8_t *)  "Hello World!", 13);
+            break;
+        case 't':
+            printf("Disconnect ACL handle\n");
+            gap_disconnect(handle);
             break;
         case '\n':
         case '\r':

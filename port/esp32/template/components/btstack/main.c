@@ -48,7 +48,10 @@
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_freertos.h"
 #include "btstack_ring_buffer.h"
-//#include "classic/btstack_link_key_db.h"
+#include "btstack_tlv.h"
+#include "btstack_tlv_esp32.h"
+#include "classic/btstack_link_key_db.h"
+#include "classic/btstack_link_key_db_tlv.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "bt.h"
@@ -315,7 +318,11 @@ int app_main(void){
 
     // init HCI
     hci_init(transport_get_instance(), NULL);
-    hci_set_link_key_db(btstack_link_key_db_memory_instance()); // @TODO
+
+    // setup link key deb using esp32 btstack_tlv instance
+    const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_esp32_get_instance();
+    const btstack_link_key_db_t * btstack_link_key_db = btstack_link_key_db_tlv_get_instance(btstack_tlv_impl, NULL);
+    hci_set_link_key_db(btstack_link_key_db);
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;

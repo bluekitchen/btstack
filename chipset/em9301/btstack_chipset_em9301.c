@@ -47,15 +47,32 @@
 
 #include "btstack_config.h"
 #include "btstack_chipset_em9301.h"
+#include "btstack_debug.h"
 
 #include <stddef.h>   /* NULL */
-#include <stdio.h> 
 #include <string.h>   /* memcpy */
 #include "hci.h"
 
 // should go to some common place
 #define OPCODE(ogf, ocf) (ocf | ogf << 10)
 
+static const uint32_t baudrates[] = {
+	      0, 
+	      0,
+	      0, 
+	   9600,
+	  14400,
+	  19200,
+	  28800,
+	  38400,
+	  57600,
+	  76800,
+	 115200,
+	 230400,
+	 460800,
+	 921600,
+	1843200,
+};
 
 static void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer){
     little_endian_store_16(hci_cmd_buffer, 0, OPCODE(OGF_VENDOR, 0x02));
@@ -63,11 +80,30 @@ static void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer)
     reverse_bd_addr(addr, &hci_cmd_buffer[3]);
 }
 
+static void chipset_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buffer){
+	// lookup baudrates
+	int i;
+	int found = 0;
+	for (i=0;i < sizeof(baudrates)/sizeof(uint32_t);i++){
+		if (baudrates[i] == baudrate){
+			found = i;
+			break;		
+		}
+	}
+	if (!found){
+		log_error("Baudrate %u not found in table", baudrate);
+		return;
+	}
+    little_endian_store_16(hci_cmd_buffer, 0, OPCODE(OGF_VENDOR, 0x07));
+    hci_cmd_buffer[2] = 0x01;
+    hci_cmd_buffer[3] = i;
+}
+
 static const btstack_chipset_t btstack_chipset_em9301 = {
     "EM9301",
     NULL, // chipset_init not used
     NULL, // chipset_next_command not used
-    NULL, // chipset_set_baudrate_command not needed as we're connected via SPI
+    chipset_set_baudrate_command,
     chipset_set_bd_addr_command,
 };
 

@@ -77,6 +77,8 @@ typedef enum {
     L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES,
     L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE,
     L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE,
+    L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES,    // only for Enhanced Retransmission Mode
+    L2CAP_STATE_WAIT_OUTGOING_EXTENDED_FEATURES,    // only for Enhanced Retransmission Mode
     L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT,
     L2CAP_STATE_WAIT_CONNECT_RSP, // from peer
     L2CAP_STATE_CONFIG,
@@ -96,20 +98,60 @@ typedef enum {
 } L2CAP_STATE;
 
 typedef enum {
-    L2CAP_CHANNEL_STATE_VAR_NONE                  = 0,
-    L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_REQ         = 1 << 0,
-    L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_RSP         = 1 << 1,
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ         = 1 << 2,
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP         = 1 << 3,
-    L2CAP_CHANNEL_STATE_VAR_SENT_CONF_REQ         = 1 << 4,
-    L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP         = 1 << 5,
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU     = 1 << 6,   // in CONF RSP, add MTU field
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_CONT    = 1 << 7,   // in CONF RSP, set CONTINUE flag
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID = 1 << 8,   // in CONF RSP, send UNKNOWN OPTIONS
-    L2CAP_CHANNEL_STATE_VAR_SEND_CMD_REJ_UNKNOWN  = 1 << 9,   // send CMD_REJ with reason unknown
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND   = 1 << 10,  // send Connection Respond with pending
-    L2CAP_CHANNEL_STATE_VAR_INCOMING              = 1 << 15,  // channel is incoming
+    L2CAP_CHANNEL_STATE_VAR_NONE                   = 0,
+    L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_REQ          = 1 << 0,
+    L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_RSP          = 1 << 1,
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ          = 1 << 2,
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP          = 1 << 3,
+    L2CAP_CHANNEL_STATE_VAR_SENT_CONF_REQ          = 1 << 4,
+    L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP          = 1 << 5,
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU      = 1 << 6,   // in CONF RSP, add MTU field
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_CONT     = 1 << 7,   // in CONF RSP, set CONTINUE flag
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID  = 1 << 8,   // in CONF RSP, send UNKNOWN OPTIONS
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED = 1 << 9,   // in CONF RSP, send Unacceptable Parameters (ERTM)
+    L2CAP_CHANNEL_STATE_VAR_BASIC_FALLBACK_TRIED   = 1 << 10,  // set when ERTM was requested but we want only Basic mode (ERM)
+    L2CAP_CHANNEL_STATE_VAR_SEND_CMD_REJ_UNKNOWN   = 1 << 11,  // send CMD_REJ with reason unknown
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND    = 1 << 12,  // send Connection Respond with pending
+    L2CAP_CHANNEL_STATE_VAR_INCOMING               = 1 << 15,  // channel is incoming
 } L2CAP_CHANNEL_STATE_VAR;
+
+typedef struct {
+    l2cap_segmentation_and_reassembly_t sar;
+    uint16_t len;
+    uint8_t  valid;
+} l2cap_ertm_rx_packet_state_t;
+
+typedef struct {
+    l2cap_segmentation_and_reassembly_t sar;
+    uint16_t len;
+    uint8_t tx_seq;
+    uint8_t retry_count;
+    uint8_t retransmission_requested;
+} l2cap_ertm_tx_packet_state_t;
+
+typedef struct {
+    // If not mandatory, the use of ERTM can be decided by the remote 
+    uint8_t  ertm_mandatory; 
+
+    // Number of retransmissions that L2CAP is allowed to try before accepting that a packet and the channel is lost.
+    uint8_t  max_transmit;
+
+    // time before retransmission of i-frame / Recommended : 2000 ms (ACL Flush timeout not used)
+    uint16_t retransmission_timeout_ms;
+
+    // time after withc s-frames are sent / Recommended: 12000 ms (ACL Flush timeout not used)
+    uint16_t monitor_timeout_ms;
+
+    // MTU for incoming SDUs
+    uint16_t local_mtu;
+
+    // Number of buffers for outgoing data
+    uint8_t num_tx_buffers;
+
+    // Number of packets that can be received out of order (-> our tx_window size)
+    uint8_t num_rx_buffers;
+
+} l2cap_ertm_config_t;
 
 // info regarding an actual connection
 typedef struct {
@@ -176,6 +218,112 @@ typedef struct {
     // automatic credits incoming
     uint16_t automatic_credits;
 
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+
+    // l2cap channel mode: basic or enhanced retransmission mode
+    l2cap_channel_mode_t mode;
+    
+    // local mps = size of rx/tx buffers
+    uint16_t local_mps;
+
+    // retransmission timer
+    btstack_timer_source_t retransmission_timer;
+
+    // monitor timer
+    btstack_timer_source_t monitor_timer;
+
+    // local/remote config options
+    uint16_t local_retransmission_timeout_ms;
+    uint16_t local_monitor_timeout_ms;
+
+    uint16_t remote_retransmission_timeout_ms;
+    uint16_t remote_monitor_timeout_ms;
+
+    uint8_t remote_tx_window_size;
+
+    uint8_t local_max_transmit;
+    uint8_t remote_max_transmit;
+    
+    // if ertm is not mandatory, allow fallback to L2CAP Basic Mode - flag
+    uint8_t ertm_mandatory;
+
+    // sender: max num of stored outgoing frames
+    uint8_t num_tx_buffers;
+
+    // sender: number of unacknowledeged I-Frames - frames have been sent, but not acknowledged yet
+    uint8_t unacked_frames;
+
+    // sender: buffer index of oldest packet
+    uint8_t tx_read_index;
+
+    // sender: buffer index to store next tx packet
+    uint8_t tx_write_index;
+
+    // sender: buffer index of packet to send next
+    uint8_t tx_send_index;
+
+    // sender: next seq nr used for sending
+    uint8_t next_tx_seq;
+
+    // sender: selective retransmission requested
+    uint8_t srej_active;
+
+
+    // receiver: max num out-of-order packets // tx_window
+    uint8_t num_rx_buffers;
+
+    // receiver: buffer index of to store packet with delta = 1
+    uint8_t rx_store_index;
+
+    // receiver: value of tx_seq in next expected i-frame
+    uint8_t expected_tx_seq;
+
+    // receiver: request transmission with tx_seq = req_seq and ack up to and including req_seq
+    uint8_t req_seq;
+
+    // receiver: local busy condition
+    uint8_t local_busy;
+
+    // receiver: send RR frame with optional final flag set - flag
+    uint8_t send_supervisor_frame_receiver_ready;
+
+    // receiver: send RR frame with poll bit set
+    uint8_t send_supervisor_frame_receiver_ready_poll;
+
+    // receiver: send RNR frame - flag
+    uint8_t send_supervisor_frame_receiver_not_ready;
+
+    // receiver: send REJ frame - flag
+    uint8_t send_supervisor_frame_reject;
+
+    // receiver: send SREJ frame - flag
+    uint8_t send_supervisor_frame_selective_reject;
+
+    // set final bit after poll packet with poll bit was received
+    uint8_t set_final_bit_after_packet_with_poll_bit_set;
+
+    // receiver: meta data for out-of-order frames
+    l2cap_ertm_rx_packet_state_t * rx_packets_state;
+
+    // sender: retransmission state
+    l2cap_ertm_tx_packet_state_t * tx_packets_state;
+
+    // receiver: reassemly pos
+    uint16_t reassembly_pos;
+
+    // receiver: reassemly sdu length
+    uint16_t reassembly_sdu_length;
+
+    // receiver: eassembly buffer
+    uint8_t * reassembly_buffer;
+
+    // receiver: num_rx_buffers of size local_mps
+    uint8_t * rx_packets_data;
+
+    // sender: num_tx_buffers of size local_mps
+    uint8_t * tx_packets_data;
+
+#endif    
 } l2cap_channel_t;
 
 // info regarding potential connections
@@ -205,7 +353,7 @@ typedef struct l2cap_signaling_response {
     uint16_t cid;  // source cid for CONNECTION REQUEST
     uint16_t data; // infoType for INFORMATION REQUEST, result for CONNECTION REQUEST and COMMAND UNKNOWN
 } l2cap_signaling_response_t;
-    
+
 
 void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id);
 int  l2cap_can_send_fixed_channel_packet_now(hci_con_handle_t con_handle, uint16_t channel_id);
@@ -254,6 +402,21 @@ uint16_t l2cap_max_le_mtu(void);
 uint8_t l2cap_create_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu, uint16_t * out_local_cid);
 
 /** 
+ * @brief Creates L2CAP channel to the PSM of a remote device with baseband address using Enhanced Retransmission Mode. 
+ *        A new baseband connection will be initiated if necessary.
+ * @param packet_handler
+ * @param address
+ * @param psm
+ * @param ertm_config
+ * @param buffer to store reassembled rx packet, out-of-order packets and unacknowledged outgoing packets with their tretransmission timers
+ * @param size of buffer
+ * @param local_cid
+ * @return status
+ */
+uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, 
+    l2cap_ertm_config_t * ertm_contig, uint8_t * buffer, uint32_t size, uint16_t * out_local_cid);
+
+/** 
  * @brief Disconnects L2CAP channel with given identifier. 
  */
 void l2cap_disconnect(uint16_t local_cid, uint8_t reason);
@@ -274,7 +437,7 @@ int l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len);
 uint8_t l2cap_register_service(btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level);
 
 /** 
- * @brief Unregisters L2CAP service with given PSM.  On embedded systems, use NULL for connection parameter.
+ * @brief Unregisters L2CAP service with given PSM.
  */
 uint8_t l2cap_unregister_service(uint16_t psm);
 
@@ -282,6 +445,16 @@ uint8_t l2cap_unregister_service(uint16_t psm);
  * @brief Accepts incoming L2CAP connection.
  */
 void l2cap_accept_connection(uint16_t local_cid);
+
+/** 
+ * @brief Accepts incoming L2CAP connection for Enhanced Retransmission Mode
+ * @param local_cid
+ * @param ertm_config
+ * @param buffer to store reassembled rx packet, out-of-order packets and unacknowledged outgoing packets with their tretransmission timers
+ * @param size of buffer
+ * @return status
+ */
+uint8_t l2cap_accept_ertm_connection(uint16_t local_cid, l2cap_ertm_config_t * ertm_contig, uint8_t * buffer, uint32_t size);
 
 /** 
  * @brief Deny incoming L2CAP connection.
@@ -412,6 +585,20 @@ uint8_t l2cap_le_send_data(uint16_t cid, uint8_t * data, uint16_t size);
 uint8_t l2cap_le_disconnect(uint16_t cid);
 
 /* API_END */
+
+/**
+ * @brief ERTM Set channel as busy.
+ * @note Can be cleared by l2cap_ertm_set_ready
+ * @param local_cid 
+ */
+uint8_t l2cap_ertm_set_busy(uint16_t local_cid);
+
+/**
+ * @brief ERTM Set channel as ready
+ * @note Used after l2cap_ertm_set_busy
+ * @param local_cid 
+ */
+uint8_t l2cap_ertm_set_ready(uint16_t local_cid);
 
 #if defined __cplusplus
 }
