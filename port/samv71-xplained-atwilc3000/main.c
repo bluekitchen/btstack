@@ -38,7 +38,7 @@ static btstack_uart_config_t uart_config;
 static hci_transport_config_uart_t transport_config = {
 	HCI_TRANSPORT_CONFIG_UART,
 	115200,
-	921600, // use 0 to skip baud rate change from 115200 to X for debugging purposes
+	0, // use 0 to skip baud rate change from 115200 to X for debugging purposes
 	1,        // flow control
 	NULL,
 };
@@ -133,6 +133,7 @@ void hal_cpu_enable_irqs_and_sleep(void){
 // RX state
 static volatile uint16_t  bytes_to_read = 0;
 static volatile uint8_t * rx_buffer_ptr = 0;
+static volatile int       rx_notify;
 
 // TX state
 static volatile uint16_t  bytes_to_write = 0;
@@ -153,24 +154,32 @@ static void (*cts_irq_handler)(void) = dummy_handler;
 // I didn't see RTS going up automatically up, ever. So, at least for RTS, the automatic management
 // is just a glorified GPIO pin control feature, which provides no benefit, but irritates a lot
 
+// J505:6
+#define DEBUG_PIN_1 PIO_PD16_IDX
+// J505:5
+#define DEBUG_PIN_2 PIO_PD15_IDX
+
 static inline void hal_uart_rts_high(void){
 	if (!simulate_flowcontrol) return;
+	ioport_set_pin_level(DEBUG_PIN_2, IOPORT_PIN_LEVEL_HIGH);
 	BOARD_USART->US_CR = US_CR_RTSEN;
 }
 static inline void hal_uart_rts_low(void){
 	if (!simulate_flowcontrol) return;
+	ioport_set_pin_level(DEBUG_PIN_2, IOPORT_PIN_LEVEL_LOW);
 	BOARD_USART->US_CR = US_CR_RTSDIS;
 }
 
-// J505:6
-// #define DEBUG_PIN_1 PIO_PD16_IDX
-// J505:5
-// #define DEBUG_PIN_2 PIO_PD15_IDX
-
 /**
  */
+static int hal_uart_dma_initialized = 0;
 void hal_uart_dma_init(void)
 {
+	if (hal_uart_dma_initialized){
+		log_info("hal_uart_dma_init already initialized");
+		return;
+	}
+	hal_uart_dma_initialized = 1;
 
 	// debug
 #ifdef DEBUG_PIN_1
@@ -315,11 +324,12 @@ int  hal_uart_dma_set_baud(uint32_t baud){
 }
 
 int  hal_uart_dma_set_flowcontrol(int flowcontrol){
+	log_info("hal_uart_dma_set_flowcontrol %u", flowcontrol);
 	simulate_flowcontrol = flowcontrol;
 	if (flowcontrol){
 		/* Set hardware handshaking mode. */
 		BOARD_USART->US_MR = (BOARD_USART->US_MR & ~US_MR_USART_MODE_Msk) | US_MR_USART_MODE_HW_HANDSHAKING;
-		hal_uart_rts_low();
+		hal_uart_rts_high();
 	} else {
 		/* Set nomal mode. */
 		BOARD_USART->US_MR = (BOARD_USART->US_MR & ~US_MR_USART_MODE_Msk) | US_MR_USART_MODE_NORMAL;
@@ -330,10 +340,6 @@ int  hal_uart_dma_set_flowcontrol(int flowcontrol){
 }
 
 void hal_uart_dma_send_block(const uint8_t *data, uint16_t size){
-
-#ifdef DEBUG_PIN_1
-	ioport_set_pin_level(DEBUG_PIN_1, IOPORT_PIN_LEVEL_HIGH);
-#endif
 
 	tx_notify = 1;
 
@@ -355,7 +361,13 @@ void hal_uart_dma_send_block(const uint8_t *data, uint16_t size){
 
 void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
 
+#ifdef DEBUG_PIN_1
+	ioport_set_pin_level(DEBUG_PIN_1, IOPORT_PIN_LEVEL_HIGH);
+#endif
+
 	hal_uart_rts_low();
+
+	rx_notify = 1;
 
 #ifdef USE_XDMAC_FOR_USART
 	xdmac_channel_get_interrupt_status( XDMAC, XDMA_CH_UART_RX);
@@ -383,7 +395,10 @@ void XDMAC_Handler(void)
 	dma_status = xdmac_channel_get_interrupt_status(XDMAC, XDMA_CH_UART_RX);
 	if (dma_status & XDMAC_CIS_BIS) {
 		hal_uart_rts_high();
-		rx_done_handler();
+		if (rx_notify){
+			rx_notify = 0;
+			rx_done_handler();
+		}
 	}
 }
 #else
@@ -391,7 +406,7 @@ void USART_Handler(void)
 {
 
 #ifdef DEBUG_PIN_2
-	ioport_set_pin_level(DEBUG_PIN_2, IOPORT_PIN_LEVEL_HIGH);
+	// ioport_set_pin_level(DEBUG_PIN_2, IOPORT_PIN_LEVEL_HIGH);
 #endif
 
 	/* Read USART status. */
@@ -406,9 +421,6 @@ void USART_Handler(void)
 			bytes_to_write--;
 		} else {
 
-#ifdef DEBUG_PIN_1
-			ioport_set_pin_level(DEBUG_PIN_1, IOPORT_PIN_LEVEL_LOW);
-#endif
 			// done. disable tx ready interrupt to avoid starvation here
 			usart_disable_interrupt(BOARD_USART, US_IER_TXRDY);
 			if (tx_notify){
@@ -426,10 +438,18 @@ void USART_Handler(void)
 			*rx_buffer_ptr++ = ch;
 			bytes_to_read--;
 			if (bytes_to_read == 0){
+
+#ifdef DEBUG_PIN_1
+			ioport_set_pin_level(DEBUG_PIN_1, IOPORT_PIN_LEVEL_LOW);
+#endif
+
 				// done. disable rx ready interrupt, raise RTS
 				hal_uart_rts_high();
 				usart_disable_interrupt(BOARD_USART, US_IER_RXRDY);
-				rx_done_handler();
+				if (rx_notify){
+					rx_notify = 0;
+					rx_done_handler();
+				}
 			}
 		} else {
 			// shoult not happen, disable irq anyway
@@ -437,7 +457,7 @@ void USART_Handler(void)
 		}
 	}
 #ifdef DEBUG_PIN_2
-	ioport_set_pin_level(DEBUG_PIN_2, IOPORT_PIN_LEVEL_LOW);
+	// ioport_set_pin_level(DEBUG_PIN_2, IOPORT_PIN_LEVEL_LOW);
 #endif
 
 }
@@ -532,7 +552,7 @@ int main(void)
     printf("Phase 1: Download firmware\n");
 
     // phase #2 start main app
-    btstack_chipset_atwilc3000_download_firmware(uart_driver, transport_config.baudrate_main, transport_config.flowcontrol, atwilc3000_fw_data, atwilc3000_fw_size, &phase2);
+    btstack_chipset_atwilc3000_download_firmware(uart_driver,921600, transport_config.flowcontrol, atwilc3000_fw_data, atwilc3000_fw_size, &phase2);
 
 	// go
 	btstack_run_loop_execute();
