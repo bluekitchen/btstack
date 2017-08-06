@@ -73,6 +73,11 @@ for file in os.listdir(examples_embedded):
     # copy example file
     shutil.copyfile(examples_embedded + file, apps_folder + "/main/" + example + ".c")
 
+    # add sco_demo_util.c for audio examples
+    if example in ['hfp_ag_demo','hfp_hf_demo', 'hsp_ag_demo', 'hsp_hf_demo']:
+        shutil.copy(examples_embedded + 'sco_demo_util.c', apps_folder + '/main/')
+        shutil.copy(examples_embedded + 'sco_demo_util.h', apps_folder + '/main/')
+
     # add component.mk file to main folder
     shutil.copyfile(script_path + '/template/main/component.mk', apps_folder + "/main/component.mk")
 
