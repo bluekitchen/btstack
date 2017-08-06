@@ -77,7 +77,6 @@ static void btstack_stdin_task(void *arg){
     do {
     	// read single byte
         uart_read_bytes(CONFIG_CONSOLE_UART_NUM, (uint8_t*) &stdin_character, 1, portMAX_DELAY);
-        printf("Received %c\n", stdin_character);
 		stdin_character_received = 1;
 
 		// request poll
