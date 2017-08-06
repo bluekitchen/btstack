@@ -31,6 +31,10 @@ To get the debug output, run:
 
 You can quit the monitor with CTRL-].
 
+## Configuration
+
+The sdkconfig of the example template disables the original Bluedroid stack by disabling the CONFIG_BLUEDROID_ENABLED kconfig option.
+
 ## Limitations
 
 ### Bug in ESP32 VHCI Implementation
