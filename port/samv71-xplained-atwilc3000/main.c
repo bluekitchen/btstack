@@ -18,7 +18,7 @@
 #include "wilc3000_bt_firmware.h"
 
 // #define USE_XDMAC_FOR_USART
-#define XDMA_CH_UART_TX   0
+#define XDMA_CH_UART_TX  0
 #define XDMA_CH_UART_RX  1
 
 /** All interrupt mask. */
@@ -37,7 +37,7 @@ static btstack_uart_config_t uart_config;
 
 static hci_transport_config_uart_t transport_config = {
 	HCI_TRANSPORT_CONFIG_UART,
-	921600,	  // directly use high baud rate after config
+	2000000,  // directly use high baud rate after config
 	0, 		  // use 0 to skip baud rate change from 115200 to X for debugging purposes
 	1,        // flow control
 	NULL,
@@ -133,13 +133,14 @@ void hal_cpu_enable_irqs_and_sleep(void){
 // RX state
 static volatile uint16_t  bytes_to_read = 0;
 static volatile uint8_t * rx_buffer_ptr = 0;
-static volatile int       rx_notify;
 
 // TX state
 static volatile uint16_t  bytes_to_write = 0;
 static volatile uint8_t * tx_buffer_ptr = 0;
-static volatile int       tx_notify;
 #endif
+
+static volatile int       rx_notify;
+static volatile int       tx_notify;
 
 static int simulate_flowcontrol;
 
