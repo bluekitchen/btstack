@@ -54,8 +54,6 @@
 #include <string.h>   /* memcpy */
 #include "hci.h"
 
-#define HCI_DEFAULT_BAUDRATE 115200
-
 // Address to load firmware
 #define IRAM_START 0x80000000
 
@@ -98,17 +96,17 @@ static uint32_t        fw_offset;
 static uint32_t        fw_baudrate;
 
 // flow control requested
-static int             fw_flowtcontrol;
+static int             fw_flowcontrol;
 
 // flow control active
-static int             flowcontrol;
+static int             atwilc3000_flowcontrol;
 
 static void atwilc3000_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buffer){
     hci_cmd_buffer[0] = 0x53;
     hci_cmd_buffer[1] = 0xfc;
     hci_cmd_buffer[2] = 5;
     little_endian_store_32(hci_cmd_buffer, 3, baudrate);
-    hci_cmd_buffer[7] = flowcontrol;    // use global state
+    hci_cmd_buffer[7] = atwilc3000_flowcontrol;    // use global state
 }
 
 static void atwilc3000_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer){
@@ -130,7 +128,7 @@ static void atwilc3000_log_event(void){
 
 static void atwilc3000_start(void){
     // default after power up
-    flowcontrol = 0;
+    atwilc3000_flowcontrol = 0;
 
     // send HCI Reset
     the_uart_driver->set_block_received(&atwilc3000_w4_command_complete_reset);
@@ -187,7 +185,7 @@ static void atwilc3000_write_memory(void){
     }
 
     // bytes to write
-    log_info("Write pos %u", fw_offset);
+    log_info("Write pos %u", (int) fw_offset);
     uint16_t bytes_to_write = btstack_min((fw_size - fw_offset), FIRMWARE_CHUNK_SIZE);
     // setup write command
     command_buffer[0] = 1;
@@ -235,12 +233,12 @@ static void atwilc3000_configure_uart(btstack_timer_source_t * ts){
     if (fw_baudrate){
         the_uart_driver->set_baudrate(HCI_DEFAULT_BAUDRATE);
     }
-    // send baudrate command to enable flow control (using current baud rate) if requested and supported
-    if (fw_flowtcontrol && the_uart_driver->set_flowcontrol){
-        log_info("Send baudrate command (%u) to enable flow control", HCI_DEFAULT_BAUDRATE);
-        flowcontrol = 1;
+    // send baudrate command to enable flow control (if supported) and/or higher baud rate
+    if ((fw_flowcontrol && the_uart_driver->set_flowcontrol) || (fw_baudrate != HCI_DEFAULT_BAUDRATE)){
+        log_info("Send baudrate command (%u) to enable flow control", (int) fw_baudrate);
+        atwilc3000_flowcontrol = fw_flowcontrol;
         command_buffer[0] = 1;
-        atwilc3000_set_baudrate_command(HCI_DEFAULT_BAUDRATE, &command_buffer[1]);
+        atwilc3000_set_baudrate_command(fw_baudrate, &command_buffer[1]);
         the_uart_driver->set_block_received(&atwilc3000_done);
         the_uart_driver->receive_block(&event_buffer[0], 7);
         atwilc3000_send_command(&command_buffer[0], 9);
@@ -252,9 +250,13 @@ static void atwilc3000_configure_uart(btstack_timer_source_t * ts){
 static void atwilc3000_done(void){
     atwilc3000_log_event();
     // enable our flow control
-    if (flowcontrol){
-        the_uart_driver->set_flowcontrol(flowcontrol);
+    if (atwilc3000_flowcontrol){
+        the_uart_driver->set_flowcontrol(atwilc3000_flowcontrol);
     }
+    if (fw_baudrate){
+        the_uart_driver->set_baudrate(fw_baudrate);
+    }
+
     // done
     download_complete(0);
 }
@@ -267,7 +269,7 @@ void btstack_chipset_atwilc3000_download_firmware(const btstack_uart_block_t * u
     fw_size = da_fw_size;
     fw_offset = 0;
     fw_baudrate = baudrate;
-    fw_flowtcontrol = flowcontrol;
+    fw_flowcontrol = flowcontrol;
 
     int res = the_uart_driver->open();
     if (res) {

@@ -37,8 +37,8 @@ static btstack_uart_config_t uart_config;
 
 static hci_transport_config_uart_t transport_config = {
 	HCI_TRANSPORT_CONFIG_UART,
-	115200,
-	0, // use 0 to skip baud rate change from 115200 to X for debugging purposes
+	921600,	  // directly use high baud rate after config
+	0, 		  // use 0 to skip baud rate change from 115200 to X for debugging purposes
 	1,        // flow control
 	NULL,
 };
@@ -542,8 +542,8 @@ int main(void)
 	// setup UART HAL + Run Loop integration
 	uart_driver = btstack_uart_block_embedded_instance();
 
-    // extract UART config from transport config, but disable flow control
-    uart_config.baudrate    = transport_config.baudrate_init;
+    // extract UART config from transport config, but disable flow control and use default baudrate
+    uart_config.baudrate    = HCI_DEFAULT_BAUDRATE;
     uart_config.flowcontrol = 0;
     uart_config.device_name = transport_config.device_name;
     uart_driver->init(&uart_config);
@@ -552,7 +552,7 @@ int main(void)
     printf("Phase 1: Download firmware\n");
 
     // phase #2 start main app
-    btstack_chipset_atwilc3000_download_firmware(uart_driver,921600, transport_config.flowcontrol, atwilc3000_fw_data, atwilc3000_fw_size, &phase2);
+    btstack_chipset_atwilc3000_download_firmware(uart_driver, transport_config.baudrate_init, transport_config.flowcontrol, atwilc3000_fw_data, atwilc3000_fw_size, &phase2);
 
 	// go
 	btstack_run_loop_execute();

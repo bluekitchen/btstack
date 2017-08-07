@@ -52,6 +52,8 @@ extern "C" {
 #include "btstack_chipset.h"
 #include "btstack_uart_block.h"
 
+#define HCI_DEFAULT_BAUDRATE 115200
+
 /**
  * @brief get chipset instance
  */

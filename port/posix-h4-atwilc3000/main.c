@@ -73,8 +73,8 @@ int btstack_main(int argc, const char * argv[]);
 
 static hci_transport_config_uart_t transport_config = {
     HCI_TRANSPORT_CONFIG_UART,
-    115200,
-    921600,  // main baudrate
+    921600,
+    0,       // main baudrate
     1,       // flow control
     NULL,
 };
@@ -156,8 +156,8 @@ int main(int argc, const char * argv[]){
     transport_config.device_name = "/dev/tty.usbserial-A96PXBJ7";
     uart_driver = btstack_uart_block_posix_instance();
 
-    // extract UART config from transport config, but disable flow control
-    uart_config.baudrate    = transport_config.baudrate_init;
+    // extract UART config from transport config, but disable flow control and use default baudrate
+    uart_config.baudrate    = HCI_DEFAULT_BAUDRATE;
     uart_config.flowcontrol = 0;
     uart_config.device_name = transport_config.device_name;
     uart_driver->init(&uart_config);
@@ -169,7 +169,7 @@ int main(int argc, const char * argv[]){
     printf("Phase 1: Download firmware\n");
 
     // phase #2 start main app
-    btstack_chipset_atwilc3000_download_firmware(uart_driver, transport_config.baudrate_main, transport_config.flowcontrol, atwilc3000_fw_data, atwilc3000_fw_size, &phase2);
+    btstack_chipset_atwilc3000_download_firmware(uart_driver, transport_config.baudrate_init, transport_config.flowcontrol, atwilc3000_fw_data, atwilc3000_fw_size, &phase2);
 
     // go
     btstack_run_loop_execute();    
