@@ -37,7 +37,7 @@
 #
 
 # Path to top level ASF directory relative to this project directory.
-PRJ_PATH = ASF
+PRJ_PATH = ../../ASF
 
 # Target CPU architecture: cortex-m3, cortex-m4
 ARCH = cortex-m7
@@ -47,8 +47,8 @@ PART = samv71q21
 
 # Application target name. Given with suffix .a for library and .elf for a
 # standalone application.
-TARGET_FLASH = getting-started_flash.elf
-TARGET_SRAM = getting-started_sram.elf
+TARGET_FLASH = le_counter_flash.elf
+TARGET_SRAM =  le_counter_sram.elf
 
 # List of C source files.
 CSRCS = \
@@ -86,8 +86,6 @@ INC_PATH = \
        common/services/serial/sam_uart                    \
        common/utils                                       \
        common/utils/stdio/stdio_serial                    \
-       sam/applications/getting-started                   \
-       sam/applications/getting-started/samv71q21_samv71_xplained_ultra \
        sam/boards                                         \
        sam/boards/samv71_xplained_ultra                   \
        sam/drivers/matrix                                 \

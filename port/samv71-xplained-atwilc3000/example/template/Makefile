@@ -48,8 +48,8 @@
 
 # Include the common Makefile, which will also include the project specific
 # config.mk file.
-MAKEFILE_PATH = ASF/sam/utils/make/Makefile.sam.in
+MAKEFILE_PATH = ../../ASF/sam/utils/make/Makefile.sam.in
 include $(MAKEFILE_PATH)
 
-flash: getting-started_flash.elf
+flash: $(TARGET_FLASH)
 	openocd -f interface/cmsis-dap.cfg -f board/atmel_samv71_xplained_ultra.cfg -f upload.cfg
