@@ -5489,6 +5489,16 @@ static inline uint16_t avrcp_subevent_play_status_query_get_avrcp_cid(const uint
 }
 
 /**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOW_PLAYING_INFO_QUERY
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_now_playing_info_query_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
  * @brief Get field goep_cid from event GOEP_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return goep_cid

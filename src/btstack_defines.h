@@ -1701,6 +1701,14 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_PLAY_STATUS_QUERY                                    0x14
 
 /**
+ * @format 12
+ * @param subevent_code
+ * @param avrcp_cid
+ */
+#define AVRCP_SUBEVENT_NOW_PLAYING_INFO_QUERY                               0x15
+
+
+/**
  * @format 121BH1
  * @param subevent_code
  * @param goep_cid
