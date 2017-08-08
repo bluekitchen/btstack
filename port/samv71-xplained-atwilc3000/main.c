@@ -1,3 +1,5 @@
+#define __BTSTACK_FILE__ "main.c"
+
 #include "asf.h"
 #include "stdio_serial.h"
 #include "conf_board.h"
@@ -529,10 +531,9 @@ static void phase2(int status){
 
     // init HCI
     const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
-    // const btstack_link_key_db_t * link_key_db = btstack_link_key_db_fs_instance();
     hci_init(transport, (void*) &transport_config);
     hci_set_chipset(btstack_chipset_atwilc3000_instance());
-    // hci_set_link_key_db(link_key_db);
+    hci_set_link_key_db(btstack_link_key_db_memory_instance());
     
     // setup app
     btstack_main(0, NULL);
@@ -568,7 +569,7 @@ int main(void)
 	btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 
 	// enable full log output while porting
-	hci_dump_open(NULL, HCI_DUMP_STDOUT);
+	// hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
 	// setup UART HAL + Run Loop integration
 	uart_driver = btstack_uart_block_embedded_instance();

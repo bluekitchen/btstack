@@ -176,6 +176,7 @@ CSRCS += \
 	${BTSTACK_ROOT}/src/classic/hfp_gsm_model.c \
 	${BTSTACK_ROOT}/src/classic/hsp_hs.c \
 	${BTSTACK_ROOT}/src/classic/hsp_ag.c \
+	${BTSTACK_ROOT}/src/classic/btstack_link_key_db_memory.c \
 	${BTSTACK_ROOT}/src/classic/goep_client.c \
 	${BTSTACK_ROOT}/src/classic/obex_iterator.c \
 	${BTSTACK_ROOT}/src/classic/pbap_client.c \
