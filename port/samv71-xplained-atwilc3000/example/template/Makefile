@@ -46,10 +46,19 @@
 # \asf_license_stop
 #
 
+BTSTACK_ROOT_MAKEFILE=../../../..
+
+# enforce .gatt compilation if needed
+all: le_counter.h
+
+le_counter.h: ${BTSTACK_ROOT_MAKEFILE}/example/le_counter.gatt
+	python ${BTSTACK_ROOT_MAKEFILE}/tool/compile_gatt.py $< $@ 
+
+flash: $(TARGET_FLASH)
+	openocd -f interface/cmsis-dap.cfg -f board/atmel_samv71_xplained_ultra.cfg -f upload.cfg
+
 # Include the common Makefile, which will also include the project specific
 # config.mk file.
 MAKEFILE_PATH = ../../ASF/sam/utils/make/Makefile.sam.in
 include $(MAKEFILE_PATH)
 
-flash: $(TARGET_FLASH)
-	openocd -f interface/cmsis-dap.cfg -f board/atmel_samv71_xplained_ultra.cfg -f upload.cfg
