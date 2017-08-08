@@ -1834,7 +1834,10 @@ static int l2cap_send_open_failed_on_hci_disconnect(l2cap_channel_t * channel){
         case L2CAP_STATE_INVALID:
         case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
             return 0;
+        // no default here, to get a warning about new states
     }
+    // still, the compiler insists on a return value
+    return 0;
 }
 
 static void l2cap_handle_hci_disconnect_event(l2cap_channel_t * channel){
