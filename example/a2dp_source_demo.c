@@ -92,7 +92,7 @@ static const int16_t sine_int16[] = {
 -19260,  -17557,  -15786,  -13952,  -12062,  -10126,   -8149,   -6140,   -4107,   -2057,
 };
 
-static char * device_name = "A2DP Source BTstack";
+static const char * device_name = "A2DP Source BTstack";
 
 #ifdef HAVE_BTSTACK_STDIN
 // mac 2011:    static const char * device_addr_string = "04:0C:CE:E4:85:D3";
@@ -216,7 +216,7 @@ static void produce_audio(int16_t * pcm_buffer, int num_samples){
 static int a2dp_demo_fill_sbc_audio_buffer(a2dp_media_sending_context_t * context){
     // perform sbc encodin
     int total_num_bytes_read = 0;
-    int num_audio_samples_per_sbc_buffer = btstack_sbc_encoder_num_audio_frames();
+    unsigned int num_audio_samples_per_sbc_buffer = btstack_sbc_encoder_num_audio_frames();
     while (context->samples_ready >= num_audio_samples_per_sbc_buffer
         && (context->max_media_payload_size - context->sbc_storage_count) >= btstack_sbc_encoder_sbc_buffer_length()){
 

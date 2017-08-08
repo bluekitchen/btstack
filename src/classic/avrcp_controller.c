@@ -490,7 +490,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 
                 case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:{
                     uint8_t num_attributes = packet[pos++];
-                    int i;
+                    unsigned int i;
                     struct item {
                         uint16_t len;
                         uint8_t  * value;

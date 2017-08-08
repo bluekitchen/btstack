@@ -142,7 +142,7 @@ FILE * msbc_file_out;
 
 int num_samples_to_write;
 int num_audio_frames;
-int phase;
+unsigned int phase;
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 
@@ -161,8 +161,8 @@ static const int16_t sine_int16_at_16000hz[] = {
 };
 
 // 8 kHz samples for CVSD/SCO packets in little endian
-static void sco_demo_sine_wave_int16_at_8000_hz_little_endian(int num_samples, int16_t * data){
-    int i;
+static void sco_demo_sine_wave_int16_at_8000_hz_little_endian(unsigned int num_samples, int16_t * data){
+    unsigned int i;
     for (i=0; i < num_samples; i++){
         int16_t sample = sine_int16_at_16000hz[phase];
         little_endian_store_16((uint8_t *) data, i * 2, sample);
@@ -176,8 +176,8 @@ static void sco_demo_sine_wave_int16_at_8000_hz_little_endian(int num_samples, i
 
 // 16 kHz samples for mSBC encoder in host endianess
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
-static void sco_demo_sine_wave_int16_at_16000_hz_host_endian(int num_samples, int16_t * data){
-    int i;
+static void sco_demo_sine_wave_int16_at_16000_hz_host_endian(unsigned int num_samples, int16_t * data){
+    unsigned int i;
     for (i=0; i < num_samples; i++){
         data[i] = sine_int16_at_16000hz[phase++];
         if (phase >= (sizeof(sine_int16_at_16000hz) / sizeof(int16_t))){

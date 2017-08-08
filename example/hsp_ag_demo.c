@@ -235,8 +235,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             break;
                         case HSP_SUBEVENT_HS_COMMAND:{
                             memset(hs_cmd_buffer, 0, sizeof(hs_cmd_buffer));
-                            int cmd_length = hsp_subevent_hs_command_get_value_length(event);
-                            int size = cmd_length <= sizeof(hs_cmd_buffer)? cmd_length : sizeof(hs_cmd_buffer); 
+                            unsigned int cmd_length = hsp_subevent_hs_command_get_value_length(event);
+                            unsigned int size = cmd_length <= sizeof(hs_cmd_buffer)? cmd_length : sizeof(hs_cmd_buffer); 
                             memcpy(hs_cmd_buffer, hsp_subevent_hs_command_get_value(event), size - 1);
                             printf("Received custom command: \"%s\". \nExit code or call hsp_ag_send_result.\n", hs_cmd_buffer);
                             break;
