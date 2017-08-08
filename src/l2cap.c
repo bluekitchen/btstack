@@ -2456,7 +2456,7 @@ static void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t *
                         // channel closed
                         channel->state = L2CAP_STATE_CLOSED;
                         // map l2cap connection response result to BTstack status enumeration
-                        l2cap_emit_channel_opened(channel, L2CAP_CONNECTION_RESPONSE_RESULT_ERTM_NOT_SUPPORTD);
+                        l2cap_emit_channel_opened(channel, L2CAP_CONNECTION_RESPONSE_RESULT_ERTM_NOT_SUPPORTED);
                         // discard channel
                         btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
                         btstack_memory_l2cap_channel_free(channel);
