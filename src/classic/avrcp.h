@@ -54,6 +54,7 @@ extern "C" {
 #endif
 
 #define BT_SIG_COMPANY_ID 0x001958
+#define AVRCP_MEDIA_ATTR_COUNT 7
 
 typedef enum {
     AVRCP_STATUS_INVALID_COMMAND = 0,           // sent if TG received a PDU that it did not understand.
@@ -109,8 +110,6 @@ typedef enum {
     AVRCP_MEDIA_ATTR_GENRE,
     AVRCP_MEDIA_ATTR_SONG_LENGTH
 } avrcp_media_attribute_id_t;
-
-#define AVRCP_MEDIA_ATTR_COUNT 7
 
 typedef enum {
     AVRCP_PDU_ID_GET_CAPABILITIES = 0x10,
@@ -237,6 +236,11 @@ typedef enum {
 } avctp_connection_state_t;
 
 typedef struct {
+    uint16_t len;
+    uint8_t  * value;
+} avrcp_now_playing_info_item_t;
+
+typedef struct {
     btstack_linked_item_t    item;
     bd_addr_t remote_addr;
     uint16_t l2cap_signaling_cid;
@@ -258,6 +262,15 @@ typedef struct {
     uint16_t notifications_enabled;
     uint16_t notifications_to_register;
     uint16_t notifications_to_deregister; 
+
+    avrcp_now_playing_info_item_t now_playing_info[AVRCP_MEDIA_ATTR_COUNT];
+    uint32_t song_length_ms;
+    int total_tracks;
+    int track_nr;
+    // used for fragmentation
+    int offset;
+    int total_num_bytes;
+    uint8_t now_playing_info_response;
 } avrcp_connection_t;
 
 typedef enum {
@@ -279,6 +292,10 @@ typedef enum{
     AVRCP_CONTROLLER = 0,
     AVRCP_TARGET
 } avrcp_role_t;
+
+typedef enum {
+    UTF8 = 106
+} rfc2978_charset_mib_enumid_t;
 
 typedef struct {
     avrcp_role_t role;
