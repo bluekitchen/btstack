@@ -82,6 +82,15 @@ uint8_t avrcp_target_supported_events(uint16_t avrcp_cid, uint8_t capabilities_l
 
 uint8_t avrcp_target_play_status(uint16_t avrcp_cid, uint32_t song_length_ms, uint32_t song_position_ms, avrcp_play_status_t status); 
 
+uint8_t avrcp_target_set_now_playing_title(uint16_t avrcp_cid, const char * title);
+uint8_t avrcp_target_set_now_playing_artist(uint16_t avrcp_cid, const char * artist);
+uint8_t avrcp_target_set_now_playing_album(uint16_t avrcp_cid, const char * album);
+uint8_t avrcp_target_set_now_playing_genre(uint16_t avrcp_cid, const char * genre);
+uint8_t avrcp_target_set_now_playing_song_length_ms(uint16_t avrcp_cid, const uint32_t song_length_ms);
+uint8_t avrcp_target_set_now_playing_total_tracks(uint16_t avrcp_cid, const int total_tracks);
+uint8_t avrcp_target_set_now_playing_track_nr(uint16_t avrcp_cid, const int track_nr);
+uint8_t avrcp_target_now_playing_info(uint16_t avrcp_cid);
+
 /* API_END */
 #if defined __cplusplus
 }

@@ -611,6 +611,7 @@ void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
         
         case L2CAP_EVENT_CHANNEL_CLOSED:
             // data: event (8), len(8), channel (16)
+            printf("L2CAP_EVENT_CHANNEL_CLOSED \n");
             local_cid = l2cap_event_channel_closed_get_local_cid(packet);
             connection = get_avrcp_connection_for_l2cap_signaling_cid(local_cid, context);
             if (connection){

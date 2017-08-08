@@ -156,9 +156,9 @@ typedef struct {
 // mac 2011: static bd_addr_t remote = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
 // pts: static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
 // mac 2013: 
-// mac 2013: 
-static const char * device_addr_string = "84:38:35:65:d1:15";
-// iPhone 5S: static const char * device_addr_string = "54:E4:3A:26:A2:39";
+// mac 2013: static const char * device_addr_string = "84:38:35:65:d1:15";
+// iPhone 5S: 
+static const char * device_addr_string = "54:E4:3A:26:A2:39";
 #endif
 
 // bt dongle: -u 02-02 static bd_addr_t remote = {0x00, 0x02, 0x72, 0xDC, 0x31, 0xC1};

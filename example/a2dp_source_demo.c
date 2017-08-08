@@ -96,11 +96,11 @@ static char * device_name = "A2DP Source BTstack";
 
 #ifdef HAVE_BTSTACK_STDIN
 // mac 2011:    static const char * device_addr_string = "04:0C:CE:E4:85:D3";
-// pts:         static const char * device_addr_string = "00:1B:DC:08:0A:A5";
+// pts:         
+static const char * device_addr_string = "00:1B:DC:08:0A:A5";
 // mac 2013:    static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:  static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
-// minijambox: 
-static const char * device_addr_string = "00:21:3C:AC:F7:38";
+// minijambox:  static const char * device_addr_string = "00:21:3C:AC:F7:38";
 // head phones: static const char * device_addr_string = "00:18:09:28:50:18";
 // bt dongle:   static const char * device_addr_string = "00:15:83:5F:9D:46";
 #endif
@@ -134,7 +134,6 @@ static const uint8_t subunit_info[] = {
 };
 
 static uint32_t company_id = 0x112233;
-
 static uint8_t companies_num = 1;
 static uint8_t companies[] = {
     0x00, 0x19, 0x58 //BT SIG registered CompanyID
@@ -158,11 +157,22 @@ static uint8_t events[] = {
 };
 
 typedef struct {
+    char title[40];
+    char artist[40];
+    char album[40];
+    char genre[40];
+    uint32_t song_length_ms;
+    int total_tracks;
+    int track_nr;
+} avrcp_now_playing_info_t;
+
+typedef struct {
     avrcp_play_status_t status;
     uint32_t song_length_ms;   // 0xFFFFFFFF if not supported
     uint32_t song_position_ms; // 0xFFFFFFFF if not supported
 } avrcp_play_status_info_t;
 
+avrcp_now_playing_info_t now_playing_info;
 avrcp_play_status_info_t play_info;
 
 /* AVRCP Target context END */
@@ -377,7 +387,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             play_info.song_length_ms = 0xFFFFFFFF;
             play_info.song_position_ms = 0xFFFFFFFF;
             play_info.status = AVRCP_PLAY_STATUS_ERROR;
-            
+
             avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
             printf("Channel successfully opened: %s, avrcp_cid 0x%02x\n", bd_addr_to_str(event_addr), local_cid);
             return;
@@ -392,12 +402,22 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
         case AVRCP_SUBEVENT_EVENT_IDS_QUERY:
             avrcp_target_supported_events(avrcp_cid, events_num, events, sizeof(events));
             break;
-            
         case AVRCP_SUBEVENT_COMPANY_IDS_QUERY:
             avrcp_target_supported_companies(avrcp_cid, companies_num, companies, sizeof(companies));
             break;
         case AVRCP_SUBEVENT_PLAY_STATUS_QUERY:
             avrcp_target_play_status(avrcp_cid, play_info.song_length_ms, play_info.song_position_ms, play_info.status);            
+            break;
+        case AVRCP_SUBEVENT_NOW_PLAYING_INFO_QUERY:
+            avrcp_target_set_now_playing_title(avrcp_cid, now_playing_info.title);
+            avrcp_target_set_now_playing_artist(avrcp_cid, now_playing_info.artist);
+            avrcp_target_set_now_playing_album(avrcp_cid, now_playing_info.album);
+            avrcp_target_set_now_playing_genre(avrcp_cid, now_playing_info.genre);
+            avrcp_target_set_now_playing_track_nr(avrcp_cid, now_playing_info.track_nr);
+            avrcp_target_set_now_playing_total_tracks(avrcp_cid, now_playing_info.total_tracks);
+            avrcp_target_set_now_playing_song_length_ms(avrcp_cid, now_playing_info.song_length_ms);
+
+            avrcp_target_now_playing_info(avrcp_cid);
             break;
         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
             printf("Channel released: avrcp_cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
@@ -509,6 +529,15 @@ int btstack_main(int argc, const char * argv[]){
         hxcmod_load(&mod_context, (void *) &mod_data, mod_len);
         printf("loaded mod '%s', size %u\n", mod_name, mod_len);
     }
+    
+    // For PTS test
+    memcpy(now_playing_info.title,  "Title  1", 8);
+    memcpy(now_playing_info.artist, "Artist 1", 8);
+    memcpy(now_playing_info.album,  "Album  1", 8);
+    memcpy(now_playing_info.genre,  "Genre  1", 8);
+    now_playing_info.track_nr = 1;
+    now_playing_info.total_tracks = 10;
+    now_playing_info.song_length_ms = 3655;
 
 #ifdef HAVE_BTSTACK_STDIN
     // parse human readable Bluetooth address
