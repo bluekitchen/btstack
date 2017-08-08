@@ -59,12 +59,17 @@ Broadcom USB Dongles | Dual mode | USB            | Yes          | Yes          
 CSR UART             | Dual mode | H4, H5, BCSP   | Rarely       | No (didn't work) | No     |         No           | csr            |
 CSR USB Dongles      | Dual mode | USB            | Mostly       | Yes              | No     |         No           | csr            |
 Dialog DA14581       | LE        | H4, SPI        | No           | n.a.             | No     |         No           | da14581        | Official HCI firmware included in BTstack
+Espressif ESP32      | Dual mode | VHCI           | Yes          | Probably         | Yes    |        Yes           |                | SoC with Bluetooth and Wifi
 EM 9301              | LE        | SPI, H4        | No           | n.a.             | No     |         No           | em9301         | Custom HCI SPI implementation
 EM 9304              | LE        | SPI, H4        | No           | n.a.             | Yes    |        Yes           | em9301         | Custom HCI SPI implementation
 Nordic nRF           | LE        | H4             | Fixed Random | n.a.             | Yes    |        Yes           |                | Requires custom HCI firmware
 STM STLC2500D        | Classic   | H4             | No           | No (didn't try)  | n.a    |         n.a.         | stlc2500d      | Custom deep sleep management not supported
 Toshiba TC35661      | Dual mode | H4             | No           | No (didn't try)  | No     |         No           | tc3566         | HCI version not tested. See below
 TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL | Yes          | Yes              | No     |    Yes for CC256XC   | cc256x         | Also WL185x, WL187x, and WL189x
+
+esp32thing: 24:0A:C4:00:8B:C4
+nina1: 18:FE:34:6D:1B:D2
+nina2: 18:FE:34:6D:17:66
 
 **Notes**:
 
@@ -138,6 +143,10 @@ It does not implement the Data Length Extension or supports multiple concurrent 
 **Baud rate**: The baud rate is fixed at 115200 with the provided firmware. A higher baud rate could be achieved by re-compiling the HCI firmware using Dialog's HCI SDK.
 
 **BTstack integration**: *btstack_chipset_da14581.c* contains the code to download the provided HCI firmware into the SRAM of the DA14581. After that, it can be used as any other HCI chipset.
+
+## Espressif ESP32
+
+The ESP32 is a SoC with a built-in Dual mode Bluetooth and Wifi radio. The HCI Controller is implemented in software and accessed via a so called Virtual HCI (VHCI) interface. It supports both LE Data Length Extensions (DLE) as well as multiple LE roles. Flow control between the VHCI and BTstack is problematic as there's no way to stop the VHCI from delivering packets. BTstack impelemts the Host Controller to Host Flow Control to deal with this. Right now, this works for HCI Events and Classic ACL packets but not for LE ACL packets. Espressif is working on a solution for this: https://github.com/espressif/esp-idf/issues/644
 
 ## EM Microelectronic Marin
 
