@@ -51,6 +51,8 @@ void SysTick_Handler(void)
 	tick_handler();
 }
 
+// Debug console Output
+
 /**
  *  Configure UART console.
  */
@@ -71,6 +73,34 @@ static void configure_console(void)
 	/* Configure console UART. */
 	sysclk_enable_peripheral_clock(CONSOLE_UART_ID);
 	stdio_serial_init(CONF_UART, &uart_serial_options);
+}
+
+// Debug console Input
+
+#include "btstack_stdin.h"
+
+static void (*stdin_handler)(char c);
+static btstack_data_source_t stdin_data_source;
+
+static void btstack_stdin_process(struct btstack_data_source *ds, btstack_data_source_callback_type_t callback_type){
+	// try to read from console
+	uint32_t stdin_character;
+	uint32_t res = usart_read(CONF_UART, &stdin_character);
+	if (res) return;
+
+	if (stdin_handler){
+		(*stdin_handler)(stdin_character & 0xff);
+	}
+}
+
+void btstack_stdin_setup(void (*handler)(char c)){
+	// set handler
+	stdin_handler = handler;
+
+	// set up polling data_source
+	btstack_run_loop_set_data_source_handler(&stdin_data_source, &btstack_stdin_process);
+	btstack_run_loop_enable_data_source_callbacks(&stdin_data_source, DATA_SOURCE_CALLBACK_POLL);
+	btstack_run_loop_add_data_source(&stdin_data_source);
 }
 
 // [main_console_configure]
