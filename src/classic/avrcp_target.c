@@ -41,6 +41,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "btstack.h"
 #include "classic/avrcp.h"
@@ -90,7 +91,7 @@ static void avrcp_target_emit_respond_vendor_dependent_query(btstack_packet_hand
 static uint16_t avrcp_target_pack_single_element_attribute_number(uint8_t * packet, uint16_t size, uint16_t pos, avrcp_media_attribute_id_t attr_id, uint32_t value){
     UNUSED(size);
     if ((attr_id < 1) || (attr_id > AVRCP_MEDIA_ATTR_COUNT)) return 0;
-    uint16_t attr_value_length = sprintf((char *)(packet+pos+8), "%u", value);
+    uint16_t attr_value_length = sprintf((char *)(packet+pos+8), "%0" PRIu32, value);
     big_endian_store_32(packet, pos, attr_id); 
     pos += 4;
     big_endian_store_16(packet, pos, UTF8);

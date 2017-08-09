@@ -89,6 +89,8 @@ extern "C" {
 
 #ifndef OI_CPU_TYPE
 
+// to avoid warnigns below
+#define OI_CPU_TYPE 0
 
 #if 0
 / #error "OI_CPU_TYPE type not defined"
@@ -96,16 +98,16 @@ extern "C" {
 
 // BK
 
-/** @name CPU/compiler-dependent primitive data type definitions for SH-3 processor family
+/** @name CPU/compiler-dependent primitive data type definitions 
  *  @{
  */
 
-typedef int8_t     OI_INT8;   /**< 8-bit signed integer values use native signed character data type for SH-3 processor. */
-typedef int16_t    OI_INT16;  /**< 16-bit signed integer values use native signed short integer data type for SH-3 processor. */
-typedef int32_t     OI_INT32;  /**< 32-bit signed integer values use native signed long integer data type for SH-3 processor. */
-typedef uint8_t   OI_UINT8;  /**< 8-bit unsigned integer values use native unsigned character data type for SH-3 processor. */
-typedef uint16_t  OI_UINT16; /**< 16-bit unsigned integer values use native unsigned short integer data type for SH-3 processor. */
-typedef uint32_t   OI_UINT32; /**< 32-bit unsigned integer values use native unsigned long integer data type for SH-3 processor. */
+typedef int8_t     OI_INT8; 
+typedef int16_t    OI_INT16;  
+typedef int32_t    OI_INT32;
+typedef uint8_t    OI_UINT8;  
+typedef uint16_t   OI_UINT16; 
+typedef uint32_t   OI_UINT32;
 
 typedef OI_UINT32 OI_ELEMENT_UNION; /**< Type for first element of a union to support all data types up to pointer width. */  
 

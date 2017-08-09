@@ -161,11 +161,11 @@ static const int16_t sine_int16_at_16000hz[] = {
 };
 
 // 8 kHz samples for CVSD/SCO packets in little endian
-static void sco_demo_sine_wave_int16_at_8000_hz_little_endian(unsigned int num_samples, int16_t * data){
+static void sco_demo_sine_wave_int16_at_8000_hz_little_endian(unsigned int num_samples, uint8_t * data){
     unsigned int i;
     for (i=0; i < num_samples; i++){
         int16_t sample = sine_int16_at_16000hz[phase];
-        little_endian_store_16((uint8_t *) data, i * 2, sample);
+        little_endian_store_16(data, i * 2, sample);
         // ony use every second sample from 16khz table to get 8khz
         phase += 2;
         if (phase >= (sizeof(sine_int16_at_16000hz) / sizeof(int16_t))){
@@ -600,7 +600,7 @@ void sco_demo_send(hci_con_handle_t sco_handle){
 #endif
     {
         const int audio_samples_per_packet = sco_payload_length / CVSD_BYTES_PER_FRAME;  
-        sco_demo_sine_wave_int16_at_8000_hz_little_endian(audio_samples_per_packet, (int16_t *) (sco_packet+3));
+        sco_demo_sine_wave_int16_at_8000_hz_little_endian(audio_samples_per_packet, &sco_packet[3]);
     }
 #endif
 

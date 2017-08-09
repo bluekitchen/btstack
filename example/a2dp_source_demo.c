@@ -96,11 +96,11 @@ static const char * device_name = "A2DP Source BTstack";
 
 #ifdef HAVE_BTSTACK_STDIN
 // mac 2011:    static const char * device_addr_string = "04:0C:CE:E4:85:D3";
-// pts:         
-static const char * device_addr_string = "00:1B:DC:08:0A:A5";
+// pts:         static const char * device_addr_string = "00:1B:DC:08:0A:A5";
 // mac 2013:    static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:  static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
-// minijambox:  static const char * device_addr_string = "00:21:3C:AC:F7:38";
+// minijambox:  
+static const char * device_addr_string = "00:21:3C:AC:F7:38";
 // head phones: static const char * device_addr_string = "00:18:09:28:50:18";
 // bt dongle:   static const char * device_addr_string = "00:15:83:5F:9D:46";
 #endif
@@ -220,10 +220,10 @@ static int a2dp_demo_fill_sbc_audio_buffer(a2dp_media_sending_context_t * contex
     while (context->samples_ready >= num_audio_samples_per_sbc_buffer
         && (context->max_media_payload_size - context->sbc_storage_count) >= btstack_sbc_encoder_sbc_buffer_length()){
 
-        uint8_t pcm_frame[256*BYTES_PER_AUDIO_SAMPLE];
+        int16_t pcm_frame[256*NUM_CHANNELS];
 
-        produce_audio((int16_t *) pcm_frame, num_audio_samples_per_sbc_buffer);
-        btstack_sbc_encoder_process_data((int16_t *) pcm_frame);
+        produce_audio(pcm_frame, num_audio_samples_per_sbc_buffer);
+        btstack_sbc_encoder_process_data(pcm_frame);
         
         uint16_t sbc_frame_size = btstack_sbc_encoder_sbc_buffer_length(); 
         uint8_t * sbc_frame = btstack_sbc_encoder_sbc_buffer();
