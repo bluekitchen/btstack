@@ -451,23 +451,23 @@ static void show_usage(void){
 }
 
 static void stdin_process(char cmd){
+    uint8_t status = ERROR_CODE_SUCCESS;
     switch (cmd){
         case 'b':
             printf(" - Create AVDTP Source connection to addr %s.\n", bd_addr_to_str(device_addr));
-            a2dp_source_establish_stream(device_addr, media_tracker.local_seid, &media_tracker.a2dp_cid);
+            status = a2dp_source_establish_stream(device_addr, media_tracker.local_seid, &media_tracker.a2dp_cid);
             break;
         case 'B':
             printf(" - AVDTP Source Disconnect\n");
-            a2dp_source_disconnect(media_tracker.a2dp_cid);
+            status = a2dp_source_disconnect(media_tracker.a2dp_cid);
             break;
         case 'c':
             printf(" - Create AVRCP Target connection to addr %s.\n", bd_addr_to_str(device_addr));
-            avrcp_target_connect(device_addr, &avrcp_cid);
-            printf(" assigned avrcp cid 0x%02x\n", avrcp_cid);
+            status = avrcp_target_connect(device_addr, &avrcp_cid);
             break;
         case 'C':
             printf(" - AVRCP Target disconnect\n");
-            avrcp_target_disconnect(avrcp_cid);
+            status = avrcp_target_disconnect(avrcp_cid);
             break;
 
         case '\n':
@@ -477,21 +477,24 @@ static void stdin_process(char cmd){
         case 'x':
             printf("Playing sine.\n");
             data_source = STREAM_SINE;
-            a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
+            status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
         case 'z':
             printf("Playing mod.\n");
             data_source = STREAM_MOD;
-            a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
+            status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
         case 'p':
             printf("Pause stream.\n");
-            a2dp_source_pause_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
+            status = a2dp_source_pause_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
         
         default:
             show_usage();
-            break;
+            return;
+    }
+    if (status != ERROR_CODE_SUCCESS){
+        printf("Could not perform command, status 0x%2x\n", status);
     }
 }
 #endif
@@ -507,7 +510,12 @@ int btstack_main(int argc, const char * argv[]){
     a2dp_source_init();
     a2dp_source_register_packet_handler(&packet_handler);
 
-    media_tracker.local_seid = a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
+    avdtp_stream_endpoint_t * local_stream_endpoint = a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
+    if (!local_stream_endpoint){
+        printf("A2DP source demo: not enough memory to create local stream endpoint\n");
+        return 1;
+    }
+    media_tracker.local_seid = avdtp_local_seid(local_stream_endpoint);
 
     // Initialize AVRCP Target
     avrcp_target_init();

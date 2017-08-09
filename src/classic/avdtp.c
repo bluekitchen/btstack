@@ -95,10 +95,14 @@ uint8_t avdtp_connect(bd_addr_t remote, avdtp_sep_type_t query_role, avdtp_conte
     avdtp_connection_t * connection = avdtp_connection_for_bd_addr(remote, avdtp_context);
     if (!connection){
         connection = avdtp_create_connection(remote, avdtp_context);
+        if (!connection){
+            log_error("avdtp: not enough memory to create connection");
+            return BTSTACK_MEMORY_ALLOC_FAILED;
+        }
     }
     if (connection->state != AVDTP_SIGNALING_CONNECTION_IDLE){
         log_error("avdtp_connect: sink in wrong state,");
-        return BTSTACK_MEMORY_ALLOC_FAILED;
+        return AVDTP_CONNECTION_IN_WRONG_STATE;
     } 
 
     if (!avdtp_cid) return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
@@ -242,6 +246,10 @@ void avdtp_handle_can_send_now(avdtp_connection_t * connection, uint16_t l2cap_c
 
 avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, avdtp_context_t * context){
     avdtp_connection_t * connection = btstack_memory_avdtp_connection_get();
+    if (!connection){
+        log_error("avdtp: not enough memory to create connection");
+        return NULL;
+    }
     memset(connection, 0, sizeof(avdtp_connection_t));
     connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
     connection->initiator_transaction_label = avdtp_get_next_initiator_transaction_label(context);
@@ -253,6 +261,10 @@ avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, avdtp_contex
 
 avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type, avdtp_context_t * context){
     avdtp_stream_endpoint_t * stream_endpoint = btstack_memory_avdtp_stream_endpoint_get();
+    if (!stream_endpoint){
+        log_error("avdtp: not enough memory to create stream endpoint");
+        return NULL;
+    }
     memset(stream_endpoint, 0, sizeof(avdtp_stream_endpoint_t));
     stream_endpoint->sep.seid = avdtp_get_next_local_seid(context);
     stream_endpoint->sep.media_type = media_type;

@@ -678,7 +678,8 @@ int btstack_main(int argc, const char * argv[]){
     avdtp_source_init(&a2dp_source_context);
     avdtp_source_register_packet_handler(&packet_handler);
 
-    media_tracker.local_seid = a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, (uint8_t *)media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), (uint8_t *)media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
+    avdtp_stream_endpoint_t * local_stream_endpoint = a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, (uint8_t *)media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), (uint8_t *)media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
+    media_tracker.local_seid = avdtp_local_seid(local_stream_endpoint);
     media_tracker.remote_seid = 1;
 
     // Initialize SDP 

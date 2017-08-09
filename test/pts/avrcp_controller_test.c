@@ -514,6 +514,11 @@ int btstack_main(int argc, const char * argv[]){
     avdtp_sink_register_packet_handler(&packet_handler);
 
     local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
+    if (!local_stream_endpoint) {
+        printf("AVRCP Controller/AVDTP Sink: not enough memory to create local_stream_endpoint\n");
+        return 1;
+    }
+
     local_stream_endpoint->sep.seid = 1;
     avdtp_sink_register_media_transport_category(local_stream_endpoint->sep.seid);
     avdtp_sink_register_media_codec_category(local_stream_endpoint->sep.seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));

@@ -172,17 +172,20 @@ void a2dp_sink_init(void){
     l2cap_register_service(&packet_handler, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, LEVEL_0);
 }
 
-uint8_t a2dp_sink_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, 
+avdtp_stream_endpoint_t * a2dp_sink_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, 
     uint8_t * codec_capabilities, uint16_t codec_capabilities_len,
     uint8_t * media_codec_info, uint16_t media_codec_info_len){
     avdtp_stream_endpoint_t * local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, media_type);
+    if (!local_stream_endpoint){
+        return NULL;
+    }
     avdtp_sink_register_media_transport_category(avdtp_stream_endpoint_seid(local_stream_endpoint));
     avdtp_sink_register_media_codec_category(avdtp_stream_endpoint_seid(local_stream_endpoint), media_type, media_codec_type, 
         codec_capabilities, codec_capabilities_len);
     local_stream_endpoint->remote_configuration.media_codec.media_codec_information     = media_codec_info;
     local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = media_codec_info_len;
                            
-    return local_stream_endpoint->sep.seid;
+    return local_stream_endpoint;
 }
 
 uint8_t a2dp_sink_establish_stream(bd_addr_t bd_addr, uint8_t local_seid, uint16_t * avdtp_cid){
