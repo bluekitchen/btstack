@@ -565,8 +565,6 @@ void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            // connection closed -> quit test app
-            // status = hci_event_disconnection_complete_get_status(packet);
             avrcp_emit_connection_closed(context->avrcp_callback, 0);
             break;
         case L2CAP_EVENT_INCOMING_CONNECTION:

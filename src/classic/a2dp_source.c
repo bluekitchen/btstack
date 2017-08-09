@@ -200,8 +200,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     switch (packet[2]){
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
             avdtp_subevent_signaling_connection_established_get_bd_addr(packet, address);
-            if (memcmp(address, &sc.remote_addr, 6) != 0) break;
-
             cid = avdtp_subevent_signaling_connection_established_get_avdtp_cid(packet);
             status = avdtp_subevent_signaling_connection_established_get_status(packet);
             if (status != 0){
@@ -218,7 +216,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
         
         case AVDTP_SUBEVENT_SIGNALING_SEP_FOUND:
-            // TODO check cid
             if (app_state != A2DP_W2_DISCOVER_SEPS) return;
             sep.seid = avdtp_subevent_signaling_sep_found_get_remote_seid(packet);
             sep.in_use = avdtp_subevent_signaling_sep_found_get_in_use(packet);
@@ -228,7 +225,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:{
-            // TODO check cid
             if (!sc.local_stream_endpoint) return;
             uint8_t sampling_frequency = avdtp_choose_sbc_sampling_frequency(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(packet));
             uint8_t channel_mode = avdtp_choose_sbc_channel_mode(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(packet));

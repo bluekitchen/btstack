@@ -271,8 +271,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     switch (packet[2]){
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
             avdtp_subevent_signaling_connection_established_get_bd_addr(packet, address);
-            if (memcmp(address, &sc.remote_addr, 6) != 0) break;
-
             cid = avdtp_subevent_signaling_connection_established_get_avdtp_cid(packet);
             status = avdtp_subevent_signaling_connection_established_get_status(packet);
             if (status != 0){
@@ -280,7 +278,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 a2dp_streaming_emit_connection_established(a2dp_sink_context.a2dp_callback, cid, 0, 0, status);
                 break;
             }
-
             app_state = A2DP_CONNECTED;
             log_info("AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED, avdtp cid 0x%02x ---", cid);
             break;
