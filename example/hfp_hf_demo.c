@@ -90,7 +90,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 char cmd;
 
 static void dump_supported_codecs(void){
-    int i;
+    unsigned int i;
     int mSBC_skipped = 0;
     printf("Supported codecs: ");
     for (i = 0; i < sizeof(codecs); i++){

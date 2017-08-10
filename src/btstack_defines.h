@@ -138,12 +138,14 @@ typedef uint8_t sm_key_t[16];
 #define L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_PSM       0x65
 #define L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY  0x66
 #define L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES 0x67
-#define L2CAP_CONNECTION_RESPONSE_RESULT_ERTM_NOT_SUPPORTD 0x68
+#define L2CAP_CONNECTION_RESPONSE_RESULT_ERTM_NOT_SUPPORTED 0x68
+// should be L2CAP_CONNECTION_RTX_TIMEOUT
 #define L2CAP_CONNECTION_RESPONSE_RESULT_RTX_TIMEOUT       0x69
-#define L2CAP_SERVICE_ALREADY_REGISTERED                   0x6A
-#define L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU                  0x6B
-#define L2CAP_SERVICE_DOES_NOT_EXIST                       0x6C
-#define L2CAP_LOCAL_CID_DOES_NOT_EXIST                     0x6D
+#define L2CAP_CONNECTION_BASEBAND_DISCONNECT               0x6A
+#define L2CAP_SERVICE_ALREADY_REGISTERED                   0x6B
+#define L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU                  0x6C
+#define L2CAP_SERVICE_DOES_NOT_EXIST                       0x6D
+#define L2CAP_LOCAL_CID_DOES_NOT_EXIST                     0x6E
     
 #define RFCOMM_MULTIPLEXER_STOPPED                         0x70
 #define RFCOMM_CHANNEL_ALREADY_REGISTERED                  0x71
@@ -1661,6 +1663,50 @@ typedef uint8_t sm_key_t[16];
  * @param command_type
  */
 #define AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE                   0x0F
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param avrcp_cid
+ */
+#define AVRCP_SUBEVENT_UNIT_INFO_QUERY                                     0x10
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param offset      page*4
+ */
+#define AVRCP_SUBEVENT_SUBUNIT_INFO_QUERY                                   0x11
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param avrcp_cid
+ */
+#define AVRCP_SUBEVENT_COMPANY_IDS_QUERY                                    0x12
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param avrcp_cid
+ */
+#define AVRCP_SUBEVENT_EVENT_IDS_QUERY                                      0x13
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param avrcp_cid
+ */
+#define AVRCP_SUBEVENT_PLAY_STATUS_QUERY                                    0x14
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param avrcp_cid
+ */
+#define AVRCP_SUBEVENT_NOW_PLAYING_INFO_QUERY                               0x15
+
 
 /**
  * @format 121BH1

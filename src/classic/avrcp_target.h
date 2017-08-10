@@ -74,6 +74,22 @@ uint8_t avrcp_target_connect(bd_addr_t bd_addr, uint16_t * avrcp_cid);
 
 uint8_t avrcp_target_disconnect(uint16_t avrcp_cid);
 
+uint8_t avrcp_target_unit_info(uint16_t avrcp_cid, avrcp_subunit_type_t unit_type, uint32_t company_id);
+uint8_t avrcp_target_subunit_info(uint16_t avrcp_cid, avrcp_subunit_type_t subunit_type, uint8_t offset, uint8_t * subunit_info_data);
+
+uint8_t avrcp_target_supported_companies(uint16_t avrcp_cid, uint8_t capabilities_length, uint8_t * capabilities, uint8_t size);
+uint8_t avrcp_target_supported_events(uint16_t avrcp_cid, uint8_t capabilities_length, uint8_t * capabilities, uint8_t size);
+
+uint8_t avrcp_target_play_status(uint16_t avrcp_cid, uint32_t song_length_ms, uint32_t song_position_ms, avrcp_play_status_t status); 
+
+uint8_t avrcp_target_set_now_playing_title(uint16_t avrcp_cid, const char * title);
+uint8_t avrcp_target_set_now_playing_artist(uint16_t avrcp_cid, const char * artist);
+uint8_t avrcp_target_set_now_playing_album(uint16_t avrcp_cid, const char * album);
+uint8_t avrcp_target_set_now_playing_genre(uint16_t avrcp_cid, const char * genre);
+uint8_t avrcp_target_set_now_playing_song_length_ms(uint16_t avrcp_cid, const uint32_t song_length_ms);
+uint8_t avrcp_target_set_now_playing_total_tracks(uint16_t avrcp_cid, const int total_tracks);
+uint8_t avrcp_target_set_now_playing_track_nr(uint16_t avrcp_cid, const int track_nr);
+uint8_t avrcp_target_now_playing_info(uint16_t avrcp_cid);
 
 /* API_END */
 #if defined __cplusplus

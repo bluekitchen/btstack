@@ -92,14 +92,14 @@ static const int16_t sine_int16[] = {
 -19260,  -17557,  -15786,  -13952,  -12062,  -10126,   -8149,   -6140,   -4107,   -2057,
 };
 
-static char * device_name = "A2DP Source BTstack";
+static const char * device_name = "A2DP Source BTstack";
 
 #ifdef HAVE_BTSTACK_STDIN
 // mac 2011:    static const char * device_addr_string = "04:0C:CE:E4:85:D3";
 // pts:         static const char * device_addr_string = "00:1B:DC:08:0A:A5";
 // mac 2013:    static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:  static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
-// minijambox: 
+// minijambox:  
 static const char * device_addr_string = "00:21:3C:AC:F7:38";
 // head phones: static const char * device_addr_string = "00:18:09:28:50:18";
 // bt dongle:   static const char * device_addr_string = "00:15:83:5F:9D:46";
@@ -119,6 +119,63 @@ static int sine_phase;
 static int hxcmod_initialized;
 static modcontext mod_context;
 static tracker_buffer_state trkbuf;
+
+
+/* AVRCP Target context START */
+static const uint8_t subunit_info[] = {
+    0,0,0,0,
+    1,1,1,1,
+    2,2,2,2,
+    3,3,3,3,
+    4,4,4,4,
+    5,5,5,5,
+    6,6,6,6,
+    7,7,7,7
+};
+
+static uint32_t company_id = 0x112233;
+static uint8_t companies_num = 1;
+static uint8_t companies[] = {
+    0x00, 0x19, 0x58 //BT SIG registered CompanyID
+};
+
+static uint8_t events_num = 13;
+static uint8_t events[] = {
+    AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED,
+    AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED,
+    AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END,
+    AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_START,
+    AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED,
+    AVRCP_NOTIFICATION_EVENT_BATT_STATUS_CHANGED,
+    AVRCP_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED,
+    AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED,
+    AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED,
+    AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED,
+    AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED,
+    AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED,
+    AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED
+};
+
+typedef struct {
+    char title[40];
+    char artist[40];
+    char album[40];
+    char genre[40];
+    uint32_t song_length_ms;
+    int total_tracks;
+    int track_nr;
+} avrcp_now_playing_info_t;
+
+typedef struct {
+    avrcp_play_status_t status;
+    uint32_t song_length_ms;   // 0xFFFFFFFF if not supported
+    uint32_t song_position_ms; // 0xFFFFFFFF if not supported
+} avrcp_play_status_info_t;
+
+avrcp_now_playing_info_t now_playing_info;
+avrcp_play_status_info_t play_info;
+
+/* AVRCP Target context END */
 
 static void a2dp_demo_send_media_packet(void){
     int num_bytes_in_frame = btstack_sbc_encoder_sbc_buffer_length();
@@ -159,14 +216,14 @@ static void produce_audio(int16_t * pcm_buffer, int num_samples){
 static int a2dp_demo_fill_sbc_audio_buffer(a2dp_media_sending_context_t * context){
     // perform sbc encodin
     int total_num_bytes_read = 0;
-    int num_audio_samples_per_sbc_buffer = btstack_sbc_encoder_num_audio_frames();
+    unsigned int num_audio_samples_per_sbc_buffer = btstack_sbc_encoder_num_audio_frames();
     while (context->samples_ready >= num_audio_samples_per_sbc_buffer
         && (context->max_media_payload_size - context->sbc_storage_count) >= btstack_sbc_encoder_sbc_buffer_length()){
 
-        uint8_t pcm_frame[256*BYTES_PER_AUDIO_SAMPLE];
+        int16_t pcm_frame[256*NUM_CHANNELS];
 
-        produce_audio((int16_t *) pcm_frame, num_audio_samples_per_sbc_buffer);
-        btstack_sbc_encoder_process_data((int16_t *) pcm_frame);
+        produce_audio(pcm_frame, num_audio_samples_per_sbc_buffer);
+        btstack_sbc_encoder_process_data(pcm_frame);
         
         uint16_t sbc_frame_size = btstack_sbc_encoder_sbc_buffer_length(); 
         uint8_t * sbc_frame = btstack_sbc_encoder_sbc_buffer();
@@ -268,6 +325,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
 
                         case A2DP_SUBEVENT_STREAM_STARTED:
+                            play_info.status = AVRCP_PLAY_STATUS_PLAYING;
                             a2dp_demo_timer_start(&media_tracker);
                             printf("Stream started.\n");
                             break;
@@ -277,11 +335,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;        
 
                         case A2DP_SUBEVENT_STREAM_SUSPENDED:
+                            play_info.status = AVRCP_PLAY_STATUS_PAUSED;
                             printf("Stream paused.\n");
                             a2dp_demo_timer_pause(&media_tracker);
                             break;
 
                         case A2DP_SUBEVENT_STREAM_RELEASED:
+                            play_info.status = AVRCP_PLAY_STATUS_STOPPED;
                             printf("Stream released.\n");
                             a2dp_demo_timer_stop(&media_tracker);
                             break;
@@ -324,10 +384,41 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                 return;
             }
             avrcp_cid = local_cid;
+            play_info.song_length_ms = 0xFFFFFFFF;
+            play_info.song_position_ms = 0xFFFFFFFF;
+            play_info.status = AVRCP_PLAY_STATUS_ERROR;
+
             avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
             printf("Channel successfully opened: %s, avrcp_cid 0x%02x\n", bd_addr_to_str(event_addr), local_cid);
             return;
         }
+        
+        case AVRCP_SUBEVENT_UNIT_INFO_QUERY:
+            avrcp_target_unit_info(avrcp_cid, AVRCP_SUBUNIT_TYPE_AUDIO, company_id);
+            break;
+        case AVRCP_SUBEVENT_SUBUNIT_INFO_QUERY:
+            avrcp_target_subunit_info(avrcp_cid, AVRCP_SUBUNIT_TYPE_UNIT, avrcp_subevent_subunit_info_query_get_offset(packet), (uint8_t *)subunit_info);
+            break;
+        case AVRCP_SUBEVENT_EVENT_IDS_QUERY:
+            avrcp_target_supported_events(avrcp_cid, events_num, events, sizeof(events));
+            break;
+        case AVRCP_SUBEVENT_COMPANY_IDS_QUERY:
+            avrcp_target_supported_companies(avrcp_cid, companies_num, companies, sizeof(companies));
+            break;
+        case AVRCP_SUBEVENT_PLAY_STATUS_QUERY:
+            avrcp_target_play_status(avrcp_cid, play_info.song_length_ms, play_info.song_position_ms, play_info.status);            
+            break;
+        case AVRCP_SUBEVENT_NOW_PLAYING_INFO_QUERY:
+            avrcp_target_set_now_playing_title(avrcp_cid, now_playing_info.title);
+            avrcp_target_set_now_playing_artist(avrcp_cid, now_playing_info.artist);
+            avrcp_target_set_now_playing_album(avrcp_cid, now_playing_info.album);
+            avrcp_target_set_now_playing_genre(avrcp_cid, now_playing_info.genre);
+            avrcp_target_set_now_playing_track_nr(avrcp_cid, now_playing_info.track_nr);
+            avrcp_target_set_now_playing_total_tracks(avrcp_cid, now_playing_info.total_tracks);
+            avrcp_target_set_now_playing_song_length_ms(avrcp_cid, now_playing_info.song_length_ms);
+
+            avrcp_target_now_playing_info(avrcp_cid);
+            break;
         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
             printf("Channel released: avrcp_cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
             avrcp_cid = 0;
@@ -360,23 +451,23 @@ static void show_usage(void){
 }
 
 static void stdin_process(char cmd){
+    uint8_t status = ERROR_CODE_SUCCESS;
     switch (cmd){
         case 'b':
             printf(" - Create AVDTP Source connection to addr %s.\n", bd_addr_to_str(device_addr));
-            a2dp_source_establish_stream(device_addr, media_tracker.local_seid, &media_tracker.a2dp_cid);
+            status = a2dp_source_establish_stream(device_addr, media_tracker.local_seid, &media_tracker.a2dp_cid);
             break;
         case 'B':
             printf(" - AVDTP Source Disconnect\n");
-            a2dp_source_disconnect(media_tracker.a2dp_cid);
+            status = a2dp_source_disconnect(media_tracker.a2dp_cid);
             break;
         case 'c':
             printf(" - Create AVRCP Target connection to addr %s.\n", bd_addr_to_str(device_addr));
-            avrcp_target_connect(device_addr, &avrcp_cid);
-            printf(" assigned avrcp cid 0x%02x\n", avrcp_cid);
+            status = avrcp_target_connect(device_addr, &avrcp_cid);
             break;
         case 'C':
             printf(" - AVRCP Target disconnect\n");
-            avrcp_target_disconnect(avrcp_cid);
+            status = avrcp_target_disconnect(avrcp_cid);
             break;
 
         case '\n':
@@ -386,21 +477,24 @@ static void stdin_process(char cmd){
         case 'x':
             printf("Playing sine.\n");
             data_source = STREAM_SINE;
-            a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
+            status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
         case 'z':
             printf("Playing mod.\n");
             data_source = STREAM_MOD;
-            a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
+            status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
         case 'p':
             printf("Pause stream.\n");
-            a2dp_source_pause_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
+            status = a2dp_source_pause_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
         
         default:
             show_usage();
-            break;
+            return;
+    }
+    if (status != ERROR_CODE_SUCCESS){
+        printf("Could not perform command, status 0x%2x\n", status);
     }
 }
 #endif
@@ -416,7 +510,12 @@ int btstack_main(int argc, const char * argv[]){
     a2dp_source_init();
     a2dp_source_register_packet_handler(&packet_handler);
 
-    media_tracker.local_seid = a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
+    avdtp_stream_endpoint_t * local_stream_endpoint = a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
+    if (!local_stream_endpoint){
+        printf("A2DP source demo: not enough memory to create local stream endpoint\n");
+        return 1;
+    }
+    media_tracker.local_seid = avdtp_local_seid(local_stream_endpoint);
 
     // Initialize AVRCP Target
     avrcp_target_init();
@@ -438,6 +537,15 @@ int btstack_main(int argc, const char * argv[]){
         hxcmod_load(&mod_context, (void *) &mod_data, mod_len);
         printf("loaded mod '%s', size %u\n", mod_name, mod_len);
     }
+    
+    // For PTS test
+    memcpy(now_playing_info.title,  "Title  1", 8);
+    memcpy(now_playing_info.artist, "Artist 1", 8);
+    memcpy(now_playing_info.album,  "Album  1", 8);
+    memcpy(now_playing_info.genre,  "Genre  1", 8);
+    now_playing_info.track_nr = 1;
+    now_playing_info.total_tracks = 10;
+    now_playing_info.song_length_ms = 3655;
 
 #ifdef HAVE_BTSTACK_STDIN
     // parse human readable Bluetooth address

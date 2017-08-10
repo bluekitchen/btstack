@@ -69,7 +69,7 @@ void a2dp_sink_create_sdp_record(uint8_t * service, uint32_t service_record_hand
  */
 void a2dp_sink_init(void);
 
-uint8_t a2dp_sink_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, 
+avdtp_stream_endpoint_t * a2dp_sink_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, 
 	uint8_t * codec_capabilities, uint16_t codec_capabilities_len,
 	uint8_t * codec_configuration, uint16_t codec_configuration_len);
 

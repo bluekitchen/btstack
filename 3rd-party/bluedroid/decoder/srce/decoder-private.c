@@ -37,7 +37,7 @@ This file drives SBC decoding.
 #include "oi_bitstream.h"
 #include <stdio.h>
 
-OI_CHAR * const OI_Codec_Copyright = "Copyright 2002-2007 Open Interface North America, Inc. All rights reserved";
+const OI_CHAR * OI_Codec_Copyright = "Copyright 2002-2007 Open Interface North America, Inc. All rights reserved";
 
 INLINE OI_STATUS internal_DecoderReset(OI_CODEC_SBC_DECODER_CONTEXT *context,
                                        OI_UINT32 *decoderData,

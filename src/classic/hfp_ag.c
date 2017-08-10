@@ -70,9 +70,9 @@
 
 // private prototypes
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void hfp_run_for_context(hfp_connection_t *context);
-static void hfp_ag_setup_audio_connection(hfp_connection_t * connection);
-static void hfp_ag_hf_start_ringing(hfp_connection_t * context);
+static void hfp_run_for_context(hfp_connection_t *hfp_connection);
+static void hfp_ag_hf_start_ringing(hfp_connection_t * hfp_connection);
+static void hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection);
 
 // public prototypes
 hfp_generic_status_indicator_t * get_hfp_generic_status_indicators(void);
@@ -108,9 +108,6 @@ static hfp_phone_number_t * subscriber_numbers = NULL;
 static int subscriber_numbers_count = 0;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
-static void hfp_run_for_context(hfp_connection_t *hfp_connection);
-static void hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection);
-static void hfp_ag_hf_start_ringing(hfp_connection_t * hfp_connection);
 hfp_ag_indicator_t * hfp_ag_get_ag_indicators(hfp_connection_t * hfp_connection);
 
 

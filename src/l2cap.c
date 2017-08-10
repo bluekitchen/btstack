@@ -1799,6 +1799,59 @@ static void l2cap_notify_channel_can_send(void){
     }
 }
 
+#ifdef L2CAP_USES_CHANNELS
+
+static int l2cap_send_open_failed_on_hci_disconnect(l2cap_channel_t * channel){
+    // open cannot fail for for incoming connections
+    if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_INCOMING) return 0;
+
+    // check state
+    switch (channel->state){
+        case L2CAP_STATE_WILL_SEND_CREATE_CONNECTION:
+        case L2CAP_STATE_WAIT_CONNECTION_COMPLETE:
+        case L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES:
+        case L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE:
+        case L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT:
+        case L2CAP_STATE_WAIT_OUTGOING_EXTENDED_FEATURES:
+        case L2CAP_STATE_WAIT_CONNECT_RSP:
+        case L2CAP_STATE_CONFIG:
+        case L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST:
+        case L2CAP_STATE_WILL_SEND_LE_CONNECTION_REQUEST:
+        case L2CAP_STATE_WAIT_LE_CONNECTION_RESPONSE:
+            return 1;
+
+        case L2CAP_STATE_OPEN:
+        case L2CAP_STATE_CLOSED:
+        case L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES:
+        case L2CAP_STATE_WAIT_DISCONNECT:
+        case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_INSUFFICIENT_SECURITY:
+        case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE:
+        case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT:
+        case L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST:
+        case L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE:
+        case L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_DECLINE:
+        case L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_ACCEPT:
+        case L2CAP_STATE_INVALID:
+        case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
+            return 0;
+        // no default here, to get a warning about new states
+    }
+    // still, the compiler insists on a return value
+    return 0;
+}
+
+static void l2cap_handle_hci_disconnect_event(l2cap_channel_t * channel){
+    if (l2cap_send_open_failed_on_hci_disconnect(channel)){
+        l2cap_emit_channel_opened(channel, L2CAP_CONNECTION_BASEBAND_DISCONNECT);
+    } else {
+        l2cap_emit_channel_closed(channel);
+    }
+    btstack_memory_l2cap_channel_free(channel);
+}
+
+#endif
+
+
 static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *packet, uint16_t size){
 
     UNUSED(packet_type);
@@ -1854,34 +1907,33 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
             break;
 #endif
             
+#ifdef L2CAP_USES_CHANNELS
         // handle disconnection complete events
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            // send l2cap disconnect events for all channels on this handle and free them
-#ifdef ENABLE_CLASSIC
             handle = little_endian_read_16(packet, 3);
+            // send l2cap open failed or closed events for all channels on this handle and free them
+#ifdef ENABLE_CLASSIC
             btstack_linked_list_iterator_init(&it, &l2cap_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
                 if (channel->con_handle != handle) continue;
-                l2cap_emit_channel_closed(channel);
-                l2cap_stop_rtx(channel);
                 btstack_linked_list_iterator_remove(&it);
-                btstack_memory_l2cap_channel_free(channel);
+                l2cap_stop_rtx(channel);
+                l2cap_handle_hci_disconnect_event(channel);
             }
 #endif
 #ifdef ENABLE_LE_DATA_CHANNELS
-            handle = little_endian_read_16(packet, 3);
             btstack_linked_list_iterator_init(&it, &l2cap_le_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
                 if (channel->con_handle != handle) continue;
-                l2cap_emit_channel_closed(channel);
                 btstack_linked_list_iterator_remove(&it);
-                btstack_memory_l2cap_channel_free(channel);
+                l2cap_handle_hci_disconnect_event(channel);
             }
 #endif
             break;
-            
+#endif
+
         // HCI Connection Timeouts
 #ifdef ENABLE_CLASSIC
         case L2CAP_EVENT_TIMEOUT_CHECK:
@@ -2407,7 +2459,7 @@ static void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t *
                         // channel closed
                         channel->state = L2CAP_STATE_CLOSED;
                         // map l2cap connection response result to BTstack status enumeration
-                        l2cap_emit_channel_opened(channel, L2CAP_CONNECTION_RESPONSE_RESULT_ERTM_NOT_SUPPORTD);
+                        l2cap_emit_channel_opened(channel, L2CAP_CONNECTION_RESPONSE_RESULT_ERTM_NOT_SUPPORTED);
                         // discard channel
                         btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
                         btstack_memory_l2cap_channel_free(channel);

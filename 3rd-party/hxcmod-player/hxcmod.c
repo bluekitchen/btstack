@@ -231,7 +231,7 @@ static void worknote( note * nptr, hxcmod_channel * cptr,char t,modcontext * mod
 
 		if( period || _sample )
 		{
-			cptr->sampdata =(char *) mod->sampledata[cptr->sampnum];
+			cptr->sampdata = mod->sampledata[cptr->sampnum];
 			cptr->length = mod->song.samples[cptr->sampnum].length;
 			cptr->reppnt = mod->song.samples[cptr->sampnum].reppnt;
 			cptr->replen = mod->song.samples[cptr->sampnum].replen;
@@ -984,7 +984,7 @@ int hxcmod_load( modcontext * modctx, void * mod_data, int mod_data_size )
 
 				if (sptr->length == 0) continue;
 
-				modctx->sampledata[i] = (char*)modmemory;
+				modctx->sampledata[i] = (mchar*)modmemory;
 				modmemory += sptr->length;
 
 				if (sptr->replen + sptr->reppnt > sptr->length)

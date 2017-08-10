@@ -222,106 +222,110 @@ static void show_usage(void){
 }
 
 static void stdin_process(char cmd){
+    uint8_t status = ERROR_CODE_SUCCESS;
     switch (cmd){
         case 'c':
             printf(" - Create AVRCP connection to addr %s.\n", bd_addr_to_str(device_addr));
-            avrcp_controller_connect(device_addr, &avrcp_cid);
+            status = avrcp_controller_connect(device_addr, &avrcp_cid);
             break;
         case 'B':
             printf(" - Disconnect\n");
-            avrcp_controller_disconnect(avrcp_cid);
+            status = avrcp_controller_disconnect(avrcp_cid);
             break;
         case 'i':
             printf(" - get play status\n");
-            avrcp_controller_get_play_status(avrcp_cid);
+            status = avrcp_controller_get_play_status(avrcp_cid);
             break;
         case 'j':
             printf(" - get now playing info\n");
-            avrcp_controller_get_now_playing_info(avrcp_cid);
+            status = avrcp_controller_get_now_playing_info(avrcp_cid);
             break;
         case 'k':
             printf(" - play\n");
-            avrcp_controller_play(avrcp_cid);
+            status = avrcp_controller_play(avrcp_cid);
             break;
         case 'K':
             printf(" - stop\n");
-            avrcp_controller_stop(avrcp_cid);
+            status = avrcp_controller_stop(avrcp_cid);
             break;
         case 'L':
             printf(" - pause\n");
-            avrcp_controller_pause(avrcp_cid);
+            status = avrcp_controller_pause(avrcp_cid);
             break;
         case 'm':
             printf(" - start fast forward\n");
-            avrcp_controller_start_fast_forward(avrcp_cid);
+            status = avrcp_controller_start_fast_forward(avrcp_cid);
             break;
         case 'M':
             printf(" - stop fast forward\n");
-            avrcp_controller_stop_fast_forward(avrcp_cid);
+            status = avrcp_controller_stop_fast_forward(avrcp_cid);
             break;
         case 'n':
             printf(" - start rewind\n");
-            avrcp_controller_start_rewind(avrcp_cid);
+            status = avrcp_controller_start_rewind(avrcp_cid);
             break;
         case 'N':
             printf(" - stop rewind\n");
-            avrcp_controller_stop_rewind(avrcp_cid);
+            status = avrcp_controller_stop_rewind(avrcp_cid);
             break;
         case 'o':
             printf(" - forward\n");
-            avrcp_controller_forward(avrcp_cid); 
+            status = avrcp_controller_forward(avrcp_cid); 
             break;
         case 'O':
             printf(" - backward\n");
-            avrcp_controller_backward(avrcp_cid);
+            status = avrcp_controller_backward(avrcp_cid);
             break;
         case 'p':
             printf(" - volume up\n");
-            avrcp_controller_volume_up(avrcp_cid);
+            status = avrcp_controller_volume_up(avrcp_cid);
             break;
         case 'P':
             printf(" - volume down\n");
-            avrcp_controller_volume_down(avrcp_cid);
+            status = avrcp_controller_volume_down(avrcp_cid);
             break;
         case 'r':
             printf(" - absolute volume of 50 percent\n");
-            avrcp_controller_set_absolute_volume(avrcp_cid, 50);
+            status = avrcp_controller_set_absolute_volume(avrcp_cid, 50);
             break;
         case 's':
             printf(" - mute\n");
-            avrcp_controller_mute(avrcp_cid);
+            status = avrcp_controller_mute(avrcp_cid);
             break;
         case 't':
             printf(" - skip\n");
-            avrcp_controller_skip(avrcp_cid);
+            status = avrcp_controller_skip(avrcp_cid);
             break;
         case 'u':
             printf(" - query repeat and shuffle mode\n");
-            avrcp_controller_query_shuffle_and_repeat_modes(avrcp_cid);
+            status = avrcp_controller_query_shuffle_and_repeat_modes(avrcp_cid);
             break;
         case 'v':
             printf(" - repeat single track\n");
-            avrcp_controller_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_SINGLE_TRACK);
+            status = avrcp_controller_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_SINGLE_TRACK);
             break;
         case 'x':
             printf(" - repeat all tracks\n");
-            avrcp_controller_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_ALL_TRACKS);
+            status = avrcp_controller_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_ALL_TRACKS);
             break;
         case 'X':
             printf(" - disable repeat mode\n");
-            avrcp_controller_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_OFF);
+            status = avrcp_controller_set_repeat_mode(avrcp_cid, AVRCP_REPEAT_MODE_OFF);
             break;
         case 'z':
             printf(" - shuffle all tracks\n");
-            avrcp_controller_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_ALL_TRACKS);
+            status = avrcp_controller_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_ALL_TRACKS);
             break;
         case 'Z':
             printf(" - disable shuffle mode\n");
-            avrcp_controller_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_OFF);
+            status = avrcp_controller_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_OFF);
             break;
         default:
             show_usage();
-            break;
+            return;
+    }
+    if (status != ERROR_CODE_SUCCESS){
+        printf("Could not perform command, status 0x%02x\n", status);
     }
 }
 #endif

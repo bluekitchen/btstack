@@ -38,7 +38,7 @@ The sdkconfig of the example template disables the original Bluedroid stack by d
 ## Limitations
 
 ### Bug in ESP32 VHCI Implementation
-The Host Controller to Host Flow Control of the Virtual HCI (VHCI) on the ESP32 does not work currently. Without it, it is not possible to slow down incoming data. For most applications, this won't be an issue, but please keep it in mind. See https://github.com/espressif/esp-idf/issues/480
+The Host Controller to Host Flow Control of the Virtual HCI (VHCI) on the ESP32 does not work for LE data (it works for HCI Events and Classic ACL packets). Without it, it is not possible to slow down incoming data. For most applications, this won't be an issue, but please keep it in mind. See https://github.com/espressif/esp-idf/issues/644
 
 ### Multi-Threading
 

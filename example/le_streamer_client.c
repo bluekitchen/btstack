@@ -51,6 +51,7 @@
 #include "btstack.h"
 
 typedef enum {
+    TC_OFF,
     TC_IDLE,
     TC_W4_SCAN_RESULT,
     TC_W4_CONNECT,
@@ -76,7 +77,7 @@ static gatt_client_characteristic_t le_streamer_characteristic;
 static gatt_client_notification_t notification_listener;
 static int listener_registered;
 
-static gc_state_t state = TC_IDLE;
+static gc_state_t state = TC_OFF;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 /*
@@ -261,8 +262,11 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     switch (event) {
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started
-            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
-            le_streamer_client_start();
+            if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING) {
+                le_streamer_client_start();
+            } else {
+                state = TC_OFF;
+            }
             break;
         case GAP_EVENT_ADVERTISING_REPORT:
             if (state != TC_W4_SCAN_RESULT) return;
@@ -303,6 +307,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                 return;
             }
             printf("Disconnected %s\n", bd_addr_to_str(le_streamer_addr));
+            if (state == TC_OFF) break;
             le_streamer_client_start();
             break;
         default:

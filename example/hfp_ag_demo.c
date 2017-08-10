@@ -109,7 +109,7 @@ enum STATE {INIT, W4_INQUIRY_MODE_COMPLETE, ACTIVE} ;
 enum STATE state = INIT;
 
 static void dump_supported_codecs(void){
-    int i;
+    unsigned int i;
     int mSBC_skipped = 0;
     printf("Supported codecs: ");
     for (i = 0; i < sizeof(codecs); i++){

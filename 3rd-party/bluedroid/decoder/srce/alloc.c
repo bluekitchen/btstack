@@ -28,11 +28,6 @@ PRIVATE OI_STATUS OI_CODEC_SBC_Alloc(OI_CODEC_SBC_COMMON_CONTEXT *common,
                                      OI_UINT32 *codecDataAligned,
                                      OI_UINT32 codecDataBytes,
                                      OI_UINT8 maxChannels,
-                                     OI_UINT8 pcmStride);
-PRIVATE OI_STATUS OI_CODEC_SBC_Alloc(OI_CODEC_SBC_COMMON_CONTEXT *common,
-                                     OI_UINT32 *codecDataAligned,
-                                     OI_UINT32 codecDataBytes,
-                                     OI_UINT8 maxChannels,
                                      OI_UINT8 pcmStride)
 {
     int i;

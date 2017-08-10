@@ -195,6 +195,12 @@ const char * avrcp_repeat2str(uint8_t index){
     return "NONE";
 }
 
+uint8_t avrcp_cmd_opcode(uint8_t *packet, uint16_t size){
+    uint8_t cmd_opcode_index = 5;
+    if (cmd_opcode_index > size) return AVRCP_CMD_OPCODE_UNDEFINED;
+    return packet[cmd_opcode_index];
+}
+
 void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name){
     uint8_t* attribute;
     de_create_sequence(service);
@@ -362,6 +368,10 @@ static uint16_t avdtp_get_next_avrcp_cid(void){
 
 static avrcp_connection_t * avrcp_create_connection(bd_addr_t remote_addr, avrcp_context_t * context){
     avrcp_connection_t * connection = btstack_memory_avrcp_connection_get();
+    if (!connection){
+        log_error("avrcp: not enough memory to create connection");
+        return NULL;
+    }
     memset(connection, 0, sizeof(avrcp_connection_t));
     connection->state = AVCTP_CONNECTION_IDLE;
     connection->transaction_label = 0xFF;
@@ -559,8 +569,6 @@ void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            // connection closed -> quit test app
-            // status = hci_event_disconnection_complete_get_status(packet);
             avrcp_emit_connection_closed(context->avrcp_callback, 0);
             break;
         case L2CAP_EVENT_INCOMING_CONNECTION:
@@ -605,6 +613,7 @@ void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
         
         case L2CAP_EVENT_CHANNEL_CLOSED:
             // data: event (8), len(8), channel (16)
+            printf("L2CAP_EVENT_CHANNEL_CLOSED \n");
             local_cid = l2cap_event_channel_closed_get_local_cid(packet);
             connection = get_avrcp_connection_for_l2cap_signaling_cid(local_cid, context);
             if (connection){

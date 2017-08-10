@@ -41,6 +41,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "btstack.h"
 #include "classic/avrcp.h"
@@ -207,13 +208,6 @@ static void avrcp_prepare_notification(avrcp_connection_t * connection, avrcp_no
     // answer page 61
 }
 
-static uint8_t avrcp_cmd_opcode(uint8_t *packet, uint16_t size){
-    uint8_t cmd_opcode_index = 5;
-    if (cmd_opcode_index > size) return AVRCP_CMD_OPCODE_UNDEFINED;
-    return packet[cmd_opcode_index];
-}
-
-
 static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
     uint8_t operands[20];
     uint8_t opcode;
@@ -248,7 +242,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             uint8_t unit_type = operands[1] >> 3;
             uint8_t unit = operands[1] & 0x07;
             uint32_t company_id = operands[2] << 16 | operands[3] << 8 | operands[4];
-            log_info("    UNIT INFO response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), unit_type 0x%02x, unit %d, company_id 0x%06x",
+            log_info("    UNIT INFO response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), unit_type 0x%02x, unit %d, company_id 0x%06" PRIx32,
                 ctype, subunit_type, subunit_id, opcode, unit_type, unit, company_id );
             break;
         }
@@ -337,7 +331,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             for (i = 0; i < capability_count; i++){
                                 uint32_t company_id = big_endian_read_24(packet, pos);
                                 pos += 3;
-                                log_info("  0x%06x, ", company_id);
+                                log_info("  0x%06" PRIx32 ", ", company_id);
                             }
                             break;
                         case AVRCP_CAPABILITY_ID_EVENT:
@@ -497,7 +491,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
 
                 case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:{
                     uint8_t num_attributes = packet[pos++];
-                    int i;
+                    unsigned int i;
                     struct item {
                         uint16_t len;
                         uint8_t  * value;
@@ -510,7 +504,9 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     uint16_t max_string_attribute_value_len = 0;
                     if (ctype == AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE || ctype == AVRCP_CTYPE_RESPONSE_CHANGED_STABLE){
                         for (i = 0; i < num_attributes; i++){
-                            avrcp_media_attribute_id_t attr_id = (avrcp_media_attribute_id_t) big_endian_read_32(packet, pos);
+                            // use local variables to avoid compiler warning
+                            uint32_t avrcp_media_attribute_id =  big_endian_read_32(packet, pos);
+                            avrcp_media_attribute_id_t attr_id = (avrcp_media_attribute_id_t) avrcp_media_attribute_id;
                             pos += 4;
                             // uint16_t character_set = big_endian_read_16(packet, pos);
                             pos += 2;

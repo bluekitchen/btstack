@@ -2088,6 +2088,7 @@ uint16_t rfcomm_get_max_frame_size(uint16_t rfcomm_cid){
     }
     return channel->max_frame_size;
 }
+
 int rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
@@ -2103,12 +2104,18 @@ int rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
     }
 
     // send might cause l2cap to emit new credits, update counters first
-    channel->credits_outgoing--;
+    if (len){
+        channel->credits_outgoing--;
+    } else {
+        log_info("sending empty RFCOMM packet for cid %02x", rfcomm_cid);
+    }
         
     int result = rfcomm_send_uih_prepared(channel->multiplexer, channel->dlci, len);
     
     if (result != 0) {
-        channel->credits_outgoing++;
+        if (len) {
+            channel->credits_outgoing++;
+        }
         log_error("rfcomm_send_prepared: error %d", result);
         return result;
     }
@@ -2119,8 +2126,8 @@ int rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
 int rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
-        log_error("rfcomm_send cid 0x%02x doesn't exist!", rfcomm_cid);
-        return 1;
+        log_error("cid 0x%02x doesn't exist!", rfcomm_cid);
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
     int err = rfcomm_assert_send_valid(channel, len);

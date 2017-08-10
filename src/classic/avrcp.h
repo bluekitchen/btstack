@@ -54,6 +54,34 @@ extern "C" {
 #endif
 
 #define BT_SIG_COMPANY_ID 0x001958
+#define AVRCP_MEDIA_ATTR_COUNT 7
+
+typedef enum {
+    AVRCP_STATUS_INVALID_COMMAND = 0,           // sent if TG received a PDU that it did not understand.
+    AVRCP_STATUS_INVALID_PARAMETER,             // Sent if the TG received a PDU with a parameter ID that it did not understand, or, if there is only one parameter ID in the PDU.
+    AVRCP_STATUS_SPECIFIED_PARAMETER_NOT_FOUND, // sent if the parameter ID is understood, but content is wrong or corrupted.
+    AVRCP_STATUS_INTERNAL_ERROR,                // sent if there are error conditions not covered by a more specific error code.
+    AVRCP_STATUS_SUCCESS,                       // sent if the operation was successful. 
+    AVRCP_STATUS_UID_CHANGED,                   // sent if the UIDs on the device have changed.
+    AVRCP_STATUS_RESERVED_6,
+    AVRCP_STATUS_INVALID_DIRECTION,             // The Direction parameter is invalid. Valid for command: Change Path
+    AVRCP_STATUS_NOT_A_DIRECTORY,               // The UID provided does not refer to a folder item. Valid for command: Change Path
+    AVRCP_STATUS_DOES_NOT_EXIST,                // The UID provided does not refer to any currently valid. Valid for command: Change Path, PlayItem, AddToNowPlaying, GetItemAttributes
+    AVRCP_STATUS_INVALID_SCOPE,                 // The scope parameter is invalid. Valid for command: GetFolderItems, PlayItem, AddToNowPlayer, GetItemAttributes,
+    AVRCP_STATUS_RANGE_OUT_OF_BOUNDS,           // The start of range provided is not valid. Valid for command: GetFolderItems
+    AVRCP_STATUS_UID_IS_A_DIRECTORY,            // The UID provided refers to a directory, which cannot be handled by this media player. Valid for command: PlayItem, AddToNowPlaying
+    AVRCP_STATUS_MEDIA_IN_USE,                  // The media is not able to be used for this operation at this time. Valid for command: PlayItem, AddToNowPlaying
+    AVRCP_STATUS_NOW_PLAYING_LIST_FULL,         // No more items can be added to the Now Playing List. Valid for command: AddToNowPlaying
+    AVRCP_STATUS_SEARCH_NOT_SUPPORTED,          // The Browsed Media Player does not support search. Valid for command: Search
+    AVRCP_STATUS_SEARCH_IN_PROGRESS,            // A search operation is already in progress. Valid for command: Search
+    AVRCP_STATUS_INVALID_PLAYER_ID,             // The specified Player Id does not refer to a valid player. Valid for command: SetAddressedPlayer, SetBrowsedPlayer
+    AVRCP_STATUS_PLAYER_NOT_BROWSABLE,          // The Player Id supplied refers to a Media Player which does not support browsing. Valid for command: SetBrowsedPlayer
+    AVRCP_STATUS_PLAYER_NOT_ADDRESSED,          // The Player Id supplied refers to a player which is not currently addressed, and the command is not able to be performed if the player is not set as addressed. Valid for command: Search SetBrowsedPlayer
+    AVRCP_STATUS_NO_VALID_SEARCH_RESULTS,       // The Search result list does not contain valid entries, e.g. after being invalidated due to change of browsed player. Valid for command: GetFolderItems
+    AVRCP_STATUS_NO_AVAILABLE_PLAYERS,
+    AVRCP_STATUS_ADDRESSED_PLAYER_CHANGED,       // Valid for command: Register Notification
+    AVRCP_STATUS_RESERVED                       // 0x17 - 0xFF
+} avrcp_status_code_t;
 
 typedef enum {
     AVRCP_SINGLE_PACKET= 0,
@@ -83,8 +111,6 @@ typedef enum {
     AVRCP_MEDIA_ATTR_SONG_LENGTH
 } avrcp_media_attribute_id_t;
 
-#define AVRCP_MEDIA_ATTR_COUNT 7
-
 typedef enum {
     AVRCP_PDU_ID_GET_CAPABILITIES = 0x10,
     AVRCP_PDU_ID_GetCurrentPlayerApplicationSettingValue = 0x13,
@@ -92,7 +118,8 @@ typedef enum {
     AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES = 0x20,
     AVRCP_PDU_ID_GET_PLAY_STATUS = 0x30,
     AVRCP_PDU_ID_REGISTER_NOTIFICATION = 0x31,
-    AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME = 0x50
+    AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME = 0x50,
+    AVRCP_PDU_ID_UNDEFINED = 0xFF
 } avrcp_pdu_id_t;
 
 typedef enum {
@@ -162,7 +189,7 @@ typedef enum {
     AVRCP_CMD_OPCODE_VENDOR_DEPENDENT = 0x00,
     // AVRCP_CMD_OPCODE_RESERVE = 0x01,
     AVRCP_CMD_OPCODE_UNIT_INFO = 0x30,
-    // AVRCP_CMD_OPCODE_SUBUNIT_INFO = 0x31,
+    AVRCP_CMD_OPCODE_SUBUNIT_INFO = 0x31,
     AVRCP_CMD_OPCODE_PASS_THROUGH = 0x7C,
     // AVRCP_CMD_OPCODE_VERSION = 0xB0,
     // AVRCP_CMD_OPCODE_POWER = 0xB2,
@@ -185,6 +212,15 @@ typedef enum {
     AVRCP_OPERATION_ID_UNDEFINED = 0xFF
 } avrcp_operation_id_t;
 
+typedef enum{
+    AVRCP_PLAY_STATUS_STOPPED = 0x00,
+    AVRCP_PLAY_STATUS_PLAYING,
+    AVRCP_PLAY_STATUS_PAUSED,
+    AVRCP_PLAY_STATUS_FWD_SEEK,
+    AVRCP_PLAY_STATUS_REV_SEEK,
+    AVRCP_PLAY_STATUS_ERROR = 0xFF
+} avrcp_play_status_t;
+
 typedef enum {
     AVCTP_CONNECTION_IDLE,
     AVCTP_SIGNALING_W4_SDP_QUERY_COMPLETE,
@@ -194,9 +230,15 @@ typedef enum {
     AVCTP_W2_SEND_RELEASE_COMMAND,
     AVCTP_W4_STOP,
     AVCTP_W2_SEND_COMMAND,
+    AVCTP_W2_SEND_RESPONSE,
     AVCTP_W2_RECEIVE_PRESS_RESPONSE,
     AVCTP_W2_RECEIVE_RESPONSE
 } avctp_connection_state_t;
+
+typedef struct {
+    uint16_t len;
+    uint8_t  * value;
+} avrcp_now_playing_info_item_t;
 
 typedef struct {
     btstack_linked_item_t    item;
@@ -220,16 +262,16 @@ typedef struct {
     uint16_t notifications_enabled;
     uint16_t notifications_to_register;
     uint16_t notifications_to_deregister; 
-} avrcp_connection_t;
 
-typedef enum {
-    AVRCP_PLAY_STATUS_STOPPED = 0x00,
-    AVRCP_PLAY_STATUS_PLAYING,
-    AVRCP_PLAY_STATUS_PAUSED,
-    AVRCP_PLAY_STATUS_FWD_SEEK, 
-    AVRCP_PLAY_STATUS_REV_SEEK, 
-    AVRCP_PLAY_STATUS_ERROR = 0xFF
-} avrcp_play_status_t;
+    avrcp_now_playing_info_item_t now_playing_info[AVRCP_MEDIA_ATTR_COUNT];
+    uint32_t song_length_ms;
+    int total_tracks;
+    int track_nr;
+    // used for fragmentation
+    int offset;
+    int total_num_bytes;
+    uint8_t now_playing_info_response;
+} avrcp_connection_t;
 
 typedef enum {
     AVRCP_SHUFFLE_MODE_INVALID,
@@ -250,6 +292,10 @@ typedef enum{
     AVRCP_CONTROLLER = 0,
     AVRCP_TARGET
 } avrcp_role_t;
+
+typedef enum {
+    UTF8 = 106
+} rfc2978_charset_mib_enumid_t;
 
 typedef struct {
     avrcp_role_t role;
@@ -282,6 +328,7 @@ uint8_t avrcp_connect(bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * a
 void avrcp_emit_connection_established(btstack_packet_handler_t callback, uint16_t avrcp_cid, bd_addr_t addr, uint8_t status);
 void avrcp_emit_connection_closed(btstack_packet_handler_t callback, uint16_t avrcp_cid);
 
+uint8_t avrcp_cmd_opcode(uint8_t *packet, uint16_t size);
 avrcp_connection_t * get_avrcp_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid, avrcp_context_t * context);
 avrcp_connection_t * get_avrcp_connection_for_avrcp_cid(uint16_t avrcp_cid, avrcp_context_t * context);
 void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_cid);

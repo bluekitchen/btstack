@@ -236,7 +236,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             break;
                         case HSP_SUBEVENT_AG_INDICATION: {
                             memset(hs_cmd_buffer, 0, sizeof(hs_cmd_buffer));
-                            int size = hsp_subevent_ag_indication_get_value_length(event);
+                            unsigned int size = hsp_subevent_ag_indication_get_value_length(event);
                             if (size >= sizeof(hs_cmd_buffer)-1){
                                 size =  sizeof(hs_cmd_buffer)-1;
                             }
