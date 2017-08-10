@@ -1,16 +1,12 @@
 #!/usr/bin/env python
-# BlueKitchen GmbH (c) 2012-2014
-
-# avr-objcopy -I ihex -O binary hci_581_active_uart.hex hci_581_active_uart.bin
-
-# requires IntelHex package https://pypi.python.org/pypi/IntelHex
-# docs: http://python-intelhex.readthedocs.io/en/latest/
-
-from intelhex import IntelHex
-import glob
+# BlueKitchen GmbH (c) 2017
+import sys
 
 usage = '''This script converts the HCI Firmware in .bin format for Atmel WILC3000
 into C files to be used with BTstack.
+
+Usage:
+$ ./convert_firmware_bin.py firmware.bin
 '''
 
 header = '''
@@ -72,12 +68,11 @@ def convert_bin(basename):
 			fout.write(code_end);
 			print ('Done\n') 
 
-files =  glob.glob('*.bin')
-if not files:
+# check usage: 1 param
+if not len(sys.argv) == 2:
     print(usage)
-    sys.exit(1) 
+    sys.exit(1)
 
-# convert each of them
-for name in files:
-	basename = name.replace('.bin','')
-	convert_bin(basename)
+name = sys.argv[1]
+basename = name.replace('.bin','')
+convert_bin(basename)

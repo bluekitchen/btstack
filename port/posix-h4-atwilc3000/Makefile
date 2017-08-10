@@ -16,6 +16,9 @@ CORE += \
 # examples
 include ${BTSTACK_ROOT}/example/Makefile.inc
 
+# firmware
+include ${BTSTACK_ROOT}/chipset/atwilc3000/Makefile.inc
+
 CFLAGS  += -g -Wall -Werror \
 	-I$(BTSTACK_ROOT)/platform/posix \
 	-I$(BTSTACK_ROOT)/chipset/atwilc3000 \
@@ -41,4 +44,3 @@ endif
 # LDFLAGS += -L/sw/lib -lportaudio -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,AudioUnit -Wl,-framework,Carbon
 
 all: ${EXAMPLES}
-
