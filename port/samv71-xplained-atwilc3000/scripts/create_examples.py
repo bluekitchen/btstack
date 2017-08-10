@@ -88,14 +88,14 @@ for file in example_files:
     with open(project_folder + 'Makefile', 'wt') as fout:
         with open(template_path + 'Makefile', 'rt') as fin:
             for line in fin:
-                if 'le_counter.h: ${BTSTACK_ROOT_MAKEFILE}/example/le_counter.gatt' in line:
-                    fout.write('%s.h: ${BTSTACK_ROOT_MAKEFILE}/example/%s.gatt\n' % (example,example))
+                if 'le_counter.h: ${BTSTACK_ROOT}/example/le_counter.gatt' in line:
+                    fout.write('%s.h: ${BTSTACK_ROOT}/example/%s.gatt\n' % (example,example))
                     continue
-                if 'all: le_counter.h' in line:
+                if 'all: le_counter.h wilc3000_bt_firmware.c' in line:
                     if len(gatt_h):
-                        fout.write("all: %s.h\n" % example)
+                        fout.write("all: %s.h wilc3000_bt_firmware.c\n" % example)
                     else:
-                        fout.write("all:\n")
+                        fout.write("all: wilc3000_bt_firmware.c\n")
                     continue
                 fout.write(line)
 
@@ -103,17 +103,20 @@ for file in example_files:
     with open(project_folder + 'config.mk', 'wt') as fout:
         with open(template_path + 'config.mk', 'rt') as fin:
             for line in fin:
-                if 'CSRCS+=${BTSTACK_ROOT}/example/le_counter.c' in line:
-                    fout.write('CSRCS+=${BTSTACK_ROOT}/example/%s.c\n' % example)
-                    continue
                 if 'TARGET_FLASH=le_counter_flash.elf' in line:
                     fout.write('TARGET_FLASH=%s_flash.elf\n' % example)
                     continue
                 if 'TARGET_SRAM=le_counter_sram.elf' in line:
                     fout.write('TARGET_SRAM=%s_sram.elf\n' % example)
                     continue
-                if 'INC_PATH += ${BTSTACK_ROOT}/port/samv71-xplained-atwilc3000/example/le_counter' in line:
-                    fout.write('INC_PATH += ${BTSTACK_ROOT}/port/samv71-xplained-atwilc3000/example/%s\n' % example)
+                if 'CSRCS+=${BTSTACK_ROOT_CONFIG}/example/le_counter.c' in line:
+                    fout.write('CSRCS+=${BTSTACK_ROOT_CONFIG}/example/%s.c\n' % example)
+                    continue
+                if 'CSRSC+=${BTSTACK_ROOT_CONFIG}/port/samv71-xplained-atwilc3000/example/template/wilc3000_bt_firmware.c' in line:
+                    fout.write('\t${BTSTACK_ROOT_CONFIG}/port/samv71-xplained-atwilc3000/example/%s/wilc3000_bt_firmware.c \\\n' % example)
+                    continue
+                if 'INC_PATH += ${BTSTACK_ROOT_CONFIG}/port/samv71-xplained-atwilc3000/example/template' in line:
+                    fout.write('INC_PATH += ${BTSTACK_ROOT_CONFIG}/port/samv71-xplained-atwilc3000/example/%s\n' % example)
                     continue
                 fout.write(line)
 

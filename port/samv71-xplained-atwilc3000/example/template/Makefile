@@ -46,13 +46,13 @@
 # \asf_license_stop
 #
 
-BTSTACK_ROOT_MAKEFILE=../../../..
+BTSTACK_ROOT=../../../..
 
 # enforce .gatt compilation if needed
-all: le_counter.h
+all: le_counter.h wilc3000_bt_firmware.c
 
-le_counter.h: ${BTSTACK_ROOT_MAKEFILE}/example/le_counter.gatt
-	python ${BTSTACK_ROOT_MAKEFILE}/tool/compile_gatt.py $< $@ 
+le_counter.h: ${BTSTACK_ROOT}/example/le_counter.gatt
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 flash: $(TARGET_FLASH)
 	openocd -f interface/cmsis-dap.cfg -f board/atmel_samv71_xplained_ultra.cfg -f upload.cfg
@@ -62,3 +62,5 @@ flash: $(TARGET_FLASH)
 MAKEFILE_PATH = ../../ASF/sam/utils/make/Makefile.sam.in
 include $(MAKEFILE_PATH)
 
+# firmware
+include ${BTSTACK_ROOT}/chipset/atwilc3000/Makefile.inc
