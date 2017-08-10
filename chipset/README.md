@@ -53,7 +53,7 @@ CSR, which has been acquired by Qualcomm, provides all relevant information on t
 
 Chipset              | Type      | HCI Transport  | BD_ADDR (1)  | SCO over HCI (2) | LE DLE | Multiple LE Roles    | BTstack folder | Comment
 -------------------- |-----------| ---------------|--------------|------------------|--------|----------------------|----------------|---------
-Atmel ATWILC3000     | Dual mode | H4             | Yes          | Don't know       | No     |         No           | atwilc3000     | Required Bluetooth firmware is 270 kB
+Atmel ATWILC3000     | Dual mode | H4             | Yes          | Don't know       | No     |         No           | atwilc3000     | Firmware size: 270 kB
 Broadcom UART        | Dual mode | H4, H5         | Rarely       | Probably (2)     | No     |      Maybe (3)       | bcm            | Max UART baudrate 2 mbps
 Broadcom USB Dongles | Dual mode | USB            | Yes          | Yes              | No     |         No           | bcm            |
 CSR UART             | Dual mode | H4, H5, BCSP   | Rarely       | No (didn't work) | No     |         No           | csr            |
@@ -82,7 +82,7 @@ nina2: 18:FE:34:6D:17:66
 
 The ATILC3000 Bluetooth/Wifi combo controller has been used with Linux on embedded devices by Atmel/Microchip. Drivers and documentation are available from a [GitHub repository](https://github.com/atwilc3000). The ATWILC3000 has a basic HCI implementation stored in ROM and requires a firmware image to be uploaded before it can be used. Please note: the Bluetooth firmware is 270 kB.
 
-**BD Addr** seems to be stored in the device. Bluetooth address can be updated via vendor-specific command. (Documentation will be updated after checking the BD Addr of a different board.)
+**BD Addr** can be set with vendor-specific command although all chipsets have an official address stored. The BD_ADDR lookup results in "Newport Media Inc." which was [acquired by Atmel](http://www.atmel.com/about/news/release.aspx?reference=tcm:26-62532) in 2014.
 
 **Baud rate** can be set with a custom command.
 
