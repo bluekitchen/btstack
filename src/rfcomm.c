@@ -2025,12 +2025,18 @@ int rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
     }
 
     // send might cause l2cap to emit new credits, update counters first
-    channel->credits_outgoing--;
+    if (len){
+        channel->credits_outgoing--;
+    } else {
+        log_info("rfcomm_send_prepared: send empty RFCOMM packet for cid 0x%02x", rfcomm_cid);
+    }
         
     int result = rfcomm_send_uih_prepared(channel->multiplexer, channel->dlci, len);
     
     if (result != 0) {
-        channel->credits_outgoing++;
+        if (len){
+            channel->credits_outgoing++;
+        }
         log_error("rfcomm_send_prepared: error %d", result);
         return result;
     }
