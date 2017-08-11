@@ -355,9 +355,8 @@ static void hal_audio_dma_process(btstack_data_source_t * ds, btstack_data_sourc
 #endif
 
 static int media_processing_init(avdtp_media_codec_configuration_sbc_t configuration){
-    
     if (media_initialized) return 0;
-
+    
 #ifdef DECODE_SBC
     btstack_sbc_decoder_init(&state, mode, handle_pcm_data, NULL);
 #endif
@@ -367,7 +366,7 @@ static int media_processing_init(avdtp_media_codec_configuration_sbc_t configura
 #endif
 
 #ifdef STORE_SBC_TO_SBC_FILE    
-    sbc_file = fopen(sbc_filename, "wb"); 
+   sbc_file = fopen(sbc_filename, "wb"); 
 #endif
 
 #ifdef HAVE_PORTAUDIO
@@ -695,9 +694,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
     switch (packet[2]){
         case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION:
-            printf(" received non SBC codec. not implemented\n");
+            printf(" -- a2dp sink demo: received non SBC codec. not implemented.\n");
             break;
         case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
+            printf(" -- a2dp sink demo: received SBC codec configuration.\n");
             sbc_configuration.reconfigure = a2dp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
             sbc_configuration.num_channels = a2dp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(packet);
             sbc_configuration.sampling_frequency = a2dp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
@@ -713,7 +713,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             if (sbc_configuration.reconfigure){
                 media_processing_close();
             }
-
             // prepare media processing
             media_processing_init(sbc_configuration);
             break;
@@ -732,9 +731,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             if (cid != a2dp_cid) break;
             local_seid = a2dp_subevent_stream_started_get_local_seid(packet);
             printf(" -- a2dp sink demo: stream started, a2dp cid 0x%02X, local_seid %d\n", a2dp_cid, local_seid);
-
             // started
-            // media_processing_init(sbc_configuration);
+            media_processing_init(sbc_configuration);
             break;
         
         case A2DP_SUBEVENT_STREAM_SUSPENDED:
@@ -742,9 +740,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             if (cid != a2dp_cid) break;
             local_seid = a2dp_subevent_stream_suspended_get_local_seid(packet);
             printf(" -- a2dp sink demo: stream paused, a2dp cid 0x%02X, local_seid %d\n", a2dp_cid, local_seid);
-
             // paused/stopped
-            // media_processing_close();
+            media_processing_close();
             break;
         
         case A2DP_SUBEVENT_STREAM_RELEASED:
