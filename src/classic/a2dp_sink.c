@@ -137,17 +137,6 @@ void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_han
     de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
 }
 
-static inline uint16_t a2dp_cid(void){
-    if (!sc.local_stream_endpoint) return 0;
-    if (!sc.local_stream_endpoint->connection) return 0;
-    return sc.local_stream_endpoint->connection->avdtp_cid;
-}
-
-static inline uint8_t local_seid(void){
-    if (!sc.local_stream_endpoint) return 0;
-    return sc.local_stream_endpoint->sep.seid;
-}
-
 void a2dp_sink_register_packet_handler(btstack_packet_handler_t callback){
     // avdtp_sink_register_packet_handler(callback);
     // return;
@@ -289,16 +278,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
             if (status != 0){
                 a2dp_streaming_emit_connection_established(a2dp_sink_context.a2dp_callback, cid, address, loc_seid, rem_seid, status);
-                break;
-            }
-            
-            if (cid != a2dp_cid()){
-                a2dp_streaming_emit_connection_established(a2dp_sink_context.a2dp_callback, cid, address, loc_seid, rem_seid, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER);
-                break;
-            }
-            
-            if (loc_seid != local_seid()){
-                a2dp_streaming_emit_connection_established(a2dp_sink_context.a2dp_callback, cid, address, loc_seid, rem_seid, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER);
                 break;
             }
             app_state = A2DP_STREAMING_OPENED;
