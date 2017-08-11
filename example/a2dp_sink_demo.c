@@ -113,7 +113,6 @@ static int sbc_samples_fix;
 #define PREBUFFER_BYTES     (PREBUFFER_MS*SAMPLE_RATE/1000*BYTES_PER_FRAME)
 static PaStream * stream;
 static uint8_t ring_buffer_storage[2*PREBUFFER_BYTES];
-static btstack_ring_buffer_t ring_buffer;
 static int total_num_samples = 0;
 #endif
 
