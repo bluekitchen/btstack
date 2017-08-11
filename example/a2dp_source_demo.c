@@ -300,64 +300,55 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(size);
     uint8_t status;
     uint8_t local_seid;
+    bd_addr_t address;
 
-    switch (packet_type) {
- 
-        case HCI_EVENT_PACKET:
-            switch (hci_event_packet_get_type(packet)) {
-                case HCI_EVENT_A2DP_META:
-                    switch (packet[2]){
-                        case A2DP_SUBEVENT_STREAM_ESTABLISHED:
-                            status = a2dp_subevent_stream_established_get_status(packet);
-                            if (status){
-                                printf("Stream establishment failed: status 0x%02x.\n", status);
-                                break;
-                            }
-                            local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
-                            if (local_seid != media_tracker.local_seid){
-                                printf("Stream establishment failed: wrong local seid %d, expected %d.\n", local_seid, media_tracker.local_seid);
-                                break;    
-                            }
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_A2DP_META) return;
 
-                            media_tracker.a2dp_cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
-                            printf("Stream established: a2dp cid 0x%02x, local seid %d, remote seid %d.\n", 
-                                media_tracker.a2dp_cid, media_tracker.local_seid, a2dp_subevent_stream_established_get_remote_seid(packet));
-                            break;
-
-                        case A2DP_SUBEVENT_STREAM_STARTED:
-                            play_info.status = AVRCP_PLAY_STATUS_PLAYING;
-                            a2dp_demo_timer_start(&media_tracker);
-                            printf("Stream started.\n");
-                            break;
-
-                        case A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW:
-                            a2dp_demo_send_media_packet();
-                            break;        
-
-                        case A2DP_SUBEVENT_STREAM_SUSPENDED:
-                            play_info.status = AVRCP_PLAY_STATUS_PAUSED;
-                            printf("Stream paused.\n");
-                            a2dp_demo_timer_pause(&media_tracker);
-                            break;
-
-                        case A2DP_SUBEVENT_STREAM_RELEASED:
-                            play_info.status = AVRCP_PLAY_STATUS_STOPPED;
-                            printf("Stream released.\n");
-                            a2dp_demo_timer_stop(&media_tracker);
-                            break;
-                        default:
-                            printf("AVDTP Source demo: event 0x%02x is not implemented\n", packet[2]);
-                            break; 
-                    }
-                    break;   
-                default:
-                    break;
+    switch (packet[2]){
+        case A2DP_SUBEVENT_STREAM_ESTABLISHED:
+            a2dp_subevent_stream_established_get_bd_addr(packet, address);
+            status = a2dp_subevent_stream_established_get_status(packet);
+            if (status){
+                printf("Stream establishment failed: status 0x%02x.\n", status);
+                break;
             }
+            local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
+            if (local_seid != media_tracker.local_seid){
+                printf("Stream establishment failed: wrong local seid %d, expected %d.\n", local_seid, media_tracker.local_seid);
+                break;    
+            }
+
+            media_tracker.a2dp_cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
+            printf("Stream established: address %s, a2dp cid 0x%02x, local seid %d, remote seid %d.\n", bd_addr_to_str(address),
+                media_tracker.a2dp_cid, media_tracker.local_seid, a2dp_subevent_stream_established_get_remote_seid(packet));
+            break;
+
+        case A2DP_SUBEVENT_STREAM_STARTED:
+            play_info.status = AVRCP_PLAY_STATUS_PLAYING;
+            a2dp_demo_timer_start(&media_tracker);
+            printf("Stream started.\n");
+            break;
+
+        case A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW:
+            a2dp_demo_send_media_packet();
+            break;        
+
+        case A2DP_SUBEVENT_STREAM_SUSPENDED:
+            play_info.status = AVRCP_PLAY_STATUS_PAUSED;
+            printf("Stream paused.\n");
+            a2dp_demo_timer_pause(&media_tracker);
+            break;
+
+        case A2DP_SUBEVENT_STREAM_RELEASED:
+            play_info.status = AVRCP_PLAY_STATUS_STOPPED;
+            printf("Stream released.\n");
+            a2dp_demo_timer_stop(&media_tracker);
             break;
         default:
-            // other packet type
-            break;
-    }    
+            printf("AVDTP Source demo: event 0x%02x is not implemented\n", packet[2]);
+            break; 
+    }
 }
 
 static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){

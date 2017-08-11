@@ -201,21 +201,6 @@ void a2dp_sink_disconnect(uint16_t a2dp_cid){
     avdtp_disconnect(a2dp_cid, &a2dp_sink_context);
 }
 
-static void a2dp_streaming_emit_connection_established(btstack_packet_handler_t callback, uint16_t cid, uint8_t local_seid, uint8_t remote_seid, uint8_t status){
-    if (!callback) return;
-    uint8_t event[8];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_A2DP_META;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = A2DP_SUBEVENT_STREAM_ESTABLISHED;
-    little_endian_store_16(event, pos, cid);
-    pos += 2;
-    event[pos++] = local_seid;
-    event[pos++] = remote_seid;
-    event[pos++] = status;
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
 static inline void a2dp_signaling_emit_media_codec_sbc(btstack_packet_handler_t callback, uint8_t * event, uint16_t event_size){
     if (!callback) return;
     if (event_size < 18) return;
@@ -278,7 +263,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             status = avdtp_subevent_signaling_connection_established_get_status(packet);
             if (status != 0){
                 log_info("AVDTP_SUBEVENT_SIGNALING_CONNECTION failed status %d ---", status);
-                a2dp_streaming_emit_connection_established(a2dp_sink_context.a2dp_callback, cid, 0, 0, status);
+                a2dp_streaming_emit_connection_established(a2dp_sink_context.a2dp_callback, cid, address, 0, 0, status);
                 break;
             }
             app_state = A2DP_CONNECTED;
@@ -296,27 +281,28 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
 
         case AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED:
+            avdtp_subevent_streaming_connection_established_get_bd_addr(packet, address);
             status = avdtp_subevent_streaming_connection_established_get_status(packet);
             cid = avdtp_subevent_streaming_connection_established_get_avdtp_cid(packet);
             loc_seid = avdtp_subevent_streaming_connection_established_get_local_seid(packet);
             rem_seid = avdtp_subevent_streaming_connection_established_get_remote_seid(packet);
 
             if (status != 0){
-                a2dp_streaming_emit_connection_established(a2dp_sink_context.a2dp_callback, cid, loc_seid, rem_seid, status);
+                a2dp_streaming_emit_connection_established(a2dp_sink_context.a2dp_callback, cid, address, loc_seid, rem_seid, status);
                 break;
             }
             
             if (cid != a2dp_cid()){
-                a2dp_streaming_emit_connection_established(a2dp_sink_context.a2dp_callback, cid, loc_seid, rem_seid, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER);
+                a2dp_streaming_emit_connection_established(a2dp_sink_context.a2dp_callback, cid, address, loc_seid, rem_seid, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER);
                 break;
             }
             
             if (loc_seid != local_seid()){
-                a2dp_streaming_emit_connection_established(a2dp_sink_context.a2dp_callback, cid, loc_seid, rem_seid, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER);
+                a2dp_streaming_emit_connection_established(a2dp_sink_context.a2dp_callback, cid, address, loc_seid, rem_seid, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER);
                 break;
             }
             app_state = A2DP_STREAMING_OPENED;
-            a2dp_streaming_emit_connection_established(a2dp_sink_context.a2dp_callback, cid, loc_seid, rem_seid, 0);
+            a2dp_streaming_emit_connection_established(a2dp_sink_context.a2dp_callback, cid, address, loc_seid, rem_seid, 0);
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_ACCEPT:

@@ -1388,9 +1388,10 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION        0x0A
 
 /**
- * @format 12111
+ * @format 12B111
  * @param subevent_code
  * @param avdtp_cid
+ * @param bd_addr
  * @param local_seid
  * @param remote_seid
  * @param status 0 == OK
@@ -1469,9 +1470,10 @@ typedef uint8_t sm_key_t[16];
 #define A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION    0x03
 
 /**
- * @format 12111          Stream is opened byt not started.
+ * @format 12B111          Stream is opened byt not started.
  * @param subevent_code 
  * @param a2dp_cid
+ * @param bd_addr
  * @param local_seid
  * @param remote_seid
  * @param status
