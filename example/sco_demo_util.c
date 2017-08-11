@@ -212,7 +212,7 @@ static int portaudio_callback( const void *inputBuffer, void *outputBuffer,
 
     // config based on codec
     int bytes_to_copy;
-    int prebuffer_bytes;
+    uint32_t prebuffer_bytes;
     switch (negotiated_codec){
         case HFP_CODEC_MSBC:
             bytes_to_copy   = framesPerBuffer * MSBC_BYTES_PER_FRAME;
@@ -256,7 +256,6 @@ static int portaudio_callback( const void *inputBuffer, void *outputBuffer,
     btstack_ring_buffer_write(&pa_input_ring_buffer, (uint8_t *)inputBuffer, framesPerBuffer * 2);
     pa_input_counter += framesPerBuffer * 2;
 #endif
-
     return 0;
 }
 
