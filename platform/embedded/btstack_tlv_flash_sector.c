@@ -274,7 +274,21 @@ static void btstack_tlv_flash_sector_store_tag(void * context, uint32_t tag, con
  * @param tag
  */
 static void btstack_tlv_flash_sector_delete_tag(void * context, uint32_t tag){
-	btstack_tlv_flash_sector_store_tag(context, tag, NULL, 0);
+
+	btstack_tlv_flash_sector_t * self = (btstack_tlv_flash_sector_t *) context;
+
+	tlv_iterator_t it;
+	btstack_tlv_flash_sector_iterator_init(self, &it, self->current_bank);
+	while (btstack_tlv_flash_sector_iterator_has_next(self, &it)){
+		log_info("Offset %u, tag %x", it.offset, it.tag);
+		if (it.tag == tag){
+			log_info("Found tag '%x' at position %u", tag, it.offset);
+			// overwrite tag with invalid tag
+			uint32_t zero_tag = 0;
+			self->hal_flash_sector_impl->write(self->hal_flash_sector_context, self->current_bank, it.offset, (uint8_t*) &zero_tag, sizeof(zero_tag));
+		}
+		tlv_iterator_fetch_next(self, &it);
+	}
 }
 
 static const btstack_tlv_t btstack_tlv_flash_sector = {
