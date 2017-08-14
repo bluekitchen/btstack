@@ -266,10 +266,8 @@ const btstack_tlv_t * btstack_tlv_flash_sector_init_instance(btstack_tlv_flash_s
 	int current_bank = btstack_tlv_flash_sector_get_latest_bank(self);
 	log_info("found bank %d", current_bank);
 	if (current_bank < 0){
-		log_info("erase both banks");
-		// erase both to get into stable state
+		log_info("erase first bank");
 		hal_flash_sector_impl->erase(hal_flash_sector_context, 0);
-		hal_flash_sector_impl->erase(hal_flash_sector_context, 1);
 		current_bank = 0;
 		btstack_tlv_flash_sector_write_header(self, current_bank, 0);	// epoch = 0;
 	}
