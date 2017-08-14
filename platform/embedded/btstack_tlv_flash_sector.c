@@ -225,7 +225,6 @@ static int btstack_tlv_flash_sector_get_tag(void * context, uint32_t tag, uint8_
 	tlv_iterator_t it;
 	btstack_tlv_flash_sector_iterator_init(self, &it, self->current_bank);
 	while (btstack_tlv_flash_sector_iterator_has_next(self, &it)){
-		log_info("Offset %u, tag %x", it.offset, it.tag);
 		if (it.tag == tag){
 			log_info("Found tag '%x' at position %u", tag, it.offset);
 			tag_index = it.offset;
@@ -266,6 +265,20 @@ static void btstack_tlv_flash_sector_store_tag(void * context, uint32_t tag, con
 	// then entry
 	self->hal_flash_sector_impl->write(self->hal_flash_sector_context, self->current_bank, self->write_offset, entry, sizeof(entry));
 
+	// overwrite old entries (if exists)
+	tlv_iterator_t it;
+	btstack_tlv_flash_sector_iterator_init(self, &it, self->current_bank);
+	while (btstack_tlv_flash_sector_iterator_has_next(self, &it) && it.offset < self->write_offset){
+		if (it.tag == tag){
+			log_info("Erase old tag '%x' at position %u", tag, it.offset);
+			// overwrite tag with invalid tag
+			uint32_t zero_tag = 0;
+			self->hal_flash_sector_impl->write(self->hal_flash_sector_context, self->current_bank, it.offset, (uint8_t*) &zero_tag, sizeof(zero_tag));
+		}
+		tlv_iterator_fetch_next(self, &it);
+	}
+
+	// done
 	self->write_offset += sizeof(entry) + data_size;
 }
 
@@ -280,9 +293,8 @@ static void btstack_tlv_flash_sector_delete_tag(void * context, uint32_t tag){
 	tlv_iterator_t it;
 	btstack_tlv_flash_sector_iterator_init(self, &it, self->current_bank);
 	while (btstack_tlv_flash_sector_iterator_has_next(self, &it)){
-		log_info("Offset %u, tag %x", it.offset, it.tag);
 		if (it.tag == tag){
-			log_info("Found tag '%x' at position %u", tag, it.offset);
+			log_info("Erase tag '%x' at position %u", tag, it.offset);
 			// overwrite tag with invalid tag
 			uint32_t zero_tag = 0;
 			self->hal_flash_sector_impl->write(self->hal_flash_sector_context, self->current_bank, it.offset, (uint8_t*) &zero_tag, sizeof(zero_tag));
