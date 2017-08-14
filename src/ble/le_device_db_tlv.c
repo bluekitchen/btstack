@@ -82,15 +82,15 @@ typedef struct le_device_db_entry_t {
 } le_device_db_entry_t;
 
 
-#ifndef MAX_NR_LE_DEVICE_DB_ENTRIES 
-#error "MAX_NR_LE_DEVICE_DB_ENTRIES not defined, please define in btstack_config.h"
+#ifndef NVM_NUM_DEVICE_DB_ENTRIES 
+#error "NVM_NUM_DEVICE_DB_ENTRIES not defined, please define in btstack_config.h"
 #endif
 
-#if MAX_NR_LE_DEVICE_DB_ENTRIES == 0
-#error "MAX_NR_LE_DEVICE_DB_ENTRIES must not be 0, please update in btstack_config.h"
+#if NVM_NUM_DEVICE_DB_ENTRIES == 0
+#error "NVM_NUM_DEVICE_DB_ENTRIES must not be 0, please update in btstack_config.h"
 #endif
 
-static uint8_t  entry_map[MAX_NR_LE_DEVICE_DB_ENTRIES];
+static uint8_t  entry_map[NVM_NUM_DEVICE_DB_ENTRIES];
 static uint32_t num_valid_entries;
 
 static const btstack_tlv_t * le_device_db_tlv_btstack_tlv_impl;
@@ -107,7 +107,7 @@ static uint32_t le_device_db_tlv_tag_for_index(uint8_t index){
 // @returns success
 // @param index = entry_pos
 static int le_device_db_tlv_fetch(int index, le_device_db_entry_t * entry){
-    if (index < 0 || index >= MAX_NR_LE_DEVICE_DB_ENTRIES){
+    if (index < 0 || index >= NVM_NUM_DEVICE_DB_ENTRIES){
 	    log_error("le_device_db_tlv_fetch called with invalid index %d", index);
 	    return 0;
 	}
@@ -119,7 +119,7 @@ static int le_device_db_tlv_fetch(int index, le_device_db_entry_t * entry){
 // @returns success
 // @param index = entry_pos
 static int le_device_db_tlv_store(int index, le_device_db_entry_t * entry){
-    if (index < 0 || index >= MAX_NR_LE_DEVICE_DB_ENTRIES){
+    if (index < 0 || index >= NVM_NUM_DEVICE_DB_ENTRIES){
 	    log_error("le_device_db_tlv_store called with invalid index %d", index);
 	    return 0;
 	}
@@ -130,7 +130,7 @@ static int le_device_db_tlv_store(int index, le_device_db_entry_t * entry){
 
 // @param index = entry_pos
 static int le_device_db_tlv_delete(int index){
-    if (index < 0 || index >= MAX_NR_LE_DEVICE_DB_ENTRIES){
+    if (index < 0 || index >= NVM_NUM_DEVICE_DB_ENTRIES){
 	    log_error("le_device_db_tlv_delete called with invalid index %d", index);
 	    return 0;
 	}
@@ -160,7 +160,7 @@ void le_device_db_init(void){
     int i;
 	num_valid_entries = 0;
 	memset(entry_map, 0, sizeof(entry_map));
-    for (i=0;i<MAX_NR_LE_DEVICE_DB_ENTRIES;i++){
+    for (i=0;i<NVM_NUM_DEVICE_DB_ENTRIES;i++){
     	// lookup entry
     	le_device_db_entry_t entry;
     	int ok = le_device_db_tlv_fetch(i, &entry);
@@ -189,10 +189,10 @@ void le_device_db_remove(int index){
 
 	// shift all entries down by one
 	int i;
-    for (i=index;i<MAX_NR_LE_DEVICE_DB_ENTRIES - 1;i++){
+    for (i=index;i<NVM_NUM_DEVICE_DB_ENTRIES - 1;i++){
     	entry_map[i] = entry_map[i+1];
     }
-    entry_map[MAX_NR_LE_DEVICE_DB_ENTRIES-1] = 0;
+    entry_map[NVM_NUM_DEVICE_DB_ENTRIES-1] = 0;
 
     // keep track
     num_valid_entries--;
@@ -214,7 +214,7 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
          break;
     }
 
-    if (i == num_valid_entries && num_valid_entries < MAX_NR_LE_DEVICE_DB_ENTRIES){
+    if (i == num_valid_entries && num_valid_entries < NVM_NUM_DEVICE_DB_ENTRIES){
     	index = num_valid_entries;
     	new_index = num_valid_entries;
     }
@@ -225,7 +225,7 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     log_info("new entry pos %u used for index %u", index, new_index);
 
     // shift all entries up by one
-    for (i = MAX_NR_LE_DEVICE_DB_ENTRIES - 1; i > index; i--){
+    for (i = NVM_NUM_DEVICE_DB_ENTRIES - 1; i > index; i--){
     	entry_map[i] = entry_map[i-1];
     }
 
