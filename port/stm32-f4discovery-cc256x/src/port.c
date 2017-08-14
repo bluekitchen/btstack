@@ -3,11 +3,12 @@
 #include "btstack_debug.h"
 #include "btstack_chipset_cc256x.h"
 #include "btstack_run_loop_embedded.h"
+#include "btstack_tlv.h"
+#include "btstack_tlv_flash_sector.h"
+#include "ble/le_device_db_tlv.h"
 #include "classic/btstack_link_key_db_static.h"
 #include "classic/btstack_link_key_db_tlv.h"
 #include "hal_flash_sector.h"
-#include "btstack_tlv.h"
-#include "btstack_tlv_flash_sector.h"
 #include "stm32f4xx_hal.h"
 
 #define __BTSTACK_FILE__ "port.c"
@@ -374,7 +375,7 @@ void port_main(void){
     hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), (void*) &config);
     hci_set_chipset(btstack_chipset_cc256x_instance());
 
-    // setup Link Key DB
+    // setup TLV Flash Sector implementation
     const hal_flash_sector_t * hal_flash_sector_impl = hal_flash_sector_stm32_init_instance(
     		&hal_flash_sector_context,
     		HAL_FLASH_SECTOR_SIZE,
@@ -386,8 +387,13 @@ void port_main(void){
     		&btstack_tlv_flash_sector_context,
 			hal_flash_sector_impl,
 			&hal_flash_sector_context);
+
+    // setup Link Key DB using TLV
     const btstack_link_key_db_t * btstack_link_key_db = btstack_link_key_db_tlv_get_instance(btstack_tlv_impl, &btstack_tlv_flash_sector_context);
     hci_set_link_key_db(btstack_link_key_db);
+
+    // setup LE Device DB using TLV
+    le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_sector_context);
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
