@@ -105,7 +105,8 @@ static const hal_flash_sector_t hal_flash_sector_memory_instance = {
 const hal_flash_sector_t * hal_flash_sector_memory_init_instance(hal_flash_sector_memory_t * self, uint8_t * storage, uint32_t storage_size){
 	self->bank_size = storage_size / 2;
 	self->banks[0] = storage;
-	self->banks[1] = &storage[self->bank_size];		
+	self->banks[1] = &storage[self->bank_size];
+	memset(storage, 0xff, storage_size);
 	return &hal_flash_sector_memory_instance;
 }
 
