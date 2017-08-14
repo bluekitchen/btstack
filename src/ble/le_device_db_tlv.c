@@ -152,7 +152,7 @@ static int le_device_db_tlv_store_mapped(int index, le_device_db_entry_t * entry
 	    log_error("le_device_tlv_store_mapped called with invalid index %d", index);
 	    return 0;
 	}
-	return le_device_db_tlv_store_mapped(entry_map[index], entry);
+	return le_device_db_tlv_store(entry_map[index], entry);
 }
 
 
