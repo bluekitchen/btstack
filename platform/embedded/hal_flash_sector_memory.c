@@ -72,7 +72,8 @@ static void hal_flash_sector_memory_read(void * context, int bank, uint32_t offs
 static void hal_flash_sector_memory_write(void * context, int bank, uint32_t offset, const uint8_t * data, uint32_t size){
 	hal_flash_sector_memory_t * self = (hal_flash_sector_memory_t *) context;
 
-	// log_info("write offset %u, len %u", offset, size);
+	log_info("write offset %u, len %u", offset, size);
+	log_info_hexdump(data, size);
 
 	if (bank > 1) return;
 	if (offset > self->bank_size) return;
@@ -81,8 +82,8 @@ static void hal_flash_sector_memory_write(void * context, int bank, uint32_t off
 #ifdef BTSTACK_TEST
 	int i;
 	for (i=0;i<size;i++){
-		if (self->banks[bank][offset] != 0xff){
-			printf("Error: offset %u written twice!\n", offset+i);
+		if (self->banks[bank][offset] != 0xff && data[i] != 0x0){
+			printf("Error: offset %u written twice. Data: 0x%02x!\n", offset+i, data[i]);
 			exit(10);
 			return;			
 		}
