@@ -1549,18 +1549,21 @@ static void sm_sc_cmac_done(uint8_t * hash){
             sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_H6_BR_EDR_LINK_KEY;
             break;
         case SM_SC_W4_CALCULATE_H6_BR_EDR_LINK_KEY:
+#ifdef ENABLE_CLASSIC
             reverse_128(hash, setup->sm_t);
             link_key_type = sm_conn->sm_connection_authenticated ?
                 AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256 : UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256;
+            log_info("Derived classic link key from LE using h6, type %u", (int) link_key_type);
             if (IS_RESPONDER(sm_conn->sm_role)){
-#ifdef ENABLE_CLASSIC
                 gap_store_link_key_for_bd_addr(setup->sm_m_address, setup->sm_t, link_key_type);
+            } else {
+                gap_store_link_key_for_bd_addr(setup->sm_s_address, setup->sm_t, link_key_type);
+            }
 #endif
+            if (IS_RESPONDER(sm_conn->sm_role)){
                 sm_conn->sm_engine_state = SM_RESPONDER_IDLE; 
             } else {
-#ifdef ENABLE_CLASSIC
                 gap_store_link_key_for_bd_addr(setup->sm_s_address, setup->sm_t, link_key_type);
-#endif
                 sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED; 
             }
             sm_done_for_handle(sm_conn->sm_handle);
@@ -2892,6 +2895,7 @@ static void sm_handle_random_result(uint8_t * data){
 #ifdef USE_MICROECC_FOR_ECDH
 
 #ifndef WICED_VERSION
+            log_info("set uECC RNG for initial key generation with 64 random bytes");
             // micro-ecc from WICED SDK uses its wiced_crypto_get_random by default - no need to set it
             uECC_set_rng(&sm_generate_f_rng);
 #endif /* WICED_VERSION */
@@ -2903,13 +2907,6 @@ static void sm_handle_random_result(uint8_t * data){
             // static version
             uECC_make_key(ec_q, ec_d);
 #endif /* USE_MICROECC_FOR_ECDH */
-
-#ifndef WICED_VERSION
-            // disable rng generator as we don't have any random bits left
-            // we can do this because we don't generate another key
-            // we need to to this because shared key calculation fails if rng returns 0
-            uECC_set_rng(NULL);
-#endif /* WICED_VERSION */
 
 #endif /* USE_MICROECC_FOR_ECDH */
 
