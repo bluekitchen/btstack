@@ -5,7 +5,6 @@ VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/example
 VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player
-VPATH += ${BTSTACK_ROOT}/3rd-party/mbedtls/library
 VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce 
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder//srce
@@ -250,7 +249,7 @@ ancs_client_demo: ancs_client_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT
 led_counter: ${CORE_OBJ} ${COMMON_OBJ} led_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-gap_le_advertisements: ${CORE_OBJ} ${COMMON_OBJ} gap_le_advertisements.c
+gap_le_advertisements: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ}  gap_le_advertisements.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hsp_hs_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hsp_hs.o hsp_hs_demo.c

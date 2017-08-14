@@ -79,17 +79,8 @@
 #ifdef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
 #error "Support for DHKEY Support in HCI Controller not implemented yet. Please use software implementation" 
 #else
-// #define USE_MBEDTLS_FOR_ECDH
 #define USE_MICROECC_FOR_ECDH
 #endif
-#endif
-
-// Software ECDH implementation provided by mbedtls
-#ifdef USE_MBEDTLS_FOR_ECDH
-#include "mbedtls/config.h"
-#include "mbedtls/platform.h"
-#include "mbedtls/ecp.h"
-#include "sm_mbedtls_allocator.h" 
 #endif
 
 // Software ECDH implementation provided by micro-ecc
@@ -272,20 +263,6 @@ static btstack_linked_list_t sm_event_handlers;
 static ec_key_generation_state_t ec_key_generation_state;
 static uint8_t ec_d[32];
 static uint8_t ec_q[64];
-#endif
-
-// Software ECDH implementation provided by mbedtls
-#ifdef USE_MBEDTLS_FOR_ECDH
-// group is always valid
-static mbedtls_ecp_group   mbedtls_ec_group;
-#ifndef HAVE_MALLOC
-// COMP Method with Window 2
-// 1300 bytes with 23 allocations
-// #define MBEDTLS_ALLOC_BUFFER_SIZE (1300+23*sizeof(void *))
-// NAIVE Method with safe cond assignments (without safe cond, order changes and allocations fail)
-#define MBEDTLS_ALLOC_BUFFER_SIZE (700+18*sizeof(void *))
-static uint8_t mbedtls_memory_buffer[MBEDTLS_ALLOC_BUFFER_SIZE]; 
-#endif
 #endif
 
 //
@@ -1594,24 +1571,6 @@ static const uint8_t f5_length[] = { 0x01, 0x00};
 
 static void sm_sc_calculate_dhkey(sm_key256_t dhkey){
     memset(dhkey, 0, 32);
-#ifdef USE_MBEDTLS_FOR_ECDH
-    // da * Pb
-    mbedtls_mpi d;
-    mbedtls_ecp_point Q;
-    mbedtls_ecp_point DH;
-    mbedtls_mpi_init(&d);
-    mbedtls_ecp_point_init(&Q);
-    mbedtls_ecp_point_init(&DH);
-    mbedtls_mpi_read_binary(&d, ec_d, 32);
-    mbedtls_mpi_read_binary(&Q.X, &setup->sm_peer_q[0] , 32);
-    mbedtls_mpi_read_binary(&Q.Y, &setup->sm_peer_q[32], 32);
-    mbedtls_mpi_lset(&Q.Z, 1);
-    mbedtls_ecp_mul(&mbedtls_ec_group, &DH, &d, &Q, NULL, NULL);
-    mbedtls_mpi_write_binary(&DH.X, dhkey, 32);
-    mbedtls_ecp_point_free(&DH);
-    mbedtls_mpi_free(&d);
-    mbedtls_ecp_point_free(&Q);
-#endif
 #ifdef USE_MICROECC_FOR_ECDH
 #if uECC_SUPPORTS_secp256r1
     // standard version
@@ -2836,7 +2795,7 @@ static void sm_handle_encryption_result(uint8_t * data){
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 #ifndef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
-#if !defined(WICED_VERSION) || defined(USE_MBEDTLS_FOR_ECDH) 
+#if !defined(WICED_VERSION)
 // @return OK
 static int sm_generate_f_rng(unsigned char * buffer, unsigned size){
     if (ec_key_generation_state != EC_KEY_GENERATION_ACTIVE) return 0;
@@ -2848,13 +2807,6 @@ static int sm_generate_f_rng(unsigned char * buffer, unsigned size){
     }
     setup->sm_passkey_bit = offset;
     return 1;
-}
-#endif
-#ifdef USE_MBEDTLS_FOR_ECDH
-// @return error
-static int sm_generate_f_rng_mbedtls(void * context, unsigned char * buffer, size_t size){
-    UNUSED(context);
-    return sm_generate_f_rng(buffer, size) == 1;
 }
 #endif
 #endif
@@ -2878,22 +2830,7 @@ static void sm_handle_random_result(uint8_t * data){
             setup->sm_passkey_bit = 0;
 
             // generate EC key
-#ifdef USE_MBEDTLS_FOR_ECDH
-            mbedtls_mpi d;
-            mbedtls_ecp_point P;
-            mbedtls_mpi_init(&d);
-            mbedtls_ecp_point_init(&P);
-            int res = mbedtls_ecp_gen_keypair(&mbedtls_ec_group, &d, &P, &sm_generate_f_rng_mbedtls, NULL);
-            log_info("gen keypair %x", res);
-            mbedtls_mpi_write_binary(&P.X, &ec_q[0],  32);
-            mbedtls_mpi_write_binary(&P.Y, &ec_q[32], 32);
-            mbedtls_mpi_write_binary(&d, ec_d, 32);
-            mbedtls_ecp_point_free(&P);
-            mbedtls_mpi_free(&d);
-#endif
-
 #ifdef USE_MICROECC_FOR_ECDH
-
 #ifndef WICED_VERSION
             log_info("set uECC RNG for initial key generation with 64 random bytes");
             // micro-ecc from WICED SDK uses its wiced_crypto_get_random by default - no need to set it
@@ -2909,7 +2846,6 @@ static void sm_handle_random_result(uint8_t * data){
 #endif /* USE_MICROECC_FOR_ECDH */
 
 #endif /* USE_MICROECC_FOR_ECDH */
-
             ec_key_generation_state = EC_KEY_GENERATION_DONE;
             log_info("Elliptic curve: d");
             log_info_hexdump(ec_d,32);
@@ -3493,15 +3429,6 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             // validate public key
             err = 0;
 
-#ifdef USE_MBEDTLS_FOR_ECDH
-            mbedtls_ecp_point Q;
-            mbedtls_ecp_point_init( &Q );
-            mbedtls_mpi_read_binary(&Q.X, &setup->sm_peer_q[0], 32);
-            mbedtls_mpi_read_binary(&Q.Y, &setup->sm_peer_q[32], 32);
-            mbedtls_mpi_lset(&Q.Z, 1);
-            err = mbedtls_ecp_check_pubkey(&mbedtls_ec_group, &Q);
-            mbedtls_ecp_point_free( & Q);
-#endif
 #ifdef USE_MICROECC_FOR_ECDH
 #if uECC_SUPPORTS_secp256r1
             // standard version
@@ -3825,14 +3752,6 @@ void sm_init(void){
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
     ec_key_generation_state = EC_KEY_GENERATION_IDLE;
 #endif
-
-#ifdef USE_MBEDTLS_FOR_ECDH
-#ifndef HAVE_MALLOC
-    sm_mbedtls_allocator_init(mbedtls_memory_buffer, sizeof(mbedtls_memory_buffer));
-#endif
-    mbedtls_ecp_group_init(&mbedtls_ec_group);
-    mbedtls_ecp_group_load(&mbedtls_ec_group, MBEDTLS_ECP_DP_SECP256R1);
-#endif
 }
 
 void sm_use_fixed_ec_keypair(uint8_t * qx, uint8_t * qy, uint8_t * d){
@@ -3850,7 +3769,6 @@ void sm_use_fixed_ec_keypair(uint8_t * qx, uint8_t * qy, uint8_t * d){
 }
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-#ifndef USE_MBEDTLS_FOR_ECDH
 static void parse_hex(uint8_t * buffer, const char * hex_string){
     while (*hex_string){
         int high_nibble = nibble_for_char(*hex_string++);
@@ -3859,29 +3777,15 @@ static void parse_hex(uint8_t * buffer, const char * hex_string){
     }
 }
 #endif
-#endif
 
 void sm_test_use_fixed_ec_keypair(void){
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
     const char * ec_d_string =  "3f49f6d4a3c55f3874c9b3e3d2103f504aff607beb40b7995899b8a6cd3c1abd";
     const char * ec_qx_string = "20b003d2f297be2c5e2c83a7e9f9a5b9eff49111acf4fddbcc0301480e359de6";
     const char * ec_qy_string = "dc809c49652aeb6d63329abf5a52155c766345c28fed3024741c8ed01589d28b";
-#ifdef USE_MBEDTLS_FOR_ECDH
-    // use test keypair from spec
-    mbedtls_mpi x;
-    mbedtls_mpi_init(&x);
-    mbedtls_mpi_read_string( &x, 16, ec_d_string);
-    mbedtls_mpi_write_binary(&x, ec_d, 32);
-    mbedtls_mpi_read_string( &x, 16, ec_qx_string);
-    mbedtls_mpi_write_binary(&x, &ec_q[0], 32);
-    mbedtls_mpi_read_string( &x, 16, ec_qy_string);
-    mbedtls_mpi_write_binary(&x, &ec_q[32], 32);
-    mbedtls_mpi_free(&x);
-#else
     parse_hex(ec_d, ec_d_string);
     parse_hex(&ec_q[0],  ec_qx_string);
     parse_hex(&ec_q[32], ec_qy_string);
-#endif
     sm_have_ec_keypair = 1;
     ec_key_generation_state = EC_KEY_GENERATION_DONE;
 #endif
