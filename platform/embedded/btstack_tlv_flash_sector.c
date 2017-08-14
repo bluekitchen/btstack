@@ -28,6 +28,9 @@
  * SUCH DAMAGE.
  *
  */
+
+#define __BTSTACK_FILE__ "btstack_tlv_flash_sector.c"
+
 #include "btstack_tlv.h"
 #include "btstack_tlv_flash_sector.h"
 #include "btstack_debug.h"
@@ -148,7 +151,7 @@ static void btstack_tlv_flash_sector_erase_bank(btstack_tlv_flash_sector_t * sel
 static void btstack_tlv_flash_sector_migrate(btstack_tlv_flash_sector_t * self){
 
 	int next_bank = 1 - self->current_bank;
-
+	log_info("migrate bank %u -> bank %u", self->current_bank, next_bank);
 	// erase bank (if needed)
 	btstack_tlv_flash_sector_erase_bank(self, next_bank);
 	int next_write_pos = 8;
@@ -156,48 +159,24 @@ static void btstack_tlv_flash_sector_migrate(btstack_tlv_flash_sector_t * self){
 	tlv_iterator_t it;
 	btstack_tlv_flash_sector_iterator_init(self, &it, self->current_bank);
 	while (btstack_tlv_flash_sector_iterator_has_next(self, &it)){
-		// check if already exist in next bank
-		int found = 0;
-		tlv_iterator_t next_it;
-		btstack_tlv_flash_sector_iterator_init(self, &next_it, next_bank);
-		while (btstack_tlv_flash_sector_iterator_has_next(self, &next_it)){
-			if (next_it.tag == it.tag){
-				found = 1;
-				break;
-			}
-			tlv_iterator_fetch_next(self, &next_it);
-		}
-		log_info("tag %x in next bank %u", it.tag, found);
-		if (found) {
-			tlv_iterator_fetch_next(self, &it);
-			continue;
-		}
-	
-		// finde latest value for this one
-		uint32_t tag_index = 0;
-		uint32_t tag_len   = 0;
-		tlv_iterator_t scan_it;
-		btstack_tlv_flash_sector_iterator_init(self, &scan_it, self->current_bank);
-		while (btstack_tlv_flash_sector_iterator_has_next(self, &scan_it)){
-			if (scan_it.tag == it.tag){
-				tag_index = scan_it.offset;
-				tag_len   = scan_it.len;
-			}
-			tlv_iterator_fetch_next(self, &scan_it);
-		}
-		// copy
-		int bytes_to_copy = 8 + tag_len;
-		log_info("migrate %u len %u -> %u", tag_index, bytes_to_copy, next_write_pos);
-		uint8_t copy_buffer[32];
-		while (bytes_to_copy){
-			int bytes_this_iteration = btstack_min(bytes_to_copy, sizeof(copy_buffer));
-			self->hal_flash_sector_impl->read(self->hal_flash_sector_context, self->current_bank, tag_index, copy_buffer, bytes_this_iteration);
-			self->hal_flash_sector_impl->write(self->hal_flash_sector_context, next_bank, next_write_pos, copy_buffer, bytes_this_iteration);
-			tag_index      += bytes_this_iteration;
-			next_write_pos += bytes_this_iteration;
-			bytes_to_copy  -= bytes_this_iteration;
-		}
+		// skip deleted entries
+		if (it.tag) {
+			uint32_t tag_len = it.len;
+			uint32_t tag_index = it.offset;
 
+			// copy
+			int bytes_to_copy = 8 + tag_len;
+			log_info("migrate pos %u, tag '%x' len %u -> new pos %u", tag_index, it.tag, bytes_to_copy, next_write_pos);
+			uint8_t copy_buffer[32];
+			while (bytes_to_copy){
+				int bytes_this_iteration = btstack_min(bytes_to_copy, sizeof(copy_buffer));
+				self->hal_flash_sector_impl->read(self->hal_flash_sector_context, self->current_bank, tag_index, copy_buffer, bytes_this_iteration);
+				self->hal_flash_sector_impl->write(self->hal_flash_sector_context, next_bank, next_write_pos, copy_buffer, bytes_this_iteration);
+				tag_index      += bytes_this_iteration;
+				next_write_pos += bytes_this_iteration;
+				bytes_to_copy  -= bytes_this_iteration;
+			}
+		}
 		tlv_iterator_fetch_next(self, &it);
 	}
 

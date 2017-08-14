@@ -30,9 +30,11 @@
  */
 
 /*
- *  hal_flash_sector.c -- volatile test environment that provides just two memory banks
+ *  hal_flash_sector_memory.c -- volatile test environment that provides just two memory banks
  *
  */
+
+#define __BTSTACK_FILE__ "hal_flash_sector_memory.c"
 
 #include "hal_flash_sector.h"
 #include "hal_flash_sector_memory.h"
