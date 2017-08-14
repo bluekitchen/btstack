@@ -116,12 +116,41 @@ static void btstack_tlv_flash_sector_write_header(btstack_tlv_flash_sector_t * s
 	self->hal_flash_sector_impl->write(self->hal_flash_sector_context, bank, 0, header, BTSTACK_TLV_HEADER_LEN);
 }
 
+/**
+ * @brief Check if erased
+ */
+static int btstack_tlv_flash_sector_test_erased(btstack_tlv_flash_sector_t * self, int bank){
+	uint32_t offset;
+	uint32_t size = self->hal_flash_sector_impl->get_size(self->hal_flash_sector_context);
+	uint8_t buffer[16];
+	uint8_t empty16[16];
+	memset(empty16, 0xff, sizeof(empty16));
+	for (offset = 0 ; offset <= size ; offset += sizeof(empty16)){
+		uint32_t copy_size = (offset + sizeof(empty16) < size) ? sizeof(empty16) : (size - offset); 
+		self->hal_flash_sector_impl->read(self->hal_flash_sector_context, bank, offset, buffer, copy_size);
+		if (memcmp(buffer, empty16, sizeof(empty16))) return 0;
+	}
+	return 1;
+}
+
+/** 
+ * @brief erase bank (only if not already erased)
+ */
+static void btstack_tlv_flash_sector_erase_bank(btstack_tlv_flash_sector_t * self, int bank){
+	if (btstack_tlv_flash_sector_test_erased(self, 0)){
+		log_info("bank %u already erased", bank);
+	} else {
+		log_info("bank %u not empty, erase bank", bank);
+		self->hal_flash_sector_impl->erase(self->hal_flash_sector_context, 0);
+	}
+}
+
 static void btstack_tlv_flash_sector_migrate(btstack_tlv_flash_sector_t * self){
 
 	int next_bank = 1 - self->current_bank;
 
-	// @TODO erase might not be needed - resp. already been performed
-	self->hal_flash_sector_impl->erase(self->hal_flash_sector_context, next_bank);
+	// erase bank (if needed)
+	btstack_tlv_flash_sector_erase_bank(self, next_bank);
 	int next_write_pos = 8;
 
 	tlv_iterator_t it;
@@ -266,8 +295,7 @@ const btstack_tlv_t * btstack_tlv_flash_sector_init_instance(btstack_tlv_flash_s
 	int current_bank = btstack_tlv_flash_sector_get_latest_bank(self);
 	log_info("found bank %d", current_bank);
 	if (current_bank < 0){
-		log_info("erase first bank");
-		hal_flash_sector_impl->erase(hal_flash_sector_context, 0);
+		btstack_tlv_flash_sector_erase_bank(self, 0);
 		current_bank = 0;
 		btstack_tlv_flash_sector_write_header(self, current_bank, 0);	// epoch = 0;
 	}
