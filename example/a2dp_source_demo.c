@@ -310,24 +310,24 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             a2dp_subevent_stream_established_get_bd_addr(packet, address);
             status = a2dp_subevent_stream_established_get_status(packet);
             if (status){
-                printf("Stream establishment failed: status 0x%02x.\n", status);
+                printf("A2DP: Stream establishment failed: status 0x%02x.\n", status);
                 break;
             }
             local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
             if (local_seid != media_tracker.local_seid){
-                printf("Stream establishment failed: wrong local seid %d, expected %d.\n", local_seid, media_tracker.local_seid);
+                printf("A2DP: Stream establishment failed: wrong local seid %d, expected %d.\n", local_seid, media_tracker.local_seid);
                 break;    
             }
 
             media_tracker.a2dp_cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
-            printf("Stream established: address %s, a2dp cid 0x%02x, local seid %d, remote seid %d.\n", bd_addr_to_str(address),
+            printf("A2DP: Stream established: address %s, a2dp cid 0x%02x, local seid %d, remote seid %d.\n", bd_addr_to_str(address),
                 media_tracker.a2dp_cid, media_tracker.local_seid, a2dp_subevent_stream_established_get_remote_seid(packet));
             break;
 
         case A2DP_SUBEVENT_STREAM_STARTED:
             play_info.status = AVRCP_PLAY_STATUS_PLAYING;
             a2dp_demo_timer_start(&media_tracker);
-            printf("Stream started.\n");
+            printf("A2DP: Stream started.\n");
             break;
 
         case A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW:
@@ -336,17 +336,17 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
         case A2DP_SUBEVENT_STREAM_SUSPENDED:
             play_info.status = AVRCP_PLAY_STATUS_PAUSED;
-            printf("Stream paused.\n");
+            printf("A2DP: Stream paused.\n");
             a2dp_demo_timer_pause(&media_tracker);
             break;
 
         case A2DP_SUBEVENT_STREAM_RELEASED:
             play_info.status = AVRCP_PLAY_STATUS_STOPPED;
-            printf("Stream released.\n");
+            printf("A2DP: Stream released.\n");
             a2dp_demo_timer_stop(&media_tracker);
             break;
         default:
-            printf("AVDTP Source demo: event 0x%02x is not implemented\n", packet[2]);
+            printf("A2DP: event 0x%02x is not implemented\n", packet[2]);
             break; 
     }
 }
@@ -364,13 +364,13 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
         case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
             local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
             if (avrcp_cid != 0 && avrcp_cid != local_cid) {
-                printf("AVRCP Connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", avrcp_cid, local_cid);
+                printf("AVRCP: Connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", avrcp_cid, local_cid);
                 return;
             }
 
             status = avrcp_subevent_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
-                printf("AVRCP Connection failed: status 0x%02x\n", status);
+                printf("AVRCP: Connection failed: status 0x%02x\n", status);
                 avrcp_cid = 0;
                 return;
             }
@@ -380,7 +380,7 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             play_info.status = AVRCP_PLAY_STATUS_ERROR;
 
             avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
-            printf("Channel successfully opened: %s, avrcp_cid 0x%02x\n", bd_addr_to_str(event_addr), local_cid);
+            printf("AVRCP: connected to %s, avrcp_cid 0x%02x\n", bd_addr_to_str(event_addr), local_cid);
             return;
         }
         
@@ -411,11 +411,11 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             avrcp_target_now_playing_info(avrcp_cid);
             break;
         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
-            printf("Channel released: avrcp_cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
+            printf("AVRCP: Channel released: avrcp_cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
             avrcp_cid = 0;
             return;
         default:
-            printf("A2DP Source/AVRCP Target event not parsed %02x\n", packet[2]);
+            printf("AVRCP: event not parsed %02x\n", packet[2]);
             break;
     }
 }

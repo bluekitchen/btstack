@@ -54,6 +54,7 @@ static uint8_t   attribute_value[1000];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
 typedef struct {
+    btstack_linked_list_t * avdtp_connections;
     avdtp_connection_t * connection;
     btstack_packet_handler_t avdtp_callback;
     avdtp_sep_type_t query_role;
@@ -92,6 +93,7 @@ static uint16_t avdtp_get_next_local_seid(avdtp_context_t * context){
 
 uint8_t avdtp_connect(bd_addr_t remote, avdtp_sep_type_t query_role, avdtp_context_t * avdtp_context, uint16_t * avdtp_cid){
     sdp_query_context.connection = NULL;
+    sdp_query_context.avdtp_connections = &avdtp_context->connections;
     avdtp_connection_t * connection = avdtp_connection_for_bd_addr(remote, avdtp_context);
     if (!connection){
         connection = avdtp_create_connection(remote, avdtp_context);
@@ -101,12 +103,13 @@ uint8_t avdtp_connect(bd_addr_t remote, avdtp_sep_type_t query_role, avdtp_conte
         }
     }
     if (connection->state != AVDTP_SIGNALING_CONNECTION_IDLE){
-        log_error("avdtp_connect: sink in wrong state,");
+        log_error("avdtp_connect: sink in wrong state");
         return AVDTP_CONNECTION_IN_WRONG_STATE;
     } 
 
-    if (!avdtp_cid) return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
-
+    if (!avdtp_cid) {
+        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
+    }
     *avdtp_cid = connection->avdtp_cid;
     connection->state = AVDTP_SIGNALING_W4_SDP_QUERY_COMPLETE;
     sdp_query_context.connection = connection;
@@ -114,7 +117,13 @@ uint8_t avdtp_connect(bd_addr_t remote, avdtp_sep_type_t query_role, avdtp_conte
     sdp_query_context.avdtp_callback = avdtp_context->avdtp_callback;
     sdp_query_context.packet_handler = avdtp_context->packet_handler;
     
-    sdp_client_query_uuid16(&avdtp_handle_sdp_client_query_result, remote, BLUETOOTH_PROTOCOL_AVDTP);
+    uint8_t err = sdp_client_query_uuid16(&avdtp_handle_sdp_client_query_result, remote, BLUETOOTH_PROTOCOL_AVDTP);
+    if (err != ERROR_CODE_SUCCESS){
+        connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
+        btstack_linked_list_remove(sdp_query_context.avdtp_connections, (btstack_linked_item_t*) sdp_query_context.connection); 
+        btstack_memory_avdtp_connection_free(sdp_query_context.connection);
+        return err;
+    }
     return ERROR_CODE_SUCCESS;
 }
 
@@ -382,8 +391,12 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
     uint16_t avdtp_l2cap_psm      = 0;
     uint16_t avdtp_version        = 0;
     // uint32_t avdtp_remote_uuid    = 0;
+    uint8_t status;
     
-    if (!sdp_query_context.connection) return;
+    if (!sdp_query_context.connection){
+        log_error("avdtp: sdp query, connection is not set.");
+        return;
+    } 
 
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
@@ -464,6 +477,8 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                                 }
                                 if (!avdtp_l2cap_psm) {
                                     sdp_query_context.connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
+                                    btstack_linked_list_remove(sdp_query_context.avdtp_connections, (btstack_linked_item_t*) sdp_query_context.connection); 
+                                    btstack_memory_avdtp_connection_free(sdp_query_context.connection);
                                     avdtp_signaling_emit_connection_established(sdp_query_context.avdtp_callback, sdp_query_context.connection->avdtp_cid, sdp_query_context.connection->remote_addr, L2CAP_SERVICE_DOES_NOT_EXIST);
                                     break;
                                 }
@@ -481,7 +496,15 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
             break;
             
         case SDP_EVENT_QUERY_COMPLETE:
-            log_info("General query done with status %d.", sdp_event_query_complete_get_status(packet));
+            status = sdp_event_query_complete_get_status(packet);
+            if (status != 0){
+                sdp_query_context.connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
+                avdtp_signaling_emit_connection_established(sdp_query_context.avdtp_callback, sdp_query_context.connection->avdtp_cid, sdp_query_context.connection->remote_addr, L2CAP_SERVICE_DOES_NOT_EXIST);
+                btstack_linked_list_remove(sdp_query_context.avdtp_connections, (btstack_linked_item_t*) sdp_query_context.connection); 
+                btstack_memory_avdtp_connection_free(sdp_query_context.connection);
+                log_info("AVDTP: SDP query failed with status 0x%02x.", status);
+                break;
+            }    
             break;
     }
 }
@@ -491,6 +514,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
     bd_addr_t event_addr;
     uint16_t psm;
     uint16_t local_cid;
+    uint8_t  status;
     avdtp_stream_endpoint_t * stream_endpoint = NULL;
     avdtp_connection_t * connection = NULL;
     btstack_linked_list_t * avdtp_connections = &context->connections;
@@ -566,13 +590,13 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     break;
                     
                 case L2CAP_EVENT_CHANNEL_OPENED:
+                    status = l2cap_event_channel_opened_get_status(packet);
                     // inform about new l2cap connection
                     l2cap_event_channel_opened_get_address(packet, event_addr);
                     local_cid = l2cap_event_channel_opened_get_local_cid(packet);
-                    if (l2cap_event_channel_opened_get_status(packet)){
+                    if (status){
                         avdtp_signaling_emit_connection_established(context->avdtp_callback, connection->avdtp_cid, event_addr, l2cap_event_channel_opened_get_status(packet));
-                        log_error("L2CAP connection to connection %s failed. status code 0x%02x", 
-                            bd_addr_to_str(event_addr), l2cap_event_channel_opened_get_status(packet));
+                        log_error("L2CAP connection to connection %s failed. status code 0x%02x", bd_addr_to_str(event_addr), status);
                         break;
                     }
                     psm = l2cap_event_channel_opened_get_psm(packet); 
@@ -612,7 +636,6 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     stream_endpoint = avdtp_stream_endpoint_for_l2cap_cid(local_cid, context);
 
                     if (stream_endpoint){
-                        printf("stream_endpoint %p, connection %p, se con %p \n", stream_endpoint, connection, stream_endpoint->connection);
                         stream_endpoint_state_machine(connection, stream_endpoint, HCI_EVENT_PACKET, L2CAP_EVENT_CHANNEL_CLOSED, packet, size, context);
                         break;
                     }
@@ -921,7 +944,6 @@ void avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_se
     stream_endpoint->remote_configuration_bitmap = configured_services_bitmap;
     stream_endpoint->remote_configuration = configuration;
     stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W2_RECONFIGURE_STREAM_WITH_SEID;
-    printf("AVDTP_INITIATOR_W2_RECONFIGURE_STREAM_WITH_SEID \n");
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 
