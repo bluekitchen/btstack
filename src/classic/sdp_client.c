@@ -451,7 +451,7 @@ void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             if (sdp_client_state != W4_CONNECT) break;
             // data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16), local_mtu(16), remote_mtu(16) 
             if (packet[2]) {
-                log_error("SDP Client Connection failed, status 0x%02x.", status);
+                log_info("SDP Client Connection failed, status 0x%02x.", packet[2]);
                 sdp_client_state = INIT;
                 sdp_parser_handle_done(packet[2]);
                 break;
