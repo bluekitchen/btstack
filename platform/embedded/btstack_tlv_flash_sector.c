@@ -188,6 +188,16 @@ static void btstack_tlv_flash_sector_migrate(btstack_tlv_flash_sector_t * self){
 	self->write_offset = next_write_pos;
 }
 
+// returns 1 == ok
+static int btstack_tlv_flash_sector_verify_alignment(btstack_tlv_flash_sector_t * self, uint32_t value_size){
+	uint32_t aligment = self->hal_flash_sector_impl->get_alignment(self->hal_flash_sector_context);
+	if (value_size % aligment){
+		log_error("Value size %u not a multiply of flash alignment %u", value_size, aligment);
+		return 0;
+	};
+	return 1;
+}
+
 /**
  * Get Value for Tag
  * @param tag
@@ -198,6 +208,9 @@ static void btstack_tlv_flash_sector_migrate(btstack_tlv_flash_sector_t * self){
 static int btstack_tlv_flash_sector_get_tag(void * context, uint32_t tag, uint8_t * buffer, uint32_t buffer_size){
 
 	btstack_tlv_flash_sector_t * self = (btstack_tlv_flash_sector_t *) context;
+
+	// abort if data size not aligned with flash requirements
+	if (!btstack_tlv_flash_sector_verify_alignment(self, buffer_size)) return 0;
 
 	uint32_t tag_index = 0;
 	uint32_t tag_len   = 0;
@@ -227,6 +240,9 @@ static int btstack_tlv_flash_sector_get_tag(void * context, uint32_t tag, uint8_
 static void btstack_tlv_flash_sector_store_tag(void * context, uint32_t tag, const uint8_t * data, uint32_t data_size){
 
 	btstack_tlv_flash_sector_t * self = (btstack_tlv_flash_sector_t *) context;
+
+	// abort if data size not aligned with flash requirements
+	if (!btstack_tlv_flash_sector_verify_alignment(self, data_size)) return;
 
 	if (self->write_offset + 8 + data_size > self->hal_flash_sector_impl->get_size(self->hal_flash_sector_context)){
 		btstack_tlv_flash_sector_migrate(self);
