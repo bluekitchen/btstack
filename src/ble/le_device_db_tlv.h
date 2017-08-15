@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 BlueKitchen GmbH
+ * Copyright (C) 2014 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -13,8 +13,11 @@
  * 3. Neither the name of the copyright holders nor the names of
  *    contributors may be used to endorse or promote products derived
  *    from this software without specific prior written permission.
+ * 4. Any redistribution, use, or modification is done solely for
+ *    personal benefit and not for any commercial purpose or for
+ *    monetary gain.
  *
- * THIS SOFTWARE IS PROVIDED BY MATTHIAS RINGWALD AND CONTRIBUTORS
+ * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
  * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
@@ -27,69 +30,35 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
+ * Please inquire about commercial licensing options at 
+ * contact@bluekitchen-gmbh.com
+ *
  */
+ 
+#ifndef __LE_DEVICE_DB_TLV_H
+#define __LE_DEVICE_DB_TLV_H
 
-/*
- *  hal_flash_sector.h
- * 
- *  HAL abstraction for Flash memory that can be written anywhere
- *  after being erased
- */
-
-#ifndef __HAL_FLASH_SECTOR_H
-#define __HAL_FLASH_SECTOR_H
-
-#include <stdint.h>
+#include "btstack_util.h"
+#include "btstack_tlv.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
-// Number of flash banks
-#define HAL_FLASH_SECTOR_NUM 2
+/* API_START */
 
-typedef struct {
+/**
+ * @brief configure le device db for use with btstack tlv instance
+ * @param btstack_tlv_impl to use
+ * @param btstack_tlv_context
+ */
 
-	/**
-	 * Get size of flash banks
-	 */
-	uint32_t (*get_size)(void * context);
+void le_device_db_tlv_configure(const btstack_tlv_t * btstack_tlv_impl, void * btstack_tlv_context);
 
-	/**
-	 * Get flash read/write alignmenent requirements
-	 */
-	uint32_t (*get_alignment)(void * context);
-
-	/**
-	 * Erase a bank
-	 * @param context
-	 * @param bank
-	 */
-	void (*erase)(void * context, int bank);
-
-	/**
-	 * Read from flash into provided buffer
-	 * @param context
-	 * @param bank
-	 * @param offset into flash bank
-	 * @param buffer to read data
-	 * @param size of data to read
-	 */
-	void (*read)(void * context, int bank, uint32_t offset, uint8_t * buffer, uint32_t size);
-
-	/**
-	 * Write data into flash. Each offset can only be written once after bank was erased
-	 * @param context
-	 * @param bank
-	 * @param offset into flash bank
-	  to read data
-	 * @param size of data to store
-	 */
-	void (*write)(void * context, int bank, uint32_t offset, const uint8_t * data, uint32_t size);
-
-} hal_flash_sector_t;
+/* API_END */
 
 #if defined __cplusplus
 }
 #endif
-#endif // __HAL_FLASH_SECTOR_H
+
+#endif // __LE_DEVICE_DB_TLV_H

@@ -1,11 +1,11 @@
 # BTstack Port for the Espressif ESP32 Platform
 
-Status: Basic port incl. all examples. BTstack runs on dedicated FreeRTOS thread. Multi threading not supported.
+Status: Basic port incl. all examples. BTstack runs on dedicated FreeRTOS thread. Multi threading (calling BTstack functions from a different thread) is not supported.
 
 ## Setup
 
 - Follow [Espressif IoT Development Framework (ESP-IDF) setup](https://github.com/espressif/esp-idf) to install XTensa toolchain and the ESP-IDF.
-- In port/esp32, configure the serial port for firmware upload as described in the ESP-IDF setup guides.
+- In port/esp32/template, configure the serial port for firmware upload as described in the ESP-IDF setup guides.
 
 ## Usage
 

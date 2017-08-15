@@ -436,7 +436,6 @@ void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             log_debug("SDP Client Query DONE! ");
             sdp_client_state = QUERY_COMPLETE;
             l2cap_disconnect(sdp_cid, 0);
-            // sdp_parser_handle_done(0);
             return;
         }
         // prepare next request and send
@@ -452,7 +451,8 @@ void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             if (sdp_client_state != W4_CONNECT) break;
             // data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16), local_mtu(16), remote_mtu(16) 
             if (packet[2]) {
-                log_error("SDP Client Connection failed.");
+                log_info("SDP Client Connection failed, status 0x%02x.", packet[2]);
+                sdp_client_state = INIT;
                 sdp_parser_handle_done(packet[2]);
                 break;
             }
@@ -684,7 +684,6 @@ int sdp_client_ready(void){
 }
 
 uint8_t sdp_client_query(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t * des_service_search_pattern, const uint8_t * des_attribute_id_list){
-
     if (!sdp_client_ready()) return SDP_QUERY_BUSY;
 
     sdp_parser_init(callback);
@@ -694,29 +693,21 @@ uint8_t sdp_client_query(btstack_packet_handler_t callback, bd_addr_t remote, co
     PDU_ID = SDP_ServiceSearchAttributeResponse;
 
     sdp_client_state = W4_CONNECT;
-    l2cap_create_channel(sdp_client_packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, l2cap_max_mtu(), NULL);
-    return 0;
+    return l2cap_create_channel(sdp_client_packet_handler, remote, BLUETOOTH_PROTOCOL_SDP, l2cap_max_mtu(), NULL);
 }
 
 uint8_t sdp_client_query_uuid16(btstack_packet_handler_t callback, bd_addr_t remote, uint16_t uuid){
-
     if (!sdp_client_ready()) return SDP_QUERY_BUSY;
-
-    uint8_t * service_service_search_pattern = sdp_service_search_pattern_for_uuid16(uuid);
-    return sdp_client_query(callback, remote, service_service_search_pattern, des_attributeIDList);
+    return sdp_client_query(callback, remote, sdp_service_search_pattern_for_uuid16(uuid), des_attributeIDList);
 }
 
 uint8_t sdp_client_query_uuid128(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t* uuid){
-
     if (!sdp_client_ready()) return SDP_QUERY_BUSY;
-
-    uint8_t * service_service_search_pattern = sdp_service_search_pattern_for_uuid128(uuid);
-    return sdp_client_query(callback, remote, service_service_search_pattern, des_attributeIDList);
+    return sdp_client_query(callback, remote, sdp_service_search_pattern_for_uuid128(uuid), des_attributeIDList);
 }
 
 #ifdef ENABLE_SDP_EXTRA_QUERIES
 uint8_t sdp_client_service_attribute_search(btstack_packet_handler_t callback, bd_addr_t remote, uint32_t search_service_record_handle, const uint8_t * des_attribute_id_list){
-
     if (!sdp_client_ready()) return SDP_QUERY_BUSY;
 
     sdp_parser_init(callback);

@@ -51,7 +51,6 @@ Additional debug information can be enabled by uncommenting ENABLE_LOG_INFO in t
 ## TODOs
   - Support for BTSTACK_STDIN
   - Add flash-openocd to Makefile template
-  - Implement BTstack Flash interface to support link key storage in flash memory.
   - Add Eclipse CDT projects for max32630fthr
   - Implement hal_led.h to control LED on board
  

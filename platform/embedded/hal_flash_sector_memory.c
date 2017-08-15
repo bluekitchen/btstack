@@ -30,9 +30,11 @@
  */
 
 /*
- *  hal_flash_sector.c -- volatile test environment that provides just two memory banks
+ *  hal_flash_sector_memory.c -- volatile test environment that provides just two memory banks
  *
  */
+
+#define __BTSTACK_FILE__ "hal_flash_sector_memory.c"
 
 #include "hal_flash_sector.h"
 #include "hal_flash_sector_memory.h"
@@ -49,6 +51,11 @@
 static uint32_t hal_flash_sector_memory_get_size(void * context){
 	hal_flash_sector_memory_t * self = (hal_flash_sector_memory_t *) context;
 	return self->bank_size;
+}
+
+static uint32_t hal_flash_sector_memory_get_alignment(void * context){
+	UNUSED(context);
+	return 1;
 }
 
 static void hal_flash_sector_memory_erase(void * context, int bank){
@@ -72,7 +79,8 @@ static void hal_flash_sector_memory_read(void * context, int bank, uint32_t offs
 static void hal_flash_sector_memory_write(void * context, int bank, uint32_t offset, const uint8_t * data, uint32_t size){
 	hal_flash_sector_memory_t * self = (hal_flash_sector_memory_t *) context;
 
-	// log_info("write offset %u, len %u", offset, size);
+	log_info("write offset %u, len %u", offset, size);
+	log_info_hexdump(data, size);
 
 	if (bank > 1) return;
 	if (offset > self->bank_size) return;
@@ -81,8 +89,8 @@ static void hal_flash_sector_memory_write(void * context, int bank, uint32_t off
 #ifdef BTSTACK_TEST
 	int i;
 	for (i=0;i<size;i++){
-		if (self->banks[bank][offset] != 0xff){
-			printf("Error: offset %u written twice!\n", offset+i);
+		if (self->banks[bank][offset] != 0xff && data[i] != 0x0){
+			printf("Error: offset %u written twice. Data: 0x%02x!\n", offset+i, data[i]);
 			exit(10);
 			return;			
 		}
@@ -93,10 +101,11 @@ static void hal_flash_sector_memory_write(void * context, int bank, uint32_t off
 }
 
 static const hal_flash_sector_t hal_flash_sector_memory_instance = {
-	/* uint32_t (*get_size)() */ &hal_flash_sector_memory_get_size,
-	/* void (*erase)(int);    */ &hal_flash_sector_memory_erase,
-	/* void (*read)(..);      */ &hal_flash_sector_memory_read,
-	/* void (*write)(..);     */ &hal_flash_sector_memory_write,
+	/* uint32_t (*get_size)(..) */ 		 &hal_flash_sector_memory_get_size,
+	/* uint32_t (*get_alignment)(..); */ &hal_flash_sector_memory_get_alignment,
+	/* void (*erase)(..);    */ 		 &hal_flash_sector_memory_erase,
+	/* void (*read)(..);      */ 		 &hal_flash_sector_memory_read,
+	/* void (*write)(..);     */ 		 &hal_flash_sector_memory_write,
 };
 
 /** 
@@ -105,7 +114,8 @@ static const hal_flash_sector_t hal_flash_sector_memory_instance = {
 const hal_flash_sector_t * hal_flash_sector_memory_init_instance(hal_flash_sector_memory_t * self, uint8_t * storage, uint32_t storage_size){
 	self->bank_size = storage_size / 2;
 	self->banks[0] = storage;
-	self->banks[1] = &storage[self->bank_size];		
+	self->banks[1] = &storage[self->bank_size];
+	memset(storage, 0xff, storage_size);
 	return &hal_flash_sector_memory_instance;
 }
 

@@ -55,8 +55,12 @@ for file in os.listdir(examples_embedded):
     os.makedirs(apps_folder)
 
     # copy files
-    for item in ['sdkconfig']:
+    for item in ['sdkconfig', 'set_port.sh']:
         shutil.copyfile(script_path + '/template/' + item, apps_folder + '/' + item)
+
+    # mark set_port.sh as executable
+    os.chmod(apps_folder + '/set_port.sh', 0o755)
+
 
     # create Makefile file
     with open(apps_folder + "Makefile", "wt") as fout:

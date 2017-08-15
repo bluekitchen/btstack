@@ -45,7 +45,10 @@
 #include <string.h>
 #include "btstack_debug.h"
 
-// Central Device db implemenation using static memory
+// ignore if NVM_LE_DEVICE_DB_ENTRIES is defined
+#ifndef NVM_NUM_DEVICE_DB_ENTRIES
+
+// LE Device db implemenation using static memory
 typedef struct le_device_memory_db {
 
     // Identification
@@ -120,7 +123,7 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
 
     if (index < 0) return -1;
 
-    log_info("Central Device DB adding type %u - %s", addr_type, bd_addr_to_str(addr));
+    log_info("LE Device DB adding type %u - %s", addr_type, bd_addr_to_str(addr));
     log_info_key("irk", irk);
 
     le_devices[index].addr_type = addr_type;
@@ -141,7 +144,7 @@ void le_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t irk)
 }
 
 void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_key_t ltk, int key_size, int authenticated, int authorized){
-    log_info("Central Device DB set encryption for %u, ediv x%04x, key size %u, authenticated %u, authorized %u",
+    log_info("LE Device DB set encryption for %u, ediv x%04x, key size %u, authenticated %u, authorized %u",
         index, ediv, key_size, authenticated, authorized);
     le_device_memory_db_t * device = &le_devices[index];
     device->ediv = ediv;
@@ -154,7 +157,7 @@ void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_k
 
 void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk, int * key_size, int * authenticated, int * authorized){
     le_device_memory_db_t * device = &le_devices[index];
-    log_info("Central Device DB encryption for %u, ediv x%04x, keysize %u, authenticated %u, authorized %u",
+    log_info("LE Device DB encryption for %u, ediv x%04x, keysize %u, authenticated %u, authorized %u",
         index, device->ediv, device->key_size, device->authenticated, device->authorized);
     if (ediv) *ediv = device->ediv;
     if (rand) memcpy(rand, device->rand, 8);
@@ -222,7 +225,7 @@ void le_device_db_local_counter_set(int index, uint32_t counter){
 #endif
 
 void le_device_db_dump(void){
-    log_info("Central Device DB dump, devices: %d", le_device_db_count());
+    log_info("LE Device DB dump, devices: %d", le_device_db_count());
     int i;
     for (i=0;i<MAX_NR_LE_DEVICE_DB_ENTRIES;i++){
         if (le_devices[i].addr_type == INVALID_ENTRY_ADDR_TYPE) continue;
@@ -234,3 +237,6 @@ void le_device_db_dump(void){
 #endif
     }
 }
+
+#endif
+

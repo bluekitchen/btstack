@@ -169,9 +169,6 @@ static void show_usage(void){
     printf("w - put incoming call on hold (Response and Hold)\n");
     printf("x - accept held incoming call (Response and Hold)\n");
     printf("X - reject held incoming call (Response and Hold)\n");
-
-    printf("---\n");
-    printf("Ctrl-c - exit\n");
     printf("---\n");
 }
 

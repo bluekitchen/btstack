@@ -16,13 +16,13 @@
 #define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_CENTRAL
 #define ENABLE_LE_DATA_LENGTH_EXTENSION
+#define ENABLE_LE_SECURE_CONNECTIONS
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO
 // #define ENABLE_LOG_DEBUG
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE (1691 + 4)
-#define MAX_NR_LE_DEVICE_DB_ENTRIES 4
 
 // HCI Controller to Host Flow Control
 //
@@ -38,3 +38,6 @@
 #define HCI_HOST_SCO_PACKET_LEN 60
 #endif
 
+// Link Key DB and LE Device DB using TLV on top of Flash Sector interface
+#define NVM_NUM_LINK_KEYS 16
+#define NVM_NUM_DEVICE_DB_ENTRIES 16

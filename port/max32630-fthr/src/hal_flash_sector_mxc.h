@@ -30,66 +30,40 @@
  */
 
 /*
- *  hal_flash_sector.h
+ *  hal_flash_sector_maxim.h
  * 
  *  HAL abstraction for Flash memory that can be written anywhere
- *  after being erased
+ *  after being erased implemented with memory
  */
 
-#ifndef __HAL_FLASH_SECTOR_H
-#define __HAL_FLASH_SECTOR_H
+#ifndef __HAL_FLASH_SECTOR_MAXIM_H
+#define __HAL_FLASH_SECTOR_MAXIM_H
 
 #include <stdint.h>
+#include "hal_flash_sector.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
-// Number of flash banks
-#define HAL_FLASH_SECTOR_NUM 2
-
 typedef struct {
+	uint32_t   sector_size;
+	uintptr_t  banks[2];
 
-	/**
-	 * Get size of flash banks
-	 */
-	uint32_t (*get_size)(void * context);
+} hal_flash_sector_mxc_t;
 
-	/**
-	 * Get flash read/write alignmenent requirements
-	 */
-	uint32_t (*get_alignment)(void * context);
-
-	/**
-	 * Erase a bank
-	 * @param context
-	 * @param bank
-	 */
-	void (*erase)(void * context, int bank);
-
-	/**
-	 * Read from flash into provided buffer
-	 * @param context
-	 * @param bank
-	 * @param offset into flash bank
-	 * @param buffer to read data
-	 * @param size of data to read
-	 */
-	void (*read)(void * context, int bank, uint32_t offset, uint8_t * buffer, uint32_t size);
-
-	/**
-	 * Write data into flash. Each offset can only be written once after bank was erased
-	 * @param context
-	 * @param bank
-	 * @param offset into flash bank
-	  to read data
-	 * @param size of data to store
-	 */
-	void (*write)(void * context, int bank, uint32_t offset, const uint8_t * data, uint32_t size);
-
-} hal_flash_sector_t;
+/**
+ * Configure MXC HAL Flash Implementation
+ *
+ * @param context of hal_flash_sector_mxc_t
+ * @param sector_size
+ * @param bank_0_addr
+ * @param bank_1_addr
+ * @return 
+ */
+const hal_flash_sector_t * hal_flash_sector_mxc_init_instance(hal_flash_sector_mxc_t * context, uint32_t sector_size, uintptr_t bank_0_addr, uintptr_t bank_1_addr);
 
 #if defined __cplusplus
 }
 #endif
-#endif // __HAL_FLASH_SECTOR_H
+#endif

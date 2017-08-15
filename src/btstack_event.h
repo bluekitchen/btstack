@@ -4512,13 +4512,22 @@ static inline uint16_t avdtp_subevent_streaming_connection_established_get_avdtp
     return little_endian_read_16(event, 3);
 }
 /**
+ * @brief Get field bd_addr from event AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void avdtp_subevent_streaming_connection_established_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[5], bd_addr);    
+}
+/**
  * @brief Get field local_seid from event AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED
  * @param event packet
  * @return local_seid
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_streaming_connection_established_get_local_seid(const uint8_t * event){
-    return event[5];
+    return event[11];
 }
 /**
  * @brief Get field remote_seid from event AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED
@@ -4527,7 +4536,7 @@ static inline uint8_t avdtp_subevent_streaming_connection_established_get_local_
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_streaming_connection_established_get_remote_seid(const uint8_t * event){
-    return event[6];
+    return event[12];
 }
 /**
  * @brief Get field status from event AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED
@@ -4536,7 +4545,7 @@ static inline uint8_t avdtp_subevent_streaming_connection_established_get_remote
  * @note: btstack_type 1
  */
 static inline uint8_t avdtp_subevent_streaming_connection_established_get_status(const uint8_t * event){
-    return event[7];
+    return event[13];
 }
 
 /**
@@ -4806,13 +4815,22 @@ static inline uint16_t a2dp_subevent_stream_established_get_a2dp_cid(const uint8
     return little_endian_read_16(event, 3);
 }
 /**
+ * @brief Get field bd_addr from event A2DP_SUBEVENT_STREAM_ESTABLISHED
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void a2dp_subevent_stream_established_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[5], bd_addr);    
+}
+/**
  * @brief Get field local_seid from event A2DP_SUBEVENT_STREAM_ESTABLISHED
  * @param event packet
  * @return local_seid
  * @note: btstack_type 1
  */
 static inline uint8_t a2dp_subevent_stream_established_get_local_seid(const uint8_t * event){
-    return event[5];
+    return event[11];
 }
 /**
  * @brief Get field remote_seid from event A2DP_SUBEVENT_STREAM_ESTABLISHED
@@ -4821,7 +4839,7 @@ static inline uint8_t a2dp_subevent_stream_established_get_local_seid(const uint
  * @note: btstack_type 1
  */
 static inline uint8_t a2dp_subevent_stream_established_get_remote_seid(const uint8_t * event){
-    return event[6];
+    return event[12];
 }
 /**
  * @brief Get field status from event A2DP_SUBEVENT_STREAM_ESTABLISHED
@@ -4830,7 +4848,7 @@ static inline uint8_t a2dp_subevent_stream_established_get_remote_seid(const uin
  * @note: btstack_type 1
  */
 static inline uint8_t a2dp_subevent_stream_established_get_status(const uint8_t * event){
-    return event[7];
+    return event[13];
 }
 
 /**

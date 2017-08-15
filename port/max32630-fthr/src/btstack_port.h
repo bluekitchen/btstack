@@ -35,7 +35,15 @@
 #ifndef BTSTACK_MAX32630FTHR_PORT_H
 #define BTSTACK_MAX32630FTHR_PORT_H
 
+#if defined __cplusplus
+extern "C" {
+#endif
+
 int bluetooth_main(void);
 void hal_btstack_run_loop_execute_once(void);
 int btstack_main(int argc, const char * argv[]);
+
+#if defined __cplusplus
+}
+#endif
 #endif /* BTSTACK_MAX32630FTHR_PORT_H */

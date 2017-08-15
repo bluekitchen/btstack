@@ -113,7 +113,6 @@ static int sbc_samples_fix;
 #define PREBUFFER_BYTES     (PREBUFFER_MS*SAMPLE_RATE/1000*BYTES_PER_FRAME)
 static PaStream * stream;
 static uint8_t ring_buffer_storage[2*PREBUFFER_BYTES];
-static btstack_ring_buffer_t ring_buffer;
 static int total_num_samples = 0;
 #endif
 
@@ -355,9 +354,8 @@ static void hal_audio_dma_process(btstack_data_source_t * ds, btstack_data_sourc
 #endif
 
 static int media_processing_init(avdtp_media_codec_configuration_sbc_t configuration){
-    
     if (media_initialized) return 0;
-
+    
 #ifdef DECODE_SBC
     btstack_sbc_decoder_init(&state, mode, handle_pcm_data, NULL);
 #endif
@@ -367,7 +365,7 @@ static int media_processing_init(avdtp_media_codec_configuration_sbc_t configura
 #endif
 
 #ifdef STORE_SBC_TO_SBC_FILE    
-    sbc_file = fopen(sbc_filename, "wb"); 
+   sbc_file = fopen(sbc_filename, "wb"); 
 #endif
 
 #ifdef HAVE_PORTAUDIO
@@ -477,7 +475,6 @@ static void media_processing_close(void){
 }
 
 static void handle_l2cap_media_data_packet(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size){
-    
     UNUSED(stream_endpoint);
 
     int pos = 0;
@@ -571,9 +568,9 @@ static void dump_sbc_configuration(avdtp_media_codec_configuration_sbc_t configu
 static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    bd_addr_t event_addr;
     uint16_t local_cid;
     uint8_t  status = 0xFF;
+    bd_addr_t adress;
     
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
@@ -593,8 +590,8 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             }
             
             avrcp_cid = local_cid;
-            avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
-            printf("Channel successfully opened: %s, avrcp_cid 0x%02x\n", bd_addr_to_str(event_addr), avrcp_cid);
+            avrcp_subevent_connection_established_get_bd_addr(packet, adress);
+            printf("Channel successfully opened: %s, avrcp_cid 0x%02x\n", bd_addr_to_str(adress), avrcp_cid);
 
             // automatically enable notifications
             avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
@@ -688,87 +685,77 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(channel);
     UNUSED(size);
     uint16_t cid;
+    bd_addr_t address;
 
-    switch (packet_type) {
-        case HCI_EVENT_PACKET:
-            switch (hci_event_packet_get_type(packet)) {
-                case HCI_EVENT_A2DP_META:
-                    switch (packet[2]){
-                        case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION:
-                            printf(" received non SBC codec. not implemented\n");
-                            break;
-                        case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
-                            sbc_configuration.reconfigure = a2dp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
-                            sbc_configuration.num_channels = a2dp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(packet);
-                            sbc_configuration.sampling_frequency = a2dp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
-                            sbc_configuration.channel_mode = a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
-                            sbc_configuration.block_length = a2dp_subevent_signaling_media_codec_sbc_configuration_get_block_length(packet);
-                            sbc_configuration.subbands = a2dp_subevent_signaling_media_codec_sbc_configuration_get_subbands(packet);
-                            sbc_configuration.allocation_method = a2dp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet);
-                            sbc_configuration.min_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_min_bitpool_value(packet);
-                            sbc_configuration.max_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
-                            sbc_configuration.frames_per_buffer = sbc_configuration.subbands * sbc_configuration.block_length;
-                            dump_sbc_configuration(sbc_configuration);
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_A2DP_META) return;
 
-                            if (sbc_configuration.reconfigure){
-                                media_processing_close();
-                            }
+    switch (packet[2]){
+        case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION:
+            printf(" -- a2dp sink demo: received non SBC codec. not implemented.\n");
+            break;
+        case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
+            printf(" -- a2dp sink demo: received SBC codec configuration.\n");
+            sbc_configuration.reconfigure = a2dp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
+            sbc_configuration.num_channels = a2dp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(packet);
+            sbc_configuration.sampling_frequency = a2dp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
+            sbc_configuration.channel_mode = a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
+            sbc_configuration.block_length = a2dp_subevent_signaling_media_codec_sbc_configuration_get_block_length(packet);
+            sbc_configuration.subbands = a2dp_subevent_signaling_media_codec_sbc_configuration_get_subbands(packet);
+            sbc_configuration.allocation_method = a2dp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet);
+            sbc_configuration.min_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_min_bitpool_value(packet);
+            sbc_configuration.max_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
+            sbc_configuration.frames_per_buffer = sbc_configuration.subbands * sbc_configuration.block_length;
+            dump_sbc_configuration(sbc_configuration);
 
-                            // prepare media processing
-                            media_processing_init(sbc_configuration);
-                            break;
-                        }  
-                        case A2DP_SUBEVENT_STREAM_ESTABLISHED:
-                            cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
-                            if (cid != a2dp_cid) break;
-                            local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
-                            printf(" -- a2dp sink demo: streaming connection is established, a2dp cid 0x%02X, local_seid %d\n", a2dp_cid, local_seid);
-                            app_state = AVDTP_APPLICATION_STREAMING;
-                            break;
-                        
-                        case A2DP_SUBEVENT_STREAM_STARTED:
-                            cid = a2dp_subevent_stream_started_get_a2dp_cid(packet);
-                            if (cid != a2dp_cid) break;
-                            local_seid = a2dp_subevent_stream_started_get_local_seid(packet);
-                            printf(" -- a2dp sink demo: stream started, a2dp cid 0x%02X, local_seid %d\n", a2dp_cid, local_seid);
-
-                            // started
-                            // media_processing_init(sbc_configuration);
-                            break;
-                        
-                        case A2DP_SUBEVENT_STREAM_SUSPENDED:
-                            cid = a2dp_subevent_stream_suspended_get_a2dp_cid(packet);
-                            if (cid != a2dp_cid) break;
-                            local_seid = a2dp_subevent_stream_suspended_get_local_seid(packet);
-                            printf(" -- a2dp sink demo: stream paused, a2dp cid 0x%02X, local_seid %d\n", a2dp_cid, local_seid);
-
-                            // paused/stopped
-                            // media_processing_close();
-                            break;
-                        
-                        case A2DP_SUBEVENT_STREAM_RELEASED:
-                            cid = a2dp_subevent_stream_released_get_a2dp_cid(packet);
-                            if (cid != a2dp_cid) break;
-                            local_seid = a2dp_subevent_stream_released_get_local_seid(packet);
-                            app_state = AVDTP_APPLICATION_IDLE;
-                            printf(" -- a2dp sink demo: stream released, a2dp cid 0x%02X, local_seid %d\n", a2dp_cid, local_seid);
-
-                            // paused/stopped
-                            media_processing_close();
-                            break;
-                        
-                        default:
-                            printf(" not implemented\n");
-                            break; 
-                    }
-                    break;   
-                default:
-                    break;
+            if (sbc_configuration.reconfigure){
+                media_processing_close();
             }
+            // prepare media processing
+            media_processing_init(sbc_configuration);
             break;
+        }  
+        case A2DP_SUBEVENT_STREAM_ESTABLISHED:
+            a2dp_subevent_stream_established_get_bd_addr(packet, address);
+            cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
+            if (cid != a2dp_cid) break;
+            local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
+            printf(" -- a2dp sink demo: streaming connection is established, address %s, a2dp cid 0x%02X, local_seid %d\n", bd_addr_to_str(address), a2dp_cid, local_seid);
+            app_state = AVDTP_APPLICATION_STREAMING;
+            break;
+        
+        case A2DP_SUBEVENT_STREAM_STARTED:
+            cid = a2dp_subevent_stream_started_get_a2dp_cid(packet);
+            if (cid != a2dp_cid) break;
+            local_seid = a2dp_subevent_stream_started_get_local_seid(packet);
+            printf(" -- a2dp sink demo: stream started, a2dp cid 0x%02X, local_seid %d\n", a2dp_cid, local_seid);
+            // started
+            media_processing_init(sbc_configuration);
+            break;
+        
+        case A2DP_SUBEVENT_STREAM_SUSPENDED:
+            cid = a2dp_subevent_stream_suspended_get_a2dp_cid(packet);
+            if (cid != a2dp_cid) break;
+            local_seid = a2dp_subevent_stream_suspended_get_local_seid(packet);
+            printf(" -- a2dp sink demo: stream paused, a2dp cid 0x%02X, local_seid %d\n", a2dp_cid, local_seid);
+            // paused/stopped
+            media_processing_close();
+            break;
+        
+        case A2DP_SUBEVENT_STREAM_RELEASED:
+            cid = a2dp_subevent_stream_released_get_a2dp_cid(packet);
+            if (cid != a2dp_cid) break;
+            local_seid = a2dp_subevent_stream_released_get_local_seid(packet);
+            app_state = AVDTP_APPLICATION_IDLE;
+            printf(" -- a2dp sink demo: stream released, a2dp cid 0x%02X, local_seid %d\n", a2dp_cid, local_seid);
+
+            // paused/stopped
+            media_processing_close();
+            break;
+        
         default:
-            // other packet type
-            break;
+            printf(" not implemented\n");
+            break; 
     }
 }
 
@@ -805,8 +792,6 @@ static void show_usage(void){
     printf("X - disable repeat mode\n");
     printf("z - shuffle all tracks\n");
     printf("Z - disable shuffle mode\n");
- 
-    printf("Ctrl-c - exit\n");
     printf("---\n");
 }
 #endif
