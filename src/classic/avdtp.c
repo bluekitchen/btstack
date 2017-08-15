@@ -59,6 +59,8 @@ typedef struct {
     btstack_packet_handler_t avdtp_callback;
     avdtp_sep_type_t query_role;
     btstack_packet_handler_t packet_handler;
+    uint16_t avdtp_l2cap_psm;
+    uint16_t avdtp_version;
 } avdtp_sdp_query_context_t;
 
 static avdtp_sdp_query_context_t sdp_query_context;
@@ -388,11 +390,10 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
 
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
-    uint16_t avdtp_l2cap_psm      = 0;
-    uint16_t avdtp_version        = 0;
-    // uint32_t avdtp_remote_uuid    = 0;
     uint8_t status;
     
+    sdp_query_context.avdtp_l2cap_psm = 0;
+    sdp_query_context.avdtp_version = 0;
     if (!sdp_query_context.connection){
         log_error("avdtp: sdp query, connection is not set.");
         return;
@@ -445,7 +446,6 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                         
                         case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST: {
                                 // log_info("SDP Attribute: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet));
-
                                 for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {                                    
                                     uint8_t       *des_element;
                                     uint8_t       *element;
@@ -464,26 +464,17 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                                         case BLUETOOTH_PROTOCOL_L2CAP:
                                             if (!des_iterator_has_more(&prot_it)) continue;
                                             des_iterator_next(&prot_it);
-                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &avdtp_l2cap_psm);
+                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_query_context.avdtp_l2cap_psm);
                                             break;
                                         case BLUETOOTH_PROTOCOL_AVDTP:
                                             if (!des_iterator_has_more(&prot_it)) continue;
                                             des_iterator_next(&prot_it);
-                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &avdtp_version);
+                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_query_context.avdtp_version);
                                             break;
                                         default:
                                             break;
                                     }
                                 }
-                                if (!avdtp_l2cap_psm) {
-                                    sdp_query_context.connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
-                                    btstack_linked_list_remove(sdp_query_context.avdtp_connections, (btstack_linked_item_t*) sdp_query_context.connection); 
-                                    btstack_memory_avdtp_connection_free(sdp_query_context.connection);
-                                    avdtp_signaling_emit_connection_established(sdp_query_context.avdtp_callback, sdp_query_context.connection->avdtp_cid, sdp_query_context.connection->remote_addr, L2CAP_SERVICE_DOES_NOT_EXIST);
-                                    break;
-                                }
-                                sdp_query_context.connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
-                                l2cap_create_channel(sdp_query_context.packet_handler, sdp_query_context.connection->remote_addr, avdtp_l2cap_psm, l2cap_max_mtu(), NULL);
                             }
                             break;
                         default:
@@ -504,7 +495,17 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                 btstack_memory_avdtp_connection_free(sdp_query_context.connection);
                 log_info("AVDTP: SDP query failed with status 0x%02x.", status);
                 break;
-            }    
+            } 
+
+            if (!sdp_query_context.avdtp_l2cap_psm) {
+                sdp_query_context.connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
+                btstack_linked_list_remove(sdp_query_context.avdtp_connections, (btstack_linked_item_t*) sdp_query_context.connection); 
+                btstack_memory_avdtp_connection_free(sdp_query_context.connection);
+                avdtp_signaling_emit_connection_established(sdp_query_context.avdtp_callback, sdp_query_context.connection->avdtp_cid, sdp_query_context.connection->remote_addr, L2CAP_SERVICE_DOES_NOT_EXIST);
+                break;
+            }
+            sdp_query_context.connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
+            l2cap_create_channel(sdp_query_context.packet_handler, sdp_query_context.connection->remote_addr, sdp_query_context.avdtp_l2cap_psm, l2cap_max_mtu(), NULL);
             break;
     }
 }
