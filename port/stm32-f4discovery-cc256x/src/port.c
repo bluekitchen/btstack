@@ -1,3 +1,5 @@
+#define __BTSTACK_FILE__ "port.c"
+
 #include "port.h"
 #include "btstack.h"
 #include "btstack_debug.h"
@@ -8,10 +10,8 @@
 #include "ble/le_device_db_tlv.h"
 #include "classic/btstack_link_key_db_static.h"
 #include "classic/btstack_link_key_db_tlv.h"
-#include "hal_flash_sector.h"
+#include "hal_flash_sector_stm32.h"
 #include "stm32f4xx_hal.h"
-
-#define __BTSTACK_FILE__ "port.c"
 
 //
 extern UART_HandleTypeDef huart2;
@@ -283,80 +283,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-// hal_flash_sector.h
-typedef struct {
-	uint32_t   sector_size;
-	uint32_t   sectors[2];
-	uintptr_t  banks[2];
-
-} hal_flash_sector_stm32_t;
-
-static uint32_t hal_flash_sector_stm32_get_size(void * context){
-	hal_flash_sector_stm32_t * self = (hal_flash_sector_stm32_t *) context;
-	return self->sector_size;
-}
-
-static uint32_t hal_flash_sector_memory_get_alignment(void * context){
-    UNUSED(context);
-    return 1;
-}
-
-static void hal_flash_sector_stm32_erase(void * context, int bank){
-	hal_flash_sector_stm32_t * self = (hal_flash_sector_stm32_t *) context;
-	if (bank > 1) return;
-	FLASH_EraseInitTypeDef eraseInit;
-	eraseInit.TypeErase = FLASH_TYPEERASE_SECTORS;
-	eraseInit.Sector = self->sectors[bank];
-	eraseInit.NbSectors = 1;
-	eraseInit.VoltageRange = FLASH_VOLTAGE_RANGE_1;	// safe value
-	uint32_t sectorError;
-	HAL_FLASH_Unlock();
-	HAL_FLASHEx_Erase(&eraseInit, &sectorError);
-	HAL_FLASH_Lock();
-}
-
-static void hal_flash_sector_stm32_read(void * context, int bank, uint32_t offset, uint8_t * buffer, uint32_t size){
-	hal_flash_sector_stm32_t * self = (hal_flash_sector_stm32_t *) context;
-
-	if (bank > 1) return;
-	if (offset > self->sector_size) return;
-	if ((offset + size) > self->sector_size) return;
-
-	memcpy(buffer, ((uint8_t *) self->banks[bank]) + offset, size);
-}
-
-static void hal_flash_sector_stm32_write(void * context, int bank, uint32_t offset, const uint8_t * data, uint32_t size){
-	hal_flash_sector_stm32_t * self = (hal_flash_sector_stm32_t *) context;
-
-	if (bank > 1) return;
-	if (offset > self->sector_size) return;
-	if ((offset + size) > self->sector_size) return;
-
-	unsigned int i;
-	HAL_FLASH_Unlock();
-	for (i=0;i<size;i++){
-		HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE, self->banks[bank] + offset +i, data[i]);
-	}
-	HAL_FLASH_Lock();
-}
-
-static const hal_flash_sector_t hal_flash_sector_stm32_impl = {
-	/* uint32_t (*get_size)() */         &hal_flash_sector_stm32_get_size,
-	/* uint32_t (*get_alignment)(..); */ &hal_flash_sector_memory_get_alignment,
-	/* void (*erase)(..);             */ &hal_flash_sector_stm32_erase,
-	/* void (*read)(..);              */ &hal_flash_sector_stm32_read,
-	/* void (*write)(..);             */ &hal_flash_sector_stm32_write,
-};
-
-static const hal_flash_sector_t * hal_flash_sector_stm32_init_instance(hal_flash_sector_stm32_t * context, uint32_t sector_size,
-		uint32_t bank_0_sector, uint32_t bank_1_sector, uintptr_t bank_0_addr, uintptr_t bank_1_addr){
-	context->sector_size = sector_size;
-	context->sectors[0] = bank_0_sector;
-	context->sectors[1] = bank_1_sector;
-	context->banks[0]   = bank_0_addr;
-	context->banks[1]   = bank_1_addr;
-	return &hal_flash_sector_stm32_impl;
-}
 
 static btstack_tlv_flash_sector_t btstack_tlv_flash_sector_context;
 static hal_flash_sector_stm32_t   hal_flash_sector_context;
