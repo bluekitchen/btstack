@@ -83,9 +83,7 @@ static void show_usage(void){
     printf("c - set phonebook '/SIM1/telecom/pb'\n");
     printf("d - pull phonebook\n");
     printf("e - disconnnect\n");
-    printf("---\n");
-    printf("Ctrl-c - exit\n");
-    printf("---\n");
+    printf("\n");
 }
 
 static void stdin_process(char c){

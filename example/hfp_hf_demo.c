@@ -152,9 +152,7 @@ static void show_usage(void){
     printf("{ - Accept held call(RHH 1)                | } - Reject held call(RHH 2)\n");
     printf("? - Query Subscriber Number (NUM)\n");
     printf("! - Update HF indicator with assigned number 1 (HFI)\n");
-    printf("---\n");
-    printf("Ctrl-c - exit\n");
-    printf("---\n");
+    printf("\n");
 }
 
 static void stdin_process(char c){
@@ -430,7 +428,6 @@ static void stdin_process(char c){
             printf("Update HF indicator with assigned number 1 (HFI)\n");
             hfp_hf_set_hf_indicator(acl_handle, 1, 1);
             break;
-
         default:
             show_usage();
             break;

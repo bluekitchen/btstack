@@ -115,9 +115,7 @@ static void show_usage(void){
     printf("S - set speaker gain 15\n");
     printf("r - start ringing\n");
     printf("t - stop ringing\n");
-    printf("---\n");
-    printf("Ctrl-c - exit\n");
-    printf("---\n");
+    printf("\n");
 }
 
 #ifdef HAVE_BTSTACK_STDIN
@@ -170,7 +168,6 @@ static void stdin_process(char c){
         default:
             show_usage();
             break;
-
     }
 }
 #endif

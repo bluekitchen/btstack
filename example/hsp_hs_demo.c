@@ -115,9 +115,7 @@ static void show_usage(void){
     printf("o - set speaker gain 0\n");
     printf("s - set speaker gain 8\n");
     printf("S - set speaker gain 15\n");
-    printf("---\n");
-    printf("Ctrl-c - exit\n");
-    printf("---\n");
+    printf("\n");
 }
 
 #ifdef HAVE_BTSTACK_STDIN

@@ -475,7 +475,6 @@ static void media_processing_close(void){
 }
 
 static void handle_l2cap_media_data_packet(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size){
-    
     UNUSED(stream_endpoint);
 
     int pos = 0;
@@ -793,8 +792,6 @@ static void show_usage(void){
     printf("X - disable repeat mode\n");
     printf("z - shuffle all tracks\n");
     printf("Z - disable shuffle mode\n");
- 
-    printf("Ctrl-c - exit\n");
     printf("---\n");
 }
 #endif

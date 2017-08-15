@@ -437,7 +437,6 @@ static void show_usage(void){
     printf("p      - pause streaming\n");
 
     printf("\n--- Bluetooth  AVRCP Target Commands %s ---\n", bd_addr_to_str(iut_address));
-    printf("Ctrl-c - exit\n");
     printf("---\n");
 }
 
