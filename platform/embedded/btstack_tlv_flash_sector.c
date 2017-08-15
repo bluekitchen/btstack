@@ -304,34 +304,44 @@ const btstack_tlv_t * btstack_tlv_flash_sector_init_instance(btstack_tlv_flash_s
 	self->hal_flash_sector_impl    = hal_flash_sector_impl;
 	self->hal_flash_sector_context = hal_flash_sector_context;
 
-	// find current bank and erase both if none found
-	int current_bank = btstack_tlv_flash_sector_get_latest_bank(self);
-	log_info("found bank %d", current_bank);
-	if (current_bank < 0){
+	// try to find current bank
+	self->current_bank = btstack_tlv_flash_sector_get_latest_bank(self);
+	log_info("found bank %d", self->current_bank);
+	if (self->current_bank >= 0){
+
+		// find last entry and write offset
+		tlv_iterator_t it;
+		uint32_t last_tag = 0;
+		uint32_t last_offset = 0;
+		btstack_tlv_flash_sector_iterator_init(self, &it, self->current_bank);
+		while (btstack_tlv_flash_sector_iterator_has_next(self, &it)){
+			last_tag = it.tag;
+			last_offset = it.offset;
+			tlv_iterator_fetch_next(self, &it);
+		}
+		self->write_offset = it.offset;
+
+		if (self->write_offset < self->hal_flash_sector_impl->get_size(self->hal_flash_sector_context)){
+			// delete older instances of last_tag
+			// this handles the unlikely case where MCU did reset after new value + header was written but before delete did complete
+			if (last_tag){
+				btstack_tlv_flash_sector_delete_tag_until_offset(self, last_tag, last_offset);
+			}
+		} else {
+			// failure!
+			self->current_bank = -1;
+		}
+
+	} 
+
+	if (self->current_bank < 0) {
 		btstack_tlv_flash_sector_erase_bank(self, 0);
-		current_bank = 0;
-		btstack_tlv_flash_sector_write_header(self, current_bank, 0);	// epoch = 0;
+		self->current_bank = 0;
+		btstack_tlv_flash_sector_write_header(self, self->current_bank, 0);	// epoch = 0;
+		self->write_offset = 8;
 	}
-	self->current_bank = current_bank;
 
-	// find last entry and write offset
-	tlv_iterator_t it;
-	uint32_t last_tag = 0;
-	uint32_t last_offset = 0;
-	btstack_tlv_flash_sector_iterator_init(self, &it, self->current_bank);
-	while (btstack_tlv_flash_sector_iterator_has_next(self, &it)){
-		last_tag = it.tag;
-		last_offset = it.offset;
-		tlv_iterator_fetch_next(self, &it);
-	}
-	self->write_offset = it.offset;
 	log_info("write offset %u", self->write_offset);
-
-	// delete older instances of last_tag
-	// this handles the unlikely case where MCU did reset after new value + header was written but before delete did complete
-	if (last_tag){
-		btstack_tlv_flash_sector_delete_tag_until_offset(self, last_tag, last_offset);
-	}
 	return &btstack_tlv_flash_sector;
 }
 
