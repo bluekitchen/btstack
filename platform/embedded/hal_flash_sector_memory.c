@@ -53,6 +53,11 @@ static uint32_t hal_flash_sector_memory_get_size(void * context){
 	return self->bank_size;
 }
 
+static uint32_t hal_flash_sector_memory_get_alignment(void * context){
+	UNUSED(context);
+	return 1;
+}
+
 static void hal_flash_sector_memory_erase(void * context, int bank){
 	hal_flash_sector_memory_t * self = (hal_flash_sector_memory_t *) context;
 	if (bank > 1) return;
@@ -96,10 +101,11 @@ static void hal_flash_sector_memory_write(void * context, int bank, uint32_t off
 }
 
 static const hal_flash_sector_t hal_flash_sector_memory_instance = {
-	/* uint32_t (*get_size)() */ &hal_flash_sector_memory_get_size,
-	/* void (*erase)(int);    */ &hal_flash_sector_memory_erase,
-	/* void (*read)(..);      */ &hal_flash_sector_memory_read,
-	/* void (*write)(..);     */ &hal_flash_sector_memory_write,
+	/* uint32_t (*get_size)(..) */ 		 &hal_flash_sector_memory_get_size,
+	/* uint32_t (*get_alignment)(..); */ &hal_flash_sector_memory_get_alignment,
+	/* void (*erase)(..);    */ 		 &hal_flash_sector_memory_erase,
+	/* void (*read)(..);      */ 		 &hal_flash_sector_memory_read,
+	/* void (*write)(..);     */ 		 &hal_flash_sector_memory_write,
 };
 
 /** 

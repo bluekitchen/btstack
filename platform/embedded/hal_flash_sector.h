@@ -56,6 +56,11 @@ typedef struct {
 	uint32_t (*get_size)(void * context);
 
 	/**
+	 * Get flash read/write alignmenent requirements
+	 */
+	uint32_t (*get_alignment)(void * context);
+
+	/**
 	 * Erase a bank
 	 * @param context
 	 * @param bank
