@@ -218,7 +218,6 @@ void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, 
             log_info("SDP Client Query DONE! ");
             sdp_client_state = QUERY_COMPLETE;
             l2cap_disconnect_internal(sdp_cid, 0);
-            // sdp_parser_handle_done(0);
             return;
         }
         // prepare next request and send
@@ -230,14 +229,12 @@ void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, 
     if (packet_type != HCI_EVENT_PACKET) return;
     
     switch(packet[0]){
-        case L2CAP_EVENT_TIMEOUT_CHECK:
-            log_info("sdp client: L2CAP_EVENT_TIMEOUT_CHECK");
-            break;
         case L2CAP_EVENT_CHANNEL_OPENED:
             if (sdp_client_state != W4_CONNECT) break;
             // data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16), local_mtu(16), remote_mtu(16) 
             if (packet[2]) {
                 log_error("SDP Client Connection failed.");
+                sdp_client_state = INIT;
                 sdp_parser_handle_done(packet[2]);
                 break;
             }
