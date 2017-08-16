@@ -104,30 +104,36 @@ uint8_t avdtp_connect(bd_addr_t remote, avdtp_sep_type_t query_role, avdtp_conte
             return BTSTACK_MEMORY_ALLOC_FAILED;
         }
     }
-    if (connection->state != AVDTP_SIGNALING_CONNECTION_IDLE){
-        log_error("avdtp_connect: sink in wrong state");
-        return AVDTP_CONNECTION_IN_WRONG_STATE;
-    } 
-
+    
+    *avdtp_cid = connection->avdtp_cid;
     if (!avdtp_cid) {
         return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
     }
-    *avdtp_cid = connection->avdtp_cid;
-    connection->state = AVDTP_SIGNALING_W4_SDP_QUERY_COMPLETE;
 
-    avdtp_context->avdtp_l2cap_psm = 0;
-    avdtp_context->avdtp_version = 0;
     avdtp_context->avdtp_cid = connection->avdtp_cid;
-    avdtp_context->query_role = query_role;
-
-    sdp_query_context = avdtp_context;
-
-    uint8_t err = sdp_client_query_uuid16(&avdtp_handle_sdp_client_query_result, remote, BLUETOOTH_PROTOCOL_AVDTP);
-    if (err != ERROR_CODE_SUCCESS){
-        connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
-        btstack_linked_list_remove(&avdtp_context->connections, (btstack_linked_item_t*) connection); 
-        btstack_memory_avdtp_connection_free(connection);
-        return err;
+            
+    uint8_t err;
+    switch (connection->state){
+        case AVDTP_SIGNALING_CONNECTION_IDLE:
+            connection->state = AVDTP_SIGNALING_W4_SDP_QUERY_COMPLETE;
+            sdp_query_context = avdtp_context;
+            avdtp_context->avdtp_l2cap_psm = 0;
+            avdtp_context->avdtp_version = 0;
+            avdtp_context->query_role = query_role;
+            err = sdp_client_query_uuid16(&avdtp_handle_sdp_client_query_result, remote, BLUETOOTH_PROTOCOL_AVDTP);
+            if (err != ERROR_CODE_SUCCESS){
+                connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
+                btstack_linked_list_remove(&avdtp_context->connections, (btstack_linked_item_t*) connection); 
+                btstack_memory_avdtp_connection_free(connection);
+            }
+            return err;
+        case AVDTP_SIGNALING_CONNECTION_OPENED:
+            avdtp_signaling_emit_connection_established(avdtp_context->avdtp_callback, avdtp_context->avdtp_cid, connection->remote_addr, ERROR_CODE_SUCCESS);
+            break;
+        default:
+            log_error("avdtp_connect: sink in wrong state");
+            return AVDTP_CONNECTION_IN_WRONG_STATE;
+            
     }
     return ERROR_CODE_SUCCESS;
 }
@@ -432,7 +438,7 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                                         // avdtp_remote_uuid = uuid;
                                         break;
                                     case BLUETOOTH_SERVICE_CLASS_AUDIO_SINK:
-                                        if (sdp_query_context->query_role != AVDTP_SINK) {
+                                        if (sdp_query_context->query_role == AVDTP_SINK) {
                                             sdp_query_context->role_supported = 1;
                                             break;
                                         }
@@ -490,7 +496,7 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
         case SDP_EVENT_QUERY_COMPLETE:
             status = sdp_event_query_complete_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
-                avdtp_signaling_emit_connection_established(sdp_query_context->avdtp_callback, sdp_query_context->avdtp_cid, connection->remote_addr, L2CAP_SERVICE_DOES_NOT_EXIST);
+                avdtp_signaling_emit_connection_established(sdp_query_context->avdtp_callback, sdp_query_context->avdtp_cid, connection->remote_addr, status);
                 btstack_linked_list_remove(&sdp_query_context->connections, (btstack_linked_item_t*) connection); 
                 btstack_memory_avdtp_connection_free(connection);
                 log_info("AVDTP: SDP query failed with status 0x%02x.", status);

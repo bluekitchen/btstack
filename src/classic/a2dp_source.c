@@ -184,8 +184,23 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             
             sc.active_remote_sep = NULL;
             next_remote_sep_index_to_query = 0;
+            if (!sc.local_stream_endpoint) {
+                app_state = A2DP_CONNECTED;
+                uint8_t event[11];
+                int pos = 0;
+                event[pos++] = HCI_EVENT_A2DP_META;
+                event[pos++] = sizeof(event) - 2;
+                event[pos++] = A2DP_SUBEVENT_INCOMING_CONNECTION_ESTABLISHED;
+                little_endian_store_16(event, pos, cid);
+                pos += 2;
+                reverse_bd_addr(event+pos, sc.remote_addr);
+                pos += 6;
+                (*a2dp_source_context.a2dp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+                return;
+            }
+
             app_state = A2DP_W2_DISCOVER_SEPS;
-            log_info("AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED, avdtp cid 0x%02x ---", cid);
+            // printf("AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED, avdtp cid 0x%02x ---\n", cid);
             avdtp_source_discover_stream_endpoints(cid);
             break;
         
@@ -198,11 +213,14 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             sep.media_type = (avdtp_media_type_t) sep_media_type;
             sep_type = avdtp_subevent_signaling_sep_found_get_sep_type(packet);
             sep.type = (avdtp_sep_type_t) sep_type;
-            log_info("found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)", sep.seid, sep.in_use, sep.media_type, sep.type);
+            // printf("found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)\n", sep.seid, sep.in_use, sep.media_type, sep.type);
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:{
-            if (!sc.local_stream_endpoint) return;
+            if (!sc.local_stream_endpoint) {
+                // printf("local seid %d \n", avdtp_subevent_signaling_media_codec_sbc_capability_get_local_seid(packet));
+                return;
+            }
             uint8_t sampling_frequency = avdtp_choose_sbc_sampling_frequency(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(packet));
             uint8_t channel_mode = avdtp_choose_sbc_channel_mode(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(packet));
             uint8_t block_length = avdtp_choose_sbc_block_length(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_block_length_bitmap(packet));
@@ -277,17 +295,17 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         a2dp_streaming_emit_connection_established(a2dp_source_context.a2dp_callback, cid, sc.remote_addr, 0, 0, AVDTP_SEID_DOES_NOT_EXIST);
                         break;
                     }
-                    log_info("Query get caps for seid %d", sc.active_remote_sep->seid);
+                    // printf("Query get caps for seid %d\n", sc.active_remote_sep->seid);
                     avdtp_source_get_capabilities(cid, sc.active_remote_sep->seid);
                     break;
                 case A2DP_W2_GET_CAPABILITIES:
                 case A2DP_W2_GET_ALL_CAPABILITIES:
                     if (next_remote_sep_index_to_query < avdtp_source_remote_seps_num(cid)){
                         sc.active_remote_sep = avdtp_source_remote_sep(cid, next_remote_sep_index_to_query++);
-                        log_info("Query get caps for seid %d", sc.active_remote_sep->seid);
+                        // printf("Query get caps for seid %d\n", sc.active_remote_sep->seid);
                         avdtp_source_get_capabilities(cid, sc.active_remote_sep->seid);
                     } else {
-                        log_info("No more remote seps found");
+                        // printf("No more remote seps found\n");
                         app_state = A2DP_IDLE;
                         a2dp_streaming_emit_connection_established(a2dp_source_context.a2dp_callback, cid, sc.remote_addr, 0, 0, AVDTP_SEID_DOES_NOT_EXIST);
                     }

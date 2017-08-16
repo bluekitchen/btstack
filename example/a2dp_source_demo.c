@@ -306,6 +306,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     if (hci_event_packet_get_type(packet) != HCI_EVENT_A2DP_META) return;
 
     switch (packet[2]){
+        case A2DP_SUBEVENT_INCOMING_CONNECTION_ESTABLISHED:
+            a2dp_subevent_incoming_connection_established_get_bd_addr(packet, address);
+            media_tracker.a2dp_cid = a2dp_subevent_incoming_connection_established_get_a2dp_cid(packet);
+            printf("A2DP: Incoming connection established: address %s, a2dp cid 0x%02x. Create stream on local seid %d.\n", 
+                bd_addr_to_str(address), media_tracker.a2dp_cid, media_tracker.local_seid);
+            status = a2dp_source_establish_stream(device_addr, media_tracker.local_seid, &media_tracker.a2dp_cid);
+            if (status != ERROR_CODE_SUCCESS){
+                printf("Could not perform command, status 0x%2x\n", status);
+            }
+            break;
         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
             a2dp_subevent_stream_established_get_bd_addr(packet, address);
             status = a2dp_subevent_stream_established_get_status(packet);
@@ -318,10 +328,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 printf("A2DP: Stream establishment failed: wrong local seid %d, expected %d.\n", local_seid, media_tracker.local_seid);
                 break;    
             }
-
             media_tracker.a2dp_cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
             printf("A2DP: Stream established: address %s, a2dp cid 0x%02x, local seid %d, remote seid %d.\n", bd_addr_to_str(address),
                 media_tracker.a2dp_cid, media_tracker.local_seid, a2dp_subevent_stream_established_get_remote_seid(packet));
+            printf("Start playing mod.\n");
+            data_source = STREAM_MOD;
+            status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
 
         case A2DP_SUBEVENT_STREAM_STARTED:
