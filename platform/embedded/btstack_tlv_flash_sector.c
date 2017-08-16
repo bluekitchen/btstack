@@ -235,6 +235,7 @@ static int btstack_tlv_flash_sector_get_tag(void * context, uint32_t tag, uint8_
 			log_info("Found tag '%x' at position %u", tag, it.offset);
 			tag_index = it.offset;
 			tag_len   = it.len;
+			break;
 		}
 		tlv_iterator_fetch_next(self, &it);
 	}
