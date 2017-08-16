@@ -45,9 +45,6 @@
 extern "C" {
 #endif
 
-// Number of flash banks
-#define HAL_FLASH_SECTOR_NUM 2
-
 typedef struct {
 
 	/**
