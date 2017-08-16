@@ -1277,10 +1277,23 @@ static void hci_initializing_run(void){
             hci_send_cmd_packet(packet, HCI_CMD_HEADER_SIZE + DEVICE_NAME_LEN);
             break;
         }
-        case HCI_INIT_WRITE_EIR_DATA:
+        case HCI_INIT_WRITE_EIR_DATA: {
             hci_stack->substate = HCI_INIT_W4_WRITE_EIR_DATA;
-            hci_send_cmd(&hci_write_extended_inquiry_response, 0, hci_stack->eir_data);                        
+            hci_reserve_packet_buffer();
+            uint8_t * packet = hci_stack->hci_packet_buffer;
+            // construct HCI Command and send
+            uint16_t opcode = hci_write_extended_inquiry_response.opcode;
+            hci_stack->last_cmd_opcode = opcode;
+            packet[0] = opcode & 0xff;
+            packet[1] = opcode >> 8;
+            packet[2] = 1 + 240;
+            packet[3] = 0;  // FEC not required
+            memcpy(&packet[4], hci_stack->eir_data, 240);
+            // expand '00:00:00:00:00:00' in name with bd_addr
+            hci_replace_bd_addr_placeholder(&packet[4], 240);
+            hci_send_cmd_packet(packet, HCI_CMD_HEADER_SIZE + DEVICE_NAME_LEN);
             break;
+        }
         case HCI_INIT_WRITE_INQUIRY_MODE:
             hci_stack->substate = HCI_INIT_W4_WRITE_INQUIRY_MODE;
             hci_send_cmd(&hci_write_inquiry_mode, (int) hci_stack->inquiry_mode);
