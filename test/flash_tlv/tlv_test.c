@@ -93,7 +93,6 @@ TEST(HAL_FLASH_SECTOR, TestWriteErase){
 }
 
 /// TLV
-
 TEST_GROUP(BSTACK_TLV){
 	
 	const hal_flash_sector_t * hal_flash_sector_impl;
@@ -227,8 +226,20 @@ TEST(BSTACK_TLV, TestMigrate2){
 	CHECK_EQUAL(buffer[0], data2[0]);
 }
 
-//
+TEST(BSTACK_TLV, TestWriteResetRead){
+    btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(&btstack_tlv_context, hal_flash_sector_impl, &hal_flash_sector_context);
+    uint32_t tag = 'abcd';
+    uint8_t  data = 7;
+    uint8_t  buffer = data;
+    btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &buffer, 1);
+    btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(&btstack_tlv_context, hal_flash_sector_impl, &hal_flash_sector_context);
+    int size = btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, NULL, 0);
+    CHECK_EQUAL(size, 1);
+    btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, &buffer, 1);
+    CHECK_EQUAL(buffer, data);
+}
 
+//
 TEST_GROUP(LINK_KEY_DB){
 	const hal_flash_sector_t * hal_flash_sector_impl;
 	hal_flash_sector_memory_t  hal_flash_sector_context;

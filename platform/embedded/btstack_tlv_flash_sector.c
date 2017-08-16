@@ -120,18 +120,22 @@ static void btstack_tlv_flash_sector_write_header(btstack_tlv_flash_sector_t * s
 }
 
 /**
- * @brief Check if erased
+ * @brief Check if erased from offset
  */
-static int btstack_tlv_flash_sector_test_erased(btstack_tlv_flash_sector_t * self, int bank){
-	uint32_t offset;
+static int btstack_tlv_flash_sector_test_erased(btstack_tlv_flash_sector_t * self, int bank, uint32_t offset){
+	log_info("test erased: bank %u, offset %u", bank, offset);
 	uint32_t size = self->hal_flash_sector_impl->get_size(self->hal_flash_sector_context);
 	uint8_t buffer[16];
 	uint8_t empty16[16];
 	memset(empty16, 0xff, sizeof(empty16));
-	for (offset = 0 ; offset <= size ; offset += sizeof(empty16)){
+	while (offset < size){
 		uint32_t copy_size = (offset + sizeof(empty16) < size) ? sizeof(empty16) : (size - offset); 
 		self->hal_flash_sector_impl->read(self->hal_flash_sector_context, bank, offset, buffer, copy_size);
-		if (memcmp(buffer, empty16, sizeof(empty16))) return 0;
+		if (memcmp(buffer, empty16, copy_size)) {
+			log_info("not erased %x - %x", offset, offset + copy_size);
+			return 0;
+		}
+		offset += copy_size;
 	}
 	return 1;
 }
@@ -140,11 +144,11 @@ static int btstack_tlv_flash_sector_test_erased(btstack_tlv_flash_sector_t * sel
  * @brief erase bank (only if not already erased)
  */
 static void btstack_tlv_flash_sector_erase_bank(btstack_tlv_flash_sector_t * self, int bank){
-	if (btstack_tlv_flash_sector_test_erased(self, 0)){
+	if (btstack_tlv_flash_sector_test_erased(self, bank, 0)){
 		log_info("bank %u already erased", bank);
 	} else {
 		log_info("bank %u not empty, erase bank", bank);
-		self->hal_flash_sector_impl->erase(self->hal_flash_sector_context, 0);
+		self->hal_flash_sector_impl->erase(self->hal_flash_sector_context, bank);
 	}
 }
 
@@ -323,16 +327,25 @@ const btstack_tlv_t * btstack_tlv_flash_sector_init_instance(btstack_tlv_flash_s
 		self->write_offset = it.offset;
 
 		if (self->write_offset < self->hal_flash_sector_impl->get_size(self->hal_flash_sector_context)){
+
 			// delete older instances of last_tag
 			// this handles the unlikely case where MCU did reset after new value + header was written but before delete did complete
 			if (last_tag){
 				btstack_tlv_flash_sector_delete_tag_until_offset(self, last_tag, last_offset);
 			}
+
+			// verify that rest of bank is empty
+			// this handles the unlikely case where MCU did reset after new value was written, but not the tag
+			if (!btstack_tlv_flash_sector_test_erased(self, self->current_bank, self->write_offset)){
+				log_info("Flash not empty after last found tag -> migrate");
+				btstack_tlv_flash_sector_migrate(self);
+			} else {
+				log_info("Flash clean after last found tag");
+			}
 		} else {
 			// failure!
 			self->current_bank = -1;
 		}
-
 	} 
 
 	if (self->current_bank < 0) {
