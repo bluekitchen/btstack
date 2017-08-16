@@ -30,7 +30,7 @@
  */
 
 /*
- *  hal_flash_sector_stm32.c
+ *  hal_flash_bank_stm32.c
  * 
  *  HAL abstraction for Flash memory that can be written anywhere
  *  after being erased
@@ -39,21 +39,21 @@
 #include <stdint.h>
 #include <string.h> // memcpy
 
-#include "hal_flash_sector_stm32.h"
+#include "hal_flash_bank_stm32.h"
 #include "stm32f4xx_hal.h"
 
-static uint32_t hal_flash_sector_stm32_get_size(void * context){
-	hal_flash_sector_stm32_t * self = (hal_flash_sector_stm32_t *) context;
+static uint32_t hal_flash_bank_stm32_get_size(void * context){
+	hal_flash_bank_stm32_t * self = (hal_flash_bank_stm32_t *) context;
 	return self->sector_size;
 }
 
-static uint32_t hal_flash_sector_memory_get_alignment(void * context){
+static uint32_t hal_flash_bank_memory_get_alignment(void * context){
     UNUSED(context);
     return 1;
 }
 
-static void hal_flash_sector_stm32_erase(void * context, int bank){
-	hal_flash_sector_stm32_t * self = (hal_flash_sector_stm32_t *) context;
+static void hal_flash_bank_stm32_erase(void * context, int bank){
+	hal_flash_bank_stm32_t * self = (hal_flash_bank_stm32_t *) context;
 	if (bank > 1) return;
 	FLASH_EraseInitTypeDef eraseInit;
 	eraseInit.TypeErase = FLASH_TYPEERASE_SECTORS;
@@ -66,8 +66,8 @@ static void hal_flash_sector_stm32_erase(void * context, int bank){
 	HAL_FLASH_Lock();
 }
 
-static void hal_flash_sector_stm32_read(void * context, int bank, uint32_t offset, uint8_t * buffer, uint32_t size){
-	hal_flash_sector_stm32_t * self = (hal_flash_sector_stm32_t *) context;
+static void hal_flash_bank_stm32_read(void * context, int bank, uint32_t offset, uint8_t * buffer, uint32_t size){
+	hal_flash_bank_stm32_t * self = (hal_flash_bank_stm32_t *) context;
 
 	if (bank > 1) return;
 	if (offset > self->sector_size) return;
@@ -76,8 +76,8 @@ static void hal_flash_sector_stm32_read(void * context, int bank, uint32_t offse
 	memcpy(buffer, ((uint8_t *) self->banks[bank]) + offset, size);
 }
 
-static void hal_flash_sector_stm32_write(void * context, int bank, uint32_t offset, const uint8_t * data, uint32_t size){
-	hal_flash_sector_stm32_t * self = (hal_flash_sector_stm32_t *) context;
+static void hal_flash_bank_stm32_write(void * context, int bank, uint32_t offset, const uint8_t * data, uint32_t size){
+	hal_flash_bank_stm32_t * self = (hal_flash_bank_stm32_t *) context;
 
 	if (bank > 1) return;
 	if (offset > self->sector_size) return;
@@ -91,20 +91,20 @@ static void hal_flash_sector_stm32_write(void * context, int bank, uint32_t offs
 	HAL_FLASH_Lock();
 }
 
-static const hal_flash_sector_t hal_flash_sector_stm32_impl = {
-	/* uint32_t (*get_size)() */         &hal_flash_sector_stm32_get_size,
-	/* uint32_t (*get_alignment)(..); */ &hal_flash_sector_memory_get_alignment,
-	/* void (*erase)(..);             */ &hal_flash_sector_stm32_erase,
-	/* void (*read)(..);              */ &hal_flash_sector_stm32_read,
-	/* void (*write)(..);             */ &hal_flash_sector_stm32_write,
+static const hal_flash_bank_t hal_flash_bank_stm32_impl = {
+	/* uint32_t (*get_size)() */         &hal_flash_bank_stm32_get_size,
+	/* uint32_t (*get_alignment)(..); */ &hal_flash_bank_memory_get_alignment,
+	/* void (*erase)(..);             */ &hal_flash_bank_stm32_erase,
+	/* void (*read)(..);              */ &hal_flash_bank_stm32_read,
+	/* void (*write)(..);             */ &hal_flash_bank_stm32_write,
 };
 
-const hal_flash_sector_t * hal_flash_sector_stm32_init_instance(hal_flash_sector_stm32_t * context, uint32_t sector_size,
+const hal_flash_bank_t * hal_flash_bank_stm32_init_instance(hal_flash_bank_stm32_t * context, uint32_t sector_size,
 		uint32_t bank_0_sector, uint32_t bank_1_sector, uintptr_t bank_0_addr, uintptr_t bank_1_addr){
 	context->sector_size = sector_size;
 	context->sectors[0] = bank_0_sector;
 	context->sectors[1] = bank_1_sector;
 	context->banks[0]   = bank_0_addr;
 	context->banks[1]   = bank_1_addr;
-	return &hal_flash_sector_stm32_impl;
+	return &hal_flash_bank_stm32_impl;
 }

@@ -36,11 +36,11 @@
  *  after being erased implemented with memory
  */
 
-#ifndef __HAL_FLASH_SECTOR_MAXIM_H
-#define __HAL_FLASH_SECTOR_MAXIM_H
+#ifndef __HAL_FLASH_BANK_MAXIM_H
+#define __HAL_FLASH_BANK_MAXIM_H
 
 #include <stdint.h>
-#include "hal_flash_sector.h"
+#include "hal_flash_bank.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -50,18 +50,18 @@ typedef struct {
 	uint32_t   sector_size;
 	uintptr_t  banks[2];
 
-} hal_flash_sector_mxc_t;
+} hal_flash_bank_mxc_t;
 
 /**
  * Configure MXC HAL Flash Implementation
  *
- * @param context of hal_flash_sector_mxc_t
+ * @param context of hal_flash_bank_mxc_t
  * @param sector_size
  * @param bank_0_addr
  * @param bank_1_addr
  * @return 
  */
-const hal_flash_sector_t * hal_flash_sector_mxc_init_instance(hal_flash_sector_mxc_t * context, uint32_t sector_size, uintptr_t bank_0_addr, uintptr_t bank_1_addr);
+const hal_flash_bank_t * hal_flash_bank_mxc_init_instance(hal_flash_bank_mxc_t * context, uint32_t sector_size, uintptr_t bank_0_addr, uintptr_t bank_1_addr);
 
 #if defined __cplusplus
 }

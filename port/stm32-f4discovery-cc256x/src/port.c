@@ -6,11 +6,11 @@
 #include "btstack_chipset_cc256x.h"
 #include "btstack_run_loop_embedded.h"
 #include "btstack_tlv.h"
-#include "btstack_tlv_flash_sector.h"
+#include "btstack_tlv_flash_bank.h"
 #include "ble/le_device_db_tlv.h"
 #include "classic/btstack_link_key_db_static.h"
 #include "classic/btstack_link_key_db_tlv.h"
-#include "hal_flash_sector_stm32.h"
+#include "hal_flash_bank_stm32.h"
 #include "stm32f4xx_hal.h"
 
 //
@@ -284,14 +284,14 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 
 
-static btstack_tlv_flash_sector_t btstack_tlv_flash_sector_context;
-static hal_flash_sector_stm32_t   hal_flash_sector_context;
+static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
+static hal_flash_bank_stm32_t   hal_flash_bank_context;
 
-#define HAL_FLASH_SECTOR_SIZE (128 * 1024)
-#define HAL_FLASH_SECTOR_BANK_0_ADDR 0x080C0000
-#define HAL_FLASH_SECTOR_BANK_1_ADDR 0x080E0000
-#define HAL_FLASH_SECTOR_BANK_0_SECTOR FLASH_SECTOR_10
-#define HAL_FLASH_SECTOR_BANK_1_SECTOR FLASH_SECTOR_11
+#define HAL_FLASH_BANK_SIZE (128 * 1024)
+#define HAL_FLASH_BANK_0_ADDR 0x080C0000
+#define HAL_FLASH_BANK_1_ADDR 0x080E0000
+#define HAL_FLASH_BANK_0_SECTOR FLASH_SECTOR_10
+#define HAL_FLASH_BANK_1_SECTOR FLASH_SECTOR_11
 
 //
 int btstack_main(int argc, char ** argv);
@@ -308,24 +308,24 @@ void port_main(void){
     hci_set_chipset(btstack_chipset_cc256x_instance());
 
     // setup TLV Flash Sector implementation
-    const hal_flash_sector_t * hal_flash_sector_impl = hal_flash_sector_stm32_init_instance(
-    		&hal_flash_sector_context,
-    		HAL_FLASH_SECTOR_SIZE,
-			HAL_FLASH_SECTOR_BANK_0_SECTOR,
-			HAL_FLASH_SECTOR_BANK_1_SECTOR,
-			HAL_FLASH_SECTOR_BANK_0_ADDR,
-			HAL_FLASH_SECTOR_BANK_1_ADDR);
-    const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(
-    		&btstack_tlv_flash_sector_context,
-			hal_flash_sector_impl,
-			&hal_flash_sector_context);
+    const hal_flash_bank_t * hal_flash_bank_impl = hal_flash_bank_stm32_init_instance(
+    		&hal_flash_bank_context,
+    		HAL_FLASH_BANK_SIZE,
+			HAL_FLASH_BANK_0_SECTOR,
+			HAL_FLASH_BANK_1_SECTOR,
+			HAL_FLASH_BANK_0_ADDR,
+			HAL_FLASH_BANK_1_ADDR);
+    const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(
+    		&btstack_tlv_flash_bank_context,
+			hal_flash_bank_impl,
+			&hal_flash_bank_context);
 
     // setup Link Key DB using TLV
-    const btstack_link_key_db_t * btstack_link_key_db = btstack_link_key_db_tlv_get_instance(btstack_tlv_impl, &btstack_tlv_flash_sector_context);
+    const btstack_link_key_db_t * btstack_link_key_db = btstack_link_key_db_tlv_get_instance(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
     hci_set_link_key_db(btstack_link_key_db);
 
     // setup LE Device DB using TLV
-    le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_sector_context);
+    le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;

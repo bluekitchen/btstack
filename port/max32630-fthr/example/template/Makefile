@@ -139,8 +139,8 @@ COMMON = \
     hci_cmd.o                 \
     hci_dump.o                \
     btstack_uart_block_embedded.o \
-    hal_flash_sector_mxc.o    \
-    btstack_tlv_flash_sector.o \
+    hal_flash_bank_mxc.o    \
+    btstack_tlv_flash_bank.o \
 
 CLASSIC = \
     btstack_link_key_db_tlv.o \

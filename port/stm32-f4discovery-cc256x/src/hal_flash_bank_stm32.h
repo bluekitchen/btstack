@@ -30,17 +30,17 @@
  */
 
 /*
- *  hal_flash_sector_stm32.h
+ *  hal_flash_bank_stm32.h
  * 
  *  HAL abstraction for Flash memory that can be written anywhere
  *  after being erased
  */
 
-#ifndef __HAL_FLASH_SECTOR_STM32_H
-#define __HAL_FLASH_SECTOR_STM32_H
+#ifndef __HAL_FLASH_BANK_STM32_H
+#define __HAL_FLASH_BANK_STM32_H
 
 #include <stdint.h>
-#include "hal_flash_sector.h"
+#include "hal_flash_bank.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -50,20 +50,20 @@ typedef struct {
 	uint32_t   sector_size;
 	uint32_t   sectors[2];
 	uintptr_t  banks[2];
-} hal_flash_sector_stm32_t;
+} hal_flash_bank_stm32_t;
 
 /**
  * Configure STM32 HAL Flash Implementation
  *
- * @param context of hal_flash_sector_stm32_t
- * @param sector_size
+ * @param context of hal_flash_bank_stm32_t
+ * @param bank_size
  * @param bank_0_sector id
  * @param bank_1_sector id
  * @param bank_0_addr
  * @param bank_1_addr
  * @return 
  */
-const hal_flash_sector_t * hal_flash_sector_stm32_init_instance(hal_flash_sector_stm32_t * context, uint32_t sector_size,
+const hal_flash_bank_t * hal_flash_bank_stm32_init_instance(hal_flash_bank_stm32_t * context, uint32_t bank_size,
 		uint32_t bank_0_sector, uint32_t bank_1_sector, uintptr_t bank_0_addr, uintptr_t bank_1_addr);
 
 #if defined __cplusplus

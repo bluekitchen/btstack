@@ -30,14 +30,14 @@
  */
 
 /*
- *  hal_flash_sector.h
+ *  hal_flash_bank.h
  * 
  *  HAL abstraction for Flash memory that can be written anywhere
  *  after being erased
  */
 
-#ifndef __HAL_FLASH_SECTOR_H
-#define __HAL_FLASH_SECTOR_H
+#ifndef __HAL_FLASH_BANK_H
+#define __HAL_FLASH_BANK_H
 
 #include <stdint.h>
 
@@ -84,9 +84,9 @@ typedef struct {
 	 */
 	void (*write)(void * context, int bank, uint32_t offset, const uint8_t * data, uint32_t size);
 
-} hal_flash_sector_t;
+} hal_flash_bank_t;
 
 #if defined __cplusplus
 }
 #endif
-#endif // __HAL_FLASH_SECTOR_H
+#endif // __HAL_FLASH_BANK_H

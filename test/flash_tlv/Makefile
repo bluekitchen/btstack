@@ -4,9 +4,9 @@ BTSTACK_ROOT = ../..
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
 COMMON_OBJ = \
-	btstack_tlv_flash_sector.o \
+	btstack_tlv_flash_bank.o \
 	btstack_util.o \
-	hal_flash_sector_memory.o \
+	hal_flash_bank_memory.o \
 	hci_dump.o \
 
 VPATH = \

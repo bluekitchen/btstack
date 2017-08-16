@@ -30,7 +30,7 @@
  */
 
 /*
- *  hal_flash_sector_mxc.c
+ *  hal_flash_bank_mxc.c
  * 
  *  HAL abstraction for Flash memory that can be written anywhere
  *  after being erased implemented with memory
@@ -39,22 +39,22 @@
 #include <stdint.h>
 #include <string.h> // memcpy
 
-#include "hal_flash_sector_mxc.h"
+#include "hal_flash_bank_mxc.h"
 
 #include "flc.h" // Maxim Flash Controller
 
-static uint32_t hal_flash_sector_mxc_get_size(void * context){
-	hal_flash_sector_mxc_t * self = (hal_flash_sector_mxc_t *) context;
+static uint32_t hal_flash_bank_mxc_get_size(void * context){
+	hal_flash_bank_mxc_t * self = (hal_flash_bank_mxc_t *) context;
 	return self->sector_size;
 }
 
-static uint32_t hal_flash_sector_mxc_get_alignment(void * context){
+static uint32_t hal_flash_bank_mxc_get_alignment(void * context){
     (void)(context);
     return 4;
 }
 
-static void hal_flash_sector_mxc_erase(void * context, int bank){
-	hal_flash_sector_mxc_t * self = (hal_flash_sector_mxc_t *) context;
+static void hal_flash_bank_mxc_erase(void * context, int bank){
+	hal_flash_bank_mxc_t * self = (hal_flash_bank_mxc_t *) context;
 
 	if (bank > 1) return;
 
@@ -62,8 +62,8 @@ static void hal_flash_sector_mxc_erase(void * context, int bank){
 	FLC_PageErase(self->banks[bank], MXC_V_FLC_ERASE_CODE_PAGE_ERASE, MXC_V_FLC_FLSH_UNLOCK_KEY);
 }
 
-static void hal_flash_sector_mxc_read(void * context, int bank, uint32_t offset, uint8_t * buffer, uint32_t size){
-	hal_flash_sector_mxc_t * self = (hal_flash_sector_mxc_t *) context;
+static void hal_flash_bank_mxc_read(void * context, int bank, uint32_t offset, uint8_t * buffer, uint32_t size){
+	hal_flash_bank_mxc_t * self = (hal_flash_bank_mxc_t *) context;
 
 	if (bank > 1) return;
 	if (offset > self->sector_size) return;
@@ -72,8 +72,8 @@ static void hal_flash_sector_mxc_read(void * context, int bank, uint32_t offset,
 	memcpy(buffer, ((uint8_t *) self->banks[bank]) + offset, size);
 }
 
-static void hal_flash_sector_mxc_write(void * context, int bank, uint32_t offset, const uint8_t * data, uint32_t size){
-	hal_flash_sector_mxc_t * self = (hal_flash_sector_mxc_t *) context;
+static void hal_flash_bank_mxc_write(void * context, int bank, uint32_t offset, const uint8_t * data, uint32_t size){
+	hal_flash_bank_mxc_t * self = (hal_flash_bank_mxc_t *) context;
 
 	if (bank > 1) return;
 	if (offset > self->sector_size) return;
@@ -82,15 +82,15 @@ static void hal_flash_sector_mxc_write(void * context, int bank, uint32_t offset
 	FLC_Write(self->banks[bank] + offset, data, size, MXC_V_FLC_FLSH_UNLOCK_KEY);
 }
 
-static const hal_flash_sector_t hal_flash_sector_mxc_impl = {
-	/* uint32_t (*get_size)() */         &hal_flash_sector_mxc_get_size,
-	/* uint32_t (*get_alignment)(..); */ &hal_flash_sector_mxc_get_alignment,
-	/* void (*erase)(..);             */ &hal_flash_sector_mxc_erase,
-	/* void (*read)(..);              */ &hal_flash_sector_mxc_read,
-	/* void (*write)(..);             */ &hal_flash_sector_mxc_write,
+static const hal_flash_bank_t hal_flash_bank_mxc_impl = {
+	/* uint32_t (*get_size)() */         &hal_flash_bank_mxc_get_size,
+	/* uint32_t (*get_alignment)(..); */ &hal_flash_bank_mxc_get_alignment,
+	/* void (*erase)(..);             */ &hal_flash_bank_mxc_erase,
+	/* void (*read)(..);              */ &hal_flash_bank_mxc_read,
+	/* void (*write)(..);             */ &hal_flash_bank_mxc_write,
 };
 
-const hal_flash_sector_t * hal_flash_sector_mxc_init_instance(hal_flash_sector_mxc_t * context, uint32_t sector_size,
+const hal_flash_bank_t * hal_flash_bank_mxc_init_instance(hal_flash_bank_mxc_t * context, uint32_t sector_size,
 		uintptr_t bank_0_addr, uintptr_t bank_1_addr){
 	context->sector_size = sector_size;
 	context->banks[0]   = bank_0_addr;
@@ -99,6 +99,6 @@ const hal_flash_sector_t * hal_flash_sector_mxc_init_instance(hal_flash_sector_m
 	// prepare FLC
 	FLC_Init();
 
-	return &hal_flash_sector_mxc_impl;
+	return &hal_flash_bank_mxc_impl;
 }
 

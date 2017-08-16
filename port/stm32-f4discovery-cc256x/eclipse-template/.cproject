@@ -73,6 +73,7 @@
 									<listOptionValue builtIn="false" value="../btstack/chipset/cc256x"/>
 									<listOptionValue builtIn="false" value="../btstack/platform/embedded"/>
 									<listOptionValue builtIn="false" value="../btstack/port/stm32-f4discovery-cc256x/src"/>
+									<listOptionValue builtIn="false" value="../btstack/port/stm32-f4discovery-cc256x/src/bsp"/>
 									<listOptionValue builtIn="false" value="../btstack/3rd-party/bluedroid/encoder/include"/>
 									<listOptionValue builtIn="false" value="../btstack/3rd-party/bluedroid/decoder/include"/>
 									<listOptionValue builtIn="false" value="../btstack/3rd-party/hxcmod-player/mods"/>

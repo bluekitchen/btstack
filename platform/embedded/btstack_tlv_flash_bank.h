@@ -30,39 +30,39 @@
  */
 
 /*
- *  btstack_tlv_flash_sector.h
+ *  btstack_tlv_flash_bank.h
  *
  *  Implementation for BTstack's Tag Value Length Persistent Storage implementations
- *  using hal_flash_sector storage
+ *  using hal_flash_bank storage
  */
 
-#ifndef __BTSTACK_TLV_FLASH_SECTOR_H
-#define __BTSTACK_TLV_FLASH_SECTOR_H
+#ifndef __BTSTACK_TLV_FLASH_BANK_H
+#define __BTSTACK_TLV_FLASH_BANK_H
 
 #include <stdint.h>
 #include "btstack_tlv.h"
-#include "hal_flash_sector.h"
+#include "hal_flash_bank.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
 typedef struct {
-	const hal_flash_sector_t * hal_flash_sector_impl;
-	void * hal_flash_sector_context;
+	const hal_flash_bank_t * hal_flash_bank_impl;
+	void * hal_flash_bank_context;
 	int current_bank;
 	int write_offset;
-} btstack_tlv_flash_sector_t;
+} btstack_tlv_flash_bank_t;
 
 /**
  * Init Tag Length Value Store
- * @param context btstack_tlv_flash_sector_t 
- * @param hal_flash_sector_impl of hal_flash_sector interface
- * @Param hal_flash_sector_context of hal_flash_sector_interface
+ * @param context btstack_tlv_flash_bank_t 
+ * @param hal_flash_bank_impl    of hal_flash_bank interface
+ * @Param hal_flash_bank_context of hal_flash_bank_interface
  */
-const btstack_tlv_t * btstack_tlv_flash_sector_init_instance(btstack_tlv_flash_sector_t * context, const hal_flash_sector_t * hal_flash_sector_impl, void * hal_flash_sector_context);
+const btstack_tlv_t * btstack_tlv_flash_bank_init_instance(btstack_tlv_flash_bank_t * context, const hal_flash_bank_t * hal_flash_bank_impl, void * hal_flash_bank_context);
 
 #if defined __cplusplus
 }
 #endif
-#endif // __BTSTACK_TLV_FLASH_SECTOR_H
+#endif // __BTSTACK_TLV_FLASH_BANK_H

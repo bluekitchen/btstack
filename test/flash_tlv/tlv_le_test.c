@@ -2,10 +2,10 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 
-#include "hal_flash_sector.h"
-#include "hal_flash_sector_memory.h"
+#include "hal_flash_bank.h"
+#include "hal_flash_bank_memory.h"
 #include "btstack_tlv.h"
-#include "btstack_tlv_flash_sector.h"
+#include "btstack_tlv_flash_bank.h"
 #include "hci_dump.h"
 #include "ble/le_device_db.h"
 #include "ble/le_device_db_tlv.h"
@@ -13,8 +13,8 @@
 #include "btstack_config.h"
 #include "btstack_debug.h"
 
-#define HAL_FLASH_SECTOR_MEMORY_STORAGE_SIZE 512
-static uint8_t hal_flash_sector_memory_storage[HAL_FLASH_SECTOR_MEMORY_STORAGE_SIZE];
+#define HAL_FLASH_BANK_MEMORY_STORAGE_SIZE 512
+static uint8_t hal_flash_bank_memory_storage[HAL_FLASH_BANK_MEMORY_STORAGE_SIZE];
 
 static void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
     int i;
@@ -31,22 +31,22 @@ static void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
 //
 
 TEST_GROUP(LE_DEVICE_DB){
-    const hal_flash_sector_t * hal_flash_sector_impl;
-    hal_flash_sector_memory_t  hal_flash_sector_context;
+    const hal_flash_bank_t * hal_flash_bank_impl;
+    hal_flash_bank_memory_t  hal_flash_bank_context;
 
     const btstack_tlv_t *      btstack_tlv_impl;
-    btstack_tlv_flash_sector_t btstack_tlv_context;
+    btstack_tlv_flash_bank_t btstack_tlv_context;
 
     bd_addr_t addr_aa, addr_bb, addr_cc;
     sm_key_t sm_key_aa, sm_key_bb, sm_key_cc;
 
     void setup(void){
-        // hal_flash_sector
-        hal_flash_sector_impl = hal_flash_sector_memory_init_instance(&hal_flash_sector_context, hal_flash_sector_memory_storage, HAL_FLASH_SECTOR_MEMORY_STORAGE_SIZE);
-        hal_flash_sector_impl->erase(&hal_flash_sector_context, 0);
-        hal_flash_sector_impl->erase(&hal_flash_sector_context, 1);
+        // hal_flash_bank
+        hal_flash_bank_impl = hal_flash_bank_memory_init_instance(&hal_flash_bank_context, hal_flash_bank_memory_storage, HAL_FLASH_BANK_MEMORY_STORAGE_SIZE);
+        hal_flash_bank_impl->erase(&hal_flash_bank_context, 0);
+        hal_flash_bank_impl->erase(&hal_flash_bank_context, 1);
         // btstack_tlv
-        btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(&btstack_tlv_context, hal_flash_sector_impl, &hal_flash_sector_context);
+        btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(&btstack_tlv_context, hal_flash_bank_impl, &hal_flash_bank_context);
         // le_device_db_tlv
         le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_context);
         le_device_db_init();
