@@ -156,7 +156,7 @@ void hfp_gsm_init(void){
 static int get_number_calls_with_enhanced_status(hfp_enhanced_call_status_t enhanced_status){
     int i, count = 0;
     for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
-        if (get_enhanced_call_status(i) == enhanced_status) count++;
+        if (get_enhanced_call_status(i) == (int) enhanced_status) count++;
     }
     return count;
 }
@@ -164,7 +164,7 @@ static int get_number_calls_with_enhanced_status(hfp_enhanced_call_status_t enha
 static int get_call_index_with_enhanced_status(hfp_enhanced_call_status_t enhanced_status){
     int i ;
     for (i = 0; i < HFP_GSM_MAX_NR_CALLS; i++){
-        if (get_enhanced_call_status(i) == enhanced_status) return i;
+        if (get_enhanced_call_status(i) == (int) enhanced_status) return i;
     }
     return -1;
 }

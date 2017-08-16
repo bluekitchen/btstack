@@ -77,7 +77,7 @@ NULL,    // 0x11 non-supported AMP command
 #endif
 };
 
-static const int num_l2cap_commands = sizeof(l2cap_signaling_commands_format) / sizeof(const char *);
+static const unsigned int num_l2cap_commands = sizeof(l2cap_signaling_commands_format) / sizeof(const char *);
 
 uint8_t   sig_seq_nr  = 0xff;
 uint16_t  source_cid  = 0x40;
