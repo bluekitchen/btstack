@@ -64,7 +64,7 @@
 
 uint8_t hfp_service_buffer[150];
 const uint8_t    rfcomm_channel_nr = 1;
-const char hfp_ag_service_name[] = "BTstack HFP AG Test";
+const char hfp_ag_service_name[] = "HFP AG Demo";
 
 static bd_addr_t device_addr;
 static const char * device_addr_string = "00:15:83:5F:9D:46";
@@ -550,6 +550,7 @@ int btstack_main(int argc, const char * argv[]){
     hci_add_event_handler(&hci_event_callback_registration);
     hci_register_sco_packet_handler(&packet_handler);
 
+    gap_set_local_name("HFP AG Demo 00:00:00:00:00:00");
     gap_discoverable_control(1);
 
     // L2CAP

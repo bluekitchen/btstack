@@ -92,7 +92,7 @@ static const int16_t sine_int16[] = {
 -19260,  -17557,  -15786,  -13952,  -12062,  -10126,   -8149,   -6140,   -4107,   -2057,
 };
 
-static const char * device_name = "A2DP Source BTstack";
+static const char * device_name = "A2DP Source Demo 00:00:00:00:00:00";
 
 #ifdef HAVE_BTSTACK_STDIN
 // mac 2011:    static const char * device_addr_string = "04:0C:CE:E4:85:D3";

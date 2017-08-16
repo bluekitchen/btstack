@@ -256,7 +256,7 @@ int btstack_main(int argc, const char * argv[]){
 
     gap_discoverable_control(1);
     gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
-    gap_set_local_name("BTstack SPP Counter");
+    gap_set_local_name("SPP Counter 00:00:00:00:00:00");
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

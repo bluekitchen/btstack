@@ -342,7 +342,7 @@ int btstack_main(int argc, const char * argv[]){
 
     gap_discoverable_control(1);
     gap_set_class_of_device(0x2540);
-    gap_set_local_name(hid_device_name);
+    gap_set_local_name("HID Keyboard Demo 00:00:00:00:00:00");
     
     // L2CAP
     l2cap_init();

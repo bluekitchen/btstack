@@ -257,11 +257,11 @@ int btstack_main(int argc, const char * argv[])
     sdp_register_service(spp_service_buffer);
     // printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
 
-    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
-
     // short-cut to find other SPP Streamer
     gap_set_class_of_device(TEST_COD);
 
+    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+    gap_set_local_name("SPP Streamer 00:00:00:00:00:00");
     gap_discoverable_control(1);
 
     spp_create_test_data();
