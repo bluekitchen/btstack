@@ -256,16 +256,23 @@ static int btstack_tlv_flash_sector_get_tag(void * context, uint32_t tag, uint8_
  * @param data
  * @param data_size
  */
-static void btstack_tlv_flash_sector_store_tag(void * context, uint32_t tag, const uint8_t * data, uint32_t data_size){
+static int btstack_tlv_flash_sector_store_tag(void * context, uint32_t tag, const uint8_t * data, uint32_t data_size){
 
 	btstack_tlv_flash_sector_t * self = (btstack_tlv_flash_sector_t *) context;
 
 	// abort if data size not aligned with flash requirements
-	if (!btstack_tlv_flash_sector_verify_alignment(self, data_size)) return;
+	if (!btstack_tlv_flash_sector_verify_alignment(self, data_size)) return 1;
 
+	// trigger migration if not enough space
 	if (self->write_offset + 8 + data_size > self->hal_flash_sector_impl->get_size(self->hal_flash_sector_context)){
 		btstack_tlv_flash_sector_migrate(self);
 	}
+
+	if (self->write_offset + 8 + data_size > self->hal_flash_sector_impl->get_size(self->hal_flash_sector_context)){
+		log_error("couldn't write entry, not enough space left");
+		return 2;
+	}
+
 	// prepare entry
 	uint8_t entry[8];
 	big_endian_store_32(entry, 0, tag);
@@ -297,7 +304,7 @@ static void btstack_tlv_flash_sector_delete_tag(void * context, uint32_t tag){
 
 static const btstack_tlv_t btstack_tlv_flash_sector = {
 	/* int  (*get_tag)(..);     */ &btstack_tlv_flash_sector_get_tag,
-	/* void (*store_tag)(..);   */ &btstack_tlv_flash_sector_store_tag,
+	/* int (*store_tag)(..);    */ &btstack_tlv_flash_sector_store_tag,
 	/* void (*delete_tag)(v..); */ &btstack_tlv_flash_sector_delete_tag,
 };
 
