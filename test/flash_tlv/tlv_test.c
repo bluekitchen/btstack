@@ -2,10 +2,10 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 
-#include "hal_flash_sector.h"
-#include "hal_flash_sector_memory.h"
+#include "hal_flash_bank.h"
+#include "hal_flash_bank_memory.h"
 #include "btstack_tlv.h"
-#include "btstack_tlv_flash_sector.h"
+#include "btstack_tlv_flash_bank.h"
 #include "hci_dump.h"
 #include "classic/btstack_link_key_db.h"
 #include "classic/btstack_link_key_db_tlv.h"
@@ -13,8 +13,8 @@
 #include "btstack_config.h"
 #include "btstack_debug.h"
 
-#define HAL_FLASH_SECTOR_MEMORY_STORAGE_SIZE 256
-static uint8_t hal_flash_sector_memory_storage[HAL_FLASH_SECTOR_MEMORY_STORAGE_SIZE];
+#define HAL_FLASH_BANK_MEMORY_STORAGE_SIZE 256
+static uint8_t hal_flash_bank_memory_storage[HAL_FLASH_BANK_MEMORY_STORAGE_SIZE];
 
 static void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
 	int i;
@@ -28,30 +28,30 @@ static void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
 	}
 }
 
-TEST_GROUP(HAL_FLASH_SECTOR){
-	const hal_flash_sector_t * hal_flash_sector_impl;
-	hal_flash_sector_memory_t hal_flash_sector_context;
+TEST_GROUP(HAL_FLASH_bank){
+	const hal_flash_bank_t * hal_flash_bank_impl;
+	hal_flash_bank_memory_t hal_flash_bank_context;
     void setup(void){
-    	hal_flash_sector_impl = hal_flash_sector_memory_init_instance(&hal_flash_sector_context, hal_flash_sector_memory_storage, HAL_FLASH_SECTOR_MEMORY_STORAGE_SIZE);
-		hal_flash_sector_impl->erase(&hal_flash_sector_context, 0);
-		hal_flash_sector_impl->erase(&hal_flash_sector_context, 1);
+    	hal_flash_bank_impl = hal_flash_bank_memory_init_instance(&hal_flash_bank_context, hal_flash_bank_memory_storage, HAL_FLASH_BANK_MEMORY_STORAGE_SIZE);
+		hal_flash_bank_impl->erase(&hal_flash_bank_context, 0);
+		hal_flash_bank_impl->erase(&hal_flash_bank_context, 1);
     }
 };
 
-TEST(HAL_FLASH_SECTOR, TestErased){
+TEST(HAL_FLASH_bank, TestErased){
 	uint8_t buffer;
 	int offsets[] = { 0, 10, 100};
 	int i;
 	for (i=0;i<sizeof(offsets)/sizeof(int);i++){
 		int bank;
 		for (bank=0;bank<2;bank++){
-			hal_flash_sector_impl->read(&hal_flash_sector_context, bank, offsets[i], &buffer, 1);	
+			hal_flash_bank_impl->read(&hal_flash_bank_context, bank, offsets[i], &buffer, 1);	
 		    CHECK_EQUAL(buffer, 0xff);
 		}
 	}
 }
 
-TEST(HAL_FLASH_SECTOR, TestWrite){
+TEST(HAL_FLASH_bank, TestWrite){
 	uint8_t buffer;
 	int offsets[] = { 0, 10, 100};
 	int i;
@@ -59,13 +59,13 @@ TEST(HAL_FLASH_SECTOR, TestWrite){
 		int bank;
 		for (bank=0;bank<2;bank++){
 			buffer = i;
-			hal_flash_sector_impl->write(&hal_flash_sector_context, bank, offsets[i], &buffer, 1);	
+			hal_flash_bank_impl->write(&hal_flash_bank_context, bank, offsets[i], &buffer, 1);	
 		}
 	}
 	for (i=0;i<sizeof(offsets)/sizeof(int);i++){
 		int bank;
 		for (bank=0;bank<2;bank++){
-			hal_flash_sector_impl->read(&hal_flash_sector_context, bank, offsets[i], &buffer, 1);	
+			hal_flash_bank_impl->read(&hal_flash_bank_context, bank, offsets[i], &buffer, 1);	
 		    CHECK_EQUAL(buffer, i);
 		}
 	}
@@ -73,51 +73,50 @@ TEST(HAL_FLASH_SECTOR, TestWrite){
 
 #if 0
 // prints error and exits tests. maybe all functions need to return ok
-TEST(HAL_FLASH_SECTOR, TestWriteTwice){
+TEST(HAL_FLASH_bank, TestWriteTwice){
 	uint8_t buffer = 5;
-	hal_flash_sector_impl->write(&hal_flash_sector_context, 0, 5, &buffer, 1);	
-	hal_flash_sector_impl->write(&hal_flash_sector_context, 0, 5, &buffer, 1);	
+	hal_flash_bank_impl->write(&hal_flash_bank_context, 0, 5, &buffer, 1);	
+	hal_flash_bank_impl->write(&hal_flash_bank_context, 0, 5, &buffer, 1);	
 }
 #endif
 
-TEST(HAL_FLASH_SECTOR, TestWriteErase){
+TEST(HAL_FLASH_bank, TestWriteErase){
 	uint32_t offset = 7;
 	uint8_t value = 9;
 	uint8_t buffer = value;
-	hal_flash_sector_impl->write(&hal_flash_sector_context, 0, offset, &buffer, 1);
-	hal_flash_sector_impl->read(&hal_flash_sector_context, 0, offset, &buffer, 1);	
+	hal_flash_bank_impl->write(&hal_flash_bank_context, 0, offset, &buffer, 1);
+	hal_flash_bank_impl->read(&hal_flash_bank_context, 0, offset, &buffer, 1);	
     CHECK_EQUAL(buffer, value);
-	hal_flash_sector_impl->erase(&hal_flash_sector_context, 0);
-	hal_flash_sector_impl->read(&hal_flash_sector_context, 0, offset, &buffer, 1);	
+	hal_flash_bank_impl->erase(&hal_flash_bank_context, 0);
+	hal_flash_bank_impl->read(&hal_flash_bank_context, 0, offset, &buffer, 1);	
     CHECK_EQUAL(buffer, 0xff);
 }
 
 /// TLV
-
 TEST_GROUP(BSTACK_TLV){
 	
-	const hal_flash_sector_t * hal_flash_sector_impl;
-	hal_flash_sector_memory_t  hal_flash_sector_context;
+	const hal_flash_bank_t * hal_flash_bank_impl;
+	hal_flash_bank_memory_t  hal_flash_bank_context;
 
-	const btstack_tlv_t *      btstack_tlv_impl;
-	btstack_tlv_flash_sector_t btstack_tlv_context;
+	const btstack_tlv_t *    btstack_tlv_impl;
+	btstack_tlv_flash_bank_t btstack_tlv_context;
 
     void setup(void){
-    	hal_flash_sector_impl = hal_flash_sector_memory_init_instance(&hal_flash_sector_context, hal_flash_sector_memory_storage, HAL_FLASH_SECTOR_MEMORY_STORAGE_SIZE);
-		hal_flash_sector_impl->erase(&hal_flash_sector_context, 0);
-		hal_flash_sector_impl->erase(&hal_flash_sector_context, 1);
+    	hal_flash_bank_impl = hal_flash_bank_memory_init_instance(&hal_flash_bank_context, hal_flash_bank_memory_storage, HAL_FLASH_BANK_MEMORY_STORAGE_SIZE);
+		hal_flash_bank_impl->erase(&hal_flash_bank_context, 0);
+		hal_flash_bank_impl->erase(&hal_flash_bank_context, 1);
     }
 };
 
 TEST(BSTACK_TLV, TestMissingTag){
-	btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(&btstack_tlv_context, hal_flash_sector_impl, &hal_flash_sector_context);
+	btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(&btstack_tlv_context, hal_flash_bank_impl, &hal_flash_bank_context);
 	uint32_t tag = 'abcd';
 	int size = btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, NULL, 0);
 	CHECK_EQUAL(size, 0);
 }
 
 TEST(BSTACK_TLV, TestWriteRead){
-	btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(&btstack_tlv_context, hal_flash_sector_impl, &hal_flash_sector_context);
+	btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(&btstack_tlv_context, hal_flash_bank_impl, &hal_flash_bank_context);
 	uint32_t tag = 'abcd';
 	uint8_t  data = 7;
 	uint8_t  buffer = data;
@@ -129,7 +128,7 @@ TEST(BSTACK_TLV, TestWriteRead){
 }
 
 TEST(BSTACK_TLV, TestWriteWriteRead){
-	btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(&btstack_tlv_context, hal_flash_sector_impl, &hal_flash_sector_context);
+	btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(&btstack_tlv_context, hal_flash_bank_impl, &hal_flash_bank_context);
 	uint32_t tag = 'abcd';
 	uint8_t  data = 7;
 	uint8_t  buffer = data;
@@ -144,7 +143,7 @@ TEST(BSTACK_TLV, TestWriteWriteRead){
 }
 
 TEST(BSTACK_TLV, TestWriteABARead){
-	btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(&btstack_tlv_context, hal_flash_sector_impl, &hal_flash_sector_context);
+	btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(&btstack_tlv_context, hal_flash_bank_impl, &hal_flash_bank_context);
 	uint32_t tag_a = 'aaaa';
 	uint32_t tag_b = 'bbbb';
 	uint8_t  data = 7;
@@ -163,7 +162,7 @@ TEST(BSTACK_TLV, TestWriteABARead){
 }
 
 TEST(BSTACK_TLV, TestWriteDeleteRead){
-	btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(&btstack_tlv_context, hal_flash_sector_impl, &hal_flash_sector_context);
+	btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(&btstack_tlv_context, hal_flash_bank_impl, &hal_flash_bank_context);
 	uint32_t tag = 'abcd';
 	uint8_t  data = 7;
 	uint8_t  buffer = data;
@@ -178,7 +177,7 @@ TEST(BSTACK_TLV, TestWriteDeleteRead){
 
 TEST(BSTACK_TLV, TestMigrate){
 
-	btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(&btstack_tlv_context, hal_flash_sector_impl, &hal_flash_sector_context);
+	btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(&btstack_tlv_context, hal_flash_bank_impl, &hal_flash_bank_context);
 
 	uint32_t tag = 'abcd';
 	uint8_t  data[8];
@@ -191,7 +190,7 @@ TEST(BSTACK_TLV, TestMigrate){
 		btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &data[0], 8);
 	}
 
-	btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(&btstack_tlv_context, hal_flash_sector_impl, &hal_flash_sector_context);
+	btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(&btstack_tlv_context, hal_flash_bank_impl, &hal_flash_bank_context);
 
 	uint8_t buffer[8];
 	btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, &buffer[0], 1);
@@ -200,7 +199,7 @@ TEST(BSTACK_TLV, TestMigrate){
 
 TEST(BSTACK_TLV, TestMigrate2){
 
-	btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(&btstack_tlv_context, hal_flash_sector_impl, &hal_flash_sector_context);
+	btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(&btstack_tlv_context, hal_flash_bank_impl, &hal_flash_bank_context);
 
 	uint32_t tag1 = 0x11223344;
 	uint32_t tag2 = 0x44556677;
@@ -218,7 +217,7 @@ TEST(BSTACK_TLV, TestMigrate2){
 		btstack_tlv_impl->store_tag(&btstack_tlv_context, tag2, data2, 8);
 	}
 
-	btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(&btstack_tlv_context, hal_flash_sector_impl, &hal_flash_sector_context);
+	btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(&btstack_tlv_context, hal_flash_bank_impl, &hal_flash_bank_context);
 
 	uint8_t buffer[8];
 	btstack_tlv_impl->get_tag(&btstack_tlv_context, tag1, &buffer[0], 1);
@@ -227,14 +226,26 @@ TEST(BSTACK_TLV, TestMigrate2){
 	CHECK_EQUAL(buffer[0], data2[0]);
 }
 
-//
+TEST(BSTACK_TLV, TestWriteResetRead){
+    btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(&btstack_tlv_context, hal_flash_bank_impl, &hal_flash_bank_context);
+    uint32_t tag = 'abcd';
+    uint8_t  data = 7;
+    uint8_t  buffer = data;
+    btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &buffer, 1);
+    btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(&btstack_tlv_context, hal_flash_bank_impl, &hal_flash_bank_context);
+    int size = btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, NULL, 0);
+    CHECK_EQUAL(size, 1);
+    btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, &buffer, 1);
+    CHECK_EQUAL(buffer, data);
+}
 
+//
 TEST_GROUP(LINK_KEY_DB){
-	const hal_flash_sector_t * hal_flash_sector_impl;
-	hal_flash_sector_memory_t  hal_flash_sector_context;
+	const hal_flash_bank_t * hal_flash_bank_impl;
+	hal_flash_bank_memory_t  hal_flash_bank_context;
 
 	const btstack_tlv_t *      btstack_tlv_impl;
-	btstack_tlv_flash_sector_t btstack_tlv_context;
+	btstack_tlv_flash_bank_t btstack_tlv_context;
 
 	const btstack_link_key_db_t * btstack_link_key_db;
 
@@ -243,12 +254,12 @@ TEST_GROUP(LINK_KEY_DB){
     link_key_type_t link_key_type;
 
     void setup(void){
-    	// hal_flash_sector
-    	hal_flash_sector_impl = hal_flash_sector_memory_init_instance(&hal_flash_sector_context, hal_flash_sector_memory_storage, HAL_FLASH_SECTOR_MEMORY_STORAGE_SIZE);
-		hal_flash_sector_impl->erase(&hal_flash_sector_context, 0);
-		hal_flash_sector_impl->erase(&hal_flash_sector_context, 1);
+    	// hal_flash_bank
+    	hal_flash_bank_impl = hal_flash_bank_memory_init_instance(&hal_flash_bank_context, hal_flash_bank_memory_storage, HAL_FLASH_BANK_MEMORY_STORAGE_SIZE);
+		hal_flash_bank_impl->erase(&hal_flash_bank_context, 0);
+		hal_flash_bank_impl->erase(&hal_flash_bank_context, 1);
 		// btstack_tlv
-		btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(&btstack_tlv_context, hal_flash_sector_impl, &hal_flash_sector_context);
+		btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(&btstack_tlv_context, hal_flash_bank_impl, &hal_flash_bank_context);
 		// btstack_link_key_db
 		btstack_link_key_db = btstack_link_key_db_tlv_get_instance(btstack_tlv_impl, &btstack_tlv_context);
 

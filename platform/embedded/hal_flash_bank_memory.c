@@ -30,14 +30,14 @@
  */
 
 /*
- *  hal_flash_sector_memory.c -- volatile test environment that provides just two memory banks
+ *  hal_flash_bank_memory.c -- volatile test environment that provides just two memory banks
  *
  */
 
-#define __BTSTACK_FILE__ "hal_flash_sector_memory.c"
+#define __BTSTACK_FILE__ "hal_flash_bank_memory.c"
 
-#include "hal_flash_sector.h"
-#include "hal_flash_sector_memory.h"
+#include "hal_flash_bank.h"
+#include "hal_flash_bank_memory.h"
 #include "btstack_debug.h"
 
 #include "stdint.h"
@@ -48,24 +48,24 @@
 #include <stdlib.h>	// exit(..)
 #endif
 
-static uint32_t hal_flash_sector_memory_get_size(void * context){
-	hal_flash_sector_memory_t * self = (hal_flash_sector_memory_t *) context;
+static uint32_t hal_flash_bank_memory_get_size(void * context){
+	hal_flash_bank_memory_t * self = (hal_flash_bank_memory_t *) context;
 	return self->bank_size;
 }
 
-static uint32_t hal_flash_sector_memory_get_alignment(void * context){
+static uint32_t hal_flash_bank_memory_get_alignment(void * context){
 	UNUSED(context);
 	return 1;
 }
 
-static void hal_flash_sector_memory_erase(void * context, int bank){
-	hal_flash_sector_memory_t * self = (hal_flash_sector_memory_t *) context;
+static void hal_flash_bank_memory_erase(void * context, int bank){
+	hal_flash_bank_memory_t * self = (hal_flash_bank_memory_t *) context;
 	if (bank > 1) return;
 	memset(self->banks[bank], 0xff, self->bank_size);
 }
 
-static void hal_flash_sector_memory_read(void * context, int bank, uint32_t offset, uint8_t * buffer, uint32_t size){
-	hal_flash_sector_memory_t * self = (hal_flash_sector_memory_t *) context;
+static void hal_flash_bank_memory_read(void * context, int bank, uint32_t offset, uint8_t * buffer, uint32_t size){
+	hal_flash_bank_memory_t * self = (hal_flash_bank_memory_t *) context;
 
 	// log_info("read offset %u, len %u", offset, size);
 
@@ -76,8 +76,8 @@ static void hal_flash_sector_memory_read(void * context, int bank, uint32_t offs
 	memcpy(buffer, &self->banks[bank][offset], size);
 }
 
-static void hal_flash_sector_memory_write(void * context, int bank, uint32_t offset, const uint8_t * data, uint32_t size){
-	hal_flash_sector_memory_t * self = (hal_flash_sector_memory_t *) context;
+static void hal_flash_bank_memory_write(void * context, int bank, uint32_t offset, const uint8_t * data, uint32_t size){
+	hal_flash_bank_memory_t * self = (hal_flash_bank_memory_t *) context;
 
 	log_info("write offset %u, len %u", offset, size);
 	log_info_hexdump(data, size);
@@ -100,22 +100,22 @@ static void hal_flash_sector_memory_write(void * context, int bank, uint32_t off
 	memcpy(&self->banks[bank][offset], data, size);
 }
 
-static const hal_flash_sector_t hal_flash_sector_memory_instance = {
-	/* uint32_t (*get_size)(..) */ 		 &hal_flash_sector_memory_get_size,
-	/* uint32_t (*get_alignment)(..); */ &hal_flash_sector_memory_get_alignment,
-	/* void (*erase)(..);    */ 		 &hal_flash_sector_memory_erase,
-	/* void (*read)(..);      */ 		 &hal_flash_sector_memory_read,
-	/* void (*write)(..);     */ 		 &hal_flash_sector_memory_write,
+static const hal_flash_bank_t hal_flash_bank_memory_instance = {
+	/* uint32_t (*get_size)(..) */ 		 &hal_flash_bank_memory_get_size,
+	/* uint32_t (*get_alignment)(..); */ &hal_flash_bank_memory_get_alignment,
+	/* void (*erase)(..);    */ 		 &hal_flash_bank_memory_erase,
+	/* void (*read)(..);      */ 		 &hal_flash_bank_memory_read,
+	/* void (*write)(..);     */ 		 &hal_flash_bank_memory_write,
 };
 
 /** 
  * Initialize instance
  */
-const hal_flash_sector_t * hal_flash_sector_memory_init_instance(hal_flash_sector_memory_t * self, uint8_t * storage, uint32_t storage_size){
+const hal_flash_bank_t * hal_flash_bank_memory_init_instance(hal_flash_bank_memory_t * self, uint8_t * storage, uint32_t storage_size){
 	self->bank_size = storage_size / 2;
 	self->banks[0] = storage;
 	self->banks[1] = &storage[self->bank_size];
 	memset(storage, 0xff, storage_size);
-	return &hal_flash_sector_memory_instance;
+	return &hal_flash_bank_memory_instance;
 }
 

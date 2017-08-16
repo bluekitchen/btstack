@@ -63,8 +63,9 @@ typedef struct {
 	 * @param tag
 	 * @param data
 	 * @param data_size
+	 * @returns 0 on success
 	 */
-	void (*store_tag)(void * context, uint32_t tag, const uint8_t * data, uint32_t data_size);
+	int (*store_tag)(void * context, uint32_t tag, const uint8_t * data, uint32_t data_size);
 
 	/**
 	 * Delete Tag

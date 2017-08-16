@@ -502,6 +502,14 @@ typedef struct {
     btstack_packet_handler_t a2dp_callback;
     void (*handle_media_data)(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size);
     btstack_packet_handler_t packet_handler;
+    
+    avdtp_sep_type_t query_role;
+    
+    // SDP query
+    uint16_t avdtp_cid;
+    uint16_t avdtp_l2cap_psm;
+    uint16_t avdtp_version;
+    uint8_t  role_supported;
 } avdtp_context_t; 
 
 void avdtp_register_media_transport_category(avdtp_stream_endpoint_t * stream_endpoint);

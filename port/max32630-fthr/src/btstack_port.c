@@ -275,18 +275,18 @@ void hal_led_on(void){
 void hal_led_toggle(void){
 }
 
-#include "hal_flash_sector_mxc.h"
+#include "hal_flash_bank_mxc.h"
 #include "btstack_tlv.h"
-#include "btstack_tlv_flash_sector.h"
+#include "btstack_tlv_flash_bank.h"
 #include "btstack_link_key_db_tlv.h"
 #include "le_device_db_tlv.h"
 
-#define HAL_FLASH_SECTOR_SIZE         0x2000
-#define HAL_FLASH_SECTOR_BANK_0_ADDR  0x1FC000
-#define HAL_FLASH_SECTOR_BANK_1_ADDR  0x1FE000
+#define HAL_FLASH_BANK_SIZE    0x2000
+#define HAL_FLASH_BANK_0_ADDR  0x1FC000
+#define HAL_FLASH_BANK_1_ADDR  0x1FE000
 
-static hal_flash_sector_mxc_t hal_flash_sector_context;
-static btstack_tlv_flash_sector_t btstack_tlv_flash_sector_context;
+static hal_flash_bank_mxc_t hal_flash_bank_context;
+static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
 
 int bluetooth_main(void)
 {
@@ -300,23 +300,23 @@ int bluetooth_main(void)
 	hci_init(transport, &config);
 	hci_set_chipset(btstack_chipset_cc256x_instance());
 
-    // setup TLV Flash Sector implementation
-    const hal_flash_sector_t * hal_flash_sector_impl = hal_flash_sector_mxc_init_instance(
-    		&hal_flash_sector_context,
-    		HAL_FLASH_SECTOR_SIZE,
-			HAL_FLASH_SECTOR_BANK_0_ADDR,
-			HAL_FLASH_SECTOR_BANK_1_ADDR);
-    const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_flash_sector_init_instance(
-    		&btstack_tlv_flash_sector_context,
-			hal_flash_sector_impl,
-			&hal_flash_sector_context);
+    // setup TLV Flash Bank implementation
+    const hal_flash_bank_t * hal_flash_bank_impl = hal_flash_bank_mxc_init_instance(
+    		&hal_flash_bank_context,
+    		HAL_FLASH_BANK_SIZE,
+			HAL_FLASH_BANK_0_ADDR,
+			HAL_FLASH_BANK_1_ADDR);
+    const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(
+    		&btstack_tlv_flash_bank_context,
+			hal_flash_bank_impl,
+			&hal_flash_bank_context);
 
     // setup Link Key DB using TLV
-    const btstack_link_key_db_t * btstack_link_key_db = btstack_link_key_db_tlv_get_instance(btstack_tlv_impl, &btstack_tlv_flash_sector_context);
+    const btstack_link_key_db_t * btstack_link_key_db = btstack_link_key_db_tlv_get_instance(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
     hci_set_link_key_db(btstack_link_key_db);
 
     // setup LE Device DB using TLV
-    le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_sector_context);
+    le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
 
     // go
 	btstack_main(0, (void *)NULL);

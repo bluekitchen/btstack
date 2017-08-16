@@ -91,7 +91,7 @@ static int btstack_tlv_esp32_get_tag(void * context, uint32_t tag, uint8_t * buf
  * @param data
  * @param data_size
  */
-static void btstack_tlv_esp32_store_tag(void * context, uint32_t tag, const uint8_t * data, uint32_t data_size){
+static int btstack_tlv_esp32_store_tag(void * context, uint32_t tag, const uint8_t * data, uint32_t data_size){
 	if (!nvs_active) return;
 	char key_buffer[9];
 	key_for_tag(tag, key_buffer);
@@ -99,12 +99,14 @@ static void btstack_tlv_esp32_store_tag(void * context, uint32_t tag, const uint
 	esp_err_t err = nvs_set_blob(the_nvs_handle, key_buffer, data, data_size);
 	if (err != ESP_OK){
         printf("Error (0x%04x) nvs_set_blob %s!\n", err, key_buffer);
-        return;
+        return 1;
     }
 	err = nvs_commit(the_nvs_handle);
 	if (err != ESP_OK){
         printf("Error (0x%04x) nvs_commit %s!\n", err, key_buffer);
+        return 1;
     }
+    return 0;
 }
 
 /**
@@ -130,7 +132,7 @@ static void btstack_tlv_esp32_delete_tag(void * context, uint32_t tag){
 
 static const btstack_tlv_t btstack_tlv_esp32 = {
 	/* int  (*get_tag)(..);     */ &btstack_tlv_esp32_get_tag,
-	/* void (*store_tag)(..);   */ &btstack_tlv_esp32_store_tag,
+	/* int (*store_tag)(..);    */ &btstack_tlv_esp32_store_tag,
 	/* void (*delete_tag)(v..); */ &btstack_tlv_esp32_delete_tag,
 };
 

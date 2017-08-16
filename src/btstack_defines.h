@@ -1522,6 +1522,14 @@ typedef uint8_t sm_key_t[16];
  */
 #define A2DP_SUBEVENT_COMMAND_REJECTED                              0x09
 
+/**
+ * @format 12B          Signaling channel is opened.
+ * @param subevent_code 
+ * @param a2dp_cid
+ * @param bd_addr
+ */
+#define A2DP_SUBEVENT_INCOMING_CONNECTION_ESTABLISHED               0x0A
+
 /** AVRCP Subevent */
 
 /**

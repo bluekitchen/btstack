@@ -30,17 +30,17 @@
  */
 
 /*
- *  hal_flash_sector.h
+ *  hal_flash_bank.h
  * 
  *  HAL abstraction for Flash memory that can be written anywhere
  *  after being erased implemented with memory
  */
 
-#ifndef __HAL_FLASH_SECTOR_MEMORY_H
-#define __HAL_FLASH_SECTOR_MEMORY_H
+#ifndef __HAL_FLASH_BANK_MEMORY_H
+#define __HAL_FLASH_BANK_MEMORY_H
 
 #include <stdint.h>
-#include "hal_flash_sector.h"
+#include "hal_flash_bank.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -50,19 +50,19 @@ extern "C" {
 typedef struct {
 	uint32_t   bank_size;
 	uint8_t  * banks[2];
-} hal_flash_sector_memory_t;
+} hal_flash_bank_memory_t;
 
 // public
 
 /** 
  * Init instance
- * @param context hal_flash_sector_memory_t
+ * @param context hal_flash_bank_memory_t
  * @param storage to use
  * @param size of storage
  */
-const hal_flash_sector_t * hal_flash_sector_memory_init_instance(hal_flash_sector_memory_t * context, uint8_t * storage, uint32_t storage_size);
+const hal_flash_bank_t * hal_flash_bank_memory_init_instance(hal_flash_bank_memory_t * context, uint8_t * storage, uint32_t storage_size);
 
 #if defined __cplusplus
 }
 #endif
-#endif // __HAL_FLASH_SECTOR_MEMORY_H
+#endif // __HAL_FLASH_BANK_MEMORY_H

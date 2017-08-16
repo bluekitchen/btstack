@@ -416,7 +416,7 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
     UNUSED(packet_type);
     UNUSED(channel);
     UNUSED(size);
-    
+    uint8_t status;
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
     // uint32_t avdtp_remote_uuid    = 0;
@@ -544,13 +544,23 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
             break;
             
         case SDP_EVENT_QUERY_COMPLETE:
-            log_info("General query done with status %d, role supported %d.\n", sdp_event_query_complete_get_status(packet), sdp_query_context->role_supported);
+            status = sdp_event_query_complete_get_status(packet);
+            if (status != ERROR_CODE_SUCCESS){
+                avrcp_emit_connection_established(sdp_query_context->avrcp_callback, connection->avrcp_cid, connection->remote_addr, status);
+                btstack_linked_list_remove(&sdp_query_context->connections, (btstack_linked_item_t*) connection); 
+                btstack_memory_avrcp_connection_free(connection);
+                log_info("AVRCP: SDP query failed with status 0x%02x.", status);
+                break;
+            }
+
             if (!sdp_query_context->role_supported || !sdp_query_context->avrcp_l2cap_psm){
                 connection->state = AVCTP_CONNECTION_IDLE;
                 avrcp_emit_connection_established(sdp_query_context->avrcp_callback, connection->avrcp_cid, connection->remote_addr, SDP_SERVICE_NOT_FOUND);
+                btstack_linked_list_remove(&sdp_query_context->connections, (btstack_linked_item_t*) connection); 
+                btstack_memory_avrcp_connection_free(connection);
                 break;                
             } 
-            log_info("AVRCP Control PSM 0x%02x, Browsing PSM 0x%02x", sdp_query_context->avrcp_l2cap_psm, sdp_query_context->avrcp_browsing_l2cap_psm);
+            // log_info("AVRCP Control PSM 0x%02x, Browsing PSM 0x%02x", sdp_query_context->avrcp_l2cap_psm, sdp_query_context->avrcp_browsing_l2cap_psm);
             connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
             l2cap_create_channel(sdp_query_context->packet_handler, connection->remote_addr, sdp_query_context->avrcp_l2cap_psm, l2cap_max_mtu(), NULL);
             break;
@@ -651,6 +661,5 @@ uint8_t avrcp_connect(bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * a
 
     sdp_query_context = context;
 
-    sdp_client_query_uuid16(&avrcp_handle_sdp_client_query_result, bd_addr, BLUETOOTH_PROTOCOL_AVCTP);
-    return ERROR_CODE_SUCCESS;
+    return sdp_client_query_uuid16(&avrcp_handle_sdp_client_query_result, bd_addr, BLUETOOTH_PROTOCOL_AVCTP);
 }
