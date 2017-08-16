@@ -160,14 +160,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
     uint8_t signal_identifier;
     uint8_t status;
-    avdtp_sep_t sep;
     uint8_t local_seid;
     uint8_t remote_seid;
     uint16_t cid;
     bd_addr_t address;
-    uint8_t sep_media_type;
-    uint8_t sep_type;
-
+    
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVDTP_META) return;
 
@@ -200,20 +197,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             }
 
             app_state = A2DP_W2_DISCOVER_SEPS;
-            // printf("AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED, avdtp cid 0x%02x ---\n", cid);
             avdtp_source_discover_stream_endpoints(cid);
             break;
         
         case AVDTP_SUBEVENT_SIGNALING_SEP_FOUND:
-            if (app_state != A2DP_W2_DISCOVER_SEPS) return;
-            sep.seid = avdtp_subevent_signaling_sep_found_get_remote_seid(packet);
-            sep.in_use = avdtp_subevent_signaling_sep_found_get_in_use(packet);
-            // use local variables to avoid compiler warning
-            sep_media_type = avdtp_subevent_signaling_sep_found_get_media_type(packet);
-            sep.media_type = (avdtp_media_type_t) sep_media_type;
-            sep_type = avdtp_subevent_signaling_sep_found_get_sep_type(packet);
-            sep.type = (avdtp_sep_type_t) sep_type;
-            // printf("found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)\n", sep.seid, sep.in_use, sep.media_type, sep.type);
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:{
