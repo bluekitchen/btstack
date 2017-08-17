@@ -126,7 +126,7 @@ gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle
  * @brief Sets local name.
  * @note has to be done before stack starts up
  * @note Default name is 'BTstack 00:00:00:00:00:00'
- * @note '00:00:00:00:00:00' in local_name will be replaced with actual name
+ * @note '00:00:00:00:00:00' in local_name will be replaced with actual bd addr
  * @param name is not copied, make sure memory is accessible during stack startup
  */
 void gap_set_local_name(const char * local_name);
@@ -135,7 +135,7 @@ void gap_set_local_name(const char * local_name);
  * @brief Set Extended Inquiry Response data
  * @note has to be done before stack starts up
  * @note If not set, local name will be used for EIR data (see gap_set_local_name)
- * @note '00:00:00:00:00:00' in local_name will be replaced with actual name
+ * @note '00:00:00:00:00:00' in local_name will be replaced with actual bd addr
  * @param eir_data size 240 bytes, is not copied make sure memory is accessible during stack startup
  */
 void gap_set_extended_inquiry_response(const uint8_t * data); 
@@ -242,6 +242,7 @@ void gap_random_address_set(bd_addr_t addr);
  * @param advertising_data_length
  * @param advertising_data (max 31 octets)
  * @note data is not copied, pointer has to stay valid
+ * @note '00:00:00:00:00:00' in advertising_data will be replaced with actual bd addr
  */
 void gap_advertisements_set_data(uint8_t advertising_data_length, uint8_t * advertising_data);
 
@@ -273,6 +274,7 @@ void gap_advertisements_enable(int enabled);
  * @param advertising_data_length
  * @param advertising_data (max 31 octets)
  * @note data is not copied, pointer has to stay valid
+ * @note '00:00:00:00:00:00' in scan_response_data will be replaced with actual bd addr
  */
 void gap_scan_response_set_data(uint8_t scan_response_data_length, uint8_t * scan_response_data);
 

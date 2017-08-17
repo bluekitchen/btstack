@@ -2993,13 +2993,17 @@ static void hci_run(void){
             uint8_t adv_data_clean[31];
             memset(adv_data_clean, 0, sizeof(adv_data_clean));
             memcpy(adv_data_clean, hci_stack->le_advertisements_data, hci_stack->le_advertisements_data_len);
+            hci_replace_bd_addr_placeholder(adv_data_clean, hci_stack->le_advertisements_data_len);
             hci_send_cmd(&hci_le_set_advertising_data, hci_stack->le_advertisements_data_len, adv_data_clean);
             return;
         }
         if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA){
             hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA;
-            hci_send_cmd(&hci_le_set_scan_response_data, hci_stack->le_scan_response_data_len,
-                hci_stack->le_scan_response_data);
+            uint8_t scan_data_clean[31];
+            memset(scan_data_clean, 0, sizeof(scan_data_clean));
+            memcpy(scan_data_clean, hci_stack->hci_le_set_scan_response_data, hci_stack->le_scan_response_data_len);
+            hci_replace_bd_addr_placeholder(scan_data_clean, hci_stack->le_scan_response_data_len);
+            hci_send_cmd(&hci_le_set_scan_response_data, hci_stack->le_scan_response_data_len, hci_stack->le_scan_response_data);
             return;
         }
         if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_ENABLE){
