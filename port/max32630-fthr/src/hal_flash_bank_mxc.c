@@ -31,7 +31,7 @@
 
 /*
  *  hal_flash_bank_mxc.c
- * 
+ *
  *  HAL abstraction for Flash memory that can be written anywhere
  *  after being erased implemented with memory
  */
@@ -101,4 +101,3 @@ const hal_flash_bank_t * hal_flash_bank_mxc_init_instance(hal_flash_bank_mxc_t *
 
 	return &hal_flash_bank_mxc_impl;
 }
-

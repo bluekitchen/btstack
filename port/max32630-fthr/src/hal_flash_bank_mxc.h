@@ -31,7 +31,7 @@
 
 /*
  *  hal_flash_sector_maxim.h
- * 
+ *
  *  HAL abstraction for Flash memory that can be written anywhere
  *  after being erased implemented with memory
  */
@@ -59,7 +59,7 @@ typedef struct {
  * @param sector_size
  * @param bank_0_addr
  * @param bank_1_addr
- * @return 
+ * @return
  */
 const hal_flash_bank_t * hal_flash_bank_mxc_init_instance(hal_flash_bank_mxc_t * context, uint32_t sector_size, uintptr_t bank_0_addr, uintptr_t bank_1_addr);
 
