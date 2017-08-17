@@ -168,6 +168,9 @@ static hci_stack_t   hci_stack_static;
 static hci_stack_t * hci_stack = NULL;
 
 #ifdef ENABLE_CLASSIC
+// default name
+static const char * default_classic_name = "BTstack 00:00:00:00:00:00";
+
 // test helper
 static uint8_t disable_l2cap_timeouts = 0;
 #endif
@@ -1261,7 +1264,6 @@ static void hci_initializing_run(void){
             break;
         case HCI_INIT_WRITE_LOCAL_NAME: {
             hci_stack->substate = HCI_INIT_W4_WRITE_LOCAL_NAME;
-            const char * local_name = hci_stack->local_name ? hci_stack->local_name : "BTstack 00:00:00:00:00:00";
             hci_reserve_packet_buffer();
             uint8_t * packet = hci_stack->hci_packet_buffer;
             // construct HCI Command and send
@@ -1271,7 +1273,7 @@ static void hci_initializing_run(void){
             packet[1] = opcode >> 8;
             packet[2] = DEVICE_NAME_LEN;
             memset(&packet[3], 0, DEVICE_NAME_LEN);
-            memcpy(&packet[3], local_name, strlen(local_name));
+            memcpy(&packet[3], hci_stack->local_name, strlen(hci_stack->local_name));
             // expand '00:00:00:00:00:00' in name with bd_addr
             hci_replace_bd_addr_placeholder(&packet[3], DEVICE_NAME_LEN);
             hci_send_cmd_packet(packet, HCI_CMD_HEADER_SIZE + DEVICE_NAME_LEN);
@@ -2425,6 +2427,9 @@ void hci_init(const hci_transport_t *transport, const void *config){
 
     // bondable by default
     hci_stack->bondable = 1;
+
+    // classic name
+    hci_stack->local_name = default_classic_name;
 
     // Secure Simple Pairing default: enable, no I/O capabilities, general bonding, mitm not required, auto accept 
     hci_stack->ssp_enable = 1;
