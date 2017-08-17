@@ -1290,7 +1290,15 @@ static void hci_initializing_run(void){
             packet[1] = opcode >> 8;
             packet[2] = 1 + 240;
             packet[3] = 0;  // FEC not required
-            memcpy(&packet[4], hci_stack->eir_data, 240);
+            if (hci_stack->eir_data){
+                memcpy(&packet[4], hci_stack->eir_data, 240);
+            } else {
+                memset(&packet[4], 0, 240);
+                int name_len = strlen(hci_stack->local_name);
+                packet[4] = name_len + 1;
+                packet[5] = BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME;
+                memcpy(&packet[6], hci_stack->local_name, name_len);
+            }
             // expand '00:00:00:00:00:00' in name with bd_addr
             hci_replace_bd_addr_placeholder(&packet[4], 240);
             hci_send_cmd_packet(packet, HCI_CMD_HEADER_SIZE + DEVICE_NAME_LEN);
@@ -1616,12 +1624,6 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             return;
 #endif
             
-        case HCI_INIT_W4_WRITE_LOCAL_NAME:
-            // skip write eir data if no eir data set
-            if (hci_stack->eir_data) break;
-            hci_stack->substate = HCI_INIT_WRITE_INQUIRY_MODE;
-            return;
-
 #ifdef ENABLE_SCO_OVER_HCI
         case HCI_INIT_W4_WRITE_SCAN_ENABLE:
             // skip write synchronous flow control if not supported

@@ -125,16 +125,18 @@ gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle
 /** 
  * @brief Sets local name.
  * @note has to be done before stack starts up
- * @param name is not copied, make sure memory is accessible during stack startup
+ * @note Default name is 'BTstack 00:00:00:00:00:00'
  * @note '00:00:00:00:00:00' in local_name will be replaced with actual name
+ * @param name is not copied, make sure memory is accessible during stack startup
  */
 void gap_set_local_name(const char * local_name);
 
 /**
  * @brief Set Extended Inquiry Response data
  * @note has to be done before stack starts up
- * @param eir_data size 240 bytes, is not copied make sure memory is accessible during stack startup
+ * @note If not set, local name will be used for EIR data (see gap_set_local_name)
  * @note '00:00:00:00:00:00' in local_name will be replaced with actual name
+ * @param eir_data size 240 bytes, is not copied make sure memory is accessible during stack startup
  */
 void gap_set_extended_inquiry_response(const uint8_t * data); 
 
