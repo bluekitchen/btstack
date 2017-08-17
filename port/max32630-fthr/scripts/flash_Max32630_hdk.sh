@@ -1,3 +1,4 @@
-file="./build/max3263x.elf"
-openocd -f scripts/max3263x_hdk.cfg -c "program $file verify reset exit"
-
+fw_file=$1
+DIR=$(dirname $(readlink -f $0))
+CFG_FILE=$DIR/max3263x_hdk.cfg
+openocd -f $CFG_FILE -c "program $fw_file verify reset exit"

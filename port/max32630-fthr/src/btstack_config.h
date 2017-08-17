@@ -9,6 +9,8 @@
 #define HAVE_EMBEDDED_TIME_MS
 // BTstack features that can be enabled
 
+#define HAVE_BTSTACK_STDIN
+
 #define ENABLE_BLE
 #define ENABLE_CLASSIC
 
