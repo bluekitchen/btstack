@@ -66,6 +66,10 @@ extern "C" {
 #define LED_OFF         1       /// Inactive state of LEDs
 #define LED_ON          0       /// Active state of LEDs
 
+#define LED_RED		(0) /* (&led_pin[0]) */
+#define LED_GREEN	(1) /* &led_pin[1] */
+#define LED_BLUE	(2) /* led_pin[2] */
+
 // Console UART configuration
 extern const uart_cfg_t console_uart_cfg;
 extern const sys_cfg_uart_t console_sys_cfg;

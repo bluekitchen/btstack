@@ -51,6 +51,7 @@
 #include "btstack.h"
 
 typedef enum {
+    TC_OFF,
     TC_IDLE,
     TC_W4_SCAN_RESULT,
     TC_W4_CONNECT,
@@ -76,8 +77,55 @@ static gatt_client_characteristic_t le_streamer_characteristic;
 static gatt_client_notification_t notification_listener;
 static int listener_registered;
 
-static gc_state_t state = TC_IDLE;
+static gc_state_t state = TC_OFF;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+/*
+ * @section Track throughput
+ * @text We calculate the throughput by setting a start time and measuring the amount of 
+ * data sent. After a configurable REPORT_INTERVAL_MS, we print the throughput in kB/s
+ * and reset the counter and start time.
+ */
+
+/* LISTING_START(tracking): Tracking throughput */
+
+#define REPORT_INTERVAL_MS 3000
+
+// support for multiple clients
+typedef struct {
+    char name;
+    int le_notification_enabled;
+    hci_con_handle_t connection_handle;
+    int  counter;
+    char test_data[200];
+    int  test_data_len;
+    uint32_t test_data_sent;
+    uint32_t test_data_start;
+} le_streamer_connection_t;
+
+static le_streamer_connection_t le_streamer_connection;
+
+static void test_reset(le_streamer_connection_t * context){
+    context->test_data_start = btstack_run_loop_get_time_ms();
+    context->test_data_sent = 0;
+}
+
+static void test_track_data(le_streamer_connection_t * context, int bytes_sent){
+    context->test_data_sent += bytes_sent;
+    // evaluate
+    uint32_t now = btstack_run_loop_get_time_ms();
+    uint32_t time_passed = now - context->test_data_start;
+    if (time_passed < REPORT_INTERVAL_MS) return;
+    // print speed
+    int bytes_per_second = context->test_data_sent * 1000 / time_passed;
+    printf("%c: %u bytes -> %u.%03u kB/s\n", context->name, context->test_data_sent, bytes_per_second / 1000, bytes_per_second % 1000);
+
+    // restart
+    context->test_data_start = now;
+    context->test_data_sent  = 0;
+}
+/* LISTING_END(tracking): Tracking throughput */
+
 
 // returns 1 if name is found in advertisement
 static int advertisement_report_contains_name(const char * name, uint8_t * advertisement_report){
@@ -155,6 +203,9 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     state = TC_W4_TEST_DATA;
                     printf("Start streaming - enable notify on test characteristic.\n");
                     gatt_client_write_client_characteristic_configuration(handle_gatt_client_event, connection_handle, &le_streamer_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+                    // setup tracking
+                    le_streamer_connection.name = 'A';
+                    test_reset(&le_streamer_connection);
                     break;
                 default:
                     break;
@@ -164,8 +215,13 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
         case TC_W4_TEST_DATA:
             switch(hci_event_packet_get_type(packet)){
                 case GATT_EVENT_NOTIFICATION:
+#if 0                
                     printf("Data: ");
                     printf_hexdump( gatt_event_notification_get_value(packet), gatt_event_notification_get_value_length(packet));
+#else
+                    test_track_data(&le_streamer_connection, gatt_event_notification_get_value_length(packet));
+#endif
+                    break;
                 case GATT_EVENT_QUERY_COMPLETE:
                     break;
                 default:
@@ -206,8 +262,11 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     switch (event) {
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started
-            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
-            le_streamer_client_start();
+            if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING) {
+                le_streamer_client_start();
+            } else {
+                state = TC_OFF;
+            }
             break;
         case GAP_EVENT_ADVERTISING_REPORT:
             if (state != TC_W4_SCAN_RESULT) return;
@@ -248,6 +307,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
                 return;
             }
             printf("Disconnected %s\n", bd_addr_to_str(le_streamer_addr));
+            if (state == TC_OFF) break;
             le_streamer_client_start();
             break;
         default:

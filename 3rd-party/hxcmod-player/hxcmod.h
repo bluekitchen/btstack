@@ -30,6 +30,7 @@ extern "C" {
 
 // Basic type
 typedef unsigned char	muchar;
+typedef signed   char   mchar;
 typedef unsigned short	muint;
 typedef          short	mint;
 typedef unsigned long	mulong;
@@ -75,7 +76,7 @@ typedef struct {
 // HxCMod Internal structures
 //
 typedef struct {
-	char *  sampdata;
+	mchar * sampdata;
 	muint   sampnum;
 	muint   length;
 	muint   reppnt;
@@ -112,7 +113,7 @@ typedef struct {
 
 typedef struct {
 	module  song;
-	char *  sampledata[31];
+	mchar * sampledata[31];
 	note *  patterndata[128];
 
 	mulong  playrate;

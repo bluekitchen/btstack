@@ -123,9 +123,10 @@ int btstack_sbc_decoder_sample_rate(btstack_sbc_decoder_state_t * state);
  * @param allocation_method
  * @param sample_rate
  * @param bitpool
+ * @param channel_mode
  */
 void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_mode_t mode, 
-                        int blocks, int subbands, int allocation_method, int sample_rate, int bitpool);
+                        int blocks, int subbands, int allocation_method, int sample_rate, int bitpool, int channel_mode);
 
 /**
  * @brief Encode PCM data

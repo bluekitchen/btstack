@@ -86,11 +86,15 @@ static void btstack_uart_block_freertos_process(btstack_data_source_t *ds, btsta
         case DATA_SOURCE_CALLBACK_POLL:
             if (send_complete){
                 send_complete = 0;
-                block_sent();
+                if (block_sent){
+                    block_sent();
+                }
             }
             if (receive_complete){
                 receive_complete = 0;
-                block_received();
+                if (block_received){
+                    block_received();
+                }
             }
             break;
         default:
@@ -150,6 +154,11 @@ static const btstack_uart_block_t btstack_uart_block_freertos = {
     /* void (*set_block_sent)(void (*handler)(void)); */              &btstack_uart_block_freertos_set_block_sent,
     /* int  (*set_baudrate)(uint32_t baudrate); */                    &hal_uart_dma_set_baud,
     /* int  (*set_parity)(int parity); */                             &btstack_uart_block_freertos_set_parity,
+#ifdef HAVE_UART_DMA_SET_FLOWCONTROL
+    /* int  (*set_flowcontrol)(int flowcontrol); */                   &hal_uart_dma_set_flowcontrol,
+#else
+    /* int  (*set_flowcontrol)(int flowcontrol); */                   NULL,
+#endif
     /* void (*receive_block)(uint8_t *buffer, uint16_t len); */       &hal_uart_dma_receive_block,
     /* void (*send_block)(const uint8_t *buffer, uint16_t length); */ &hal_uart_dma_send_block,    
     /* int (*get_supported_sleep_modes); */                           NULL,

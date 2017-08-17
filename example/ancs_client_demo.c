@@ -130,7 +130,6 @@ static void ancs_callback(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
-    
     (void)argc;
     (void)argv;
 

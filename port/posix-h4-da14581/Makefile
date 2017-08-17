@@ -11,7 +11,7 @@ CORE += \
 	le_device_db_fs.c \
 	main.c \
 	wav_util.c 					\
-	stdin_support.c \
+	btstack_stdin_posix.c \
 
 # examples
 include ${BTSTACK_ROOT}/example/Makefile.inc

@@ -36,12 +36,12 @@
 #define MAX_NR_WHITELIST_ENTRIES 1
 #define MAX_NR_SM_LOOKUP_ENTRIES 3
 #define MAX_NR_SERVICE_RECORD_ITEMS 1
-#define MAX_NR_LE_DEVICE_DB_ENTRIES 1
 #define MAX_NR_AVDTP_STREAM_ENDPOINTS 1
 #define MAX_NR_AVDTP_CONNECTIONS 1
 #define MAX_NR_AVRCP_CONNECTIONS 1
 
-// Link Key DB using TLV on top of Flash Sector interface
+// Link Key DB and LE Device DB using TLV on top of Flash Sector interface
 #define NVM_NUM_LINK_KEYS 16
+#define NVM_NUM_DEVICE_DB_ENTRIES 16
 
 #endif

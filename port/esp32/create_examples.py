@@ -42,6 +42,8 @@ print("Creating examples in local folder")
 for file in os.listdir(examples_embedded):
     if not file.endswith(".c"):
         continue
+    if file in ['panu_demo.c', 'sco_demo_util.c']:
+        continue
 
     example = file[:-2]
     gatt_path = examples_embedded + example + ".gatt"
@@ -53,8 +55,12 @@ for file in os.listdir(examples_embedded):
     os.makedirs(apps_folder)
 
     # copy files
-    for item in ['sdkconfig']:
+    for item in ['sdkconfig', 'set_port.sh']:
         shutil.copyfile(script_path + '/template/' + item, apps_folder + '/' + item)
+
+    # mark set_port.sh as executable
+    os.chmod(apps_folder + '/set_port.sh', 0o755)
+
 
     # create Makefile file
     with open(apps_folder + "Makefile", "wt") as fout:
@@ -70,6 +76,11 @@ for file in os.listdir(examples_embedded):
 
     # copy example file
     shutil.copyfile(examples_embedded + file, apps_folder + "/main/" + example + ".c")
+
+    # add sco_demo_util.c for audio examples
+    if example in ['hfp_ag_demo','hfp_hf_demo', 'hsp_ag_demo', 'hsp_hf_demo']:
+        shutil.copy(examples_embedded + 'sco_demo_util.c', apps_folder + '/main/')
+        shutil.copy(examples_embedded + 'sco_demo_util.h', apps_folder + '/main/')
 
     # add component.mk file to main folder
     shutil.copyfile(script_path + '/template/main/component.mk', apps_folder + "/main/component.mk")

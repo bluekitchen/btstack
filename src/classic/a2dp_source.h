@@ -68,53 +68,47 @@ void a2dp_source_init(void);
 
 void a2dp_source_register_packet_handler(btstack_packet_handler_t callback);
 
-uint8_t a2dp_source_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, 
+avdtp_stream_endpoint_t * a2dp_source_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, 
 	uint8_t * codec_capabilities, uint16_t codec_capabilities_len,
 	uint8_t * codec_configuration, uint16_t codec_configuration_len);
 
 /**
  * @brief Open stream
+ * @param bd_addr
+ * @param local_seid
  * @param avdtp_cid
- * @param seid
  */
-void a2dp_source_establish_stream(bd_addr_t bd_addr, uint8_t local_seid);
+uint8_t a2dp_source_establish_stream(bd_addr_t bd_addr, uint8_t local_seid, uint16_t * avdtp_cid);
+
 
 /**
  * @brief Start stream
  * @param avdtp_cid
  * @param seid
  */
-void a2dp_source_start_stream(uint8_t int_seid);
+uint8_t a2dp_source_start_stream(uint16_t avdtp_cid, uint8_t local_seid);
 
 /**
  * @brief Start stream
  * @param avdtp_cid
  * @param seid
  */
-void a2dp_source_pause_stream(uint8_t int_seid);
-
-/**
- * @brief Close stream
- * @param avdtp_cid
- * @param seid
- */
-void a2dp_source_release_stream(uint8_t int_seid);
+uint8_t a2dp_source_pause_stream(uint16_t avdtp_cid, uint8_t local_seid);
 
 /**
  * @brief Disconnect from device with cid. 
  * @param avdtp_cid
  */
-void a2dp_source_disconnect(uint16_t avdtp_cid);
-
+uint8_t a2dp_source_disconnect(uint16_t avdtp_cid);
 
 // size for media (does not include media header)
-int 	a2dp_max_media_payload_size(uint8_t int_seid);
+int 	a2dp_max_media_payload_size(uint8_t local_seid);
 
-uint8_t a2dp_source_stream_endpoint_ready(uint8_t local_seid);
+uint8_t a2dp_source_stream_endpoint_ready(uint16_t avdtp_cid, uint8_t local_seid);
 
 void 	a2dp_source_stream_endpoint_request_can_send_now(uint8_t local_seid);
 
-int  	a2dp_source_stream_send_media_payload(uint8_t int_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker);
+int  	a2dp_source_stream_send_media_payload(uint8_t local_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker);
 
 /* API_END */
 

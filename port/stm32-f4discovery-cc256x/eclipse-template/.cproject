@@ -68,13 +68,16 @@
 									<listOptionValue builtIn="false" value="&quot;../system/include/cmsis&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;../system/include/stm32f4xx&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;../system/include/cmsis/device&quot;"/>
+									<listOptionValue builtIn="false" value="../example"/>
 									<listOptionValue builtIn="false" value="../btstack/src"/>
 									<listOptionValue builtIn="false" value="../btstack/chipset/cc256x"/>
 									<listOptionValue builtIn="false" value="../btstack/platform/embedded"/>
 									<listOptionValue builtIn="false" value="../btstack/port/stm32-f4discovery-cc256x/src"/>
-									<listOptionValue builtIn="false" value="../example"/>
+									<listOptionValue builtIn="false" value="../btstack/port/stm32-f4discovery-cc256x/src/bsp"/>
 									<listOptionValue builtIn="false" value="../btstack/3rd-party/bluedroid/encoder/include"/>
 									<listOptionValue builtIn="false" value="../btstack/3rd-party/bluedroid/decoder/include"/>
+									<listOptionValue builtIn="false" value="../btstack/3rd-party/hxcmod-player/mods"/>
+									<listOptionValue builtIn="false" value="../btstack/3rd-party/hxcmod-player"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.defs.1206315366" name="Defined symbols (-D)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.defs" useByScannerDiscovery="true" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="DEBUG"/>
@@ -153,7 +156,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="btstack/chipset/cc256x"/>
 						<entry excluding="hci_transport_h4_embedded.c|hci_transport_h4_ehcill_embedded.c" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="btstack/platform/embedded"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="btstack/port/stm32-f4discovery-cc256x/src"/>
-						<entry excluding="ble/att_db_util.c" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="btstack/src"/>
+						<entry excluding="ble/att_db_util.c|ble/le_device_db_memory.c" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="btstack/src"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="example"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="system"/>

@@ -43,6 +43,8 @@
  *  or Task Notifications if HAVE_FREERTOS_TASK_NOTIFICATIONS is defined
  */
 
+#define __BTSTACK_FILE__ "btstack_run_loop_freertos.c"
+
 #include <stddef.h> // NULL
 
 #include "btstack_linked_list.h"

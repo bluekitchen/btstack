@@ -38,6 +38,7 @@
 #include "lp.h"
 #include "uart.h"
 #include "board.h"
+#include "led.h"
 #include "btstack_debug.h"
 
 #include "btstack.h"
@@ -69,6 +70,8 @@ const gpio_cfg_t PAN1326_HCIRTS = { PORT_0, PIN_3, GPIO_FUNC_GPIO,
 static void dummy_handler(void) {};
 static void (*rx_done_handler)(void) = dummy_handler;
 static void (*tx_done_handler)(void) = dummy_handler;
+
+
 
 void hal_cpu_disable_irqs(void)
 {
@@ -269,14 +272,36 @@ static hci_transport_config_uart_t config = {
 // hal_led.h implementation
 #include "hal_led.h"
 void hal_led_off(void){
+	LED_Off(LED_BLUE);
 }
+
 void hal_led_on(void){
+	LED_On(LED_BLUE);
 }
+
 void hal_led_toggle(void){
+	LED_Toggle(LED_BLUE);
 }
+
+#include "hal_flash_bank_mxc.h"
+#include "btstack_tlv.h"
+#include "btstack_tlv_flash_bank.h"
+#include "btstack_link_key_db_tlv.h"
+#include "le_device_db_tlv.h"
+
+#define HAL_FLASH_BANK_SIZE    0x2000
+#define HAL_FLASH_BANK_0_ADDR  0x1FC000
+#define HAL_FLASH_BANK_1_ADDR  0x1FE000
+
+static hal_flash_bank_mxc_t hal_flash_bank_context;
+static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
 
 int bluetooth_main(void)
 {
+	LED_Off(LED_GREEN);
+	LED_On(LED_RED);
+	LED_Off(LED_BLUE);
+
 	bt_comm_init();
 	/* BT Stack Initialization */
 	btstack_memory_init();
@@ -284,12 +309,28 @@ int bluetooth_main(void)
 
 	/* Init HCI */
 	const hci_transport_t * transport = hci_transport_h4_instance(btstack_uart_block_embedded_instance());
-	const btstack_link_key_db_t *link_key_db = NULL;
-
 	hci_init(transport, &config);
-	hci_set_link_key_db(link_key_db);
-
 	hci_set_chipset(btstack_chipset_cc256x_instance());
+
+    // setup TLV Flash Bank implementation
+    const hal_flash_bank_t * hal_flash_bank_impl = hal_flash_bank_mxc_init_instance(
+    		&hal_flash_bank_context,
+    		HAL_FLASH_BANK_SIZE,
+			HAL_FLASH_BANK_0_ADDR,
+			HAL_FLASH_BANK_1_ADDR);
+    const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(
+    		&btstack_tlv_flash_bank_context,
+			hal_flash_bank_impl,
+			&hal_flash_bank_context);
+
+    // setup Link Key DB using TLV
+    const btstack_link_key_db_t * btstack_link_key_db = btstack_link_key_db_tlv_get_instance(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
+    hci_set_link_key_db(btstack_link_key_db);
+
+    // setup LE Device DB using TLV
+    le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
+
+    // go
 	btstack_main(0, (void *)NULL);
 
 	return 0;
