@@ -3001,7 +3001,7 @@ static void hci_run(void){
             hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA;
             uint8_t scan_data_clean[31];
             memset(scan_data_clean, 0, sizeof(scan_data_clean));
-            memcpy(scan_data_clean, hci_stack->hci_le_set_scan_response_data, hci_stack->le_scan_response_data_len);
+            memcpy(scan_data_clean, hci_stack->le_scan_response_data, hci_stack->le_scan_response_data_len);
             hci_replace_bd_addr_placeholder(scan_data_clean, hci_stack->le_scan_response_data_len);
             hci_send_cmd(&hci_le_set_scan_response_data, hci_stack->le_scan_response_data_len, hci_stack->le_scan_response_data);
             return;
