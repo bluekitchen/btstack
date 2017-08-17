@@ -48,7 +48,11 @@
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_freertos.h"
 #include "btstack_ring_buffer.h"
-//#include "classic/btstack_link_key_db.h"
+#include "btstack_tlv.h"
+#include "btstack_tlv_esp32.h"
+#include "ble/le_device_db_tlv.h"
+#include "classic/btstack_link_key_db.h"
+#include "classic/btstack_link_key_db_tlv.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "bt.h"
@@ -307,7 +311,7 @@ int app_main(void){
     printf("BTstack: setup\n");
 
     // enable packet logger
-    // hci_dump_open(NULL, HCI_DUMP_STDOUT);
+    hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
     /// GET STARTED with BTstack ///
     btstack_memory_init();
@@ -315,7 +319,16 @@ int app_main(void){
 
     // init HCI
     hci_init(transport_get_instance(), NULL);
-    hci_set_link_key_db(btstack_link_key_db_memory_instance()); // @TODO
+
+    // setup TLV ESP32 implementation
+    const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_esp32_get_instance();
+
+    // setup Link Key DB using TLV
+    const btstack_link_key_db_t * btstack_link_key_db = btstack_link_key_db_tlv_get_instance(btstack_tlv_impl, NULL);
+    hci_set_link_key_db(btstack_link_key_db);
+
+    // setup LE Device DB using TLV
+    le_device_db_tlv_configure(btstack_tlv_impl, NULL);
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;

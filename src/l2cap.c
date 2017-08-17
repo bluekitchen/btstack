@@ -89,11 +89,14 @@
 #endif
 
 // prototypes
+static void l2cap_run(void);
 static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size );
 static void l2cap_notify_channel_can_send(void);
 static void l2cap_emit_can_send_now(btstack_packet_handler_t packet_handler, uint16_t channel);
 #ifdef ENABLE_CLASSIC
+static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * channel);
+static void l2cap_handle_connection_complete(hci_con_handle_t con_handle, l2cap_channel_t * channel);
 static void l2cap_finialize_channel_close(l2cap_channel_t *channel);
 static inline l2cap_service_t * l2cap_get_service(uint16_t psm);
 static void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status);
@@ -108,6 +111,17 @@ static l2cap_channel_t * l2cap_le_get_channel_for_local_cid(uint16_t local_cid);
 static void l2cap_le_notify_channel_can_send(l2cap_channel_t *channel);
 static void l2cap_le_finialize_channel_close(l2cap_channel_t *channel);
 static inline l2cap_service_t * l2cap_le_get_service(uint16_t psm);
+#endif
+#ifdef L2CAP_USES_CHANNELS
+static void l2cap_dispatch_to_channel(l2cap_channel_t *channel, uint8_t type, uint8_t * data, uint16_t size);
+static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid);
+static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t packet_handler, bd_addr_t address, bd_addr_type_t address_type, 
+        uint16_t psm, uint16_t local_mtu, gap_security_level_t security_level);
+#endif
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+static void l2cap_ertm_notify_channel_can_send(l2cap_channel_t * channel);
+static void l2cap_ertm_monitor_timeout_callback(btstack_timer_source_t * ts);
+static void l2cap_ertm_retransmission_timeout_callback(btstack_timer_source_t * ts);
 #endif
 
 typedef struct l2cap_fixed_channel {
@@ -137,6 +151,515 @@ static l2cap_fixed_channel_t fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_SIZE];
 // only used for connection parameter update events
 static btstack_packet_handler_t l2cap_event_packet_handler;
 #endif
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+
+/*
+ * CRC lookup table for generator polynom D^16 + D^15 + D^2 + 1
+ */
+static const uint16_t crc16_table[256] = {
+    0x0000, 0xc0c1, 0xc181, 0x0140, 0xc301, 0x03c0, 0x0280, 0xc241, 0xc601, 0x06c0, 0x0780, 0xc741, 0x0500, 0xc5c1, 0xc481, 0x0440,
+    0xcc01, 0x0cc0, 0x0d80, 0xcd41, 0x0f00, 0xcfc1, 0xce81, 0x0e40, 0x0a00, 0xcac1, 0xcb81, 0x0b40, 0xc901, 0x09c0, 0x0880, 0xc841,
+    0xd801, 0x18c0, 0x1980, 0xd941, 0x1b00, 0xdbc1, 0xda81, 0x1a40, 0x1e00, 0xdec1, 0xdf81, 0x1f40, 0xdd01, 0x1dc0, 0x1c80, 0xdc41,
+    0x1400, 0xd4c1, 0xd581, 0x1540, 0xd701, 0x17c0, 0x1680, 0xd641, 0xd201, 0x12c0, 0x1380, 0xd341, 0x1100, 0xd1c1, 0xd081, 0x1040,
+    0xf001, 0x30c0, 0x3180, 0xf141, 0x3300, 0xf3c1, 0xf281, 0x3240, 0x3600, 0xf6c1, 0xf781, 0x3740, 0xf501, 0x35c0, 0x3480, 0xf441,
+    0x3c00, 0xfcc1, 0xfd81, 0x3d40, 0xff01, 0x3fc0, 0x3e80, 0xfe41, 0xfa01, 0x3ac0, 0x3b80, 0xfb41, 0x3900, 0xf9c1, 0xf881, 0x3840,
+    0x2800, 0xe8c1, 0xe981, 0x2940, 0xeb01, 0x2bc0, 0x2a80, 0xea41, 0xee01, 0x2ec0, 0x2f80, 0xef41, 0x2d00, 0xedc1, 0xec81, 0x2c40,
+    0xe401, 0x24c0, 0x2580, 0xe541, 0x2700, 0xe7c1, 0xe681, 0x2640, 0x2200, 0xe2c1, 0xe381, 0x2340, 0xe101, 0x21c0, 0x2080, 0xe041,
+    0xa001, 0x60c0, 0x6180, 0xa141, 0x6300, 0xa3c1, 0xa281, 0x6240, 0x6600, 0xa6c1, 0xa781, 0x6740, 0xa501, 0x65c0, 0x6480, 0xa441,
+    0x6c00, 0xacc1, 0xad81, 0x6d40, 0xaf01, 0x6fc0, 0x6e80, 0xae41, 0xaa01, 0x6ac0, 0x6b80, 0xab41, 0x6900, 0xa9c1, 0xa881, 0x6840,
+    0x7800, 0xb8c1, 0xb981, 0x7940, 0xbb01, 0x7bc0, 0x7a80, 0xba41, 0xbe01, 0x7ec0, 0x7f80, 0xbf41, 0x7d00, 0xbdc1, 0xbc81, 0x7c40,
+    0xb401, 0x74c0, 0x7580, 0xb541, 0x7700, 0xb7c1, 0xb681, 0x7640, 0x7200, 0xb2c1, 0xb381, 0x7340, 0xb101, 0x71c0, 0x7080, 0xb041,
+    0x5000, 0x90c1, 0x9181, 0x5140, 0x9301, 0x53c0, 0x5280, 0x9241, 0x9601, 0x56c0, 0x5780, 0x9741, 0x5500, 0x95c1, 0x9481, 0x5440,
+    0x9c01, 0x5cc0, 0x5d80, 0x9d41, 0x5f00, 0x9fc1, 0x9e81, 0x5e40, 0x5a00, 0x9ac1, 0x9b81, 0x5b40, 0x9901, 0x59c0, 0x5880, 0x9841,
+    0x8801, 0x48c0, 0x4980, 0x8941, 0x4b00, 0x8bc1, 0x8a81, 0x4a40, 0x4e00, 0x8ec1, 0x8f81, 0x4f40, 0x8d01, 0x4dc0, 0x4c80, 0x8c41,
+    0x4400, 0x84c1, 0x8581, 0x4540, 0x8701, 0x47c0, 0x4680, 0x8641, 0x8201, 0x42c0, 0x4380, 0x8341, 0x4100, 0x81c1, 0x8081, 0x4040, 
+};
+
+static uint16_t crc16_calc(uint8_t * data, uint16_t len){
+    uint16_t crc = 0;   // initial value = 0 
+    while (len--){
+        crc = (crc >> 8) ^ crc16_table[ (crc ^ ((uint16_t) *data++)) & 0x00FF ];
+    }
+    return crc;
+}
+
+static inline uint16_t l2cap_encanced_control_field_for_information_frame(uint8_t tx_seq, int final, uint8_t req_seq, l2cap_segmentation_and_reassembly_t sar){
+    return (((uint16_t) sar) << 14) | (req_seq << 8) | (final << 7) | (tx_seq << 1) | 0; 
+}
+
+static inline uint16_t l2cap_encanced_control_field_for_supevisor_frame(l2cap_supervisory_function_t supervisory_function, int poll, int final, uint8_t req_seq){
+    return (req_seq << 8) | (final << 7) | (poll << 4) | (((int) supervisory_function) << 2) | 1; 
+}
+
+static int l2cap_next_ertm_seq_nr(int seq_nr){
+    return (seq_nr + 1) & 0x3f;
+}
+
+static int l2cap_ertm_can_store_packet_now(l2cap_channel_t * channel){
+     // get num free tx buffers
+    int num_tx_buffers_used = channel->tx_write_index - channel->tx_read_index;
+    if (num_tx_buffers_used < 0){
+        num_tx_buffers_used += channel->num_tx_buffers;
+    }
+    int num_free_tx_buffers = channel->num_tx_buffers - num_tx_buffers_used;
+    // calculate num tx buffers for remote MTU
+    int num_tx_buffers_for_max_remote_mtu;
+    if (channel->remote_mtu <= channel->remote_mps){
+        // MTU fits into single packet
+        num_tx_buffers_for_max_remote_mtu = 1;
+    } else {
+        // include SDU Length
+        num_tx_buffers_for_max_remote_mtu = (channel->remote_mtu + 2 + (channel->remote_mps - 1)) / channel->remote_mps;
+    }
+    return num_tx_buffers_for_max_remote_mtu <= num_free_tx_buffers;
+}
+
+static void l2cap_ertm_next_tx_write_index(l2cap_channel_t * channel){
+    channel->tx_write_index++;
+    if (channel->tx_write_index < channel->num_tx_buffers) return;
+    channel->tx_write_index = 0;
+}
+
+static void l2cap_ertm_start_monitor_timer(l2cap_channel_t * channel){
+    log_info("Start Monitor timer");
+    btstack_run_loop_remove_timer(&channel->monitor_timer);
+    btstack_run_loop_set_timer_handler(&channel->monitor_timer, &l2cap_ertm_monitor_timeout_callback);
+    btstack_run_loop_set_timer_context(&channel->monitor_timer, channel);
+    btstack_run_loop_set_timer(&channel->monitor_timer, channel->local_monitor_timeout_ms);
+    btstack_run_loop_add_timer(&channel->monitor_timer);
+}
+
+static void l2cap_ertm_stop_monitor_timer(l2cap_channel_t * channel){
+    log_info("Stop Monitor timer");
+    btstack_run_loop_remove_timer(&channel->monitor_timer);
+}
+
+static void l2cap_ertm_start_retransmission_timer(l2cap_channel_t * channel){
+    log_info("Start Retransmission timer");
+    btstack_run_loop_remove_timer(&channel->retransmission_timer);
+    btstack_run_loop_set_timer_handler(&channel->retransmission_timer, &l2cap_ertm_retransmission_timeout_callback);
+    btstack_run_loop_set_timer_context(&channel->retransmission_timer, channel);
+    btstack_run_loop_set_timer(&channel->retransmission_timer, channel->local_retransmission_timeout_ms);
+    btstack_run_loop_add_timer(&channel->retransmission_timer);
+}
+
+static void l2cap_ertm_stop_retransmission_timer(l2cap_channel_t * l2cap_channel){
+    log_info("Stop Retransmission timer");
+    btstack_run_loop_remove_timer(&l2cap_channel->retransmission_timer);
+}    
+
+static void l2cap_ertm_monitor_timeout_callback(btstack_timer_source_t * ts){
+    log_info("Monitor timeout");
+    l2cap_channel_t * l2cap_channel = (l2cap_channel_t *) btstack_run_loop_get_timer_context(ts);
+
+    // TODO: we assume that it's the oldest packet
+    l2cap_ertm_tx_packet_state_t * tx_state;
+    tx_state = &l2cap_channel->tx_packets_state[l2cap_channel->tx_read_index];
+
+    // check retry count
+    if (tx_state->retry_count < l2cap_channel->remote_max_transmit){
+        // increment retry count
+        tx_state->retry_count++;
+
+        l2cap_ertm_start_monitor_timer(l2cap_channel);
+
+        // send RR/P=1
+        l2cap_channel->send_supervisor_frame_receiver_ready_poll = 1;
+    } else {
+        log_info("Monitor timer expired & retry count >= max transmit -> disconnect");
+        l2cap_channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+    }
+    l2cap_run();
+}
+
+static void l2cap_ertm_retransmission_timeout_callback(btstack_timer_source_t * ts){
+    log_info("Retransmission timeout");
+    l2cap_channel_t * l2cap_channel = (l2cap_channel_t *) btstack_run_loop_get_timer_context(ts);
+    
+    // TODO: we assume that it's the oldest packet
+    l2cap_ertm_tx_packet_state_t * tx_state;
+    tx_state = &l2cap_channel->tx_packets_state[l2cap_channel->tx_read_index];
+
+    // set retry count = 1
+    tx_state->retry_count = 1;
+
+    // start monitor timer
+    l2cap_ertm_start_monitor_timer(l2cap_channel);
+ 
+    // send RR/P=1
+    l2cap_channel->send_supervisor_frame_receiver_ready_poll = 1;
+    l2cap_run();
+}
+
+static int l2cap_ertm_send_information_frame(l2cap_channel_t * channel, int index, int final){
+    l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[index];
+    hci_reserve_packet_buffer();
+    uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
+    uint16_t control = l2cap_encanced_control_field_for_information_frame(tx_state->tx_seq, final, channel->req_seq, tx_state->sar);
+    log_info("I-Frame: control 0x%04x", control);
+    little_endian_store_16(acl_buffer, 8, control);
+    memcpy(&acl_buffer[8+2], &channel->tx_packets_data[index * channel->local_mtu], tx_state->len);
+    // (re-)start retransmission timer on 
+    l2cap_ertm_start_retransmission_timer(channel);
+    // send
+    return l2cap_send_prepared(channel->local_cid, 2 + tx_state->len);
+}
+
+static void l2cap_ertm_store_fragment(l2cap_channel_t * channel, l2cap_segmentation_and_reassembly_t sar, uint16_t sdu_length, uint8_t * data, uint16_t len){
+    // get next index for storing packets
+    int index = channel->tx_write_index;
+
+    l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[index];
+    tx_state->tx_seq = channel->next_tx_seq;
+    tx_state->len = len;
+    tx_state->sar = sar;
+    tx_state->retry_count = 0;
+
+    uint8_t * tx_packet = &channel->tx_packets_data[index * channel->local_mtu];
+    int pos = 0;
+    if (sar == L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU){
+        little_endian_store_16(tx_packet, 0, sdu_length);
+        pos += 2;
+    }
+    memcpy(&tx_packet[pos], data, len);
+
+    // update
+    channel->next_tx_seq = l2cap_next_ertm_seq_nr(channel->next_tx_seq);
+    l2cap_ertm_next_tx_write_index(channel);
+
+    log_info("l2cap_ertm_store_fragment: after store, tx_read_index %u, tx_write_index %u", channel->tx_read_index, channel->tx_write_index);
+
+}
+
+static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t len){
+    if (len > channel->remote_mtu){
+        log_error("l2cap_send cid 0x%02x, data length exceeds remote MTU.", channel->local_cid);
+        return L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU;
+    }
+
+    // check if it needs to get fragmented
+    if (len > channel->remote_mps){
+        // fragmentation needed.
+        l2cap_segmentation_and_reassembly_t sar =  L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU;
+        int chunk_len;
+        while (len){
+            switch (sar){
+                case L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU:
+                    chunk_len = channel->remote_mps - 2;    // sdu_length
+                    l2cap_ertm_store_fragment(channel, sar, len, data, chunk_len);
+                    len -= chunk_len;
+                    sar = L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU;
+                    break;
+                case L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU:
+                    chunk_len = channel->remote_mps;
+                    if (chunk_len >= len){
+                        sar = L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU; 
+                        chunk_len = len;                       
+                    }
+                    l2cap_ertm_store_fragment(channel, sar, len, data, chunk_len);
+                    len -= chunk_len;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+    } else {
+        l2cap_ertm_store_fragment(channel, L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU, 0, data, len);
+    }
+
+    // try to send
+    l2cap_run();
+    return 0;
+}
+
+static uint16_t l2cap_setup_options_ertm(l2cap_channel_t * channel, uint8_t * config_options){
+    config_options[0] = 0x04;   // RETRANSMISSION AND FLOW CONTROL OPTION
+    config_options[1] = 9;      // length
+    config_options[2] = (uint8_t) channel->mode;
+    config_options[3] = channel->num_rx_buffers;    // == TxWindows size
+    config_options[4] = channel->local_max_transmit;
+    little_endian_store_16( config_options, 5, channel->local_retransmission_timeout_ms); 
+    little_endian_store_16( config_options, 7, channel->local_monitor_timeout_ms);
+    little_endian_store_16( config_options, 9, channel->local_mps);
+    return 11;
+}
+
+static int l2cap_ertm_send_supervisor_frame(l2cap_channel_t * channel, uint16_t control){
+    hci_reserve_packet_buffer();
+    uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
+    log_info("S-Frame: control 0x%04x", control);
+    little_endian_store_16(acl_buffer, 8, control);
+    return l2cap_send_prepared(channel->local_cid, 2);
+}
+
+static uint8_t l2cap_ertm_validate_local_config(l2cap_ertm_config_t * ertm_config, uint8_t * buffer, uint32_t size){
+    
+    UNUSED(buffer);
+    UNUSED(size);
+
+    uint8_t result = ERROR_CODE_SUCCESS;
+    if (ertm_config->max_transmit < 1){
+        log_error("max_transmit must be >= 1");
+        result = ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    if (ertm_config->retransmission_timeout_ms < 2000){
+        log_error("retransmission_timeout_ms must be >= 2000 ms");
+        result = ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    if (ertm_config->monitor_timeout_ms < 12000){
+        log_error("monitor_timeout_ms must be >= 12000 ms");
+        result = ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    if (ertm_config->local_mtu < 48){
+        log_error("local_mtu must be >= 48");
+        result = ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    if (ertm_config->num_rx_buffers < 1){
+        log_error("num_rx_buffers must be >= 1");
+        result = ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    if (ertm_config->num_tx_buffers < 1){
+        log_error("num_rx_buffers must be >= 1");
+        result = ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
+    }
+    return result;
+}
+
+static void l2cap_ertm_configure_channel(l2cap_channel_t * channel, l2cap_ertm_config_t * ertm_config, uint8_t * buffer, uint32_t size){
+
+    channel->mode  = L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION;
+    channel->ertm_mandatory = ertm_config->ertm_mandatory;
+    channel->local_max_transmit = ertm_config->max_transmit;
+    channel->local_retransmission_timeout_ms = ertm_config->retransmission_timeout_ms;
+    channel->local_monitor_timeout_ms = ertm_config->monitor_timeout_ms;
+    channel->local_mtu = ertm_config->local_mtu;
+    channel->num_rx_buffers = ertm_config->num_rx_buffers;
+    channel->num_tx_buffers = ertm_config->num_tx_buffers;
+
+    // align buffer to 16-byte boundary, just in case
+    int bytes_till_alignment = 16 - (((uintptr_t) buffer) & 0x0f);
+    buffer += bytes_till_alignment;
+    size   -= bytes_till_alignment;
+
+    // setup state buffers
+    uint32_t pos = 0;
+    channel->rx_packets_state = (l2cap_ertm_rx_packet_state_t *) &buffer[pos];
+    pos += ertm_config->num_rx_buffers * sizeof(l2cap_ertm_rx_packet_state_t);
+    channel->tx_packets_state = (l2cap_ertm_tx_packet_state_t *) &buffer[pos];
+    pos += ertm_config->num_tx_buffers * sizeof(l2cap_ertm_tx_packet_state_t);
+
+    // setup reassembly buffer
+    channel->reassembly_buffer = &buffer[pos];
+    pos += ertm_config->local_mtu;
+
+    // divide rest of data equally
+    channel->local_mps = (size - pos) / (ertm_config->num_rx_buffers + ertm_config->num_tx_buffers);
+    log_info("Local MPS: %u", channel->local_mtu);
+    channel->rx_packets_data = &buffer[pos];
+    pos += ertm_config->num_rx_buffers * channel->local_mtu;
+    channel->tx_packets_data = &buffer[pos];
+}
+
+uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, 
+    l2cap_ertm_config_t * ertm_config, uint8_t * buffer, uint32_t size, uint16_t * out_local_cid){
+
+    log_info("L2CAP_CREATE_ERTM_CHANNEL addr %s, psm 0x%x, local mtu %u", bd_addr_to_str(address), psm, ertm_config->local_mtu);
+
+    // validate local config
+    uint8_t result = l2cap_ertm_validate_local_config(ertm_config, buffer, size);
+    if (result) return result;
+
+    l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, address, BD_ADDR_TYPE_CLASSIC, psm, ertm_config->local_mtu, LEVEL_0);
+    if (!channel) {
+        return BTSTACK_MEMORY_ALLOC_FAILED;
+    }
+
+    // configure ERTM
+    l2cap_ertm_configure_channel(channel, ertm_config, buffer, size);
+
+    // add to connections list
+    btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) channel);
+
+    // store local_cid
+    if (out_local_cid){
+       *out_local_cid = channel->local_cid;
+    }
+
+    // check if hci connection is already usable
+    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(address, BD_ADDR_TYPE_CLASSIC);
+    if (conn){
+        log_info("l2cap_create_channel, hci connection already exists");
+        l2cap_handle_connection_complete(conn->con_handle, channel);
+        // check if remote supported fearures are already received
+        if (conn->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) {
+            l2cap_handle_remote_supported_features_received(channel);
+        }
+    }
+
+    l2cap_run(); 
+
+    return 0;     
+}
+
+static void l2cap_ertm_notify_channel_can_send(l2cap_channel_t * channel){
+    if (l2cap_ertm_can_store_packet_now(channel)){
+        channel->waiting_for_can_send_now = 0;
+        l2cap_emit_can_send_now(channel->packet_handler, channel->local_cid);
+    }
+}
+
+uint8_t l2cap_accept_ertm_connection(uint16_t local_cid, l2cap_ertm_config_t * ertm_config, uint8_t * buffer, uint32_t size){
+
+    log_info("L2CAP_ACCEPT_ERTM_CONNECTION local_cid 0x%x", local_cid);
+    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
+    if (!channel) {
+        log_error("l2cap_accept_connection called but local_cid 0x%x not found", local_cid);
+        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
+    }
+
+    // validate local config
+    uint8_t result = l2cap_ertm_validate_local_config(ertm_config, buffer, size);
+    if (result) return result;
+
+    // configure L2CAP ERTM
+    l2cap_ertm_configure_channel(channel, ertm_config, buffer, size);
+
+    // continue
+    channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT;
+
+    // process
+    l2cap_run();
+
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t l2cap_ertm_set_busy(uint16_t local_cid){
+    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid( local_cid);
+    if (!channel) {
+        log_error( "l2cap_decline_connection called but local_cid 0x%x not found", local_cid);
+        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
+    }
+    if (!channel->local_busy){
+        channel->local_busy = 1;
+        channel->send_supervisor_frame_receiver_not_ready = 1;
+        l2cap_run();
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t l2cap_ertm_set_ready(uint16_t local_cid){
+    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid( local_cid);
+    if (!channel) {
+        log_error( "l2cap_decline_connection called but local_cid 0x%x not found", local_cid);
+        return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
+    }
+    if (channel->local_busy){
+        channel->local_busy = 0;
+        channel->send_supervisor_frame_receiver_ready_poll = 1;
+        l2cap_run();
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
+// Process-ReqSeq
+static void l2cap_ertm_process_req_seq(l2cap_channel_t * l2cap_channel, uint8_t req_seq){
+    int num_buffers_acked = 0;
+    l2cap_ertm_tx_packet_state_t * tx_state;
+    log_info("l2cap_ertm_process_req_seq: tx_read_index %u, tx_write_index %u, req_seq %u", l2cap_channel->tx_read_index, l2cap_channel->tx_write_index, req_seq);
+    while (1){
+
+        // no unack packets left
+        if (l2cap_channel->unacked_frames == 0) {
+            // stop retransmission timer
+            l2cap_ertm_stop_retransmission_timer(l2cap_channel);
+            break;
+        }
+
+        tx_state = &l2cap_channel->tx_packets_state[l2cap_channel->tx_read_index];
+        // calc delta
+        int delta = (req_seq - tx_state->tx_seq) & 0x03f;
+        if (delta == 0) break;  // all packets acknowledged
+        if (delta > l2cap_channel->remote_tx_window_size) break;   
+
+        num_buffers_acked++;
+        l2cap_channel->unacked_frames--;
+        log_info("RR seq %u => packet with tx_seq %u done", req_seq, tx_state->tx_seq);
+
+        l2cap_channel->tx_read_index++;
+        if (l2cap_channel->tx_read_index >= l2cap_channel->num_rx_buffers){
+            l2cap_channel->tx_read_index = 0;
+        }
+    }
+
+    if (num_buffers_acked){
+        l2cap_ertm_notify_channel_can_send(l2cap_channel);
+    }
+}     
+
+static l2cap_ertm_tx_packet_state_t * l2cap_ertm_get_tx_state(l2cap_channel_t * l2cap_channel, uint8_t tx_seq){
+    int i;
+    for (i=0;i<l2cap_channel->num_tx_buffers;i++){
+        l2cap_ertm_tx_packet_state_t * tx_state = &l2cap_channel->tx_packets_state[i];
+        if (tx_state->tx_seq == tx_seq) return tx_state;
+    }
+    return NULL;
+}
+
+// @param delta number of frames in the future, >= 1
+static void l2cap_ertm_handle_out_of_sequence_sdu(l2cap_channel_t * l2cap_channel, l2cap_segmentation_and_reassembly_t sar, int delta, uint8_t * payload, uint16_t size){
+    log_info("Store SDU with delta %u", delta);
+    // get rx state for packet to store
+    int index = l2cap_channel->rx_store_index + delta - 1;
+    if (index > l2cap_channel->num_rx_buffers){
+        index -= l2cap_channel->num_rx_buffers;
+    }
+    log_info("Index of packet to store %u", index);
+    l2cap_ertm_rx_packet_state_t * rx_state = &l2cap_channel->rx_packets_state[index];
+    // check if buffer is free
+    if (rx_state->valid){
+        log_error("Packet buffer already used");
+        return;
+    }
+    rx_state->valid = 1;
+    rx_state->sar = sar;
+    rx_state->len = size;
+    uint8_t * rx_buffer = &l2cap_channel->rx_packets_data[index];
+    memcpy(rx_buffer, payload, size);
+}
+
+static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l2cap_segmentation_and_reassembly_t sar, uint8_t * payload, uint16_t size){
+    switch (sar){
+        case L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU:
+            // packet complete -> disapatch
+            l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, payload, size);
+            break;
+        case L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU:
+            // TODO: check if reassembly started
+            // TODO: check sdu_len against local mtu
+            l2cap_channel->reassembly_sdu_length = little_endian_read_16(payload, 0);
+            payload += 2;
+            size    -= 2;
+            memcpy(&l2cap_channel->reassembly_buffer[0], payload, size);
+            l2cap_channel->reassembly_pos = size;
+            break;
+        case L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU:
+            memcpy(&l2cap_channel->reassembly_buffer[l2cap_channel->reassembly_pos], payload, size);
+            l2cap_channel->reassembly_pos += size;
+            break;
+        case L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU:
+            memcpy(&l2cap_channel->reassembly_buffer[l2cap_channel->reassembly_pos], payload, size);
+            l2cap_channel->reassembly_pos += size;
+            // packet complete -> disapatch
+            l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, l2cap_channel->reassembly_buffer, l2cap_channel->reassembly_pos);
+            l2cap_channel->reassembly_pos = 0;    
+            break; 
+    }
+}
+
+#endif
+
 
 static uint16_t l2cap_fixed_channel_table_channel_id_for_index(int index){
     switch (index){
@@ -368,20 +891,37 @@ void l2cap_request_can_send_now_event(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return;
     channel->waiting_for_can_send_now = 1;
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+        l2cap_ertm_notify_channel_can_send(channel);
+        return;
+    }
+#endif        
     l2cap_notify_channel_can_send();
 }
 
 int  l2cap_can_send_packet_now(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return 0;
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+        return l2cap_ertm_can_store_packet_now(channel);
+    }
+#endif    
     return hci_can_send_acl_packet_now(channel->con_handle);
 }
 
 int  l2cap_can_send_prepared_packet_now(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return 0;
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+        return 0;
+    }
+#endif
     return hci_can_send_prepared_acl_packet_now(channel->con_handle);
 }
+
 uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (channel) {
@@ -486,22 +1026,46 @@ int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     
     log_debug("l2cap_send_prepared cid 0x%02x, handle %u, 1 credit used", local_cid, channel->con_handle);
     
+    int fcs_size = 0;
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+        fcs_size = 2;
+    }
+#endif
+
     // set non-flushable packet boundary flag if supported on Controller
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
     uint8_t packet_boundary_flag = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
-    l2cap_setup_header(acl_buffer, channel->con_handle, packet_boundary_flag, channel->remote_cid, len);
+    l2cap_setup_header(acl_buffer, channel->con_handle, packet_boundary_flag, channel->remote_cid, len + fcs_size);
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+        // calculate FCS over l2cap data
+        uint16_t fcs = crc16_calc(acl_buffer + 4, 4 + len);
+        log_info("I-Frame: fcs 0x%04x", fcs);
+        little_endian_store_16(acl_buffer, 8 + len, fcs);
+    }
+#endif
+
     // send
-    return hci_send_acl_packet_buffer(len+8);
+    return hci_send_acl_packet_buffer(len+8+fcs_size);
 }
 
 // assumption - only on Classic connections
 int l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len){
-
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         log_error("l2cap_send no channel for cid 0x%02x", local_cid);
         return -1;   // TODO: define error
     }
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    // send in ERTM
+    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+        return l2cap_ertm_send(channel, data, len);
+    }
+#endif
 
     if (len > channel->remote_mtu){
         log_error("l2cap_send cid 0x%02x, data length exceeds remote MTU.", local_cid);
@@ -515,9 +1079,7 @@ int l2cap_send(uint16_t local_cid, uint8_t *data, uint16_t len){
 
     hci_reserve_packet_buffer();
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
-
     memcpy(&acl_buffer[8], data, len);
-
     return l2cap_send_prepared(local_cid, len);
 }
 
@@ -563,6 +1125,37 @@ uint16_t l2cap_max_le_mtu(void){
     return l2cap_max_mtu();
 }
 
+#ifdef ENABLE_CLASSIC
+
+static uint16_t l2cap_setup_options_mtu(l2cap_channel_t * channel, uint8_t * config_options){
+    config_options[0] = 1; // MTU
+    config_options[1] = 2; // len param
+    little_endian_store_16(config_options, 2, channel->local_mtu);
+    return 4;
+}
+
+static uint16_t l2cap_setup_options(l2cap_channel_t * channel, uint8_t * config_options){
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    // use ERTM options if supported
+    hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
+    if ((connection->l2cap_state.information_state == L2CAP_INFORMATION_STATE_DONE) && (connection->l2cap_state.extended_feature_mask & 0x08)){
+        return l2cap_setup_options_ertm(channel, config_options);
+
+    }
+#endif
+    return l2cap_setup_options_mtu(channel, config_options);
+}
+
+static uint32_t l2cap_extended_features_mask(void){
+    // extended features request supported, features: fixed channels, unicast connectionless data reception
+    uint32_t features = 0x280;
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    features |= 0x0008;
+#endif
+    return features;
+}
+#endif
+
 // MARK: L2CAP_RUN
 // process outstanding signaling tasks
 static void l2cap_run(void){
@@ -578,12 +1171,12 @@ static void l2cap_run(void){
 
         uint8_t  sig_id        = signaling_responses[0].sig_id;
         uint8_t  response_code = signaling_responses[0].code;
-        uint16_t infoType      = signaling_responses[0].data;  // INFORMATION_REQUEST
+        uint16_t info_type     = signaling_responses[0].data;  // INFORMATION_REQUEST
         uint16_t result        = signaling_responses[0].data;  // CONNECTION_REQUEST, COMMAND_REJECT
 #ifdef ENABLE_CLASSIC
         uint16_t source_cid    = signaling_responses[0].cid;   // CONNECTION_REQUEST
 #endif
-        UNUSED(infoType);
+        UNUSED(info_type);
 
         // remove first item before sending (to avoid sending response mutliple times)
         signaling_responses_pending--;
@@ -605,28 +1198,27 @@ static void l2cap_run(void){
                 l2cap_send_signaling_packet(handle, ECHO_RESPONSE, sig_id, 0, NULL);
                 break;
             case INFORMATION_REQUEST:
-                switch (infoType){
-                    case 1: { // Connectionless MTU
+                switch (info_type){
+                    case L2CAP_INFO_TYPE_CONNECTIONLESS_MTU: {
                             uint16_t connectionless_mtu = hci_max_acl_data_packet_length();
-                            l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, sizeof(connectionless_mtu), &connectionless_mtu);
+                            l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, info_type, 0, sizeof(connectionless_mtu), &connectionless_mtu);
                         }
                         break;
-                    case 2: { // Extended Features Supported
-                            // extended features request supported, features: fixed channels, unicast connectionless data reception
-                            uint32_t features = 0x280;
-                            l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, sizeof(features), &features);
+                    case L2CAP_INFO_TYPE_EXTENDED_FEATURES_SUPPORTED: {
+                            uint32_t features = l2cap_extended_features_mask();
+                            l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, info_type, 0, sizeof(features), &features);
                         }
                         break;
-                    case 3: { // Fixed Channels Supported
+                    case L2CAP_INFO_TYPE_FIXED_CHANNELS_SUPPORTED: {
                             uint8_t map[8];
                             memset(map, 0, 8);
                             map[0] = 0x06;  // L2CAP Signaling Channel (0x02) + Connectionless reception (0x04)
-                            l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, sizeof(map), &map);
+                            l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, info_type, 0, sizeof(map), &map);
                         }
                         break;
                     default:
                         // all other types are not supported
-                        l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 1, 0, NULL);
+                        l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, info_type, 1, 0, NULL);
                         break;                        
                 }
                 break;
@@ -651,8 +1243,24 @@ static void l2cap_run(void){
     btstack_linked_list_iterator_t it;    
     UNUSED(it);
 
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    // send l2cap information request if neccessary
+    hci_connections_get_iterator(&it);
+    while(btstack_linked_list_iterator_has_next(&it)){
+        hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
+        if (connection->l2cap_state.information_state == L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST){
+            connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W4_EXTENDED_FEATURE_RESPONSE;
+            // send information request for extended features
+            uint8_t sig_id = l2cap_next_sig_id();
+            uint8_t info_type = L2CAP_INFO_TYPE_EXTENDED_FEATURES_SUPPORTED;
+            l2cap_send_signaling_packet(connection->con_handle, INFORMATION_REQUEST, sig_id, info_type);
+            return;
+        }
+    }
+#endif
+
 #ifdef ENABLE_CLASSIC
-    uint8_t  config_options[4];
+    uint8_t  config_options[10];
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
 
@@ -714,15 +1322,21 @@ static void l2cap_run(void){
                         channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP);
                     }
                     if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID){
+                        channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP);
                         l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_UNKNOWN_OPTIONS, 0, NULL);
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+                    } else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED){
+                        channelStateVarClearFlag(channel,L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED);
+                        channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP);
+                        uint16_t options_size = l2cap_setup_options(channel, config_options);
+                        l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_UNACCEPTABLE_PARAMETERS, options_size, &config_options);
+#endif
                     } else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU){
-                        config_options[0] = 1; // MTU
-                        config_options[1] = 2; // len param
-                        little_endian_store_16( (uint8_t*)&config_options, 2, channel->remote_mtu);
-                        l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, 0, 4, &config_options);
                         channelStateVarClearFlag(channel,L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
+                        uint16_t options_size = l2cap_setup_options(channel, config_options);
+                        l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_SUCCESS, options_size, &config_options);
                     } else {
-                        l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, 0, 0, NULL);
+                        l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_SUCCESS, 0, NULL);
                     }
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_CONT);
                 }
@@ -730,10 +1344,8 @@ static void l2cap_run(void){
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ);
                     channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_REQ);
                     channel->local_sig_id = l2cap_next_sig_id();
-                    config_options[0] = 1; // MTU
-                    config_options[1] = 2; // len param
-                    little_endian_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
-                    l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_REQUEST, channel->local_sig_id, channel->remote_cid, 0, 4, &config_options);
+                    uint16_t options_size = l2cap_setup_options(channel, config_options);
+                    l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_REQUEST, channel->local_sig_id, channel->remote_cid, 0, options_size, &config_options);
                     l2cap_start_rtx(channel);
                 }
                 if (l2cap_channel_ready_for_open(channel)){
@@ -759,6 +1371,86 @@ static void l2cap_run(void){
             default:
                 break;
         }
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+        // send s-frame to acknowledge received packets
+        if (!hci_can_send_acl_packet_now(channel->con_handle)) continue;
+
+        if (channel->tx_send_index != channel->tx_write_index){
+            // check remote tx window
+            log_info("unacknowledged_packets %u, remote tx window size %u", channel->unacked_frames, channel->remote_tx_window_size);
+            if (channel->unacked_frames < channel->remote_tx_window_size){
+                channel->unacked_frames++;
+                int index = channel->tx_send_index;
+                channel->tx_send_index++;
+                if (channel->tx_send_index >= channel->num_tx_buffers){
+                    channel->tx_send_index = 0;          
+                }
+                l2cap_ertm_send_information_frame(channel, index, 0);   // final = 0
+                continue;
+            }
+        }
+
+        if (channel->send_supervisor_frame_receiver_ready){
+            channel->send_supervisor_frame_receiver_ready = 0;
+            log_info("Send S-Frame: RR %u, final %u", channel->req_seq, channel->set_final_bit_after_packet_with_poll_bit_set);
+            uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY, 0,  channel->set_final_bit_after_packet_with_poll_bit_set, channel->req_seq);
+            channel->set_final_bit_after_packet_with_poll_bit_set = 0;
+            l2cap_ertm_send_supervisor_frame(channel, control);
+            continue;
+        }
+        if (channel->send_supervisor_frame_receiver_ready_poll){
+            channel->send_supervisor_frame_receiver_ready_poll = 0;
+            log_info("Send S-Frame: RR %u with poll=1 ", channel->req_seq);
+            uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY, 1, 0, channel->req_seq);
+            l2cap_ertm_send_supervisor_frame(channel, control);
+            continue;
+        }
+        if (channel->send_supervisor_frame_receiver_not_ready){
+            channel->send_supervisor_frame_receiver_not_ready = 0;
+            log_info("Send S-Frame: RNR %u", channel->req_seq);
+            uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY, 0, 0, channel->req_seq);
+            l2cap_ertm_send_supervisor_frame(channel, control);
+            continue;
+        }
+        if (channel->send_supervisor_frame_reject){
+            channel->send_supervisor_frame_reject = 0;
+            log_info("Send S-Frame: REJ %u", channel->req_seq);
+            uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT, 0, 0, channel->req_seq);
+            l2cap_ertm_send_supervisor_frame(channel, control);
+            continue;
+        }
+        if (channel->send_supervisor_frame_selective_reject){
+            channel->send_supervisor_frame_selective_reject = 0;
+            log_info("Send S-Frame: SREJ %u", channel->expected_tx_seq);
+            uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_SREJ_SELECTIVE_REJECT, 0, channel->set_final_bit_after_packet_with_poll_bit_set, channel->expected_tx_seq);
+            channel->set_final_bit_after_packet_with_poll_bit_set = 0;
+            l2cap_ertm_send_supervisor_frame(channel, control);
+            continue;
+        }
+
+        if (channel->srej_active){
+            int i;
+            for (i=0;i<channel->num_tx_buffers;i++){
+                l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[i];
+                if (tx_state->retransmission_requested) {
+                    tx_state->retransmission_requested = 0;
+                    uint8_t final = channel->set_final_bit_after_packet_with_poll_bit_set;
+                    channel->set_final_bit_after_packet_with_poll_bit_set = 0;
+                    l2cap_ertm_send_information_frame(channel, i, final);
+                    break;
+                }
+            }
+            if (i == channel->num_tx_buffers){
+                // no retransmission request found
+                channel->srej_active = 0;
+            } else {
+                // packet was sent
+                continue;
+            }
+        }
+#endif
+
     }
 #endif
 
@@ -907,6 +1599,22 @@ static void l2cap_handle_connection_complete(hci_con_handle_t con_handle, l2cap_
     }
 }
 
+static void l2cap_ready_to_connect(l2cap_channel_t * channel){
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    // assumption: outgoing connection
+    hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
+    if (connection->l2cap_state.information_state == L2CAP_INFORMATION_STATE_IDLE){
+        connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;        
+        channel->state = L2CAP_STATE_WAIT_OUTGOING_EXTENDED_FEATURES;
+        return;
+    }
+#endif
+
+    // fine, go ahead
+    channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST;
+}
+
 static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * channel){
     if (channel->state != L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES) return;
 
@@ -918,8 +1626,8 @@ static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * ch
         gap_request_security_level(channel->con_handle, LEVEL_2);
         return;
     }
-    // fine, go ahead
-    channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST;
+
+    l2cap_ready_to_connect(channel);
 }
 #endif
 
@@ -953,6 +1661,7 @@ static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t pac
     channel->state_var = L2CAP_CHANNEL_STATE_VAR_NONE;
     channel->remote_sig_id = L2CAP_SIG_ID_INVALID;
     channel->local_sig_id = L2CAP_SIG_ID_INVALID;
+
     return channel;
 }
 #endif
@@ -978,6 +1687,10 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
     if (!channel) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    channel->mode = L2CAP_CHANNEL_MODE_BASIC;
+#endif    
 
     // add to connections list
     btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) channel);
@@ -1086,6 +1799,59 @@ static void l2cap_notify_channel_can_send(void){
     }
 }
 
+#ifdef L2CAP_USES_CHANNELS
+
+static int l2cap_send_open_failed_on_hci_disconnect(l2cap_channel_t * channel){
+    // open cannot fail for for incoming connections
+    if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_INCOMING) return 0;
+
+    // check state
+    switch (channel->state){
+        case L2CAP_STATE_WILL_SEND_CREATE_CONNECTION:
+        case L2CAP_STATE_WAIT_CONNECTION_COMPLETE:
+        case L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES:
+        case L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE:
+        case L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT:
+        case L2CAP_STATE_WAIT_OUTGOING_EXTENDED_FEATURES:
+        case L2CAP_STATE_WAIT_CONNECT_RSP:
+        case L2CAP_STATE_CONFIG:
+        case L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST:
+        case L2CAP_STATE_WILL_SEND_LE_CONNECTION_REQUEST:
+        case L2CAP_STATE_WAIT_LE_CONNECTION_RESPONSE:
+            return 1;
+
+        case L2CAP_STATE_OPEN:
+        case L2CAP_STATE_CLOSED:
+        case L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES:
+        case L2CAP_STATE_WAIT_DISCONNECT:
+        case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_INSUFFICIENT_SECURITY:
+        case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE:
+        case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT:
+        case L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST:
+        case L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE:
+        case L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_DECLINE:
+        case L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_ACCEPT:
+        case L2CAP_STATE_INVALID:
+        case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
+            return 0;
+        // no default here, to get a warning about new states
+    }
+    // still, the compiler insists on a return value
+    return 0;
+}
+
+static void l2cap_handle_hci_disconnect_event(l2cap_channel_t * channel){
+    if (l2cap_send_open_failed_on_hci_disconnect(channel)){
+        l2cap_emit_channel_opened(channel, L2CAP_CONNECTION_BASEBAND_DISCONNECT);
+    } else {
+        l2cap_emit_channel_closed(channel);
+    }
+    btstack_memory_l2cap_channel_free(channel);
+}
+
+#endif
+
+
 static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *packet, uint16_t size){
 
     UNUSED(packet_type);
@@ -1141,34 +1907,33 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
             break;
 #endif
             
+#ifdef L2CAP_USES_CHANNELS
         // handle disconnection complete events
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            // send l2cap disconnect events for all channels on this handle and free them
-#ifdef ENABLE_CLASSIC
             handle = little_endian_read_16(packet, 3);
+            // send l2cap open failed or closed events for all channels on this handle and free them
+#ifdef ENABLE_CLASSIC
             btstack_linked_list_iterator_init(&it, &l2cap_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
                 if (channel->con_handle != handle) continue;
-                l2cap_emit_channel_closed(channel);
-                l2cap_stop_rtx(channel);
                 btstack_linked_list_iterator_remove(&it);
-                btstack_memory_l2cap_channel_free(channel);
+                l2cap_stop_rtx(channel);
+                l2cap_handle_hci_disconnect_event(channel);
             }
 #endif
 #ifdef ENABLE_LE_DATA_CHANNELS
-            handle = little_endian_read_16(packet, 3);
             btstack_linked_list_iterator_init(&it, &l2cap_le_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
                 if (channel->con_handle != handle) continue;
-                l2cap_emit_channel_closed(channel);
                 btstack_linked_list_iterator_remove(&it);
-                btstack_memory_l2cap_channel_free(channel);
+                l2cap_handle_hci_disconnect_event(channel);
             }
 #endif
             break;
-            
+#endif
+
         // HCI Connection Timeouts
 #ifdef ENABLE_CLASSIC
         case L2CAP_EVENT_TIMEOUT_CHECK:
@@ -1215,8 +1980,15 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
                 switch (channel->state){
                     case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
                         if (actual_level >= required_level){
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+                            // we need to know if ERTM is supported before sending a config response
+                            hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
+                            connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;        
+                            channel->state = L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES;
+#else
                             channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
-                            l2cap_emit_incoming_connection(channel);                
+                            l2cap_emit_incoming_connection(channel);
+#endif
                         } else {
                             channel->reason = 0x0003; // security block
                             channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
@@ -1225,7 +1997,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
 
                     case L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE:
                         if (actual_level >= required_level){
-                            channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST;
+                            l2cap_ready_to_connect(channel);
                         } else {
                             // disconnnect, authentication not good enough
                             hci_disconnect_security_block(handle);
@@ -1321,6 +2093,11 @@ void l2cap_accept_connection(uint16_t local_cid){
         return;
     }
 
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    // configure L2CAP Basic mode
+    channel->mode  = L2CAP_CHANNEL_MODE_BASIC;
+#endif
+
     channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT;
 
     // process
@@ -1354,12 +2131,13 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
     while (pos < end_pos){
         uint8_t option_hint = command[pos] >> 7;
         uint8_t option_type = command[pos] & 0x7f;
-        log_info("l2cap cid %u, hint %u, type %u", channel->local_cid, option_hint, option_type);
+        // log_info("l2cap cid %u, hint %u, type %u", channel->local_cid, option_hint, option_type);
         pos++;
         uint8_t length = command[pos++];
         // MTU { type(8): 1, len(8):2, MTU(16) }
-        if (option_type == 1 && length == 2){
+        if (option_type == L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT && length == 2){
             channel->remote_mtu = little_endian_read_16(command, pos);
+            log_info("Remote MTU %u", channel->remote_mtu);
             if (channel->remote_mtu > l2cap_max_mtu()){
                 log_info("Remote MTU %u larger than outgoing buffer, only using MTU = %u", channel->remote_mtu, l2cap_max_mtu());
                 channel->remote_mtu = l2cap_max_mtu();
@@ -1367,16 +2145,115 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
         }
         // Flush timeout { type(8):2, len(8): 2, Flush Timeout(16)}
-        if (option_type == 2 && length == 2){
+        if (option_type == L2CAP_CONFIG_OPTION_TYPE_FLUSH_TIMEOUT && length == 2){
             channel->flush_timeout = little_endian_read_16(command, pos);
+            log_info("Flush timeout: %u ms", channel->flush_timeout);
         }
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+        // Retransmission and Flow Control Option
+        if (option_type == L2CAP_CONFIG_OPTION_TYPE_RETRANSMISSION_AND_FLOW_CONTROL && length == 9){
+            l2cap_channel_mode_t mode = (l2cap_channel_mode_t) command[pos];
+            switch(channel->mode){
+                case L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION:
+                    // Store remote config
+                    channel->remote_tx_window_size = command[pos+1];
+                    channel->remote_max_transmit   = command[pos+2];
+                    channel->remote_retransmission_timeout_ms = little_endian_read_16(command, pos + 3);
+                    channel->remote_monitor_timeout_ms = little_endian_read_16(command, pos + 5);
+                    channel->remote_mps = little_endian_read_16(command, pos + 7);
+                    log_info("FC&C config: tx window: %u, max transmit %u, retrans timeout %u, monitor timeout %u, mps %u",
+                        channel->remote_tx_window_size,
+                        channel->remote_max_transmit,
+                        channel->remote_retransmission_timeout_ms,
+                        channel->remote_monitor_timeout_ms,
+                        channel->remote_mps);
+                    // If ERTM mandatory, but remote doens't offer ERTM -> disconnect
+                    if (channel->ertm_mandatory && mode != L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+                        channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+                    } else {
+                        channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
+                    }
+                    break;
+                case L2CAP_CHANNEL_MODE_BASIC:
+                    switch (mode){
+                        case L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION:
+                            // remote asks for ERTM, but we want basic mode. disconnect if this happens a second time
+                            if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_BASIC_FALLBACK_TRIED){
+                                channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+                            }
+                            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_BASIC_FALLBACK_TRIED);
+                            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED);
+                            break;
+                        default: // case L2CAP_CHANNEL_MODE_BASIC:
+                            // TODO store and evaluate configuration
+                            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }        
+#endif        
         // check for unknown options
-        if (option_hint == 0 && (option_type == 0 || option_type >= 0x07)){
+        if (option_hint == 0 && (option_type < L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT || option_type > L2CAP_CONFIG_OPTION_TYPE_EXTENDED_WINDOW_SIZE)){
             log_info("l2cap cid %u, unknown options", channel->local_cid);
             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID);
         }
         pos += length;
     }
+}
+
+static void l2cap_signaling_handle_configure_response(l2cap_channel_t *channel, uint8_t result, uint8_t *command){
+    log_info("l2cap_signaling_handle_configure_response");
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    uint16_t end_pos = 4 + little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
+    uint16_t pos     = 10;
+    while (pos < end_pos){
+        uint8_t option_hint = command[pos] >> 7;
+        uint8_t option_type = command[pos] & 0x7f;
+        log_info("l2cap cid %u, hint %u, type %u", channel->local_cid, option_hint, option_type);
+        pos++;
+        uint8_t length = command[pos++];
+
+        // Retransmission and Flow Control Option
+        if (option_type == L2CAP_CONFIG_OPTION_TYPE_RETRANSMISSION_AND_FLOW_CONTROL && length == 9){
+            switch (channel->mode){
+                case L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION:
+                    if (channel->ertm_mandatory){
+                        // ??
+                    } else {
+                        // On 'Reject - Unacceptable Parameters' to our optional ERTM request, fall back to BASIC mode
+                        if (result == L2CAP_CONF_RESULT_UNACCEPTABLE_PARAMETERS){
+                            channel->mode = L2CAP_CHANNEL_MODE_BASIC;
+                        }
+                    }
+                    break;
+                case L2CAP_CHANNEL_MODE_BASIC:
+                    if (result == L2CAP_CONF_RESULT_UNACCEPTABLE_PARAMETERS){
+                        // On 'Reject - Unacceptable Parameters' to our Basic mode request, disconnect
+                        channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        // check for unknown options
+        if (option_hint == 0 && (option_type < L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT || option_type > L2CAP_CONFIG_OPTION_TYPE_EXTENDED_WINDOW_SIZE)){
+            log_info("l2cap cid %u, unknown options", channel->local_cid);
+            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID);
+        }
+
+        pos += length;
+    }
+#else
+    UNUSED(channel);
+    UNUSED(result);
+    UNUSED(command);
+#endif        
 }
 
 static int l2cap_channel_ready_for_open(l2cap_channel_t *channel){
@@ -1470,6 +2347,7 @@ static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *c
                     break;
                 case CONFIGURE_RESPONSE:
                     l2cap_stop_rtx(channel);
+                    l2cap_signaling_handle_configure_response(channel, result, command);
                     switch (result){
                         case 0: // success
                             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_RSP);
@@ -1478,6 +2356,13 @@ static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *c
                             l2cap_start_ertx(channel);
                             break;
                         default:
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+                            if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION && channel->ertm_mandatory){
+                                // remote does not offer ertm but it's required
+                                channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+                                break;
+                            } 
+#endif                     
                             // retry on negative result
                             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ);
                             break;
@@ -1520,12 +2405,14 @@ static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *c
 
 static void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t * command){
     
+    btstack_linked_list_iterator_t it;    
+
     // get code, signalind identifier and command len
     uint8_t code   = command[L2CAP_SIGNALING_COMMAND_CODE_OFFSET];
     uint8_t sig_id = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
     
-    // not for a particular channel, and not CONNECTION_REQUEST, ECHO_[REQUEST|RESPONSE], INFORMATION_REQUEST 
-    if (code < 1 || code == ECHO_RESPONSE || code > INFORMATION_REQUEST){
+    // not for a particular channel, and not CONNECTION_REQUEST, ECHO_[REQUEST|RESPONSE], INFORMATION_RESPONSE 
+    if (code < 1 || code == ECHO_RESPONSE || code > INFORMATION_RESPONSE){
         l2cap_register_signaling_response(handle, COMMAND_REJECT, sig_id, 0, L2CAP_REJ_CMD_UNKNOWN);
         return;
     }
@@ -1545,11 +2432,57 @@ static void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t *
             return;
             
         case INFORMATION_REQUEST: {
-            uint16_t infoType = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
-            l2cap_register_signaling_response(handle, code, sig_id, 0, infoType);
+            uint16_t info_type = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
+            l2cap_register_signaling_response(handle, code, sig_id, 0, info_type);
             return;
         }
-            
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+        case INFORMATION_RESPONSE: {
+            hci_connection_t * connection = hci_connection_for_handle(handle);
+            if (!connection) return;
+            uint16_t info_type = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
+            uint16_t result =  little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+2);
+            if (result != 0) return;
+            if (info_type != L2CAP_INFO_TYPE_EXTENDED_FEATURES_SUPPORTED) return;
+            connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_DONE; 
+            connection->l2cap_state.extended_feature_mask = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+4);
+            log_info("extended features mask 0x%02x", connection->l2cap_state.extended_feature_mask);
+            // trigger connection request
+            btstack_linked_list_iterator_init(&it, &l2cap_channels);
+            while (btstack_linked_list_iterator_has_next(&it)){
+                l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+                if (channel->con_handle != handle) continue;
+                // bail if ERTM was requested but is not supported
+                if ((channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) && ((connection->l2cap_state.extended_feature_mask & 0x08) == 0)){
+                    if (channel->ertm_mandatory){
+                        // channel closed
+                        channel->state = L2CAP_STATE_CLOSED;
+                        // map l2cap connection response result to BTstack status enumeration
+                        l2cap_emit_channel_opened(channel, L2CAP_CONNECTION_RESPONSE_RESULT_ERTM_NOT_SUPPORTED);
+                        // discard channel
+                        btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
+                        btstack_memory_l2cap_channel_free(channel);
+                        continue;
+                    } else {
+                        // fallback to Basic mode
+                        channel->mode = L2CAP_CHANNEL_MODE_BASIC;
+                    }
+                }
+                // start connecting
+                if (channel->state == L2CAP_STATE_WAIT_OUTGOING_EXTENDED_FEATURES){
+                    channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST;
+                }
+                // respond to connection request
+                if (channel->state == L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES){
+                    channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
+                    l2cap_emit_incoming_connection(channel);    
+                }
+            }
+            return;
+        }
+#endif
+
         default:
             break;
     }
@@ -1559,7 +2492,6 @@ static void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t *
     uint16_t dest_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
     
     // Find channel for this sig_id and connection handle
-    btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
         l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
@@ -1631,10 +2563,10 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 int update_parameter = 1;
                 le_connection_parameter_range_t existing_range;
                 gap_get_connection_parameter_range(&existing_range);
-                uint16_t le_conn_interval_min = little_endian_read_16(command,8);
-                uint16_t le_conn_interval_max = little_endian_read_16(command,10);
-                uint16_t le_conn_latency = little_endian_read_16(command,12);
-                uint16_t le_supervision_timeout = little_endian_read_16(command,14);
+                uint16_t le_conn_interval_min = little_endian_read_16(command,4);
+                uint16_t le_conn_interval_max = little_endian_read_16(command,6);
+                uint16_t le_conn_latency = little_endian_read_16(command,8);
+                uint16_t le_supervision_timeout = little_endian_read_16(command,10);
 
                 if (le_conn_interval_min < existing_range.le_conn_interval_min) update_parameter = 0;
                 if (le_conn_interval_max > existing_range.le_conn_interval_max) update_parameter = 0;
@@ -1929,6 +2861,160 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             // Find channel for this channel_id and connection handle
             l2cap_channel = l2cap_get_channel_for_local_cid(channel_id);
             if (l2cap_channel) {
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+                if (l2cap_channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+
+                    // verify FCS
+                    uint16_t fcs_calculated = crc16_calc(&packet[4], size - (4+2));
+                    uint16_t fcs_packet     = little_endian_read_16(packet, size-2);
+                    log_info("Packet FCS 0x%04x, calculated FCS 0x%04x", fcs_packet, fcs_calculated);
+                    if (fcs_calculated != fcs_packet){
+                        log_error("FCS mismatch! Packet 0x%04x, calculated 0x%04x", fcs_packet, fcs_calculated);
+                        // TODO: trigger retransmission or something like that
+                        break;
+                    }
+
+                    // switch on packet type
+                    uint16_t control = little_endian_read_16(packet, COMPLETE_L2CAP_HEADER);
+                    uint8_t  req_seq = (control >> 8) & 0x3f;
+                    int final = (control >> 7) & 0x01;
+                    if (control & 1){
+                        // S-Frame
+                        int poll  = (control >> 4) & 0x01;
+                        l2cap_supervisory_function_t s = (l2cap_supervisory_function_t) ((control >> 2) & 0x03);
+                        log_info("Control: 0x%04x => Supervisory function %u, ReqSeq %02u", control, (int) s, req_seq);
+                        l2cap_ertm_tx_packet_state_t * tx_state;
+                        switch (s){
+                            case L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY:
+                                log_info("L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY");
+                                l2cap_ertm_process_req_seq(l2cap_channel, req_seq);
+                                if (poll && final){
+                                    // S-frames shall not be transmitted with both the F-bit and the P-bit set to 1 at the same time.
+                                    log_error("P=F=1 in S-Frame");
+                                    break;
+                                }
+                                if (poll){
+                                    // check if we did request selective retransmission before <==> we have stored SDU segments
+                                    int i;
+                                    int num_stored_out_of_order_packets = 0;
+                                    for (i=0;i<l2cap_channel->num_rx_buffers;i++){
+                                        int index = l2cap_channel->rx_store_index + i;
+                                        if (index >= l2cap_channel->num_rx_buffers){
+                                            index -= l2cap_channel->num_rx_buffers;
+                                        }
+                                        l2cap_ertm_rx_packet_state_t * rx_state = &l2cap_channel->rx_packets_state[index];
+                                        if (!rx_state->valid) continue;
+                                        num_stored_out_of_order_packets++;
+                                    }
+                                    if (num_stored_out_of_order_packets){
+                                        l2cap_channel->send_supervisor_frame_selective_reject = 1;
+                                    } else {
+                                        l2cap_channel->send_supervisor_frame_receiver_ready   = 1;
+                                    }
+                                    l2cap_channel->set_final_bit_after_packet_with_poll_bit_set = 1;
+                                }
+                                if (final){
+                                    // Stop-MonitorTimer
+                                    l2cap_ertm_stop_monitor_timer(l2cap_channel);
+                                    // If UnackedFrames > 0 then Start-RetransTimer
+                                    if (l2cap_channel->unacked_frames){
+                                        l2cap_ertm_start_retransmission_timer(l2cap_channel);
+                                    }
+
+                                    // final bit set <- response to RR with poll bit set. All not acknowledged packets need to be retransmitted
+                                    l2cap_channel->tx_send_index = l2cap_channel->tx_read_index;
+                                }                       
+                                break;
+                            case L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT:
+                                log_info("L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT");
+                                l2cap_ertm_process_req_seq(l2cap_channel, req_seq);
+                                // rsetart transmittion from last unacknowledted packet (earlier packets already freed in l2cap_ertm_process_req_seq)
+                                l2cap_channel->tx_send_index = l2cap_channel->tx_read_index;
+                                break;
+                            case L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY:
+                                log_error("L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY");
+                                break;
+                            case L2CAP_SUPERVISORY_FUNCTION_SREJ_SELECTIVE_REJECT:
+                                log_info("L2CAP_SUPERVISORY_FUNCTION_SREJ_SELECTIVE_REJECT");
+                                if (poll){
+                                    l2cap_ertm_process_req_seq(l2cap_channel, req_seq);
+                                }
+                                // find requested i-frame
+                                tx_state = l2cap_ertm_get_tx_state(l2cap_channel, req_seq);
+                                if (tx_state){
+                                    log_info("Retransmission for tx_seq %u requested", req_seq);
+                                    l2cap_channel->set_final_bit_after_packet_with_poll_bit_set = poll;
+                                    tx_state->retransmission_requested = 1;
+                                    l2cap_channel->srej_active = 1;
+                                }         
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    } else {
+                        // I-Frame
+                        // get control
+                        l2cap_segmentation_and_reassembly_t sar = (l2cap_segmentation_and_reassembly_t) (control >> 14);
+                        uint8_t tx_seq = (control >> 1) & 0x3f;
+                        log_info("Control: 0x%04x => SAR %u, ReqSeq %02u, R?, TxSeq %02u", control, (int) sar, req_seq, tx_seq);
+                        log_info("SAR: pos %u", l2cap_channel->reassembly_pos);
+                        log_info("State: expected_tx_seq %02u, req_seq %02u", l2cap_channel->expected_tx_seq, l2cap_channel->req_seq);
+                        l2cap_ertm_process_req_seq(l2cap_channel, req_seq);
+                        if (final){
+                            // final bit set <- response to RR with poll bit set. All not acknowledged packets need to be retransmitted
+                            l2cap_channel->tx_send_index = l2cap_channel->tx_read_index;
+                        }
+                        // check ordering
+                        if (l2cap_channel->expected_tx_seq == tx_seq){
+                            log_info("Received expected frame with TxSeq == ExpectedTxSeq == %02u", tx_seq);
+                            l2cap_channel->expected_tx_seq = l2cap_next_ertm_seq_nr(l2cap_channel->expected_tx_seq);
+                            l2cap_channel->req_seq         = l2cap_channel->expected_tx_seq;
+ 
+                            // process SDU
+                            l2cap_ertm_handle_in_sequence_sdu(l2cap_channel, sar, &packet[COMPLETE_L2CAP_HEADER+2], size-(COMPLETE_L2CAP_HEADER+2+2));
+
+                            // process stored segments
+                            while (1){
+                                int index = l2cap_channel->rx_store_index;
+                                l2cap_ertm_rx_packet_state_t * rx_state = &l2cap_channel->rx_packets_state[index];
+                                if (!rx_state->valid) break;
+
+                                log_info("Processing stored frame with TxSeq == ExpectedTxSeq == %02u", l2cap_channel->expected_tx_seq);
+                                l2cap_channel->expected_tx_seq = l2cap_next_ertm_seq_nr(l2cap_channel->expected_tx_seq);
+                                l2cap_channel->req_seq         = l2cap_channel->expected_tx_seq;
+
+                                rx_state->valid = 0;
+                                l2cap_ertm_handle_in_sequence_sdu(l2cap_channel, rx_state->sar, &l2cap_channel->rx_packets_data[index], rx_state->len);
+
+                                // update rx store index
+                                index++;
+                                if (index >= l2cap_channel->num_rx_buffers){
+                                    index = 0;
+                                }
+                                l2cap_channel->rx_store_index = index;
+                            }
+
+                            //
+                            l2cap_channel->send_supervisor_frame_receiver_ready = 1;
+
+                        } else {
+                            int delta = (tx_seq - l2cap_channel->expected_tx_seq) & 0x3f;
+                            if (delta < 2){
+                                // store segment
+                                l2cap_ertm_handle_out_of_sequence_sdu(l2cap_channel, sar, delta, &packet[COMPLETE_L2CAP_HEADER+2], size-(COMPLETE_L2CAP_HEADER+2+2));
+
+                                log_info("Received unexpected frame TxSeq %u but expected %u -> send S-SREJ", tx_seq, l2cap_channel->expected_tx_seq);
+                                l2cap_channel->send_supervisor_frame_selective_reject = 1;
+                            } else {
+                                log_info("Received unexpected frame TxSeq %u but expected %u -> send S-REJ", tx_seq, l2cap_channel->expected_tx_seq);
+                                l2cap_channel->send_supervisor_frame_reject = 1;
+                            }
+                        }
+                    }
+                    break;
+                }
+#endif                
                 l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
             }
 #endif

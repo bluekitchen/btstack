@@ -92,15 +92,21 @@ static void btstack_uart_embedded_process(btstack_data_source_t *ds, btstack_dat
         case DATA_SOURCE_CALLBACK_POLL:
             if (send_complete){
                 send_complete = 0;
-                block_sent();
+                if (block_sent){
+                    block_sent();
+                }
             }
             if (receive_complete){
                 receive_complete = 0;
-                block_received();
+                if (block_received){
+                    block_received();
+                }
             }
             if (wakeup_event){
                 wakeup_event = 0;
-                wakeup_handler();
+                if (wakeup_handler){
+                    wakeup_handler();
+                }
             }
             break;
         default:
@@ -186,6 +192,11 @@ static const btstack_uart_block_t btstack_uart_embedded = {
     /* void (*set_block_sent)(void (*handler)(void)); */              &btstack_uart_embedded_set_block_sent,
     /* int  (*set_baudrate)(uint32_t baudrate); */                    &hal_uart_dma_set_baud,
     /* int  (*set_parity)(int parity); */                             &btstack_uart_embedded_set_parity,
+#ifdef HAVE_UART_DMA_SET_FLOWCONTROL
+    /* int  (*set_flowcontrol)(int flowcontrol); */                   &hal_uart_dma_set_flowcontrol,
+#else
+    /* int  (*set_flowcontrol)(int flowcontrol); */                   NULL,
+#endif
     /* void (*receive_block)(uint8_t *buffer, uint16_t len); */       &btstack_uart_embedded_receive_block,
     /* void (*send_block)(const uint8_t *buffer, uint16_t length); */ &btstack_uart_embedded_send_block,    
 	/* int (*get_supported_sleep_modes); */                           &btstack_uart_embedded_get_supported_sleep_modes,

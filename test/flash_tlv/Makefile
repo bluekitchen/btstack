@@ -3,18 +3,16 @@ CC=g++
 BTSTACK_ROOT = ../..
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
-COMMON = \
-	btstack_link_key_db_tlv.c \
-	btstack_tlv_flash_sector.c \
-	btstack_util.c \
-	hal_flash_sector_memory.c \
-	hci_dump.c \
-
-COMMON_OBJ  = $(COMMON:.c=.o) 
+COMMON_OBJ = \
+	btstack_tlv_flash_bank.o \
+	btstack_util.o \
+	hal_flash_bank_memory.o \
+	hci_dump.o \
 
 VPATH = \
 	${BTSTACK_ROOT}/src \
 	${BTSTACK_ROOT}/src/classic \
+	${BTSTACK_ROOT}/src/ble \
 	${BTSTACK_ROOT}/platform/embedded \
 
 CFLAGS  = \
@@ -30,14 +28,17 @@ CFLAGS  = \
 
 LDFLAGS += -lCppUTest -lCppUTestExt
 
-TESTS = tlv_test
+TESTS = tlv_test tlv_le_test
 
 all: ${TESTS}
 
 clean:
 	rm -rf *.o $(TESTS) *.dSYM *.pklg
 
-tlv_test: ${COMMON_OBJ} tlv_test.o  
+tlv_test: ${COMMON_OBJ} btstack_link_key_db_tlv.o tlv_test.o  
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+tlv_le_test: ${COMMON_OBJ} le_device_db_tlv.o tlv_le_test.o  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all

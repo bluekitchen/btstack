@@ -41,3 +41,16 @@ spp_counter
 spp_streamer
 TIInit_12.10.28.c
 TIInit_12.8.32.c
+BCM43430A1.hcd
+a2dp_sink_demo
+a2dp_source_demo
+gatt_battery_query.h
+gatt_browser.h
+hid_keyboard_demo
+le_streamer_client
+pbap_client_demo
+sm_pairing_central
+sm_pairing_peripheral
+spp_and_le_streamer
+spp_and_le_streamer.h
+spp_streamer_client

@@ -61,7 +61,7 @@ void btstack_ring_buffer_init(btstack_ring_buffer_t * ring_buffer, uint8_t * sto
     ring_buffer->full = 0;
 }
 
-int btstack_ring_buffer_bytes_available(btstack_ring_buffer_t * ring_buffer){
+uint32_t btstack_ring_buffer_bytes_available(btstack_ring_buffer_t * ring_buffer){
     if (ring_buffer->full) return ring_buffer->size;
     int diff = ring_buffer->last_written_index - ring_buffer->last_read_index;
     if (diff >= 0) return diff;
@@ -74,7 +74,7 @@ int btstack_ring_buffer_empty(btstack_ring_buffer_t * ring_buffer){
 }
 
 // 
-int btstack_ring_buffer_bytes_free(btstack_ring_buffer_t * ring_buffer){
+uint32_t btstack_ring_buffer_bytes_free(btstack_ring_buffer_t * ring_buffer){
     return ring_buffer->size - btstack_ring_buffer_bytes_available(ring_buffer);
 }
 
@@ -83,6 +83,9 @@ int btstack_ring_buffer_write(btstack_ring_buffer_t * ring_buffer, uint8_t * dat
     if (btstack_ring_buffer_bytes_free(ring_buffer) < data_length){
         return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     }
+
+    // simplify logic below by asserting data_length > 0
+    if (data_length == 0) return 0;
 
     // copy first chunk
     unsigned int bytes_until_end = ring_buffer->size - ring_buffer->last_written_index;
@@ -116,6 +119,9 @@ void btstack_ring_buffer_read(btstack_ring_buffer_t * ring_buffer, uint8_t * dat
     data_length = btstack_min(data_length, btstack_ring_buffer_bytes_available(ring_buffer));
     *number_of_bytes_read = data_length;
 
+    // simplify logic below by asserting data_length > 0
+    if (data_length == 0) return;
+
     // copy first chunk
     unsigned int bytes_until_end = ring_buffer->size - ring_buffer->last_read_index;
     unsigned int bytes_to_copy = btstack_min(bytes_until_end, data_length);
@@ -135,7 +141,7 @@ void btstack_ring_buffer_read(btstack_ring_buffer_t * ring_buffer, uint8_t * dat
         ring_buffer->last_read_index += data_length;
     }
 
-    // clear full flag 
+    // clear full flag
     ring_buffer->full = 0;
 } 
 

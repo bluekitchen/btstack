@@ -138,10 +138,12 @@ COMMON = \
     hci.o                     \
     hci_cmd.o                 \
     hci_dump.o                \
-    btstack_uart_block_embedded.o
+    btstack_uart_block_embedded.o \
+    hal_flash_bank_mxc.o    \
+    btstack_tlv_flash_bank.o \
 
 CLASSIC = \
-    btstack_link_key_db_memory.o \
+    btstack_link_key_db_tlv.o \
     rfcomm.o                  \
     sdp_util.o              \
     spp_server.o            \
@@ -152,7 +154,7 @@ CLASSIC = \
 BLE = \
     att_db.o                      \
     att_server.o              \
-    le_device_db_memory.o  \
+    le_device_db_tlv.o  \
     att_dispatch.o            \
     sm.o \
     ancs_client.o \

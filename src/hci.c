@@ -1054,6 +1054,22 @@ static void hci_initializing_next_state(void){
     hci_stack->substate = (hci_substate_t )( ((int) hci_stack->substate) + 1);
 }
 
+#ifdef ENABLE_CLASSIC
+static void hci_replace_bd_addr_placeholder(uint8_t * data, uint16_t size){
+    const int bd_addr_string_len = 17;
+    int i = 0;
+    while (i < size - bd_addr_string_len){
+        if (memcmp(&data[i], "00:00:00:00:00:00", bd_addr_string_len)) {
+            i++;
+            continue;
+        }
+        // set real address
+        memcpy(&data[i], bd_addr_to_str(hci_stack->local_bd_addr), bd_addr_string_len);
+        i += bd_addr_string_len;
+    }
+}
+#endif
+
 // assumption: hci_can_send_command_packet_now() == true
 static void hci_initializing_run(void){
     log_debug("hci_initializing_run: substate %u, can send %u", hci_stack->substate, hci_can_send_command_packet_now());
@@ -1243,20 +1259,24 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_WRITE_CLASS_OF_DEVICE;
             hci_send_cmd(&hci_write_class_of_device, hci_stack->class_of_device);
             break;
-        case HCI_INIT_WRITE_LOCAL_NAME:
+        case HCI_INIT_WRITE_LOCAL_NAME: {
             hci_stack->substate = HCI_INIT_W4_WRITE_LOCAL_NAME;
-            if (hci_stack->local_name){
-                hci_send_cmd(&hci_write_local_name, hci_stack->local_name);
-            } else {
-                char local_name[8+17+1];
-                // BTstack 11:22:33:44:55:66
-                memcpy(local_name, "BTstack ", 8);
-                memcpy(&local_name[8], bd_addr_to_str(hci_stack->local_bd_addr), 17);   // strlen(bd_addr_to_str(...)) = 17
-                local_name[8+17] = '\0';
-                log_info("---> Name %s", local_name);
-                hci_send_cmd(&hci_write_local_name, local_name);
-            }
+            const char * local_name = hci_stack->local_name ? hci_stack->local_name : "BTstack 00:00:00:00:00:00";
+            hci_reserve_packet_buffer();
+            uint8_t * packet = hci_stack->hci_packet_buffer;
+            // construct HCI Command and send
+            uint16_t opcode = hci_write_local_name.opcode;
+            hci_stack->last_cmd_opcode = opcode;
+            packet[0] = opcode & 0xff;
+            packet[1] = opcode >> 8;
+            packet[2] = DEVICE_NAME_LEN;
+            memset(&packet[3], 0, DEVICE_NAME_LEN);
+            memcpy(&packet[3], local_name, strlen(local_name));
+            // expand '00:00:00:00:00:00' in name with bd_addr
+            hci_replace_bd_addr_placeholder(&packet[3], DEVICE_NAME_LEN);
+            hci_send_cmd_packet(packet, HCI_CMD_HEADER_SIZE + DEVICE_NAME_LEN);
             break;
+        }
         case HCI_INIT_WRITE_EIR_DATA:
             hci_stack->substate = HCI_INIT_W4_WRITE_EIR_DATA;
             hci_send_cmd(&hci_write_extended_inquiry_response, 0, hci_stack->eir_data);                        
@@ -1518,8 +1538,9 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             hci_stack->substate = HCI_INIT_READ_BD_ADDR;
             return;            
         case HCI_INIT_W4_SET_BD_ADDR:
-            // for STLC2500D, bd addr change only gets active after sending reset command
-            if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_ST_MICROELECTRONICS){
+            // for STLC2500D + ATWILC3000, bd addr change only gets active after sending reset command
+            if ((hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_ST_MICROELECTRONICS)
+            ||  (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_ATMEL_CORPORATION)){
                 hci_stack->substate = HCI_INIT_SEND_RESET_ST_WARM_BOOT;
                 return;
             }
@@ -2949,7 +2970,10 @@ static void hci_run(void){
         }
         if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_ADV_DATA){
             hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_ADV_DATA;
-            hci_send_cmd(&hci_le_set_advertising_data, hci_stack->le_advertisements_data_len, hci_stack->le_advertisements_data);
+            uint8_t adv_data_clean[31];
+            memset(adv_data_clean, 0, sizeof(adv_data_clean));
+            memcpy(adv_data_clean, hci_stack->le_advertisements_data, hci_stack->le_advertisements_data_len);
+            hci_send_cmd(&hci_le_set_advertising_data, hci_stack->le_advertisements_data_len, adv_data_clean);
             return;
         }
         if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA){

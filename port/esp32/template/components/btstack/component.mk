@@ -14,6 +14,8 @@ $(NAME)_COMPONENTS += micro-ecc
 COMPONENT_ADD_INCLUDEDIRS := \
 	${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include \
 	${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include \
+	${BTSTACK_ROOT}/3rd-party/hxcmod-player \
+	${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods \
 	$(BTSTACK_ROOT)/src/classic \
 	$(BTSTACK_ROOT)/src/ble/gatt-service \
 	$(BTSTACK_ROOT)/src/ble \
@@ -24,6 +26,10 @@ COMPONENT_ADD_INCLUDEDIRS := \
 	include \
 
 COMPONENT_SRCDIRS := \
+	${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce \
+	${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce \
+	${BTSTACK_ROOT}/3rd-party/hxcmod-player \
+	${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods \
 	$(BTSTACK_ROOT)/src/ble/gatt-service \
 	$(BTSTACK_ROOT)/src/ble \
 	$(BTSTACK_ROOT)/src/classic \

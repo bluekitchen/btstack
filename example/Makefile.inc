@@ -5,7 +5,6 @@ VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/example
 VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player
-VPATH += ${BTSTACK_ROOT}/3rd-party/mbedtls/library
 VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce 
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder//srce
@@ -108,35 +107,34 @@ HXCMOD_PLAYER = \
 	${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c 	\
 
 EXAMPLES = 					\
-	avdtp_sink_demo       	\
 	a2dp_sink_demo			\
-	avdtp_source_demo       \
+	a2dp_source_demo       \
 	ancs_client_demo		\
 	gap_dedicated_bonding	\
 	gap_inquiry 			\
+	gap_le_advertisements   \
 	gatt_battery_query		\
 	gatt_browser            \
+	hfp_ag_demo             \
+	hfp_hf_demo             \
 	hid_keyboard_demo 	    \
+	hsp_ag_demo             \
+	hsp_hs_demo             \
 	le_counter              \
 	le_streamer				\
 	le_streamer_client      \
 	led_counter				\
+	pbap_client_demo		\
 	sdp_bnep_query 			\
 	sdp_general_query		\
 	sdp_rfcomm_query		\
+	sm_pairing_central      \
+	sm_pairing_peripheral   \
 	spp_and_le_counter 		\
 	spp_and_le_streamer     \
 	spp_counter 			\
 	spp_streamer			\
 	spp_streamer_client     \
-	gap_le_advertisements   \
-	hfp_ag_demo             \
-	hfp_hf_demo             \
-	hsp_ag_demo             \
-	hsp_hs_demo             \
-	sm_pairing_peripheral   \
-	sm_pairing_central      \
-	pbap_client_demo		\
 
 EXAMPLES_USING_LE =			\
 	ancs_client_demo		\
@@ -251,7 +249,7 @@ ancs_client_demo: ancs_client_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT
 led_counter: ${CORE_OBJ} ${COMMON_OBJ} led_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-gap_le_advertisements: ${CORE_OBJ} ${COMMON_OBJ} gap_le_advertisements.c
+gap_le_advertisements: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ}  gap_le_advertisements.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hsp_hs_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hsp_hs.o hsp_hs_demo.c
@@ -269,17 +267,14 @@ hfp_hf_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODE
 hid_keyboard_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_ring_buffer.o hid_device.o hid_keyboard_demo.o
 	${CC} $^ ${CFLAGS} -I${BTSTACK_ROOT}/platform/posix ${LDFLAGS} -o $@
 
-avdtp_source_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_ENCODER_OBJ} ${SBC_DECODER_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} avdtp_source_demo.c
+a2dp_source_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_ENCODER_OBJ} ${SBC_DECODER_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} avrcp.o avrcp_target.o a2dp_source_demo.c
 	${CC} $^ ${CFLAGS} -I${BTSTACK_ROOT}/platform/posix ${LDFLAGS} -o $@
 
-avdtp_sink_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_ENCODER_OBJ} ${SBC_DECODER_OBJ} ${AVDTP_OBJ}  avdtp_sink_demo.c
-	${CC} $^ ${CFLAGS} -I${BTSTACK_ROOT}/platform/posix ${LDFLAGS} -o $@
-
-a2dp_sink_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_ENCODER_OBJ} ${SBC_DECODER_OBJ} ${AVDTP_OBJ} avrcp.o a2dp_sink_demo.c
+a2dp_sink_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_ENCODER_OBJ} ${SBC_DECODER_OBJ} ${AVDTP_OBJ} avrcp.o avrcp_controller.o a2dp_sink_demo.c
 	${CC} $^ ${CFLAGS} -I${BTSTACK_ROOT}/platform/posix ${LDFLAGS} -o $@
 
 clean:
-	rm -f ${EXAMPLES}
+	rm -f ${EXAMPLES} *_demo
 	rm -f  *.o *.out *.hex *.exe *.wav *.sbc
 	rm -f  ancs_client_demo.h profile.h spp_and_le_counter.h le_counter.h le_streamer.h 
 	rm -f  gatt_battery_query.h gatt_browser.h sm_pairing_peripheral.h

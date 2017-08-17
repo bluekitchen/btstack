@@ -62,10 +62,6 @@
 
 #include "sco_demo_util.h"
 
-#ifdef HAVE_BTSTACK_STDIN
-#include "btstack_stdin.h"
-#endif
-
 uint8_t hfp_service_buffer[150];
 const uint8_t   rfcomm_channel_nr = 1;
 const char hfp_hf_service_name[] = "BTstack HFP HF Demo";
@@ -94,7 +90,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 char cmd;
 
 static void dump_supported_codecs(void){
-    int i;
+    unsigned int i;
     int mSBC_skipped = 0;
     printf("Supported codecs: ");
     for (i = 0; i < sizeof(codecs); i++){
@@ -156,9 +152,7 @@ static void show_usage(void){
     printf("{ - Accept held call(RHH 1)                | } - Reject held call(RHH 2)\n");
     printf("? - Query Subscriber Number (NUM)\n");
     printf("! - Update HF indicator with assigned number 1 (HFI)\n");
-    printf("---\n");
-    printf("Ctrl-c - exit\n");
-    printf("---\n");
+    printf("\n");
 }
 
 static void stdin_process(char c){
@@ -434,7 +428,6 @@ static void stdin_process(char c){
             printf("Update HF indicator with assigned number 1 (HFI)\n");
             hfp_hf_set_hf_indicator(acl_handle, 1, 1);
             break;
-
         default:
             show_usage();
             break;

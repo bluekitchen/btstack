@@ -115,9 +115,7 @@ static void show_usage(void){
     printf("o - set speaker gain 0\n");
     printf("s - set speaker gain 8\n");
     printf("S - set speaker gain 15\n");
-    printf("---\n");
-    printf("Ctrl-c - exit\n");
-    printf("---\n");
+    printf("\n");
 }
 
 #ifdef HAVE_BTSTACK_STDIN
@@ -236,7 +234,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             break;
                         case HSP_SUBEVENT_AG_INDICATION: {
                             memset(hs_cmd_buffer, 0, sizeof(hs_cmd_buffer));
-                            int size = hsp_subevent_ag_indication_get_value_length(event);
+                            unsigned int size = hsp_subevent_ag_indication_get_value_length(event);
                             if (size >= sizeof(hs_cmd_buffer)-1){
                                 size =  sizeof(hs_cmd_buffer)-1;
                             }

@@ -1,11 +1,11 @@
 # BTstack Port for the Espressif ESP32 Platform
 
-Status: Basic port incl. all examples. BTstack runs on dedicated FreeRTOS thread. Multi threading not supported.
+Status: Basic port incl. all examples. BTstack runs on dedicated FreeRTOS thread. Multi threading (calling BTstack functions from a different thread) is not supported.
 
 ## Setup
 
 - Follow [Espressif IoT Development Framework (ESP-IDF) setup](https://github.com/espressif/esp-idf) to install XTensa toolchain and the ESP-IDF.
-- In port/esp32, configure the serial port for firmware upload as described in the ESP-IDF setup guides.
+- In port/esp32/template, configure the serial port for firmware upload as described in the ESP-IDF setup guides.
 
 ## Usage
 
@@ -31,10 +31,14 @@ To get the debug output, run:
 
 You can quit the monitor with CTRL-].
 
+## Configuration
+
+The sdkconfig of the example template disables the original Bluedroid stack by disabling the CONFIG_BLUEDROID_ENABLED kconfig option.
+
 ## Limitations
 
 ### Bug in ESP32 VHCI Implementation
-The Host Controller to Host Flow Control of the Virtual HCI (VHCI) on the ESP32 does not work currently. Without it, it is not possible to slow down incoming data. For most applications, this won't be an issue, but please keep it in mind. See https://github.com/espressif/esp-idf/issues/480
+The Host Controller to Host Flow Control of the Virtual HCI (VHCI) on the ESP32 does not work for LE data (it works for HCI Events and Classic ACL packets). Without it, it is not possible to slow down incoming data. For most applications, this won't be an issue, but please keep it in mind. See https://github.com/espressif/esp-idf/issues/644
 
 ### Multi-Threading
 

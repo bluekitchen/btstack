@@ -128,7 +128,8 @@ static void att_emit_can_send_now_event(void){
 }
 
 static void att_handle_value_indication_timeout(btstack_timer_source_t *ts){
-    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) btstack_run_loop_get_timer_context(ts);
+    void * context = btstack_run_loop_get_timer_context(ts);
+    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) context;
     att_server_t * att_server = att_server_for_handle(con_handle);
     if (!att_server) return;
     uint16_t att_handle = att_server->value_indication_handle;

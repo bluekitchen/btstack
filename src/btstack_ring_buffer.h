@@ -76,14 +76,14 @@ int btstack_ring_buffer_empty(btstack_ring_buffer_t * ring_buffer);
  * @param ring_buffer object
  * @return number of bytes available for read
  */
-int btstack_ring_buffer_bytes_available(btstack_ring_buffer_t * ring_buffer);
+uint32_t btstack_ring_buffer_bytes_available(btstack_ring_buffer_t * ring_buffer);
 
 /**
  * Get free space available for write
  * @param ring_buffer object
  * @return number of bytes available for write
  */
-int btstack_ring_buffer_bytes_free(btstack_ring_buffer_t * ring_buffer);
+uint32_t btstack_ring_buffer_bytes_free(btstack_ring_buffer_t * ring_buffer);
 
 /**
  * Write bytes into ring buffer

@@ -29,7 +29,7 @@ The file *btstack_config.h* contains three parts:
 
 - \#define HAVE_* directives [listed here](#sec:haveDirectives). These directives describe available system properties, similar to config.h in a autoconf setup.
 - \#define ENABLE_* directives [listed here](#sec:enableDirectives). These directives list enabled properties, most importantly ENABLE_CLASSIC and ENABLE_BLE.
-- other #define directives for BTstack configuration, most notably static memory, [see next section](#sec:memoryConfigurationHowTo).
+- other #define directives for BTstack configuration, most notably static memory, [see next section](#sec:memoryConfigurationHowTo) and [NVM configuration](#sec:nvmConfiguration).
 
 <!-- a name "lst:platformConfiguration"></a-->
 <!-- -->
@@ -82,6 +82,7 @@ ENABLE_LE_SECURE_CONNECTIONS    | Enable LE Secure Connections using [mbed TLS l
 ENABLE_LE_DATA_CHANNELS         | Enable LE Data Channels in credit-based flow control mode
 ENABLE_LE_DATA_LENGTH_EXTENSION | Enable LE Data Length Extension support
 ENABLE_LE_SIGNED_WRITE          | Enable LE Signed Writes in ATT/GATT
+ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE | Enable L2CAP Enhanced Retransmission Mode. Mandatory for AVRCP Browsing
 ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL | Enable HCI Controller to Host Flow Control, see below
 ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND | Enable workaround for bug in CC256x Flow Control during baud rate change, see chipset docs.
 
@@ -160,6 +161,19 @@ Listing: Memory configuration for a basic SPP server. {#lst:memoryConfigurationS
 In this example, the size of ACL packets is limited to the minimum of 52 bytes, resulting in an L2CAP MTU of 48 bytes. Only a singleHCI connection can be established at any time. On it, two L2CAP services are provided, which can be active at the same time. Here, these two can be RFCOMM and SDP. Then, memory for one RFCOMM multiplexer is reserved over which one connection can be active. Finally, up to three link keys can be cached in RAM.
 
 <!-- -->
+
+### Non-volatile memory (NVM) directives {#sec:nvmConfiguration}
+
+If implemented, bonding information is stored in Non-volatile memory. For Classic, a single link keys and its type is stored. For LE, the bonding information contains various values (long term key, random number, EDIV, signing counter, identity, ...)Often, this implemented using Flash memory. Then, the number of stored entries are limited by:
+
+<!-- a name "lst:nvmDefines"></a-->
+<!-- -->
+
+#define                   | Description
+--------------------------|------------
+NVM_NUM_LINK_KEYS         | Max number of Classic Link Keys that can be stored 
+NVM_NUM_DEVICE_DB_ENTRIES | Max number of LE Device DB entries that can be stored
+
 
 ## Source tree structure {#sec:sourceTreeHowTo}
 

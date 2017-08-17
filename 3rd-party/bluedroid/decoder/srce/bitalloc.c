@@ -56,7 +56,6 @@ OI_UINT32 OI_SBC_MaxBitpool(OI_CODEC_SBC_FRAME_INFO *frame)
 }
 
 
-PRIVATE OI_UINT16 internal_CalculateFramelen(OI_CODEC_SBC_FRAME_INFO *frame);
 PRIVATE OI_UINT16 internal_CalculateFramelen(OI_CODEC_SBC_FRAME_INFO *frame)
 {
     OI_UINT16 nbits = frame->nrof_blocks * frame->bitpool;
@@ -73,7 +72,6 @@ PRIVATE OI_UINT16 internal_CalculateFramelen(OI_CODEC_SBC_FRAME_INFO *frame)
 }
 
 
-PRIVATE OI_UINT32 internal_CalculateBitrate(OI_CODEC_SBC_FRAME_INFO *frame);
 PRIVATE OI_UINT32 internal_CalculateBitrate(OI_CODEC_SBC_FRAME_INFO *frame)
 {
     OI_UINT blocksbands;

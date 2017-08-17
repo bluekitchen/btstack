@@ -53,17 +53,23 @@ CSR, which has been acquired by Qualcomm, provides all relevant information on t
 
 Chipset              | Type      | HCI Transport  | BD_ADDR (1)  | SCO over HCI (2) | LE DLE | Multiple LE Roles    | BTstack folder | Comment
 -------------------- |-----------| ---------------|--------------|------------------|--------|----------------------|----------------|---------
+Atmel ATWILC3000     | Dual mode | H4             | Yes          | Don't know       | No     |         No           | atwilc3000     | Firmware size: 270 kB
 Broadcom UART        | Dual mode | H4, H5         | Rarely       | Probably (2)     | No     |      Maybe (3)       | bcm            | Max UART baudrate 2 mbps
 Broadcom USB Dongles | Dual mode | USB            | Yes          | Yes              | No     |         No           | bcm            |
 CSR UART             | Dual mode | H4, H5, BCSP   | Rarely       | No (didn't work) | No     |         No           | csr            |
 CSR USB Dongles      | Dual mode | USB            | Mostly       | Yes              | No     |         No           | csr            |
 Dialog DA14581       | LE        | H4, SPI        | No           | n.a.             | No     |         No           | da14581        | Official HCI firmware included in BTstack
+Espressif ESP32      | Dual mode | VHCI           | Yes          | Probably         | Yes    |        Yes           |                | SoC with Bluetooth and Wifi
 EM 9301              | LE        | SPI, H4        | No           | n.a.             | No     |         No           | em9301         | Custom HCI SPI implementation
-EM 9304              | LE        | SPI, H4        | No           | n.a.             | Yes    |     Probably (4)     | em9301         | Custom HCI SPI implementation
-Nordic nRF           | LE        | H4             | Fixed Random | n.a.             | Yes    |         Yes          |                | Requires custom HCI firmware
+EM 9304              | LE        | SPI, H4        | No           | n.a.             | Yes    |        Yes           | em9301         | Custom HCI SPI implementation
+Nordic nRF           | LE        | H4             | Fixed Random | n.a.             | Yes    |        Yes           |                | Requires custom HCI firmware
 STM STLC2500D        | Classic   | H4             | No           | No (didn't try)  | n.a    |         n.a.         | stlc2500d      | Custom deep sleep management not supported
 Toshiba TC35661      | Dual mode | H4             | No           | No (didn't try)  | No     |         No           | tc3566         | HCI version not tested. See below
 TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL | Yes          | Yes              | No     |    Yes for CC256XC   | cc256x         | Also WL185x, WL187x, and WL189x
+
+esp32thing: 24:0A:C4:00:8B:C4
+nina1: 18:FE:34:6D:1B:D2
+nina2: 18:FE:34:6D:17:66
 
 **Notes**:
 
@@ -71,7 +77,16 @@ TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL | Yes          | Yes          
   2. SCO over HCI: All Bluetooth Classic chipsets support SCO over HCI, for those that are marked with No, we either didn't try or didn't found enough information to configure it correctly.
   3. Multiple LE Roles: Apple uses Broadcom Bluetooth+Wifi in their iOS devices and newer iOS versions support multiple concurrent LE roles,
   so at least some Broadcom models support multiple concurrent LE roles.
-  4. Datasheet doesn't mention it, while tech support stated that multiple roles are supported. Doc will be updated after some basic tests on this.
+
+## Atmel/Microchip
+
+The ATILC3000 Bluetooth/Wifi combo controller has been used with Linux on embedded devices by Atmel/Microchip. Drivers and documentation are available from a [GitHub repository](https://github.com/atwilc3000). The ATWILC3000 has a basic HCI implementation stored in ROM and requires a firmware image to be uploaded before it can be used. Please note: the Bluetooth firmware is 270 kB.
+
+**BD Addr** can be set with vendor-specific command although all chipsets have an official address stored. The BD_ADDR lookup results in "Newport Media Inc." which was [acquired by Atmel](http://www.atmel.com/about/news/release.aspx?reference=tcm:26-62532) in 2014.
+
+**Baud rate** can be set with a custom command.
+
+**BTstack integration**: *btstack_chipset_atwilc3000.c* contains the code to download the Bluetooth firmware image into the RAM of the ATWILC3000. After that, it can be normally used by BTstack.
 
 ## Broadcom
 
@@ -121,7 +136,7 @@ SCO Data is routed over HCI for USB dongles, but not for UART connections. HSP a
 
 Dialog Semiconductor offers the DA14581, an LE-only SoC that can be programmed with an HCI firmware. The HCI firmware can be uploaded on boot into SRAM or stored in the OTP (One-time programmable) memory, or in an external SPI.
 
-IT does not implement the Data Length Extension or supports multiple concurrent roles.
+It does not implement the Data Length Extension or supports multiple concurrent roles.
 
 **BD Addr** fixed to 80:EA:CA:00:00:01. No command in HCI firmware to set it differently. Random addresses could be used instead.
 
@@ -129,23 +144,27 @@ IT does not implement the Data Length Extension or supports multiple concurrent 
 
 **BTstack integration**: *btstack_chipset_da14581.c* contains the code to download the provided HCI firmware into the SRAM of the DA14581. After that, it can be used as any other HCI chipset.
 
+## Espressif ESP32
+
+The ESP32 is a SoC with a built-in Dual mode Bluetooth and Wifi radio. The HCI Controller is implemented in software and accessed via a so called Virtual HCI (VHCI) interface. It supports both LE Data Length Extensions (DLE) as well as multiple LE roles. Flow control between the VHCI and BTstack is problematic as there's no way to stop the VHCI from delivering packets. BTstack impelemts the Host Controller to Host Flow Control to deal with this. Right now, this works for HCI Events and Classic ACL packets but not for LE ACL packets. Espressif is working on a solution for this: https://github.com/espressif/esp-idf/issues/644
+
 ## EM Microelectronic Marin
 
 For a long time, the EM9301 has been the only Bluetooth Single-Mode LE chipset with an HCI interface. The EM9301 can be connected via SPI or UART. The UART interface does not support hardware flow control and is not recommended for use with BTstack. The SPI mode uses a proprietary but documented extension to implement flow control and signal if the EM9301 has data to send.
 
-In December 2016, EM released the new EM9304 that also features an HCI mode and supports the Bluetooth 4.2. specification. It seems to support the Data Length Extension and probably also supports multiple LE roles. The EM9304 is a larger MCU that allows to run custom code on it. For this, an advanced mechanism to upload configuration and firmware to RAM or into an One-Time-Programmable area of 128 kB is supported. It supports a superset of the vendor specific commands of the EM9301.
+In December 2016, EM released the new EM9304 that also features an HCI mode and adds support for optional Bluetooth 4.2. features. It supports the Data Length Extension and up to 8 LE roles. The EM9304 is a larger MCU that allows to run custom code on it. For this, an advanced mechanism to upload configuration and firmware to RAM or into an One-Time-Programmable area of 128 kB is supported. It supports a superset of the vendor specific commands of the EM9301.
 
-EM9304 is used by the 'stm32-l053r8-em9304' port in BTstack. The port.c file also contains an IRQ driven implementation of the SPI H4 protocol specified in the [datasheet](http://www.emmicroelectronic.com/sites/default/files/public/products/datasheets/9304-ds_0.pdf).
+EM9304 is used by the 'stm32-l053r8-em9304' port in BTstack. The port.c file also contains an IRQ+DMA-driven implementation of the SPI H4 protocol specified in the [datasheet](http://www.emmicroelectronic.com/sites/default/files/public/products/datasheets/9304-ds_0.pdf).
 
 **BD Addr** must be set during startup since it does not have a stored fix address.
 
 **SCO data** is not supported since it is LE only.
 
-**Baud rate** could be set for UART mode. For SPI, the master controls the speed via the SPI Clock line.
+**Baud rate** could be set for UART mode. For SPI, the master controls the speed via the SPI Clock line. With 3.3V, 16 Mhz is supported.
 
 **Init scripts** are not required although it is possible to upload small firmware patches to RAM or the OTP memory.
 
-**BTstack integration**: The common code for the EM9301 is provided by *btstack_chipset_em9301.c*. During the setup, *btstack_chipset_em9301_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. It enables to set the BD Addr during start. The chipset support can be used with the newer EM9304 as well.
+**BTstack integration**: The common code for the EM9304 is provided by *btstack_chipset_em9301.c*. During the setup, *btstack_chipset_em9301_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. It enables to set the BD Addr during start.
 
 
 ## Nordic nRF5 series
@@ -171,7 +190,7 @@ To use these chipsets with BTstack, you need to install an arm-none-eabi gcc too
   * Install [J-Link Software and documentation pack](https://www.segger.com/jlink-software.html).
   * Get nrfjprog as part of the [nRFx-Command-Line-Tools](http://www.nordicsemi.com/eng/Products/Bluetooth-low-energy/nRF52-DK). Click on Downloads tab on the top and look for your OS.
   * [Checkout Zephyr and install toolchain](https://www.zephyrproject.org/doc/getting_started/getting_started.html). We recommend using the [arm-non-eabi gcc binaries](https://launchpad.net/gcc-arm-embedded) instead of compiling it yourself. At least on OS X, this failed for us.
-  * Download our [patch](https://raw.githubusercontent.com/bluekitchen/btstack/develop/port/nrf5-zephyr/hci_firmware.patch) into the Zephyr root folder and apply it there:
+  * Download our [patch](https://raw.githubusercontent.com/bluekitchen/btstack/master/port/nrf5-zephyr/hci_firmware.patch) into the Zephyr root folder and apply it there:
 
 <!-- -->
       $ patch -p1 < hci_firmware.patch

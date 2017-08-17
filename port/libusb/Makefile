@@ -8,7 +8,7 @@ COMMON  += hci_transport_h2_libusb.c btstack_run_loop_posix.c le_device_db_fs.c 
 include ${BTSTACK_ROOT}/example/Makefile.inc
 
 # CC = gcc-fsf-4.9
-CFLAGS  += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror -Wunused-parameter
+CFLAGS  += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror -Wunused-parameter -Wredundant-decls -Wsign-compare
 # CFLAGS += -Werror
 
 CFLAGS += -I${BTSTACK_ROOT}/platform/posix \
@@ -32,6 +32,7 @@ endif
 # use pkg-config for portaudio
 # CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags) -DHAVE_PORTAUDIO
 # LDFLAGS += $(shell pkg-config portaudio-2.0 --libs)
+
 # hard coded flags for portaudio in /usr/local/lib
 # CFLAGS  += -I/usr/local/include -DHAVE_PORTAUDIO
 # LDFLAGS += -L/sw/lib -lportaudio -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,AudioUnit -Wl,-framework,Carbon
