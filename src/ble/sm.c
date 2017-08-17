@@ -2572,7 +2572,19 @@ static void sm_run(void){
                     bd_addr_t local_address;
                     uint8_t buffer[8];
                     buffer[0] = SM_CODE_IDENTITY_ADDRESS_INFORMATION;
-                    gap_le_get_own_address(&buffer[1], local_address);
+                    switch (gap_random_address_get_mode()){
+                        case GAP_RANDOM_ADDRESS_TYPE_OFF:
+                        case GAP_RANDOM_ADDRESS_TYPE_STATIC:
+                            // public or static random
+                            gap_le_get_own_address(&buffer[1], local_address);
+                            break;
+                        case GAP_RANDOM_ADDRESS_NON_RESOLVABLE:
+                        case GAP_RANDOM_ADDRESS_RESOLVABLE:
+                            // fallback to public
+                            gap_local_bd_addr(local_address);
+                            buffer[1] = 0;
+                            break;
+                    }
                     reverse_bd_addr(local_address, &buffer[2]);
                     l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                     sm_timeout_reset(connection);
