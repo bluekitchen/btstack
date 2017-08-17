@@ -38,6 +38,7 @@
 #include "lp.h"
 #include "uart.h"
 #include "board.h"
+#include "led.h"
 #include "btstack_debug.h"
 
 #include "btstack.h"
@@ -69,6 +70,8 @@ const gpio_cfg_t PAN1326_HCIRTS = { PORT_0, PIN_3, GPIO_FUNC_GPIO,
 static void dummy_handler(void) {};
 static void (*rx_done_handler)(void) = dummy_handler;
 static void (*tx_done_handler)(void) = dummy_handler;
+
+
 
 void hal_cpu_disable_irqs(void)
 {
@@ -269,10 +272,15 @@ static hci_transport_config_uart_t config = {
 // hal_led.h implementation
 #include "hal_led.h"
 void hal_led_off(void){
+	LED_Off(LED_BLUE);
 }
+
 void hal_led_on(void){
+	LED_On(LED_BLUE);
 }
+
 void hal_led_toggle(void){
+	LED_Toggle(LED_BLUE);
 }
 
 #include "hal_flash_bank_mxc.h"
@@ -290,6 +298,10 @@ static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
 
 int bluetooth_main(void)
 {
+	LED_Off(LED_GREEN);
+	LED_On(LED_RED);
+	LED_Off(LED_BLUE);
+
 	bt_comm_init();
 	/* BT Stack Initialization */
 	btstack_memory_init();
