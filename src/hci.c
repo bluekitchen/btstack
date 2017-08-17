@@ -1301,7 +1301,7 @@ static void hci_initializing_run(void){
             }
             // expand '00:00:00:00:00:00' in name with bd_addr
             hci_replace_bd_addr_placeholder(&packet[4], 240);
-            hci_send_cmd_packet(packet, HCI_CMD_HEADER_SIZE + DEVICE_NAME_LEN);
+            hci_send_cmd_packet(packet, HCI_CMD_HEADER_SIZE + 1 + 240);
             break;
         }
         case HCI_INIT_WRITE_INQUIRY_MODE:
