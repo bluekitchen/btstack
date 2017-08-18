@@ -464,15 +464,13 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
     UNUSED(size);
 
     hfp_connection_t * hfp_connection = connection_doing_sdp_query;
-    
-    if ( hfp_connection->state != HFP_W4_SDP_QUERY_COMPLETE) return;
-    
+    if (!hfp_connection) {
+        log_error("handle_query_rfcomm_event, no connection");
+        return;
+    }
+
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
-            if (!hfp_connection) {
-                log_error("handle_query_rfcomm_event alloc connection for RFCOMM port %u failed", sdp_event_query_rfcomm_service_get_rfcomm_channel(packet));
-                return;
-            }
             hfp_connection->rfcomm_channel_nr = sdp_event_query_rfcomm_service_get_rfcomm_channel(packet);
             break;
         case SDP_EVENT_QUERY_COMPLETE:
@@ -483,6 +481,8 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
                 rfcomm_create_channel(rfcomm_packet_handler, hfp_connection->remote_addr, hfp_connection->rfcomm_channel_nr, NULL); 
                 break;
             }
+            hfp_connection->state = HFP_IDLE;
+            hfp_emit_slc_connection_event(hfp_callback, sdp_event_query_complete_get_status(packet), HCI_CON_HANDLE_INVALID, hfp_connection->remote_addr);
             log_info("rfcomm service not found, status %u.", sdp_event_query_complete_get_status(packet));
             break;
         default:
