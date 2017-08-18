@@ -264,6 +264,11 @@ LIBUSB_CALL static void async_callback(struct libusb_transfer *transfer){
 
     int c;
 
+    if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED){
+        log_info("shutdown, transfer %p", transfer);
+    }
+
+
     // identify and free transfers as part of shutdown
 #ifdef ENABLE_SCO_OVER_HCI
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED || sco_shutdown) {
@@ -1105,6 +1110,8 @@ static int usb_close(void){
     int c;
     int completed = 0;
 
+    log_info("usb_close");
+
     switch (libusb_state){
         case LIB_USB_CLOSED:
             break;
@@ -1134,22 +1141,26 @@ static int usb_close(void){
             libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_ERROR);
             for (c = 0 ; c < EVENT_IN_BUFFER_COUNT ; c++) {
                 if (event_in_transfer[c]){
+                    log_info("cancel event_in_transfer[%u] = %p", c, event_in_transfer[c]);
                     libusb_cancel_transfer(event_in_transfer[c]);
                 }
             }
             for (c = 0 ; c < ACL_IN_BUFFER_COUNT ; c++) {
                 if (acl_in_transfer[c]){
+                    log_info("cancel acl_in_transfer[%u] = %p", c, acl_in_transfer[c]);
                     libusb_cancel_transfer(acl_in_transfer[c]);
                 }
             }
 #ifdef ENABLE_SCO_OVER_HCI
             for (c = 0 ; c < SCO_IN_BUFFER_COUNT ; c++) {
                 if (sco_in_transfer[c]){
+                    log_info("cancel sco_in_transfer[%u] = %p", c, sco_in_transfer[c]);
                     libusb_cancel_transfer(sco_in_transfer[c]);
                 }
             }
             for (c = 0; c < SCO_OUT_BUFFER_COUNT ; c++){
                 if (sco_out_transfers_in_flight[c]) {
+                    log_info("cancel sco_out_transfers[%u] = %p", c, sco_out_transfers[c]);
                     libusb_cancel_transfer(sco_out_transfers[c]);
                 } else {
                     libusb_free_transfer(sco_out_transfers[c]);
@@ -1159,8 +1170,15 @@ static int usb_close(void){
 #endif
             libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_WARNING);
 
-            // wait until all transfers are completed
+            // wait until all transfers are completed - or 20 iterations
+            int countdown = 20;
             while (!completed){
+
+                if (--countdown == 0){
+                    log_info("Not all transfers cancelled, leaking a bit.");
+                    break;
+                }
+
                 struct timeval tv;
                 memset(&tv, 0, sizeof(struct timeval));
                 libusb_handle_events_timeout(NULL, &tv);
@@ -1168,6 +1186,7 @@ static int usb_close(void){
                 completed = 1;
                 for (c=0;c<EVENT_IN_BUFFER_COUNT;c++){
                     if (event_in_transfer[c]) {
+                        log_info("event_in_transfer[%u] still active (%p)", c, event_in_transfer[c]);
                         completed = 0;
                         break;
                     }
@@ -1177,6 +1196,7 @@ static int usb_close(void){
 
                 for (c=0;c<ACL_IN_BUFFER_COUNT;c++){
                     if (acl_in_transfer[c]) {
+                        log_info("acl_in_transfer[%u] still active (%p)", c, acl_in_transfer[c]);
                         completed = 0;
                         break;
                     }
@@ -1188,6 +1208,7 @@ static int usb_close(void){
                 // Cancel all synchronous transfer
                 for (c = 0 ; c < SCO_IN_BUFFER_COUNT ; c++) {
                     if (sco_in_transfer[c]){
+                        log_info("sco_in_transfer[%u] still active (%p)", c, sco_in_transfer[c]);
                         completed = 0;
                         break;
                     }
@@ -1197,6 +1218,7 @@ static int usb_close(void){
 
                 for (c=0; c < SCO_OUT_BUFFER_COUNT ; c++){
                     if (sco_out_transfers[c]){
+                        log_info("sco_out_transfers[%u] still active (%p)", c, sco_out_transfers[c]);
                         completed = 0;
                         break;
                     }
