@@ -119,6 +119,7 @@ PROJ_CFLAGS += \
     -I${BTSTACK_ROOT}/example \
     -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include \
 	-I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include \
+	-I${BTSTACK_ROOT}/3rd-party/micro-ecc \
 	-I${BTSTACK_ROOT}/3rd-party/hxcmod-player \
 
 
@@ -141,8 +142,9 @@ COMMON = \
     hci_cmd.o                 \
     hci_dump.o                \
     btstack_uart_block_embedded.o \
-    hal_flash_bank_mxc.o    \
-    btstack_tlv_flash_bank.o \
+    hal_flash_bank_mxc.o      \
+    btstack_tlv_flash_bank.o  \
+    btstack_stdin_embedded.o  \
 
 CLASSIC = \
     btstack_link_key_db_tlv.o \
@@ -162,7 +164,8 @@ BLE = \
     ancs_client.o \
     gatt_client.o \
     hid_device.o \
-    battery_service_server.o
+    battery_service_server.o \
+    uECC.o \
 
 AVDTP += \
 	avdtp_util.c  		\
@@ -175,6 +178,8 @@ AVDTP += \
 	a2dp_sink.c  		\
 	btstack_ring_buffer.c \
 	avrcp.c \
+	avrcp_target.c \
+	avrcp_controller.c \
 
 HFP_OBJ += sco_demo_util.o btstack_ring_buffer.o hfp.o hfp_gsm_model.o hfp_ag.o hfp_hf.o
 
