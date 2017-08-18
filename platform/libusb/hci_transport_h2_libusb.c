@@ -1133,14 +1133,20 @@ static int usb_close(void){
             // Cancel all transfers, ignore warnings for this
             libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_ERROR);
             for (c = 0 ; c < EVENT_IN_BUFFER_COUNT ; c++) {
-                libusb_cancel_transfer(event_in_transfer[c]);
+                if (event_in_transfer[c]){
+                    libusb_cancel_transfer(event_in_transfer[c]);
+                }
             }
             for (c = 0 ; c < ACL_IN_BUFFER_COUNT ; c++) {
-                libusb_cancel_transfer(acl_in_transfer[c]);
+                if (acl_in_transfer[c]){
+                    libusb_cancel_transfer(acl_in_transfer[c]);
+                }
             }
 #ifdef ENABLE_SCO_OVER_HCI
             for (c = 0 ; c < SCO_IN_BUFFER_COUNT ; c++) {
-                libusb_cancel_transfer(sco_in_transfer[c]);
+                if (sco_in_transfer[c]){
+                    libusb_cancel_transfer(sco_in_transfer[c]);
+                }
             }
             for (c = 0; c < SCO_OUT_BUFFER_COUNT ; c++){
                 if (sco_out_transfers_in_flight[c]) {
