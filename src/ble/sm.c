@@ -2982,16 +2982,12 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
             
 		case HCI_EVENT_PACKET:
 			switch (hci_event_packet_get_type(packet)) {
-				
+
                 case BTSTACK_EVENT_STATE:
 					// bt stack activated, get started
 					if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                         log_info("HCI Working!");
 
-                        // set local addr for le device db
-                        bd_addr_t local_bd_addr;
-                        gap_local_bd_addr(local_bd_addr);
-                        le_device_db_set_local_bd_addr(local_bd_addr);
 
                         dkg_state = sm_persistent_irk_ready ? DKG_CALC_DHK : DKG_CALC_IRK;
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
@@ -3213,12 +3209,15 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         // Hack for Nordic nRF5 series that doesn't have public address:
                         // - with patches from port/nrf5-zephyr, hci_read_bd_addr returns random static address
                         // - we use this as default for advertisements/connections
+                        bd_addr_t addr;
+                        reverse_bd_addr(&packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1], addr);
                         if (hci_get_manufacturer() == BLUETOOTH_COMPANY_ID_NORDIC_SEMICONDUCTOR_ASA){
                             log_info("nRF5: using (fake) public address as random static address");
-                            bd_addr_t addr;
-                            reverse_bd_addr(&packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1], addr);
                             gap_random_address_set(addr);
                         }
+
+                        // set local addr for le device db
+                        le_device_db_set_local_bd_addr(addr);
                     }
                     break;
                 default:
