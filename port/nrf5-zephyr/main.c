@@ -1,76 +1,38 @@
 /*
- * Copyright (C) 2016 BlueKitchen GmbH
+ * Copyright (c) 2016 Nordic Semiconductor ASA
+ * Copyright (c) 2015-2016 Intel Corporation
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the copyright holders nor the names of
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- * 4. Any redistribution, use, or modification is done solely for
- *    personal benefit and not for any commercial purpose or for
- *    monetary gain.
- *
- * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
- * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
- * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * Please inquire about commercial licensing options at 
- * contact@bluekitchen-gmbh.com
- *
+ * SPDX-License-Identifier: Apache-2.0
  */
 
-#define __BTSTACK_FILE__ "main.c"
- /**
-  * BTstack port for Zephyr Bluetooth Controller
-  *
-  * Data Sources aside from the HCI Controller are not supported yet 
-  * Timers are supported by waiting on the HCI Controller RX queue until the next timeout is due
-  */
-
-// libc
 #include <errno.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 
-// zephyr
+#include <zephyr.h>
 #include <arch/cpu.h>
+#include <misc/byteorder.h>
+#include <logging/sys_log.h>
+#include <misc/util.h>
+
 #include <device.h>
 #include <init.h>
-#include <misc/byteorder.h>
-#include <misc/kernel_event_logger.h>
-#include <misc/sys_log.h>
-#include <misc/util.h>
-#include <net/buf.h>
-#include <sys_clock.h>
 #include <uart.h>
-#include <zephyr.h>
 
-// Bluetooth Controller
-#include "ll.h"
+#include <net/buf.h>
 #include <bluetooth/bluetooth.h>
+#include <bluetooth/l2cap.h>
 #include <bluetooth/hci.h>
 #include <bluetooth/buf.h>
 #include <bluetooth/hci_raw.h>
 
-// Nordic NFK
+#include "ll.h"
+
+// Nordic NDK
 #include "nrf.h"
+
+#include "common/log.h"
 
 // BTstack
 #include "btstack_debug.h"
@@ -81,50 +43,45 @@
 #include "hci_dump.h"
 #include "hci_transport.h"
 
-static btstack_packet_callback_registration_t hci_event_callback_registration;
+// static struct device *hci_uart_dev;
+// static BT_STACK_NOINIT(tx_thread_stack, CONFIG_BT_HCI_TX_STACK_SIZE);
+// static struct k_thread tx_thread_data;
 
-static void (*transport_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
+/* HCI command buffers */
+#define CMD_BUF_SIZE BT_BUF_RX_SIZE
+NET_BUF_POOL_DEFINE(cmd_tx_pool, CONFIG_BT_HCI_CMD_COUNT, CMD_BUF_SIZE, BT_BUF_USER_DATA_MIN, NULL);
+
+#if defined(CONFIG_BT_CTLR)
+#define BT_L2CAP_MTU (CONFIG_BT_CTLR_TX_BUFFER_SIZE - BT_L2CAP_HDR_SIZE)
+#else
+#define BT_L2CAP_MTU 65 /* 64-byte public key + opcode */
+#endif /* CONFIG_BT_CTLR */
+
+/** Data size needed for ACL buffers */
+#define BT_BUF_ACL_SIZE BT_L2CAP_BUF_SIZE(BT_L2CAP_MTU)
+
+#if defined(CONFIG_BT_CTLR_TX_BUFFERS)
+#define TX_BUF_COUNT CONFIG_BT_CTLR_TX_BUFFERS
+#else
+#define TX_BUF_COUNT 6
+#endif
+
+NET_BUF_POOL_DEFINE(acl_tx_pool, TX_BUF_COUNT, BT_BUF_ACL_SIZE, BT_BUF_USER_DATA_MIN, NULL);
+
+static K_FIFO_DEFINE(tx_queue);
+static K_FIFO_DEFINE(rx_queue);
 
 //
 // hci_transport_zephyr.c
 //
 
-/* HCI command buffers */
-#define CMD_BUF_SIZE (CONFIG_BLUETOOTH_HCI_SEND_RESERVE + \
-		      sizeof(struct bt_hci_cmd_hdr) + \
-		      CONFIG_BLUETOOTH_MAX_CMD_LEN)
-
-static struct nano_fifo avail_cmd_tx;
-static NET_BUF_POOL(cmd_tx_pool, CONFIG_BLUETOOTH_HCI_CMD_COUNT, CMD_BUF_SIZE,
-		    &avail_cmd_tx, NULL, BT_BUF_USER_DATA_MIN);
-
-#define BT_L2CAP_MTU 64
-/** Data size needed for ACL buffers */
-#define BT_BUF_ACL_SIZE (CONFIG_BLUETOOTH_HCI_RECV_RESERVE + \
-			 sizeof(struct bt_hci_acl_hdr) + \
-			 4 /* L2CAP header size */ + \
-			 BT_L2CAP_MTU)
-
-static struct nano_fifo avail_acl_tx;
-static NET_BUF_POOL(acl_tx_pool, CONFIG_BLUETOOTH_CONTROLLER_TX_BUFFERS,
-		    BT_BUF_ACL_SIZE, &avail_acl_tx, NULL, BT_BUF_USER_DATA_MIN);
-
-static struct nano_fifo rx_queue;
-static struct nano_fifo tx_queue;
+static void (*transport_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 /**
  * init transport
  * @param transport_config
  */
 static void transport_init(const void *transport_config){
-	/* Initialize the buffer pools */
-	net_buf_pool_init(cmd_tx_pool);
-	net_buf_pool_init(acl_tx_pool);
-
-	/* Initialize the FIFOs */
-	nano_fifo_init(&tx_queue);
-	nano_fifo_init(&rx_queue);
-
 	/* startup Controller */
 	bt_enable_raw(&rx_queue);
 }
@@ -161,7 +118,7 @@ static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size)
 	struct net_buf *buf;
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
-			buf = net_buf_get(&avail_cmd_tx, 0);
+			buf = net_buf_alloc(&cmd_tx_pool, K_NO_WAIT);
 			if (buf) {
 				bt_buf_set_type(buf, BT_BUF_CMD);
 				memcpy(net_buf_add(buf, size), packet, size);
@@ -171,7 +128,7 @@ static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size)
 			}
             break;
         case HCI_ACL_DATA_PACKET:
-			buf = net_buf_get(&avail_acl_tx, 0);
+			buf = net_buf_alloc(&acl_tx_pool, K_NO_WAIT);
 			if (buf) {
 				bt_buf_set_type(buf, BT_BUF_ACL_OUT);
 				memcpy(net_buf_add(buf, size), packet, size);
@@ -222,26 +179,19 @@ static void transport_deliver_controller_packet(struct net_buf * buf){
 		net_buf_unref(buf);
 }
 
+
 // btstack_run_loop_zephry.c
 
 // the run loop
 static btstack_linked_list_t timers;
 
-static int sys_clock_ms_per_tick;	// set in btstack_run_loop_zephyr_init()
-
+// TODO: handle 32 bit ms time overrun
 static uint32_t btstack_run_loop_zephyr_get_time_ms(void){
-	return sys_tick_get_32() * sys_clock_ms_per_tick;
-}
-
-static uint32_t btstack_run_loop_zephyr_ticks_for_ms(uint32_t time_in_ms){
-    return time_in_ms / sys_clock_ms_per_tick;
+	return  k_uptime_get_32();
 }
 
 static void btstack_run_loop_zephyr_set_timer(btstack_timer_source_t *ts, uint32_t timeout_in_ms){
-    uint32_t ticks = btstack_run_loop_zephyr_ticks_for_ms(timeout_in_ms);
-    if (ticks == 0) ticks++;
-    // time until next tick is < hal_tick_get_tick_period_in_ms() and we don't know, so we add one
-    ts->timeout = sys_tick_get_32() + 1 + ticks; 
+    ts->timeout = k_uptime_get_32() + 1 + timeout_in_ms; 
 }
 
 /**
@@ -287,10 +237,10 @@ static void btstack_run_loop_zephyr_dump_timer(void){
 static void btstack_run_loop_zephyr_execute(void) {
     while (1) {
         // get next timeout
-        int32_t timeout_ticks = TICKS_UNLIMITED;
+        int32_t timeout_ticks = K_FOREVER;
         if (timers) {
             btstack_timer_source_t * ts = (btstack_timer_source_t *) timers;
-            uint32_t now = sys_tick_get_32();
+            uint32_t now = k_uptime_get_32();
             if (ts->timeout < now){
                 // remove timer before processing it to allow handler to re-register with run loop
                 btstack_run_loop_remove_timer(ts);
@@ -302,7 +252,7 @@ static void btstack_run_loop_zephyr_execute(void) {
         }
                 
  	   	// process RX fifo only
-    	struct net_buf *buf = net_buf_get_timeout(&rx_queue, 0, timeout_ticks);
+    	struct net_buf *buf = net_buf_get(&rx_queue, timeout_ticks);
 		if (buf){
 			transport_deliver_controller_packet(buf);
 		}
@@ -311,8 +261,6 @@ static void btstack_run_loop_zephyr_execute(void) {
 
 static void btstack_run_loop_zephyr_btstack_run_loop_init(void){
     timers = NULL;
-    sys_clock_ms_per_tick  = sys_clock_us_per_tick / 1000;
-    log_info("btstack_run_loop_init: ms_per_tick %u", sys_clock_ms_per_tick);
 }
 
 static const btstack_run_loop_t btstack_run_loop_wiced = {
@@ -335,7 +283,7 @@ const btstack_run_loop_t * btstack_run_loop_zephyr_get_instance(void){
     return &btstack_run_loop_wiced;
 }
 
-// main.c
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -346,8 +294,20 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
 int btstack_main(void);
 
+#if defined(CONFIG_BT_CTLR_ASSERT_HANDLER)
+void bt_ctlr_assert_handle(char *file, u32_t line)
+{
+	printf("CONFIG_BT_CTLR_ASSERT_HANDLER: file %s, line %u\n", file, line);
+	while (1) {
+	}
+}
+#endif /* CONFIG_BT_CTLR_ASSERT_HANDLER */
+
+
 void main(void)
 {
+	// configure console UART by replacing CONFIG_UART_NRF5_BAUD_RATE with 115200 in uart_console.c
+
 	printf("BTstack booting up..\n");
 
 	// start with BTstack init - especially configure HCI Transport
@@ -360,6 +320,7 @@ void main(void)
     // init HCI
     hci_init(transport_get_instance(), NULL);
 
+#if 1
     // nRF5 chipsets don't have an official public address
     // Instead, they use a Static Random Address set in the factory
     bd_addr_t addr;
@@ -373,7 +334,8 @@ void main(void)
     // make Random Static Address available via HCI Read BD ADDR as fake public address
     little_endian_store_32(addr, 0, NRF_FICR->DEVICEADDR[0]);
     little_endian_store_16(addr, 4, NRF_FICR->DEVICEADDR[1] | 0xc000);
-    ll_address_set(0, addr);
+    ll_addr_set(0, addr);
+#endif
 #endif
 
     // inform about BTstack state
