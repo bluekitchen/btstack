@@ -24,8 +24,13 @@ Now, the BTstack examples can be build from the Zephyr examples folder in the sa
 
 to build the le_counter example for the pca10040 dev kit using the ARM GCC compiler.
 
-See nRF5 SDK documentation about how to install it.
+You can use `make flash` or `./flash_nrf52_pca10040.sh` to download it onto the board.
 
 All examples that provide a GATT Server use the GATT DB in the .gatt file. Therefore you need to run ./update_gatt_db.sh in the example folder after modifying the .gatt file.
 
 This port does not support Data Sources aside from the HCI Controller.
+
+## TODO
+- printf is configured by patching `drivers/serial/uart_nrf5.c' to use 115200 (default: 100000). There should be a better way to set baud rate.
+- enable/configure DLE for max packet size for LE Streamer
+
