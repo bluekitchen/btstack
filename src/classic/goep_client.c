@@ -179,6 +179,13 @@ static void goep_client_handle_query_rfcomm_event(uint8_t packet_type, uint16_t 
             goep_client->bearer_port = sdp_event_query_rfcomm_service_get_rfcomm_channel(packet);
             break;
         case SDP_EVENT_QUERY_COMPLETE:
+            if (sdp_event_query_complete_get_status(packet)){
+                log_info("GOEP client, SDP query failed 0x%02x", sdp_event_query_complete_get_status(packet));
+                goep_client->state = GOEP_INIT;
+                goep_client_emit_connected_event(goep_client, sdp_event_query_complete_get_status(packet));
+                break;
+            } 
+            
             if (goep_client->bearer_port == 0){
                 log_info("Remote GOEP RFCOMM Server Channel not found");
                 goep_client->state = GOEP_INIT;
