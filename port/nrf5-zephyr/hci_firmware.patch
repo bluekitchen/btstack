@@ -36,7 +36,7 @@ index b666967..8606b24 100644
 +++ b/samples/bluetooth/hci_uart/src/Makefile
 @@ -1 +1,2 @@
  obj-y += main.o
-+ccflags-y += -I../../../subsys/bluetooth/controller/ll
++ccflags-y += -I../../../subsys/bluetooth/controller/ll_sw
 diff --git a/samples/bluetooth/hci_uart/src/main.c b/samples/bluetooth/hci_uart/src/main.c
 index 76e75e1..70da655 100644
 --- a/samples/bluetooth/hci_uart/src/main.c
@@ -83,10 +83,10 @@ index 76e75e1..70da655 100644
  
  	while (1) {
  		struct net_buf *buf;
-diff --git a/subsys/bluetooth/controller/ll/ctrl.h b/subsys/bluetooth/controller/ll/ctrl.h
+diff --git a/subsys/bluetooth/controller/ll_sw/ctrl.h b/subsys/bluetooth/controller/ll_sw/ctrl.h
 index f9b092d..b950083 100644
---- a/subsys/bluetooth/controller/ll/ctrl.h
-+++ b/subsys/bluetooth/controller/ll/ctrl.h
+--- a/subsys/bluetooth/controller/ll_sw/ctrl.h
++++ b/subsys/bluetooth/controller/ll_sw/ctrl.h
 @@ -79,7 +79,7 @@
   * Controller Interface Defines
   ****************************************************************************/
