@@ -16,9 +16,9 @@ mk_template = '''#
 
 obj-y += EXAMPLE.o
 obj-y += main.o
+ccflags-y += -I${ZEPHYR_BASE}/subsys/bluetooth
+ccflags-y += -I${ZEPHYR_BASE}/subsys/bluetooth/controller/include
 ccflags-y += -I${ZEPHYR_BASE}/subsys/btstack
-ccflags-y += -I${ZEPHYR_BASE}/subsys/bluetooth/controller/ll
-
 '''
 
 gatt_update_template = '''#!/bin/sh
