@@ -206,7 +206,7 @@ void hfp_ag_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
     de_add_number(service, DE_UINT, DE_SIZE_16, sdp_features);
 }
 
-static int hfp_ag_change_in_band_ring_tone_setting_cmd(uint16_t cid){
+static int hfp_ag_send_change_in_band_ring_tone_setting_cmd(uint16_t cid){
     char buffer[20];
     sprintf(buffer, "\r\n%s:%d\r\n", HFP_CHANGE_IN_BAND_RING_TONE_SETTING, use_in_band_tone());
     return send_str_over_rfcomm(cid, buffer);
@@ -218,13 +218,13 @@ static int hfp_ag_exchange_supported_features_cmd(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static int hfp_ag_ok(uint16_t cid){
+static int hfp_ag_send_ok(uint16_t cid){
     char buffer[10];
     sprintf(buffer, "\r\nOK\r\n");
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static int hfp_ag_ring(uint16_t cid){
+static int hfp_ag_send_ring(uint16_t cid){
     return send_str_over_rfcomm(cid, (char *) "\r\nRING\r\n");
 }
 
@@ -252,13 +252,13 @@ static int hfp_ag_send_call_waiting_notification(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static int hfp_ag_error(uint16_t cid){
+static int hfp_ag_send_error(uint16_t cid){
     char buffer[10];
     sprintf(buffer, "\r\nERROR\r\n");
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static int hfp_ag_report_extended_audio_gateway_error(uint16_t cid, uint8_t error){
+static int hfp_ag_send_report_extended_audio_gateway_error(uint16_t cid, uint8_t error){
     char buffer[20];
     sprintf(buffer, "\r\n%s=%d\r\n", HFP_EXTENDED_AUDIO_GATEWAY_ERROR, error);
     return send_str_over_rfcomm(cid, buffer);
@@ -391,7 +391,7 @@ static int hfp_ag_call_services_join(char * buffer, int buffer_size){
     return offset;
 }
 
-static int hfp_ag_cmd_via_generator(uint16_t cid, hfp_connection_t * hfp_connection,
+static int hfp_ag_send_cmd_via_generator(uint16_t cid, hfp_connection_t * hfp_connection,
     int start_segment, int num_segments,
     int (*get_segment_len)(hfp_connection_t * hfp_connection, int segment),
     void (*store_segment) (hfp_connection_t * hfp_connection, int segment, uint8_t * buffer)){
@@ -417,13 +417,13 @@ static int hfp_ag_cmd_via_generator(uint16_t cid, hfp_connection_t * hfp_connect
 }
 
 // returns next segment to store
-static int hfp_ag_retrieve_indicators_cmd_via_generator(uint16_t cid, hfp_connection_t * hfp_connection, int start_segment){
+static int hfp_ag_send_retrieve_indicators_cmd_via_generator(uint16_t cid, hfp_connection_t * hfp_connection, int start_segment){
     int num_segments = hfp_ag_indicators_cmd_generator_num_segments(hfp_connection);
-    return hfp_ag_cmd_via_generator(cid, hfp_connection, start_segment, num_segments,
+    return hfp_ag_send_cmd_via_generator(cid, hfp_connection, start_segment, num_segments,
         hfp_ag_indicators_cmd_generator_get_segment_len, hgp_ag_indicators_cmd_generator_store_segment);
 }
 
-static int hfp_ag_retrieve_indicators_status_cmd(uint16_t cid){
+static int hfp_ag_send_retrieve_indicators_status_cmd(uint16_t cid){
     char buffer[40];
     int offset = snprintf(buffer, sizeof(buffer), "\r\n%s:", HFP_INDICATOR);
     offset += hfp_ag_indicators_status_join(buffer+offset, sizeof(buffer)-offset);
@@ -435,15 +435,15 @@ static int hfp_ag_retrieve_indicators_status_cmd(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static int hfp_ag_set_indicator_status_update_cmd(uint16_t cid, uint8_t activate){
+static int hfp_ag_send_set_indicator_status_update_cmd(uint16_t cid, uint8_t activate){
     UNUSED(activate);
 
     // AT\r\n%s:3,0,0,%d\r\n
-    return hfp_ag_ok(cid);
+    return hfp_ag_send_ok(cid);
 }
 
 
-static int hfp_ag_retrieve_can_hold_call_cmd(uint16_t cid){
+static int hfp_ag_send_retrieve_can_hold_call_cmd(uint16_t cid){
     char buffer[40];
     int offset = snprintf(buffer, sizeof(buffer), "\r\n%s:", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES);
     offset += hfp_ag_call_services_join(buffer+offset, sizeof(buffer)-offset);
@@ -456,11 +456,11 @@ static int hfp_ag_retrieve_can_hold_call_cmd(uint16_t cid){
 }
 
 
-static int hfp_ag_list_supported_generic_status_indicators_cmd(uint16_t cid){
-    return hfp_ag_ok(cid);
+static int hfp_ag_send_list_supported_generic_status_indicators_cmd(uint16_t cid){
+    return hfp_ag_send_ok(cid);
 }
 
-static int hfp_ag_retrieve_supported_generic_status_indicators_cmd(uint16_t cid){
+static int hfp_ag_send_retrieve_supported_generic_status_indicators_cmd(uint16_t cid){
     char buffer[40];
     int offset = snprintf(buffer, sizeof(buffer), "\r\n%s:(", HFP_GENERIC_STATUS_INDICATOR);
     offset += hfp_hf_indicators_join(buffer+offset, sizeof(buffer)-offset);
@@ -472,7 +472,7 @@ static int hfp_ag_retrieve_supported_generic_status_indicators_cmd(uint16_t cid)
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static int hfp_ag_retrieve_initital_supported_generic_status_indicators_cmd(uint16_t cid){
+static int hfp_ag_send_retrieve_initital_supported_generic_status_indicators_cmd(uint16_t cid){
     char buffer[40];
     int offset = hfp_hf_indicators_initial_status_join(buffer, sizeof(buffer));
     
@@ -482,13 +482,13 @@ static int hfp_ag_retrieve_initital_supported_generic_status_indicators_cmd(uint
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static int hfp_ag_transfer_ag_indicators_status_cmd(uint16_t cid, hfp_ag_indicator_t * indicator){
+static int hfp_ag_send_transfer_ag_indicators_status_cmd(uint16_t cid, hfp_ag_indicator_t * indicator){
     char buffer[20];
     sprintf(buffer, "\r\n%s:%d,%d\r\n", HFP_TRANSFER_AG_INDICATOR_STATUS, indicator->index, indicator->status);
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static int hfp_ag_report_network_operator_name_cmd(uint16_t cid, hfp_network_opearator_t op){
+static int hfp_ag_send_report_network_operator_name_cmd(uint16_t cid, hfp_network_opearator_t op){
     char buffer[40];
     if (strlen(op.name) == 0){
         sprintf(buffer, "\r\n%s:%d,,\r\n\r\nOK\r\n", HFP_QUERY_OPERATOR_SELECTION, op.mode);
@@ -499,31 +499,31 @@ static int hfp_ag_report_network_operator_name_cmd(uint16_t cid, hfp_network_ope
 }
 
 
-static int hfp_ag_cmd_suggest_codec(uint16_t cid, uint8_t codec){
+static int hfp_ag_send_suggest_codec_cmd(uint16_t cid, uint8_t codec){
     char buffer[30];
     sprintf(buffer, "\r\n%s:%d\r\n", HFP_CONFIRM_COMMON_CODEC, codec);
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static int hfp_ag_activate_voice_recognition_cmd(uint16_t cid, uint8_t activate_voice_recognition){
+static int hfp_ag_send_activate_voice_recognition_cmd(uint16_t cid, uint8_t activate_voice_recognition){
     char buffer[30];
     sprintf(buffer, "\r\n%s: %d\r\n", HFP_ACTIVATE_VOICE_RECOGNITION, activate_voice_recognition);
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static int hfp_ag_set_speaker_gain_cmd(uint16_t cid, uint8_t gain){
+static int hfp_ag_send_set_speaker_gain_cmd(uint16_t cid, uint8_t gain){
     char buffer[30];
     sprintf(buffer, "\r\n%s:%d\r\n", HFP_SET_SPEAKER_GAIN, gain);
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static int hfp_ag_set_microphone_gain_cmd(uint16_t cid, uint8_t gain){
+static int hfp_ag_send_set_microphone_gain_cmd(uint16_t cid, uint8_t gain){
     char buffer[30];
     sprintf(buffer, "\r\n%s:%d\r\n", HFP_SET_MICROPHONE_GAIN, gain);
     return send_str_over_rfcomm(cid, buffer);
 }
             
-static int hfp_ag_set_response_and_hold(uint16_t cid, int state){
+static int hfp_ag_send_set_response_and_hold(uint16_t cid, int state){
     char buffer[30];
     sprintf(buffer, "\r\n%s: %d\r\n", HFP_RESPONSE_AND_HOLD, state);
     return send_str_over_rfcomm(cid, buffer);
@@ -589,7 +589,7 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
         case HFP_CMD_AVAILABLE_CODECS:
             if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED){
                 hfp_connection->codecs_state = HFP_CODECS_RECEIVED_LIST;
-                hfp_ag_ok(hfp_connection->rfcomm_cid);
+                hfp_ag_send_ok(hfp_connection->rfcomm_cid);
                 return 1;    
             }
 
@@ -601,30 +601,30 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
                 default:
                     break;
             }
-            hfp_ag_ok(hfp_connection->rfcomm_cid);
+            hfp_ag_send_ok(hfp_connection->rfcomm_cid);
             return 1;
         
         case HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP:
             hfp_connection->codecs_state = HFP_CODECS_RECEIVED_TRIGGER_CODEC_EXCHANGE;
-            hfp_ag_ok(hfp_connection->rfcomm_cid);
+            hfp_ag_send_ok(hfp_connection->rfcomm_cid);
             return 1;
         
         case HFP_CMD_AG_SEND_COMMON_CODEC:
             hfp_connection->codecs_state = HFP_CODECS_AG_SENT_COMMON_CODEC;
             hfp_connection->suggested_codec = hfp_ag_suggest_codec(hfp_connection);
-            hfp_ag_cmd_suggest_codec(hfp_connection->rfcomm_cid, hfp_connection->suggested_codec);
+            hfp_ag_send_suggest_codec_cmd(hfp_connection->rfcomm_cid, hfp_connection->suggested_codec);
             return 1;
 
         case HFP_CMD_HF_CONFIRMED_CODEC:
             if (hfp_connection->codec_confirmed != hfp_connection->suggested_codec){
                 hfp_connection->codecs_state = HFP_CODECS_ERROR;
-                hfp_ag_error(hfp_connection->rfcomm_cid);
+                hfp_ag_send_error(hfp_connection->rfcomm_cid);
                 return 1;
             } 
             hfp_connection->negotiated_codec = hfp_connection->codec_confirmed;
             hfp_connection->codecs_state = HFP_CODECS_EXCHANGED;
             log_info("hfp: codec confirmed: %s", hfp_connection->negotiated_codec == HFP_CODEC_MSBC ? "mSBC" : "CVSD");
-            hfp_ag_ok(hfp_connection->rfcomm_cid);           
+            hfp_ag_send_ok(hfp_connection->rfcomm_cid);           
             // now, pick link settings
             hfp_init_link_settings(hfp_connection);
             return 1; 
@@ -689,7 +689,7 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
         case HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS:
             if (hfp_connection->state != HFP_W4_RETRIEVE_INDICATORS_STATUS) break;
             hfp_connection->state = HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE;
-            hfp_ag_retrieve_indicators_status_cmd(hfp_connection->rfcomm_cid);
+            hfp_ag_send_retrieve_indicators_status_cmd(hfp_connection->rfcomm_cid);
             return 1;
 
         case HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE:
@@ -701,7 +701,7 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
             } else {
                 hfp_ag_slc_established(hfp_connection);
             }
-            hfp_ag_set_indicator_status_update_cmd(hfp_connection->rfcomm_cid, 1);
+            hfp_ag_send_set_indicator_status_update_cmd(hfp_connection->rfcomm_cid, 1);
             return 1;
                 
         case HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES:
@@ -709,7 +709,7 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
             if (has_hf_indicators_feature(hfp_connection)){
                 hfp_connection->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
             }
-            hfp_ag_retrieve_can_hold_call_cmd(hfp_connection->rfcomm_cid);
+            hfp_ag_send_retrieve_can_hold_call_cmd(hfp_connection->rfcomm_cid);
             if (!has_hf_indicators_feature(hfp_connection)){
                 hfp_ag_slc_established(hfp_connection);
             }
@@ -718,19 +718,19 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
         case HFP_CMD_LIST_GENERIC_STATUS_INDICATORS:
             if (hfp_connection->state != HFP_W4_LIST_GENERIC_STATUS_INDICATORS) break;
             hfp_connection->state = HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS;
-            hfp_ag_list_supported_generic_status_indicators_cmd(hfp_connection->rfcomm_cid);
+            hfp_ag_send_list_supported_generic_status_indicators_cmd(hfp_connection->rfcomm_cid);
             return 1;
 
         case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS:
             if (hfp_connection->state != HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS) break;
             hfp_connection->state = HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS; 
-            hfp_ag_retrieve_supported_generic_status_indicators_cmd(hfp_connection->rfcomm_cid);
+            hfp_ag_send_retrieve_supported_generic_status_indicators_cmd(hfp_connection->rfcomm_cid);
             return 1;
 
         case HFP_CMD_RETRIEVE_GENERIC_STATUS_INDICATORS_STATE:
             if (hfp_connection->state != HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS) break;
             hfp_ag_slc_established(hfp_connection);
-            hfp_ag_retrieve_initital_supported_generic_status_indicators_cmd(hfp_connection->rfcomm_cid);
+            hfp_ag_send_retrieve_initital_supported_generic_status_indicators_cmd(hfp_connection->rfcomm_cid);
             return 1;
         default:
             break;
@@ -738,7 +738,7 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
 
     switch (hfp_connection->state){
         case HFP_RETRIEVE_INDICATORS: {
-            int next_segment = hfp_ag_retrieve_indicators_cmd_via_generator(hfp_connection->rfcomm_cid, hfp_connection, hfp_connection->send_ag_indicators_segment);
+            int next_segment = hfp_ag_send_retrieve_indicators_cmd_via_generator(hfp_connection->rfcomm_cid, hfp_connection, hfp_connection->send_ag_indicators_segment);
             int num_segments = hfp_ag_indicators_cmd_generator_num_segments(hfp_connection);
             log_info("HFP_CMD_RETRIEVE_AG_INDICATORS next segment %u, num_segments %u", next_segment, num_segments);
             if (next_segment < num_segments){
@@ -767,42 +767,42 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
     switch(hfp_connection->command){
         case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
             hfp_supported_features = store_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION, hfp_connection->ag_activate_voice_recognition);
-            hfp_ag_activate_voice_recognition_cmd(hfp_connection->rfcomm_cid, hfp_connection->ag_activate_voice_recognition);
+            hfp_ag_send_activate_voice_recognition_cmd(hfp_connection->rfcomm_cid, hfp_connection->ag_activate_voice_recognition);
             return 1;
         case HFP_CMD_HF_ACTIVATE_VOICE_RECOGNITION:
             if (get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION)){
                 hfp_supported_features = store_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION, hfp_connection->ag_activate_voice_recognition);
-                hfp_ag_ok(hfp_connection->rfcomm_cid);
+                hfp_ag_send_ok(hfp_connection->rfcomm_cid);
                 hfp_ag_setup_audio_connection(hfp_connection);
             } else {
-                hfp_ag_error(hfp_connection->rfcomm_cid);
+                hfp_ag_send_error(hfp_connection->rfcomm_cid);
             }
             return 1;
         case HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING:
-            hfp_ag_change_in_band_ring_tone_setting_cmd(hfp_connection->rfcomm_cid);
+            hfp_ag_send_change_in_band_ring_tone_setting_cmd(hfp_connection->rfcomm_cid);
             return 1;
         case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
-            hfp_ag_report_network_operator_name_cmd(hfp_connection->rfcomm_cid, hfp_connection->network_operator);
+            hfp_ag_send_report_network_operator_name_cmd(hfp_connection->rfcomm_cid, hfp_connection->network_operator);
             return 1;
         case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME_FORMAT:
             if (hfp_connection->network_operator.format != 0){
-                hfp_ag_error(hfp_connection->rfcomm_cid);
+                hfp_ag_send_error(hfp_connection->rfcomm_cid);
             } else {
-                hfp_ag_ok(hfp_connection->rfcomm_cid);
+                hfp_ag_send_ok(hfp_connection->rfcomm_cid);
             }
             return 1;
         case HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE:
-            hfp_ag_ok(hfp_connection->rfcomm_cid);
+            hfp_ag_send_ok(hfp_connection->rfcomm_cid);
             return 1;
         case HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR:
             if (hfp_connection->extended_audio_gateway_error){
                 hfp_connection->extended_audio_gateway_error = 0;
-                hfp_ag_report_extended_audio_gateway_error(hfp_connection->rfcomm_cid, hfp_connection->extended_audio_gateway_error_value);
+                hfp_ag_send_report_extended_audio_gateway_error(hfp_connection->rfcomm_cid, hfp_connection->extended_audio_gateway_error_value);
                 return 1;
             }
             break;
         case HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE:
-            hfp_ag_ok(hfp_connection->rfcomm_cid);
+            hfp_ag_send_ok(hfp_connection->rfcomm_cid);
             return 1;
         default:
             break;
@@ -1485,7 +1485,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                 log_info("AG putting current call on hold for new outgoing calllog_info");
                 hfp_ag_set_callheld_indicator();
                 indicator_index = get_ag_indicator_index_for_name("callheld");
-                hfp_ag_transfer_ag_indicators_status_cmd(hfp_connection->rfcomm_cid, &hfp_ag_indicators[indicator_index]);
+                hfp_ag_send_transfer_ag_indicators_status_cmd(hfp_connection->rfcomm_cid, &hfp_ag_indicators[indicator_index]);
             }
 
             // start audio if needed
@@ -1676,14 +1676,14 @@ static void hfp_run_for_context(hfp_connection_t *hfp_connection){
         hfp_connection->ok_pending = 0;
         hfp_connection->send_error = 0;
         hfp_connection->command = HFP_CMD_NONE;
-        hfp_ag_error(hfp_connection->rfcomm_cid);
+        hfp_ag_send_error(hfp_connection->rfcomm_cid);
         return;
     }
 
     if (hfp_connection->send_error){
         hfp_connection->send_error = 0;
         hfp_connection->command = HFP_CMD_NONE;
-        hfp_ag_error(hfp_connection->rfcomm_cid); 
+        hfp_ag_send_error(hfp_connection->rfcomm_cid); 
         return;
     }
 
@@ -1691,14 +1691,14 @@ static void hfp_run_for_context(hfp_connection_t *hfp_connection){
     if (hfp_connection->send_response_and_hold_status){
         int status = hfp_connection->send_response_and_hold_status - 1;
         hfp_connection->send_response_and_hold_status = 0;
-        hfp_ag_set_response_and_hold(hfp_connection->rfcomm_cid, status);
+        hfp_ag_send_set_response_and_hold(hfp_connection->rfcomm_cid, status);
         return;
     }
 
     if (hfp_connection->ok_pending){
         hfp_connection->ok_pending = 0;
         hfp_connection->command = HFP_CMD_NONE;
-        hfp_ag_ok(hfp_connection->rfcomm_cid);
+        hfp_ag_send_ok(hfp_connection->rfcomm_cid);
         return;
     }
 
@@ -1712,7 +1712,7 @@ static void hfp_run_for_context(hfp_connection_t *hfp_connection){
                     log_info("+CMER:3,0,0,0 - not sending update for '%s'", hfp_ag_indicators[i].name);
                     break;
                 }
-                hfp_ag_transfer_ag_indicators_status_cmd(hfp_connection->rfcomm_cid, &hfp_ag_indicators[i]);
+                hfp_ag_send_transfer_ag_indicators_status_cmd(hfp_connection->rfcomm_cid, &hfp_ag_indicators[i]);
                 return;
             }
         }
@@ -1721,7 +1721,7 @@ static void hfp_run_for_context(hfp_connection_t *hfp_connection){
     if (hfp_connection->ag_ring){
         hfp_connection->ag_ring = 0;
         hfp_connection->command = HFP_CMD_NONE;
-        hfp_ag_ring(hfp_connection->rfcomm_cid);
+        hfp_ag_send_ring(hfp_connection->rfcomm_cid);
         return;
     }
 
@@ -1747,28 +1747,29 @@ static void hfp_run_for_context(hfp_connection_t *hfp_connection){
         } else {
             hfp_connection->send_subscriber_number = 0;
             hfp_connection->next_subscriber_number_to_send = 0;
-            hfp_ag_ok(hfp_connection->rfcomm_cid);
+            hfp_ag_send_ok(hfp_connection->rfcomm_cid);
         }
         hfp_connection->command = HFP_CMD_NONE;
+
     }
 
     if (hfp_connection->send_microphone_gain){
         hfp_connection->send_microphone_gain = 0;
         hfp_connection->command = HFP_CMD_NONE;
-        hfp_ag_set_microphone_gain_cmd(hfp_connection->rfcomm_cid, hfp_connection->microphone_gain);
+        hfp_ag_send_set_microphone_gain_cmd(hfp_connection->rfcomm_cid, hfp_connection->microphone_gain);
         return;
     }
     
     if (hfp_connection->send_speaker_gain){
         hfp_connection->send_speaker_gain = 0;
         hfp_connection->command = HFP_CMD_NONE;
-        hfp_ag_set_speaker_gain_cmd(hfp_connection->rfcomm_cid, hfp_connection->speaker_gain);
+        hfp_ag_send_set_speaker_gain_cmd(hfp_connection->rfcomm_cid, hfp_connection->speaker_gain);
         return;
     }
     
     if (hfp_connection->send_ag_status_indicators){
         hfp_connection->send_ag_status_indicators = 0;
-        hfp_ag_retrieve_indicators_status_cmd(hfp_connection->rfcomm_cid);
+        hfp_ag_send_retrieve_indicators_status_cmd(hfp_connection->rfcomm_cid);
         return;
     }
 
@@ -1901,7 +1902,7 @@ static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_
             break;
         case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
             if (subscriber_numbers_count == 0){
-                hfp_ag_ok(hfp_connection->rfcomm_cid);
+                hfp_ag_send_ok(hfp_connection->rfcomm_cid);
                 break;
             }
             hfp_connection->next_subscriber_number_to_send = 0;
