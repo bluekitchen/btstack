@@ -67,7 +67,7 @@ const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_ag_service_name[] = "HFP AG Demo";
 
 static bd_addr_t device_addr;
-static const char * device_addr_string = "00:15:83:5F:9D:46";
+static const char * device_addr_string = "00:21:3C:AC:F7:38";
 
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
 static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
@@ -141,8 +141,8 @@ static void show_usage(void){
     printf("\n--- Bluetooth HFP Audiogateway (AG) unit Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("\n");
     
-    printf("a - establish HFP connection to PTS module %s\n", bd_addr_to_str(device_addr));
-    // printf("A - release HFP connection to PTS module\n");
+    printf("a - establish HFP connection to %s\n", bd_addr_to_str(device_addr));
+    // printf("A - release HFP connection\n");
     
     printf("b - establish AUDIO connection          | B - release AUDIO connection\n");
     printf("c - simulate incoming call from 1234567 | C - simulate call from 1234567 dropped\n");
@@ -176,7 +176,7 @@ static void stdin_process(char cmd){
     switch (cmd){
         case 'a':
             log_info("USER:\'%c\'", cmd);
-            printf("Establish HFP service level connection to PTS module %s...\n", bd_addr_to_str(device_addr));
+            printf("Establish HFP service level connection to %s...\n", bd_addr_to_str(device_addr));
             hfp_ag_establish_service_level_connection(device_addr);
             break;
         case 'A':
@@ -395,9 +395,17 @@ static void stdin_process(char cmd){
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
     UNUSED(channel);
     bd_addr_t addr;
+    uint8_t status;
     switch (packet_type){
         case HCI_EVENT_PACKET:
-            switch (event[0]){
+            switch(hci_event_packet_get_type(event)){
+#ifndef HAVE_BTSTACK_STDIN
+                case BTSTACK_EVENT_STATE:
+                    if (btstack_event_state_get_state(event) != HCI_STATE_WORKING) break;
+                    printf("Establish HFP AG service level connection to %s...\n", bd_addr_to_str(device_addr));
+                    hfp_ag_establish_service_level_connection(device_addr);
+                    break;
+#endif
                 case GAP_EVENT_INQUIRY_RESULT:
                     gap_event_inquiry_result_get_bd_addr(event, addr);
                     // print info
@@ -430,23 +438,33 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     break;
             }
 
-            if (event[0] != HCI_EVENT_HFP_META) return;
+            if (hci_event_packet_get_type(event) != HCI_EVENT_HFP_META) return;
 
             if (event[3]
-                && event[2] != HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER
-                && event[2] != HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG 
-                && event[2] != HFP_SUBEVENT_TRANSMIT_DTMF_CODES){
+                && hci_event_hfp_meta_get_subevent_code(event) != HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER
+                && hci_event_hfp_meta_get_subevent_code(event) != HFP_SUBEVENT_ATTACH_NUMBER_TO_VOICE_TAG 
+                && hci_event_hfp_meta_get_subevent_code(event) != HFP_SUBEVENT_TRANSMIT_DTMF_CODES){
                 printf("ERROR, status: %u\n", event[3]);
                 return;
             }
 
-            switch (event[2]) {   
+            switch (hci_event_hfp_meta_get_subevent_code(event)) {   
                 case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
+                    status = hfp_subevent_service_level_connection_established_get_status(event);
+                    if (status){
+                        printf("Connection failed, staus 0x%02x\n", status);
+                        break;
+                    }
                     acl_handle = hfp_subevent_service_level_connection_established_get_con_handle(event);
                     hfp_subevent_service_level_connection_established_get_bd_addr(event, device_addr);
-                    printf("Service level connection established from %s.\n", bd_addr_to_str(device_addr));
+                    printf("Service level connection established to %s.\n", bd_addr_to_str(device_addr));
                     dump_supported_codecs();
-                   break;
+#ifndef HAVE_BTSTACK_STDIN
+                    log_info("Establish Audio connection %s", bd_addr_to_str(device_addr));
+                    printf("Establish Audio connection %s...\n", bd_addr_to_str(device_addr));
+                    hfp_ag_establish_audio_connection(acl_handle);
+#endif
+                    break;
                 case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
                     printf("Service level connection released.\n");
                     sco_handle = 0;
@@ -511,7 +529,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     printf("Call answered by HF\n");
                     break;
                 default:
-                    printf("Event not handled %u\n", event[2]);
+                    printf("Event not handled %u\n", hci_event_hfp_meta_get_subevent_code(event));
                     break;
             }
             break;

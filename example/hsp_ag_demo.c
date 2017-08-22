@@ -71,7 +71,9 @@ static uint16_t      sco_handle = 0;
 
 static char hs_cmd_buffer[100];
 
-static bd_addr_t device_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
+static const char * device_name = "HSP AG Demo 00:00:00:00:00:00";
+static const char * device_addr_string = "00:1b:dc:07:32:ef";
+static bd_addr_t device_addr;
 
 /* @section Audio Transfer Setup 
  *
@@ -97,6 +99,8 @@ static bd_addr_t device_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
  */ 
 
 
+
+#ifdef HAVE_BTSTACK_STDIN
 static void show_usage(void){
     bd_addr_t iut_address;
     gap_local_bd_addr(iut_address);
@@ -104,7 +108,7 @@ static void show_usage(void){
     printf("\n--- Bluetooth HSP Audio Gateway Test Console %s ---\n", bd_addr_to_str(iut_address));
    
     printf("---\n");
-    printf("c - Connect to %s\n", bd_addr_to_str(device_addr));
+    printf("c - Connect to %s\n", device_addr_string);
     printf("C - Disconnect\n");
     printf("a - establish audio connection\n");
     printf("A - release audio connection\n");
@@ -118,11 +122,10 @@ static void show_usage(void){
     printf("\n");
 }
 
-#ifdef HAVE_BTSTACK_STDIN
 static void stdin_process(char c){
     switch (c){
         case 'c':
-            printf("Connect to %s\n", bd_addr_to_str(device_addr));
+            printf("Connect to %s\n", device_addr_string);
             hsp_ag_connect(device_addr);
             break;
         case 'C':
@@ -176,17 +179,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
     UNUSED(channel);
 
     switch (packet_type){
-
         case HCI_SCO_DATA_PACKET:
             sco_demo_receive(event, event_size);
             break;
 
         case HCI_EVENT_PACKET:
-            switch (event[0]) {
+            switch (hci_event_packet_get_type(event)) {
+#ifndef HAVE_BTSTACK_STDIN
                 case BTSTACK_EVENT_STATE:
-                    if (event[2] != HCI_STATE_WORKING) break;
-                    show_usage();
+                    if (btstack_event_state_get_state(event) != HCI_STATE_WORKING) break;
+                    printf("Establish HSP AG service to %s...\n", device_addr_string);
+                    hsp_ag_connect(device_addr);
                     break;
+#endif
                 case HCI_EVENT_SCO_CAN_SEND_NOW:
                     sco_demo_send(sco_handle);
                     break;
@@ -195,9 +200,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                         case HSP_SUBEVENT_RFCOMM_CONNECTION_COMPLETE:
                             if (hsp_subevent_rfcomm_connection_complete_get_status(event)){
                                 printf("RFCOMM connection establishement failed with status %u\n", hsp_subevent_rfcomm_connection_complete_get_status(event));
-                            } else {
-                                printf("RFCOMM connection established.\n");
+                                break;
                             } 
+                            printf("RFCOMM connection established.\n");
+#ifndef HAVE_BTSTACK_STDIN
+                            printf("Establish Audio connection to %s...\n", device_addr_string);
+                            hsp_ag_establish_audio_connection();
+#endif
                             break;
                         case HSP_SUBEVENT_RFCOMM_DISCONNECTION_COMPLETE:
                             if (hsp_subevent_rfcomm_disconnection_complete_get_status(event)){
@@ -289,11 +298,14 @@ int btstack_main(int argc, const char * argv[]){
     hsp_ag_register_packet_handler(&packet_handler);
     hci_register_sco_packet_handler(&packet_handler);
 
+    // parse human readable Bluetooth address
+    sscanf_bd_addr(device_addr_string, device_addr);
+
 #ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
 #endif
 
-    gap_set_local_name("HSP AG Demo 00:00:00:00:00:00");
+    gap_set_local_name(device_name);
     gap_discoverable_control(1);
     gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
     gap_set_class_of_device(0x400204);

@@ -55,10 +55,6 @@
 #include "btstack_stdin.h"
 #endif
 
-#ifndef HAVE_BTSTACK_STDIN
-static int step = 0;
-#endif
-
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static bd_addr_t    remote_addr;
