@@ -1057,7 +1057,7 @@ static void hci_initializing_next_state(void){
     hci_stack->substate = (hci_substate_t )( ((int) hci_stack->substate) + 1);
 }
 
-#ifdef ENABLE_CLASSIC
+#if defined(ENABLE_CLASSIC) || defined(ENABLE_LE_PERIPHERAL)
 static void hci_replace_bd_addr_placeholder(uint8_t * data, uint16_t size){
     const int bd_addr_string_len = 17;
     int i = 0;
@@ -2430,8 +2430,10 @@ void hci_init(const hci_transport_t *transport, const void *config){
     // bondable by default
     hci_stack->bondable = 1;
 
+#ifdef ENABLE_CLASSIC
     // classic name
     hci_stack->local_name = default_classic_name;
+#endif
 
     // Secure Simple Pairing default: enable, no I/O capabilities, general bonding, mitm not required, auto accept 
     hci_stack->ssp_enable = 1;
