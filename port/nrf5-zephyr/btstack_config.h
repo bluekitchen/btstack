@@ -33,4 +33,7 @@
 #define MAX_NR_SERVICE_RECORD_ITEMS 1
 #define MAX_NR_LE_DEVICE_DB_ENTRIES 1
 
+// hack to fix usage of hci_init in zephry
+#define hci_init btstack_hci_init
+
 #endif
