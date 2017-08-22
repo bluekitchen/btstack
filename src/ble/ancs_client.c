@@ -220,7 +220,12 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             return;
             
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            notify_client_simple(ANCS_SUBEVENT_CLIENT_DISCONNECTED);
+            if (hci_event_disconnection_complete_get_connection_handle(packet) != gc_handle) break;
+            if (tc_state == TC_SUBSCRIBED){
+                notify_client_simple(ANCS_SUBEVENT_CLIENT_DISCONNECTED);
+            }
+            tc_state = TC_IDLE;
+            gc_handle = 0;
             return;
 
         default:
@@ -319,7 +324,7 @@ static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             value_length = little_endian_read_16(packet, 6);
             value = &packet[8];
 
-            log_info("ANCS Ntoficiation, value handle %u", value_handle);
+            log_info("ANCS Notification, value handle %u", value_handle);
 
             if (value_handle == ancs_data_source_characteristic.value_handle){
                 int i;
