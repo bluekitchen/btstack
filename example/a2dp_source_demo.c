@@ -489,11 +489,19 @@ static void stdin_process(char cmd){
             break;
 
         case 'x':
+            if (data_source == STREAM_SINE) {
+                printf("Already playing sine.\n");
+                return;
+            }
             printf("Playing sine.\n");
             data_source = STREAM_SINE;
             status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
         case 'z':
+            if (data_source == STREAM_SINE) {
+                printf("Already playing mode.\n");
+                return;
+            }
             printf("Playing mod.\n");
             data_source = STREAM_MOD;
             status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
