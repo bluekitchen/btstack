@@ -498,7 +498,7 @@ static void stdin_process(char cmd){
             status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
         case 'z':
-            if (data_source == STREAM_SINE) {
+            if (data_source == STREAM_MOD) {
                 printf("Already playing mode.\n");
                 return;
             }
