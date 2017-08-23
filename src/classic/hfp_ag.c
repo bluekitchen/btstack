@@ -652,7 +652,7 @@ static void hfp_ag_slc_established(hfp_connection_t * hfp_connection){
 static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hfp_connection){
     // log_info("hfp_ag_run_for_context_service_level_connection state %u, command %u", hfp_connection->state, hfp_connection->command);
     if (hfp_connection->state >= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
-    int done = 0;
+    int sent = 0;
     switch(hfp_connection->command){
         case HFP_CMD_SUPPORTED_FEATURES:
             switch(hfp_connection->state){
@@ -671,12 +671,11 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
             }
             break;
         case HFP_CMD_AVAILABLE_CODECS:
-            done = codecs_exchange_state_machine(hfp_connection);
-
+            sent = codecs_exchange_state_machine(hfp_connection);
             if (hfp_connection->codecs_state == HFP_CODECS_RECEIVED_LIST){
                 hfp_connection->state = HFP_W4_RETRIEVE_INDICATORS;
             }
-            return done;
+            return sent;
 
         case HFP_CMD_RETRIEVE_AG_INDICATORS:
             if (hfp_connection->state == HFP_W4_RETRIEVE_INDICATORS) {
@@ -755,14 +754,12 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
         default:
             break;
     }
-
-    return done;
+    return 0;
 }
 
 static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connection_t * hfp_connection){
-
-    int done = codecs_exchange_state_machine(hfp_connection);
-    if (done) return done;
+    int sent = codecs_exchange_state_machine(hfp_connection);
+    if (sent) return 1;
    
     switch(hfp_connection->command){
         case HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION:
@@ -825,10 +822,10 @@ static int hfp_ag_run_for_audio_connection(hfp_connection_t * hfp_connection){
     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return 0;
     
     // run codecs exchange
-    int done = codecs_exchange_state_machine(hfp_connection);
-    if (done) return done;
+    int sent = codecs_exchange_state_machine(hfp_connection);
+    if (sent) return 1;
 
-    if (hfp_connection->codecs_state != HFP_CODECS_EXCHANGED) return done;
+    if (hfp_connection->codecs_state != HFP_CODECS_EXCHANGED) return 0;
     if (hfp_connection->establish_audio_connection){
         hfp_connection->state = HFP_W4_SCO_CONNECTED;
         hfp_connection->establish_audio_connection = 0;
@@ -1790,20 +1787,20 @@ static void hfp_run_for_context(hfp_connection_t *hfp_connection){
         }
     }
 
-    int done = hfp_ag_run_for_context_service_level_connection(hfp_connection);
-    if (!done){
-        done = hfp_ag_run_for_context_service_level_connection_queries(hfp_connection);
+    int cmd_sent = hfp_ag_run_for_context_service_level_connection(hfp_connection);
+    if (!cmd_sent){
+        cmd_sent = hfp_ag_run_for_context_service_level_connection_queries(hfp_connection);
     } 
 
-    if (!done){
-        done = call_setup_state_machine(hfp_connection);
+    if (!cmd_sent){
+        cmd_sent = call_setup_state_machine(hfp_connection);
     }
 
-    if (!done){  
-        done = hfp_ag_run_for_audio_connection(hfp_connection);
+    if (!cmd_sent){  
+        cmd_sent = hfp_ag_run_for_audio_connection(hfp_connection);
     }
 
-    if (hfp_connection->command == HFP_CMD_NONE && !done){
+    if (hfp_connection->command == HFP_CMD_NONE && !cmd_sent){
         // log_info("hfp_connection->command == HFP_CMD_NONE");
         switch(hfp_connection->state){
             case HFP_W2_DISCONNECT_RFCOMM:
@@ -1814,11 +1811,9 @@ static void hfp_run_for_context(hfp_connection_t *hfp_connection){
                 break;
         }
     }
-    if (done){
+    
+    if (cmd_sent){
         hfp_connection->command = HFP_CMD_NONE;
-    }
-    //
-    if (done) {
         rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid); 
     }
 }
@@ -2142,7 +2137,6 @@ static void hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection){
     if (hfp_connection->state >= HFP_W2_DISCONNECT_SCO) return;
         
     hfp_connection->establish_audio_connection = 1;
-
     if (!has_codec_negotiation_feature(hfp_connection)){
         log_info("hfp_ag_establish_audio_connection - no codec negotiation feature, using CVSD");
         hfp_connection->negotiated_codec = HFP_CODEC_CVSD;
@@ -2151,8 +2145,7 @@ static void hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection){
         hfp_init_link_settings(hfp_connection);
         return;
     } 
-
-    // TODO: check if codecs already exchanged
+    
     hfp_connection->trigger_codec_exchange = 1;
 }
 
