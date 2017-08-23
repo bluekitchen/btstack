@@ -1652,7 +1652,6 @@ static void hfp_run_for_context(hfp_connection_t *hfp_connection){
         rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
         return;
     }
-
     if (hfp_connection->send_status_of_current_calls){
         hfp_connection->ok_pending = 0; 
         if (hfp_connection->next_call_index < hfp_gsm_get_number_of_calls()){
@@ -1771,6 +1770,24 @@ static void hfp_run_for_context(hfp_connection_t *hfp_connection){
         hfp_connection->send_ag_status_indicators = 0;
         hfp_ag_send_retrieve_indicators_status_cmd(hfp_connection->rfcomm_cid);
         return;
+    }
+
+    // trigger codec exchange if requested by app
+    if (hfp_connection->trigger_codec_exchange){
+        log_info("trigger codec, command %u, codec state %u", hfp_connection->command, hfp_connection->codecs_state);
+    }
+    if (hfp_connection->trigger_codec_exchange && hfp_connection->command == HFP_CMD_NONE){
+        switch (hfp_connection->codecs_state){
+            case HFP_CODECS_IDLE:
+            case HFP_CODECS_RECEIVED_LIST:
+            case HFP_CODECS_AG_RESEND_COMMON_CODEC:
+            case HFP_CODECS_ERROR:
+                hfp_connection->trigger_codec_exchange = 0;
+                hfp_connection->command = HFP_CMD_AG_SEND_COMMON_CODEC;
+                break;
+            default:
+                break;
+        }
     }
 
     int done = hfp_ag_run_for_context_service_level_connection(hfp_connection);
@@ -2120,6 +2137,7 @@ void hfp_ag_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl
 }
 
 static void hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection){
+    log_info("hfp_ag_setup_audio_connection state %u", hfp_connection->state);
     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return;
     if (hfp_connection->state >= HFP_W2_DISCONNECT_SCO) return;
         
@@ -2131,18 +2149,11 @@ static void hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection){
         hfp_connection->codecs_state = HFP_CODECS_EXCHANGED;
         // now, pick link settings
         hfp_init_link_settings(hfp_connection);
+        return;
     } 
 
-    switch (hfp_connection->codecs_state){
-        case HFP_CODECS_IDLE:
-        case HFP_CODECS_RECEIVED_LIST:
-        case HFP_CODECS_AG_RESEND_COMMON_CODEC:
-        case HFP_CODECS_ERROR:
-            hfp_connection->command = HFP_CMD_AG_SEND_COMMON_CODEC;
-            break;
-        default:
-            break;
-    } 
+    // TODO: check if codecs already exchanged
+    hfp_connection->trigger_codec_exchange = 1;
 }
 
 void hfp_ag_establish_audio_connection(hci_con_handle_t acl_handle){
@@ -2151,6 +2162,7 @@ void hfp_ag_establish_audio_connection(hci_con_handle_t acl_handle){
         log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
         return;
     }
+    hfp_connection->trigger_codec_exchange = 0;
     hfp_connection->establish_audio_connection = 0;
     hfp_ag_setup_audio_connection(hfp_connection);
     hfp_run_for_context(hfp_connection);

@@ -545,6 +545,7 @@ typedef struct hfp_connection {
     
     hfp_link_setttings_t link_setting;
 
+    uint8_t trigger_codec_exchange;
     uint8_t establish_audio_connection; 
     uint8_t release_audio_connection; 
 
