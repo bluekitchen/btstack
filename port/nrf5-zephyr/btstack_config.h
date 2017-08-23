@@ -13,9 +13,10 @@
 #define ENABLE_LE_CENTRAL
 #define ENABLE_LOG_INFO
 #define ENABLE_LOG_ERROR
+#define ENABLE_LE_DATA_LENGTH_EXTENSION
 
 // BTstack configuration. buffers, sizes, ...
-#define HCI_ACL_PAYLOAD_SIZE 52
+#define HCI_ACL_PAYLOAD_SIZE 260
 #define MAX_NR_WHITELIST_ENTRIES 1
 #define MAX_NR_HCI_CONNECTIONS 1
 #define MAX_NR_SM_LOOKUP_ENTRIES 3
