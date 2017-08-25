@@ -1530,6 +1530,15 @@ typedef uint8_t sm_key_t[16];
  */
 #define A2DP_SUBEVENT_INCOMING_CONNECTION_ESTABLISHED               0x0A
 
+/**
+ * @format 121            Signaling channel is released.
+ * @param subevent_code
+ * @param a2dp_cid
+ * @param local_seid
+ */
+#define A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED                  0x0B
+
+
 /** AVRCP Subevent */
 
 /**
