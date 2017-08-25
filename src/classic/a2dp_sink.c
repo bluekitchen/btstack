@@ -221,6 +221,7 @@ static inline void a2dp_emit_stream_event(btstack_packet_handler_t callback, uin
 static inline void a2dp_emit_cmd_accepted(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size){
     if (!callback) return;
     UNUSED(size);
+    packet[0] = HCI_EVENT_A2DP_META;
     packet[2] = A2DP_SUBEVENT_COMMAND_ACCEPTED;
     (*callback)(HCI_EVENT_PACKET, 0, packet, size); 
 }
@@ -228,6 +229,7 @@ static inline void a2dp_emit_cmd_accepted(btstack_packet_handler_t callback, uin
 static inline void a2dp_emit_cmd_rejected(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size){
     if (!callback) return;
     UNUSED(size);
+    packet[0] = HCI_EVENT_A2DP_META;
     packet[2] = A2DP_SUBEVENT_COMMAND_REJECTED;
     (*callback)(HCI_EVENT_PACKET, 0, packet, size); 
 }
