@@ -1455,8 +1455,10 @@ static void sm_sc_cmac_done(uint8_t * hash){
 
     sm_connection_t * sm_conn = sm_cmac_connection;
     sm_cmac_connection = NULL;
+#ifdef ENABLE_CLASSIC
     link_key_type_t link_key_type;
-
+#endif
+    
     switch (sm_conn->sm_engine_state){
         case SM_SC_W4_CMAC_FOR_CONFIRMATION:
             memcpy(setup->sm_local_confirm, hash, 16);
