@@ -301,7 +301,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     uint8_t status;
     uint8_t local_seid;
     bd_addr_t address;
-
+    
     if (packet_type != HCI_EVENT_PACKET) return;
 
 #ifndef HAVE_BTSTACK_STDIN
@@ -317,7 +317,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 #endif
 
     if (hci_event_packet_get_type(packet) != HCI_EVENT_A2DP_META) return;
-
     switch (packet[2]){
         case A2DP_SUBEVENT_INCOMING_CONNECTION_ESTABLISHED:
             a2dp_subevent_incoming_connection_established_get_bd_addr(packet, address);
@@ -369,6 +368,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             play_info.status = AVRCP_PLAY_STATUS_STOPPED;
             printf("A2DP: Stream released.\n");
             a2dp_demo_timer_stop(&media_tracker);
+            break;
+        case A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
+            printf("A2DP: Signaling released.\n");
             break;
         default:
             printf("A2DP: event 0x%02x is not implemented\n", packet[2]);
