@@ -686,6 +686,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(size);
     uint16_t cid;
     bd_addr_t address;
+    uint8_t status;
 
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_A2DP_META) return;
@@ -717,10 +718,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         }  
         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
             a2dp_subevent_stream_established_get_bd_addr(packet, address);
+            status = a2dp_subevent_stream_established_get_status(packet);
             cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
             if (cid != a2dp_cid) break;
-            local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
+            if (status){
+                app_state = AVDTP_APPLICATION_IDLE;
+                printf(" -- a2dp sink demo: streaming connection failed, status 0x%02x\n", status);
+                break;
+            }
             printf(" -- a2dp sink demo: streaming connection is established, address %s, a2dp cid 0x%02X, local_seid %d\n", bd_addr_to_str(address), a2dp_cid, local_seid);
+            local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
             app_state = AVDTP_APPLICATION_STREAMING;
             break;
         
@@ -813,7 +820,7 @@ static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
     switch (cmd){
         case 'b':
-            printf(" - Create AVDTP connection to addr %s.\n", bd_addr_to_str(device_addr));
+            printf(" - Create AVDTP connection to addr %s, and local seid %d.\n", bd_addr_to_str(device_addr), local_seid);
             status = a2dp_sink_establish_stream(device_addr, local_seid, &a2dp_cid);
             break;
         case 'B':

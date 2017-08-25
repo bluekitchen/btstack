@@ -180,7 +180,7 @@ avdtp_stream_endpoint_t * a2dp_sink_create_stream_endpoint(avdtp_media_type_t me
 uint8_t a2dp_sink_establish_stream(bd_addr_t bd_addr, uint8_t local_seid, uint16_t * avdtp_cid){
     sc.local_stream_endpoint = avdtp_stream_endpoint_for_seid(local_seid, &a2dp_sink_context);
     if (!sc.local_stream_endpoint){
-        log_error(" no local_stream_endpoint for seid %d", local_seid);
+        log_info("No local_stream_endpoint for seid %d", local_seid);
         return AVDTP_SEID_DOES_NOT_EXIST;
     }
     return avdtp_sink_connect(bd_addr, avdtp_cid);
@@ -253,6 +253,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             cid = avdtp_subevent_signaling_connection_established_get_avdtp_cid(packet);
             status = avdtp_subevent_signaling_connection_established_get_status(packet);
             if (status != 0){
+                app_state = A2DP_IDLE;
                 log_info("AVDTP_SUBEVENT_SIGNALING_CONNECTION failed status %d ---", status);
                 a2dp_streaming_emit_connection_established(a2dp_sink_context.a2dp_callback, cid, address, 0, 0, status);
                 break;
