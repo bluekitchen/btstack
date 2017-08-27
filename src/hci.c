@@ -1335,6 +1335,10 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_LE_READ_BUFFER_SIZE;
             hci_send_cmd(&hci_le_read_buffer_size);
             break;
+        case HCI_INIT_LE_SET_EVENT_MASK:
+            hci_stack->substate = HCI_INIT_W4_LE_SET_EVENT_MASK;
+            hci_send_cmd(&hci_le_set_event_mask, 0x000FFFFF, 0x0);
+            break;
         case HCI_INIT_WRITE_LE_HOST_SUPPORTED:
             // LE Supported Host = 1, Simultaneous Host = 0
             hci_stack->substate = HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED;
@@ -1605,7 +1609,9 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         case HCI_INIT_W4_LE_READ_BUFFER_SIZE:
             // skip write le host if not supported (e.g. on LE only EM9301)
             if (hci_stack->local_supported_commands[0] & 0x02) break;
-            // explicit fall through to reduce repetitions
+            hci_stack->substate = HCI_INIT_LE_SET_EVENT_MASK;
+            return;
+
 
 #ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
         case HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED:
