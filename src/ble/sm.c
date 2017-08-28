@@ -80,6 +80,7 @@
 #ifdef ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
 #include "uECC.h"
 #endif
+#endif
 
 #if defined(ENABLE_LE_SIGNED_WRITE) || defined(ENABLE_LE_SECURE_CONNECTIONS)
 #define ENABLE_CMAC_ENGINE
@@ -2149,7 +2150,7 @@ static void sm_run(void){
             return;
         }
 
-#if defined(ENABLE_LE_SECURE_CONNECTIONS) || !defined(ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS)
+#if defined(ENABLE_LE_SECURE_CONNECTIONS) && !defined(ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS)
         if (setup->sm_state_vars & SM_STATE_VAR_DHKEY_NEEDED){
             setup->sm_state_vars &= ~SM_STATE_VAR_DHKEY_NEEDED;
             hci_send_cmd(&hci_le_generate_dhkey, &setup->sm_peer_q[0], &setup->sm_peer_q[32]);
@@ -2879,7 +2880,6 @@ static void sm_handle_random_result(uint8_t * data){
             sm_log_ec_keypair();
         }
     }
-#endif
 #endif
     
     switch (rau_state){
