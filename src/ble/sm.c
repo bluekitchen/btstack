@@ -1586,10 +1586,6 @@ static void sm_sc_calculate_dhkey(sm_key256_t dhkey){
 }
 
 static void f5_calculate_salt(sm_connection_t * sm_conn){
-    // calculate DHKEY
-    sm_key256_t dhkey;
-    sm_sc_calculate_dhkey(dhkey);
-
     // calculate salt for f5
     const uint16_t message_len = 32;
     sm_cmac_connection = sm_conn;
@@ -1717,6 +1713,10 @@ static void sm_sc_calculate_remote_confirm(sm_connection_t * sm_conn){
 
 static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn){
     sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F5_SALT;
+
+    // calculate DHKEY
+    sm_key256_t dhkey;
+    sm_sc_calculate_dhkey(dhkey);
 }
 
 static void sm_sc_calculate_f6_for_dhkey_check(sm_connection_t * sm_conn){
