@@ -3350,22 +3350,13 @@ static inline uint8_t hci_subevent_le_generate_dhkey_complete_get_status(const u
     return event[3];
 }
 /**
- * @brief Get field dhkey_x from event HCI_SUBEVENT_LE_GENERATE_DHKEY_COMPLETE
+ * @brief Get field dhkey from event HCI_SUBEVENT_LE_GENERATE_DHKEY_COMPLETE
  * @param event packet
- * @param Pointer to storage for dhkey_x
+ * @param Pointer to storage for dhkey
  * @note: btstack_type Q
  */
-static inline void hci_subevent_le_generate_dhkey_complete_get_dhkey_x(const uint8_t * event, uint8_t * dhkey_x){
-    reverse_bytes(&event[4], dhkey_x, 32);    
-}
-/**
- * @brief Get field dhkey_y from event HCI_SUBEVENT_LE_GENERATE_DHKEY_COMPLETE
- * @param event packet
- * @param Pointer to storage for dhkey_y
- * @note: btstack_type Q
- */
-static inline void hci_subevent_le_generate_dhkey_complete_get_dhkey_y(const uint8_t * event, uint8_t * dhkey_y){
-    reverse_bytes(&event[36], dhkey_y, 32);    
+static inline void hci_subevent_le_generate_dhkey_complete_get_dhkey(const uint8_t * event, uint8_t * dhkey){
+    reverse_bytes(&event[4], dhkey, 32);    
 }
 
 /**

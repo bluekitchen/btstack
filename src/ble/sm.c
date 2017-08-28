@@ -3161,19 +3161,20 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_log_ec_keypair();
                             break;
                         case HCI_SUBEVENT_LE_GENERATE_DHKEY_COMPLETE:
+                            sm_conn = sm_get_connection_for_handle(sm_active_connection_handle);
                             if (hci_subevent_le_generate_dhkey_complete_get_status(packet)){
-                                log_error("Generate DHKEY failed");
+                                log_error("Generate DHKEY failed -> abort");
+                                // abort pairing with 'unspecified reason'
+                                sm_pdu_received_in_wrong_state(sm_conn);
                                 break;
                             }
-                            // key is x/y as little endian, like in public key command
-                            hci_subevent_le_generate_dhkey_complete_get_dhkey_x(packet, &setup->sm_dhkey[0]);
-                            // hci_subevent_le_read_local_p256_public_key_complete_get_dhkey_y(packet, &setup->sm_dhkey[32]);
+
+                            hci_subevent_le_generate_dhkey_complete_get_dhkey(packet, &setup->sm_dhkey[0]);
                             setup->sm_state_vars |= SM_STATE_VAR_DHKEY_CALCULATED;
                             log_info("dhkey");
                             log_info_hexdump(&setup->sm_dhkey[0], 32);
 
                             // trigger next step
-                            sm_connection_t * sm_conn = sm_get_connection_for_handle(sm_active_connection_handle);
                             if (sm_conn->sm_engine_state == SM_SC_W4_CALCULATE_DHKEY){
                                 sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F5_SALT;
                             }
@@ -3515,10 +3516,9 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             reverse_256(&packet[01], &setup->sm_peer_q[0]);
             reverse_256(&packet[33], &setup->sm_peer_q[32]);
 
+#ifdef USE_MICROECC_FOR_ECDH
             // validate public key
             err = 0;
-
-#ifdef USE_MICROECC_FOR_ECDH
 #if uECC_SUPPORTS_secp256r1
             // standard version
             err = uECC_valid_public_key(setup->sm_peer_q, uECC_secp256r1()) == 0;
@@ -3526,14 +3526,13 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             // static version
             err = uECC_valid_public_key(setup->sm_peer_q) == 0;
 #endif
-#endif
-
             if (err){
                 log_error("sm: peer public key invalid %x", err);
                 // uses "unspecified reason", there is no "public key invalid" error code
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
+#endif
 
 #ifndef USE_MICROECC_FOR_ECDH 
             // start calculating dhkey
