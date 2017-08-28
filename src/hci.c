@@ -1616,7 +1616,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 #ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
         case HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED:
             if ((hci_stack->local_supported_commands[0] & 0x30) == 0x30){
-                hci_stack->substate = HCI_INIT_LE_READ_MAX_DATA_LENGTH;
+                hci_stack->substate = HCI_INIT_LE_SET_EVENT_MASK;
                 return;
             }
             // explicit fall through to reduce repetitions
