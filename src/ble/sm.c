@@ -77,7 +77,8 @@
 #endif
 
 #ifdef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
-#error "Support for DHKEY Support in HCI Controller not implemented yet. Please use software implementation" 
+// currently used to validate local and remote public key
+#include "uECC.h"
 #else
 #define USE_MICROECC_FOR_ECDH
 #endif
@@ -166,7 +167,9 @@ typedef enum {
 } ec_key_generation_state_t;
 
 typedef enum {
-    SM_STATE_VAR_DHKEY_COMMAND_RECEIVED = 1 << 0
+    SM_STATE_VAR_DHKEY_NEEDED = 1 << 0,
+    SM_STATE_VAR_DHKEY_CALCULATED = 1 << 1,
+    SM_STATE_VAR_DHKEY_COMMAND_RECEIVED = 1 << 2,
 } sm_state_var_t;
 
 //
@@ -311,7 +314,7 @@ typedef struct sm_setup_context {
     uint8_t   sm_peer_q[64];    // also stores random for EC key generation during init
     sm_key_t  sm_peer_nonce;    // might be combined with sm_peer_random
     sm_key_t  sm_local_nonce;   // might be combined with sm_local_random
-    sm_key_t  sm_dhkey;
+    sm_key_t  sm_dhkey; 
     sm_key_t  sm_peer_dhkey_check;
     sm_key_t  sm_local_dhkey_check;
     sm_key_t  sm_ra;
@@ -1713,11 +1716,20 @@ static void sm_sc_calculate_remote_confirm(sm_connection_t * sm_conn){
 }
 
 static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn){
-    sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F5_SALT;
 
+#ifdef USE_MICROECC_FOR_ECDH
     // calculate DHKEY
-    sm_key256_t dhkey;
-    sm_sc_calculate_dhkey(dhkey);
+    sm_sc_calculate_dhkey(setup->sm_dhkey);
+    setup->sm_state_vars |= SM_STATE_VAR_DHKEY_CALCULATED;
+#endif
+
+    if (setup->sm_state_vars & SM_STATE_VAR_DHKEY_CALCULATED){
+        sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F5_SALT;
+        return;
+    } else {
+        sm_conn->sm_engine_state = SM_SC_W4_CALCULATE_DHKEY;
+    }
+
 }
 
 static void sm_sc_calculate_f6_for_dhkey_check(sm_connection_t * sm_conn){
@@ -2139,16 +2151,29 @@ static void sm_run(void){
 
         if (sm_active_connection_handle == HCI_CON_HANDLE_INVALID) return;
 
+        sm_connection_t * connection = sm_get_connection_for_handle(sm_active_connection_handle);
+        if (!connection) {
+            log_info("no connection for handle 0x%04x", sm_active_connection_handle);
+            return;
+        }
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+#ifdef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
+        if (setup->sm_state_vars & SM_STATE_VAR_DHKEY_NEEDED){
+            setup->sm_state_vars &= ~SM_STATE_VAR_DHKEY_NEEDED;
+            hci_send_cmd(&hci_le_generate_dhkey, &setup->sm_peer_q[0], &setup->sm_peer_q[32]);
+            // for comparison
+            sm_key256_t dhkey;
+            sm_sc_calculate_dhkey(dhkey);
+            return;
+        }
+#endif
+#endif
+
         // assert that we could send a SM PDU - not needed for all of the following
         if (!l2cap_can_send_fixed_channel_packet_now(sm_active_connection_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL)) {
             log_info("cannot send now, requesting can send now event");
             l2cap_request_can_send_fix_channel_now_event(sm_active_connection_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
-            return;
-        }
-
-        sm_connection_t * connection = sm_get_connection_for_handle(sm_active_connection_handle);
-        if (!connection) {
-            log_info("no connection for handle 0x%04x", sm_active_connection_handle);
             return;
         }
 
@@ -3097,16 +3122,63 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             break;
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
+#ifdef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
                         case HCI_SUBEVENT_LE_READ_LOCAL_P256_PUBLIC_KEY_COMPLETE:
                             if (hci_subevent_le_read_local_p256_public_key_complete_get_status(packet)){
                                 log_error("Read Local P256 Public Key failed");
                                 break;
                             }
+                            // 4 variants to read public key
+
+                            // key is 64 byte value little endian
+                            // reverse_bytes(&packet[4], ec_q, 64);
+                            
+                            // key is 64 byte value big endian
+                            // memcpy(ec_q, &packet[4], 64);
+
+                            // key is x/y as little endian, like in public key command
                             hci_subevent_le_read_local_p256_public_key_complete_get_dhkey_x(packet, &ec_q[0]);
                             hci_subevent_le_read_local_p256_public_key_complete_get_dhkey_y(packet, &ec_q[32]);
+                            
+                            // key is y/z as little endian
+                            // hci_subevent_le_read_local_p256_public_key_complete_get_dhkey_x(packet, &ec_q[32]);
+                            // hci_subevent_le_read_local_p256_public_key_complete_get_dhkey_y(packet, &ec_q[0]);
+
+                            {
+                                // validate public key using uECC for now
+#if uECC_SUPPORTS_secp256r1
+                                // standard version
+                                int valid = uECC_valid_public_key(ec_q, uECC_secp256r1());
+                                log_info("public key validA %u", valid);
+#else
+                                // static version
+                                int valid = uECC_valid_public_key(ec_q);
+                                log_info("public key validB %u", valid);
+#endif
+                            }   
+
                             ec_key_generation_state = EC_KEY_GENERATION_DONE;
                             sm_log_ec_keypair();
                             break;
+                        case HCI_SUBEVENT_LE_GENERATE_DHKEY_COMPLETE:
+                            if (hci_subevent_le_generate_dhkey_complete_get_status(packet)){
+                                log_error("Generate DHKEY failed");
+                                break;
+                            }
+                            // key is x/y as little endian, like in public key command
+                            hci_subevent_le_generate_dhkey_complete_get_dhkey_x(packet, &setup->sm_dhkey[0]);
+                            // hci_subevent_le_read_local_p256_public_key_complete_get_dhkey_y(packet, &setup->sm_dhkey[32]);
+                            setup->sm_state_vars |= SM_STATE_VAR_DHKEY_CALCULATED;
+                            log_info("dhkey");
+                            log_info_hexdump(&setup->sm_dhkey[0], 32);
+
+                            // trigger next step
+                            sm_connection_t * sm_conn = sm_get_connection_for_handle(sm_active_connection_handle);
+                            if (sm_conn->sm_engine_state == SM_SC_W4_CALCULATE_DHKEY){
+                                sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F5_SALT;
+                            }
+                            break;
+#endif
 #endif
                         default:
                             break;
@@ -3463,6 +3535,11 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 break;
             }
 
+#ifndef USE_MICROECC_FOR_ECDH 
+            // start calculating dhkey
+            setup->sm_state_vars |= SM_STATE_VAR_DHKEY_NEEDED;            
+#endif
+
             if (IS_RESPONDER(sm_conn->sm_role)){
                 // responder
                 sm_conn->sm_engine_state = SM_SC_SEND_PUBLIC_KEY_COMMAND;
@@ -3541,6 +3618,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
         case SM_SC_W2_CALCULATE_G2:
         case SM_SC_W4_CALCULATE_G2:
+        case SM_SC_W4_CALCULATE_DHKEY:
         case SM_SC_W2_CALCULATE_F5_SALT:
         case SM_SC_W4_CALCULATE_F5_SALT:
         case SM_SC_W2_CALCULATE_F5_MACKEY:
