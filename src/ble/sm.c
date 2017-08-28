@@ -311,6 +311,7 @@ typedef struct sm_setup_context {
     uint8_t   sm_peer_q[64];    // also stores random for EC key generation during init
     sm_key_t  sm_peer_nonce;    // might be combined with sm_peer_random
     sm_key_t  sm_local_nonce;   // might be combined with sm_local_random
+    sm_key_t  sm_dhkey;
     sm_key_t  sm_peer_dhkey_check;
     sm_key_t  sm_local_dhkey_check;
     sm_key_t  sm_ra;
@@ -1589,7 +1590,7 @@ static void f5_calculate_salt(sm_connection_t * sm_conn){
     // calculate salt for f5
     const uint16_t message_len = 32;
     sm_cmac_connection = sm_conn;
-    memcpy(sm_cmac_sc_buffer, dhkey, message_len);
+    memcpy(sm_cmac_sc_buffer, setup->sm_dhkey, message_len);
     sm_cmac_general_start(f5_salt, message_len, &sm_sc_cmac_get_byte, &sm_sc_cmac_done);
 }
 
