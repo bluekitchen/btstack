@@ -3251,6 +3251,13 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         // set local addr for le device db
                         le_device_db_set_local_bd_addr(addr);
                     }
+                    if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_supported_commands)){
+#if defined(ENABLE_LE_SECURE_CONNECTIONS) && !defined(ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS)
+                        if ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+34] & 0x06) != 0x06){
+                            log_error("LE Secure Connections enabled, but HCI Controller doesn't support it. Please add ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS to btstack_config.h");
+                        }
+#endif
+                    }
                     break;
                 default:
                     break;
