@@ -76,16 +76,8 @@
 #error "HCI_ACL_PAYLOAD_SIZE must be at least 69 bytes when using LE Secure Conection. Please increase HCI_ACL_PAYLOAD_SIZE or disable ENABLE_LE_SECURE_CONNECTIONS"
 #endif
 
-#ifdef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
-// currently used to validate local and remote public key
-#include "uECC.h"
-#else
-#define USE_MICROECC_FOR_ECDH
-#endif
-#endif
-
 // Software ECDH implementation provided by micro-ecc
-#ifdef USE_MICROECC_FOR_ECDH
+#ifdef ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
 #include "uECC.h"
 #endif
 
@@ -1574,9 +1566,9 @@ static const sm_key_t f5_salt = { 0x6C ,0x88, 0x83, 0x91, 0xAA, 0xF5, 0xA5, 0x38
 static const uint8_t f5_key_id[] = { 0x62, 0x74, 0x6c, 0x65 };
 static const uint8_t f5_length[] = { 0x01, 0x00};  
 
+#ifdef ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
 static void sm_sc_calculate_dhkey(sm_key256_t dhkey){
     memset(dhkey, 0, 32);
-#ifdef USE_MICROECC_FOR_ECDH
 #if uECC_SUPPORTS_secp256r1
     // standard version
     uECC_shared_secret(setup->sm_peer_q, ec_d, dhkey, uECC_secp256r1());
@@ -1584,10 +1576,10 @@ static void sm_sc_calculate_dhkey(sm_key256_t dhkey){
     // static version
     uECC_shared_secret(setup->sm_peer_q, ec_d, dhkey);
 #endif
-#endif
     log_info("dhkey");
     log_info_hexdump(dhkey, 32);
 }
+#endif
 
 static void f5_calculate_salt(sm_connection_t * sm_conn){
     // calculate salt for f5
@@ -1717,7 +1709,7 @@ static void sm_sc_calculate_remote_confirm(sm_connection_t * sm_conn){
 
 static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn){
 
-#ifdef USE_MICROECC_FOR_ECDH
+#ifdef ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
     // calculate DHKEY
     sm_sc_calculate_dhkey(setup->sm_dhkey);
     setup->sm_state_vars |= SM_STATE_VAR_DHKEY_CALCULATED;
@@ -1897,7 +1889,7 @@ static void sm_run(void){
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
     if (ec_key_generation_state == EC_KEY_GENERATION_ACTIVE){
-#ifndef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
+#ifdef ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
         sm_random_start(NULL);
 #else
         ec_key_generation_state = EC_KEY_GENERATION_W4_KEY;
@@ -2157,17 +2149,12 @@ static void sm_run(void){
             return;
         }
 
-#ifdef ENABLE_LE_SECURE_CONNECTIONS
-#ifdef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
+#if defined(ENABLE_LE_SECURE_CONNECTIONS) || !defined(ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS)
         if (setup->sm_state_vars & SM_STATE_VAR_DHKEY_NEEDED){
             setup->sm_state_vars &= ~SM_STATE_VAR_DHKEY_NEEDED;
             hci_send_cmd(&hci_le_generate_dhkey, &setup->sm_peer_q[0], &setup->sm_peer_q[32]);
-            // for comparison
-            sm_key256_t dhkey;
-            sm_sc_calculate_dhkey(dhkey);
             return;
         }
-#endif
 #endif
 
         // assert that we could send a SM PDU - not needed for all of the following
@@ -2833,7 +2820,7 @@ static void sm_handle_encryption_result(uint8_t * data){
 }
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-#ifndef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
+#ifdef ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
 #if !defined(WICED_VERSION)
 // @return OK
 static int sm_generate_f_rng(unsigned char * buffer, unsigned size){
@@ -2854,8 +2841,7 @@ static int sm_generate_f_rng(unsigned char * buffer, unsigned size){
 // note: random generator is ready. this doesn NOT imply that aes engine is unused!
 static void sm_handle_random_result(uint8_t * data){
 
-#ifdef ENABLE_LE_SECURE_CONNECTIONS
-#ifndef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
+#if defined(ENABLE_LE_SECURE_CONNECTIONS) && defined(ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS)
 
     if (ec_key_generation_state == EC_KEY_GENERATION_ACTIVE){
         int num_bytes = setup->sm_passkey_bit;
@@ -2869,7 +2855,6 @@ static void sm_handle_random_result(uint8_t * data){
             setup->sm_passkey_bit = 0;
 
             // generate EC key
-#ifdef USE_MICROECC_FOR_ECDH
 #ifndef WICED_VERSION
             log_info("set uECC RNG for initial key generation with 64 random bytes");
             // micro-ecc from WICED SDK uses its wiced_crypto_get_random by default - no need to set it
@@ -2886,9 +2871,8 @@ static void sm_handle_random_result(uint8_t * data){
 #else
             // static version
             uECC_make_key(ec_q, ec_d);
-#endif /* USE_MICROECC_FOR_ECDH */
+#endif /* ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS */
 
-#endif /* USE_MICROECC_FOR_ECDH */
             ec_key_generation_state = EC_KEY_GENERATION_DONE;
             log_info("Elliptic curve: d");
             log_info_hexdump(ec_d,32);
@@ -3121,42 +3105,16 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 #endif
                             break;
 
-#ifdef ENABLE_LE_SECURE_CONNECTIONS
-#ifdef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
+#if defined(ENABLE_LE_SECURE_CONNECTIONS) && !defined(ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS)
                         case HCI_SUBEVENT_LE_READ_LOCAL_P256_PUBLIC_KEY_COMPLETE:
                             if (hci_subevent_le_read_local_p256_public_key_complete_get_status(packet)){
                                 log_error("Read Local P256 Public Key failed");
                                 break;
                             }
-                            // 4 variants to read public key
 
-                            // key is 64 byte value little endian
-                            // reverse_bytes(&packet[4], ec_q, 64);
-                            
-                            // key is 64 byte value big endian
-                            // memcpy(ec_q, &packet[4], 64);
-
-                            // key is x/y as little endian, like in public key command
                             hci_subevent_le_read_local_p256_public_key_complete_get_dhkey_x(packet, &ec_q[0]);
                             hci_subevent_le_read_local_p256_public_key_complete_get_dhkey_y(packet, &ec_q[32]);
                             
-                            // key is y/z as little endian
-                            // hci_subevent_le_read_local_p256_public_key_complete_get_dhkey_x(packet, &ec_q[32]);
-                            // hci_subevent_le_read_local_p256_public_key_complete_get_dhkey_y(packet, &ec_q[0]);
-
-                            {
-                                // validate public key using uECC for now
-#if uECC_SUPPORTS_secp256r1
-                                // standard version
-                                int valid = uECC_valid_public_key(ec_q, uECC_secp256r1());
-                                log_info("public key validA %u", valid);
-#else
-                                // static version
-                                int valid = uECC_valid_public_key(ec_q);
-                                log_info("public key validB %u", valid);
-#endif
-                            }   
-
                             ec_key_generation_state = EC_KEY_GENERATION_DONE;
                             sm_log_ec_keypair();
                             break;
@@ -3179,7 +3137,6 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                 sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F5_SALT;
                             }
                             break;
-#endif
 #endif
                         default:
                             break;
@@ -3516,7 +3473,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             reverse_256(&packet[01], &setup->sm_peer_q[0]);
             reverse_256(&packet[33], &setup->sm_peer_q[32]);
 
-#ifdef USE_MICROECC_FOR_ECDH
+#ifdef ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
             // validate public key
             err = 0;
 #if uECC_SUPPORTS_secp256r1
@@ -3534,7 +3491,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             }
 #endif
 
-#ifndef USE_MICROECC_FOR_ECDH 
+#ifndef ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS 
             // start calculating dhkey
             setup->sm_state_vars |= SM_STATE_VAR_DHKEY_NEEDED;            
 #endif
