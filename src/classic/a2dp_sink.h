@@ -77,11 +77,13 @@ void a2dp_sink_init(void);
  * @param codec_capabilities_len	media codec capabilities length
  * @param codec_configuration 		default media codec configuration
  * @param codec_configuration_len	media codec configuration length 
- * @return status
+ * @param out_local_seid			Assigned stream endpoint ID used in further A2DP commands.
+ *
+ * @return status 					ERROR_CODE_SUCCESS if sucessful
  */
 uint8_t a2dp_sink_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, 
 	uint8_t * codec_capabilities, uint16_t codec_capabilities_len,
-	uint8_t * codec_configuration, uint16_t codec_configuration_len, uint8_t * local_seid);
+	uint8_t * codec_configuration, uint16_t codec_configuration_len, uint8_t * out_local_seid);
 
 /**
  * @brief Register callback for the A2DP Sink client. It will receive following subevents of HCI_EVENT_A2DP_META HCI event type: 
@@ -107,14 +109,14 @@ void a2dp_sink_register_media_handler(void (*callback)(uint8_t local_seid, uint8
 /**
  * @brief Establish stream.
  * @param remote
- * @param local_seid  ID assigned to a local stream endpoint
- * @param a2dp_cid   
+ * @param local_seid  		ID of a local stream endpoint.
+ * @param out_a2dp_cid 		Assigned A2DP channel identifyer used for furhter A2DP commands.   
  */
-uint8_t a2dp_sink_establish_stream(bd_addr_t remote, uint8_t local_seid, uint16_t * a2dp_cid);
+uint8_t a2dp_sink_establish_stream(bd_addr_t remote, uint8_t local_seid, uint16_t * out_a2dp_cid);
 
 /**
- * @brief Release stream.
- * @param a2dp_cid
+ * @brief Release stream and disconnect from remote.
+ * @param a2dp_cid 			A2DP channel identifyer.
  */
 void a2dp_sink_disconnect(uint16_t a2dp_cid);
 

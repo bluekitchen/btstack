@@ -55,7 +55,7 @@ extern "C" {
 /* API_START */
 
 /**
- * @brief A2DP Source service record. 
+ * @brief Create A2DP Source service record. 
  * @param service
  * @param service_record_handle
  * @param supported_features 16-bit bitmap, see AVDTP_SOURCE_SF_* values in avdtp.h
@@ -64,51 +64,95 @@ extern "C" {
  */
 void a2dp_source_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name);
 
+/**
+ * @brief Initialize up A2DP Source device.
+ */
 void a2dp_source_init(void);
 
-void a2dp_source_register_packet_handler(btstack_packet_handler_t callback);
-
+/**
+ * @brief Create a stream endpoint of type SOURCE, and register media codec by specifying its capabilities and the default configuration.
+ * @param media_type    			See avdtp_media_type_t values in avdtp.h (audio, video or multimedia).
+ * @param media_codec_type 			See avdtp_media_codec_type_t values in avdtp.h 
+ * @param codec_capabilities        Media codec capabilities as defined in A2DP spec, section 4 - Audio Codec Interoperability Requirements.
+ * @param codec_capabilities_len	Media codec capabilities length.
+ * @param codec_configuration 		Default media codec configuration.
+ * @param codec_configuration_len	Media codec configuration length. 
+ * @param out_local_seid			Assigned stream endpoint ID used in further A2DP commands.
+ *
+ * @return status 					ERROR_CODE_SUCCESS if sucessful.
+ */
 avdtp_stream_endpoint_t * a2dp_source_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, 
 	uint8_t * codec_capabilities, uint16_t codec_capabilities_len,
 	uint8_t * codec_configuration, uint16_t codec_configuration_len);
 
 /**
- * @brief Open stream
- * @param bd_addr
- * @param local_seid
- * @param avdtp_cid
+ * @brief Register callback for the A2DP Source client. It will receive following subevents of HCI_EVENT_A2DP_META HCI event type: 
+ * - A2DP_SUBEVENT_INCOMING_CONNECTION_ESTABLISHED:		        Received when signaling connection with a remote is established .
+ * - A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:				Received when signaling connection with a remote is released .
+ * - A2DP_SUBEVENT_STREAM_ESTABLISHED:							Received when stream to a remote device is established.
+ * - A2DP_SUBEVENT_STREAM_STARTED:								Received when stream is started.
+ * - A2DP_SUBEVENT_STREAM_SUSPENDED:							Received when stream is paused.
+ * - A2DP_SUBEVENT_STREAM_RELEASED:								Received when stream is released.
+ * - A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW:			Indicates that the next media packet can be sent.
+ *
+ * @param callback
  */
-uint8_t a2dp_source_establish_stream(bd_addr_t bd_addr, uint8_t local_seid, uint16_t * avdtp_cid);
-
+void a2dp_source_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
- * @brief Start stream
- * @param avdtp_cid
- * @param seid
+ * @brief Open stream.
+ * @param remote
+ * @param local_seid	 	ID assigned to a local stream endpoint
+ * @param out_a2dp_cid 		Assigned A2DP channel identifyer used for furhter A2DP commands. 
  */
-uint8_t a2dp_source_start_stream(uint16_t avdtp_cid, uint8_t local_seid);
+uint8_t a2dp_source_establish_stream(bd_addr_t remote, uint8_t local_seid, uint16_t * out_a2dp_cid);
 
 /**
- * @brief Start stream
- * @param avdtp_cid
- * @param seid
+ * @brief Start stream.
+ * @param a2dp_cid 			A2DP channel identifyer.
+ * @param local_seid	 	ID of a local stream endpoint.
  */
-uint8_t a2dp_source_pause_stream(uint16_t avdtp_cid, uint8_t local_seid);
+uint8_t a2dp_source_start_stream(uint16_t a2dp_cid, uint8_t local_seid);
 
 /**
- * @brief Disconnect from device with cid. 
- * @param avdtp_cid
+ * @brief Pause stream.
+ * @param a2dp_cid 			A2DP channel identifyer.
+ * @param local_seid  		ID of a local stream endpoint.
  */
-uint8_t a2dp_source_disconnect(uint16_t avdtp_cid);
+uint8_t a2dp_source_pause_stream(uint16_t a2dp_cid, uint8_t local_seid);
 
-// size for media (does not include media header)
-int 	a2dp_max_media_payload_size(uint8_t local_seid);
+/**
+ * @brief Release stream and disconnect from remote. 
+ * @param a2dp_cid 			A2DP channel identifyer.
+ */
+uint8_t a2dp_source_disconnect(uint16_t a2dp_cid);
 
-uint8_t a2dp_source_stream_endpoint_ready(uint16_t avdtp_cid, uint8_t local_seid);
+/**
+ * @brief Request to send a media packet. Packet can be then sent on reception of A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW event.
+ * @param a2dp_cid 			A2DP channel identifyer.
+ * @param local_seid  		ID of a local stream endpoint.
+ */
+void 	a2dp_source_stream_endpoint_request_can_send_now(uint16_t a2dp_cid, uint8_t local_seid);
 
-void 	a2dp_source_stream_endpoint_request_can_send_now(uint8_t local_seid);
+/**
+ * @brief Return maximal media payload size, does not include media header.
+ * @param a2dp_cid 			A2DP channel identifyer.
+ * @param local_seid  		ID of a local stream endpoint.
+ * @return max_media_payload_size_without_media_header
+ */
+int 	a2dp_max_media_payload_size(uint16_t a2dp_cid, uint8_t local_seid);
 
-int  	a2dp_source_stream_send_media_payload(uint8_t local_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker);
+/**
+ * @brief Send media payload.
+ * @param a2dp_cid 			A2DP channel identifyer.
+ * @param local_seid  		ID of a local stream endpoint.
+ * @param storage
+ * @param num_bytes_to_copy
+ * @param num_frames
+ * @param marker
+ * @return max_media_payload_size_without_media_header
+ */
+int  	a2dp_source_stream_send_media_payload(uint16_t a2dp_cid, uint8_t local_seid, uint8_t * storage, int num_bytes_to_copy, uint8_t num_frames, uint8_t marker);
 
 /* API_END */
 

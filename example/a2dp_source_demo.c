@@ -181,7 +181,7 @@ static void a2dp_demo_send_media_packet(void){
     int num_bytes_in_frame = btstack_sbc_encoder_sbc_buffer_length();
     int bytes_in_storage = media_tracker.sbc_storage_count;
     uint8_t num_frames = bytes_in_storage / num_bytes_in_frame;
-    a2dp_source_stream_send_media_payload(media_tracker.local_seid, media_tracker.sbc_storage, bytes_in_storage, num_frames, 0);
+    a2dp_source_stream_send_media_payload(media_tracker.a2dp_cid, media_tracker.local_seid, media_tracker.sbc_storage, bytes_in_storage, num_frames, 0);
     media_tracker.sbc_storage_count = 0;
     media_tracker.sbc_ready_to_send = 0;
 }
@@ -264,12 +264,12 @@ static void a2dp_demo_audio_timeout_handler(btstack_timer_source_t * timer){
     if ((context->sbc_storage_count + btstack_sbc_encoder_sbc_buffer_length()) > context->max_media_payload_size){
         // schedule sending
         context->sbc_ready_to_send = 1;
-        a2dp_source_stream_endpoint_request_can_send_now(context->local_seid);
+        a2dp_source_stream_endpoint_request_can_send_now(context->a2dp_cid, context->local_seid);
     }
 }
 
 static void a2dp_demo_timer_start(a2dp_media_sending_context_t * context){
-    context->max_media_payload_size = a2dp_max_media_payload_size(context->local_seid);
+    context->max_media_payload_size = a2dp_max_media_payload_size(context->a2dp_cid, context->local_seid);
     context->sbc_storage_count = 0;
     context->sbc_ready_to_send = 0;
     context->streaming = 1;

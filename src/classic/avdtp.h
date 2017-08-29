@@ -473,7 +473,7 @@ typedef struct {
     bd_addr_t remote_addr;
     
     uint32_t fill_audio_ring_buffer_timeout_ms;
-    uint32_t time_audio_data_sent; // ms
+    uint32_t time_audio_data_sent; // msstream
     uint32_t acc_num_missed_samples;
     uint32_t samples_ready;
     btstack_timer_source_t fill_audio_ring_buffer_timer;
