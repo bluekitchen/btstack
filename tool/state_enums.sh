@@ -14,3 +14,11 @@ echo "RFCOMM Channel states"
 grep RFCOMM_CHANNEL_ $BTSTACK_ROOT/src/classic/rfcomm.h | grep -v RFCOMM_CHANNEL_STATE | grep -v "// state variables" | nl
 
 echo
+
+# HFP
+echo "HFP Commands/States"
+grep  HFP_CMD_ $BTSTACK_ROOT/src/classic/hfp.h | nl -v 0
+echo "HFP Errors"
+grep  HFP_CME_ $BTSTACK_ROOT/src/classic/hfp.h | nl -v 0
+
+echo

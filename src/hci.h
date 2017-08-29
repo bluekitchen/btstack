@@ -70,10 +70,10 @@ extern "C" {
      
 // packet buffer sizes
 
-// Max HCI Commadn LE payload size:
+// Max HCI Command LE payload size:
 // 64 from LE Generate DHKey command
 // 32 from LE Encrypt command
-#if defined(ENABLE_LE_SECURE_CONNECTIONS) && !defined(HAVE_HCI_CONTROLLER_DHKEY_SUPPORT)
+#if defined(ENABLE_LE_SECURE_CONNECTIONS) && !defined(ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS)
 #define HCI_CMD_PAYLOAD_SIZE_LE 64
 #else
 #define HCI_CMD_PAYLOAD_SIZE_LE 32
@@ -351,6 +351,7 @@ typedef enum {
     SM_SC_W4_PAIRING_RANDOM,
     SM_SC_W2_CALCULATE_G2,
     SM_SC_W4_CALCULATE_G2,
+    SM_SC_W4_CALCULATE_DHKEY,
     SM_SC_W2_CALCULATE_F5_SALT,
     SM_SC_W4_CALCULATE_F5_SALT,
     SM_SC_W2_CALCULATE_F5_MACKEY,
@@ -616,6 +617,8 @@ typedef enum hci_init_state{
     HCI_INIT_W4_LE_READ_BUFFER_SIZE,
     HCI_INIT_WRITE_LE_HOST_SUPPORTED,
     HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED,
+    HCI_INIT_LE_SET_EVENT_MASK,
+    HCI_INIT_W4_LE_SET_EVENT_MASK,
 #endif
 
 #ifdef ENABLE_LE_DATA_LENGTH_EXTENSION

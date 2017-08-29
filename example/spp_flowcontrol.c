@@ -208,7 +208,7 @@ int btstack_main(int argc, const char * argv[]){
     one_shot_timer_setup();
     
     puts("SPP FlowControl Demo: simulates processing on received data...\n\r");
-    gap_set_local_name("BTstack SPP Flow Control");
+    gap_set_local_name("SPP Flowcontrol 00:00:00:00:00:00");
     gap_discoverable_control(1);
 
     // turn on!

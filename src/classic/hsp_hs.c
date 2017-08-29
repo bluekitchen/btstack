@@ -626,6 +626,11 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
             }
             hsp_hs_reset_state();
             log_info("Service not found, status %u.", sdp_event_query_complete_get_status(packet));
+            if (sdp_event_query_complete_get_status(packet)){
+                emit_event(HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE, sdp_event_query_complete_get_status(packet));
+            } else {
+                emit_event(HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE, SDP_SERVICE_NOT_FOUND);
+            }
             break;
     }
 }

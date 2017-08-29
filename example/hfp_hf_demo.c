@@ -64,7 +64,7 @@
 
 uint8_t hfp_service_buffer[150];
 const uint8_t   rfcomm_channel_nr = 1;
-const char hfp_hf_service_name[] = "BTstack HFP HF Demo";
+const char hfp_hf_service_name[] = "HFP HF Demo";
 
 #ifdef HAVE_BTSTACK_STDIN
 static const char * device_addr_string = "00:1B:DC:08:0A:A5";
@@ -571,6 +571,7 @@ int btstack_main(int argc, const char * argv[]){
 
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);   
+    gap_set_local_name("HFP HF Demo 00:00:00:00:00:00");
 
     // init L2CAP
     l2cap_init();

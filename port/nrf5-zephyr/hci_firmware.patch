@@ -1,57 +1,40 @@
-diff --git a/samples/bluetooth/hci_uart/flash_nrf51_pca10028.sh b/samples/bluetooth/hci_uart/flash_nrf51_pca10028.sh
-new file mode 100755
-index 0000000..d51907f
---- /dev/null
-+++ b/samples/bluetooth/hci_uart/flash_nrf51_pca10028.sh
-@@ -0,0 +1,4 @@
-+#!/bin/sh
-+nrfjprog --eraseall -f nrf51
-+nrfjprog --program outdir/nrf51_pca10028/zephyr.hex -f nrf51
-+nrfjprog --reset -f nrf51
-diff --git a/samples/bluetooth/hci_uart/flash_nrf52_pca10040.sh b/samples/bluetooth/hci_uart/flash_nrf52_pca10040.sh
-new file mode 100755
-index 0000000..cc20145
---- /dev/null
-+++ b/samples/bluetooth/hci_uart/flash_nrf52_pca10040.sh
-@@ -0,0 +1,4 @@
-+#!/bin/sh
-+nrfjprog --eraseall -f nrf52
-+nrfjprog --program outdir/nrf52_pca10040/zephyr.hex -f nrf52
-+nrfjprog --reset -f nrf52
 diff --git a/samples/bluetooth/hci_uart/nrf5.conf b/samples/bluetooth/hci_uart/nrf5.conf
-index c3b362d..9fe511f 100644
+index 8b268bc73..b00853925 100644
 --- a/samples/bluetooth/hci_uart/nrf5.conf
 +++ b/samples/bluetooth/hci_uart/nrf5.conf
-@@ -7,6 +7,6 @@ CONFIG_UART_INTERRUPT_DRIVEN=y
- CONFIG_BLUETOOTH=y
- CONFIG_BLUETOOTH_HCI_RAW=y
- CONFIG_BLUETOOTH_MAX_CONN=16
+@@ -4,7 +4,7 @@ CONFIG_UART_CONSOLE=n
+ CONFIG_GPIO=y
+ CONFIG_SERIAL=y
+ CONFIG_UART_INTERRUPT_DRIVEN=y
 -CONFIG_UART_NRF5_BAUD_RATE=1000000
 +CONFIG_UART_NRF5_BAUD_RATE=115200
  CONFIG_UART_NRF5_FLOW_CONTROL=y
- CONFIG_BLUETOOTH_CONTROLLER_ASSERT_HANDLER=y
+ CONFIG_MAIN_STACK_SIZE=512
+ CONFIG_SYSTEM_WORKQUEUE_STACK_SIZE=512
 diff --git a/samples/bluetooth/hci_uart/src/Makefile b/samples/bluetooth/hci_uart/src/Makefile
-index b666967..8606b24 100644
+index ae704cee5..833816b50 100644
 --- a/samples/bluetooth/hci_uart/src/Makefile
 +++ b/samples/bluetooth/hci_uart/src/Makefile
-@@ -1 +1,2 @@
+@@ -1,3 +1,4 @@
+ ccflags-y += -I${ZEPHYR_BASE}/subsys/bluetooth
+ 
  obj-y += main.o
-+ccflags-y += -I../../../subsys/bluetooth/controller/ll
++ccflags-y += -I../../../subsys/bluetooth/controller/ll_sw
 diff --git a/samples/bluetooth/hci_uart/src/main.c b/samples/bluetooth/hci_uart/src/main.c
-index 76e75e1..70da655 100644
+index c21d76215..c8680a43d 100644
 --- a/samples/bluetooth/hci_uart/src/main.c
 +++ b/samples/bluetooth/hci_uart/src/main.c
-@@ -36,6 +36,9 @@
- #include <bluetooth/buf.h>
- #include <bluetooth/hci_raw.h>
+@@ -29,6 +29,9 @@
+ 
+ #include "common/log.h"
  
 +#include "ll.h"
 +#include "nrf.h"
 +
  static struct device *hci_uart_dev;
- 
- #define STACK_SIZE 1024
-@@ -354,6 +357,18 @@ static int hci_uart_init(struct device *unused)
+ static BT_STACK_NOINIT(tx_thread_stack, CONFIG_BT_HCI_TX_STACK_SIZE);
+ static struct k_thread tx_thread_data;
+@@ -341,6 +344,30 @@ static int hci_uart_init(struct device *unused)
  DEVICE_INIT(hci_uart, "hci_uart", &hci_uart_init, NULL, NULL,
  	    APPLICATION, CONFIG_KERNEL_INIT_PRIORITY_DEVICE);
  
@@ -67,32 +50,80 @@ index 76e75e1..70da655 100644
 +    buffer[pos++] = value >> 24;
 +}
 +
++void little_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
++    buffer[pos++] = value;
++    buffer[pos++] = value >> 8;
++}
++
++void little_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value){
++    buffer[pos++] = value;
++    buffer[pos++] = value >> 8;
++    buffer[pos++] = value >> 16;
++    buffer[pos++] = value >> 24;
++}
++
  void main(void)
  {
  	/* incoming events and data from the controller */
-@@ -373,6 +388,12 @@ void main(void)
- 		       NULL, K_PRIO_COOP(7), 0, K_NO_WAIT);
+@@ -351,6 +378,13 @@ void main(void)
  
+ 	/* Enable the raw interface, this will in turn open the HCI driver */
  	bt_enable_raw(&rx_queue);
-+    
++
 +    // make Random Static Address available via HCI Read BD ADDR as fake public address
 +    uint8_t addr[6];
 +    little_endian_store_16(addr, 4, NRF_FICR->DEVICEADDR[1] | 0xc000);
 +    little_endian_store_32(addr, 0, NRF_FICR->DEVICEADDR[0]);
 +    ll_address_set(0, addr);
- 
- 	while (1) {
- 		struct net_buf *buf;
-diff --git a/subsys/bluetooth/controller/ll/ctrl.h b/subsys/bluetooth/controller/ll/ctrl.h
-index f9b092d..b950083 100644
---- a/subsys/bluetooth/controller/ll/ctrl.h
-+++ b/subsys/bluetooth/controller/ll/ctrl.h
-@@ -79,7 +79,7 @@
-  * Controller Interface Defines
-  ****************************************************************************/
- #define RADIO_BLE_VERSION_NUMBER	(0x08)
--#define RADIO_BLE_COMPANY_ID		(0xFFFF)
++
+ 	/* Spawn the TX thread and start feeding commands and data to the
+ 	 * controller
+ 	 */
+diff --git a/subsys/bluetooth/controller/ll_sw/ctrl.h b/subsys/bluetooth/controller/ll_sw/ctrl.h
+index ecec3ccc3..88cdba5fc 100644
+--- a/subsys/bluetooth/controller/ll_sw/ctrl.h
++++ b/subsys/bluetooth/controller/ll_sw/ctrl.h
+@@ -128,7 +128,7 @@
+ #if defined(CONFIG_BT_CTLR_COMPANY_ID)
+ #define RADIO_BLE_COMPANY_ID            CONFIG_BT_CTLR_COMPANY_ID
+ #else
+-#define RADIO_BLE_COMPANY_ID            0xFFFF
 +#define RADIO_BLE_COMPANY_ID (0x0059) // Nordic Semiconductor ASA
- #define RADIO_BLE_SUB_VERSION_NUMBER	(0xFFFF)
- #define RADIO_BLE_FEATURES		(0x1F) /* LE Ping, Slave Initiated
- 						* Feature request, Extended
+ #endif
+ #if defined(CONFIG_BT_CTLR_SUBVERSION_NUMBER)
+ #define RADIO_BLE_SUB_VERSION_NUMBER \
+diff --git a/drivers/serial/uart_nrf5.c b/drivers/serial/uart_nrf5.c
+index e8ebfa5d9..9a5c70e1e 100644
+--- a/drivers/serial/uart_nrf5.c
++++ b/drivers/serial/uart_nrf5.c
+@@ -227,7 +227,7 @@ static int uart_nrf5_init(struct device *dev)
+ 
+ #endif /* CONFIG_UART_NRF5_FLOW_CONTROL */
+ 
+-	DEV_DATA(dev)->baud_rate = CONFIG_UART_NRF5_BAUD_RATE;
++	DEV_DATA(dev)->baud_rate = 115200;
+ 
+ 	/* Set baud rate */
+ 	err = baudrate_set(dev, DEV_DATA(dev)->baud_rate,
+diff --git a/subsys/Kconfig b/subsys/Kconfig
+index 4966a0b81..546713963 100644
+--- a/subsys/Kconfig
++++ b/subsys/Kconfig
+@@ -24,3 +24,5 @@ source "subsys/net/Kconfig"
+ source "subsys/shell/Kconfig"
+ 
+ source "subsys/usb/Kconfig"
++
++source "subsys/btstack/Kconfig"
+diff --git a/subsys/Makefile b/subsys/Makefile
+index a9a2aa153..94da28f17 100644
+--- a/subsys/Makefile
++++ b/subsys/Makefile
+@@ -1,6 +1,7 @@
+ obj-$(CONFIG_FILE_SYSTEM) += fs/
+ obj-$(CONFIG_USB) += usb/
+ obj-$(CONFIG_BT) += bluetooth/
++obj-$(CONFIG_BTSTACK) += btstack/
+ obj-$(CONFIG_NET_BUF) += net/
+ obj-$(CONFIG_CONSOLE_SHELL) += shell/
+ obj-$(CONFIG_CONSOLE_PULL) += console/

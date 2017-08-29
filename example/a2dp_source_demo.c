@@ -92,18 +92,18 @@ static const int16_t sine_int16[] = {
 -19260,  -17557,  -15786,  -13952,  -12062,  -10126,   -8149,   -6140,   -4107,   -2057,
 };
 
-static const char * device_name = "A2DP Source BTstack";
+static const char * device_name = "A2DP Source Demo 00:00:00:00:00:00";
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-#ifdef HAVE_BTSTACK_STDIN
 // mac 2011:    static const char * device_addr_string = "04:0C:CE:E4:85:D3";
 // pts:         static const char * device_addr_string = "00:1B:DC:08:0A:A5";
 // mac 2013:    static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:  static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
-// minijambox:  
-static const char * device_addr_string = "00:21:3C:AC:F7:38";
+// minijambox:  static const char * device_addr_string = "00:21:3C:AC:F7:38";
 // head phones: static const char * device_addr_string = "00:18:09:28:50:18";
 // bt dongle:   static const char * device_addr_string = "00:15:83:5F:9D:46";
-#endif
+// RT-B6
+static const char * device_addr_string = "00:75:58:FF:C9:7D";
 
 static bd_addr_t device_addr;
 static uint8_t sdp_a2dp_source_service_buffer[150];
@@ -301,10 +301,22 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     uint8_t status;
     uint8_t local_seid;
     bd_addr_t address;
-
+    
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != HCI_EVENT_A2DP_META) return;
 
+#ifndef HAVE_BTSTACK_STDIN
+    if (hci_event_packet_get_type(packet) == BTSTACK_EVENT_STATE){
+        if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
+        printf("Create AVDTP Source connection to addr %s.\n", bd_addr_to_str(device_addr));
+        status = a2dp_source_establish_stream(device_addr, media_tracker.local_seid, &media_tracker.a2dp_cid);
+        if (status != ERROR_CODE_SUCCESS){
+            printf("Could not perform command, status 0x%2x\n", status);
+        }
+        return;
+    }
+#endif
+
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_A2DP_META) return;
     switch (packet[2]){
         case A2DP_SUBEVENT_INCOMING_CONNECTION_ESTABLISHED:
             a2dp_subevent_incoming_connection_established_get_bd_addr(packet, address);
@@ -356,6 +368,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             play_info.status = AVRCP_PLAY_STATUS_STOPPED;
             printf("A2DP: Stream released.\n");
             a2dp_demo_timer_stop(&media_tracker);
+            break;
+        case A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
+            printf("A2DP: Signaling released.\n");
             break;
         default:
             printf("A2DP: event 0x%02x is not implemented\n", packet[2]);
@@ -477,11 +492,19 @@ static void stdin_process(char cmd){
             break;
 
         case 'x':
+            if (data_source == STREAM_SINE) {
+                printf("Already playing sine.\n");
+                return;
+            }
             printf("Playing sine.\n");
             data_source = STREAM_SINE;
             status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
         case 'z':
+            if (data_source == STREAM_MOD) {
+                printf("Already playing mode.\n");
+                return;
+            }
             printf("Playing mod.\n");
             data_source = STREAM_MOD;
             status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
@@ -506,6 +529,10 @@ int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     UNUSED(argc);
     (void)argv;
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     l2cap_init();
     // Initialize AVDTP Source
@@ -549,9 +576,10 @@ int btstack_main(int argc, const char * argv[]){
     now_playing_info.total_tracks = 10;
     now_playing_info.song_length_ms = 3655;
 
-#ifdef HAVE_BTSTACK_STDIN
     // parse human readable Bluetooth address
     sscanf_bd_addr(device_addr_string, device_addr);
+    
+#ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
 #endif
     // turn on!

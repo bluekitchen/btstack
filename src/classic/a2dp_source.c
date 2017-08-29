@@ -167,7 +167,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVDTP_META) return;
-
+    
     switch (packet[2]){
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
             avdtp_subevent_signaling_connection_established_get_bd_addr(packet, sc.remote_addr);
@@ -378,10 +378,24 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             signal_identifier = avdtp_subevent_signaling_general_reject_get_signal_identifier(packet);
             log_info("Rejected %d", signal_identifier);
             break;
-        case AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED:{
+        case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:{
+            app_state = A2DP_IDLE;
             uint8_t event[6];
             int pos = 0;
-            event[pos++] = HCI_EVENT_AVDTP_META;
+            event[pos++] = HCI_EVENT_A2DP_META;
+            event[pos++] = sizeof(event) - 2;
+            event[pos++] = A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED;
+            little_endian_store_16(event, pos, avdtp_subevent_streaming_connection_released_get_avdtp_cid(packet));
+            pos += 2;
+            event[pos++] = avdtp_subevent_streaming_connection_released_get_local_seid(packet);
+            (*a2dp_source_context.a2dp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+            break;
+        }
+        case AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED:{
+            app_state = A2DP_IDLE;
+            uint8_t event[6];
+            int pos = 0;
+            event[pos++] = HCI_EVENT_A2DP_META;
             event[pos++] = sizeof(event) - 2;
             event[pos++] = A2DP_SUBEVENT_STREAM_RELEASED;
             little_endian_store_16(event, pos, avdtp_subevent_streaming_connection_released_get_avdtp_cid(packet));
@@ -390,8 +404,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             (*a2dp_source_context.a2dp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
             break;
         }
-        case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
-            break;
         default:
             app_state = A2DP_IDLE;
             log_info("not implemented");

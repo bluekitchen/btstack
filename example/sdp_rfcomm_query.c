@@ -120,6 +120,11 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
                                 sdp_event_query_rfcomm_service_get_rfcomm_channel(packet));
             break;
         case SDP_EVENT_QUERY_COMPLETE:
+            if (sdp_event_query_complete_get_status(packet)){
+                printf("SDP query failed 0x%02x\n", sdp_event_query_complete_get_status(packet));
+                break;
+            } 
+            printf("SDP query done.\n");
             report_found_services();
             break;
     }

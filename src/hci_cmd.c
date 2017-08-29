@@ -1110,15 +1110,14 @@ OPCODE(OGF_LE_CONTROLLER, 0x25), ""
 //  LE Read Local P-256 Public Key Complete is generated on completion
 };
 
-#ifdef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
 /**
- * @param end_test_cmd
+ * @param public key
+ * @param private key
  */
 const hci_cmd_t hci_le_generate_dhkey = {
 OPCODE(OGF_LE_CONTROLLER, 0x26), "QQ"
 // LE Generate DHKey Complete is generated on completion
 };
-#endif
 
 /**
  */

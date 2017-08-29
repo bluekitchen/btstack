@@ -76,16 +76,10 @@
 #error "HCI_ACL_PAYLOAD_SIZE must be at least 69 bytes when using LE Secure Conection. Please increase HCI_ACL_PAYLOAD_SIZE or disable ENABLE_LE_SECURE_CONNECTIONS"
 #endif
 
-#ifdef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
-#error "Support for DHKEY Support in HCI Controller not implemented yet. Please use software implementation" 
-#else
-#define USE_MICROECC_FOR_ECDH
-#endif
-#endif
-
 // Software ECDH implementation provided by micro-ecc
-#ifdef USE_MICROECC_FOR_ECDH
+#ifdef ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
 #include "uECC.h"
+#endif
 #endif
 
 #if defined(ENABLE_LE_SIGNED_WRITE) || defined(ENABLE_LE_SECURE_CONNECTIONS)
@@ -166,7 +160,9 @@ typedef enum {
 } ec_key_generation_state_t;
 
 typedef enum {
-    SM_STATE_VAR_DHKEY_COMMAND_RECEIVED = 1 << 0
+    SM_STATE_VAR_DHKEY_NEEDED = 1 << 0,
+    SM_STATE_VAR_DHKEY_CALCULATED = 1 << 1,
+    SM_STATE_VAR_DHKEY_COMMAND_RECEIVED = 1 << 2,
 } sm_state_var_t;
 
 //
@@ -311,6 +307,7 @@ typedef struct sm_setup_context {
     uint8_t   sm_peer_q[64];    // also stores random for EC key generation during init
     sm_key_t  sm_peer_nonce;    // might be combined with sm_peer_random
     sm_key_t  sm_local_nonce;   // might be combined with sm_local_random
+    sm_key_t  sm_dhkey; 
     sm_key_t  sm_peer_dhkey_check;
     sm_key_t  sm_local_dhkey_check;
     sm_key_t  sm_ra;
@@ -1455,8 +1452,10 @@ static void sm_sc_cmac_done(uint8_t * hash){
 
     sm_connection_t * sm_conn = sm_cmac_connection;
     sm_cmac_connection = NULL;
+#ifdef ENABLE_CLASSIC
     link_key_type_t link_key_type;
-
+#endif
+    
     switch (sm_conn->sm_engine_state){
         case SM_SC_W4_CMAC_FOR_CONFIRMATION:
             memcpy(setup->sm_local_confirm, hash, 16);
@@ -1540,7 +1539,6 @@ static void sm_sc_cmac_done(uint8_t * hash){
             if (IS_RESPONDER(sm_conn->sm_role)){
                 sm_conn->sm_engine_state = SM_RESPONDER_IDLE; 
             } else {
-                gap_store_link_key_for_bd_addr(setup->sm_s_address, setup->sm_t, link_key_type);
                 sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED; 
             }
             sm_done_for_handle(sm_conn->sm_handle);
@@ -1569,9 +1567,9 @@ static const sm_key_t f5_salt = { 0x6C ,0x88, 0x83, 0x91, 0xAA, 0xF5, 0xA5, 0x38
 static const uint8_t f5_key_id[] = { 0x62, 0x74, 0x6c, 0x65 };
 static const uint8_t f5_length[] = { 0x01, 0x00};  
 
+#ifdef ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
 static void sm_sc_calculate_dhkey(sm_key256_t dhkey){
     memset(dhkey, 0, 32);
-#ifdef USE_MICROECC_FOR_ECDH
 #if uECC_SUPPORTS_secp256r1
     // standard version
     uECC_shared_secret(setup->sm_peer_q, ec_d, dhkey, uECC_secp256r1());
@@ -1579,20 +1577,16 @@ static void sm_sc_calculate_dhkey(sm_key256_t dhkey){
     // static version
     uECC_shared_secret(setup->sm_peer_q, ec_d, dhkey);
 #endif
-#endif
     log_info("dhkey");
     log_info_hexdump(dhkey, 32);
 }
+#endif
 
 static void f5_calculate_salt(sm_connection_t * sm_conn){
-    // calculate DHKEY
-    sm_key256_t dhkey;
-    sm_sc_calculate_dhkey(dhkey);
-
     // calculate salt for f5
     const uint16_t message_len = 32;
     sm_cmac_connection = sm_conn;
-    memcpy(sm_cmac_sc_buffer, dhkey, message_len);
+    memcpy(sm_cmac_sc_buffer, setup->sm_dhkey, message_len);
     sm_cmac_general_start(f5_salt, message_len, &sm_sc_cmac_get_byte, &sm_sc_cmac_done);
 }
 
@@ -1715,7 +1709,20 @@ static void sm_sc_calculate_remote_confirm(sm_connection_t * sm_conn){
 }
 
 static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn){
-    sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F5_SALT;
+
+#ifdef ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
+    // calculate DHKEY
+    sm_sc_calculate_dhkey(setup->sm_dhkey);
+    setup->sm_state_vars |= SM_STATE_VAR_DHKEY_CALCULATED;
+#endif
+
+    if (setup->sm_state_vars & SM_STATE_VAR_DHKEY_CALCULATED){
+        sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F5_SALT;
+        return;
+    } else {
+        sm_conn->sm_engine_state = SM_SC_W4_CALCULATE_DHKEY;
+    }
+
 }
 
 static void sm_sc_calculate_f6_for_dhkey_check(sm_connection_t * sm_conn){
@@ -1883,7 +1890,7 @@ static void sm_run(void){
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
     if (ec_key_generation_state == EC_KEY_GENERATION_ACTIVE){
-#ifndef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
+#ifdef ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
         sm_random_start(NULL);
 #else
         ec_key_generation_state = EC_KEY_GENERATION_W4_KEY;
@@ -2137,16 +2144,24 @@ static void sm_run(void){
 
         if (sm_active_connection_handle == HCI_CON_HANDLE_INVALID) return;
 
+        sm_connection_t * connection = sm_get_connection_for_handle(sm_active_connection_handle);
+        if (!connection) {
+            log_info("no connection for handle 0x%04x", sm_active_connection_handle);
+            return;
+        }
+
+#if defined(ENABLE_LE_SECURE_CONNECTIONS) && !defined(ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS)
+        if (setup->sm_state_vars & SM_STATE_VAR_DHKEY_NEEDED){
+            setup->sm_state_vars &= ~SM_STATE_VAR_DHKEY_NEEDED;
+            hci_send_cmd(&hci_le_generate_dhkey, &setup->sm_peer_q[0], &setup->sm_peer_q[32]);
+            return;
+        }
+#endif
+
         // assert that we could send a SM PDU - not needed for all of the following
         if (!l2cap_can_send_fixed_channel_packet_now(sm_active_connection_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL)) {
             log_info("cannot send now, requesting can send now event");
             l2cap_request_can_send_fix_channel_now_event(sm_active_connection_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
-            return;
-        }
-
-        sm_connection_t * connection = sm_get_connection_for_handle(sm_active_connection_handle);
-        if (!connection) {
-            log_info("no connection for handle 0x%04x", sm_active_connection_handle);
             return;
         }
 
@@ -2572,7 +2587,19 @@ static void sm_run(void){
                     bd_addr_t local_address;
                     uint8_t buffer[8];
                     buffer[0] = SM_CODE_IDENTITY_ADDRESS_INFORMATION;
-                    gap_le_get_own_address(&buffer[1], local_address);
+                    switch (gap_random_address_get_mode()){
+                        case GAP_RANDOM_ADDRESS_TYPE_OFF:
+                        case GAP_RANDOM_ADDRESS_TYPE_STATIC:
+                            // public or static random
+                            gap_le_get_own_address(&buffer[1], local_address);
+                            break;
+                        case GAP_RANDOM_ADDRESS_NON_RESOLVABLE:
+                        case GAP_RANDOM_ADDRESS_RESOLVABLE:
+                            // fallback to public
+                            gap_local_bd_addr(local_address);
+                            buffer[1] = 0;
+                            break;
+                    }
                     reverse_bd_addr(local_address, &buffer[2]);
                     l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                     sm_timeout_reset(connection);
@@ -2794,7 +2821,7 @@ static void sm_handle_encryption_result(uint8_t * data){
 }
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-#ifndef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
+#ifdef ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
 #if !defined(WICED_VERSION)
 // @return OK
 static int sm_generate_f_rng(unsigned char * buffer, unsigned size){
@@ -2815,8 +2842,7 @@ static int sm_generate_f_rng(unsigned char * buffer, unsigned size){
 // note: random generator is ready. this doesn NOT imply that aes engine is unused!
 static void sm_handle_random_result(uint8_t * data){
 
-#ifdef ENABLE_LE_SECURE_CONNECTIONS
-#ifndef HAVE_HCI_CONTROLLER_DHKEY_SUPPORT
+#if defined(ENABLE_LE_SECURE_CONNECTIONS) && defined(ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS)
 
     if (ec_key_generation_state == EC_KEY_GENERATION_ACTIVE){
         int num_bytes = setup->sm_passkey_bit;
@@ -2830,7 +2856,6 @@ static void sm_handle_random_result(uint8_t * data){
             setup->sm_passkey_bit = 0;
 
             // generate EC key
-#ifdef USE_MICROECC_FOR_ECDH
 #ifndef WICED_VERSION
             log_info("set uECC RNG for initial key generation with 64 random bytes");
             // micro-ecc from WICED SDK uses its wiced_crypto_get_random by default - no need to set it
@@ -2847,16 +2872,14 @@ static void sm_handle_random_result(uint8_t * data){
 #else
             // static version
             uECC_make_key(ec_q, ec_d);
-#endif /* USE_MICROECC_FOR_ECDH */
+#endif /* ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS */
 
-#endif /* USE_MICROECC_FOR_ECDH */
             ec_key_generation_state = EC_KEY_GENERATION_DONE;
             log_info("Elliptic curve: d");
             log_info_hexdump(ec_d,32);
             sm_log_ec_keypair();
         }
     }
-#endif
 #endif
     
     switch (rau_state){
@@ -2970,16 +2993,12 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
             
 		case HCI_EVENT_PACKET:
 			switch (hci_event_packet_get_type(packet)) {
-				
+
                 case BTSTACK_EVENT_STATE:
 					// bt stack activated, get started
 					if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                         log_info("HCI Working!");
 
-                        // set local addr for le device db
-                        bd_addr_t local_bd_addr;
-                        gap_local_bd_addr(local_bd_addr);
-                        le_device_db_set_local_bd_addr(local_bd_addr);
 
                         dkg_state = sm_persistent_irk_ready ? DKG_CALC_DHK : DKG_CALC_IRK;
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
@@ -3086,16 +3105,37 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 #endif
                             break;
 
-#ifdef ENABLE_LE_SECURE_CONNECTIONS
+#if defined(ENABLE_LE_SECURE_CONNECTIONS) && !defined(ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS)
                         case HCI_SUBEVENT_LE_READ_LOCAL_P256_PUBLIC_KEY_COMPLETE:
                             if (hci_subevent_le_read_local_p256_public_key_complete_get_status(packet)){
                                 log_error("Read Local P256 Public Key failed");
                                 break;
                             }
+
                             hci_subevent_le_read_local_p256_public_key_complete_get_dhkey_x(packet, &ec_q[0]);
                             hci_subevent_le_read_local_p256_public_key_complete_get_dhkey_y(packet, &ec_q[32]);
+                            
                             ec_key_generation_state = EC_KEY_GENERATION_DONE;
                             sm_log_ec_keypair();
+                            break;
+                        case HCI_SUBEVENT_LE_GENERATE_DHKEY_COMPLETE:
+                            sm_conn = sm_get_connection_for_handle(sm_active_connection_handle);
+                            if (hci_subevent_le_generate_dhkey_complete_get_status(packet)){
+                                log_error("Generate DHKEY failed -> abort");
+                                // abort pairing with 'unspecified reason'
+                                sm_pdu_received_in_wrong_state(sm_conn);
+                                break;
+                            }
+
+                            hci_subevent_le_generate_dhkey_complete_get_dhkey(packet, &setup->sm_dhkey[0]);
+                            setup->sm_state_vars |= SM_STATE_VAR_DHKEY_CALCULATED;
+                            log_info("dhkey");
+                            log_info_hexdump(&setup->sm_dhkey[0], 32);
+
+                            // trigger next step
+                            if (sm_conn->sm_engine_state == SM_SC_W4_CALCULATE_DHKEY){
+                                sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_F5_SALT;
+                            }
                             break;
 #endif
                         default:
@@ -3201,12 +3241,22 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         // Hack for Nordic nRF5 series that doesn't have public address:
                         // - with patches from port/nrf5-zephyr, hci_read_bd_addr returns random static address
                         // - we use this as default for advertisements/connections
+                        bd_addr_t addr;
+                        reverse_bd_addr(&packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1], addr);
                         if (hci_get_manufacturer() == BLUETOOTH_COMPANY_ID_NORDIC_SEMICONDUCTOR_ASA){
                             log_info("nRF5: using (fake) public address as random static address");
-                            bd_addr_t addr;
-                            reverse_bd_addr(&packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1], addr);
                             gap_random_address_set(addr);
                         }
+
+                        // set local addr for le device db
+                        le_device_db_set_local_bd_addr(addr);
+                    }
+                    if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_supported_commands)){
+#if defined(ENABLE_LE_SECURE_CONNECTIONS) && !defined(ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS)
+                        if ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+34] & 0x06) != 0x06){
+                            log_error("LE Secure Connections enabled, but HCI Controller doesn't support it. Please add ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS to btstack_config.h");
+                        }
+#endif
                     }
                     break;
                 default:
@@ -3430,10 +3480,9 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             reverse_256(&packet[01], &setup->sm_peer_q[0]);
             reverse_256(&packet[33], &setup->sm_peer_q[32]);
 
+#ifdef ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
             // validate public key
             err = 0;
-
-#ifdef USE_MICROECC_FOR_ECDH
 #if uECC_SUPPORTS_secp256r1
             // standard version
             err = uECC_valid_public_key(setup->sm_peer_q, uECC_secp256r1()) == 0;
@@ -3441,14 +3490,18 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             // static version
             err = uECC_valid_public_key(setup->sm_peer_q) == 0;
 #endif
-#endif
-
             if (err){
                 log_error("sm: peer public key invalid %x", err);
                 // uses "unspecified reason", there is no "public key invalid" error code
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
+#endif
+
+#ifndef ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS 
+            // start calculating dhkey
+            setup->sm_state_vars |= SM_STATE_VAR_DHKEY_NEEDED;            
+#endif
 
             if (IS_RESPONDER(sm_conn->sm_role)){
                 // responder
@@ -3528,6 +3581,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
         case SM_SC_W2_CALCULATE_G2:
         case SM_SC_W4_CALCULATE_G2:
+        case SM_SC_W4_CALCULATE_DHKEY:
         case SM_SC_W2_CALCULATE_F5_SALT:
         case SM_SC_W4_CALCULATE_F5_SALT:
         case SM_SC_W2_CALCULATE_F5_MACKEY:

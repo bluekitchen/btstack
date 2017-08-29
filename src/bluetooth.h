@@ -651,11 +651,10 @@ typedef enum {
  */
 #define HCI_SUBEVENT_LE_READ_LOCAL_P256_PUBLIC_KEY_COMPLETE 0x08
  /**
- * @format 11QQ
+ * @format 11Q
  * @param subevent_code
  * @param status
- * @param dhkey_x x coordinate of Diffie-Hellman key
- * @param dhkey_y y coordinate of Diffie-Hellman key
+ * @param dhkey Diffie-Hellman key
  */
 #define HCI_SUBEVENT_LE_GENERATE_DHKEY_COMPLETE            0x09
 

@@ -3350,22 +3350,13 @@ static inline uint8_t hci_subevent_le_generate_dhkey_complete_get_status(const u
     return event[3];
 }
 /**
- * @brief Get field dhkey_x from event HCI_SUBEVENT_LE_GENERATE_DHKEY_COMPLETE
+ * @brief Get field dhkey from event HCI_SUBEVENT_LE_GENERATE_DHKEY_COMPLETE
  * @param event packet
- * @param Pointer to storage for dhkey_x
+ * @param Pointer to storage for dhkey
  * @note: btstack_type Q
  */
-static inline void hci_subevent_le_generate_dhkey_complete_get_dhkey_x(const uint8_t * event, uint8_t * dhkey_x){
-    reverse_bytes(&event[4], dhkey_x, 32);    
-}
-/**
- * @brief Get field dhkey_y from event HCI_SUBEVENT_LE_GENERATE_DHKEY_COMPLETE
- * @param event packet
- * @param Pointer to storage for dhkey_y
- * @note: btstack_type Q
- */
-static inline void hci_subevent_le_generate_dhkey_complete_get_dhkey_y(const uint8_t * event, uint8_t * dhkey_y){
-    reverse_bytes(&event[36], dhkey_y, 32);    
+static inline void hci_subevent_le_generate_dhkey_complete_get_dhkey(const uint8_t * event, uint8_t * dhkey){
+    reverse_bytes(&event[4], dhkey, 32);    
 }
 
 /**
@@ -4981,6 +4972,25 @@ static inline uint16_t a2dp_subevent_incoming_connection_established_get_a2dp_ci
  */
 static inline void a2dp_subevent_incoming_connection_established_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
     reverse_bd_addr(&event[5], bd_addr);    
+}
+
+/**
+ * @brief Get field a2dp_cid from event A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED
+ * @param event packet
+ * @return a2dp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t a2dp_subevent_signaling_connection_released_get_a2dp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field local_seid from event A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED
+ * @param event packet
+ * @return local_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_connection_released_get_local_seid(const uint8_t * event){
+    return event[5];
 }
 
 /**

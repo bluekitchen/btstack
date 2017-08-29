@@ -144,6 +144,20 @@ avdtp_stream_endpoint_t * avdtp_stream_endpoint_for_l2cap_cid(uint16_t l2cap_cid
     return NULL;
 }
 
+avdtp_stream_endpoint_t * avdtp_stream_endpoint_for_signaling_cid(uint16_t l2cap_cid, avdtp_context_t * context){
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, &context->stream_endpoints);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
+        if (stream_endpoint->connection){
+            if (stream_endpoint->connection->l2cap_signaling_cid == l2cap_cid){
+                return stream_endpoint;
+            }
+        }
+    }
+    return NULL;
+}
+
 avdtp_stream_endpoint_t * avdtp_stream_endpoint_with_seid(uint8_t seid, avdtp_context_t * context){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &context->stream_endpoints);
@@ -811,14 +825,17 @@ void avdtp_signaling_emit_media_codec_other_reconfiguration(btstack_packet_handl
                            
 
 void avdtp_request_can_send_now_acceptor(avdtp_connection_t * connection, uint16_t l2cap_cid){
+    if (!connection) return;
     connection->wait_to_send_acceptor = 1;
     l2cap_request_can_send_now_event(l2cap_cid);
 }
 void avdtp_request_can_send_now_initiator(avdtp_connection_t * connection, uint16_t l2cap_cid){
+    if (!connection) return;
     connection->wait_to_send_initiator = 1;
     l2cap_request_can_send_now_event(l2cap_cid);
 }
 void avdtp_request_can_send_now_self(avdtp_connection_t * connection, uint16_t l2cap_cid){
+    if (!connection) return;
     connection->wait_to_send_self = 1;
     l2cap_request_can_send_now_event(l2cap_cid);
 }
@@ -863,6 +880,7 @@ uint8_t avdtp_remote_seid(avdtp_stream_endpoint_t * stream_endpoint){
 
 void a2dp_streaming_emit_connection_established(btstack_packet_handler_t callback, uint16_t cid, bd_addr_t addr, uint8_t local_seid, uint8_t remote_seid, uint8_t status){
     if (!callback) return;
+    printf("emit A2DP_SUBEVENT_STREAM_ESTABLISHED\n");
     uint8_t event[14];
     int pos = 0;
     event[pos++] = HCI_EVENT_A2DP_META;

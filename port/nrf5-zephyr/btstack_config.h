@@ -13,9 +13,10 @@
 #define ENABLE_LE_CENTRAL
 #define ENABLE_LOG_INFO
 #define ENABLE_LOG_ERROR
+#define ENABLE_LE_DATA_LENGTH_EXTENSION
 
 // BTstack configuration. buffers, sizes, ...
-#define HCI_ACL_PAYLOAD_SIZE 52
+#define HCI_ACL_PAYLOAD_SIZE 260
 #define MAX_NR_WHITELIST_ENTRIES 1
 #define MAX_NR_HCI_CONNECTIONS 1
 #define MAX_NR_SM_LOOKUP_ENTRIES 3
@@ -32,5 +33,8 @@
 #define MAX_NR_BNEP_CHANNELS 0
 #define MAX_NR_SERVICE_RECORD_ITEMS 1
 #define MAX_NR_LE_DEVICE_DB_ENTRIES 1
+
+// hack to fix usage of hci_init in zephry
+#define hci_init btstack_hci_init
 
 #endif

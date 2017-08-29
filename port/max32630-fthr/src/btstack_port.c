@@ -32,18 +32,26 @@
 *******************************************************************************
 */
 
-#include "hal_tick.h"
 #include <stdio.h>
 #include <string.h>
+
+// MXC
 #include "lp.h"
 #include "uart.h"
 #include "board.h"
-#include "btstack_debug.h"
+#include "led.h"
 
+// BTstack Core
+#include "btstack_debug.h"
 #include "btstack.h"
 #include "btstack_config.h"
 #include "btstack_run_loop_embedded.h"
 #include "btstack_chipset_cc256x.h"
+
+// BTstack HALs
+#include "hal_tick.h"
+#include "hal_stdin.h"
+
 #include "btstack_port.h"
 
 #define CC256X_UART_ID             0
@@ -70,6 +78,8 @@ static void dummy_handler(void) {};
 static void (*rx_done_handler)(void) = dummy_handler;
 static void (*tx_done_handler)(void) = dummy_handler;
 
+
+
 void hal_cpu_disable_irqs(void)
 {
 	__disable_irq();
@@ -81,7 +91,8 @@ void hal_cpu_enable_irqs(void)
 }
 void hal_cpu_enable_irqs_and_sleep(void)
 {
-
+	__enable_irq();
+	/* TODO: Add sleep mode */
 }
 
 void hal_uart_dma_send_block(const uint8_t *buffer, uint16_t len)
@@ -269,11 +280,93 @@ static hci_transport_config_uart_t config = {
 // hal_led.h implementation
 #include "hal_led.h"
 void hal_led_off(void){
+	LED_Off(LED_BLUE);
 }
+
 void hal_led_on(void){
+	LED_On(LED_BLUE);
 }
+
 void hal_led_toggle(void){
+	LED_Toggle(LED_BLUE);
 }
+
+// hal_stdin.h
+static uint8_t stdin_buffer[1];
+static void (*stdin_handler)(char c);
+
+static uart_req_t uart_byte_request;
+
+static void uart_rx_handler(uart_req_t *request, int error)
+{
+    if (stdin_handler){
+        (*stdin_handler)(stdin_buffer[0]);
+    }
+	UART_ReadAsync(MXC_UART_GET_UART(CONSOLE_UART), &uart_byte_request);
+}
+
+void hal_stdin_setup(void (*handler)(char c)){
+    // set handler
+    stdin_handler = handler;
+
+	/* set input handler */
+	uart_byte_request.callback = uart_rx_handler;
+	uart_byte_request.data = stdin_buffer;
+	uart_byte_request.len = sizeof(uint8_t);
+	UART_ReadAsync(MXC_UART_GET_UART(CONSOLE_UART), &uart_byte_request);
+}
+
+#if 0
+
+#include "btstack_stdin.h"
+
+static btstack_data_source_t stdin_data_source;
+static void (*stdin_handler)(char c);
+
+static uart_req_t uart_byte_request;
+static volatile int stdin_character_received;
+static uint8_t stdin_buffer[1];
+
+static void stdin_rx_complete(void) {
+    stdin_character_received = 1;
+}
+
+static void uart_rx_handler(uart_req_t *request, int error)
+{
+	stdin_rx_complete();
+}
+
+static void stdin_process(struct btstack_data_source *ds, btstack_data_source_callback_type_t callback_type){
+    if (!stdin_character_received) return;
+    if (stdin_handler){
+        (*stdin_handler)(stdin_buffer[0]);
+    }
+    stdin_character_received = 0;
+	UART_ReadAsync(MXC_UART_GET_UART(CONSOLE_UART), &uart_byte_request);
+}
+
+static void btstack_stdin_handler(char c){
+    stdin_character_received = 1;
+    btstack_run_loop_embedded_trigger();
+    printf("Received: %c\n", c);
+}
+
+void btstack_stdin_setup(void (*handler)(char c)){
+    // set handler
+    stdin_handler = handler;
+
+    // set up polling data_source
+    btstack_run_loop_set_data_source_handler(&stdin_data_source, &stdin_process);
+    btstack_run_loop_enable_data_source_callbacks(&stdin_data_source, DATA_SOURCE_CALLBACK_POLL);
+    btstack_run_loop_add_data_source(&stdin_data_source);
+
+	/* set input handler */
+	uart_byte_request.callback = uart_rx_handler;
+	uart_byte_request.data = stdin_buffer;
+	uart_byte_request.len = sizeof(uint8_t);
+	UART_ReadAsync(MXC_UART_GET_UART(CONSOLE_UART), &uart_byte_request);
+}
+#endif
 
 #include "hal_flash_bank_mxc.h"
 #include "btstack_tlv.h"
@@ -288,12 +381,21 @@ void hal_led_toggle(void){
 static hal_flash_bank_mxc_t hal_flash_bank_context;
 static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
 
+
+/******************************************************************************/
 int bluetooth_main(void)
 {
+	LED_Off(LED_GREEN);
+	LED_On(LED_RED);
+	LED_Off(LED_BLUE);
+
 	bt_comm_init();
 	/* BT Stack Initialization */
 	btstack_memory_init();
 	btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
+
+	// enable packet logger
+	//hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
 	/* Init HCI */
 	const hci_transport_t * transport = hci_transport_h4_instance(btstack_uart_block_embedded_instance());
@@ -302,12 +404,12 @@ int bluetooth_main(void)
 
     // setup TLV Flash Bank implementation
     const hal_flash_bank_t * hal_flash_bank_impl = hal_flash_bank_mxc_init_instance(
-    		&hal_flash_bank_context,
-    		HAL_FLASH_BANK_SIZE,
+		&hal_flash_bank_context,
+		HAL_FLASH_BANK_SIZE,
 			HAL_FLASH_BANK_0_ADDR,
 			HAL_FLASH_BANK_1_ADDR);
     const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(
-    		&btstack_tlv_flash_bank_context,
+		&btstack_tlv_flash_bank_context,
 			hal_flash_bank_impl,
 			&hal_flash_bank_context);
 
@@ -320,6 +422,5 @@ int bluetooth_main(void)
 
     // go
 	btstack_main(0, (void *)NULL);
-
 	return 0;
 }

@@ -150,6 +150,10 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     break;
                 
                 case AVDTP_SI_RECONFIGURE:
+                    if (!stream_endpoint){
+                        log_error("AVDTP_SI_RECONFIGURE: stream endpoint is null");
+                        break;
+                    }
                     sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, connection->signaling_packet.command+4, connection->signaling_packet.size-4);
                     // TODO check if configuration is supported
                     
@@ -163,6 +167,10 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     break;
 
                 case AVDTP_SI_SET_CONFIGURATION:{
+                    if (!stream_endpoint){
+                        log_error("AVDTP_SI_SET_CONFIGURATION: stream endpoint is null");
+                        break;
+                    }
                     sep.configured_service_categories = stream_endpoint->remote_capabilities_bitmap;
                     sep.configuration = stream_endpoint->remote_capabilities;
                     sep.in_use = 1;
@@ -183,6 +191,10 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                 }
                 
                 case AVDTP_SI_OPEN:
+                    if (!stream_endpoint){
+                        log_error("AVDTP_SI_OPEN: stream endpoint is null");
+                        break;
+                    }
                     if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_W2_REQUEST_OPEN_STREAM) {
                         log_error("AVDTP_SI_OPEN in wrong stream endpoint state");
                         return;
@@ -192,6 +204,10 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     l2cap_create_channel(context->packet_handler, connection->remote_addr, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, NULL);
                     return;
                 case AVDTP_SI_START:
+                    if (!stream_endpoint){
+                        log_error("AVDTP_SI_START: stream endpoint is null");
+                        break;
+                    }
                     if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_OPENED) {
                         log_error("AVDTP_SI_START in wrong stream endpoint state");
                         return;
@@ -199,6 +215,10 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_STREAMING;
                     break;
                 case AVDTP_SI_SUSPEND:
+                    if (!stream_endpoint){
+                        log_error("AVDTP_SI_SUSPEND: stream endpoint is null");
+                        break;
+                    }
                     if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_STREAMING) {
                         log_error("AVDTP_SI_SUSPEND in wrong stream endpoint state");
                         return;
@@ -206,9 +226,17 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
                     break;
                 case AVDTP_SI_CLOSE:
+                    if (!stream_endpoint){
+                        log_error("AVDTP_SI_CLOSE: stream endpoint is null");
+                        break;
+                    }
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CLOSING;
                     break;
                 case AVDTP_SI_ABORT:
+                    if (!stream_endpoint){
+                        log_error("AVDTP_SI_ABORT: stream endpoint is null");
+                        break;
+                    }
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_ABORTING;
                     break;
                 default:

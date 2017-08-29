@@ -92,7 +92,7 @@ static int btstack_tlv_esp32_get_tag(void * context, uint32_t tag, uint8_t * buf
  * @param data_size
  */
 static int btstack_tlv_esp32_store_tag(void * context, uint32_t tag, const uint8_t * data, uint32_t data_size){
-	if (!nvs_active) return;
+	if (!nvs_active) return 0;
 	char key_buffer[9];
 	key_for_tag(tag, key_buffer);
 	log_info("store tag %s", key_buffer);

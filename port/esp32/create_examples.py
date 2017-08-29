@@ -20,11 +20,18 @@ EXTRA_COMPONENT_DIRS := components
 include $(IDF_PATH)/make/project.mk
 '''
 
-gatt_update_template = '''#!/bin/sh
-DIR=`dirname $0`
-BTSTACK_ROOT=$DIR/../../../../btstack
-echo "Creating src/EXAMPLE.h from EXAMPLE.gatt"
-$BTSTACK_ROOT/tool/compile_gatt.py $BTSTACK_ROOT/example/EXAMPLE.gatt $DIR/main/EXAMPLE.h
+gatt_update_template = '''#!/usr/bin/env python
+#
+# Update EXAMPLE.h from EXAMPLE.gatt
+import os
+import sys
+
+script_path  = os.path.abspath(os.path.dirname(sys.argv[0]))
+btstack_root = script_path + '/../../../'
+compile_gatt = btstack_root + 'tool/compile_gatt.py'
+print("Creating src/EXAMPLE.h from EXAMPLE.gatt")
+sys.argv= [compile_gatt, btstack_root + "example/EXAMPLE.gatt", script_path + "/main/EXAMPLE.h"]
+exec(open(compile_gatt).read(), globals())
 '''
 
 # get script path
@@ -88,7 +95,7 @@ for file in os.listdir(examples_embedded):
     # create update_gatt.sh if .gatt file is present
     gatt_path = examples_embedded + example + ".gatt"
     if os.path.exists(gatt_path):
-        update_gatt_script = apps_folder + "update_gatt_db.sh"
+        update_gatt_script = apps_folder + "update_gatt_db.py"
         with open(update_gatt_script, "wt") as fout:
             fout.write(gatt_update_template.replace("EXAMPLE", example))        
         os.chmod(update_gatt_script, 0o755)

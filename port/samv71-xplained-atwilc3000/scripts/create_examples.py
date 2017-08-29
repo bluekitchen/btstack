@@ -112,8 +112,8 @@ for file in example_files:
                 if 'CSRCS+=${BTSTACK_ROOT_CONFIG}/example/le_counter.c' in line:
                     fout.write('CSRCS+=${BTSTACK_ROOT_CONFIG}/example/%s.c\n' % example)
                     continue
-                if 'CSRSC+=${BTSTACK_ROOT_CONFIG}/port/samv71-xplained-atwilc3000/example/template/wilc3000_bt_firmware.c' in line:
-                    fout.write('\t${BTSTACK_ROOT_CONFIG}/port/samv71-xplained-atwilc3000/example/%s/wilc3000_bt_firmware.c \\\n' % example)
+                if 'CSRCS+=${BTSTACK_ROOT_CONFIG}/port/samv71-xplained-atwilc3000/example/template/wilc3000_bt_firmware.c' in line:
+                    fout.write('CSRCS+=${BTSTACK_ROOT_CONFIG}/port/samv71-xplained-atwilc3000/example/%s/wilc3000_bt_firmware.c \\\n' % example)
                     continue
                 if 'INC_PATH += ${BTSTACK_ROOT_CONFIG}/port/samv71-xplained-atwilc3000/example/template' in line:
                     fout.write('INC_PATH += ${BTSTACK_ROOT_CONFIG}/port/samv71-xplained-atwilc3000/example/%s\n' % example)

@@ -168,6 +168,9 @@ static hci_stack_t   hci_stack_static;
 static hci_stack_t * hci_stack = NULL;
 
 #ifdef ENABLE_CLASSIC
+// default name
+static const char * default_classic_name = "BTstack 00:00:00:00:00:00";
+
 // test helper
 static uint8_t disable_l2cap_timeouts = 0;
 #endif
@@ -1054,7 +1057,7 @@ static void hci_initializing_next_state(void){
     hci_stack->substate = (hci_substate_t )( ((int) hci_stack->substate) + 1);
 }
 
-#ifdef ENABLE_CLASSIC
+#if defined(ENABLE_CLASSIC) || defined(ENABLE_LE_PERIPHERAL)
 static void hci_replace_bd_addr_placeholder(uint8_t * data, uint16_t size){
     const int bd_addr_string_len = 17;
     int i = 0;
@@ -1261,7 +1264,6 @@ static void hci_initializing_run(void){
             break;
         case HCI_INIT_WRITE_LOCAL_NAME: {
             hci_stack->substate = HCI_INIT_W4_WRITE_LOCAL_NAME;
-            const char * local_name = hci_stack->local_name ? hci_stack->local_name : "BTstack 00:00:00:00:00:00";
             hci_reserve_packet_buffer();
             uint8_t * packet = hci_stack->hci_packet_buffer;
             // construct HCI Command and send
@@ -1271,16 +1273,37 @@ static void hci_initializing_run(void){
             packet[1] = opcode >> 8;
             packet[2] = DEVICE_NAME_LEN;
             memset(&packet[3], 0, DEVICE_NAME_LEN);
-            memcpy(&packet[3], local_name, strlen(local_name));
+            memcpy(&packet[3], hci_stack->local_name, strlen(hci_stack->local_name));
             // expand '00:00:00:00:00:00' in name with bd_addr
             hci_replace_bd_addr_placeholder(&packet[3], DEVICE_NAME_LEN);
             hci_send_cmd_packet(packet, HCI_CMD_HEADER_SIZE + DEVICE_NAME_LEN);
             break;
         }
-        case HCI_INIT_WRITE_EIR_DATA:
+        case HCI_INIT_WRITE_EIR_DATA: {
             hci_stack->substate = HCI_INIT_W4_WRITE_EIR_DATA;
-            hci_send_cmd(&hci_write_extended_inquiry_response, 0, hci_stack->eir_data);                        
+            hci_reserve_packet_buffer();
+            uint8_t * packet = hci_stack->hci_packet_buffer;
+            // construct HCI Command and send
+            uint16_t opcode = hci_write_extended_inquiry_response.opcode;
+            hci_stack->last_cmd_opcode = opcode;
+            packet[0] = opcode & 0xff;
+            packet[1] = opcode >> 8;
+            packet[2] = 1 + 240;
+            packet[3] = 0;  // FEC not required
+            if (hci_stack->eir_data){
+                memcpy(&packet[4], hci_stack->eir_data, 240);
+            } else {
+                memset(&packet[4], 0, 240);
+                int name_len = strlen(hci_stack->local_name);
+                packet[4] = name_len + 1;
+                packet[5] = BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME;
+                memcpy(&packet[6], hci_stack->local_name, name_len);
+            }
+            // expand '00:00:00:00:00:00' in name with bd_addr
+            hci_replace_bd_addr_placeholder(&packet[4], 240);
+            hci_send_cmd_packet(packet, HCI_CMD_HEADER_SIZE + 1 + 240);
             break;
+        }
         case HCI_INIT_WRITE_INQUIRY_MODE:
             hci_stack->substate = HCI_INIT_W4_WRITE_INQUIRY_MODE;
             hci_send_cmd(&hci_write_inquiry_mode, (int) hci_stack->inquiry_mode);
@@ -1311,6 +1334,10 @@ static void hci_initializing_run(void){
         case HCI_INIT_LE_READ_BUFFER_SIZE:
             hci_stack->substate = HCI_INIT_W4_LE_READ_BUFFER_SIZE;
             hci_send_cmd(&hci_le_read_buffer_size);
+            break;
+        case HCI_INIT_LE_SET_EVENT_MASK:
+            hci_stack->substate = HCI_INIT_W4_LE_SET_EVENT_MASK;
+            hci_send_cmd(&hci_le_set_event_mask, 0x1FF, 0x0);
             break;
         case HCI_INIT_WRITE_LE_HOST_SUPPORTED:
             // LE Supported Host = 1, Simultaneous Host = 0
@@ -1582,12 +1609,14 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         case HCI_INIT_W4_LE_READ_BUFFER_SIZE:
             // skip write le host if not supported (e.g. on LE only EM9301)
             if (hci_stack->local_supported_commands[0] & 0x02) break;
-            // explicit fall through to reduce repetitions
+            hci_stack->substate = HCI_INIT_LE_SET_EVENT_MASK;
+            return;
+
 
 #ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
         case HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED:
             if ((hci_stack->local_supported_commands[0] & 0x30) == 0x30){
-                hci_stack->substate = HCI_INIT_LE_READ_MAX_DATA_LENGTH;
+                hci_stack->substate = HCI_INIT_LE_SET_EVENT_MASK;
                 return;
             }
             // explicit fall through to reduce repetitions
@@ -1601,12 +1630,6 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             return;
 #endif
             
-        case HCI_INIT_W4_WRITE_LOCAL_NAME:
-            // skip write eir data if no eir data set
-            if (hci_stack->eir_data) break;
-            hci_stack->substate = HCI_INIT_WRITE_INQUIRY_MODE;
-            return;
-
 #ifdef ENABLE_SCO_OVER_HCI
         case HCI_INIT_W4_WRITE_SCAN_ENABLE:
             // skip write synchronous flow control if not supported
@@ -2347,23 +2370,7 @@ static void hci_state_reset(void){
     hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
     hci_stack->le_whitelist = 0;
     hci_stack->le_whitelist_capacity = 0;
-
-    // connection parameter to use for outgoing connections
-    hci_stack->le_connection_interval_min = 0x0008;    // 10 ms
-    hci_stack->le_connection_interval_max = 0x0018;    // 30 ms
-    hci_stack->le_connection_latency      = 4;         // 4
-    hci_stack->le_supervision_timeout     = 0x0048;    // 720 ms
-    hci_stack->le_minimum_ce_length       = 2;         // 1.25 ms
-    hci_stack->le_maximum_ce_length       = 0x0030;    // 30 ms
 #endif
-
-    // connection parameter range used to answer connection parameter update requests in l2cap
-    hci_stack->le_connection_parameter_range.le_conn_interval_min =          6; 
-    hci_stack->le_connection_parameter_range.le_conn_interval_max =       3200;
-    hci_stack->le_connection_parameter_range.le_conn_latency_min =           0;
-    hci_stack->le_connection_parameter_range.le_conn_latency_max =         500;
-    hci_stack->le_connection_parameter_range.le_supervision_timeout_min =   10;
-    hci_stack->le_connection_parameter_range.le_supervision_timeout_max = 3200;
 }
 
 #ifdef ENABLE_CLASSIC
@@ -2413,6 +2420,11 @@ void hci_init(const hci_transport_t *transport, const void *config){
     // bondable by default
     hci_stack->bondable = 1;
 
+#ifdef ENABLE_CLASSIC
+    // classic name
+    hci_stack->local_name = default_classic_name;
+#endif
+
     // Secure Simple Pairing default: enable, no I/O capabilities, general bonding, mitm not required, auto accept 
     hci_stack->ssp_enable = 1;
     hci_stack->ssp_io_capability = SSP_IO_CAPABILITY_NO_INPUT_NO_OUTPUT;
@@ -2421,6 +2433,24 @@ void hci_init(const hci_transport_t *transport, const void *config){
 
     // voice setting - signed 16 bit pcm data with CVSD over the air
     hci_stack->sco_voice_setting = 0x60;
+
+#ifdef ENABLE_LE_CENTRAL
+    // connection parameter to use for outgoing connections
+    hci_stack->le_connection_interval_min = 0x0008;    // 10 ms
+    hci_stack->le_connection_interval_max = 0x0018;    // 30 ms
+    hci_stack->le_connection_latency      = 4;         // 4
+    hci_stack->le_supervision_timeout     = 0x0048;    // 720 ms
+    hci_stack->le_minimum_ce_length       = 2;         // 1.25 ms
+    hci_stack->le_maximum_ce_length       = 0x0030;    // 30 ms
+#endif
+
+    // connection parameter range used to answer connection parameter update requests in l2cap
+    hci_stack->le_connection_parameter_range.le_conn_interval_min =          6; 
+    hci_stack->le_connection_parameter_range.le_conn_interval_max =       3200;
+    hci_stack->le_connection_parameter_range.le_conn_latency_min =           0;
+    hci_stack->le_connection_parameter_range.le_conn_latency_max =         500;
+    hci_stack->le_connection_parameter_range.le_supervision_timeout_min =   10;
+    hci_stack->le_connection_parameter_range.le_supervision_timeout_max = 3200;
 
     hci_state_reset();
 }
@@ -2973,13 +3003,17 @@ static void hci_run(void){
             uint8_t adv_data_clean[31];
             memset(adv_data_clean, 0, sizeof(adv_data_clean));
             memcpy(adv_data_clean, hci_stack->le_advertisements_data, hci_stack->le_advertisements_data_len);
+            hci_replace_bd_addr_placeholder(adv_data_clean, hci_stack->le_advertisements_data_len);
             hci_send_cmd(&hci_le_set_advertising_data, hci_stack->le_advertisements_data_len, adv_data_clean);
             return;
         }
         if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA){
             hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_SCAN_DATA;
-            hci_send_cmd(&hci_le_set_scan_response_data, hci_stack->le_scan_response_data_len,
-                hci_stack->le_scan_response_data);
+            uint8_t scan_data_clean[31];
+            memset(scan_data_clean, 0, sizeof(scan_data_clean));
+            memcpy(scan_data_clean, hci_stack->le_scan_response_data, hci_stack->le_scan_response_data_len);
+            hci_replace_bd_addr_placeholder(scan_data_clean, hci_stack->le_scan_response_data_len);
+            hci_send_cmd(&hci_le_set_scan_response_data, hci_stack->le_scan_response_data_len, hci_stack->le_scan_response_data);
             return;
         }
         if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_ENABLE){

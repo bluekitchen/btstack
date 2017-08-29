@@ -1623,6 +1623,7 @@ static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * ch
     if (gap_ssp_supported_on_both_sides(channel->con_handle) && !l2cap_security_level_0_allowed_for_PSM(channel->psm)){
         // request security level 2
         channel->state = L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE;
+        channel->required_security_level = LEVEL_2;
         gap_request_security_level(channel->con_handle, LEVEL_2);
         return;
     }
@@ -1972,10 +1973,10 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
                 if (channel->con_handle != handle) continue;
 
-                log_info("l2cap - state %u", channel->state);
-
                 gap_security_level_t actual_level = (gap_security_level_t) packet[4];
                 gap_security_level_t required_level = channel->required_security_level;
+
+                log_info("channel state %u: actual %u >= required %u?", channel->state, actual_level, required_level);
 
                 switch (channel->state){
                     case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:

@@ -299,7 +299,7 @@ int btstack_main(int argc, const char * argv[]){
     btstack_stdin_setup(stdin_process);
 #endif
 
-    gap_set_local_name("BTstack HSP HS");
+    gap_set_local_name("HSP HS Demo 00:00:00:00:00:00");
     gap_discoverable_control(1);
     gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
     gap_set_class_of_device(0x240404);
