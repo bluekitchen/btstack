@@ -67,7 +67,7 @@ static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 static avdtp_context_t * sdp_query_context;
 static uint16_t avdtp_cid_counter = 0;
 
-static void (*handle_media_data)(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size);
+static void (*handle_media_data)(uint8_t local_seid, uint8_t *packet, uint16_t size);
 static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static uint16_t avdtp_get_next_initiator_transaction_label(avdtp_context_t * context){
@@ -562,7 +562,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
             if (channel == stream_endpoint->l2cap_media_cid){
                 if (handle_media_data){
-                    (*handle_media_data)(stream_endpoint, packet, size);
+                    (*handle_media_data)(avdtp_local_seid(stream_endpoint), packet, size);
                 }               
                 break;
             } 

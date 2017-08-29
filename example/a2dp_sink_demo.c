@@ -474,9 +474,8 @@ static void media_processing_close(void){
 #endif
 }
 
-static void handle_l2cap_media_data_packet(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size){
-    UNUSED(stream_endpoint);
-
+static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16_t size){
+    UNUSED(seid);
     int pos = 0;
     
     avdtp_media_packet_header_t media_header;
@@ -954,12 +953,11 @@ int btstack_main(int argc, const char * argv[]){
     a2dp_sink_register_packet_handler(&packet_handler);
     a2dp_sink_register_media_handler(&handle_l2cap_media_data_packet);
 
-    avdtp_stream_endpoint_t * local_stream_endpoint = a2dp_sink_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
-    if (!local_stream_endpoint){
+    uint8_t status = a2dp_sink_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration), &local_seid);
+    if (status != ERROR_CODE_SUCCESS){
         printf("A2DP Sink: not enough memory to create local stream endpoint\n");
         return 1;
     }
-    local_seid = avdtp_local_seid(local_stream_endpoint);
     // Initialize AVRCP COntroller
     avrcp_controller_init();
     avrcp_controller_register_packet_handler(&avrcp_controller_packet_handler);

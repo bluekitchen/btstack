@@ -55,65 +55,69 @@ extern "C" {
 /* API_START */
 	
 /**
- * @brief A2DP Sink service record. 
+ * @brief Create A2DP Sink service record. 
  * @param service
  * @param service_record_handle
- * @param supported_features 16-bit bitmap, see a2dp_SINK_SF_* values in avdtp.h
+ * @param supported_features 16-bit bitmap, see AVDTP_SINK_SF_* values in avdtp.h
  * @param service_name
  * @param service_provider_name
  */
 void a2dp_sink_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name);
 
 /**
- * @brief Set up A2DP Sink device.
+ * @brief Initialize up A2DP Sink device.
  */
 void a2dp_sink_init(void);
 
-avdtp_stream_endpoint_t * a2dp_sink_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, 
+/**
+ * @brief Create a stream endpoint of type SINK, and register media codec by specifying its capabilities and the default configuration.
+ * @param media_type    			see avdtp_media_type_t values in avdtp.h (audio, video or multimedia)
+ * @param media_codec_type 			see avdtp_media_codec_type_t values in avdtp.h 
+ * @param codec_capabilities        media codec capabilities as defined in A2DP spec, section 4 - Audio Codec Interoperability Requirements.
+ * @param codec_capabilities_len	media codec capabilities length
+ * @param codec_configuration 		default media codec configuration
+ * @param codec_configuration_len	media codec configuration length 
+ * @return status
+ */
+uint8_t a2dp_sink_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, 
 	uint8_t * codec_capabilities, uint16_t codec_capabilities_len,
-	uint8_t * codec_configuration, uint16_t codec_configuration_len);
+	uint8_t * codec_configuration, uint16_t codec_configuration_len, uint8_t * local_seid);
 
 /**
- * @brief Register callback for the A2DP Sink client. 
+ * @brief Register callback for the A2DP Sink client. It will receive following subevents of HCI_EVENT_A2DP_META HCI event type: 
+ * - A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:		indicates from remote chosen SBC media codec configuration 
+ * - A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION:	indicates from remote chosen other then SBC media codec configuration 
+ * - A2DP_SUBEVENT_STREAM_ESTABLISHED:							received when stream to a remote device is established
+ * - A2DP_SUBEVENT_STREAM_STARTED:								received when stream is started
+ * - A2DP_SUBEVENT_STREAM_SUSPENDED:							received when stream is paused
+ * - A2DP_SUBEVENT_STREAM_RELEASED:								received when stream is released
+ *
  * @param callback
  */
 void a2dp_sink_register_packet_handler(btstack_packet_handler_t callback);
 
-
 /**
  * @brief Register media handler for the A2DP Sink client. 
  * @param callback
+ * @param packet
+ * @param size
  */
-void a2dp_sink_register_media_handler(void (*callback)(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size));
+void a2dp_sink_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *packet, uint16_t size));
 
 /**
- * @brief Open stream
- * @param bd_addr
- * @param local_seid
- * @param avdtp_cid
+ * @brief Establish stream.
+ * @param remote
+ * @param local_seid  ID assigned to a local stream endpoint
+ * @param a2dp_cid   
  */
-uint8_t a2dp_sink_establish_stream(bd_addr_t bd_addr, uint8_t local_seid, uint16_t * avdtp_cid);
-
+uint8_t a2dp_sink_establish_stream(bd_addr_t remote, uint8_t local_seid, uint16_t * a2dp_cid);
 
 /**
- * @brief Start stream
- * @param local_seid
+ * @brief Release stream.
+ * @param a2dp_cid
  */
-void a2dp_sink_start_stream(uint8_t local_seid);
-
-/**
- * @brief Suspend stream
- * @param local_seid
- */
-void a2dp_sink_pause(uint8_t local_seid);
-
-/**
- * @brief Abort stream
- * @param local_seid
- */
-void a2dp_sink_stop_stream(uint8_t local_seid);
-
 void a2dp_sink_disconnect(uint16_t a2dp_cid);
+
 /* API_END */
 
 

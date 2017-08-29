@@ -87,7 +87,7 @@ void avdtp_sink_register_packet_handler(btstack_packet_handler_t callback);
  */
 uint8_t avdtp_sink_connect(bd_addr_t bd_addr, uint16_t * avdtp_cid);
 
-void avdtp_sink_register_media_handler(void (*callback)(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size));
+void avdtp_sink_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *packet, uint16_t size));
 /**
  * @brief Disconnect from device with connection handle. 
  * @param avdtp_cid
