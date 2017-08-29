@@ -4,7 +4,8 @@ Status: Basic port incl. all examples. BTstack runs on dedicated FreeRTOS thread
 
 ## Setup
 
-- Follow [Espressif IoT Development Framework (ESP-IDF) setup](https://github.com/espressif/esp-idf) to install XTensa toolchain and the ESP-IDF.
+- Follow [Espressif IoT Development Framework (ESP-IDF) setup](https://github.com/espressif/esp-idf) to install XTensa toolchain and the ESP-IDF. 
+- Make sure your checkout is newer than 4654278b1bd6b7f7f55013f7edad76109f7ee944 from Aug 25th, 2017
 - In port/esp32/template, configure the serial port for firmware upload as described in the ESP-IDF setup guides.
 
 ## Usage
@@ -37,8 +38,10 @@ The sdkconfig of the example template disables the original Bluedroid stack by d
 
 ## Limitations
 
-### Bug in ESP32 VHCI Implementation
-The Host Controller to Host Flow Control of the Virtual HCI (VHCI) on the ESP32 does not work for LE data (it works for HCI Events and Classic ACL packets). Without it, it is not possible to slow down incoming data. For most applications, this won't be an issue, but please keep it in mind. See https://github.com/espressif/esp-idf/issues/644
+### Bug in Host Controller to Host Flow Control implementation
+The Link Layer in the ESP32 does not reset the supervision timeout while the Host does not accept new packets (due to slow processing etc..), which will triggger a disconnect based on Connection Timeout (reason 8). See https://github.com/espressif/esp-idf/issues/644#issuecomment-325251315 
+
+For most applications, this won't be an issue, but please keep it in mind. 
 
 ### Multi-Threading
 
