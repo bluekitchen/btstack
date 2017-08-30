@@ -93,6 +93,7 @@ uint8_t a2dp_sink_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_me
  * - A2DP_SUBEVENT_STREAM_STARTED:								received when stream is started
  * - A2DP_SUBEVENT_STREAM_SUSPENDED:							received when stream is paused
  * - A2DP_SUBEVENT_STREAM_RELEASED:								received when stream is released
+ * - A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED: 				received when signaling channel is disconnected
  *
  * @param callback
  */

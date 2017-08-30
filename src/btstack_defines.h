@@ -184,7 +184,7 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_CONNECTION_DOES_NOT_EXIST                    0xC1
 #define AVDTP_CONNECTION_IN_WRONG_STATE                    0xC2
 #define AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE               0xC3
-#define AVDTP_MEDIA_CONNECTION_DOES_NOT_EXIST              0xC4
+#define AVDTP_MEDIA_CONNECTION_DOES_NOT_EXIST              0xC4 
 
 /* ENUM_END */
 
@@ -1531,10 +1531,9 @@ typedef uint8_t sm_key_t[16];
 #define A2DP_SUBEVENT_INCOMING_CONNECTION_ESTABLISHED               0x0A
 
 /**
- * @format 121            Signaling channel is released.
+ * @format 12            Signaling channel is released.
  * @param subevent_code
  * @param a2dp_cid
- * @param local_seid
  */
 #define A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED                  0x0B
 

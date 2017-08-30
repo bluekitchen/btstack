@@ -880,7 +880,6 @@ uint8_t avdtp_remote_seid(avdtp_stream_endpoint_t * stream_endpoint){
 
 void a2dp_streaming_emit_connection_established(btstack_packet_handler_t callback, uint16_t cid, bd_addr_t addr, uint8_t local_seid, uint8_t remote_seid, uint8_t status){
     if (!callback) return;
-    printf("emit A2DP_SUBEVENT_STREAM_ESTABLISHED\n");
     uint8_t event[14];
     int pos = 0;
     event[pos++] = HCI_EVENT_A2DP_META;

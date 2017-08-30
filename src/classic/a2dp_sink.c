@@ -219,13 +219,25 @@ static inline void a2dp_emit_stream_event(btstack_packet_handler_t callback, uin
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event)); 
 }
 
-static inline void a2dp_emit_cmd_accepted(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size){
+static inline void a2dp_emit_signaling_connection_released(btstack_packet_handler_t callback, uint16_t a2dp_cid){
     if (!callback) return;
-    UNUSED(size);
-    packet[0] = HCI_EVENT_A2DP_META;
-    packet[2] = A2DP_SUBEVENT_COMMAND_ACCEPTED;
-    (*callback)(HCI_EVENT_PACKET, 0, packet, size); 
+    uint8_t event[5];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_A2DP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED;
+    little_endian_store_16(event, pos, a2dp_cid);
+    pos += 2;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event)); 
 }
+
+// static inline void a2dp_emit_cmd_accepted(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size){
+//     if (!callback) return;
+//     UNUSED(size);
+//     packet[0] = HCI_EVENT_A2DP_META;
+//     packet[2] = A2DP_SUBEVENT_COMMAND_ACCEPTED;
+//     (*callback)(HCI_EVENT_PACKET, 0, packet, size); 
+// }
 
 static inline void a2dp_emit_cmd_rejected(btstack_packet_handler_t callback, uint8_t * packet, uint16_t size){
     if (!callback) return;
@@ -305,7 +317,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     a2dp_emit_stream_event(a2dp_sink_context.a2dp_callback, cid, A2DP_SUBEVENT_STREAM_RELEASED, loc_seid);
                     break;
                 default:
-                    a2dp_emit_cmd_accepted(a2dp_sink_context.a2dp_callback, packet, size);
+                    // a2dp_emit_cmd_accepted(a2dp_sink_context.a2dp_callback, packet, size);
                     break;
             }
             break;
@@ -324,6 +336,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             a2dp_emit_stream_event(a2dp_sink_context.a2dp_callback, cid, A2DP_SUBEVENT_STREAM_RELEASED, loc_seid);
             break;
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
+            cid = avdtp_subevent_signaling_connection_released_get_avdtp_cid(packet);
+            a2dp_emit_signaling_connection_released(a2dp_sink_context.a2dp_callback, cid);
             app_state = A2DP_IDLE;
             break;
         default:

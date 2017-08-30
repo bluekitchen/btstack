@@ -428,8 +428,7 @@ static void media_processing_close(void){
     if (!media_initialized) return;
     media_initialized = 0;
 
-#ifdef STORE_SBC_TO_WAV_FILE 
-    printf("WAV Writer: close file.\n");                   
+#ifdef STORE_SBC_TO_WAV_FILE                  
     wav_writer_close();
     int total_frames_nr = state.good_frames_nr + state.bad_frames_nr + state.zero_frames_nr;
 
@@ -750,7 +749,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         
         case A2DP_SUBEVENT_STREAM_RELEASED:
             cid = a2dp_subevent_stream_released_get_a2dp_cid(packet);
-            if (cid != a2dp_cid) break;
+            if (cid != a2dp_cid) {
+                printf(" -- a2dp sink demo: unexpected cid 0x%02x instead of 0x%02x\n", cid, a2dp_cid);
+                break;
+            }
             local_seid = a2dp_subevent_stream_released_get_local_seid(packet);
             app_state = AVDTP_APPLICATION_IDLE;
             printf(" -- a2dp sink demo: stream released, a2dp cid 0x%02X, local_seid %d\n", a2dp_cid, local_seid);
@@ -758,9 +760,17 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             // paused/stopped
             media_processing_close();
             break;
-        
+        case A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
+            cid = a2dp_subevent_signaling_connection_released_get_a2dp_cid(packet);
+            if (cid != a2dp_cid) {
+                printf(" -- a2dp sink demo: unexpected cid 0x%02x instead of 0x%02x\n", cid, a2dp_cid);
+                break;
+            }
+            app_state = AVDTP_APPLICATION_IDLE;
+            printf(" -- a2dp sink demo: signaling connection released\n");
+            break;
         default:
-            printf(" not implemented\n");
+            printf(" -- a2dp sink demo: not parsed 0x%02x\n", packet[2]);
             break; 
     }
 }
@@ -823,7 +833,7 @@ static void stdin_process(char cmd){
             status = a2dp_sink_establish_stream(device_addr, local_seid, &a2dp_cid);
             break;
         case 'B':
-            printf(" - Disconnect\n");
+            printf(" - AVDTP disconnect from addr %s.\n", bd_addr_to_str(device_addr));
             status = avdtp_sink_disconnect(a2dp_cid);
             break;
         case 'c':
@@ -831,7 +841,7 @@ static void stdin_process(char cmd){
             status = avrcp_controller_connect(device_addr, &avrcp_cid);
             break;
         case 'C':
-            printf(" - Disconnect\n");
+            printf(" - AVRCP disconnect from addr %s.\n", bd_addr_to_str(device_addr));
             status = avrcp_controller_disconnect(avrcp_cid);
             break;
 
@@ -977,8 +987,7 @@ int btstack_main(int argc, const char * argv[]){
     gap_set_local_name("A2DP Sink Demo 00:00:00:00:00:00");
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);
-    printf("sdp, gap done\n");
-
+    printf("Starting BTstack ...\n");
     // turn on!
     hci_power_control(HCI_POWER_ON);
 

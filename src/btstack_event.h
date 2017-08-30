@@ -4983,15 +4983,6 @@ static inline void a2dp_subevent_incoming_connection_established_get_bd_addr(con
 static inline uint16_t a2dp_subevent_signaling_connection_released_get_a2dp_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
-/**
- * @brief Get field local_seid from event A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED
- * @param event packet
- * @return local_seid
- * @note: btstack_type 1
- */
-static inline uint8_t a2dp_subevent_signaling_connection_released_get_local_seid(const uint8_t * event){
-    return event[5];
-}
 
 /**
  * @brief Get field status from event AVRCP_SUBEVENT_CONNECTION_ESTABLISHED

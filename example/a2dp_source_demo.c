@@ -373,7 +373,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             printf("A2DP: Signaling released.\n");
             break;
         default:
-            printf("A2DP: event 0x%02x is not implemented\n", packet[2]);
+            printf("A2DP: event 0x%02x is not parsed\n", packet[2]);
             break; 
     }
 }
