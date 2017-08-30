@@ -1497,12 +1497,20 @@ typedef uint8_t sm_key_t[16];
 #define A2DP_SUBEVENT_STREAM_SUSPENDED                              0x06
 
 /**
+ * @format 121           Stream is stoped or aborted.
+ * @param subevent_code
+ * @param a2dp_cid
+ * @param local_seid
+ */
+#define A2DP_SUBEVENT_STREAM_STOPPED                                0x07
+
+/**
  * @format 121            Stream is released.
  * @param subevent_code
  * @param a2dp_cid
  * @param local_seid
  */
-#define A2DP_SUBEVENT_STREAM_RELEASED                               0x07
+#define A2DP_SUBEVENT_STREAM_RELEASED                               0x08
 
 /**
  * @format 1211
@@ -1511,7 +1519,7 @@ typedef uint8_t sm_key_t[16];
  * @param local_seid
  * @param signal_identifier
  */
-#define A2DP_SUBEVENT_COMMAND_ACCEPTED                              0x08
+#define A2DP_SUBEVENT_COMMAND_ACCEPTED                              0x09
 
 /**
  * @format 1211
@@ -1520,7 +1528,7 @@ typedef uint8_t sm_key_t[16];
  * @param local_seid
  * @param signal_identifier 
  */
-#define A2DP_SUBEVENT_COMMAND_REJECTED                              0x09
+#define A2DP_SUBEVENT_COMMAND_REJECTED                              0x0A
 
 /**
  * @format 12B          Signaling channel is opened.
@@ -1528,14 +1536,14 @@ typedef uint8_t sm_key_t[16];
  * @param a2dp_cid
  * @param bd_addr
  */
-#define A2DP_SUBEVENT_INCOMING_CONNECTION_ESTABLISHED               0x0A
+#define A2DP_SUBEVENT_INCOMING_CONNECTION_ESTABLISHED               0x0B
 
 /**
  * @format 12            Signaling channel is released.
  * @param subevent_code
  * @param a2dp_cid
  */
-#define A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED                  0x0B
+#define A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED                  0x0C
 
 
 /** AVRCP Subevent */

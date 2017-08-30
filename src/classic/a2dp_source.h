@@ -92,6 +92,7 @@ avdtp_stream_endpoint_t * a2dp_source_create_stream_endpoint(avdtp_media_type_t 
  * - A2DP_SUBEVENT_STREAM_ESTABLISHED:							Received when stream to a remote device is established.
  * - A2DP_SUBEVENT_STREAM_STARTED:								Received when stream is started.
  * - A2DP_SUBEVENT_STREAM_SUSPENDED:							Received when stream is paused.
+ * - A2DP_SUBEVENT_STREAM_STOPED:							    received when stream is aborted or stopped.
  * - A2DP_SUBEVENT_STREAM_RELEASED:								Received when stream is released.
  * - A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW:			Indicates that the next media packet can be sent.
  *

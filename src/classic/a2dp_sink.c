@@ -314,7 +314,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     break;
                 case AVDTP_SI_ABORT:
                 case AVDTP_SI_CLOSE:
-                    a2dp_emit_stream_event(a2dp_sink_context.a2dp_callback, cid, A2DP_SUBEVENT_STREAM_RELEASED, loc_seid);
+                    a2dp_emit_stream_event(a2dp_sink_context.a2dp_callback, cid, A2DP_SUBEVENT_STREAM_STOPPED, loc_seid);
                     break;
                 default:
                     // a2dp_emit_cmd_accepted(a2dp_sink_context.a2dp_callback, packet, size);

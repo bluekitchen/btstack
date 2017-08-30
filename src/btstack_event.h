@@ -4881,6 +4881,25 @@ static inline uint8_t a2dp_subevent_stream_suspended_get_local_seid(const uint8_
 }
 
 /**
+ * @brief Get field a2dp_cid from event A2DP_SUBEVENT_STREAM_STOPPED
+ * @param event packet
+ * @return a2dp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t a2dp_subevent_stream_stopped_get_a2dp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field local_seid from event A2DP_SUBEVENT_STREAM_STOPPED
+ * @param event packet
+ * @return local_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_stream_stopped_get_local_seid(const uint8_t * event){
+    return event[5];
+}
+
+/**
  * @brief Get field a2dp_cid from event A2DP_SUBEVENT_STREAM_RELEASED
  * @param event packet
  * @return a2dp_cid

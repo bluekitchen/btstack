@@ -350,7 +350,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             int pos = 0;
                             event[pos++] = HCI_EVENT_A2DP_META;
                             event[pos++] = sizeof(event) - 2;
-                            event[pos++] = A2DP_SUBEVENT_STREAM_RELEASED;
+                            event[pos++] = A2DP_SUBEVENT_STREAM_STOPPED;
                             little_endian_store_16(event, pos, cid);
                             pos += 2;
                             log_info("send A2DP_SUBEVENT_STREAM_RELEASED to app");
