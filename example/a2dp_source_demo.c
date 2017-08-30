@@ -383,10 +383,12 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
     UNUSED(size);
     bd_addr_t event_addr;
     uint16_t local_cid;
-    uint8_t  status = 0xFF;
-    
+    uint8_t  a2dp_cmd_status = 0xFF;
+    uint8_t  avrcp_cmd_status = 0xFF;
+
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
+    
     switch (packet[2]){
         case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
             local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
@@ -395,9 +397,9 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                 return;
             }
 
-            status = avrcp_subevent_connection_established_get_status(packet);
-            if (status != ERROR_CODE_SUCCESS){
-                printf("AVRCP: Connection failed: status 0x%02x\n", status);
+            avrcp_cmd_status = avrcp_subevent_connection_established_get_status(packet);
+            if (avrcp_cmd_status != ERROR_CODE_SUCCESS){
+                printf("AVRCP: Connection failed: status 0x%02x\n", avrcp_cmd_status);
                 avrcp_cid = 0;
                 return;
             }
@@ -437,6 +439,37 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
 
             avrcp_target_now_playing_info(avrcp_cid);
             break;
+        case AVRCP_SUBEVENT_OPERATION:{
+            avrcp_operation_id_t operation_id = avrcp_subevent_operation_get_operation_id(packet);
+            uint8_t operands_length = avrcp_subevent_operation_get_operands_length(packet);
+            uint8_t operand =  avrcp_subevent_operation_get_operand(packet);
+            printf("AVRCP: operation 0x%02x, operands length %d\n", operation_id, operands_length);
+            
+            switch (operation_id){
+                case AVRCP_OPERATION_ID_PLAY:
+                    a2dp_cmd_status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
+                    break;
+                case AVRCP_OPERATION_ID_PAUSE:
+                    a2dp_cmd_status = a2dp_source_pause_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
+                    break;
+                
+                case AVRCP_OPERATION_ID_STOP:
+                case AVRCP_OPERATION_ID_REWIND:
+                case AVRCP_OPERATION_ID_FAST_FORWARD:
+                case AVRCP_OPERATION_ID_FORWARD:
+                case AVRCP_OPERATION_ID_BACKWARD:
+                case AVRCP_OPERATION_ID_SKIP:
+                case AVRCP_OPERATION_ID_VOLUME_UP:
+                case AVRCP_OPERATION_ID_VOLUME_DOWN:
+                case AVRCP_OPERATION_ID_MUTE:
+                case AVRCP_OPERATION_ID_UNDEFINED:
+                    avrcp_cmd_status = avrcp_target_operation_not_implemented(avrcp_cid, operation_id, operands_length, operand);
+                    return;
+            }
+            // printf("a2dp_cmd_status 0x%02x \n", a2dp_cmd_status);
+            avrcp_cmd_status = avrcp_target_operation_accepted(avrcp_cid, operation_id, operands_length, operand);
+            break;
+        }
         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
             printf("AVRCP: Channel released: avrcp_cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
             avrcp_cid = 0;

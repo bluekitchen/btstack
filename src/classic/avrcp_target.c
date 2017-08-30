@@ -52,6 +52,21 @@ void avrcp_target_create_sdp_record(uint8_t * service, uint32_t service_record_h
     avrcp_create_sdp_record(0, service, service_record_handle, browsing, supported_features, service_name, service_provider_name);
 }
 
+static void avrcp_target_emit_operation(btstack_packet_handler_t callback, uint16_t avrcp_cid, avrcp_operation_id_t operation_id, uint8_t operands_length, uint8_t operand){
+    if (!callback) return;
+    uint8_t event[8];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVRCP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVRCP_SUBEVENT_OPERATION; 
+    little_endian_store_16(event, pos, avrcp_cid);
+    pos += 2;
+    event[pos++] = operation_id; 
+    event[pos++] = operands_length; 
+    event[pos++] = operand; 
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static void avrcp_target_emit_respond_query(btstack_packet_handler_t callback, uint16_t avrcp_cid, uint8_t subeventID){
     if (!callback) return;
     uint8_t event[5];
@@ -206,6 +221,8 @@ static int avrcp_target_send_response(uint16_t cid, avrcp_connection_t * connect
     packet[pos++] = (uint8_t)connection->command_opcode;
     // operands
     memcpy(packet+pos, connection->cmd_operands, connection->cmd_operands_length);
+    // printf_hexdump(packet+pos, connection->cmd_operands_length);
+
     pos += connection->cmd_operands_length;
     connection->wait_to_send = 0;
     return l2cap_send_prepared(cid, pos);
@@ -231,6 +248,45 @@ static uint8_t avrcp_target_response_reject(avrcp_connection_t * connection, avr
     connection->state = AVCTP_W2_SEND_RESPONSE;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
+}
+
+static uint8_t avrcp_target_pass_through_response(uint16_t avrcp_cid, avrcp_command_type_t cmd_type, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand){
+    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(avrcp_cid, &avrcp_target_context);
+    if (!connection){
+        log_error("avrcp_target_operation_reject: could not find a connection.");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    printf("avrcp_target_pass_through_response: operation 0x%02x, operands length %d\n", opid, operands_length);
+            
+    connection->command_type = cmd_type;
+    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL; 
+    connection->subunit_id =   AVRCP_SUBUNIT_ID;
+    connection->command_opcode = AVRCP_CMD_OPCODE_PASS_THROUGH;
+    
+    int pos = 0; 
+    connection->cmd_operands[pos++] = opid;
+    connection->cmd_operands[pos++] = operands_length;
+    if (operands_length == 1){
+        connection->cmd_operands[pos++] = operand;
+    }
+    connection->cmd_operands_length = pos;    
+    
+    connection->state = AVCTP_W2_SEND_RESPONSE;
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t avrcp_target_operation_rejected(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand){
+    return avrcp_target_pass_through_response(avrcp_cid, AVRCP_CTYPE_RESPONSE_REJECTED, opid, operands_length, operand);
+}
+
+uint8_t avrcp_target_operation_accepted(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand){
+    return avrcp_target_pass_through_response(avrcp_cid, AVRCP_CTYPE_RESPONSE_ACCEPTED, opid, operands_length, operand);
+}
+
+uint8_t avrcp_target_operation_not_implemented(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand){
+    return avrcp_target_pass_through_response(avrcp_cid, AVRCP_CTYPE_RESPONSE_ACCEPTED, opid, operands_length, operand);
 }
 
 uint8_t avrcp_target_unit_info(uint16_t avrcp_cid, avrcp_subunit_type_t unit_type, uint32_t company_id){
@@ -474,6 +530,10 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             avrcp_target_emit_respond_subunit_info_query(avrcp_target_context.avrcp_callback, connection->avrcp_cid, offset);
             break;
         }
+        case AVRCP_CMD_OPCODE_PASS_THROUGH:
+            log_info("AVRCP_OPERATION_ID 0x%02x, operands length %d, operand %d", packet[6], packet[7], packet[8]);
+            avrcp_target_emit_operation(avrcp_target_context.avrcp_callback, connection->avrcp_cid, packet[6], packet[7], packet[8]);
+            break;
         case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:
             pdu_id = pdu[0];
             // 1 - reserved
@@ -516,7 +576,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             }
             break;
         default:
-            printf("AVRCP source: opcode 0x%02x not implemented\n", avrcp_cmd_opcode(packet,size));
+            printf("AVRCP target: opcode 0x%02x not implemented\n", avrcp_cmd_opcode(packet,size));
             break;
     }
 }

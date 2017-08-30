@@ -1733,6 +1733,15 @@ typedef uint8_t sm_key_t[16];
  */
 #define AVRCP_SUBEVENT_NOW_PLAYING_INFO_QUERY                               0x15
 
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param operation_id
+ * @param operands_length
+ * @param operand
+ */
+#define AVRCP_SUBEVENT_OPERATION                               0x16 
 
 /**
  * @format 121BH1

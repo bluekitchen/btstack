@@ -91,6 +91,10 @@ uint8_t avrcp_target_set_now_playing_total_tracks(uint16_t avrcp_cid, const int 
 uint8_t avrcp_target_set_now_playing_track_nr(uint16_t avrcp_cid, const int track_nr);
 uint8_t avrcp_target_now_playing_info(uint16_t avrcp_cid);
 
+uint8_t avrcp_target_operation_rejected(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand);
+uint8_t avrcp_target_operation_accepted(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand);
+uint8_t avrcp_target_operation_not_implemented(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand);
+
 /* API_END */
 #if defined __cplusplus
 }

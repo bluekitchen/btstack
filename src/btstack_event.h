@@ -5556,6 +5556,43 @@ static inline uint16_t avrcp_subevent_now_playing_info_query_get_avrcp_cid(const
 }
 
 /**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_OPERATION
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_operation_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field operation_id from event AVRCP_SUBEVENT_OPERATION
+ * @param event packet
+ * @return operation_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_operation_get_operation_id(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field operands_length from event AVRCP_SUBEVENT_OPERATION
+ * @param event packet
+ * @return operands_length
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_operation_get_operands_length(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field operand from event AVRCP_SUBEVENT_OPERATION
+ * @param event packet
+ * @return operand
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_operation_get_operand(const uint8_t * event){
+    return event[7];
+}
+
+/**
  * @brief Get field goep_cid from event GOEP_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return goep_cid
