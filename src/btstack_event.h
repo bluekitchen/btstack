@@ -3170,27 +3170,27 @@ static inline uint16_t hci_subevent_le_connection_update_complete_get_supervisio
  * @return connection_handle
  * @note: btstack_type H
  */
-//  static inline hci_con_handle_t hci_subevent_le_read_remote_used_features_complete_get_connection_handle(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline hci_con_handle_t hci_subevent_le_read_remote_used_features_complete_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
 /**
  * @brief Get field random_number from event HCI_SUBEVENT_LE_READ_REMOTE_USED_FEATURES_COMPLETE
  * @param event packet
  * @return random_number
  * @note: btstack_type D
  */
-//  static inline const uint8_t * hci_subevent_le_read_remote_used_features_complete_get_random_number(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline const uint8_t * hci_subevent_le_read_remote_used_features_complete_get_random_number(const uint8_t * event){
+    return (const uint8_t *) &event[5];
+}
 /**
  * @brief Get field encryption_diversifier from event HCI_SUBEVENT_LE_READ_REMOTE_USED_FEATURES_COMPLETE
  * @param event packet
  * @return encryption_diversifier
  * @note: btstack_type 2
  */
-//  static inline uint16_t hci_subevent_le_read_remote_used_features_complete_get_encryption_diversifier(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint16_t hci_subevent_le_read_remote_used_features_complete_get_encryption_diversifier(const uint8_t * event){
+    return little_endian_read_16(event, 13);
+}
 
 /**
  * @brief Get field connection_handle from event HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST
@@ -3198,27 +3198,27 @@ static inline uint16_t hci_subevent_le_connection_update_complete_get_supervisio
  * @return connection_handle
  * @note: btstack_type H
  */
-//  static inline hci_con_handle_t hci_subevent_le_long_term_key_request_get_connection_handle(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline hci_con_handle_t hci_subevent_le_long_term_key_request_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
 /**
  * @brief Get field random_number from event HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST
  * @param event packet
  * @return random_number
  * @note: btstack_type D
  */
-//  static inline const uint8_t * hci_subevent_le_long_term_key_request_get_random_number(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline const uint8_t * hci_subevent_le_long_term_key_request_get_random_number(const uint8_t * event){
+    return (const uint8_t *) &event[5];
+}
 /**
  * @brief Get field encryption_diversifier from event HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST
  * @param event packet
  * @return encryption_diversifier
  * @note: btstack_type 2
  */
-//  static inline uint16_t hci_subevent_le_long_term_key_request_get_encryption_diversifier(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint16_t hci_subevent_le_long_term_key_request_get_encryption_diversifier(const uint8_t * event){
+    return little_endian_read_16(event, 13);
+}
 
 /**
  * @brief Get field connection_handle from event HCI_SUBEVENT_LE_REMOTE_CONNECTION_PARAMETER_REQUEST
