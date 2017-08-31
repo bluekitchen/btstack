@@ -383,8 +383,8 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
     UNUSED(size);
     bd_addr_t event_addr;
     uint16_t local_cid;
-    uint8_t  a2dp_cmd_status = 0xFF;
-    uint8_t  avrcp_cmd_status = 0xFF;
+    uint8_t  a2dp_cmd_status;
+    uint8_t  avrcp_cmd_status;
 
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
@@ -467,7 +467,9 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                     return;
             }
             // printf("a2dp_cmd_status 0x%02x \n", a2dp_cmd_status);
+            (void) a2dp_cmd_status;
             avrcp_cmd_status = avrcp_target_operation_accepted(avrcp_cid, operation_id, operands_length, operand);
+            (void) avrcp_cmd_status;
             break;
         }
         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
