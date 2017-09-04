@@ -60,6 +60,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <net/if_arp.h>
 
@@ -93,9 +94,8 @@ static uint16_t bnep_cid            = 0;
 static uint8_t   attribute_value[1000];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
-//static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
-// static bd_addr_t remote = {0xE0,0x06,0xE6,0xBB,0x95,0x79}; // Ole Thinkpad
-static bd_addr_t remote = {0x84,0x38,0x35,0x65,0xD1,0x15};  // MacBook 2013 
+static const char * remote_addr_string = "F4-0F-24-3B-1B-E1";
+static bd_addr_t remote_addr;
 
 static int  tap_fd = -1;
 static uint8_t network_buffer[BNEP_MTU_MIN];
@@ -392,8 +392,6 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                                 }
                                 printf("l2cap_psm 0x%04x, bnep_version 0x%04x\n", bnep_l2cap_psm, bnep_version);
 
-                                /* Create BNEP connection */
-                                bnep_connect(packet_handler, remote, bnep_l2cap_psm, BLUETOOTH_SERVICE_CLASS_PANU, bnep_remote_uuid);
                             }
                             break;
                         default:
@@ -406,7 +404,13 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
             break;
             
         case SDP_EVENT_QUERY_COMPLETE:
-            fprintf(stderr, "General query done with status %d.\n", sdp_event_query_complete_get_status(packet));
+            fprintf(stderr, "General query done with status %d, bnep psm %04x.\n", sdp_event_query_complete_get_status(packet), bnep_l2cap_psm);
+            if (bnep_l2cap_psm){
+                /* Create BNEP connection */
+                bnep_connect(packet_handler, remote_addr, bnep_l2cap_psm, BLUETOOTH_SERVICE_CLASS_PANU, bnep_remote_uuid);
+            } else {
+                fprintf(stderr, "No BNEP service found\n");
+            }
 
             break;
     }
@@ -444,7 +448,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case BTSTACK_EVENT_STATE:
                     if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                         printf("Start SDP BNEP query.\n");
-                        sdp_client_query_uuid16(&handle_sdp_client_query_result, remote, BLUETOOTH_PROTOCOL_BNEP);
+                        sdp_client_query_uuid16(&handle_sdp_client_query_result, remote_addr, BLUETOOTH_PROTOCOL_BNEP);
                     }
                     break;
 
@@ -568,6 +572,10 @@ int btstack_main(int argc, const char * argv[]){
     printf("Client HCI init done\n");
 
     panu_setup();
+
+    // parse human readable Bluetooth address
+    sscanf_bd_addr(remote_addr_string, remote_addr);
+
     // Turn on the device 
     hci_power_control(HCI_POWER_ON);
     return 0;
