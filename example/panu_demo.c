@@ -91,10 +91,16 @@ static uint32_t bnep_remote_uuid    = 0;
 static uint16_t bnep_version        = 0;
 static uint16_t bnep_cid            = 0;
 
+static uint16_t sdp_bnep_l2cap_psm      = 0;
+static uint16_t sdp_bnep_version        = 0;
+static uint32_t sdp_bnep_remote_uuid    = 0;
+
 static uint8_t   attribute_value[1000];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
-static const char * remote_addr_string = "F4-0F-24-3B-1B-E1";
+// MBP 2016 static const char * remote_addr_string = "F4-0F-24-3B-1B-E1";
+// Wiko Sunny
+static const char * remote_addr_string = "A0:4C:5B:0F:B2:42";
 static bd_addr_t remote_addr;
 
 static int  tap_fd = -1;
@@ -310,6 +316,18 @@ static char * get_string_from_data_element(uint8_t * element){
  * @text The SDP parsers retrieves the BNEP PAN UUID as explained in  
  * Section [on SDP BNEP Query example](#sec:sdpbnepqueryExample}.
  */
+static void handle_sdp_client_record_complete(void){
+
+    printf("SDP BNEP Record complete\n");
+
+    // accept first entry or if we foudn a NAP and only have a PANU yet
+    if ((bnep_remote_uuid == 0) || (sdp_bnep_remote_uuid == BLUETOOTH_SERVICE_CLASS_NAP && bnep_remote_uuid == BLUETOOTH_SERVICE_CLASS_PANU)){
+        bnep_l2cap_psm   = sdp_bnep_l2cap_psm;
+        bnep_remote_uuid = sdp_bnep_remote_uuid;
+        bnep_version     = sdp_bnep_version;
+    }
+}
+
 static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
 
     UNUSED(packet_type);
@@ -324,6 +342,8 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
             // Handle new SDP record 
             if (sdp_event_query_attribute_byte_get_record_id(packet) != record_id) {
+                handle_sdp_client_record_complete();
+                // next record started
                 record_id = sdp_event_query_attribute_byte_get_record_id(packet);
                 printf("SDP Record: Nr: %d\n", record_id);
             }
@@ -345,7 +365,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                                     case BLUETOOTH_SERVICE_CLASS_NAP:
                                     case BLUETOOTH_SERVICE_CLASS_GN:
                                         printf("SDP Attribute 0x%04x: BNEP PAN protocol UUID: %04x\n", sdp_event_query_attribute_byte_get_attribute_id(packet), uuid);
-                                        bnep_remote_uuid = uuid;
+                                        sdp_bnep_remote_uuid = uuid;
                                         break;
                                     default:
                                         break;
@@ -379,12 +399,12 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                                         case BLUETOOTH_PROTOCOL_L2CAP:
                                             if (!des_iterator_has_more(&prot_it)) continue;
                                             des_iterator_next(&prot_it);
-                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &bnep_l2cap_psm);
+                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_bnep_l2cap_psm);
                                             break;
                                         case BLUETOOTH_PROTOCOL_BNEP:
                                             if (!des_iterator_has_more(&prot_it)) continue;
                                             des_iterator_next(&prot_it);
-                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &bnep_version);
+                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_bnep_version);
                                             break;
                                         default:
                                             break;
@@ -404,6 +424,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
             break;
             
         case SDP_EVENT_QUERY_COMPLETE:
+            handle_sdp_client_record_complete();
             fprintf(stderr, "General query done with status %d, bnep psm %04x.\n", sdp_event_query_complete_get_status(packet), bnep_l2cap_psm);
             if (bnep_l2cap_psm){
                 /* Create BNEP connection */
