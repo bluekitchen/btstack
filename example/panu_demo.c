@@ -278,12 +278,16 @@ static void process_tap_dev_data(btstack_data_source_t *ds, btstack_data_source_
     }
 
     network_buffer_len = len;
+    log_info("network packet, len %u", (int) len);
     if (bnep_can_send_packet_now(bnep_cid)) {
         bnep_send(bnep_cid, network_buffer, network_buffer_len);
         network_buffer_len = 0;
     } else {
+        log_info("cannort send, request permission");
         // park the current network packet
         btstack_run_loop_remove_data_source(&tap_dev_ds);
+        // and request a send permission
+        bnep_request_can_send_now_event(bnep_cid);
     }
     return;
 }
