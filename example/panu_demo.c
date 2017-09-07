@@ -280,6 +280,7 @@ static void process_tap_dev_data(btstack_data_source_t *ds, btstack_data_source_
     network_buffer_len = len;
     log_info("network packet, len %u", (int) len);
     if (bnep_can_send_packet_now(bnep_cid)) {
+        log_info("direct send");
         bnep_send(bnep_cid, network_buffer, network_buffer_len);
         network_buffer_len = 0;
     } else {
@@ -552,6 +553,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case BNEP_EVENT_CAN_SEND_NOW:
                     // Check for parked network packets and send it out now 
                     if (network_buffer_len > 0) {
+                        log_info("indirect send");
                         bnep_send(bnep_cid, network_buffer, network_buffer_len);
                         network_buffer_len = 0;
                         // Re-add the tap device data source
