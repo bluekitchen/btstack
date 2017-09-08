@@ -278,19 +278,12 @@ static void process_tap_dev_data(btstack_data_source_t *ds, btstack_data_source_
     }
 
     network_buffer_len = len;
-    log_info("network packet, len %u", (int) len);
-    if (bnep_can_send_packet_now(bnep_cid)) {
-        log_info("direct send");
-        bnep_send(bnep_cid, network_buffer, network_buffer_len);
-        network_buffer_len = 0;
-    } else {
-        log_info("cannort send, request permission");
-        // park the current network packet
-        btstack_run_loop_remove_data_source(&tap_dev_ds);
-        // and request a send permission
-        bnep_request_can_send_now_event(bnep_cid);
-    }
-    return;
+
+    // disable reading from netif
+    btstack_run_loop_disable_data_source_callbacks(&tap_dev_ds, DATA_SOURCE_CALLBACK_READ);
+
+    // request permission to send
+    bnep_request_can_send_now_event(bnep_cid);
 }
 /* LISTING_END */
 
@@ -525,6 +518,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             btstack_run_loop_set_data_source_fd(&tap_dev_ds, tap_fd);
                             btstack_run_loop_set_data_source_handler(&tap_dev_ds, &process_tap_dev_data);
                             btstack_run_loop_add_data_source(&tap_dev_ds);
+                            btstack_run_loop_enable_data_source_callbacks(&tap_dev_ds, DATA_SOURCE_CALLBACK_READ);
                         }
                     }
 					break;
@@ -547,19 +541,16 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     }
                     break;
 
-                /* @text BNEP_EVENT_CAN_SEND_NOW indicates that a new packet can be send. This triggers the retry of a 
-                 * parked network packet. If this succeeds, the data source element is added to the run loop again.
+                /* @text BNEP_EVENT_CAN_SEND_NOW indicates that a new packet can be send. This triggers the send of a 
+                 * stored network packet. The tap datas source can be enabled again
                  */
                 case BNEP_EVENT_CAN_SEND_NOW:
-                    // Check for parked network packets and send it out now 
                     if (network_buffer_len > 0) {
-                        log_info("indirect send");
                         bnep_send(bnep_cid, network_buffer, network_buffer_len);
                         network_buffer_len = 0;
-                        // Re-add the tap device data source
-                        btstack_run_loop_add_data_source(&tap_dev_ds);
+                        // Re-enable the tap device data source
+                        btstack_run_loop_enable_data_source_callbacks(&tap_dev_ds, DATA_SOURCE_CALLBACK_READ);
                     }
-                    
                     break;
                     
                 default:
@@ -595,8 +586,6 @@ int btstack_main(int argc, const char * argv[]){
 
     (void)argc;
     (void)argv;
-
-    printf("Client HCI init done\n");
 
     panu_setup();
 
