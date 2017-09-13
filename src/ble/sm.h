@@ -298,6 +298,16 @@ void sm_use_fixed_ec_keypair(uint8_t * qx, uint8_t * qy, uint8_t * d);
  */
 void sm_use_fixed_legacy_pairing_passkey_in_display_role(uint32_t passkey);
 
+/**
+ * @brief Allow connection re-encryption in Peripheral (Responder) role for LE Legacy Pairing 
+ *       without entry for Central device stored in LE Device DB
+ * @note BTstack in Peripheral Role (Responder) supports LE Legacy Pairing without a persistent LE Device DB as
+ *       the LTK is reconstructed from a local secret IRK and EDIV + Random stored on Central (Initiator) device
+ *       On the downside, it's not really possible to delete a pairing if this is enabled.
+ * @param allow encryption using reconstructed LTK without stored entry (Default: 1)
+ */
+void sm_allow_ltk_reconstruction_without_le_device_db_entry(int allow);
+
 /* API_END */
 
 // PTS testing

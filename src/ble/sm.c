@@ -179,6 +179,7 @@ static uint8_t sm_auth_req = 0;
 static uint8_t sm_io_capabilities = IO_CAPABILITY_NO_INPUT_NO_OUTPUT;
 static uint8_t sm_slave_request_security;
 static uint32_t sm_fixed_legacy_pairing_passkey_in_display_role;
+static uint8_t sm_reconstruct_ltk_without_le_device_db_entry;
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 static uint8_t sm_have_ec_keypair;
 #endif
@@ -1260,8 +1261,14 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                     sm_connection->sm_irk_lookup_state = IRK_LOOKUP_SUCCEEDED;
                     sm_connection->sm_le_db_index = matched_device_id;
                     log_info("ADDRESS_RESOLUTION_SUCEEDED, index %d", sm_connection->sm_le_db_index);
+                    if (sm_connection->sm_role) {
+                        // LTK request received before, IRK required -> start LTK calculation
+                        if (sm_connection->sm_engine_state == SM_RESPONDER_PH0_RECEIVED_LTK_W4_IRK){
+                            sm_connection->sm_engine_state = SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST;
+                        }
+                        break;
+                    }
 #ifdef ENABLE_LE_CENTRAL
-                    if (sm_connection->sm_role) break;
                     if (!sm_connection->sm_bonding_requested && !sm_connection->sm_security_request_received) break;
                     sm_connection->sm_security_request_received = 0;
                     sm_connection->sm_bonding_requested = 0;
@@ -1275,8 +1282,14 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                     break;
                 case ADDRESS_RESOLUTION_FAILED:
                     sm_connection->sm_irk_lookup_state = IRK_LOOKUP_FAILED;
+                    if (sm_connection->sm_role) {
+                        // LTK request received before, IRK required -> negative LTK reply
+                        if (sm_connection->sm_engine_state == SM_RESPONDER_PH0_RECEIVED_LTK_W4_IRK){
+                            sm_connection->sm_engine_state = SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
+                        }
+                        break;
+                    }
 #ifdef ENABLE_LE_CENTRAL
-                    if (sm_connection->sm_role) break;
                     if (!sm_connection->sm_bonding_requested && !sm_connection->sm_security_request_received) break;
                     sm_connection->sm_security_request_received = 0;
                     sm_connection->sm_bonding_requested = 0;
@@ -3100,7 +3113,24 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             // For Legacy Pairing (<=> EDIV != 0 || RAND != NULL), we need to recalculated our LTK as a
                             // potentially stored LTK is from the master
                             if (sm_conn->sm_local_ediv != 0 || !sm_is_null_random(sm_conn->sm_local_rand)){
-                                sm_conn->sm_engine_state = SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST;
+                                if (sm_reconstruct_ltk_without_le_device_db_entry){
+                                    sm_conn->sm_engine_state = SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST;
+                                    break;
+                                }
+                                // additionally check if remote is in LE Device DB if requested
+                                switch(sm_conn->sm_irk_lookup_state){
+                                    case IRK_LOOKUP_FAILED:
+                                        log_info("LTK Request: device not in device db");
+                                        sm_conn->sm_engine_state = SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
+                                        break;
+                                    case IRK_LOOKUP_SUCCEEDED:
+                                        sm_conn->sm_engine_state = SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST;
+                                        break;
+                                    default:
+                                        // wait for irk look doen
+                                        sm_conn->sm_engine_state = SM_RESPONDER_PH0_RECEIVED_LTK_W4_IRK;
+                                        break;
+                                }
                                 break;
                             }
 
@@ -3792,7 +3822,8 @@ void sm_init(void){
     sm_min_encryption_key_size = 7;
 
     sm_fixed_legacy_pairing_passkey_in_display_role = 0xffffffff;
-
+    sm_reconstruct_ltk_without_le_device_db_entry = 1;
+ 
 #ifdef ENABLE_CMAC_ENGINE
     sm_cmac_state  = CMAC_IDLE;
 #endif
@@ -3860,6 +3891,10 @@ void sm_test_use_fixed_ec_keypair(void){
 
 void sm_use_fixed_legacy_pairing_passkey_in_display_role(uint32_t passkey){
     sm_fixed_legacy_pairing_passkey_in_display_role = passkey;
+}
+
+void sm_allow_ltk_reconstruction_without_le_device_db_entry(int allow){
+    sm_reconstruct_ltk_without_le_device_db_entry = allow;
 }
 
 static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handle){
