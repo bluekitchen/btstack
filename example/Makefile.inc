@@ -277,7 +277,7 @@ clean:
 	rm -f ${EXAMPLES} *_demo
 	rm -f  *.o *.out *.hex *.exe *.wav *.sbc
 	rm -f  ancs_client_demo.h profile.h spp_and_le_counter.h le_counter.h le_streamer.h 
-	rm -f  gatt_battery_query.h gatt_browser.h sm_pairing_peripheral.h
+	rm -f  gatt_battery_query.h gatt_browser.h sm_pairing_peripheral.h spp_and_le_streamer.h
 	rm -rf *.dSYM
 	rm -rf ${BTSTACK_ROOT}/src/*.o
 	rm -rf ${BTSTACK_ROOT}/src/ble/*.o
