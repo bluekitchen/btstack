@@ -132,11 +132,12 @@ static bd_addr_t device_addr;
 
 static uint16_t avdtp_cid = 0;
 static uint8_t sdp_avdtp_sink_service_buffer[150];
-static avdtp_sep_t sep;
 
 static adtvp_media_codec_information_sbc_t sbc_capability;
 static avdtp_media_codec_configuration_sbc_t sbc_configuration;
-static avdtp_stream_endpoint_t * local_stream_endpoint;
+static uint8_t local_seid;
+static uint8_t remote_seid;
+// static avdtp_sep_t sep;
 
 static uint16_t remote_configuration_bitmap;
 static avdtp_capabilities_t remote_configuration;
@@ -309,9 +310,8 @@ static void close_media_processing(void){
 #endif
 }
 
-static void handle_l2cap_media_data_packet(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size){
-    
-    UNUSED(stream_endpoint);
+static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16_t size){
+    UNUSED(seid);
 
     int pos = 0;
     
@@ -413,11 +413,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             printf("AVDTP connection released: avdtp_cid 0x%02x.\n", avdtp_cid);
             break;
         case AVDTP_SUBEVENT_SIGNALING_SEP_FOUND:
-            sep.seid = avdtp_subevent_signaling_sep_found_get_remote_seid(packet);
-            sep.in_use = avdtp_subevent_signaling_sep_found_get_in_use(packet);
-            sep.media_type = avdtp_subevent_signaling_sep_found_get_media_type(packet);
-            sep.type = avdtp_subevent_signaling_sep_found_get_sep_type(packet);
-            printf("Found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)\n", sep.seid, sep.in_use, sep.media_type, sep.type);
+            remote_seid = avdtp_subevent_signaling_sep_found_get_remote_seid(packet);
+            printf("Found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)\n", 
+                remote_seid, avdtp_subevent_signaling_sep_found_get_in_use(packet), 
+                avdtp_subevent_signaling_sep_found_get_media_type(packet), avdtp_subevent_signaling_sep_found_get_sep_type(packet));
             break;
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:
             printf("Received MEDIA_CODEC_SBC_CAPABILITY\n");
@@ -495,19 +494,19 @@ static void show_usage(void){
     printf("a      - get all capabilities\n");
     printf("s      - set configuration\n");
     printf("f      - get configuration\n");
-    printf("R      - reconfigure stream with %d\n", sep.seid);
-    printf("o      - establish stream with seid %d\n", sep.seid);
-    printf("m      - start stream with %d\n", sep.seid);
-    printf("A      - abort stream with %d\n", sep.seid);
-    printf("P      - suspend (pause) stream with %d\n", sep.seid);
-    printf("S      - stop (release) stream with %d\n", sep.seid);
+    printf("R      - reconfigure stream with %d\n", remote_seid);
+    printf("o      - establish stream with seid %d\n", remote_seid);
+    printf("m      - start stream with %d\n", remote_seid);
+    printf("A      - abort stream with %d\n", remote_seid);
+    printf("P      - suspend (pause) stream with %d\n", remote_seid);
+    printf("S      - stop (release) stream with %d\n", remote_seid);
     printf("C      - disconnect\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
 
 static void stdin_process(char cmd){
-    sep.seid = 1;
+    remote_seid = 1;
     switch (cmd){
         case 'c':
             printf("Establish AVDTP Sink connection to %s\n", device_addr_string);
@@ -522,54 +521,54 @@ static void stdin_process(char cmd){
             avdtp_sink_discover_stream_endpoints(avdtp_cid);
             break;
         case 'g':
-            printf("Get capabilities of stream endpoint with seid %d\n", sep.seid);
-            avdtp_sink_get_capabilities(avdtp_cid, sep.seid);
+            printf("Get capabilities of stream endpoint with seid %d\n", remote_seid);
+            avdtp_sink_get_capabilities(avdtp_cid, remote_seid);
             break;
         case 'a':
-            printf("Get all capabilities of stream endpoint with seid %d\n", sep.seid);
-            avdtp_sink_get_all_capabilities(avdtp_cid, sep.seid);
+            printf("Get all capabilities of stream endpoint with seid %d\n", remote_seid);
+            avdtp_sink_get_all_capabilities(avdtp_cid, remote_seid);
             break;
         case 'f':
-            printf("Get configuration of stream endpoint with seid %d\n", sep.seid);
-            avdtp_sink_get_configuration(avdtp_cid, sep.seid);
+            printf("Get configuration of stream endpoint with seid %d\n", remote_seid);
+            avdtp_sink_get_configuration(avdtp_cid, remote_seid);
             break;
         case 's':
-            printf("Set configuration of stream endpoint with seid %d\n", sep.seid);
+            printf("Set configuration of stream endpoint with seid %d\n", remote_seid);
             remote_configuration_bitmap = store_bit16(remote_configuration_bitmap, AVDTP_MEDIA_CODEC, 1);
             remote_configuration.media_codec.media_type = AVDTP_AUDIO;
             remote_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
             remote_configuration.media_codec.media_codec_information_len = sizeof(media_sbc_codec_configuration);
             remote_configuration.media_codec.media_codec_information = media_sbc_codec_configuration;
-            avdtp_sink_set_configuration(avdtp_cid, local_stream_endpoint->sep.seid, sep.seid, remote_configuration_bitmap, remote_configuration);
+            avdtp_sink_set_configuration(avdtp_cid, local_seid, remote_seid, remote_configuration_bitmap, remote_configuration);
             break;
         case 'R':
-            printf("Reconfigure stream endpoint with seid %d\n", sep.seid);
+            printf("Reconfigure stream endpoint with seid %d\n", remote_seid);
             remote_configuration_bitmap = store_bit16(remote_configuration_bitmap, AVDTP_MEDIA_CODEC, 1);
             remote_configuration.media_codec.media_type = AVDTP_AUDIO;
             remote_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
             remote_configuration.media_codec.media_codec_information_len = sizeof(media_sbc_codec_reconfiguration);
             remote_configuration.media_codec.media_codec_information = media_sbc_codec_reconfiguration;
-            avdtp_sink_reconfigure(avdtp_cid, local_stream_endpoint->sep.seid, sep.seid, remote_configuration_bitmap, remote_configuration);
+            avdtp_sink_reconfigure(avdtp_cid, local_seid, remote_seid, remote_configuration_bitmap, remote_configuration);
             break;
         case 'o':
-            printf("Establish stream between local %d and remote %d seid\n", avdtp_local_seid(local_stream_endpoint), sep.seid);
-            avdtp_sink_open_stream(avdtp_cid, local_stream_endpoint->sep.seid, sep.seid);
+            printf("Establish stream between local %d and remote %d seid\n", local_seid, remote_seid);
+            avdtp_sink_open_stream(avdtp_cid, local_seid, remote_seid);
             break;
         case 'm': 
-            printf("Start stream between local %d and remote %d seid\n", avdtp_local_seid(local_stream_endpoint), avdtp_remote_seid(local_stream_endpoint));
-            avdtp_sink_start_stream(avdtp_cid, avdtp_local_seid(local_stream_endpoint));
+            printf("Start stream between local %d and remote %d seid\n", local_seid, remote_seid);
+            avdtp_sink_start_stream(avdtp_cid, local_seid);
             break;
         case 'A':
-            printf("Abort stream between local %d and remote %d seid\n", avdtp_local_seid(local_stream_endpoint), avdtp_remote_seid(local_stream_endpoint));
-            avdtp_sink_abort_stream(avdtp_cid, avdtp_local_seid(local_stream_endpoint));
+            printf("Abort stream between local %d and remote %d seid\n", local_seid, remote_seid);
+            avdtp_sink_abort_stream(avdtp_cid, local_seid);
             break;
         case 'S':
-            printf("Release stream between local %d and remote %d seid\n", avdtp_local_seid(local_stream_endpoint), avdtp_remote_seid(local_stream_endpoint));
-            avdtp_sink_stop_stream(avdtp_cid, avdtp_local_seid(local_stream_endpoint));
+            printf("Release stream between local %d and remote %d seid\n", local_seid, remote_seid);
+            avdtp_sink_stop_stream(avdtp_cid, local_seid);
             break;
         case 'P':
-            printf("Susspend stream between local %d and remote %d seid\n", avdtp_local_seid(local_stream_endpoint), avdtp_remote_seid(local_stream_endpoint));
-            avdtp_sink_suspend(avdtp_cid, avdtp_local_seid(local_stream_endpoint));
+            printf("Susspend stream between local %d and remote %d seid\n", local_seid, remote_seid);
+            avdtp_sink_suspend(avdtp_cid, local_seid);
             break;
 
         case '\n':
@@ -598,14 +597,14 @@ int btstack_main(int argc, const char * argv[]){
     avdtp_sink_init(&a2dp_sink_context);
     avdtp_sink_register_packet_handler(&packet_handler);
 
-    local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
+    avdtp_stream_endpoint_t * local_stream_endpoint = avdtp_sink_create_stream_endpoint(AVDTP_SINK, AVDTP_AUDIO);
     if (!local_stream_endpoint) {
         printf("AVDTP Sink: not enough memory to create local_stream_endpoint\n");
         return 1;
     }
-    
-    avdtp_sink_register_media_transport_category(local_stream_endpoint->sep.seid);
-    avdtp_sink_register_media_codec_category(local_stream_endpoint->sep.seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));
+    local_seid = avdtp_local_seid(local_stream_endpoint);
+    avdtp_sink_register_media_transport_category(local_seid);
+    avdtp_sink_register_media_codec_category(local_seid, AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities));
 
     avdtp_sink_register_media_handler(&handle_l2cap_media_data_packet);
     // Initialize SDP 

@@ -3170,27 +3170,27 @@ static inline uint16_t hci_subevent_le_connection_update_complete_get_supervisio
  * @return connection_handle
  * @note: btstack_type H
  */
-//  static inline hci_con_handle_t hci_subevent_le_read_remote_used_features_complete_get_connection_handle(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline hci_con_handle_t hci_subevent_le_read_remote_used_features_complete_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
 /**
  * @brief Get field random_number from event HCI_SUBEVENT_LE_READ_REMOTE_USED_FEATURES_COMPLETE
  * @param event packet
  * @return random_number
  * @note: btstack_type D
  */
-//  static inline const uint8_t * hci_subevent_le_read_remote_used_features_complete_get_random_number(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline const uint8_t * hci_subevent_le_read_remote_used_features_complete_get_random_number(const uint8_t * event){
+    return (const uint8_t *) &event[5];
+}
 /**
  * @brief Get field encryption_diversifier from event HCI_SUBEVENT_LE_READ_REMOTE_USED_FEATURES_COMPLETE
  * @param event packet
  * @return encryption_diversifier
  * @note: btstack_type 2
  */
-//  static inline uint16_t hci_subevent_le_read_remote_used_features_complete_get_encryption_diversifier(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint16_t hci_subevent_le_read_remote_used_features_complete_get_encryption_diversifier(const uint8_t * event){
+    return little_endian_read_16(event, 13);
+}
 
 /**
  * @brief Get field connection_handle from event HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST
@@ -3198,27 +3198,27 @@ static inline uint16_t hci_subevent_le_connection_update_complete_get_supervisio
  * @return connection_handle
  * @note: btstack_type H
  */
-//  static inline hci_con_handle_t hci_subevent_le_long_term_key_request_get_connection_handle(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline hci_con_handle_t hci_subevent_le_long_term_key_request_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
 /**
  * @brief Get field random_number from event HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST
  * @param event packet
  * @return random_number
  * @note: btstack_type D
  */
-//  static inline const uint8_t * hci_subevent_le_long_term_key_request_get_random_number(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline const uint8_t * hci_subevent_le_long_term_key_request_get_random_number(const uint8_t * event){
+    return (const uint8_t *) &event[5];
+}
 /**
  * @brief Get field encryption_diversifier from event HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST
  * @param event packet
  * @return encryption_diversifier
  * @note: btstack_type 2
  */
-//  static inline uint16_t hci_subevent_le_long_term_key_request_get_encryption_diversifier(const uint8_t * event){
-//      not implemented yet
-//  }
+static inline uint16_t hci_subevent_le_long_term_key_request_get_encryption_diversifier(const uint8_t * event){
+    return little_endian_read_16(event, 13);
+}
 
 /**
  * @brief Get field connection_handle from event HCI_SUBEVENT_LE_REMOTE_CONNECTION_PARAMETER_REQUEST
@@ -4881,6 +4881,25 @@ static inline uint8_t a2dp_subevent_stream_suspended_get_local_seid(const uint8_
 }
 
 /**
+ * @brief Get field a2dp_cid from event A2DP_SUBEVENT_STREAM_STOPPED
+ * @param event packet
+ * @return a2dp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t a2dp_subevent_stream_stopped_get_a2dp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field local_seid from event A2DP_SUBEVENT_STREAM_STOPPED
+ * @param event packet
+ * @return local_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_stream_stopped_get_local_seid(const uint8_t * event){
+    return event[5];
+}
+
+/**
  * @brief Get field a2dp_cid from event A2DP_SUBEVENT_STREAM_RELEASED
  * @param event packet
  * @return a2dp_cid
@@ -4982,15 +5001,6 @@ static inline void a2dp_subevent_incoming_connection_established_get_bd_addr(con
  */
 static inline uint16_t a2dp_subevent_signaling_connection_released_get_a2dp_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field local_seid from event A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED
- * @param event packet
- * @return local_seid
- * @note: btstack_type 1
- */
-static inline uint8_t a2dp_subevent_signaling_connection_released_get_local_seid(const uint8_t * event){
-    return event[5];
 }
 
 /**
@@ -5543,6 +5553,43 @@ static inline uint16_t avrcp_subevent_play_status_query_get_avrcp_cid(const uint
  */
 static inline uint16_t avrcp_subevent_now_playing_info_query_get_avrcp_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_OPERATION
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_operation_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field operation_id from event AVRCP_SUBEVENT_OPERATION
+ * @param event packet
+ * @return operation_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_operation_get_operation_id(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field operands_length from event AVRCP_SUBEVENT_OPERATION
+ * @param event packet
+ * @return operands_length
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_operation_get_operands_length(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field operand from event AVRCP_SUBEVENT_OPERATION
+ * @param event packet
+ * @return operand
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_operation_get_operand(const uint8_t * event){
+    return event[7];
 }
 
 /**

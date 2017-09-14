@@ -473,7 +473,7 @@ typedef struct {
     bd_addr_t remote_addr;
     
     uint32_t fill_audio_ring_buffer_timeout_ms;
-    uint32_t time_audio_data_sent; // ms
+    uint32_t time_audio_data_sent; // msstream
     uint32_t acc_num_missed_samples;
     uint32_t samples_ready;
     btstack_timer_source_t fill_audio_ring_buffer_timer;
@@ -500,7 +500,7 @@ typedef struct {
     uint16_t initiator_transaction_id_counter;
     btstack_packet_handler_t avdtp_callback;
     btstack_packet_handler_t a2dp_callback;
-    void (*handle_media_data)(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size);
+    void (*handle_media_data)(uint8_t local_seid, uint8_t *packet, uint16_t size);
     btstack_packet_handler_t packet_handler;
     
     avdtp_sep_type_t query_role;

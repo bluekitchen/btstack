@@ -67,7 +67,7 @@ static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 static avdtp_context_t * sdp_query_context;
 static uint16_t avdtp_cid_counter = 0;
 
-static void (*handle_media_data)(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size);
+static void (*handle_media_data)(uint8_t local_seid, uint8_t *packet, uint16_t size);
 static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static uint16_t avdtp_get_next_initiator_transaction_label(avdtp_context_t * context){
@@ -311,91 +311,6 @@ static void handle_l2cap_data_packet_for_signaling_connection(avdtp_connection_t
     }
 }
 
-static void stream_endpoint_state_machine(avdtp_connection_t * connection, avdtp_stream_endpoint_t * stream_endpoint, uint8_t packet_type, uint8_t event, uint8_t *packet, uint16_t size, avdtp_context_t * context){
-    uint16_t local_cid;
-    uint8_t  status;
-    bd_addr_t address;
-        
-    if (!connection){
-        log_info("stream_endpoint_state_machine: connection does not exist.");
-        return;
-    }
-    
-    switch (packet_type){
-        case L2CAP_DATA_PACKET:{
-            int offset = avdtp_read_signaling_header(&connection->signaling_packet, packet, size);
-            if (connection->signaling_packet.message_type == AVDTP_CMD_MSG){
-                avdtp_acceptor_stream_config_subsm(connection, packet, size, offset, context);
-            } else {
-                avdtp_initiator_stream_config_subsm(connection, packet, size, offset, context);
-            } 
-            break;
-        }
-        case HCI_EVENT_PACKET:
-            if (!stream_endpoint){
-                log_error("stream_endpoint_state_machine: stream_endpoint does not exist.");
-                return;
-            }
-        
-            switch (event){
-                case L2CAP_EVENT_CHANNEL_OPENED:
-                    l2cap_event_channel_opened_get_address(packet, address);
-                    if (stream_endpoint->l2cap_media_cid == 0){
-                        status = l2cap_event_channel_opened_get_status(packet);
-                        if (status){
-                            log_info(" -> AVDTP_STREAM_ENDPOINT_OPENED failed with status %d, avdtp cid 0x%02x, l2cap_media_cid 0x%02x, local seid %d, remote seid %d", status, connection->avdtp_cid, stream_endpoint->l2cap_media_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint));
-                            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;
-                            avdtp_streaming_emit_connection_established(context->avdtp_callback, connection->avdtp_cid, address, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), status);
-                            break;
-                        }
-                        if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED){
-                            log_info(" -> AVDTP_STREAM_ENDPOINT_OPENED failed - stream endpoint in wrong state %d, avdtp cid 0x%02x, l2cap_media_cid 0x%02x, local seid %d, remote seid %d", stream_endpoint->state, connection->avdtp_cid, stream_endpoint->l2cap_media_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint));
-                            avdtp_streaming_emit_connection_established(context->avdtp_callback, connection->avdtp_cid, address, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE);
-                            break;
-                        } 
-                        stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
-                        stream_endpoint->connection = connection;
-                        stream_endpoint->l2cap_media_cid = l2cap_event_channel_opened_get_local_cid(packet);
-                        stream_endpoint->media_con_handle = l2cap_event_channel_opened_get_handle(packet);
-                        log_info(" -> AVDTP_STREAM_ENDPOINT_OPENED, avdtp cid 0x%02x, l2cap_media_cid 0x%02x, local seid %d, remote seid %d", connection->avdtp_cid, stream_endpoint->l2cap_media_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint));
-                        avdtp_streaming_emit_connection_established(context->avdtp_callback, connection->avdtp_cid, address, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), 0);
-                        return;
-                    }
-                    break;
-
-                case L2CAP_EVENT_CHANNEL_CLOSED:
-                    local_cid = l2cap_event_channel_closed_get_local_cid(packet);
-                    log_info("L2CAP_EVENT_CHANNEL_CLOSED stream endpoint sm: media cid 0x%02x, local cid 0x%02x\n", stream_endpoint->l2cap_media_cid , local_cid);
-                    if (stream_endpoint->l2cap_media_cid == local_cid){
-                        avdtp_streaming_emit_connection_released(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint));
-                        stream_endpoint->l2cap_media_cid = 0;
-                        stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;
-                        stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
-                        stream_endpoint->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
-                        stream_endpoint->remote_sep_index = 0;
-                        break;
-                    }
-                    if (stream_endpoint->l2cap_recovery_cid == local_cid){
-                        log_info(" -> L2CAP_EVENT_CHANNEL_CLOSED recovery cid 0x%0x", local_cid);
-                        stream_endpoint->l2cap_recovery_cid = 0;
-                        break;
-                    }
-                    
-                    if (stream_endpoint->l2cap_reporting_cid == local_cid){
-                        log_info("L2CAP_EVENT_CHANNEL_CLOSED reporting cid 0x%0x", local_cid);
-                        stream_endpoint->l2cap_reporting_cid = 0;
-                        break;
-                    }
-                    break;
-                default:
-                    break;
-            } 
-            break;
-        default:
-            break;
-    }
-}
-
 static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     avdtp_connection_t * connection = avdtp_connection_for_avdtp_cid(sdp_query_context->avdtp_cid, sdp_query_context);
     if (!connection) {
@@ -555,14 +470,19 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
             
             if (stream_endpoint->connection){
                 if (channel == stream_endpoint->connection->l2cap_signaling_cid){
-                    stream_endpoint_state_machine(stream_endpoint->connection, stream_endpoint, L2CAP_DATA_PACKET, 0, packet, size, context);
+                    int offset = avdtp_read_signaling_header(&stream_endpoint->connection->signaling_packet, packet, size);
+                    if (stream_endpoint->connection->signaling_packet.message_type == AVDTP_CMD_MSG){
+                        avdtp_acceptor_stream_config_subsm(stream_endpoint->connection, packet, size, offset, context);
+                    } else {
+                        avdtp_initiator_stream_config_subsm(stream_endpoint->connection, packet, size, offset, context);
+                    } 
                     break;
                 }
             }
 
             if (channel == stream_endpoint->l2cap_media_cid){
                 if (handle_media_data){
-                    (*handle_media_data)(stream_endpoint, packet, size);
+                    (*handle_media_data)(avdtp_local_seid(stream_endpoint), packet, size);
                 }               
                 break;
             } 
@@ -652,19 +572,36 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                         log_info("L2CAP_EVENT_CHANNEL_OPENED: stream_endpoint not found");
                         return;
                     }
-                    stream_endpoint_state_machine(connection, stream_endpoint, HCI_EVENT_PACKET, L2CAP_EVENT_CHANNEL_OPENED, packet, size, context);
+                    
+                    if (stream_endpoint->l2cap_media_cid == 0){
+                        status = l2cap_event_channel_opened_get_status(packet);
+                        if (status){
+                            log_info(" -> AVDTP_STREAM_ENDPOINT_OPENED failed with status %d, avdtp cid 0x%02x, l2cap_media_cid 0x%02x, local seid %d, remote seid %d", status, context->avdtp_cid, stream_endpoint->l2cap_media_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint));
+                            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;
+                            avdtp_streaming_emit_connection_established(context->avdtp_callback, context->avdtp_cid, event_addr, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), status);
+                            break;
+                        }
+                        if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED){
+                            log_info(" -> AVDTP_STREAM_ENDPOINT_OPENED failed - stream endpoint in wrong state %d, avdtp cid 0x%02x, l2cap_media_cid 0x%02x, local seid %d, remote seid %d", stream_endpoint->state, connection->avdtp_cid, stream_endpoint->l2cap_media_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint));
+                            avdtp_streaming_emit_connection_established(context->avdtp_callback, context->avdtp_cid, event_addr, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE);
+                            break;
+                        } 
+
+                        stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
+                        stream_endpoint->connection = connection;
+                        stream_endpoint->l2cap_media_cid = l2cap_event_channel_opened_get_local_cid(packet);
+                        stream_endpoint->media_con_handle = l2cap_event_channel_opened_get_handle(packet);
+                        log_info(" -> AVDTP_STREAM_ENDPOINT_OPENED, avdtp cid 0x%02x, l2cap_media_cid 0x%02x, local seid %d, remote seid %d", context->avdtp_cid, stream_endpoint->l2cap_media_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint));
+                        avdtp_streaming_emit_connection_established(context->avdtp_callback, context->avdtp_cid, event_addr, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), 0);
+                        return;
+                    }
                     break;
                 
                 case L2CAP_EVENT_CHANNEL_CLOSED:
                     local_cid = l2cap_event_channel_closed_get_local_cid(packet);
                     connection = avdtp_connection_for_l2cap_signaling_cid(local_cid, context);
                     stream_endpoint = avdtp_stream_endpoint_for_l2cap_cid(local_cid, context);
-                    log_info("received L2CAP_EVENT_CHANNEL_CLOSED, cid 0x%2x, %p, %p\n", local_cid, connection, stream_endpoint);
-                    
-                    if (stream_endpoint){
-                        stream_endpoint_state_machine(stream_endpoint->connection, stream_endpoint, HCI_EVENT_PACKET, L2CAP_EVENT_CHANNEL_CLOSED, packet, size, context);
-                        break;
-                    }
+                    log_info("received L2CAP_EVENT_CHANNEL_CLOSED, cid 0x%2x, connection %p, stream_endpoint %p", local_cid, connection, stream_endpoint);
                     
                     if (connection){
                         avdtp_signaling_emit_connection_released(context->avdtp_callback, connection->avdtp_cid);
@@ -680,6 +617,33 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                         }
                         btstack_memory_avdtp_connection_free(connection);
                         break;
+                    }
+
+                    if (stream_endpoint){
+                        if (stream_endpoint->l2cap_media_cid == local_cid){
+                            connection = stream_endpoint->connection;
+                            avdtp_streaming_emit_connection_released(context->avdtp_callback, context->avdtp_cid, avdtp_local_seid(stream_endpoint));
+                            stream_endpoint->l2cap_media_cid = 0;
+                            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;
+                            stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
+                            stream_endpoint->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
+                            stream_endpoint->remote_sep_index = 0;
+                            if (connection && connection->disconnect){
+                                avdtp_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
+                            }
+                            break;
+                        }
+                        if (stream_endpoint->l2cap_recovery_cid == local_cid){
+                            log_info(" -> L2CAP_EVENT_CHANNEL_CLOSED recovery cid 0x%0x", local_cid);
+                            stream_endpoint->l2cap_recovery_cid = 0;
+                            break;
+                        }
+                        
+                        if (stream_endpoint->l2cap_reporting_cid == local_cid){
+                            log_info("L2CAP_EVENT_CHANNEL_CLOSED reporting cid 0x%0x", local_cid);
+                            stream_endpoint->l2cap_reporting_cid = 0;
+                            break;
+                        }
                     }
                     break;
 
@@ -710,8 +674,11 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 uint8_t avdtp_disconnect(uint16_t avdtp_cid, avdtp_context_t * context){
     avdtp_connection_t * connection = avdtp_connection_for_avdtp_cid(avdtp_cid, context);
     if (!connection) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (connection->state == AVDTP_SIGNALING_CONNECTION_IDLE) return AVDTP_CONNECTION_IN_WRONG_STATE;
-    if (connection->state == AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED) return AVDTP_CONNECTION_IN_WRONG_STATE;
+    if (connection->state == AVDTP_SIGNALING_CONNECTION_IDLE){
+        avdtp_signaling_emit_connection_released(context->avdtp_callback, connection->avdtp_cid);
+        return ERROR_CODE_SUCCESS;
+    } 
+    if (connection->state == AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED) return ERROR_CODE_SUCCESS;
     
     connection->disconnect = 1;
     avdtp_request_can_send_now_self(connection, connection->l2cap_signaling_cid);

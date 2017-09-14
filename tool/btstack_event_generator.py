@@ -187,6 +187,7 @@ param_read = {
     'R' : 'return &event[{offset}];',
     'N' : 'return (const char *) &event[{offset}];',
     'T' : 'return (const char *) &event[{offset}];',
+    'D' : 'return (const uint8_t *) &event[{offset}];',
     'Q' : 'reverse_bytes(&event[{offset}], {result_name}, 32);',
     'V' : 'return &event[{offset}];',
     'X' : 'gatt_client_deserialize_service(event, {offset}, {result_name});',

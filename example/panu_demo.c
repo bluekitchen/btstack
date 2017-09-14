@@ -60,6 +60,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <net/if_arp.h>
 
@@ -90,12 +91,17 @@ static uint32_t bnep_remote_uuid    = 0;
 static uint16_t bnep_version        = 0;
 static uint16_t bnep_cid            = 0;
 
+static uint16_t sdp_bnep_l2cap_psm      = 0;
+static uint16_t sdp_bnep_version        = 0;
+static uint32_t sdp_bnep_remote_uuid    = 0;
+
 static uint8_t   attribute_value[1000];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
-//static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
-// static bd_addr_t remote = {0xE0,0x06,0xE6,0xBB,0x95,0x79}; // Ole Thinkpad
-static bd_addr_t remote = {0x84,0x38,0x35,0x65,0xD1,0x15};  // MacBook 2013 
+// MBP 2016 static const char * remote_addr_string = "F4-0F-24-3B-1B-E1";
+// Wiko Sunny
+static const char * remote_addr_string = "A0:4C:5B:0F:B2:42";
+static bd_addr_t remote_addr;
 
 static int  tap_fd = -1;
 static uint8_t network_buffer[BNEP_MTU_MIN];
@@ -272,14 +278,12 @@ static void process_tap_dev_data(btstack_data_source_t *ds, btstack_data_source_
     }
 
     network_buffer_len = len;
-    if (bnep_can_send_packet_now(bnep_cid)) {
-        bnep_send(bnep_cid, network_buffer, network_buffer_len);
-        network_buffer_len = 0;
-    } else {
-        // park the current network packet
-        btstack_run_loop_remove_data_source(&tap_dev_ds);
-    }
-    return;
+
+    // disable reading from netif
+    btstack_run_loop_disable_data_source_callbacks(&tap_dev_ds, DATA_SOURCE_CALLBACK_READ);
+
+    // request permission to send
+    bnep_request_can_send_now_event(bnep_cid);
 }
 /* LISTING_END */
 
@@ -310,6 +314,18 @@ static char * get_string_from_data_element(uint8_t * element){
  * @text The SDP parsers retrieves the BNEP PAN UUID as explained in  
  * Section [on SDP BNEP Query example](#sec:sdpbnepqueryExample}.
  */
+static void handle_sdp_client_record_complete(void){
+
+    printf("SDP BNEP Record complete\n");
+
+    // accept first entry or if we foudn a NAP and only have a PANU yet
+    if ((bnep_remote_uuid == 0) || (sdp_bnep_remote_uuid == BLUETOOTH_SERVICE_CLASS_NAP && bnep_remote_uuid == BLUETOOTH_SERVICE_CLASS_PANU)){
+        bnep_l2cap_psm   = sdp_bnep_l2cap_psm;
+        bnep_remote_uuid = sdp_bnep_remote_uuid;
+        bnep_version     = sdp_bnep_version;
+    }
+}
+
 static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
 
     UNUSED(packet_type);
@@ -324,6 +340,8 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
             // Handle new SDP record 
             if (sdp_event_query_attribute_byte_get_record_id(packet) != record_id) {
+                handle_sdp_client_record_complete();
+                // next record started
                 record_id = sdp_event_query_attribute_byte_get_record_id(packet);
                 printf("SDP Record: Nr: %d\n", record_id);
             }
@@ -345,7 +363,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                                     case BLUETOOTH_SERVICE_CLASS_NAP:
                                     case BLUETOOTH_SERVICE_CLASS_GN:
                                         printf("SDP Attribute 0x%04x: BNEP PAN protocol UUID: %04x\n", sdp_event_query_attribute_byte_get_attribute_id(packet), uuid);
-                                        bnep_remote_uuid = uuid;
+                                        sdp_bnep_remote_uuid = uuid;
                                         break;
                                     default:
                                         break;
@@ -379,12 +397,12 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                                         case BLUETOOTH_PROTOCOL_L2CAP:
                                             if (!des_iterator_has_more(&prot_it)) continue;
                                             des_iterator_next(&prot_it);
-                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &bnep_l2cap_psm);
+                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_bnep_l2cap_psm);
                                             break;
                                         case BLUETOOTH_PROTOCOL_BNEP:
                                             if (!des_iterator_has_more(&prot_it)) continue;
                                             des_iterator_next(&prot_it);
-                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &bnep_version);
+                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_bnep_version);
                                             break;
                                         default:
                                             break;
@@ -392,8 +410,6 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                                 }
                                 printf("l2cap_psm 0x%04x, bnep_version 0x%04x\n", bnep_l2cap_psm, bnep_version);
 
-                                /* Create BNEP connection */
-                                bnep_connect(packet_handler, remote, bnep_l2cap_psm, BLUETOOTH_SERVICE_CLASS_PANU, bnep_remote_uuid);
                             }
                             break;
                         default:
@@ -406,7 +422,14 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
             break;
             
         case SDP_EVENT_QUERY_COMPLETE:
-            fprintf(stderr, "General query done with status %d.\n", sdp_event_query_complete_get_status(packet));
+            handle_sdp_client_record_complete();
+            fprintf(stderr, "General query done with status %d, bnep psm %04x.\n", sdp_event_query_complete_get_status(packet), bnep_l2cap_psm);
+            if (bnep_l2cap_psm){
+                /* Create BNEP connection */
+                bnep_connect(packet_handler, remote_addr, bnep_l2cap_psm, BLUETOOTH_SERVICE_CLASS_PANU, bnep_remote_uuid);
+            } else {
+                fprintf(stderr, "No BNEP service found\n");
+            }
 
             break;
     }
@@ -444,7 +467,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case BTSTACK_EVENT_STATE:
                     if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                         printf("Start SDP BNEP query.\n");
-                        sdp_client_query_uuid16(&handle_sdp_client_query_result, remote, BLUETOOTH_PROTOCOL_BNEP);
+                        sdp_client_query_uuid16(&handle_sdp_client_query_result, remote_addr, BLUETOOTH_PROTOCOL_BNEP);
                     }
                     break;
 
@@ -495,6 +518,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             btstack_run_loop_set_data_source_fd(&tap_dev_ds, tap_fd);
                             btstack_run_loop_set_data_source_handler(&tap_dev_ds, &process_tap_dev_data);
                             btstack_run_loop_add_data_source(&tap_dev_ds);
+                            btstack_run_loop_enable_data_source_callbacks(&tap_dev_ds, DATA_SOURCE_CALLBACK_READ);
                         }
                     }
 					break;
@@ -517,18 +541,16 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     }
                     break;
 
-                /* @text BNEP_EVENT_CAN_SEND_NOW indicates that a new packet can be send. This triggers the retry of a 
-                 * parked network packet. If this succeeds, the data source element is added to the run loop again.
+                /* @text BNEP_EVENT_CAN_SEND_NOW indicates that a new packet can be send. This triggers the send of a 
+                 * stored network packet. The tap datas source can be enabled again
                  */
                 case BNEP_EVENT_CAN_SEND_NOW:
-                    // Check for parked network packets and send it out now 
                     if (network_buffer_len > 0) {
                         bnep_send(bnep_cid, network_buffer, network_buffer_len);
                         network_buffer_len = 0;
-                        // Re-add the tap device data source
-                        btstack_run_loop_add_data_source(&tap_dev_ds);
+                        // Re-enable the tap device data source
+                        btstack_run_loop_enable_data_source_callbacks(&tap_dev_ds, DATA_SOURCE_CALLBACK_READ);
                     }
-                    
                     break;
                     
                 default:
@@ -565,9 +587,11 @@ int btstack_main(int argc, const char * argv[]){
     (void)argc;
     (void)argv;
 
-    printf("Client HCI init done\n");
-
     panu_setup();
+
+    // parse human readable Bluetooth address
+    sscanf_bd_addr(remote_addr_string, remote_addr);
+
     // Turn on the device 
     hci_power_control(HCI_POWER_ON);
     return 0;

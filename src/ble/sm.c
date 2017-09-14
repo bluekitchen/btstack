@@ -178,6 +178,8 @@ static uint8_t sm_min_encryption_key_size;
 static uint8_t sm_auth_req = 0;
 static uint8_t sm_io_capabilities = IO_CAPABILITY_NO_INPUT_NO_OUTPUT;
 static uint8_t sm_slave_request_security;
+static uint32_t sm_fixed_legacy_pairing_passkey_in_display_role;
+static uint8_t sm_reconstruct_ltk_without_le_device_db_entry;
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 static uint8_t sm_have_ec_keypair;
 #endif
@@ -1259,8 +1261,14 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                     sm_connection->sm_irk_lookup_state = IRK_LOOKUP_SUCCEEDED;
                     sm_connection->sm_le_db_index = matched_device_id;
                     log_info("ADDRESS_RESOLUTION_SUCEEDED, index %d", sm_connection->sm_le_db_index);
+                    if (sm_connection->sm_role) {
+                        // LTK request received before, IRK required -> start LTK calculation
+                        if (sm_connection->sm_engine_state == SM_RESPONDER_PH0_RECEIVED_LTK_W4_IRK){
+                            sm_connection->sm_engine_state = SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST;
+                        }
+                        break;
+                    }
 #ifdef ENABLE_LE_CENTRAL
-                    if (sm_connection->sm_role) break;
                     if (!sm_connection->sm_bonding_requested && !sm_connection->sm_security_request_received) break;
                     sm_connection->sm_security_request_received = 0;
                     sm_connection->sm_bonding_requested = 0;
@@ -1274,8 +1282,14 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                     break;
                 case ADDRESS_RESOLUTION_FAILED:
                     sm_connection->sm_irk_lookup_state = IRK_LOOKUP_FAILED;
+                    if (sm_connection->sm_role) {
+                        // LTK request received before, IRK required -> negative LTK reply
+                        if (sm_connection->sm_engine_state == SM_RESPONDER_PH0_RECEIVED_LTK_W4_IRK){
+                            sm_connection->sm_engine_state = SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
+                        }
+                        break;
+                    }
 #ifdef ENABLE_LE_CENTRAL
-                    if (sm_connection->sm_role) break;
                     if (!sm_connection->sm_bonding_requested && !sm_connection->sm_security_request_received) break;
                     sm_connection->sm_security_request_received = 0;
                     sm_connection->sm_bonding_requested = 0;
@@ -2930,13 +2944,19 @@ static void sm_handle_random_result(uint8_t * data){
 
         case SM_PH2_W4_RANDOM_TK:
         {
-            // map random to 0-999999 without speding much cycles on a modulus operation
-            uint32_t tk = little_endian_read_32(data,0);
-            tk = tk & 0xfffff;  // 1048575
-            if (tk >= 999999){
-                tk = tk - 999999;
-            } 
             sm_reset_tk();
+            uint32_t tk;
+            if (sm_fixed_legacy_pairing_passkey_in_display_role == 0xffffffff){
+                // map random to 0-999999 without speding much cycles on a modulus operation
+                tk = little_endian_read_32(data,0);
+                tk = tk & 0xfffff;  // 1048575
+                if (tk >= 999999){
+                    tk = tk - 999999;
+                } 
+            } else {
+                // override with pre-defined passkey
+                tk = sm_fixed_legacy_pairing_passkey_in_display_role;
+            }
             big_endian_store_32(setup->sm_tk, 12, tk);
             if (IS_RESPONDER(connection->sm_role)){
                 connection->sm_engine_state = SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE;
@@ -3093,7 +3113,24 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             // For Legacy Pairing (<=> EDIV != 0 || RAND != NULL), we need to recalculated our LTK as a
                             // potentially stored LTK is from the master
                             if (sm_conn->sm_local_ediv != 0 || !sm_is_null_random(sm_conn->sm_local_rand)){
-                                sm_conn->sm_engine_state = SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST;
+                                if (sm_reconstruct_ltk_without_le_device_db_entry){
+                                    sm_conn->sm_engine_state = SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST;
+                                    break;
+                                }
+                                // additionally check if remote is in LE Device DB if requested
+                                switch(sm_conn->sm_irk_lookup_state){
+                                    case IRK_LOOKUP_FAILED:
+                                        log_info("LTK Request: device not in device db");
+                                        sm_conn->sm_engine_state = SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
+                                        break;
+                                    case IRK_LOOKUP_SUCCEEDED:
+                                        sm_conn->sm_engine_state = SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST;
+                                        break;
+                                    default:
+                                        // wait for irk look doen
+                                        sm_conn->sm_engine_state = SM_RESPONDER_PH0_RECEIVED_LTK_W4_IRK;
+                                        break;
+                                }
                                 break;
                             }
 
@@ -3238,17 +3275,9 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         break;
                     }
                     if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_bd_addr)){
-                        // Hack for Nordic nRF5 series that doesn't have public address:
-                        // - with patches from port/nrf5-zephyr, hci_read_bd_addr returns random static address
-                        // - we use this as default for advertisements/connections
+                        // set local addr for le device db
                         bd_addr_t addr;
                         reverse_bd_addr(&packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1], addr);
-                        if (hci_get_manufacturer() == BLUETOOTH_COMPANY_ID_NORDIC_SEMICONDUCTOR_ASA){
-                            log_info("nRF5: using (fake) public address as random static address");
-                            gap_random_address_set(addr);
-                        }
-
-                        // set local addr for le device db
                         le_device_db_set_local_bd_addr(addr);
                     }
                     if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_supported_commands)){
@@ -3783,7 +3812,10 @@ void sm_init(void){
 
     sm_max_encryption_key_size = 16;
     sm_min_encryption_key_size = 7;
-    
+
+    sm_fixed_legacy_pairing_passkey_in_display_role = 0xffffffff;
+    sm_reconstruct_ltk_without_le_device_db_entry = 1;
+ 
 #ifdef ENABLE_CMAC_ENGINE
     sm_cmac_state  = CMAC_IDLE;
 #endif
@@ -3847,6 +3879,14 @@ void sm_test_use_fixed_ec_keypair(void){
     sm_have_ec_keypair = 1;
     ec_key_generation_state = EC_KEY_GENERATION_DONE;
 #endif
+}
+
+void sm_use_fixed_legacy_pairing_passkey_in_display_role(uint32_t passkey){
+    sm_fixed_legacy_pairing_passkey_in_display_role = passkey;
+}
+
+void sm_allow_ltk_reconstruction_without_le_device_db_entry(int allow){
+    sm_reconstruct_ltk_without_le_device_db_entry = allow;
 }
 
 static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handle){

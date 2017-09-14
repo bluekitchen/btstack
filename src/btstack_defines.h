@@ -184,7 +184,7 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_CONNECTION_DOES_NOT_EXIST                    0xC1
 #define AVDTP_CONNECTION_IN_WRONG_STATE                    0xC2
 #define AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE               0xC3
-#define AVDTP_MEDIA_CONNECTION_DOES_NOT_EXIST              0xC4
+#define AVDTP_MEDIA_CONNECTION_DOES_NOT_EXIST              0xC4 
 
 /* ENUM_END */
 
@@ -1497,12 +1497,20 @@ typedef uint8_t sm_key_t[16];
 #define A2DP_SUBEVENT_STREAM_SUSPENDED                              0x06
 
 /**
+ * @format 121           Stream is stoped or aborted.
+ * @param subevent_code
+ * @param a2dp_cid
+ * @param local_seid
+ */
+#define A2DP_SUBEVENT_STREAM_STOPPED                                0x07
+
+/**
  * @format 121            Stream is released.
  * @param subevent_code
  * @param a2dp_cid
  * @param local_seid
  */
-#define A2DP_SUBEVENT_STREAM_RELEASED                               0x07
+#define A2DP_SUBEVENT_STREAM_RELEASED                               0x08
 
 /**
  * @format 1211
@@ -1511,7 +1519,7 @@ typedef uint8_t sm_key_t[16];
  * @param local_seid
  * @param signal_identifier
  */
-#define A2DP_SUBEVENT_COMMAND_ACCEPTED                              0x08
+#define A2DP_SUBEVENT_COMMAND_ACCEPTED                              0x09
 
 /**
  * @format 1211
@@ -1520,7 +1528,7 @@ typedef uint8_t sm_key_t[16];
  * @param local_seid
  * @param signal_identifier 
  */
-#define A2DP_SUBEVENT_COMMAND_REJECTED                              0x09
+#define A2DP_SUBEVENT_COMMAND_REJECTED                              0x0A
 
 /**
  * @format 12B          Signaling channel is opened.
@@ -1528,15 +1536,14 @@ typedef uint8_t sm_key_t[16];
  * @param a2dp_cid
  * @param bd_addr
  */
-#define A2DP_SUBEVENT_INCOMING_CONNECTION_ESTABLISHED               0x0A
+#define A2DP_SUBEVENT_INCOMING_CONNECTION_ESTABLISHED               0x0B
 
 /**
- * @format 121            Signaling channel is released.
+ * @format 12            Signaling channel is released.
  * @param subevent_code
  * @param a2dp_cid
- * @param local_seid
  */
-#define A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED                  0x0B
+#define A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED                  0x0C
 
 
 /** AVRCP Subevent */
@@ -1726,6 +1733,15 @@ typedef uint8_t sm_key_t[16];
  */
 #define AVRCP_SUBEVENT_NOW_PLAYING_INFO_QUERY                               0x15
 
+/**
+ * @format 12111
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param operation_id
+ * @param operands_length
+ * @param operand
+ */
+#define AVRCP_SUBEVENT_OPERATION                               0x16 
 
 /**
  * @format 121BH1

@@ -285,11 +285,13 @@ const btstack_run_loop_t * btstack_run_loop_zephyr_get_instance(void){
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
+static bd_addr_t static_address;
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != BTSTACK_EVENT_STATE) return;
     if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
-    printf("BTstack up and running.\n");
+    printf("BTstack up and running as %s.\n", bd_addr_to_str(static_address));
 }
 
 int btstack_main(void);
@@ -302,7 +304,6 @@ void bt_ctlr_assert_handle(char *file, u32_t line)
 	}
 }
 #endif /* CONFIG_BT_CTLR_ASSERT_HANDLER */
-
 
 void main(void)
 {
@@ -320,23 +321,12 @@ void main(void)
     // init HCI
     hci_init(transport_get_instance(), NULL);
 
-#if 1
     // nRF5 chipsets don't have an official public address
-    // Instead, they use a Static Random Address set in the factory
-    bd_addr_t addr;
-#if 0
-    // set random static address
-    big_endian_store_16(addr, 0, NRF_FICR->DEVICEADDR[1] | 0xc000);
-    big_endian_store_32(addr, 2, NRF_FICR->DEVICEADDR[0]);
-    gap_random_address_set(addr);
-    printf("Random Static Address: %s\n", bd_addr_to_str(addr));
-#else
-    // make Random Static Address available via HCI Read BD ADDR as fake public address
-    little_endian_store_32(addr, 0, NRF_FICR->DEVICEADDR[0]);
-    little_endian_store_16(addr, 4, NRF_FICR->DEVICEADDR[1] | 0xc000);
-    ll_addr_set(0, addr);
-#endif
-#endif
+    // Instead, a Static Random Address is assigned during manufacturing
+    // let's use it as well
+    big_endian_store_16(static_address, 0, NRF_FICR->DEVICEADDR[1] | 0xc000);
+    big_endian_store_32(static_address, 2, NRF_FICR->DEVICEADDR[0]);
+    gap_random_address_set(static_address);
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;

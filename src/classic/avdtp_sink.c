@@ -125,7 +125,7 @@ avdtp_stream_endpoint_t * avdtp_sink_create_stream_endpoint(avdtp_sep_type_t sep
     return avdtp_create_stream_endpoint(sep_type, media_type, avdtp_sink_context);
 }
 
-void avdtp_sink_register_media_handler(void (*callback)(avdtp_stream_endpoint_t * stream_endpoint, uint8_t *packet, uint16_t size)){
+void avdtp_sink_register_media_handler(void (*callback)(uint8_t local_seid, uint8_t *packet, uint16_t size)){
     if (callback == NULL){
         log_error("avdtp_sink_register_media_handler called with NULL callback");
         return;

@@ -181,7 +181,7 @@ static void a2dp_demo_send_media_packet(void){
     int num_bytes_in_frame = btstack_sbc_encoder_sbc_buffer_length();
     int bytes_in_storage = media_tracker.sbc_storage_count;
     uint8_t num_frames = bytes_in_storage / num_bytes_in_frame;
-    a2dp_source_stream_send_media_payload(media_tracker.local_seid, media_tracker.sbc_storage, bytes_in_storage, num_frames, 0);
+    a2dp_source_stream_send_media_payload(media_tracker.a2dp_cid, media_tracker.local_seid, media_tracker.sbc_storage, bytes_in_storage, num_frames, 0);
     media_tracker.sbc_storage_count = 0;
     media_tracker.sbc_ready_to_send = 0;
 }
@@ -264,12 +264,12 @@ static void a2dp_demo_audio_timeout_handler(btstack_timer_source_t * timer){
     if ((context->sbc_storage_count + btstack_sbc_encoder_sbc_buffer_length()) > context->max_media_payload_size){
         // schedule sending
         context->sbc_ready_to_send = 1;
-        a2dp_source_stream_endpoint_request_can_send_now(context->local_seid);
+        a2dp_source_stream_endpoint_request_can_send_now(context->a2dp_cid, context->local_seid);
     }
 }
 
 static void a2dp_demo_timer_start(a2dp_media_sending_context_t * context){
-    context->max_media_payload_size = a2dp_max_media_payload_size(context->local_seid);
+    context->max_media_payload_size = a2dp_max_media_payload_size(context->a2dp_cid, context->local_seid);
     context->sbc_storage_count = 0;
     context->sbc_ready_to_send = 0;
     context->streaming = 1;
@@ -373,7 +373,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             printf("A2DP: Signaling released.\n");
             break;
         default:
-            printf("A2DP: event 0x%02x is not implemented\n", packet[2]);
+            printf("A2DP: event 0x%02x is not parsed\n", packet[2]);
             break; 
     }
 }
@@ -383,10 +383,12 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
     UNUSED(size);
     bd_addr_t event_addr;
     uint16_t local_cid;
-    uint8_t  status = 0xFF;
-    
+    uint8_t  a2dp_cmd_status;
+    uint8_t  avrcp_cmd_status;
+
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
+    
     switch (packet[2]){
         case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
             local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
@@ -395,9 +397,9 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                 return;
             }
 
-            status = avrcp_subevent_connection_established_get_status(packet);
-            if (status != ERROR_CODE_SUCCESS){
-                printf("AVRCP: Connection failed: status 0x%02x\n", status);
+            avrcp_cmd_status = avrcp_subevent_connection_established_get_status(packet);
+            if (avrcp_cmd_status != ERROR_CODE_SUCCESS){
+                printf("AVRCP: Connection failed: status 0x%02x\n", avrcp_cmd_status);
                 avrcp_cid = 0;
                 return;
             }
@@ -437,6 +439,39 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
 
             avrcp_target_now_playing_info(avrcp_cid);
             break;
+        case AVRCP_SUBEVENT_OPERATION:{
+            avrcp_operation_id_t operation_id = avrcp_subevent_operation_get_operation_id(packet);
+            uint8_t operands_length = avrcp_subevent_operation_get_operands_length(packet);
+            uint8_t operand =  avrcp_subevent_operation_get_operand(packet);
+            printf("AVRCP: operation 0x%02x, operands length %d\n", operation_id, operands_length);
+            
+            switch (operation_id){
+                case AVRCP_OPERATION_ID_PLAY:
+                    a2dp_cmd_status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
+                    break;
+                case AVRCP_OPERATION_ID_PAUSE:
+                    a2dp_cmd_status = a2dp_source_pause_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
+                    break;
+                
+                case AVRCP_OPERATION_ID_STOP:
+                case AVRCP_OPERATION_ID_REWIND:
+                case AVRCP_OPERATION_ID_FAST_FORWARD:
+                case AVRCP_OPERATION_ID_FORWARD:
+                case AVRCP_OPERATION_ID_BACKWARD:
+                case AVRCP_OPERATION_ID_SKIP:
+                case AVRCP_OPERATION_ID_VOLUME_UP:
+                case AVRCP_OPERATION_ID_VOLUME_DOWN:
+                case AVRCP_OPERATION_ID_MUTE:
+                case AVRCP_OPERATION_ID_UNDEFINED:
+                    avrcp_cmd_status = avrcp_target_operation_not_implemented(avrcp_cid, operation_id, operands_length, operand);
+                    return;
+            }
+            // printf("a2dp_cmd_status 0x%02x \n", a2dp_cmd_status);
+            (void) a2dp_cmd_status;
+            avrcp_cmd_status = avrcp_target_operation_accepted(avrcp_cid, operation_id, operands_length, operand);
+            (void) avrcp_cmd_status;
+            break;
+        }
         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
             printf("AVRCP: Channel released: avrcp_cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
             avrcp_cid = 0;
