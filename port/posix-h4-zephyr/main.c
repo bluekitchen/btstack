@@ -61,6 +61,7 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "btstack_stdin.h"
+#include "btstack_chipset_zephyr.h"
 
 int btstack_main(int argc, const char * argv[]);
 
@@ -74,14 +75,22 @@ static hci_transport_config_uart_t config = {
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
+static const uint8_t read_static_address_command_complete_prefix[] = { 0x0e, 0x1b, 0x01, 0x09, 0xfc };
+static bd_addr_t static_address;
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     bd_addr_t addr;
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
-            gap_local_bd_addr(addr);
-            printf("BTstack up and running at %s\n",  bd_addr_to_str(addr));
+            printf("BTstack up and running as %s\n",  bd_addr_to_str(static_address));
+            break;
+        case HCI_EVENT_COMMAND_COMPLETE:
+            if (memcmp(packet, read_static_address_command_complete_prefix, sizeof(read_static_address_command_complete_prefix)) == 0){
+                reverse_48(&packet[7], static_address);
+                gap_random_address_set(addr);
+            }
             break;
         default:
             break;
@@ -136,6 +145,7 @@ int main(int argc, const char * argv[]){
     const btstack_link_key_db_t * link_key_db = btstack_link_key_db_fs_instance();
 	hci_init(transport, (void*) &config);
     hci_set_link_key_db(link_key_db);
+    hci_set_chipset(btstack_chipset_zephyr_instance());
     
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;

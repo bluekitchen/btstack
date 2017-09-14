@@ -9,7 +9,7 @@ CORE += \
 	le_device_db_fs.c \
 	main.c \
 	btstack_stdin_posix.c \
-	wav_util.c 					\
+	btstack_chipset_zephyr.c \
 
 # examples
 include ${BTSTACK_ROOT}/example/Makefile.inc
@@ -17,9 +17,11 @@ include ${BTSTACK_ROOT}/example/Makefile.inc
 CFLAGS  += -g -Wall -Werror \
 	-I$(BTSTACK_ROOT)/platform/embedded \
 	-I$(BTSTACK_ROOT)/platform/posix \
+	-I$(BTSTACK_ROOT)/chipset/zephyr \
 
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/embedded
+VPATH += ${BTSTACK_ROOT}/chipset/zephyr
 
 # use pkg-config for portaudio
 # CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags) -DHAVE_PORTAUDIO
@@ -28,5 +30,5 @@ VPATH += ${BTSTACK_ROOT}/platform/embedded
 # CFLAGS  += -I/usr/local/include -DHAVE_PORTAUDIO
 # LDFLAGS += -L/sw/lib -lportaudio -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,AudioUnit -Wl,-framework,Carbon
 
-all: ${EXAMPLES}
+all: ${EXAMPLES_USING_LE}
 
