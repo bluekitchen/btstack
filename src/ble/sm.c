@@ -3275,17 +3275,9 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         break;
                     }
                     if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_bd_addr)){
-                        // Hack for Nordic nRF5 series that doesn't have public address:
-                        // - with patches from port/nrf5-zephyr, hci_read_bd_addr returns random static address
-                        // - we use this as default for advertisements/connections
+                        // set local addr for le device db
                         bd_addr_t addr;
                         reverse_bd_addr(&packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1], addr);
-                        if (hci_get_manufacturer() == BLUETOOTH_COMPANY_ID_NORDIC_SEMICONDUCTOR_ASA){
-                            log_info("nRF5: using (fake) public address as random static address");
-                            gap_random_address_set(addr);
-                        }
-
-                        // set local addr for le device db
                         le_device_db_set_local_bd_addr(addr);
                     }
                     if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_supported_commands)){

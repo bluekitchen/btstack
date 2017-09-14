@@ -4,15 +4,6 @@ ZEPHYR_BASE=../../..
 
 echo "Integrating BTstack into Zephyr"
 
-if grep -q -F "NRF_FICR->DEVICEADDR" ${ZEPHYR_BASE}/samples/bluetooth/hci_uart/src/main.c; then
-	echo "HCI Firmware patch already installed"
-else
-	# assert files don't exist since patch would get irritated
-	echo "Applying HCI Firmware patch"
-	rm -f ${ZEPHYR_BASE}/samples/bluetooth/hci_uart/flash*
-	cat hci_firmware.patch | patch -d ${ZEPHYR_BASE} -p1
-fi
-
 echo "Adding subsys/btstack"
 
 # add btstack folder to subsys/Makefile
@@ -48,7 +39,6 @@ rsync -a Kconfig ${ZEPHYR_BASE}/subsys/btstack
 
 # copy Makefiles
 rsync -a Makefile.src 	        ${ZEPHYR_BASE}/subsys/btstack/Makefile
-rsync -a Makefile.classic 	    ${ZEPHYR_BASE}/subsys/btstack/classic/Makefile
 rsync -a Makefile.ble 	        ${ZEPHYR_BASE}/subsys/btstack/ble/Makefile
 rsync -a Makefile.gatt-service  ${ZEPHYR_BASE}/subsys/btstack/ble/gatt-service/Makefile
 rsync -a Makefile.bluedroid 	${ZEPHYR_BASE}/subsys/btstack/bluedroid/Makefile
