@@ -601,6 +601,8 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                                     event[pos++] = 0;
                                 }
                                 break;
+                            default:
+                                break;
                         }
                     }
                     event[1] = pos - 2;

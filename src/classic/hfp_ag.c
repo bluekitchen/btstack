@@ -264,20 +264,6 @@ static int hfp_ag_send_report_extended_audio_gateway_error(uint16_t cid, uint8_t
     return send_str_over_rfcomm(cid, buffer);
 }
 
-// fast & small implementation for fixed int size
-static int string_len_for_uint32(uint32_t i){
-    if (i <         10) return 1;
-    if (i <        100) return 2;
-    if (i <       1000) return 3;
-    if (i <      10000) return 4;
-    if (i <     100000) return 5;
-    if (i <    1000000) return 6;      
-    if (i <   10000000) return 7;
-    if (i <  100000000) return 8;
-    if (i < 1000000000) return 9;
-    return 10;
-}
-
 // get size for indicator string
 static int hfp_ag_indicators_string_size(hfp_connection_t * hfp_connection, int i){
     // template: ("$NAME",($MIN,$MAX))

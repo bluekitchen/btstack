@@ -5495,35 +5495,6 @@ static inline uint8_t avrcp_subevent_player_application_value_response_get_comma
 }
 
 /**
- * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_UNIT_INFO_QUERY
- * @param event packet
- * @return avrcp_cid
- * @note: btstack_type 2
- */
-static inline uint16_t avrcp_subevent_unit_info_query_get_avrcp_cid(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-
-/**
- * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_SUBUNIT_INFO_QUERY
- * @param event packet
- * @return avrcp_cid
- * @note: btstack_type 2
- */
-static inline uint16_t avrcp_subevent_subunit_info_query_get_avrcp_cid(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field offset from event AVRCP_SUBEVENT_SUBUNIT_INFO_QUERY
- * @param event packet
- * @return offset
- * @note: btstack_type 1
- */
-static inline uint8_t avrcp_subevent_subunit_info_query_get_offset(const uint8_t * event){
-    return event[5];
-}
-
-/**
  * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_COMPANY_IDS_QUERY
  * @param event packet
  * @return avrcp_cid
@@ -5550,16 +5521,6 @@ static inline uint16_t avrcp_subevent_event_ids_query_get_avrcp_cid(const uint8_
  * @note: btstack_type 2
  */
 static inline uint16_t avrcp_subevent_play_status_query_get_avrcp_cid(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-
-/**
- * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOW_PLAYING_INFO_QUERY
- * @param event packet
- * @return avrcp_cid
- * @note: btstack_type 2
- */
-static inline uint16_t avrcp_subevent_now_playing_info_query_get_avrcp_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 

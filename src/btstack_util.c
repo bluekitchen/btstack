@@ -355,6 +355,27 @@ uint32_t btstack_atoi(const char *str){
     }
 }
 
+int string_len_for_uint32(uint32_t i){
+    if (i <         10) return 1;
+    if (i <        100) return 2;
+    if (i <       1000) return 3;
+    if (i <      10000) return 4;
+    if (i <     100000) return 5;
+    if (i <    1000000) return 6;      
+    if (i <   10000000) return 7;
+    if (i <  100000000) return 8;
+    if (i < 1000000000) return 9;
+    return 10;
+}
+
+int count_set_bits_uint32(uint32_t x){
+    x = (x & 0x55555555) + ((x >> 1) & 0x55555555);
+    x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
+    x = (x & 0x0F0F0F0F) + ((x >> 4) & 0x0F0F0F0F);
+    x = (x & 0x00FF00FF) + ((x >> 8) & 0x00FF00FF);
+    x = (x & 0x0000FFFF) + ((x >> 16) & 0x0000FFFF);
+    return x;
+}
 
 /*  
  * CRC (reversed crc) lookup table as calculated by the table generator in ETSI TS 101 369 V6.3.0.

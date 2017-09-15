@@ -74,22 +74,20 @@ uint8_t avrcp_target_connect(bd_addr_t bd_addr, uint16_t * avrcp_cid);
 
 uint8_t avrcp_target_disconnect(uint16_t avrcp_cid);
 
-uint8_t avrcp_target_unit_info(uint16_t avrcp_cid, avrcp_subunit_type_t unit_type, uint32_t company_id);
-uint8_t avrcp_target_subunit_info(uint16_t avrcp_cid, avrcp_subunit_type_t subunit_type, uint8_t offset, uint8_t * subunit_info_data);
-
 uint8_t avrcp_target_supported_companies(uint16_t avrcp_cid, uint8_t capabilities_length, uint8_t * capabilities, uint8_t size);
 uint8_t avrcp_target_supported_events(uint16_t avrcp_cid, uint8_t capabilities_length, uint8_t * capabilities, uint8_t size);
 
-uint8_t avrcp_target_play_status(uint16_t avrcp_cid, uint32_t song_length_ms, uint32_t song_position_ms, avrcp_play_status_t status); 
+uint8_t avrcp_target_play_status(uint16_t avrcp_cid, uint32_t song_length_ms, uint32_t song_position_ms, avrcp_playback_status_t status); 
 
-uint8_t avrcp_target_set_now_playing_title(uint16_t avrcp_cid, const char * title);
-uint8_t avrcp_target_set_now_playing_artist(uint16_t avrcp_cid, const char * artist);
-uint8_t avrcp_target_set_now_playing_album(uint16_t avrcp_cid, const char * album);
-uint8_t avrcp_target_set_now_playing_genre(uint16_t avrcp_cid, const char * genre);
-uint8_t avrcp_target_set_now_playing_song_length_ms(uint16_t avrcp_cid, const uint32_t song_length_ms);
-uint8_t avrcp_target_set_now_playing_total_tracks(uint16_t avrcp_cid, const int total_tracks);
-uint8_t avrcp_target_set_now_playing_track_nr(uint16_t avrcp_cid, const int track_nr);
-uint8_t avrcp_target_now_playing_info(uint16_t avrcp_cid);
+void avrcp_target_set_now_playing_info(uint16_t avrcp_cid, const avrcp_track_t * current_track, uint16_t total_tracks);
+uint8_t avrcp_target_set_playback_status(uint16_t avrcp_cid, avrcp_playback_status_t playback_status);
+void avrcp_target_set_unit_info(uint16_t avrcp_cid, avrcp_subunit_type_t unit_type, uint32_t company_id);
+void avrcp_target_set_subunit_info(uint16_t avrcp_cid, avrcp_subunit_type_t subunit_type, const uint8_t * subunit_info_data, uint16_t subunit_info_data_size);
+
+uint8_t avrcp_target_playing_content_changed(uint16_t avrcp_cid);
+uint8_t avrcp_target_battery_status_changed(uint16_t avrcp_cid, avrcp_battery_status_t battery_status);
+uint8_t avrcp_target_volume_changed(uint16_t avrcp_cid, uint8_t volume_percentage);
+
 
 uint8_t avrcp_target_operation_rejected(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand);
 uint8_t avrcp_target_operation_accepted(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand);
