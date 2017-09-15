@@ -175,7 +175,9 @@ bonding via the *gap_dedicated_bonding* function.
 ## SPP - Serial Port Profile
 
 The SPP profile defines how to set up virtual serial ports and connect
-two Bluetooth enabled devices.
+two Bluetooth enabled devices. Please keep in mind that a serial port does not 
+preserve packet boundaries if you try to send data as packets and read about
+[RFCOMM packet boundaries]({protocols/#sec:noRfcommPacketBoundaries}).
 
 ### Accessing an SPP Server on a remote device
 
