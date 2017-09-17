@@ -2801,20 +2801,13 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 }
 #endif
 
-static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size ){
-    UNUSED(packet_type);
-    UNUSED(channel);
-            
+static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, uint16_t size ){
+#ifdef ENABLE_CLASSIC
     l2cap_channel_t * l2cap_channel;
-    UNUSED(l2cap_channel);
 
-    // Get Channel ID
     uint16_t channel_id = READ_L2CAP_CHANNEL_ID(packet); 
-    hci_con_handle_t handle = READ_ACL_CONNECTION_HANDLE(packet);
-
     switch (channel_id) {
             
-#ifdef ENABLE_CLASSIC
         case L2CAP_CID_SIGNALING: {
             uint16_t command_offset = 8;
             while (command_offset < size) {                
@@ -2826,31 +2819,6 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             }
             break;
         }
-#endif
-
-#ifdef ENABLE_BLE
-        case L2CAP_CID_SIGNALING_LE: {
-            uint16_t sig_id = packet[COMPLETE_L2CAP_HEADER + 1];
-            int      valid  = l2cap_le_signaling_handler_dispatch(handle, &packet[COMPLETE_L2CAP_HEADER], sig_id);
-            if (!valid){
-                l2cap_register_signaling_response(handle, COMMAND_REJECT_LE, sig_id, 0, L2CAP_REJ_CMD_UNKNOWN);
-            }
-            break;
-        }
-#endif
-
-        case L2CAP_CID_ATTRIBUTE_PROTOCOL:
-            if (fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_ATTRIBUTE_PROTOCOL].callback) {
-                (*fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_ATTRIBUTE_PROTOCOL].callback)(ATT_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
-            }
-            break;
-
-        case L2CAP_CID_SECURITY_MANAGER_PROTOCOL:
-            if (fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_SECURITY_MANAGER_PROTOCOL].callback) {
-                (*fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_SECURITY_MANAGER_PROTOCOL].callback)(SM_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
-            }
-            break;
-
         case L2CAP_CID_CONNECTIONLESS_CHANNEL:
             if (fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_CONNECTIONLESS_CHANNEL].callback) {
                 (*fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_CONNECTIONLESS_CHANNEL].callback)(UCD_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
@@ -2858,7 +2826,6 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             break;
 
         default: 
-#ifdef ENABLE_CLASSIC
             // Find channel for this channel_id and connection handle
             l2cap_channel = l2cap_get_channel_for_local_cid(channel_id);
             if (l2cap_channel) {
@@ -3018,7 +2985,47 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 #endif                
                 l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
             }
+            break;
+    }
+#else
+    UNUSED(handle); // ok: no code
+    UNUSED(packet); // ok: no code
+    UNUSED(size);   // ok: no code
 #endif
+}
+
+static void l2cap_acl_le_handler(hci_con_handle_t handle, uint8_t *packet, uint16_t size ){
+#ifdef ENABLE_BLE
+
+#ifdef ENABLE_LE_DATA_CHANNELS
+    l2cap_channel_t * l2cap_channel;
+#endif
+    uint16_t channel_id = READ_L2CAP_CHANNEL_ID(packet);
+    switch (channel_id) {
+
+        case L2CAP_CID_SIGNALING_LE: {
+            uint16_t sig_id = packet[COMPLETE_L2CAP_HEADER + 1];
+            int      valid  = l2cap_le_signaling_handler_dispatch(handle, &packet[COMPLETE_L2CAP_HEADER], sig_id);
+            if (!valid){
+                l2cap_register_signaling_response(handle, COMMAND_REJECT_LE, sig_id, 0, L2CAP_REJ_CMD_UNKNOWN);
+            }
+            break;
+        }
+
+        case L2CAP_CID_ATTRIBUTE_PROTOCOL:
+            if (fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_ATTRIBUTE_PROTOCOL].callback) {
+                (*fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_ATTRIBUTE_PROTOCOL].callback)(ATT_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
+            }
+            break;
+
+        case L2CAP_CID_SECURITY_MANAGER_PROTOCOL:
+            if (fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_SECURITY_MANAGER_PROTOCOL].callback) {
+                (*fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_SECURITY_MANAGER_PROTOCOL].callback)(SM_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
+            }
+            break;
+
+        default:
+
 #ifdef ENABLE_LE_DATA_CHANNELS
             l2cap_channel = l2cap_le_get_channel_for_local_cid(channel_id);
             if (l2cap_channel) {
@@ -3056,6 +3063,26 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             }
 #endif
             break;
+    }
+#else
+    UNUSED(handle); // ok: no code
+    UNUSED(packet); // ok: no code
+    UNUSED(size);   // ok: no code
+#endif
+}
+
+static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);    // ok: registered with hci_register_acl_packet_handler
+    UNUSED(channel);        // ok: there is no channel
+
+    // Dispatch to Classic or LE handler
+    hci_con_handle_t handle = READ_ACL_CONNECTION_HANDLE(packet);
+    hci_connection_t *conn = hci_connection_for_handle(handle);
+    if (!conn) return;
+    if (conn->address_type == BD_ADDR_TYPE_CLASSIC){
+        l2cap_acl_classic_handler(handle, packet, size);
+    } else {
+        l2cap_acl_le_handler(handle, packet, size);
     }
 
     l2cap_run();
