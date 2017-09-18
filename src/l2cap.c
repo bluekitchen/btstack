@@ -2410,9 +2410,10 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
     btstack_linked_list_iterator_t it;    
 
     // get code, signalind identifier and command len
-    uint8_t code   = command[L2CAP_SIGNALING_COMMAND_CODE_OFFSET];
-    uint8_t sig_id = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
-    
+    uint8_t code     = command[L2CAP_SIGNALING_COMMAND_CODE_OFFSET];
+    uint8_t sig_id   = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
+    uint16_t cmd_len = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
+
     // not for a particular channel, and not CONNECTION_REQUEST, ECHO_[REQUEST|RESPONSE], INFORMATION_RESPONSE 
     if (code < 1 || code == ECHO_RESPONSE || code > INFORMATION_RESPONSE){
         l2cap_register_signaling_response(handle, COMMAND_REJECT, sig_id, 0, L2CAP_REJ_CMD_UNKNOWN);
@@ -2422,65 +2423,77 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
     // general commands without an assigned channel
     switch(code) {
             
-        case CONNECTION_REQUEST: {
-            uint16_t psm =        little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
-            uint16_t source_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+2);
-            l2cap_handle_connection_request(handle, sig_id, psm, source_cid);
+        case CONNECTION_REQUEST:
+            if (cmd_len == 4){
+                uint16_t psm =        little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
+                uint16_t source_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+2);
+                l2cap_handle_connection_request(handle, sig_id, psm, source_cid);
+            } else {
+                l2cap_register_signaling_response(handle, COMMAND_REJECT, sig_id, 0, L2CAP_REJ_CMD_UNKNOWN);
+            }
             return;
-        }
             
         case ECHO_REQUEST:
             l2cap_register_signaling_response(handle, code, sig_id, 0, 0);
             return;
             
-        case INFORMATION_REQUEST: {
-            uint16_t info_type = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
-            l2cap_register_signaling_response(handle, code, sig_id, 0, info_type);
+        case INFORMATION_REQUEST:
+            if (cmd_len == 2) {
+                uint16_t info_type = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
+                l2cap_register_signaling_response(handle, code, sig_id, 0, info_type);
+            } else {
+                l2cap_register_signaling_response(handle, COMMAND_REJECT, sig_id, 0, L2CAP_REJ_CMD_UNKNOWN);
+            }
             return;
-        }
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
         case INFORMATION_RESPONSE: {
             hci_connection_t * connection = hci_connection_for_handle(handle);
             if (!connection) return;
-            uint16_t info_type = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
-            uint16_t result =  little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+2);
-            if (result != 0) return;
-            if (info_type != L2CAP_INFO_TYPE_EXTENDED_FEATURES_SUPPORTED) return;
-            connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_DONE; 
-            connection->l2cap_state.extended_feature_mask = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+4);
-            log_info("extended features mask 0x%02x", connection->l2cap_state.extended_feature_mask);
-            // trigger connection request
-            btstack_linked_list_iterator_init(&it, &l2cap_channels);
-            while (btstack_linked_list_iterator_has_next(&it)){
-                l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-                if (channel->con_handle != handle) continue;
-                // bail if ERTM was requested but is not supported
-                if ((channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) && ((connection->l2cap_state.extended_feature_mask & 0x08) == 0)){
-                    if (channel->ertm_mandatory){
-                        // channel closed
-                        channel->state = L2CAP_STATE_CLOSED;
-                        // map l2cap connection response result to BTstack status enumeration
-                        l2cap_emit_channel_opened(channel, L2CAP_CONNECTION_RESPONSE_RESULT_ERTM_NOT_SUPPORTED);
-                        // discard channel
-                        btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
-                        btstack_memory_l2cap_channel_free(channel);
-                        continue;
-                    } else {
-                        // fallback to Basic mode
-                        channel->mode = L2CAP_CHANNEL_MODE_BASIC;
+            if (cmd_len >= 4) {
+                uint16_t info_type = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
+                uint16_t result =  little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+2);
+                if (result != 0) return;
+                if (info_type != L2CAP_INFO_TYPE_EXTENDED_FEATURES_SUPPORTED) return;
+                if (cmd_len >= 6) {
+                    connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_DONE; 
+                    connection->l2cap_state.extended_feature_mask = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+4);
+                    log_info("extended features mask 0x%02x", connection->l2cap_state.extended_feature_mask);
+                    // trigger connection request
+                    btstack_linked_list_iterator_init(&it, &l2cap_channels);
+                    while (btstack_linked_list_iterator_has_next(&it)){
+                        l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+                        if (channel->con_handle != handle) continue;
+                        // bail if ERTM was requested but is not supported
+                        if ((channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) && ((connection->l2cap_state.extended_feature_mask & 0x08) == 0)){
+                            if (channel->ertm_mandatory){
+                                // channel closed
+                                channel->state = L2CAP_STATE_CLOSED;
+                                // map l2cap connection response result to BTstack status enumeration
+                                l2cap_emit_channel_opened(channel, L2CAP_CONNECTION_RESPONSE_RESULT_ERTM_NOT_SUPPORTED);
+                                // discard channel
+                                btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
+                                btstack_memory_l2cap_channel_free(channel);
+                                continue;
+                            } else {
+                                // fallback to Basic mode
+                                channel->mode = L2CAP_CHANNEL_MODE_BASIC;
+                            }
+                        }
+                        // start connecting
+                        if (channel->state == L2CAP_STATE_WAIT_OUTGOING_EXTENDED_FEATURES){
+                            channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST;
+                        }
+                        // respond to connection request
+                        if (channel->state == L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES){
+                            channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
+                            l2cap_emit_incoming_connection(channel);
+                        }
                     }
-                }
-                // start connecting
-                if (channel->state == L2CAP_STATE_WAIT_OUTGOING_EXTENDED_FEATURES){
-                    channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST;
-                }
-                // respond to connection request
-                if (channel->state == L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES){
-                    channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
-                    l2cap_emit_incoming_connection(channel);    
+                    return; // cmd len valid
                 }
             }
+            l2cap_register_signaling_response(handle, COMMAND_REJECT, sig_id, 0, L2CAP_REJ_CMD_UNKNOWN);
             return;
         }
 #endif
@@ -2488,7 +2501,6 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
         default:
             break;
     }
-    
     
     // Get potential destination CID
     uint16_t dest_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
