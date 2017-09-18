@@ -2117,6 +2117,7 @@ void l2cap_decline_connection(uint16_t local_cid){
     l2cap_run();
 }
 
+// @pre command len is valid, see check in l2cap_signaling_handler_channel
 static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, uint8_t *command){
 
     channel->remote_sig_id = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
@@ -2206,6 +2207,7 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
     }
 }
 
+// @pre command len is valid, see check in l2cap_signaling_handler_channel
 static void l2cap_signaling_handle_configure_response(l2cap_channel_t *channel, uint8_t result, uint8_t *command){
     log_info("l2cap_signaling_handle_configure_response");
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
@@ -2267,10 +2269,12 @@ static int l2cap_channel_ready_for_open(l2cap_channel_t *channel){
 }
 
 
+// @pre command len is valid, see check in l2cap_signaling_handler_dispatch
 static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command){
 
     uint8_t  code       = command[L2CAP_SIGNALING_COMMAND_CODE_OFFSET];
     uint8_t  identifier = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
+    uint16_t cmd_len    = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
     uint16_t result = 0;
     
     log_info("L2CAP signaling handler code %u, state %u", code, channel->state);
@@ -2298,6 +2302,11 @@ static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *c
         case L2CAP_STATE_WAIT_CONNECT_RSP:
             switch (code){
                 case CONNECTION_RESPONSE:
+                    if (cmd_len < 8){
+                        // command imcomplete
+                        l2cap_register_signaling_response(channel->con_handle, COMMAND_REJECT, identifier, 0, L2CAP_REJ_CMD_UNKNOWN);
+                        break;
+                    }
                     l2cap_stop_rtx(channel);
                     result = little_endian_read_16 (command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+4);
                     switch (result) {
@@ -2336,9 +2345,13 @@ static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *c
             break;
 
         case L2CAP_STATE_CONFIG:
-            result = little_endian_read_16 (command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+4);
             switch (code) {
                 case CONFIGURE_REQUEST:
+                    if (cmd_len < 4){
+                        // command incomplete
+                        l2cap_register_signaling_response(channel->con_handle, COMMAND_REJECT, identifier, 0, L2CAP_REJ_CMD_UNKNOWN);
+                        break;
+                    }
                     channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP);
                     l2cap_signaling_handle_configure_request(channel, command);
                     if (!(channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_CONT)){
@@ -2347,6 +2360,12 @@ static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *c
                     }
                     break;
                 case CONFIGURE_RESPONSE:
+                    if (cmd_len < 6){
+                        // command incomplete
+                        l2cap_register_signaling_response(channel->con_handle, COMMAND_REJECT, identifier, 0, L2CAP_REJ_CMD_UNKNOWN);
+                        break;
+                    }
+                    result = little_endian_read_16 (command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+4);
                     l2cap_stop_rtx(channel);
                     l2cap_signaling_handle_configure_response(channel, result, command);
                     switch (result){
