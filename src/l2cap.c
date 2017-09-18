@@ -1236,7 +1236,7 @@ static void l2cap_run(void){
         }
     }
     
-#ifdef ENABLE_CLASSIC
+#if defined(ENABLE_BLE) || defined(ENABLE_BLE)
     btstack_linked_list_iterator_t it;    
 #endif
 
