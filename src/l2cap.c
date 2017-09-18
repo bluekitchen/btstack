@@ -2404,7 +2404,8 @@ static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *c
 }
 
 
-static void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t * command){
+// @pre command len is valid, see check in l2cap_acl_classic_handler
+static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * command){
     
     btstack_linked_list_iterator_t it;    
 
@@ -2801,7 +2802,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 }
 #endif
 
-static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, uint16_t size ){
+static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, uint16_t size){
 #ifdef ENABLE_CLASSIC
     l2cap_channel_t * l2cap_channel;
 
@@ -2810,12 +2811,18 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
             
         case L2CAP_CID_SIGNALING: {
             uint16_t command_offset = 8;
-            while (command_offset < size) {                
-                // handle signaling commands
+            while (command_offset < size) {
+                // assert signaling command is fully inside packet
+                uint16_t data_len = little_endian_read_16(packet, command_offset + L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
+                uint32_t next_command_offset = ((uint32_t) command_offset) + L2CAP_SIGNALING_COMMAND_DATA_OFFSET + data_len;
+                if (next_command_offset > size){
+                    log_error("l2cap signaling command len invalid -> drop");
+                    break;
+                }
+                // handle signaling command
                 l2cap_signaling_handler_dispatch(handle, &packet[command_offset]);
-                
-                // increment command_offset
-                command_offset += L2CAP_SIGNALING_COMMAND_DATA_OFFSET + little_endian_read_16(packet, command_offset + L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
+                // go to next command
+                command_offset = (uint16_t) next_command_offset;
             }
             break;
         }
