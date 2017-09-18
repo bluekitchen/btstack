@@ -394,11 +394,8 @@ static int l2cap_ertm_send_supervisor_frame(l2cap_channel_t * channel, uint16_t 
     return l2cap_send_prepared(channel->local_cid, 2);
 }
 
-static uint8_t l2cap_ertm_validate_local_config(l2cap_ertm_config_t * ertm_config, uint8_t * buffer, uint32_t size){
+static uint8_t l2cap_ertm_validate_local_config(l2cap_ertm_config_t * ertm_config){
     
-    UNUSED(buffer);
-    UNUSED(size);
-
     uint8_t result = ERROR_CODE_SUCCESS;
     if (ertm_config->max_transmit < 1){
         log_error("max_transmit must be >= 1");
@@ -468,7 +465,7 @@ uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_ad
     log_info("L2CAP_CREATE_ERTM_CHANNEL addr %s, psm 0x%x, local mtu %u", bd_addr_to_str(address), psm, ertm_config->local_mtu);
 
     // validate local config
-    uint8_t result = l2cap_ertm_validate_local_config(ertm_config, buffer, size);
+    uint8_t result = l2cap_ertm_validate_local_config(ertm_config);
     if (result) return result;
 
     l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, address, BD_ADDR_TYPE_CLASSIC, psm, ertm_config->local_mtu, LEVEL_0);
@@ -520,7 +517,7 @@ uint8_t l2cap_accept_ertm_connection(uint16_t local_cid, l2cap_ertm_config_t * e
     }
 
     // validate local config
-    uint8_t result = l2cap_ertm_validate_local_config(ertm_config, buffer, size);
+    uint8_t result = l2cap_ertm_validate_local_config(ertm_config);
     if (result) return result;
 
     // configure L2CAP ERTM
@@ -727,12 +724,12 @@ void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t
 #ifdef ENABLE_BLE
     l2cap_event_packet_handler = handler;
 #else
-    UNUSED(handler);
+    UNUSED(handler);    // ok: no code
 #endif
 }
 
 void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t channel_id){
-    UNUSED(con_handle);
+    UNUSED(con_handle);  // ok: there is no channel
 
     int index = l2cap_fixed_channel_table_index_for_channel_id(channel_id);
     if (index < 0) return;
@@ -741,7 +738,7 @@ void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, u
 }
 
 int  l2cap_can_send_fixed_channel_packet_now(hci_con_handle_t con_handle, uint16_t channel_id){
-    UNUSED(channel_id);
+    UNUSED(channel_id); // ok: only depends on Controller LE buffers
 
     return hci_can_send_acl_packet_now(con_handle);
 }
@@ -1171,12 +1168,11 @@ static void l2cap_run(void){
 
         uint8_t  sig_id        = signaling_responses[0].sig_id;
         uint8_t  response_code = signaling_responses[0].code;
-        uint16_t info_type     = signaling_responses[0].data;  // INFORMATION_REQUEST
         uint16_t result        = signaling_responses[0].data;  // CONNECTION_REQUEST, COMMAND_REJECT
 #ifdef ENABLE_CLASSIC
+        uint16_t info_type     = signaling_responses[0].data;  // INFORMATION_REQUEST
         uint16_t source_cid    = signaling_responses[0].cid;   // CONNECTION_REQUEST
 #endif
-        UNUSED(info_type);
 
         // remove first item before sending (to avoid sending response mutliple times)
         signaling_responses_pending--;
@@ -1240,8 +1236,9 @@ static void l2cap_run(void){
         }
     }
     
+#ifdef ENABLE_CLASSIC
     btstack_linked_list_iterator_t it;    
-    UNUSED(it);
+#endif
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     // send l2cap information request if neccessary
@@ -1855,21 +1852,19 @@ static void l2cap_handle_hci_disconnect_event(l2cap_channel_t * channel){
 
 static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *packet, uint16_t size){
 
-    UNUSED(packet_type);
-    UNUSED(cid);
-    UNUSED(size);
+    UNUSED(packet_type); // ok: registered with hci_event_callback_registration
+    UNUSED(cid);         // ok: there is no channel
+    UNUSED(size);        // ok: fixed format events read from HCI buffer
     
+#ifdef ENABLE_CLASSIC
     bd_addr_t address;
-    hci_con_handle_t handle;
     int hci_con_used;
+#endif
+#ifdef L2CAP_USES_CHANNELS
+    hci_con_handle_t handle;
     btstack_linked_list_iterator_t it;
+#endif
 
-    // avoid unused warnings
-    UNUSED(address);
-    UNUSED(hci_con_used);
-    UNUSED(it);
-    UNUSED(handle);
-    
     switch(hci_event_packet_get_type(packet)){
             
         // Notify channel packet handler if they can send now
@@ -2253,9 +2248,9 @@ static void l2cap_signaling_handle_configure_response(l2cap_channel_t *channel, 
         pos += length;
     }
 #else
-    UNUSED(channel);
-    UNUSED(result);
-    UNUSED(command);
+    UNUSED(channel);  // ok: no code
+    UNUSED(result);   // ok: no code
+    UNUSED(command);  // ok: no code
 #endif        
 }
 
