@@ -3083,12 +3083,17 @@ static void l2cap_acl_le_handler(hci_con_handle_t handle, uint8_t *packet, uint1
                 // first fragment
                 uint16_t pos = 0;
                 if (!l2cap_channel->receive_sdu_len){
-                    l2cap_channel->receive_sdu_len = little_endian_read_16(packet, COMPLETE_L2CAP_HEADER);
+                    uint16_t sdu_len = little_endian_read_16(packet, COMPLETE_L2CAP_HEADER);
+                    if(sdu_len > l2cap_channel->local_mtu) break;   // SDU would be larger than our buffer
+                    l2cap_channel->receive_sdu_len = sdu_len;
                     l2cap_channel->receive_sdu_pos = 0;                   
                     pos  += 2;
                     size -= 2;
                 }
-                memcpy(&l2cap_channel->receive_sdu_buffer[l2cap_channel->receive_sdu_pos], &packet[COMPLETE_L2CAP_HEADER+pos], size-COMPLETE_L2CAP_HEADER);
+                uint16_t fragment_size   = size-COMPLETE_L2CAP_HEADER;
+                uint16_t remaining_space = l2cap_channel->local_mtu - l2cap_channel->receive_sdu_pos;
+                if (fragment_size > remaining_space) break;         // SDU would cause buffer overrun
+                memcpy(&l2cap_channel->receive_sdu_buffer[l2cap_channel->receive_sdu_pos], &packet[COMPLETE_L2CAP_HEADER+pos], fragment_size);
                 l2cap_channel->receive_sdu_pos += size - COMPLETE_L2CAP_HEADER;
                 // done?
                 log_info("le packet pos %u, len %u", l2cap_channel->receive_sdu_pos, l2cap_channel->receive_sdu_len);
