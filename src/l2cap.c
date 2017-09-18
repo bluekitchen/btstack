@@ -2577,16 +2577,21 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 #endif
 
     uint8_t code   = command[L2CAP_SIGNALING_COMMAND_CODE_OFFSET];
+    uint16_t len   = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
     log_info("l2cap_le_signaling_handler_dispatch: command 0x%02x, sig id %u", code, sig_id);
 
     switch (code){
 
         case CONNECTION_PARAMETER_UPDATE_RESPONSE:
+            // check size
+            if (len < 8) return 0;
             result = little_endian_read_16(command, 4);
             l2cap_emit_connection_parameter_update_response(handle, result);
             break;
 
         case CONNECTION_PARAMETER_UPDATE_REQUEST:
+            // check size
+            if (len < 2) return 0;
             connection = hci_connection_for_handle(handle);
             if (connection){
                 if (connection->role != HCI_ROLE_MASTER){
@@ -2660,7 +2665,9 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             break;
 
         case LE_CREDIT_BASED_CONNECTION_REQUEST:
- 
+            // check size
+            if (len < 10) return 0;
+
             // get hci connection, bail if not found (must not happen)
             connection = hci_connection_for_handle(handle);
             if (!connection) return 0;
@@ -2754,6 +2761,9 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             break;
 
         case LE_CREDIT_BASED_CONNECTION_RESPONSE:
+            // check size
+            if (len < 10) return 0;
+
             // Find channel for this sig_id and connection handle
             channel = NULL;
             btstack_linked_list_iterator_init(&it, &l2cap_le_channels);
@@ -2789,6 +2799,9 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             break;
 
         case LE_FLOW_CONTROL_CREDIT:
+            // check size
+            if (len < 4) return 0;
+
             // find channel
             local_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 0);
             channel = l2cap_le_get_channel_for_local_cid(local_cid);
@@ -2809,6 +2822,10 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             break;
 
         case DISCONNECTION_REQUEST:
+
+            // check size
+            if (len < 4) return 0;
+
             // find channel
             local_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 0);
             channel = l2cap_le_get_channel_for_local_cid(local_cid);
@@ -3032,7 +3049,7 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
 #endif
 }
 
-static void l2cap_acl_le_handler(hci_con_handle_t handle, uint8_t *packet, uint16_t size ){
+static void l2cap_acl_le_handler(hci_con_handle_t handle, uint8_t *packet, uint16_t size){
 #ifdef ENABLE_BLE
 
 #ifdef ENABLE_LE_DATA_CHANNELS
@@ -3043,6 +3060,8 @@ static void l2cap_acl_le_handler(hci_con_handle_t handle, uint8_t *packet, uint1
 
         case L2CAP_CID_SIGNALING_LE: {
             uint16_t sig_id = packet[COMPLETE_L2CAP_HEADER + 1];
+            uint16_t len = little_endian_read_16(packet, COMPLETE_L2CAP_HEADER + 2);
+            if (COMPLETE_L2CAP_HEADER + 4 + len > size) break;
             int      valid  = l2cap_le_signaling_handler_dispatch(handle, &packet[COMPLETE_L2CAP_HEADER], sig_id);
             if (!valid){
                 l2cap_register_signaling_response(handle, COMMAND_REJECT_LE, sig_id, 0, L2CAP_REJ_CMD_UNKNOWN);
@@ -3117,6 +3136,9 @@ static void l2cap_acl_le_handler(hci_con_handle_t handle, uint8_t *packet, uint1
 static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);    // ok: registered with hci_register_acl_packet_handler
     UNUSED(channel);        // ok: there is no channel
+
+    // Assert full L2CAP header present
+    if (size < COMPLETE_L2CAP_HEADER) return;
 
     // Dispatch to Classic or LE handler
     hci_con_handle_t handle = READ_ACL_CONNECTION_HANDLE(packet);
