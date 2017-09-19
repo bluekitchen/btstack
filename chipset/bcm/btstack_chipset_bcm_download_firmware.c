@@ -140,6 +140,7 @@ void btstack_chipset_bcm_download_firmware(const btstack_uart_block_t * the_uart
     chipset     = btstack_chipset_bcm_instance();
     baudrate    = baudrate_upload; 
     download_complete = done;
+    btstack_chipset_bcm_enable_init_script(1);
 
     int res = uart_driver->open();
     if (res) {
