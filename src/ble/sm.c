@@ -3003,8 +3003,8 @@ static void sm_handle_random_result(uint8_t * data){
 
 static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
-    UNUSED(channel);
-    UNUSED(size);
+    UNUSED(channel);    // ok: there is no channel
+    UNUSED(size);       // ok: fixed format HCI events
 
     sm_connection_t  * sm_conn;
     hci_con_handle_t con_handle;
