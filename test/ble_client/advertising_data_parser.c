@@ -57,7 +57,7 @@
 #include "ad_parser.h"
 #include "l2cap.h"
 
-void le_handle_advertisement_report(uint8_t *packet, int size);
+void le_handle_advertisement_report(uint8_t *packet, uint16_t size);
 
 typedef struct ad_event {
     uint8_t   type;
