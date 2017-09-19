@@ -232,6 +232,7 @@ extern "C" int att_write_callback(hci_con_handle_t con_handle, uint16_t attribut
 		case WRITE_LONG_CHARACTERISTIC_DESCRIPTOR:
 		case WRITE_LONG_CHARACTERISTIC_VALUE:
 		case WRITE_RELIABLE_LONG_CHARACTERISTIC_VALUE:
+			if (transaction_mode == ATT_TRANSACTION_MODE_VALIDATE) break;
 			if (transaction_mode == ATT_TRANSACTION_MODE_EXECUTE) break;
 			CHECK_EQUAL(ATT_TRANSACTION_MODE_ACTIVE, transaction_mode);
 			CHECK_EQUAL_ARRAY((uint8_t *)&long_value[offset], buffer, buffer_size);
