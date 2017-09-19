@@ -169,13 +169,23 @@ int sdp_handle_service_search_request(uint8_t * packet, uint16_t remote_mtu){
     
     // get request details
     uint16_t  transaction_id = big_endian_read_16(packet, 1);
-    // not used yet - uint16_t  param_len = big_endian_read_16(packet, 3);
+    uint16_t  param_len = big_endian_read_16(packet, 3);
     uint8_t * serviceSearchPattern = &packet[5];
-    uint16_t  serviceSearchPatternLen = de_get_len(serviceSearchPattern);
+    uint16_t  serviceSearchPatternLen = de_get_len_safe(serviceSearchPattern, param_len);
+    // assert service search pattern is contained
+    if (!serviceSearchPatternLen) return 0;
+    param_len -= serviceSearchPatternLen;
+    // assert max record count is contained
+    if (param_len < 2) return 0;
     uint16_t  maximumServiceRecordCount = big_endian_read_16(packet, 5 + serviceSearchPatternLen);
+    param_len -= 2;
+    // assert continuation state len is contained in param_len
+    if (param_len < 1) return 0;
     uint8_t * continuationState = &packet[5+serviceSearchPatternLen+2];
-    
-    // calc maxumumServiceRecordCount based on remote MTU
+    // assert continuation state is contained in param_len
+    if (1 + continuationState[0] > param_len) return 0;
+
+    // calc maximumServiceRecordCount based on remote MTU
     uint16_t maxNrServiceRecordsPerResponse = (remote_mtu - (9+3))/4;
     
     // continuation state contains index of next service record to examine
@@ -246,12 +256,22 @@ int sdp_handle_service_attribute_request(uint8_t * packet, uint16_t remote_mtu){
     
     // get request details
     uint16_t  transaction_id = big_endian_read_16(packet, 1);
-    // not used yet - uint16_t  param_len = big_endian_read_16(packet, 3);
+    uint16_t  param_len = big_endian_read_16(packet, 3);
+    // assert serviceRecordHandle and maximumAttributeByteCount are in param_len
+    if (param_len < 6) return 0;
     uint32_t  serviceRecordHandle = big_endian_read_32(packet, 5);
     uint16_t  maximumAttributeByteCount = big_endian_read_16(packet, 9);
+    param_len -= 6;
     uint8_t * attributeIDList = &packet[11];
-    uint16_t  attributeIDListLen = de_get_len(attributeIDList);
+    uint16_t  attributeIDListLen = de_get_len_safe(attributeIDList, param_len);
+    // assert attributeIDList are in param_len
+    if (!attributeIDListLen) return 0;
+    param_len -= attributeIDListLen;
+    // assert continuation state len is contained in param_len
+    if (param_len < 1) return 0;
     uint8_t * continuationState = &packet[11+attributeIDListLen];
+    // assert continuation state is contained in param_len
+    if (1 + continuationState[0] > param_len) return 0;
     
     // calc maximumAttributeByteCount based on remote MTU
     uint16_t maximumAttributeByteCount2 = remote_mtu - (7+3);
@@ -333,14 +353,26 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
     
     // get request details
     uint16_t  transaction_id = big_endian_read_16(packet, 1);
-    // not used yet - uint16_t  param_len = big_endian_read_16(packet, 3);
+    uint16_t  param_len = big_endian_read_16(packet, 3);
     uint8_t * serviceSearchPattern = &packet[5];
-    uint16_t  serviceSearchPatternLen = de_get_len(serviceSearchPattern);
+    uint16_t  serviceSearchPatternLen = de_get_len_safe(serviceSearchPattern, param_len);
+    // assert serviceSearchPattern header is contained in param_len
+    if (!serviceSearchPatternLen) return 0;
+    param_len -= serviceSearchPatternLen;
+    // assert maximumAttributeByteCount contained in param_len
+    if (param_len < 2) return 0;
     uint16_t  maximumAttributeByteCount = big_endian_read_16(packet, 5 + serviceSearchPatternLen);
+    param_len -= 2;
     uint8_t * attributeIDList = &packet[5+serviceSearchPatternLen+2];
-    uint16_t  attributeIDListLen = de_get_len(attributeIDList);
+    uint16_t  attributeIDListLen = de_get_len_safe(attributeIDList, param_len);
+    // assert attributeIDList is contained in param_len
+    if (!attributeIDListLen) return 0;
+    // assert continuation state len is contained in param_len
+    if (param_len < 1) return 0;
     uint8_t * continuationState = &packet[5+serviceSearchPatternLen+2+attributeIDListLen];
-    
+    // assert continuation state is contained in param_len
+    if (1 + continuationState[0] > param_len) return 0;
+
     // calc maximumAttributeByteCount based on remote MTU, SDP header and reserved Continuation block
     uint16_t maximumAttributeByteCount2 = remote_mtu - 12;
     if (maximumAttributeByteCount2 < maximumAttributeByteCount) {
@@ -451,23 +483,26 @@ static void sdp_respond(void){
 
 // we assume that we don't get two requests in a row
 static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(size);
-    
 	uint16_t transaction_id;
     SDP_PDU_ID_t pdu_id;
     uint16_t remote_mtu;
-    // uint16_t param_len;
+    uint16_t param_len;
     
 	switch (packet_type) {
 			
 		case L2CAP_DATA_PACKET:
             pdu_id = (SDP_PDU_ID_t) packet[0];
             transaction_id = big_endian_read_16(packet, 1);
-            // param_len = big_endian_read_16(packet, 3);
+            param_len = big_endian_read_16(packet, 3);
             remote_mtu = l2cap_get_remote_mtu_for_local_cid(channel);
             // account for our buffer
             if (remote_mtu > SDP_RESPONSE_BUFFER_SIZE){
                 remote_mtu = SDP_RESPONSE_BUFFER_SIZE;
+            }
+            // validate parm_len against packet size
+            if (param_len + 5 > size) {
+                // just clear pdu_id
+                pdu_id = SDP_ErrorResponse;
             }
             
             // log_info("SDP Request: type %u, transaction id %u, len %u, mtu %u", pdu_id, transaction_id, param_len, remote_mtu);
