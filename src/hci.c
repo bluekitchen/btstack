@@ -156,7 +156,7 @@ static int  hci_number_free_acl_slots_for_connection_type( bd_addr_type_t addres
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_CENTRAL
 // called from test/ble_client/advertising_data_parser.c
-void le_handle_advertisement_report(uint8_t *packet, int size);
+void le_handle_advertisement_report(uint8_t *packet, uint16_t size);
 static void hci_remove_from_whitelist(bd_addr_type_t address_type, bd_addr_t address);
 #endif
 #endif
@@ -961,9 +961,7 @@ void gap_le_get_own_address(uint8_t * addr_type, bd_addr_t addr){
 }
 
 #ifdef ENABLE_LE_CENTRAL
-void le_handle_advertisement_report(uint8_t *packet, int size){
-
-    UNUSED(size);
+void le_handle_advertisement_report(uint8_t *packet, uint16_t size){
 
     int offset = 3;
     int num_reports = packet[offset];
@@ -972,8 +970,8 @@ void le_handle_advertisement_report(uint8_t *packet, int size){
     int i;
     // log_info("HCI: handle adv report with num reports: %d", num_reports);
     uint8_t event[12 + LE_ADVERTISING_DATA_SIZE]; // use upper bound to avoid var size automatic var
-    for (i=0; i<num_reports;i++){
-        uint8_t data_length = packet[offset + 8];
+    for (i=0; i<num_reports && offset < size;i++){
+        uint8_t data_length = btstack_min( packet[offset + 8], LE_ADVERTISING_DATA_SIZE);
         uint8_t event_size = 10 + data_length;
         int pos = 0;
         event[pos++] = GAP_EVENT_ADVERTISING_REPORT;
@@ -1382,7 +1380,8 @@ static void hci_init_done(void){
 }
 
 static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
-    UNUSED(size);
+
+    UNUSED(size);   // ok: less than 6 bytes are read from our buffer
     
     uint8_t command_completed = 0;
 
