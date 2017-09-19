@@ -78,7 +78,7 @@ de_type_t de_get_element_type(const uint8_t *header){
     return (de_type_t) (header[0] >> 3);
 }
 
-int de_get_header_size(const uint8_t * header){
+uint32_t de_get_header_size(const uint8_t * header){
     de_size_t de_size = de_get_size_type(header);
     if (de_size <= DE_SIZE_128) {
         return 1;
@@ -86,7 +86,7 @@ int de_get_header_size(const uint8_t * header){
     return 1 + (1 << (de_size-DE_SIZE_VAR_8));
 }
 
-int de_get_data_size(const uint8_t * header){
+uint32_t de_get_data_size(const uint8_t * header){
     uint32_t result = 0;
     de_type_t de_type = de_get_element_type(header);
     de_size_t de_size = de_get_size_type(header);
@@ -114,6 +114,18 @@ int de_get_data_size(const uint8_t * header){
 
 int de_get_len(const uint8_t *header){
     return de_get_header_size(header) + de_get_data_size(header); 
+}
+
+// returns data element length if data element fits in size
+uint32_t de_get_len_safe(const uint8_t * header, uint32_t size){
+    if (1           > size) return 0;
+    uint32_t header_size = de_get_header_size(header);
+    if (header_size > size) return 0;
+    uint32_t data_size   = de_get_data_size(header);
+    if (data_size   > size) return 0;
+    uint32_t de_len      = header_size + data_size;
+    if (de_len      > size) return 0;
+    return de_len;
 }
 
 // @returns OK, if UINT16 value was read

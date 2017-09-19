@@ -76,11 +76,13 @@ typedef enum {
 // MARK: DateElement
 void      de_dump_data_element(const uint8_t * record);
 int       de_get_len(const uint8_t * header);
+
+
 de_size_t de_get_size_type(const uint8_t * header);
 de_type_t de_get_element_type(const uint8_t * header);
-int       de_get_header_size(const uint8_t * header);
+uint32_t  de_get_header_size(const uint8_t * header);
 int       de_element_get_uint16(const uint8_t * element, uint16_t * value);
-int       de_get_data_size(const uint8_t * header);
+uint32_t  de_get_data_size(const uint8_t * header);
 uint32_t  de_get_uuid32(const uint8_t * element);
 int       de_get_normalized_uuid(uint8_t *uuid128, const uint8_t *element);
 
@@ -92,6 +94,9 @@ void      de_add_number(uint8_t *seq, de_type_t type, de_size_t size, uint32_t v
 void      de_add_data( uint8_t *seq, de_type_t type, uint16_t size, uint8_t *data);
 
 void      de_add_uuid128(uint8_t * seq, uint8_t * uuid);
+
+// returns data element  len if date element is smaller than size
+uint32_t de_get_len_safe(const uint8_t * header, uint32_t size);
 
 // MARK: DES iterator
 typedef struct {
