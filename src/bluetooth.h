@@ -1081,13 +1081,14 @@ typedef enum {
 #define ATT_PROPERTY_AUTHORIZATION_REQUIRED  0x800
 // Encryption key size stored in upper 4 bits, 0 == no encryption, encryption key size - 1 otherwise
 
-// ATT Transaction Timeout of 30 seconds for Command/Response or Incidationc/Confirmation
+// ATT Transaction Timeout of 30 seconds for Command/Response or Indication/Confirmation
 #define ATT_TRANSACTION_TIMEOUT_MS     30000
 
 #define ATT_TRANSACTION_MODE_NONE      0x0
 #define ATT_TRANSACTION_MODE_ACTIVE    0x1
 #define ATT_TRANSACTION_MODE_EXECUTE   0x2
 #define ATT_TRANSACTION_MODE_CANCEL    0x3
+#define ATT_TRANSACTION_MODE_VALIDATE  0x4
 
 // MARK: GATT UUIDs
 #define GATT_PRIMARY_SERVICE_UUID                   0x2800
