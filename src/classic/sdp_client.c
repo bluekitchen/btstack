@@ -82,7 +82,7 @@ void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 static uint16_t sdp_client_setup_service_search_attribute_request(uint8_t * data);
 #ifdef ENABLE_SDP_EXTRA_QUERIES
 static uint16_t sdp_client_setup_service_search_request(uint8_t * data);
-static uint16_t sdp_client_setup_service_attribute_request(uint8_t * data, uint16_t size);
+static uint16_t sdp_client_setup_service_attribute_request(uint8_t * data);
 static void     sdp_client_parse_service_search_response(uint8_t* packet, uint16_t size);
 static void     sdp_client_parse_service_attribute_response(uint8_t* packet, uint16_t size);
 #endif
@@ -561,7 +561,7 @@ static uint16_t sdp_client_setup_service_search_request(uint8_t * data){
 }
 
 
-static uint16_t sdp_client_setup_service_attribute_request(uint8_t * data, uint16_t size){
+static uint16_t sdp_client_setup_service_attribute_request(uint8_t * data){
 
     uint16_t offset = 0;
     transactionID++;
