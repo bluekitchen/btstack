@@ -82,9 +82,9 @@ void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 static uint16_t sdp_client_setup_service_search_attribute_request(uint8_t * data);
 #ifdef ENABLE_SDP_EXTRA_QUERIES
 static uint16_t sdp_client_setup_service_search_request(uint8_t * data);
-static uint16_t sdp_client_setup_service_attribute_request(uint8_t * data);
-static void     sdp_client_parse_service_search_response(uint8_t* packet);
-static void     sdp_client_parse_service_attribute_response(uint8_t* packet);
+static uint16_t sdp_client_setup_service_attribute_request(uint8_t * data, uint16_t size);
+static void     sdp_client_parse_service_search_response(uint8_t* packet, uint16_t size);
+static void     sdp_client_parse_service_attribute_response(uint8_t* packet, uint16_t size);
 #endif
 
 static uint8_t des_attributeIDList[] = { 0x35, 0x05, 0x0A, 0x00, 0x01, 0xff, 0xff};  // Attribute: 0x0001 - 0x0100
@@ -355,7 +355,10 @@ static void sdp_client_send_request(uint16_t channel){
 }
 
 
-static void sdp_client_parse_service_search_attribute_response(uint8_t* packet){
+static void sdp_client_parse_service_search_attribute_response(uint8_t* packet, uint16_t size){
+
+    UNUSED(size);
+    
     uint16_t offset = 3;
     uint16_t parameterLength = big_endian_read_16(packet,offset);
     offset+=2;
@@ -406,14 +409,14 @@ void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 return;
 #ifdef ENABLE_SDP_EXTRA_QUERIES
             case SDP_ServiceSearchResponse:
-                sdp_client_parse_service_search_response(packet);
+                sdp_client_parse_service_search_response(packet, size);
                 break;
             case SDP_ServiceAttributeResponse:
-                sdp_client_parse_service_attribute_response(packet);
+                sdp_client_parse_service_attribute_response(packet, size);
                 break;
 #endif
             case SDP_ServiceSearchAttributeResponse:
-                sdp_client_parse_service_search_attribute_response(packet);
+                sdp_client_parse_service_search_attribute_response(packet, size);
                 break;
             default:
                 log_error("PDU ID %u unexpected/invalid", PDU_ID);
@@ -556,7 +559,9 @@ static uint16_t sdp_client_setup_service_search_request(uint8_t * data){
 }
 
 
-static uint16_t sdp_client_setup_service_attribute_request(uint8_t * data){
+static uint16_t sdp_client_setup_service_attribute_request(uint8_t * data, uint16_t size){
+
+    UNUSED(size);
 
     uint16_t offset = 0;
     transactionID++;
@@ -595,7 +600,10 @@ static uint16_t sdp_client_setup_service_attribute_request(uint8_t * data){
     return offset;
 }
 
-static void sdp_client_parse_service_search_response(uint8_t* packet){
+static void sdp_client_parse_service_search_response(uint8_t* packet, uint16_t size){
+
+    UNUSED(size);
+
     uint16_t offset = 3;
     uint16_t parameterLength = big_endian_read_16(packet,offset);
     offset+=2;
@@ -627,7 +635,10 @@ static void sdp_client_parse_service_search_response(uint8_t* packet){
     }
 }
 
-static void sdp_client_parse_service_attribute_response(uint8_t* packet){
+static void sdp_client_parse_service_attribute_response(uint8_t* packet, uint16_t size){
+
+    UNUSED(size);
+
     uint16_t offset = 3;
     uint16_t parameterLength = big_endian_read_16(packet,offset);
     offset+=2;
