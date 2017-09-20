@@ -357,37 +357,39 @@ static void sdp_client_send_request(uint16_t channel){
 
 static void sdp_client_parse_service_search_attribute_response(uint8_t* packet, uint16_t size){
 
-    UNUSED(size);
-    
     uint16_t offset = 3;
+    if (offset + 2 + 2 > size) return;  // parameterLength + attributeListByteCount
     uint16_t parameterLength = big_endian_read_16(packet,offset);
     offset+=2;
+    if (offset + parameterLength > size) return;
+
     // AttributeListByteCount <= mtu
     uint16_t attributeListByteCount = big_endian_read_16(packet,offset);
     offset+=2;
-
     if (attributeListByteCount > mtu){
         log_error("Error parsing ServiceSearchAttributeResponse: Number of bytes in found attribute list is larger then the MaximumAttributeByteCount.");
         return;
     }
 
     // AttributeLists
+    if (offset + attributeListByteCount > size) return;
     sdp_client_parse_attribute_lists(packet+offset, attributeListByteCount);
     offset+=attributeListByteCount;
 
+    // continuation state len
+    if (offset + 1 > size) return;
     continuationStateLen = packet[offset];
     offset++;
-
     if (continuationStateLen > 16){
+        continuationStateLen = 0;
         log_error("Error parsing ServiceSearchAttributeResponse: Number of bytes in continuation state exceedes 16.");
         return;
     }
-    memcpy(continuationState, packet+offset, continuationStateLen);
-    offset+=continuationStateLen;
 
-    if (parameterLength != offset - 5){
-        log_error("Error parsing ServiceSearchAttributeResponse: wrong size of parameters, number of expected bytes%u, actual number %u.", parameterLength, offset);
-    }
+    // continuation state
+    if (offset + continuationStateLen > size) return;
+    memcpy(continuationState, packet+offset, continuationStateLen);
+    // offset+=continuationStateLen;
 }
 
 void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -561,8 +563,6 @@ static uint16_t sdp_client_setup_service_search_request(uint8_t * data){
 
 static uint16_t sdp_client_setup_service_attribute_request(uint8_t * data, uint16_t size){
 
-    UNUSED(size);
-
     uint16_t offset = 0;
     transactionID++;
     // uint8_t SDP_PDU_ID_t.SDP_ServiceSearchRequest;
@@ -602,11 +602,12 @@ static uint16_t sdp_client_setup_service_attribute_request(uint8_t * data, uint1
 
 static void sdp_client_parse_service_search_response(uint8_t* packet, uint16_t size){
 
-    UNUSED(size);
-
     uint16_t offset = 3;
+    if (offset + 2 + 2 + 2 > size) return;  // parameterLength, totalServiceRecordCount, currentServiceRecordCount
+
     uint16_t parameterLength = big_endian_read_16(packet,offset);
     offset+=2;
+    if (offset + parameterLength > size) return;
 
     uint16_t totalServiceRecordCount = big_endian_read_16(packet,offset);
     offset+=2;
@@ -618,57 +619,56 @@ static void sdp_client_parse_service_search_response(uint8_t* packet, uint16_t s
         return;
     }
     
+    if (offset + currentServiceRecordCount * 4 > size) return;
     sdp_client_parse_service_record_handle_list(packet+offset, totalServiceRecordCount, currentServiceRecordCount);
-    offset+=(currentServiceRecordCount * 4);
+    offset+= currentServiceRecordCount * 4;
 
+    if (offset + 1 > size) return;
     continuationStateLen = packet[offset];
     offset++;
     if (continuationStateLen > 16){
+        continuationStateLen = 0;
         log_error("Error parsing ServiceSearchResponse: Number of bytes in continuation state exceedes 16.");
         return;
     }
+    if (offset + continuationStateLen > size) return;
     memcpy(continuationState, packet+offset, continuationStateLen);
-    offset+=continuationStateLen;
-
-    if (parameterLength != offset - 5){
-        log_error("Error parsing ServiceSearchResponse: wrong size of parameters, number of expected bytes%u, actual number %u.", parameterLength, offset);
-    }
+    // offset+=continuationStateLen;
 }
 
 static void sdp_client_parse_service_attribute_response(uint8_t* packet, uint16_t size){
 
-    UNUSED(size);
-
     uint16_t offset = 3;
+    if (offset + 2 + 2 > size) return;  // parameterLength, attributeListByteCount
     uint16_t parameterLength = big_endian_read_16(packet,offset);
     offset+=2;
+    if (offset+parameterLength > size) return;
 
     // AttributeListByteCount <= mtu
     uint16_t attributeListByteCount = big_endian_read_16(packet,offset);
     offset+=2;
-
     if (attributeListByteCount > mtu){
         log_error("Error parsing ServiceSearchAttributeResponse: Number of bytes in found attribute list is larger then the MaximumAttributeByteCount.");
         return;
     }
 
     // AttributeLists
+    if (offset+attributeListByteCount > size) return;
     sdp_client_parse_attribute_lists(packet+offset, attributeListByteCount);
     offset+=attributeListByteCount;
 
+    // continuationStateLen
+    if (offset + 1 > size) return;
     continuationStateLen = packet[offset];
     offset++;
-
     if (continuationStateLen > 16){
+        continuationStateLen = 0;
         log_error("Error parsing ServiceAttributeResponse: Number of bytes in continuation state exceedes 16.");
         return;
     }
+    if (offset + continuationStateLen > size) return;
     memcpy(continuationState, packet+offset, continuationStateLen);
-    offset+=continuationStateLen;
-
-    if (parameterLength != offset - 5){
-        log_error("Error parsing ServiceAttributeResponse: wrong size of parameters, number of expected bytes%u, actual number %u.", parameterLength, offset);
-    }
+    // offset+=continuationStateLen;
 }
 #endif
 
