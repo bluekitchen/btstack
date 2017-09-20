@@ -1172,7 +1172,7 @@ static int bnep_handle_control_packet(bnep_channel_t *channel, uint8_t *packet, 
  */
 static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
 {
-    UNUSED(size);
+    UNUSED(size);   // ok: handling own l2cap events
 
     bd_addr_t event_addr;
     uint16_t  psm;
