@@ -42,6 +42,7 @@ System properties:
 HAVE_MALLOC                        | Use dynamic memory
 HAVE_AES128                        | Use platform AES128 engine - not needed usually
 HAVE_BTSTACK_STDIN                 | STDIN is available for CLI interface
+HAVE_MBEDTLS_ECC_P256              | mbedTLS provides NIST P-256 operations e.g. for LE Secure Connections
 
 Embedded platform properties:
 

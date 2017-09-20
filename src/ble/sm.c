@@ -76,10 +76,32 @@
 #error "HCI_ACL_PAYLOAD_SIZE must be at least 69 bytes when using LE Secure Conection. Please increase HCI_ACL_PAYLOAD_SIZE or disable ENABLE_LE_SECURE_CONNECTIONS"
 #endif
 
-// Software ECDH implementation provided by micro-ecc
+// configure ECC implementations 
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+#if defined(ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS) && defined(HAVE_MBEDTLS_ECC_P256)
+#error "If you already have mbedTLS (HAVE_MBEDTLS_ECC_P256), please disable uECC (USE_MICRO_ECC_FOR_ECDH) in bstack_config.h"
+#endif
 #ifdef ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
+#define USE_SOFTWARE_ECDH_IMPLEMENTATION
+#define USE_MICRO_ECC_FOR_ECDH
+#endif
+#ifdef HAVE_MBEDTLS_ECC_P256
+#define USE_SOFTWARE_ECDH_IMPLEMENTATION
+#define USE_MBEDTLS_FOR_ECDH
+#endif
+#endif /* ENABLE_LE_SECURE_CONNECTIONS */
+
+// Software ECDH implementation provided by micro-ecc
+#ifdef USE_MICRO_ECC_FOR_ECDH
 #include "uECC.h"
 #endif
+#endif
+
+// Software ECDH implementation provided by mbedTLS
+#ifdef USE_MBEDTLS_FOR_ECDH
+#include "mbedtls/config.h"
+#include "mbedtls/platform.h"
+#include "mbedtls/ecp.h"
 #endif
 
 #if defined(ENABLE_LE_SIGNED_WRITE) || defined(ENABLE_LE_SECURE_CONNECTIONS)
@@ -261,6 +283,11 @@ static btstack_linked_list_t sm_event_handlers;
 static ec_key_generation_state_t ec_key_generation_state;
 static uint8_t ec_d[32];
 static uint8_t ec_q[64];
+#endif
+
+// Software ECDH implementation provided by mbedtls
+#ifdef USE_MBEDTLS_FOR_ECDH
+static mbedtls_ecp_group   mbedtls_ec_group;
 #endif
 
 //
@@ -1581,9 +1608,12 @@ static const sm_key_t f5_salt = { 0x6C ,0x88, 0x83, 0x91, 0xAA, 0xF5, 0xA5, 0x38
 static const uint8_t f5_key_id[] = { 0x62, 0x74, 0x6c, 0x65 };
 static const uint8_t f5_length[] = { 0x01, 0x00};  
 
-#ifdef ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
+#ifdef USE_SOFTWARE_ECDH_IMPLEMENTATION
+
 static void sm_sc_calculate_dhkey(sm_key256_t dhkey){
     memset(dhkey, 0, 32);
+
+#ifdef USE_MICRO_ECC_FOR_ECDH
 #if uECC_SUPPORTS_secp256r1
     // standard version
     uECC_shared_secret(setup->sm_peer_q, ec_d, dhkey, uECC_secp256r1());
@@ -1591,6 +1621,27 @@ static void sm_sc_calculate_dhkey(sm_key256_t dhkey){
     // static version
     uECC_shared_secret(setup->sm_peer_q, ec_d, dhkey);
 #endif
+#endif
+
+#ifdef USE_MBEDTLS_FOR_ECDH
+    // da * Pb
+    mbedtls_mpi d;
+    mbedtls_ecp_point Q;
+    mbedtls_ecp_point DH;
+    mbedtls_mpi_init(&d);
+    mbedtls_ecp_point_init(&Q);
+    mbedtls_ecp_point_init(&DH);
+    mbedtls_mpi_read_binary(&d, ec_d, 32);
+    mbedtls_mpi_read_binary(&Q.X, &setup->sm_peer_q[0] , 32);
+    mbedtls_mpi_read_binary(&Q.Y, &setup->sm_peer_q[32], 32);
+    mbedtls_mpi_lset(&Q.Z, 1);
+    mbedtls_ecp_mul(&mbedtls_ec_group, &DH, &d, &Q, NULL, NULL);
+    mbedtls_mpi_write_binary(&DH.X, dhkey, 32);
+    mbedtls_ecp_point_free(&DH);
+    mbedtls_mpi_free(&d);
+    mbedtls_ecp_point_free(&Q);
+#endif
+
     log_info("dhkey");
     log_info_hexdump(dhkey, 32);
 }
@@ -1724,7 +1775,7 @@ static void sm_sc_calculate_remote_confirm(sm_connection_t * sm_conn){
 
 static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn){
 
-#ifdef ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
+#ifdef USE_SOFTWARE_ECDH_IMPLEMENTATION
     // calculate DHKEY
     sm_sc_calculate_dhkey(setup->sm_dhkey);
     setup->sm_state_vars |= SM_STATE_VAR_DHKEY_CALCULATED;
@@ -1904,7 +1955,7 @@ static void sm_run(void){
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
     if (ec_key_generation_state == EC_KEY_GENERATION_ACTIVE){
-#ifdef ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
+#ifdef USE_SOFTWARE_ECDH_IMPLEMENTATION
         sm_random_start(NULL);
 #else
         ec_key_generation_state = EC_KEY_GENERATION_W4_KEY;
@@ -2164,7 +2215,7 @@ static void sm_run(void){
             return;
         }
 
-#if defined(ENABLE_LE_SECURE_CONNECTIONS) && !defined(ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS)
+#if defined(ENABLE_LE_SECURE_CONNECTIONS) && !defined(USE_SOFTWARE_ECDH_IMPLEMENTATION)
         if (setup->sm_state_vars & SM_STATE_VAR_DHKEY_NEEDED){
             setup->sm_state_vars &= ~SM_STATE_VAR_DHKEY_NEEDED;
             hci_send_cmd(&hci_le_generate_dhkey, &setup->sm_peer_q[0], &setup->sm_peer_q[32]);
@@ -2835,8 +2886,8 @@ static void sm_handle_encryption_result(uint8_t * data){
 }
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-#ifdef ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
-#if !defined(WICED_VERSION)
+
+#if (defined(USE_MICRO_ECC_FOR_ECDH) && !defined(WICED_VERSION)) || defined(USE_MBEDTLS_FOR_ECDH)
 // @return OK
 static int sm_generate_f_rng(unsigned char * buffer, unsigned size){
     if (ec_key_generation_state != EC_KEY_GENERATION_ACTIVE) return 0;
@@ -2850,13 +2901,19 @@ static int sm_generate_f_rng(unsigned char * buffer, unsigned size){
     return 1;
 }
 #endif
-#endif
-#endif
+#ifdef USE_MBEDTLS_FOR_ECDH
+// @return error - just wrap sm_generate_f_rng
+static int sm_generate_f_rng_mbedtls(void * context, unsigned char * buffer, size_t size){
+    UNUSED(context);
+    return sm_generate_f_rng(buffer, size) == 1;
+}
+#endif /* USE_MBEDTLS_FOR_ECDH */
+#endif /* ENABLE_LE_SECURE_CONNECTIONS */
 
 // note: random generator is ready. this doesn NOT imply that aes engine is unused!
 static void sm_handle_random_result(uint8_t * data){
 
-#if defined(ENABLE_LE_SECURE_CONNECTIONS) && defined(ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS)
+#if defined(ENABLE_LE_SECURE_CONNECTIONS) && defined(USE_SOFTWARE_ECDH_IMPLEMENTATION)
 
     if (ec_key_generation_state == EC_KEY_GENERATION_ACTIVE){
         int num_bytes = setup->sm_passkey_bit;
@@ -2870,6 +2927,8 @@ static void sm_handle_random_result(uint8_t * data){
             setup->sm_passkey_bit = 0;
 
             // generate EC key
+#ifdef USE_MICRO_ECC_FOR_ECDH
+
 #ifndef WICED_VERSION
             log_info("set uECC RNG for initial key generation with 64 random bytes");
             // micro-ecc from WICED SDK uses its wiced_crypto_get_random by default - no need to set it
@@ -2886,7 +2945,22 @@ static void sm_handle_random_result(uint8_t * data){
 #else
             // static version
             uECC_make_key(ec_q, ec_d);
-#endif /* ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS */
+#endif 
+#endif /* USE_MICRO_ECC_FOR_ECDH */
+
+#ifdef USE_MBEDTLS_FOR_ECDH
+            mbedtls_mpi d;
+            mbedtls_ecp_point P;
+            mbedtls_mpi_init(&d);
+            mbedtls_ecp_point_init(&P);
+            int res = mbedtls_ecp_gen_keypair(&mbedtls_ec_group, &d, &P, &sm_generate_f_rng_mbedtls, NULL);
+            log_info("gen keypair %x", res);
+            mbedtls_mpi_write_binary(&P.X, &ec_q[0],  32);
+            mbedtls_mpi_write_binary(&P.Y, &ec_q[32], 32);
+            mbedtls_mpi_write_binary(&d, ec_d, 32);
+            mbedtls_ecp_point_free(&P);
+            mbedtls_mpi_free(&d);
+#endif  /* USE_MBEDTLS_FOR_ECDH */ 
 
             ec_key_generation_state = EC_KEY_GENERATION_DONE;
             log_info("Elliptic curve: d");
@@ -3142,7 +3216,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 #endif
                             break;
 
-#if defined(ENABLE_LE_SECURE_CONNECTIONS) && !defined(ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS)
+#if defined(ENABLE_LE_SECURE_CONNECTIONS) && !defined(USE_MICRO_ECC_FOR_ECDH)
                         case HCI_SUBEVENT_LE_READ_LOCAL_P256_PUBLIC_KEY_COMPLETE:
                             if (hci_subevent_le_read_local_p256_public_key_complete_get_status(packet)){
                                 log_error("Read Local P256 Public Key failed");
@@ -3281,9 +3355,9 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         le_device_db_set_local_bd_addr(addr);
                     }
                     if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_supported_commands)){
-#if defined(ENABLE_LE_SECURE_CONNECTIONS) && !defined(ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS)
+#if defined(ENABLE_LE_SECURE_CONNECTIONS) && !defined(USE_MICRO_ECC_FOR_ECDH)
                         if ((packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+34] & 0x06) != 0x06){
-                            log_error("LE Secure Connections enabled, but HCI Controller doesn't support it. Please add ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS to btstack_config.h");
+                            log_error("LE Secure Connections enabled, but HCI Controller doesn't support it. Please add USE_MICRO_ECC_FOR_ECDH to btstack_config.h");
                         }
 #endif
                     }
@@ -3533,9 +3607,10 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             reverse_256(&packet[01], &setup->sm_peer_q[0]);
             reverse_256(&packet[33], &setup->sm_peer_q[32]);
 
-#ifdef ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
-            // validate public key
+            // validate public key using micro-ecc
             err = 0;
+
+#ifdef USE_MICRO_ECC_FOR_ECDH
 #if uECC_SUPPORTS_secp256r1
             // standard version
             err = uECC_valid_public_key(setup->sm_peer_q, uECC_secp256r1()) == 0;
@@ -3543,15 +3618,26 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             // static version
             err = uECC_valid_public_key(setup->sm_peer_q) == 0;
 #endif
+#endif
+
+#ifdef USE_MBEDTLS_FOR_ECDH
+            mbedtls_ecp_point Q;
+            mbedtls_ecp_point_init( &Q );
+            mbedtls_mpi_read_binary(&Q.X, &setup->sm_peer_q[0], 32);
+            mbedtls_mpi_read_binary(&Q.Y, &setup->sm_peer_q[32], 32);
+            mbedtls_mpi_lset(&Q.Z, 1);
+            err = mbedtls_ecp_check_pubkey(&mbedtls_ec_group, &Q);
+            mbedtls_ecp_point_free( & Q);
+#endif
+
             if (err){
                 log_error("sm: peer public key invalid %x", err);
                 // uses "unspecified reason", there is no "public key invalid" error code
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
-#endif
 
-#ifndef ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS 
+#ifndef USE_MICRO_ECC_FOR_ECDH 
             // start calculating dhkey
             setup->sm_state_vars |= SM_STATE_VAR_DHKEY_NEEDED;            
 #endif
@@ -3865,6 +3951,11 @@ void sm_init(void){
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
     ec_key_generation_state = EC_KEY_GENERATION_IDLE;
+#endif
+
+#ifdef USE_MBEDTLS_FOR_ECDH
+    mbedtls_ecp_group_init(&mbedtls_ec_group);
+    mbedtls_ecp_group_load(&mbedtls_ec_group, MBEDTLS_ECP_DP_SECP256R1);
 #endif
 }
 
