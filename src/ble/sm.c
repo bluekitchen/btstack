@@ -3350,30 +3350,54 @@ static int sm_validate_stk_generation_method(void){
     }
 }
 
-static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uint8_t *packet, uint16_t size){
+// size of complete sm_pdu used to validate input
+static const uint8_t sm_pdu_size[] = {
+    0,  // 0x00 invalid opcode
+    7,  // 0x01 pairing request
+    7,  // 0x02 pairing response
+    17, // 0x03 pairing confirm
+    17, // 0x04 pairing random
+    2,  // 0x05 pairing failed
+    17, // 0x06 encryption information
+    8,  // 0x07 master identification
+    17, // 0x08 identification information
+    8,  // 0x09 identify address information
+    17, // 0x0a signing information
+    2,  // 0x0b security request
+    65, // 0x0c pairing public key
+    17, // 0x0d pairing dhk check
+    2,  // 0x0e keypress notification
+};
 
-    UNUSED(size);
+static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uint8_t *packet, uint16_t size){
 
     if (packet_type == HCI_EVENT_PACKET && packet[0] == L2CAP_EVENT_CAN_SEND_NOW){
         sm_run();
     }
 
     if (packet_type != SM_DATA_PACKET) return;
+    if (size == 0) return;
+
+    uint8_t sm_pdu_code = packet[0];
+
+    // validate pdu size
+    if (sm_pdu_code >= sizeof(sm_pdu_size)) return;
+    if (sm_pdu_size[sm_pdu_code] < size)   return;
 
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
     if (!sm_conn) return;
 
-    if (packet[0] == SM_CODE_PAIRING_FAILED){
+    if (sm_pdu_code == SM_CODE_PAIRING_FAILED){
         sm_conn->sm_engine_state = sm_conn->sm_role ? SM_RESPONDER_IDLE : SM_INITIATOR_CONNECTED;
         return;
     }
 
-    log_debug("sm_pdu_handler: state %u, pdu 0x%02x", sm_conn->sm_engine_state, packet[0]);
+    log_debug("sm_pdu_handler: state %u, pdu 0x%02x", sm_conn->sm_engine_state, sm_pdu_code);
 
     int err;
     UNUSED(err);
 
-    if (packet[0] == SM_CODE_KEYPRESS_NOTIFICATION){
+    if (sm_pdu_code == SM_CODE_KEYPRESS_NOTIFICATION){
         uint8_t buffer[5];
         buffer[0] = SM_EVENT_KEYPRESS_NOTIFICATION;
         buffer[1] = 3;
@@ -3393,7 +3417,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
         // Initiator
         case SM_INITIATOR_CONNECTED:
-            if ((packet[0] != SM_CODE_SECURITY_REQUEST) || (sm_conn->sm_role)){
+            if ((sm_pdu_code != SM_CODE_SECURITY_REQUEST) || (sm_conn->sm_role)){
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
@@ -3417,7 +3441,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             break;
 
         case SM_INITIATOR_PH1_W4_PAIRING_RESPONSE:
-            if (packet[0] != SM_CODE_PAIRING_RESPONSE){
+            if (sm_pdu_code != SM_CODE_PAIRING_RESPONSE){
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
@@ -3460,7 +3484,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             break;                        
 
         case SM_INITIATOR_PH2_W4_PAIRING_CONFIRM:
-            if (packet[0] != SM_CODE_PAIRING_CONFIRM){
+            if (sm_pdu_code != SM_CODE_PAIRING_CONFIRM){
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
@@ -3471,7 +3495,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             break;
 
         case SM_INITIATOR_PH2_W4_PAIRING_RANDOM:
-            if (packet[0] != SM_CODE_PAIRING_RANDOM){
+            if (sm_pdu_code != SM_CODE_PAIRING_RANDOM){
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;;
             }
@@ -3487,7 +3511,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
         case SM_RESPONDER_IDLE:
         case SM_RESPONDER_SEND_SECURITY_REQUEST: 
         case SM_RESPONDER_PH1_W4_PAIRING_REQUEST:
-            if (packet[0] != SM_CODE_PAIRING_REQUEST){
+            if (sm_pdu_code != SM_CODE_PAIRING_REQUEST){
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;;
             }
@@ -3500,7 +3524,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
         case SM_SC_W4_PUBLIC_KEY_COMMAND:
-            if (packet[0] != SM_CODE_PAIRING_PUBLIC_KEY){
+            if (sm_pdu_code != SM_CODE_PAIRING_PUBLIC_KEY){
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
@@ -3563,7 +3587,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             break;
 
         case SM_SC_W4_CONFIRMATION:
-            if (packet[0] != SM_CODE_PAIRING_CONFIRM){
+            if (sm_pdu_code != SM_CODE_PAIRING_CONFIRM){
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
@@ -3591,7 +3615,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             break;        
 
         case SM_SC_W4_PAIRING_RANDOM:
-            if (packet[0] != SM_CODE_PAIRING_RANDOM){
+            if (sm_pdu_code != SM_CODE_PAIRING_RANDOM){
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
@@ -3620,7 +3644,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
         case SM_SC_W2_CALCULATE_F6_FOR_DHKEY_CHECK:
         case SM_SC_W4_DHKEY_CHECK_COMMAND:
         case SM_SC_W4_CALCULATE_F6_FOR_DHKEY_CHECK:
-            if (packet[0] != SM_CODE_PAIRING_DHKEY_CHECK){
+            if (sm_pdu_code != SM_CODE_PAIRING_DHKEY_CHECK){
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
@@ -3637,7 +3661,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
 #ifdef ENABLE_LE_PERIPHERAL
         case SM_RESPONDER_PH1_W4_PAIRING_CONFIRM:
-            if (packet[0] != SM_CODE_PAIRING_CONFIRM){
+            if (sm_pdu_code != SM_CODE_PAIRING_CONFIRM){
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
@@ -3668,7 +3692,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             break;
 
         case SM_RESPONDER_PH2_W4_PAIRING_RANDOM:
-            if (packet[0] != SM_CODE_PAIRING_RANDOM){
+            if (sm_pdu_code != SM_CODE_PAIRING_RANDOM){
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;;
             }
@@ -3680,7 +3704,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 #endif
 
         case SM_PH3_RECEIVE_KEYS:
-            switch(packet[0]){
+            switch(sm_pdu_code){
                 case SM_CODE_ENCRYPTION_INFORMATION:
                     setup->sm_key_distribution_received_set |= SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
                     reverse_128(&packet[1], setup->sm_peer_ltk);
