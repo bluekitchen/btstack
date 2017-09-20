@@ -388,33 +388,22 @@ static void sdp_client_parse_service_search_attribute_response(uint8_t* packet){
 }
 
 void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(size);
     
     // uint16_t handle;
     if (packet_type == L2CAP_DATA_PACKET){
+        if (size < 3) return;
         uint16_t responseTransactionID = big_endian_read_16(packet,1);
         if (responseTransactionID != transactionID){
             log_error("Mismatching transaction ID, expected %u, found %u.", transactionID, responseTransactionID);
             return;
         } 
         
-        if (packet[0] == SDP_ErrorResponse){
-            log_error("Received error response with code %u, disconnecting", packet[2]);
-            l2cap_disconnect(sdp_cid, 0);
-            return;
-        }
-
-        if (packet[0] != SDP_ServiceSearchAttributeResponse 
-         && packet[0] != SDP_ServiceSearchResponse
-         && packet[0] != SDP_ServiceAttributeResponse){
-            log_error("Not a valid PDU ID, expected %u, %u or %u, found %u.", SDP_ServiceSearchResponse, 
-                                    SDP_ServiceAttributeResponse, SDP_ServiceSearchAttributeResponse, packet[0]);
-            return;
-        }
-
         PDU_ID = (SDP_PDU_ID_t)packet[0];
-        log_debug("SDP Client :: PDU ID. %u ,%u", PDU_ID, packet[0]);
         switch (PDU_ID){
+            case SDP_ErrorResponse:
+                log_error("Received error response with code %u, disconnecting", packet[2]);
+                l2cap_disconnect(sdp_cid, 0);
+                return;
 #ifdef ENABLE_SDP_EXTRA_QUERIES
             case SDP_ServiceSearchResponse:
                 sdp_client_parse_service_search_response(packet);
@@ -427,7 +416,7 @@ void sdp_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 sdp_client_parse_service_search_attribute_response(packet);
                 break;
             default:
-                log_error("SDP Client :: PDU ID invalid. %u ,%u", PDU_ID, packet[0]);
+                log_error("PDU ID %u unexpected/invalid", PDU_ID);
                 return;
         }
 
