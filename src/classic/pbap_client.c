@@ -222,8 +222,10 @@ static void pbap_handle_can_send_now(void){
 }
 
 static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(channel);
-    UNUSED(size);
+
+    UNUSED(channel); // ok: there is no channel
+    UNUSED(size);    // ok: handling own geop events
+
     obex_iterator_t it;
     uint8_t status;
     switch (packet_type){

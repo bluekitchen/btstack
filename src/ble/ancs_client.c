@@ -183,9 +183,9 @@ static void ancs_chunk_parser_handle_byte(uint8_t data){
 
 static void handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
-    UNUSED(packet_type);
-    UNUSED(channel);
-    UNUSED(size);
+    UNUSED(packet_type); // ok: only hci events
+    UNUSED(channel);     // ok: there is no channel
+    UNUSED(size);        // ok: fixed format events read from HCI buffer
 
     int connection_encrypted;
 
