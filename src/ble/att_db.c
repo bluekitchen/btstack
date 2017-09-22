@@ -536,8 +536,10 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
         }
 
         // check security requirements
-        error_code = att_validate_security(att_connection, &it);
-        if (error_code) break;
+        if ((it.flags & ATT_DB_FLAGS_READ_WITHOUT_AUTHENTICATION) == 0){
+            error_code = att_validate_security(att_connection, &it);
+            if (error_code) break;
+        }
 
         att_update_value_len(&it, att_connection->con_handle);
         
@@ -621,9 +623,11 @@ static uint16_t handle_read_request2(att_connection_t * att_connection, uint8_t 
     }
 
     // check security requirements
-    uint8_t error_code = att_validate_security(att_connection, &it);
-    if (error_code) {
-        return setup_error(response_buffer, request_type, handle, error_code);
+    if ((it.flags & ATT_DB_FLAGS_READ_WITHOUT_AUTHENTICATION) == 0){
+        uint8_t error_code = att_validate_security(att_connection, &it);
+        if (error_code) {
+            return setup_error(response_buffer, request_type, handle, error_code);
+        }
     }
 
     att_update_value_len(&it, att_connection->con_handle);
@@ -667,9 +671,11 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
     }
 
     // check security requirements
-    uint8_t error_code = att_validate_security(att_connection, &it);
-    if (error_code) {
-        return setup_error(response_buffer, request_type, handle, error_code);
+    if ((it.flags & ATT_DB_FLAGS_READ_WITHOUT_AUTHENTICATION) == 0){
+        uint8_t error_code = att_validate_security(att_connection, &it);
+        if (error_code) {
+            return setup_error(response_buffer, request_type, handle, error_code);
+        }
     }
 
     att_update_value_len(&it, att_connection->con_handle);
@@ -736,9 +742,10 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
         }
 
         // check security requirements
-        error_code = att_validate_security(att_connection, &it);
-        if (error_code) break;
-
+        if ((it.flags & ATT_DB_FLAGS_READ_WITHOUT_AUTHENTICATION) == 0){
+            error_code = att_validate_security(att_connection, &it);
+            if (error_code) break;
+        }
         att_update_value_len(&it, att_connection->con_handle);
         
         // limit data

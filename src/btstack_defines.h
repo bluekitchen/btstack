@@ -293,6 +293,12 @@ typedef uint8_t sm_key_t[16];
 #define GATT_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION           0X81
 #define GATT_GET_MTU                                             0x82
 
+// ATT
+
+// ..
+// Internal properties reuse some GATT Characteristic Properties fields
+#define ATT_DB_FLAGS_READ_WITHOUT_AUTHENTICATION 0x0001
+
 
 // EVENTS
 

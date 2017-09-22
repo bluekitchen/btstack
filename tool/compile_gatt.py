@@ -48,6 +48,7 @@ assigned_uuids = {
 }
 
 property_flags = {
+    # GATT Characteristic Properties
     'BROADCAST' :                   0x01,
     'READ' :                        0x02,
     'WRITE_WITHOUT_RESPONSE' :      0x04,
@@ -57,23 +58,30 @@ property_flags = {
     'AUTHENTICATED_SIGNED_WRITE' :  0x40,
     'EXTENDED_PROPERTIES' :         0x80,
     # custom BTstack extension
-    'DYNAMIC':                     0x100,
-    'LONG_UUID':                   0x200,
-    'AUTHENTICATION_REQUIRED':     0x400,
-    'AUTHORIZATION_REQUIRED':      0x800,
-    'ENCRYPTION_KEY_SIZE_7':      0x6000,
-    'ENCRYPTION_KEY_SIZE_8':      0x7000,
-    'ENCRYPTION_KEY_SIZE_9':      0x8000,
-    'ENCRYPTION_KEY_SIZE_10':     0x9000,
-    'ENCRYPTION_KEY_SIZE_11':     0xa000,
-    'ENCRYPTION_KEY_SIZE_12':     0xb000,
-    'ENCRYPTION_KEY_SIZE_13':     0xc000,
-    'ENCRYPTION_KEY_SIZE_14':     0xd000,
-    'ENCRYPTION_KEY_SIZE_15':     0xe000,
-    'ENCRYPTION_KEY_SIZE_16':     0xf000,
+    'DYNAMIC':                      0x100,
+    'LONG_UUID':                    0x200,
+    'AUTHENTICATION_REQUIRED':      0x400,
+    'AUTHORIZATION_REQUIRED':       0x800,
+    'ENCRYPTION_KEY_SIZE_7':       0x6000,
+    'ENCRYPTION_KEY_SIZE_8':       0x7000,
+    'ENCRYPTION_KEY_SIZE_9':       0x8000,
+    'ENCRYPTION_KEY_SIZE_10':      0x9000,
+    'ENCRYPTION_KEY_SIZE_11':      0xa000,
+    'ENCRYPTION_KEY_SIZE_12':      0xb000,
+    'ENCRYPTION_KEY_SIZE_13':      0xc000,
+    'ENCRYPTION_KEY_SIZE_14':      0xd000,
+    'ENCRYPTION_KEY_SIZE_15':      0xe000,
+    'ENCRYPTION_KEY_SIZE_16':      0xf000,
+    
     # only used by gatt compiler >= 0xffff
     # Extended Properties
     'RELIABLE_WRITE':             0x10000,
+
+    # Broadcast, Notify, Indicate, Extended Properties are only used to describe a GATT Characteristic, but are free to use with att_db
+    'READ_WITHOUT_AUTHENTICATION': 0x0001, 
+    # 0x10
+    # 0x20
+    # 0x80
 }
 
 btstack_root = ''
@@ -314,9 +322,11 @@ def parseCharacteristic(fout, parts):
 
     write_indent(fout)
     fout.write('// 0x%04x VALUE-%s-'"'%s'"'\n' % (handle, '-'.join(parts[1:3]),value))
+    # drop Broadcast, Notify, Indicate - not used for flags 
+    value_properties = properties & 0x1ffce
     write_indent(fout)
     write_16(fout, size)
-    write_16(fout, properties)
+    write_16(fout, value_properties)
     write_16(fout, handle)
     write_uuid(uuid)
     if is_string(value):
@@ -329,12 +339,14 @@ def parseCharacteristic(fout, parts):
     handle = handle + 1
 
     if add_client_characteristic_configuration(properties):
+        # replace GATT Characterstic Properties with READ|WRITE|READ_WITHOUT_AUTHENTICATION|DYNAMIC
+        ccc_properties = (properties & 0x1ff00) | property_flags['READ_WITHOUT_AUTHENTICATION'] | property_flags['READ'] | property_flags['WRITE'] | property_flags['DYNAMIC'];
         size = 2 + 2 + 2 + 2 + 2
         write_indent(fout)
         fout.write('// 0x%04x CLIENT_CHARACTERISTIC_CONFIGURATION\n' % (handle))
         write_indent(fout)
         write_16(fout, size)
-        write_16(fout, property_flags['READ'] | property_flags['WRITE'] | property_flags['DYNAMIC'])
+        write_16(fout, ccc_properties)
         write_16(fout, handle)
         write_16(fout, 0x2902)
         write_16(fout, 0)
