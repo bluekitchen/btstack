@@ -317,13 +317,15 @@ def parseCharacteristic(fout, parts):
     else:
         size = size + len(value.split())
 
+    # drop Broadcast, Notify, Indicate - not used for flags 
+    value_properties = properties & 0x1ffce
+
+    # add UUID128 flag for value handle
     if uuid_size == 16:
-        properties = properties | property_flags['LONG_UUID'];
+        value_properties = value_properties | property_flags['LONG_UUID'];
 
     write_indent(fout)
     fout.write('// 0x%04x VALUE-%s-'"'%s'"'\n' % (handle, '-'.join(parts[1:3]),value))
-    # drop Broadcast, Notify, Indicate - not used for flags 
-    value_properties = properties & 0x1ffce
     write_indent(fout)
     write_16(fout, size)
     write_16(fout, value_properties)
@@ -340,7 +342,7 @@ def parseCharacteristic(fout, parts):
 
     if add_client_characteristic_configuration(properties):
         # replace GATT Characterstic Properties with READ|WRITE|READ_WITHOUT_AUTHENTICATION|DYNAMIC
-        ccc_properties = (properties & 0x1ff00) | property_flags['READ_WITHOUT_AUTHENTICATION'] | property_flags['READ'] | property_flags['WRITE'] | property_flags['DYNAMIC'];
+        ccc_properties = (properties & 0x1fc00) | property_flags['READ_WITHOUT_AUTHENTICATION'] | property_flags['READ'] | property_flags['WRITE'] | property_flags['DYNAMIC'];
         size = 2 + 2 + 2 + 2 + 2
         write_indent(fout)
         fout.write('// 0x%04x CLIENT_CHARACTERISTIC_CONFIGURATION\n' % (handle))
