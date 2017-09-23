@@ -1248,3 +1248,31 @@ uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uui
     return 0;
 }
 
+// att_read_callback helpers
+uint16_t att_read_callback_handle_blob(const uint8_t * blob, uint16_t blob_size, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    if (buffer){
+        uint16_t bytes_to_copy = btstack_min(blob_size - offset, buffer_size);
+        memcpy(buffer, &blob[offset], bytes_to_copy);
+        return bytes_to_copy;
+    } else {
+        return blob_size;
+    }
+}
+
+uint16_t att_read_callback_handle_little_endian_32(uint32_t value, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    uint8_t value_buffer[4];
+    little_endian_store_32(value_buffer, 0, value);
+    return att_read_callback_handle_blob(value_buffer, sizeof(value_buffer), offset, buffer, buffer_size);
+}
+
+uint16_t att_read_callback_handle_little_endian_16(uint16_t value, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    uint8_t value_buffer[2];
+    little_endian_store_16(value_buffer, 0, value);
+    return att_read_callback_handle_blob(value_buffer, sizeof(value_buffer), offset, buffer, buffer_size);
+}
+
+uint16_t att_read_callback_handle_byte(uint8_t value, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    uint8_t value_buffer[1];
+    value_buffer[0] = value;
+    return att_read_callback_handle_blob(value_buffer, sizeof(value_buffer), offset, buffer, buffer_size);
+}

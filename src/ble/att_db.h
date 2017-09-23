@@ -177,7 +177,52 @@ void att_clear_transaction_queue(att_connection_t * att_connection);
 void att_register_service_handler(att_service_handler_t * handler);
 
 
- // experimental client API
+// att_read_callback helpers for a various data types
+
+/*
+ * @brief Handle read of blob like data for att_read_callback
+ * @param blob of data
+ * @param blob_size of blob
+ * @param offset from att_read_callback
+ * @param buffer from att_read_callback
+ * @param buffer_size from att_read_callback
+ * @returns value size for buffer == 0 and num bytes copied otherwise
+ */
+uint16_t att_read_callback_handle_blob(const uint8_t * blob, uint16_t blob_size, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
+
+/*
+ * @brief Handle read of little endian unsigned 32 bit value for att_read_callback
+ * @param value
+ * @param offset from att_read_callback
+ * @param buffer from att_read_callback
+ * @param buffer_size from att_read_callback
+ * @returns value size for buffer == 0 and num bytes copied otherwise
+ */
+uint16_t att_read_callback_handle_little_endian_32(uint32_t value, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
+
+/*
+ * @brief Handle read of little endian unsigned 16 bit value for att_read_callback
+ * @param value
+ * @param offset from att_read_callback
+ * @param buffer from att_read_callback
+ * @param buffer_size from att_read_callback
+ * @returns value size for buffer == 0 and num bytes copied otherwise
+ */
+uint16_t att_read_callback_handle_little_endian_16(uint16_t value, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
+
+/*
+ * @brief Handle read of single byte for att_read_callback
+ * @param blob of data
+ * @param blob_size of blob
+ * @param offset from att_read_callback
+ * @param buffer from att_read_callback
+ * @param buffer_size from att_read_callback
+ * @returns value size for buffer == 0 and num bytes copied otherwise
+ */
+uint16_t att_read_callback_handle_byte(uint8_t value, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
+
+
+// experimental client API
 uint16_t att_uuid_for_handle(uint16_t attribute_handle);
 
 
