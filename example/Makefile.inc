@@ -6,7 +6,7 @@ VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/example
 VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player
 VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
-VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce 
+VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder//srce
 
 CFLAGS += -I.
@@ -118,6 +118,7 @@ EXAMPLES = 					\
 	hfp_ag_demo             \
 	hfp_hf_demo             \
 	hid_keyboard_demo 	    \
+	hog_keyboard_demo    \
 	hsp_ag_demo             \
 	hsp_hs_demo             \
 	le_counter              \
@@ -147,17 +148,18 @@ EXAMPLES_USING_LE =			\
 	gap_le_advertisements   \
 	sm_pairing_peripheral   \
 	sm_pairing_central      \
+	hog_keyboard_demo \
 
 # .o for .c
 CORE_OBJ    = $(CORE:.c=.o)
-COMMON_OBJ  = $(COMMON:.c=.o) 
-CLASSIC_OBJ  = $(CLASSIC:.c=.o) 
+COMMON_OBJ  = $(COMMON:.c=.o)
+CLASSIC_OBJ  = $(CLASSIC:.c=.o)
 SM_OBJ = $(SM:.c=.o) $(MICROECC:.c=.o)
 ATT_OBJ     = $(ATT:.c=.o)
 GATT_CLIENT_OBJ = $(GATT_CLIENT:.c=.o)
 GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
 PAN_OBJ = $(PAN:.c=.o)
-SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
+SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o)
 SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 CVSD_PLC_OBJ = $(CVSD_PLC:.c=.o)
 AVDTP_OBJ  = $(AVDTP:.c=.o)
@@ -167,23 +169,25 @@ default_target: all
 
 # compile .gatt descriptions
 profile.h: profile.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 ancs_client_demo.h: ancs_client_demo.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 gatt_browser.h: gatt_browser.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 gatt_battery_query.h: gatt_battery_query.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 spp_and_le_counter.h: spp_and_le_counter.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 spp_and_le_streamer.h: spp_and_le_counter.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 le_counter.h: le_counter.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 le_streamer.h: le_streamer.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
+hog_keyboard_demo.h: hog_keyboard_demo.gatt
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 sm_pairing_peripheral.h: sm_pairing_peripheral.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 # examples
 sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${PAN_OBJ} ${SDP_CLIENT} sdp_rfcomm_query.c
@@ -192,37 +196,40 @@ sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${PAN_OBJ} ${SDP_CLIE
 pbap_client_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} obex_iterator.c goep_client.c pbap_client.c pbap_client_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-sdp_general_query: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} sdp_general_query.c  
+sdp_general_query: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} sdp_general_query.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-sdp_bnep_query: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} sdp_bnep_query.c  
+sdp_bnep_query: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} sdp_bnep_query.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 spp_counter: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} spp_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-le_counter: le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} battery_service_server.o le_counter.c 
+le_counter: le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} battery_service_server.o le_counter.c
 	${CC} $(filter-out le_counter.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-sm_pairing_peripheral: sm_pairing_peripheral.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} sm_pairing_peripheral.c 
+hog_keyboard_demo: hog_keyboard_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} battery_service_server.o device_information_service_server.o hids_device.o btstack_ring_buffer.o hog_keyboard_demo.c
+	${CC} $(filter-out hog_keyboard_demo.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+sm_pairing_peripheral: sm_pairing_peripheral.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} sm_pairing_peripheral.c
 	${CC} $(filter-out sm_pairing_peripheral.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-sm_pairing_central: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} sm_pairing_central.o 
+sm_pairing_central: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} sm_pairing_central.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-le_streamer: le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} le_streamer.c 
+le_streamer: le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} le_streamer.c
 	${CC} $(filter-out le_streamer.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 le_streamer_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ} le_streamer_client.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-spp_and_le_counter: spp_and_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} spp_and_le_counter.c 
+spp_and_le_counter: spp_and_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} spp_and_le_counter.c
 	${CC} $(filter-out spp_and_le_counter.h,$^)  ${CFLAGS} ${LDFLAGS} -o $@
 
-spp_and_le_streamer: spp_and_le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} spp_and_le_streamer.c 
+spp_and_le_streamer: spp_and_le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} spp_and_le_streamer.c
 	${CC} $(filter-out spp_and_le_streamer.h,$^)  ${CFLAGS} ${LDFLAGS} -o $@
 
-spp_streamer: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} spp_streamer.c  
+spp_streamer: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} spp_streamer.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 spp_streamer_client: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} spp_streamer_client.c
@@ -234,7 +241,7 @@ gap_dedicated_bonding: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} gap_dedicated_bo
 gap_inquiry: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} gap_inquiry.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-panu_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} panu_demo.c  
+panu_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} panu_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 gatt_browser: gatt_browser.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} gatt_browser.c
@@ -276,7 +283,7 @@ a2dp_sink_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_ENC
 clean:
 	rm -f ${EXAMPLES} *_demo
 	rm -f  *.o *.out *.hex *.exe *.wav *.sbc
-	rm -f  ancs_client_demo.h profile.h spp_and_le_counter.h le_counter.h le_streamer.h 
+	rm -f  ancs_client_demo.h profile.h spp_and_le_counter.h le_counter.h le_streamer.h
 	rm -f  gatt_battery_query.h gatt_browser.h sm_pairing_peripheral.h spp_and_le_streamer.h
 	rm -rf *.dSYM
 	rm -rf ${BTSTACK_ROOT}/src/*.o

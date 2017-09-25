@@ -149,6 +149,14 @@ static inline uint8_t hci_event_le_meta_get_subevent_code(const uint8_t * event)
 static inline uint8_t hci_event_hid_meta_get_subevent_code(const uint8_t * event){
     return event[2];
 }
+/***
+ * @brief Get subevent code for hids event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_hids_meta_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
 /**
  * @brief Get field status from event HCI_EVENT_INQUIRY_COMPLETE
  * @param event packet
@@ -5797,6 +5805,92 @@ static inline uint16_t hid_subevent_connection_closed_get_hid_cid(const uint8_t 
  */
 static inline uint16_t hid_subevent_can_send_now_get_hid_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field con_handle from event HIDS_SUBEVENT_CAN_SEND_NOW
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hids_subevent_can_send_now_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field con_handle from event HIDS_SUBEVENT_PROTOCOL_MODE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hids_subevent_protocol_mode_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field protocol_mode from event HIDS_SUBEVENT_PROTOCOL_MODE
+ * @param event packet
+ * @return protocol_mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t hids_subevent_protocol_mode_get_protocol_mode(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event HIDS_SUBEVENT_BOOT_MOUSE_INPUT_REPORT_ENABLE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hids_subevent_boot_mouse_input_report_enable_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field enable from event HIDS_SUBEVENT_BOOT_MOUSE_INPUT_REPORT_ENABLE
+ * @param event packet
+ * @return enable
+ * @note: btstack_type 1
+ */
+static inline uint8_t hids_subevent_boot_mouse_input_report_enable_get_enable(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event HIDS_SUBEVENT_BOOT_KEYBOARD_INPUT_REPORT_ENABLE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hids_subevent_boot_keyboard_input_report_enable_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field enable from event HIDS_SUBEVENT_BOOT_KEYBOARD_INPUT_REPORT_ENABLE
+ * @param event packet
+ * @return enable
+ * @note: btstack_type 1
+ */
+static inline uint8_t hids_subevent_boot_keyboard_input_report_enable_get_enable(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event HIDS_SUBEVENT_INPUT_REPORT_ENABLE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hids_subevent_input_report_enable_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field enable from event HIDS_SUBEVENT_INPUT_REPORT_ENABLE
+ * @param event packet
+ * @return enable
+ * @note: btstack_type 1
+ */
+static inline uint8_t hids_subevent_input_report_enable_get_enable(const uint8_t * event){
+    return event[5];
 }
 
 

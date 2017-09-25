@@ -981,6 +981,7 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_PBAP_META                                0xEE
 #define HCI_EVENT_HID_META                                 0xEF
 #define HCI_EVENT_A2DP_META                                0xF0
+#define HCI_EVENT_HIDS_META                                0xF1
 
 // Potential other meta groups
 // #define HCI_EVENT_BNEP_META                                0xxx
@@ -1800,6 +1801,8 @@ typedef uint8_t sm_key_t[16];
  */
 #define PBAP_SUBEVENT_OPERATION_COMPLETED                                  0x03
 
+// HID Meta Event Group
+
 /**
  * @format 121BH1
  * @param subevent_code
@@ -1824,5 +1827,46 @@ typedef uint8_t sm_key_t[16];
  * @param hid_cid
 */
 #define HID_SUBEVENT_CAN_SEND_NOW                                          0x03
+
+// HIDS Meta Event Group
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param con_handle
+*/
+#define HIDS_SUBEVENT_CAN_SEND_NOW                                          0x01
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param con_handle
+ * @param protocol_mode
+*/
+#define HIDS_SUBEVENT_PROTOCOL_MODE                                         0x02
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param con_handle
+ * @param enable
+*/
+#define HIDS_SUBEVENT_BOOT_MOUSE_INPUT_REPORT_ENABLE                        0x03
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param con_handle
+ * @param enable
+*/
+#define HIDS_SUBEVENT_BOOT_KEYBOARD_INPUT_REPORT_ENABLE                     0x04
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param con_handle
+ * @param enable
+*/
+#define HIDS_SUBEVENT_INPUT_REPORT_ENABLE                                   0x05
 
 #endif
