@@ -118,7 +118,8 @@ EXAMPLES = 					\
 	hfp_ag_demo             \
 	hfp_hf_demo             \
 	hid_keyboard_demo 	    \
-	hog_keyboard_demo    \
+	hog_keyboard_demo       \
+	hog_mouse_demo          \
 	hsp_ag_demo             \
 	hsp_hs_demo             \
 	le_counter              \
@@ -148,7 +149,8 @@ EXAMPLES_USING_LE =			\
 	gap_le_advertisements   \
 	sm_pairing_peripheral   \
 	sm_pairing_central      \
-	hog_keyboard_demo \
+	hog_keyboard_demo       \
+	hog_mouse_demo          \
 
 # .o for .c
 CORE_OBJ    = $(CORE:.c=.o)
@@ -168,25 +170,7 @@ HXCMOD_PLAYER_OBJ = $(HXCMOD_PLAYER:.c=.o)
 default_target: all
 
 # compile .gatt descriptions
-profile.h: profile.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
-ancs_client_demo.h: ancs_client_demo.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
-gatt_browser.h: gatt_browser.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
-gatt_battery_query.h: gatt_battery_query.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
-spp_and_le_counter.h: spp_and_le_counter.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
-spp_and_le_streamer.h: spp_and_le_counter.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
-le_counter.h: le_counter.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
-le_streamer.h: le_streamer.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
-hog_keyboard_demo.h: hog_keyboard_demo.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
-sm_pairing_peripheral.h: sm_pairing_peripheral.gatt
+%.h: %.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 # examples
@@ -210,6 +194,9 @@ le_counter: le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ}
 
 hog_keyboard_demo: hog_keyboard_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} battery_service_server.o device_information_service_server.o hids_device.o btstack_ring_buffer.o hog_keyboard_demo.c
 	${CC} $(filter-out hog_keyboard_demo.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+hog_mouse_demo: hog_mouse_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} battery_service_server.o device_information_service_server.o hids_device.o hog_mouse_demo.c
+	${CC} $(filter-out hog_mouse_demo.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 sm_pairing_peripheral: sm_pairing_peripheral.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} sm_pairing_peripheral.c
 	${CC} $(filter-out sm_pairing_peripheral.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
@@ -283,7 +270,7 @@ a2dp_sink_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_ENC
 clean:
 	rm -f ${EXAMPLES} *_demo
 	rm -f  *.o *.out *.hex *.exe *.wav *.sbc
-	rm -f  ancs_client_demo.h profile.h spp_and_le_counter.h le_counter.h le_streamer.h
+	rm -f  ancs_client_demo.h profile.h spp_and_le_counter.h le_counter.h le_streamer.h hog_keyboard_demo.h hog_mouse_demo.h
 	rm -f  gatt_battery_query.h gatt_browser.h sm_pairing_peripheral.h spp_and_le_streamer.h
 	rm -rf *.dSYM
 	rm -rf ${BTSTACK_ROOT}/src/*.o
