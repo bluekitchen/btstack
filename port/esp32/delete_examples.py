@@ -15,11 +15,9 @@ script_path = os.path.abspath(os.path.dirname(sys.argv[0]))
 examples_embedded = script_path + "/../../example/"
 
 # path to port/esp32
-apps_btstack = ""
+apps_btstack = script_path + "/"
 
 print("Deleting examples in local folder")
-
-# iterate over btstack examples
 for file in os.listdir(examples_embedded):
     if not file.endswith(".c"):
         continue
@@ -29,3 +27,7 @@ for file in os.listdir(examples_embedded):
         shutil.rmtree(apps_folder)
     print("- %s" % example)
 
+print("Deleting examples folder")
+examples_folder = apps_btstack + "/examples"
+if os.path.exists(examples_folder):
+    shutil.rmtree(examples_folder)

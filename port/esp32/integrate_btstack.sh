@@ -29,5 +29,8 @@ rsync -a ../../platform/freertos ${IDF_PATH}/components/btstack/platform
 # sync embedded run loop
 rsync -a ../../platform/embedded ${IDF_PATH}/components/btstack/platform
 
+# sync tools - used to access compile_gatt.py
+rsync -a ../../tool ${IDF_PATH}/components/btstack
+
 # create samples/btstack
 ./create_examples.py
