@@ -15,7 +15,6 @@ mk_template = '''#
 # On DATE
 
 PROJECT_NAME := EXAMPLE
-EXTRA_COMPONENT_DIRS := components
 
 include $(IDF_PATH)/make/project.mk
 '''
@@ -73,9 +72,6 @@ for file in os.listdir(examples_embedded):
     with open(apps_folder + "Makefile", "wt") as fout:
         fout.write(mk_template.replace("EXAMPLE", example).replace("TOOL", script_path).replace("DATE",time.strftime("%c")))
 
-    # copy components folder
-    shutil.copytree(script_path + '/template/components', apps_folder + '/components')
-
     # create main folder
     main_folder = apps_folder + "main/"
     if not os.path.exists(main_folder):
@@ -97,10 +93,9 @@ for file in os.listdir(examples_embedded):
     if os.path.exists(gatt_path):
         update_gatt_script = apps_folder + "update_gatt_db.py"
         with open(update_gatt_script, "wt") as fout:
-            fout.write(gatt_update_template.replace("EXAMPLE", example))        
+            fout.write(gatt_update_template.replace("EXAMPLE", example))
         os.chmod(update_gatt_script, 0o755)
         subprocess.call(update_gatt_script + "> /dev/null", shell=True)
         print("- %s including compiled GATT DB" % example)
     else:
         print("- %s" % example)
-
