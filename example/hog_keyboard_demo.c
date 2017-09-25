@@ -163,7 +163,7 @@ static const uint8_t keytable_us_shift[] = {
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 static uint8_t battery = 100;
-static hci_con_handle_t con_handle;
+static hci_con_handle_t con_handle = HCI_CON_HANDLE_INVALID;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -285,6 +285,8 @@ static void typing_can_send_now(void){
                 int found = keycode_and_modifer_us_for_character(c, &keycode, &modifier);
                 if (!found) continue;
 
+                printf("sending: %c\n", c);
+
                 send_report(modifier, keycode);
                 state = W4_CAN_SEND_KEY_UP;
                 hids_device_request_can_send_now_event(con_handle);
@@ -309,7 +311,7 @@ static void stdin_process(char character){
     uint8_t c = character;
     btstack_ring_buffer_write(&ascii_input_buffer, &c, 1);
     // start sending
-    if (state == W4_INPUT){
+    if (state == W4_INPUT && con_handle != HCI_CON_HANDLE_INVALID){
         state = W4_CAN_SEND_FROM_BUFFER;
         hids_device_request_can_send_now_event(con_handle);
     }
