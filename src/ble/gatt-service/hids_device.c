@@ -35,6 +35,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "hids_device.c"
+
 /**
  * Implementation of the GATT HIDS Device
  * To use with your application, add '#import <hids.gatt>' to your .gatt file
@@ -46,6 +48,7 @@
 #include "att_server.h"
 #include "bluetooth_gatt.h"
 #include "btstack_util.h"
+#include "btstack_debug.h"
 
 static btstack_packet_handler_t packet_handler;
 static btstack_context_callback_registration_t  battery_callback;
@@ -102,9 +105,11 @@ static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t a
     UNUSED(connection_handle);
 
     if (att_handle == hid_protocol_mode_value_handle){
+        log_info("Read protocol mode");
         return att_read_callback_handle_byte(hid_protocol_mode, offset, buffer, buffer_size);
     }
     if (att_handle == hid_report_map_handle){
+        log_info("Read report map");
         return att_read_callback_handle_blob(hid_descriptor, hid_descriptor_size, offset, buffer, buffer_size);
     }
     // if (att_handle == hid_boot_mouse_input_value_handle){
@@ -140,10 +145,12 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
     }
     if (att_handle == hid_report_input_client_configuration_handle){
         hid_report_input_client_configuration_value = little_endian_read_16(buffer, 0);
+        log_info("Enable Report Input notifications: %x", hid_report_input_client_configuration_value);
         hids_device_emit_event_with_uint8(HIDS_SUBEVENT_INPUT_REPORT_ENABLE, con_handle, hid_protocol_mode);
     }
     if (att_handle == hid_protocol_mode_value_handle){
         hid_protocol_mode = buffer[0];
+        log_info("Set protocol mode: %u", hid_protocol_mode);
         hids_device_emit_event_with_uint8(HIDS_SUBEVENT_PROTOCOL_MODE, con_handle, hid_protocol_mode);
     }
     return 0;
@@ -230,4 +237,3 @@ void hids_device_send_boot_mouse_input_report(hci_con_handle_t con_handle, const
 void hids_device_send_boot_keyboard_input_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len){
     att_server_notify(con_handle, hid_boot_keyboard_input_value_handle, (uint8_t*) report, report_len);
 }
-
