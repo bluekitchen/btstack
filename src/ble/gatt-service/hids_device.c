@@ -44,8 +44,8 @@
 
 #include "hids_device.h"
 
-#include "att_db.h"
-#include "att_server.h"
+#include "ble/att_db.h"
+#include "ble/att_server.h"
 #include "bluetooth_gatt.h"
 #include "btstack_util.h"
 #include "btstack_debug.h"
