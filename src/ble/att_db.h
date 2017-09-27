@@ -76,14 +76,21 @@ typedef uint16_t (*att_read_callback_t)(hci_con_handle_t con_handle, uint16_t at
 // ATT Client Write Callback for Dynamic Data
 // @param con_handle of hci le connection
 // @param attribute_handle to be written
-// @param transaction - ATT_TRANSACTION_MODE_NONE for regular writes, ATT_TRANSACTION_MODE_ACTIVE for prepared writes and ATT_TRANSACTION_MODE_EXECUTE
+// @param transaction - ATT_TRANSACTION_MODE_NONE for regular writes. For prepared writes: ATT_TRANSACTION_MODE_ACTIVE, ATT_TRANSACTION_MODE_VALIDATE, ATT_TRANSACTION_MODE_EXECUTE, ATT_TRANSACTION_MODE_CANCEL
 // @param offset into the value - used for queued writes and long attributes
 // @param buffer 
 // @param buffer_size
 // @param signature used for signed write commmands
 // @returns 0 if write was ok, ATT_ERROR_PREPARE_QUEUE_FULL if no space in queue, ATT_ERROR_INVALID_OFFSET if offset is larger than max buffer
+//
+// Each Prepared Write Request triggers a callback with transaction mode ATT_TRANSACTION_MODE_ACTIVE.
+// On Execute Write, the callback will be called with ATT_TRANSACTION_MODE_VALIDATE and allows to validate all queued writes and return an application error.
+// If none of the registered callbacks return an error for ATT_TRANSACTION_MODE_VALIDATE and the callback will be called with ATT_TRANSACTION_MODE_EXECUTE.
+// Otherwise, all callbacks will be called with ATT_TRANSACTION_MODE_CANCEL.
+//
+// If the additional validation step is not needed, just return 0 for all callbacks with transaction mode ATT_TRANSACTION_MODE_VALIDATE.
+//
 typedef int (*att_write_callback_t)(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
-
 
 // Read & Write Callbacks for handle range
 typedef struct att_service_handler {
@@ -170,7 +177,52 @@ void att_clear_transaction_queue(att_connection_t * att_connection);
 void att_register_service_handler(att_service_handler_t * handler);
 
 
- // experimental client API
+// att_read_callback helpers for a various data types
+
+/*
+ * @brief Handle read of blob like data for att_read_callback
+ * @param blob of data
+ * @param blob_size of blob
+ * @param offset from att_read_callback
+ * @param buffer from att_read_callback
+ * @param buffer_size from att_read_callback
+ * @returns value size for buffer == 0 and num bytes copied otherwise
+ */
+uint16_t att_read_callback_handle_blob(const uint8_t * blob, uint16_t blob_size, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
+
+/*
+ * @brief Handle read of little endian unsigned 32 bit value for att_read_callback
+ * @param value
+ * @param offset from att_read_callback
+ * @param buffer from att_read_callback
+ * @param buffer_size from att_read_callback
+ * @returns value size for buffer == 0 and num bytes copied otherwise
+ */
+uint16_t att_read_callback_handle_little_endian_32(uint32_t value, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
+
+/*
+ * @brief Handle read of little endian unsigned 16 bit value for att_read_callback
+ * @param value
+ * @param offset from att_read_callback
+ * @param buffer from att_read_callback
+ * @param buffer_size from att_read_callback
+ * @returns value size for buffer == 0 and num bytes copied otherwise
+ */
+uint16_t att_read_callback_handle_little_endian_16(uint16_t value, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
+
+/*
+ * @brief Handle read of single byte for att_read_callback
+ * @param blob of data
+ * @param blob_size of blob
+ * @param offset from att_read_callback
+ * @param buffer from att_read_callback
+ * @param buffer_size from att_read_callback
+ * @returns value size for buffer == 0 and num bytes copied otherwise
+ */
+uint16_t att_read_callback_handle_byte(uint8_t value, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
+
+
+// experimental client API
 uint16_t att_uuid_for_handle(uint16_t attribute_handle);
 
 

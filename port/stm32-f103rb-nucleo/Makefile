@@ -35,7 +35,7 @@ COMMON = \
     hci_cmd.c		          \
     hci_dump.c		          \
     btstack_uart_block_embedded.c \
-    hci_transport_h4_ehcill_embedded.c \
+    hci_transport_h4.c        \
     l2cap.c			          \
     l2cap_signaling.c         \
     sdp_client.c              \

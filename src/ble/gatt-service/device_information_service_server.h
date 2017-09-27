@@ -113,10 +113,11 @@ void device_information_service_server_set_system_id(uint64_t manufacturer_ident
 void device_information_service_server_set_ieee_regulatory_certification(uint16_t value_a, uint16_t value_b);
 
 /**
- * @brief Set Software Revision
+ * @brief Set PnP ID
  * @param vendor_source_id
  * @param vendor_id
  * @param product_id
+ * @Param product_versoin
  */
 void device_information_service_server_set_pnp_id(uint8_t vendor_source_id, uint16_t vendor_id, uint16_t product_id, uint16_t product_version);
 

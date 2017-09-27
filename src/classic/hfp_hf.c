@@ -988,16 +988,21 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *hfp_connection){
 
 
 static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(packet_type);
+    UNUSED(packet_type);    // ok: only called with RFCOMM_DATA_PACKET
+
+    // assertion: size >= 1 as rfcomm.c does not deliver empty packets
+    if (size < 1) return;
 
     hfp_connection_t * hfp_connection = get_hfp_connection_context_for_rfcomm_cid(channel);
     if (!hfp_connection) return;
 
+    // temp overwrite last byte (most likely \n for log_info)
     char last_char = packet[size-1];
     packet[size-1] = 0;
     log_info("HFP_RX %s", packet);
     packet[size-1] = last_char;
             
+    // process messages byte-wise
     int pos, i, value;
     for (pos = 0; pos < size ; pos++){
         hfp_parse(hfp_connection, packet[pos], 1);

@@ -231,8 +231,8 @@ void log_debug_hexdump(const void *data, int size){
 #ifdef ENABLE_LOG_DEBUG
     log_hexdump(LOG_LEVEL_DEBUG, data, size);
 #else
-    UNUSED(data);
-    UNUSED(size);
+    UNUSED(data);   // ok: no code
+    UNUSED(size);   // ok: no code
 #endif
 }
 
@@ -240,8 +240,8 @@ void log_info_hexdump(const void *data, int size){
 #ifdef ENABLE_LOG_INFO
     log_hexdump(LOG_LEVEL_INFO, data, size);
 #else
-    UNUSED(data);
-    UNUSED(size);
+    UNUSED(data);   // ok: no code
+    UNUSED(size);   // ok: no code
 #endif
 }
 

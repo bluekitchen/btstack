@@ -188,12 +188,7 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_hand
     UNUSED(con_handle);
 
     if (att_handle == ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE){
-        if (buffer){
-            memcpy(buffer, &counter_string[offset], buffer_size);
-            return buffer_size;
-        } else {
-            return counter_string_len;
-        }
+        return att_read_callback_handle_blob((const uint8_t *)counter_string, buffer_size, offset, buffer, buffer_size);
     }
     return 0;
 }

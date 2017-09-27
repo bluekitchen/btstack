@@ -135,10 +135,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void dummy_notify(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t size){
-    UNUSED(packet_type);
-    UNUSED(channel);
-    UNUSED(event);
-    UNUSED(size);    
+    UNUSED(packet_type);    // ok: no code
+    UNUSED(channel);        // ok: no code
+    UNUSED(event);          // ok: no code
+    UNUSED(size);           // ok: no code
 }
 
 void hsp_ag_register_packet_handler(btstack_packet_handler_t callback){
@@ -352,11 +352,9 @@ void hsp_ag_set_speaker_gain(uint8_t gain){
 }  
 
 static void hsp_ringing_timeout_handler(btstack_timer_source_t * timer){
-    UNUSED(timer);
-
     ag_ring = 1;
-    btstack_run_loop_set_timer(&hs_timeout, 2000); // 2 seconds timeout
-    btstack_run_loop_add_timer(&hs_timeout);
+    btstack_run_loop_set_timer(timer, 2000); // 2 seconds timeout
+    btstack_run_loop_add_timer(timer);
     hsp_run();
 }
 
@@ -541,7 +539,7 @@ static void hsp_run(void){
 
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(channel);
+    UNUSED(channel);    // ok: no channel for HCI_EVENT_PACKET and only single active RFCOMM channel
 
     if (packet_type == RFCOMM_DATA_PACKET){
         while (size > 0 && (packet[0] == '\n' || packet[0] == '\r')){
@@ -708,9 +706,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 
 static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(packet_type);
-    UNUSED(channel);
-    UNUSED(size);
+    UNUSED(packet_type);    // ok: handling own sdp events
+    UNUSED(channel);        // ok: no channel
+    UNUSED(size);           // ok: handling own sdp events
 
     switch (packet[0]){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:

@@ -536,8 +536,10 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
         }
 
         // check security requirements
-        error_code = att_validate_security(att_connection, &it);
-        if (error_code) break;
+        if ((it.flags & ATT_DB_FLAGS_READ_WITHOUT_AUTHENTICATION) == 0){
+            error_code = att_validate_security(att_connection, &it);
+            if (error_code) break;
+        }
 
         att_update_value_len(&it, att_connection->con_handle);
         
@@ -621,9 +623,11 @@ static uint16_t handle_read_request2(att_connection_t * att_connection, uint8_t 
     }
 
     // check security requirements
-    uint8_t error_code = att_validate_security(att_connection, &it);
-    if (error_code) {
-        return setup_error(response_buffer, request_type, handle, error_code);
+    if ((it.flags & ATT_DB_FLAGS_READ_WITHOUT_AUTHENTICATION) == 0){
+        uint8_t error_code = att_validate_security(att_connection, &it);
+        if (error_code) {
+            return setup_error(response_buffer, request_type, handle, error_code);
+        }
     }
 
     att_update_value_len(&it, att_connection->con_handle);
@@ -667,9 +671,11 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
     }
 
     // check security requirements
-    uint8_t error_code = att_validate_security(att_connection, &it);
-    if (error_code) {
-        return setup_error(response_buffer, request_type, handle, error_code);
+    if ((it.flags & ATT_DB_FLAGS_READ_WITHOUT_AUTHENTICATION) == 0){
+        uint8_t error_code = att_validate_security(att_connection, &it);
+        if (error_code) {
+            return setup_error(response_buffer, request_type, handle, error_code);
+        }
     }
 
     att_update_value_len(&it, att_connection->con_handle);
@@ -736,9 +742,10 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
         }
 
         // check security requirements
-        error_code = att_validate_security(att_connection, &it);
-        if (error_code) break;
-
+        if ((it.flags & ATT_DB_FLAGS_READ_WITHOUT_AUTHENTICATION) == 0){
+            error_code = att_validate_security(att_connection, &it);
+            if (error_code) break;
+        }
         att_update_value_len(&it, att_connection->con_handle);
         
         // limit data
@@ -986,6 +993,20 @@ static void att_notify_write_callbacks(att_connection_t * att_connection, uint16
     (*att_write_callback)(att_connection->con_handle, 0, transaction_mode, 0, NULL, 0);
 }
 
+// returns first reported error or 0
+static uint8_t att_validate_prepared_write(att_connection_t * att_connection){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &service_handlers);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        att_service_handler_t * handler = (att_service_handler_t*) btstack_linked_list_iterator_next(&it);
+        if (!handler->write_callback) continue;
+        uint8_t error_code = (*handler->write_callback)(att_connection->con_handle, 0, ATT_TRANSACTION_MODE_VALIDATE, 0, NULL, 0);
+        if (error_code) return error_code;
+    }
+    if (!att_write_callback) return 0;
+    return (*att_write_callback)(att_connection->con_handle, 0, ATT_TRANSACTION_MODE_VALIDATE, 0, NULL, 0);
+}
+
 /*
  * @brief transcation queue of prepared writes, e.g., after disconnect
  */
@@ -1003,6 +1024,10 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
     
     uint8_t request_type = ATT_EXECUTE_WRITE_REQUEST;
     if (request_buffer[1]) {
+        // validate queued write
+        if (att_prepare_write_error_code == 0){
+            att_prepare_write_error_code = att_validate_prepared_write(att_connection);
+        }
         // deliver queued errors
         if (att_prepare_write_error_code){
             att_clear_transaction_queue(att_connection);
@@ -1223,3 +1248,31 @@ uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uui
     return 0;
 }
 
+// att_read_callback helpers
+uint16_t att_read_callback_handle_blob(const uint8_t * blob, uint16_t blob_size, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    if (buffer){
+        uint16_t bytes_to_copy = btstack_min(blob_size - offset, buffer_size);
+        memcpy(buffer, &blob[offset], bytes_to_copy);
+        return bytes_to_copy;
+    } else {
+        return blob_size;
+    }
+}
+
+uint16_t att_read_callback_handle_little_endian_32(uint32_t value, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    uint8_t value_buffer[4];
+    little_endian_store_32(value_buffer, 0, value);
+    return att_read_callback_handle_blob(value_buffer, sizeof(value_buffer), offset, buffer, buffer_size);
+}
+
+uint16_t att_read_callback_handle_little_endian_16(uint16_t value, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    uint8_t value_buffer[2];
+    little_endian_store_16(value_buffer, 0, value);
+    return att_read_callback_handle_blob(value_buffer, sizeof(value_buffer), offset, buffer, buffer_size);
+}
+
+uint16_t att_read_callback_handle_byte(uint8_t value, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    uint8_t value_buffer[1];
+    value_buffer[0] = value;
+    return att_read_callback_handle_blob(value_buffer, sizeof(value_buffer), offset, buffer, buffer_size);
+}

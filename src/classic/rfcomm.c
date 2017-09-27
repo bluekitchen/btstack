@@ -912,7 +912,8 @@ static void rfcomm_multiplexer_set_state_and_request_can_send_now_event(rfcomm_m
  * @return handled packet
  */
 static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
-    UNUSED(size);
+
+    UNUSED(size);   // ok: handling own l2cap events
 
     bd_addr_t event_addr;
     uint16_t  psm;
@@ -1043,8 +1044,6 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
 }
 
 static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(size);
-    
     // get or create a multiplexer for a certain device
     rfcomm_multiplexer_t *multiplexer = rfcomm_multiplexer_for_l2cap_cid(channel);
     if (!multiplexer) return 0;
@@ -1125,6 +1124,7 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
                     if (len > RFCOMM_TEST_DATA_MAX_LEN){
                         len = RFCOMM_TEST_DATA_MAX_LEN;
                     }
+                    len = btstack_min(len, size - 1 - payload_offset);  // avoid information leak
                     multiplexer->test_data_len = len;
                     memcpy(multiplexer->test_data, &packet[payload_offset + 2], len);
                     l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
@@ -1409,7 +1409,8 @@ static void rfcomm_channel_state_machine_with_dlci(rfcomm_multiplexer_t * multip
 }
 
 static void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t *packet, uint16_t size){
-    UNUSED(size);
+
+    UNUSED(size);   // ok: fixed format messages
         
     // rfcomm: (0) addr [76543 server channel] [2 direction: initiator uses 1] [1 C/R: CMD by initiator = 1] [0 EA=1]
     const uint8_t frame_dlci = packet[0] >> 2;

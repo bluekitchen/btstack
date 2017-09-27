@@ -57,7 +57,7 @@ COMMON = \
     hal_uart_dma.c            		   \
     hci.c			          		   \
     hci_cmd.c		                   \
-    hci_transport_h4_ehcill_embedded.c \
+	hci_transport_h4.c 				   \
 
 SPP = \
     l2cap.c			          \

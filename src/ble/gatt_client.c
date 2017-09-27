@@ -1012,8 +1012,8 @@ static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8
 }
 
 static void gatt_client_hci_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(channel);
-    UNUSED(size);
+    UNUSED(channel);    // ok: handling own l2cap events
+    UNUSED(size);       // ok: there is no channel
     
     if (packet_type != HCI_EVENT_PACKET) return;
 

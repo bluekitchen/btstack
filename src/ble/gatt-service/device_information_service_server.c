@@ -101,6 +101,7 @@ static void set_string(device_information_field_id_t field_id, const char * text
 }
 
 static uint16_t device_information_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+	UNUSED(con_handle);	// ok: info same for all devices
 	int i;
 	for (i=0;i<NUM_INFORMATION_FIELDS;i++){
 		if (device_information_fields[i].value_handle != attribute_handle) continue;
@@ -223,7 +224,7 @@ void device_information_service_server_set_pnp_id(uint8_t vendor_source_id, uint
 	device_information_fields[PNP_ID].len = 7;
 
 	device_information_pnp_id[0] = vendor_source_id;
-	little_endian_store_16(device_information_pnp_id, 1, vendor_source_id);
-	little_endian_store_16(device_information_pnp_id, 3, vendor_id);
-	little_endian_store_16(device_information_pnp_id, 5, product_id);
+	little_endian_store_16(device_information_pnp_id, 1, vendor_id);
+	little_endian_store_16(device_information_pnp_id, 3, product_id);
+	little_endian_store_16(device_information_pnp_id, 5, product_version);
 }

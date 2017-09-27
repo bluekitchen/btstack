@@ -435,14 +435,6 @@ static int hfp_ag_send_retrieve_indicators_status_cmd(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static int hfp_ag_send_set_indicator_status_update_cmd(uint16_t cid, uint8_t activate){
-    UNUSED(activate);
-
-    // AT\r\n%s:3,0,0,%d\r\n
-    return hfp_ag_send_ok(cid);
-}
-
-
 static int hfp_ag_send_retrieve_can_hold_call_cmd(uint16_t cid){
     char buffer[40];
     int offset = snprintf(buffer, sizeof(buffer), "\r\n%s:", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES);
@@ -700,7 +692,7 @@ static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * hf
             } else {
                 hfp_ag_slc_established(hfp_connection);
             }
-            hfp_ag_send_set_indicator_status_update_cmd(hfp_connection->rfcomm_cid, 1);
+            hfp_ag_send_ok(hfp_connection->rfcomm_cid);
             return 1;
                 
         case HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES:
@@ -1830,16 +1822,21 @@ static hfp_generic_status_indicator_t *get_hf_indicator_by_number(int number){
 }
 
 static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(packet_type);
-    
+    UNUSED(packet_type);    // ok: only called with RFCOMM_DATA_PACKET
+
+    // assertion: size >= 1 as rfcomm.c does not deliver empty packets
+    if (size < 1) return;
+
     hfp_connection_t * hfp_connection = get_hfp_connection_context_for_rfcomm_cid(channel);
     if (!hfp_connection) return;
     
+    // temp overwrite last byte (most likely \n for log_info)
     char last_char = packet[size-1];
     packet[size-1] = 0;
     log_info("HFP_RX %s", packet);
     packet[size-1] = last_char;
     
+    // process messages byte-wise
     int pos;
     for (pos = 0; pos < size ; pos++){
         hfp_parse(hfp_connection, packet[pos], 0);
