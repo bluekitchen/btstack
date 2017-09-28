@@ -19,17 +19,16 @@ PROJECT_NAME := EXAMPLE
 include $(IDF_PATH)/make/project.mk
 '''
 
-gatt_update_template = '''#!/usr/bin/env python
-#
-# Update EXAMPLE.h from EXAMPLE.gatt
-import os
-import sys
+component_mk_gatt_add_on = '''
+# app depends on compiled gatt db
+EXAMPLE.o: EXAMPLE.h
 
-script_path  = os.path.abspath(os.path.dirname(sys.argv[0]))
-compile_gatt = os.environ['IDF_PATH'] + '/components/btstack/tool/compile_gatt.py'
-print("Creating src/gatt_battery_query.h from src/gatt_battery_query.gatt")
-sys.argv= [compile_gatt, script_path + "/main/EXAMPLE.gatt", script_path + "/main/EXAMPLE.h"]
-exec(open(compile_gatt).read(), globals())
+# rule to compile gatt db
+EXAMPLE.h: $(COMPONENT_PATH)/EXAMPLE.gatt
+\t$(IDF_PATH)/components/btstack/tool/compile_gatt.py $^ $@
+
+# remove compiled gatt db on clean
+COMPONENT_EXTRA_CLEAN = EXAMPLE.h
 '''
 
 # get script path
@@ -39,11 +38,11 @@ script_path = os.path.abspath(os.path.dirname(sys.argv[0]))
 examples_embedded = script_path + "/../../example/"
 
 # path to samples
-examples_folder = script_path + "/examples/"
+example_folder = script_path + "/example/"
 
 print("Creating examples folder")
-if not os.path.exists(examples_folder):
-    os.makedirs(examples_folder)
+if not os.path.exists(example_folder):
+    os.makedirs(example_folder)
 
 print("Creating examples in examples folder")
 
@@ -58,7 +57,7 @@ for file in os.listdir(examples_embedded):
     gatt_path = examples_embedded + example + ".gatt"
 
     # create folder
-    apps_folder = examples_folder + example + "/"
+    apps_folder = example_folder + example + "/"
     if os.path.exists(apps_folder):
         shutil.rmtree(apps_folder)
     os.makedirs(apps_folder)
@@ -88,17 +87,15 @@ for file in os.listdir(examples_embedded):
         shutil.copy(examples_embedded + 'sco_demo_util.h', apps_folder + '/main/')
 
     # add component.mk file to main folder
-    shutil.copyfile(script_path + '/template/main/component.mk', apps_folder + "/main/component.mk")
+    main_component_mk = apps_folder + "/main/component.mk"
+    shutil.copyfile(script_path + '/template/main/component.mk', main_component_mk)
 
-    # create update_gatt.sh if .gatt file is present
+    # add rules to compile gatt db if .gatt file is present
     gatt_path = examples_embedded + example + ".gatt"
     if os.path.exists(gatt_path):
         shutil.copy(gatt_path, apps_folder + "/main/" + example + ".gatt")
-        update_gatt_script = apps_folder + "update_gatt_db.py"
-        with open(update_gatt_script, "wt") as fout:
-            fout.write(gatt_update_template.replace("EXAMPLE", example))
-        os.chmod(update_gatt_script, 0o755)
-        subprocess.call(update_gatt_script + "> /dev/null", shell=True)
-        print("- %s including compiled GATT DB" % example)
+        with open(main_component_mk, "a") as fout:
+            fout.write(component_mk_gatt_add_on.replace("EXAMPLE", example))
+        print("- %s including GATT DB compilation rules" % example)
     else:
         print("- %s" % example)
