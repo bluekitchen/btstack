@@ -115,9 +115,10 @@ initscripts-TIInit_6.12.26_ble_add-on.bts: cc256xc_bt_sp_v1.0.zip
 
 # Various scripts for WL chipsets
 
+# V4.2 from BlueKitchen website, original: http://www.ti.com/tool/wl18xx-bt-sp
 TIInit_11.8.32.bts:
 	@echo "Downloading $@"
-	@curl -sS -O $(TI_GIT_REPO_URL)/TIInit_11.8.32.bts
+	@curl -sS -O $(BLUEKITCHEN_URL)/TIInit_11.8.32.bts
 
 TIInit_12.10.28.bts:
 	@echo "Downloading $@"
