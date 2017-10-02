@@ -139,6 +139,14 @@ bluetooth_init_cc2560A_2.14.c: bluetooth_init_cc2560A_2.14.bts
 	@echo "Creating $@"
 	@$(CONVERSION_SCRIPT) $^ $@
 
+bluetooth_init_cc2567_2.4.c: CC2567_BT_ANT_Service_Pack_2.4.bts
+	@echo "Creating $@"
+	@$(CONVERSION_SCRIPT) $^ $@
+
+bluetooth_init_cc2567_2.8.c: CC256x_BT_Service_Pack_2.8_ANT_1.16.bts
+	@echo "Creating $@"
+	@$(CONVERSION_SCRIPT) $^ $@
+
 bluetooth_init_cc2564_2.14.c: bluetooth_init_cc2564_2.14.bts
 	@echo "Creating $@"
 	@$(CONVERSION_SCRIPT) $^ $@

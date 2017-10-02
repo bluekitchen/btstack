@@ -301,12 +301,16 @@ lmp_subversion = 0
 name_lower = main_bts.lower()
 if 'cc2560_' in name_lower:
     aka = "6.2.31"
-if 'cc2560a_' in name_lower or 'cc2564_' in name_lower:
+if 'cc2560a_' in name_lower or 'cc2564_' in name_lower or 'cc2567_' in name_lower:
     aka = "6.6.15"
 if 'cc2560b_' in name_lower or 'cc2564b_' in name_lower:
     aka = "6.7.16"
 if 'cc2564c_' in name_lower:
     aka = "6.12.26"
+
+# hardcode AKA for CC2567 v2.8
+if 'cc256x_bt_service_pack_2.8_ant_1.16' in name_lower:
+    aka = "6.6.15"
 
 # use AKA from .bts file that it
 name_parts = re.match('.*TIInit_(\d*\.\d*\.\d*).*.bts', main_bts)
