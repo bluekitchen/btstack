@@ -120,7 +120,9 @@ static void hog_mouse_setup(void){
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
+    // setup l2cap and register for connection parameter updates
     l2cap_init();
+    l2cap_register_packet_handler(&packet_handler);
 
     // setup le device db
     le_device_db_init();
@@ -285,6 +287,7 @@ static void hid_embedded_start_mousing(void){
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
+    uint16_t conn_interval;
 
     switch (packet_type) {
         case HCI_EVENT_PACKET:
@@ -303,6 +306,29 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
                     printf("Display Passkey: %"PRIu32"\n", sm_event_passkey_display_number_get_passkey(packet));
                     break;
+                case L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE:
+                    printf("L2CAP Connection Parameter Update Complete, response: %x\n", l2cap_event_connection_parameter_update_response_get_result(packet));
+                    break;
+                case HCI_EVENT_LE_META:
+                    switch (hci_event_le_meta_get_subevent_code(packet)) {
+                        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                            // print connection parameters (without using float operations)
+                            conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
+                            printf("LE Connection Complete:\n");
+                            printf("- Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
+                            printf("- Connection Latency: %u\n", hci_subevent_le_connection_complete_get_conn_latency(packet));
+                            break;
+                        case HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE:
+                            // print connection parameters (without using float operations)
+                            conn_interval = hci_subevent_le_connection_update_complete_get_conn_interval(packet);
+                            printf("LE Connection Update:\n");
+                            printf("- Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
+                            printf("- Connection Latency: %u\n", hci_subevent_le_connection_update_complete_get_conn_latency(packet));
+                            break;
+                        default:
+                            break;
+                    }
+                    break;  
                 case HCI_EVENT_HIDS_META:
                     switch (hci_event_hids_meta_get_subevent_code(packet)){
                         case HIDS_SUBEVENT_INPUT_REPORT_ENABLE:
@@ -311,6 +337,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 #ifndef HAVE_BTSTACK_STDIN
                             hid_embedded_start_mousing();
 #endif
+                            // request connection param update via L2CAP following Apple Bluetooth Design Guidelines
+                            // gap_request_connection_parameter_update(con_handle, 12, 12, 4, 100);    // 15 ms, 4, 1s
+
+                            // directly update connection params via HCI following Apple Bluetooth Design Guidelines
+                            // gap_update_connection_parameters(con_handle, 12, 12, 4, 100);    // 60-75 ms, 4, 1s
+
                             break;
                         case HIDS_SUBEVENT_BOOT_KEYBOARD_INPUT_REPORT_ENABLE:
                             con_handle = hids_subevent_input_report_enable_get_con_handle(packet);
