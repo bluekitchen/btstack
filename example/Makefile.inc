@@ -175,6 +175,9 @@ default_target: all
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 # examples
+ant_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ant_test.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
 sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${PAN_OBJ} ${SDP_CLIENT} sdp_rfcomm_query.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
