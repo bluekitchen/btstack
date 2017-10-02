@@ -2573,20 +2573,13 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 
     uint8_t code   = command[L2CAP_SIGNALING_COMMAND_CODE_OFFSET];
     uint16_t len   = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
-    log_info("l2cap_le_signaling_handler_dispatch: command 0x%02x, sig id %u", code, sig_id);
+    log_info("l2cap_le_signaling_handler_dispatch: command 0x%02x, sig id %u, len %u", code, sig_id, len);
 
     switch (code){
 
-        case CONNECTION_PARAMETER_UPDATE_RESPONSE:
-            // check size
-            if (len < 8) return 0;
-            result = little_endian_read_16(command, 4);
-            l2cap_emit_connection_parameter_update_response(handle, result);
-            break;
-
         case CONNECTION_PARAMETER_UPDATE_REQUEST:
             // check size
-            if (len < 2) return 0;
+            if (len < 8) return 0;
             connection = hci_connection_for_handle(handle);
             if (connection){
                 if (connection->role != HCI_ROLE_MASTER){
@@ -2629,6 +2622,13 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             memcpy(&event[2], &command[4], 8);
             hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
             (*l2cap_event_packet_handler)( HCI_EVENT_PACKET, 0, event, sizeof(event));
+            break;
+
+        case CONNECTION_PARAMETER_UPDATE_RESPONSE:
+            // check size
+            if (len < 2) return 0;
+            result = little_endian_read_16(command, 4);
+            l2cap_emit_connection_parameter_update_response(handle, result);
             break;
 
 #ifdef ENABLE_LE_DATA_CHANNELS
