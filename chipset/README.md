@@ -233,7 +233,7 @@ The different CC256x chipset can be identified by the LMP Subversion returned by
 Chipset | LMP Subversion |  AKA
 --------|----------------|-------
 CC2560  |         0x191f | 6.2.31
-CC2560A, CC2564 | 0x1B0F | 6.6.15
+CC2560A, CC2564, CC2567 | 0x1B0F | 6.6.15
 CC256xB |         0x1B90 | 6.7.16
 CC256xC |         0x9a1a | 6.12.26
 WL18xx  |         0xac20 | 11.8.32
