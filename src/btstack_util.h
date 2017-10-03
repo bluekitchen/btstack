@@ -253,6 +253,13 @@ int  uuid_has_bluetooth_prefix(const uint8_t * uuid128);
  */
 uint32_t btstack_atoi(const char *str);
 
+/**
+ * CRC8 functions using ETSI TS 101 369 V6.3.0.
+ * Only used by RFCOMM
+ */
+uint8_t crc8_check(uint8_t *data, uint16_t len, uint8_t check_sum);
+uint8_t crc8_calc(uint8_t *data, uint16_t len);
+
 /* API_END */
 
 #if defined __cplusplus
