@@ -508,7 +508,7 @@ static int rfcomm_send_packet_for_multiplexer(rfcomm_multiplexer_t *multiplexer,
 	if ((control & 0xef) == BT_RFCOMM_UIH){
 		crc_fields = 2;
 	}
-	rfcomm_out_buffer[pos++] =  crc8_calc(rfcomm_out_buffer, crc_fields); // calc fcs
+	rfcomm_out_buffer[pos++] =  btstack_crc8_calc(rfcomm_out_buffer, crc_fields); // calc fcs
 
     int err = l2cap_send_prepared(multiplexer->l2cap_cid, pos);
     
@@ -533,7 +533,7 @@ static int rfcomm_send_uih_prepared(rfcomm_multiplexer_t *multiplexer, uint8_t d
     pos += len;
     
     // UIH frames only calc FCS over address + control (5.1.1)
-    rfcomm_out_buffer[pos++] =  crc8_calc(rfcomm_out_buffer, 2); // calc fcs
+    rfcomm_out_buffer[pos++] =  btstack_crc8_calc(rfcomm_out_buffer, 2); // calc fcs
     
     int err = l2cap_send_prepared(multiplexer->l2cap_cid, pos);
     

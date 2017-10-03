@@ -393,7 +393,7 @@ static uint8_t crc8(uint8_t *data, uint16_t len){
 }
 
 /*-----------------------------------------------------------------------------------*/
-uint8_t crc8_check(uint8_t *data, uint16_t len, uint8_t check_sum){
+uint8_t btstack_crc8_check(uint8_t *data, uint16_t len, uint8_t check_sum){
     uint8_t crc;
     crc = crc8(data, len);
     crc = crc8table[crc ^ check_sum];
@@ -405,7 +405,7 @@ uint8_t crc8_check(uint8_t *data, uint16_t len, uint8_t check_sum){
 }
 
 /*-----------------------------------------------------------------------------------*/
-uint8_t crc8_calc(uint8_t *data, uint16_t len){
+uint8_t btstack_crc8_calc(uint8_t *data, uint16_t len){
     /* Ones complement */
     return 0xFF - crc8(data, len);
 }
