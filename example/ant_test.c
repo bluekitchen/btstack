@@ -36,48 +36,76 @@
  */
 
 // *****************************************************************************
-//
-// ant + spp demo - it provides a SPP port and and sends a counter every second
-//                - it also listens on ANT channel 33,1,1
-//
-// it doesn't use the LCD to get down to a minimal memory footpring
-//
+// ANT + SPP Counter demo for TI CC2567
+// - it provides a SPP port and and sends a counter every second
+// - it also listens on ANT channel 33,1,1
 // *****************************************************************************
 
-#include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <msp430x54x.h>
 
 #include "btstack_chipset_cc256x.h"
-#include "hal_board.h"
-#include "hal_compat.h"
-#include "hal_usb.h"
 
-#include "ant_cmds.h"
-#include "hci_cmd.h"
-#include "btstack_run_loop.h"
-#include "classic/sdp_util.h"
-#include "btstack_util.h"
+#include "btstack.h"
+#include "ant_cmd.h"
 
-#include "hci.h"
-#include "l2cap.h"
-#include "btstack_memory.h"
-#include "btstack_event.h"
-#include "classic/btstack_link_key_db.h"
-#include "classic/rfcomm.h"
-#include "classic/sdp_server.h"
-#include "btstack_config.h"
-
+#define RFCOMM_SERVER_CHANNEL 1
 #define HEARTBEAT_PERIOD_MS 1000
 
 static uint8_t   rfcomm_channel_nr = 1;
 static uint16_t  rfcomm_channel_id = 0;
 static uint8_t   spp_service_buffer[100];
+static btstack_timer_source_t heartbeat;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+// ant logic
+static enum {
+    ANT_IDLE,
+    ANT_SEND_RESET,
+    ANT_W4_RESET_COMPLETE,
+    ANT_SEND_ASSIGN_CHANNEL,
+    ANT_W4_ASSIGN_CHANNEL_COMPLETE,
+    ANT_SEND_SET_CHANNEL_ID,
+    ANT_W4_SET_CHANNEL_ID_COMPLETE,
+    ANT_SEND_CHANNEL_OPEN,
+    ANT_W4_CHANNEL_OPEN_COMPLETE,
+    ANT_ACTIVE
+} ant_state = ANT_IDLE;
+
+static void ant_run(void){
+    // check if ANT/HCI command can be sent
+    if (!hci_can_send_command_packet_now()) return;
+
+    // send next command
+    switch(ant_state){
+        case ANT_SEND_RESET:
+            ant_state = ANT_W4_RESET_COMPLETE;
+            // 1. reset
+            printf("Send ANT Reset\n");
+            ant_send_cmd(&ant_reset); 
+            break;
+        case ANT_SEND_ASSIGN_CHANNEL:
+            ant_state = ANT_W4_ASSIGN_CHANNEL_COMPLETE;
+            // 2. assign channel
+            printf("Send Assign Channel\n");
+            ant_send_cmd(&ant_assign_channel, 0, 0x00, 0);
+            break;
+        case ANT_SEND_SET_CHANNEL_ID:
+            ant_state = ANT_W4_SET_CHANNEL_ID_COMPLETE;
+            // 3. set channel ID
+            printf("Send Set Channel ID\n");
+            ant_send_cmd(&ant_channel_id, 0, 33, 1, 1);
+            break;
+        case ANT_SEND_CHANNEL_OPEN:
+            ant_state = ANT_W4_CHANNEL_OPEN_COMPLETE;
+            // 4. open channel
+            printf("Send Channel Open\n");
+            ant_send_cmd(&ant_open_channel, 0);
+            break;
+        default:
+            break;
+    }
+}
 
 // Bluetooth logic
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -97,25 +125,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 					if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                         printf("BTstack is up and running\n");
                         // start ANT init
-                        ant_send_cmd(&ant_reset); 
+                        ant_state = ANT_SEND_RESET;
 					}
 					break;
-				
-				case HCI_EVENT_COMMAND_COMPLETE:
-					if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_bd_addr)){
-                        reverse_bd_addr(&packet[6], event_addr);
-                        printf("BD-ADDR: %s\n\r", bd_addr_to_str(event_addr));
-                        break;
-                    }
-					break;
-
-				case HCI_EVENT_LINK_KEY_REQUEST:
-					// deny link key request
-                    printf("Link key request\n\r");
-                    hci_event_link_key_request_get_bd_addr(packet, event_addr);
-					hci_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
-					break;
-					
+									
 				case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
                     printf("Pin code request - using '0000'\n\r");
@@ -162,8 +175,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 					switch(event_code){
 						
 						case MESG_STARTUP_MESG_ID:
-							// 2. assign channel
-							ant_send_cmd(&ant_assign_channel, 0, 0x00, 0);
+                            ant_state = ANT_SEND_ASSIGN_CHANNEL;
 							break;
 
 						case MESG_RESPONSE_EVENT_ID:
@@ -171,15 +183,15 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 							message_id = packet[9];
 							switch (message_id){
 								case MESG_ASSIGN_CHANNEL_ID:
-									// 3. set channel ID
-									ant_send_cmd(&ant_channel_id, 0, 33, 1, 1);
+                                    ant_state = ANT_SEND_SET_CHANNEL_ID;
 									break; 
 								case MESG_CHANNEL_ID_ID:
-									// 4. open channel
-									ant_send_cmd(&ant_open_channel, 0);
+                                    ant_state = ANT_SEND_CHANNEL_OPEN;
+                                    break;
+                                default:
+                                    break;
 							}
 							break;
-
 						default:
 							break;
 					}
@@ -193,6 +205,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         default:
             break;
 	}
+
+    ant_run();
 }
 
 static void  heartbeat_handler(struct btstack_timer_source *ts){
@@ -201,7 +215,7 @@ static void  heartbeat_handler(struct btstack_timer_source *ts){
         static int counter = 0;
         char lineBuffer[30];
         sprintf(lineBuffer, "BTstack counter %04u\n\r", ++counter);
-        printf(lineBuffer);
+        puts(lineBuffer);
         if (rfcomm_can_send_packet_now(rfcomm_channel_id)){
             int err = rfcomm_send(rfcomm_channel_id, (uint8_t*) lineBuffer, strlen(lineBuffer));
             if (err) {
@@ -230,13 +244,12 @@ int btstack_main(int argc, const char * argv[]){
 
     // init SDP, create record for SPP and register with SDP
     sdp_init();
-	memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
-    spp_create_sdp_record( (uint8_t*) spp_service_buffer, 1, "SPP Counter");
-    printf("SDP service buffer size: %u\n\r", (uint16_t) (de_get_len((uint8_t*) spp_service_buffer)));
-    sdp_register_service(service_record_item);
+    memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
+    spp_create_sdp_record(spp_service_buffer, 0x10001, RFCOMM_SERVER_CHANNEL, "SPP Counter");
+    sdp_register_service(spp_service_buffer);
+    printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
     
     // set one-shot timer
-    btstack_timer_source_t heartbeat;
     heartbeat.process = &heartbeat_handler;
     btstack_run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
     btstack_run_loop_add_timer(&heartbeat);

@@ -12,11 +12,11 @@ Status: Basic port incl. all examples. BTstack runs on dedicated FreeRTOS thread
 
 In port/esp32, run
 
-	./create_examples.py
+	./integrate_btstack.sh
 
-The script will create project folders for all examples. Each example project folder, e.g. port/esp32/spp_and_le_counter, contains a Makefile.  
+The script will copy parts of the BTstack tree into the ESP-IDF as $IDF_PATH/components/btstack and then create project folders for all examples. Each example project folder, e.g. port/esp32/examples/spp_and_le_counter, contains a Makefile. Please run the command again after updating the BTstack tree to also update the copy in the ESP-IDF.
 
-To compile the example, run:
+To compile an example, run:
 
 	make
 
@@ -32,6 +32,11 @@ To get the debug output, run:
 
 You can quit the monitor with CTRL-].
 
+## Old Make Versions
+
+Compilation fails with older versions of the make tool, e.g. make 3.8.1 (from 2006) providedby the current Xcode 9 on macOS.
+Interestingly, if you run make a second time, it completes the compilation.
+
 ## Configuration
 
 The sdkconfig of the example template disables the original Bluedroid stack by disabling the CONFIG_BLUEDROID_ENABLED kconfig option.
@@ -39,9 +44,9 @@ The sdkconfig of the example template disables the original Bluedroid stack by d
 ## Limitations
 
 ### Bug in Host Controller to Host Flow Control implementation
-The Link Layer in the ESP32 does not reset the supervision timeout while the Host does not accept new packets (due to slow processing etc..), which will triggger a disconnect based on Connection Timeout (reason 8). See https://github.com/espressif/esp-idf/issues/644#issuecomment-325251315 
+The Link Layer in the ESP32 does not reset the supervision timeout while the Host does not accept new packets (due to slow processing etc..), which will eventually triggger a disconnect based on Connection Timeout (reason 8). See https://github.com/espressif/esp-idf/issues/644#issuecomment-325251315 
 
-For most applications, this won't be an issue, but please keep it in mind. 
+For most applications, this won't be an issue, but please keep it in mind if you're LE data processing is very slow.
 
 ### Multi-Threading
 
