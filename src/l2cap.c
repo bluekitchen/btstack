@@ -472,9 +472,9 @@ static void l2cap_ertm_configure_channel(l2cap_channel_t * channel, l2cap_ertm_c
 
     // divide rest of data equally
     channel->local_mps = (size - pos) / (ertm_config->num_rx_buffers + ertm_config->num_tx_buffers);
-    log_info("Local MPS: %u", channel->local_mtu);
+    log_info("Local MPS: %u", channel->local_mps);
     channel->rx_packets_data = &buffer[pos];
-    pos += ertm_config->num_rx_buffers * channel->local_mtu;
+    pos += ertm_config->num_rx_buffers * channel->local_mps;
     channel->tx_packets_data = &buffer[pos];
 }
 
