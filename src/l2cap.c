@@ -1124,23 +1124,41 @@ uint16_t l2cap_max_le_mtu(void){
 
 #ifdef ENABLE_CLASSIC
 
-static uint16_t l2cap_setup_options_mtu(l2cap_channel_t * channel, uint8_t * config_options){
+static uint16_t l2cap_setup_options_mtu(uint8_t * config_options, uint16_t mtu){
     config_options[0] = 1; // MTU
     config_options[1] = 2; // len param
-    little_endian_store_16(config_options, 2, channel->local_mtu);
+    little_endian_store_16(config_options, 2, mtu);
     return 4;
 }
 
-static uint16_t l2cap_setup_options(l2cap_channel_t * channel, uint8_t * config_options){
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+static int l2cap_ertm_mode(l2cap_channel_t * channel){
+    hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
+    return ((connection->l2cap_state.information_state == L2CAP_INFORMATION_STATE_DONE) 
+        &&  (connection->l2cap_state.extended_feature_mask & 0x08));
+}
+#endif
+
+static uint16_t l2cap_setup_options_request(l2cap_channel_t * channel, uint8_t * config_options){
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     // use ERTM options if supported
-    hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
-    if ((connection->l2cap_state.information_state == L2CAP_INFORMATION_STATE_DONE) && (connection->l2cap_state.extended_feature_mask & 0x08)){
+    if (l2cap_ertm_mode(channel)){
         return l2cap_setup_options_ertm(channel, config_options);
-
     }
 #endif
-    return l2cap_setup_options_mtu(channel, config_options);
+    uint16_t mtu = channel->local_mtu;
+    return l2cap_setup_options_mtu(config_options, mtu);
+}
+
+static uint16_t l2cap_setup_options_response(l2cap_channel_t * channel, uint8_t * config_options){
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    // use ERTM options if supported
+    if (l2cap_ertm_mode(channel)){
+        return l2cap_setup_options_ertm(channel, config_options);
+    }
+#endif
+    uint16_t mtu = channel->local_mtu;
+    return l2cap_setup_options_mtu(config_options, mtu);
 }
 
 static uint32_t l2cap_extended_features_mask(void){
@@ -1325,12 +1343,12 @@ static void l2cap_run(void){
                     } else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED){
                         channelStateVarClearFlag(channel,L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED);
                         channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP);
-                        uint16_t options_size = l2cap_setup_options(channel, config_options);
+                        uint16_t options_size = l2cap_setup_options_response(channel, config_options);
                         l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_UNACCEPTABLE_PARAMETERS, options_size, &config_options);
 #endif
                     } else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU){
                         channelStateVarClearFlag(channel,L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
-                        uint16_t options_size = l2cap_setup_options(channel, config_options);
+                        uint16_t options_size = l2cap_setup_options_response(channel, config_options);
                         l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_SUCCESS, options_size, &config_options);
                     } else {
                         l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_SUCCESS, 0, NULL);
@@ -1341,7 +1359,7 @@ static void l2cap_run(void){
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ);
                     channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_REQ);
                     channel->local_sig_id = l2cap_next_sig_id();
-                    uint16_t options_size = l2cap_setup_options(channel, config_options);
+                    uint16_t options_size = l2cap_setup_options_request(channel, config_options);
                     l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_REQUEST, channel->local_sig_id, channel->remote_cid, 0, options_size, &config_options);
                     l2cap_start_rtx(channel);
                 }
