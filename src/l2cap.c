@@ -374,7 +374,7 @@ static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t l
     return 0;
 }
 
-static uint16_t l2cap_setup_options_ertm(l2cap_channel_t * channel, uint8_t * config_options){
+static uint16_t l2cap_setup_options_ertm_request(l2cap_channel_t * channel, uint8_t * config_options){
     config_options[0] = 0x04;   // RETRANSMISSION AND FLOW CONTROL OPTION
     config_options[1] = 9;      // length
     config_options[2] = (uint8_t) channel->mode;
@@ -383,6 +383,25 @@ static uint16_t l2cap_setup_options_ertm(l2cap_channel_t * channel, uint8_t * co
     little_endian_store_16( config_options, 5, channel->local_retransmission_timeout_ms); 
     little_endian_store_16( config_options, 7, channel->local_monitor_timeout_ms);
     little_endian_store_16( config_options, 9, channel->local_mps);
+    return 11;
+}
+
+static uint16_t l2cap_setup_options_ertm_response(l2cap_channel_t * channel, uint8_t * config_options){
+    config_options[0] = 0x04;   // RETRANSMISSION AND FLOW CONTROL OPTION
+    config_options[1] = 9;      // length
+    config_options[2] = (uint8_t) channel->mode;
+    // less or equal to remote tx window size
+    config_options[3] = btstack_min(channel->num_tx_buffers, channel->remote_tx_window_size);
+    // max transmit in response shall be ignored -> use sender values
+    config_options[4] = channel->remote_max_transmit;
+    // A value for the Retransmission time-out shall be sent in a positive Configuration Response
+    // and indicates the value that will be used by the sender of the Configuration Response -> use our value
+    little_endian_store_16( config_options, 5, channel->local_retransmission_timeout_ms);
+    // A value for the Monitor time-out shall be sent in a positive Configuration Response
+    // and indicates the value that will be used by the sender of the Configuration Response -> use our value
+    little_endian_store_16( config_options, 7, channel->local_monitor_timeout_ms);
+    // less or equal to remote mps
+    little_endian_store_16( config_options, 9, btstack_min(channel->local_mps, channel->remote_mps));
     return 11;
 }
 
@@ -1143,7 +1162,7 @@ static uint16_t l2cap_setup_options_request(l2cap_channel_t * channel, uint8_t *
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     // use ERTM options if supported
     if (l2cap_ertm_mode(channel)){
-        return l2cap_setup_options_ertm(channel, config_options);
+        return l2cap_setup_options_ertm_request(channel, config_options);
     }
 #endif
     uint16_t mtu = channel->local_mtu;
@@ -1154,7 +1173,7 @@ static uint16_t l2cap_setup_options_response(l2cap_channel_t * channel, uint8_t 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     // use ERTM options if supported
     if (l2cap_ertm_mode(channel)){
-        return l2cap_setup_options_ertm(channel, config_options);
+        return l2cap_setup_options_ertm_response(channel, config_options);
     }
 #endif
     uint16_t mtu = btstack_min(channel->local_mtu, channel->remote_mtu);
