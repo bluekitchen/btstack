@@ -1157,7 +1157,7 @@ static uint16_t l2cap_setup_options_response(l2cap_channel_t * channel, uint8_t 
         return l2cap_setup_options_ertm(channel, config_options);
     }
 #endif
-    uint16_t mtu = channel->local_mtu;
+    uint16_t mtu = btstack_min(channel->local_mtu, channel->remote_mtu);
     return l2cap_setup_options_mtu(config_options, mtu);
 }
 
