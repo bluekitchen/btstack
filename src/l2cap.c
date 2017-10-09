@@ -624,7 +624,7 @@ static l2cap_ertm_tx_packet_state_t * l2cap_ertm_get_tx_state(l2cap_channel_t * 
 }
 
 // @param delta number of frames in the future, >= 1
-// @assumption size <= l2cap_channel->local_mps (checked )
+// @assumption size <= l2cap_channel->local_mps (checked in l2cap_acl_classic_handler)
 static void l2cap_ertm_handle_out_of_sequence_sdu(l2cap_channel_t * l2cap_channel, l2cap_segmentation_and_reassembly_t sar, int delta, uint8_t * payload, uint16_t size){
     log_info("Store SDU with delta %u", delta);
     // get rx state for packet to store
@@ -646,28 +646,43 @@ static void l2cap_ertm_handle_out_of_sequence_sdu(l2cap_channel_t * l2cap_channe
     memcpy(rx_buffer, payload, size);
 }
 
+// @assumption size <= l2cap_channel->local_mps (checked in l2cap_acl_classic_handler)
 static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l2cap_segmentation_and_reassembly_t sar, uint8_t * payload, uint16_t size){
+    uint16_t reassembly_sdu_length;
     switch (sar){
         case L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU:
+            // assert total packet size <= our mtu
+            if (size > l2cap_channel->local_mtu) break;
             // packet complete -> disapatch
             l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, payload, size);
             break;
         case L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU:
-            // TODO: check if reassembly started
-            // TODO: check sdu_len against local mtu
-            l2cap_channel->reassembly_sdu_length = little_endian_read_16(payload, 0);
+            // read SDU len
+            reassembly_sdu_length = little_endian_read_16(payload, 0);
             payload += 2;
             size    -= 2;
+            // assert reassembled size <= our mtu
+            if (reassembly_sdu_length > l2cap_channel->local_mtu) break;
+            // store start segment
+            l2cap_channel->reassembly_sdu_length = reassembly_sdu_length;
             memcpy(&l2cap_channel->reassembly_buffer[0], payload, size);
             l2cap_channel->reassembly_pos = size;
             break;
         case L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU:
+            // assert size of reassembled data <= our mtu
+            if (l2cap_channel->reassembly_pos + size > l2cap_channel->local_mtu) break;
+            // store continuation segment
             memcpy(&l2cap_channel->reassembly_buffer[l2cap_channel->reassembly_pos], payload, size);
             l2cap_channel->reassembly_pos += size;
             break;
         case L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU:
+            // assert size of reassembled data <= our mtu
+            if (l2cap_channel->reassembly_pos + size > l2cap_channel->local_mtu) break;
+            // store continuation segment
             memcpy(&l2cap_channel->reassembly_buffer[l2cap_channel->reassembly_pos], payload, size);
             l2cap_channel->reassembly_pos += size;
+            // assert size of reassembled data matches announced sdu length
+            if (l2cap_channel->reassembly_pos != l2cap_channel->reassembly_sdu_length) break;
             // packet complete -> disapatch
             l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, l2cap_channel->reassembly_buffer, l2cap_channel->reassembly_pos);
             l2cap_channel->reassembly_pos = 0;    
