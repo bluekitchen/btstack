@@ -624,6 +624,7 @@ static l2cap_ertm_tx_packet_state_t * l2cap_ertm_get_tx_state(l2cap_channel_t * 
 }
 
 // @param delta number of frames in the future, >= 1
+// @assumption size <= l2cap_channel->local_mps (checked )
 static void l2cap_ertm_handle_out_of_sequence_sdu(l2cap_channel_t * l2cap_channel, l2cap_segmentation_and_reassembly_t sar, int delta, uint8_t * payload, uint16_t size){
     log_info("Store SDU with delta %u", delta);
     // get rx state for packet to store
@@ -2919,7 +2920,10 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
                 if (l2cap_channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
 
-                    // verify FCS
+                    // assert control + FCS fields are inside
+                    if (size < COMPLETE_L2CAP_HEADER+2+2) break;
+
+                    // verify FCS (required if one side requests it and BTstack does)
                     uint16_t fcs_calculated = crc16_calc(&packet[4], size - (4+2));
                     uint16_t fcs_packet     = little_endian_read_16(packet, size-2);
                     log_info("Packet FCS 0x%04x, calculated FCS 0x%04x", fcs_packet, fcs_calculated);
@@ -3020,6 +3024,14 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                             // final bit set <- response to RR with poll bit set. All not acknowledged packets need to be retransmitted
                             l2cap_channel->tx_send_index = l2cap_channel->tx_read_index;
                         }
+
+                        // get SDU
+                        const uint8_t * sdu_data = &packet[COMPLETE_L2CAP_HEADER+2];
+                        uint16_t        sdu_len  = size-(COMPLETE_L2CAP_HEADER+2+2);
+
+                        // assert SDU size is smaller or equal to our buffers
+                        if (sdu_len > l2cap_channel->local_mps) break;
+
                         // check ordering
                         if (l2cap_channel->expected_tx_seq == tx_seq){
                             log_info("Received expected frame with TxSeq == ExpectedTxSeq == %02u", tx_seq);
@@ -3027,7 +3039,7 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                             l2cap_channel->req_seq         = l2cap_channel->expected_tx_seq;
  
                             // process SDU
-                            l2cap_ertm_handle_in_sequence_sdu(l2cap_channel, sar, &packet[COMPLETE_L2CAP_HEADER+2], size-(COMPLETE_L2CAP_HEADER+2+2));
+                            l2cap_ertm_handle_in_sequence_sdu(l2cap_channel, sar, sdu_data, sdu_len);
 
                             // process stored segments
                             while (1){
@@ -3057,7 +3069,7 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                             int delta = (tx_seq - l2cap_channel->expected_tx_seq) & 0x3f;
                             if (delta < 2){
                                 // store segment
-                                l2cap_ertm_handle_out_of_sequence_sdu(l2cap_channel, sar, delta, &packet[COMPLETE_L2CAP_HEADER+2], size-(COMPLETE_L2CAP_HEADER+2+2));
+                                l2cap_ertm_handle_out_of_sequence_sdu(l2cap_channel, sar, delta, sdu_data, sdu_len);
 
                                 log_info("Received unexpected frame TxSeq %u but expected %u -> send S-SREJ", tx_seq, l2cap_channel->expected_tx_seq);
                                 l2cap_channel->send_supervisor_frame_selective_reject = 1;
