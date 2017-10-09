@@ -254,6 +254,20 @@ int  uuid_has_bluetooth_prefix(const uint8_t * uuid128);
 uint32_t btstack_atoi(const char *str);
 
 /**
+ * @brief Return number of digits of a uint32 number
+ * @param uint32_number
+ * @return num_digits
+ */
+int string_len_for_uint32(uint32_t i);
+
+/**
+ * @brief Return number of set bits in a uint32 number
+ * @param uint32_number
+ * @return num_set_bits
+ */
+int count_set_bits_uint32(uint32_t x);
+
+/**
  * CRC8 functions using ETSI TS 101 369 V6.3.0.
  * Only used by RFCOMM
  */

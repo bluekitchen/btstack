@@ -96,7 +96,7 @@ void device_id_create_sdp_record(uint8_t *service, uint32_t service_record_handl
 
 	// 0x0204 "PrimaryRecord"
 	de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_PRIMARY_RECORD);
-	de_add_number(service,  DE_UINT, DE_SIZE_16, 1);	// yes, this is the primary record - there are no others
+	de_add_number(service,  DE_BOOL, DE_SIZE_8,  1);	// yes, this is the primary record - there are no others
 
 	// 0x0205 "VendorIDSource"
 	de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_VENDOR_ID_SOURCE);

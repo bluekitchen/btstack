@@ -1702,21 +1702,6 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param avrcp_cid
  */
-#define AVRCP_SUBEVENT_UNIT_INFO_QUERY                                     0x10
-
-/**
- * @format 121
- * @param subevent_code
- * @param avrcp_cid
- * @param offset      page*4
- */
-#define AVRCP_SUBEVENT_SUBUNIT_INFO_QUERY                                   0x11
-
-/**
- * @format 12
- * @param subevent_code
- * @param avrcp_cid
- */
 #define AVRCP_SUBEVENT_COMPANY_IDS_QUERY                                    0x12
 
 /**
@@ -1734,13 +1719,6 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_PLAY_STATUS_QUERY                                    0x14
 
 /**
- * @format 12
- * @param subevent_code
- * @param avrcp_cid
- */
-#define AVRCP_SUBEVENT_NOW_PLAYING_INFO_QUERY                               0x15
-
-/**
  * @format 12111
  * @param subevent_code
  * @param avrcp_cid
@@ -1748,7 +1726,7 @@ typedef uint8_t sm_key_t[16];
  * @param operands_length
  * @param operand
  */
-#define AVRCP_SUBEVENT_OPERATION                               0x16 
+#define AVRCP_SUBEVENT_OPERATION                                            0x15 
 
 /**
  * @format 121BH1

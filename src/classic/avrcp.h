@@ -102,7 +102,8 @@ typedef enum {
 } avrcp_capability_id_t;
 
 typedef enum {
-    AVRCP_MEDIA_ATTR_TITLE = 1,
+    AVRCP_MEDIA_ATTR_NONE = 0,
+    AVRCP_MEDIA_ATTR_TITLE,
     AVRCP_MEDIA_ATTR_ARTIST,
     AVRCP_MEDIA_ATTR_ALBUM,
     AVRCP_MEDIA_ATTR_TRACK,
@@ -118,6 +119,7 @@ typedef enum {
     AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES = 0x20,
     AVRCP_PDU_ID_GET_PLAY_STATUS = 0x30,
     AVRCP_PDU_ID_REGISTER_NOTIFICATION = 0x31,
+    AVRCP_PDU_ID_REQUEST_CONTINUING_RESPONSE = 0x40,
     AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME = 0x50,
     AVRCP_PDU_ID_UNDEFINED = 0xFF
 } avrcp_pdu_id_t;
@@ -138,6 +140,10 @@ typedef enum {
     AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED = 0x0d                      // The volume has been changed locally on the TG, see 6.13.3.
 } avrcp_notification_event_id_t;
 
+// control command response: accepted, rejected, interim
+// status  command response: not implemented, rejected, in transition, stable
+// notify  command response: not implemented, rejected, changed
+
 typedef enum {
     AVRCP_CTYPE_CONTROL = 0,
     AVRCP_CTYPE_STATUS,
@@ -157,9 +163,6 @@ typedef enum {
     AVRCP_CTYPE_RESPONSE_INTERIM            // target is unable to respond with either ACCEPTED or REJECTED within 100 millisecond
 } avrcp_command_type_t;
 
-// control command response: accepted, rejected, interim
-// status command response: not implemented, rejected, in transiiton, stable
-// notify command response: not implemented, rejected, changed
 typedef enum {
     AVRCP_SUBUNIT_TYPE_MONITOR = 0,
     AVRCP_SUBUNIT_TYPE_AUDIO = 1,
@@ -213,13 +216,22 @@ typedef enum {
 } avrcp_operation_id_t;
 
 typedef enum{
-    AVRCP_PLAY_STATUS_STOPPED = 0x00,
-    AVRCP_PLAY_STATUS_PLAYING,
-    AVRCP_PLAY_STATUS_PAUSED,
-    AVRCP_PLAY_STATUS_FWD_SEEK,
-    AVRCP_PLAY_STATUS_REV_SEEK,
-    AVRCP_PLAY_STATUS_ERROR = 0xFF
-} avrcp_play_status_t;
+    AVRCP_PLAYBACK_STATUS_STOPPED = 0x00,
+    AVRCP_PLAYBACK_STATUS_PLAYING,
+    AVRCP_PLAYBACK_STATUS_PAUSED,
+    AVRCP_PLAYBACK_STATUS_FWD_SEEK,
+    AVRCP_PLAYBACK_STATUS_REV_SEEK,
+    AVRCP_PLAYBACK_STATUS_ERROR = 0xFF
+} avrcp_playback_status_t;
+
+typedef enum{
+    AVRCP_BATTERY_STATUS_NORMAL = 0x00, // Battery operation is in normal state
+    AVRCP_BATTERY_STATUS_WARNING,       // unable to operate soon. Is provided when the battery level is going down.
+    AVRCP_BATTERY_STATUS_CRITICAL,      // can not operate any more. Is provided when the battery level is going down.
+    AVRCP_BATTERY_STATUS_EXTERNAL,      // Plugged to external power supply
+    AVRCP_BATTERY_STATUS_FULL_CHARGE    // when the device is completely charged from the external power supply
+} avrcp_battery_status_t;
+
 
 typedef enum {
     AVCTP_CONNECTION_IDLE,
@@ -241,6 +253,17 @@ typedef struct {
 } avrcp_now_playing_info_item_t;
 
 typedef struct {
+    uint8_t track_id[8];
+    uint16_t track_nr;
+    char * title;
+    char * artist;
+    char * album;
+    char * genre;
+    uint32_t song_length_ms;
+    uint32_t song_position_ms;
+} avrcp_track_t;
+
+typedef struct {
     btstack_linked_item_t    item;
     bd_addr_t remote_addr;
     uint16_t l2cap_signaling_cid;
@@ -255,6 +278,8 @@ typedef struct {
     avrcp_command_type_t command_type;
     avrcp_subunit_type_t subunit_type;
     avrcp_subunit_id_t   subunit_id;
+    avrcp_packet_type_t  packet_type;
+
     uint8_t cmd_operands[20];
     uint8_t cmd_operands_length;
     btstack_timer_source_t press_and_hold_cmd_timer;
@@ -263,14 +288,36 @@ typedef struct {
     uint16_t notifications_to_register;
     uint16_t notifications_to_deregister; 
 
+    avrcp_subunit_type_t unit_type;
+    uint32_t company_id;
+    avrcp_subunit_type_t subunit_info_type;
+    const uint8_t * subunit_info_data;
+    uint16_t subunit_info_data_size;
+
     avrcp_now_playing_info_item_t now_playing_info[AVRCP_MEDIA_ATTR_COUNT];
+    uint8_t  track_id[8];
     uint32_t song_length_ms;
+    uint32_t song_position_ms;
     int total_tracks;
     int track_nr;
-    // used for fragmentation
-    int offset;
-    int total_num_bytes;
+    uint8_t track_selected;
+    uint8_t track_changed;
+    
+    avrcp_playback_status_t playback_status;
+    uint8_t playback_status_changed;
+
+    uint8_t playing_content_changed;
+    
+    avrcp_battery_status_t battery_status;
+    uint8_t battery_status_changed;
+    uint8_t volume_percentage;
+    uint8_t volume_percentage_changed;
     uint8_t now_playing_info_response;
+    uint8_t now_playing_info_attr_bitmap;
+
+    // used for fragmentation
+    avrcp_media_attribute_id_t next_attr_id;
+    int fragmented_value_offset;
 } avrcp_connection_t;
 
 typedef enum {

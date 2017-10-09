@@ -65,6 +65,7 @@
 // #undef HAVE_BTSTACK_STDIN
 
 static uint8_t hid_service_buffer[250];
+static uint8_t device_id_sdp_service_buffer[100];
 static const char hid_device_name[] = "BTstack HID Keyboard";
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint16_t hid_cid;
@@ -352,8 +353,15 @@ int btstack_main(int argc, const char * argv[]){
     memset(hid_service_buffer, 0, sizeof(hid_service_buffer));
     // hid sevice subclass 2540 Keyboard, hid counntry code 33 US, hid virtual cable off, hid reconnect initiate off, hid boot device off 
     hid_create_sdp_record(hid_service_buffer, 0x10001, 0x2540, 33, 0, 0, 0, hid_descriptor_keyboard_boot_mode, sizeof(hid_descriptor_keyboard_boot_mode), hid_device_name);
-    printf("SDP service record size: %u\n", de_get_len( hid_service_buffer));
+    printf("HID service record size: %u\n", de_get_len( hid_service_buffer));
     sdp_register_service(hid_service_buffer);
+
+    // See https://www.bluetooth.com/specifications/assigned-numbers/company-identifiers if you don't have a USB Vendor ID and need a Bluetooth Vendor ID
+    // device info: BlueKitchen GmbH, product 1, version 1
+    device_id_create_sdp_record(device_id_sdp_service_buffer, 0x10003, DEVICE_ID_VENDOR_ID_SOURCE_BLUETOOTH, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 1, 1);
+    printf("Device ID SDP service record size: %u\n", de_get_len((uint8_t*)device_id_sdp_service_buffer));
+    sdp_register_service(device_id_sdp_service_buffer);
+
     
     // HID Device
     hid_device_init();

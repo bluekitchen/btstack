@@ -31,71 +31,76 @@ EXAMPLE.h: $(COMPONENT_PATH)/EXAMPLE.gatt
 COMPONENT_EXTRA_CLEAN = EXAMPLE.h
 '''
 
-# get script path
-script_path = os.path.abspath(os.path.dirname(sys.argv[0]))
+def create_examples(script_path):
+    # path to examples
+    examples_embedded = script_path + "/../../example/"
 
-# path to examples
-examples_embedded = script_path + "/../../example/"
+    # path to samples
+    example_folder = script_path + "/example/"
 
-# path to samples
-example_folder = script_path + "/example/"
+    print("Creating examples folder")
+    if not os.path.exists(example_folder):
+        os.makedirs(example_folder)
 
-print("Creating examples folder")
-if not os.path.exists(example_folder):
-    os.makedirs(example_folder)
+    print("Creating examples in examples folder")
 
-print("Creating examples in examples folder")
+    # iterate over btstack examples
+    for file in os.listdir(examples_embedded):
+        if not file.endswith(".c"):
+            continue
+        if file in ['panu_demo.c', 'sco_demo_util.c']:
+            continue
 
-# iterate over btstack examples
-for file in os.listdir(examples_embedded):
-    if not file.endswith(".c"):
-        continue
-    if file in ['panu_demo.c', 'sco_demo_util.c']:
-        continue
+        example = file[:-2]
+        gatt_path = examples_embedded + example + ".gatt"
 
-    example = file[:-2]
-    gatt_path = examples_embedded + example + ".gatt"
+        # create folder
+        apps_folder = example_folder + example + "/"
+        if os.path.exists(apps_folder):
+            shutil.rmtree(apps_folder)
+        os.makedirs(apps_folder)
 
-    # create folder
-    apps_folder = example_folder + example + "/"
-    if os.path.exists(apps_folder):
-        shutil.rmtree(apps_folder)
-    os.makedirs(apps_folder)
+        # copy files
+        for item in ['sdkconfig', 'set_port.sh']:
+            shutil.copyfile(script_path + '/template/' + item, apps_folder + '/' + item)
 
-    # copy files
-    for item in ['sdkconfig', 'set_port.sh']:
-        shutil.copyfile(script_path + '/template/' + item, apps_folder + '/' + item)
+        # mark set_port.sh as executable
+        os.chmod(apps_folder + '/set_port.sh', 0o755)
 
-    # mark set_port.sh as executable
-    os.chmod(apps_folder + '/set_port.sh', 0o755)
+        # create Makefile file
+        with open(apps_folder + "Makefile", "wt") as fout:
+            fout.write(mk_template.replace("EXAMPLE", example).replace("TOOL", script_path).replace("DATE",time.strftime("%c")))
 
-    # create Makefile file
-    with open(apps_folder + "Makefile", "wt") as fout:
-        fout.write(mk_template.replace("EXAMPLE", example).replace("TOOL", script_path).replace("DATE",time.strftime("%c")))
+        # create main folder
+        main_folder = apps_folder + "main/"
+        if not os.path.exists(main_folder):
+            os.makedirs(main_folder)
 
-    # create main folder
-    main_folder = apps_folder + "main/"
-    if not os.path.exists(main_folder):
-        os.makedirs(main_folder)
+        # copy example file
+        shutil.copyfile(examples_embedded + file, apps_folder + "/main/" + example + ".c")
 
-    # copy example file
-    shutil.copyfile(examples_embedded + file, apps_folder + "/main/" + example + ".c")
+        # add sco_demo_util.c for audio examples
+        if example in ['hfp_ag_demo','hfp_hf_demo', 'hsp_ag_demo', 'hsp_hf_demo']:
+            shutil.copy(examples_embedded + 'sco_demo_util.c', apps_folder + '/main/')
+            shutil.copy(examples_embedded + 'sco_demo_util.h', apps_folder + '/main/')
 
-    # add sco_demo_util.c for audio examples
-    if example in ['hfp_ag_demo','hfp_hf_demo', 'hsp_ag_demo', 'hsp_hf_demo']:
-        shutil.copy(examples_embedded + 'sco_demo_util.c', apps_folder + '/main/')
-        shutil.copy(examples_embedded + 'sco_demo_util.h', apps_folder + '/main/')
+        # add component.mk file to main folder
+        main_component_mk = apps_folder + "/main/component.mk"
+        shutil.copyfile(script_path + '/template/main/component.mk', main_component_mk)
 
-    # add component.mk file to main folder
-    main_component_mk = apps_folder + "/main/component.mk"
-    shutil.copyfile(script_path + '/template/main/component.mk', main_component_mk)
+        # add rules to compile gatt db if .gatt file is present
+        gatt_path = examples_embedded + example + ".gatt"
+        if os.path.exists(gatt_path):
+            shutil.copy(gatt_path, apps_folder + "/main/" + example + ".gatt")
+            with open(main_component_mk, "a") as fout:
+                fout.write(component_mk_gatt_add_on.replace("EXAMPLE", example))
+            print("- %s including GATT DB compilation rules" % example)
+        else:
+            print("- %s" % example)
 
-    # add rules to compile gatt db if .gatt file is present
-    gatt_path = examples_embedded + example + ".gatt"
-    if os.path.exists(gatt_path):
-        shutil.copy(gatt_path, apps_folder + "/main/" + example + ".gatt")
-        with open(main_component_mk, "a") as fout:
-            fout.write(component_mk_gatt_add_on.replace("EXAMPLE", example))
-        print("- %s including GATT DB compilation rules" % example)
-    else:
-        print("- %s" % example)
+if __name__ == '__main__':
+    # get script path
+    script_path = os.path.abspath(os.path.dirname(sys.argv[0]))
+    create_examples(script_path)
+
+

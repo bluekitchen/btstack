@@ -160,10 +160,10 @@ void hid_create_sdp_record(
     de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0111);  // v1.1.1
 
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_DEVICE_SUBCLASS);
-    de_add_number(service,  DE_UINT, DE_SIZE_16, hid_device_subclass);
+    de_add_number(service,  DE_UINT, DE_SIZE_8,  hid_device_subclass);
     
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_COUNTRY_CODE);
-    de_add_number(service,  DE_UINT, DE_SIZE_16, hid_country_code); 
+    de_add_number(service,  DE_UINT, DE_SIZE_8,  hid_country_code);
 
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_VIRTUAL_CABLE);
     de_add_number(service,  DE_BOOL, DE_SIZE_8,  hid_virtual_cable);
@@ -183,6 +183,19 @@ void hid_create_sdp_record(
     }        
     de_pop_sequence(service, attribute);  
     
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HIDLANGID_BASE_LIST);
+    attribute = de_push_sequence(service);
+    {
+        uint8_t* hig_lang_base = de_push_sequence(attribute);
+        {
+            // see: http://www.usb.org/developers/docs/USB_LANGIDs.pdf
+            de_add_number(hig_lang_base,  DE_UINT, DE_SIZE_16, 0x0409);    // HIDLANGID = English (US)
+            de_add_number(hig_lang_base,  DE_UINT, DE_SIZE_16, 0x0100);    // HIDLanguageBase = 0x0100 default
+        }
+        de_pop_sequence(attribute, hig_lang_base);
+    }
+    de_pop_sequence(service, attribute);
+
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_BOOT_DEVICE); 
     de_add_number(service,  DE_BOOL, DE_SIZE_8,  hid_boot_device);
 }

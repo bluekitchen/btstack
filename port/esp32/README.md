@@ -12,9 +12,11 @@ Status: Basic port incl. all examples. BTstack runs on dedicated FreeRTOS thread
 
 In port/esp32, run
 
-	./integrate_btstack.sh
+	./integrate_btstack.py
 
-The script will copy parts of the BTstack tree into the ESP-IDF as $IDF_PATH/components/btstack and then create project folders for all examples. Each example project folder, e.g. port/esp32/examples/spp_and_le_counter, contains a Makefile. Please run the command again after updating the BTstack tree to also update the copy in the ESP-IDF.
+The script will copy parts of the BTstack tree into the ESP-IDF as $IDF_PATH/components/btstack and then create project folders for all examples.
+
+Each example project folder, e.g. port/esp32/examples/spp_and_le_counter, contains a Makefile. Please run the command again after updating the BTstack tree (e.g. by git pull) to also update the copy in the ESP-IDF.
 
 To compile an example, run:
 
@@ -34,7 +36,7 @@ You can quit the monitor with CTRL-].
 
 ## Old Make Versions
 
-Compilation fails with older versions of the make tool, e.g. make 3.8.1 (from 2006) providedby the current Xcode 9 on macOS.
+Compilation fails with older versions of the make tool, e.g. make 3.8.1 (from 2006) provided by the current Xcode 9 on macOS.
 Interestingly, if you run make a second time, it completes the compilation.
 
 ## Configuration

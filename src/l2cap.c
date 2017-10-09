@@ -374,7 +374,7 @@ static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t l
     return 0;
 }
 
-static uint16_t l2cap_setup_options_ertm(l2cap_channel_t * channel, uint8_t * config_options){
+static uint16_t l2cap_setup_options_ertm_request(l2cap_channel_t * channel, uint8_t * config_options){
     config_options[0] = 0x04;   // RETRANSMISSION AND FLOW CONTROL OPTION
     config_options[1] = 9;      // length
     config_options[2] = (uint8_t) channel->mode;
@@ -383,6 +383,25 @@ static uint16_t l2cap_setup_options_ertm(l2cap_channel_t * channel, uint8_t * co
     little_endian_store_16( config_options, 5, channel->local_retransmission_timeout_ms); 
     little_endian_store_16( config_options, 7, channel->local_monitor_timeout_ms);
     little_endian_store_16( config_options, 9, channel->local_mps);
+    return 11;
+}
+
+static uint16_t l2cap_setup_options_ertm_response(l2cap_channel_t * channel, uint8_t * config_options){
+    config_options[0] = 0x04;   // RETRANSMISSION AND FLOW CONTROL OPTION
+    config_options[1] = 9;      // length
+    config_options[2] = (uint8_t) channel->mode;
+    // less or equal to remote tx window size
+    config_options[3] = btstack_min(channel->num_tx_buffers, channel->remote_tx_window_size);
+    // max transmit in response shall be ignored -> use sender values
+    config_options[4] = channel->remote_max_transmit;
+    // A value for the Retransmission time-out shall be sent in a positive Configuration Response
+    // and indicates the value that will be used by the sender of the Configuration Response -> use our value
+    little_endian_store_16( config_options, 5, channel->local_retransmission_timeout_ms);
+    // A value for the Monitor time-out shall be sent in a positive Configuration Response
+    // and indicates the value that will be used by the sender of the Configuration Response -> use our value
+    little_endian_store_16( config_options, 7, channel->local_monitor_timeout_ms);
+    // less or equal to remote mps
+    little_endian_store_16( config_options, 9, btstack_min(channel->local_mps, channel->remote_mps));
     return 11;
 }
 
@@ -453,9 +472,9 @@ static void l2cap_ertm_configure_channel(l2cap_channel_t * channel, l2cap_ertm_c
 
     // divide rest of data equally
     channel->local_mps = (size - pos) / (ertm_config->num_rx_buffers + ertm_config->num_tx_buffers);
-    log_info("Local MPS: %u", channel->local_mtu);
+    log_info("Local MPS: %u", channel->local_mps);
     channel->rx_packets_data = &buffer[pos];
-    pos += ertm_config->num_rx_buffers * channel->local_mtu;
+    pos += ertm_config->num_rx_buffers * channel->local_mps;
     channel->tx_packets_data = &buffer[pos];
 }
 
@@ -605,7 +624,8 @@ static l2cap_ertm_tx_packet_state_t * l2cap_ertm_get_tx_state(l2cap_channel_t * 
 }
 
 // @param delta number of frames in the future, >= 1
-static void l2cap_ertm_handle_out_of_sequence_sdu(l2cap_channel_t * l2cap_channel, l2cap_segmentation_and_reassembly_t sar, int delta, uint8_t * payload, uint16_t size){
+// @assumption size <= l2cap_channel->local_mps (checked in l2cap_acl_classic_handler)
+static void l2cap_ertm_handle_out_of_sequence_sdu(l2cap_channel_t * l2cap_channel, l2cap_segmentation_and_reassembly_t sar, int delta, const uint8_t * payload, uint16_t size){
     log_info("Store SDU with delta %u", delta);
     // get rx state for packet to store
     int index = l2cap_channel->rx_store_index + delta - 1;
@@ -626,28 +646,43 @@ static void l2cap_ertm_handle_out_of_sequence_sdu(l2cap_channel_t * l2cap_channe
     memcpy(rx_buffer, payload, size);
 }
 
-static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l2cap_segmentation_and_reassembly_t sar, uint8_t * payload, uint16_t size){
+// @assumption size <= l2cap_channel->local_mps (checked in l2cap_acl_classic_handler)
+static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l2cap_segmentation_and_reassembly_t sar, const uint8_t * payload, uint16_t size){
+    uint16_t reassembly_sdu_length;
     switch (sar){
         case L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU:
+            // assert total packet size <= our mtu
+            if (size > l2cap_channel->local_mtu) break;
             // packet complete -> disapatch
-            l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, payload, size);
+            l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, (uint8_t*) payload, size);
             break;
         case L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU:
-            // TODO: check if reassembly started
-            // TODO: check sdu_len against local mtu
-            l2cap_channel->reassembly_sdu_length = little_endian_read_16(payload, 0);
+            // read SDU len
+            reassembly_sdu_length = little_endian_read_16(payload, 0);
             payload += 2;
             size    -= 2;
+            // assert reassembled size <= our mtu
+            if (reassembly_sdu_length > l2cap_channel->local_mtu) break;
+            // store start segment
+            l2cap_channel->reassembly_sdu_length = reassembly_sdu_length;
             memcpy(&l2cap_channel->reassembly_buffer[0], payload, size);
             l2cap_channel->reassembly_pos = size;
             break;
         case L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU:
+            // assert size of reassembled data <= our mtu
+            if (l2cap_channel->reassembly_pos + size > l2cap_channel->local_mtu) break;
+            // store continuation segment
             memcpy(&l2cap_channel->reassembly_buffer[l2cap_channel->reassembly_pos], payload, size);
             l2cap_channel->reassembly_pos += size;
             break;
         case L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU:
+            // assert size of reassembled data <= our mtu
+            if (l2cap_channel->reassembly_pos + size > l2cap_channel->local_mtu) break;
+            // store continuation segment
             memcpy(&l2cap_channel->reassembly_buffer[l2cap_channel->reassembly_pos], payload, size);
             l2cap_channel->reassembly_pos += size;
+            // assert size of reassembled data matches announced sdu length
+            if (l2cap_channel->reassembly_pos != l2cap_channel->reassembly_sdu_length) break;
             // packet complete -> disapatch
             l2cap_dispatch_to_channel(l2cap_channel, L2CAP_DATA_PACKET, l2cap_channel->reassembly_buffer, l2cap_channel->reassembly_pos);
             l2cap_channel->reassembly_pos = 0;    
@@ -1124,23 +1159,41 @@ uint16_t l2cap_max_le_mtu(void){
 
 #ifdef ENABLE_CLASSIC
 
-static uint16_t l2cap_setup_options_mtu(l2cap_channel_t * channel, uint8_t * config_options){
+static uint16_t l2cap_setup_options_mtu(uint8_t * config_options, uint16_t mtu){
     config_options[0] = 1; // MTU
     config_options[1] = 2; // len param
-    little_endian_store_16(config_options, 2, channel->local_mtu);
+    little_endian_store_16(config_options, 2, mtu);
     return 4;
 }
 
-static uint16_t l2cap_setup_options(l2cap_channel_t * channel, uint8_t * config_options){
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+static int l2cap_ertm_mode(l2cap_channel_t * channel){
+    hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
+    return ((connection->l2cap_state.information_state == L2CAP_INFORMATION_STATE_DONE) 
+        &&  (connection->l2cap_state.extended_feature_mask & 0x08));
+}
+#endif
+
+static uint16_t l2cap_setup_options_request(l2cap_channel_t * channel, uint8_t * config_options){
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
     // use ERTM options if supported
-    hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
-    if ((connection->l2cap_state.information_state == L2CAP_INFORMATION_STATE_DONE) && (connection->l2cap_state.extended_feature_mask & 0x08)){
-        return l2cap_setup_options_ertm(channel, config_options);
-
+    if (l2cap_ertm_mode(channel)){
+        return l2cap_setup_options_ertm_request(channel, config_options);
     }
 #endif
-    return l2cap_setup_options_mtu(channel, config_options);
+    uint16_t mtu = channel->local_mtu;
+    return l2cap_setup_options_mtu(config_options, mtu);
+}
+
+static uint16_t l2cap_setup_options_response(l2cap_channel_t * channel, uint8_t * config_options){
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    // use ERTM options if supported
+    if (l2cap_ertm_mode(channel)){
+        return l2cap_setup_options_ertm_response(channel, config_options);
+    }
+#endif
+    uint16_t mtu = btstack_min(channel->local_mtu, channel->remote_mtu);
+    return l2cap_setup_options_mtu(config_options, mtu);
 }
 
 static uint32_t l2cap_extended_features_mask(void){
@@ -1325,12 +1378,12 @@ static void l2cap_run(void){
                     } else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED){
                         channelStateVarClearFlag(channel,L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED);
                         channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP);
-                        uint16_t options_size = l2cap_setup_options(channel, config_options);
+                        uint16_t options_size = l2cap_setup_options_response(channel, config_options);
                         l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_UNACCEPTABLE_PARAMETERS, options_size, &config_options);
 #endif
                     } else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU){
                         channelStateVarClearFlag(channel,L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
-                        uint16_t options_size = l2cap_setup_options(channel, config_options);
+                        uint16_t options_size = l2cap_setup_options_response(channel, config_options);
                         l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_SUCCESS, options_size, &config_options);
                     } else {
                         l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_SUCCESS, 0, NULL);
@@ -1341,7 +1394,7 @@ static void l2cap_run(void){
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ);
                     channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_REQ);
                     channel->local_sig_id = l2cap_next_sig_id();
-                    uint16_t options_size = l2cap_setup_options(channel, config_options);
+                    uint16_t options_size = l2cap_setup_options_request(channel, config_options);
                     l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_REQUEST, channel->local_sig_id, channel->remote_cid, 0, options_size, &config_options);
                     l2cap_start_rtx(channel);
                 }
@@ -2882,7 +2935,10 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
                 if (l2cap_channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
 
-                    // verify FCS
+                    // assert control + FCS fields are inside
+                    if (size < COMPLETE_L2CAP_HEADER+2+2) break;
+
+                    // verify FCS (required if one side requests it and BTstack does)
                     uint16_t fcs_calculated = crc16_calc(&packet[4], size - (4+2));
                     uint16_t fcs_packet     = little_endian_read_16(packet, size-2);
                     log_info("Packet FCS 0x%04x, calculated FCS 0x%04x", fcs_packet, fcs_calculated);
@@ -2983,6 +3039,14 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                             // final bit set <- response to RR with poll bit set. All not acknowledged packets need to be retransmitted
                             l2cap_channel->tx_send_index = l2cap_channel->tx_read_index;
                         }
+
+                        // get SDU
+                        const uint8_t * sdu_data = &packet[COMPLETE_L2CAP_HEADER+2];
+                        uint16_t        sdu_len  = size-(COMPLETE_L2CAP_HEADER+2+2);
+
+                        // assert SDU size is smaller or equal to our buffers
+                        if (sdu_len > l2cap_channel->local_mps) break;
+
                         // check ordering
                         if (l2cap_channel->expected_tx_seq == tx_seq){
                             log_info("Received expected frame with TxSeq == ExpectedTxSeq == %02u", tx_seq);
@@ -2990,7 +3054,7 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                             l2cap_channel->req_seq         = l2cap_channel->expected_tx_seq;
  
                             // process SDU
-                            l2cap_ertm_handle_in_sequence_sdu(l2cap_channel, sar, &packet[COMPLETE_L2CAP_HEADER+2], size-(COMPLETE_L2CAP_HEADER+2+2));
+                            l2cap_ertm_handle_in_sequence_sdu(l2cap_channel, sar, sdu_data, sdu_len);
 
                             // process stored segments
                             while (1){
@@ -3020,7 +3084,7 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                             int delta = (tx_seq - l2cap_channel->expected_tx_seq) & 0x3f;
                             if (delta < 2){
                                 // store segment
-                                l2cap_ertm_handle_out_of_sequence_sdu(l2cap_channel, sar, delta, &packet[COMPLETE_L2CAP_HEADER+2], size-(COMPLETE_L2CAP_HEADER+2+2));
+                                l2cap_ertm_handle_out_of_sequence_sdu(l2cap_channel, sar, delta, sdu_data, sdu_len);
 
                                 log_info("Received unexpected frame TxSeq %u but expected %u -> send S-SREJ", tx_seq, l2cap_channel->expected_tx_seq);
                                 l2cap_channel->send_supervisor_frame_selective_reject = 1;

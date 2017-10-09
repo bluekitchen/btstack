@@ -616,6 +616,10 @@ void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 break;
             }
             connection->l2cap_signaling_cid = local_cid;
+            connection->song_length_ms = 0xFFFFFFFF;
+            connection->song_position_ms = 0xFFFFFFFF;
+            connection->playback_status = AVRCP_PLAYBACK_STATUS_ERROR;
+
             log_info("L2CAP_EVENT_CHANNEL_OPENED avrcp_cid 0x%02x, l2cap_signaling_cid 0x%02x", connection->avrcp_cid, connection->l2cap_signaling_cid);
             connection->state = AVCTP_CONNECTION_OPENED;
             avrcp_emit_connection_established(context->avrcp_callback, connection->avrcp_cid, event_addr, ERROR_CODE_SUCCESS);
