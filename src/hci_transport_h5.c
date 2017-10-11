@@ -45,6 +45,9 @@
  *  Created by Matthias Ringw ald on 4/29/09.
  */
 
+#include "btstack_config.h"
+#define ENABLE_LOG_DEBUG
+
 #include <inttypes.h>
 
 #include "hci.h"
@@ -529,7 +532,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
     uint8_t  link_packet_type = slip_header[1] & 0x0f;
     uint16_t link_payload_len = (slip_header[1] >> 4) | (slip_header[2] << 4);
 
-    log_debug("process_frame, reliable %u, packet type %u, seq_nr %u, ack_nr %u , dic %u", reliable_packet, link_packet_type, seq_nr, ack_nr, data_integrity_check_present);
+    log_debug("process_frame, reliable %u, packet type %u, seq_nr %u, ack_nr %u , dic %u, payload 0x%04x bytes", reliable_packet, link_packet_type, seq_nr, ack_nr, data_integrity_check_present, frame_size_without_header);
     log_debug_hexdump(slip_header, 4);
     log_debug_hexdump(slip_payload, frame_size_without_header);
 
