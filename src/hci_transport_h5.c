@@ -736,10 +736,23 @@ static void hci_transport_h5_read_next_byte(void){
     btstack_uart->receive_block(&hci_transport_link_read_byte, 1);    
 }
 
+// track time receiving SLIP frame
+static uint32_t hci_transport_h5_receive_start;
 static void hci_transport_h5_block_received(){
+    // track start time when receiving first byte // a bit hackish
+    if (hci_transport_h5_receive_start == 0 && hci_transport_link_read_byte != BTSTACK_SLIP_SOF){
+        hci_transport_h5_receive_start = btstack_run_loop_get_time_ms();
+    }
     btstack_slip_decoder_process(hci_transport_link_read_byte);
     uint16_t frame_size = btstack_slip_decoder_frame_size();
     if (frame_size) {
+        // track time
+        uint32_t packet_receive_time = btstack_run_loop_get_time_ms() - hci_transport_h5_receive_start;
+        uint32_t nominmal_time = (frame_size + 6) * 10 * 1000 / uart_config.baudrate;
+        log_info("slip frame time %u ms for %u decoded bytes. nomimal time %u ms", (int) packet_receive_time, frame_size, (int) nominmal_time);
+        // reset state
+        hci_transport_h5_receive_start = 0;
+        // 
         hci_transport_h5_process_frame(frame_size);
         hci_transport_slip_init();
     }
