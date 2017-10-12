@@ -3,8 +3,9 @@ a2dp_source_demo
 ancs_client_demo
 ancs_client_demo.h
 avdtp_sink.sbc
-avdtp_sink.sbc
 avdtp_sink.wav
+avdtp_sink_demo
+avdtp_source_demo
 ble_central_test
 ble_peripheral_test
 bnep_test
@@ -13,7 +14,6 @@ gap_dedicated_bonding
 gap_inquiry
 gap_inquiry_and_bond
 gap_le_advertisements
-gap_le_advertisements
 gatt_battery_query
 gatt_battery_query.h
 gatt_browser
@@ -21,12 +21,16 @@ gatt_browser.h
 hfp_ag_demo
 hfp_hf_demo
 hid_keyboard_demo
+hid_mouse_demo
+hog_keyboard_demo
+hog_keyboard_demo.h
+hog_mouse_demo
+hog_mouse_demo.h
 hsp_ag_demo
 hsp_hs_demo
 l2cap_test
 le_counter
 le_counter.h
-le_streamer
 le_streamer
 le_streamer.h
 le_streamer_client
@@ -48,8 +52,5 @@ spp_and_le_streamer
 spp_and_le_streamer.h
 spp_counter
 spp_streamer
-spp_streamer
-spp_streamer_clientavdtp_sink_demo
-avdtp_source_demo
-avdtp_sink_demo
+spp_streamer_client
 spp_streamer_client
