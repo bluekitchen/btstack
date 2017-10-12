@@ -55,6 +55,8 @@ extern "C" {
 
 #define BT_SIG_COMPANY_ID 0x001958
 #define AVRCP_MEDIA_ATTR_COUNT 7
+#define AVRCP_MAX_ATTRIBUTTE_SIZE 100
+#define AVRCP_ATTRIBUTE_HEADER_LEN  8
 
 typedef enum {
     AVRCP_STATUS_INVALID_COMMAND = 0,           // sent if TG received a PDU that it did not understand.
@@ -120,6 +122,7 @@ typedef enum {
     AVRCP_PDU_ID_GET_PLAY_STATUS = 0x30,
     AVRCP_PDU_ID_REGISTER_NOTIFICATION = 0x31,
     AVRCP_PDU_ID_REQUEST_CONTINUING_RESPONSE = 0x40,
+    AVRCP_PDU_ID_REQUEST_ABORT_CONTINUING_RESPONSE = 0x41,
     AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME = 0x50,
     AVRCP_PDU_ID_UNDEFINED = 0xFF
 } avrcp_pdu_id_t;
@@ -263,6 +266,13 @@ typedef struct {
     uint32_t song_position_ms;
 } avrcp_track_t;
 
+typedef enum {
+    AVRCP_PARSER_IDLE = 0,
+    AVRCP_PARSER_GET_ATTRIBUTE_HEADER,       // 8 bytes
+    AVRCP_PARSER_GET_ATTRIBUTE_VALUE,
+    AVRCP_PARSER_IGNORE_ATTRIBUTE_VALUE
+} avrcp_parser_state_t;
+
 typedef struct {
     btstack_linked_item_t    item;
     bd_addr_t remote_addr;
@@ -314,10 +324,25 @@ typedef struct {
     uint8_t volume_percentage_changed;
     uint8_t now_playing_info_response;
     uint8_t now_playing_info_attr_bitmap;
-
+    uint8_t abort_continue_response;
+    
     // used for fragmentation
     avrcp_media_attribute_id_t next_attr_id;
-    int fragmented_value_offset;
+    
+    avrcp_parser_state_t parser_state;
+    uint8_t  parser_attribute_header[AVRCP_ATTRIBUTE_HEADER_LEN];
+    uint8_t  parser_attribute_header_pos;
+
+    uint16_t list_size;
+    uint16_t list_offset;
+    uint8_t  attribute_value[AVRCP_MAX_ATTRIBUTTE_SIZE];
+    uint16_t attribute_value_len;
+    uint16_t attribute_value_offset;
+    
+    uint32_t attribute_id;
+    
+    uint8_t  num_attributes;
+    uint8_t  num_parsed_attributes;
 } avrcp_connection_t;
 
 typedef enum {

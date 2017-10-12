@@ -208,6 +208,207 @@ static void avrcp_prepare_notification(avrcp_connection_t * connection, avrcp_no
     // answer page 61
 }
 
+
+static void avrcp_parser_reset(avrcp_connection_t * connection){
+    connection->list_offset = 0;
+    connection->num_attributes = 0;
+    connection->num_parsed_attributes = 0;
+    connection->parser_attribute_header_pos = 0;
+    connection->parser_state = AVRCP_PARSER_IDLE;
+}
+
+static void avrcp_controller_emit_now_playing_info_event_done(btstack_packet_handler_t callback, uint16_t avrcp_cid, uint8_t ctype, uint8_t status){
+    uint8_t event[7];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVRCP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVRCP_SUBEVENT_NOW_PLAYING_INFO_DONE;
+    little_endian_store_16(event, pos, avrcp_cid);
+    pos += 2;
+    event[pos++] = ctype;
+    event[pos++] = status;
+    // printf_hexdump(event, pos);
+    (*callback)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
+static void avrcp_controller_emit_now_playing_info_event(btstack_packet_handler_t callback, uint16_t avrcp_cid, uint8_t ctype, avrcp_media_attribute_id_t attr_id, uint8_t * value, uint16_t value_len){
+    uint8_t event[HCI_EVENT_BUFFER_SIZE];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVRCP_META;
+    // reserve one byte for subevent type and data len
+    int data_len_pos = pos;
+    pos++;
+    int subevent_type_pos = pos;
+    pos++;
+    little_endian_store_16(event, pos, avrcp_cid);
+    pos += 2;
+    event[pos++] = ctype;
+    
+    switch (attr_id){
+        case AVRCP_MEDIA_ATTR_TITLE:
+            event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_TITLE_INFO;
+            event[pos++] = value_len;
+            memcpy(event+pos, value, value_len);
+            break;
+        case AVRCP_MEDIA_ATTR_ARTIST:
+            event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_ARTIST_INFO;
+            event[pos++] = value_len;
+            memcpy(event+pos, value, value_len);
+            break;
+        case AVRCP_MEDIA_ATTR_ALBUM:
+            event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_ALBUM_INFO;
+            event[pos++] = value_len;
+            memcpy(event+pos, value, value_len);
+            break;
+        case AVRCP_MEDIA_ATTR_GENRE:
+            event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_GENRE_INFO;
+            event[pos++] = value_len;
+            memcpy(event+pos, value, value_len);
+            break;
+        case AVRCP_MEDIA_ATTR_SONG_LENGTH:
+            event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_SONG_LENGTH_MS_INFO;
+            if (value){
+                little_endian_store_32(event, pos, btstack_atoi((char *)value));
+            } else {
+                little_endian_store_32(event, pos, 0);
+            }
+            pos += 4;
+            break;
+        case AVRCP_MEDIA_ATTR_TRACK:
+            event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_TRACK_INFO;
+            if (value){
+                event[pos++] = btstack_atoi((char *)value);
+            } else {
+                event[pos++] = 0;
+            }
+            break;
+        case AVRCP_MEDIA_ATTR_TOTAL_TRACKS:
+            event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_TOTAL_TRACKS_INFO;
+            if (value){
+                event[pos++] = btstack_atoi((char *)value);
+            } else {
+                event[pos++] = 0;
+            }
+            break;
+        default:
+            break;
+    }
+    event[data_len_pos] = pos - 2;
+    // printf("send attr len %d,  value %s\n", value_len, value);
+    (*callback)(HCI_EVENT_PACKET, 0, event, pos);
+}
+
+static void avrcp_parser_process_byte(uint8_t byte, avrcp_connection_t * connection, avrcp_command_type_t ctype){
+    switch(connection->parser_state){
+        case AVRCP_PARSER_GET_ATTRIBUTE_HEADER:
+            if (connection->parser_attribute_header_pos < AVRCP_ATTRIBUTE_HEADER_LEN) {
+                connection->parser_attribute_header[connection->parser_attribute_header_pos++] = byte;
+                connection->list_offset++;
+                break;
+            }
+            connection->attribute_value_len = btstack_min(big_endian_read_16(connection->parser_attribute_header, 6), AVRCP_MAX_ATTRIBUTTE_SIZE );
+            // printf(" attr id %d, len to read %d, total len %d  \n", big_endian_read_32(connection->parser_attribute_header, 0), connection->attribute_value_len, big_endian_read_16(connection->parser_attribute_header, 6));
+            connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_VALUE;
+            break;
+        case AVRCP_PARSER_GET_ATTRIBUTE_VALUE:{
+            if (connection->attribute_value_offset < connection->attribute_value_len){
+                connection->attribute_value[connection->attribute_value_offset++] = byte;
+                connection->list_offset++;
+                break;
+            }
+            // TODO emit event
+            uint32_t attribute_id = big_endian_read_32(connection->parser_attribute_header, 0);
+            if (attribute_id > AVRCP_MEDIA_ATTR_NONE && attribute_id <= AVRCP_MEDIA_ATTR_SONG_LENGTH){
+                avrcp_controller_emit_now_playing_info_event(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, attribute_id, connection->attribute_value, connection->attribute_value_len);
+            }
+            
+            if (connection->attribute_value_offset < big_endian_read_16(connection->parser_attribute_header, 6)){
+                // printf("parse until end of valuE, and ignore it\n");
+                connection->parser_state = AVRCP_PARSER_IGNORE_ATTRIBUTE_VALUE;
+                break;
+            }
+
+            if (connection->list_offset == connection->list_size){
+                avrcp_parser_reset(connection);
+                avrcp_controller_emit_now_playing_info_event_done(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, 0);
+                break;
+            }
+
+            connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_HEADER;
+            connection->parser_attribute_header_pos = 0;
+            break;
+        }
+        case AVRCP_PARSER_IGNORE_ATTRIBUTE_VALUE:
+            if (connection->attribute_value_offset < big_endian_read_16(connection->parser_attribute_header, 6)){
+                connection->list_offset++;
+                connection->attribute_value_offset++;
+                break;
+            }
+            // printf("read %d, total %d\n", connection->attribute_value_offset, big_endian_read_16(connection->parser_attribute_header, 6));
+            
+            if (connection->list_offset == connection->list_size){
+                avrcp_parser_reset(connection);
+                avrcp_controller_emit_now_playing_info_event_done(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, 0);
+                break;
+            }
+            connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_HEADER;
+            connection->parser_attribute_header_pos = 0;
+            break;
+        default:
+            break;
+    }
+}
+
+static void avrcp_source_parse_and_emit_element_attrs(uint8_t * packet, uint16_t num_bytes_to_read, avrcp_connection_t * connection, avrcp_command_type_t ctype){
+    int i;
+    for (i=0;i<num_bytes_to_read;i++){
+        avrcp_parser_process_byte(packet[i], connection, ctype);
+    }
+}
+
+static uint8_t avrcp_controller_request_abort_continuation(avrcp_connection_t * connection){
+    connection->state = AVCTP_W2_SEND_COMMAND;
+    connection->transaction_label++;
+    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    connection->command_type = AVRCP_CTYPE_CONTROL;
+    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
+    connection->subunit_id = AVRCP_SUBUNIT_ID;
+    int pos = 0;
+    big_endian_store_24(connection->cmd_operands, pos, BT_SIG_COMPANY_ID);
+    pos += 3;
+    connection->cmd_operands[pos++] = AVRCP_PDU_ID_REQUEST_ABORT_CONTINUING_RESPONSE; // PDU ID
+    connection->cmd_operands[pos++] = 0;
+    // Parameter Length
+    connection->cmd_operands_length = 8;
+    big_endian_store_16(connection->cmd_operands, pos, 1);
+    pos += 2;
+    connection->cmd_operands[pos++] = AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES;
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
+
+static uint8_t avrcp_controller_request_continue_response(avrcp_connection_t * connection){
+    connection->state = AVCTP_W2_SEND_COMMAND;
+    connection->transaction_label++;
+    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    connection->command_type = AVRCP_CTYPE_CONTROL;
+    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
+    connection->subunit_id = AVRCP_SUBUNIT_ID;
+    int pos = 0;
+    big_endian_store_24(connection->cmd_operands, pos, BT_SIG_COMPANY_ID);
+    pos += 3;
+    connection->cmd_operands[pos++] = AVRCP_PDU_ID_REQUEST_CONTINUING_RESPONSE; // PDU ID
+    connection->cmd_operands[pos++] = 0;
+    // Parameter Length
+    connection->cmd_operands_length = 8;
+    big_endian_store_16(connection->cmd_operands, pos, 1);
+    pos += 2;
+    connection->cmd_operands[pos++] = AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES;
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
 static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
     uint8_t operands[20];
     uint8_t opcode;
@@ -490,125 +691,33 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
 
                 case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:{
-                    uint8_t num_attributes = packet[pos++];
-                    unsigned int i;
-                    struct item {
-                        uint16_t len;
-                        uint8_t  * value;
-                    } items[AVRCP_MEDIA_ATTR_COUNT];
-                    memset(items, 0, sizeof(items));
-
-                    uint16_t string_attributes_len = 0;
-                    uint8_t  num_string_attributes = 0;
-                    uint16_t total_event_payload_for_string_attributes = HCI_EVENT_PAYLOAD_SIZE-2;
-                    uint16_t max_string_attribute_value_len = 0;
-                    if (ctype == AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE || ctype == AVRCP_CTYPE_RESPONSE_CHANGED_STABLE){
-                        for (i = 0; i < num_attributes; i++){
-                            // use local variables to avoid compiler warning
-                            uint32_t avrcp_media_attribute_id =  big_endian_read_32(packet, pos);
-                            avrcp_media_attribute_id_t attr_id = (avrcp_media_attribute_id_t) avrcp_media_attribute_id;
-                            pos += 4;
-                            // uint16_t character_set = big_endian_read_16(packet, pos);
-                            pos += 2;
-                            uint16_t attr_value_length = big_endian_read_16(packet, pos);
-                            pos += 2;
-
-                            // debug - to remove later
-                            uint8_t  value[100];
-                            uint16_t value_len = sizeof(value) <= attr_value_length? sizeof(value) - 1 : attr_value_length;
-                            memcpy(value, packet+pos, value_len);
-                            value[value_len] = 0;
-                            // printf("Now Playing Info %s: %s \n", attribute2str(attr_id), value);
-                            // end debug
-
-                            if ((attr_id >= 1) || (attr_id <= AVRCP_MEDIA_ATTR_COUNT)) {
-                                items[attr_id-1].len = attr_value_length;
-                                items[attr_id-1].value = &packet[pos];
-                                switch (attr_id){
-                                    case AVRCP_MEDIA_ATTR_TITLE:
-                                    case AVRCP_MEDIA_ATTR_ARTIST:
-                                    case AVRCP_MEDIA_ATTR_ALBUM:
-                                    case AVRCP_MEDIA_ATTR_GENRE:
-                                        num_string_attributes++;
-                                        string_attributes_len += attr_value_length;
-                                        if (max_string_attribute_value_len < attr_value_length){
-                                            max_string_attribute_value_len = attr_value_length;
-                                        }
-                                        break;
-                                    default:
-                                        break;
+                    avrcp_packet_type_t packet_type = operands[4] & 0x03;
+                    switch (packet_type){
+                        case AVRCP_START_PACKET:
+                        case AVRCP_SINGLE_PACKET:
+                            avrcp_parser_reset(connection);
+                            connection->list_size = param_length;
+                            connection->num_attributes = packet[pos++];
+                            // printf("AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES num_attributes %d, total size %d, packet type 0x%02x \n", connection->num_attributes, connection->list_size, operands[4] & 0x03);
+                            connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_HEADER;
+                            avrcp_source_parse_and_emit_element_attrs(packet+pos, size-pos, connection, ctype);
+                            
+                            if (packet_type == AVRCP_START_PACKET){
+                                if (connection->num_attributes == 1 && connection->parser_state == AVRCP_PARSER_IGNORE_ATTRIBUTE_VALUE){
+                                    avrcp_controller_request_abort_continuation(connection);
+                                } else {
+                                    avrcp_controller_request_continue_response(connection);
                                 }
                             }
-                            pos += attr_value_length;
-                        }
+                            break;
+                        case AVRCP_CONTINUE_PACKET:
+                            avrcp_source_parse_and_emit_element_attrs(packet+pos, size-pos, connection, ctype);
+                            avrcp_controller_request_continue_response(connection);
+                            break;
+                        case AVRCP_END_PACKET:
+                            avrcp_source_parse_and_emit_element_attrs(packet+pos, size-pos, connection, ctype);
+                            break;
                     }
-
-                    // subtract space for fixed fields
-                    total_event_payload_for_string_attributes -= 14 + 4;    // 4 for '\0'
-
-                    // @TODO optimize space by repeatedly decreasing max_string_attribute_value_len until it fits into buffer instead of crude divion
-                    uint16_t max_value_len = total_event_payload_for_string_attributes > string_attributes_len? max_string_attribute_value_len : total_event_payload_for_string_attributes/(string_attributes_len+1) - 1;
-                    // printf("num_string_attributes %d, string_attributes_len %d, total_event_payload_for_string_attributes %d, max_value_len %d \n", num_string_attributes, string_attributes_len, total_event_payload_for_string_attributes, max_value_len);
-
-                    const uint8_t attribute_order[] = {
-                        AVRCP_MEDIA_ATTR_TRACK,
-                        AVRCP_MEDIA_ATTR_TOTAL_TRACKS,
-                        AVRCP_MEDIA_ATTR_SONG_LENGTH,
-                        AVRCP_MEDIA_ATTR_TITLE,
-                        AVRCP_MEDIA_ATTR_ARTIST,
-                        AVRCP_MEDIA_ATTR_ALBUM,
-                        AVRCP_MEDIA_ATTR_GENRE
-                    };
-
-                    uint8_t event[HCI_EVENT_BUFFER_SIZE];
-                    event[0] = HCI_EVENT_AVRCP_META;
-                    pos = 2;
-                    event[pos++] = AVRCP_SUBEVENT_NOW_PLAYING_INFO;
-                    little_endian_store_16(event, pos, connection->avrcp_cid);
-                    pos += 2;
-                    event[pos++] = ctype;
-                    for (i = 0; i < sizeof(attribute_order); i++){
-                        avrcp_media_attribute_id_t attr_id = (avrcp_media_attribute_id_t) attribute_order[i];
-                        uint16_t value_len = 0;
-                        switch (attr_id){
-                            case AVRCP_MEDIA_ATTR_TITLE:
-                            case AVRCP_MEDIA_ATTR_ARTIST:
-                            case AVRCP_MEDIA_ATTR_ALBUM:
-                            case AVRCP_MEDIA_ATTR_GENRE:
-                                if (items[attr_id-1].value){
-                                    value_len = items[attr_id-1].len <= max_value_len ? items[attr_id-1].len : max_value_len;
-                                }
-                                event[pos++] = value_len + 1;
-                                if (value_len){
-                                    memcpy(event+pos, items[attr_id-1].value, value_len);
-                                    pos += value_len;
-                                }
-                                event[pos++] = 0;
-                                break;
-                            case AVRCP_MEDIA_ATTR_SONG_LENGTH:
-                                if (items[attr_id-1].value){
-                                    little_endian_store_32(event, pos, btstack_atoi((char *)items[attr_id-1].value));
-                                } else {
-                                    little_endian_store_32(event, pos, 0);
-                                }
-                                pos += 4;
-                                break;
-                            case AVRCP_MEDIA_ATTR_TRACK:
-                            case AVRCP_MEDIA_ATTR_TOTAL_TRACKS:
-                                if (items[attr_id-1].value){
-                                    event[pos++] = btstack_atoi((char *)items[attr_id-1].value);
-                                } else {
-                                    event[pos++] = 0;
-                                }
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                    event[1] = pos - 2;
-                    // printf_hexdump(event, pos);
-                    (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, pos);
-                    break;
                 }
                 default:
                     break;
@@ -893,6 +1002,7 @@ uint8_t avrcp_controller_disable_notification(uint16_t avrcp_cid, avrcp_notifica
     connection->notifications_to_deregister |= (1 << event_id);
     return ERROR_CODE_SUCCESS;
 }
+
 
 uint8_t avrcp_controller_get_now_playing_info(uint16_t avrcp_cid){
     avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(avrcp_cid, &avrcp_controller_context);
