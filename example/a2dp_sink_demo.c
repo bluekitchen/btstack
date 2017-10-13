@@ -113,7 +113,6 @@ static int sbc_samples_fix;
 #define PREBUFFER_BYTES     (PREBUFFER_MS*SAMPLE_RATE/1000*BYTES_PER_FRAME)
 static PaStream * stream;
 static uint8_t ring_buffer_storage[2*PREBUFFER_BYTES];
-static int total_num_samples = 0;
 #endif
 
 // WAV File
@@ -275,8 +274,6 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
 #endif
 
 #ifdef HAVE_PORTAUDIO
-    total_num_samples+=num_samples*num_channels;
-
     // store pcm samples in ringbuffer
     btstack_ring_buffer_write(&ring_buffer, (uint8_t *)data, num_samples*num_channels*2);
 
@@ -301,7 +298,6 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
 static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
     UNUSED(sample_rate);
     UNUSED(context);
-    total_num_samples+=num_samples*num_channels;
 
     // store in ring buffer
     uint8_t * write_data = start_of_buffer(write_buffer);
