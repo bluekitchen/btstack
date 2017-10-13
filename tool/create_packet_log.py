@@ -130,6 +130,14 @@ with open (outfile, 'wb') as fout:
 			if rest:
 				handleHexPacket(fout, timestamp, 3, rest)
 				continue
+			rest = chop(line,'SCO => ')
+			if rest:
+				handleHexPacket(fout, timestamp, 8, rest)
+				continue
+			rest = chop(line,'SCO <= ')
+			if rest:
+				handleHexPacket(fout, timestamp, 9, rest)
+				continue
 			rest = chop(line,'LOG -- ')
 			if rest:
 				line = rest
