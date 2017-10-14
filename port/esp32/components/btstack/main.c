@@ -210,7 +210,7 @@ static void transport_init(const void *transport_config){
 /**
  * open transport connection
  */
-
+static int bt_controller_initialized;
 static int transport_open(void){
     esp_err_t ret;
 
@@ -218,21 +218,31 @@ static int transport_open(void){
 
     btstack_ring_buffer_init(&hci_ringbuffer, hci_ringbuffer_storage, sizeof(hci_ringbuffer_storage));
 
+    // http://esp-idf.readthedocs.io/en/latest/api-reference/bluetooth/controller_vhci.html (2017104)
+    // - "esp_bt_controller_init: ... This function should be called only once, before any other BT functions are called."
+    // - "esp_bt_controller_deinit" .. This function should be called only once, after any other BT functions are called. 
+    //    This function is not whole completed, esp_bt_controller_init cannot called after this function."
+    // -> esp_bt_controller_init can only be called once after boot
+    if (!bt_controller_initialized){
+        bt_controller_initialized = 1;
 
-    esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
-    ret = esp_bt_controller_init(&bt_cfg);
-    if (ret) {
-        log_error("transport: esp_bt_controller_init failed");
-        return -1;
+        esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+        ret = esp_bt_controller_init(&bt_cfg);
+        if (ret) {
+            log_error("transport: esp_bt_controller_init failed");
+            return -1;
+        }
+
+        esp_vhci_host_register_callback(&vhci_host_cb);
     }
 
+    // enable dual mode
     ret = esp_bt_controller_enable(ESP_BT_MODE_BTDM);
     if (ret) {
         log_error("transport: esp_bt_controller_enable failed");
         return -1;
     }
 
-    esp_vhci_host_register_callback(&vhci_host_cb);
     return 0;
 }
 
@@ -241,6 +251,9 @@ static int transport_open(void){
  */
 static int transport_close(void){
     log_info("transport_close");
+
+    // disable controller
+    esp_bt_controller_disable();
     return 0;
 }
 
