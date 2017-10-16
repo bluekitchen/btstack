@@ -67,10 +67,6 @@ STM STLC2500D        | Classic   | H4             | No           | No (didn't tr
 Toshiba TC35661      | Dual mode | H4             | No           | No (didn't try)  | No     |         No           | tc3566         | HCI version not tested. See below
 TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL | Yes          | Yes              | No     |    Yes for CC256XC   | cc256x         | Also WL185x, WL187x, and WL189x
 
-esp32thing: 24:0A:C4:00:8B:C4
-nina1: 18:FE:34:6D:1B:D2
-nina2: 18:FE:34:6D:17:66
-
 **Notes**:
 
   1. BD_ADDR: Indciates if Bluetooth chipset compes with its own valid MAC Addess. Better Broadcom and CSR dongles usually come with a MAC address from the dongle manufacturer, but cheaper ones might come with identical addresses.
@@ -88,7 +84,7 @@ The ATILC3000 Bluetooth/Wifi combo controller has been used with Linux on embedd
 
 **BTstack integration**: *btstack_chipset_atwilc3000.c* contains the code to download the Bluetooth firmware image into the RAM of the ATWILC3000. After that, it can be normally used by BTstack.
 
-## Broadcom
+## Broadcom/Cypress Semiconductor
 
 Before the Broadcom Wifi+Bluetooth division was taken over by Cypress Semiconductor, it was not possible to buy Broadcom chipset in low quantities. Nevertheless, module manufacturers like Ampak created modules that contained Broadcom BCM chipsets (Bluetooth as well as Bluetooth+Wifi combos) that might already have been pre-tested for FCC and similar certifications.
 A popular example is the Ampak AP6212A module that contains an BCM 43438A1 and is used on the Raspberry Pi 3, the RedBear Duo, and the RedBear IoT pHAT for older Raspberry Pi models.
@@ -113,9 +109,11 @@ BTstack supports uploading of the init script in two variants: using .hcd files 
 
 SCO Data can be routed over HCI for both USB dongles and UART connections, however BTstack does not provide any form of flow control for UART connections. HSP and HFP Narrow Band Speech is supported via I2C/PCM pins.
 
-## CSR
+## CSR / Qualcomm Incorporated
 
-Similar to Broadcom, the best source for documentation is the source code for blueZ.
+CSR plc has been acquired by Qualcomm Incorporated in August 2015.
+
+Similar to Broadcom, the best source for documentation is the source code for blueZ. 
 
 CSR USB dongles do not require special configuration and SCO data is routed over USB by default.
 
