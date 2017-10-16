@@ -97,7 +97,7 @@ TEST(LE_DEVICE_DB, AddOTwoRemoveOne){
     bd_addr_t addr;
     sm_key_t sm_key;
     int addr_type;
-    le_device_db_info(0, &addr_type, addr, sm_key);
+    le_device_db_info(1, &addr_type, addr, sm_key);
     CHECK_EQUAL_ARRAY(sm_key_bb, sm_key, 16);
     CHECK_EQUAL_ARRAY(addr_bb, addr, 6);
 }

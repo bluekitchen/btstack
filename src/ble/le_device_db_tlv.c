@@ -90,6 +90,7 @@ typedef struct le_device_db_entry_t {
 #error "NVM_NUM_DEVICE_DB_ENTRIES must not be 0, please update in btstack_config.h"
 #endif
 
+// only stores if entry present
 static uint8_t  entry_map[NVM_NUM_DEVICE_DB_ENTRIES];
 static uint32_t num_valid_entries;
 
@@ -139,23 +140,6 @@ static int le_device_db_tlv_delete(int index){
 	return 1;
 }
 
-static int le_device_db_tlv_fetch_mapped(int index, le_device_db_entry_t * entry){
-    if (index < 0 || index >= num_valid_entries){
-	    log_error("le_device_db_tlv_fetch_mapped called with invalid index %d", index);
-	    return 0;
-	}
-	return le_device_db_tlv_fetch(entry_map[index], entry);
-}
-
-static int le_device_db_tlv_store_mapped(int index, le_device_db_entry_t * entry){
-    if (index < 0 || index >= num_valid_entries){
-	    log_error("le_device_tlv_store_mapped called with invalid index %d", index);
-	    return 0;
-	}
-	return le_device_db_tlv_store(entry_map[index], entry);
-}
-
-
 void le_device_db_init(void){
     int i;
 	num_valid_entries = 0;
@@ -163,10 +147,10 @@ void le_device_db_init(void){
     for (i=0;i<NVM_NUM_DEVICE_DB_ENTRIES;i++){
     	// lookup entry
     	le_device_db_entry_t entry;
-    	int ok = le_device_db_tlv_fetch(i, &entry);
-    	if (!ok) continue;
-    	// if valid, store entry_pos in entry_map
-    	entry_map[num_valid_entries++] = i;
+    	if (!le_device_db_tlv_fetch(i, &entry)) continue;
+
+    	entry_map[i] = 1;
+        num_valid_entries++;
     }
     log_info("num valid le device entries %u", num_valid_entries);
 }
@@ -182,17 +166,11 @@ int le_device_db_count(void){
 }
 
 void le_device_db_remove(int index){
-
 	// delete entry in TLV
-	int entry_pos = entry_map[index];
-	le_device_db_tlv_delete(entry_pos);
+	le_device_db_tlv_delete(index);
 
-	// shift all entries down by one
-	int i;
-    for (i=index;i<NVM_NUM_DEVICE_DB_ENTRIES - 1;i++){
-    	entry_map[i] = entry_map[i+1];
-    }
-    entry_map[NVM_NUM_DEVICE_DB_ENTRIES-1] = 0;
+	// mark as unused
+    entry_map[index] = 0;
 
     // keep track
     num_valid_entries--;
@@ -202,37 +180,18 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
 	// find unused entry in the used list
     int i;
     int index = -1;
-    int expected_index = 0;
-    int new_index = -1;
-    for (i=0;i<num_valid_entries;i++){
-         if (entry_map[i] == expected_index){
-         	expected_index++;
-         	continue;
-         }
+    for (i=0;i<NVM_NUM_DEVICE_DB_ENTRIES;i++){
+         if (entry_map[i]) continue;
          index = i;
-         new_index = expected_index;
          break;
-    }
-
-    if (i == num_valid_entries && num_valid_entries < NVM_NUM_DEVICE_DB_ENTRIES){
-    	index = num_valid_entries;
-    	new_index = num_valid_entries;
     }
 
     // no free entry found
     if (index < 0) return -1;
 
-    log_info("new entry pos %u used for index %u", index, new_index);
+    log_info("new entry for index %u", index);
 
-    // shift all entries up by one
-    for (i = NVM_NUM_DEVICE_DB_ENTRIES - 1; i > index; i--){
-    	entry_map[i] = entry_map[i-1];
-    }
-
-    // set in entry_mape
-    entry_map[index] = new_index;
-
-    // store entry at entry_pos = index
+    // store entry at index
 	le_device_db_entry_t entry;
     log_info("LE Device DB adding type %u - %s", addr_type, bd_addr_to_str(addr));
     log_info_key("irk", irk);
@@ -247,6 +206,9 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     // store
     le_device_db_tlv_store(index, &entry);
     
+    // set in entry_mape
+    entry_map[index] = 1;
+
     // keep track
     num_valid_entries++;
 
@@ -259,7 +221,7 @@ void le_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t irk)
 
 	// fetch entry
 	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch_mapped(index, &entry);
+	int ok = le_device_db_tlv_fetch(index, &entry);
 	if (!ok) return;
 
     if (addr_type) *addr_type = entry.addr_type;
@@ -271,7 +233,7 @@ void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_k
 
 	// fetch entry
 	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch_mapped(index, &entry);
+	int ok = le_device_db_tlv_fetch(index, &entry);
 	if (!ok) return;
 
 	// update
@@ -285,14 +247,14 @@ void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_k
     entry.authorized = authorized;
 
     // store
-    le_device_db_tlv_store_mapped(index, &entry);
+    le_device_db_tlv_store(index, &entry);
 }
 
 void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk, int * key_size, int * authenticated, int * authorized){
 
 	// fetch entry
 	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch_mapped(index, &entry);
+	int ok = le_device_db_tlv_fetch(index, &entry);
 	if (!ok) return;
 
 	// update user fields
@@ -313,7 +275,7 @@ void le_device_db_remote_csrk_get(int index, sm_key_t csrk){
 
 	// fetch entry
 	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch_mapped(index, &entry);
+	int ok = le_device_db_tlv_fetch(index, &entry);
 	if (!ok) return;
 
     if (csrk) memcpy(csrk, entry.remote_csrk, 16);
@@ -323,7 +285,7 @@ void le_device_db_remote_csrk_set(int index, sm_key_t csrk){
 
 	// fetch entry
 	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch_mapped(index, &entry);
+	int ok = le_device_db_tlv_fetch(index, &entry);
 	if (!ok) return;
 
     if (!csrk) return;
@@ -332,14 +294,14 @@ void le_device_db_remote_csrk_set(int index, sm_key_t csrk){
     memcpy(entry.remote_csrk, csrk, 16);
 
     // store
-    le_device_db_tlv_store_mapped(index, &entry);
+    le_device_db_tlv_store(index, &entry);
 }
 
 void le_device_db_local_csrk_get(int index, sm_key_t csrk){
 
 	// fetch entry
 	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch_mapped(index, &entry);
+	int ok = le_device_db_tlv_fetch(index, &entry);
 	if (!ok) return;
 
     if (!csrk) return;
@@ -352,7 +314,7 @@ void le_device_db_local_csrk_set(int index, sm_key_t csrk){
 
 	// fetch entry
 	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch_mapped(index, &entry);
+	int ok = le_device_db_tlv_fetch(index, &entry);
 	if (!ok) return;
 
     if (!csrk) return;
@@ -361,7 +323,7 @@ void le_device_db_local_csrk_set(int index, sm_key_t csrk){
     memcpy(entry.local_csrk, csrk, 16);
 
     // store
-    le_device_db_tlv_store_mapped(index, &entry);
+    le_device_db_tlv_store(index, &entry);
 }
 
 // query last used/seen signing counter
@@ -369,7 +331,7 @@ uint32_t le_device_db_remote_counter_get(int index){
 
 	// fetch entry
 	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch_mapped(index, &entry);
+	int ok = le_device_db_tlv_fetch(index, &entry);
 	if (!ok) return 0;
 
     return entry.remote_counter;
@@ -380,13 +342,13 @@ void le_device_db_remote_counter_set(int index, uint32_t counter){
 
 	// fetch entry
 	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch_mapped(index, &entry);
+	int ok = le_device_db_tlv_fetch(index, &entry);
 	if (!ok) return;
 
     entry.remote_counter = counter;
 
     // store
-    le_device_db_tlv_store_mapped(index, &entry);
+    le_device_db_tlv_store(index, &entry);
 }
 
 // query last used/seen signing counter
@@ -394,7 +356,7 @@ uint32_t le_device_db_local_counter_get(int index){
 
 	// fetch entry
 	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch_mapped(index, &entry);
+	int ok = le_device_db_tlv_fetch(index, &entry);
 	if (!ok) return 0;
 
     return entry.local_counter;
@@ -405,14 +367,14 @@ void le_device_db_local_counter_set(int index, uint32_t counter){
 
 	// fetch entry
 	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch_mapped(index, &entry);
+	int ok = le_device_db_tlv_fetch(index, &entry);
 	if (!ok) return;
 
 	// update
     entry.local_counter = counter;
 
     // store
-    le_device_db_tlv_store_mapped(index, &entry);
+    le_device_db_tlv_store(index, &entry);
 }
 
 #endif
@@ -423,7 +385,7 @@ void le_device_db_dump(void){
     for (i=0;i<num_valid_entries;i++){
 		// fetch entry
 		le_device_db_entry_t entry;
-		le_device_db_tlv_fetch_mapped(i, &entry);
+		le_device_db_tlv_fetch(i, &entry);
         log_info("%u: %u %s", i, entry.addr_type, bd_addr_to_str(entry.addr));
         log_info_key("irk", entry.irk);
 #ifdef ENABLE_LE_SIGNED_WRITE
