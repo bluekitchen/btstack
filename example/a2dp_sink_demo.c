@@ -744,7 +744,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             a2dp_subevent_stream_established_get_bd_addr(packet, address);
             status = a2dp_subevent_stream_established_get_status(packet);
             cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
-            if (cid != a2dp_cid) break;
+            printf("A2DP_SUBEVENT_STREAM_ESTABLISHED %d, %d \n", cid, a2dp_cid);
+            if (!a2dp_cid){
+                // incoming connection
+                a2dp_cid = cid;
+            } else if (cid != a2dp_cid) {
+                break;
+            }
             if (status){
                 app_state = AVDTP_APPLICATION_IDLE;
                 printf(" -- a2dp sink demo: streaming connection failed, status 0x%02x\n", status);
@@ -855,8 +861,8 @@ static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
     switch (cmd){
         case 'b':
-            printf(" - Create AVDTP connection to addr %s, and local seid %d.\n", bd_addr_to_str(device_addr), local_seid);
             status = a2dp_sink_establish_stream(device_addr, local_seid, &a2dp_cid);
+            printf(" - Create AVDTP connection to addr %s, and local seid %d, expected cid 0x%02x.\n", bd_addr_to_str(device_addr), local_seid, a2dp_cid);
             break;
         case 'B':
             printf(" - AVDTP disconnect from addr %s.\n", bd_addr_to_str(device_addr));

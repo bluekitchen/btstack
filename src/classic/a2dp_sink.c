@@ -291,7 +291,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             cid = avdtp_subevent_streaming_connection_established_get_avdtp_cid(packet);
             loc_seid = avdtp_subevent_streaming_connection_established_get_local_seid(packet);
             rem_seid = avdtp_subevent_streaming_connection_established_get_remote_seid(packet);
-
+            log_info("AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED, avdtp cid 0x%02x, status %d ---", cid, status);
+            
             if (status != 0){
                 a2dp_streaming_emit_connection_established(a2dp_sink_context.a2dp_callback, cid, address, loc_seid, rem_seid, status);
                 break;
