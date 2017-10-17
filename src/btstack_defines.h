@@ -298,6 +298,7 @@ typedef uint8_t sm_key_t[16];
 // ..
 // Internal properties reuse some GATT Characteristic Properties fields
 #define ATT_DB_FLAGS_READ_WITHOUT_AUTHENTICATION 0x0001
+#define ATT_DB_PERSISTENT_WRITE_CCC              0x0010
 
 
 // EVENTS

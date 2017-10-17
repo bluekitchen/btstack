@@ -75,10 +75,11 @@ property_flags = {
     
     # only used by gatt compiler >= 0xffff
     # Extended Properties
-    'RELIABLE_WRITE':             0x10000,
+    'RELIABLE_WRITE':              0x10000,
 
     # Broadcast, Notify, Indicate, Extended Properties are only used to describe a GATT Characteristic, but are free to use with att_db
     'READ_WITHOUT_AUTHENTICATION': 0x0001, 
+    'PERSISTENT_WRITE_CCC':        0x0010,
     # 0x10
     # 0x20
     # 0x80
@@ -317,8 +318,9 @@ def parseCharacteristic(fout, parts):
     else:
         size = size + len(value.split())
 
-    # drop Broadcast, Notify, Indicate - not used for flags 
-    value_properties = properties & 0x1ffce
+    # drop Broadcast (0x01), Notify (0x10), Indicate (0x20)- not used for flags 
+    # 
+    value_properties = properties & 0x1ffce 
 
     # add UUID128 flag for value handle
     if uuid_size == 16:
@@ -342,7 +344,12 @@ def parseCharacteristic(fout, parts):
 
     if add_client_characteristic_configuration(properties):
         # replace GATT Characterstic Properties with READ|WRITE|READ_WITHOUT_AUTHENTICATION|DYNAMIC
-        ccc_properties = (properties & 0x1fc00) | property_flags['READ_WITHOUT_AUTHENTICATION'] | property_flags['READ'] | property_flags['WRITE'] | property_flags['DYNAMIC'];
+        ccc_properties = (properties & 0x1fc00) |           \
+            property_flags['READ_WITHOUT_AUTHENTICATION'] | \
+            property_flags['READ'] |                        \
+            property_flags['WRITE'] |                       \
+            property_flags['DYNAMIC'] |                     \
+            property_flags['PERSISTENT_WRITE_CCC'];
         size = 2 + 2 + 2 + 2 + 2
         write_indent(fout)
         fout.write('// 0x%04x CLIENT_CHARACTERISTIC_CONFIGURATION\n' % (handle))
