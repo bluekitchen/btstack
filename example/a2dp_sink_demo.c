@@ -352,7 +352,6 @@ static void hal_audio_dma_process(btstack_data_source_t * ds, btstack_data_sourc
 
 static int media_processing_init(avdtp_media_codec_configuration_sbc_t configuration){
     if (media_initialized) return 0;
-    
 #ifdef DECODE_SBC
     btstack_sbc_decoder_init(&state, mode, handle_pcm_data, NULL);
 #endif
@@ -416,6 +415,7 @@ static int media_processing_init(avdtp_media_codec_configuration_sbc_t configura
     memset(ring_buffer_storage, 0, sizeof(ring_buffer_storage));
     btstack_ring_buffer_init(&ring_buffer, ring_buffer_storage, sizeof(ring_buffer_storage));
     audio_stream_started = 0;
+    audio_stream_paused = 0;
 #endif 
     media_initialized = 1;
     return 0;
