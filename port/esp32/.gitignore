@@ -30,3 +30,6 @@ spp_flowcontrol
 spp_streamer
 spp_streamer_client
 template/sdkconfig.old
+create_examples.pyc
+example/
+template/build/
