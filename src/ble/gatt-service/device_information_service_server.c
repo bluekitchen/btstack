@@ -129,12 +129,12 @@ void device_information_service_server_init(void){
 		device_information_fields[i].value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, device_information_characteristic_uuids[i]);
 	}
 
-	// register service with ATT DB	
+	// register service with ATT Server
 	device_information_service.start_handle   = start_handle;
 	device_information_service.end_handle     = end_handle;
 	device_information_service.read_callback  = &device_information_service_read_callback;
 	device_information_service.write_callback = NULL;
-	att_register_service_handler(&device_information_service);
+	att_server_register_service_handler(&device_information_service);
 }
 
 /**

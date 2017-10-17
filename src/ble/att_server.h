@@ -63,6 +63,12 @@ void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_
  */
 void att_server_register_packet_handler(btstack_packet_handler_t handler);
 
+/**
+ * @brief register read/write callbacks for specific handle range
+ * @param att_service_handler_t
+ */
+void att_server_register_service_handler(att_service_handler_t * handler);
+
 /*
  * @brief tests if a notification or indication can be send right now
  * @param con_handle

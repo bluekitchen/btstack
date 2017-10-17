@@ -72,7 +72,11 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 static btstack_packet_handler_t               att_client_packet_handler = NULL;
 static btstack_linked_list_t                  can_send_now_clients;
+static btstack_linked_list_t                  service_handlers;
 static uint8_t                                att_client_waiting_for_can_send;
+
+static att_read_callback_t                    att_server_client_read_callback;
+static att_write_callback_t                   att_server_client_write_callback;
 
 static att_server_t * att_server_for_handle(hci_con_handle_t con_handle){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
@@ -456,7 +460,98 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
     }
 }
 
+
+// gatt service management
+static att_service_handler_t * att_service_handler_for_handle(uint16_t handle){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &service_handlers);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        att_service_handler_t * handler = (att_service_handler_t*) btstack_linked_list_iterator_next(&it);
+        if (handler->start_handle > handle) continue;
+        if (handler->end_handle   < handle) continue;
+        return handler;
+    }
+    return NULL;
+}
+static att_read_callback_t att_server_read_callback_for_handle(uint16_t handle){
+    att_service_handler_t * handler = att_service_handler_for_handle(handle);
+    if (handler) return handler->read_callback;
+    return att_server_client_read_callback;
+}
+
+static att_write_callback_t att_server_write_callback_for_handle(uint16_t handle){
+    att_service_handler_t * handler = att_service_handler_for_handle(handle);
+    if (handler) return handler->write_callback;
+    return att_server_client_write_callback;
+}
+
+static void att_notify_write_callbacks(hci_con_handle_t con_handle, uint16_t transaction_mode){
+    // notify all callbacks
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &service_handlers);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        att_service_handler_t * handler = (att_service_handler_t*) btstack_linked_list_iterator_next(&it);
+        if (!handler->write_callback) continue;
+        (*handler->write_callback)(con_handle, 0, transaction_mode, 0, NULL, 0);
+    }
+    if (!att_server_client_write_callback) return;
+    (*att_server_client_write_callback)(con_handle, 0, transaction_mode, 0, NULL, 0);
+}
+
+// returns first reported error or 0
+static uint8_t att_validate_prepared_write(hci_con_handle_t con_handle){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &service_handlers);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        att_service_handler_t * handler = (att_service_handler_t*) btstack_linked_list_iterator_next(&it);
+        if (!handler->write_callback) continue;
+        uint8_t error_code = (*handler->write_callback)(con_handle, 0, ATT_TRANSACTION_MODE_VALIDATE, 0, NULL, 0);
+        if (error_code) return error_code;
+    }
+    if (!att_server_client_write_callback) return 0;
+    return (*att_server_client_write_callback)(con_handle, 0, ATT_TRANSACTION_MODE_VALIDATE, 0, NULL, 0);
+}
+
+static uint16_t att_server_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    att_read_callback_t callback = att_server_read_callback_for_handle(attribute_handle);
+    return (*callback)(con_handle, attribute_handle, offset, buffer, buffer_size);
+}
+
+static int att_server_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+    switch (transaction_mode){
+        case ATT_TRANSACTION_MODE_VALIDATE:
+            return att_validate_prepared_write(con_handle);
+        case ATT_TRANSACTION_MODE_EXECUTE:
+        case ATT_TRANSACTION_MODE_CANCEL:
+            att_notify_write_callbacks(con_handle, transaction_mode);
+            return 0;
+        default:
+            break;
+    }
+    att_write_callback_t callback = att_server_write_callback_for_handle(attribute_handle);
+
+    // TODO: check if write for ccc, if yes store in tlv
+    return (*callback)(con_handle, attribute_handle, transaction_mode, offset, buffer, buffer_size);
+}
+
+/**
+ * @brief register read/write callbacks for specific handle range
+ * @param att_service_handler_t
+ */
+void att_server_register_service_handler(att_service_handler_t * handler){
+    if (att_service_handler_for_handle(handler->start_handle) ||
+        att_service_handler_for_handle(handler->end_handle)){
+        log_error("handler for range 0x%04x-0x%04x already registered", handler->start_handle, handler->end_handle);
+        return;
+    }
+    btstack_linked_list_add(&service_handlers, (btstack_linked_item_t*) handler);
+}
+
 void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_write_callback_t write_callback){
+
+    // store callbacks
+    att_server_client_read_callback  = read_callback;
+    att_server_client_write_callback = write_callback;
 
     // register for HCI Events
     hci_event_callback_registration.callback = &att_event_packet_handler;
@@ -470,8 +565,8 @@ void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_
     att_dispatch_register_server(att_packet_handler);
 
     att_set_db(db);
-    att_set_read_callback(read_callback);
-    att_set_write_callback(write_callback);
+    att_set_read_callback(att_server_read_callback);
+    att_set_write_callback(att_server_write_callback);
 
 }
 

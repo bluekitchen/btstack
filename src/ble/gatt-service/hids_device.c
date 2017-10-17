@@ -196,12 +196,12 @@ void hids_device_init(uint8_t country_code, const uint8_t * descriptor, uint16_t
     hid_report_input_value_handle                       = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_REPORT);
     hid_report_input_client_configuration_handle        = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_REPORT);
 
-    // register service with ATT DB
+    // register service with ATT Server
     hid_service.start_handle   = start_handle;
     hid_service.end_handle     = end_handle;
     hid_service.read_callback  = &att_read_callback;
     hid_service.write_callback = &att_write_callback;
-    att_register_service_handler(&hid_service);
+    att_server_register_service_handler(&hid_service);
 }
 
 /**
