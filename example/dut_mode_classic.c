@@ -56,9 +56,8 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 /* @section Bluetooth Logic 
  *
- * @text The Bluetooth logic is implemented as a state machine within the packet
- * handler. In this example, the following states are passed sequentially:
- * INIT, and ACTIVE.
+ * @text When BTstack is up and running, send Enable Device Under Test Mode Command and
+ * print its result.
  */ 
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
