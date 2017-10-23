@@ -30,68 +30,22 @@
  */
 
 /*
- *  btstack_tlv_.h
+ *  btstack_tlv.c
  *
- *  Inteface for BTstack's Tag Value Length Persistent Storage implementations
- *  used to store pairing/bonding data
+ *  Singleton for BTstack's Tag Value Length Persistent Storage implementation
  */
 
-#ifndef __BTSTACK_TLV_H
-#define __BTSTACK_TLV_H
+#include "btstack_tlv.h"
 
-#include <stdint.h>
+static btstack_tlv_t * btstack_tlv_singleton_impl;
+static void * 		   btstack_tlv_singleton_context;
 
-#if defined __cplusplus
-extern "C" {
-#endif
-
-typedef struct {
-
-	/**
-	 * Get Value for Tag
-	 * @param context
-	 * @param tag
-	 * @param buffer
-	 * @param buffer_size
-	 * @returns size of value
-	 */
-	int (*get_tag)(void * context, uint32_t tag, uint8_t * buffer, uint32_t buffer_size);
-
-	/**
-	 * Store Tag 
-	 * @param context
-	 * @param tag
-	 * @param data
-	 * @param data_size
-	 * @returns 0 on success
-	 */
-	int (*store_tag)(void * context, uint32_t tag, const uint8_t * data, uint32_t data_size);
-
-	/**
-	 * Delete Tag
-	 * @param context
-	 * @param tag
-	 */
-	void (*delete_tag)(void * context,  uint32_t tag);
-
-} btstack_tlv_t;
-
-/** 
- * @brief Make TLV implementation available to BTstack components via Singleton
- * @note Usually called by port after BD_ADDR was retrieved from Bluetooth Controller
- * @param tlv_impl
- * @param tlv_context
- */
-void btstack_tlv_set_instance(btstack_tlv_t * tlv_impl, void * tlv_context);
-
-/**
- * @brief Get current TLV implementation. Used for bonding information, but can be used by application, too.
- * @param tlv_impl
- * @param tlv_context
- */
-void btstack_tlv_get_instance(btstack_tlv_t ** tlv_impl, void ** tlv_context);
-
-#if defined __cplusplus
+void btstack_tlv_set_instance(btstack_tlv_t * tlv_impl, void * tlv_context){
+	btstack_tlv_singleton_impl 	  = tlv_impl;
+	btstack_tlv_singleton_context = tlv_context;
 }
-#endif
-#endif // __BTSTACK_TLV_H
+
+void btstack_tlv_get_instance(btstack_tlv_t ** tlv_impl, void ** tlv_context){
+	*tlv_impl    = btstack_tlv_singleton_impl;
+	*tlv_context = btstack_tlv_singleton_context;
+}
