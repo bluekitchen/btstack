@@ -61,6 +61,14 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "btstack_stdin.h"
+#include "btstack_tlv_posix.h"
+
+#define TLV_DB_PATH_PREFIX "/tmp/btstack_"
+#define TLV_DB_PATH_POSTFIX ".tlv"
+static char tlv_db_path[100];
+static const btstack_tlv_t * tlv_impl;
+static btstack_tlv_posix_t   tlv_context;
+static bd_addr_t             local_addr;
 
 int btstack_main(int argc, const char * argv[]);
 
@@ -70,9 +78,20 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     UNUSED(channel);
     UNUSED(size);
     if (packet_type != HCI_EVENT_PACKET) return;
-    if (hci_event_packet_get_type(packet) != BTSTACK_EVENT_STATE) return;
-    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
-    printf("BTstack up and running.\n");
+    switch (hci_event_packet_get_type(packet)){
+        case BTSTACK_EVENT_STATE:
+            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
+            gap_local_bd_addr(local_addr);
+            printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
+            strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
+            strcat(tlv_db_path, bd_addr_to_str(local_addr));
+            strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
+            tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
+            btstack_tlv_set_instance(tlv_impl, &tlv_context);
+            break;
+        default:
+            break;
+    }
 }
 
 static void sigint_handler(int param){
