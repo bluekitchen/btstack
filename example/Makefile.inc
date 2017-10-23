@@ -35,6 +35,7 @@ COMMON += \
 	hci_dump.c		            \
 	l2cap.c			            \
 	l2cap_signaling.c	        \
+	btstack_tlv.c               \
 
 CLASSIC += \
 	btstack_link_key_db_memory.c   \
