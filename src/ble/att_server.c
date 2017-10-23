@@ -64,6 +64,11 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"
+#include "btstack_tlv.h"
+
+#ifndef GATT_SERVER_NUM_PERSISTENT_CCC
+#define GATT_SERVER_NUM_PERSISTENT_CCC 20
+#endif
 
 static void att_run_for_context(att_server_t * att_server);
 
@@ -77,6 +82,10 @@ static uint8_t                                att_client_waiting_for_can_send;
 
 static att_read_callback_t                    att_server_client_read_callback;
 static att_write_callback_t                   att_server_client_write_callback;
+
+// track CCC 1-entry cache
+// static att_server_t *    att_persistent_ccc_server;
+// static hci_con_handle_t  att_persistent_ccc_con_handle;
 
 static att_server_t * att_server_for_handle(hci_con_handle_t con_handle){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
@@ -460,6 +469,56 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
     }
 }
 
+// ---------------------
+// persistent CCC writes
+// TLV value format: le_device_index(8), attribute_handle(16), value (8)
+static uint32_t att_server_persistent_ccc_tag_for_index(uint8_t index){
+    return 'B' << 24 | 'T' << 16 | 'C' << 8 | index;
+}
+
+static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t value){
+    // lookup att_server instance
+    att_server_t * att_server = att_server_for_handle(con_handle);
+    if (!att_server) return;
+    int le_device_index = att_server->ir_le_device_db_index;
+    log_info("Store CCC value 0x%04x for handle 0x%04x of remote %s, le device id %d", value, att_handle, bd_addr_to_str(att_server->peer_address), le_device_index);
+    // check if bonded
+    if (le_device_index < 0) return;
+    // get btstack_tlv
+    const btstack_tlv_t * tlv_impl = NULL;
+    void * tlv_context;
+    btstack_tlv_get_instance(&tlv_impl, &tlv_context);
+    if (!tlv_impl) return;
+    // update ccc tag
+    int index;
+    uint8_t buffer[4];
+    int free_index = -1;
+    for (index=0;index<GATT_SERVER_NUM_PERSISTENT_CCC;index++){
+        uint32_t tag = att_server_persistent_ccc_tag_for_index(index);
+        int len = tlv_impl->get_tag(tlv_context, tag, buffer, sizeof(buffer));
+        if (len == 0){
+            free_index = index;
+            continue;
+        }
+        if (len != sizeof(buffer)) continue;
+        if (buffer[0] != le_device_index) continue;
+        if (little_endian_read_16(buffer, 1) != att_handle) continue;
+        // update
+        buffer[3] = value;
+        tlv_impl->store_tag(tlv_context, tag, buffer, sizeof(buffer));
+        return;
+    }
+    if (free_index < 0) return;
+    // store ccc tag
+    buffer[0] = le_device_index;
+    little_endian_store_16(buffer, 1, att_handle);
+    buffer[3] = value;
+    uint32_t tag = att_server_persistent_ccc_tag_for_index(free_index);
+    tlv_impl->store_tag(tlv_context, tag, buffer, sizeof(buffer));
+}
+
+// persistent CCC writes
+// ---------------------
 
 // gatt service management
 static att_service_handler_t * att_service_handler_for_handle(uint16_t handle){
@@ -530,7 +589,11 @@ static int att_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
     }
     att_write_callback_t callback = att_server_write_callback_for_handle(attribute_handle);
 
-    // TODO: check if write for ccc, if yes store in tlv
+    // track CCC writes
+    if (att_is_persistent_ccc(attribute_handle) && offset == 0 && buffer_size == 2){
+        att_server_persistent_ccc_write(con_handle, attribute_handle, little_endian_read_16(buffer, 0));
+    }
+
     return (*callback)(con_handle, attribute_handle, transaction_mode, offset, buffer, buffer_size);
 }
 
