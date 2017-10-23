@@ -71,6 +71,8 @@
 #endif
 
 static void att_run_for_context(att_server_t * att_server);
+static att_write_callback_t att_server_write_callback_for_handle(uint16_t handle);
+static void att_server_persistent_ccc_restore(att_server_t * att_server);
 
 // global
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -198,6 +200,12 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     if (!att_server) break;
                 	att_server->connection.encryption_key_size = sm_encryption_key_size(con_handle);
                 	att_server->connection.authenticated = sm_authenticated(con_handle);
+                    if (hci_event_packet_get_type(packet) == HCI_EVENT_ENCRYPTION_CHANGE){
+                        // restore CCC values when encrypted
+                        if (hci_event_encryption_change_get_encryption_enabled(packet)){
+                            att_server_persistent_ccc_restore(att_server);
+                        } 
+                    }
                 	break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -503,9 +511,15 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
         if (len != sizeof(buffer)) continue;
         if (buffer[0] != le_device_index) continue;
         if (little_endian_read_16(buffer, 1) != att_handle) continue;
-        // update
-        buffer[3] = value;
-        tlv_impl->store_tag(tlv_context, tag, buffer, sizeof(buffer));
+        if (value){
+            // update
+            if (buffer[3] == value) return;
+            buffer[3] = value;
+            tlv_impl->store_tag(tlv_context, tag, buffer, sizeof(buffer));
+        } else {
+            // delete
+            tlv_impl->delete_tag(tlv_context, tag);
+        }
         return;
     }
     if (free_index < 0) return;
@@ -515,6 +529,34 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
     buffer[3] = value;
     uint32_t tag = att_server_persistent_ccc_tag_for_index(free_index);
     tlv_impl->store_tag(tlv_context, tag, buffer, sizeof(buffer));
+}
+
+static void att_server_persistent_ccc_restore(att_server_t * att_server){
+    if (!att_server) return;
+    int le_device_index = att_server->ir_le_device_db_index;
+    log_info("Restore CCC values of remote %s, le device id %d", bd_addr_to_str(att_server->peer_address), le_device_index);
+    // get btstack_tlv
+    const btstack_tlv_t * tlv_impl = NULL;
+    void * tlv_context;
+    btstack_tlv_get_instance(&tlv_impl, &tlv_context);
+    if (!tlv_impl) return;
+    // get all ccc tag
+    int index;
+    uint8_t buffer[4];
+    for (index=0;index<GATT_SERVER_NUM_PERSISTENT_CCC;index++){
+        uint32_t tag = att_server_persistent_ccc_tag_for_index(index);
+        int len = tlv_impl->get_tag(tlv_context, tag, buffer, sizeof(buffer));
+        if (len != sizeof(buffer)) continue;
+        if (buffer[0] != le_device_index) continue;
+        // simulate write callback
+        uint16_t attribute_handle = little_endian_read_16(buffer, 1);
+        uint8_t  value[2];
+        little_endian_store_16(value, 0, buffer[3]);
+        att_write_callback_t callback = att_server_write_callback_for_handle(attribute_handle);
+        if (!callback) continue;
+        log_info("Attribute handle 0x%04x, value 0x%04x", attribute_handle, buffer[3]);
+        (*callback)(att_server->connection.con_handle, attribute_handle, ATT_TRANSACTION_MODE_NONE, 0, value, sizeof(value));
+    }
 }
 
 // persistent CCC writes
@@ -573,6 +615,7 @@ static uint8_t att_validate_prepared_write(hci_con_handle_t con_handle){
 
 static uint16_t att_server_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     att_read_callback_t callback = att_server_read_callback_for_handle(attribute_handle);
+    if (!callback) return 0;
     return (*callback)(con_handle, attribute_handle, offset, buffer, buffer_size);
 }
 
@@ -587,13 +630,14 @@ static int att_server_write_callback(hci_con_handle_t con_handle, uint16_t attri
         default:
             break;
     }
-    att_write_callback_t callback = att_server_write_callback_for_handle(attribute_handle);
 
     // track CCC writes
     if (att_is_persistent_ccc(attribute_handle) && offset == 0 && buffer_size == 2){
         att_server_persistent_ccc_write(con_handle, attribute_handle, little_endian_read_16(buffer, 0));
     }
 
+    att_write_callback_t callback = att_server_write_callback_for_handle(attribute_handle);
+    if (!callback) return 0;
     return (*callback)(con_handle, attribute_handle, transaction_mode, offset, buffer, buffer_size);
 }
 
