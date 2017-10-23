@@ -103,7 +103,7 @@ static void btstack_tlv_posix_delete_tag(void * context, uint32_t tag){
 		tlv_entry_t * entry = (tlv_entry_t*) btstack_linked_list_iterator_next(&it);
 		if (entry->tag != tag) continue;
 		btstack_linked_list_iterator_remove(&it);
-		btstack_tlv_posix_append_tag(self, tag, 0, NULL);
+		btstack_tlv_posix_append_tag(self, tag, NULL, 0);
 		return;
 	}
 }
