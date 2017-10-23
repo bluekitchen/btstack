@@ -5,6 +5,7 @@ SUBDIRS =  \
 	att_db \
 	avdtp \
 	avrcp \
+	tlv_posix \
 	ble_client \
 	btstack_link_key_db \
 	des_iterator \

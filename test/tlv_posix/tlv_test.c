@@ -1,0 +1,164 @@
+
+#include "CppUTest/TestHarness.h"
+#include "CppUTest/CommandLineTestRunner.h"
+
+#include "btstack_tlv.h"
+#include "btstack_tlv_posix.h"
+#include "hci_dump.h"
+#include "btstack_util.h"
+#include "btstack_config.h"
+#include "btstack_debug.h"
+#include <unistd.h>
+
+#define TEST_DB "/tmp/test.tlv"
+
+/// TLV
+TEST_GROUP(BSTACK_TLV){
+	const btstack_tlv_t * btstack_tlv_impl;
+	btstack_tlv_posix_t   btstack_tlv_context;
+    void setup(void){
+    	log_info("setup");
+    	// delete old file
+    	unlink(TEST_DB);
+    	// open db
+		btstack_tlv_impl = btstack_tlv_posix_init_instance(&btstack_tlv_context, TEST_DB);
+    }
+    void reopen_db(void){
+    	log_info("reopen");
+    	// close file 
+    	fclose(btstack_tlv_context.file);
+    	// reopen
+		btstack_tlv_impl = btstack_tlv_posix_init_instance(&btstack_tlv_context, TEST_DB);
+    }
+    void teardown(void){
+    	log_info("teardown");
+    	// close file
+    	fclose(btstack_tlv_context.file);
+    }
+};
+
+TEST(BSTACK_TLV, TestMissingTag){
+	uint32_t tag = 'abcd';
+	int size = btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, NULL, 0);
+	CHECK_EQUAL(size, 0);
+}
+
+TEST(BSTACK_TLV, TestWriteRead){
+	uint32_t tag = 'abcd';
+	uint8_t  data = 7;
+	uint8_t  buffer = data;
+	btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &buffer, 1);
+	int size = btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, NULL, 0);
+	CHECK_EQUAL(size, 1);
+	btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, &buffer, 1);
+	CHECK_EQUAL(buffer, data);
+}
+
+TEST(BSTACK_TLV, TestWriteWriteRead){
+	uint32_t tag = 'abcd';
+	uint8_t  data = 7;
+	uint8_t  buffer = data;
+	btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &buffer, 1);
+	data++;
+	buffer = data;
+	btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &buffer, 1);
+	int size = btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, NULL, 0);
+	CHECK_EQUAL(size, 1);
+	btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, &buffer, 1);
+	CHECK_EQUAL(buffer, data);
+}
+
+TEST(BSTACK_TLV, TestWriteABARead){
+	uint32_t tag_a = 'aaaa';
+	uint32_t tag_b = 'bbbb';
+	uint8_t  data = 7;
+	uint8_t  buffer = data;
+	btstack_tlv_impl->store_tag(&btstack_tlv_context, tag_a, &buffer, 1);
+ 	data++;
+	buffer = data;
+	btstack_tlv_impl->store_tag(&btstack_tlv_context, tag_b, &buffer, 1);
+	data++;
+	buffer = data;
+	btstack_tlv_impl->store_tag(&btstack_tlv_context, tag_a, &buffer, 1);
+	int size = btstack_tlv_impl->get_tag(&btstack_tlv_context, tag_a, NULL, 0);
+	CHECK_EQUAL(size, 1);
+	btstack_tlv_impl->get_tag(&btstack_tlv_context, tag_a, &buffer, 1);
+	CHECK_EQUAL(buffer, data);
+}
+
+TEST(BSTACK_TLV, TestWriteDeleteRead){
+	uint32_t tag = 'abcd';
+	uint8_t  data = 7;
+	uint8_t  buffer = data;
+	btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &buffer, 1);
+	data++;
+	buffer = data;
+	btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &buffer, 1);
+	btstack_tlv_impl->delete_tag(&btstack_tlv_context, tag);
+	int size = btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, NULL, 0);
+	CHECK_EQUAL(size, 0);
+}
+
+TEST(BSTACK_TLV, TestMigrate){
+	uint32_t tag = 'abcd';
+	uint8_t  data[8];
+	memcpy(data, "01234567", 8);
+
+	// entry 8 + data 8 = 16. 
+	int i;
+	for (i=0;i<8;i++){
+		data[0] = '0' + i;
+		btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &data[0], 8);
+	}
+
+	reopen_db();
+
+	uint8_t buffer[8];
+	btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, &buffer[0], 1);
+	CHECK_EQUAL(buffer[0], data[0]);
+}
+
+TEST(BSTACK_TLV, TestMigrate2){
+	uint32_t tag1 = 0x11223344;
+	uint32_t tag2 = 0x44556677;
+	uint8_t  data1[8];
+	memcpy(data1, "01234567", 8);
+	uint8_t  data2[8];
+	memcpy(data2, "abcdefgh", 8);
+
+	// entry 8 + data 8 = 16. 
+	int i;
+	for (i=0;i<8;i++){
+		data1[0] = '0' + i;
+		data2[0] = 'a' + i;
+		btstack_tlv_impl->store_tag(&btstack_tlv_context, tag1, data1, 8);
+		btstack_tlv_impl->store_tag(&btstack_tlv_context, tag2, data2, 8);
+	}
+
+	reopen_db();
+
+	uint8_t buffer[8];
+	btstack_tlv_impl->get_tag(&btstack_tlv_context, tag1, &buffer[0], 1);
+	CHECK_EQUAL(buffer[0], data1[0]);
+	btstack_tlv_impl->get_tag(&btstack_tlv_context, tag2, &buffer[0], 1);
+	CHECK_EQUAL(buffer[0], data2[0]);
+}
+
+TEST(BSTACK_TLV, TestWriteResetRead){
+    uint32_t tag = 'abcd';
+    uint8_t  data = 7;
+    uint8_t  buffer = data;
+    btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &buffer, 1);
+
+    reopen_db();
+
+    int size = btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, NULL, 0);
+    CHECK_EQUAL(size, 1);
+    btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, &buffer, 1);
+    CHECK_EQUAL(buffer, data);
+}
+
+int main (int argc, const char * argv[]){
+	hci_dump_open("tlv_test.pklg", HCI_DUMP_PACKETLOGGER);
+    return CommandLineTestRunner::RunAllTests(argc, argv);
+}
