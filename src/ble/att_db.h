@@ -230,6 +230,16 @@ uint16_t gatt_server_get_value_handle_for_characteristic_with_uuid16(uint16_t st
 // returns 0 if not found
 uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
 
+// non-user functionality for att_server
+
+/*
+ * @brief Check if writes to handle should be persistent
+ * @param handle
+ * @returns 1 if persistent
+ */
+int att_is_persistent_ccc(uint16_t handle);
+
+
 #if defined __cplusplus
 }
 #endif
