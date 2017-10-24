@@ -178,10 +178,6 @@ void btstack_run_loop_freertos_execute_code_on_main_thread_from_isr(void (*fn)(v
  */
 static void btstack_run_loop_freertos_execute(void) {
     log_debug("RL: execute");
-
-#ifdef HAVE_FREERTOS_TASK_NOTIFICATIONS
-    btstack_run_loop_task = xTaskGetCurrentTaskHandle();
-#endif
     
     while (1) {
 
@@ -257,6 +253,11 @@ static void btstack_run_loop_freertos_init(void){
 #ifndef HAVE_FREERTOS_TASK_NOTIFICATIONS
     // event group to wake run loop
     btstack_run_loop_event_group = xEventGroupCreate();
+#endif
+
+#ifdef HAVE_FREERTOS_TASK_NOTIFICATIONS
+    btstack_run_loop_task = xTaskGetCurrentTaskHandle();
+    log_info("run loop task %p", btstack_run_loop_task);
 #endif
 
     log_info("run loop init, queue item size %u", (int) sizeof(function_call_t));
