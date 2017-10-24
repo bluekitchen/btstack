@@ -152,7 +152,11 @@ void btstack_run_loop_freertos_trigger_from_isr(void){
 #ifdef HAVE_FREERTOS_TASK_NOTIFICATIONS
     xTaskNotifyFromISR(btstack_run_loop_task, EVENT_GROUP_FLAG_RUN_LOOP, eSetBits, &xHigherPriorityTaskWoken);
     if (xHigherPriorityTaskWoken) {
+#ifdef ESP_PLATFORM
+        portYIELD_FROM_ISR();
+#else
         portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+#endif
     }
 #else
     xEventGroupSetBitsFromISR(btstack_run_loop_event_group, EVENT_GROUP_FLAG_RUN_LOOP, &xHigherPriorityTaskWoken);
