@@ -69,6 +69,8 @@ uint32_t hal_time_ms(void) {
     return esp_log_timestamp();
 }
 
+#ifdef CONFIG_BT_ENABLED
+
 // assert pre-buffer for packet type is available
 #if !defined(HCI_OUTGOING_PRE_BUFFER_SIZE) || (HCI_OUTGOING_PRE_BUFFER_SIZE < 1)
 #error HCI_OUTGOING_PRE_BUFFER_SIZE not defined or smaller than 1. Please update hci.h
@@ -292,6 +294,35 @@ static const hci_transport_t transport = {
     NULL, // reset link
     NULL, // set SCO config
 };
+
+#else
+
+// this port requires the ESP32 Bluetooth to be enabled in the sdkconfig
+// try to tell the user
+
+#include "esp_log.h"
+static void transport_init(const void *transport_config){
+    while (1){
+        ESP_LOGE("BTstack", "ESP32 Transport Init called, but Bluetooth support not enabled in sdkconfig.");
+        ESP_LOGE("BTstack", "Please enable CONFIG_BT_ENABLED with 'make menuconfig and compile again.");
+        ESP_LOGE("BTstack", "");
+    }
+}
+
+static const hci_transport_t transport = {
+    "none",
+    &transport_init,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL, // set baud rate
+    NULL, // reset link
+    NULL, // set SCO config
+};
+#endif
+
 
 static const hci_transport_t * transport_get_instance(void){
     return &transport;
