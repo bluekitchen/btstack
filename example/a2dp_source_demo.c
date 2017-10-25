@@ -295,11 +295,6 @@ static void a2dp_demo_timer_stop(a2dp_media_sending_context_t * context){
     btstack_run_loop_remove_timer(&context->audio_timer);
 } 
 
-static void a2dp_demo_timer_pause(a2dp_media_sending_context_t * context){
-    btstack_run_loop_remove_timer(&context->audio_timer);
-} 
-
-
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -328,6 +323,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             // TODO: check incoming cid
             a2dp_subevent_incoming_connection_established_get_bd_addr(packet, address);
             cid = a2dp_subevent_incoming_connection_established_get_a2dp_cid(packet);
+            printf("A2DP_SUBEVENT_INCOMING_CONNECTION_ESTABLISHED, cid 0x%02x,  media_tracker.a2dp_cid 0x%02x\n", cid, media_tracker.a2dp_cid);
             if (cid != media_tracker.a2dp_cid) break;
             
             media_tracker.connected = 1;
@@ -339,6 +335,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             }
             break;
         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
+            media_tracker.connected = 1;
             a2dp_subevent_stream_established_get_bd_addr(packet, address);
             status = a2dp_subevent_stream_established_get_status(packet);
             if (status){
@@ -353,7 +350,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             media_tracker.a2dp_cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
             printf("A2DP: Stream established: address %s, a2dp cid 0x%02x, local seid %d, remote seid %d.\n", bd_addr_to_str(address),
                 media_tracker.a2dp_cid, media_tracker.local_seid, a2dp_subevent_stream_established_get_remote_seid(packet));
-            printf("Start playing mod.\n");
+            printf("Start playing mod, cid 0x%02x.\n", media_tracker.a2dp_cid);
             data_source = STREAM_MOD;
             status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
@@ -374,7 +371,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             play_info.status = AVRCP_PLAYBACK_STATUS_PAUSED;
             avrcp_target_set_playback_status(avrcp_cid, AVRCP_PLAYBACK_STATUS_PAUSED);
             printf("A2DP: Stream paused.\n");
-            a2dp_demo_timer_pause(&media_tracker);
+            a2dp_demo_timer_stop(&media_tracker);
             break;
 
         case A2DP_SUBEVENT_STREAM_RELEASED:
@@ -502,8 +499,8 @@ static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
     switch (cmd){
         case 'b':
-            printf(" - Create AVDTP Source connection to addr %s.\n", bd_addr_to_str(device_addr));
             status = a2dp_source_establish_stream(device_addr, media_tracker.local_seid, &media_tracker.a2dp_cid);
+            printf(" - Create AVDTP Source connection to addr %s, cid 0x%02x.\n", bd_addr_to_str(device_addr), media_tracker.a2dp_cid);
             break;
         case 'B':
             printf(" - AVDTP Source Disconnect from cid 0x%2x\n", media_tracker.a2dp_cid);
@@ -532,10 +529,6 @@ static void stdin_process(char cmd){
 
         case 'x':
             avrcp_target_set_now_playing_info(avrcp_cid, &tracks[data_source], sizeof(tracks)/sizeof(avrcp_track_t));
-            if (data_source == STREAM_SINE) {
-                printf("Already playing sine.\n");
-                return;
-            }
             printf("Playing sine.\n");
             data_source = STREAM_SINE;
             if (!media_tracker.connected) break;
@@ -543,18 +536,14 @@ static void stdin_process(char cmd){
             break;
         case 'z':
             avrcp_target_set_now_playing_info(avrcp_cid, &tracks[data_source], sizeof(tracks)/sizeof(avrcp_track_t));
-            if (data_source == STREAM_MOD) {
-                printf("Already playing mode.\n");
-                return;
-            }
             printf("Playing mod.\n");
             data_source = STREAM_MOD;
             if (!media_tracker.connected) break;
             status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
         case 'p':
-            printf("Pause stream.\n");
             if (!media_tracker.connected) break;
+            printf("Pause stream.\n");
             status = a2dp_source_pause_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
         case '0':
