@@ -757,6 +757,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 break;
             }
             printf(" -- a2dp sink demo: streaming connection is established, address %s, a2dp cid 0x%02X, local_seid %d\n", bd_addr_to_str(address), a2dp_cid, local_seid);
+            
+            memcpy(device_addr, address, 6);
+
             local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
             app_state = AVDTP_APPLICATION_STREAMING;
             break;
@@ -812,9 +815,9 @@ static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth AVDTP Sink/AVRCP Connection Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("b      - AVDTP Sink create  connection to addr %s\n", device_addr_string);
+    printf("b      - AVDTP Sink create  connection to addr %s\n", bd_addr_to_str(device_addr));
     printf("B      - AVDTP Sink disconnect\n");
-    printf("c      - AVRCP create connection to addr %s\n", device_addr_string);
+    printf("c      - AVRCP create connection to addr %s\n", bd_addr_to_str(device_addr));
     printf("C      - AVRCP disconnect\n");
 
     printf("\n--- Bluetooth AVRCP Commands %s ---\n", bd_addr_to_str(iut_address));
