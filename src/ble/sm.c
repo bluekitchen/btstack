@@ -3435,7 +3435,7 @@ static const uint8_t sm_pdu_size[] = {
     17, // 0x04 pairing random
     2,  // 0x05 pairing failed
     17, // 0x06 encryption information
-    8,  // 0x07 master identification
+    11, // 0x07 master identification
     17, // 0x08 identification information
     8,  // 0x09 identify address information
     17, // 0x0a signing information
@@ -3458,7 +3458,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
     // validate pdu size
     if (sm_pdu_code >= sizeof(sm_pdu_size)) return;
-    if (sm_pdu_size[sm_pdu_code] < size)   return;
+    if (sm_pdu_size[sm_pdu_code] != size)   return;
 
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
     if (!sm_conn) return;
