@@ -184,7 +184,8 @@ static bd_addr_t device_addr;
 #endif
 
 static uint16_t avrcp_cid = 0;
-static uint8_t sdp_avrcp_controller_service_buffer[200];
+static uint8_t  avrcp_connected = 0;
+static uint8_t  sdp_avrcp_controller_service_buffer[200];
 
 #ifdef HAVE_PORTAUDIO
 static int patestCallback( const void *inputBuffer, void *outputBuffer,
@@ -585,17 +586,21 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             }
             
             avrcp_cid = local_cid;
+            avrcp_connected = 1;
             avrcp_subevent_connection_established_get_bd_addr(packet, adress);
             printf("Channel successfully opened: %s, avrcp_cid 0x%02x\n", bd_addr_to_str(adress), avrcp_cid);
 
             // automatically enable notifications
             avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
             avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
             return;
         }
         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
             printf("Channel released: avrcp_cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
             avrcp_cid = 0;
+            avrcp_connected = 0;
             return;
         default:
             break;
@@ -862,6 +867,20 @@ static uint8_t media_sbc_codec_configuration[] = {
 #ifdef HAVE_BTSTACK_STDIN
 static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
+    printf("stdin_process \n");
+    if (!avrcp_connected){
+        switch (cmd){
+            case 'b':
+            case 'B':
+            case 'c':
+                break;
+            default:
+                printf("Command '%c' cannot be performed - please use 'c' to establish an AVRCP connection with device (addr %s).\n", cmd, bd_addr_to_str(device_addr));
+                return;    
+        }
+    
+    }
+    
     switch (cmd){
         case 'b':
             status = a2dp_sink_establish_stream(device_addr, local_seid, &a2dp_cid);
