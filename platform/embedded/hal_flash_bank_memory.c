@@ -86,18 +86,18 @@ static void hal_flash_bank_memory_write(void * context, int bank, uint32_t offse
 	if (offset > self->bank_size) return;
 	if ((offset + size) > self->bank_size) return;
 
-#ifdef BTSTACK_TEST
 	int i;
 	for (i=0;i<size;i++){
-		if (self->banks[bank][offset] != 0xff && data[i] != 0x0){
+		// write 0xff doesn't change anything
+		if (data[i] == 0xff) continue;
+		// writing something other than 0x00 is only allowed once
+		if (self->banks[bank][offset] != 0xff && data[i] != 0x00){
 			printf("Error: offset %u written twice. Data: 0x%02x!\n", offset+i, data[i]);
 			exit(10);
 			return;			
 		}
+		self->banks[bank][offset++] = data[i];
 	}
-#endif
-
-	memcpy(&self->banks[bank][offset], data, size);
 }
 
 static const hal_flash_bank_t hal_flash_bank_memory_instance = {
