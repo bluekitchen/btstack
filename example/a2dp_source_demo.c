@@ -35,6 +35,21 @@
  *
  */
 
+#define __BTSTACK_FILE__ "a2dp_source_demo.c"
+
+/*
+ * a2dp_source_demo.c
+ */
+
+// *****************************************************************************
+/* EXAMPLE_START(a2dp_source_demo): A2DP Source Demo
+ *
+ * @text This A2DP Source example demonstrates how to send 
+ * an audio to a remote A2DP Sink device, and, if HAVE_BTSTACK_STDIN is defined,
+ * how to switch between two audio data sources. 
+ */
+// *****************************************************************************
+
 
 #include <stdint.h>
 #include <stdio.h>
@@ -566,7 +581,7 @@ static void stdin_process(char cmd){
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
-    UNUSED(argc);
+    (void)argc;
     (void)argv;
 
     // register for HCI events
@@ -614,3 +629,4 @@ int btstack_main(int argc, const char * argv[]){
     hci_power_control(HCI_POWER_ON);
     return 0;
 }
+/* EXAMPLE_END */
