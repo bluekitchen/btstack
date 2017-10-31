@@ -52,14 +52,13 @@
 
 #define BTSTACK_TLV_HEADER_LEN 8
 
-// #ifdef BTSTACK_FLASH_ALIGNMENT_MAX
-// #define BTSTACK_FLASH_ALIGNMENT 16
-// #endif
+#ifndef BTSTACK_FLASH_ALIGNMENT_MAX
+#define BTSTACK_FLASH_ALIGNMENT_MAX 8
+#endif
 
 static const char * btstack_tlv_header_magic = "BTstack";
 
 // TLV Iterator
-
 typedef struct {
 	int 	 bank;
 	uint32_t offset;
@@ -67,19 +66,56 @@ typedef struct {
 	uint32_t len;
 } tlv_iterator_t;
 
-// support unaligned flash read/write
+static uint32_t btstack_tlv_flash_bank_align_size(btstack_tlv_flash_bank_t * self, uint32_t size){
+	uint32_t aligment = self->hal_flash_bank_impl->get_alignment(self->hal_flash_bank_context);
+	return (size + aligment - 1) & ~(aligment - 1);
+}
+
+// support unaligned flash read/writes
+// strategy: increase size to meet alignment, perform unaligned read/write of last chunk with helper buffer
+
 static void btstack_tlv_flash_bank_read(btstack_tlv_flash_bank_t * self, int bank, uint32_t offset, uint8_t * buffer, uint32_t size){
- 	self->hal_flash_bank_impl->read(self->hal_flash_bank_context, bank, offset, buffer, size);
+
+	// read main data
+	uint32_t aligment = self->hal_flash_bank_impl->get_alignment(self->hal_flash_bank_context);
+	uint32_t lower_bits = size & (aligment - 1);
+	uint32_t size_aligned = size - lower_bits;
+	if (size_aligned){
+		self->hal_flash_bank_impl->read(self->hal_flash_bank_context, bank, offset, buffer, size_aligned);
+		buffer += size_aligned;
+		offset += size_aligned;
+		size   -= size_aligned;
+	}
+
+	// read last part
+	if (size == 0) return;
+	uint8_t aligment_block[BTSTACK_FLASH_ALIGNMENT_MAX];
+	self->hal_flash_bank_impl->read(self->hal_flash_bank_context, bank, offset, aligment_block, aligment);
+	uint32_t bytes_to_copy = btstack_min(aligment - lower_bits, size);
+	memcpy(buffer, aligment_block, bytes_to_copy);
 }
 
 static void btstack_tlv_flash_bank_write(btstack_tlv_flash_bank_t * self, int bank, uint32_t offset, const uint8_t * buffer, uint32_t size){
-	self->hal_flash_bank_impl->write(self->hal_flash_bank_context, bank, offset, buffer, size);
+
+	// write main data
+	uint32_t aligment = self->hal_flash_bank_impl->get_alignment(self->hal_flash_bank_context);
+	uint32_t lower_bits = size & (aligment - 1);
+	uint32_t size_aligned = size - lower_bits;
+	if (size_aligned){
+		self->hal_flash_bank_impl->write(self->hal_flash_bank_context, bank, offset, buffer, size_aligned);
+		buffer += size_aligned;
+		offset += size_aligned;
+		size   -= size_aligned;
+	}
+
+	// write last part
+	if (size == 0) return;
+	uint8_t aligment_block[BTSTACK_FLASH_ALIGNMENT_MAX];
+	memset(aligment_block, 0xff, aligment);
+	memcpy(aligment_block, buffer, lower_bits);
+	self->hal_flash_bank_impl->write(self->hal_flash_bank_context, bank, offset, aligment_block, aligment);
 }
 
-// static uint32_t btstack_tlv_flash_bank_align_size(btstack_tlv_flash_bank * self, uint32_t size){
-// 	uint32_t aligment = self->hal_flash_bank_impl->get_alignment(self->hal_flash_bank_context);
-// 	return (size + aligment-1) & ~(alignement - 1);
-// }
 
 // iterator
 
@@ -103,7 +139,7 @@ static int btstack_tlv_flash_bank_iterator_has_next(btstack_tlv_flash_bank_t * s
 }
 
 static void tlv_iterator_fetch_next(btstack_tlv_flash_bank_t * self, tlv_iterator_t * it){
-	it->offset += 8 + it->len;
+	it->offset += 8 + btstack_tlv_flash_bank_align_size(self, it->len);
 	if (it->offset >= self->hal_flash_bank_impl->get_size(self->hal_flash_bank_context)) {
 		it->tag = 0xffffffff;
 		it->len = 0;
@@ -213,16 +249,6 @@ static void btstack_tlv_flash_bank_migrate(btstack_tlv_flash_bank_t * self){
 	self->write_offset = next_write_pos;
 }
 
-// returns 1 == ok
-static int btstack_tlv_flash_bank_verify_alignment(btstack_tlv_flash_bank_t * self, uint32_t value_size){
-	uint32_t aligment = self->hal_flash_bank_impl->get_alignment(self->hal_flash_bank_context);
-	if (value_size % aligment){
-		log_error("Value size %u not a multiply of flash alignment %u", value_size, aligment);
-		return 0;
-	};
-	return 1;
-}
-
 static void btstack_tlv_flash_bank_delete_tag_until_offset(btstack_tlv_flash_bank_t * self, uint32_t tag, uint32_t offset){
 	tlv_iterator_t it;
 	btstack_tlv_flash_bank_iterator_init(self, &it, self->current_bank);
@@ -247,9 +273,6 @@ static void btstack_tlv_flash_bank_delete_tag_until_offset(btstack_tlv_flash_ban
 static int btstack_tlv_flash_bank_get_tag(void * context, uint32_t tag, uint8_t * buffer, uint32_t buffer_size){
 
 	btstack_tlv_flash_bank_t * self = (btstack_tlv_flash_bank_t *) context;
-
-	// abort if data size not aligned with flash requirements
-	if (!btstack_tlv_flash_bank_verify_alignment(self, buffer_size)) return 0;
 
 	uint32_t tag_index = 0;
 	uint32_t tag_len   = 0;
@@ -281,9 +304,6 @@ static int btstack_tlv_flash_bank_store_tag(void * context, uint32_t tag, const 
 
 	btstack_tlv_flash_bank_t * self = (btstack_tlv_flash_bank_t *) context;
 
-	// abort if data size not aligned with flash requirements
-	if (!btstack_tlv_flash_bank_verify_alignment(self, data_size)) return 1;
-
 	// trigger migration if not enough space
 	if (self->write_offset + 8 + data_size > self->hal_flash_bank_impl->get_size(self->hal_flash_bank_context)){
 		btstack_tlv_flash_bank_migrate(self);
@@ -311,7 +331,7 @@ static int btstack_tlv_flash_bank_store_tag(void * context, uint32_t tag, const 
 	btstack_tlv_flash_bank_delete_tag_until_offset(self, tag, self->write_offset);
 
 	// done
-	self->write_offset += sizeof(entry) + data_size;
+	self->write_offset += sizeof(entry) + btstack_tlv_flash_bank_align_size(self, data_size);
 
 	return 0;
 }
