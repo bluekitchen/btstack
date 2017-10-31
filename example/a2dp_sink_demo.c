@@ -540,10 +540,6 @@ static void media_processing_close(void){
  * handle_pcm_data callback.
  */ 
 
-#if defined(HAVE_PORTAUDIO) || defined(STORE_SBC_TO_WAV_FILE) || defined(HAVE_AUDIO_DMA) 
-static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context);
-#endif
-
 static int read_media_data_header(uint8_t * packet, int size, int * offset, avdtp_media_packet_header_t * media_header);
 static int read_sbc_header(uint8_t * packet, int size, int * offset, avdtp_sbc_codec_header_t * sbc_header);
 
