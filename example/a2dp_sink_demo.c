@@ -42,7 +42,7 @@
  */
 
 // *****************************************************************************
-/* EXAMPLE_START(a2dp_sink_demo): Receive audio and control playback.
+/* EXAMPLE_START(a2dp_sink_demo): Receive audio stream and control its playback.
  *
  * @text This A2DP Sink example demonstrates how to use the A2DP Sink service to 
  * receive an audio data stream from a remote A2DP Source device. In addition,
@@ -227,7 +227,7 @@ static uint8_t media_sbc_codec_configuration[] = {
  * - handle_pcm_data - handles PCM audio frames. Here, they are stored a in wav file if STORE_SBC_TO_WAV_FILE is defined, and/or played using the PortAudio library if HAVE_PORTAUDIO is defined.
  */
 
-/* LISTING_START(MainConfiguration): Setup Audio Sink and AVRCP services */
+/* LISTING_START(MainConfiguration): Setup Audio Sink and AVRCP Controller services */
 static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size);
 static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16_t size);
