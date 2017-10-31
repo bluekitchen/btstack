@@ -110,6 +110,7 @@ EXAMPLES = 					\
 	a2dp_sink_demo			\
 	a2dp_source_demo       \
 	ancs_client_demo		\
+	dut_mode_classic        \
 	gap_dedicated_bonding	\
 	gap_inquiry 			\
 	gap_le_advertisements   \
@@ -251,28 +252,31 @@ gap_le_advertisements: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ}  gap_le_advertisement
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hsp_hs_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hsp_hs.o hsp_hs_demo.c
-	${CC} $^ ${CFLAGS} -I${BTSTACK_ROOT}/platform/posix ${LDFLAGS} -o $@
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hsp_ag_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hsp_ag.o hsp_ag_demo.c
-	${CC} $^ ${CFLAGS} -I${BTSTACK_ROOT}/platform/posix ${LDFLAGS} -o $@
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hfp_ag_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hfp.o hfp_gsm_model.o hfp_ag.o hfp_ag_demo.c
-	${CC} $^ ${CFLAGS} -I${BTSTACK_ROOT}/platform/posix ${LDFLAGS} -o $@
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hfp_hf_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hfp.o hfp_hf.o hfp_hf_demo.c
-	${CC} $^ ${CFLAGS} -I${BTSTACK_ROOT}/platform/posix ${LDFLAGS} -o $@
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hid_keyboard_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_ring_buffer.o hid_device.o hid_keyboard_demo.o
-	${CC} $^ ${CFLAGS} -I${BTSTACK_ROOT}/platform/posix ${LDFLAGS} -o $@
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hid_mouse_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_ring_buffer.o hid_device.o hid_mouse_demo.o
-	${CC} $^ ${CFLAGS} -I${BTSTACK_ROOT}/platform/posix ${LDFLAGS} -o $@
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 a2dp_source_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_ENCODER_OBJ} ${SBC_DECODER_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} avrcp.o avrcp_target.o a2dp_source_demo.c
-	${CC} $^ ${CFLAGS} -I${BTSTACK_ROOT}/platform/posix ${LDFLAGS} -o $@
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 a2dp_sink_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_ENCODER_OBJ} ${SBC_DECODER_OBJ} ${AVDTP_OBJ} avrcp.o avrcp_controller.o a2dp_sink_demo.c
-	${CC} $^ ${CFLAGS} -I${BTSTACK_ROOT}/platform/posix ${LDFLAGS} -o $@
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+dut_mode_classic: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} dut_mode_classic.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:
 	rm -f ${EXAMPLES} *_demo

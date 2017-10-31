@@ -50,12 +50,10 @@
 #include "btstack_run_loop_freertos.h"
 #include "hal_uart_dma.h"
 
-// hack to avoid error for ESP32
-#ifndef ESP_PLATFORM
-
 #if (INCLUDE_xEventGroupSetBitFromISR != 1) && !defined(HAVE_FREERTOS_TASK_NOTIFICATIONS)
 #error "The BTstack HAL UART Run Loop integration (btstack_uart_block_freertos) needs to trigger Run Loop iterations from ISR context," \
-"but 'INCLUDE_xEventGroupSetBitFromISR' is not enabled in your FreeRTOS configuration. Please enable INCLUDE_xEventGroupSetBitFromISR."
+"but neither 'INCLUDE_xEventGroupSetBitFromISR' is enabled in your FreeRTOS configuration nor HAVE_FREERTOS_TASK_NOTIFICATIONS is enabled in " \
+"btstack_config.h. Please enable INCLUDE_xEventGroupSetBitFromISR or HAVE_FREERTOS_TASK_NOTIFICATIONS."
 #endif
 
 // uart config
@@ -169,6 +167,3 @@ static const btstack_uart_block_t btstack_uart_block_freertos = {
 const btstack_uart_block_t * btstack_uart_block_freertos_instance(void){
 	return &btstack_uart_block_freertos;
 }
-
-// end of hack to avoid error for ESP32
-#endif // ESP_PLATFORM

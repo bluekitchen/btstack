@@ -9,12 +9,26 @@ import subprocess
 import sys
 
 
-gatt_update_template = '''#!/bin/sh
-DIR=`dirname $0`
-PROJECT_LOC=$DIR
-echo "Creating EXAMPLE.h from EXAMPLE.gatt"
-$PROJECT_LOC/btstack/tool/compile_gatt.py $PROJECT_LOC/example/EXAMPLE.gatt $PROJECT_LOC/example/EXAMPLE.h
+gatt_update_template = '''#!/usr/bin/env python
+
+import subprocess
+import os
+import sys
+
+# get project path
+project_path = os.path.abspath(os.path.dirname(sys.argv[0])) + '/'
+
+print('Creating EXAMPLE.h from EXAMPLE.gatt')
+
+# execute script
+compile_gatt_script = project_path + "/btstack/tool/compile_gatt.py"
+gatt_file = project_path + '/example/EXAMPLE.gatt'
+h_file    = project_path + '/example/EXAMPLE.h'
+print(gatt_file)
+print(h_file)
+subprocess.call([compile_gatt_script, gatt_file, h_file])
 '''
+
 
 ## pick correct init script based on your hardware
 # - init script for CC2564B
@@ -116,7 +130,7 @@ for file in example_files:
         shutil.copy(btstack_root + 'tool/compile_gatt.py', compile_gatt_path)
         os.chmod(compile_gatt_path, 0o755)
         # create example/update_gatt_db.sh
-        update_gatt_script = project_folder + "update_gatt_db.sh"
+        update_gatt_script = project_folder + "update_gatt_db.py"
         with open(update_gatt_script, "wt") as fout:
             fout.write(gatt_update_template.replace("EXAMPLE", example))        
         os.chmod(update_gatt_script, 0o755)

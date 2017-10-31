@@ -775,6 +775,31 @@ OPCODE(OGF_TESTING, 0x02), "1"
 // return: status
 };
 
+/**
+ */
+const hci_cmd_t hci_enable_device_under_test_mode = {
+OPCODE(OGF_TESTING, 0x03), ""
+// return: status
+};
+
+/**
+ * @param simple_pairing_debug_mode
+ */
+const hci_cmd_t hci_write_simple_pairing_debug_mode = {
+OPCODE(OGF_TESTING, 0x04), "1"
+// return: status
+};
+
+/**
+ * @param handle
+ * @param dm1_acl_u_mode
+ * @param esco_loopback_mode
+ */
+const hci_cmd_t hci_write_secure_connections_test_mode = {
+OPCODE(OGF_TESTING, 0x0a), "H11"
+// return: status
+};
+
 
 /**
  * Informational Parameters

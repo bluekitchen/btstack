@@ -808,6 +808,7 @@ static void sm_setup_tk(void){
 #else
     setup->sm_use_secure_connections = 0;
 #endif
+    log_info("Secure pairing: %u", setup->sm_use_secure_connections);
 
     // If both devices have not set the MITM option in the Authentication Requirements
     // Flags, then the IO capabilities shall be ignored and the Just Works association
@@ -3434,7 +3435,7 @@ static const uint8_t sm_pdu_size[] = {
     17, // 0x04 pairing random
     2,  // 0x05 pairing failed
     17, // 0x06 encryption information
-    8,  // 0x07 master identification
+    11, // 0x07 master identification
     17, // 0x08 identification information
     8,  // 0x09 identify address information
     17, // 0x0a signing information
@@ -3457,7 +3458,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
     // validate pdu size
     if (sm_pdu_code >= sizeof(sm_pdu_size)) return;
-    if (sm_pdu_size[sm_pdu_code] < size)   return;
+    if (sm_pdu_size[sm_pdu_code] != size)   return;
 
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
     if (!sm_conn) return;
@@ -3873,6 +3874,12 @@ void sm_set_encryption_key_size_range(uint8_t min_size, uint8_t max_size){
 }
 
 void sm_set_authentication_requirements(uint8_t auth_req){
+#ifndef ENABLE_LE_SECURE_CONNECTIONS
+    if (auth_req & SM_AUTHREQ_SECURE_CONNECTION){
+        log_error("ENABLE_LE_SECURE_CONNECTIONS not defined, but requested by app. Dropping SC flag");
+        auth_req &= ~SM_AUTHREQ_SECURE_CONNECTION;
+    }
+#endif
     sm_auth_req = auth_req;
 }
 

@@ -90,14 +90,18 @@ static void btstack_uart_posix_process_write(btstack_data_source_t *ds) {
 
     // write up to write_bytes_len to fd
     int bytes_written = (int) write(ds->fd, write_bytes_data, write_bytes_len);
-    if (bytes_written < 0) {
-        btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
-        return;
-    }
-
     uint32_t end = btstack_run_loop_get_time_ms();
     if (end - start > 10){
-        log_info("h4_process: write took %u ms", end - start);
+        log_info("write took %u ms", end - start);
+    }
+    if (bytes_written == 0){
+        log_error("wrote zero bytes\n");
+        return;
+    }
+    if (bytes_written < 0) {
+        log_error("write returned error\n");
+        btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_WRITE);
+        return;
     }
 
     write_bytes_data += bytes_written;
@@ -119,7 +123,7 @@ static void btstack_uart_posix_process_write(btstack_data_source_t *ds) {
 static void btstack_uart_posix_process_read(btstack_data_source_t *ds) {
 
     if (read_bytes_len == 0) {
-        log_info("btstack_uart_posix_process_read but no read requested");
+        log_info("called but no read pending");
         btstack_run_loop_disable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
     }
 
@@ -130,10 +134,17 @@ static void btstack_uart_posix_process_read(btstack_data_source_t *ds) {
     // log_info("btstack_uart_posix_process_read need %u bytes, got %d", read_bytes_len, (int) bytes_read);
     uint32_t end = btstack_run_loop_get_time_ms();
     if (end - start > 10){
-        log_info("h4_process: read took %u ms", end - start);
+        log_info("read took %u ms", end - start);
     }
-    if (bytes_read < 0) return;
-    
+    if (bytes_read == 0){
+        log_error("read zero bytes\n");
+        return;
+    }
+    if (bytes_read < 0) {
+        log_error("read returned error\n");
+        return;
+    }
+
     read_bytes_len   -= bytes_read;
     read_bytes_data  += bytes_read;
     if (read_bytes_len > 0) return;
@@ -145,7 +156,7 @@ static void btstack_uart_posix_process_read(btstack_data_source_t *ds) {
     }
 }
 
-static void hci_transport_h5_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
+static void hci_uart_posix_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
     if (ds->fd < 0) return;
     switch (callback_type){
         case DATA_SOURCE_CALLBACK_READ:
@@ -341,7 +352,7 @@ static int btstack_uart_posix_open(void){
 
     // set up data_source
     btstack_run_loop_set_data_source_fd(&transport_data_source, fd);
-    btstack_run_loop_set_data_source_handler(&transport_data_source, &hci_transport_h5_process);
+    btstack_run_loop_set_data_source_handler(&transport_data_source, &hci_uart_posix_process);
     btstack_run_loop_add_data_source(&transport_data_source);
 
     // wait a bit - at least cheap FTDI232 clones might send the first byte out incorrectly

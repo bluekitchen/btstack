@@ -408,7 +408,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                                             break;
                                     }
                                 }
-                                printf("l2cap_psm 0x%04x, bnep_version 0x%04x\n", bnep_l2cap_psm, bnep_version);
+                                printf("Summary: uuid 0x%04x, l2cap_psm 0x%04x, bnep_version 0x%04x\n", sdp_bnep_remote_uuid, sdp_bnep_l2cap_psm, sdp_bnep_version);
 
                             }
                             break;
@@ -466,8 +466,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                  */
                 case BTSTACK_EVENT_STATE:
                     if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-                        printf("Start SDP BNEP query.\n");
-                        sdp_client_query_uuid16(&handle_sdp_client_query_result, remote_addr, BLUETOOTH_PROTOCOL_BNEP);
+                        printf("Start SDP BNEP query for remote PAN Network Access Point (NAP).\n");
+                        sdp_client_query_uuid16(&handle_sdp_client_query_result, remote_addr, BLUETOOTH_SERVICE_CLASS_NAP);
                     }
                     break;
 

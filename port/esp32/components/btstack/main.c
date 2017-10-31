@@ -69,6 +69,8 @@ uint32_t hal_time_ms(void) {
     return esp_log_timestamp();
 }
 
+#ifdef CONFIG_BT_ENABLED
+
 // assert pre-buffer for packet type is available
 #if !defined(HCI_OUTGOING_PRE_BUFFER_SIZE) || (HCI_OUTGOING_PRE_BUFFER_SIZE < 1)
 #error HCI_OUTGOING_PRE_BUFFER_SIZE not defined or smaller than 1. Please update hci.h
@@ -210,7 +212,7 @@ static void transport_init(const void *transport_config){
 /**
  * open transport connection
  */
-
+static int bt_controller_initialized;
 static int transport_open(void){
     esp_err_t ret;
 
@@ -218,21 +220,31 @@ static int transport_open(void){
 
     btstack_ring_buffer_init(&hci_ringbuffer, hci_ringbuffer_storage, sizeof(hci_ringbuffer_storage));
 
+    // http://esp-idf.readthedocs.io/en/latest/api-reference/bluetooth/controller_vhci.html (2017104)
+    // - "esp_bt_controller_init: ... This function should be called only once, before any other BT functions are called."
+    // - "esp_bt_controller_deinit" .. This function should be called only once, after any other BT functions are called. 
+    //    This function is not whole completed, esp_bt_controller_init cannot called after this function."
+    // -> esp_bt_controller_init can only be called once after boot
+    if (!bt_controller_initialized){
+        bt_controller_initialized = 1;
 
-    esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
-    ret = esp_bt_controller_init(&bt_cfg);
-    if (ret) {
-        log_error("transport: esp_bt_controller_init failed");
-        return -1;
+        esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+        ret = esp_bt_controller_init(&bt_cfg);
+        if (ret) {
+            log_error("transport: esp_bt_controller_init failed");
+            return -1;
+        }
+
+        esp_vhci_host_register_callback(&vhci_host_cb);
     }
 
+    // enable dual mode
     ret = esp_bt_controller_enable(ESP_BT_MODE_BTDM);
     if (ret) {
         log_error("transport: esp_bt_controller_enable failed");
         return -1;
     }
 
-    esp_vhci_host_register_callback(&vhci_host_cb);
     return 0;
 }
 
@@ -241,6 +253,9 @@ static int transport_open(void){
  */
 static int transport_close(void){
     log_info("transport_close");
+
+    // disable controller
+    esp_bt_controller_disable();
     return 0;
 }
 
@@ -279,6 +294,35 @@ static const hci_transport_t transport = {
     NULL, // reset link
     NULL, // set SCO config
 };
+
+#else
+
+// this port requires the ESP32 Bluetooth to be enabled in the sdkconfig
+// try to tell the user
+
+#include "esp_log.h"
+static void transport_init(const void *transport_config){
+    while (1){
+        ESP_LOGE("BTstack", "ESP32 Transport Init called, but Bluetooth support not enabled in sdkconfig.");
+        ESP_LOGE("BTstack", "Please enable CONFIG_BT_ENABLED with 'make menuconfig and compile again.");
+        ESP_LOGE("BTstack", "");
+    }
+}
+
+static const hci_transport_t transport = {
+    "none",
+    &transport_init,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL, // set baud rate
+    NULL, // reset link
+    NULL, // set SCO config
+};
+#endif
+
 
 static const hci_transport_t * transport_get_instance(void){
     return &transport;

@@ -157,7 +157,7 @@ void att_db_util_add_service_uuid128(uint8_t * uuid128){
 static void att_db_util_add_client_characteristic_configuration(uint16_t properties){
 	uint8_t buffer[2];
 	// keep authentication flags
-	uint16_t flags = (properties & 0x1ff00) | ATT_DB_FLAGS_READ_WITHOUT_AUTHENTICATION | ATT_PROPERTY_READ | ATT_PROPERTY_WRITE | ATT_PROPERTY_DYNAMIC;
+	uint16_t flags = (properties & 0x1ff00) | ATT_DB_PERSISTENT_WRITE_CCC | ATT_DB_FLAGS_READ_WITHOUT_AUTHENTICATION | ATT_PROPERTY_READ | ATT_PROPERTY_WRITE | ATT_PROPERTY_DYNAMIC;
 	little_endian_store_16(buffer, 0, 0); 
 	att_db_util_add_attribute_uuid16(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION, flags, buffer, 2);
 }

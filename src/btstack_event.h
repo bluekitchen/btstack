@@ -5050,124 +5050,6 @@ static inline uint16_t avrcp_subevent_connection_released_get_avrcp_cid(const ui
 }
 
 /**
- * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return avrcp_cid
- * @note: btstack_type 2
- */
-static inline uint16_t avrcp_subevent_now_playing_info_get_avrcp_cid(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field command_type from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return command_type
- * @note: btstack_type 1
- */
-static inline uint8_t avrcp_subevent_now_playing_info_get_command_type(const uint8_t * event){
-    return event[5];
-}
-/**
- * @brief Get field track from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return track
- * @note: btstack_type 1
- */
-static inline uint8_t avrcp_subevent_now_playing_info_get_track(const uint8_t * event){
-    return event[6];
-}
-/**
- * @brief Get field total_tracks from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return total_tracks
- * @note: btstack_type 1
- */
-static inline uint8_t avrcp_subevent_now_playing_info_get_total_tracks(const uint8_t * event){
-    return event[7];
-}
-/**
- * @brief Get field song_length from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return song_length
- * @note: btstack_type 4
- */
-static inline uint32_t avrcp_subevent_now_playing_info_get_song_length(const uint8_t * event){
-    return little_endian_read_32(event, 8);
-}
-/**
- * @brief Get field title_len from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return title_len
- * @note: btstack_type J
- */
-static inline int avrcp_subevent_now_playing_info_get_title_len(const uint8_t * event){
-    return event[12];
-}
-/**
- * @brief Get field title from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return title
- * @note: btstack_type V
- */
-static inline const uint8_t * avrcp_subevent_now_playing_info_get_title(const uint8_t * event){
-    return &event[13];
-}
-/**
- * @brief Get field artist_len from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return artist_len
- * @note: btstack_type J
- */
-static inline int avrcp_subevent_now_playing_info_get_artist_len(const uint8_t * event){
-    return event[13 + event[12]];
-}
-/**
- * @brief Get field artist from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return artist
- * @note: btstack_type V
- */
-static inline const uint8_t * avrcp_subevent_now_playing_info_get_artist(const uint8_t * event){
-    return &event[13 + event[12] + 1];
-}
-/**
- * @brief Get field album_len from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return album_len
- * @note: btstack_type J
- */
-static inline int avrcp_subevent_now_playing_info_get_album_len(const uint8_t * event){
-    return event[13 + event[12] + 1 + event[13 + event[12]]];
-}
-/**
- * @brief Get field album from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return album
- * @note: btstack_type V
- */
-static inline const uint8_t * avrcp_subevent_now_playing_info_get_album(const uint8_t * event){
-    return &event[13 + event[12] + 1 + event[13 + event[12]] + 1];
-}
-/**
- * @brief Get field genre_len from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return genre_len
- * @note: btstack_type J
- */
-static inline int avrcp_subevent_now_playing_info_get_genre_len(const uint8_t * event){
-    return event[13 + event[12] + 1 + event[13 + event[12]] + 1 + event[13 + event[12] + 1 + event[13 + event[12]]]];
-}
-/**
- * @brief Get field genre from event AVRCP_SUBEVENT_NOW_PLAYING_INFO
- * @param event packet
- * @return genre
- * @note: btstack_type V
- */
-static inline const uint8_t * avrcp_subevent_now_playing_info_get_genre(const uint8_t * event){
-    return &event[13 + event[12] + 1 + event[13 + event[12]] + 1 + event[13 + event[12] + 1 + event[13 + event[12]]] + 1];
-}
-
-/**
  * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE
  * @param event packet
  * @return avrcp_cid
@@ -5559,6 +5441,266 @@ static inline uint8_t avrcp_subevent_operation_get_operands_length(const uint8_t
  */
 static inline uint8_t avrcp_subevent_operation_get_operand(const uint8_t * event){
     return event[7];
+}
+
+/**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOW_PLAYING_TRACK_INFO
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_now_playing_track_info_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field command_type from event AVRCP_SUBEVENT_NOW_PLAYING_TRACK_INFO
+ * @param event packet
+ * @return command_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_now_playing_track_info_get_command_type(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field track from event AVRCP_SUBEVENT_NOW_PLAYING_TRACK_INFO
+ * @param event packet
+ * @return track
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_now_playing_track_info_get_track(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOW_PLAYING_TOTAL_TRACKS_INFO
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_now_playing_total_tracks_info_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field command_type from event AVRCP_SUBEVENT_NOW_PLAYING_TOTAL_TRACKS_INFO
+ * @param event packet
+ * @return command_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_now_playing_total_tracks_info_get_command_type(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field total_tracks from event AVRCP_SUBEVENT_NOW_PLAYING_TOTAL_TRACKS_INFO
+ * @param event packet
+ * @return total_tracks
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_now_playing_total_tracks_info_get_total_tracks(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOW_PLAYING_SONG_LENGTH_MS_INFO
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_now_playing_song_length_ms_info_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field command_type from event AVRCP_SUBEVENT_NOW_PLAYING_SONG_LENGTH_MS_INFO
+ * @param event packet
+ * @return command_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_now_playing_song_length_ms_info_get_command_type(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field song_length from event AVRCP_SUBEVENT_NOW_PLAYING_SONG_LENGTH_MS_INFO
+ * @param event packet
+ * @return song_length
+ * @note: btstack_type 4
+ */
+static inline uint32_t avrcp_subevent_now_playing_song_length_ms_info_get_song_length(const uint8_t * event){
+    return little_endian_read_32(event, 6);
+}
+
+/**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOW_PLAYING_TITLE_INFO
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_now_playing_title_info_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field command_type from event AVRCP_SUBEVENT_NOW_PLAYING_TITLE_INFO
+ * @param event packet
+ * @return command_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_now_playing_title_info_get_command_type(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field value_len from event AVRCP_SUBEVENT_NOW_PLAYING_TITLE_INFO
+ * @param event packet
+ * @return value_len
+ * @note: btstack_type J
+ */
+static inline int avrcp_subevent_now_playing_title_info_get_value_len(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field value from event AVRCP_SUBEVENT_NOW_PLAYING_TITLE_INFO
+ * @param event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * avrcp_subevent_now_playing_title_info_get_value(const uint8_t * event){
+    return &event[7];
+}
+
+/**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOW_PLAYING_ARTIST_INFO
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_now_playing_artist_info_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field command_type from event AVRCP_SUBEVENT_NOW_PLAYING_ARTIST_INFO
+ * @param event packet
+ * @return command_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_now_playing_artist_info_get_command_type(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field value_len from event AVRCP_SUBEVENT_NOW_PLAYING_ARTIST_INFO
+ * @param event packet
+ * @return value_len
+ * @note: btstack_type J
+ */
+static inline int avrcp_subevent_now_playing_artist_info_get_value_len(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field value from event AVRCP_SUBEVENT_NOW_PLAYING_ARTIST_INFO
+ * @param event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * avrcp_subevent_now_playing_artist_info_get_value(const uint8_t * event){
+    return &event[7];
+}
+
+/**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOW_PLAYING_ALBUM_INFO
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_now_playing_album_info_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field command_type from event AVRCP_SUBEVENT_NOW_PLAYING_ALBUM_INFO
+ * @param event packet
+ * @return command_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_now_playing_album_info_get_command_type(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field value_len from event AVRCP_SUBEVENT_NOW_PLAYING_ALBUM_INFO
+ * @param event packet
+ * @return value_len
+ * @note: btstack_type J
+ */
+static inline int avrcp_subevent_now_playing_album_info_get_value_len(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field value from event AVRCP_SUBEVENT_NOW_PLAYING_ALBUM_INFO
+ * @param event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * avrcp_subevent_now_playing_album_info_get_value(const uint8_t * event){
+    return &event[7];
+}
+
+/**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOW_PLAYING_GENRE_INFO
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_now_playing_genre_info_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field command_type from event AVRCP_SUBEVENT_NOW_PLAYING_GENRE_INFO
+ * @param event packet
+ * @return command_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_now_playing_genre_info_get_command_type(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field value_len from event AVRCP_SUBEVENT_NOW_PLAYING_GENRE_INFO
+ * @param event packet
+ * @return value_len
+ * @note: btstack_type J
+ */
+static inline int avrcp_subevent_now_playing_genre_info_get_value_len(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field value from event AVRCP_SUBEVENT_NOW_PLAYING_GENRE_INFO
+ * @param event packet
+ * @return value
+ * @note: btstack_type V
+ */
+static inline const uint8_t * avrcp_subevent_now_playing_genre_info_get_value(const uint8_t * event){
+    return &event[7];
+}
+
+/**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOW_PLAYING_INFO_DONE
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_now_playing_info_done_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field command_type from event AVRCP_SUBEVENT_NOW_PLAYING_INFO_DONE
+ * @param event packet
+ * @return command_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_now_playing_info_done_get_command_type(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field status from event AVRCP_SUBEVENT_NOW_PLAYING_INFO_DONE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_now_playing_info_done_get_status(const uint8_t * event){
+    return event[6];
 }
 
 /**

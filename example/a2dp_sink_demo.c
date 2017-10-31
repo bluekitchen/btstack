@@ -113,7 +113,6 @@ static int sbc_samples_fix;
 #define PREBUFFER_BYTES     (PREBUFFER_MS*SAMPLE_RATE/1000*BYTES_PER_FRAME)
 static PaStream * stream;
 static uint8_t ring_buffer_storage[2*PREBUFFER_BYTES];
-static int total_num_samples = 0;
 #endif
 
 // WAV File
@@ -166,6 +165,7 @@ static uint8_t  sdp_avdtp_sink_service_buffer[150];
 static avdtp_media_codec_configuration_sbc_t sbc_configuration;
 static uint16_t a2dp_cid = 0;
 static uint8_t  local_seid = 0;
+static uint8_t  value[100];
 
 typedef enum {
     AVDTP_APPLICATION_IDLE,
@@ -184,7 +184,8 @@ static bd_addr_t device_addr;
 #endif
 
 static uint16_t avrcp_cid = 0;
-static uint8_t sdp_avrcp_controller_service_buffer[200];
+static uint8_t  avrcp_connected = 0;
+static uint8_t  sdp_avrcp_controller_service_buffer[200];
 
 #ifdef HAVE_PORTAUDIO
 static int patestCallback( const void *inputBuffer, void *outputBuffer,
@@ -274,8 +275,6 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
 #endif
 
 #ifdef HAVE_PORTAUDIO
-    total_num_samples+=num_samples*num_channels;
-
     // store pcm samples in ringbuffer
     btstack_ring_buffer_write(&ring_buffer, (uint8_t *)data, num_samples*num_channels*2);
 
@@ -300,7 +299,6 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
 static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
     UNUSED(sample_rate);
     UNUSED(context);
-    total_num_samples+=num_samples*num_channels;
 
     // store in ring buffer
     uint8_t * write_data = start_of_buffer(write_buffer);
@@ -355,7 +353,6 @@ static void hal_audio_dma_process(btstack_data_source_t * ds, btstack_data_sourc
 
 static int media_processing_init(avdtp_media_codec_configuration_sbc_t configuration){
     if (media_initialized) return 0;
-    
 #ifdef DECODE_SBC
     btstack_sbc_decoder_init(&state, mode, handle_pcm_data, NULL);
 #endif
@@ -419,6 +416,7 @@ static int media_processing_init(avdtp_media_codec_configuration_sbc_t configura
     memset(ring_buffer_storage, 0, sizeof(ring_buffer_storage));
     btstack_ring_buffer_init(&ring_buffer, ring_buffer_storage, sizeof(ring_buffer_storage));
     audio_stream_started = 0;
+    audio_stream_paused = 0;
 #endif 
     media_initialized = 1;
     return 0;
@@ -588,17 +586,21 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             }
             
             avrcp_cid = local_cid;
+            avrcp_connected = 1;
             avrcp_subevent_connection_established_get_bd_addr(packet, adress);
             printf("Channel successfully opened: %s, avrcp_cid 0x%02x\n", bd_addr_to_str(adress), avrcp_cid);
 
             // automatically enable notifications
             avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
             avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED);
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED);
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
             return;
         }
         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
             printf("Channel released: avrcp_cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
             avrcp_cid = 0;
+            avrcp_connected = 0;
             return;
         default:
             break;
@@ -633,30 +635,59 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             printf("%s, %s\n", avrcp_shuffle2str(shuffle_mode), avrcp_repeat2str(repeat_mode));
             break;
         }
-        case AVRCP_SUBEVENT_NOW_PLAYING_INFO:{
-            uint8_t value[100];
-            printf("now playing: \n");
-            if (avrcp_subevent_now_playing_info_get_title_len(packet) > 0){
-                memcpy(value, avrcp_subevent_now_playing_info_get_title(packet), avrcp_subevent_now_playing_info_get_title_len(packet));
+        case AVRCP_SUBEVENT_NOW_PLAYING_TITLE_INFO:
+            printf("AVRCP_SUBEVENT_NOW_PLAYING_TITLE_INFO len %d \n", avrcp_subevent_now_playing_title_info_get_value_len(packet));
+            if (avrcp_subevent_now_playing_title_info_get_value_len(packet) > 0){
+                memcpy(value, avrcp_subevent_now_playing_title_info_get_value(packet), avrcp_subevent_now_playing_title_info_get_value_len(packet));
                 printf("    Title: %s\n", value);
-            }    
-            if (avrcp_subevent_now_playing_info_get_album_len(packet) > 0){
-                memcpy(value, avrcp_subevent_now_playing_info_get_album(packet), avrcp_subevent_now_playing_info_get_album_len(packet));
-                printf("    Album: %s\n", value);
-            }
-            if (avrcp_subevent_now_playing_info_get_artist_len(packet) > 0){
-                memcpy(value, avrcp_subevent_now_playing_info_get_artist(packet), avrcp_subevent_now_playing_info_get_artist_len(packet));
-                printf("    Artist: %s\n", value);
-            }
-            if (avrcp_subevent_now_playing_info_get_genre_len(packet) > 0){
-                memcpy(value, avrcp_subevent_now_playing_info_get_genre(packet), avrcp_subevent_now_playing_info_get_genre_len(packet));
-                printf("    Genre: %s\n", value);
-            }
-            printf("    Track: %d\n", avrcp_subevent_now_playing_info_get_track(packet));
-            printf("    Total nr. tracks: %d\n", avrcp_subevent_now_playing_info_get_total_tracks(packet));
-            printf("    Song length: %d ms\n", avrcp_subevent_now_playing_info_get_song_length(packet));
+            }  
             break;
-        }
+
+        case AVRCP_SUBEVENT_NOW_PLAYING_ARTIST_INFO:
+            if (avrcp_subevent_now_playing_artist_info_get_value_len(packet) > 0){
+                memcpy(value, avrcp_subevent_now_playing_artist_info_get_value(packet), avrcp_subevent_now_playing_artist_info_get_value_len(packet));
+                printf("    Title: %s\n", value);
+            }  
+            break;
+        
+        case AVRCP_SUBEVENT_NOW_PLAYING_ALBUM_INFO:
+            if (avrcp_subevent_now_playing_album_info_get_value_len(packet) > 0){
+                memcpy(value, avrcp_subevent_now_playing_album_info_get_value(packet), avrcp_subevent_now_playing_album_info_get_value_len(packet));
+                printf("    Title: %s\n", value);
+            }  
+            break;
+        
+        case AVRCP_SUBEVENT_NOW_PLAYING_GENRE_INFO:
+            if (avrcp_subevent_now_playing_genre_info_get_value_len(packet) > 0){
+                memcpy(value, avrcp_subevent_now_playing_genre_info_get_value(packet), avrcp_subevent_now_playing_genre_info_get_value_len(packet));
+                printf("    Title: %s\n", value);
+            }  
+            break;
+        
+        // case AVRCP_SUBEVENT_NOW_PLAYING_INFO:{
+        //     uint8_t value[100];
+        //     printf("now playing: \n");
+        //     if (avrcp_subevent_now_playing_info_get_title_len(packet) > 0){
+        //         memcpy(value, avrcp_subevent_now_playing_info_get_title(packet), avrcp_subevent_now_playing_info_get_title_len(packet));
+        //         printf("    Title: %s\n", value);
+        //     }    
+        //     if (avrcp_subevent_now_playing_info_get_album_len(packet) > 0){
+        //         memcpy(value, avrcp_subevent_now_playing_info_get_album(packet), avrcp_subevent_now_playing_info_get_album_len(packet));
+        //         printf("    Album: %s\n", value);
+        //     }
+        //     if (avrcp_subevent_now_playing_info_get_artist_len(packet) > 0){
+        //         memcpy(value, avrcp_subevent_now_playing_info_get_artist(packet), avrcp_subevent_now_playing_info_get_artist_len(packet));
+        //         printf("    Artist: %s\n", value);
+        //     }
+        //     if (avrcp_subevent_now_playing_info_get_genre_len(packet) > 0){
+        //         memcpy(value, avrcp_subevent_now_playing_info_get_genre(packet), avrcp_subevent_now_playing_info_get_genre_len(packet));
+        //         printf("    Genre: %s\n", value);
+        //     }
+        //     printf("    Track: %d\n", avrcp_subevent_now_playing_info_get_track(packet));
+        //     printf("    Total nr. tracks: %d\n", avrcp_subevent_now_playing_info_get_total_tracks(packet));
+        //     printf("    Song length: %d ms\n", avrcp_subevent_now_playing_info_get_song_length(packet));
+        //     break;
+        // }
         case AVRCP_SUBEVENT_PLAY_STATUS:
             printf("song length: %d ms, song position: %d ms, play status: %s\n", 
                 avrcp_subevent_play_status_get_song_length(packet), 
@@ -718,13 +749,22 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             a2dp_subevent_stream_established_get_bd_addr(packet, address);
             status = a2dp_subevent_stream_established_get_status(packet);
             cid = a2dp_subevent_stream_established_get_a2dp_cid(packet);
-            if (cid != a2dp_cid) break;
+            printf("A2DP_SUBEVENT_STREAM_ESTABLISHED %d, %d \n", cid, a2dp_cid);
+            if (!a2dp_cid){
+                // incoming connection
+                a2dp_cid = cid;
+            } else if (cid != a2dp_cid) {
+                break;
+            }
             if (status){
                 app_state = AVDTP_APPLICATION_IDLE;
                 printf(" -- a2dp sink demo: streaming connection failed, status 0x%02x\n", status);
                 break;
             }
             printf(" -- a2dp sink demo: streaming connection is established, address %s, a2dp cid 0x%02X, local_seid %d\n", bd_addr_to_str(address), a2dp_cid, local_seid);
+            
+            memcpy(device_addr, address, 6);
+
             local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
             app_state = AVDTP_APPLICATION_STREAMING;
             break;
@@ -780,9 +820,9 @@ static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth AVDTP Sink/AVRCP Connection Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("b      - AVDTP Sink create  connection to addr %s\n", device_addr_string);
+    printf("b      - AVDTP Sink create  connection to addr %s\n", bd_addr_to_str(device_addr));
     printf("B      - AVDTP Sink disconnect\n");
-    printf("c      - AVRCP create connection to addr %s\n", device_addr_string);
+    printf("c      - AVRCP create connection to addr %s\n", bd_addr_to_str(device_addr));
     printf("C      - AVRCP disconnect\n");
 
     printf("\n--- Bluetooth AVRCP Commands %s ---\n", bd_addr_to_str(iut_address));
@@ -827,10 +867,24 @@ static uint8_t media_sbc_codec_configuration[] = {
 #ifdef HAVE_BTSTACK_STDIN
 static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
+    printf("stdin_process \n");
+    if (!avrcp_connected){
+        switch (cmd){
+            case 'b':
+            case 'B':
+            case 'c':
+                break;
+            default:
+                printf("Command '%c' cannot be performed - please use 'c' to establish an AVRCP connection with device (addr %s).\n", cmd, bd_addr_to_str(device_addr));
+                return;    
+        }
+    
+    }
+    
     switch (cmd){
         case 'b':
-            printf(" - Create AVDTP connection to addr %s, and local seid %d.\n", bd_addr_to_str(device_addr), local_seid);
             status = a2dp_sink_establish_stream(device_addr, local_seid, &a2dp_cid);
+            printf(" - Create AVDTP connection to addr %s, and local seid %d, expected cid 0x%02x.\n", bd_addr_to_str(device_addr), local_seid, a2dp_cid);
             break;
         case 'B':
             printf(" - AVDTP disconnect from addr %s.\n", bd_addr_to_str(device_addr));
