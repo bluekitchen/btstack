@@ -49,6 +49,14 @@
  * the AVRCP Controller is used to get information on currently played media, 
  * such are title, artist and album, as well as to control the playback, 
  * i.e. to play, stop, repeat, etc.
+ *
+ * @test To test with a remote device, e.g. a mobile phone,
+ * pair from the remote device with the demo, then start playing music on the remote device.
+ * Alternatively, set the device_addr_string to the Bluetooth address of your 
+ * remote device in the code, and call connect from the UI.
+ * 
+ * @test To controll the playback, tap SPACE on the console to show the available 
+ * AVRCP commands.
  */
 // *****************************************************************************
 

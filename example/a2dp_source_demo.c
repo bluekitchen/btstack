@@ -48,6 +48,11 @@
  * to a remote A2DP Sink device and how to switch between two audio data sources.  
  * In addition, the AVRCP Target is used to answer queries on currently played media,
  * as well as to handle remote playback control, i.e. play, stop, repeat, etc.
+ *
+ * @test To test with a remote device, e.g. a Bluetooth speaker,
+ * set the device_addr_string to the Bluetooth address of your 
+ * remote device in the code, and use the UI to connect and start playback. 
+ * Tap SPACE on the console to show the available commands.
  */
 // *****************************************************************************
 
