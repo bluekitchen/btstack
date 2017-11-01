@@ -151,6 +151,15 @@ static void att_handle_value_indication_timeout(btstack_timer_source_t *ts){
     att_handle_value_indication_notify_client(ATT_HANDLE_VALUE_INDICATION_TIMEOUT, att_server->connection.con_handle, att_handle);
 }
 
+static void att_device_identified(hci_con_handle_t con_handle, uint8_t index){
+    att_server_t * att_server = att_server_for_handle(con_handle);
+    if (!att_server) return;
+    att_server->ir_lookup_active = 0;
+    att_server->ir_le_device_db_index = index;
+    log_info("Remote device with conn 0%04x registered with index id %u", (int) con_handle, att_server->ir_le_device_db_index);
+    att_run_for_context(att_server);
+}
+
 static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     UNUSED(channel); // ok: there is no channel
@@ -227,13 +236,10 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     att_server->ir_lookup_active = 1;
                     break;
                 case SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED:
-                    con_handle = sm_event_identity_resolving_succeeded_get_handle(packet);
-                    att_server = att_server_for_handle(con_handle);
-                    if (!att_server) break;
-                    att_server->ir_lookup_active = 0;
-                    att_server->ir_le_device_db_index = sm_event_identity_resolving_succeeded_get_index(packet);
-                    log_info("SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED id %u", att_server->ir_le_device_db_index);
-                    att_run_for_context(att_server);
+                    att_device_identified(sm_event_identity_resolving_succeeded_get_handle(packet), sm_event_identity_resolving_succeeded_get_index(packet));
+                    break;
+                case SM_EVENT_IDENTITY_CREATED:
+                    att_device_identified(sm_event_identity_created_get_handle(packet), sm_event_identity_created_get_index(packet));
                     break;
                 case SM_EVENT_IDENTITY_RESOLVING_FAILED:
                     con_handle = sm_event_identity_resolving_failed_get_handle(packet);
