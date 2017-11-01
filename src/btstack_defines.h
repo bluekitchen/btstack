@@ -883,7 +883,7 @@ typedef uint8_t sm_key_t[16];
   * @param address
   * @param identity_addr_type
   * @param identity_address
-  * @param index_internal
+  * @param index
   *
   */
 #define SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED                    0xDA
@@ -915,12 +915,13 @@ typedef uint8_t sm_key_t[16];
  /**
   * @brief Emitted during pairing to inform app about address used as identity
   *
-  * @format H1B1B
+  * @format H1B1B1
   * @param handle
   * @param addr_type
   * @param address
   * @param identity_addr_type
   * @param identity_address
+  * @param index
   */
 #define SM_EVENT_IDENTITY_CREATED                                0xDE
 

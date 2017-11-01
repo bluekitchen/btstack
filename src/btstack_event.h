@@ -2711,12 +2711,12 @@ static inline void sm_event_identity_resolving_succeeded_get_identity_address(co
     reverse_bd_addr(&event[12], identity_address);    
 }
 /**
- * @brief Get field index_internal from event SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED
+ * @brief Get field index from event SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED
  * @param event packet
- * @return index_internal
+ * @return index
  * @note: btstack_type 2
  */
-static inline uint16_t sm_event_identity_resolving_succeeded_get_index_internal(const uint8_t * event){
+static inline uint16_t sm_event_identity_resolving_succeeded_get_index(const uint8_t * event){
     return little_endian_read_16(event, 18);
 }
 #endif
@@ -2856,6 +2856,15 @@ static inline uint8_t sm_event_identity_created_get_identity_addr_type(const uin
  */
 static inline void sm_event_identity_created_get_identity_address(const uint8_t * event, bd_addr_t identity_address){
     reverse_bd_addr(&event[12], identity_address);    
+}
+/**
+ * @brief Get field index from event SM_EVENT_IDENTITY_CREATED
+ * @param event packet
+ * @return index
+ * @note: btstack_type 1
+ */
+static inline uint8_t sm_event_identity_created_get_index(const uint8_t * event){
+    return event[18];
 }
 #endif
 
