@@ -28,11 +28,11 @@ BTstack is free for non-commercial use. However, for commercial use, <a href="ma
 
 **Protocols:** L2CAP, RFCOMM, SDP, BNEP, ATT, SM (incl. LE Secure Connections).
 
-**Profiles** GAP, IOP, HFP, HSP, SPP, PAN, GATT.
+**Profiles:** GAP, IOP, HFP, HSP, SPP, PAN, GATT.
 
-**Beta Stage** A2DP, AVRCP, HID, HOGP.
+**Beta Stage:** A2DP, AVRCP, HID, HOGP.
 
-**In Development** BLE Mesh, AVRCP Browsing and more.
+**In Development:** BLE Mesh, AVRCP Browsing and more.
 
 It has been qualified with the the Bluetooth SIG for GAP, IOP, HFP, HSP, SPP, PAN profiles and
 GATT, SM of the Bluetooth 4.2 LE Central and Peripheral roles (QD ID 25340). For information on MFi/iAP2 support, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us</a>.
