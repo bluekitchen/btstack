@@ -35,8 +35,15 @@
  *
  */
 
+#define __BTSTACK_FILE__ "spp_streamer.c"
+
+/*
+ * spp_streamer.c
+ */
+
 // *****************************************************************************
 /* EXAMPLE_START(spp_streamer): Send test data via SPP as fast as possible
+ * 
  * @text After RFCOMM connections gets open, request a
  * RFCOMM_EVENT_CAN_SEND_NOW via rfcomm_request_can_send_now_event().
  * When we get the RFCOMM_EVENT_CAN_SEND_NOW, send data and request another one.

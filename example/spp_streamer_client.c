@@ -35,6 +35,12 @@
  *
  */
 
+#define __BTSTACK_FILE__ "spp_streamer_client.c"
+
+/*
+ * spp_streamer_client.c
+ */
+
 // *****************************************************************************
 /* EXAMPLE_START(spp_streamer_client): Client for SPP Streamer
  * 

@@ -36,7 +36,13 @@
  */
 
 #define __BTSTACK_FILE__ "pbap_client_demo.c"
- 
+
+// *****************************************************************************
+/* EXAMPLE_START(pbap_client_demo): Connect to Phonebook Server and get contacts.
+ */
+// *****************************************************************************
+
+
 #include "btstack_config.h"
 
 #include <stdint.h>
@@ -234,3 +240,4 @@ int btstack_main(int argc, const char * argv[]){
 
     return 0;
 }
+/* EXAMPLE_END */

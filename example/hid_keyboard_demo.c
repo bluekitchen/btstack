@@ -35,16 +35,16 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hid_device_demo.c"
+#define __BTSTACK_FILE__ "hid_keyboard_demo.c"
  
 // *****************************************************************************
-/* EXAMPLE_START(hid_device_demo): HID Device (Server) Demo
- *
- * Status: Basic implementation. HID Request from Host are not answered yet. Works with iOS.
+/* EXAMPLE_START(hid_keyboard_demo): HID Keyboard (Server) Demo
  *
  * @text This HID Device example demonstrates how to implement
  * an HID keyboard. Without a HAVE_BTSTACK_STDIN, a fixed demo text is sent
  * If HAVE_BTSTACK_STDIN is defined, you can type from the terminal
+ *
+ * @text Status: Basic implementation. HID Request from Host are not answered yet. Works with iOS.
  */
 // *****************************************************************************
 
