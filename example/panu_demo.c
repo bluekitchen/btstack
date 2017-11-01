@@ -48,6 +48,8 @@
  * sets up a BNEP server and registers a PANU SDP record and waits for incoming connections.
  * In client mode, it connects to a remote device, does an SDP Query to identify the PANU
  * service and initiates a BNEP connection.
+ *
+ * Note: currently supported only on Linux and Mac.
  */
 
 #include "btstack_config.h"

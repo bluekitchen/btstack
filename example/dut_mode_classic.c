@@ -41,7 +41,7 @@
 /* EXAMPLE_START(dut_mode_classic): Enable Device Under Test (DUT) Mode for BR/EDR
  *
  * @text DUT mode can be used for production testing. This example just configures 
- * the Bluetooth Controller for DUT mode
+ * the Bluetooth Controller for DUT mode.
  */
 // *****************************************************************************
 

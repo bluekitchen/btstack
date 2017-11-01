@@ -42,11 +42,14 @@
  */
 
 // *****************************************************************************
-/* EXAMPLE_START(spp_streamer): Send test data via SPP as fast as possible
+/* EXAMPLE_START(spp_streamer): Send test data via SPP as fast as possible.
  * 
  * @text After RFCOMM connections gets open, request a
  * RFCOMM_EVENT_CAN_SEND_NOW via rfcomm_request_can_send_now_event().
- * When we get the RFCOMM_EVENT_CAN_SEND_NOW, send data and request another one.
+ * @text When we get the RFCOMM_EVENT_CAN_SEND_NOW, send data and request another one.
+ *
+ * @text Note: To test, run the example, pair from a remote 
+ * device, and open the Virtual Serial Port.
  */
 // *****************************************************************************
 

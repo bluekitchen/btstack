@@ -39,6 +39,10 @@
 
 // *****************************************************************************
 /* EXAMPLE_START(pbap_client_demo): Connect to Phonebook Server and get contacts.
+ *
+ * @text Note: The Bluetooth address of the remote Phonbook server is hardcoded. 
+ * Change it before running example, then use the UI to connect to it, to set and 
+ * query contacts.
  */
 // *****************************************************************************
 

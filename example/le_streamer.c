@@ -38,7 +38,7 @@
 #define __BTSTACK_FILE__ "le_streamer.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(le_streamer): LE Peripheral - Stream data over GATT
+/* EXAMPLE_START(le_streamer): LE Streamer - Stream data over GATT.
  *
  * @text All newer operating systems provide GATT Client functionality.
  * This example shows how to get a maximal throughput via BLE:
@@ -49,8 +49,8 @@
  * a connection interval of 30 ms and there's no public way to use a shorter 
  * interval with iOS (if we're not implementing an HID device).
  *
- * @text Note: To start the streaming, please run the le_streamer_client example 
- * on other device, or use some GATT Explorer, e.g. LightBlue, BLExplr.
+ * @text Note: To start the streaming, run the example.
+ * On remote device use some GATT Explorer, e.g. LightBlue, BLExplr to enable notifications.
  */
  // *****************************************************************************
 
