@@ -137,19 +137,19 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
 
     if (att_handle == hid_boot_mouse_input_client_configuration_handle){
         uint16_t new_value = little_endian_read_16(buffer, 0);
-        if (new_value == hid_boot_mouse_input_client_configuration_value) return 0;
+        // if (new_value == hid_boot_mouse_input_client_configuration_value) return 0;
         hid_boot_mouse_input_client_configuration_value = new_value;
         hids_device_emit_event_with_uint8(HIDS_SUBEVENT_BOOT_MOUSE_INPUT_REPORT_ENABLE, con_handle, hid_protocol_mode);
     }
     if (att_handle == hid_boot_keyboard_input_client_configuration_handle){
         uint16_t new_value = little_endian_read_16(buffer, 0);
-        if (new_value == hid_boot_keyboard_input_client_configuration_value) return 0;
+        // if (new_value == hid_boot_keyboard_input_client_configuration_value) return 0;
         hid_boot_keyboard_input_client_configuration_value = new_value;
         hids_device_emit_event_with_uint8(HIDS_SUBEVENT_BOOT_KEYBOARD_INPUT_REPORT_ENABLE, con_handle, hid_protocol_mode);
     }
     if (att_handle == hid_report_input_client_configuration_handle){
         uint16_t new_value = little_endian_read_16(buffer, 0);
-        if (new_value == hid_report_input_client_configuration_value) return 0;
+        // if (new_value == hid_report_input_client_configuration_value) return 0;
         hid_report_input_client_configuration_value = new_value;
         log_info("Enable Report Input notifications: %x", new_value);
         hids_device_emit_event_with_uint8(HIDS_SUBEVENT_INPUT_REPORT_ENABLE, con_handle, hid_protocol_mode);
