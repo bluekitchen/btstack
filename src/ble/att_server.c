@@ -210,7 +210,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     att_server = att_server_for_handle(con_handle);
                     if (!att_server) break;
                     att_server->ir_lookup_active = 0;
-                    att_server->ir_le_device_db_index = sm_event_identity_resolving_succeeded_get_index_internal(packet);
+                    att_server->ir_le_device_db_index = sm_event_identity_resolving_succeeded_get_index(packet);
                     log_info("SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED id %u", att_server->ir_le_device_db_index);
                     att_run_for_context(att_server);
                     break;
