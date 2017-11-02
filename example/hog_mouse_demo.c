@@ -228,9 +228,12 @@ static void stdin_process(char character){
 
 #define MOUSE_PERIOD_MS 15
 
-static int step;
 static const int STEPS_PER_DIRECTION = 50;
 static const int MOUSE_SPEED = 10;
+
+static btstack_timer_source_t mousing_timer;
+static int mousing_active = 0;
+static int step;
 
 static struct {
     int dx;
@@ -242,11 +245,13 @@ static struct {
     {  0, -1 },
 };
 
-static btstack_timer_source_t mousing_timer;
 
 static void mousing_timer_handler(btstack_timer_source_t * ts){
 
-    if (con_handle == HCI_CON_HANDLE_INVALID) return;
+    if (con_handle == HCI_CON_HANDLE_INVALID) {
+        mousing_active = 0;
+        return;
+    }
 
     // simulate left click when corner reached
     if (step % STEPS_PER_DIRECTION == 0){
@@ -272,6 +277,9 @@ static void mousing_timer_handler(btstack_timer_source_t * ts){
 }
 
 static void hid_embedded_start_mousing(void){
+    if (mousing_active) return;
+    mousing_active = 1;
+
     printf("Start mousing..\n");
 
     step = 0;
@@ -281,7 +289,6 @@ static void hid_embedded_start_mousing(void){
     btstack_run_loop_set_timer(&mousing_timer, MOUSE_PERIOD_MS);
     btstack_run_loop_add_timer(&mousing_timer);
 }
-
 #endif
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
