@@ -45,9 +45,6 @@
  *  Created by Matthias Ringw ald on 4/29/09.
  */
 
-#include "btstack_config.h"
-#define ENABLE_LOG_DEBUG
-
 #include <inttypes.h>
 
 #include "hci.h"
