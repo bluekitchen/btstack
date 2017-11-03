@@ -44,10 +44,10 @@
 #include <string.h>
 
 #include "btstack.h"
-#include "avdtp.h"
-#include "avdtp_util.h"
-#include "avdtp_source.h"
-#include "a2dp_source.h"
+#include "classic/avdtp.h"
+#include "classic/avdtp_util.h"
+#include "classic/avdtp_source.h"
+#include "classic/a2dp_source.h"
 
 #define AVDTP_MEDIA_PAYLOAD_HEADER_SIZE 12
 

@@ -43,11 +43,11 @@
 #include <string.h>
 
 #include "btstack.h"
-#include "avdtp.h"
-#include "avdtp_sink.h"
-#include "avdtp_util.h"
-#include "avdtp_initiator.h"
-#include "avdtp_acceptor.h"
+#include "classic/avdtp.h"
+#include "classic/avdtp_sink.h"
+#include "classic/avdtp_util.h"
+#include "classic/avdtp_initiator.h"
+#include "classic/avdtp_acceptor.h"
 
 static avdtp_context_t * avdtp_sink_context;
 

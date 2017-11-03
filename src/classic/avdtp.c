@@ -44,10 +44,10 @@
 #include <string.h>
 
 #include "btstack.h"
-#include "avdtp.h"
-#include "avdtp_util.h"
-#include "avdtp_acceptor.h"
-#include "avdtp_initiator.h"
+#include "classic/avdtp.h"
+#include "classic/avdtp_util.h"
+#include "classic/avdtp_acceptor.h"
+#include "classic/avdtp_initiator.h"
 
 static int record_id = -1;
 static uint8_t   attribute_value[1000];
