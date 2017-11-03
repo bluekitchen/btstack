@@ -238,7 +238,7 @@ typedef enum{
 
 typedef enum {
     AVCTP_CONNECTION_IDLE,
-    AVCTP_SIGNALING_W4_SDP_QUERY_COMPLETE,
+    AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE,
     AVCTP_CONNECTION_W4_L2CAP_CONNECTED,
     AVCTP_CONNECTION_OPENED,
     AVCTP_W2_SEND_PRESS_COMMAND,
@@ -376,13 +376,32 @@ typedef struct {
     btstack_packet_handler_t packet_handler;
 
     // SDP query
+    uint8_t parse_sdp_record;
+    uint32_t record_id;
     uint16_t avrcp_cid;
     uint16_t avrcp_l2cap_psm;
     uint16_t avrcp_version;
     uint16_t avrcp_browsing_l2cap_psm;
     uint16_t avrcp_browsing_version;
-    uint8_t  role_supported;
 } avrcp_context_t; 
+
+// BROWSING 
+typedef struct {
+    btstack_linked_item_t    item;
+    bd_addr_t remote_addr;
+    uint16_t l2cap_browsing_cid;
+    uint16_t browsing_cid;
+
+    avctp_connection_state_t state;
+    uint8_t wait_to_send;
+    uint8_t transaction_label;
+
+    uint8_t * ertm_buffer;
+    uint32_t  ertm_buffer_size;
+    l2cap_ertm_config_t ertm_config;
+} avrcp_browsing_connection_t;
+
+// BROWSING END
 
 const char * avrcp_subunit2str(uint16_t index);
 const char * avrcp_event2str(uint16_t index);

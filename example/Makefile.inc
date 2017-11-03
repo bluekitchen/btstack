@@ -107,6 +107,7 @@ HXCMOD_PLAYER = \
 	${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c 	\
 
 EXAMPLES = 					\
+	avrcp_browsing_client	\
 	a2dp_sink_demo			\
 	a2dp_source_demo       \
 	ancs_client_demo		\
@@ -273,6 +274,9 @@ a2dp_source_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_E
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 a2dp_sink_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_ENCODER_OBJ} ${SBC_DECODER_OBJ} ${AVDTP_OBJ} avrcp.o avrcp_controller.o a2dp_sink_demo.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+avrcp_browsing_client: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} avrcp.o avrcp_controller.o avrcp_browsing_controller.o avrcp_browsing_client.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 dut_mode_classic: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} dut_mode_classic.c
