@@ -127,6 +127,7 @@ static void l2cap_ertm_retransmission_timeout_callback(btstack_timer_source_t * 
 typedef struct l2cap_fixed_channel {
     btstack_packet_handler_t callback;
     uint8_t waiting_for_can_send_now;
+    uint8_t next_request;
 } l2cap_fixed_channel_t;
 
 #ifdef ENABLE_CLASSIC
@@ -145,7 +146,10 @@ static l2cap_signaling_response_t signaling_responses[NR_PENDING_SIGNALING_RESPO
 static int signaling_responses_pending;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+#define FIXED_CHANNEL_FIFO_INVALID_INDEX 0xff
 static l2cap_fixed_channel_t fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_SIZE];
+static uint8_t fixed_channel_head_index = FIXED_CHANNEL_FIFO_INVALID_INDEX;
+static uint8_t fixed_channel_tail_index = FIXED_CHANNEL_FIFO_INVALID_INDEX;
 
 #ifdef ENABLE_BLE
 // only used for connection parameter update events
@@ -741,6 +745,10 @@ void l2cap_init(void){
     l2cap_event_packet_handler = NULL;
 #endif
     memset(fixed_channels, 0, sizeof(fixed_channels));
+    int i;
+    for (i=0;i<L2CAP_FIXED_CHANNEL_TABLE_SIZE;i++){
+        fixed_channels[i].next_request = FIXED_CHANNEL_FIFO_INVALID_INDEX;        
+    }
 
     // 
     // register callback with HCI
@@ -768,6 +776,15 @@ void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, u
 
     int index = l2cap_fixed_channel_table_index_for_channel_id(channel_id);
     if (index < 0) return;
+
+    // insert into queue
+    if (fixed_channel_tail_index == FIXED_CHANNEL_FIFO_INVALID_INDEX){
+        fixed_channel_head_index = index;
+    } else {
+        fixed_channels[fixed_channel_tail_index].next_request = index;
+    }
+    fixed_channel_tail_index = index;
+    fixed_channels[index].next_request = FIXED_CHANNEL_FIFO_INVALID_INDEX;
     fixed_channels[index].waiting_for_can_send_now = 1;
     l2cap_notify_channel_can_send();
 }
@@ -1830,6 +1847,32 @@ static void l2cap_notify_channel_can_send(void){
     }
 #endif
 
+#if 1
+    if (fixed_channel_head_index != FIXED_CHANNEL_FIFO_INVALID_INDEX){
+        int can_send = 0;
+        uint8_t i = fixed_channel_head_index;
+        if (fixed_channels[i].callback && fixed_channels[i].waiting_for_can_send_now){
+            if (l2cap_fixed_channel_table_index_is_le(i)){
+#ifdef ENABLE_BLE
+                can_send = hci_can_send_acl_le_packet_now();
+#endif
+            } else {
+#ifdef ENABLE_CLASSIC
+                can_send = hci_can_send_acl_classic_packet_now();
+#endif
+            } 
+        }
+        fixed_channels[i].waiting_for_can_send_now = 0;
+        fixed_channel_head_index = fixed_channels[i].next_request;
+        fixed_channels[i].next_request = FIXED_CHANNEL_FIFO_INVALID_INDEX;
+        if (fixed_channel_head_index == FIXED_CHANNEL_FIFO_INVALID_INDEX){
+            fixed_channel_tail_index = FIXED_CHANNEL_FIFO_INVALID_INDEX;
+        }
+        if (can_send) {
+            l2cap_emit_can_send_now(fixed_channels[i].callback, l2cap_fixed_channel_table_channel_id_for_index(i));
+        }
+    }
+#else
     int i;
     for (i=0;i<L2CAP_FIXED_CHANNEL_TABLE_SIZE;i++){
         if (!fixed_channels[i].callback) continue;
@@ -1848,6 +1891,9 @@ static void l2cap_notify_channel_can_send(void){
         fixed_channels[i].waiting_for_can_send_now = 0;
         l2cap_emit_can_send_now(fixed_channels[i].callback, l2cap_fixed_channel_table_channel_id_for_index(i));
     }
+
+#endif
+
 }
 
 #ifdef L2CAP_USES_CHANNELS
