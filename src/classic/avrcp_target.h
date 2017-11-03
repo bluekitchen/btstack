@@ -36,7 +36,7 @@
  */
 
 /*
- * avrcp.h
+ * avrcp_target.h
  * 
  * Audio/Video Remote Control Profile
  *
@@ -56,7 +56,7 @@ extern "C" {
 
 
 /**
- * @brief AVDTP Source service record. 
+ * @brief AVRCP Target service record. 
  * @param service
  * @param service_record_handle
  * @param browsing  1 - supported, 0 - not supported

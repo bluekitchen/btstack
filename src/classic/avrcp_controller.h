@@ -57,7 +57,7 @@ extern "C" {
 /* API_START */
 
 /**
- * @brief AVDTP Sink service record. 
+ * @brief AVRCP Controller service record. 
  * @param service
  * @param service_record_handle
  * @param browsing  1 - supported, 0 - not supported
@@ -68,7 +68,7 @@ extern "C" {
 void avrcp_controller_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name);
 
 /**
- * @brief Set up AVDTP Sink device.
+ * @brief Set up AVRCP Controller device.
  */
 void avrcp_controller_init(void);
 
