@@ -646,16 +646,20 @@ void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
 uint8_t avrcp_connect(bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * avrcp_cid){
     avrcp_connection_t * connection = get_avrcp_connection_for_bd_addr(bd_addr, context);
+    printf("avrcp_connect 1 \n");
     if (connection){
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     connection = avrcp_create_connection(bd_addr, context);
+    printf("avrcp_connect 2 \n");
     if (!connection){
         log_error("avrcp: could not allocate connection struct.");
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
+    printf("avrcp_connect 3 \n");
     
     if (!avrcp_cid) return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
+    printf("avrcp_connect 4 \n");
     
     *avrcp_cid = connection->avrcp_cid; 
     connection->state = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
