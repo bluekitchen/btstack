@@ -107,7 +107,6 @@ HXCMOD_PLAYER = \
 	${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c 	\
 
 EXAMPLES = 					\
-	avrcp_browsing_client	\
 	a2dp_sink_demo			\
 	a2dp_source_demo       \
 	ancs_client_demo		\
