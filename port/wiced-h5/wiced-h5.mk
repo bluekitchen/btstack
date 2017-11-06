@@ -66,7 +66,7 @@ $(NAME)_SOURCES += \
 	../../chipset/bcm/btstack_chipset_bcm_download_firmware.c  \
 
 ifeq ($(BT_CHIP_XTAL_FREQUENCY),)
-$(NAME)_SOURCES += ../../../drivers/bluetooth/firmware/$(BT_CHIP)$(BT_CHIP_REVISION)/bt_firmware_image.c
+$(NAME)_SOURCES += ../../../drivers/bluetooth/firmware/$(BT_CHIP)$(BT_CHIP_REVISION)/$(BT_FIRMWARE_FILE)
 else
-$(NAME)_SOURCES += ../../../drivers/bluetooth/firmware/$(BT_CHIP)$(BT_CHIP_REVISION)/$(BT_CHIP_XTAL_FREQUENCY)/bt_firmware_image.c
+$(NAME)_SOURCES += ../../../drivers/bluetooth/firmware/$(BT_CHIP)$(BT_CHIP_REVISION)/$(BT_CHIP_XTAL_FREQUENCY)/$(BT_FIRMWARE_FILE)
 endif
