@@ -22,7 +22,6 @@ $(NAME)_SOURCES := ../../../libraries/btstack/example/EXAMPLE.c
 $(NAME)_COMPONENTS += btstack/port/wiced-h4
 $(NAME)_CFLAGS += ADDITIONAL_CFLAGS
 
-BT_FIRMWARE_PATH := BLUETOOTH_FIRMWARE_PATH
 BT_FIRMWARE_FILE := BLUETOOTH_FIRMWARE_FILE
 '''
 
@@ -70,13 +69,6 @@ if wiced_version < "3.4.0":
 
 # NOTE: it would be more robust to check for files on disk
 
-# drivers folder was moved into librarias with 4.0
-if wiced_version < "4.0":
-    bluetooth_firmware_path = 'drivers/bluetooth/firmware'
-else:
-    bluetooth_firmware_path = 'libraries/drivers/bluetooth/firmware'
-print("Bluetooth Firmware in %s" % bluetooth_firmware_path)
-
 # bluetooth firmware image name changed in 5.2
 if wiced_version < "5.2":
     bluetooth_firmware_file = 'bt_firmware_image.c'
@@ -105,7 +97,7 @@ for file in os.listdir(examples_embedded):
 
     # create .mk file
     with open(apps_folder + example + ".mk", "wt") as fout:
-        fout.write(mk_template.replace("EXAMPLE", example).replace("TOOL", script_path).replace("ADDITIONAL_CFLAGS", additional_cflags).replace("DATE",time.strftime("%c")).replace('BLUETOOTH_FIRMWARE_PATH', bluetooth_firmware_path).replace('BLUETOOTH_FIRMWARE_FILE', bluetooth_firmware_file))
+        fout.write(mk_template.replace("EXAMPLE", example).replace("TOOL", script_path).replace("ADDITIONAL_CFLAGS", additional_cflags).replace("DATE",time.strftime("%c")).replace('BLUETOOTH_FIRMWARE_FILE', bluetooth_firmware_file))
 
     # create update_gatt.sh if .gatt file is present
     gatt_path = examples_embedded + example + ".gatt"
