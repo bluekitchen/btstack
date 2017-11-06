@@ -20,8 +20,11 @@ GLOBAL_INCLUDES += .
 
 $(NAME)_SOURCES := ../../../libraries/btstack/example/EXAMPLE.c
 $(NAME)_COMPONENTS += btstack/port/wiced-h5
-$(NAME)_CFLAGS += ADDITIONAL_CFLAGS
 
+# Additional CFLAGS for BTstack Component compilation
+BTSTACK_CFLAGS += ADDITIONAL_CFLAGS
+
+# Name of Firmware file
 BT_FIRMWARE_FILE := BLUETOOTH_FIRMWARE_FILE
 '''
 
@@ -62,10 +65,16 @@ wiced_version = "%u.%u" % (wiced_version_major, wiced_version_minor)
 # show WICED version
 print("Found WICED SDK version: %s" % wiced_version)
 
+# UART API changes in 3.4
 additional_cflags = ""
 if wiced_version < "3.4.0":
     print("Adding WICED_UART_READ_DOES_NOT_RETURN_BYTES_READ for SDK < 3.4.0")
     additional_cflags = "-DWICED_UART_READ_DOES_NOT_RETURN_BYTES_READ"
+
+# aes in wiced_security was replaced by mbedTLS in 5.2
+if wiced_version >= "5.2":
+    print("Add WICED_HAVE_MBEDTLS for SDK >= 5.2")
+    additional_cflags += " -DWICED_HAVE_MBEDTLS"
 
 # NOTE: it would be more robust to check for files on disk
 

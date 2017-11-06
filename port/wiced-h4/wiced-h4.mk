@@ -19,6 +19,9 @@ GLOBAL_INCLUDES += \
 # micro-ecc of WICED tree used for SECP256R1 in LE Secure Connections
 $(NAME)_COMPONENTS += crypto/micro-ecc
 
+# additional CFLAGS
+$(NAME)_CFLAGS += $(BTSTACK_CFLAGS)
+
 # core BTstack sources
 $(NAME)_SOURCES += \
 	../../src/ad_parser.c    		      \
