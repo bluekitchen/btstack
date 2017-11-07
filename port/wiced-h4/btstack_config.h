@@ -6,6 +6,7 @@
 #define __BTSTACK_CONFIG
 
 // Port related features
+#define HAVE_BTSTACK_STDIN
 #define HAVE_EMBEDDED_TIME_MS
 #define WICED_BT_UART_MANUAL_CTS_RTS
 
