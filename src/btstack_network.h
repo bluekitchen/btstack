@@ -43,14 +43,14 @@
 #define __BTSTACK_NETWORK_H
 
 #include <stdint.h>
-#include "btstack_defines.h"
+#include "bluetooth.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
 /**
- * @brief Initialise network interface
+ * @brief Initialize network interface
  * @param send_packet_callback
  */
 void btstack_network_init(void (*send_packet_callback)(const uint8_t * packet, uint16_t size));
@@ -63,7 +63,7 @@ void btstack_network_init(void (*send_packet_callback)(const uint8_t * packet, u
 int  btstack_network_up(bd_addr_t network_address);
 
 /**
- * @brief Bring up network interfacd
+ * @brief Shut down network interfacd
  * @param network_address
  * @return 0 if ok
  */
@@ -74,10 +74,10 @@ int  btstack_network_down(void);
  * @param packet
  * @param size
  */
-uint8_t btstack_network_process_packet(const uint8_t * packet, uint16_t size);
+void btstack_network_process_packet(const uint8_t * packet, uint16_t size);
 
 /** 
- * @brief Notify network interface that packet from send_packet_callback was sent and the next packet could be delivered
+ * @brief Notify network interface that packet from send_packet_callback was sent and the next packet can be delivered.
  */
 void btstack_network_packet_sent(void);
 
