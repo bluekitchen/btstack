@@ -18,6 +18,9 @@ NAME := EXAMPLE
 
 GLOBAL_INCLUDES += .
 
+# Replace Linefeed with -> CRLF
+GLOBAL_DEFINES += CRLF_STDIO_REPLACEMENT
+
 $(NAME)_SOURCES := ../../../libraries/btstack/example/EXAMPLE.c
 $(NAME)_COMPONENTS += btstack/port/wiced-h5
 
