@@ -81,6 +81,12 @@ void btstack_network_process_packet(const uint8_t * packet, uint16_t size);
  */
 void btstack_network_packet_sent(void);
 
+/**
+ * @brief Get network name after network was activated
+ * @note e.g. tapX on Linux, might not be useful on all platforms
+ * @returns network name
+ */
+const char * btstack_network_get_name(void);
 
 #if defined __cplusplus
 }

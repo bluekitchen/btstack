@@ -83,17 +83,18 @@
 static int  tap_fd = -1;
 static uint8_t network_buffer[BNEP_MTU_MIN];
 static size_t  network_buffer_len = 0;
+static char tap_dev_name[16];
 
 #ifdef __APPLE__
 // tuntaposx provides fixed set of tapX devices
 static const char * tap_dev = "/dev/tap0";
-static char tap_dev_name[16] = "tap0";
+static const char * tap_dev_name_template = "tap0";
 #endif
 
 #ifdef __linux
 // Linux uses single control device to bring up tunX or tapX interface
 static const char * tap_dev = "/dev/net/tun";
-static char tap_dev_name[16] = "bnep%d";
+static const char * tap_dev_name_template =  "bnep%d";
 #endif
 
 static btstack_data_source_t tap_dev_ds;
@@ -162,7 +163,6 @@ int btstack_network_up(bd_addr_t network_address){
     struct ifreq ifr;
     int fd_dev;
     int fd_socket;
-    char * dev;
 
     if( (fd_dev = open(tap_dev, O_RDWR)) < 0 ) {
         fprintf(stderr, "TAP: Error opening %s: %s\n", tap_dev, strerror(errno));
@@ -171,11 +171,8 @@ int btstack_network_up(bd_addr_t network_address){
 
 #ifdef __linux
     memset(&ifr, 0, sizeof(ifr));
-
     ifr.ifr_flags = IFF_TAP | IFF_NO_PI; 
-    if( *dev ) {
-        strncpy(ifr.ifr_name, dev, IFNAMSIZ);
-    }
+    strncpy(ifr.ifr_name, tap_dev_name_template, IFNAMSIZ);  // device name pattern
 
     int err;
     if( (err = ioctl(fd_dev, TUNSETIFF, (void *) &ifr)) < 0 ) {
@@ -183,10 +180,10 @@ int btstack_network_up(bd_addr_t network_address){
         close(fd_dev);
         return -1;
     }  
-    dev = ifr.ifr_name;
+    strcpy(tap_dev_name, ifr.ifr_name);
 #endif
 #ifdef __APPLE__
-    dev = tap_dev_name;
+    strcpy(tap_dev_name, tap_dev_name_template);
 #endif    
 
     fd_socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
@@ -199,7 +196,7 @@ int btstack_network_up(bd_addr_t network_address){
     // Configure the MAC address of the newly created bnep(x) 
     // device to the local bd_address
     memset (&ifr, 0, sizeof(struct ifreq));
-    strcpy(ifr.ifr_name, dev);
+    strcpy(ifr.ifr_name, tap_dev_name);
 #ifdef __linux
     ifr.ifr_hwaddr.sa_family = ARPHRD_ETHER;
     memcpy(ifr.ifr_hwaddr.sa_data, network_address, sizeof(bd_addr_t));
@@ -255,6 +252,15 @@ int btstack_network_up(bd_addr_t network_address){
     btstack_run_loop_enable_data_source_callbacks(&tap_dev_ds, DATA_SOURCE_CALLBACK_READ);
 
     return 0;;
+}
+
+/**
+ * @brief Get network name after network was activated
+ * @note e.g. tapX on Linux, might not be useful on all platforms
+ * @returns network name
+ */
+const char * btstack_network_get_name(void){
+    return tap_dev_name;
 }
 
 /**

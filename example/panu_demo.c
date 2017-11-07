@@ -333,6 +333,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         /* Setup network interface */
                         gap_local_bd_addr(local_addr);
                         btstack_network_up(local_addr);
+                        printf("Network Interface %s activated\n", btstack_network_get_name());
                     }
 					break;
                 
