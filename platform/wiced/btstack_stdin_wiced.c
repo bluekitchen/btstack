@@ -37,9 +37,7 @@
 
 #define __BTSTACK_FILE__ "btstack_stdin_wiced.c"
 
-#include <errno.h>
 #include <stdio.h>
-#include <unistd.h>
 
 #include "btstack_run_loop_wiced.h"
 #include "btstack_defines.h"
