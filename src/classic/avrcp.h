@@ -124,6 +124,7 @@ typedef enum {
     AVRCP_PDU_ID_REQUEST_CONTINUING_RESPONSE = 0x40,
     AVRCP_PDU_ID_REQUEST_ABORT_CONTINUING_RESPONSE = 0x41,
     AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME = 0x50,
+    AVRCP_PDU_ID_GET_FOLDER_ITEMS = 0x71,
     AVRCP_PDU_ID_UNDEFINED = 0xFF
 } avrcp_pdu_id_t;
 
@@ -275,6 +276,8 @@ typedef enum {
 
 // BROWSING 
 typedef struct {
+    uint16_t l2cap_browsing_cid;
+
     avctp_connection_state_t state;
     uint8_t wait_to_send;
     uint8_t transaction_label;
@@ -282,6 +285,15 @@ typedef struct {
     uint8_t * ertm_buffer;
     uint32_t  ertm_buffer_size;
     l2cap_ertm_config_t ertm_config;
+
+    // get folder item
+    uint8_t get_folder_item;
+    uint8_t scope;
+    uint32_t start_item;
+    uint32_t end_item;
+    uint8_t attribute_count;
+    uint8_t * attribute_list;
+
 } avrcp_browsing_connection_t;
 // BROWSING END
 
@@ -291,7 +303,6 @@ typedef struct {
     uint16_t l2cap_signaling_cid;
     uint16_t avrcp_cid;
 
-    uint16_t l2cap_browsing_cid;
     uint16_t avrcp_browsing_cid;
     uint16_t browsing_l2cap_psm;
     uint16_t browsing_version;

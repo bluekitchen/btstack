@@ -241,9 +241,11 @@ static void show_usage(void){
     printf("c      - AVRCP Browsing Controller create connection to addr %s\n", bd_addr_to_str(device_addr));
     printf("C      - AVRCP Browsing Controller disconnect\n");
     printf("A      - AVRCP Controller disconnect\n");
+    printf("p      - Get player list\n");
     printf("---\n");
 }
 #endif
+
 
 #ifdef HAVE_BTSTACK_STDIN
 static void stdin_process(char cmd){
@@ -279,6 +281,12 @@ static void stdin_process(char cmd){
             }
             printf("AVRCP Browsing Controller already disconnected\n");
             break;
+        
+        case 'p':
+            printf("AVRCP Browsing: get player list\n");
+            avrcp_browsing_controller_get_player_list(browsing_cid);
+            break;
+            
         case '\n':
         case '\r':
             break;
@@ -286,6 +294,7 @@ static void stdin_process(char cmd){
             show_usage();
             return;
     }
+
     if (status != ERROR_CODE_SUCCESS){
         printf("Could not perform command, status 0x%2x\n", status);
     }

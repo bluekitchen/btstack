@@ -52,6 +52,7 @@
 extern "C" {
 #endif
 
+
 /* API_START */
 
 /**
@@ -76,6 +77,23 @@ uint8_t avrcp_browsing_controller_connect(bd_addr_t bd_addr, uint8_t * ertm_buff
  * @returns status
  */
 uint8_t avrcp_browsing_controller_disconnect(uint16_t avrcp_browsing_cid);
+
+/**
+ * @brief Retrieve a listing of the contents of a folder.
+ * @param avrcp_browsing_cid
+ * @param scope    0-player list, 1-virtual file system, 2-search, 3-now playing  
+ * @param start_item
+ * @param end_item
+ * @param attribute_count
+ * @param attribute_list
+ **/
+uint8_t avrcp_browsing_controller_get_folder_items(uint16_t avrcp_browsing_cid, uint8_t scope, uint32_t start_item, uint32_t end_item, uint8_t attribute_count, uint8_t * attribute_list);
+
+/**
+ * @brief Retrieve a player list.
+ * @param avrcp_browsing_cid
+ **/
+uint8_t avrcp_browsing_controller_get_player_list(uint16_t avrcp_browsing_cid);
 
 /* API_END */
 
