@@ -55,7 +55,6 @@ extern "C" {
 #endif
 
 /* API_START */
-
 /**
  * @brief AVRCP Controller service record. 
  * @param service
@@ -278,8 +277,11 @@ uint8_t avrcp_controller_set_shuffle_mode(uint16_t avrcp_cid, avrcp_shuffle_mode
  * @returns status
  */
 uint8_t avrcp_controller_set_repeat_mode(uint16_t avrcp_cid, avrcp_repeat_mode_t mode);
-
 /* API_END */
+
+// Only used by AVRCP controller and AVRCP browsing controller
+avrcp_context_t avrcp_controller_context;
+
 #if defined __cplusplus
 }
 #endif

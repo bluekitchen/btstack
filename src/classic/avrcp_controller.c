@@ -47,8 +47,6 @@
 #include "classic/avrcp.h"
 #include "classic/avrcp_controller.h"
 
-static avrcp_context_t avrcp_controller_context;
-
 void avrcp_controller_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name){
     avrcp_create_sdp_record(1, service, service_record_handle, browsing, supported_features, service_name, service_provider_name);
 }

@@ -134,10 +134,8 @@ int btstack_main(int argc, const char * argv[]){
     // Register AVRCP for HCI events.
     avrcp_controller_register_packet_handler(&avrcp_browsing_controller_packet_handler);
     
-    // Initialize AVRCP Controller.
+    // Initialize AVRCP Browsing Controller, HCI events will be sent to the AVRCP Controller callback. 
     avrcp_browsing_controller_init();
-    // Register AVRCP for HCI events.
-    avrcp_browsing_controller_register_packet_handler(&avrcp_browsing_controller_packet_handler);
     
     // Initialize SDP. 
     sdp_init();
@@ -180,13 +178,13 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
         case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
             local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
             if (browsing_cid != 0 && browsing_cid != local_cid) {
-                printf("AVRCP Browsing Client: Connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", browsing_cid, local_cid);
+                printf("AVRCP Browsing Client: AVRCP Controller connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", browsing_cid, local_cid);
                 return;
             }
 
             status = avrcp_subevent_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
-                printf("AVRCP Browsing Client: Connection failed: status 0x%02x\n", status);
+                printf("AVRCP Browsing Client: AVRCP Controller connection failed: status 0x%02x\n", status);
                 browsing_cid = 0;
                 return;
             }
@@ -194,11 +192,11 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
             avrcp_cid = local_cid;
             avrcp_connected = 1;
             avrcp_subevent_connection_established_get_bd_addr(packet, adress);
-            printf("AVRCP Browsing Client: Channel successfully opened: %s, browsing_cid 0x%02x\n", bd_addr_to_str(adress), avrcp_cid);
+            printf("AVRCP Browsing Client: AVRCP Controller Channel successfully opened: %s, avrcp_cid 0x%02x\n", bd_addr_to_str(adress), avrcp_cid);
             return;
         }
         case AVRCP_SUBEVENT_CONNECTION_RELEASED:
-            printf("AVRCP Browsing Client: Channel released: browsing_cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
+            printf("AVRCP Browsing Client: AVRCP Controller Channel released: avrcp_cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
             browsing_cid = 0;
             avrcp_browsing_connected = 0;
             return;
@@ -206,13 +204,13 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
         case AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED: {
             local_cid = avrcp_subevent_browsing_connection_established_get_browsing_cid(packet);
             if (browsing_cid != 0 && browsing_cid != local_cid) {
-                printf("AVRCP Browsing Client: Connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", browsing_cid, local_cid);
+                printf("AVRCP Browsing Client: AVRCP Browsing Controller Connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", browsing_cid, local_cid);
                 return;
             }
 
             status = avrcp_subevent_browsing_connection_established_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
-                printf("AVRCP Browsing Client: Connection failed: status 0x%02x\n", status);
+                printf("AVRCP Browsing Client: AVRCP Browsing Controller Connection failed: status 0x%02x\n", status);
                 browsing_cid = 0;
                 return;
             }
@@ -220,11 +218,11 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
             browsing_cid = local_cid;
             avrcp_browsing_connected = 1;
             avrcp_subevent_browsing_connection_established_get_bd_addr(packet, adress);
-            printf("AVRCP Browsing Client: Channel successfully opened: %s, browsing_cid 0x%02x\n", bd_addr_to_str(adress), browsing_cid);
+            printf("AVRCP Browsing Client: AVRCP Browsing Controller Channel successfully opened: %s, browsing_cid 0x%02x\n", bd_addr_to_str(adress), browsing_cid);
             return;
         }
         case AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED:
-            printf("AVRCP Browsing Client: Channel released: browsing_cid 0x%02x\n", avrcp_subevent_browsing_connection_released_get_browsing_cid(packet));
+            printf("AVRCP Browsing Client: AVRCP Browsing Controller Channel released: browsing_cid 0x%02x\n", avrcp_subevent_browsing_connection_released_get_browsing_cid(packet));
             browsing_cid = 0;
             avrcp_browsing_connected = 0;
             return;
@@ -239,8 +237,10 @@ static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth AVRCP Controller Connection Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("c      - AVRCP create connection for browsing to addr %s\n", bd_addr_to_str(device_addr));
-    printf("C      - AVRCP disconnect\n");
+    printf("a      - AVRCP Controller create connection to addr %s\n", bd_addr_to_str(device_addr));
+    printf("c      - AVRCP Browsing Controller create connection to addr %s\n", bd_addr_to_str(device_addr));
+    printf("C      - AVRCP Browsing Controller disconnect\n");
+    printf("A      - AVRCP Controller disconnect\n");
     printf("---\n");
 }
 #endif
@@ -251,20 +251,33 @@ static void stdin_process(char cmd){
     
     switch (cmd){
         case 'a':
-            printf(" - Create AVRCP connection for controll to addr %s.\n", bd_addr_to_str(device_addr));
+            printf(" - Create AVRCP connection for control to addr %s.\n", bd_addr_to_str(device_addr));
             status = avrcp_controller_connect(device_addr, &avrcp_cid);
             break;
+        case 'A':
+            if (avrcp_connected){
+                printf(" - AVRCP Controller disconnect from addr %s.\n", bd_addr_to_str(device_addr));
+                status = avrcp_controller_disconnect(avrcp_cid);
+                break;
+            }
+            printf("AVRCP Controller already disconnected\n");
+            break;
+
         case 'c':
             if (!avrcp_connected) {
-                printf(" You must first create AVRCP connection for controll to addr %s.\n", bd_addr_to_str(device_addr));
+                printf(" You must first create AVRCP connection for control to addr %s.\n", bd_addr_to_str(device_addr));
                 break;
             }
             printf(" - Create AVRCP connection for browsing to addr %s.\n", bd_addr_to_str(device_addr));
             status = avrcp_browsing_controller_connect(device_addr, ertm_buffer, sizeof(ertm_buffer), &ertm_config, &browsing_cid);
             break;
         case 'C':
-            printf(" - AVRCP disconnect from addr %s.\n", bd_addr_to_str(device_addr));
-            status = avrcp_browsing_controller_disconnect(browsing_cid);
+            if (avrcp_browsing_connected){
+                printf(" - AVRCP Browsing Controller disconnect from addr %s.\n", bd_addr_to_str(device_addr));
+                status = avrcp_browsing_controller_disconnect(browsing_cid);
+                break;
+            }
+            printf("AVRCP Browsing Controller already disconnected\n");
             break;
         case '\n':
         case '\r':

@@ -60,12 +60,6 @@ extern "C" {
 void avrcp_browsing_controller_init(void);
 
 /**
- * @brief Register callback for the AVRCP Sink client. 
- * @param callback
- */
-void avrcp_browsing_controller_register_packet_handler(btstack_packet_handler_t callback);
-
-/**
  * @brief Connect to device with a Bluetooth address.
  * @param bd_addr
  * @param ertm_buffer

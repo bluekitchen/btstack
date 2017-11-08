@@ -273,11 +273,30 @@ typedef enum {
     AVRCP_PARSER_IGNORE_ATTRIBUTE_VALUE
 } avrcp_parser_state_t;
 
+// BROWSING 
+typedef struct {
+    avctp_connection_state_t state;
+    uint8_t wait_to_send;
+    uint8_t transaction_label;
+
+    uint8_t * ertm_buffer;
+    uint32_t  ertm_buffer_size;
+    l2cap_ertm_config_t ertm_config;
+} avrcp_browsing_connection_t;
+// BROWSING END
+
 typedef struct {
     btstack_linked_item_t    item;
     bd_addr_t remote_addr;
     uint16_t l2cap_signaling_cid;
     uint16_t avrcp_cid;
+
+    uint16_t l2cap_browsing_cid;
+    uint16_t avrcp_browsing_cid;
+    uint16_t browsing_l2cap_psm;
+    uint16_t browsing_version;
+
+    avrcp_browsing_connection_t * browsing_connection;
 
     avctp_connection_state_t state;
     uint8_t wait_to_send;
@@ -375,33 +394,17 @@ typedef struct {
     btstack_packet_handler_t avrcp_callback;
     btstack_packet_handler_t packet_handler;
 
+    // btstack_packet_handler_t browsing_callback;
+    btstack_packet_handler_t browsing_packet_handler;
+
     // SDP query
     uint8_t parse_sdp_record;
     uint32_t record_id;
     uint16_t avrcp_cid;
     uint16_t avrcp_l2cap_psm;
     uint16_t avrcp_version;
-    uint16_t avrcp_browsing_l2cap_psm;
-    uint16_t avrcp_browsing_version;
 } avrcp_context_t; 
 
-// BROWSING 
-typedef struct {
-    btstack_linked_item_t    item;
-    bd_addr_t remote_addr;
-    uint16_t l2cap_browsing_cid;
-    uint16_t browsing_cid;
-
-    avctp_connection_state_t state;
-    uint8_t wait_to_send;
-    uint8_t transaction_label;
-
-    uint8_t * ertm_buffer;
-    uint32_t  ertm_buffer_size;
-    l2cap_ertm_config_t ertm_config;
-} avrcp_browsing_connection_t;
-
-// BROWSING END
 
 const char * avrcp_subunit2str(uint16_t index);
 const char * avrcp_event2str(uint16_t index);
@@ -422,7 +425,12 @@ void avrcp_emit_connection_closed(btstack_packet_handler_t callback, uint16_t av
 uint8_t avrcp_cmd_opcode(uint8_t *packet, uint16_t size);
 avrcp_connection_t * get_avrcp_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid, avrcp_context_t * context);
 avrcp_connection_t * get_avrcp_connection_for_avrcp_cid(uint16_t avrcp_cid, avrcp_context_t * context);
+avrcp_connection_t * get_avrcp_connection_for_bd_addr(bd_addr_t addr, avrcp_context_t * context);
 void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_cid);
+uint16_t avrcp_get_next_cid(void);
+
+// SDP query
+void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 #if defined __cplusplus
 }
