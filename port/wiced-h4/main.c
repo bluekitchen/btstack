@@ -59,7 +59,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static const hci_transport_config_uart_t hci_transport_config_uart = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
-    2000000,    // 300000+ didn't work reliably, the 48 MHz UART config might be needed for this
+    1000000,    // 200000+ didn't work reliably
     1,
     NULL,
 };
