@@ -48,12 +48,19 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
 /* API_START */
 
 /**
  * @brief Set start address for DCT storage
  */
 void le_device_db_wiced_dct_set_start_address(uint32_t start_address);
+
+/*
+ * @brief Get Size of LE Device DB DCT part
+ */
+int le_device_db_wiced_dct_get_storage_size(void);
 
 /*
  * @brief Delete all le device entries

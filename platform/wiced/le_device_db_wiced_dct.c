@@ -289,3 +289,7 @@ void le_device_db_dump(void){
         log_info_key("irk", entry.irk);
     }
 }
+
+int le_device_db_wiced_dct_get_storage_size(void){
+	return NVM_NUM_LE_DEVICES * sizeof(le_device_nvm_t);
+}
