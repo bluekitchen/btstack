@@ -198,7 +198,7 @@ static int btstack_tlv_posix_read_db(btstack_tlv_posix_t * self){
 							btstack_linked_list_add(&self->entry_list, (btstack_linked_item_t *) new_entry);
 						} else {
 							// fail
-							free(entry);
+							free(new_entry);
 							break;
 						}
 					}	    		
