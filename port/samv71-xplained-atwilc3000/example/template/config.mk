@@ -156,6 +156,7 @@ CSRCS += \
 	${BTSTACK_ROOT_CONFIG}/src/btstack_ring_buffer.c \
 	${BTSTACK_ROOT_CONFIG}/src/btstack_run_loop.c \
 	${BTSTACK_ROOT_CONFIG}/src/btstack_util.c \
+	${BTSTACK_ROOT_CONFIG}/src/btstack_tlv.c \
 	${BTSTACK_ROOT_CONFIG}/src/classic/a2dp_sink.c  		\
 	${BTSTACK_ROOT_CONFIG}/src/classic/a2dp_source.c 		\
 	${BTSTACK_ROOT_CONFIG}/src/classic/avdtp.c  			\

@@ -92,6 +92,7 @@ Src/stm32l0xx_it.c \
 	btstack_ring_buffer.c \
 	btstack_run_loop.c \
 	btstack_run_loop_embedded.c \
+	btstack_tlv.c \
 	btstack_uart_block_embedded.c \
 	btstack_util.c \
 	device_information_service_server.c \

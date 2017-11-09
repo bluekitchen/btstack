@@ -143,6 +143,7 @@ COMMON = \
     hci_dump.o                \
     btstack_uart_block_embedded.o \
     hal_flash_bank_mxc.o      \
+    btstack_tlv.o             \
     btstack_tlv_flash_bank.o  \
     btstack_stdin_embedded.o  \
 

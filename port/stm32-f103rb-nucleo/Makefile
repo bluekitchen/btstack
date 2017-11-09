@@ -31,6 +31,7 @@ COMMON = \
 	rfcomm.c			      \
 	sdp_client_rfcomm.c 		  \
     btstack_util.c			  \
+    btstack_tlv.c	          \
     hci.c			          \
     hci_cmd.c		          \
     hci_dump.c		          \

@@ -49,6 +49,7 @@ $(NAME)_SOURCES += \
 	../../src/btstack_run_loop.c          \
 	../../src/btstack_util.c              \
 	../../src/btstack_slip.c              \
+	../../src/btstack_tlv.c               \
 	../../src/hci.c                       \
 	../../src/hci_cmd.c                   \
 	../../src/hci_dump.c                  \

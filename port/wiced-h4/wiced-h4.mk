@@ -47,6 +47,7 @@ $(NAME)_SOURCES += \
 	../../src/btstack_memory.c            \
 	../../src/btstack_memory_pool.c       \
 	../../src/btstack_run_loop.c          \
+	../../src/btstack_tlv.c               \
 	../../src/btstack_util.c              \
 	../../src/hci.c                       \
 	../../src/hci_cmd.c                   \
