@@ -12,7 +12,8 @@ CORE += \
 	btstack_util.c 	            \
 	main.c 	\
 	btstack_stdin_posix.c \
-	
+	btstack_tlv.c \
+	btstack_tlv_posix.c \	
 
 COMMON += \
 	ad_parser.c 				\
