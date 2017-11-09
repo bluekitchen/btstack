@@ -9,6 +9,7 @@
 #define HAVE_EMBEDDED_TIME_MS
 #define HAVE_MALLOC
 #define HAVE_BTSTACK_STDIN
+#define HAVE_FREERTOS_TASK_NOTIFICATIONS
 
 // BTstack features that can be enabled
 #define ENABLE_BLE
