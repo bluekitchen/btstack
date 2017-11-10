@@ -387,7 +387,11 @@ static uint16_t l2cap_setup_options_ertm_request(l2cap_channel_t * channel, uint
     little_endian_store_16( config_options, 5, channel->local_retransmission_timeout_ms); 
     little_endian_store_16( config_options, 7, channel->local_monitor_timeout_ms);
     little_endian_store_16( config_options, 9, channel->local_mps);
-    return 11;
+    //
+    config_options[11] = 0x05;  // FCS OPTION
+    config_options[12] = 1;     // length
+    config_options[13] = channel->fcs_option;
+    return 14;
 }
 
 static uint16_t l2cap_setup_options_ertm_response(l2cap_channel_t * channel, uint8_t * config_options){
@@ -406,7 +410,11 @@ static uint16_t l2cap_setup_options_ertm_response(l2cap_channel_t * channel, uin
     little_endian_store_16( config_options, 7, channel->local_monitor_timeout_ms);
     // less or equal to remote mps
     little_endian_store_16( config_options, 9, btstack_min(channel->local_mps, channel->remote_mps));
-    return 11;
+    //
+    config_options[11] = 0x05;  // FCS OPTION
+    config_options[12] = 1;     // length
+    config_options[13] = channel->fcs_option;
+    return 14;
 }
 
 static int l2cap_ertm_send_supervisor_frame(l2cap_channel_t * channel, uint16_t control){
@@ -480,6 +488,11 @@ static void l2cap_ertm_configure_channel(l2cap_channel_t * channel, l2cap_ertm_c
     channel->rx_packets_data = &buffer[pos];
     pos += ertm_config->num_rx_buffers * channel->local_mps;
     channel->tx_packets_data = &buffer[pos];
+
+    // Issue: iOS (e.g. 10.2) uses "No FCS" as default while Core 5.0 specifies "FCS" as default
+    // Workaround: try to actively negotiate "No FCS" and fall back to "FCS" if "No FCS" is rejected
+    // This works as iOS accepts the "No FCS" request, hence the default value is only used on non-iOS devices
+    channel->fcs_option = 0;
 }
 
 uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, 
@@ -1078,7 +1091,7 @@ int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     int fcs_size = 0;
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION && channel->fcs_option){
         fcs_size = 2;
     }
 #endif
@@ -2290,6 +2303,13 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
                 default:
                     break;
             }
+        }
+        if (option_type == L2CAP_CONFIG_OPTION_TYPE_FRAME_CHECK_SEQUENCE && length == 1){
+            // "FCS" has precedence over "No FCS"
+            if (command[pos] != 0){
+                log_info("ertm: accept remote request for FCS");
+                channel->fcs_option = 1;
+            }
         }        
 #endif        
         // check for unknown options
@@ -2981,17 +3001,22 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
                 if (l2cap_channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
 
-                    // assert control + FCS fields are inside
-                    if (size < COMPLETE_L2CAP_HEADER+2+2) break;
+                    int fcs_size = l2cap_channel->fcs_option ? 2 : 0;
 
-                    // verify FCS (required if one side requests it and BTstack does)
-                    uint16_t fcs_calculated = crc16_calc(&packet[4], size - (4+2));
-                    uint16_t fcs_packet     = little_endian_read_16(packet, size-2);
-                    log_info("Packet FCS 0x%04x, calculated FCS 0x%04x", fcs_packet, fcs_calculated);
-                    if (fcs_calculated != fcs_packet){
-                        log_error("FCS mismatch! Packet 0x%04x, calculated 0x%04x", fcs_packet, fcs_calculated);
-                        // TODO: trigger retransmission or something like that
-                        break;
+                    // assert control + FCS fields are inside
+                    if (size < COMPLETE_L2CAP_HEADER+2+fcs_size) break;
+
+                    if (l2cap_channel->fcs_option){
+                        // verify FCS (required if one side requests it and BTstack does)
+                        uint16_t fcs_calculated = crc16_calc(&packet[4], size - (4+2));
+                        uint16_t fcs_packet     = little_endian_read_16(packet, size-2);
+                        if (fcs_calculated == fcs_packet){
+                            log_info("Packet FCS 0x%04x verified", fcs_packet);
+                        } else {
+                            log_error("FCS mismatch! Packet 0x%04x, calculated 0x%04x", fcs_packet, fcs_calculated);
+                            // TODO: trigger retransmission or something like that
+                            break;
+                        }
                     }
 
                     // switch on packet type
@@ -3088,7 +3113,7 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
 
                         // get SDU
                         const uint8_t * sdu_data = &packet[COMPLETE_L2CAP_HEADER+2];
-                        uint16_t        sdu_len  = size-(COMPLETE_L2CAP_HEADER+2+2);
+                        uint16_t        sdu_len  = size-(COMPLETE_L2CAP_HEADER+2+fcs_size);
 
                         // assert SDU size is smaller or equal to our buffers
                         if (sdu_len > l2cap_channel->local_mps) break;

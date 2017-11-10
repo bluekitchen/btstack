@@ -247,6 +247,9 @@ typedef struct {
     // if ertm is not mandatory, allow fallback to L2CAP Basic Mode - flag
     uint8_t ertm_mandatory;
 
+    // Frame Chech Sequence (crc16) is present in both directions
+    uint8_t fcs_option;
+
     // sender: max num of stored outgoing frames
     uint8_t num_tx_buffers;
 
