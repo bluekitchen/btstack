@@ -5751,6 +5751,16 @@ static inline uint16_t avrcp_subevent_browsing_connection_released_get_browsing_
 }
 
 /**
+ * @brief Get field browsing_cid from event AVRCP_SUBEVENT_BROWSING_MEDIA_ITEM_DONE
+ * @param event packet
+ * @return browsing_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_browsing_media_item_done_get_browsing_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
  * @brief Get field goep_cid from event GOEP_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return goep_cid

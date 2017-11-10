@@ -240,22 +240,6 @@ void avrcp_browser_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
     }
 }
 
-static void avrcp_handle_l2cap_data_packet_for_browsing_connection(avrcp_browsing_connection_t * connection, uint8_t *packet, uint16_t size){
-    UNUSED(size);
-
-    int pos = 3;
-    avrcp_pdu_id_t pdu_id = packet[pos++];
-
-    switch(pdu_id){
-        case AVRCP_PDU_ID_GET_FOLDER_ITEMS:
-            printf("AVRCP_PDU_ID_GET_FOLDER_ITEMS response \n");
-            break;
-        default:
-            break;
-    }
-    connection->state = AVCTP_CONNECTION_OPENED;
-}
-
 static int avrcp_browsing_controller_send_get_folder_items_cmd(uint16_t cid, avrcp_browsing_connection_t * connection){
     uint8_t command[100];
     int pos = 0; 
@@ -299,14 +283,52 @@ static void avrcp_browsing_controller_handle_can_send_now(avrcp_browsing_connect
     }
 }
 
+
+static void avrcp_browsing_controller_emit_done(btstack_packet_handler_t callback, uint16_t browsing_cid){
+    if (!callback) return;
+    uint8_t event[5];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVRCP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVRCP_SUBEVENT_BROWSING_MEDIA_ITEM_DONE;
+    little_endian_store_16(event, pos, browsing_cid);
+    pos += 2;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void avrcp_browsing_controller_handle_l2cap_data_packet(avrcp_connection_t * connection, uint8_t *packet, uint16_t size){
+    UNUSED(size);
+    printf("avrcp_browsing_controller_handle_l2cap_data_packet \n");
+    printf_hexdump(packet, size);
+    
+    int pos = 3;
+    avrcp_pdu_id_t pdu_id = packet[pos++];
+
+    switch(pdu_id){
+        case AVRCP_PDU_ID_GET_FOLDER_ITEMS:
+            printf("AVRCP_PDU_ID_GET_FOLDER_ITEMS response \n");
+
+            avrcp_browsing_controller_emit_done(avrcp_controller_context.avrcp_callback, connection->avrcp_browsing_cid);
+            break;
+        default:
+            break;
+    }
+    connection->state = AVCTP_CONNECTION_OPENED;
+}
+
 static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     avrcp_browsing_connection_t * connection;
+    avrcp_connection_t * avrcp_connection;
+    printf("avrcp_browsing_controller_packet_handler, packet type 0%02x\n", packet_type);
 
     switch (packet_type) {
         case L2CAP_DATA_PACKET:
-            connection = get_avrcp_browsing_connection_for_l2cap_cid(channel, &avrcp_controller_context);
-            if (!connection) break;
-            avrcp_handle_l2cap_data_packet_for_browsing_connection(connection, packet, size);
+            avrcp_connection = get_avrcp_connection_for_browsing_l2cap_cid(channel, &avrcp_controller_context);
+            if (!avrcp_connection){
+                printf("connection not found 0%2x\n", channel);
+                break;
+            } 
+            avrcp_browsing_controller_handle_l2cap_data_packet(avrcp_connection, packet, size);
             break;
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)){

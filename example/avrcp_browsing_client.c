@@ -136,6 +136,8 @@ int btstack_main(int argc, const char * argv[]){
     
     // Initialize AVRCP Browsing Controller, HCI events will be sent to the AVRCP Controller callback. 
     avrcp_browsing_controller_init();
+    // // Register AVRCP for HCI events.
+    // avrcp_browsing_controller_register_packet_handler(&avrcp_browsing_controller_packet_handler);
     
     // Initialize SDP. 
     sdp_init();

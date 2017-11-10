@@ -110,6 +110,10 @@ typedef uint8_t sm_key_t[16];
 
 // PBAP data
 #define PBAP_DATA_PACKET        0x0e
+
+// AVRCP browsing data
+#define AVRCP_BROWSING_DATA_PACKET     0x0f
+
  
 // debug log messages
 #define LOG_MESSAGE_PACKET      0xfc
@@ -1802,6 +1806,15 @@ typedef uint8_t sm_key_t[16];
  * @param browsing_cid
  */
 #define AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED                            0x1C
+
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param browsing_cid
+ */
+#define AVRCP_SUBEVENT_BROWSING_MEDIA_ITEM_DONE                                0x1D
+
 
 /**
  * @format 121BH1

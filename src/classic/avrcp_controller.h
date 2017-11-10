@@ -72,7 +72,7 @@ void avrcp_controller_create_sdp_record(uint8_t * service, uint32_t service_reco
 void avrcp_controller_init(void);
 
 /**
- * @brief Register callback for the AVRCP Sink client. 
+ * @brief Register callback for the AVRCP Controller client. 
  * @param callback
  */
 void avrcp_controller_register_packet_handler(btstack_packet_handler_t callback);
