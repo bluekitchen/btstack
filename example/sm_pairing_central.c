@@ -102,6 +102,7 @@ static void sm_pairing_central_setup(void){
     // LE Legacy Pairing, Passkey entry initiator enter, responder (us) displays
     // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
     // sm_set_authentication_requirements(SM_AUTHREQ_MITM_PROTECTION);
+    // sm_use_fixed_passkey_in_display_role(123456);
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
     // LE Secure Connetions, Just Works
@@ -115,6 +116,7 @@ static void sm_pairing_central_setup(void){
     // LE Legacy Pairing, Passkey entry initiator enter, responder (us) displays
     // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
     // sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION|SM_AUTHREQ_MITM_PROTECTION);
+    // sm_use_fixed_passkey_in_display_role(123456);
 #endif
 }
 

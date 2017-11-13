@@ -291,12 +291,12 @@ int sm_le_device_index(hci_con_handle_t con_handle );
 void sm_use_fixed_ec_keypair(uint8_t * qx, uint8_t * qy, uint8_t * d);
 
 /**
- * @brief Set passkey used with LE Legacy Pairing when we generate and show it instead of random number
+ * @brief Use fixec passkey for Legacy and SC instead of generating a random number
  * @note Can be used to improve security over Just Works if no keyboard or displary are present and 
  *       individual random passkey can be printed on the device during production
  * @param passkey
  */
-void sm_use_fixed_legacy_pairing_passkey_in_display_role(uint32_t passkey);
+void sm_use_fixed_passkey_in_display_role(uint32_t passkey);
 
 /**
  * @brief Allow connection re-encryption in Peripheral (Responder) role for LE Legacy Pairing 

@@ -200,7 +200,7 @@ static uint8_t sm_min_encryption_key_size;
 static uint8_t sm_auth_req = 0;
 static uint8_t sm_io_capabilities = IO_CAPABILITY_NO_INPUT_NO_OUTPUT;
 static uint8_t sm_slave_request_security;
-static uint32_t sm_fixed_legacy_pairing_passkey_in_display_role;
+static uint32_t sm_fixed_passkey_in_display_role;
 static uint8_t sm_reconstruct_ltk_without_le_device_db_entry;
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 static uint8_t sm_have_ec_keypair;
@@ -3021,7 +3021,7 @@ static void sm_handle_random_result(uint8_t * data){
         {
             sm_reset_tk();
             uint32_t tk;
-            if (sm_fixed_legacy_pairing_passkey_in_display_role == 0xffffffff){
+            if (sm_fixed_passkey_in_display_role == 0xffffffff){
                 // map random to 0-999999 without speding much cycles on a modulus operation
                 tk = little_endian_read_32(data,0);
                 tk = tk & 0xfffff;  // 1048575
@@ -3030,7 +3030,7 @@ static void sm_handle_random_result(uint8_t * data){
                 }
             } else {
                 // override with pre-defined passkey
-                tk = sm_fixed_legacy_pairing_passkey_in_display_role;
+                tk = sm_fixed_passkey_in_display_role;
             }
             big_endian_store_32(setup->sm_tk, 12, tk);
             if (IS_RESPONDER(connection->sm_role)){
@@ -3931,7 +3931,7 @@ void sm_init(void){
     sm_max_encryption_key_size = 16;
     sm_min_encryption_key_size = 7;
 
-    sm_fixed_legacy_pairing_passkey_in_display_role = 0xffffffff;
+    sm_fixed_passkey_in_display_role = 0xffffffff;
     sm_reconstruct_ltk_without_le_device_db_entry = 1;
 
 #ifdef ENABLE_CMAC_ENGINE
@@ -4004,8 +4004,8 @@ void sm_test_use_fixed_ec_keypair(void){
 #endif
 }
 
-void sm_use_fixed_legacy_pairing_passkey_in_display_role(uint32_t passkey){
-    sm_fixed_legacy_pairing_passkey_in_display_role = passkey;
+void sm_use_fixed_passkey_in_display_role(uint32_t passkey){
+    sm_fixed_passkey_in_display_role = passkey;
 }
 
 void sm_allow_ltk_reconstruction_without_le_device_db_entry(int allow){

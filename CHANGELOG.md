@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GATT Server: Writes to GATT Client Characteristic Configuration are stored in TLV and restored on reconnect. The db.h file generated from db.gatt needs to be re-created.
 - TLV: global TLV instance available via btstack_tlv_get_instance() (src/btstack_tlv.h)
 - TLV: POSIX implementation that appends to a file on disk (platform/posix/btstack_tlv_posix.c)
+- SM: allow to set fixed passkey in display role using sm_use_fixed_passkey_in_display_role
 
 ### Changed
 - panu_demo: uses btstack_network.h now
