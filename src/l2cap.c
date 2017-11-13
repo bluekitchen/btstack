@@ -790,6 +790,9 @@ void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, u
     int index = l2cap_fixed_channel_table_index_for_channel_id(channel_id);
     if (index < 0) return;
 
+    // check if already registered
+    if (fixed_channels[index].waiting_for_can_send_now) return;
+
     // insert into queue
     if (fixed_channel_tail_index == FIXED_CHANNEL_FIFO_INVALID_INDEX){
         fixed_channel_head_index = index;
@@ -1863,24 +1866,31 @@ static void l2cap_notify_channel_can_send(void){
 #if 1
     if (fixed_channel_head_index != FIXED_CHANNEL_FIFO_INVALID_INDEX){
         int can_send = 0;
+        int remove_entry = 1;
         uint8_t i = fixed_channel_head_index;
         if (fixed_channels[i].callback && fixed_channels[i].waiting_for_can_send_now){
             if (l2cap_fixed_channel_table_index_is_le(i)){
 #ifdef ENABLE_BLE
                 can_send = hci_can_send_acl_le_packet_now();
+                remove_entry = can_send;
 #endif
             } else {
 #ifdef ENABLE_CLASSIC
                 can_send = hci_can_send_acl_classic_packet_now();
+                remove_entry = can_send;
 #endif
-            } 
+            }
         }
-        fixed_channels[i].waiting_for_can_send_now = 0;
-        fixed_channel_head_index = fixed_channels[i].next_request;
-        fixed_channels[i].next_request = FIXED_CHANNEL_FIFO_INVALID_INDEX;
-        if (fixed_channel_head_index == FIXED_CHANNEL_FIFO_INVALID_INDEX){
-            fixed_channel_tail_index = FIXED_CHANNEL_FIFO_INVALID_INDEX;
+        // remove entry
+        if (remove_entry){
+            fixed_channels[i].waiting_for_can_send_now = 0;
+            fixed_channel_head_index = fixed_channels[i].next_request;
+            fixed_channels[i].next_request = FIXED_CHANNEL_FIFO_INVALID_INDEX;
+            if (fixed_channel_head_index == FIXED_CHANNEL_FIFO_INVALID_INDEX){
+                fixed_channel_tail_index = FIXED_CHANNEL_FIFO_INVALID_INDEX;
+            }
         }
+        // notify
         if (can_send) {
             l2cap_emit_can_send_now(fixed_channels[i].callback, l2cap_fixed_channel_table_channel_id_for_index(i));
         }
