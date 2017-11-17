@@ -245,6 +245,33 @@ typedef enum {
 #define ERROR_CODE_COARSE_CLOCK_ADJUSTMENT_REJECTED_BUT_WILL_TRY_TO_ADJUST_USING_CLOCK_DRAGGING 0x40
 /* ENUM_END */
 
+/* ENUM_START: AVRCP_BROWSING_ERROR_CODE */
+#define AVRCP_BROWSING_ERROR_CODE_INVALID_COMMAND                     0x00  // Sent if TG received a PDU that it did not understand. Valid for All.
+#define AVRCP_BROWSING_ERROR_CODE_INVALID_PARAMETER                   0x01  // Sent if the TG received a PDU with a parameter ID that it did not understand. Sent if there is only one parameter ID in the PDU. Valid for All.
+#define AVRCP_BROWSING_ERROR_CODE_SPECIFIED_PARAMETER_NOT_FOUND       0x02  // Sent if the parameter ID is understood, but content is wrong or corrupted. Valid for All.
+#define AVRCP_BROWSING_ERROR_CODE_INTERNAL_ERROR                      0x03  // Sent if there are error conditions not covered by a more specific error code. Valid for All.
+#define AVRCP_BROWSING_ERROR_CODE_SUCCESS                             0x04  // This is the status that should be returned if the operation was successful. Valid for All except where the response CType is AV/C REJECTED.
+#define AVRCP_BROWSING_ERROR_CODE_UID_CHANGED                         0x05  // The UIDs on the device have changed. Valid for All.
+#define AVRCP_BROWSING_ERROR_CODE_RESERVED_06                         0x06  // Valid for All.
+#define AVRCP_BROWSING_ERROR_CODE_INVALID_DIRECTION                   0x07  // The Direction parameter is invalid. Valid for Change Path.
+#define AVRCP_BROWSING_ERROR_CODE_NOT_A_DIRECTORY                     0x08  // The UID provided does not refer to a folder item. Valid for Change Path.
+#define AVRCP_BROWSING_ERROR_CODE_DOES_NOT_EXIST                      0x09  // The UID provided does not refer to any currently valid. Valid for Change Path, PlayItem, AddToNowPlaying, GetItemAttributes.
+#define AVRCP_BROWSING_ERROR_CODE_INVALID_SCOPE                       0x0a  // The scope parameter is invalid. Valid for GetFolderItems, PlayItem, AddToNowPlayer, GetItemAttributes,.
+#define AVRCP_BROWSING_ERROR_CODE_RANGE_OUT_OF_BOUNDS                 0x0b  // The start of range provided is not valid. Valid for GetFolderItems.
+#define AVRCP_BROWSING_ERROR_CODE_UID_IS_A_DIRECTORY                  0x0c  // The UID provided refers to a directory, which cannot be handled by this media player. Valid for PlayItem, AddToNowPlaying.
+#define AVRCP_BROWSING_ERROR_CODE_MEDIA_IN_USES                       0x0d  // The media is not able to be used for this operation at this time. Valid for PlayItem, AddToNowPlaying.
+#define AVRCP_BROWSING_ERROR_CODE_NOW_PLAYING_LIST_FULL               0x0e  // No more items can be added to the Now Playing List. Valid for AddToNowPlaying.
+#define AVRCP_BROWSING_ERROR_CODE_SEARCH_NOT_SUPPORTED                0x0f  // The Browsed Media Player does not support search. Valid for Search.
+#define AVRCP_BROWSING_ERROR_CODE_SEARCH_IN_PROGRESS                  0x10  // A search operation is already in progress. Valid for Search.
+#define AVRCP_BROWSING_ERROR_CODE_INVALID_PLAYER_ID                   0x11  // The specified Player Id does not refer to a valid player. Valid for SetAddressedPlayer, SetBrowsedPlayer.
+#define AVRCP_BROWSING_ERROR_CODE_PLAYER_NOT_BROWSABLE                0x12  // The Player Id supplied refers to a Media Player which does not support browsing. Valid for SetBrowsedPlayer.
+#define AVRCP_BROWSING_ERROR_CODE_PLAYER_NOT_ADDRESSED                0x13  // The Player Id supplied refers to a player which is not currently addressed, and the command is not able to be performed if the player is not set as addressed. Valid for Search SetBrowsedPlayer.
+#define AVRCP_BROWSING_ERROR_CODE_NO_VALID_SEARCH_RESULTS             0x14  // The Search result list does not contain valid entries, e.g. after being invalidated due to change of browsed player. Valid for GetFolderItems.
+#define AVRCP_BROWSING_ERROR_CODE_NO_AVAILABLE_PLAYERS                0x15  // Valid for All.
+#define AVRCP_BROWSING_ERROR_CODE_ADDRESSED_PLAYER_CHANGED            0x16  // Valid for Register Notification.
+// 0x17-0xff Reserved
+/* ENUM_END */
+
 // HCI roles
 #define HCI_ROLE_MASTER 0
 #define HCI_ROLE_SLAVE  1

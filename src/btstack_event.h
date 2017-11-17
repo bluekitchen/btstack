@@ -5759,6 +5759,24 @@ static inline uint16_t avrcp_subevent_browsing_connection_released_get_browsing_
 static inline uint16_t avrcp_subevent_browsing_media_item_done_get_browsing_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
+/**
+ * @brief Get field browsing_status from event AVRCP_SUBEVENT_BROWSING_MEDIA_ITEM_DONE
+ * @param event packet
+ * @return browsing_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_browsing_media_item_done_get_browsing_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field bluetooth_status from event AVRCP_SUBEVENT_BROWSING_MEDIA_ITEM_DONE
+ * @param event packet
+ * @return bluetooth_status
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_browsing_media_item_done_get_bluetooth_status(const uint8_t * event){
+    return event[6];
+}
 
 /**
  * @brief Get field goep_cid from event GOEP_SUBEVENT_CONNECTION_OPENED

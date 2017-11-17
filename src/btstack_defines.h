@@ -189,7 +189,6 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_CONNECTION_IN_WRONG_STATE                    0xC2
 #define AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE               0xC3
 #define AVDTP_MEDIA_CONNECTION_DOES_NOT_EXIST              0xC4 
-
 /* ENUM_END */
 
 // DAEMON COMMANDS
@@ -1809,9 +1808,11 @@ typedef uint8_t sm_key_t[16];
 
 
 /**
- * @format 12
+ * @format 1211
  * @param subevent_code
  * @param browsing_cid
+ * @param browsing_status
+ * @param bluetooth_status
  */
 #define AVRCP_SUBEVENT_BROWSING_MEDIA_ITEM_DONE                                0x1D
 
