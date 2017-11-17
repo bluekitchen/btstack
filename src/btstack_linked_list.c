@@ -44,6 +44,7 @@
  */
 
 #include "btstack_linked_list.h"
+#include "btstack_debug.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -175,6 +176,9 @@ btstack_linked_item_t * btstack_linked_list_iterator_next(btstack_linked_list_it
 
 void btstack_linked_list_iterator_remove(btstack_linked_list_iterator_t * it){
     it->curr = it->curr->next;
+    if (it->prev->next != it->curr){
+        log_error("prev item %p does not point to curr %p", it->prev, it->curr);
+    }
     it->prev->next = it->curr;
     it->advance_on_next = 0;
 }
