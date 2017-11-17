@@ -867,18 +867,22 @@ static uint8_t media_sbc_codec_configuration[] = {
 #ifdef HAVE_BTSTACK_STDIN
 static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
-    printf("stdin_process \n");
+
     if (!avrcp_connected){
         switch (cmd){
             case 'b':
-            case 'B':
             case 'c':
                 break;
+            case '\n':
+            case '\r':
+            case ' ':
+                show_usage();
+                return;
             default:
-                printf("Command '%c' cannot be performed - please use 'c' to establish an AVRCP connection with device (addr %s).\n", cmd, bd_addr_to_str(device_addr));
+                show_usage();
+                printf("Not connected. Please use 'b' or c' to establish a connection with device (addr %s).\n", bd_addr_to_str(device_addr));
                 return;    
         }
-    
     }
     
     switch (cmd){
