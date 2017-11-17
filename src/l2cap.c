@@ -1813,6 +1813,7 @@ l2cap_disconnect(uint16_t local_cid, uint8_t reason){
 }
 
 static void l2cap_handle_connection_failed_for_addr(bd_addr_t address, uint8_t status){
+    // mark all channels before emitting open events as these could trigger new connetion requests to the same device
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -1822,17 +1823,32 @@ static void l2cap_handle_connection_failed_for_addr(bd_addr_t address, uint8_t s
         switch (channel->state){
             case L2CAP_STATE_WAIT_CONNECTION_COMPLETE:
             case L2CAP_STATE_WILL_SEND_CREATE_CONNECTION:
+                channel->state = L2CAP_STATE_EMIT_OPEN_FAILED_AND_DISCARD;
+                break;
+            default:
+                break;
+        }
+    }
+    // emit and free marked entries. restart loop to deal with list changes
+    int done = 0;
+    while (!done) {
+        done = 1;
+        btstack_linked_list_iterator_init(&it, &l2cap_channels);
+        while (btstack_linked_list_iterator_has_next(&it)){
+            l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+            if (channel->state == L2CAP_STATE_EMIT_OPEN_FAILED_AND_DISCARD){
+                done = 0;
                 // failure, forward error code
                 l2cap_emit_channel_opened(channel, status);
                 // discard channel
                 l2cap_stop_rtx(channel);
-                btstack_linked_list_iterator_remove(&it);
+                btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
                 btstack_memory_l2cap_channel_free(channel);
                 break;
-            default:
-                break;               
+            }
         }
     }
+
 }
 
 static void l2cap_handle_connection_success_for_addr(bd_addr_t address, hci_con_handle_t handle){
@@ -1938,6 +1954,7 @@ static int l2cap_send_open_failed_on_hci_disconnect(l2cap_channel_t * channel){
         case L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST:
         case L2CAP_STATE_WILL_SEND_LE_CONNECTION_REQUEST:
         case L2CAP_STATE_WAIT_LE_CONNECTION_RESPONSE:
+        case L2CAP_STATE_EMIT_OPEN_FAILED_AND_DISCARD:
             return 1;
 
         case L2CAP_STATE_OPEN:
