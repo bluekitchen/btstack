@@ -315,6 +315,8 @@ static rfcomm_multiplexer_t * rfcomm_multiplexer_for_addr(bd_addr_t addr){
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) rfcomm_multiplexers; it ; it = it->next){
         rfcomm_multiplexer_t * multiplexer = ((rfcomm_multiplexer_t *) it);
+        // ignore multiplexer in shutdown
+        if (multiplexer->state == RFCOMM_MULTIPLEXER_SHUTTING_DOWN) continue;
         if (bd_addr_cmp(addr, multiplexer->remote_addr) == 0) {
             return multiplexer;
         };
@@ -982,16 +984,23 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
                 // remove (potential) timer
                 rfcomm_multiplexer_stop_timer(multiplexer);
 
+                // mark multiplexer as shutting down
+                multiplexer->state = RFCOMM_MULTIPLEXER_SHUTTING_DOWN;
+
                 // emit rfcomm_channel_opened with status and free channel
-                btstack_linked_item_t * it = (btstack_linked_item_t *) &rfcomm_channels;
-                while (it->next) {
-                    rfcomm_channel_t * channel = (rfcomm_channel_t *) it->next;
-                    if (channel->multiplexer == multiplexer){
-                        rfcomm_emit_channel_opened(channel, status);
-                        it->next = it->next->next;
-                        btstack_memory_rfcomm_channel_free(channel);
-                    } else {
-                        it = it->next;
+                int done = 0;
+                while (!done){
+                    btstack_linked_item_t * it = (btstack_linked_item_t *) &rfcomm_channels;
+                    while (it->next) {
+                        rfcomm_channel_t * channel = (rfcomm_channel_t *) it->next;
+                        if (channel->multiplexer == multiplexer){
+                            rfcomm_emit_channel_opened(channel, status);
+                            btstack_linked_list_remove(&rfcomm_channels, (btstack_linked_item_t *) channel);
+                            btstack_memory_rfcomm_channel_free(channel);
+                            break;
+                        } else {
+                            it = it->next;
+                        }
                     }
                 }
 
