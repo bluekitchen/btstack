@@ -18,3 +18,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - panu_demo: uses btstack_network.h now
 - WICED: configure printf to replace Linefeed with CRLF
+
+## Fixed
+- RFCOMM: support connection requests during connection failure 
+- L2CAP: support connection requests during connection failure 
+- HCI: avoid double free during halting
+
