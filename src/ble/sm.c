@@ -2597,6 +2597,7 @@ static void sm_run(void){
                 reverse_128(setup->sm_ltk, ltk_flipped);
                 connection->sm_engine_state = SM_RESPONDER_IDLE;
                 hci_send_cmd(&hci_le_long_term_key_request_reply, connection->sm_handle, ltk_flipped);
+                sm_done_for_handle(connection->sm_handle);
                 return;
             }
             case SM_RESPONDER_PH4_Y_GET_ENC:
