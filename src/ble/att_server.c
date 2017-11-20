@@ -192,7 +192,8 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                             att_server->connection.encryption_key_size = 0;
                             att_server->connection.authenticated = 0;
 		                	att_server->connection.authorized = 0;
-                            att_server->ir_le_device_db_index = -1;
+                            // workaround: identity resolving can already be complete, at least store result
+                            att_server->ir_le_device_db_index = sm_le_device_index(con_handle);
                             att_server->pairing_active = 0;
                             break;
 
