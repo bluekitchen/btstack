@@ -547,6 +547,13 @@ const hci_cmd_t hci_write_link_policy_settings = {
 OPCODE(OGF_LINK_POLICY, 0x0d), "H2"
 };
 
+/**
+ * @param policy
+ */
+const hci_cmd_t hci_write_default_link_policy_setup = {
+    OPCODE(OGF_LINK_POLICY, 0x0F), "2"
+};
+
 
 /**
  *  Controller & Baseband Commands 

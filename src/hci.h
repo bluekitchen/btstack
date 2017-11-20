@@ -854,6 +854,10 @@ typedef struct {
     bd_addr_t custom_bd_addr; 
     uint8_t   custom_bd_addr_set;
 
+#ifdef ENABLE_CLASSIC
+    uint8_t master_slave_policy;
+#endif
+
 } hci_stack_t;
 
 
@@ -1004,6 +1008,11 @@ uint8_t* hci_get_outgoing_packet_buffer(void);
  */
 void hci_release_packet_buffer(void);
 
+/**
+* @brief Sets the master/slave policy
+* @param policy (0: attempt to become master, 1: let connecting device decide)
+*/
+void hci_set_master_slave_policy(uint8_t policy);
 
 /* API_END */
 

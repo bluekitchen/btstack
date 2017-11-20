@@ -2127,9 +2127,10 @@ static void event_handler(uint8_t *packet, int size){
 #ifdef ENABLE_CLASSIC
         case HCI_EVENT_ROLE_CHANGE:
             if (packet[2]) break;   // status != 0
-            handle = little_endian_read_16(packet, 3);
-            conn = hci_connection_for_handle(handle);
-            if (!conn) break;       // no conn
+            reverse_bd_addr(&packet[3], addr);
+            addr_type = BD_ADDR_TYPE_CLASSIC;
+            conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
+            if (!conn) break;
             conn->role = packet[9];
             break;
 #endif
@@ -2423,6 +2424,9 @@ void hci_init(const hci_transport_t *transport, const void *config){
 #ifdef ENABLE_CLASSIC
     // classic name
     hci_stack->local_name = default_classic_name;
+
+    // Master slave policy
+    hci_stack->master_slave_policy = 1;
 #endif
 
     // Secure Simple Pairing default: enable, no I/O capabilities, general bonding, mitm not required, auto accept 
@@ -3138,7 +3142,7 @@ static void hci_run(void){
                 connection->state = ACCEPTED_CONNECTION_REQUEST;
                 connection->role  = HCI_ROLE_SLAVE;
                 if (connection->address_type == BD_ADDR_TYPE_CLASSIC){
-                    hci_send_cmd(&hci_accept_connection_request, connection->address, 1);
+                    hci_send_cmd(&hci_accept_connection_request, connection->address, hci_stack->master_slave_policy);
                 } 
                 return;
 #endif
@@ -4486,8 +4490,16 @@ int hci_get_sco_packet_length(void){
     if (hci_stack->sco_voice_setting & 0x0020) return 51;
     return 27;
 }
-#endif
 
+/**
+* @brief Sets the master/slave policy
+* @param policy (0: attempt to become master, 1: let connecting device decide)
+*/
+void hci_set_master_slave_policy(uint8_t policy){
+    hci_stack->master_slave_policy = policy;
+}
+
+#endif
 
 HCI_STATE hci_get_state(void){
     return hci_stack->state;
