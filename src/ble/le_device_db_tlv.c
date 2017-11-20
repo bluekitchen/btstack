@@ -381,7 +381,7 @@ void le_device_db_local_counter_set(int index, uint32_t counter){
 
 void le_device_db_dump(void){
     log_info("LE Device DB dump, devices: %d", le_device_db_count());
-    int i;
+    uint32_t i;
     for (i=0;i<num_valid_entries;i++){
 		// fetch entry
 		le_device_db_entry_t entry;
