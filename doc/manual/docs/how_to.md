@@ -178,7 +178,7 @@ If implemented, bonding information is stored in Non-volatile memory. For Classi
 --------------------------|------------
 NVM_NUM_LINK_KEYS         | Max number of Classic Link Keys that can be stored 
 NVM_NUM_DEVICE_DB_ENTRIES | Max number of LE Device DB entries that can be stored
-
+NVN_NUM_GATT_SERVER_CCC   | Max number of 'Client Characteristic Configuration' values that can be stored by GATT Server
 
 ## Source tree structure {#sec:sourceTreeHowTo}
 

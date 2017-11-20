@@ -66,8 +66,8 @@
 #include "l2cap.h"
 #include "btstack_tlv.h"
 
-#ifndef GATT_SERVER_NUM_PERSISTENT_CCC
-#define GATT_SERVER_NUM_PERSISTENT_CCC 20
+#ifndef NVN_NUM_GATT_SERVER_CCC
+#define NVN_NUM_GATT_SERVER_CCC 20
 #endif
 
 static void att_run_for_context(att_server_t * att_server);
@@ -556,7 +556,7 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
     uint32_t tag_for_lowest_seq_nr = 0;
     uint32_t tag_for_empty = 0;
     persistent_ccc_entry_t entry;
-    for (index=0;index<GATT_SERVER_NUM_PERSISTENT_CCC;index++){
+    for (index=0;index<NVN_NUM_GATT_SERVER_CCC;index++){
         uint32_t tag = att_server_persistent_ccc_tag_for_index(index);
         int len = tlv_impl->get_tag(tlv_context, tag, (uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
 
@@ -635,7 +635,7 @@ static void att_server_persistent_ccc_clear(att_server_t * att_server){
     // get all ccc tag
     int index;
     persistent_ccc_entry_t entry;
-    for (index=0;index<GATT_SERVER_NUM_PERSISTENT_CCC;index++){
+    for (index=0;index<NVN_NUM_GATT_SERVER_CCC;index++){
         uint32_t tag = att_server_persistent_ccc_tag_for_index(index);
         int len = tlv_impl->get_tag(tlv_context, tag, (uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
         if (len != sizeof(persistent_ccc_entry_t)) continue;
@@ -658,7 +658,7 @@ static void att_server_persistent_ccc_restore(att_server_t * att_server){
     // get all ccc tag
     int index;
     persistent_ccc_entry_t entry;
-    for (index=0;index<GATT_SERVER_NUM_PERSISTENT_CCC;index++){
+    for (index=0;index<NVN_NUM_GATT_SERVER_CCC;index++){
         uint32_t tag = att_server_persistent_ccc_tag_for_index(index);
         int len = tlv_impl->get_tag(tlv_context, tag, (uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
         if (len != sizeof(persistent_ccc_entry_t)) continue;
