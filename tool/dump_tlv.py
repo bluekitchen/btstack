@@ -60,7 +60,7 @@ with open (infile, 'rb') as fin:
 			pos += 4
 			packet  = fin.read(len)
 			pos += len
-			print('%04x' % tag + as_hex(packet))
+			print('%04x: ' % tag + as_hex(packet))
 		print("Done")
 
 	except TypeError:
