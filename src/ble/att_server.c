@@ -75,6 +75,14 @@ static att_write_callback_t att_server_write_callback_for_handle(uint16_t handle
 static void att_server_persistent_ccc_restore(att_server_t * att_server);
 static void att_server_persistent_ccc_clear(att_server_t * att_server);
 
+//
+typedef struct {
+    uint32_t seq_nr;
+    uint16_t att_handle;
+    uint8_t  value;
+    uint8_t  device_index;
+} persistent_ccc_entry_t;
+
 // global
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
@@ -521,7 +529,6 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
 
 // ---------------------
 // persistent CCC writes
-// TLV value format: le_device_index(8), attribute_handle(16), value (8)
 static uint32_t att_server_persistent_ccc_tag_for_index(uint8_t index){
     return 'B' << 24 | 'T' << 16 | 'C' << 8 | index;
 }
@@ -532,36 +539,56 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
     if (!att_server) return;
     int le_device_index = att_server->ir_le_device_db_index;
     log_info("Store CCC value 0x%04x for handle 0x%04x of remote %s, le device id %d", value, att_handle, bd_addr_to_str(att_server->peer_address), le_device_index);
+
     // check if bonded
     if (le_device_index < 0) return;
+
     // get btstack_tlv
     const btstack_tlv_t * tlv_impl = NULL;
     void * tlv_context;
     btstack_tlv_get_instance(&tlv_impl, &tlv_context);
     if (!tlv_impl) return;
+
     // update ccc tag
     int index;
-    uint8_t buffer[4];
-    int free_index = -1;
+    uint32_t highest_seq_nr = 0;
+    uint32_t lowest_seq_nr = 0;
+    uint32_t tag_for_lowest_seq_nr = 0;
+    uint32_t tag_for_empty = 0;
+    persistent_ccc_entry_t entry;
     for (index=0;index<GATT_SERVER_NUM_PERSISTENT_CCC;index++){
         uint32_t tag = att_server_persistent_ccc_tag_for_index(index);
-        int len = tlv_impl->get_tag(tlv_context, tag, buffer, sizeof(buffer));
-        if (len == 0){
-            free_index = index;
+        int len = tlv_impl->get_tag(tlv_context, tag, (uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
+
+        // empty/invalid tag
+        if (len != sizeof(persistent_ccc_entry_t)){
+            tag_for_empty = tag;
             continue;
         }
-        if (len != sizeof(buffer)) continue;
-        if (buffer[0] != le_device_index) continue;
-        if (little_endian_read_16(buffer, 1) != att_handle) continue;
+        // update highest seq nr
+        if (entry.seq_nr > highest_seq_nr){
+            highest_seq_nr = entry.seq_nr;
+        }
+        // find entry with lowest seq nr
+        if ((tag_for_lowest_seq_nr == 0) || (entry.seq_nr < lowest_seq_nr)){
+            tag_for_lowest_seq_nr = tag;
+            lowest_seq_nr = entry.seq_nr;
+        }
+
+        if (entry.device_index != le_device_index) continue;
+        if (entry.att_handle   != att_handle)      continue;
+
+        // found matching entry
         if (value){
             // update
-            if (buffer[3] == value) {
+            if (entry.value == value) {
                 log_info("CCC Index %u: Up-to-date", index);
                 return;
             }
-            buffer[3] = value;
+            entry.value = value;
+            entry.seq_nr = highest_seq_nr + 1;
             log_info("CCC Index %u: Store", index);
-            tlv_impl->store_tag(tlv_context, tag, buffer, sizeof(buffer));
+            tlv_impl->store_tag(tlv_context, tag, (const uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
         } else {
             // delete
             log_info("CCC Index %u: Delete", index);
@@ -569,13 +596,29 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
         }
         return;
     }
-    if (free_index < 0) return;
+
+    log_info("tag_for_empy %x, tag_for_lowest_seq_nr %x", tag_for_empty, tag_for_lowest_seq_nr);
+
+    if (value == 0){
+        // done
+        return;
+    }
+
+    uint32_t tag_to_use = 0;
+    if (tag_for_empty){
+        tag_to_use = tag_for_empty;
+    } else if (tag_for_lowest_seq_nr){
+        tag_to_use = tag_for_lowest_seq_nr;
+    } else {
+        // should not happen
+        return;
+    }
     // store ccc tag
-    buffer[0] = le_device_index;
-    little_endian_store_16(buffer, 1, att_handle);
-    buffer[3] = value;
-    uint32_t tag = att_server_persistent_ccc_tag_for_index(free_index);
-    tlv_impl->store_tag(tlv_context, tag, buffer, sizeof(buffer));
+    entry.seq_nr       = highest_seq_nr + 1;
+    entry.device_index = le_device_index;
+    entry.att_handle   = att_handle;
+    entry.value        = value;
+    tlv_impl->store_tag(tlv_context, tag_to_use, (uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
 }
 
 static void att_server_persistent_ccc_clear(att_server_t * att_server){
@@ -591,12 +634,12 @@ static void att_server_persistent_ccc_clear(att_server_t * att_server){
     if (!tlv_impl) return;
     // get all ccc tag
     int index;
-    uint8_t buffer[4];
+    persistent_ccc_entry_t entry;
     for (index=0;index<GATT_SERVER_NUM_PERSISTENT_CCC;index++){
         uint32_t tag = att_server_persistent_ccc_tag_for_index(index);
-        int len = tlv_impl->get_tag(tlv_context, tag, buffer, sizeof(buffer));
-        if (len != sizeof(buffer)) continue;
-        if (buffer[0] != le_device_index) continue;
+        int len = tlv_impl->get_tag(tlv_context, tag, (uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
+        if (len != sizeof(persistent_ccc_entry_t)) continue;
+        if (entry.device_index != le_device_index) continue;
         // delete entry
         log_info("CCC Index %u: Delete", index);
         tlv_impl->delete_tag(tlv_context, tag);
@@ -614,19 +657,19 @@ static void att_server_persistent_ccc_restore(att_server_t * att_server){
     if (!tlv_impl) return;
     // get all ccc tag
     int index;
-    uint8_t buffer[4];
+    persistent_ccc_entry_t entry;
     for (index=0;index<GATT_SERVER_NUM_PERSISTENT_CCC;index++){
         uint32_t tag = att_server_persistent_ccc_tag_for_index(index);
-        int len = tlv_impl->get_tag(tlv_context, tag, buffer, sizeof(buffer));
-        if (len != sizeof(buffer)) continue;
-        if (buffer[0] != le_device_index) continue;
+        int len = tlv_impl->get_tag(tlv_context, tag, (uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
+        if (len != sizeof(persistent_ccc_entry_t)) continue;
+        if (entry.device_index != le_device_index) continue;
         // simulate write callback
-        uint16_t attribute_handle = little_endian_read_16(buffer, 1);
+        uint16_t attribute_handle = entry.att_handle;
         uint8_t  value[2];
-        little_endian_store_16(value, 0, buffer[3]);
+        little_endian_store_16(value, 0, entry.value);
         att_write_callback_t callback = att_server_write_callback_for_handle(attribute_handle);
         if (!callback) continue;
-        log_info("CCC Index %u: Set Attribute handle 0x%04x to value 0x%04x", index, attribute_handle, buffer[3]);
+        log_info("CCC Index %u: Set Attribute handle 0x%04x to value 0x%04x", index, attribute_handle, entry.value );
         (*callback)(att_server->connection.con_handle, attribute_handle, ATT_TRANSACTION_MODE_NONE, 0, value, sizeof(value));
     }
 }
