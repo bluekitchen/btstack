@@ -140,19 +140,22 @@ static int le_device_db_tlv_delete(int index){
 	return 1;
 }
 
-void le_device_db_init(void){
+static void le_device_db_tlv_scan(void){
     int i;
-	num_valid_entries = 0;
-	memset(entry_map, 0, sizeof(entry_map));
+    num_valid_entries = 0;
+    memset(entry_map, 0, sizeof(entry_map));
     for (i=0;i<NVM_NUM_DEVICE_DB_ENTRIES;i++){
-    	// lookup entry
-    	le_device_db_entry_t entry;
-    	if (!le_device_db_tlv_fetch(i, &entry)) continue;
+        // lookup entry
+        le_device_db_entry_t entry;
+        if (!le_device_db_tlv_fetch(i, &entry)) continue;
 
-    	entry_map[i] = 1;
+        entry_map[i] = 1;
         num_valid_entries++;
     }
     log_info("num valid le device entries %u", num_valid_entries);
+}
+
+void le_device_db_init(void){
 }
 
 // not used
@@ -382,7 +385,9 @@ void le_device_db_local_counter_set(int index, uint32_t counter){
 void le_device_db_dump(void){
     log_info("LE Device DB dump, devices: %d", le_device_db_count());
     uint32_t i;
-    for (i=0;i<num_valid_entries;i++){
+
+    for (i=0;i<NVM_NUM_DEVICE_DB_ENTRIES;i++){
+        if (!entry_map[i]) continue;
 		// fetch entry
 		le_device_db_entry_t entry;
 		le_device_db_tlv_fetch(i, &entry);
@@ -398,4 +403,5 @@ void le_device_db_dump(void){
 void le_device_db_tlv_configure(const btstack_tlv_t * btstack_tlv_impl, void * btstack_tlv_context){
 	le_device_db_tlv_btstack_tlv_impl = btstack_tlv_impl;
 	le_device_db_tlv_btstack_tlv_context = btstack_tlv_context;
+    le_device_db_tlv_scan();
 }
