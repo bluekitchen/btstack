@@ -116,7 +116,7 @@ static int le_device_db_tlv_fetch(int index, le_device_db_entry_t * entry){
 	}
     uint32_t tag = le_device_db_tlv_tag_for_index(index);
     int size = le_device_db_tlv_btstack_tlv_impl->get_tag(le_device_db_tlv_btstack_tlv_context, tag, (uint8_t*) entry, sizeof(le_device_db_entry_t));
-	return size != 0;
+	return size == sizeof(le_device_db_entry_t);
 }
 
 // @returns success
