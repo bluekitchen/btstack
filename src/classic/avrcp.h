@@ -366,7 +366,7 @@ typedef enum{
 } avrcp_role_t;
 
 typedef enum {
-    UTF8 = 106
+    RFC2978_CHARSET_MIB_UTF8 = 106
 } rfc2978_charset_mib_enumid_t;
 
 typedef struct {
