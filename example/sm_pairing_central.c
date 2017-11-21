@@ -57,6 +57,7 @@
 #include <string.h>
 
 #include "btstack.h"
+#include "sm_pairing_peripheral.h"
 
 
 // We're looking for a remote device that lists this service in the advertisement
@@ -90,6 +91,10 @@ static void sm_pairing_central_setup(void){
     sm_init();
     sm_event_callback_registration.callback = &packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
+
+    // setup ATT server
+    att_server_init(profile_data, NULL, NULL);    
+    att_server_register_packet_handler(packet_handler);
 
     /**
      * Choose ONE of the following configurations
