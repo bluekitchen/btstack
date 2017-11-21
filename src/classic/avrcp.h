@@ -125,6 +125,7 @@ typedef enum {
     AVRCP_PDU_ID_REQUEST_ABORT_CONTINUING_RESPONSE = 0x41,
     AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME = 0x50,
     AVRCP_PDU_ID_GET_FOLDER_ITEMS = 0x71,
+    AVRCP_PDU_ID_CHANGE_PATH = 0x72,
     AVRCP_PDU_ID_UNDEFINED = 0xFF
 } avrcp_pdu_id_t;
 
@@ -294,6 +295,11 @@ typedef struct {
     uint8_t attribute_count;
     uint8_t * attribute_list;
 
+    // change_path
+    uint8_t change_path;
+    uint8_t direction;
+    uint16_t uid_counter;
+    uint8_t folder_uid[8];
 } avrcp_browsing_connection_t;
 // BROWSING END
 
@@ -396,7 +402,7 @@ typedef enum{
 } avrcp_role_t;
 
 typedef enum {
-    UTF8 = 106
+    RFC2978_CHARSET_MIB_UTF8 = 106
 } rfc2978_charset_mib_enumid_t;
 
 typedef struct {
