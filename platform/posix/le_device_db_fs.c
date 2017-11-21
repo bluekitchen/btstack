@@ -281,6 +281,8 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     log_info("Central Device DB adding type %u - %s", addr_type, bd_addr_to_str(addr));
     log_info_key("irk", irk);
 
+    memset(&le_devices[index], 0, sizeof(le_device_memory_db_t));
+
     le_devices[index].addr_type = addr_type;
     memcpy(le_devices[index].addr, addr, 6);
     memcpy(le_devices[index].irk, irk, 16);
