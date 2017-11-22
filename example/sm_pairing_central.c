@@ -57,7 +57,7 @@
 #include <string.h>
 
 #include "btstack.h"
-#include "sm_pairing_peripheral.h"
+#include "sm_pairing_central.h"
 
 
 // We're looking for a remote device that lists this service in the advertisement
