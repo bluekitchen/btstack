@@ -501,17 +501,8 @@ static void stdin_process(char cmd){
                     avrcp_browsing_controller_browse_media(browsing_cid, 0, 0xFFFFFFFF, AVRCP_MEDIA_ATTR_ALL);
                     break;
                 case 'u':
-                    if (folder_index < 0 && !parent_folder_set){
-                        printf("AVRCP Browsing: no folders available\n");
-                        break;
-                    }
-                    if (!parent_folder_set){
-                        parent_folder_set = 1;
-                        memcpy(parent_folder_name, folders[0].name, folders[0].name_len);
-                        memcpy(parent_folder_uid, folders[0].uid, 8);
-                    }
-                    printf("AVRCP Browsing: go up one level of %s\n", (char *)parent_folder_name);
-                    status = avrcp_browsing_controller_go_up_one_level(browsing_cid, parent_folder_uid);
+                    printf("AVRCP Browsing: go up one level\n");
+                    status = avrcp_browsing_controller_go_up_one_level(browsing_cid);
                     folder_index = -1;
                     break;
                 case 'd':

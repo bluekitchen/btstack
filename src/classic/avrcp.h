@@ -283,33 +283,33 @@ typedef struct {
     uint16_t l2cap_browsing_cid;
 
     avctp_connection_state_t state;
-    uint8_t wait_to_send;
-    uint8_t transaction_label;
+    uint8_t  wait_to_send;
+    uint8_t  transaction_label;
 
-    uint8_t * ertm_buffer;
-    uint32_t  ertm_buffer_size;
+    uint8_t *ertm_buffer;
+    uint32_t ertm_buffer_size;
     l2cap_ertm_config_t ertm_config;
 
     // players
-    uint8_t set_addressed_player_id;
-    uint8_t set_browsed_player_id;
+    uint8_t  set_addressed_player_id;
+    uint8_t  set_browsed_player_id;
     
     uint16_t addressed_player_id;
     uint16_t browsed_player_id;
     uint16_t browsed_player_uid_counter;
 
     // get folder item
-    uint8_t get_folder_item;
-    uint8_t scope;
+    uint8_t  get_folder_item;
+    uint8_t  scope;
     uint32_t start_item;
     uint32_t end_item;
-    uint32_t  attr_bitmap;
+    uint32_t attr_bitmap;
 
     // change_path
-    uint8_t change_path;
-    uint8_t direction;
+    uint8_t  change_path;
+    uint8_t  direction;
     uint16_t uid_counter;
-    uint8_t folder_uid[8];
+    uint8_t  folder_uid[8];
 } avrcp_browsing_connection_t;
 // BROWSING END
 

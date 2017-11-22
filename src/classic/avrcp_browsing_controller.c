@@ -613,8 +613,8 @@ uint8_t avrcp_browsing_controller_change_path(uint16_t avrcp_browsing_cid, uint8
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avrcp_browsing_controller_go_up_one_level(uint16_t avrcp_browsing_cid, uint8_t * folder_uid){
-    return avrcp_browsing_controller_change_path(avrcp_browsing_cid, 0, folder_uid);
+uint8_t avrcp_browsing_controller_go_up_one_level(uint16_t avrcp_browsing_cid){
+    return avrcp_browsing_controller_change_path(avrcp_browsing_cid, 0, 0);
 }
 
 uint8_t avrcp_browsing_controller_go_down_one_level(uint16_t avrcp_browsing_cid, uint8_t * folder_uid){
