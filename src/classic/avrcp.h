@@ -124,6 +124,8 @@ typedef enum {
     AVRCP_PDU_ID_REQUEST_CONTINUING_RESPONSE = 0x40,
     AVRCP_PDU_ID_REQUEST_ABORT_CONTINUING_RESPONSE = 0x41,
     AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME = 0x50,
+    AVRCP_PDU_ID_SET_ADDRESSED_PLAYER = 0x60,
+    AVRCP_PDU_ID_SET_BROWSED_PLAYER = 0x70,
     AVRCP_PDU_ID_GET_FOLDER_ITEMS = 0x71,
     AVRCP_PDU_ID_CHANGE_PATH = 0x72,
     AVRCP_PDU_ID_UNDEFINED = 0xFF
@@ -286,6 +288,14 @@ typedef struct {
     uint8_t * ertm_buffer;
     uint32_t  ertm_buffer_size;
     l2cap_ertm_config_t ertm_config;
+
+    // players
+    uint8_t set_addressed_player_id;
+    uint8_t set_browsed_player_id;
+    
+    uint16_t addressed_player_id;
+    uint16_t browsed_player_id;
+    uint16_t browsed_player_uid_counter;
 
     // get folder item
     uint8_t get_folder_item;

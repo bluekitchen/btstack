@@ -66,6 +66,10 @@
 #include "btstack_stdin.h"
 #endif
 
+#define AVRCP_BROWSING_MAX_PLAYERS          10
+#define AVRCP_BROWSING_MAX_FOLDERS          10
+#define AVRCP_BROWSING_MAX_FOLDER_NAME_LEN  30
+
 #ifdef HAVE_BTSTACK_STDIN
 // mac 2011: static bd_addr_t remote = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
 // pts: static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
@@ -87,6 +91,27 @@ static uint8_t  sdp_avrcp_browsing_controller_service_buffer[200];
 static uint8_t browsing_query_active = 0;
 static avrcp_media_item_context_t media_item_context;
 
+typedef struct {
+    uint16_t  charset;
+    uint8_t   depth;
+    uint16_t  name_len;
+    char      name[AVRCP_BROWSING_MAX_FOLDER_NAME_LEN];
+} avrcp_browsing_root_folder_t;
+
+typedef struct {
+    uint8_t  uid[8];
+    uint16_t name_len;
+    char     name[AVRCP_BROWSING_MAX_FOLDER_NAME_LEN];
+} avrcp_browsing_folders_t;
+
+static uint8_t  parent_folder_set = 0;
+static uint8_t  parent_folder_uid[8];
+static char     parent_folder_name[AVRCP_BROWSING_MAX_FOLDER_NAME_LEN];
+static avrcp_browsing_folders_t folders[AVRCP_BROWSING_MAX_FOLDERS];
+static int folder_index = -1;
+static uint16_t players[AVRCP_BROWSING_MAX_PLAYERS];
+static int player_index = -1;
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static uint8_t ertm_buffer[10000];
@@ -99,6 +124,24 @@ static l2cap_ertm_config_t ertm_config = {
     4,
     4,
 };
+
+
+static inline int next_index(int * index, int max_value){
+    if ((*index) < max_value){
+        (*index)++;
+    } else {
+        (*index) = 0;
+    }
+    return (*index);
+}
+
+static int next_folder_index(){
+    return next_index(&folder_index, AVRCP_BROWSING_MAX_FOLDERS);
+}
+
+static int next_player_index(){
+    return next_index(&player_index, AVRCP_BROWSING_MAX_PLAYERS);
+}
 
 
 /* @section Main Application Setup
@@ -180,9 +223,21 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
             pos += 2; // length
 
             switch (data_type){
+                case AVRCP_BROWSING_MEDIA_ROOT_FOLDER:{
+                    avrcp_browsing_root_folder_t root_folder;
+                    root_folder.charset = big_endian_read_16(packet, pos);
+                    pos += 2;
+                    root_folder.depth = packet[pos++];
+                    root_folder.name_len = big_endian_read_16(packet, pos);
+                    pos += 2;
+                    root_folder.name_len = btstack_max(big_endian_read_16(packet, pos), AVRCP_BROWSING_MAX_FOLDER_NAME_LEN - 1);
+                    memset(root_folder.name, 0, AVRCP_BROWSING_MAX_FOLDER_NAME_LEN);
+                    memcpy(root_folder.name, packet+pos, root_folder.name_len);
+                    printf("Found root folder: name %s, depth %d \n", (char *)root_folder.name, root_folder.depth);
+                    break;
+                }
                 case AVRCP_BROWSING_MEDIA_PLAYER_ITEM:{
-                    printf("AVRCP Browsing Client: Received media player item \n");
-            
+                    printf("Received media player:  ");
                     uint16_t player_id = big_endian_read_16(packet, pos);
                     pos += 2;
                     avrcp_browsing_media_player_major_type_t major_type = packet[pos++];
@@ -192,16 +247,17 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     uint8_t feature_bitmask[16];
                     memcpy(feature_bitmask, packet, 16);
                     pos += 16;
-                    printf("player ID 0x%04x\n, major_type %d, subtype %d, status %d\n", player_id, major_type, subtype, status);
-                    printf_hexdump(feature_bitmask, 16);
+                    printf("player ID 0x%04x, major_type %d, subtype %d, status %d\n", player_id, major_type, subtype, status);
+                    players[next_player_index()] = player_id;
                     break;
                 }
                 case AVRCP_BROWSING_FOLDER_ITEM:{
-                    printf("AVRCP Browsing Client: Received folder item \n");
-            
+                    int index = next_folder_index();
+                    printf("Found folder [%d]: ", index);
+                    memcpy(folders[index].uid, packet+pos, 8);
                     uint32_t folder_uid_high = big_endian_read_32(packet, pos);
                     pos += 4;
-                    uint32_t folder_uid_low  = big_endian_read_32(packet, pos+4);
+                    uint32_t folder_uid_low  = big_endian_read_32(packet, pos);
                     pos += 4;
                     avrcp_browsing_folder_type_t folder_type = packet[pos++];
                     uint8_t  is_playable = packet[pos++];
@@ -209,16 +265,19 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     pos += 2;
                     uint16_t displayable_name_length = big_endian_read_16(packet, pos);
                     pos += 2;
-                    char value[20];
-                    uint16_t value_len = sizeof(value) > displayable_name_length ? displayable_name_length:sizeof(value)-1;
+                    char value[AVRCP_BROWSING_MAX_FOLDER_NAME_LEN];
+                    memset(value, 0, AVRCP_BROWSING_MAX_FOLDER_NAME_LEN);
+                    uint16_t value_len = btstack_max(displayable_name_length, AVRCP_BROWSING_MAX_FOLDER_NAME_LEN - 1); 
                     memcpy(value, packet+pos, value_len);
-                    value[value_len] = 0;
+
                     printf("Folder UID: 0x%08" PRIx32 "%08" PRIx32 ", folder_type 0x%02x, is_playable %d, charset 0x%02x, displayable_name_length %d, value %s\n", 
                         folder_uid_high, folder_uid_low, folder_type, is_playable, charset, displayable_name_length, value);
+                    memcpy(folders[index].name, value, value_len);
+                    folders[index].name_len = value_len;
                     break;
                 }
                 case AVRCP_BROWSING_MEDIA_ELEMENT_ITEM:{
-                    printf("AVRCP Browsing Client: Received media item \n");
+                    printf("Found media: ");
             
                     uint32_t media_uid_high = big_endian_read_32(packet, pos);
                     pos += 4;
@@ -251,7 +310,6 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     break;
             }
             break;
-
         case HCI_EVENT_PACKET:
             if (hci_event_packet_get_type(packet) != HCI_EVENT_AVRCP_META) return;
             uint16_t local_cid;
@@ -262,13 +320,13 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                 case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
                     local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
                     if (browsing_cid != 0 && browsing_cid != local_cid) {
-                        printf("AVRCP Browsing Client: AVRCP Controller connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", browsing_cid, local_cid);
+                        printf("AVRCP Controller connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", browsing_cid, local_cid);
                         return;
                     }
 
                     status = avrcp_subevent_connection_established_get_status(packet);
                     if (status != ERROR_CODE_SUCCESS){
-                        printf("AVRCP Browsing Client: AVRCP Controller connection failed: status 0x%02x\n", status);
+                        printf("AVRCP Controller connection failed: status 0x%02x\n", status);
                         browsing_cid = 0;
                         return;
                     }
@@ -276,25 +334,26 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     avrcp_cid = local_cid;
                     avrcp_connected = 1;
                     avrcp_subevent_connection_established_get_bd_addr(packet, address);
-                    printf("AVRCP Browsing Client: AVRCP Controller Channel successfully opened: %s, avrcp_cid 0x%02x\n", bd_addr_to_str(address), avrcp_cid);
+                    printf("AVRCP Controller connected.\n");
                     return;
                 }
                 case AVRCP_SUBEVENT_CONNECTION_RELEASED:
-                    printf("AVRCP Browsing Client: AVRCP Controller Channel released: avrcp_cid 0x%02x\n", avrcp_subevent_connection_released_get_avrcp_cid(packet));
+                    printf("AVRCP Browsing Client released.\n");
                     browsing_cid = 0;
                     avrcp_browsing_connected = 0;
+                    folder_index = 0;
+                    memset(folders, 0, sizeof(folders));
                     return;
-
                 case AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED: {
                     local_cid = avrcp_subevent_browsing_connection_established_get_browsing_cid(packet);
                     if (browsing_cid != 0 && browsing_cid != local_cid) {
-                        printf("AVRCP Browsing Client: AVRCP Browsing Controller Connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", browsing_cid, local_cid);
+                        printf("AVRCP Browsing Client connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", browsing_cid, local_cid);
                         return;
                     }
 
                     status = avrcp_subevent_browsing_connection_established_get_status(packet);
                     if (status != ERROR_CODE_SUCCESS){
-                        printf("AVRCP Browsing Client: AVRCP Browsing Controller Connection failed: status 0x%02x\n", status);
+                        printf("AVRCP Browsing Client connection failed: status 0x%02x\n", status);
                         browsing_cid = 0;
                         return;
                     }
@@ -302,22 +361,24 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     browsing_cid = local_cid;
                     avrcp_browsing_connected = 1;
                     avrcp_subevent_browsing_connection_established_get_bd_addr(packet, address);
-                    printf("AVRCP Browsing Client: AVRCP Browsing Controller Channel successfully opened: %s, browsing_cid 0x%02x\n", bd_addr_to_str(address), browsing_cid);
+                    printf("AVRCP Browsing Client connected\n");
                     return;
                 }
                 case AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED:
-                    printf("AVRCP Browsing Client: AVRCP Browsing Controller Channel released: browsing_cid 0x%02x\n", avrcp_subevent_browsing_connection_released_get_browsing_cid(packet));
+                    printf("AVRCP Browsing Client released\n");
                     browsing_cid = 0;
                     avrcp_browsing_connected = 0;
                     return;
-
                 case AVRCP_SUBEVENT_BROWSING_MEDIA_ITEM_DONE:
-                    printf("AVRCP Browsing Client: query done with browsing status 0x%02x, bluetooth status 0x%02x.\n", 
-                        avrcp_subevent_browsing_media_item_done_get_browsing_status(packet),
-                        avrcp_subevent_browsing_media_item_done_get_bluetooth_status(packet));
                     browsing_query_active = 0;
+                    if (avrcp_subevent_browsing_media_item_done_get_browsing_status(packet) != AVRCP_BROWSING_ERROR_CODE_SUCCESS){
+                        printf("AVRCP Browsing query done with browsing status 0x%02x, bluetooth status 0x%02x.\n", 
+                            avrcp_subevent_browsing_media_item_done_get_browsing_status(packet),
+                            avrcp_subevent_browsing_media_item_done_get_bluetooth_status(packet));
+                        break;    
+                    }
+                    printf("AVRCP Browsing cmd: DONE.\n");
                     break;
-
                 default:
                     printf("AVRCP Browsing Client: event is not parsed\n");
                     break;
@@ -335,11 +396,19 @@ static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth AVRCP Controller Connection Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("a      - AVRCP Controller create connection to addr %s\n", bd_addr_to_str(device_addr));
+    printf("e      - AVRCP Controller create connection to addr %s\n", bd_addr_to_str(device_addr));
     printf("c      - AVRCP Browsing Controller create connection to addr %s\n", bd_addr_to_str(device_addr));
     printf("C      - AVRCP Browsing Controller disconnect\n");
-    printf("A      - AVRCP Controller disconnect\n");
-    printf("p      - Get player list\n");
+    printf("E      - AVRCP Controller disconnect\n");
+
+    printf("a      - Set first found player as addressed player\n");
+    printf("b      - Set first found player as browsed player\n");
+    
+    printf("m      - Get media players\n");
+    printf("f      - Browse folders\n");
+    printf("u      - Go up one level\n");
+    printf("d      - Go down one level\n");
+    printf("i      - Browse media items\n");
     printf("---\n");
 }
 #endif
@@ -357,11 +426,11 @@ static void stdin_process(char cmd){
     }
 
     switch (cmd){
-        case 'a':
+        case 'e':
             printf(" - Create AVRCP connection for control to addr %s.\n", bd_addr_to_str(device_addr));
             status = avrcp_controller_connect(device_addr, &avrcp_cid);
             break;
-        case 'A':
+        case 'E':
             if (avrcp_connected){
                 printf(" - AVRCP Controller disconnect from addr %s.\n", bd_addr_to_str(device_addr));
                 status = avrcp_controller_disconnect(avrcp_cid);
@@ -386,18 +455,81 @@ static void stdin_process(char cmd){
             }
             printf("AVRCP Browsing Controller already disconnected\n");
             break;
-       
-        case 'p':
-            printf("AVRCP Browsing: get player list\n");
-            avrcp_browsing_controller_get_player_list(browsing_cid);
-            break;
-            
         case '\n':
         case '\r':
             break;
+        
         default:
-            show_usage();
-            return;
+            if (!avrcp_browsing_connected){
+                show_usage();
+                printf("Please connect the AVRCP Browsing client\n");
+                break;
+            }
+            
+            switch (cmd) {
+                case 'a':
+                    if (player_index < 0) {
+                        printf("Get media players first\n");
+                        break;
+                    }
+                    printf("Set addressed player\n");
+                    status = avrcp_browsing_controller_set_addressed_player(browsing_cid, players[0]);
+                    break;
+                case 'b':
+                    if (player_index < 0) {
+                        printf("Get media players first\n");
+                        break;
+                    }
+                    printf("Set browsed player\n");
+                    status = avrcp_browsing_controller_set_browsed_player(browsing_cid, players[0]);
+                    break;
+                case 'm':
+                    printf("AVRCP Browsing: get media players\n");
+                    player_index = -1;
+                    status = avrcp_browsing_controller_get_media_players(browsing_cid);
+                    break;
+                case 'f':
+                    printf("AVRCP Browsing: browse folders\n");
+                    folder_index = -1;
+                    status = avrcp_browsing_controller_browse_file_system(browsing_cid);
+                    break;
+                case 'i':
+                    printf("AVRCP Browsing: browse media items\n");
+                    avrcp_browsing_controller_browse_media(browsing_cid);
+                    break;
+                case 'u':
+                    if (folder_index < 0 && !parent_folder_set){
+                        printf("AVRCP Browsing: no folders available\n");
+                        break;
+                    }
+                    if (!parent_folder_set){
+                        parent_folder_set = 1;
+                        memcpy(parent_folder_name, folders[0].name, folders[0].name_len);
+                        memcpy(parent_folder_uid, folders[0].uid, 8);
+                    }
+                    printf("AVRCP Browsing: go up one level of %s\n", (char *)parent_folder_name);
+                    status = avrcp_browsing_controller_go_up_one_level(browsing_cid, parent_folder_uid);
+                    folder_index = -1;
+                    break;
+                case 'd':
+                    if (folder_index < 0 && !parent_folder_set){
+                        printf("AVRCP Browsing: no folders available\n");
+                        break;
+                    }
+                    if (!parent_folder_set){
+                        parent_folder_set = 1;
+                        memcpy(parent_folder_name, folders[0].name, folders[0].name_len);
+                        memcpy(parent_folder_uid, folders[0].uid, 8);
+                    }
+                    printf("AVRCP Browsing: go down one level of %s\n", (char *)parent_folder_name);
+                    status = avrcp_browsing_controller_go_down_one_level(browsing_cid, parent_folder_uid);
+                    folder_index = -1;
+                    break;
+                default:
+                    show_usage();
+                    break;
+            }
+            break;
     }
 
     if (status != ERROR_CODE_SUCCESS){

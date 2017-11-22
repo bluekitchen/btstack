@@ -58,7 +58,8 @@ extern "C" {
 typedef enum {
 	AVRCP_BROWSING_MEDIA_PLAYER_ITEM = 0x01,
 	AVRCP_BROWSING_FOLDER_ITEM,
-	AVRCP_BROWSING_MEDIA_ELEMENT_ITEM
+	AVRCP_BROWSING_MEDIA_ELEMENT_ITEM,
+	AVRCP_BROWSING_MEDIA_ROOT_FOLDER
 } avrcp_browsing_item_type_t;
 
 typedef enum {
@@ -127,21 +128,51 @@ uint8_t avrcp_browsing_controller_connect(bd_addr_t bd_addr, uint8_t * ertm_buff
 uint8_t avrcp_browsing_controller_disconnect(uint16_t avrcp_browsing_cid);
 
 /**
- * @brief Retrieve a listing of the contents of a folder.
+ * @brief Retrieve a list of media players.
  * @param avrcp_browsing_cid
- * @param scope    0-player list, 1-virtual file system, 2-search, 3-now playing  
- * @param start_item
- * @param end_item
- * @param attribute_count
- * @param attribute_list
  **/
-uint8_t avrcp_browsing_controller_get_folder_items(uint16_t avrcp_browsing_cid, uint8_t scope, uint32_t start_item, uint32_t end_item, uint8_t attribute_count, uint8_t * attribute_list);
+uint8_t avrcp_browsing_controller_get_media_players(uint16_t avrcp_browsing_cid);
 
 /**
- * @brief Retrieve a player list.
+ * @brief Retrieve a list of folders and media items of the browsed player.
  * @param avrcp_browsing_cid
  **/
-uint8_t avrcp_browsing_controller_get_player_list(uint16_t avrcp_browsing_cid);
+uint8_t avrcp_browsing_controller_browse_file_system(uint16_t avrcp_browsing_cid);
+
+/**
+ * @brief Retrieve a list of media items of the browsed player.
+ * @param avrcp_browsing_cid
+ **/
+uint8_t avrcp_browsing_controller_browse_media(uint16_t avrcp_browsing_cid);
+
+/**
+ * @brief Retrieve a list of folders and media items of the addressed player.
+ * @param avrcp_browsing_cid
+ **/
+uint8_t avrcp_browsing_controller_browse_now_playing_list(uint16_t avrcp_browsing_cid);
+
+/** 
+ * @brief Set browsed player. Calling this command is required prior to browsing the player's file system. Some players may support browsing only when set as the Addressed Player.
+ * @param avrcp_browsing_cid
+ * @param browsed_player_id
+ */
+uint8_t avrcp_browsing_controller_set_browsed_player(uint16_t avrcp_browsing_cid, uint16_t browsed_player_id);
+
+/** 
+ * @brief Set addressed player.  
+ * @param avrcp_browsing_cid
+ * @param addressed_player_id
+ */
+uint8_t avrcp_browsing_controller_set_addressed_player(uint16_t avrcp_browsing_cid, uint16_t addressed_player_id);
+
+/**
+ * @brief Navigate one level up or down in thhe virtual filesystem. Requires that s browsed player is set.
+ * @param direction     0-folder up, 1-folder down    
+ * @param folder_uid    8 bytes long
+ **/
+uint8_t avrcp_browsing_controller_change_path(uint16_t avrcp_browsing_cid, uint8_t direction, uint8_t * folder_uid);
+uint8_t avrcp_browsing_controller_go_up_one_level(uint16_t avrcp_browsing_cid, uint8_t * folder_uid);
+uint8_t avrcp_browsing_controller_go_down_one_level(uint16_t avrcp_browsing_cid, uint8_t * folder_uid);
 
 /* API_END */
 
