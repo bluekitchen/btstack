@@ -250,19 +250,42 @@ static int avrcp_browsing_controller_send_get_folder_items_cmd(uint16_t cid, avr
     command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
     command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
     command[pos++] = AVRCP_PDU_ID_GET_FOLDER_ITEMS;
-    big_endian_store_16(command, pos, 10+connection->attribute_count);
-    pos += 2;
 
+    uint32_t attribute_count = 0;
+    uint32_t attributes_to_copy = 0;
+
+    switch (connection->attr_bitmap){
+        case AVRCP_MEDIA_ATTR_NONE:
+            attribute_count = AVRCP_MEDIA_ATTR_NONE; // 0xFFFFFFFF
+            break;
+        case AVRCP_MEDIA_ATTR_ALL:
+            attribute_count = AVRCP_MEDIA_ATTR_ALL;  // 0
+            break;
+        default:
+            attribute_count = count_set_bits_uint32(connection->attr_bitmap & 0xff);
+            attributes_to_copy = attribute_count;
+            break;
+    }
+    
+    big_endian_store_16(command, pos, 10 + attribute_count);
+    pos += 2;
     command[pos++] = connection->scope;
     big_endian_store_32(command, pos, connection->start_item);
     pos += 4;
     big_endian_store_32(command, pos, connection->end_item);
     pos += 4;
-    command[pos++] = connection->attribute_count;
-    if (connection->attribute_count){
-        memcpy(command+pos, connection->attribute_list, connection->attribute_count);
-        pos += connection->attribute_count;
+    command[pos++] = attribute_count;
+    
+    int bit_position = 1;
+    while (attributes_to_copy){
+        if (connection->attr_bitmap & (1 << bit_position)){
+            big_endian_store_32(command, pos, bit_position);
+            pos += 4;
+            attributes_to_copy--;
+        }
+        bit_position++;
     }
+    
     return l2cap_send(cid, command, pos);
 }
 
@@ -484,7 +507,7 @@ uint8_t avrcp_browsing_controller_disconnect(uint16_t avrcp_browsing_cid){
  * @param attribute_count
  * @param attribute_list
  **/
-static uint8_t avrcp_browsing_controller_get_folder_items(uint16_t avrcp_browsing_cid, uint8_t scope, uint32_t start_item, uint32_t end_item, uint8_t attribute_count, uint8_t * attribute_list){
+static uint8_t avrcp_browsing_controller_get_folder_items(uint16_t avrcp_browsing_cid, uint8_t scope, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap){
     avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid(avrcp_browsing_cid, &avrcp_controller_context);
     if (!avrcp_connection){
         log_error("avrcp_browsing_controller_disconnect: could not find a connection.");
@@ -497,29 +520,28 @@ static uint8_t avrcp_browsing_controller_get_folder_items(uint16_t avrcp_browsin
     connection->scope = scope;
     connection->start_item = start_item;
     connection->end_item = end_item;
-    connection->attribute_count = attribute_count;
-    connection->attribute_list = attribute_list;
+    connection->attr_bitmap = attr_bitmap;
 
     avrcp_request_can_send_now(avrcp_connection, connection->l2cap_browsing_cid);
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avrcp_browsing_controller_get_media_players(uint16_t avrcp_browsing_cid){
-    return avrcp_browsing_controller_get_folder_items(avrcp_browsing_cid, 0, 0, 0xFFFFFFFF, 0, NULL);
+uint8_t avrcp_browsing_controller_get_media_players(uint16_t avrcp_browsing_cid, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap){
+    return avrcp_browsing_controller_get_folder_items(avrcp_browsing_cid, 0, start_item, end_item, attr_bitmap);
 }
 
-uint8_t avrcp_browsing_controller_browse_file_system(uint16_t avrcp_browsing_cid){
-    // return avrcp_browsing_controller_get_folder_items(avrcp_browsing_cid, 1, 0, 0xFFFFFFFF, 0, NULL);
-    return avrcp_browsing_controller_get_folder_items(avrcp_browsing_cid, 1, 0, 0x05, 0, NULL);
+uint8_t avrcp_browsing_controller_browse_file_system(uint16_t avrcp_browsing_cid, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap){
+    // return avrcp_browsing_controller_get_folder_items(avrcp_browsing_cid, 1, 0, 0xFFFFFFFF, attr_bitmap);
+    return avrcp_browsing_controller_get_folder_items(avrcp_browsing_cid, 1, start_item, end_item, attr_bitmap);
 }
 
-uint8_t avrcp_browsing_controller_browse_media(uint16_t avrcp_browsing_cid){
+uint8_t avrcp_browsing_controller_browse_media(uint16_t avrcp_browsing_cid, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap){
     // return avrcp_browsing_controller_get_folder_items(avrcp_browsing_cid, 2, 0, 0xFFFFFFFF, 0, NULL);
-    return avrcp_browsing_controller_get_folder_items(avrcp_browsing_cid, 2, 0, 0x05, 0, NULL);
+    return avrcp_browsing_controller_get_folder_items(avrcp_browsing_cid, 2, start_item, end_item, attr_bitmap);
 }
 
-uint8_t avrcp_browsing_controller_browse_now_playing_list(uint16_t avrcp_browsing_cid){
-    return avrcp_browsing_controller_get_folder_items(avrcp_browsing_cid, 3, 0, 0xFFFFFFFF, 0, NULL);
+uint8_t avrcp_browsing_controller_browse_now_playing_list(uint16_t avrcp_browsing_cid, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap){
+    return avrcp_browsing_controller_get_folder_items(avrcp_browsing_cid, 3, start_item, end_item, attr_bitmap);
 }
 
 

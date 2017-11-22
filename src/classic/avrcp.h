@@ -104,14 +104,15 @@ typedef enum {
 } avrcp_capability_id_t;
 
 typedef enum {
-    AVRCP_MEDIA_ATTR_NONE = 0,
+    AVRCP_MEDIA_ATTR_ALL = 0,
     AVRCP_MEDIA_ATTR_TITLE,
     AVRCP_MEDIA_ATTR_ARTIST,
     AVRCP_MEDIA_ATTR_ALBUM,
     AVRCP_MEDIA_ATTR_TRACK,
     AVRCP_MEDIA_ATTR_TOTAL_TRACKS,
     AVRCP_MEDIA_ATTR_GENRE,
-    AVRCP_MEDIA_ATTR_SONG_LENGTH
+    AVRCP_MEDIA_ATTR_SONG_LENGTH_MS,
+    AVRCP_MEDIA_ATTR_NONE = 0xFFFFFFFF
 } avrcp_media_attribute_id_t;
 
 typedef enum {
@@ -302,8 +303,7 @@ typedef struct {
     uint8_t scope;
     uint32_t start_item;
     uint32_t end_item;
-    uint8_t attribute_count;
-    uint8_t * attribute_list;
+    uint32_t  attr_bitmap;
 
     // change_path
     uint8_t change_path;

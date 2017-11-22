@@ -54,7 +54,6 @@ extern "C" {
 
 
 /* API_START */
-
 typedef enum {
 	AVRCP_BROWSING_MEDIA_PLAYER_ITEM = 0x01,
 	AVRCP_BROWSING_FOLDER_ITEM,
@@ -130,26 +129,38 @@ uint8_t avrcp_browsing_controller_disconnect(uint16_t avrcp_browsing_cid);
 /**
  * @brief Retrieve a list of media players.
  * @param avrcp_browsing_cid
+ * @param start_item
+ * @param end_item
+ * @param attr_bitmap Use AVRCP_MEDIA_ATTR_ALL for all, and AVRCP_MEDIA_ATTR_NONE for none. Otherwise, see avrcp_media_attribute_id_t for the bitmap position of attrs. 
  **/
-uint8_t avrcp_browsing_controller_get_media_players(uint16_t avrcp_browsing_cid);
+uint8_t avrcp_browsing_controller_get_media_players(uint16_t avrcp_browsing_cid, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap);
 
 /**
  * @brief Retrieve a list of folders and media items of the browsed player.
  * @param avrcp_browsing_cid
+ * @param start_item
+ * @param end_item
+ * @param attr_bitmap Use AVRCP_MEDIA_ATTR_ALL for all, and AVRCP_MEDIA_ATTR_NONE for none. Otherwise, see avrcp_media_attribute_id_t for the bitmap position of attrs. 
  **/
-uint8_t avrcp_browsing_controller_browse_file_system(uint16_t avrcp_browsing_cid);
+uint8_t avrcp_browsing_controller_browse_file_system(uint16_t avrcp_browsing_cid, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap);
 
 /**
  * @brief Retrieve a list of media items of the browsed player.
  * @param avrcp_browsing_cid
+ * @param start_item
+ * @param end_item
+ * @param attr_bitmap Use AVRCP_MEDIA_ATTR_ALL for all, and AVRCP_MEDIA_ATTR_NONE for none. Otherwise, see avrcp_media_attribute_id_t for the bitmap position of attrs. 
  **/
-uint8_t avrcp_browsing_controller_browse_media(uint16_t avrcp_browsing_cid);
+uint8_t avrcp_browsing_controller_browse_media(uint16_t avrcp_browsing_cid, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap);
 
 /**
  * @brief Retrieve a list of folders and media items of the addressed player.
  * @param avrcp_browsing_cid
+ * @param start_item
+ * @param end_item
+ * @param attr_bitmap Use AVRCP_MEDIA_ATTR_ALL for all, and AVRCP_MEDIA_ATTR_NONE for none. Otherwise, see avrcp_media_attribute_id_t for the bitmap position of attrs. 
  **/
-uint8_t avrcp_browsing_controller_browse_now_playing_list(uint16_t avrcp_browsing_cid);
+uint8_t avrcp_browsing_controller_browse_now_playing_list(uint16_t avrcp_browsing_cid, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap);
 
 /** 
  * @brief Set browsed player. Calling this command is required prior to browsing the player's file system. Some players may support browsing only when set as the Addressed Player.

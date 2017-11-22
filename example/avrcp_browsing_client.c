@@ -230,8 +230,9 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     root_folder.depth = packet[pos++];
                     root_folder.name_len = big_endian_read_16(packet, pos);
                     pos += 2;
-                    root_folder.name_len = btstack_max(big_endian_read_16(packet, pos), AVRCP_BROWSING_MAX_FOLDER_NAME_LEN - 1);
+
                     memset(root_folder.name, 0, AVRCP_BROWSING_MAX_FOLDER_NAME_LEN);
+                    root_folder.name_len = btstack_min(big_endian_read_16(packet, pos), AVRCP_BROWSING_MAX_FOLDER_NAME_LEN - 1);
                     memcpy(root_folder.name, packet+pos, root_folder.name_len);
                     printf("Found root folder: name %s, depth %d \n", (char *)root_folder.name, root_folder.depth);
                     break;
@@ -253,7 +254,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                 }
                 case AVRCP_BROWSING_FOLDER_ITEM:{
                     int index = next_folder_index();
-                    printf("Found folder [%d]: ", index);
+                    // printf("Found folder [%d]: ", index);
                     memcpy(folders[index].uid, packet+pos, 8);
                     uint32_t folder_uid_high = big_endian_read_32(packet, pos);
                     pos += 4;
@@ -265,13 +266,15 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     pos += 2;
                     uint16_t displayable_name_length = big_endian_read_16(packet, pos);
                     pos += 2;
+                    
                     char value[AVRCP_BROWSING_MAX_FOLDER_NAME_LEN];
+                    
                     memset(value, 0, AVRCP_BROWSING_MAX_FOLDER_NAME_LEN);
-                    uint16_t value_len = btstack_max(displayable_name_length, AVRCP_BROWSING_MAX_FOLDER_NAME_LEN - 1); 
+                    uint16_t value_len = btstack_min(displayable_name_length, AVRCP_BROWSING_MAX_FOLDER_NAME_LEN - 1); 
                     memcpy(value, packet+pos, value_len);
 
-                    printf("Folder UID: 0x%08" PRIx32 "%08" PRIx32 ", folder_type 0x%02x, is_playable %d, charset 0x%02x, displayable_name_length %d, value %s\n", 
-                        folder_uid_high, folder_uid_low, folder_type, is_playable, charset, displayable_name_length, value);
+                    printf("UID 0x%08" PRIx32 "%08" PRIx32 ", type 0x%02x, is_playable %d, charset 0x%02x, name %s\n", 
+                        folder_uid_high, folder_uid_low, folder_type, is_playable, charset, value);
                     memcpy(folders[index].name, value, value_len);
                     folders[index].name_len = value_len;
                     break;
@@ -486,16 +489,16 @@ static void stdin_process(char cmd){
                 case 'm':
                     printf("AVRCP Browsing: get media players\n");
                     player_index = -1;
-                    status = avrcp_browsing_controller_get_media_players(browsing_cid);
+                    status = avrcp_browsing_controller_get_media_players(browsing_cid, 0, 0xFFFFFFFF, AVRCP_MEDIA_ATTR_ALL);
                     break;
                 case 'f':
                     printf("AVRCP Browsing: browse folders\n");
                     folder_index = -1;
-                    status = avrcp_browsing_controller_browse_file_system(browsing_cid);
+                    status = avrcp_browsing_controller_browse_file_system(browsing_cid, 0, 0xFFFFFFFF, AVRCP_MEDIA_ATTR_ALL);
                     break;
                 case 'i':
                     printf("AVRCP Browsing: browse media items\n");
-                    avrcp_browsing_controller_browse_media(browsing_cid);
+                    avrcp_browsing_controller_browse_media(browsing_cid, 0, 0xFFFFFFFF, AVRCP_MEDIA_ATTR_ALL);
                     break;
                 case 'u':
                     if (folder_index < 0 && !parent_folder_set){

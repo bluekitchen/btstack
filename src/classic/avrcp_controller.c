@@ -266,7 +266,7 @@ static void avrcp_controller_emit_now_playing_info_event(btstack_packet_handler_
             event[pos++] = value_len;
             memcpy(event+pos, value, value_len);
             break;
-        case AVRCP_MEDIA_ATTR_SONG_LENGTH:
+        case AVRCP_MEDIA_ATTR_SONG_LENGTH_MS:
             event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_SONG_LENGTH_MS_INFO;
             if (value){
                 little_endian_store_32(event, pos, btstack_atoi((char *)value));
@@ -319,7 +319,7 @@ static void avrcp_parser_process_byte(uint8_t byte, avrcp_connection_t * connect
             }
             // TODO emit event
             uint32_t attribute_id = big_endian_read_32(connection->parser_attribute_header, 0);
-            if (attribute_id > AVRCP_MEDIA_ATTR_NONE && attribute_id <= AVRCP_MEDIA_ATTR_SONG_LENGTH){
+            if (attribute_id > AVRCP_MEDIA_ATTR_NONE && attribute_id <= AVRCP_MEDIA_ATTR_SONG_LENGTH_MS){
                 avrcp_controller_emit_now_playing_info_event(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, attribute_id, connection->attribute_value, connection->attribute_value_len);
             }
             
