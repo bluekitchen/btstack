@@ -76,6 +76,8 @@
 #define AUDIO_TIMEOUT_MS            10 
 #define TABLE_SIZE_441HZ            100
 
+#define SBC_STORAGE_SIZE 1030
+
 typedef enum {
     STREAM_SINE = 0,
     STREAM_MOD,
@@ -94,7 +96,7 @@ typedef struct {
     uint8_t  streaming;
     int      max_media_payload_size;
     
-    uint8_t  sbc_storage[1030];
+    uint8_t  sbc_storage[SBC_STORAGE_SIZE];
     uint16_t sbc_storage_count;
     uint8_t  sbc_ready_to_send;
 } a2dp_media_sending_context_t;
@@ -368,7 +370,7 @@ static void a2dp_demo_audio_timeout_handler(btstack_timer_source_t * timer){
 }
 
 static void a2dp_demo_timer_start(a2dp_media_sending_context_t * context){
-    context->max_media_payload_size = a2dp_max_media_payload_size(context->a2dp_cid, context->local_seid);
+    context->max_media_payload_size = btstack_min(a2dp_max_media_payload_size(context->a2dp_cid, context->local_seid), SBC_STORAGE_SIZE);
     context->sbc_storage_count = 0;
     context->sbc_ready_to_send = 0;
     context->streaming = 1;
