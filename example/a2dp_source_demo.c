@@ -122,15 +122,13 @@ static const int16_t sine_int16[] = {
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-// mac 2011:    static const char * device_addr_string = "04:0C:CE:E4:85:D3";
-// pts:         static const char * device_addr_string = "00:1B:DC:08:0A:A5";
-// mac 2013:    static const char * device_addr_string = "84:38:35:65:d1:15";
-// phone 2013:  static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
-// minijambox:  
+// pts:             static const char * device_addr_string = "00:1B:DC:08:0A:A5";
+// mac 2013:        static const char * device_addr_string = "84:38:35:65:d1:15";
+// phone 2013:      static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
+// Minijambox:      
 static const char * device_addr_string = "00:21:3C:AC:F7:38";
-// head phones: static const char * device_addr_string = "00:18:09:28:50:18";
-// bt dongle:   static const char * device_addr_string = "00:15:83:5F:9D:46";
-// RT-B6:       static const char * device_addr_string = "00:75:58:FF:C9:7D";
+// Philips SHB9100: static const char * device_addr_string = "00:22:37:05:FD:E8";
+// RT-B6:           static const char * device_addr_string = "00:75:58:FF:C9:7D";
 
 static bd_addr_t device_addr;
 static uint8_t sdp_a2dp_source_service_buffer[150];
