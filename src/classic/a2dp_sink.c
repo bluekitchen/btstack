@@ -43,7 +43,6 @@
 #include <string.h>
 
 #include "btstack.h"
-#include "classic/avdtp.h"
 #include "classic/avdtp_util.h"
 #include "classic/avdtp_sink.h"
 #include "classic/a2dp_sink.h"
