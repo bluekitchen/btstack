@@ -598,7 +598,7 @@ uint8_t avrcp_target_set_playback_status(uint16_t avrcp_cid, avrcp_playback_stat
 void avrcp_target_set_now_playing_info(uint16_t avrcp_cid, const avrcp_track_t * current_track, uint16_t total_tracks){
     avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(avrcp_cid, &avrcp_target_context);
     if (!connection){
-        printf("avrcp_unit_info: could not find a connection. cid 0x%02x\n", avrcp_cid);
+        log_error("avrcp_unit_info: could not find a connection. cid 0x%02x\n", avrcp_cid);
         return; 
     }
     if (!current_track){
