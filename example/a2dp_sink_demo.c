@@ -651,7 +651,7 @@ static int read_sbc_header(uint8_t * packet, int size, int * offset, avdtp_sbc_c
     
     if (size - pos < sbc_header_len){
         printf("Not enough data to read SBC header, expected %d, received %d\n", sbc_header_len, size-pos);
-        return 1;
+        return 0;
     }
 
     sbc_header->fragmentation = get_bit16(packet[pos], 7);
@@ -661,7 +661,7 @@ static int read_sbc_header(uint8_t * packet, int size, int * offset, avdtp_sbc_c
     pos++;
     // printf("SBC HEADER: num_frames %u, fragmented %u, start %u, stop %u\n", sbc_header.num_frames, sbc_header.fragmentation, sbc_header.starting_packet, sbc_header.last_packet);
     *offset = pos;
-    return 0;
+    return 1;
 }
 
 static int read_media_data_header(uint8_t *packet, int size, int *offset, avdtp_media_packet_header_t *media_header){
@@ -670,7 +670,7 @@ static int read_media_data_header(uint8_t *packet, int size, int *offset, avdtp_
     
     if (size - pos < media_header_len){
         printf("Not enough data to read media packet header, expected %d, received %d\n", media_header_len, size-pos);
-        return 1;
+        return 0;
     }
 
     media_header->version = packet[pos] & 0x03;
@@ -699,7 +699,7 @@ static int read_media_data_header(uint8_t *packet, int size, int *offset, avdtp_
     //     media_header->timestamp, media_header->version, media_header->padding, media_header->extension, media_header->csrc_count);
     // printf("MEDIA HEADER: marker %02x, payload_type %02x, sequence_number %u, synchronization_source %u\n", 
     //     media_header->marker, media_header->payload_type, media_header->sequence_number, media_header->synchronization_source);
-    return 0;
+    return 1;
 }
 
 static void dump_sbc_configuration(avdtp_media_codec_configuration_sbc_t configuration){
