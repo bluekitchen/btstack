@@ -154,6 +154,14 @@ static void a2dp_streaming_emit_can_send_media_packet_now(btstack_packet_handler
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static inline void a2dp_signaling_emit_media_codec_sbc(btstack_packet_handler_t callback, uint8_t * event, uint16_t event_size){
+    if (!callback) return;
+    if (event_size < 18) return;
+    event[0] = HCI_EVENT_A2DP_META;
+    event[2] = A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION;
+    (*callback)(HCI_EVENT_PACKET, 0, event, event_size);
+}
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -242,8 +250,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             sc.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
             sc.channel_mode = avdtp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
             // TODO: deal with reconfigure: avdtp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
+            a2dp_signaling_emit_media_codec_sbc(a2dp_source_context.a2dp_callback, packet, size);
+       
             break;
         }  
+
+       
         case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: 
             cid = avdtp_subevent_streaming_can_send_media_packet_now_get_avdtp_cid(packet);
             a2dp_streaming_emit_can_send_media_packet_now(a2dp_source_context.a2dp_callback, cid, 0);
@@ -309,11 +321,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     break;
                 case A2DP_W2_OPEN_STREAM_WITH_SEID:{
                     app_state = A2DP_W4_OPEN_STREAM_WITH_SEID;
-                    btstack_sbc_encoder_init(&sc.sbc_encoder_state, SBC_MODE_STANDARD, 
-                        sc.block_length, sc.subbands, 
-                        sc.allocation_method, sc.sampling_frequency, 
-                        sc.max_bitpool_value,
-                        sc.channel_mode);
                     avdtp_source_open_stream(cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), sc.active_remote_sep->seid);
                     break;
                 }
