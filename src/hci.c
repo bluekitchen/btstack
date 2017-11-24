@@ -2182,6 +2182,13 @@ static void event_handler(uint8_t *packet, int size){
                     addr_type = (bd_addr_type_t)packet[7];
                     log_info("LE Connection_complete (status=%u) type %u, %s", packet[3], addr_type, bd_addr_to_str(addr));
                     conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
+
+                    // Workaround for bug in esp32, where the HCI_SUBEVENT_LE_CONNECTION_COMPLETE event after a connect_cancel doesn't contain the address. Instead it's 0's.
+                    if (!conn && packet[3]){
+                        bd_addr_copy(addr, hci_stack->le_cancel_connect_addr);
+                        addr_type = hci_stack->le_cancel_connect_addr_type;
+                        conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
+                    }
 #ifdef ENABLE_LE_CENTRAL
                     // if auto-connect, remove from whitelist in both roles
                     if (hci_stack->le_connecting_state == LE_CONNECTING_WHITELIST){
@@ -2195,6 +2202,8 @@ static void event_handler(uint8_t *packet, int size){
                         if (conn){
                             btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
                             btstack_memory_hci_connection_free( conn );
+                            memset(hci_stack->le_cancel_connect_addr, 0, BD_ADDR_LEN);
+                            hci_stack->le_cancel_connect_addr_type = BD_ADDR_TYPE_UNKNOWN;
                         }
                         break;
                     }
@@ -4030,7 +4039,10 @@ static hci_connection_t * gap_get_outgoing_connection(void){
 
 uint8_t gap_connect_cancel(void){
     hci_connection_t * conn = gap_get_outgoing_connection();
-    if (!conn) return 0;
+    hci_connection_t * pending_cancel_conn = hci_connection_for_bd_addr_and_type(hci_stack->le_cancel_connect_addr, hci_stack->le_cancel_connect_addr_type);
+
+    // @assumption: only one connect_cancel_reuqest at a time
+    if (!conn || pending_cancel_conn) return 0;
     switch (conn->state){
         case SEND_CREATE_CONNECTION:
             // skip sending create connection and emit event instead
@@ -4041,6 +4053,8 @@ uint8_t gap_connect_cancel(void){
         case SENT_CREATE_CONNECTION:
             // request to send cancel connection
             conn->state = SEND_CANCEL_CONNECTION;
+            hci_stack->le_cancel_connect_addr_type = conn->address_type;
+            bd_addr_copy(hci_stack->le_cancel_connect_addr, conn->address);
             hci_run();
             break;
         default:

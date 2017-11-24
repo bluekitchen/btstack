@@ -820,6 +820,10 @@ typedef struct {
     uint16_t le_supervision_timeout;
     uint16_t le_minimum_ce_length;
     uint16_t le_maximum_ce_length;
+
+    bd_addr_t le_cancel_connect_addr;
+    bd_addr_type_t le_cancel_connect_addr_type;
+
 #endif
 
     le_connection_parameter_range_t le_connection_parameter_range;
