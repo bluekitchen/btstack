@@ -512,7 +512,7 @@ static void media_processing_close(void){
 #endif
 
 #ifdef HAVE_PORTAUDIO
-    printf("PortAudio: Steram closed\n");
+    printf("PortAudio: Stream closed\n");
     log_info("PortAudio: Stream closed");
 
     PaError err = Pa_StopStream(stream);
