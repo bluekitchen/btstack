@@ -1733,7 +1733,7 @@ static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t pac
     channel->address_type = address_type;
     channel->psm = psm;
     channel->local_mtu  = local_mtu;
-    channel->remote_mtu = L2CAP_MINIMAL_MTU;
+    channel->remote_mtu = L2CAP_DEFAULT_MTU;
     channel->required_security_level = security_level;
 
     // 
