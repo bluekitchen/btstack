@@ -814,6 +814,8 @@ typedef struct {
     uint16_t le_supervision_timeout;
     uint16_t le_minimum_ce_length;
     uint16_t le_maximum_ce_length;
+    uint16_t le_connection_scan_interval;
+    uint16_t le_connection_scan_window;
 #endif
 
     le_connection_parameter_range_t le_connection_parameter_range;
