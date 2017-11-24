@@ -2449,6 +2449,8 @@ void hci_init(const hci_transport_t *transport, const void *config){
 
 #ifdef ENABLE_LE_CENTRAL
     // connection parameter to use for outgoing connections
+    hci_stack->le_connection_scan_interval = 0x0060;   // 60ms
+    hci_stack->le_connection_scan_window  = 0x0030;    // 30ms
     hci_stack->le_connection_interval_min = 0x0008;    // 10 ms
     hci_stack->le_connection_interval_max = 0x0018;    // 30 ms
     hci_stack->le_connection_latency      = 4;         // 4
@@ -3088,8 +3090,8 @@ static void hci_run(void){
             bd_addr_t null_addr;
             memset(null_addr, 0, 6);
             hci_send_cmd(&hci_le_create_connection,
-                 0x0060,    // scan interval: 60 ms
-                 0x0030,    // scan interval: 30 ms
+                hci_stack->le_connection_scan_interval,    // scan interval: 60 ms
+                hci_stack->le_connection_scan_window,    // scan interval: 30 ms
                  1,         // use whitelist
                  0,         // peer address type
                  null_addr, // peer bd addr
@@ -3125,8 +3127,8 @@ static void hci_run(void){
 #ifdef ENABLE_LE_CENTRAL
                         log_info("sending hci_le_create_connection");
                         hci_send_cmd(&hci_le_create_connection,
-                             0x0060,    // scan interval: 60 ms
-                             0x0030,    // scan interval: 30 ms
+                             hci_stack->le_connection_scan_interval,    // conn scan interval
+                             hci_stack->le_connection_scan_window,      // conn scan windows
                              0,         // don't use whitelist
                              connection->address_type, // peer address type
                              connection->address,      // peer bd addr
@@ -4067,6 +4069,8 @@ uint8_t gap_connect_cancel(void){
 #ifdef ENABLE_LE_CENTRAL
 /**
  * @brief Set connection parameters for outgoing connections
+ * @param conn_scan_interval (unit: 0.625 msec), default: 60 ms
+ * @param conn_scan_window (unit: 0.625 msec), default: 30 ms
  * @param conn_interval_min (unit: 1.25ms), default: 10 ms
  * @param conn_interval_max (unit: 1.25ms), default: 30 ms
  * @param conn_latency, default: 4
@@ -4075,8 +4079,11 @@ uint8_t gap_connect_cancel(void){
  * @param max_ce_length (unit: 0.625ms), default: 30 ms
  */
 
-void gap_set_connection_parameters(uint16_t conn_interval_min, uint16_t conn_interval_max,
-    uint16_t conn_latency, uint16_t supervision_timeout, uint16_t min_ce_length, uint16_t max_ce_length){
+void gap_set_connection_parameters(uint16_t conn_scan_interval, uint16_t conn_scan_window, 
+    uint16_t conn_interval_min, uint16_t conn_interval_max, uint16_t conn_latency,
+    uint16_t supervision_timeout, uint16_t min_ce_length, uint16_t max_ce_length){
+    hci_stack->le_connection_scan_interval = conn_scan_interval;
+    hci_stack->le_connection_scan_window = conn_scan_window;
     hci_stack->le_connection_interval_min = conn_interval_min;
     hci_stack->le_connection_interval_max = conn_interval_max;
     hci_stack->le_connection_latency = conn_latency;
