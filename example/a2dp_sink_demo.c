@@ -66,6 +66,7 @@
 #include <string.h>
 
 #include "btstack.h"
+#include "classic/btstack_sbc.h"
 
 #define AVRCP_BROWSING_ENABLED 0
 

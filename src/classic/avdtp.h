@@ -52,7 +52,6 @@
 
 #include <stdint.h>
 #include "hci.h"
-#include "classic/btstack_sbc.h"
 #include "btstack_ring_buffer.h"
 
 #if defined __cplusplus
@@ -478,7 +477,6 @@ typedef struct {
     uint32_t samples_ready;
     btstack_timer_source_t fill_audio_ring_buffer_timer;
     btstack_ring_buffer_t sbc_ring_buffer;
-    btstack_sbc_encoder_state_t sbc_encoder_state;
     
     int reconfigure;
     int num_channels;

@@ -64,6 +64,8 @@
 
 #include "btstack.h"
 
+#include "classic/btstack_sbc.h"
+
 #include "hxcmod.h"
 #include "mods/mod.h"
 
@@ -120,19 +122,37 @@ static const int16_t sine_int16[] = {
 -19260,  -17557,  -15786,  -13952,  -12062,  -10126,   -8149,   -6140,   -4107,   -2057,
 };
 
+typedef struct {
+    int reconfigure;
+    int num_channels;
+    int sampling_frequency;
+    int channel_mode;
+    int block_length;
+    int subbands;
+    int allocation_method;
+    int min_bitpool_value;
+    int max_bitpool_value;
+    int frames_per_buffer;
+} avdtp_media_codec_configuration_sbc_t;
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
+#ifdef HAVE_BTSTACK_STDIN
 // pts:             static const char * device_addr_string = "00:1B:DC:08:0A:A5";
 // mac 2013:        static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:      static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
-// Minijambox:      
-static const char * device_addr_string = "00:21:3C:AC:F7:38";
+// Minijambox:      static const char * device_addr_string = "00:21:3C:AC:F7:38";
 // Philips SHB9100: static const char * device_addr_string = "00:22:37:05:FD:E8";
 // RT-B6:           static const char * device_addr_string = "00:75:58:FF:C9:7D";
+// BT dongle:
+static const char * device_addr_string = "00:1A:7D:DA:71:0A";
+#endif
 
 static bd_addr_t device_addr;
 static uint8_t sdp_a2dp_source_service_buffer[150];
 static uint8_t sdp_avrcp_target_service_buffer[200];
+static avdtp_media_codec_configuration_sbc_t sbc_configuration;
+static btstack_sbc_encoder_state_t sbc_encoder_state;
 
 static uint8_t media_sbc_codec_configuration[4];
 static a2dp_media_sending_context_t media_tracker;
@@ -414,11 +434,15 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
     if (hci_event_packet_get_type(packet) != HCI_EVENT_A2DP_META) return;
     switch (packet[2]){
         case A2DP_SUBEVENT_INCOMING_CONNECTION_ESTABLISHED:
-            // TODO: check incoming cid
             a2dp_subevent_incoming_connection_established_get_bd_addr(packet, address);
             cid = a2dp_subevent_incoming_connection_established_get_a2dp_cid(packet);
-            printf("A2DP_SUBEVENT_INCOMING_CONNECTION_ESTABLISHED, cid 0x%02x,  media_tracker.a2dp_cid 0x%02x\n", cid, media_tracker.a2dp_cid);
-            if (cid != media_tracker.a2dp_cid) break;
+            
+            if (!media_tracker.a2dp_cid){
+                media_tracker.a2dp_cid = cid;
+            } else if (cid != media_tracker.a2dp_cid){
+                printf("A2DP: Incoming connection failure, received cid 0x%02x, expected cid 0x%02x\n", cid, media_tracker.a2dp_cid);
+                break;
+            }
             
             media_tracker.connected = 1;
             printf("A2DP: Incoming connection established: address %s, a2dp cid 0x%02x. Create stream on local seid %d.\n", 
@@ -428,6 +452,28 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
                 printf("Could not perform command, status 0x%2x\n", status);
             }
             break;
+
+         case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
+            printf("A2DP Sink demo: received SBC codec configuration.\n");
+            sbc_configuration.reconfigure = a2dp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
+            sbc_configuration.num_channels = a2dp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(packet);
+            sbc_configuration.sampling_frequency = a2dp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
+            sbc_configuration.channel_mode = a2dp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
+            sbc_configuration.block_length = a2dp_subevent_signaling_media_codec_sbc_configuration_get_block_length(packet);
+            sbc_configuration.subbands = a2dp_subevent_signaling_media_codec_sbc_configuration_get_subbands(packet);
+            sbc_configuration.allocation_method = a2dp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet);
+            sbc_configuration.min_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_min_bitpool_value(packet);
+            sbc_configuration.max_bitpool_value = a2dp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
+            sbc_configuration.frames_per_buffer = sbc_configuration.subbands * sbc_configuration.block_length;
+            
+            btstack_sbc_encoder_init(&sbc_encoder_state, SBC_MODE_STANDARD, 
+                sbc_configuration.block_length, sbc_configuration.subbands, 
+                sbc_configuration.allocation_method, sbc_configuration.sampling_frequency, 
+                sbc_configuration.max_bitpool_value,
+                sbc_configuration.channel_mode);
+            break;
+        }  
+
         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
             media_tracker.connected = 1;
             a2dp_subevent_stream_established_get_bd_addr(packet, address);
