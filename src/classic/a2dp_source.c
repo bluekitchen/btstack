@@ -250,6 +250,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             sc.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
             sc.channel_mode = avdtp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
             // TODO: deal with reconfigure: avdtp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
+            log_info("SBC Config: sample rate %u, max bitpool %u", sc.sampling_frequency, sc.max_bitpool_value);
             a2dp_signaling_emit_media_codec_sbc(a2dp_source_context.a2dp_callback, packet, size);
        
             break;

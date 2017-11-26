@@ -141,11 +141,11 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 // pts:             static const char * device_addr_string = "00:1B:DC:08:0A:A5";
 // mac 2013:        static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:      static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
-// Minijambox:      static const char * device_addr_string = "00:21:3C:AC:F7:38";
+// Minijambox:      
+static const char * device_addr_string = "00:21:3C:AC:F7:38";
 // Philips SHB9100: static const char * device_addr_string = "00:22:37:05:FD:E8";
 // RT-B6:           static const char * device_addr_string = "00:75:58:FF:C9:7D";
-// BT dongle:
-static const char * device_addr_string = "00:1A:7D:DA:71:0A";
+// BT dongle:       static const char * device_addr_string = "00:1A:7D:DA:71:0A";
 #endif
 
 static bd_addr_t device_addr;

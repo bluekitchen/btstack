@@ -136,18 +136,18 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     break;
                 
                 case AVDTP_SI_GET_CONFIGURATION:
-                    sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, packet+offset, size-offset);
-                    if (get_bit16(sep.configured_service_categories, AVDTP_MEDIA_CODEC)){
-                        switch (sep.configuration.media_codec.media_codec_type){
-                            case AVDTP_CODEC_SBC: 
-                                avdtp_signaling_emit_media_codec_sbc_configuration(context->avdtp_callback, connection->avdtp_cid, connection->local_seid, connection->remote_seid, 
-                                    sep.configuration.media_codec.media_type, sep.configuration.media_codec.media_codec_information);
-                                break;
-                            default:
-                                avdtp_signaling_emit_media_codec_other_configuration(context->avdtp_callback, connection->avdtp_cid, connection->local_seid,  connection->remote_seid, sep.configuration.media_codec);
-                                break;
-                        }
-                    }
+                    // sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, packet+offset, size-offset);
+                    // if (get_bit16(sep.configured_service_categories, AVDTP_MEDIA_CODEC)){
+                    //     switch (sep.configuration.media_codec.media_codec_type){
+                    //         case AVDTP_CODEC_SBC: 
+                    //             avdtp_signaling_emit_media_codec_sbc_configuration(context->avdtp_callback, connection->avdtp_cid, connection->local_seid, connection->remote_seid, 
+                    //                 sep.configuration.media_codec.media_type, sep.configuration.media_codec.media_codec_information);
+                    //             break;
+                    //         default:
+                    //             avdtp_signaling_emit_media_codec_other_configuration(context->avdtp_callback, connection->avdtp_cid, connection->local_seid,  connection->remote_seid, sep.configuration.media_codec);
+                    //             break;
+                    //     }
+                    // }
                     break;
                 
                 case AVDTP_SI_RECONFIGURE:
@@ -172,8 +172,8 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                         log_error("AVDTP_SI_SET_CONFIGURATION: stream endpoint is null");
                         break;
                     }
-                    sep.configured_service_categories = stream_endpoint->remote_capabilities_bitmap;
-                    sep.configuration = stream_endpoint->remote_capabilities;
+                    sep.configured_service_categories = stream_endpoint->remote_configuration_bitmap;
+                    sep.configuration = stream_endpoint->remote_configuration;
                     sep.in_use = 1;
                     // TODO check if configuration is supported
                     
@@ -188,6 +188,18 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     connection->remote_seps[stream_endpoint->remote_sep_index] = sep;
                     log_info("INT: configured remote seid %d, to %p", connection->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
+
+                    switch (stream_endpoint->media_codec_type){
+                        case AVDTP_CODEC_SBC: 
+                            avdtp_signaling_emit_media_codec_sbc_configuration(context->avdtp_callback, connection->avdtp_cid, connection->local_seid, connection->remote_seid, 
+                                stream_endpoint->media_type, stream_endpoint->media_codec_sbc_info);
+                            break;
+                        default:
+                            // TODO: we don\t have codec info to emit config
+                            // avdtp_signaling_emit_media_codec_other_configuration(context->avdtp_callback, connection->avdtp_cid, connection->local_seid,  connection->remote_seid, sep.configuration.media_codec);
+                            break;
+                    }
+
                     break;
                 }
                 

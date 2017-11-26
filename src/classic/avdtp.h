@@ -454,6 +454,12 @@ typedef struct avdtp_stream_endpoint {
     
     uint16_t remote_configuration_bitmap;
     avdtp_capabilities_t remote_configuration;  
+
+    // temporary SBC config
+    avdtp_media_codec_type_t media_codec_type;
+    avdtp_media_type_t media_type;
+    uint8_t media_codec_sbc_info[4];
+
     // register request for media L2cap connection release
     uint8_t media_disconnect;
     uint8_t media_connect;
