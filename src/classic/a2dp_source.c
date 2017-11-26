@@ -311,14 +311,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     break;
                 case A2DP_W2_SET_CONFIGURATION:{
                     if (!sc.local_stream_endpoint) return;
-                    app_state = A2DP_W2_GET_CONFIGURATION;
+                    app_state = A2DP_W2_OPEN_STREAM_WITH_SEID;
                     avdtp_source_set_configuration(cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), sc.active_remote_sep->seid, sc.local_stream_endpoint->remote_configuration_bitmap, sc.local_stream_endpoint->remote_configuration);
                     break;
                 }
-                case A2DP_W2_GET_CONFIGURATION:
-                    app_state = A2DP_W2_OPEN_STREAM_WITH_SEID;
-                    avdtp_source_get_configuration(cid, sc.active_remote_sep->seid);
-                    break;
                 case A2DP_W2_OPEN_STREAM_WITH_SEID:{
                     app_state = A2DP_W4_OPEN_STREAM_WITH_SEID;
                     avdtp_source_open_stream(cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), sc.active_remote_sep->seid);
