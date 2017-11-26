@@ -700,7 +700,8 @@ void avdtp_signaling_emit_media_codec_other_capability(btstack_packet_handler_t 
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static inline void avdtp_signaling_emit_media_codec_sbc(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, adtvp_media_codec_capabilities_t media_codec, uint8_t reconfigure){
+static inline void avdtp_signaling_emit_media_codec_sbc(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, 
+    avdtp_media_type_t media_type, const uint8_t * media_codec_information, uint8_t reconfigure){
     if (!callback) return;
     uint8_t event[16+2];
     int pos = 0;
@@ -719,10 +720,10 @@ static inline void avdtp_signaling_emit_media_codec_sbc(btstack_packet_handler_t
     uint8_t subbands = 0;
     uint8_t block_length = 0;
 
-    uint8_t sampling_frequency_bitmap = media_codec.media_codec_information[0] >> 4;
-    uint8_t channel_mode_bitmap = media_codec.media_codec_information[0] & 0x0F;
-    uint8_t block_length_bitmap = media_codec.media_codec_information[1] >> 4;
-    uint8_t subbands_bitmap = (media_codec.media_codec_information[1] & 0x0F) >> 2;
+    uint8_t sampling_frequency_bitmap = media_codec_information[0] >> 4;
+    uint8_t channel_mode_bitmap = media_codec_information[0] & 0x0F;
+    uint8_t block_length_bitmap = media_codec_information[1] >> 4;
+    uint8_t subbands_bitmap = (media_codec_information[1] & 0x0F) >> 2;
 
     if (channel_mode_bitmap & AVDTP_SBC_MONO){
         num_channels = 1;
@@ -766,7 +767,7 @@ static inline void avdtp_signaling_emit_media_codec_sbc(btstack_packet_handler_t
         block_length = 16;
     }
     
-    event[pos++] = media_codec.media_type;
+    event[pos++] = media_type;
     little_endian_store_16(event, pos, sampling_frequency);
     pos += 2;
     
@@ -774,20 +775,20 @@ static inline void avdtp_signaling_emit_media_codec_sbc(btstack_packet_handler_t
     event[pos++] = num_channels;
     event[pos++] = block_length;
     event[pos++] = subbands;
-    event[pos++] = media_codec.media_codec_information[1] & 0x03;
-    event[pos++] = media_codec.media_codec_information[2];
-    event[pos++] = media_codec.media_codec_information[3];
+    event[pos++] = media_codec_information[1] & 0x03;
+    event[pos++] = media_codec_information[2];
+    event[pos++] = media_codec_information[3];
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void avdtp_signaling_emit_media_codec_sbc_configuration(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, adtvp_media_codec_capabilities_t media_codec){
+void avdtp_signaling_emit_media_codec_sbc_configuration(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, avdtp_media_type_t media_type, const uint8_t * media_codec_information){
     if (!callback) return;
-    avdtp_signaling_emit_media_codec_sbc(callback, avdtp_cid, local_seid, remote_seid, media_codec, 0);
+    avdtp_signaling_emit_media_codec_sbc(callback, avdtp_cid, local_seid, remote_seid, media_type, media_codec_information, 0);
 }
 
-void avdtp_signaling_emit_media_codec_sbc_reconfiguration(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, adtvp_media_codec_capabilities_t media_codec){
+void avdtp_signaling_emit_media_codec_sbc_reconfiguration(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, avdtp_media_type_t media_type, const uint8_t * media_codec_information){
     if (!callback) return;
-    avdtp_signaling_emit_media_codec_sbc(callback, avdtp_cid, local_seid, remote_seid, media_codec, 1);
+    avdtp_signaling_emit_media_codec_sbc(callback, avdtp_cid, local_seid, remote_seid, media_type, media_codec_information, 1);
 }
 
 static inline void avdtp_signaling_emit_media_codec_other(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, adtvp_media_codec_capabilities_t media_codec, uint8_t reconfigure){

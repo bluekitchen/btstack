@@ -140,7 +140,8 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     if (get_bit16(sep.configured_service_categories, AVDTP_MEDIA_CODEC)){
                         switch (sep.configuration.media_codec.media_codec_type){
                             case AVDTP_CODEC_SBC: 
-                                avdtp_signaling_emit_media_codec_sbc_configuration(context->avdtp_callback, connection->avdtp_cid, connection->local_seid, connection->remote_seid, sep.configuration.media_codec);
+                                avdtp_signaling_emit_media_codec_sbc_configuration(context->avdtp_callback, connection->avdtp_cid, connection->local_seid, connection->remote_seid, 
+                                    sep.configuration.media_codec.media_type, sep.configuration.media_codec.media_codec_information);
                                 break;
                             default:
                                 avdtp_signaling_emit_media_codec_other_configuration(context->avdtp_callback, connection->avdtp_cid, connection->local_seid,  connection->remote_seid, sep.configuration.media_codec);

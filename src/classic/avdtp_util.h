@@ -92,9 +92,9 @@ void avdtp_streaming_emit_can_send_media_packet_now(btstack_packet_handler_t cal
 
 void avdtp_signaling_emit_media_codec_sbc_capability(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, adtvp_media_codec_capabilities_t media_codec);
 void avdtp_signaling_emit_media_codec_other_capability(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, adtvp_media_codec_capabilities_t media_codec);
-void avdtp_signaling_emit_media_codec_sbc_configuration(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, adtvp_media_codec_capabilities_t media_codec);
+void avdtp_signaling_emit_media_codec_sbc_configuration(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, avdtp_media_type_t media_type, const uint8_t * media_codec_information);
 void avdtp_signaling_emit_media_codec_other_configuration(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, adtvp_media_codec_capabilities_t media_codec);
-void avdtp_signaling_emit_media_codec_sbc_reconfiguration(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, adtvp_media_codec_capabilities_t media_codec);
+void avdtp_signaling_emit_media_codec_sbc_reconfiguration(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, avdtp_media_type_t media_type, const uint8_t * media_codec_information);
 void avdtp_signaling_emit_media_codec_other_reconfiguration(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, adtvp_media_codec_capabilities_t media_codec);
 
 void avdtp_request_can_send_now_acceptor(avdtp_connection_t * connection, uint16_t l2cap_cid);
