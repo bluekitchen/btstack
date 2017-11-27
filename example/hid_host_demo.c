@@ -52,7 +52,7 @@
 #include "btstack_config.h"
 #include "btstack.h"
 
-#define MAX_ATTRIBUTE_VALUE_SIZE 200
+#define MAX_ATTRIBUTE_VALUE_SIZE 300
 
 // SDP
 static uint8_t            hid_descriptor[MAX_ATTRIBUTE_VALUE_SIZE];
