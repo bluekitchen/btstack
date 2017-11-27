@@ -11,7 +11,6 @@
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_embedded.h"
-#include "classic/btstack_link_key_db.h"
 #include "hal_uart_dma.h"
 #include "hal_cpu.h"
 #include "hal_tick.h"
@@ -533,7 +532,6 @@ static void phase2(int status){
     const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
     hci_init(transport, (void*) &transport_config);
     hci_set_chipset(btstack_chipset_atwilc3000_instance());
-    hci_set_link_key_db(btstack_link_key_db_memory_instance());
     
     // setup app
     btstack_main(0, NULL);

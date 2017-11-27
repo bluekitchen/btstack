@@ -26,6 +26,22 @@ clean:
 \tdone
 '''
 
+# 
+le_examples = [
+'ancs_client_demo.c', 
+'gap_le_advertisements.c', 
+'gatt_battery_query.c', 
+'gatt_browser.c', 
+'hog_keyboard_demo.c', 
+'hog_mouse_demo.c', 
+'le_counter.c', 
+'le_streamer.c', 
+'le_streamer_client.c', 
+'led_counter.c', 
+'sm_pairing_central.c', 
+'sm_pairing_peripheral.c', 
+]
+
 # get script path
 script_path = os.path.abspath(os.path.dirname(sys.argv[0])) + '/../'
 
@@ -56,7 +72,7 @@ examples = []
 for file in example_files:
     if not file.endswith(".c"):
         continue
-    if file in ['panu_demo.c', 'sco_demo_util.c']:
+    if not file in le_examples:
         continue
     example = file[:-2]
     examples.append(example)
