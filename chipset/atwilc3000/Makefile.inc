@@ -12,8 +12,8 @@ wilc3000_bt_firmware_no_rtc.c: wilc3000_bt_firmware_no_rtc.bin
 
 wilc3000_bt_firmware.bin: 
 	@echo "Downloading $@"
-	@curl -O https://raw.githubusercontent.com/atwilc3000/firmware/098971235035a9a143d395279e80d33c6640e9c3/wilc3000_bt_firmware.bin
+	@curl -O https://raw.githubusercontent.com/linux4wilc/firmware/master/wilc3000_bt_firmware.bin
 
 wilc3000_bt_firmware_no_rtc.bin:
 	@echo "Downloading $@"
-	curl -O https://raw.githubusercontent.com/atwilc3000/firmware/098971235035a9a143d395279e80d33c6640e9c3/wilc3000_bt_firmware_no_rtc.bin
+	curl -O https://raw.githubusercontent.com/linux4wilc/firmware/master/wilc3000_bt_firmware_no_rtc.bin
