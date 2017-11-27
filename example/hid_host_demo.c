@@ -43,7 +43,8 @@
 
 /* EXAMPLE_START(hid_host_demo): HID Host Demo
  *
- * @text This example implements an HID Host.
+ * @text This example implements an HID Host. For now, it connnects to a fixed device, queries the HID SDP
+ * record and opens the HID Control + Interrupt channels
  */
 
 #include <stdio.h>
@@ -53,15 +54,19 @@
 
 #define MAX_ATTRIBUTE_VALUE_SIZE 200
 
+// SDP
 static uint8_t            hid_descriptor[MAX_ATTRIBUTE_VALUE_SIZE];
 static uint16_t           hid_descriptor_len;
 
 static uint16_t           hid_control_psm;
 static uint16_t           hid_interrupt_psm;
 
-
 static uint8_t            attribute_value[MAX_ATTRIBUTE_VALUE_SIZE];
 static const unsigned int attribute_value_buffer_size = MAX_ATTRIBUTE_VALUE_SIZE;
+
+// L2CAP
+static uint16_t            l2cap_hid_control_cid;
+static uint16_t            l2cap_hid_interrupt_cid;
 
 // MBP 2016
 static const char * remote_addr_string = "F4-0F-24-3B-1B-E1";
@@ -110,6 +115,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
     uint8_t       *des_element;
     uint8_t       *element;
     uint32_t       uuid;
+    uint8_t        status;
 
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
@@ -186,6 +192,10 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                 break;
             }
             printf("Setup HID\n");
+            status = l2cap_create_channel(packet_handler, remote_addr, hid_control_psm, 48, &l2cap_hid_control_cid);
+            if (status){
+                printf("Connecting to HID Control failed: 0x%02x\n", status);
+            }
             break;
     }
 }
@@ -200,12 +210,11 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
 {
     /* LISTING_PAUSE */
-    UNUSED(channel);
-    UNUSED(size);
-
     uint8_t   event;
     bd_addr_t event_addr;
-  
+    uint8_t   status;
+    uint16_t  l2cap_cid;
+
     /* LISTING_RESUME */
     switch (packet_type) {
 		case HCI_EVENT_PACKET:
@@ -236,10 +245,40 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
 
                 /* LISTING_RESUME */
+
+                case L2CAP_EVENT_CHANNEL_OPENED: 
+                    status = packet[2];
+                    if (status){
+                        printf("L2CAP Connection failed: 0x%02x\n", status);
+                        break;
+                    }
+                    l2cap_cid  = little_endian_read_16(packet, 13);
+                    if (!l2cap_cid) break;
+                    if (l2cap_cid == l2cap_hid_control_cid){
+                        status = l2cap_create_channel(packet_handler, remote_addr, hid_interrupt_psm, 48, &l2cap_hid_interrupt_cid);
+                        if (status){
+                            printf("Connecting to HID Control failed: 0x%02x\n", status);
+                            break;
+                        }
+                    }                        
+                    if (l2cap_cid == l2cap_hid_interrupt_cid){
+                        printf("HID Connection established\n");
+                    }
+                    break;
                 default:
                     break;
-
             }
+            break;
+        case L2CAP_DATA_PACKET:
+            // for now, just dump incoming data
+            if (channel == l2cap_hid_interrupt_cid){
+                printf("HID Interrupt: ");
+            } else if (channel == l2cap_hid_control_cid){
+                printf("HID Control: ");
+            } else {
+                break;
+            }
+            printf_hexdump(packet, size);
         default:
             break;
     }
@@ -263,5 +302,3 @@ int btstack_main(int argc, const char * argv[]){
 }
 
 /* EXAMPLE_END */
-/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*-  */
-
