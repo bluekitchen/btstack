@@ -119,6 +119,7 @@ EXAMPLES = 					\
 	gatt_browser            \
 	hfp_ag_demo             \
 	hfp_hf_demo             \
+	hid_host_demo           \
 	hid_keyboard_demo 	    \
 	hid_mouse_demo          \
 	hog_keyboard_demo       \
@@ -262,6 +263,9 @@ hfp_ag_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODE
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hfp_hf_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hfp.o hfp_hf.o hfp_hf_demo.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+hid_host_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} hid_host_demo.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hid_keyboard_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_ring_buffer.o hid_device.o hid_keyboard_demo.o
