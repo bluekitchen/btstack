@@ -379,7 +379,7 @@ static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t l
 }
 
 static uint16_t l2cap_setup_options_ertm_request(l2cap_channel_t * channel, uint8_t * config_options){
-    config_options[0] = 0x04;   // RETRANSMISSION AND FLOW CONTROL OPTION
+    config_options[0] = L2CAP_CONFIG_OPTION_TYPE_RETRANSMISSION_AND_FLOW_CONTROL;
     config_options[1] = 9;      // length
     config_options[2] = (uint8_t) channel->mode;
     config_options[3] = channel->num_rx_buffers;    // == TxWindows size
@@ -388,14 +388,18 @@ static uint16_t l2cap_setup_options_ertm_request(l2cap_channel_t * channel, uint
     little_endian_store_16( config_options, 7, channel->local_monitor_timeout_ms);
     little_endian_store_16( config_options, 9, channel->local_mps);
     //
-    config_options[11] = 0x05;  // FCS OPTION
+    config_options[11] = L2CAP_CONFIG_OPTION_TYPE_FRAME_CHECK_SEQUENCE;
     config_options[12] = 1;     // length
     config_options[13] = channel->fcs_option;
-    return 14;
+    //
+    config_options[14] = L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT;
+    config_options[15] = 2;     // length
+    little_endian_store_16(config_options, 16, channel->local_mtu);
+    return 18;
 }
 
 static uint16_t l2cap_setup_options_ertm_response(l2cap_channel_t * channel, uint8_t * config_options){
-    config_options[0] = 0x04;   // RETRANSMISSION AND FLOW CONTROL OPTION
+    config_options[0] = L2CAP_CONFIG_OPTION_TYPE_RETRANSMISSION_AND_FLOW_CONTROL;
     config_options[1] = 9;      // length
     config_options[2] = (uint8_t) channel->mode;
     // less or equal to remote tx window size
@@ -411,10 +415,14 @@ static uint16_t l2cap_setup_options_ertm_response(l2cap_channel_t * channel, uin
     // less or equal to remote mps
     little_endian_store_16( config_options, 9, btstack_min(channel->local_mps, channel->remote_mps));
     //
-    config_options[11] = 0x05;  // FCS OPTION
+    config_options[11] = L2CAP_CONFIG_OPTION_TYPE_FRAME_CHECK_SEQUENCE;
     config_options[12] = 1;     // length
     config_options[13] = channel->fcs_option;
-    return 14;
+    //
+    config_options[14] = L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT; // MTU
+    config_options[15] = 2;     // length
+    little_endian_store_16(config_options, 16, channel->remote_mtu);
+    return 18;
 }
 
 static int l2cap_ertm_send_supervisor_frame(l2cap_channel_t * channel, uint16_t control){
@@ -1193,7 +1201,7 @@ uint16_t l2cap_max_le_mtu(void){
 #ifdef ENABLE_CLASSIC
 
 static uint16_t l2cap_setup_options_mtu(uint8_t * config_options, uint16_t mtu){
-    config_options[0] = 1; // MTU
+    config_options[0] = L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT; // MTU
     config_options[1] = 2; // len param
     little_endian_store_16(config_options, 2, mtu);
     return 4;
