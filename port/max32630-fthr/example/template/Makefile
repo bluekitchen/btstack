@@ -190,10 +190,10 @@ include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
 
 SBC_DECODER += \
 	btstack_sbc_plc.c \
-	btstack_sbc_bludroid.c \
+	btstack_sbc_decoder_bluedroid.c \
 
 SBC_ENCODER += \
-	btstack_sbc_bludroid.c \
+	btstack_sbc_encoder_bluedroid.c \
 	hfp_msbc.c \
 
 HXCMOD_PLAYER = \

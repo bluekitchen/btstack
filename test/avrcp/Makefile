@@ -58,10 +58,10 @@ LDFLAGS += $(shell pkg-config portaudio-2.0 --libs)
 
 SBC_DECODER += \
 	${BTSTACK_ROOT}/src/classic/btstack_sbc_plc.c \
-	${BTSTACK_ROOT}/src/classic/btstack_sbc_bludroid.c \
+	${BTSTACK_ROOT}/src/classic/btstack_sbc_decoder_bluedroid.c \
 
 SBC_ENCODER += \
-	${BTSTACK_ROOT}/src/classic/btstack_sbc_bludroid.c \
+	${BTSTACK_ROOT}/src/classic/btstack_sbc_encoder_bluedroid.c \
 	${BTSTACK_ROOT}/src/classic/hfp_msbc.c \
 
 AVRCP += \
