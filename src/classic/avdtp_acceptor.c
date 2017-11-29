@@ -194,6 +194,15 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES;
                     break;
                 case AVDTP_SI_SET_CONFIGURATION:{
+                    if (connection->is_configuration_initiated_localy){
+                        log_info("ACP: Set configuration already initiated localy, reject cmd ");
+                        // fire configuration parsing errors 
+                        connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                        stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD;
+                        connection->is_initiator = 1;
+                        break;
+                    }
+
                     log_info("ACP: AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION ");
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION;
                     connection->reject_service_category = 0;

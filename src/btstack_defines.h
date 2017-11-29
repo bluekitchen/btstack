@@ -1543,12 +1543,13 @@ typedef uint8_t sm_key_t[16];
 #define A2DP_SUBEVENT_COMMAND_REJECTED                              0x0A
 
 /**
- * @format 12B          Signaling channel is opened.
- * @param subevent_code 
+ * @format 12B1
+ * @param subevent_code
  * @param a2dp_cid
  * @param bd_addr
+ * @param status 0 == OK
  */
-#define A2DP_SUBEVENT_INCOMING_CONNECTION_ESTABLISHED               0x0B
+#define A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED              0x0B
 
 /**
  * @format 12            Signaling channel is released.

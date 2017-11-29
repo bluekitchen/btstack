@@ -373,6 +373,7 @@ typedef struct {
     avdtp_packet_type_t         packet_type;
 } avdtp_signaling_packet_t;
 
+
 typedef struct {
     btstack_linked_item_t    item;
     bd_addr_t remote_addr;
@@ -410,6 +411,10 @@ typedef struct {
     // store configurations with remote seps
     avdtp_sep_t remote_seps[MAX_NUM_SEPS];
     uint8_t remote_seps_num;
+
+    // store current role
+    uint8_t is_initiator;
+    uint8_t is_configuration_initiated_localy;
 } avdtp_connection_t;
 
 typedef enum {
@@ -418,12 +423,12 @@ typedef enum {
     A2DP_W2_DISCOVER_SEPS,
     A2DP_W2_GET_CAPABILITIES,
     A2DP_W2_GET_ALL_CAPABILITIES,
-    A2DP_W2_SET_CONFIGURATION,
+    A2DP_W2_SET_CONFIGURATION,      //5
     A2DP_W4_GET_CONFIGURATION,
     A2DP_W4_SET_CONFIGURATION,
     A2DP_W2_SUSPEND_STREAM_WITH_SEID,
     A2DP_W2_RECONFIGURE_WITH_SEID,
-    A2DP_W2_OPEN_STREAM_WITH_SEID,
+    A2DP_W2_OPEN_STREAM_WITH_SEID,   //10
     A2DP_W4_OPEN_STREAM_WITH_SEID,
     A2DP_W2_START_STREAM_WITH_SEID,
     A2DP_W2_ABORT_STREAM_WITH_SEID,
@@ -470,6 +475,7 @@ typedef struct avdtp_stream_endpoint {
     uint8_t suspend_stream;
     
     uint16_t sequence_number;
+
 } avdtp_stream_endpoint_t;
 
 typedef struct {

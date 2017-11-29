@@ -4992,22 +4992,31 @@ static inline uint8_t a2dp_subevent_command_rejected_get_signal_identifier(const
 }
 
 /**
- * @brief Get field a2dp_cid from event A2DP_SUBEVENT_INCOMING_CONNECTION_ESTABLISHED
+ * @brief Get field a2dp_cid from event A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED
  * @param event packet
  * @return a2dp_cid
  * @note: btstack_type 2
  */
-static inline uint16_t a2dp_subevent_incoming_connection_established_get_a2dp_cid(const uint8_t * event){
+static inline uint16_t a2dp_subevent_signaling_connection_established_get_a2dp_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field bd_addr from event A2DP_SUBEVENT_INCOMING_CONNECTION_ESTABLISHED
+ * @brief Get field bd_addr from event A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED
  * @param event packet
  * @param Pointer to storage for bd_addr
  * @note: btstack_type B
  */
-static inline void a2dp_subevent_incoming_connection_established_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+static inline void a2dp_subevent_signaling_connection_established_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
     reverse_bd_addr(&event[5], bd_addr);    
+}
+/**
+ * @brief Get field status from event A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_connection_established_get_status(const uint8_t * event){
+    return event[11];
 }
 
 /**

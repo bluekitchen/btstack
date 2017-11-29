@@ -189,13 +189,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             
             sc.active_remote_sep = NULL;
             next_remote_sep_index_to_query = 0;
-            if (!sc.local_stream_endpoint) {
+            if (sc.local_stream_endpoint) {
                 app_state = A2DP_CONNECTED;
                 uint8_t event[11];
                 int pos = 0;
                 event[pos++] = HCI_EVENT_A2DP_META;
                 event[pos++] = sizeof(event) - 2;
-                event[pos++] = A2DP_SUBEVENT_INCOMING_CONNECTION_ESTABLISHED;
+                event[pos++] = A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED;
                 little_endian_store_16(event, pos, cid);
                 pos += 2;
                 reverse_bd_addr(event+pos, sc.remote_addr);
@@ -204,6 +204,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 return;
             }
 
+            log_info("A2DP_SUBEVENT_SIGNALING_CONNECTION established avdtp_cid 0x%02x ---", a2dp_source_context.avdtp_cid);
+                
             app_state = A2DP_W2_DISCOVER_SEPS;
             avdtp_source_discover_stream_endpoints(cid);
             break;
@@ -251,11 +253,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             sc.channel_mode = avdtp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
             // TODO: deal with reconfigure: avdtp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
             log_info("SBC Config: sample rate %u, max bitpool %u", sc.sampling_frequency, sc.max_bitpool_value);
+            app_state = A2DP_W2_OPEN_STREAM_WITH_SEID;
             a2dp_signaling_emit_media_codec_sbc(a2dp_source_context.a2dp_callback, packet, size);
-       
             break;
         }  
-
        
         case AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW: 
             cid = avdtp_subevent_streaming_can_send_media_packet_now_get_avdtp_cid(packet);
@@ -283,7 +284,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             // TODO check cid
             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
             cid = avdtp_subevent_signaling_accept_get_avdtp_cid(packet);
-            log_info("Accepted %d", signal_identifier);
+            log_info("Accepted %d, state %d", signal_identifier, app_state);
             
             switch (app_state){
                 case A2DP_W2_DISCOVER_SEPS:
@@ -312,11 +313,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     break;
                 case A2DP_W2_SET_CONFIGURATION:{
                     if (!sc.local_stream_endpoint) return;
-                    app_state = A2DP_W2_OPEN_STREAM_WITH_SEID;
+                    app_state = A2DP_W4_SET_CONFIGURATION;
+                    log_info("A2DP configuration is set, wait for A2DP_W2_OPEN_STREAM_WITH_SEID ... ");
                     avdtp_source_set_configuration(cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), sc.active_remote_sep->seid, sc.local_stream_endpoint->remote_configuration_bitmap, sc.local_stream_endpoint->remote_configuration);
                     break;
                 }
                 case A2DP_W2_OPEN_STREAM_WITH_SEID:{
+                    log_info("A2DP open stream ");
                     app_state = A2DP_W4_OPEN_STREAM_WITH_SEID;
                     avdtp_source_open_stream(cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), sc.active_remote_sep->seid);
                     break;
