@@ -414,7 +414,8 @@ typedef struct {
 
     // store current role
     uint8_t is_initiator;
-    uint8_t is_configuration_initiated_localy;
+    uint8_t is_configuration_initiated_locally;
+    btstack_timer_source_t configuration_timer;
 } avdtp_connection_t;
 
 typedef enum {
@@ -563,6 +564,9 @@ uint8_t avdtp_choose_sbc_max_bitpool_value(avdtp_stream_endpoint_t * stream_endp
 uint8_t avdtp_choose_sbc_min_bitpool_value(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_min_bitpool_value);
 
 uint8_t avdtp_stream_endpoint_seid(avdtp_stream_endpoint_t * stream_endpoint);
+void avdtp_configuration_timeout_handler(btstack_timer_source_t * timer);
+void avdtp_configuration_timer_start(avdtp_connection_t * connection);
+void avdtp_configuration_timer_stop(avdtp_connection_t * connection);
 
 #if defined __cplusplus
 }

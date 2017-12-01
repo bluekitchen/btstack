@@ -49,6 +49,8 @@
 #include "classic/avdtp_acceptor.h"
 #include "classic/avdtp_initiator.h"
 
+#define CONFIGURATION_TIMEOUT_MS 300
+
 static int record_id = -1;
 static uint8_t   attribute_value[1000];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
@@ -69,6 +71,29 @@ static uint16_t avdtp_cid_counter = 0x55;
 
 static void (*handle_media_data)(uint8_t local_seid, uint8_t *packet, uint16_t size);
 static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
+void avdtp_configuration_timeout_handler(btstack_timer_source_t * timer){
+    avdtp_connection_t * connection = (avdtp_connection_t *) btstack_run_loop_get_timer_context(timer);
+    if (!connection){
+        log_error("Context of avdtp_configuration_timeout_handler is NULL");
+        return;
+    }
+    connection->is_initiator = 1;
+    connection->is_configuration_initiated_locally = 1;
+    avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);  
+}
+
+void avdtp_configuration_timer_start(avdtp_connection_t * connection){
+    btstack_run_loop_remove_timer(&connection->configuration_timer);
+    btstack_run_loop_set_timer_handler(&connection->configuration_timer, avdtp_configuration_timeout_handler);
+    btstack_run_loop_set_timer_context(&connection->configuration_timer, connection);
+    btstack_run_loop_set_timer(&connection->configuration_timer, CONFIGURATION_TIMEOUT_MS); 
+    btstack_run_loop_add_timer(&connection->configuration_timer);
+}
+
+void avdtp_configuration_timer_stop(avdtp_connection_t * connection){
+    btstack_run_loop_remove_timer(&connection->configuration_timer);
+} 
 
 static uint16_t avdtp_get_next_initiator_transaction_label(avdtp_context_t * context){
     context->initiator_transaction_id_counter++;
@@ -907,7 +932,7 @@ void avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t rem
         log_error("avdtp_set_configuration: no initiator stream endpoint for seid %d", local_seid);
         return;
     }        
-    connection->is_configuration_initiated_localy = 1;
+    connection->is_configuration_initiated_locally = 1;
     connection->is_initiator = 1;
 
     connection->initiator_transaction_label++;

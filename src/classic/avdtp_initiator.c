@@ -37,7 +37,6 @@
 
 #define __BTSTACK_FILE__ "avdtp_initiator.c"
 
-
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,7 +46,6 @@
 #include "classic/avdtp.h"
 #include "classic/avdtp_util.h"
 #include "classic/avdtp_initiator.h"
-
 
 static int avdtp_initiator_send_signaling_cmd(uint16_t cid, avdtp_signal_identifier_t identifier, uint8_t transaction_label){
     uint8_t command[2];
@@ -168,6 +166,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     break;
 
                 case AVDTP_SI_SET_CONFIGURATION:{
+                    avdtp_configuration_timer_stop(connection);
                     if (!stream_endpoint){
                         log_error("AVDTP_SI_SET_CONFIGURATION: stream endpoint is null");
                         break;
@@ -260,6 +259,15 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
             connection->initiator_transaction_label++;
             break;
         case AVDTP_RESPONSE_REJECT_MSG:
+            switch (connection->signaling_packet.signal_identifier){
+                case AVDTP_SI_SET_CONFIGURATION:
+                    connection->is_initiator = 0;
+                    log_info("Received reject for set configuration, role changed from initiator to acceptor.");
+                    avdtp_configuration_timer_start(connection);
+                    break;
+                default:
+                    break;
+            }
             log_info("    AVDTP_RESPONSE_REJECT_MSG signal %d", connection->signaling_packet.signal_identifier);
             avdtp_signaling_emit_reject(context->avdtp_callback, connection->avdtp_cid, connection->local_seid, connection->signaling_packet.signal_identifier);
             return;
@@ -375,9 +383,10 @@ int sent = 1;
         case AVDTP_INITIATOR_W2_SET_CONFIGURATION:
         case AVDTP_INITIATOR_W2_RECONFIGURE_STREAM_WITH_SEID:{
             if (!connection->is_initiator){
-                connection->is_configuration_initiated_localy = 0;
+                connection->is_configuration_initiated_locally = 0;
                 break;
             }
+            connection->is_configuration_initiated_locally = 1;
 
             log_info("INT: AVDTP_INITIATOR_W2_(RE)CONFIGURATION bitmap, int seid %d, acp seid %d", connection->local_seid, connection->remote_seid);
             // log_info_hexdump(  connection->remote_capabilities.media_codec.media_codec_information,  connection->remote_capabilities.media_codec.media_codec_information_len);
