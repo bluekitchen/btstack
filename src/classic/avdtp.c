@@ -79,6 +79,7 @@ void avdtp_configuration_timeout_handler(btstack_timer_source_t * timer){
         return;
     }
     connection->is_initiator = 1;
+    log_info("avdtp_configuration_timeout_handler: role is_initiator %d", connection->is_initiator);
     connection->is_configuration_initiated_locally = 1;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);  
 }
@@ -141,6 +142,7 @@ uint8_t avdtp_connect(bd_addr_t remote, avdtp_sep_type_t query_role, avdtp_conte
         case AVDTP_SIGNALING_CONNECTION_IDLE:
             connection->state = AVDTP_SIGNALING_W4_SDP_QUERY_COMPLETE;
             connection->is_initiator = 1;
+            log_info("avdtp_connect: role is_initiator %d", connection->is_initiator);
             sdp_query_context = avdtp_context;
             avdtp_context->avdtp_l2cap_psm = 0;
             avdtp_context->avdtp_version = 0;
@@ -535,6 +537,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     if (!connection || connection->state == AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED){
                         connection = avdtp_create_connection(event_addr, context);
                         connection->is_initiator = 0;
+                        log_info("L2CAP_EVENT_INCOMING_CONNECTION: role is_initiator %d", connection->is_initiator);
                         connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
                         log_info("L2CAP_EVENT_INCOMING_CONNECTION, connection %p, state connection %d, avdtp cid 0x%02x", connection, connection->state, connection->avdtp_cid);
                         l2cap_accept_connection(local_cid);
@@ -855,11 +858,14 @@ uint8_t avdtp_suspend_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_conte
 }
 
 void avdtp_discover_stream_endpoints(uint16_t avdtp_cid, avdtp_context_t * context){
+    log_info("call avdtp_discover_stream_endpoints");
+
     avdtp_connection_t * connection = avdtp_connection_for_avdtp_cid(avdtp_cid, context);
     if (!connection){
         log_error("avdtp_discover_stream_endpoints: no connection for signaling cid 0x%02x found", avdtp_cid);
         return;
     }
+
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) return;
 
     switch (connection->initiator_connection_state){
@@ -934,6 +940,7 @@ void avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t rem
     }        
     connection->is_configuration_initiated_locally = 1;
     connection->is_initiator = 1;
+    log_info("avdtp_set_configuration locally: role is_initiator %d", connection->is_initiator);
 
     connection->initiator_transaction_label++;
     connection->remote_seid = remote_seid;

@@ -146,9 +146,9 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 // static const char * device_addr_string = "00:21:3C:AC:F7:38";
 // Philips SHB9100: static const char * device_addr_string = "00:22:37:05:FD:E8";
 // RT-B6:           static const char * device_addr_string = "00:75:58:FF:C9:7D";
-// BT dongle:       static const char * device_addr_string = "00:1A:7D:DA:71:0A";
-// Sony MDR-ZX330BT
-static const char * device_addr_string = "00:18:09:28:50:18";
+// BT dongle:       
+static const char * device_addr_string = "00:1A:7D:DA:71:0A";
+// Sony MDR-ZX330BT static const char * device_addr_string = "00:18:09:28:50:18";
 #endif
 
 static bd_addr_t device_addr;
@@ -468,10 +468,10 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
                 sbc_configuration.max_bitpool_value,
                 sbc_configuration.channel_mode);
             
-            status = a2dp_source_establish_stream(device_addr, media_tracker.local_seid, &media_tracker.a2dp_cid);
-            if (status != ERROR_CODE_SUCCESS){
-                printf("Could not perform command, status 0x%2x\n", status);
-            }
+            // status = a2dp_source_establish_stream(device_addr, media_tracker.local_seid, &media_tracker.a2dp_cid);
+            // if (status != ERROR_CODE_SUCCESS){
+            //     printf("Could not perform command, status 0x%2x\n", status);
+            // }
             break;
         }  
 
