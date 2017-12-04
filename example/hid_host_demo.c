@@ -65,8 +65,8 @@ static uint8_t            attribute_value[MAX_ATTRIBUTE_VALUE_SIZE];
 static const unsigned int attribute_value_buffer_size = MAX_ATTRIBUTE_VALUE_SIZE;
 
 // L2CAP
-static uint16_t            l2cap_hid_control_cid;
-static uint16_t            l2cap_hid_interrupt_cid;
+static uint16_t           l2cap_hid_control_cid;
+static uint16_t           l2cap_hid_interrupt_cid;
 
 // MBP 2016
 static const char * remote_addr_string = "F4-0F-24-3B-1B-E1";
@@ -75,6 +75,55 @@ static const char * remote_addr_string = "F4-0F-24-3B-1B-E1";
 static bd_addr_t remote_addr;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+// Simplified US Keyboard with Shift modifier
+
+#define CHAR_ILLEGAL     0xff
+#define CHAR_RETURN     '\n'
+#define CHAR_ESCAPE      27
+#define CHAR_TAB         '\t'
+#define CHAR_BACKSPACE   0x7f
+
+/**
+ * English (US)
+ */
+static const uint8_t keytable_us_none [] = {
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /*   0-3 */
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',                   /*  4-13 */
+    'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',                   /* 14-23 */
+    'u', 'v', 'w', 'x', 'y', 'z',                                       /* 24-29 */
+    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',                   /* 30-39 */
+    CHAR_RETURN, CHAR_ESCAPE, CHAR_BACKSPACE, CHAR_TAB, ' ',            /* 40-44 */
+    '-', '=', '[', ']', '\\', CHAR_ILLEGAL, ';', '\'', 0x60, ',',       /* 45-54 */
+    '.', '/', CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,   /* 55-60 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 61-64 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 65-68 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 69-72 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 73-76 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 77-80 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 81-84 */
+    '*', '-', '+', '\n', '1', '2', '3', '4', '5',                       /* 85-97 */
+    '6', '7', '8', '9', '0', '.', 0xa7,                                 /* 97-100 */
+}; 
+
+static const uint8_t keytable_us_shift[] = {
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /*  0-3  */
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',                   /*  4-13 */
+    'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',                   /* 14-23 */
+    'U', 'V', 'W', 'X', 'Y', 'Z',                                       /* 24-29 */
+    '!', '@', '#', '$', '%', '^', '&', '*', '(', ')',                   /* 30-39 */
+    CHAR_RETURN, CHAR_ESCAPE, CHAR_BACKSPACE, CHAR_TAB, ' ',            /* 40-44 */
+    '_', '+', '{', '}', '|', CHAR_ILLEGAL, ':', '"', 0x7E, '<',         /* 45-54 */
+    '>', '?', CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,   /* 55-60 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 61-64 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 65-68 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 69-72 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 73-76 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 77-80 */
+    CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL, CHAR_ILLEGAL,             /* 81-84 */
+    '*', '-', '+', '\n', '1', '2', '3', '4', '5',                       /* 85-97 */
+    '6', '7', '8', '9', '0', '.', 0xb1,                                 /* 97-100 */
+}; 
 
 
 /* @section Main application configuration
@@ -94,6 +143,9 @@ static void hid_host_setup(void){
 
     // Initialize L2CAP 
     l2cap_init();
+
+    // Disable stdout buffering
+    setbuf(stdout, NULL);
 }
 /* LISTING_END */
 
@@ -168,10 +220,19 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                             }
                             break;
                         case BLUETOOTH_ATTRIBUTE_HID_DESCRIPTOR_LIST:
-                            hid_descriptor_len = sdp_event_query_attribute_byte_get_attribute_length(packet);
-                            memcpy(hid_descriptor, attribute_value, hid_descriptor_len);
-                            printf("HID Descriptor:\n");
-                            printf_hexdump(hid_descriptor, hid_descriptor_len);
+                            for (des_iterator_init(&attribute_list_it, attribute_value); des_iterator_has_more(&attribute_list_it); des_iterator_next(&attribute_list_it)) {
+                                if (des_iterator_get_type(&attribute_list_it) != DE_DES) continue;
+                                des_element = des_iterator_get_element(&attribute_list_it);
+                                for (des_iterator_init(&additional_des_it, des_element); des_iterator_has_more(&additional_des_it); des_iterator_next(&additional_des_it)) {                                    
+                                    if (des_iterator_get_type(&additional_des_it) != DE_STRING) continue;
+                                    element = des_iterator_get_element(&additional_des_it);
+                                    const uint8_t * descriptor = de_get_string(element);
+                                    hid_descriptor_len = de_get_data_size(element);
+                                    memcpy(hid_descriptor, descriptor, hid_descriptor_len);
+                                    printf("HID Descriptor:\n");
+                                    printf_hexdump(hid_descriptor, hid_descriptor_len);
+                                }
+                            }                        
                             break;
                         default:
                             break;
@@ -198,6 +259,76 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
             }
             break;
     }
+}
+
+/*
+ * @section HID Report Handler
+ * 
+ * @text Use BTstack's compact HID Parser to process incoming HID Report
+ * Iterate over all fields and process fields with usage page = 0x07 / Keyboard
+ * Check if SHIFT is down and process first character (don't handle multiple key presses)
+ * 
+ */
+#define NUM_KEYS 6
+static uint8_t last_keys[NUM_KEYS];
+static void hid_host_handle_interrupt_report(const uint8_t * report, uint16_t report_len){
+    // check if HID Input Report
+    if (report_len < 1) return;
+    if (*report != 0xa1) return; 
+    report++;
+    report_len--;
+    btstack_hid_parser_t parser;
+    btstack_hid_parser_init(&parser, hid_descriptor, hid_descriptor_len, BTSTACK_HID_REPORT_TYPE_INPUT, report, report_len);
+    int shift = 0;
+    uint8_t new_keys[NUM_KEYS];
+    memset(new_keys, 0, sizeof(new_keys));
+    int     new_keys_count = 0;
+    while (btstack_hid_parser_has_more(&parser)){
+        uint16_t usage_page;
+        uint16_t usage;
+        int32_t  value;
+        btstack_hid_parser_get_field(&parser, &usage_page, &usage, &value);
+        if (usage_page != 0x07) continue;   
+        switch (usage){
+            case 0xe1:
+            case 0xe6:
+                if (value){
+                    shift = 1;
+                }
+                continue;
+            case 0x00:
+                continue;
+            default:
+                break;
+        }
+        if (usage >= sizeof(keytable_us_none)) continue;
+
+        // store new keys
+        new_keys[new_keys_count++] = usage;
+
+        // check if usage was used last time (and ignore in that case)
+        int i;
+        for (i=0;i<NUM_KEYS;i++){
+            if (usage == last_keys[i]){
+                usage = 0;
+            }
+        }
+        if (usage == 0) continue;
+
+        uint8_t key;
+        if (shift){
+            key = keytable_us_shift[usage];
+        } else {
+            key = keytable_us_none[usage];
+        }
+        if (key == CHAR_ILLEGAL) continue;
+        if (key == CHAR_BACKSPACE){ 
+            printf("\b \b");    // go back one char, print space, go back one char again
+            continue;
+        }
+        printf("%c", key);
+    }
+    memcpy(last_keys, new_keys, NUM_KEYS);
 }
 
 /*
@@ -272,13 +403,13 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case L2CAP_DATA_PACKET:
             // for now, just dump incoming data
             if (channel == l2cap_hid_interrupt_cid){
-                printf("HID Interrupt: ");
+                hid_host_handle_interrupt_report(packet,  size);
             } else if (channel == l2cap_hid_control_cid){
                 printf("HID Control: ");
+                printf_hexdump(packet, size);
             } else {
                 break;
             }
-            printf_hexdump(packet, size);
         default:
             break;
     }
