@@ -49,7 +49,7 @@
 BTSTACK_ROOT=../../../..
 
 # enforce .gatt compilation if needed
-all: le_counter.h wilc3000_bt_firmware.c
+all: le_counter.h wilc3000_ble_firmware.h
 
 le_counter.h: ${BTSTACK_ROOT}/example/le_counter.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
