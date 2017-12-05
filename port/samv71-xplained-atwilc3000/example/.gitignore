@@ -28,3 +28,5 @@ spp_counter/
 spp_flowcontrol/
 spp_streamer/
 spp_streamer_client/
+hog_keyboard_demo
+hog_mouse_demo

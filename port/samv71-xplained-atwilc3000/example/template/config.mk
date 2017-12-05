@@ -53,7 +53,6 @@ TARGET_SRAM=le_counter_sram.elf
 # template main file + firmware file
 BTSTACK_ROOT_CONFIG = ../../../
 CSRCS+=${BTSTACK_ROOT_CONFIG}/example/le_counter.c
-# sCSRCS+=${BTSTACK_ROOT_CONFIG}/port/samv71-xplained-atwilc3000/example/template/wilc3000_bt_firmware.c
 
 # List of C source files.
 CSRCS+= \
