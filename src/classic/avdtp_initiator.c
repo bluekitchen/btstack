@@ -265,7 +265,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
             switch (connection->signaling_packet.signal_identifier){
                 case AVDTP_SI_SET_CONFIGURATION:
                     connection->is_initiator = 0;
-                    log_info("Received reject for set configuration, role changed from initiator to acceptor.");
+                    log_info("Received reject for set configuration, role changed from initiator to acceptor. Start timer.");
                     avdtp_configuration_timer_start(connection);
                     break;
                 default:
@@ -399,7 +399,7 @@ int sent = 1;
             connection->signaling_packet.int_seid = connection->local_seid;
             
             connection->signaling_packet.signal_identifier = AVDTP_SI_SET_CONFIGURATION;
-
+            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURATION_SUBSTATEMACHINE;
             if (stream_endpoint_state == AVDTP_INITIATOR_W2_RECONFIGURE_STREAM_WITH_SEID){
                 connection->signaling_packet.signal_identifier = AVDTP_SI_RECONFIGURE;
             }

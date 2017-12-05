@@ -194,8 +194,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES;
                     break;
                 case AVDTP_SI_SET_CONFIGURATION:{
-                    log_info("acceptor SM received SET_CONFIGURATION cmd: role is_initiator %d", connection->is_initiator);
-                    
+                    // log_info("acceptor SM received SET_CONFIGURATION cmd: role is_initiator %d", connection->is_initiator);
                     if (connection->is_initiator){
                         if (connection->is_configuration_initiated_locally){
                             log_info("ACP: Set configuration already initiated locally, reject cmd ");
@@ -209,9 +208,8 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                         log_info("acceptor SM received SET_CONFIGURATION cmd: change role to acceptor, is_initiator %d", connection->is_initiator);
                     }
                     
-
                     log_info("ACP: AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION ");
-                    
+                    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURATION_SUBSTATEMACHINE;
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION;
                     connection->reject_service_category = 0;
                     stream_endpoint->connection = connection;

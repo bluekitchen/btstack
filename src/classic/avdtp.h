@@ -394,6 +394,8 @@ typedef struct {
 
     uint8_t local_seid;
     uint8_t remote_seid;
+    // for repeating the set_configuration 
+    void * active_stream_endpoint;
 
     uint8_t initiator_transaction_label;
     uint8_t acceptor_transaction_label;
@@ -476,7 +478,6 @@ typedef struct avdtp_stream_endpoint {
     uint8_t suspend_stream;
     
     uint16_t sequence_number;
-
 } avdtp_stream_endpoint_t;
 
 typedef struct {

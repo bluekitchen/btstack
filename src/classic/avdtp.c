@@ -78,13 +78,27 @@ void avdtp_configuration_timeout_handler(btstack_timer_source_t * timer){
         log_error("Context of avdtp_configuration_timeout_handler is NULL");
         return;
     }
-    connection->is_initiator = 1;
-    log_info("avdtp_configuration_timeout_handler: role is_initiator %d", connection->is_initiator);
+    avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t*) connection->active_stream_endpoint;
+    if (!stream_endpoint) {
+        log_error("avdtp_configuration_timeout_handler: no initiator stream endpoint for seid %d", connection->local_seid);
+        return;
+    }   
+    if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_CONFIGURATION_SUBSTATEMACHINE) return;    
     connection->is_configuration_initiated_locally = 1;
+    connection->is_initiator = 1;
+    connection->initiator_transaction_label++;
+    stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W2_SET_CONFIGURATION;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);  
 }
 
 void avdtp_configuration_timer_start(avdtp_connection_t * connection){
+    avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t*) connection->active_stream_endpoint;
+    if (!stream_endpoint) {
+        log_error("avdtp_configuration_timeout_handler: no initiator stream endpoint for seid %d", connection->local_seid);
+        return;
+    }   
+    if (stream_endpoint->state != AVDTP_STREAM_ENDPOINT_CONFIGURATION_SUBSTATEMACHINE) return; 
+
     btstack_run_loop_remove_timer(&connection->configuration_timer);
     btstack_run_loop_set_timer_handler(&connection->configuration_timer, avdtp_configuration_timeout_handler);
     btstack_run_loop_set_timer_context(&connection->configuration_timer, connection);
@@ -665,7 +679,9 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     }
 
                     if (connection){
+                        btstack_run_loop_remove_timer(&connection->configuration_timer);
                         avdtp_signaling_emit_connection_released(context->avdtp_callback, connection->avdtp_cid);
+                        
                         btstack_linked_list_remove(avdtp_connections, (btstack_linked_item_t*) connection); 
                         btstack_linked_list_iterator_t it;    
                         btstack_linked_list_iterator_init(&it, stream_endpoints);
@@ -937,7 +953,8 @@ void avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t rem
     if (!stream_endpoint) {
         log_error("avdtp_set_configuration: no initiator stream endpoint for seid %d", local_seid);
         return;
-    }        
+    }    
+    connection->active_stream_endpoint = (void*) stream_endpoint;    
     connection->is_configuration_initiated_locally = 1;
     connection->is_initiator = 1;
     log_info("avdtp_set_configuration locally: role is_initiator %d", connection->is_initiator);
