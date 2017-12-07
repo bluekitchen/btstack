@@ -1,6 +1,6 @@
 # BTstack Port for the Microchip PIC32 Harmony Platform
 
-Status: All examples working, polling UART driver. Tested on Bluetooth Audio Development Kit only.
+Status: All examples working, polling UART driver. Tested on Bluetooth Audio Development Kit only. Created with Harmony v1.07, does not compile with new v2.x versions.
 
 ## Setup
 
