@@ -53,6 +53,7 @@
 #include "btstack_event.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
+#include "bluetooth_sdp.h"
 #include "classic/rfcomm.h"
 #include "classic/sdp_client_rfcomm.h"
 #include "classic/sdp_server.h"
@@ -491,7 +492,7 @@ static void stdin_process(char c){
         if (c == '\n'){
             printf("\nSending Pin '%s'\n", ui_pin);
             ui_pin[ui_pin_offset] = 0;
-            gap_pin_code_response(event_addr, ui_pin);
+            gap_pin_code_response(remote, ui_pin);
         } else {
             ui_pin[ui_pin_offset++] = c;
         }

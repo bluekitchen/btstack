@@ -674,7 +674,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     break;
                 case CENTRAL_W4_RECONNECTION_ADDRESS_QUERY_COMPLETE:
                     central_state = CENTRAL_IDLE;
-                    gap_advertisements_get_address(&address_type, our_private_address);
+                    gap_le_get_own_address(&address_type, our_private_address);
                     printf("Our private address: %s\n", bd_addr_to_str(our_private_address));
                     reverse_bd_addr(our_private_address, flipped_address);
                     gatt_client_write_value_of_characteristic(handle_gatt_client_event, handle, gap_reconnection_address_characteristic.value_handle, 6, flipped_address);
@@ -863,7 +863,7 @@ static void print_screen(void){
 static void show_usage(void){
     uint8_t iut_address_type;
     bd_addr_t      iut_address;
-    gap_advertisements_get_address(&iut_address_type, iut_address);
+    gap_le_get_own_address(&iut_address_type, iut_address);
 
     reset_screen();
 
