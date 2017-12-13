@@ -158,6 +158,8 @@ static btstack_packet_handler_t l2cap_event_packet_handler;
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
 
+static uint8_t l2cap_ertm_omit_fcs_option;
+
 /*
  * CRC lookup table for generator polynom D^16 + D^15 + D^2 + 1
  */
@@ -379,50 +381,62 @@ static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t l
 }
 
 static uint16_t l2cap_setup_options_ertm_request(l2cap_channel_t * channel, uint8_t * config_options){
-    config_options[0] = L2CAP_CONFIG_OPTION_TYPE_RETRANSMISSION_AND_FLOW_CONTROL;
-    config_options[1] = 9;      // length
-    config_options[2] = (uint8_t) channel->mode;
-    config_options[3] = channel->num_rx_buffers;    // == TxWindows size
-    config_options[4] = channel->local_max_transmit;
-    little_endian_store_16( config_options, 5, channel->local_retransmission_timeout_ms); 
-    little_endian_store_16( config_options, 7, channel->local_monitor_timeout_ms);
-    little_endian_store_16( config_options, 9, channel->local_mps);
+    int pos = 0;
+    config_options[pos++] = L2CAP_CONFIG_OPTION_TYPE_RETRANSMISSION_AND_FLOW_CONTROL;
+    config_options[pos++] = 9;      // length
+    config_options[pos++] = (uint8_t) channel->mode;
+    config_options[pos++] = channel->num_rx_buffers;    // == TxWindows size
+    config_options[pos++] = channel->local_max_transmit;
+    little_endian_store_16( config_options, pos, channel->local_retransmission_timeout_ms);
+    pos += 2;
+    little_endian_store_16( config_options, pos, channel->local_monitor_timeout_ms);
+    pos += 2;
+    little_endian_store_16( config_options, pos, channel->local_mps);
+    pos += 2;
     //
-    config_options[11] = L2CAP_CONFIG_OPTION_TYPE_FRAME_CHECK_SEQUENCE;
-    config_options[12] = 1;     // length
-    config_options[13] = channel->fcs_option;
-    //
-    config_options[14] = L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT;
-    config_options[15] = 2;     // length
-    little_endian_store_16(config_options, 16, channel->local_mtu);
-    return 18;
+    config_options[pos++] = L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT;
+    config_options[pos++] = 2;     // length
+    little_endian_store_16(config_options, pos, channel->local_mtu);
+    pos += 2;
+    // 
+    config_options[pos++] = L2CAP_CONFIG_OPTION_TYPE_FRAME_CHECK_SEQUENCE;
+    config_options[pos++] = 1;     // length
+    config_options[pos++] = channel->fcs_option;
+    return pos;
 }
 
 static uint16_t l2cap_setup_options_ertm_response(l2cap_channel_t * channel, uint8_t * config_options){
-    config_options[0] = L2CAP_CONFIG_OPTION_TYPE_RETRANSMISSION_AND_FLOW_CONTROL;
-    config_options[1] = 9;      // length
-    config_options[2] = (uint8_t) channel->mode;
+    int pos = 0;
+    config_options[pos++] = L2CAP_CONFIG_OPTION_TYPE_RETRANSMISSION_AND_FLOW_CONTROL;
+    config_options[pos++] = 9;      // length
+    config_options[pos++] = (uint8_t) channel->mode;
     // less or equal to remote tx window size
-    config_options[3] = btstack_min(channel->num_tx_buffers, channel->remote_tx_window_size);
+    config_options[pos++] = btstack_min(channel->num_tx_buffers, channel->remote_tx_window_size);
     // max transmit in response shall be ignored -> use sender values
-    config_options[4] = channel->remote_max_transmit;
+    config_options[pos++] = channel->remote_max_transmit;
     // A value for the Retransmission time-out shall be sent in a positive Configuration Response
     // and indicates the value that will be used by the sender of the Configuration Response -> use our value
-    little_endian_store_16( config_options, 5, channel->local_retransmission_timeout_ms);
+    little_endian_store_16( config_options, pos, channel->local_retransmission_timeout_ms);
+    pos += 2;
     // A value for the Monitor time-out shall be sent in a positive Configuration Response
     // and indicates the value that will be used by the sender of the Configuration Response -> use our value
-    little_endian_store_16( config_options, 7, channel->local_monitor_timeout_ms);
+    little_endian_store_16( config_options, pos, channel->local_monitor_timeout_ms);
+    pos += 2;
     // less or equal to remote mps
-    little_endian_store_16( config_options, 9, btstack_min(channel->local_mps, channel->remote_mps));
+    little_endian_store_16( config_options, pos, btstack_min(channel->local_mps, channel->remote_mps));
+    pos += 2;
     //
-    config_options[11] = L2CAP_CONFIG_OPTION_TYPE_FRAME_CHECK_SEQUENCE;
-    config_options[12] = 1;     // length
-    config_options[13] = channel->fcs_option;
+    config_options[pos++] = L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT; // MTU
+    config_options[pos++] = 2;     // length
+    little_endian_store_16(config_options, pos, channel->remote_mtu);
+    pos += 2;
+#if 0
     //
-    config_options[14] = L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT; // MTU
-    config_options[15] = 2;     // length
-    little_endian_store_16(config_options, 16, channel->remote_mtu);
-    return 18;
+    config_options[pos++] = L2CAP_CONFIG_OPTION_TYPE_FRAME_CHECK_SEQUENCE;
+    config_options[pos++] = 1;     // length
+    config_options[pos++] = channel->fcs_option;
+#endif
+    return pos;
 }
 
 static int l2cap_ertm_send_supervisor_frame(l2cap_channel_t * channel, uint16_t control){
@@ -715,6 +729,10 @@ static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l
     }
 }
 
+void l2cap_ertm_dont_send_fcs_option(void){
+    l2cap_ertm_omit_fcs_option = 1;
+}
+
 #endif
 
 
@@ -909,6 +927,9 @@ void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
     log_info("L2CAP_EVENT_CHANNEL_OPENED status 0x%x addr %s handle 0x%x psm 0x%x local_cid 0x%x remote_cid 0x%x local_mtu %u, remote_mtu %u, flush_timeout %u",
              status, bd_addr_to_str(channel->address), channel->con_handle, channel->psm,
              channel->local_cid, channel->remote_cid, channel->local_mtu, channel->remote_mtu, channel->flush_timeout);
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    log_info("ERTM mode %u, fcs enabled %u", channel->mode, channel->fcs_option);
+#endif
     uint8_t event[24];
     event[0] = L2CAP_EVENT_CHANNEL_OPENED;
     event[1] = sizeof(event) - 2;
@@ -2262,6 +2283,10 @@ void l2cap_decline_connection(uint16_t local_cid){
 // @pre command len is valid, see check in l2cap_signaling_handler_channel
 static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, uint8_t *command){
 
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    uint8_t use_fcs = 1;
+#endif
+
     channel->remote_sig_id = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
 
     uint16_t flags = little_endian_read_16(command, 6);
@@ -2340,11 +2365,7 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
             }
         }
         if (option_type == L2CAP_CONFIG_OPTION_TYPE_FRAME_CHECK_SEQUENCE && length == 1){
-            // "FCS" has precedence over "No FCS"
-            if (command[pos] != 0){
-                log_info("ertm: accept remote request for FCS");
-                channel->fcs_option = 1;
-            }
+            use_fcs = command[pos];
         }        
 #endif        
         // check for unknown options
@@ -2354,6 +2375,13 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
         }
         pos += length;
     }
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+        // "FCS" has precedence over "No FCS"
+        uint8_t update = channel->fcs_option || use_fcs;
+        log_info("local fcs: %u, remote fcs: %u -> %u", channel->fcs_option, use_fcs, update);
+        channel->fcs_option = update;
+#endif
 }
 
 // @pre command len is valid, see check in l2cap_signaling_handler_channel
@@ -2365,7 +2393,7 @@ static void l2cap_signaling_handle_configure_response(l2cap_channel_t *channel, 
     while (pos < end_pos){
         uint8_t option_hint = command[pos] >> 7;
         uint8_t option_type = command[pos] & 0x7f;
-        log_info("l2cap cid %u, hint %u, type %u", channel->local_cid, option_hint, option_type);
+        // log_info("l2cap cid %u, hint %u, type %u", channel->local_cid, option_hint, option_type);
         pos++;
         uint8_t length = command[pos++];
 
@@ -3042,7 +3070,7 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                     if (size < COMPLETE_L2CAP_HEADER+2+fcs_size) break;
 
                     if (l2cap_channel->fcs_option){
-                        // verify FCS (required if one side requests it and BTstack does)
+                        // verify FCS (required if one side requested it)
                         uint16_t fcs_calculated = crc16_calc(&packet[4], size - (4+2));
                         uint16_t fcs_packet     = little_endian_read_16(packet, size-2);
                         if (fcs_calculated == fcs_packet){
