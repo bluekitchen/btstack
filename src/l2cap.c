@@ -1256,7 +1256,7 @@ static uint32_t l2cap_extended_features_mask(void){
     // extended features request supported, features: fixed channels, unicast connectionless data reception
     uint32_t features = 0x280;
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-    features |= 0x0008;
+    features |= 0x0028;
 #endif
     return features;
 }
