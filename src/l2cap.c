@@ -1134,7 +1134,7 @@ int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     l2cap_setup_header(acl_buffer, channel->con_handle, packet_boundary_flag, channel->remote_cid, len + fcs_size);
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+    if (fcs_size){
         // calculate FCS over l2cap data
         uint16_t fcs = crc16_calc(acl_buffer + 4, 4 + len);
         log_info("I-Frame: fcs 0x%04x", fcs);
