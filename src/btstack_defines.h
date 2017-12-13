@@ -1792,20 +1792,28 @@ typedef uint8_t sm_key_t[16];
 #define AVRCP_SUBEVENT_NOW_PLAYING_INFO_DONE                                  0x1A
 
 /**
+ * @format 1B2
+ * @param subevent_code
+ * @param bd_addr
+ * @param browsing_cid
+ */
+#define AVRCP_SUBEVENT_INCOMING_BROWSING_CONNECTION                          0x1B
+
+/**
  * @format 11B2
  * @param subevent_code
  * @param status 0 == OK
  * @param bd_addr
  * @param browsing_cid
  */
-#define AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED                        0x1B
+#define AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED                        0x1C
 
 /**
  * @format 12
  * @param subevent_code
  * @param browsing_cid
  */
-#define AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED                            0x1C
+#define AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED                            0x1D
 
 
 /**
@@ -1815,7 +1823,7 @@ typedef uint8_t sm_key_t[16];
  * @param browsing_status
  * @param bluetooth_status
  */
-#define AVRCP_SUBEVENT_BROWSING_MEDIA_ITEM_DONE                                0x1D
+#define AVRCP_SUBEVENT_BROWSING_MEDIA_ITEM_DONE                                0x1E
 
 
 /**

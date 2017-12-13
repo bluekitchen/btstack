@@ -5722,6 +5722,25 @@ static inline uint8_t avrcp_subevent_now_playing_info_done_get_status(const uint
 }
 
 /**
+ * @brief Get field bd_addr from event AVRCP_SUBEVENT_INCOMING_BROWSING_CONNECTION
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void avrcp_subevent_incoming_browsing_connection_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[3], bd_addr);    
+}
+/**
+ * @brief Get field browsing_cid from event AVRCP_SUBEVENT_INCOMING_BROWSING_CONNECTION
+ * @param event packet
+ * @return browsing_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_incoming_browsing_connection_get_browsing_cid(const uint8_t * event){
+    return little_endian_read_16(event, 9);
+}
+
+/**
  * @brief Get field status from event AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED
  * @param event packet
  * @return status
