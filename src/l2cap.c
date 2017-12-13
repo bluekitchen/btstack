@@ -158,8 +158,6 @@ static btstack_packet_handler_t l2cap_event_packet_handler;
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
 
-static uint8_t l2cap_ertm_omit_fcs_option;
-
 /*
  * CRC lookup table for generator polynom D^16 + D^15 + D^2 + 1
  */
@@ -727,10 +725,6 @@ static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l
             l2cap_channel->reassembly_pos = 0;    
             break; 
     }
-}
-
-void l2cap_ertm_dont_send_fcs_option(void){
-    l2cap_ertm_omit_fcs_option = 1;
 }
 
 #endif
