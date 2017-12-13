@@ -10,6 +10,7 @@ CORE += \
 	btstack_util.c 	            \
 	main.c 						\
 	btstack_stdin_posix.c       \
+	btstack_tlv_posix.c 		\
 	
 COMMON += \
 	hci.c			            \
@@ -50,7 +51,7 @@ include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
 
 CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-variable -Wunused-parameter -Werror 
-CFLAGS += -I.
+CFLAGS += -I..
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/src/classic
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include -D OI_DEBUG
@@ -87,13 +88,13 @@ EXAMPLES = avdtp_source_test avdtp_sink_test le_data_channel avrcp_controller_te
 all: ${EXAMPLES}
 
 # compile .gatt descriptions
-avrcp_controller_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} sdp_client.o avrcp.o avrcp_controller.o avrcp_controller_test.o
+avrcp_controller_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} sdp_client.o avrcp.o avrcp_media_item_iterator.o avrcp_controller.o avrcp_browsing_controller.o avrcp_controller_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 avdtp_sink_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} avdtp_sink_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-avdtp_source_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} avdtp_source_test.o
+avdtp_source_test: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} avdtp_source_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 ble_peripheral_test.h: ble_peripheral_test.gatt

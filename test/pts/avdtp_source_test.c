@@ -94,10 +94,11 @@ typedef struct {
 // pts:         static const char * device_addr_string = "00:1B:DC:08:0A:A5";
 // mac 2013:    static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:  static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
-// minijambox:  
-static const char * device_addr_string = "00:21:3C:AC:F7:38";
+// minijambox:  static const char * device_addr_string = "00:21:3C:AC:F7:38";
 // head phones: static const char * device_addr_string = "00:18:09:28:50:18";
-// bt dongle:   static const char * device_addr_string = "00:15:83:5F:9D:46";
+// BT dongle:   static const char * device_addr_string = "00:15:83:5F:9D:46";
+// BT dongle:       
+static const char * device_addr_string = "00:1A:7D:DA:71:0A";
 #endif
 
 typedef struct {
@@ -129,6 +130,7 @@ static avdtp_stream_endpoint_context_t sc;
 static uint16_t remote_configuration_bitmap;
 static avdtp_capabilities_t remote_configuration;
 static avdtp_context_t a2dp_source_context;
+static btstack_sbc_encoder_state_t sbc_encoder_state;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -391,7 +393,7 @@ static void initialize_sbc_encoder(void){
                         sc.block_length, sc.subbands, 
                         sc.allocation_method, sc.sampling_frequency, 
                         sc.max_bitpool_value, sc.channel_mode);
-    btstack_sbc_encoder_init(&sc.sbc_encoder_state, SBC_MODE_STANDARD, 
+    btstack_sbc_encoder_init(&sbc_encoder_state, SBC_MODE_STANDARD, 
                         sc.block_length, sc.subbands, 
                         sc.allocation_method, sc.sampling_frequency, 
                         sc.max_bitpool_value, sc.channel_mode);
@@ -688,9 +690,10 @@ int btstack_main(int argc, const char * argv[]){
     a2dp_source_create_sdp_record(sdp_avdtp_source_service_buffer, 0x10002, 1, NULL, NULL);
     sdp_register_service(sdp_avdtp_source_service_buffer);
     
-    gap_set_local_name("BTstack AVDTP Source PTS Test");
+    gap_set_local_name("BTstack PTS AVDTP Source Test 00:00:00:00:00:00");
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);
+    sscanf_bd_addr(device_addr_string, device_addr);
 
 #ifdef HAVE_BTSTACK_STDIN
     // parse human readable Bluetooth address
