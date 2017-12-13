@@ -244,6 +244,7 @@ typedef enum{
 typedef enum {
     AVCTP_CONNECTION_IDLE,
     AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE,
+    AVCTP_CONNECTION_W4_ERTM_CONFIGURATION,
     AVCTP_CONNECTION_W4_L2CAP_CONNECTED,
     AVCTP_CONNECTION_OPENED,
     AVCTP_W2_SEND_PRESS_COMMAND,
@@ -421,7 +422,7 @@ typedef struct {
     btstack_packet_handler_t avrcp_callback;
     btstack_packet_handler_t packet_handler;
 
-    // btstack_packet_handler_t browsing_callback;
+    btstack_packet_handler_t browsing_avrcp_callback;
     btstack_packet_handler_t browsing_packet_handler;
 
     // SDP query

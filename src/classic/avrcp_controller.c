@@ -1148,6 +1148,10 @@ uint8_t avrcp_controller_disconnect(uint16_t avrcp_cid){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (connection->browsing_connection){
+        if (connection->browsing_connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+        l2cap_disconnect(connection->browsing_connection->l2cap_browsing_cid, 0);
+    }
     l2cap_disconnect(connection->l2cap_signaling_cid, 0);
     return ERROR_CODE_SUCCESS;
 }

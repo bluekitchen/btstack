@@ -46,6 +46,8 @@
 #include "classic/avrcp.h"
 #include "classic/avrcp_browsing_controller.h"
 
+#define PSM_AVCTP_BROWSING              0x001b
+
 void avrcp_browser_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avrcp_context_t * context);
 static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -90,6 +92,21 @@ static void avrcp_emit_browsing_connection_established(btstack_packet_handler_t 
     event[pos++] = sizeof(event) - 2;
     event[pos++] = AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED;
     event[pos++] = status;
+    reverse_bd_addr(addr,&event[pos]);
+    pos += 6;
+    little_endian_store_16(event, pos, browsing_cid);
+    pos += 2;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void avrcp_emit_incoming_browsing_connection(btstack_packet_handler_t callback, uint16_t browsing_cid, bd_addr_t addr){
+    printf("avrcp_emit_incoming_browsing_connection browsing_cid 0x%02x \n", browsing_cid);
+    if (!callback) return;
+    uint8_t event[11];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVRCP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVRCP_SUBEVENT_INCOMING_BROWSING_CONNECTION;
     reverse_bd_addr(addr,&event[pos]);
     pos += 6;
     little_endian_store_16(event, pos, browsing_cid);
@@ -159,32 +176,29 @@ void avrcp_browser_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
     bd_addr_t event_addr;
     uint16_t local_cid;
     uint8_t  status;
-    avrcp_browsing_connection_t * connection = NULL;
+    avrcp_browsing_connection_t * browsing_connection = NULL;
     avrcp_connection_t * avrcp_connection = NULL;
     
     if (packet_type != HCI_EVENT_PACKET) return;
 
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            avrcp_emit_browsing_connection_closed(context->avrcp_callback, 0);
+            avrcp_emit_browsing_connection_closed(context->browsing_avrcp_callback, 0);
             break;
         case L2CAP_EVENT_INCOMING_CONNECTION:
             l2cap_event_incoming_connection_get_address(packet, event_addr);
             local_cid = l2cap_event_incoming_connection_get_local_cid(packet);
             avrcp_connection = get_avrcp_connection_for_bd_addr(event_addr, context);
             if (!avrcp_connection) {
-                log_error("No previously created AVRCP controller connections");
+                printf("No previously created AVRCP controller connections");
                 l2cap_decline_connection(local_cid);
                 break;
             }
-            connection = avrcp_browsing_create_connection(avrcp_connection);
-            avrcp_connection->browsing_connection = connection;
-            connection->l2cap_browsing_cid = local_cid;
-            connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
-            log_info("L2CAP_EVENT_INCOMING_CONNECTION browsing_cid 0x%02x, l2cap_signaling_cid 0x%02x", avrcp_connection->avrcp_browsing_cid, connection->l2cap_browsing_cid);
-            // l2cap_accept_connection(local_cid);
-            log_error("L2CAP Accepting incoming connection request in ERTM."); 
-            l2cap_accept_ertm_connection(local_cid, &connection->ertm_config, connection->ertm_buffer, connection->ertm_buffer_size);
+            browsing_connection = avrcp_browsing_create_connection(avrcp_connection);
+            browsing_connection->l2cap_browsing_cid = local_cid;
+            browsing_connection->state = AVCTP_CONNECTION_W4_ERTM_CONFIGURATION;
+            printf("Emit AVRCP_SUBEVENT_INCOMING_BROWSING_CONNECTION browsing_cid 0x%02x, l2cap_signaling_cid 0x%02x\n", avrcp_connection->avrcp_browsing_cid, browsing_connection->l2cap_browsing_cid);
+            avrcp_emit_incoming_browsing_connection(context->browsing_avrcp_callback, avrcp_connection->avrcp_browsing_cid, event_addr);
             break;
             
         case L2CAP_EVENT_CHANNEL_OPENED:
@@ -195,31 +209,26 @@ void avrcp_browser_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
             avrcp_connection = get_avrcp_connection_for_bd_addr(event_addr, context);
             if (!avrcp_connection){
                 log_error("Failed to find AVRCP connection for bd_addr %s", bd_addr_to_str(event_addr));
-                avrcp_emit_browsing_connection_established(context->avrcp_callback, local_cid, event_addr, L2CAP_LOCAL_CID_DOES_NOT_EXIST);
+                avrcp_emit_browsing_connection_established(context->browsing_avrcp_callback, local_cid, event_addr, L2CAP_LOCAL_CID_DOES_NOT_EXIST);
                 l2cap_disconnect(local_cid, 0); // reason isn't used
                 break;
             }
 
-            connection = avrcp_connection->browsing_connection;
-            if (!connection){
-                log_error("Failed to alloc AVRCP connection structure");
-                avrcp_emit_browsing_connection_established(context->avrcp_callback, local_cid, event_addr, BTSTACK_MEMORY_ALLOC_FAILED);
-                l2cap_disconnect(local_cid, 0); // reason isn't used
-                break;
-            }
-
+            browsing_connection = avrcp_connection->browsing_connection;
             if (status != ERROR_CODE_SUCCESS){
                 log_info("L2CAP connection to connection %s failed. status code 0x%02x", bd_addr_to_str(event_addr), status);
-                avrcp_emit_browsing_connection_established(context->avrcp_callback, avrcp_connection->avrcp_browsing_cid, event_addr, status);
-                btstack_memory_avrcp_browsing_connection_free(connection);
+                avrcp_emit_browsing_connection_established(context->browsing_avrcp_callback, avrcp_connection->avrcp_browsing_cid, event_addr, status);
+                btstack_memory_avrcp_browsing_connection_free(browsing_connection);
                 avrcp_connection->browsing_connection = NULL;
                 break;
             }
-            connection->l2cap_browsing_cid = local_cid;
+            if (browsing_connection->state != AVCTP_CONNECTION_W4_L2CAP_CONNECTED) break;
+            
+            browsing_connection->l2cap_browsing_cid = local_cid;
 
-            log_info("L2CAP_EVENT_CHANNEL_OPENED browsing cid 0x%02x, l2cap cid 0x%02x", avrcp_connection->avrcp_browsing_cid, connection->l2cap_browsing_cid);
-            connection->state = AVCTP_CONNECTION_OPENED;
-            avrcp_emit_browsing_connection_established(context->avrcp_callback, avrcp_connection->avrcp_browsing_cid, event_addr, ERROR_CODE_SUCCESS);
+            log_info("L2CAP_EVENT_CHANNEL_OPENED browsing cid 0x%02x, l2cap cid 0x%02x", avrcp_connection->avrcp_browsing_cid, browsing_connection->l2cap_browsing_cid);
+            browsing_connection->state = AVCTP_CONNECTION_OPENED;
+            avrcp_emit_browsing_connection_established(context->browsing_avrcp_callback, avrcp_connection->avrcp_browsing_cid, event_addr, ERROR_CODE_SUCCESS);
             break;
         
         case L2CAP_EVENT_CHANNEL_CLOSED:
@@ -228,7 +237,7 @@ void avrcp_browser_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
             avrcp_connection = get_avrcp_connection_for_browsing_l2cap_cid(local_cid, context);
             
             if (avrcp_connection && avrcp_connection->browsing_connection){
-                avrcp_emit_browsing_connection_closed(context->avrcp_callback, avrcp_connection->avrcp_browsing_cid);
+                avrcp_emit_browsing_connection_closed(context->browsing_avrcp_callback, avrcp_connection->avrcp_browsing_cid);
                 // free connection
                 btstack_memory_avrcp_browsing_connection_free(avrcp_connection->browsing_connection);
                 avrcp_connection->browsing_connection = NULL;
@@ -480,7 +489,15 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
 
 void avrcp_browsing_controller_init(void){
     avrcp_controller_context.browsing_packet_handler = avrcp_browsing_controller_packet_handler;
-    l2cap_register_service(&avrcp_browsing_controller_packet_handler, BLUETOOTH_PROTOCOL_AVCTP, 0xffff, LEVEL_0);
+    l2cap_register_service(&avrcp_browsing_controller_packet_handler, PSM_AVCTP_BROWSING, 0xffff, LEVEL_0);
+}
+
+void avrcp_browsing_controller_register_packet_handler(btstack_packet_handler_t callback){
+    if (callback == NULL){
+        log_error("avrcp_browsing_controller_register_packet_handler called with NULL callback");
+        return;
+    }
+    avrcp_controller_context.browsing_avrcp_callback = callback;
 }
 
 uint8_t avrcp_browsing_controller_connect(bd_addr_t bd_addr, uint8_t * ertm_buffer, uint32_t size, l2cap_ertm_config_t * ertm_config, uint16_t * avrcp_browsing_cid){
@@ -496,6 +513,48 @@ uint8_t avrcp_browsing_controller_disconnect(uint16_t avrcp_browsing_cid){
     if (avrcp_connection->browsing_connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
     
     l2cap_disconnect(avrcp_connection->browsing_connection->l2cap_browsing_cid, 0);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t avrcp_avrcp_browsing_configure_incoming_connection(uint16_t avrcp_browsing_cid, uint8_t * ertm_buffer, uint32_t size, l2cap_ertm_config_t * ertm_config){
+    printf("avrcp_avrcp_browsing_configure_incoming_connection browsing cid 0x%02X\n", avrcp_browsing_cid);
+    avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid(avrcp_browsing_cid, &avrcp_controller_context);
+    if (!avrcp_connection){
+        printf("avrcp_avrcp_browsing_decline_incoming_connection: could not find a connection.\n");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (!avrcp_connection->browsing_connection){
+        printf("avrcp_avrcp_browsing_decline_incoming_connection: no browsing connection.\n");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    } 
+
+    if (avrcp_connection->browsing_connection->state != AVCTP_CONNECTION_W4_ERTM_CONFIGURATION){
+        printf("avrcp_avrcp_browsing_decline_incoming_connection: browsing connection in a wrong state.\n");
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    } 
+
+    avrcp_connection->browsing_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
+    avrcp_connection->browsing_connection->ertm_buffer = ertm_buffer;
+    avrcp_connection->browsing_connection->ertm_buffer_size = size;
+    memcpy(&avrcp_connection->browsing_connection->ertm_config, ertm_config, sizeof(l2cap_ertm_config_t));
+    printf("accept ertm connection\n");
+    l2cap_accept_ertm_connection(avrcp_connection->browsing_connection->l2cap_browsing_cid, &avrcp_connection->browsing_connection->ertm_config, avrcp_connection->browsing_connection->ertm_buffer, avrcp_connection->browsing_connection->ertm_buffer_size);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t avrcp_avrcp_browsing_decline_incoming_connection(uint16_t avrcp_browsing_cid){
+    avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid(avrcp_browsing_cid, &avrcp_controller_context);
+    if (!avrcp_connection){
+        log_error("avrcp_avrcp_browsing_decline_incoming_connection: could not find a connection.");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (!avrcp_connection->browsing_connection) return ERROR_CODE_SUCCESS;
+    if (avrcp_connection->browsing_connection->state > AVCTP_CONNECTION_W4_ERTM_CONFIGURATION) return ERROR_CODE_COMMAND_DISALLOWED;
+    
+    l2cap_decline_connection(avrcp_connection->browsing_connection->l2cap_browsing_cid);
+    // free connection
+    btstack_memory_avrcp_browsing_connection_free(avrcp_connection->browsing_connection);
+    avrcp_connection->browsing_connection = NULL;
     return ERROR_CODE_SUCCESS;
 }
 

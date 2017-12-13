@@ -106,7 +106,7 @@ void avrcp_browsing_controller_init(void);
  * @brief Register callback for the AVRCP Browsing Controller client. 
  * @param callback
  */
-// void avrcp_browsing_controller_register_packet_handler(btstack_packet_handler_t callback);
+void avrcp_browsing_controller_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
  * @brief Connect to device with a Bluetooth address.
@@ -118,6 +118,24 @@ void avrcp_browsing_controller_init(void);
  * @returns status
  */
 uint8_t avrcp_browsing_controller_connect(bd_addr_t bd_addr, uint8_t * ertm_buffer, uint32_t size, l2cap_ertm_config_t * ertm_config, uint16_t * avrcp_browsing_cid);
+
+/**
+ * @brief Configure incoming connection.
+ * @param avrcp_browsing_cid
+ * @param ertm_buffer
+ * @param ertm_buffer_size
+ * @param ertm_config
+ * @returns status
+ */
+uint8_t avrcp_avrcp_browsing_configure_incoming_connection(uint16_t avrcp_browsing_cid, uint8_t * ertm_buffer, uint32_t size, l2cap_ertm_config_t * ertm_config);
+
+/**
+ * @brief Decline incoming connection.
+ * @param avrcp_browsing_cid
+ * @returns status
+ */
+uint8_t avrcp_avrcp_browsing_decline_incoming_connection(uint16_t avrcp_browsing_cid);
+
 
 /**
  * @brief Disconnect from AVRCP target

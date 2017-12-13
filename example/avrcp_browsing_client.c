@@ -399,19 +399,19 @@ static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth AVRCP Controller Connection Test Console %s ---\n", bd_addr_to_str(iut_address));
-    printf("e      - AVRCP Controller create connection to addr %s\n", bd_addr_to_str(device_addr));
-    printf("c      - AVRCP Browsing Controller create connection to addr %s\n", bd_addr_to_str(device_addr));
-    printf("C      - AVRCP Browsing Controller disconnect\n");
-    printf("E      - AVRCP Controller disconnect\n");
+    printf("c      - AVRCP Controller create connection to addr %s\n", bd_addr_to_str(device_addr));
+    printf("e      - AVRCP Browsing Controller create connection to addr %s\n", bd_addr_to_str(device_addr));
+    printf("E      - AVRCP Browsing Controller disconnect\n");
+    printf("C      - AVRCP Controller disconnect\n");
 
-    printf("a      - Set first found player as addressed player\n");
-    printf("b      - Set first found player as browsed player\n");
+    printf("I      - Set first found player as addressed player\n");
+    printf("O      - Set first found player as browsed player\n");
     
-    printf("m      - Get media players\n");
-    printf("f      - Browse folders\n");
-    printf("u      - Go up one level\n");
-    printf("d      - Go down one level\n");
-    printf("i      - Browse media items\n");
+    printf("p      - Get media players\n");
+    printf("Q      - Browse folders\n");
+    printf("P      - Go up one level\n");
+    printf("W      - Go down one level\n");
+    printf("T      - Browse media items\n");
     printf("---\n");
 }
 #endif
@@ -429,11 +429,11 @@ static void stdin_process(char cmd){
     }
 
     switch (cmd){
-        case 'e':
+        case 'c':
             printf(" - Create AVRCP connection for control to addr %s.\n", bd_addr_to_str(device_addr));
             status = avrcp_controller_connect(device_addr, &avrcp_cid);
             break;
-        case 'E':
+        case 'C':
             if (avrcp_connected){
                 printf(" - AVRCP Controller disconnect from addr %s.\n", bd_addr_to_str(device_addr));
                 status = avrcp_controller_disconnect(avrcp_cid);
@@ -442,7 +442,7 @@ static void stdin_process(char cmd){
             printf("AVRCP Controller already disconnected\n");
             break;
 
-        case 'c':
+        case 'e':
             if (!avrcp_connected) {
                 printf(" You must first create AVRCP connection for control to addr %s.\n", bd_addr_to_str(device_addr));
                 break;
@@ -450,7 +450,7 @@ static void stdin_process(char cmd){
             printf(" - Create AVRCP connection for browsing to addr %s.\n", bd_addr_to_str(device_addr));
             status = avrcp_browsing_controller_connect(device_addr, ertm_buffer, sizeof(ertm_buffer), &ertm_config, &browsing_cid);
             break;
-        case 'C':
+        case 'E':
             if (avrcp_browsing_connected){
                 printf(" - AVRCP Browsing Controller disconnect from addr %s.\n", bd_addr_to_str(device_addr));
                 status = avrcp_browsing_controller_disconnect(browsing_cid);
@@ -470,7 +470,7 @@ static void stdin_process(char cmd){
             }
             
             switch (cmd) {
-                case 'a':
+                case 'I':
                     if (player_index < 0) {
                         printf("Get media players first\n");
                         break;
@@ -478,7 +478,7 @@ static void stdin_process(char cmd){
                     printf("Set addressed player\n");
                     status = avrcp_browsing_controller_set_addressed_player(browsing_cid, players[0]);
                     break;
-                case 'b':
+                case 'O':
                     if (player_index < 0) {
                         printf("Get media players first\n");
                         break;
@@ -486,26 +486,26 @@ static void stdin_process(char cmd){
                     printf("Set browsed player\n");
                     status = avrcp_browsing_controller_set_browsed_player(browsing_cid, players[0]);
                     break;
-                case 'm':
+                case 'p':
                     printf("AVRCP Browsing: get media players\n");
                     player_index = -1;
                     status = avrcp_browsing_controller_get_media_players(browsing_cid, 0, 0xFFFFFFFF, AVRCP_MEDIA_ATTR_ALL);
                     break;
-                case 'f':
+                case 'Q':
                     printf("AVRCP Browsing: browse folders\n");
                     folder_index = -1;
                     status = avrcp_browsing_controller_browse_file_system(browsing_cid, 0, 0xFFFFFFFF, AVRCP_MEDIA_ATTR_ALL);
                     break;
-                case 'i':
+                case 'P':
                     printf("AVRCP Browsing: browse media items\n");
                     avrcp_browsing_controller_browse_media(browsing_cid, 0, 0xFFFFFFFF, AVRCP_MEDIA_ATTR_ALL);
                     break;
-                case 'u':
+                case 'W':
                     printf("AVRCP Browsing: go up one level\n");
                     status = avrcp_browsing_controller_go_up_one_level(browsing_cid);
                     folder_index = -1;
                     break;
-                case 'd':
+                case 'T':
                     if (folder_index < 0 && !parent_folder_set){
                         printf("AVRCP Browsing: no folders available\n");
                         break;
