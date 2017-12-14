@@ -1880,4 +1880,7 @@ void gatt_client_deserialize_characteristic(const uint8_t * packet, int offset, 
 void gatt_client_deserialize_characteristic_descriptor(const uint8_t * packet, int offset, gatt_client_characteristic_descriptor_t * descriptor){
     descriptor->handle = little_endian_read_16(packet, offset);
     reverse_128(&packet[offset+2], descriptor->uuid128);
+    if (uuid_has_bluetooth_prefix(descriptor->uuid128)){
+        descriptor->uuid16 = big_endian_read_32(descriptor->uuid128, 0);
+    }
 }
