@@ -690,7 +690,7 @@ int btstack_main(int argc, const char * argv[]){
     a2dp_source_create_sdp_record(sdp_avdtp_source_service_buffer, 0x10002, 1, NULL, NULL);
     sdp_register_service(sdp_avdtp_source_service_buffer);
     
-    gap_set_local_name("BTstack PTS AVDTP Source Test 00:00:00:00:00:00");
+    gap_set_local_name("BTstack AVDTP Source PTS 00:00:00:00:00:00");
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);
     sscanf_bd_addr(device_addr_string, device_addr);

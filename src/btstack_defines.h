@@ -188,7 +188,8 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_CONNECTION_DOES_NOT_EXIST                    0xC1
 #define AVDTP_CONNECTION_IN_WRONG_STATE                    0xC2
 #define AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE               0xC3
-#define AVDTP_MEDIA_CONNECTION_DOES_NOT_EXIST              0xC4 
+#define AVDTP_STREAM_ENDPOINT_DOES_NOT_EXIST               0xC4
+#define AVDTP_MEDIA_CONNECTION_DOES_NOT_EXIST              0xC5 
 /* ENUM_END */
 
 // DAEMON COMMANDS

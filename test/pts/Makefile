@@ -2,6 +2,16 @@
 BTSTACK_ROOT = ../..
 
 
+CLASSIC += \
+	btstack_link_key_db_memory.c   \
+	sdp_util.c	                \
+	spp_server.c  				\
+	rfcomm.c	                \
+	bnep.c	                    \
+	sdp_server.c			    \
+	device_id_server.c          \
+
+
 CORE += \
 	btstack_memory.c            \
 	btstack_linked_list.c	    \
@@ -67,6 +77,12 @@ AVDTP += \
 	btstack_ring_buffer.c \
 
 # include ${BTSTACK_ROOT}/example/Makefile.inc
+
+HXCMOD_PLAYER = \
+	${BTSTACK_ROOT}/3rd-party/hxcmod-player/hxcmod.c 						\
+	${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c 	\
+
+include ${BTSTACK_ROOT}/example/Makefile.inc
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
 
@@ -107,16 +123,22 @@ ATT_OBJ     = $(ATT:.c=.o)
 SM_OBJ = $(SM:.c=.o) $(MICROECC:.c=.o)
 GATT_CLIENT_OBJ = $(GATT_CLIENT:.c=.o)
 GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
+CLASSIC_OBJ  = $(CLASSIC:.c=.o) 
 SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
 SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 AVDTP_OBJ  = $(AVDTP:.c=.o)
+HXCMOD_PLAYER_OBJ = ${HXCMOD_PLAYER:.c=.o}
 
 EXAMPLES  = iopt ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback le_data_channel
-EXAMPLES += avdtp_source_test avdtp_sink_test le_data_channel avrcp_controller_test
+EXAMPLES += avdtp_source_test avdtp_sink_test le_data_channel avrcp_controller_test 
+# avrcp_target_test
 
 all: ${EXAMPLES}
 
 # compile .gatt descriptions
+# avrcp_target_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_ENCODER_OBJ} ${SM_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} avrcp.o avrcp_target.o avrcp_target_test.c
+# 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
 avrcp_controller_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} sdp_client.o avrcp.o avrcp_media_item_iterator.o avrcp_controller.o avrcp_browsing_controller.o avrcp_controller_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 

@@ -502,7 +502,7 @@ static uint8_t media_sbc_codec_capabilities[] = {
 #ifdef HAVE_BTSTACK_STDIN
 
 static void stdin_process(char cmd){
-    uint8_t status;
+    uint8_t status = ERROR_CODE_SUCCESS;
     sep.seid = 1;
     switch (cmd){
         case 'b':
@@ -754,9 +754,11 @@ static void stdin_process(char cmd){
             status = avrcp_browsing_controller_set_browsed_player(browsing_cid, players[0]);
             break;
         case 'p':
-            printf("AVRCP Browsing: get media players\n");
-            player_index = -1;
-            status = avrcp_browsing_controller_get_media_players(browsing_cid, 0, 0xFFFFFFFF, AVRCP_MEDIA_ATTR_ALL);
+            players[next_player_index()] = 1;
+
+            // printf("AVRCP Browsing: get media players. Brosing cid 0x%02X\n", browsing_cid);
+            // player_index = -1;
+            // status = avrcp_browsing_controller_get_media_players(browsing_cid, 0, 0xFFFFFFFF, AVRCP_MEDIA_ATTR_ALL);
             break;
         case 'Q':
             printf("AVRCP Browsing: browse folders\n");
@@ -791,6 +793,9 @@ static void stdin_process(char cmd){
             show_usage();
             break;
 
+    }
+    if (status != ERROR_CODE_SUCCESS){
+        printf("Could not complete cmd %c, status 0x%02X\n", cmd, status);
     }
 }
 #endif
@@ -839,7 +844,7 @@ int btstack_main(int argc, const char * argv[]){
     avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10001, AVRCP_BROWSING_ENABLED, 1, NULL, NULL);
     sdp_register_service(sdp_avrcp_controller_service_buffer);
 
-    gap_set_local_name("BTstack AVRCP PTS Test");
+    gap_set_local_name("BTstack AVRCP Controller PTS 00:00:00:00:00:00");
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);
 

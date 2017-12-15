@@ -83,7 +83,6 @@ static int avdtp_acceptor_validate_msg_length(avdtp_signal_identifier_t signal_i
 void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t * packet, uint16_t size, int offset, avdtp_context_t * context){
     avdtp_stream_endpoint_t * stream_endpoint;
     connection->acceptor_transaction_label = connection->signaling_packet.transaction_label;
-    
     if (!avdtp_acceptor_validate_msg_length(connection->signaling_packet.signal_identifier, size)) {
         connection->error_code = BAD_LENGTH;
         connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;

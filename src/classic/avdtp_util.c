@@ -825,20 +825,25 @@ void avdtp_signaling_emit_media_codec_other_reconfiguration(btstack_packet_handl
 }
                            
 
-void avdtp_request_can_send_now_acceptor(avdtp_connection_t * connection, uint16_t l2cap_cid){
-    if (!connection) return;
+uint8_t avdtp_request_can_send_now_acceptor(avdtp_connection_t * connection, uint16_t l2cap_cid){
+    if (!connection) return AVDTP_CONNECTION_DOES_NOT_EXIST;
     connection->wait_to_send_acceptor = 1;
     l2cap_request_can_send_now_event(l2cap_cid);
+    return ERROR_CODE_SUCCESS;
 }
-void avdtp_request_can_send_now_initiator(avdtp_connection_t * connection, uint16_t l2cap_cid){
-    if (!connection) return;
+
+uint8_t avdtp_request_can_send_now_initiator(avdtp_connection_t * connection, uint16_t l2cap_cid){
+    if (!connection) return AVDTP_CONNECTION_DOES_NOT_EXIST;
     connection->wait_to_send_initiator = 1;
     l2cap_request_can_send_now_event(l2cap_cid);
+    return ERROR_CODE_SUCCESS;
 }
-void avdtp_request_can_send_now_self(avdtp_connection_t * connection, uint16_t l2cap_cid){
-    if (!connection) return;
+
+uint8_t avdtp_request_can_send_now_self(avdtp_connection_t * connection, uint16_t l2cap_cid){
+    if (!connection) return AVDTP_CONNECTION_DOES_NOT_EXIST;
     connection->wait_to_send_self = 1;
     l2cap_request_can_send_now_event(l2cap_cid);
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t avdtp_get_index_of_remote_stream_endpoint_with_seid(avdtp_stream_endpoint_t * stream_endpoint, uint16_t seid){

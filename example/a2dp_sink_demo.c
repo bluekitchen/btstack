@@ -129,7 +129,7 @@ static uint8_t sbc_frame_size;
 static int sbc_samples_fix;
 #endif
 
-// PortAdudio - live playback
+// PortAudio - live playback
 #ifdef HAVE_PORTAUDIO
 #define PA_SAMPLE_TYPE      paInt16
 #define SAMPLE_RATE 48000

@@ -284,7 +284,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
 }
 
 void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, avdtp_context_t * context){
-int sent = 1;
+    int sent = 1;
     switch (connection->initiator_connection_state){
         case AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_DISCOVER_SEPS:
             log_info("INT: AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_DISCOVER_SEPS");
@@ -335,7 +335,7 @@ int sent = 1;
         } 
         return;
     }
-
+    
     if (stream_endpoint->stop_stream){
         stream_endpoint->stop_stream = 0;
         if (stream_endpoint->state >= AVDTP_STREAM_ENDPOINT_OPENED){
@@ -345,7 +345,7 @@ int sent = 1;
             return;            
         }
     }
-
+    
     if (stream_endpoint->abort_stream){
         stream_endpoint->abort_stream = 0;
         switch (stream_endpoint->state){
@@ -362,7 +362,7 @@ int sent = 1;
                 break;
         }
     }
-
+    
     if (stream_endpoint->suspend_stream){
         stream_endpoint->suspend_stream = 0;
         if (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING){
@@ -371,7 +371,7 @@ int sent = 1;
             return;
         }
     }
-
+    
     if (stream_endpoint->send_stream){
         stream_endpoint->send_stream = 0;
         if (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING){
@@ -381,17 +381,15 @@ int sent = 1;
         }
     }
 
-
     switch (stream_endpoint_state){
         case AVDTP_INITIATOR_W2_SET_CONFIGURATION:
         case AVDTP_INITIATOR_W2_RECONFIGURE_STREAM_WITH_SEID:{
-            log_info("initiator SM prepare SET_CONFIGURATION cmd: role is_initiator %d", connection->is_initiator);
-                    
-            if (!connection->is_initiator){
+            if (stream_endpoint_state == AVDTP_INITIATOR_W2_SET_CONFIGURATION && !connection->is_initiator){
                 log_info("initiator SM stop sending SET_CONFIGURATION cmd: current role is acceptor");
                 connection->is_configuration_initiated_locally = 0;
                 break;
             }
+            log_info("initiator SM prepare SET_CONFIGURATION cmd");
             connection->is_configuration_initiated_locally = 1;
             log_info("INT: AVDTP_INITIATOR_W2_(RE)CONFIGURATION bitmap, int seid %d, acp seid %d", connection->local_seid, connection->remote_seid);
             // log_info_hexdump(  connection->remote_capabilities.media_codec.media_codec_information,  connection->remote_capabilities.media_codec.media_codec_information_len);
