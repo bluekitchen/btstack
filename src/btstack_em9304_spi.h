@@ -36,13 +36,13 @@
  */
 
 /*
- *  hal_em9304_spi.h
+ *  btstack_em9304_spi.h
  *
- *  Hardware Abstraction Layer for EM9304 connected via SPI with additional RDY Interrupt line
- *
+ *  BTstack's Hardware Abstraction Layer for EM9304 connected via SPI with additional RDY Interrupt line
+
  */
-#ifndef __HAL_EM9304_SPI_H
-#define __HAL_EM9304_SPI_H
+#ifndef __BTSTACK_EM9304_SPI_H
+#define __BTSTACK_EM9304_SPI_H
 
 #include <stdint.h>
 
@@ -52,80 +52,81 @@ extern "C" {
 
 /* API_START */
 
-/**
- * @brief Initialize SPI
- */
-void hal_em9304_spi_init(void);
+#include <stdint.h>
+typedef struct {
+
+    /* API_START */
+
+    /**
+     * @brief Open SPI
+     */
+    int (*open)(void);
+
+    /**
+     * @brief Close SPI
+     */
+    int (*close)(void);
+
+    /**
+     * @brief Check if full duplex operation via transceive is supported
+     * @return 1 if supported
+     */
+    int  (*get_fullduplex_support)(void);
+
+    /**
+     * @brief Set callback for RDY
+     * @param callback or NULL to disable callback
+     */
+    void (*set_ready_callback)(void (*callback)(void));
+
+    /**
+     * @brief Set callback for transfer complete
+     * @param callback
+     */
+    void (*set_transfer_done_callback)(void (*callback)(void));
+
+    /**
+     * @brief Set Chip Selet
+     * @param enable
+     */
+    void (*set_chip_select)(int enable);
+
+    /**
+     * @brief Poll READY state
+     */
+    int (*get_ready)();
+
+    /**
+     * @brief Transmit and Receive bytes via SPI
+     * @param tx_data buffer to transmit
+     * @param rx_data buffer to receive into
+     * @param len 
+     */
+    void (*transceive)(const uint8_t * tx_data, uint8_t * rx_data, uint16_t len);
+
+    /**
+     * @brief Transmit bytes via SPI
+     * @param tx_data buffer to transmit
+     * @param len 
+     */
+    void (*transmit)(const uint8_t * tx_data, uint16_t len);
+
+    /**
+     * @brief Receive bytes via SPI
+     * @param rx_data buffer to receive into
+     * @param len 
+     */
+    void (*receive)(uint8_t * rx_data, uint16_t len);
+
+} btstack_em9304_spi_t;
 
 /**
- * @brief Deinitialize SPI
+ *
  */
-void hal_em9304_spi_deinit(void);
+const btstack_em9304_spi_t * btstack_em9304_spi_embedded_instance(void);
 
-/**
- * @brief Set callback for RDY - can be called from ISR context
- * @param callback
- */
-void hal_em9304_spi_set_ready_callback(void (*callback)(void));
-
-/**
- * @brief Set callback for transfer complete - can be called from ISR context
- * @param callback
- */
-void hal_em9304_spi_set_transfer_done_callback(void (*callback)(void));
-
-/**
- * @brief Enable READY IRQ
- */
-void hal_em9304_spi_enable_ready_interrupt(void);
-
-/**
- * @brief Disable READY IRQ
- */
-void hal_em9304_spi_disable_ready_interrupt(void);
-
-/**
- * @brief Poll READY state
- */
-int hal_em9304_spi_get_ready();
-
-/**
- * @brief Set Chip Selet
- * @param enable
- */
-void hal_em9304_spi_set_chip_select(int enable);
-
-/**
- * @brief Check if full duplex operation via hal_em9304_spi_transceive is supported
- */
-int  hal_em9304_spi_get_fullduplex_support(void);
-
-/**
- * @brief Transmit and Receive bytes via SPI
- * @param tx_data buffer to transmit
- * @param rx_data buffer to receive into
- * @param len 
- */
-void hal_em9304_spi_transceive(const uint8_t * tx_data, uint8_t * rx_data, uint16_t len);
-
-/**
- * @brief Transmit bytes via SPI
- * @param tx_data buffer to transmit
- * @param len 
- */
-void hal_em9304_spi_transmit(const uint8_t * tx_data, uint16_t len);
-
-/**
- * @brief Receive bytes via SPI
- * @param rx_data buffer to receive into
- * @param len 
- */
-void hal_em9304_spi_receive(uint8_t * rx_data, uint16_t len);
-
-/* API_END */
-    
 #if defined __cplusplus
 }
 #endif
 
-#endif // __HAL_EM9304_SPI_H
+#endif // __BTSTACK_EM9304_SPI_H
