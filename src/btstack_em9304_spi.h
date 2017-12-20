@@ -94,7 +94,7 @@ typedef struct {
     /**
      * @brief Poll READY state
      */
-    int (*get_ready)();
+    int (*get_ready)(void);
 
     /**
      * @brief Transmit and Receive bytes via SPI
