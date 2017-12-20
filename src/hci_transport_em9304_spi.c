@@ -58,8 +58,7 @@ static void em9304_spi_engine_run(void);
 #define EM9304_SPI_HEADER_TX        0x42
 #define EM9304_SPI_HEADER_RX        0x81
 
-#define SPI_EM9304_RX_BUFFER_SIZE     64
-#define SPI_EM9304_TX_BUFFER_SIZE     64
+#define SPI_EM9304_BUFFER_SIZE        64
 #define SPI_EM9304_RING_BUFFER_SIZE  128
 
 // state
@@ -86,6 +85,8 @@ static uint16_t em9304_spi_engine_rx_request_len;
 static uint16_t em9304_spi_engine_tx_request_len;
 
 static btstack_ring_buffer_t em9304_spi_engine_rx_ring_buffer;
+
+// note: needs to be aligned
 static uint8_t em9304_spi_engine_rx_ring_buffer_storage[SPI_EM9304_RING_BUFFER_SIZE];
 
 static const uint8_t  * em9304_spi_engine_tx_data;
@@ -107,9 +108,9 @@ union {
 } sStas;
 
 union {
-    uint32_t words[SPI_EM9304_RX_BUFFER_SIZE/4];
-    uint8_t  bytes[SPI_EM9304_RX_BUFFER_SIZE];
-} em9304_spi_engine_spi_rx_buffer;
+    uint32_t words[SPI_EM9304_BUFFER_SIZE/4];
+    uint8_t  bytes[SPI_EM9304_BUFFER_SIZE];
+} em9304_spi_engine_spi_buffer;
 
 static void em9304_spi_engine_ready_callback(void){
     // TODO: collect states
@@ -154,7 +155,7 @@ static void em9304_spi_engine_start_tx_transaction(void){
 }
 
 static inline int em9304_engine_space_in_rx_buffer(void){
-    return btstack_ring_buffer_bytes_free(&em9304_spi_engine_rx_ring_buffer) >= SPI_EM9304_RX_BUFFER_SIZE;
+    return btstack_ring_buffer_bytes_free(&em9304_spi_engine_rx_ring_buffer) >= SPI_EM9304_BUFFER_SIZE;
 }
 
 static void em9304_engine_receive_buffer_ready(void){
@@ -210,7 +211,7 @@ static void em9304_spi_engine_run(void){
             // read data
             em9304_spi_engine_state = SPI_EM9304_RX_W4_DATA_RECEIVED;
             em9304_spi_engine_rx_request_len = sStas.bytes[0];
-            btstack_em9304_spi->receive(em9304_spi_engine_spi_rx_buffer.bytes, em9304_spi_engine_rx_request_len);
+            btstack_em9304_spi->receive(em9304_spi_engine_spi_buffer.bytes, em9304_spi_engine_rx_request_len);
             break;
 
         case SPI_EM9304_RX_DATA_RECEIVED:
@@ -218,7 +219,7 @@ static void em9304_spi_engine_run(void){
             em9304_engine_action_done();
 
             // move data into ring buffer
-            btstack_ring_buffer_write(&em9304_spi_engine_rx_ring_buffer, em9304_spi_engine_spi_rx_buffer.bytes, em9304_spi_engine_rx_request_len);
+            btstack_ring_buffer_write(&em9304_spi_engine_rx_ring_buffer, em9304_spi_engine_spi_buffer.bytes, em9304_spi_engine_rx_request_len);
             em9304_spi_engine_rx_request_len = 0;
 
             // notify about new data available -- assume empty
@@ -263,7 +264,15 @@ static void em9304_spi_engine_run(void){
 
             // send command
             em9304_spi_engine_state = SPI_EM9304_TX_W4_DATA_SENT;
-            btstack_em9304_spi->transmit( (uint8_t*) em9304_spi_engine_tx_data, em9304_spi_engine_tx_request_len);
+            if ( (((uintptr_t) em9304_spi_engine_tx_data) & 0x03) == 0){
+                // 4-byte aligned
+                btstack_em9304_spi->transmit( (uint8_t*) em9304_spi_engine_tx_data, em9304_spi_engine_tx_request_len);
+            } else {
+                // TODO: get rid of alignment requirement
+                // enforce alignment by copying to spi buffer first
+                memcpy(em9304_spi_engine_spi_buffer.bytes, em9304_spi_engine_tx_data, em9304_spi_engine_tx_request_len);
+                btstack_em9304_spi->transmit( (uint8_t*) em9304_spi_engine_spi_buffer.bytes, em9304_spi_engine_tx_request_len);
+            }
             break;
 
         case SPI_EM9304_TX_DATA_SENT:
