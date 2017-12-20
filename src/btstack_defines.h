@@ -1367,6 +1367,94 @@ typedef uint8_t sm_key_t[16];
  */
 #define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CAPABILITY        0x08
 
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param local_seid
+ * @param remote_seid
+ */
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY        0x09
+
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param local_seid
+ * @param remote_seid
+ */
+#define AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY        0x0A
+
+
+/**
+ * @format 1211111
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param local_seid
+ * @param remote_seid
+ * @param recovery_type
+ * @param maximum_recovery_window_size
+ * @param maximum_number_media_packets
+ */
+#define AVDTP_SUBEVENT_SIGNALING_RECOVERY_CAPABILITY        0x0B
+
+
+/**
+ * @format 12112LV
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param local_seid
+ * @param remote_seid
+ * @param cp_type
+ * @param cp_type_value_len
+ * @param cp_type_value
+ */
+#define AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY        0x0C
+
+
+/**
+ * @format 121111111111
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param local_seid
+ * @param remote_seid
+ * @param fragmentation
+ * @param transport_identifiers_num
+ * @param transport_session_identifier_1
+ * @param transport_session_identifier_2
+ * @param transport_session_identifier_3
+ * @param tcid_1
+ * @param tcid_2
+ * @param tcid_3
+ */
+#define AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY        0x0D
+
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param local_seid
+ * @param remote_seid
+ */
+#define AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY        0x0E
+
+
+/**
+ * @format 1211111
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param local_seid
+ * @param remote_seid
+ * @param back_ch
+ * @param media
+ * @param recovery
+ */
+#define AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY        0x0F
+
+
 /**
  * @format 12111121111111
  * @param subevent_code
@@ -1384,7 +1472,7 @@ typedef uint8_t sm_key_t[16];
  * @param min_bitpool_value
  * @param max_bitpool_value
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION        0x09
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION        0x10
 
 /**
  * @format 1211112LV
@@ -1398,7 +1486,7 @@ typedef uint8_t sm_key_t[16];
  * @param media_codec_information_len
  * @param media_codec_information
  */
-#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION        0x0A
+#define AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION        0x11
 
 /**
  * @format 12B111
@@ -1409,7 +1497,7 @@ typedef uint8_t sm_key_t[16];
  * @param remote_seid
  * @param status 0 == OK
  */
-#define AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED     0x0B
+#define AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED     0x12
 
 /**
  * @format 121
@@ -1417,7 +1505,7 @@ typedef uint8_t sm_key_t[16];
  * @param avdtp_cid
  * @param local_seid
  */
-#define AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED        0x0C
+#define AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED        0x13
 
 /**
  * @format 1212
@@ -1426,7 +1514,7 @@ typedef uint8_t sm_key_t[16];
  * @param local_seid
  * @param sequence_number
  */
-#define AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW   0x0D
+#define AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW   0x14
 
 
 /** A2DP Subevent */

@@ -120,20 +120,8 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                 
                 case AVDTP_SI_GET_CAPABILITIES:
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
-                    log_info("initiator AVDTP_SI_GET_CAPABILITIES \n");
                     sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, &sep.capabilities, packet+offset, size-offset);
-                    if (get_bit16(sep.registered_service_categories, AVDTP_MEDIA_CODEC)){
-                        switch (sep.capabilities.media_codec.media_codec_type){
-                            case AVDTP_CODEC_SBC: 
-                                log_info("initiator avdtp_signaling_emit_media_codec_sbc_capability, local_seid %d, remote_seid %d\n", connection->local_seid, connection->remote_seid);
-                                avdtp_signaling_emit_media_codec_sbc_capability(context->avdtp_callback, connection->avdtp_cid, connection->local_seid, connection->remote_seid, sep.capabilities.media_codec);
-                                break;
-                            default:
-                                log_info("initiator avdtp_signaling_emit_media_codec_other_capability \n");
-                                avdtp_signaling_emit_media_codec_other_capability(context->avdtp_callback, connection->avdtp_cid, connection->local_seid, connection->remote_seid, sep.capabilities.media_codec);
-                                break;
-                        }
-                    }
+                    avdtp_emit_capabilities(context->avdtp_callback, connection->avdtp_cid, connection->local_seid, connection->remote_seid, &sep.capabilities, sep.registered_service_categories);
                     break;
                 
                 case AVDTP_SI_GET_CONFIGURATION:

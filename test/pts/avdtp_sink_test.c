@@ -552,7 +552,6 @@ static int read_media_data_header(uint8_t *packet, int size, int *offset, avdtp_
 }
 
 static void dump_sbc_capability(adtvp_media_codec_information_sbc_t media_codec_sbc){
-    printf("Received media codec capability:\n");
     printf("    - sampling_frequency: 0x%02x\n", media_codec_sbc.sampling_frequency_bitmap);
     printf("    - channel_mode: 0x%02x\n", media_codec_sbc.channel_mode_bitmap);
     printf("    - block_length: 0x%02x\n", media_codec_sbc.block_length_bitmap);
@@ -562,7 +561,6 @@ static void dump_sbc_capability(adtvp_media_codec_information_sbc_t media_codec_
 }
 
 static void dump_sbc_configuration(avdtp_media_codec_configuration_sbc_t configuration){
-    printf("Received media codec configuration:\n");
     printf("    - num_channels: %d\n", configuration.num_channels);
     printf("    - sampling_frequency: %d\n", configuration.sampling_frequency);
     printf("    - channel_mode: %d\n", configuration.channel_mode);

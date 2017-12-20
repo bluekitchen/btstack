@@ -58,8 +58,9 @@
 extern "C" {
 #endif
 
-#define MAX_NUM_SEPS 10
-#define MAX_CSRC_NUM 15
+#define AVDTP_MAX_NUM_SEPS 10
+#define AVDTP_MAX_CSRC_NUM 15
+#define AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN 10
 
 // Supported Features
 #define AVDTP_SOURCE_SF_Player      0x0001
@@ -182,7 +183,7 @@ typedef struct {
 typedef struct {
     uint16_t cp_type;
     uint16_t cp_type_value_len;
-    const uint8_t * cp_type_value;
+    uint8_t cp_type_value[AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN];
 } adtvp_content_protection_t;
 
 typedef struct{
@@ -265,7 +266,7 @@ typedef struct {
     uint32_t timestamp;
     uint32_t synchronization_source;
 
-    uint32_t csrc_list[MAX_CSRC_NUM];
+    uint32_t csrc_list[AVDTP_MAX_CSRC_NUM];
 } avdtp_media_packet_header_t;
 
 typedef enum {
@@ -403,7 +404,7 @@ typedef struct {
     uint8_t wait_to_send_initiator;
     uint8_t wait_to_send_self;
     
-    uint8_t suspended_seids[MAX_NUM_SEPS];
+    uint8_t suspended_seids[AVDTP_MAX_NUM_SEPS];
     uint8_t num_suspended_seids;
 
     uint8_t reject_service_category;
@@ -411,7 +412,7 @@ typedef struct {
     uint8_t error_code;
 
     // store configurations with remote seps
-    avdtp_sep_t remote_seps[MAX_NUM_SEPS];
+    avdtp_sep_t remote_seps[AVDTP_MAX_NUM_SEPS];
     uint8_t remote_seps_num;
 
     // store current role

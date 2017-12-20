@@ -260,17 +260,8 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                         connection->remote_seps[stream_endpoint->remote_sep_index] = sep;
                         log_info("ACP: add seid %d, to %p", connection->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
                     } 
-                    if (get_bit16(sep.configured_service_categories, AVDTP_MEDIA_CODEC)){
-                        switch (sep.configuration.media_codec.media_codec_type){
-                            case AVDTP_CODEC_SBC: 
-                                avdtp_signaling_emit_media_codec_sbc_configuration(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), 
-                                    sep.configuration.media_codec.media_type, sep.configuration.media_codec.media_codec_information);
-                                break;
-                            default:
-                                avdtp_signaling_emit_media_codec_other_configuration(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), sep.configuration.media_codec);
-                                break;
-                        }
-                    }
+                    
+                    avdtp_emit_configuration(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), &sep.configuration, sep.configured_service_categories);
                     avdtp_signaling_emit_accept(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), connection->signaling_packet.signal_identifier);
                     break;
                 }
@@ -301,17 +292,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index] = sep;
                     log_info("ACP: update seid %d, to %p", stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
 
-                    if (get_bit16(sep.configured_service_categories, AVDTP_MEDIA_CODEC)){
-                        switch (sep.capabilities.media_codec.media_codec_type){
-                            case AVDTP_CODEC_SBC: 
-                                avdtp_signaling_emit_media_codec_sbc_reconfiguration(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), 
-                                    sep.configuration.media_codec.media_type, sep.configuration.media_codec.media_codec_information);
-                                break;
-                            default:
-                                avdtp_signaling_emit_media_codec_other_reconfiguration(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), sep.configuration.media_codec);
-                                break;
-                        }
-                    }
+                    avdtp_emit_configuration(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), &sep.configuration, sep.configured_service_categories);
                     avdtp_signaling_emit_accept(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), connection->signaling_packet.signal_identifier);
                     break;
                 }
@@ -419,7 +400,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
 }
 
 static int avdtp_acceptor_send_seps_response(uint16_t cid, uint8_t transaction_label, avdtp_stream_endpoint_t * endpoints){
-    uint8_t command[2+2*MAX_NUM_SEPS];
+    uint8_t command[2+2*AVDTP_MAX_NUM_SEPS];
     int pos = 0;
     command[pos++] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_RESPONSE_ACCEPT_MSG);
     command[pos++] = (uint8_t)AVDTP_SI_DISCOVER;
