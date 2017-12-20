@@ -86,7 +86,6 @@ static uint16_t em9304_spi_engine_tx_request_len;
 
 static btstack_ring_buffer_t em9304_spi_engine_rx_ring_buffer;
 
-// note: needs to be aligned
 static uint8_t em9304_spi_engine_rx_ring_buffer_storage[SPI_EM9304_RING_BUFFER_SIZE];
 
 static const uint8_t  * em9304_spi_engine_tx_data;
@@ -154,6 +153,19 @@ static void em9304_spi_engine_start_tx_transaction(void){
     btstack_em9304_spi->set_ready_callback(&em9304_spi_engine_ready_callback);
 }
 
+static void em9304_spi_engine_start_rx_transaction(void){
+    // disable interrupt again
+    btstack_em9304_spi->set_ready_callback(NULL);
+
+    // enable chip select
+    btstack_em9304_spi->set_chip_select(1);
+
+    // send read command
+    em9304_spi_engine_state = SPI_EM9304_RX_W4_READ_COMMAND_SENT;
+    sCommand.bytes[0] = EM9304_SPI_HEADER_RX;
+    btstack_em9304_spi->transmit(sCommand.bytes, 1);
+}
+
 static inline int em9304_engine_space_in_rx_buffer(void){
     return btstack_ring_buffer_bytes_free(&em9304_spi_engine_rx_ring_buffer) >= SPI_EM9304_BUFFER_SIZE;
 }
@@ -162,26 +174,25 @@ static void em9304_engine_receive_buffer_ready(void){
     // no data ready for receive or transmit, but space in rx ringbuffer  -> enable READY IRQ
     em9304_spi_engine_state = SPI_EM9304_READY_FOR_TX_AND_RX;
     btstack_em9304_spi->set_ready_callback(&em9304_spi_engine_ready_callback);
+    // avoid dead lock, check READY again
+    if (btstack_em9304_spi->get_ready()){
+        em9304_spi_engine_start_rx_transaction();
+    }
 }
 
 static void em9304_engine_start_next_transaction(void){
     
-    if (em9304_spi_engine_state != SPI_EM9304_DONE) return;
+    switch (em9304_spi_engine_state){
+        case SPI_EM9304_READY_FOR_TX:
+        case SPI_EM9304_READY_FOR_TX_AND_RX:
+        case SPI_EM9304_DONE:
+            break;
+        default:
+            return;
+    }   
 
-    if (btstack_em9304_spi->get_ready()){
-        // RDY -> data available
-        if (em9304_engine_space_in_rx_buffer()) {
-            // disable interrupt again
-            btstack_em9304_spi->set_ready_callback(NULL);
-
-            // enable chip select
-            btstack_em9304_spi->set_chip_select(1);
-
-            // send read command
-            em9304_spi_engine_state = SPI_EM9304_RX_W4_READ_COMMAND_SENT;
-            sCommand.bytes[0] = EM9304_SPI_HEADER_RX;
-            btstack_em9304_spi->transmit(sCommand.bytes, 1);
-        }
+    if (btstack_em9304_spi->get_ready() && em9304_engine_space_in_rx_buffer()) {
+        em9304_spi_engine_start_rx_transaction();
     } else if (em9304_spi_engine_tx_size){
         em9304_spi_engine_start_tx_transaction();
     } else if (em9304_engine_space_in_rx_buffer()){
@@ -198,6 +209,12 @@ static void em9304_engine_action_done(void){
 static void em9304_spi_engine_run(void){
     uint16_t max_bytes_to_send;
     switch (em9304_spi_engine_state){
+
+        case SPI_EM9304_READY_FOR_TX_AND_RX:
+            // check if ready
+            if (!btstack_em9304_spi->get_ready()) break;
+            em9304_spi_engine_start_rx_transaction();
+            break;
 
         case SPI_EM9304_RX_READ_COMMAND_SENT:
             em9304_spi_engine_state = SPI_EM9304_RX_W4_STS2_RECEIVED;
