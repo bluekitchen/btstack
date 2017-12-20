@@ -551,8 +551,17 @@ static void emit_gatt_all_characteristic_descriptors_result_event(
     reverse_128(uuid128, &packet[6]);
     emit_event_new(peripheral->callback, packet, sizeof(packet));
 }
-///
 
+static void emit_gatt_mtu_exchanged_result_event(gatt_client_t * peripheral, uint16_t new_mtu){
+    // @format H2
+    uint8_t packet[6];
+    packet[0] = GATT_EVENT_MTU;
+    packet[1] = sizeof(packet) - 2;
+    little_endian_store_16(packet, 2, peripheral->con_handle);
+    little_endian_store_16(packet, 4, new_mtu);
+    emit_event_new(peripheral->callback, packet, sizeof(packet));
+}
+///
 static void report_gatt_services(gatt_client_t * peripheral, uint8_t * packet,  uint16_t size){
     uint8_t attr_length = packet[1];
     uint8_t uuid_length = attr_length - 4;
@@ -1068,7 +1077,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             uint16_t local_rx_mtu = l2cap_max_le_mtu();
             peripheral->mtu = remote_rx_mtu < local_rx_mtu ? remote_rx_mtu : local_rx_mtu;
             peripheral->mtu_state = MTU_EXCHANGED;
-
+            emit_gatt_mtu_exchanged_result_event(peripheral, peripheral->mtu);
             break;
         }
         case ATT_READ_BY_GROUP_TYPE_RESPONSE:
