@@ -89,11 +89,8 @@ static uint8_t em9304_spi_engine_rx_ring_buffer_storage[SPI_EM9304_RING_BUFFER_S
 static const uint8_t  * em9304_spi_engine_tx_data;
 static uint16_t         em9304_spi_engine_tx_size;
 
-static uint8_t  * em9304_spi_engine_rx_buffer;
-static uint16_t   em9304_spi_engine_rx_len;
-
 // handlers
-static void (*em9304_spi_engine_rx_done_handler)(void);
+static void (*em9304_spi_engine_rx_available_handler)(void);
 static void (*em9304_spi_engine_tx_done_handler)(void);
 
 // TODO: get rid of alignment requirement
@@ -142,27 +139,6 @@ static void em9304_spi_engine_transfer_done(void){
     em9304_spi_engine_process();
 }
 
-static void em9304_spi_engine_transfer_rx_data(void){
-    while (1){
-        int bytes_available = btstack_ring_buffer_bytes_available(&em9304_spi_engine_rx_ring_buffer);
-        log_debug("transfer_rx_data: ring buffer has %u -> hci buffer needs %u", bytes_available, em9304_spi_engine_rx_len);
-
-        if (!bytes_available) break;
-        if (!em9304_spi_engine_rx_len) break;
-
-        int bytes_to_copy = btstack_min(bytes_available, em9304_spi_engine_rx_len);
-        uint32_t bytes_read;
-        btstack_ring_buffer_read(&em9304_spi_engine_rx_ring_buffer, em9304_spi_engine_rx_buffer, bytes_to_copy, &bytes_read);
-        em9304_spi_engine_rx_buffer += bytes_read;
-        em9304_spi_engine_rx_len    -= bytes_read;
-
-        if (em9304_spi_engine_rx_len == 0){
-            (*em9304_spi_engine_rx_done_handler)();
-            break;
-        }
-    }
-}
-
 static void em9304_spi_engine_start_tx_transaction(void){
     // state = wait for RDY
     em9304_spi_engine_state = SPI_EM9304_TX_W4_RDY;
@@ -174,31 +150,44 @@ static void em9304_spi_engine_start_tx_transaction(void){
     btstack_em9304_spi->set_ready_callback(&em9304_spi_engine_ready_callback);
 }
 
+static inline int em9304_engine_space_in_rx_buffer(void){
+    return btstack_ring_buffer_bytes_free(&em9304_spi_engine_rx_ring_buffer) >= SPI_EM9304_RX_BUFFER_SIZE;
+}
+
+static void em9304_engine_idle(void){
+
+    if (em9304_spi_engine_state != SPI_EM9304_IDLE) return;
+
+    if (btstack_em9304_spi->get_ready()){
+        // RDY -> data available
+        if (em9304_engine_space_in_rx_buffer()) {
+            // disable interrupt again
+            btstack_em9304_spi->set_ready_callback(NULL);
+
+            // enable chip select
+            btstack_em9304_spi->set_chip_select(1);
+
+            // send read command
+            em9304_spi_engine_state = SPI_EM9304_RX_W4_READ_COMMAND_SENT;
+            sCommand.bytes[0] = EM9304_SPI_HEADER_RX;
+            btstack_em9304_spi->transmit(sCommand.bytes, 1);
+        }
+    } else if (em9304_spi_engine_tx_size){
+        // start TX
+        em9304_spi_engine_start_tx_transaction();
+
+    } else if (em9304_engine_space_in_rx_buffer()){
+        // no data ready for receive or transmit, but space in rx ringbuffer  -> enable READY IRQ
+        btstack_em9304_spi->set_ready_callback(&em9304_spi_engine_ready_callback);
+    }
+}
+
 static void em9304_spi_engine_process(void){
     uint16_t max_bytes_to_send;
 
     switch (em9304_spi_engine_state){
         case SPI_EM9304_IDLE:
-            if (btstack_em9304_spi->get_ready()){
-                // RDY -> data available
-                if (btstack_ring_buffer_bytes_free(&em9304_spi_engine_rx_ring_buffer) >= SPI_EM9304_RX_BUFFER_SIZE) {
-
-                    // disable interrupt again
-                    btstack_em9304_spi->set_ready_callback(NULL);
-                                // enable chip select
-                    btstack_em9304_spi->set_chip_select(1);
-
-                    // send read command
-                    em9304_spi_engine_state = SPI_EM9304_RX_W4_READ_COMMAND_SENT;
-                    sCommand.bytes[0] = EM9304_SPI_HEADER_RX;
-                    btstack_em9304_spi->transmit(sCommand.bytes, 1);
-                }
-            } else if (em9304_spi_engine_tx_size){
-                em9304_spi_engine_start_tx_transaction();
-            } else if (em9304_spi_engine_rx_len){
-                // no data ready, no data to send, but read request -> enable IRQ
-                btstack_em9304_spi->set_ready_callback(&em9304_spi_engine_ready_callback);
-            }
+            em9304_engine_idle();
             break;
 
         case SPI_EM9304_RX_READ_COMMAND_SENT:
@@ -227,7 +216,10 @@ static void em9304_spi_engine_process(void){
             em9304_spi_engine_rx_request_len = 0;
 
             // deliver new data
-            em9304_spi_engine_transfer_rx_data();
+            (*em9304_spi_engine_rx_available_handler)();
+
+            // idle, look for more work
+            em9304_engine_idle();
             break;
 
         case SPI_EM9304_TX_W4_RDY:
@@ -286,11 +278,8 @@ static void em9304_spi_engine_process(void){
                 // notify higher layer
                 (*em9304_spi_engine_tx_done_handler)();
 
-                // re-enable irq if read pending
-                if (em9304_spi_engine_rx_len){
-                    // no data ready, no data to send, but read request -> enable IRQ
-                    btstack_em9304_spi->set_ready_callback(&em9304_spi_engine_ready_callback);
-                }
+                // idle, look for more work
+                em9304_engine_idle();
             }
             break;
 
@@ -309,8 +298,8 @@ static void em9304_spi_engine_close(void){
     btstack_em9304_spi->close();
 }
 
-static void em9304_spi_engine_set_block_received( void (*the_block_handler)(void)){
-    em9304_spi_engine_rx_done_handler = the_block_handler;
+static void em9304_spi_engine_set_data_available( void (*the_block_handler)(void)){
+    em9304_spi_engine_rx_available_handler = the_block_handler;
 }
 
 static void em9304_spi_engine_set_block_sent( void (*the_block_handler)(void)){
@@ -323,13 +312,15 @@ static void em9304_spi_engine_send_block(const uint8_t *buffer, uint16_t length)
     em9304_spi_engine_process();
 }
 
-static void em9304_spi_engine_receive_block(uint8_t *buffer, uint16_t length){
-    log_debug("em9304_spi_engine_receive_block: len %u, ring buffer has %u, UART_RX_LEN %u", length, btstack_ring_buffer_bytes_available(&em9304_spi_engine_rx_ring_buffer), em9304_spi_engine_rx_len);
-    em9304_spi_engine_rx_buffer = buffer;
-    em9304_spi_engine_rx_len    = length;
-    em9304_spi_engine_transfer_rx_data();
-    em9304_spi_engine_process();
+static int em9304_engine_num_bytes_available(void){
+    return btstack_ring_buffer_bytes_available(&em9304_spi_engine_rx_ring_buffer);
 }
+
+static void em9304_engine_get_bytes(uint8_t * buffer, uint16_t num_bytes){
+    uint32_t bytes_read;
+    btstack_ring_buffer_read(&em9304_spi_engine_rx_ring_buffer, buffer, num_bytes, &bytes_read);
+}
+
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -368,10 +359,44 @@ static int read_pos;
 static uint8_t hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 1 + HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
 static uint8_t * hci_packet = &hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE];
 
+static uint8_t  * hci_transport_em9304_spi_rx_buffer;
+static uint16_t   hci_transport_em9304_spi_rx_len;
+
+static void hci_transport_em9304_spi_block_read(void);
+
 static void hci_transport_em9304_spi_reset_statemachine(void){
     h4_state = H4_W4_PACKET_TYPE;
     read_pos = 0;
     bytes_to_read = 1;
+}
+
+static void hci_transport_em9304_spi_process_data(void){
+    while (1){
+        int bytes_available = em9304_engine_num_bytes_available();
+        log_debug("transfer_rx_data: ring buffer has %u -> hci buffer needs %u", bytes_available, hci_transport_em9304_spi_rx_len);
+
+        if (!bytes_available) break;
+        if (!hci_transport_em9304_spi_rx_len) break;
+
+        int bytes_to_copy = btstack_min(bytes_available, hci_transport_em9304_spi_rx_len);
+        em9304_engine_get_bytes(hci_transport_em9304_spi_rx_buffer, bytes_to_copy);
+
+        hci_transport_em9304_spi_rx_buffer += bytes_to_copy;
+        hci_transport_em9304_spi_rx_len    -= bytes_to_copy;
+
+        if (hci_transport_em9304_spi_rx_len == 0){
+            (*hci_transport_em9304_spi_block_read)();
+            break;
+        }
+    }
+}
+
+static void em9304_spi_engine_receive_block(uint8_t *buffer, uint16_t length){
+    log_debug("em9304_spi_engine_receive_block: len %u, ring buffer has %u, UART_RX_LEN %u", length, btstack_ring_buffer_bytes_available(&em9304_spi_engine_rx_ring_buffer), hci_transport_em9304_spi_rx_len);
+    hci_transport_em9304_spi_rx_buffer = buffer;
+    hci_transport_em9304_spi_rx_len    = length;
+    hci_transport_em9304_spi_process_data();
+    em9304_spi_engine_process();
 }
 
 static void hci_transport_em9304_spi_trigger_next_read(void){
@@ -465,7 +490,7 @@ static int hci_transport_em9304_spi_open(void){
 
     // setup UART driver
     em9304_spi_engine_init();
-    em9304_spi_engine_set_block_received(&hci_transport_em9304_spi_block_read);
+    em9304_spi_engine_set_data_available(&hci_transport_em9304_spi_process_data);
     em9304_spi_engine_set_block_sent(&hci_transport_em9304_spi_block_sent);
     // setup H4 RX
     hci_transport_em9304_spi_reset_statemachine();
