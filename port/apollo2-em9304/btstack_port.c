@@ -438,12 +438,30 @@ int hal_em9304_spi_get_fullduplex_support(void){
 // EM 9304 SPI Master HCI Implementation
 const uint8_t hci_reset_2[] = { 0x01, 0x03, 0x0c, 0x00 };
 
+#include "btstack_event.h"
+#include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_embedded.h"
-#include "btstack_memory.h"
 #include "hci_dump.h"
 
-int btstack_main(int argc, const char * argv[]);
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+int btstack_main(int argc, char ** argv);
+
+// main.c
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(size);
+    UNUSED(channel);
+    if (packet_type != HCI_EVENT_PACKET) return;
+    switch(hci_event_packet_get_type(packet)){
+        case BTSTACK_EVENT_STATE:
+            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
+            printf("BTstack up and running.\n");
+            break;
+        default:
+            break;
+    }
+}
+
 int main(void)
 {
     //
@@ -500,7 +518,11 @@ int main(void)
 
     // init HCI
     hci_init(hci_transport_em9304_spi_instance(btstack_em9304_spi_embedded_instance()), NULL);
-    hci_dump_open( NULL, HCI_DUMP_STDOUT );
+    // hci_dump_open( NULL, HCI_DUMP_STDOUT );
+
+    // inform about BTstack state
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     // hand over control to btstack_main()..
 
