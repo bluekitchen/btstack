@@ -224,7 +224,7 @@ void hal_cpu_enable_irqs_and_sleep(void){
 // hal_time_ms.h
 #include "hal_time_ms.h"
 uint32_t hal_time_ms(void){
-    return am_hal_systick_count();
+    return am_hal_stimer_counter_get();
 }
 
 
@@ -490,6 +490,10 @@ int main(void)
       am_hal_interrupt_enable(AM_HAL_INTERRUPT_IOMASTER5);
 #endif
 
+    // Start System Timer (only Apollo 2)
+    am_hal_stimer_config(AM_HAL_STIMER_LFRC_1KHZ);
+    am_hal_stimer_counter_clear();
+    
     // start with BTstack init - especially configure HCI Transport
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
