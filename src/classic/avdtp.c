@@ -957,7 +957,10 @@ uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t 
         log_error("avdtp: no initiator stream endpoint for seid %d", local_seid);
         return AVDTP_STREAM_ENDPOINT_DOES_NOT_EXIST;
     } 
-
+    if (stream_endpoint->state >= AVDTP_STREAM_ENDPOINT_CONFIGURED){
+        log_error("avdtp: stream endpoint seid %d in wrong state", local_seid);
+        return AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE;
+    }
     connection->active_stream_endpoint = (void*) stream_endpoint;    
     connection->is_configuration_initiated_locally = 1;
     connection->is_initiator = 1;
