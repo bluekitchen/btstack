@@ -13,7 +13,7 @@
 #define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_CENTRAL
 #define ENABLE_LE_DATA_LENGTH_EXTENSION
-#define ENABLE_LOG_INFO
+// #define ENABLE_LOG_INFO
 #define ENABLE_LOG_ERROR
 
 // BTstack configuration. buffers, sizes, ...
