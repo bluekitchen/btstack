@@ -22,12 +22,12 @@ pdf:
 	rm -rf latex tmp
 
 
-preview: update_apis html
+preview: update_docs_and_apis html
 	# race condition, open browser before startnig MKdocs
 	open http://127.0.0.1:8000
 	mkdocs serve
 
-update_apis:
+update_docs_and_apis:
 	sed -e "s|../doc/manual/docs/||g" ../../chipset/README.md > docs/chipsets.md
 	rm -rf tmp
 	mkdir tmp
