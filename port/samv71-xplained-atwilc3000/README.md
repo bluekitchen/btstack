@@ -8,7 +8,7 @@ To create all example projects in the example folder, you can run:
 
     $ make
 
-# Compile Example
+## Compile Example
 
 In one of the example folders:
 

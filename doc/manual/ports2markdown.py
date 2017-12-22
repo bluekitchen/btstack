@@ -6,8 +6,8 @@ import fnmatch
 
 blacklist = []
 
-example_item = """
-    - [PORT_TITLE](#sec:PORT_LABELPort): PORT_PATH"""
+port_item = """
+- [PORT_TITLE](#sec:PORT_LABELPort)"""
 
 def get_readme_title(example_path):
     title = ''
@@ -39,11 +39,11 @@ def process_readmes(intro_file, ports_folder, ports_file):
         for readme_dir, readme_file in matches.items():
             with open(readme_file, 'rb') as fin:
                 for line in fin:
-                    #increase level of indetation
-                    parts = re.match('(#\s+)(.*)\n',line)
-                    if parts:
-                        title = parts.group(2)
-                        ports.write(example_item.replace("PORT_TITLE", title).replace("PORT_PATH", readme_file).replace("PORT_LABEL", readme_dir))
+                    # find title, add reference
+                    title_parts = re.match('(#\s+)(.*)\n',line)
+                    if title_parts:
+                        title = title_parts.group(2)
+                        ports.write(port_item.replace("PORT_TITLE", title).replace("PORT_LABEL", readme_dir))
                         break
         fin.close()
         ports.write("\n\n")
@@ -52,11 +52,17 @@ def process_readmes(intro_file, ports_folder, ports_file):
             with open(readme_file, 'rb') as fin:
                 for line in fin:
                     #increase level of indetation
-                    parts = re.match('#(.*\n)',line)
+                    parts = re.match('#(.*)\n',line)
+                    title_parts = re.match('(#\s+)(.*)\n',line)
                     if parts:
-                        ports.write("#" + line + "{#sec:"+ readme_dir + "Port}")
+                        if title_parts:
+                            ports.write("#" + title_parts.group(2) + " {" + "#sec:" + readme_dir + "Port}\n" )
+                        else:
+                            ports.write("#" + line)
                     else:
                         ports.write(line)
+
+
         fin.close()
         ports.close()
 
