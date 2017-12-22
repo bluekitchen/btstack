@@ -45,9 +45,9 @@
 
 #include "btstack.h"
 
-#define NUM_CHANNELS                2
-#define A2DP_SAMPLE_RATE            44100
-#define BYTES_PER_AUDIO_SAMPLE      (2*NUM_CHANNELS)
+// #define NUM_CHANNELS                2
+// #define A2DP_SAMPLE_RATE            44100
+// #define BYTES_PER_AUDIO_SAMPLE      (2*NUM_CHANNELS)
 #define AUDIO_TIMEOUT_MS            10 
 #define TABLE_SIZE_441HZ            100
 #define AVDTP_MEDIA_PAYLOAD_HEADER_SIZE 12
@@ -91,14 +91,14 @@ typedef struct {
 
 #ifdef HAVE_BTSTACK_STDIN
 // mac 2011:    static const char * device_addr_string = "04:0C:CE:E4:85:D3";
-// pts:         static const char * device_addr_string = "00:1B:DC:08:0A:A5";
+// pts:         
+static const char * device_addr_string = "00:1B:DC:08:0A:A5";
 // mac 2013:    static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:  static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
 // minijambox:  static const char * device_addr_string = "00:21:3C:AC:F7:38";
 // head phones: static const char * device_addr_string = "00:18:09:28:50:18";
 // BT dongle:   static const char * device_addr_string = "00:15:83:5F:9D:46";
-// BT dongle:       
-static const char * device_addr_string = "00:1A:7D:DA:71:0A";
+// BT dongle:   static const char * device_addr_string = "00:1A:7D:DA:71:0A";
 #endif
 
 typedef struct {
@@ -134,6 +134,15 @@ static btstack_sbc_encoder_state_t sbc_encoder_state;
 static uint8_t is_cmd_triggered_localy = 0;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+static int bytes_per_audio_sample(void){
+    return sc.num_channels * 2;
+}
+
+static int a2dp_sample_rate(void){
+    return sc.sampling_frequency;
+}
+
 
 static void a2dp_source_setup_media_header(uint8_t * media_packet, int size, int *offset, uint8_t marker, uint16_t sequence_number){
     if (size < AVDTP_MEDIA_PAYLOAD_HEADER_SIZE){
@@ -235,11 +244,11 @@ static int fill_sbc_audio_buffer(a2dp_media_sending_context_t * context){
     // perform sbc encodin
     int total_num_bytes_read = 0;
     int num_audio_samples_per_sbc_buffer = btstack_sbc_encoder_num_audio_frames();
-    // printf("num_audio_samples_per_sbc_buffer %d, btstack_sbc_encoder_sbc_buffer_length() %d\n", num_audio_samples_per_sbc_buffer, btstack_sbc_encoder_sbc_buffer_length());
+    
     while (context->samples_ready >= num_audio_samples_per_sbc_buffer
         && (context->max_media_payload_size - context->sbc_storage_count) >= btstack_sbc_encoder_sbc_buffer_length()){
 
-        uint8_t pcm_frame[256*BYTES_PER_AUDIO_SAMPLE];
+        uint8_t pcm_frame[ 256 * bytes_per_audio_sample()];
 
         produce_sine_audio((int16_t *) pcm_frame, num_audio_samples_per_sbc_buffer);
         btstack_sbc_encoder_process_data((int16_t *) pcm_frame);
@@ -266,8 +275,8 @@ static void avdtp_audio_timeout_handler(btstack_timer_source_t * timer){
         update_period_ms = now - context->time_audio_data_sent;
     } 
 
-    uint32_t num_samples = (update_period_ms * A2DP_SAMPLE_RATE) / 1000;
-    context->acc_num_missed_samples += (update_period_ms * A2DP_SAMPLE_RATE) % 1000;
+    uint32_t num_samples = (update_period_ms * a2dp_sample_rate()) / 1000;
+    context->acc_num_missed_samples += (update_period_ms * a2dp_sample_rate()) % 1000;
     
     while (context->acc_num_missed_samples >= 1000){
         num_samples++;
@@ -394,6 +403,7 @@ static void initialize_sbc_encoder(void){
                         sc.block_length, sc.subbands, 
                         sc.allocation_method, sc.sampling_frequency, 
                         sc.max_bitpool_value, sc.channel_mode);
+
     btstack_sbc_encoder_init(&sbc_encoder_state, SBC_MODE_STANDARD, 
                         sc.block_length, sc.subbands, 
                         sc.allocation_method, sc.sampling_frequency, 
@@ -526,12 +536,27 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             sbc_configuration.frames_per_buffer = sbc_configuration.subbands * sbc_configuration.block_length;
             dump_sbc_configuration(sbc_configuration);
 
-            sc.sampling_frequency = avdtp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
-            sc.block_length = avdtp_subevent_signaling_media_codec_sbc_configuration_get_block_length(packet);
-            sc.subbands = avdtp_subevent_signaling_media_codec_sbc_configuration_get_subbands(packet);
-            sc.allocation_method = avdtp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet) - 1;
-            sc.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
-             // TODO: deal with reconfigure: avdtp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
+            sc.block_length = sbc_configuration.block_length;
+            sc.subbands     = sbc_configuration.subbands;
+            sc.allocation_method = sbc_configuration.allocation_method - 1;
+            sc.max_bitpool_value = sbc_configuration.max_bitpool_value;
+            sc.sampling_frequency = sbc_configuration.sampling_frequency;
+            sc.num_channels = 2;
+            switch (sbc_configuration.channel_mode){
+                case AVDTP_SBC_JOINT_STEREO:
+                    sc.channel_mode = 3;
+                    break;
+                case AVDTP_SBC_STEREO:
+                    sc.channel_mode = 2;
+                    break;
+                case AVDTP_SBC_DUAL_CHANNEL:
+                    sc.channel_mode = 1;
+                    break;
+                case AVDTP_SBC_MONO:
+                    sc.channel_mode = 0;
+                    sc.num_channels = 1;
+                    break;
+            }
             break;
         }  
 

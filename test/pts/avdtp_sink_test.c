@@ -123,9 +123,9 @@ typedef struct {
 } avdtp_media_codec_configuration_sbc_t;
 
 // mac 2011:    static const char * device_addr_string = "04:0C:CE:E4:85:D3";
-// pts:         static const char * device_addr_string = "00:1B:DC:08:0A:A5";
-// mac 2013:    
-static const char * device_addr_string = "84:38:35:65:d1:15";
+// pts:         
+static const char * device_addr_string = "00:1B:DC:08:0A:A5";
+// mac 2013:    static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:  static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
 // minijambox:  static const char * device_addr_string = "00:21:3C:AC:F7:38";
 // head phones: static const char * device_addr_string = "00:18:09:28:50:18";
@@ -337,7 +337,7 @@ static int media_processing_init(avdtp_media_codec_configuration_sbc_t configura
 
 static void media_processing_close(void){
     if (is_media_initialized) return;
- is_media_initialized = 0;
+    is_media_initialized = 0;
 
 #ifdef STORE_SBC_TO_WAV_FILE                  
     wav_writer_close();
@@ -632,9 +632,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             sbc_configuration.frames_per_buffer = sbc_configuration.subbands * sbc_configuration.block_length;
             dump_sbc_configuration(sbc_configuration);
             
-            if (sbc_configuration.reconfigure){
-                media_processing_close();
-            }
+            media_processing_close();
             media_processing_init(sbc_configuration);
             break;
         }  
@@ -847,7 +845,7 @@ int btstack_main(int argc, const char * argv[]){
     memset(sdp_avdtp_sink_service_buffer, 0, sizeof(sdp_avdtp_sink_service_buffer));
     a2dp_sink_create_sdp_record(sdp_avdtp_sink_service_buffer, 0x10001, 1, NULL, NULL);
     sdp_register_service(sdp_avdtp_sink_service_buffer);
-    
+    // printf("BTstack AVDTP Sink, supported features 0x%04x\n", );
     gap_set_local_name("BTstack AVDTP Sink PTS 00:00:00:00:00:00");
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);
