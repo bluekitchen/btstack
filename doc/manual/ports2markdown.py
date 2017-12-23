@@ -20,15 +20,20 @@ def get_readme_title(example_path):
     return title
 
 # write list of examples
-def process_readmes(intro_file, ports_folder, ports_file):
+def process_readmes(intro_file, port_folder, ports_file, ports_folder):
     matches = {}
-    
-    for root, dirnames, filenames in os.walk(ports_folder):
+    images  = {}
+
+    for root, dirnames, filenames in os.walk(port_folder):
         for filename in fnmatch.filter(filenames, 'README.md'):
             folder = os.path.basename(root)
             if folder not in blacklist:
                 matches[folder] = os.path.join(root, filename)
         
+        for filename in fnmatch.filter(filenames, "*.jpg"):
+            folder = os.path.basename(root)
+            if folder not in blacklist:
+                images[filename] = os.path.join(root, filename)
 
     with open(ports_file, 'w') as ports:
         with open(intro_file, 'rb') as fin:
@@ -62,6 +67,10 @@ def process_readmes(intro_file, ports_folder, ports_file):
                     else:
                         ports.write(line)
 
+        # copy images
+        for image_filename, image_path in images.items():
+            print('copy %s as %s' % (image_path, ports_folder + image_filename))
+            shutil.copy(image_path, ports_folder + image_filename)
 
         fin.close()
         ports.close()
@@ -71,10 +80,10 @@ def main(argv):
     docsfolder    = "docs/"
     
     inputfolder = btstackfolder + "port/"
-    introfile   = docsfolder + "ports/intro.md"
-    outputfile  = docsfolder + "ports/existing_ports.md"
-    
-    process_readmes(introfile, inputfolder, outputfile)
+    portsfolder = docsfolder + "ports/"
+    introfile   = portsfolder + "intro.md"
+    outputfile  = portsfolder + "existing_ports.md"
+    process_readmes(introfile, inputfolder, outputfile, portsfolder)
 
 if __name__ == "__main__":
    main(sys.argv[1:])
