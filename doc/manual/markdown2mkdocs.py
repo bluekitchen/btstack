@@ -9,9 +9,9 @@ def insert_anchor(mdout, reference):
 def insert_reference(mdout, text, link):
     mdout.write("")
 
-def process_sections(temp_file, dest_file):
+def process_sections(source_file, dest_file):
     with open(dest_file, 'w') as mdout:
-        with open(temp_file, 'r') as mdin:
+        with open(source_file, 'r') as mdin:
             for line in mdin:
                 section = re.match('(#+.*){#(sec:.*)}',line)
                 if section:
@@ -20,12 +20,9 @@ def process_sections(temp_file, dest_file):
                 else:
                     mdout.write(line)
                 
-    shutil.copyfile(dest_file, temp_file)
-    return
-
-def process_figures(temp_file, dest_file):
+def process_figures(source_file, dest_file):
     with open(dest_file, 'w') as mdout:
-        with open(temp_file, 'r') as mdin:
+        with open(source_file, 'r') as mdin:
             for line in mdin:
                 # detect figure
                 figure = re.match('\s*(\!.*)({#(fig:.*)})',line)
@@ -38,12 +35,10 @@ def process_figures(temp_file, dest_file):
                         md_reference = "[below](#"+figure_ref.group(2)+")"
                         line = line.replace(figure_ref.group(1), md_reference) 
                     mdout.write(line)
-    shutil.copyfile(dest_file, temp_file)
-    return
 
-def process_tables(temp_file, dest_file):
+def process_tables(source_file, dest_file):
     with open(dest_file, 'w') as mdout:
-        with open(temp_file, 'r') as mdin:
+        with open(source_file, 'r') as mdin:
             for line in mdin:
                 # detect table
                 table = re.match('\s*(Table:.*)({#(tbl:.*)})',line)
@@ -56,13 +51,11 @@ def process_tables(temp_file, dest_file):
                         md_reference = "[below](#"+table_ref.group(2)+")"
                         line = line.replace(table_ref.group(1), md_reference) 
                     mdout.write(line)
-    shutil.copyfile(dest_file, temp_file)
-    return
 
 
-def process_listings(temp_file, dest_file):
+def process_listings(source_file, dest_file):
     with open(dest_file, 'w') as mdout:
-        with open(temp_file, 'r') as mdin:
+        with open(source_file, 'r') as mdin:
             for line in mdin:
                 listing_start = re.match('.*{#(lst:.*)\s+.c\s+.*',line)
                 listing_end = re.match('\s*~~~~\s*\n',line)
@@ -72,14 +65,10 @@ def process_listings(temp_file, dest_file):
                     mdout.write("\n")
                 else:
                     mdout.write(line)
-    shutil.copyfile(dest_file, temp_file)
-    return
-
 
 
 def main(argv):
     md_template = "docs"
-    md_temp = "docs_tmp"
     md_final = "docs_final"
     yml_file = "mkdocs.yml"
     
@@ -87,13 +76,12 @@ def main(argv):
         doc = yaml.load(yin)
         for page in doc["pages"]:
             source_file = md_template +"/"+ page[0]
-            temp_file   = md_temp +"/"+ page[0]
             dest_file   = md_final +"/"+ page[0]
             
-            process_sections(temp_file, dest_file)
-            process_figures(temp_file, dest_file)
-            process_tables(temp_file, dest_file)
-            process_listings(temp_file, dest_file)
+            process_sections(source_file, dest_file)
+            process_figures(source_file, dest_file)
+            process_tables(source_file, dest_file)
+            process_listings(source_file, dest_file)
 
 
 if __name__ == "__main__":
