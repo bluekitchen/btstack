@@ -59,9 +59,9 @@ def process_readmes(intro_file, port_folder, ports_file, ports_folder):
                     title_parts = re.match('(#\s+)(.*)\n',line)
                     if parts:
                         if title_parts:
-                            ports.write("#" + title_parts.group(2) + " {" + "#sec:" + readme_dir + "Port}\n" )
+                            ports.write("## " + title_parts.group(2) + " {" + "#sec:" + readme_dir + "Port}\n" )
                         else:
-                            ports.write("#" + line)
+                            ports.write("## " + line)
                     else:
                         ports.write(line)
 
