@@ -19,6 +19,7 @@ pdf:
 	# create latex/btstack_generated.md -> latex/btstack_final.tex
 	./markdown2tex.py
 	cp btstack_gettingstarted.tex latex
+	cp docs/ports/*.jpg latex
 	cd latex && pdflatex btstack_gettingstarted.tex && pdflatex btstack_gettingstarted.tex
 	mv latex/btstack_gettingstarted.pdf btstack.pdf
 	rm -rf latex tmp
