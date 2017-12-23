@@ -390,7 +390,7 @@ static void avrcp_browsing_controller_handle_can_send_now(avrcp_browsing_connect
 
 static void avrcp_browsing_controller_emit_done(btstack_packet_handler_t callback, uint16_t browsing_cid, uint8_t browsing_status, uint8_t bluetooth_status){
     if (!callback) return;
-    uint8_t event[6];
+    uint8_t event[7];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
     event[pos++] = sizeof(event) - 2;
