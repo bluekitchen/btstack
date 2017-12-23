@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os, shutil
-import re, yaml
-import fnmatch
+import sys, os, shutil, re
 
 blacklist = []
 
@@ -24,16 +22,16 @@ def process_readmes(intro_file, port_folder, ports_file, ports_folder):
     matches = {}
     images  = {}
 
-    for root, dirnames, filenames in os.walk(port_folder):
-        for filename in fnmatch.filter(filenames, 'README.md'):
-            folder = os.path.basename(root)
-            if folder not in blacklist:
-                matches[folder] = os.path.join(root, filename)
-        
-        for filename in fnmatch.filter(filenames, "*.jpg"):
-            folder = os.path.basename(root)
-            if folder not in blacklist:
-                images[filename] = os.path.join(root, filename)
+    # iterate over port folders
+    ports = os.listdir(port_folder)
+    for port in ports:
+        if port not in blacklist:
+            readme_file = port_folder + "/" + port + "/" + "README.md"
+            if os.path.exists(readme_file):
+                matches[port] = readme_file
+                for file in os.listdir(port_folder + "/" + port):
+                    if file.endswith('.jpg'):
+                        images[file] =  port_folder + "/" + port + "/" + file
 
     with open(ports_file, 'w') as ports:
         with open(intro_file, 'rb') as fin:
