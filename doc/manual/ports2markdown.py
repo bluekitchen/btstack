@@ -54,14 +54,11 @@ def process_readmes(intro_file, port_folder, ports_file, ports_folder):
         for readme_dir, readme_file in sorted(matches.items()):
             with open(readme_file, 'rb') as fin:
                 for line in fin:
-                    #increase level of indetation
+                    #increase level of indentation
                     parts = re.match('#(.*)\n',line)
                     title_parts = re.match('(#\s+)(.*)\n',line)
-                    if parts:
-                        if title_parts:
-                            ports.write("## " + title_parts.group(2) + " {" + "#sec:" + readme_dir + "Port}\n" )
-                        else:
-                            ports.write("## " + line)
+                    if parts and title_parts:
+                        ports.write("# " + title_parts.group(2) + " {" + "#sec:" + readme_dir + "Port}\n" )
                     else:
                         ports.write(line)
 
