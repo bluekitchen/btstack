@@ -39,7 +39,7 @@ def process_readmes(intro_file, port_folder, ports_file, ports_folder):
                 ports.write(line)
         fin.close()
 
-        for readme_dir, readme_file in matches.items():
+        for readme_dir, readme_file in sorted(matches.items()):
             with open(readme_file, 'rb') as fin:
                 for line in fin:
                     # find title, add reference
@@ -51,7 +51,7 @@ def process_readmes(intro_file, port_folder, ports_file, ports_folder):
         fin.close()
         ports.write("\n\n")
 
-        for readme_dir, readme_file in matches.items():
+        for readme_dir, readme_file in sorted(matches.items()):
             with open(readme_file, 'rb') as fin:
                 for line in fin:
                     #increase level of indetation
