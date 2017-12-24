@@ -221,6 +221,7 @@ GATT_FILES = \
 	gatt_browser.gatt \
 	gatt_battery_query.gatt \
 	sm_pairing_peripheral.gatt \
+	sm_pairing_central.gatt \
 
 
 #######################################
