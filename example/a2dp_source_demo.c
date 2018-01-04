@@ -134,7 +134,6 @@ typedef struct {
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-#ifdef HAVE_BTSTACK_STDIN
 // pts:             static const char * device_addr_string = "00:1B:DC:08:0A:A5";
 // mac 2013:        static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:      static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
@@ -145,7 +144,6 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 // BT dongle:       
 static const char * device_addr_string = "00:1A:7D:DA:71:0A";
 // Sony MDR-ZX330BT static const char * device_addr_string = "00:18:09:28:50:18";
-#endif
 
 static bd_addr_t device_addr;
 static uint8_t sdp_a2dp_source_service_buffer[150];
@@ -283,9 +281,10 @@ static int a2dp_source_and_avrcp_services_init(void){
         hxcmod_load(&mod_context, (void *) &mod_data, mod_len);
         printf("loaded mod '%s', size %u\n", mod_name, mod_len);
     }
+    
     // Parse human readable Bluetooth address.
     sscanf_bd_addr(device_addr_string, device_addr);
-    
+
 #ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
 #endif
