@@ -53,6 +53,12 @@
               <itemPath>../../../3rd-party/bluedroid/encoder/Makefile.inc</itemPath>
             </logicalFolder>
           </logicalFolder>
+          <logicalFolder name="f1" displayName="hxcmod-player" projectFiles="true">
+            <logicalFolder name="f1" displayName="mods" projectFiles="true">
+              <itemPath>../../../3rd-party/hxcmod-player/mods/mod.h</itemPath>
+            </logicalFolder>
+            <itemPath>../../../3rd-party/hxcmod-player/hxcmod.h</itemPath>
+          </logicalFolder>
           <logicalFolder name="micro-ecc" displayName="micro-ecc" projectFiles="true">
             <itemPath>../../../3rd-party/micro-ecc/btstack_config_uECC.h</itemPath>
             <itemPath>../../../3rd-party/micro-ecc/uECC.h</itemPath>
@@ -184,6 +190,12 @@
                 <itemPath>../../../3rd-party/bluedroid/encoder/srce/sbc_packing.c</itemPath>
               </logicalFolder>
             </logicalFolder>
+          </logicalFolder>
+          <logicalFolder name="f1" displayName="hxcmod-player" projectFiles="true">
+            <logicalFolder name="f1" displayName="mods" projectFiles="true">
+              <itemPath>../../../3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c</itemPath>
+            </logicalFolder>
+            <itemPath>../../../3rd-party/hxcmod-player/hxcmod.c</itemPath>
           </logicalFolder>
           <logicalFolder name="micro-ecc" displayName="micro-ecc" projectFiles="true">
             <itemPath>../../../3rd-party/micro-ecc/uECC.c</itemPath>
@@ -367,7 +379,7 @@
         <property key="enable-unroll-loops" value="false"/>
         <property key="exclude-floating-point" value="false"/>
         <property key="extra-include-directories"
-                  value=".;../../../..;../src;../src/system_config/bt_audio_dk;../../../src;../../../chipset/csr;../../../platform/embedded;../../../3rd-party/micro-ecc;../../../3rd-party/bluedroid/decoder/include;../../../3rd-party/bluedroid/encoder/include"/>
+                  value=".;../../../..;../src;../src/system_config/bt_audio_dk;../../../src;../../../chipset/csr;../../../platform/embedded;../../../3rd-party/micro-ecc;../../../3rd-party/bluedroid/decoder/include;../../../3rd-party/bluedroid/encoder/include;../../../3rd-party/hxcmod-player;../../../3rd-party/hxcmod-player/mods"/>
         <property key="generate-16-bit-code" value="false"/>
         <property key="generate-micro-compressed-code" value="false"/>
         <property key="isolate-each-function" value="false"/>
