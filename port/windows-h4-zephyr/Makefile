@@ -1,0 +1,30 @@
+# Makefile for windows-h4 examples
+BTSTACK_ROOT = ../..
+
+CORE += main.c btstack_stdin_windows.c
+
+COMMON  += \
+			btstack_chipset_zephyr.c     \
+			btstack_link_key_db_fs.c     \
+			btstack_run_loop_windows.c   \
+			btstack_uart_block_windows.c \
+			hci_transport_h4.c           \
+			le_device_db_fs.c            \
+
+# examples
+include ${BTSTACK_ROOT}/example/Makefile.inc
+
+# CC = gcc-fsf-4.9
+CFLAGS  += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror
+# CFLAGS += -Werror
+
+CFLAGS += -I${BTSTACK_ROOT}/platform/posix \
+		  -I${BTSTACK_ROOT}/platform/windows \
+		  -I${BTSTACK_ROOT}/platform/embedded \
+		  -I$(BTSTACK_ROOT)/chipset/zephyr \
+
+VPATH += ${BTSTACK_ROOT}/platform/windows
+VPATH += ${BTSTACK_ROOT}/platform/posix
+VPATH += ${BTSTACK_ROOT}/chipset/zephyr
+
+all: ${EXAMPLES_USING_LE}
