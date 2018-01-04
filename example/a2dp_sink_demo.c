@@ -899,7 +899,9 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
             }
             printf("A2DP Sink demo: streaming connection is established, address %s, a2dp cid 0x%02X, local_seid %d\n", bd_addr_to_str(address), a2dp_cid, local_seid);
             
+#ifdef HAVE_BTSTACK_STDIN
             memcpy(device_addr, address, 6);
+#endif
             local_seid = a2dp_subevent_stream_established_get_local_seid(packet);
             a2dp_sink_connected = 1;
             break;
