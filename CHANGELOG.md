@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Example/hid_host_demo with HID parser and support for basic US keyboard layout
 - EM9304: custom HCI Transport implementation for EM9304 on top of btstack_em9304_spi.h platform abstraction only requires hal_em9304_spi.h to be implemented for new ports
 - Port for Apollo2 MCU with EM9304 (ports/apollo2-em9304)
+- Port for Windows with Zephyr HCI Firmware connected via serial port  
 
 ### Changed
 - panu_demo: uses btstack_network.h now
