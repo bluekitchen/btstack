@@ -24,7 +24,7 @@ Alternatively, you can download it as a ZIP archive from
 [BTstack’s page](https://github.com/bluekitchen/btstack/archive/master.zip) on
 GitHub.
 
-## Quick Start
+## Let's Go
 
 The easiest way to try BTstack is on a regular desktop setup like macOS, Linux or Windows together with a standard USB Bluetooht Controller. Running BTstack on destkop speeds up the devlopment cycle a log and also provides direct access to full packet log files in cases something doesn't work as expected. The same code can then later be run unmodified on an embedded target.
 
