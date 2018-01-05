@@ -1,11 +1,12 @@
-# BTstack Port for Windows Systems using the WinUSB Driver
+# BTstack port for Windows Systems using the WinUSB Driver
 
-Although libusb basically works with the POSIX Run Loop on Windows, we recommend to use the Windows-WinUSB port that uses the native run loop and WinUSB API to access a USB Bluetooth dongle.
+The Windows-WinUSB port uses the native run loop and WinUSB API to access a USB Bluetooth dongle.
 
 To allow libusb or WinUSB to access an USB Bluetooth dongle, you need to install a special device driver to make it accessible to user space processes. 
 
 It works like this:
--  Start [Zadig](http://zadig.akeo.ie)
+-  Download [Zadig](http://zadig.akeo.ie)
+-  Start Zadig
 -  Select Options -> “List all devices”
 -  Select USB Bluetooth dongle in the big pull down list
 -  Select WinUSB (libusb) in the right pull pull down list

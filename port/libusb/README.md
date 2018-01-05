@@ -26,4 +26,5 @@ Bluetooth. For this, execute:
 
     sudo nvram bluetoothHostControllerSwitchBehavior=never
 
-You may need to reboot for the change to become active.
+and then reboot to activate the change.
+
