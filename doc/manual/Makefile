@@ -1,15 +1,14 @@
 all: update_apis_and_listings html pdf
 
-html:
+html: 
 	# create docs/ports/existing_ports.md + adds images
 	./ports2markdown.py
 	# re-create docs_final
-	rm -rf docs_final
 	cp -r docs docs_final
 	# docs -> docs_final
 	./markdown2mkdocs.py
 	mkdocs build --clean
-	./mkdocs2html.py
+	# ./mkdocs2html.py
 
 pdf:
 	mkdir -p latex
