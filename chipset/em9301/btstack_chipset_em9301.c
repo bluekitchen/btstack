@@ -82,25 +82,6 @@ static const uint32_t baudrates[] = {
 	1843200,
 };
 
-#if 0
-// crc32 from 802.3 without table lookup to minimize code
-uint32_t crc32(const uint8_t *data, uint16_t len) {
-   int i, j;
-   uint32_t byte, crc, mask;
-   crc = 0xFFFFFFFF;
-   for (i=0;i<len;i++){
-      byte = data[i];
-      crc = crc ^ byte;
-      for (j = 7; j >= 0; j--) {
-         mask = -(crc & 1);
-         crc = (crc >> 1) ^ (0xEDB88320 & mask);
-      }
-      i = i + 1;
-   }
-   return ~crc;
-}
-#endif
-
 #ifdef HAVE_EM9304_PATCH_CONTAINER
 
 extern const uint8_t   container_blob_data[];
