@@ -96,6 +96,7 @@ static int att_db_util_assert_space(uint16_t size){
 	}
 	att_db = new_db;
 	att_db_max_size = new_size;
+    att_set_db(att_db); // Update att_db with the new db
 	return 1;
 #else
 	log_error("att_db: out of memory");
