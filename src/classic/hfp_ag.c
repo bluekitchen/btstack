@@ -412,24 +412,16 @@ static int hfp_ag_send_retrieve_indicators_cmd_via_generator(uint16_t cid, hfp_c
 static int hfp_ag_send_retrieve_indicators_status_cmd(uint16_t cid){
     char buffer[40];
     int offset = snprintf(buffer, sizeof(buffer), "\r\n%s:", HFP_INDICATOR);
-    offset += hfp_ag_indicators_status_join(buffer+offset, sizeof(buffer)-offset);
-    
-    buffer[offset] = 0;
-    
+    offset += hfp_ag_indicators_status_join(buffer+offset, sizeof(buffer) - offset - 9);
     offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n\r\nOK\r\n");
-    buffer[offset] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_ag_send_retrieve_can_hold_call_cmd(uint16_t cid){
     char buffer[40];
     int offset = snprintf(buffer, sizeof(buffer), "\r\n%s:", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES);
-    offset += hfp_ag_call_services_join(buffer+offset, sizeof(buffer)-offset);
-    
-    buffer[offset] = 0;
-    
+    offset += hfp_ag_call_services_join(buffer+offset, sizeof(buffer)-offset-9);
     offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n\r\nOK\r\n");
-    buffer[offset] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -441,22 +433,15 @@ static int hfp_ag_send_list_supported_generic_status_indicators_cmd(uint16_t cid
 static int hfp_ag_send_retrieve_supported_generic_status_indicators_cmd(uint16_t cid){
     char buffer[40];
     int offset = snprintf(buffer, sizeof(buffer), "\r\n%s:(", HFP_GENERIC_STATUS_INDICATOR);
-    offset += hfp_hf_indicators_join(buffer+offset, sizeof(buffer)-offset);
-    
-    buffer[offset] = 0;
-    
+    offset += hfp_hf_indicators_join(buffer+offset, sizeof(buffer) - offset - 10);
     offset += snprintf(buffer+offset, sizeof(buffer)-offset, ")\r\n\r\nOK\r\n");
-    buffer[offset] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_ag_send_retrieve_initital_supported_generic_status_indicators_cmd(uint16_t cid){
     char buffer[40];
-    int offset = hfp_hf_indicators_initial_status_join(buffer, sizeof(buffer));
-    
-    buffer[offset] = 0;
-    offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\r\nOK\r\n");
-    buffer[offset] = 0;
+    int offset = hfp_hf_indicators_initial_status_join(buffer, sizeof(buffer) - 7);
+    snprintf(buffer+offset, sizeof(buffer)-offset, "\r\nOK\r\n");
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -471,44 +456,38 @@ static int hfp_ag_send_report_network_operator_name_cmd(uint16_t cid, hfp_networ
     if (strlen(op.name) == 0){
         sprintf(buffer, "\r\n%s:%d,,\r\n\r\nOK\r\n", HFP_QUERY_OPERATOR_SELECTION, op.mode);
     } else {
-        int offset = 0;
         int size = sizeof(buffer);
-        offset += snprintf(buffer, size,"\r\n%s:%d,%d,", HFP_QUERY_OPERATOR_SELECTION, op.mode, op.format);
+        int offset = snprintf(buffer, size,"\r\n%s:%d,%d,", HFP_QUERY_OPERATOR_SELECTION, op.mode, op.format);
         offset += snprintf(buffer + offset, 16, "%s", op.name);
-        offset += snprintf(buffer + offset, size - offset,"\r\n\r\nOK\r\n");
+        snprintf(buffer + offset, size - offset, "\r\n\r\nOK\r\n");
     }
     return send_str_over_rfcomm(cid, buffer);
 }
 
+static inline int hfp_ag_send_cmd_with_int(uint16_t cid, const char * cmd, uint8_t value){
+    char buffer[30];
+    sprintf(buffer, "\r\n%s:%d\r\n", cmd, value);
+    return send_str_over_rfcomm(cid, buffer);
+}
 
 static int hfp_ag_send_suggest_codec_cmd(uint16_t cid, uint8_t codec){
-    char buffer[30];
-    sprintf(buffer, "\r\n%s:%d\r\n", HFP_CONFIRM_COMMON_CODEC, codec);
-    return send_str_over_rfcomm(cid, buffer);
+    return hfp_ag_send_cmd_with_int(cid, HFP_CONFIRM_COMMON_CODEC, codec);
 }
 
 static int hfp_ag_send_activate_voice_recognition_cmd(uint16_t cid, uint8_t activate_voice_recognition){
-    char buffer[30];
-    sprintf(buffer, "\r\n%s: %d\r\n", HFP_ACTIVATE_VOICE_RECOGNITION, activate_voice_recognition);
-    return send_str_over_rfcomm(cid, buffer);
+    return hfp_ag_send_cmd_with_int(cid, HFP_ACTIVATE_VOICE_RECOGNITION, activate_voice_recognition);
 }
 
 static int hfp_ag_send_set_speaker_gain_cmd(uint16_t cid, uint8_t gain){
-    char buffer[30];
-    sprintf(buffer, "\r\n%s:%d\r\n", HFP_SET_SPEAKER_GAIN, gain);
-    return send_str_over_rfcomm(cid, buffer);
+    return hfp_ag_send_cmd_with_int(cid, HFP_SET_SPEAKER_GAIN, gain);
 }
 
 static int hfp_ag_send_set_microphone_gain_cmd(uint16_t cid, uint8_t gain){
-    char buffer[30];
-    sprintf(buffer, "\r\n%s:%d\r\n", HFP_SET_MICROPHONE_GAIN, gain);
-    return send_str_over_rfcomm(cid, buffer);
+    return hfp_ag_send_cmd_with_int(cid, HFP_SET_MICROPHONE_GAIN, gain);
 }
             
 static int hfp_ag_send_set_response_and_hold(uint16_t cid, int state){
-    char buffer[30];
-    sprintf(buffer, "\r\n%s: %d\r\n", HFP_RESPONSE_AND_HOLD, state);
-    return send_str_over_rfcomm(cid, buffer);
+    return hfp_ag_send_cmd_with_int(cid, HFP_RESPONSE_AND_HOLD, state);
 }
 
 static uint8_t hfp_ag_suggest_codec(hfp_connection_t *hfp_connection){
@@ -1610,7 +1589,7 @@ static void hfp_ag_send_call_status(hfp_connection_t * hfp_connection, int call_
     // TODO: check length of a buffer, to fit the MTU
     int offset = snprintf(buffer, sizeof(buffer), "\r\n%s: %d,%d,%d,%d,%d", HFP_LIST_CURRENT_CALLS, idx, dir, status, mode, mpty);
     if (number){
-        offset += snprintf(buffer+offset, sizeof(buffer)-offset, ", \"%s\",%u", number, type);
+        offset += snprintf(buffer+offset, sizeof(buffer)-offset-3, ", \"%s\",%u", number, type);
     } 
     snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n");
     log_info("hfp_ag_send_current_call_status 000 index %d, dir %d, status %d, mode %d, mpty %d, type %d, number %s", idx, dir, status,
@@ -1619,11 +1598,7 @@ static void hfp_ag_send_call_status(hfp_connection_t * hfp_connection, int call_
 }
 
 static void hfp_run_for_context(hfp_connection_t *hfp_connection){
-
-    // log_info("hfp_run_for_context %p", hfp_connection);
-
     if (!hfp_connection) return;
-
     if (!hfp_connection->rfcomm_cid) return;
 
     if (!rfcomm_can_send_packet_now(hfp_connection->rfcomm_cid)) {
