@@ -53,8 +53,6 @@
 #include <string.h>   /* memcpy */
 #include "hci.h"
 
-#include "crc32.h"
-
 // should go to some common place
 #define OPCODE(ogf, ocf) (ocf | ogf << 10)
 
@@ -99,6 +97,22 @@ static enum {
 
 #endif
 
+// Quick CRC32 implementation using 4-bit lookup table
+static const uint32_t crc32_table[16] = { 
+	0x00000000, 0x1db71064, 0x3b6e20c8, 0x26d930ac, 0x76dc4190, 0x6b6b51f4, 0x4db26158, 0x5005713c,
+	0xedb88320, 0xf00f9344, 0xd6d6a3e8, 0xcb61b38c, 0x9b64c2b0, 0x86d3d2d4, 0xa00ae278, 0xbdbdf21c
+};
+
+uint32_t btstack_crc32(const uint8_t *buf, uint16_t size){
+	uint16_t pos;
+	uint32_t crc32 = 0xffffffff;
+	for (pos=0 ; pos<size ; pos++){
+		uint8_t b = buf[pos];
+		crc32 = (crc32 >> 4) ^ crc32_table[(crc32 & 0x0F) ^ (b & 0x0F)];
+		crc32 = (crc32 >> 4) ^ crc32_table[(crc32 & 0x0F) ^ (b >>   4)];
+	}
+	return ~crc32;
+}
 
 static void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer){
     little_endian_store_16(hci_cmd_buffer, 0, OPCODE(OGF_VENDOR, 0x02));
@@ -165,7 +179,7 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
 			// start uploading (<= 59 bytes)
 			patch_sequence_number = 1;
 			bytes_to_upload = btstack_min(59, container_end - container_blob_offset);
-			crc = crc32(&container_blob_data[container_blob_offset], bytes_to_upload); 
+			crc = btstack_crc32(&container_blob_data[container_blob_offset], bytes_to_upload); 
 			// build command
 		    little_endian_store_16(hci_cmd_buffer, 0, HCI_OPCODE_EM_WRITE_PATCH_START);
 		    hci_cmd_buffer[2] = 5 + bytes_to_upload;
@@ -180,7 +194,7 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
 		case UPLOAD_ACTIVE:
 			// Upload next segement
 			bytes_to_upload = btstack_min(58, container_end - container_blob_offset);
-			crc = crc32(&container_blob_data[container_blob_offset], bytes_to_upload); 
+			crc = btstack_crc32(&container_blob_data[container_blob_offset], bytes_to_upload); 
 			// build command
 		    little_endian_store_16(hci_cmd_buffer, 0, HCI_OPCODE_EM_WRITE_PATCH_CONTINUE);
 		    hci_cmd_buffer[2] = 6 + bytes_to_upload;
