@@ -467,11 +467,15 @@ static int hfp_ag_send_transfer_ag_indicators_status_cmd(uint16_t cid, hfp_ag_in
 }
 
 static int hfp_ag_send_report_network_operator_name_cmd(uint16_t cid, hfp_network_opearator_t op){
-    char buffer[40];
+    char buffer[41];
     if (strlen(op.name) == 0){
         sprintf(buffer, "\r\n%s:%d,,\r\n\r\nOK\r\n", HFP_QUERY_OPERATOR_SELECTION, op.mode);
     } else {
-        sprintf(buffer, "\r\n%s:%d,%d,%s\r\n\r\nOK\r\n", HFP_QUERY_OPERATOR_SELECTION, op.mode, op.format, op.name);
+        int offset = 0;
+        int size = sizeof(buffer);
+        offset += snprintf(buffer, size,"\r\n%s:%d,%d,", HFP_QUERY_OPERATOR_SELECTION, op.mode, op.format);
+        offset += snprintf(buffer + offset, 16, "%s", op.name);
+        offset += snprintf(buffer + offset, size - offset,"\r\n\r\nOK\r\n");
     }
     return send_str_over_rfcomm(cid, buffer);
 }
