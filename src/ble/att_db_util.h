@@ -55,6 +55,12 @@
 extern "C" {
 #endif
 
+typedef struct
+{
+    uint16_t          value_handle;       /**< Handle to the characteristic value. */
+    uint16_t          cccd_handle;        /**< Handle to the Client Characteristic Configuration Descriptor. */
+} att_db_handles;
+
 /* API_START */
 
 /**
@@ -65,26 +71,40 @@ void att_db_util_init(void);
 /**
  * @brief Add primary service for 16-bit UUID
  */
-void att_db_util_add_service_uuid16(uint16_t udid16);
+uint16_t att_db_util_add_service_uuid16(uint16_t udid16);
 
 /**
  * @brief Add primary service for 128-bit UUID
  */
-void att_db_util_add_service_uuid128(uint8_t * udid128);
+uint16_t att_db_util_add_service_uuid128(uint8_t * udid128);
 
 /**
  * @brief Add Characteristic with 16-bit UUID, properties, and data
  * @returns attribute value handle
  * @see ATT_PROPERTY_* in ble/att_db.h
  */
-uint16_t att_db_util_add_characteristic_uuid16(uint16_t   udid16,  uint16_t properties, uint8_t * data, uint16_t data_len);
+att_db_handles att_db_util_add_characteristic_uuid16(uint16_t   udid16, uint16_t properties, uint8_t * data, uint16_t data_len);
 
 /**
  * @brief Add Characteristic with 128-bit UUID, properties, and data
  * @returns attribute value handle
  * @see ATT_PROPERTY_* in ble/att_db.h
  */
-uint16_t att_db_util_add_characteristic_uuid128(uint8_t * udid128, uint16_t properties, uint8_t * data, uint16_t data_len);
+att_db_handles att_db_util_add_characteristic_uuid128(uint8_t * udid128, uint16_t properties, uint8_t * data, uint16_t data_len);
+
+/**
+* @brief Add descriptor with 16-bit UUID, properties, and data
+* @returns attribute value handle
+* @see ATT_PROPERTY_* in ble/att_db.h
+*/
+uint16_t att_db_util_add_descriptor_uuid16(uint16_t uuid16, uint16_t properties, uint8_t * data, uint16_t data_len);
+
+/**
+* @brief Add descriptor with 128-bit UUID, properties, and data
+* @returns attribute value handle
+* @see ATT_PROPERTY_* in ble/att_db.h
+*/
+uint16_t att_db_util_add_descriptor_uuid128(uint8_t * udid128, uint16_t properties, uint8_t * data, uint16_t data_len);
 
 /** 
  * @brief Get address of constructed ATT DB
