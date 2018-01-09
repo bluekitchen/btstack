@@ -795,7 +795,7 @@ static void avdtp_signaling_emit_content_multiplexing_capability(btstack_packet_
 
 static void avdtp_signaling_emit_media_codec_other_capability(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, adtvp_media_codec_capabilities_t media_codec){
     if (!callback) return;
-    uint8_t event[111];
+    uint8_t event[MAX_MEDIA_CODEC_INFORMATION_LENGTH + 12];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
     event[pos++] = sizeof(event) - 2;
@@ -809,11 +809,7 @@ static void avdtp_signaling_emit_media_codec_other_capability(btstack_packet_han
     pos += 2;
     little_endian_store_16(event, pos, media_codec.media_codec_information_len);
     pos += 2;
-    if (media_codec.media_codec_information_len < 100){
-        memcpy(event+pos, media_codec.media_codec_information, media_codec.media_codec_information_len);
-    } else {
-        memcpy(event+pos, media_codec.media_codec_information, 100);
-    }
+    memcpy(event+pos, media_codec.media_codec_information, btstack_min(media_codec.media_codec_information_len, MAX_MEDIA_CODEC_INFORMATION_LENGTH));
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
