@@ -97,7 +97,8 @@ static enum {
 
 #endif
 
-// Quick CRC32 implementation using 4-bit lookup table
+// CRC32 implementation using 4-bit lookup table created by pycrc v0.9.1, https://pycrc.org
+// ./pycrc.py --model crc-32 --algorithm table-driven --table-idx-width=4 --generate c
 static const uint32_t crc32_table[16] = { 
 	0x00000000, 0x1db71064, 0x3b6e20c8, 0x26d930ac, 0x76dc4190, 0x6b6b51f4, 0x4db26158, 0x5005713c,
 	0xedb88320, 0xf00f9344, 0xd6d6a3e8, 0xcb61b38c, 0x9b64c2b0, 0x86d3d2d4, 0xa00ae278, 0xbdbdf21c
@@ -105,13 +106,14 @@ static const uint32_t crc32_table[16] = {
 
 uint32_t btstack_crc32(const uint8_t *buf, uint16_t size){
 	uint16_t pos;
-	uint32_t crc32 = 0xffffffff;
+	uint32_t crc = 0xffffffff;
 	for (pos=0 ; pos<size ; pos++){
-		uint8_t b = buf[pos];
-		crc32 = (crc32 >> 4) ^ crc32_table[(crc32 & 0x0F) ^ (b & 0x0F)];
-		crc32 = (crc32 >> 4) ^ crc32_table[(crc32 & 0x0F) ^ (b >>   4)];
-	}
-	return ~crc32;
+        int tbl_idx = crc ^ buf[pos];
+        crc = crc32_table[tbl_idx & 0x0f] ^ (crc >> 4);
+        tbl_idx = crc ^ (buf[pos] >> 4);
+        crc = crc32_table[tbl_idx & 0x0f] ^ (crc >> 4);
+    }
+	return ~crc;
 }
 
 static void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer){
