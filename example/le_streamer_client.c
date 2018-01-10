@@ -37,10 +37,13 @@
 
 #define __BTSTACK_FILE__ "le_streamer_client.c"
 
+/*
+ * le_streamer_client.c
+ */
+
 // *****************************************************************************
-//
-// LE Streamer Client - connects to 'LE Streamer' and subscribes to test characteristic
-//
+/* EXAMPLE_START(le_streamer_client): Connects to 'LE Streamer' and subscribes to test characteristic
+ */
 // *****************************************************************************
 
 #include <stdint.h>
@@ -364,3 +367,4 @@ int btstack_main(int argc, const char * argv[]){
 
     return 0;
 }
+/* EXAMPLE_END */

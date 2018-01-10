@@ -104,14 +104,15 @@ typedef enum {
 } avrcp_capability_id_t;
 
 typedef enum {
-    AVRCP_MEDIA_ATTR_NONE = 0,
+    AVRCP_MEDIA_ATTR_ALL = 0,
     AVRCP_MEDIA_ATTR_TITLE,
     AVRCP_MEDIA_ATTR_ARTIST,
     AVRCP_MEDIA_ATTR_ALBUM,
     AVRCP_MEDIA_ATTR_TRACK,
     AVRCP_MEDIA_ATTR_TOTAL_TRACKS,
     AVRCP_MEDIA_ATTR_GENRE,
-    AVRCP_MEDIA_ATTR_SONG_LENGTH
+    AVRCP_MEDIA_ATTR_SONG_LENGTH_MS,
+    AVRCP_MEDIA_ATTR_NONE = 0xFFFFFFFF
 } avrcp_media_attribute_id_t;
 
 typedef enum {
@@ -124,6 +125,10 @@ typedef enum {
     AVRCP_PDU_ID_REQUEST_CONTINUING_RESPONSE = 0x40,
     AVRCP_PDU_ID_REQUEST_ABORT_CONTINUING_RESPONSE = 0x41,
     AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME = 0x50,
+    AVRCP_PDU_ID_SET_ADDRESSED_PLAYER = 0x60,
+    AVRCP_PDU_ID_SET_BROWSED_PLAYER = 0x70,
+    AVRCP_PDU_ID_GET_FOLDER_ITEMS = 0x71,
+    AVRCP_PDU_ID_CHANGE_PATH = 0x72,
     AVRCP_PDU_ID_UNDEFINED = 0xFF
 } avrcp_pdu_id_t;
 
@@ -238,7 +243,8 @@ typedef enum{
 
 typedef enum {
     AVCTP_CONNECTION_IDLE,
-    AVCTP_SIGNALING_W4_SDP_QUERY_COMPLETE,
+    AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE,
+    AVCTP_CONNECTION_W4_ERTM_CONFIGURATION,
     AVCTP_CONNECTION_W4_L2CAP_CONNECTED,
     AVCTP_CONNECTION_OPENED,
     AVCTP_W2_SEND_PRESS_COMMAND,
@@ -273,11 +279,52 @@ typedef enum {
     AVRCP_PARSER_IGNORE_ATTRIBUTE_VALUE
 } avrcp_parser_state_t;
 
+// BROWSING 
+typedef struct {
+    uint16_t l2cap_browsing_cid;
+
+    avctp_connection_state_t state;
+    uint8_t  wait_to_send;
+    uint8_t  transaction_label;
+
+    uint8_t *ertm_buffer;
+    uint32_t ertm_buffer_size;
+    l2cap_ertm_config_t ertm_config;
+
+    // players
+    uint8_t  set_addressed_player_id;
+    uint8_t  set_browsed_player_id;
+    
+    uint16_t addressed_player_id;
+    uint16_t browsed_player_id;
+    uint16_t browsed_player_uid_counter;
+
+    // get folder item
+    uint8_t  get_folder_item;
+    uint8_t  scope;
+    uint32_t start_item;
+    uint32_t end_item;
+    uint32_t attr_bitmap;
+
+    // change_path
+    uint8_t  change_path;
+    uint8_t  direction;
+    uint16_t uid_counter;
+    uint8_t  folder_uid[8];
+} avrcp_browsing_connection_t;
+// BROWSING END
+
 typedef struct {
     btstack_linked_item_t    item;
     bd_addr_t remote_addr;
     uint16_t l2cap_signaling_cid;
     uint16_t avrcp_cid;
+
+    uint16_t avrcp_browsing_cid;
+    uint16_t browsing_l2cap_psm;
+    uint16_t browsing_version;
+
+    avrcp_browsing_connection_t * browsing_connection;
 
     avctp_connection_state_t state;
     uint8_t wait_to_send;
@@ -375,14 +422,17 @@ typedef struct {
     btstack_packet_handler_t avrcp_callback;
     btstack_packet_handler_t packet_handler;
 
+    btstack_packet_handler_t browsing_avrcp_callback;
+    btstack_packet_handler_t browsing_packet_handler;
+
     // SDP query
+    uint8_t parse_sdp_record;
+    uint32_t record_id;
     uint16_t avrcp_cid;
     uint16_t avrcp_l2cap_psm;
     uint16_t avrcp_version;
-    uint16_t avrcp_browsing_l2cap_psm;
-    uint16_t avrcp_browsing_version;
-    uint8_t  role_supported;
 } avrcp_context_t; 
+
 
 const char * avrcp_subunit2str(uint16_t index);
 const char * avrcp_event2str(uint16_t index);
@@ -403,7 +453,12 @@ void avrcp_emit_connection_closed(btstack_packet_handler_t callback, uint16_t av
 uint8_t avrcp_cmd_opcode(uint8_t *packet, uint16_t size);
 avrcp_connection_t * get_avrcp_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid, avrcp_context_t * context);
 avrcp_connection_t * get_avrcp_connection_for_avrcp_cid(uint16_t avrcp_cid, avrcp_context_t * context);
+avrcp_connection_t * get_avrcp_connection_for_bd_addr(bd_addr_t addr, avrcp_context_t * context);
 void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_cid);
+uint16_t avrcp_get_next_cid(void);
+
+// SDP query
+void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 #if defined __cplusplus
 }

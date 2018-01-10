@@ -2,13 +2,13 @@
 
 This port allows to use the ATWILC3000 connected via UART with BTstack running on a POSIX host system, see test setup below (which lacks a proper RESET button).
 
-# Compilation
+## Compilation
 
 $ make
 
 The Makefile downloads the wilc3000_bt_firmware.bin firmware from the [GitHub atwilc3000/firmware](https://github.com/atwilc3000/firmware) repo.
 
-# Usage
+## Usage
 
 Just run any of the provided examples, e.g.
 

@@ -45,9 +45,9 @@
 #include <string.h>
 
 #include "btstack.h"
-#include "avdtp.h"
-#include "avdtp_util.h"
-#include "avdtp_source.h"
+#include "classic/avdtp.h"
+#include "classic/avdtp_util.h"
+#include "classic/avdtp_source.h"
 
 static avdtp_context_t * avdtp_source_context;
 
@@ -133,28 +133,28 @@ uint8_t avdtp_source_suspend(uint16_t avdtp_cid, uint8_t local_seid){
     return avdtp_suspend_stream(avdtp_cid, local_seid, avdtp_source_context);
 }
 
-void avdtp_source_discover_stream_endpoints(uint16_t avdtp_cid){
-    avdtp_discover_stream_endpoints(avdtp_cid, avdtp_source_context);
+uint8_t avdtp_source_discover_stream_endpoints(uint16_t avdtp_cid){
+    return avdtp_discover_stream_endpoints(avdtp_cid, avdtp_source_context);
 }
 
-void avdtp_source_get_capabilities(uint16_t avdtp_cid, uint8_t remote_seid){
-    avdtp_get_capabilities(avdtp_cid, remote_seid, avdtp_source_context);
+uint8_t avdtp_source_get_capabilities(uint16_t avdtp_cid, uint8_t remote_seid){
+    return avdtp_get_capabilities(avdtp_cid, remote_seid, avdtp_source_context);
 }
 
-void avdtp_source_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid){
-    avdtp_get_all_capabilities(avdtp_cid, remote_seid, avdtp_source_context);
+uint8_t avdtp_source_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid){
+    return avdtp_get_all_capabilities(avdtp_cid, remote_seid, avdtp_source_context);
 }
 
-void avdtp_source_get_configuration(uint16_t avdtp_cid, uint8_t remote_seid){
-    avdtp_get_configuration(avdtp_cid, remote_seid, avdtp_source_context);
+uint8_t avdtp_source_get_configuration(uint16_t avdtp_cid, uint8_t remote_seid){
+    return avdtp_get_configuration(avdtp_cid, remote_seid, avdtp_source_context);
 }
 
-void avdtp_source_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration){
-    avdtp_set_configuration(avdtp_cid, local_seid, remote_seid, configured_services_bitmap, configuration, avdtp_source_context);
+uint8_t avdtp_source_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration){
+    return avdtp_set_configuration(avdtp_cid, local_seid, remote_seid, configured_services_bitmap, configuration, avdtp_source_context);
 }
 
-void avdtp_source_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration){
-    avdtp_reconfigure(avdtp_cid, local_seid, remote_seid, configured_services_bitmap, configuration, avdtp_source_context);
+uint8_t avdtp_source_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration){
+    return avdtp_reconfigure(avdtp_cid, local_seid, remote_seid, configured_services_bitmap, configuration, avdtp_source_context);
 }
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){

@@ -200,7 +200,7 @@ static uint8_t sm_min_encryption_key_size;
 static uint8_t sm_auth_req = 0;
 static uint8_t sm_io_capabilities = IO_CAPABILITY_NO_INPUT_NO_OUTPUT;
 static uint8_t sm_slave_request_security;
-static uint32_t sm_fixed_legacy_pairing_passkey_in_display_role;
+static uint32_t sm_fixed_passkey_in_display_role;
 static uint8_t sm_reconstruct_ltk_without_le_device_db_entry;
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 static uint8_t sm_have_ec_keypair;
@@ -412,6 +412,50 @@ static void sm_handle_encryption_result(uint8_t * data);
 
 static void log_info_hex16(const char * name, uint16_t value){
     log_info("%-6s 0x%04x", name, value);
+}
+
+// static inline uint8_t sm_pairing_packet_get_code(sm_pairing_packet_t packet){
+//     return packet[0];
+// }
+static inline uint8_t sm_pairing_packet_get_io_capability(sm_pairing_packet_t packet){
+    return packet[1];
+}
+static inline uint8_t sm_pairing_packet_get_oob_data_flag(sm_pairing_packet_t packet){
+    return packet[2];
+}
+static inline uint8_t sm_pairing_packet_get_auth_req(sm_pairing_packet_t packet){
+    return packet[3];
+}
+static inline uint8_t sm_pairing_packet_get_max_encryption_key_size(sm_pairing_packet_t packet){
+    return packet[4];
+}
+static inline uint8_t sm_pairing_packet_get_initiator_key_distribution(sm_pairing_packet_t packet){
+    return packet[5];
+}
+static inline uint8_t sm_pairing_packet_get_responder_key_distribution(sm_pairing_packet_t packet){
+    return packet[6];
+}
+
+static inline void sm_pairing_packet_set_code(sm_pairing_packet_t packet, uint8_t code){
+    packet[0] = code;
+}
+static inline void sm_pairing_packet_set_io_capability(sm_pairing_packet_t packet, uint8_t io_capability){
+    packet[1] = io_capability;
+}
+static inline void sm_pairing_packet_set_oob_data_flag(sm_pairing_packet_t packet, uint8_t oob_data_flag){
+    packet[2] = oob_data_flag;
+}
+static inline void sm_pairing_packet_set_auth_req(sm_pairing_packet_t packet, uint8_t auth_req){
+    packet[3] = auth_req;
+}
+static inline void sm_pairing_packet_set_max_encryption_key_size(sm_pairing_packet_t packet, uint8_t max_encryption_key_size){
+    packet[4] = max_encryption_key_size;
+}
+static inline void sm_pairing_packet_set_initiator_key_distribution(sm_pairing_packet_t packet, uint8_t initiator_key_distribution){
+    packet[5] = initiator_key_distribution;
+}
+static inline void sm_pairing_packet_set_responder_key_distribution(sm_pairing_packet_t packet, uint8_t responder_key_distribution){
+    packet[6] = responder_key_distribution;
 }
 
 // @returns 1 if all bytes are 0
@@ -1382,9 +1426,9 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
         le_db_index = le_device_db_add(setup->sm_peer_addr_type, setup->sm_peer_address, setup->sm_peer_irk);
     }
 
-    sm_notify_client_index(SM_EVENT_IDENTITY_CREATED, sm_conn->sm_handle, setup->sm_peer_addr_type, setup->sm_peer_address, le_db_index);
-
     if (le_db_index >= 0){
+
+        sm_notify_client_index(SM_EVENT_IDENTITY_CREATED, sm_conn->sm_handle, setup->sm_peer_addr_type, setup->sm_peer_address, le_db_index);
 
 #ifdef ENABLE_LE_SIGNED_WRITE
         // store local CSRK
@@ -2597,6 +2641,7 @@ static void sm_run(void){
                 reverse_128(setup->sm_ltk, ltk_flipped);
                 connection->sm_engine_state = SM_RESPONDER_IDLE;
                 hci_send_cmd(&hci_le_long_term_key_request_reply, connection->sm_handle, ltk_flipped);
+                sm_done_for_handle(connection->sm_handle);
                 return;
             }
             case SM_RESPONDER_PH4_Y_GET_ENC:
@@ -3021,7 +3066,7 @@ static void sm_handle_random_result(uint8_t * data){
         {
             sm_reset_tk();
             uint32_t tk;
-            if (sm_fixed_legacy_pairing_passkey_in_display_role == 0xffffffff){
+            if (sm_fixed_passkey_in_display_role == 0xffffffff){
                 // map random to 0-999999 without speding much cycles on a modulus operation
                 tk = little_endian_read_32(data,0);
                 tk = tk & 0xfffff;  // 1048575
@@ -3030,7 +3075,7 @@ static void sm_handle_random_result(uint8_t * data){
                 }
             } else {
                 // override with pre-defined passkey
-                tk = sm_fixed_legacy_pairing_passkey_in_display_role;
+                tk = sm_fixed_passkey_in_display_role;
             }
             big_endian_store_32(setup->sm_tk, 12, tk);
             if (IS_RESPONDER(connection->sm_role)){
@@ -3931,7 +3976,7 @@ void sm_init(void){
     sm_max_encryption_key_size = 16;
     sm_min_encryption_key_size = 7;
 
-    sm_fixed_legacy_pairing_passkey_in_display_role = 0xffffffff;
+    sm_fixed_passkey_in_display_role = 0xffffffff;
     sm_reconstruct_ltk_without_le_device_db_entry = 1;
 
 #ifdef ENABLE_CMAC_ENGINE
@@ -4004,8 +4049,8 @@ void sm_test_use_fixed_ec_keypair(void){
 #endif
 }
 
-void sm_use_fixed_legacy_pairing_passkey_in_display_role(uint32_t passkey){
-    sm_fixed_legacy_pairing_passkey_in_display_role = passkey;
+void sm_use_fixed_passkey_in_display_role(uint32_t passkey){
+    sm_fixed_passkey_in_display_role = passkey;
 }
 
 void sm_allow_ltk_reconstruction_without_le_device_db_entry(int allow){

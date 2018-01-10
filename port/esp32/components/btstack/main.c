@@ -55,7 +55,7 @@
 #include "classic/btstack_link_key_db_tlv.h"
 #include "hci.h"
 #include "hci_dump.h"
-#include "bt.h"
+#include "esp_bt.h"
 #include "btstack_debug.h"
 
 #include "freertos/FreeRTOS.h"

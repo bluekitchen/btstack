@@ -65,7 +65,7 @@ static btstack_uart_config_t uart_config;
 static const hci_transport_config_uart_t transport_config = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
-    200000,    // 300000+ didn't work reliably, the 48 MHz UART config might be needed for this
+    1000000,    // 200000+ didn't work reliably
     0,
     NULL,
 };

@@ -55,6 +55,8 @@
 // Single stored entry
 typedef struct le_device_db_entry_t {
 
+    uint32_t seq_nr;    // used for "least recently stored" eviction strategy
+
     // Identification
     int addr_type;
     bd_addr_t addr;
@@ -114,7 +116,7 @@ static int le_device_db_tlv_fetch(int index, le_device_db_entry_t * entry){
 	}
     uint32_t tag = le_device_db_tlv_tag_for_index(index);
     int size = le_device_db_tlv_btstack_tlv_impl->get_tag(le_device_db_tlv_btstack_tlv_context, tag, (uint8_t*) entry, sizeof(le_device_db_entry_t));
-	return size != 0;
+	return size == sizeof(le_device_db_entry_t);
 }
 
 // @returns success
@@ -140,19 +142,22 @@ static int le_device_db_tlv_delete(int index){
 	return 1;
 }
 
-void le_device_db_init(void){
+static void le_device_db_tlv_scan(void){
     int i;
-	num_valid_entries = 0;
-	memset(entry_map, 0, sizeof(entry_map));
+    num_valid_entries = 0;
+    memset(entry_map, 0, sizeof(entry_map));
     for (i=0;i<NVM_NUM_DEVICE_DB_ENTRIES;i++){
-    	// lookup entry
-    	le_device_db_entry_t entry;
-    	if (!le_device_db_tlv_fetch(i, &entry)) continue;
+        // lookup entry
+        le_device_db_entry_t entry;
+        if (!le_device_db_tlv_fetch(i, &entry)) continue;
 
-    	entry_map[i] = 1;
+        entry_map[i] = 1;
         num_valid_entries++;
     }
     log_info("num valid le device entries %u", num_valid_entries);
+}
+
+void le_device_db_init(void){
 }
 
 // not used
@@ -177,24 +182,59 @@ void le_device_db_remove(int index){
 }
 
 int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
+
+    uint32_t highest_seq_nr = 0;
+    uint32_t lowest_seq_nr  = 0;
+    int index_for_lowest_seq_nr = -1;
+    int index_for_addr  = -1;
+    int index_for_empty = -1;
+
 	// find unused entry in the used list
     int i;
-    int index = -1;
     for (i=0;i<NVM_NUM_DEVICE_DB_ENTRIES;i++){
-         if (entry_map[i]) continue;
-         index = i;
-         break;
+         if (entry_map[i]) {
+            le_device_db_entry_t entry;
+            le_device_db_tlv_fetch(i, &entry);
+            // found addr?
+            if ((memcmp(addr, entry.addr, 6) == 0) && addr_type == entry.addr_type){
+                index_for_addr = i;
+            }
+            // update highest seq nr
+            if (entry.seq_nr > highest_seq_nr){
+                highest_seq_nr = entry.seq_nr;
+            }
+            // find entry with lowest seq nr
+            if ((index_for_lowest_seq_nr == 0) || (entry.seq_nr < lowest_seq_nr)){
+                index_for_lowest_seq_nr = i;
+                lowest_seq_nr = entry.seq_nr;
+            }
+        } else {
+            index_for_empty = i;
+        }
     }
 
-    // no free entry found
-    if (index < 0) return -1;
+    log_info("index_for_addr %x, index_for_empy %x, index_for_lowest_seq_nr %x", index_for_addr, index_for_empty, index_for_lowest_seq_nr);
 
-    log_info("new entry for index %u", index);
+    uint32_t index_to_use = 0;
+    if (index_for_addr >= 0){
+        index_to_use = index_for_addr;
+    } else if (index_for_empty >= 0){
+        index_to_use = index_for_empty;
+    } else if (index_for_lowest_seq_nr >= 0){
+        index_to_use = index_for_lowest_seq_nr;
+    } else {
+        // should not happen
+        return -1;
+    }
+
+    log_info("new entry for index %u", index_to_use);
 
     // store entry at index
 	le_device_db_entry_t entry;
     log_info("LE Device DB adding type %u - %s", addr_type, bd_addr_to_str(addr));
     log_info_key("irk", irk);
+
+    memset(&entry, 0, sizeof(le_device_db_entry_t));
 
     entry.addr_type = addr_type;
     memcpy(entry.addr, addr, 6);
@@ -204,15 +244,17 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
 #endif
 
     // store
-    le_device_db_tlv_store(index, &entry);
+    le_device_db_tlv_store(index_to_use, &entry);
     
     // set in entry_mape
-    entry_map[index] = 1;
+    entry_map[index_to_use] = 1;
 
-    // keep track
-    num_valid_entries++;
+    // keep track - don't increase if old entry found
+    if (index_for_addr < 0){
+        num_valid_entries++;
+    }
 
-    return index;
+    return index_to_use;
 }
 
 
@@ -381,8 +423,10 @@ void le_device_db_local_counter_set(int index, uint32_t counter){
 
 void le_device_db_dump(void){
     log_info("LE Device DB dump, devices: %d", le_device_db_count());
-    int i;
-    for (i=0;i<num_valid_entries;i++){
+    uint32_t i;
+
+    for (i=0;i<NVM_NUM_DEVICE_DB_ENTRIES;i++){
+        if (!entry_map[i]) continue;
 		// fetch entry
 		le_device_db_entry_t entry;
 		le_device_db_tlv_fetch(i, &entry);
@@ -398,4 +442,5 @@ void le_device_db_dump(void){
 void le_device_db_tlv_configure(const btstack_tlv_t * btstack_tlv_impl, void * btstack_tlv_context){
 	le_device_db_tlv_btstack_tlv_impl = btstack_tlv_impl;
 	le_device_db_tlv_btstack_tlv_context = btstack_tlv_context;
+    le_device_db_tlv_scan();
 }

@@ -18,9 +18,17 @@ NAME := EXAMPLE
 
 GLOBAL_INCLUDES += .
 
+# Replace Linefeed with -> CRLF
+GLOBAL_DEFINES += CRLF_STDIO_REPLACEMENT
+
 $(NAME)_SOURCES := ../../../libraries/btstack/example/EXAMPLE.c
 $(NAME)_COMPONENTS += btstack/port/wiced-h4
-$(NAME)_CFLAGS += ADDITIONAL_CFLAGS
+
+# Additional CFLAGS for BTstack Component compilation
+BTSTACK_CFLAGS += ADDITIONAL_CFLAGS
+
+# Name of Firmware file
+BT_FIRMWARE_FILE := BLUETOOTH_FIRMWARE_FILE
 '''
 
 gatt_update_template = '''#!/bin/sh
@@ -35,18 +43,29 @@ script_path = os.path.abspath(os.path.dirname(sys.argv[0]))
 
 # validate WICED root by reading version.txt
 wiced_root = script_path + "/../../../../"
-wiced_version = ""
+wiced_version_txt = ""
 try:
     with open(wiced_root + 'version.txt', 'r') as fin:
-        wiced_version = fin.read()  # Read the contents of the file into memory.
+        wiced_version_txt = fin.read()  # Read the contents of the file into memory.
 except:
     pass
-if not "WICED Version" in wiced_version:
+if not "WICED Version" in wiced_version_txt:
     print("Cannot find WICED root. Make sure BTstack is checked out in WICED-SDK-X/libraries")
     sys.exit(1)
 
+# check for 5.2+ version syntax
+if 'Wiced_' in wiced_version_txt:
+    wiced_version_string = (wiced_version_txt.split()[2]).split('_')[1]
+    wiced_version_major = int(wiced_version_string.split('.')[0])
+    wiced_version_minor = int(wiced_version_string.split('.')[1])
+else:
+    wiced_version = wiced_version_txt.split()[2]
+    wiced_version_major = int(wiced_version.split('.')[0])
+    wiced_version_minor = int(wiced_version.split('.')[1])
+
+wiced_version = "%u.%u" % (wiced_version_major, wiced_version_minor)
+
 # show WICED version
-wiced_version = wiced_version.split()[2]
 print("Found WICED SDK version: %s" % wiced_version)
 
 additional_cflags = ""
@@ -54,6 +73,14 @@ if wiced_version < "3.4.0":
     print("Adding WICED_UART_READ_DOES_NOT_RETURN_BYTES_READ for SDK < 3.4.0")
     additional_cflags = "-DWICED_UART_READ_DOES_NOT_RETURN_BYTES_READ"
 
+# NOTE: it would be more robust to check for files on disk
+
+# bluetooth firmware image name changed in 5.2
+if wiced_version < "5.2":
+    bluetooth_firmware_file = 'bt_firmware_image.c'
+else:
+    bluetooth_firmware_file = 'bt_firmware_controller.c'
+print("Bluetooth Firmware name: %s" % bluetooth_firmware_file)
 
 # path to examples
 examples_embedded = script_path + "/../../example/"
@@ -76,7 +103,7 @@ for file in os.listdir(examples_embedded):
 
     # create .mk file
     with open(apps_folder + example + ".mk", "wt") as fout:
-        fout.write(mk_template.replace("EXAMPLE", example).replace("TOOL", script_path).replace("ADDITIONAL_CFLAGS", additional_cflags).replace("DATE",time.strftime("%c")))
+        fout.write(mk_template.replace("EXAMPLE", example).replace("TOOL", script_path).replace("ADDITIONAL_CFLAGS", additional_cflags).replace("DATE",time.strftime("%c")).replace('BLUETOOTH_FIRMWARE_FILE', bluetooth_firmware_file))
 
     # create update_gatt.sh if .gatt file is present
     gatt_path = examples_embedded + example + ".gatt"

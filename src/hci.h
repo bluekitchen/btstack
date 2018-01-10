@@ -434,7 +434,8 @@ typedef struct {
     bd_addr_t               peer_address;
 
     int                     ir_le_device_db_index;
-    int                     ir_lookup_active;
+    uint8_t                 ir_lookup_active;
+    uint8_t                 pairing_active;
 
     int                     value_indication_handle;    
     btstack_timer_source_t  value_indication_timer;

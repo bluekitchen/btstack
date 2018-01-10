@@ -47,7 +47,8 @@
 #include "classic/avrcp.h"
 #include "classic/avrcp_controller.h"
 
-static avrcp_context_t avrcp_controller_context;
+// made public in avrcp_controller.h
+avrcp_context_t avrcp_controller_context;
 
 void avrcp_controller_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name){
     avrcp_create_sdp_record(1, service, service_record_handle, browsing, supported_features, service_name, service_provider_name);
@@ -265,7 +266,7 @@ static void avrcp_controller_emit_now_playing_info_event(btstack_packet_handler_
             event[pos++] = value_len;
             memcpy(event+pos, value, value_len);
             break;
-        case AVRCP_MEDIA_ATTR_SONG_LENGTH:
+        case AVRCP_MEDIA_ATTR_SONG_LENGTH_MS:
             event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_SONG_LENGTH_MS_INFO;
             if (value){
                 little_endian_store_32(event, pos, btstack_atoi((char *)value));
@@ -318,7 +319,7 @@ static void avrcp_parser_process_byte(uint8_t byte, avrcp_connection_t * connect
             }
             // TODO emit event
             uint32_t attribute_id = big_endian_read_32(connection->parser_attribute_header, 0);
-            if (attribute_id > AVRCP_MEDIA_ATTR_NONE && attribute_id <= AVRCP_MEDIA_ATTR_SONG_LENGTH){
+            if (attribute_id > AVRCP_MEDIA_ATTR_NONE && attribute_id <= AVRCP_MEDIA_ATTR_SONG_LENGTH_MS){
                 avrcp_controller_emit_now_playing_info_event(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, attribute_id, connection->attribute_value, connection->attribute_value_len);
             }
             
@@ -1147,6 +1148,10 @@ uint8_t avrcp_controller_disconnect(uint16_t avrcp_cid){
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (connection->browsing_connection){
+        if (connection->browsing_connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+        l2cap_disconnect(connection->browsing_connection->l2cap_browsing_cid, 0);
+    }
     l2cap_disconnect(connection->l2cap_signaling_cid, 0);
     return ERROR_CODE_SUCCESS;
 }

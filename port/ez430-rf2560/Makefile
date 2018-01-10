@@ -48,6 +48,7 @@ CORE   = \
     btstack_run_loop.c		     \
     btstack_run_loop_embedded.c  \
     btstack_util.c			          \
+    btstack_tlv.c             \
 
 COMMON = \
 	ad_parser.c 					   \

@@ -88,11 +88,9 @@ static const char * default_avrcp_target_service_provider_name = "BTstack AVRCP 
 static uint16_t  avrcp_cid_counter = 0;
 
 static avrcp_context_t * sdp_query_context;
-static int record_id = -1;
 static uint8_t   attribute_value[1000];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
-static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static const char * avrcp_subunit_type_name[] = {
     "MONITOR", "AUDIO", "PRINTER", "DISC", "TAPE_RECORDER_PLAYER", "TUNER", 
@@ -319,7 +317,7 @@ void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t ser
     de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
 }
 
-static avrcp_connection_t * get_avrcp_connection_for_bd_addr(bd_addr_t addr, avrcp_context_t * context){
+avrcp_connection_t * get_avrcp_connection_for_bd_addr(bd_addr_t addr, avrcp_context_t * context){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *) &context->connections);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -358,7 +356,7 @@ void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_
 }
 
 
-static uint16_t avdtp_get_next_avrcp_cid(void){
+uint16_t avrcp_get_next_cid(void){
     avrcp_cid_counter++;
     if (avrcp_cid_counter == 0){
         avrcp_cid_counter = 1;
@@ -375,7 +373,7 @@ static avrcp_connection_t * avrcp_create_connection(bd_addr_t remote_addr, avrcp
     memset(connection, 0, sizeof(avrcp_connection_t));
     connection->state = AVCTP_CONNECTION_IDLE;
     connection->transaction_label = 0xFF;
-    connection->avrcp_cid = avdtp_get_next_avrcp_cid();
+    connection->avrcp_cid = avrcp_get_next_cid();
     memcpy(connection->remote_addr, remote_addr, 6);
     btstack_linked_list_add(&context->connections, (btstack_linked_item_t *) connection);
     return connection;
@@ -409,10 +407,11 @@ void avrcp_emit_connection_closed(btstack_packet_handler_t callback, uint16_t av
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(sdp_query_context->avrcp_cid, sdp_query_context);
     if (!connection) return;
-    if (connection->state != AVCTP_SIGNALING_W4_SDP_QUERY_COMPLETE) return;
+    if (connection->state != AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE) return; 
+    
     UNUSED(packet_type);
     UNUSED(channel);
     UNUSED(size);
@@ -424,8 +423,9 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
             // Handle new SDP record 
-            if (sdp_event_query_attribute_byte_get_record_id(packet) != record_id) {
-                record_id = sdp_event_query_attribute_byte_get_record_id(packet);
+            if (sdp_event_query_attribute_byte_get_record_id(packet) != sdp_query_context->record_id) {
+                sdp_query_context->record_id = sdp_event_query_attribute_byte_get_record_id(packet);
+                sdp_query_context->parse_sdp_record = 0;
                 // log_info("SDP Record: Nr: %d", record_id);
             }
 
@@ -443,14 +443,14 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                                 switch (uuid){
                                     case BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL_TARGET:
                                         if (sdp_query_context->role == AVRCP_CONTROLLER) {
-                                            sdp_query_context->role_supported = 1;
+                                            sdp_query_context->parse_sdp_record = 1;
                                             break;
                                         }
                                         break;
                                     case BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL:
                                     case BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL_CONTROLLER:
                                         if (sdp_query_context->role == AVRCP_TARGET) {
-                                            sdp_query_context->role_supported = 1;
+                                            sdp_query_context->parse_sdp_record = 1;
                                             break;
                                         }
                                         break;
@@ -461,6 +461,7 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                             break;
                         
                         case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST: {
+                                if (!sdp_query_context->parse_sdp_record) break;
                                 // log_info("SDP Attribute: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet));
                                 for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {                                    
                                     uint8_t       *des_element;
@@ -495,6 +496,7 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                             break;
                         case BLUETOOTH_ATTRIBUTE_ADDITIONAL_PROTOCOL_DESCRIPTOR_LISTS: {
                                 // log_info("SDP Attribute: 0x%04x", sdp_event_query_attribute_byte_get_attribute_id(packet));
+                                if (!sdp_query_context->parse_sdp_record) break;
                                 if (de_get_element_type(attribute_value) != DE_DES) break;
 
                                 des_iterator_t des_list_0_it;
@@ -521,12 +523,12 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                                         case BLUETOOTH_PROTOCOL_L2CAP:
                                             if (!des_iterator_has_more(&prot_it)) continue;
                                             des_iterator_next(&prot_it);
-                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_query_context->avrcp_browsing_l2cap_psm);
+                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &connection->browsing_l2cap_psm);
                                             break;
                                         case BLUETOOTH_PROTOCOL_AVCTP:
                                             if (!des_iterator_has_more(&prot_it)) continue;
                                             des_iterator_next(&prot_it);
-                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_query_context->avrcp_browsing_version);
+                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &connection->browsing_version);
                                             break;
                                         default:
                                             break;
@@ -543,8 +545,9 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
             }
             break;
             
-        case SDP_EVENT_QUERY_COMPLETE:
+        case SDP_EVENT_QUERY_COMPLETE:{
             status = sdp_event_query_complete_get_status(packet);
+    
             if (status != ERROR_CODE_SUCCESS){
                 avrcp_emit_connection_established(sdp_query_context->avrcp_callback, connection->avrcp_cid, connection->remote_addr, status);
                 btstack_linked_list_remove(&sdp_query_context->connections, (btstack_linked_item_t*) connection); 
@@ -553,17 +556,18 @@ static void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                 break;
             }
 
-            if (!sdp_query_context->role_supported || !sdp_query_context->avrcp_l2cap_psm){
+            if (!sdp_query_context->parse_sdp_record){
                 connection->state = AVCTP_CONNECTION_IDLE;
                 avrcp_emit_connection_established(sdp_query_context->avrcp_callback, connection->avrcp_cid, connection->remote_addr, SDP_SERVICE_NOT_FOUND);
                 btstack_linked_list_remove(&sdp_query_context->connections, (btstack_linked_item_t*) connection); 
                 btstack_memory_avrcp_connection_free(connection);
                 break;                
             } 
-            // log_info("AVRCP Control PSM 0x%02x, Browsing PSM 0x%02x", sdp_query_context->avrcp_l2cap_psm, sdp_query_context->avrcp_browsing_l2cap_psm);
+            // log_info("AVRCP Control PSM 0x%02x, Browsing PSM 0x%02x", sdp_query_context->avrcp_l2cap_psm, sdp_query_context->browsing_l2cap_psm);
             connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
             l2cap_create_channel(sdp_query_context->packet_handler, connection->remote_addr, sdp_query_context->avrcp_l2cap_psm, l2cap_max_mtu(), NULL);
             break;
+        }
     }
 }
 
@@ -656,13 +660,12 @@ uint8_t avrcp_connect(bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * a
     if (!avrcp_cid) return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
     
     *avrcp_cid = connection->avrcp_cid; 
-    connection->state = AVCTP_SIGNALING_W4_SDP_QUERY_COMPLETE;
-   
+    connection->state = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
+    
     context->avrcp_l2cap_psm = 0;
     context->avrcp_version = 0;
     context->avrcp_cid = connection->avrcp_cid;
-
+    connection->browsing_l2cap_psm = 0;
     sdp_query_context = context;
-
     return sdp_client_query_uuid16(&avrcp_handle_sdp_client_query_result, bd_addr, BLUETOOTH_PROTOCOL_AVCTP);
 }

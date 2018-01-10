@@ -131,6 +131,10 @@ void   btstack_memory_avdtp_connection_free(avdtp_connection_t *avdtp_connection
 avrcp_connection_t * btstack_memory_avrcp_connection_get(void);
 void   btstack_memory_avrcp_connection_free(avrcp_connection_t *avrcp_connection);
 
+// avrcp_browsing_connection
+avrcp_browsing_connection_t * btstack_memory_avrcp_browsing_connection_get(void);
+void   btstack_memory_avrcp_browsing_connection_free(avrcp_browsing_connection_t *avrcp_browsing_connection);
+
 #ifdef ENABLE_BLE
 // gatt_client, whitelist_entry, sm_lookup_entry
 gatt_client_t * btstack_memory_gatt_client_get(void);

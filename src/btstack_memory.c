@@ -35,8 +35,6 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_memory.c"
-
 
 /*
  *  btstack_memory.h
@@ -595,6 +593,45 @@ void btstack_memory_avrcp_connection_free(avrcp_connection_t *avrcp_connection){
 #endif
 
 
+
+// MARK: avrcp_browsing_connection_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_AVRCP_BROWSING_CONNECTIONS)
+    #if defined(MAX_NO_AVRCP_BROWSING_CONNECTIONS)
+        #error "Deprecated MAX_NO_AVRCP_BROWSING_CONNECTIONS defined instead of MAX_NR_AVRCP_BROWSING_CONNECTIONS. Please update your btstack_config.h to use MAX_NR_AVRCP_BROWSING_CONNECTIONS."
+    #else
+        #define MAX_NR_AVRCP_BROWSING_CONNECTIONS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_AVRCP_BROWSING_CONNECTIONS
+#if MAX_NR_AVRCP_BROWSING_CONNECTIONS > 0
+static avrcp_browsing_connection_t avrcp_browsing_connection_storage[MAX_NR_AVRCP_BROWSING_CONNECTIONS];
+static btstack_memory_pool_t avrcp_browsing_connection_pool;
+avrcp_browsing_connection_t * btstack_memory_avrcp_browsing_connection_get(void){
+    return (avrcp_browsing_connection_t *) btstack_memory_pool_get(&avrcp_browsing_connection_pool);
+}
+void btstack_memory_avrcp_browsing_connection_free(avrcp_browsing_connection_t *avrcp_browsing_connection){
+    btstack_memory_pool_free(&avrcp_browsing_connection_pool, avrcp_browsing_connection);
+}
+#else
+avrcp_browsing_connection_t * btstack_memory_avrcp_browsing_connection_get(void){
+    return NULL;
+}
+void btstack_memory_avrcp_browsing_connection_free(avrcp_browsing_connection_t *avrcp_browsing_connection){
+    // silence compiler warning about unused parameter in a portable way
+    (void) avrcp_browsing_connection;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+avrcp_browsing_connection_t * btstack_memory_avrcp_browsing_connection_get(void){
+    return (avrcp_browsing_connection_t*) malloc(sizeof(avrcp_browsing_connection_t));
+}
+void btstack_memory_avrcp_browsing_connection_free(avrcp_browsing_connection_t *avrcp_browsing_connection){
+    free(avrcp_browsing_connection);
+}
+#endif
+
+
 #ifdef ENABLE_BLE
 
 // MARK: gatt_client_t
@@ -755,6 +792,9 @@ void btstack_memory_init(void){
 #endif
 #if MAX_NR_AVRCP_CONNECTIONS > 0
     btstack_memory_pool_create(&avrcp_connection_pool, avrcp_connection_storage, MAX_NR_AVRCP_CONNECTIONS, sizeof(avrcp_connection_t));
+#endif
+#if MAX_NR_AVRCP_BROWSING_CONNECTIONS > 0
+    btstack_memory_pool_create(&avrcp_browsing_connection_pool, avrcp_browsing_connection_storage, MAX_NR_AVRCP_BROWSING_CONNECTIONS, sizeof(avrcp_browsing_connection_t));
 #endif
 #ifdef ENABLE_BLE
 #if MAX_NR_GATT_CLIENTS > 0

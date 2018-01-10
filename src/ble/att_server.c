@@ -64,15 +64,39 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"
+#include "btstack_tlv.h"
+
+#ifndef NVN_NUM_GATT_SERVER_CCC
+#define NVN_NUM_GATT_SERVER_CCC 20
+#endif
 
 static void att_run_for_context(att_server_t * att_server);
+static att_write_callback_t att_server_write_callback_for_handle(uint16_t handle);
+static void att_server_persistent_ccc_restore(att_server_t * att_server);
+static void att_server_persistent_ccc_clear(att_server_t * att_server);
+
+//
+typedef struct {
+    uint32_t seq_nr;
+    uint16_t att_handle;
+    uint8_t  value;
+    uint8_t  device_index;
+} persistent_ccc_entry_t;
 
 // global
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 static btstack_packet_handler_t               att_client_packet_handler = NULL;
 static btstack_linked_list_t                  can_send_now_clients;
+static btstack_linked_list_t                  service_handlers;
 static uint8_t                                att_client_waiting_for_can_send;
+
+static att_read_callback_t                    att_server_client_read_callback;
+static att_write_callback_t                   att_server_client_write_callback;
+
+// track CCC 1-entry cache
+// static att_server_t *    att_persistent_ccc_server;
+// static hci_con_handle_t  att_persistent_ccc_con_handle;
 
 static att_server_t * att_server_for_handle(hci_con_handle_t con_handle){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
@@ -136,6 +160,13 @@ static void att_handle_value_indication_timeout(btstack_timer_source_t *ts){
     att_handle_value_indication_notify_client(ATT_HANDLE_VALUE_INDICATION_TIMEOUT, att_server->connection.con_handle, att_handle);
 }
 
+static void att_device_identified(att_server_t * att_server, uint8_t index){
+    att_server->ir_lookup_active = 0;
+    att_server->ir_le_device_db_index = index;
+    log_info("Remote device with conn 0%04x registered with index id %u", (int) att_server->connection.con_handle, att_server->ir_le_device_db_index);
+    att_run_for_context(att_server);
+}
+
 static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     UNUSED(channel); // ok: there is no channel
@@ -169,7 +200,9 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                             att_server->connection.encryption_key_size = 0;
                             att_server->connection.authenticated = 0;
 		                	att_server->connection.authorized = 0;
-                            att_server->ir_le_device_db_index = -1;
+                            // workaround: identity resolving can already be complete, at least store result
+                            att_server->ir_le_device_db_index = sm_le_device_index(con_handle);
+                            att_server->pairing_active = 0;
                             break;
 
                         default:
@@ -185,6 +218,12 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     if (!att_server) break;
                 	att_server->connection.encryption_key_size = sm_encryption_key_size(con_handle);
                 	att_server->connection.authenticated = sm_authenticated(con_handle);
+                    if (hci_event_packet_get_type(packet) == HCI_EVENT_ENCRYPTION_CHANGE){
+                        // restore CCC values when encrypted
+                        if (hci_event_encryption_change_get_encryption_enabled(packet)){
+                            att_server_persistent_ccc_restore(att_server);
+                        } 
+                    }
                 	break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -195,9 +234,11 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     att_clear_transaction_queue(&att_server->connection);
                     att_server->connection.con_handle = 0;
                     att_server->value_indication_handle = 0; // reset error state
+                    att_server->pairing_active = 0;
                     att_server->state = ATT_SERVER_IDLE;
                     break;
                     
+                // Identity Resolving
                 case SM_EVENT_IDENTITY_RESOLVING_STARTED:
                     con_handle = sm_event_identity_resolving_started_get_handle(packet);
                     att_server = att_server_for_handle(con_handle);
@@ -206,13 +247,10 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     att_server->ir_lookup_active = 1;
                     break;
                 case SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED:
-                    con_handle = sm_event_identity_resolving_succeeded_get_handle(packet);
+                    con_handle = sm_event_identity_created_get_handle(packet);
                     att_server = att_server_for_handle(con_handle);
-                    if (!att_server) break;
-                    att_server->ir_lookup_active = 0;
-                    att_server->ir_le_device_db_index = sm_event_identity_resolving_succeeded_get_index_internal(packet);
-                    log_info("SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED id %u", att_server->ir_le_device_db_index);
-                    att_run_for_context(att_server);
+                    if (!att_server) return;
+                    att_device_identified(att_server, sm_event_identity_resolving_succeeded_get_index(packet));
                     break;
                 case SM_EVENT_IDENTITY_RESOLVING_FAILED:
                     con_handle = sm_event_identity_resolving_failed_get_handle(packet);
@@ -223,6 +261,35 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     att_server->ir_le_device_db_index = -1;
                     att_run_for_context(att_server);
                     break;
+
+                // Pairing started - delete stored CCC values
+                // - assumes pairing indicates either new device or re-pairing, in both cases there should be no stored CCC values
+                // - assumes that all events have the con handle as the first field
+                case SM_EVENT_JUST_WORKS_REQUEST:
+                case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
+                case SM_EVENT_PASSKEY_INPUT_NUMBER:
+                case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
+                    con_handle = sm_event_just_works_request_get_handle(packet);
+                    att_server = att_server_for_handle(con_handle);
+                    if (!att_server) break;
+                    att_server->pairing_active = 1;
+                    log_info("SM Pairing started");
+                    if (att_server->ir_le_device_db_index < 0) break;
+                    att_server_persistent_ccc_clear(att_server);
+                    // index not valid anymore
+                    att_server->ir_le_device_db_index = -1;
+                    break;
+
+                // Pairing completed
+                case SM_EVENT_IDENTITY_CREATED:
+                    con_handle = sm_event_identity_created_get_handle(packet);
+                    att_server = att_server_for_handle(con_handle);
+                    if (!att_server) return;
+                    att_server->pairing_active = 0;
+                    att_device_identified(att_server, sm_event_identity_created_get_index(packet));
+                    break;
+
+                // Authorization
                 case SM_EVENT_AUTHORIZATION_RESULT: {
                     con_handle = sm_event_authorization_result_get_handle(packet);
                     att_server = att_server_for_handle(con_handle);
@@ -309,6 +376,10 @@ static int att_server_process_validated_request(att_server_t * att_server){
 static void att_run_for_context(att_server_t * att_server){
     switch (att_server->state){
         case ATT_SERVER_REQUEST_RECEIVED:
+
+            // wait until pairing is complete
+            if (att_server->pairing_active) break;
+
 #ifdef ENABLE_LE_SIGNED_WRITE
             if (att_server->request_buffer[0] == ATT_SIGNED_WRITE_COMMAND){
                 log_info("ATT Signed Write!");
@@ -456,7 +527,253 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
     }
 }
 
+// ---------------------
+// persistent CCC writes
+static uint32_t att_server_persistent_ccc_tag_for_index(uint8_t index){
+    return 'B' << 24 | 'T' << 16 | 'C' << 8 | index;
+}
+
+static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t value){
+    // lookup att_server instance
+    att_server_t * att_server = att_server_for_handle(con_handle);
+    if (!att_server) return;
+    int le_device_index = att_server->ir_le_device_db_index;
+    log_info("Store CCC value 0x%04x for handle 0x%04x of remote %s, le device id %d", value, att_handle, bd_addr_to_str(att_server->peer_address), le_device_index);
+
+    // check if bonded
+    if (le_device_index < 0) return;
+
+    // get btstack_tlv
+    const btstack_tlv_t * tlv_impl = NULL;
+    void * tlv_context;
+    btstack_tlv_get_instance(&tlv_impl, &tlv_context);
+    if (!tlv_impl) return;
+
+    // update ccc tag
+    int index;
+    uint32_t highest_seq_nr = 0;
+    uint32_t lowest_seq_nr = 0;
+    uint32_t tag_for_lowest_seq_nr = 0;
+    uint32_t tag_for_empty = 0;
+    persistent_ccc_entry_t entry;
+    for (index=0;index<NVN_NUM_GATT_SERVER_CCC;index++){
+        uint32_t tag = att_server_persistent_ccc_tag_for_index(index);
+        int len = tlv_impl->get_tag(tlv_context, tag, (uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
+
+        // empty/invalid tag
+        if (len != sizeof(persistent_ccc_entry_t)){
+            tag_for_empty = tag;
+            continue;
+        }
+        // update highest seq nr
+        if (entry.seq_nr > highest_seq_nr){
+            highest_seq_nr = entry.seq_nr;
+        }
+        // find entry with lowest seq nr
+        if ((tag_for_lowest_seq_nr == 0) || (entry.seq_nr < lowest_seq_nr)){
+            tag_for_lowest_seq_nr = tag;
+            lowest_seq_nr = entry.seq_nr;
+        }
+
+        if (entry.device_index != le_device_index) continue;
+        if (entry.att_handle   != att_handle)      continue;
+
+        // found matching entry
+        if (value){
+            // update
+            if (entry.value == value) {
+                log_info("CCC Index %u: Up-to-date", index);
+                return;
+            }
+            entry.value = value;
+            entry.seq_nr = highest_seq_nr + 1;
+            log_info("CCC Index %u: Store", index);
+            tlv_impl->store_tag(tlv_context, tag, (const uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
+        } else {
+            // delete
+            log_info("CCC Index %u: Delete", index);
+            tlv_impl->delete_tag(tlv_context, tag);
+        }
+        return;
+    }
+
+    log_info("tag_for_empy %x, tag_for_lowest_seq_nr %x", tag_for_empty, tag_for_lowest_seq_nr);
+
+    if (value == 0){
+        // done
+        return;
+    }
+
+    uint32_t tag_to_use = 0;
+    if (tag_for_empty){
+        tag_to_use = tag_for_empty;
+    } else if (tag_for_lowest_seq_nr){
+        tag_to_use = tag_for_lowest_seq_nr;
+    } else {
+        // should not happen
+        return;
+    }
+    // store ccc tag
+    entry.seq_nr       = highest_seq_nr + 1;
+    entry.device_index = le_device_index;
+    entry.att_handle   = att_handle;
+    entry.value        = value;
+    tlv_impl->store_tag(tlv_context, tag_to_use, (uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
+}
+
+static void att_server_persistent_ccc_clear(att_server_t * att_server){
+    if (!att_server) return;
+    int le_device_index = att_server->ir_le_device_db_index;
+    log_info("Clear CCC values of remote %s, le device id %d", bd_addr_to_str(att_server->peer_address), le_device_index);
+    // check if bonded
+    if (le_device_index < 0) return;
+    // get btstack_tlv
+    const btstack_tlv_t * tlv_impl = NULL;
+    void * tlv_context;
+    btstack_tlv_get_instance(&tlv_impl, &tlv_context);
+    if (!tlv_impl) return;
+    // get all ccc tag
+    int index;
+    persistent_ccc_entry_t entry;
+    for (index=0;index<NVN_NUM_GATT_SERVER_CCC;index++){
+        uint32_t tag = att_server_persistent_ccc_tag_for_index(index);
+        int len = tlv_impl->get_tag(tlv_context, tag, (uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
+        if (len != sizeof(persistent_ccc_entry_t)) continue;
+        if (entry.device_index != le_device_index) continue;
+        // delete entry
+        log_info("CCC Index %u: Delete", index);
+        tlv_impl->delete_tag(tlv_context, tag);
+    }  
+}
+
+static void att_server_persistent_ccc_restore(att_server_t * att_server){
+    if (!att_server) return;
+    int le_device_index = att_server->ir_le_device_db_index;
+    log_info("Restore CCC values of remote %s, le device id %d", bd_addr_to_str(att_server->peer_address), le_device_index);
+    // get btstack_tlv
+    const btstack_tlv_t * tlv_impl = NULL;
+    void * tlv_context;
+    btstack_tlv_get_instance(&tlv_impl, &tlv_context);
+    if (!tlv_impl) return;
+    // get all ccc tag
+    int index;
+    persistent_ccc_entry_t entry;
+    for (index=0;index<NVN_NUM_GATT_SERVER_CCC;index++){
+        uint32_t tag = att_server_persistent_ccc_tag_for_index(index);
+        int len = tlv_impl->get_tag(tlv_context, tag, (uint8_t *) &entry, sizeof(persistent_ccc_entry_t));
+        if (len != sizeof(persistent_ccc_entry_t)) continue;
+        if (entry.device_index != le_device_index) continue;
+        // simulate write callback
+        uint16_t attribute_handle = entry.att_handle;
+        uint8_t  value[2];
+        little_endian_store_16(value, 0, entry.value);
+        att_write_callback_t callback = att_server_write_callback_for_handle(attribute_handle);
+        if (!callback) continue;
+        log_info("CCC Index %u: Set Attribute handle 0x%04x to value 0x%04x", index, attribute_handle, entry.value );
+        (*callback)(att_server->connection.con_handle, attribute_handle, ATT_TRANSACTION_MODE_NONE, 0, value, sizeof(value));
+    }
+}
+
+// persistent CCC writes
+// ---------------------
+
+// gatt service management
+static att_service_handler_t * att_service_handler_for_handle(uint16_t handle){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &service_handlers);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        att_service_handler_t * handler = (att_service_handler_t*) btstack_linked_list_iterator_next(&it);
+        if (handler->start_handle > handle) continue;
+        if (handler->end_handle   < handle) continue;
+        return handler;
+    }
+    return NULL;
+}
+static att_read_callback_t att_server_read_callback_for_handle(uint16_t handle){
+    att_service_handler_t * handler = att_service_handler_for_handle(handle);
+    if (handler) return handler->read_callback;
+    return att_server_client_read_callback;
+}
+
+static att_write_callback_t att_server_write_callback_for_handle(uint16_t handle){
+    att_service_handler_t * handler = att_service_handler_for_handle(handle);
+    if (handler) return handler->write_callback;
+    return att_server_client_write_callback;
+}
+
+static void att_notify_write_callbacks(hci_con_handle_t con_handle, uint16_t transaction_mode){
+    // notify all callbacks
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &service_handlers);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        att_service_handler_t * handler = (att_service_handler_t*) btstack_linked_list_iterator_next(&it);
+        if (!handler->write_callback) continue;
+        (*handler->write_callback)(con_handle, 0, transaction_mode, 0, NULL, 0);
+    }
+    if (!att_server_client_write_callback) return;
+    (*att_server_client_write_callback)(con_handle, 0, transaction_mode, 0, NULL, 0);
+}
+
+// returns first reported error or 0
+static uint8_t att_validate_prepared_write(hci_con_handle_t con_handle){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &service_handlers);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        att_service_handler_t * handler = (att_service_handler_t*) btstack_linked_list_iterator_next(&it);
+        if (!handler->write_callback) continue;
+        uint8_t error_code = (*handler->write_callback)(con_handle, 0, ATT_TRANSACTION_MODE_VALIDATE, 0, NULL, 0);
+        if (error_code) return error_code;
+    }
+    if (!att_server_client_write_callback) return 0;
+    return (*att_server_client_write_callback)(con_handle, 0, ATT_TRANSACTION_MODE_VALIDATE, 0, NULL, 0);
+}
+
+static uint16_t att_server_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    att_read_callback_t callback = att_server_read_callback_for_handle(attribute_handle);
+    if (!callback) return 0;
+    return (*callback)(con_handle, attribute_handle, offset, buffer, buffer_size);
+}
+
+static int att_server_write_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+    switch (transaction_mode){
+        case ATT_TRANSACTION_MODE_VALIDATE:
+            return att_validate_prepared_write(con_handle);
+        case ATT_TRANSACTION_MODE_EXECUTE:
+        case ATT_TRANSACTION_MODE_CANCEL:
+            att_notify_write_callbacks(con_handle, transaction_mode);
+            return 0;
+        default:
+            break;
+    }
+
+    // track CCC writes
+    if (att_is_persistent_ccc(attribute_handle) && offset == 0 && buffer_size == 2){
+        att_server_persistent_ccc_write(con_handle, attribute_handle, little_endian_read_16(buffer, 0));
+    }
+
+    att_write_callback_t callback = att_server_write_callback_for_handle(attribute_handle);
+    if (!callback) return 0;
+    return (*callback)(con_handle, attribute_handle, transaction_mode, offset, buffer, buffer_size);
+}
+
+/**
+ * @brief register read/write callbacks for specific handle range
+ * @param att_service_handler_t
+ */
+void att_server_register_service_handler(att_service_handler_t * handler){
+    if (att_service_handler_for_handle(handler->start_handle) ||
+        att_service_handler_for_handle(handler->end_handle)){
+        log_error("handler for range 0x%04x-0x%04x already registered", handler->start_handle, handler->end_handle);
+        return;
+    }
+    btstack_linked_list_add(&service_handlers, (btstack_linked_item_t*) handler);
+}
+
 void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_write_callback_t write_callback){
+
+    // store callbacks
+    att_server_client_read_callback  = read_callback;
+    att_server_client_write_callback = write_callback;
 
     // register for HCI Events
     hci_event_callback_registration.callback = &att_event_packet_handler;
@@ -470,8 +787,8 @@ void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_
     att_dispatch_register_server(att_packet_handler);
 
     att_set_db(db);
-    att_set_read_callback(read_callback);
-    att_set_write_callback(write_callback);
+    att_set_read_callback(att_server_read_callback);
+    att_set_write_callback(att_server_write_callback);
 
 }
 

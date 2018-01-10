@@ -112,7 +112,9 @@ extern "C" {
 #define HFP_MAX_NUM_AG_INDICATORS 20
 #define HFP_MAX_NUM_HF_INDICATORS 20
 #define HFP_MAX_INDICATOR_DESC_SIZE 20 
-
+#define HFP_MAX_NETWORK_OPERATOR_NAME_SIZE 17   
+#define HFP_CALL_SERVICE_SIZE 3
+    
 #define HFP_SUPPORTED_FEATURES "+BRSF"
 #define HFP_AVAILABLE_CODECS "+BAC"
 #define HFP_INDICATOR "+CIND"
@@ -458,14 +460,14 @@ typedef struct{
 } hfp_ag_indicator_t;
 
 typedef struct{
-    char name[3];
+    char name[HFP_CALL_SERVICE_SIZE];
 } hfp_call_service_t;
 
 
 typedef struct{
     uint8_t mode;
     uint8_t format;
-    char name[17]; // enabled
+    char name[HFP_MAX_NETWORK_OPERATOR_NAME_SIZE]; // enabled
 } hfp_network_opearator_t;
 
     

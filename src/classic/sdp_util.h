@@ -78,6 +78,9 @@ void      de_dump_data_element(const uint8_t * record);
 int       de_get_len(const uint8_t * header);
 
 
+// @note returned "string" is not NULL terminated
+const uint8_t * de_get_string(const uint8_t * element);
+
 de_size_t de_get_size_type(const uint8_t * header);
 de_type_t de_get_element_type(const uint8_t * header);
 uint32_t  de_get_header_size(const uint8_t * header);
@@ -85,7 +88,6 @@ int       de_element_get_uint16(const uint8_t * element, uint16_t * value);
 uint32_t  de_get_data_size(const uint8_t * header);
 uint32_t  de_get_uuid32(const uint8_t * element);
 int       de_get_normalized_uuid(uint8_t *uuid128, const uint8_t *element);
-
 void      de_create_sequence(uint8_t * header);
 void      de_store_descriptor_with_len(uint8_t * header, de_type_t type, de_size_t size, uint32_t len);
 uint8_t * de_push_sequence(uint8_t *header);

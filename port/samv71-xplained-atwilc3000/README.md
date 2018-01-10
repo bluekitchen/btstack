@@ -8,7 +8,7 @@ To create all example projects in the example folder, you can run:
 
     $ make
 
-# Compile Example
+## Compile Example
 
 In one of the example folders:
 
@@ -16,7 +16,7 @@ In one of the example folders:
 
 To upload the firmware:
 
-    $ make
+    $ make flash
 
 You need to connect the the Debug USB to your computer.
 
@@ -29,8 +29,6 @@ Also, the full packet log can be enabled in the main() function on main.c by unc
 
 ## TODOs
     - Implement hal_flash_sector.h to persist link keys
-    - Implement hal_audio_dma.h for A2DP Audio Sink and HFP/HSP Demos
-    - Figure out if/how SCO packets can be routed over HCI for HFP wide-band speech
 
 ## Issues
     - Bluetooth UART driver uses per-byte interrupts and doesn't work reliable at higher baud rates (921600 seems ok, 2 mbps already causes problems).

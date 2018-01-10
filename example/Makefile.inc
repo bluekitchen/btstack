@@ -35,6 +35,7 @@ COMMON += \
 	hci_dump.c		            \
 	l2cap.c			            \
 	l2cap_signaling.c	        \
+	btstack_tlv.c               \
 
 CLASSIC += \
 	btstack_link_key_db_memory.c   \
@@ -82,10 +83,10 @@ include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
 
 SBC_DECODER += \
 	btstack_sbc_plc.c \
-	btstack_sbc_bludroid.c \
+	btstack_sbc_decoder_bluedroid.c \
 
 SBC_ENCODER += \
-	btstack_sbc_bludroid.c \
+	btstack_sbc_encoder_bluedroid.c \
 	hfp_msbc.c \
 
 CVSD_PLC = \
@@ -118,6 +119,7 @@ EXAMPLES = 					\
 	gatt_browser            \
 	hfp_ag_demo             \
 	hfp_hf_demo             \
+	hid_host_demo           \
 	hid_keyboard_demo 	    \
 	hid_mouse_demo          \
 	hog_keyboard_demo       \
@@ -206,8 +208,8 @@ hog_mouse_demo: hog_mouse_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SER
 sm_pairing_peripheral: sm_pairing_peripheral.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} sm_pairing_peripheral.c
 	${CC} $(filter-out sm_pairing_peripheral.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-sm_pairing_central: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} sm_pairing_central.o
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+sm_pairing_central: sm_pairing_central.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} sm_pairing_central.o
+	${CC} $(filter-out sm_pairing_central.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 le_streamer: le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} le_streamer.c
 	${CC} $(filter-out le_streamer.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
@@ -263,16 +265,22 @@ hfp_ag_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODE
 hfp_hf_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hfp.o hfp_hf.o hfp_hf_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
+hid_host_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_hid_parser.o hid_host_demo.o
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
 hid_keyboard_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_ring_buffer.o hid_device.o hid_keyboard_demo.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hid_mouse_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_ring_buffer.o hid_device.o hid_mouse_demo.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-a2dp_source_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_ENCODER_OBJ} ${SBC_DECODER_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} avrcp.o avrcp_target.o a2dp_source_demo.c
+a2dp_source_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} avrcp.o avrcp_target.o a2dp_source_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-a2dp_sink_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_ENCODER_OBJ} ${SBC_DECODER_OBJ} ${AVDTP_OBJ} avrcp.o avrcp_controller.o a2dp_sink_demo.c
+a2dp_sink_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${AVDTP_OBJ} avrcp.o avrcp_controller.o a2dp_sink_demo.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+avrcp_browsing_client: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} avrcp.o avrcp_controller.o avrcp_browsing_controller.o avrcp_media_item_iterator.o avrcp_browsing_client.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 dut_mode_classic: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} dut_mode_classic.c

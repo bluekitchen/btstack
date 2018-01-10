@@ -38,16 +38,19 @@
 #define __BTSTACK_FILE__ "le_streamer.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(le_streamer): LE Peripheral - Stream data over GATT
+/* EXAMPLE_START(le_streamer): LE Streamer - Stream data over GATT.
  *
  * @text All newer operating systems provide GATT Client functionality.
  * This example shows how to get a maximal throughput via BLE:
- * - send whenever possible
- * - use the max ATT MTU
+ * - send whenever possible,
+ * - use the max ATT MTU.
  *
- * In theory, we should also update the connection parameters, but we already get
+ * @text In theory, we should also update the connection parameters, but we already get
  * a connection interval of 30 ms and there's no public way to use a shorter 
- * interval with iOS (if we're not implementing an HID device)
+ * interval with iOS (if we're not implementing an HID device).
+ *
+ * @text Note: To start the streaming, run the example.
+ * On remote device use some GATT Explorer, e.g. LightBlue, BLExplr to enable notifications.
  */
  // *****************************************************************************
 
@@ -210,6 +213,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
+                case BTSTACK_EVENT_STATE:
+                // BTstack activated, get started
+                if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING) {
+                    printf("To start the streaming, please run the le_streamer_client example on other device, or use some GATT Explorer, e.g. LightBlue, BLExplr.\n");
+                } 
+                break;
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     context = connection_for_conn_handle(hci_event_disconnection_complete_get_connection_handle(packet));
                     if (!context) break;

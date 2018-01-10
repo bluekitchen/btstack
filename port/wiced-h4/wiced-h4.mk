@@ -19,6 +19,9 @@ GLOBAL_INCLUDES += \
 # micro-ecc of WICED tree used for SECP256R1 in LE Secure Connections
 $(NAME)_COMPONENTS += crypto/micro-ecc
 
+# additional CFLAGS
+$(NAME)_CFLAGS += $(BTSTACK_CFLAGS)
+
 # core BTstack sources
 $(NAME)_SOURCES += \
 	../../src/ad_parser.c    		      \
@@ -44,6 +47,7 @@ $(NAME)_SOURCES += \
 	../../src/btstack_memory.c            \
 	../../src/btstack_memory_pool.c       \
 	../../src/btstack_run_loop.c          \
+	../../src/btstack_tlv.c               \
 	../../src/btstack_util.c              \
 	../../src/hci.c                       \
 	../../src/hci_cmd.c                   \
@@ -58,12 +62,13 @@ $(NAME)_SOURCES += \
 	main.c                                               \
 	../../platform/wiced/btstack_link_key_db_wiced_dct.c \
 	../../platform/wiced/btstack_run_loop_wiced.c        \
+	../../platform/wiced/btstack_stdin_wiced.c           \
 	../../platform/wiced/btstack_uart_block_wiced.c 	 \
 	../../platform/wiced/le_device_db_wiced_dct.c        \
 	../../chipset/bcm/btstack_chipset_bcm.c              \
 
 ifeq ($(BT_CHIP_XTAL_FREQUENCY),)
-$(NAME)_SOURCES += ../../../drivers/bluetooth/firmware/$(BT_CHIP)$(BT_CHIP_REVISION)/bt_firmware_image.c
+$(NAME)_SOURCES += ../../../drivers/bluetooth/firmware/$(BT_CHIP)$(BT_CHIP_REVISION)/$(BT_FIRMWARE_FILE)
 else
-$(NAME)_SOURCES += ../../../drivers/bluetooth/firmware/$(BT_CHIP)$(BT_CHIP_REVISION)/$(BT_CHIP_XTAL_FREQUENCY)/bt_firmware_image.c
+$(NAME)_SOURCES += ../../../drivers/bluetooth/firmware/$(BT_CHIP)$(BT_CHIP_REVISION)/$(BT_CHIP_XTAL_FREQUENCY)/$(BT_FIRMWARE_FILE)
 endif

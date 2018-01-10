@@ -53,13 +53,15 @@
               <itemPath>../../../3rd-party/bluedroid/encoder/Makefile.inc</itemPath>
             </logicalFolder>
           </logicalFolder>
-          <logicalFolder name="micro-ecc" displayName="micro-ecc" projectFiles="true">
-            <logicalFolder name="include" displayName="include" projectFiles="true">
-              <logicalFolder name="micro-ecc" displayName="micro-ecc" projectFiles="true">
-                <itemPath>../../../3rd-party/micro-ecc/include/uECC.h</itemPath>
-                <itemPath>../../../3rd-party/micro-ecc/include/btstack_config_eCC.h</itemPath>
-              </logicalFolder>
+          <logicalFolder name="f1" displayName="hxcmod-player" projectFiles="true">
+            <logicalFolder name="f1" displayName="mods" projectFiles="true">
+              <itemPath>../../../3rd-party/hxcmod-player/mods/mod.h</itemPath>
             </logicalFolder>
+            <itemPath>../../../3rd-party/hxcmod-player/hxcmod.h</itemPath>
+          </logicalFolder>
+          <logicalFolder name="micro-ecc" displayName="micro-ecc" projectFiles="true">
+            <itemPath>../../../3rd-party/micro-ecc/btstack_config_uECC.h</itemPath>
+            <itemPath>../../../3rd-party/micro-ecc/uECC.h</itemPath>
           </logicalFolder>
         </logicalFolder>
         <logicalFolder name="ble" displayName="ble" projectFiles="true">
@@ -189,22 +191,15 @@
               </logicalFolder>
             </logicalFolder>
           </logicalFolder>
-          <logicalFolder name="micro-ecc" displayName="micro-ecc" projectFiles="true">
-            <logicalFolder name="include" displayName="include" projectFiles="true">
-              <logicalFolder name="micro-ecc" displayName="micro-ecc" projectFiles="true">
-              </logicalFolder>
+          <logicalFolder name="f1" displayName="hxcmod-player" projectFiles="true">
+            <logicalFolder name="f1" displayName="mods" projectFiles="true">
+              <itemPath>../../../3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c</itemPath>
             </logicalFolder>
-            <logicalFolder name="library" displayName="library" projectFiles="true">
-              <itemPath>../../../3rd-party/micro-ecc/uECC.c</itemPath>
-            </logicalFolder>
+            <itemPath>../../../3rd-party/hxcmod-player/hxcmod.c</itemPath>
           </logicalFolder>
-        </logicalFolder>
-        <logicalFolder name="ble" displayName="ble" projectFiles="true">
-          <itemPath>../../../src/ble/att_db.c</itemPath>
-          <itemPath>../../../src/ble/att_dispatch.c</itemPath>
-          <itemPath>../../../src/ble/att_server.c</itemPath>
-          <itemPath>../../../src/ble/le_device_db_memory.c</itemPath>
-          <itemPath>../../../src/ble/sm.c</itemPath>
+          <logicalFolder name="micro-ecc" displayName="micro-ecc" projectFiles="true">
+            <itemPath>../../../3rd-party/micro-ecc/uECC.c</itemPath>
+          </logicalFolder>
         </logicalFolder>
         <logicalFolder name="chipset-csr" displayName="chipset-csr" projectFiles="true">
           <itemPath>../../../chipset/csr/btstack_chipset_csr.c</itemPath>
@@ -214,6 +209,59 @@
           <itemPath>../../../platform/embedded/btstack_uart_block_embedded.c</itemPath>
         </logicalFolder>
         <logicalFolder name="src" displayName="src" projectFiles="true">
+          <logicalFolder name="f2" displayName="ble" projectFiles="true">
+            <logicalFolder name="f1" displayName="gatt-service" projectFiles="true">
+              <itemPath>../../../src/ble/gatt-service/battery_service_server.c</itemPath>
+              <itemPath>../../../src/ble/gatt-service/device_information_service_server.c</itemPath>
+              <itemPath>../../../src/ble/gatt-service/hids_device.c</itemPath>
+            </logicalFolder>
+            <itemPath>../../../src/ble/att_db.c</itemPath>
+            <itemPath>../../../src/ble/att_dispatch.c</itemPath>
+            <itemPath>../../../src/ble/att_server.c</itemPath>
+            <itemPath>../../../src/ble/le_device_db_memory.c</itemPath>
+            <itemPath>../../../src/ble/sm.c</itemPath>
+            <itemPath>../../../src/ble/ancs_client.c</itemPath>
+            <itemPath>../../../src/ble/gatt_client.c</itemPath>
+          </logicalFolder>
+          <logicalFolder name="f1" displayName="classic" projectFiles="true">
+            <itemPath>../../../src/classic/btstack_link_key_db_memory.c</itemPath>
+            <itemPath>../../../src/classic/sdp_client.c</itemPath>
+            <itemPath>../../../src/classic/sdp_client_rfcomm.c</itemPath>
+            <itemPath>../../../src/classic/sdp_server.c</itemPath>
+            <itemPath>../../../src/classic/sdp_util.c</itemPath>
+            <itemPath>../../../src/classic/spp_server.c</itemPath>
+            <itemPath>../../../src/classic/a2dp_sink.c</itemPath>
+            <itemPath>../../../src/classic/a2dp_source.c</itemPath>
+            <itemPath>../../../src/classic/avdtp.c</itemPath>
+            <itemPath>../../../src/classic/avdtp_acceptor.c</itemPath>
+            <itemPath>../../../src/classic/avdtp_initiator.c</itemPath>
+            <itemPath>../../../src/classic/avdtp_sink.c</itemPath>
+            <itemPath>../../../src/classic/avdtp_source.c</itemPath>
+            <itemPath>../../../src/classic/avdtp_util.c</itemPath>
+            <itemPath>../../../src/classic/avrcp.c</itemPath>
+            <itemPath>../../../src/classic/avrcp_browsing_controller.c</itemPath>
+            <itemPath>../../../src/classic/avrcp_controller.c</itemPath>
+            <itemPath>../../../src/classic/avrcp_media_item_iterator.c</itemPath>
+            <itemPath>../../../src/classic/avrcp_target.c</itemPath>
+            <itemPath>../../../src/classic/bnep.c</itemPath>
+            <itemPath>../../../src/classic/btstack_cvsd_plc.c</itemPath>
+            <itemPath>../../../src/classic/btstack_sbc_decoder_bluedroid.c</itemPath>
+            <itemPath>../../../src/classic/btstack_sbc_encoder_bluedroid.c</itemPath>
+            <itemPath>../../../src/classic/btstack_sbc_plc.c</itemPath>
+            <itemPath>../../../src/classic/device_id_server.c</itemPath>
+            <itemPath>../../../src/classic/goep_client.c</itemPath>
+            <itemPath>../../../src/classic/hfp.c</itemPath>
+            <itemPath>../../../src/classic/hfp_ag.c</itemPath>
+            <itemPath>../../../src/classic/hfp_gsm_model.c</itemPath>
+            <itemPath>../../../src/classic/hfp_hf.c</itemPath>
+            <itemPath>../../../src/classic/hfp_msbc.c</itemPath>
+            <itemPath>../../../src/classic/hid_device.c</itemPath>
+            <itemPath>../../../src/classic/hsp_ag.c</itemPath>
+            <itemPath>../../../src/classic/hsp_hs.c</itemPath>
+            <itemPath>../../../src/classic/obex_iterator.c</itemPath>
+            <itemPath>../../../src/classic/pan.c</itemPath>
+            <itemPath>../../../src/classic/pbap_client.c</itemPath>
+          </logicalFolder>
           <itemPath>../../../src/btstack_memory.c</itemPath>
           <itemPath>../../../src/hci.c</itemPath>
           <itemPath>../../../src/hci_cmd.c</itemPath>
@@ -222,19 +270,14 @@
           <itemPath>../../../src/l2cap_signaling.c</itemPath>
           <itemPath>../../../src/btstack_linked_list.c</itemPath>
           <itemPath>../../../src/btstack_memory_pool.c</itemPath>
-          <itemPath>../../../src/classic/btstack_link_key_db_memory.c</itemPath>
           <itemPath>../../../src/classic/rfcomm.c</itemPath>
           <itemPath>../../../src/btstack_run_loop.c</itemPath>
-          <itemPath>../../../src/classic/sdp_server.c</itemPath>
-          <itemPath>../../../src/classic/sdp_client.c</itemPath>
-          <itemPath>../../../src/classic/sdp_client_rfcomm.c</itemPath>
-          <itemPath>../../../src/classic/sdp_util.c</itemPath>
           <itemPath>../../../src/btstack_util.c</itemPath>
-          <itemPath>../../../src/classic/spp_server.c</itemPath>
           <itemPath>../../../src/hci_transport_h4.c</itemPath>
           <itemPath>../../../src/hci_transport_h5.c</itemPath>
           <itemPath>../../../src/btstack_slip.c</itemPath>
           <itemPath>../../../src/ad_parser.c</itemPath>
+          <itemPath>../../../src/btstack_tlv.c</itemPath>
         </logicalFolder>
       </logicalFolder>
       <logicalFolder name="f2" displayName="framework" projectFiles="true">
@@ -336,7 +379,7 @@
         <property key="enable-unroll-loops" value="false"/>
         <property key="exclude-floating-point" value="false"/>
         <property key="extra-include-directories"
-                  value=".;../../../..;../src;../src/system_config/bt_audio_dk;../../../src;../../../chipset/csr;../../../platform/embedded;../../../3rd-party/micro-ecc;../../../3rd-party/bluedroid/decoder/include;../../../3rd-party/bluedroid/encoder/include"/>
+                  value=".;../../../..;../src;../src/system_config/bt_audio_dk;../../../src;../../../chipset/csr;../../../platform/embedded;../../../3rd-party/micro-ecc;../../../3rd-party/bluedroid/decoder/include;../../../3rd-party/bluedroid/encoder/include;../../../3rd-party/hxcmod-player;../../../3rd-party/hxcmod-player/mods"/>
         <property key="generate-16-bit-code" value="false"/>
         <property key="generate-micro-compressed-code" value="false"/>
         <property key="isolate-each-function" value="false"/>
@@ -397,7 +440,7 @@
         <property key="oXC32ld-extra-opts" value=""/>
         <property key="optimization-level" value=""/>
         <property key="preprocessor-macros" value=""/>
-        <property key="remove-unused-sections" value="false"/>
+        <property key="remove-unused-sections" value="true"/>
         <property key="report-memory-usage" value="false"/>
         <property key="stack-size" value=""/>
         <property key="symbol-stripping" value=""/>

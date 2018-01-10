@@ -56,6 +56,12 @@
 // should go to some common place
 #define OPCODE(ogf, ocf) (ocf | ogf << 10)
 
+#define HCI_OPCODE_EM_WRITE_PATCH_START        (0xFC27)
+#define HCI_OPCODE_EM_WRITE_PATCH_CONTINUE     (0xFC28)
+#define HCI_OPCODE_EM_WRITE_PATCH_ABORT        (0xFC29)
+#define HCI_OPCODE_EM_CPU_RESET                (0xFC32)
+#define HCI_OPCODE_EM_PATCH_QUERY              (0xFC34)
+
 static const uint32_t baudrates[] = {
 	      0, 
 	      0,
@@ -74,6 +80,42 @@ static const uint32_t baudrates[] = {
 	1843200,
 };
 
+#ifdef HAVE_EM9304_PATCH_CONTAINER
+
+extern const uint8_t   container_blob_data[];
+extern const uint32_t  container_blob_size;
+
+static uint32_t container_blob_offset  = 0;
+static uint32_t container_end;	// current container
+static uint16_t patch_sequence_number;
+static int      em_cpu_reset_sent;
+
+static enum {
+	UPLOAD_IDLE,
+	UPLOAD_ACTIVE,
+} upload_state;
+
+#endif
+
+// CRC32 implementation using 4-bit lookup table created by pycrc v0.9.1, https://pycrc.org
+// ./pycrc.py --model crc-32 --algorithm table-driven --table-idx-width=4 --generate c
+static const uint32_t crc32_table[16] = { 
+	0x00000000, 0x1db71064, 0x3b6e20c8, 0x26d930ac, 0x76dc4190, 0x6b6b51f4, 0x4db26158, 0x5005713c,
+	0xedb88320, 0xf00f9344, 0xd6d6a3e8, 0xcb61b38c, 0x9b64c2b0, 0x86d3d2d4, 0xa00ae278, 0xbdbdf21c
+};
+
+uint32_t btstack_crc32(const uint8_t *buf, uint16_t size){
+	uint16_t pos;
+	uint32_t crc = 0xffffffff;
+	for (pos=0 ; pos<size ; pos++){
+        int tbl_idx = crc ^ buf[pos];
+        crc = crc32_table[tbl_idx & 0x0f] ^ (crc >> 4);
+        tbl_idx = crc ^ (buf[pos] >> 4);
+        crc = crc32_table[tbl_idx & 0x0f] ^ (crc >> 4);
+    }
+	return ~crc;
+}
+
 static void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer){
     little_endian_store_16(hci_cmd_buffer, 0, OPCODE(OGF_VENDOR, 0x02));
     hci_cmd_buffer[2] = 0x06;
@@ -84,7 +126,7 @@ static void chipset_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buf
 	// lookup baudrates
 	int i;
 	int found = 0;
-	for (i=0;i < sizeof(baudrates)/sizeof(uint32_t);i++){
+	for (i=0 ; i < sizeof(baudrates)/sizeof(uint32_t) ; i++){
 		if (baudrates[i] == baudrate){
 			found = i;
 			break;		
@@ -99,10 +141,88 @@ static void chipset_set_baudrate_command(uint32_t baudrate, uint8_t *hci_cmd_buf
     hci_cmd_buffer[3] = i;
 }
 
+#ifdef HAVE_EM9304_PATCH_CONTAINER
+static void chipset_init(const void * config){
+	UNUSED(config);
+	container_blob_offset = 0;
+	em_cpu_reset_sent = 0;
+	upload_state = UPLOAD_IDLE;
+}
+
+static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
+	log_info("pos %u, container end %u, blob size %u", container_blob_offset, container_end, container_blob_size);
+
+    if (container_blob_offset >= container_blob_size) {
+    	if (0 == em_cpu_reset_sent){
+    		// send EM CPU Reset
+		    little_endian_store_16(hci_cmd_buffer, 0, HCI_OPCODE_EM_CPU_RESET);
+		    hci_cmd_buffer[2] = 0;
+		    em_cpu_reset_sent = 1;
+		    return BTSTACK_CHIPSET_VALID_COMMAND;
+    	} else {
+	        return BTSTACK_CHIPSET_DONE;
+    	}
+    }
+
+    uint32_t tag;
+    uint16_t bytes_to_upload;
+    uint32_t crc;
+
+	switch (upload_state){
+		case UPLOAD_IDLE:
+			// check for 'em93' tag
+			tag = little_endian_read_32(container_blob_data, container_blob_offset);
+			if (0x656d3933 != tag) {
+				log_error("Expected 0x656d3933 ('em934') but got %08x", tag);
+				return BTSTACK_CHIPSET_DONE;
+			}
+			// fetch info for current container
+			container_end = container_blob_offset + little_endian_read_32(container_blob_data, container_blob_offset + 4);
+			// start uploading (<= 59 bytes)
+			patch_sequence_number = 1;
+			bytes_to_upload = btstack_min(59, container_end - container_blob_offset);
+			crc = btstack_crc32(&container_blob_data[container_blob_offset], bytes_to_upload); 
+			// build command
+		    little_endian_store_16(hci_cmd_buffer, 0, HCI_OPCODE_EM_WRITE_PATCH_START);
+		    hci_cmd_buffer[2] = 5 + bytes_to_upload;
+		    hci_cmd_buffer[3] = 0;	// upload to iRAM1
+		    little_endian_store_32(hci_cmd_buffer, 4, crc);
+		    memcpy(&hci_cmd_buffer[8], &container_blob_data[container_blob_offset], bytes_to_upload);
+		    container_blob_offset += bytes_to_upload;
+		    if (container_blob_offset < container_end){
+		    	upload_state = UPLOAD_ACTIVE;
+		    }
+		    return BTSTACK_CHIPSET_VALID_COMMAND;
+		case UPLOAD_ACTIVE:
+			// Upload next segement
+			bytes_to_upload = btstack_min(58, container_end - container_blob_offset);
+			crc = btstack_crc32(&container_blob_data[container_blob_offset], bytes_to_upload); 
+			// build command
+		    little_endian_store_16(hci_cmd_buffer, 0, HCI_OPCODE_EM_WRITE_PATCH_CONTINUE);
+		    hci_cmd_buffer[2] = 6 + bytes_to_upload;
+		    little_endian_store_16(hci_cmd_buffer, 3, patch_sequence_number++);
+		    little_endian_store_32(hci_cmd_buffer, 5, crc);
+		    memcpy(&hci_cmd_buffer[9], &container_blob_data[container_blob_offset], bytes_to_upload);
+		    container_blob_offset += bytes_to_upload;
+		    if (container_blob_offset >= container_end){
+		    	log_info("container done maybe another one");
+		    	upload_state = UPLOAD_IDLE;
+		    }
+		    return BTSTACK_CHIPSET_VALID_COMMAND;
+	}
+	return BTSTACK_CHIPSET_DONE;
+}
+#endif
+
 static const btstack_chipset_t btstack_chipset_em9301 = {
     "EM9301",
-    NULL, // chipset_init not used
-    NULL, // chipset_next_command not used
+#ifdef HAVE_EM9304_PATCH_CONTAINER
+    chipset_init,
+    chipset_next_command,
+#else
+    NULL,
+    NULL,
+#endif
     chipset_set_baudrate_command,
     chipset_set_bd_addr_command,
 };

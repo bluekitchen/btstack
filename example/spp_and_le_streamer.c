@@ -41,8 +41,13 @@
  * @text The SPP and LE Streamer example combines the Bluetooth Classic SPP Streamer
  * and the Bluetooth LE Streamer into a single application.
  *
- * In this Section, we only point out the differences to the individual examples
+ * @text In this Section, we only point out the differences to the individual examples
  * and how how the stack is configured.
+ *
+ * @text Note: To test, please run the example, and then: 
+ *    - for SPP pair from a remote device, and open the Virtual Serial Port,
+ *    - for LE use some GATT Explorer, e.g. LightBlue, BLExplr, to enable notifications.
+ *
  */
 // *****************************************************************************
 

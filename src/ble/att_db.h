@@ -170,13 +170,6 @@ uint16_t att_prepare_handle_value_indication(att_connection_t * att_connection,
  */
 void att_clear_transaction_queue(att_connection_t * att_connection);
 
-/**
- * @brief register read/write callbacks for specific handle range
- * @param att_service_handler_t
- */
-void att_register_service_handler(att_service_handler_t * handler);
-
-
 // att_read_callback helpers for a various data types
 
 /*
@@ -236,6 +229,16 @@ uint16_t gatt_server_get_value_handle_for_characteristic_with_uuid16(uint16_t st
 
 // returns 0 if not found
 uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
+
+// non-user functionality for att_server
+
+/*
+ * @brief Check if writes to handle should be persistent
+ * @param handle
+ * @returns 1 if persistent
+ */
+int att_is_persistent_ccc(uint16_t handle);
+
 
 #if defined __cplusplus
 }

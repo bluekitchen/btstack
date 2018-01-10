@@ -26,6 +26,22 @@ clean:
 \tdone
 '''
 
+# 
+le_examples = [
+'ancs_client_demo.c', 
+'gap_le_advertisements.c', 
+'gatt_battery_query.c', 
+'gatt_browser.c', 
+'hog_keyboard_demo.c', 
+'hog_mouse_demo.c', 
+'le_counter.c', 
+'le_streamer.c', 
+'le_streamer_client.c', 
+'led_counter.c', 
+'sm_pairing_central.c', 
+'sm_pairing_peripheral.c', 
+]
+
 # get script path
 script_path = os.path.abspath(os.path.dirname(sys.argv[0])) + '/../'
 
@@ -56,7 +72,7 @@ examples = []
 for file in example_files:
     if not file.endswith(".c"):
         continue
-    if file in ['panu_demo.c', 'sco_demo_util.c']:
+    if not file in le_examples:
         continue
     example = file[:-2]
     examples.append(example)
@@ -91,11 +107,11 @@ for file in example_files:
                 if 'le_counter.h: ${BTSTACK_ROOT}/example/le_counter.gatt' in line:
                     fout.write('%s.h: ${BTSTACK_ROOT}/example/%s.gatt\n' % (example,example))
                     continue
-                if 'all: le_counter.h wilc3000_bt_firmware.c' in line:
+                if 'all: le_counter.h wilc3000_ble_firmware.h' in line:
                     if len(gatt_h):
-                        fout.write("all: %s.h wilc3000_bt_firmware.c\n" % example)
+                        fout.write("all: %s.h wilc3000_ble_firmware.h\n" % example)
                     else:
-                        fout.write("all: wilc3000_bt_firmware.c\n")
+                        fout.write("all: le_counter.h wilc3000_ble_firmware.h\n")
                     continue
                 fout.write(line)
 
@@ -111,9 +127,6 @@ for file in example_files:
                     continue
                 if 'CSRCS+=${BTSTACK_ROOT_CONFIG}/example/le_counter.c' in line:
                     fout.write('CSRCS+=${BTSTACK_ROOT_CONFIG}/example/%s.c\n' % example)
-                    continue
-                if 'CSRCS+=${BTSTACK_ROOT_CONFIG}/port/samv71-xplained-atwilc3000/example/template/wilc3000_bt_firmware.c' in line:
-                    fout.write('CSRCS+=${BTSTACK_ROOT_CONFIG}/port/samv71-xplained-atwilc3000/example/%s/wilc3000_bt_firmware.c \\\n' % example)
                     continue
                 if 'INC_PATH += ${BTSTACK_ROOT_CONFIG}/port/samv71-xplained-atwilc3000/example/template' in line:
                     fout.write('INC_PATH += ${BTSTACK_ROOT_CONFIG}/port/samv71-xplained-atwilc3000/example/%s\n' % example)

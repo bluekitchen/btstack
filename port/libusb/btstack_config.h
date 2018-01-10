@@ -25,6 +25,8 @@
 #define ENABLE_SCO_OVER_HCI
 #define ENABLE_SDP_DES_DUMP
 
+#define ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE (1691 + 4)
 #define HCI_INCOMING_PRE_BUFFER_SIZE 14 // sizeof BNEP header, avoid memcpy

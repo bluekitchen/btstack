@@ -50,6 +50,7 @@ BTdaemon_SOURCES =      \
     bnep.c                      \
     btstack_memory.c            \
     btstack_memory_pool.c       \
+    btstack_tlv.c               \
     btstack_uart_block_posix.c  \
     daemon.c                    \
     gatt_client.c               \

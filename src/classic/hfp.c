@@ -1121,7 +1121,8 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
         case HFP_PARSER_THIRD_ITEM:
              switch (hfp_connection->command){
                 case HFP_CMD_QUERY_OPERATOR_SELECTION_NAME:
-                    strcpy(hfp_connection->network_operator.name, (char *)hfp_connection->line_buffer);
+                    strncpy(hfp_connection->network_operator.name, (char *)hfp_connection->line_buffer, HFP_MAX_NETWORK_OPERATOR_NAME_SIZE);
+                    hfp_connection->network_operator.name[HFP_MAX_NETWORK_OPERATOR_NAME_SIZE - 1] = 0;
                     log_info("name %s\n", hfp_connection->line_buffer);
                     break;
                 case HFP_CMD_RETRIEVE_AG_INDICATORS:
@@ -1263,7 +1264,8 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
             hfp_connection->remote_codecs_nr = hfp_connection->parser_item_index;
             break;
         case HFP_CMD_RETRIEVE_AG_INDICATORS:
-            strcpy((char *)hfp_connection->ag_indicators[hfp_connection->parser_item_index].name,  (char *)hfp_connection->line_buffer);
+            strncpy((char *)hfp_connection->ag_indicators[hfp_connection->parser_item_index].name,  (char *)hfp_connection->line_buffer, HFP_MAX_INDICATOR_DESC_SIZE);
+            hfp_connection->ag_indicators[hfp_connection->parser_item_index].name[HFP_MAX_INDICATOR_DESC_SIZE-1] = 0;
             hfp_connection->ag_indicators[hfp_connection->parser_item_index].index = hfp_connection->parser_item_index+1;
             log_info("Indicator %d: %s (", hfp_connection->ag_indicators_nr+1, hfp_connection->line_buffer);
             break;
@@ -1282,7 +1284,8 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
         case HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES:
             log_info("Parsed Support call hold: %s\n", hfp_connection->line_buffer);
             if (hfp_connection->line_size > 2 ) break;
-            strcpy((char *)hfp_connection->remote_call_services[hfp_connection->remote_call_services_nr].name,  (char *)hfp_connection->line_buffer);
+            strncpy((char *)hfp_connection->remote_call_services[hfp_connection->remote_call_services_nr].name, (char *)hfp_connection->line_buffer, HFP_CALL_SERVICE_SIZE);
+            hfp_connection->remote_call_services[hfp_connection->remote_call_services_nr].name[HFP_CALL_SERVICE_SIZE - 1] = 0;
             hfp_connection->remote_call_services_nr++;
             break;
         case HFP_CMD_LIST_GENERIC_STATUS_INDICATORS:

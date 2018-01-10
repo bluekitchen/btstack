@@ -181,7 +181,8 @@ list_of_structs = [
     ["service_record_item"],
     ["avdtp_stream_endpoint"],
     ["avdtp_connection"],
-    ["avrcp_connection"]    
+    ["avrcp_connection"],
+    ["avrcp_browsing_connection"]    
 ]
 list_of_le_structs = [["gatt_client", "whitelist_entry", "sm_lookup_entry"]]
 

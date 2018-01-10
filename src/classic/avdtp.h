@@ -52,15 +52,15 @@
 
 #include <stdint.h>
 #include "hci.h"
-#include "classic/btstack_sbc.h"
 #include "btstack_ring_buffer.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
-#define MAX_NUM_SEPS 10
-#define MAX_CSRC_NUM 15
+#define AVDTP_MAX_NUM_SEPS 10
+#define AVDTP_MAX_CSRC_NUM 15
+#define AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN 10
 
 // Supported Features
 #define AVDTP_SOURCE_SF_Player      0x0001
@@ -183,7 +183,7 @@ typedef struct {
 typedef struct {
     uint16_t cp_type;
     uint16_t cp_type_value_len;
-    const uint8_t * cp_type_value;
+    uint8_t cp_type_value[AVDTP_MAX_CONTENT_PROTECTION_TYPE_VALUE_LEN];
 } adtvp_content_protection_t;
 
 typedef struct{
@@ -266,7 +266,7 @@ typedef struct {
     uint32_t timestamp;
     uint32_t synchronization_source;
 
-    uint32_t csrc_list[MAX_CSRC_NUM];
+    uint32_t csrc_list[AVDTP_MAX_CSRC_NUM];
 } avdtp_media_packet_header_t;
 
 typedef enum {
@@ -374,6 +374,7 @@ typedef struct {
     avdtp_packet_type_t         packet_type;
 } avdtp_signaling_packet_t;
 
+
 typedef struct {
     btstack_linked_item_t    item;
     bd_addr_t remote_addr;
@@ -394,6 +395,8 @@ typedef struct {
 
     uint8_t local_seid;
     uint8_t remote_seid;
+    // for repeating the set_configuration 
+    void * active_stream_endpoint;
 
     uint8_t initiator_transaction_label;
     uint8_t acceptor_transaction_label;
@@ -401,7 +404,7 @@ typedef struct {
     uint8_t wait_to_send_initiator;
     uint8_t wait_to_send_self;
     
-    uint8_t suspended_seids[MAX_NUM_SEPS];
+    uint8_t suspended_seids[AVDTP_MAX_NUM_SEPS];
     uint8_t num_suspended_seids;
 
     uint8_t reject_service_category;
@@ -409,8 +412,13 @@ typedef struct {
     uint8_t error_code;
 
     // store configurations with remote seps
-    avdtp_sep_t remote_seps[MAX_NUM_SEPS];
+    avdtp_sep_t remote_seps[AVDTP_MAX_NUM_SEPS];
     uint8_t remote_seps_num;
+
+    // store current role
+    uint8_t is_initiator;
+    uint8_t is_configuration_initiated_locally;
+    btstack_timer_source_t configuration_timer;
 } avdtp_connection_t;
 
 typedef enum {
@@ -419,17 +427,16 @@ typedef enum {
     A2DP_W2_DISCOVER_SEPS,
     A2DP_W2_GET_CAPABILITIES,
     A2DP_W2_GET_ALL_CAPABILITIES,
-    A2DP_W2_SET_CONFIGURATION,
+    A2DP_W2_SET_CONFIGURATION,      //5
     A2DP_W4_GET_CONFIGURATION,
     A2DP_W4_SET_CONFIGURATION,
     A2DP_W2_SUSPEND_STREAM_WITH_SEID,
     A2DP_W2_RECONFIGURE_WITH_SEID,
-    A2DP_W2_OPEN_STREAM_WITH_SEID,
+    A2DP_W2_OPEN_STREAM_WITH_SEID,   //10
     A2DP_W4_OPEN_STREAM_WITH_SEID,
     A2DP_W2_START_STREAM_WITH_SEID,
     A2DP_W2_ABORT_STREAM_WITH_SEID,
     A2DP_W2_STOP_STREAM_WITH_SEID,
-    A2DP_W2_GET_CONFIGURATION, 
     A2DP_STREAMING_OPENED
 } a2dp_state_t;
 
@@ -456,6 +463,12 @@ typedef struct avdtp_stream_endpoint {
     
     uint16_t remote_configuration_bitmap;
     avdtp_capabilities_t remote_configuration;  
+
+    // temporary SBC config
+    avdtp_media_codec_type_t media_codec_type;
+    avdtp_media_type_t media_type;
+    uint8_t media_codec_sbc_info[4];
+
     // register request for media L2cap connection release
     uint8_t media_disconnect;
     uint8_t media_connect;
@@ -478,7 +491,6 @@ typedef struct {
     uint32_t samples_ready;
     btstack_timer_source_t fill_audio_ring_buffer_timer;
     btstack_ring_buffer_t sbc_ring_buffer;
-    btstack_sbc_encoder_state_t sbc_encoder_state;
     
     int reconfigure;
     int num_channels;
@@ -534,12 +546,12 @@ uint8_t avdtp_stop_stream (uint16_t avdtp_cid, uint8_t local_seid, avdtp_context
 uint8_t avdtp_abort_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context_t * context);
 uint8_t avdtp_suspend_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context_t * context);
 
-void avdtp_discover_stream_endpoints(uint16_t avdtp_cid, avdtp_context_t * context);
-void avdtp_get_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_context_t * context);
-void avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_context_t * context);
-void avdtp_get_configuration(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_context_t * context);
-void avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context);
-void avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context);
+uint8_t avdtp_discover_stream_endpoints(uint16_t avdtp_cid, avdtp_context_t * context);
+uint8_t avdtp_get_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_context_t * context);
+uint8_t avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_context_t * context);
+uint8_t avdtp_get_configuration(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_context_t * context);
+uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context);
+uint8_t avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context);
 uint8_t avdtp_remote_seps_num(uint16_t avdtp_cid, avdtp_context_t * context);
 avdtp_sep_t * avdtp_remote_sep(uint16_t avdtp_cid, uint8_t index, avdtp_context_t * context);
 
@@ -554,6 +566,9 @@ uint8_t avdtp_choose_sbc_max_bitpool_value(avdtp_stream_endpoint_t * stream_endp
 uint8_t avdtp_choose_sbc_min_bitpool_value(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_min_bitpool_value);
 
 uint8_t avdtp_stream_endpoint_seid(avdtp_stream_endpoint_t * stream_endpoint);
+void avdtp_configuration_timeout_handler(btstack_timer_source_t * timer);
+void avdtp_configuration_timer_start(avdtp_connection_t * connection);
+void avdtp_configuration_timer_stop(avdtp_connection_t * connection);
 
 #if defined __cplusplus
 }

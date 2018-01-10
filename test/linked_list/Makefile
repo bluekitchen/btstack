@@ -14,6 +14,8 @@ VPATH += ${BTSTACK_ROOT}/platform/posix
 
 COMMON = \
     btstack_linked_list.c \
+    hci_dump.c \
+    btstack_util.c \
 
 COMMON_OBJ = $(COMMON:.c=.o)
 

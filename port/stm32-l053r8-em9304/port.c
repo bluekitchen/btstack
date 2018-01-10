@@ -478,6 +478,7 @@ void port_main(void){
 
     // init HCI
     hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), &config);
+    hci_set_chipset(btstack_chipset_em9301_instance());
 
 #if 0
     // setup Link Key DB

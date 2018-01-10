@@ -98,38 +98,38 @@ uint8_t avdtp_sink_disconnect(uint16_t avdtp_cid);
  * @brief Discover stream endpoints
  * @param avdtp_cid
  */
-void avdtp_sink_discover_stream_endpoints(uint16_t avdtp_cid);
+uint8_t avdtp_sink_discover_stream_endpoints(uint16_t avdtp_cid);
 
 /**
  * @brief Get capabilities
  * @param avdtp_cid
  */
-void avdtp_sink_get_capabilities(uint16_t avdtp_cid, uint8_t acp_seid);
+uint8_t avdtp_sink_get_capabilities(uint16_t avdtp_cid, uint8_t acp_seid);
 
 /**
  * @brief Get all capabilities
  * @param avdtp_cid
  */
-void avdtp_sink_get_all_capabilities(uint16_t avdtp_cid, uint8_t acp_seid);
+uint8_t avdtp_sink_get_all_capabilities(uint16_t avdtp_cid, uint8_t acp_seid);
 
 /**
  * @brief Set configuration
  * @param avdtp_cid
  */
-void avdtp_sink_set_configuration(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration);
+uint8_t avdtp_sink_set_configuration(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration);
 
 /**
  * @brief Reconfigure stream
  * @param avdtp_cid
  * @param seid
  */
-void avdtp_sink_reconfigure(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration);
+uint8_t avdtp_sink_reconfigure(uint16_t avdtp_cid, uint8_t int_seid, uint8_t acp_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration);
 
 /**
  * @brief Get configuration
  * @param avdtp_cid
  */
-void avdtp_sink_get_configuration(uint16_t avdtp_cid, uint8_t acp_seid);
+uint8_t avdtp_sink_get_configuration(uint16_t avdtp_cid, uint8_t acp_seid);
 
 
 /**

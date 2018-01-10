@@ -168,6 +168,11 @@ uint32_t de_get_uuid32(const uint8_t * element){
     return big_endian_read_32(uuid128, 0);
 }
 
+const uint8_t * de_get_string(const uint8_t * element){
+    if (de_get_element_type(element) != DE_STRING) return NULL;
+    return &element[de_get_header_size(element)];
+}
+
 // functions to create record
 static void de_store_descriptor(uint8_t * header, de_type_t type, de_size_t size){
     header[0] = (type << 3) | size; 

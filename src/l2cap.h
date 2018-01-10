@@ -94,6 +94,7 @@ typedef enum {
     L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_DECLINE,
     L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_ACCEPT,
     L2CAP_STATE_WAIT_LE_CONNECTION_RESPONSE,
+    L2CAP_STATE_EMIT_OPEN_FAILED_AND_DISCARD,
     L2CAP_STATE_INVALID,
 } L2CAP_STATE;
 
@@ -246,6 +247,9 @@ typedef struct {
     
     // if ertm is not mandatory, allow fallback to L2CAP Basic Mode - flag
     uint8_t ertm_mandatory;
+
+    // Frame Chech Sequence (crc16) is present in both directions
+    uint8_t fcs_option;
 
     // sender: max num of stored outgoing frames
     uint8_t num_tx_buffers;

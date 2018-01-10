@@ -62,7 +62,8 @@
 #include "btstack_stdin.h"
 
 #include "btstack_chipset_atwilc3000.h"
-#include "wilc3000_bt_firmware.h"
+// #include "wilc3000_bt_firmware.h"
+#include "wilc3000_ble_firmware.h"
 
 static int main_argc;
 static const char ** main_argv;
@@ -169,7 +170,7 @@ int main(int argc, const char * argv[]){
     printf("Phase 1: Download firmware\n");
 
     // phase #2 start main app
-    btstack_chipset_atwilc3000_download_firmware(uart_driver, transport_config.baudrate_init, transport_config.flowcontrol, atwilc3000_fw_data, atwilc3000_fw_size, &phase2);
+    btstack_chipset_atwilc3000_download_firmware(uart_driver, transport_config.baudrate_init, transport_config.flowcontrol, (const uint8_t *) firmware_ble, sizeof(firmware_ble), &phase2);
 
     // go
     btstack_run_loop_execute();    

@@ -37,17 +37,15 @@
 
 #define __BTSTACK_FILE__ "avdtp_initiator.c"
 
-
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "btstack.h"
-#include "avdtp.h"
-#include "avdtp_util.h"
-#include "avdtp_initiator.h"
-
+#include "classic/avdtp.h"
+#include "classic/avdtp_util.h"
+#include "classic/avdtp_initiator.h"
 
 static int avdtp_initiator_send_signaling_cmd(uint16_t cid, avdtp_signal_identifier_t identifier, uint8_t transaction_label){
     uint8_t command[2];
@@ -123,30 +121,22 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                 case AVDTP_SI_GET_CAPABILITIES:
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
                     sep.registered_service_categories = avdtp_unpack_service_capabilities(connection, &sep.capabilities, packet+offset, size-offset);
-                    if (get_bit16(sep.registered_service_categories, AVDTP_MEDIA_CODEC)){
-                        switch (sep.capabilities.media_codec.media_codec_type){
-                            case AVDTP_CODEC_SBC: 
-                                avdtp_signaling_emit_media_codec_sbc_capability(context->avdtp_callback, connection->avdtp_cid, connection->local_seid, connection->remote_seid, sep.capabilities.media_codec);
-                                break;
-                            default:
-                                avdtp_signaling_emit_media_codec_other_capability(context->avdtp_callback, connection->avdtp_cid, connection->local_seid, connection->remote_seid, sep.capabilities.media_codec);
-                                break;
-                        }
-                    }
+                    avdtp_emit_capabilities(context->avdtp_callback, connection->avdtp_cid, connection->local_seid, connection->remote_seid, &sep.capabilities, sep.registered_service_categories);
                     break;
                 
                 case AVDTP_SI_GET_CONFIGURATION:
-                    sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, packet+offset, size-offset);
-                    if (get_bit16(sep.configured_service_categories, AVDTP_MEDIA_CODEC)){
-                        switch (sep.configuration.media_codec.media_codec_type){
-                            case AVDTP_CODEC_SBC: 
-                                avdtp_signaling_emit_media_codec_sbc_configuration(context->avdtp_callback, connection->avdtp_cid, connection->local_seid, connection->remote_seid, sep.configuration.media_codec);
-                                break;
-                            default:
-                                avdtp_signaling_emit_media_codec_other_configuration(context->avdtp_callback, connection->avdtp_cid, connection->local_seid,  connection->remote_seid, sep.configuration.media_codec);
-                                break;
-                        }
-                    }
+                    // sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, packet+offset, size-offset);
+                    // if (get_bit16(sep.configured_service_categories, AVDTP_MEDIA_CODEC)){
+                    //     switch (sep.configuration.media_codec.media_codec_type){
+                    //         case AVDTP_CODEC_SBC: 
+                    //             avdtp_signaling_emit_media_codec_sbc_configuration(context->avdtp_callback, connection->avdtp_cid, connection->local_seid, connection->remote_seid, 
+                    //                 sep.configuration.media_codec.media_type, sep.configuration.media_codec.media_codec_information);
+                    //             break;
+                    //         default:
+                    //             avdtp_signaling_emit_media_codec_other_configuration(context->avdtp_callback, connection->avdtp_cid, connection->local_seid,  connection->remote_seid, sep.configuration.media_codec);
+                    //             break;
+                    //     }
+                    // }
                     break;
                 
                 case AVDTP_SI_RECONFIGURE:
@@ -167,12 +157,13 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     break;
 
                 case AVDTP_SI_SET_CONFIGURATION:{
+                    avdtp_configuration_timer_stop(connection);
                     if (!stream_endpoint){
                         log_error("AVDTP_SI_SET_CONFIGURATION: stream endpoint is null");
                         break;
                     }
-                    sep.configured_service_categories = stream_endpoint->remote_capabilities_bitmap;
-                    sep.configuration = stream_endpoint->remote_capabilities;
+                    sep.configured_service_categories = stream_endpoint->remote_configuration_bitmap;
+                    sep.configuration = stream_endpoint->remote_configuration;
                     sep.in_use = 1;
                     // TODO check if configuration is supported
                     
@@ -187,6 +178,18 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     connection->remote_seps[stream_endpoint->remote_sep_index] = sep;
                     log_info("INT: configured remote seid %d, to %p", connection->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
+
+                    switch (stream_endpoint->media_codec_type){
+                        case AVDTP_CODEC_SBC: 
+                            avdtp_signaling_emit_media_codec_sbc_configuration(context->avdtp_callback, connection->avdtp_cid, connection->local_seid, connection->remote_seid, 
+                                stream_endpoint->media_type, stream_endpoint->media_codec_sbc_info);
+                            break;
+                        default:
+                            // TODO: we don\t have codec info to emit config
+                            // avdtp_signaling_emit_media_codec_other_configuration(context->avdtp_callback, connection->avdtp_cid, connection->local_seid,  connection->remote_seid, sep.configuration.media_codec);
+                            break;
+                    }
+
                     break;
                 }
                 
@@ -247,6 +250,15 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
             connection->initiator_transaction_label++;
             break;
         case AVDTP_RESPONSE_REJECT_MSG:
+            switch (connection->signaling_packet.signal_identifier){
+                case AVDTP_SI_SET_CONFIGURATION:
+                    connection->is_initiator = 0;
+                    log_info("Received reject for set configuration, role changed from initiator to acceptor. Start timer.");
+                    avdtp_configuration_timer_start(connection);
+                    break;
+                default:
+                    break;
+            }
             log_info("    AVDTP_RESPONSE_REJECT_MSG signal %d", connection->signaling_packet.signal_identifier);
             avdtp_signaling_emit_reject(context->avdtp_callback, connection->avdtp_cid, connection->local_seid, connection->signaling_packet.signal_identifier);
             return;
@@ -260,7 +272,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
 }
 
 void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, avdtp_context_t * context){
-int sent = 1;
+    int sent = 1;
     switch (connection->initiator_connection_state){
         case AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_DISCOVER_SEPS:
             log_info("INT: AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_DISCOVER_SEPS");
@@ -311,7 +323,7 @@ int sent = 1;
         } 
         return;
     }
-
+    
     if (stream_endpoint->stop_stream){
         stream_endpoint->stop_stream = 0;
         if (stream_endpoint->state >= AVDTP_STREAM_ENDPOINT_OPENED){
@@ -321,7 +333,7 @@ int sent = 1;
             return;            
         }
     }
-
+    
     if (stream_endpoint->abort_stream){
         stream_endpoint->abort_stream = 0;
         switch (stream_endpoint->state){
@@ -338,7 +350,7 @@ int sent = 1;
                 break;
         }
     }
-
+    
     if (stream_endpoint->suspend_stream){
         stream_endpoint->suspend_stream = 0;
         if (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING){
@@ -347,7 +359,7 @@ int sent = 1;
             return;
         }
     }
-
+    
     if (stream_endpoint->send_stream){
         stream_endpoint->send_stream = 0;
         if (stream_endpoint->state == AVDTP_STREAM_ENDPOINT_STREAMING){
@@ -357,17 +369,23 @@ int sent = 1;
         }
     }
 
-
     switch (stream_endpoint_state){
         case AVDTP_INITIATOR_W2_SET_CONFIGURATION:
         case AVDTP_INITIATOR_W2_RECONFIGURE_STREAM_WITH_SEID:{
+            if (stream_endpoint_state == AVDTP_INITIATOR_W2_SET_CONFIGURATION && !connection->is_initiator){
+                log_info("initiator SM stop sending SET_CONFIGURATION cmd: current role is acceptor");
+                connection->is_configuration_initiated_locally = 0;
+                break;
+            }
+            log_info("initiator SM prepare SET_CONFIGURATION cmd");
+            connection->is_configuration_initiated_locally = 1;
             log_info("INT: AVDTP_INITIATOR_W2_(RE)CONFIGURATION bitmap, int seid %d, acp seid %d", connection->local_seid, connection->remote_seid);
             // log_info_hexdump(  connection->remote_capabilities.media_codec.media_codec_information,  connection->remote_capabilities.media_codec.media_codec_information_len);
             connection->signaling_packet.acp_seid = connection->remote_seid;
             connection->signaling_packet.int_seid = connection->local_seid;
             
             connection->signaling_packet.signal_identifier = AVDTP_SI_SET_CONFIGURATION;
-
+            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURATION_SUBSTATEMACHINE;
             if (stream_endpoint_state == AVDTP_INITIATOR_W2_RECONFIGURE_STREAM_WITH_SEID){
                 connection->signaling_packet.signal_identifier = AVDTP_SI_RECONFIGURE;
             }

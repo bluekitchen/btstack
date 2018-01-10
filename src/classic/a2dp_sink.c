@@ -43,10 +43,9 @@
 #include <string.h>
 
 #include "btstack.h"
-#include "avdtp.h"
-#include "avdtp_util.h"
-#include "avdtp_sink.h"
-#include "a2dp_sink.h"
+#include "classic/avdtp_util.h"
+#include "classic/avdtp_sink.h"
+#include "classic/a2dp_sink.h"
 
 static const char * default_a2dp_sink_service_name = "BTstack A2DP Sink Service";
 static const char * default_a2dp_sink_service_provider_name = "BTstack A2DP Sink Service Provider";

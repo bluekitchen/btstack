@@ -12,6 +12,7 @@ pages:
 - [examples/examples.md, Embedded Examples]
 - [chipsets.md, Chipsets]
 - [porting.md, Porting to Other Platforms]
+- [ports/existing_ports.md, Existing Ports]
 - [integration.md, Integrating with Existing Systems]
 - [appendix/apis.md, APIs]
 - [appendix/events_errors.md, Events and Errors]

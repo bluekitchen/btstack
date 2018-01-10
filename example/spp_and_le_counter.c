@@ -43,8 +43,12 @@
  * @text The SPP and LE Counter example combines the Bluetooth Classic SPP Counter
  * and the Bluetooth LE Counter into a single application.
  *
- * In this Section, we only point out the differences to the individual examples
- * and how how the stack is configured.
+ * @text In this Section, we only point out the differences to the individual examples
+ * and how the stack is configured.
+ *
+ * @text Note: To test, please run the example, and then: 
+ *    - for SPP pair from a remote device, and open the Virtual Serial Port,
+ *    - for LE use some GATT Explorer, e.g. LightBlue, BLExplr, to enable notifications.
  */
 // *****************************************************************************
 

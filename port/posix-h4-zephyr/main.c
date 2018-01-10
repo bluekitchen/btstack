@@ -129,7 +129,7 @@ int main(int argc, const char * argv[]){
     hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
 
     // pick serial port
-    config.device_name = "/dev/tty.usbmodem14514411"; // PCA10040 nRF52832 
+    config.device_name = "/dev/tty.usbmodem14514421"; // PCA10040 nRF52832 
 
     // accept path from command line
     if (argc >= 3 && strcmp(argv[1], "-u") == 0){

@@ -36,7 +36,17 @@
  */
 
 #define __BTSTACK_FILE__ "pbap_client_demo.c"
- 
+
+// *****************************************************************************
+/* EXAMPLE_START(pbap_client_demo): Connect to Phonebook Server and get contacts.
+ *
+ * @text Note: The Bluetooth address of the remote Phonbook server is hardcoded. 
+ * Change it before running example, then use the UI to connect to it, to set and 
+ * query contacts.
+ */
+// *****************************************************************************
+
+
 #include "btstack_config.h"
 
 #include <stdint.h>
@@ -234,3 +244,4 @@ int btstack_main(int argc, const char * argv[]){
 
     return 0;
 }
+/* EXAMPLE_END */

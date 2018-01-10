@@ -83,7 +83,6 @@ static int avdtp_acceptor_validate_msg_length(avdtp_signal_identifier_t signal_i
 void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t * packet, uint16_t size, int offset, avdtp_context_t * context){
     avdtp_stream_endpoint_t * stream_endpoint;
     connection->acceptor_transaction_label = connection->signaling_packet.transaction_label;
-    
     if (!avdtp_acceptor_validate_msg_length(connection->signaling_packet.signal_identifier, size)) {
         connection->error_code = BAD_LENGTH;
         connection->acceptor_connection_state = AVDTP_SIGNALING_CONNECTION_ACCEPTOR_W2_REJECT_WITH_ERROR_CODE;
@@ -194,7 +193,22 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_GET_CAPABILITIES;
                     break;
                 case AVDTP_SI_SET_CONFIGURATION:{
+                    // log_info("acceptor SM received SET_CONFIGURATION cmd: role is_initiator %d", connection->is_initiator);
+                    if (connection->is_initiator){
+                        if (connection->is_configuration_initiated_locally){
+                            log_info("ACP: Set configuration already initiated locally, reject cmd ");
+                            // fire configuration parsing errors 
+                            connection->reject_signal_identifier = connection->signaling_packet.signal_identifier;
+                            stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_REJECT_UNKNOWN_CMD;
+                            connection->is_initiator = 1;
+                            break;
+                        }
+                        connection->is_initiator = 0;   
+                        log_info("acceptor SM received SET_CONFIGURATION cmd: change role to acceptor, is_initiator %d", connection->is_initiator);
+                    }
+                    
                     log_info("ACP: AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION ");
+                    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURATION_SUBSTATEMACHINE;
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_SET_CONFIGURATION;
                     connection->reject_service_category = 0;
                     stream_endpoint->connection = connection;
@@ -246,16 +260,8 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                         connection->remote_seps[stream_endpoint->remote_sep_index] = sep;
                         log_info("ACP: add seid %d, to %p", connection->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
                     } 
-                    if (get_bit16(sep.configured_service_categories, AVDTP_MEDIA_CODEC)){
-                        switch (sep.configuration.media_codec.media_codec_type){
-                            case AVDTP_CODEC_SBC: 
-                                avdtp_signaling_emit_media_codec_sbc_configuration(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), sep.configuration.media_codec);
-                                break;
-                            default:
-                                avdtp_signaling_emit_media_codec_other_configuration(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), sep.configuration.media_codec);
-                                break;
-                        }
-                    }
+                    
+                    avdtp_emit_configuration(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), &sep.configuration, sep.configured_service_categories);
                     avdtp_signaling_emit_accept(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), connection->signaling_packet.signal_identifier);
                     break;
                 }
@@ -286,16 +292,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
                     stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index] = sep;
                     log_info("ACP: update seid %d, to %p", stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].seid, stream_endpoint);
 
-                    if (get_bit16(sep.configured_service_categories, AVDTP_MEDIA_CODEC)){
-                        switch (sep.capabilities.media_codec.media_codec_type){
-                            case AVDTP_CODEC_SBC: 
-                                avdtp_signaling_emit_media_codec_sbc_reconfiguration(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), sep.configuration.media_codec);
-                                break;
-                            default:
-                                avdtp_signaling_emit_media_codec_other_reconfiguration(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), sep.configuration.media_codec);
-                                break;
-                        }
-                    }
+                    avdtp_emit_configuration(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), avdtp_remote_seid(stream_endpoint), &sep.configuration, sep.configured_service_categories);
                     avdtp_signaling_emit_accept(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint), connection->signaling_packet.signal_identifier);
                     break;
                 }
@@ -403,7 +400,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
 }
 
 static int avdtp_acceptor_send_seps_response(uint16_t cid, uint8_t transaction_label, avdtp_stream_endpoint_t * endpoints){
-    uint8_t command[2+2*MAX_NUM_SEPS];
+    uint8_t command[2+2*AVDTP_MAX_NUM_SEPS];
     int pos = 0;
     command[pos++] = avdtp_header(transaction_label, AVDTP_SINGLE_PACKET, AVDTP_RESPONSE_ACCEPT_MSG);
     command[pos++] = (uint8_t)AVDTP_SI_DISCOVER;

@@ -2,7 +2,7 @@
 import os, sys, getopt, re
 
 # Defines the names of example groups. Preserves the order in which the example groups will be parsed.
-list_of_groups = ["Hello World", "GAP", "SDP Queries", "SPP Server", "BNEP/PAN", "HSP", "HFP", "Low Energy", "Dual Mode"]
+list_of_groups = ["Hello World", "GAP", "SDP Queries", "SPP Server", "BNEP/PAN", "HSP", "HFP", "Low Energy", "Dual Mode", "Audio", "HID", "LE Pairing", "Phone Book Access", "Performance", "Testing"]
 
 # Defines which examples belong to a group. Example is defined as [example file, example title].
 list_of_examples = { 
@@ -18,6 +18,13 @@ list_of_examples = {
                      ["le_counter"],
                      ["le_streamer"]],
     "Dual Mode" : [["spp_and_le_counter"]],
+    "Audio"     : [["a2dp_sink_demo"],["a2dp_source_demo"]],
+
+    "HID"       : [["hid_keyboard_demo"], ["hid_mouse_demo"], ["hog_keyboard_demo"], ["hog_mouse_demo"]],
+    "LE Pairing": [["sm_pairing_central"], ["sm_pairing_peripheral"]],
+    "Phone Book Access" : [["pbap_client_demo"]],
+    "Performance" : [["le_streamer"], ["le_streamer_client"], ["spp_streamer"], ["spp_streamer_client"]],
+    "Testing"     : [["dut_mode_classic"]]
 }
 
 lst_header = """

@@ -3289,6 +3289,10 @@ static void hci_run(void){
                 hci_con_handle_t con_handle = (uint16_t) connection->con_handle;
                 if (!hci_can_send_command_packet_now()) return;
 
+                // check state
+                if (connection->state == SENT_DISCONNECT) return;
+                connection->state = SENT_DISCONNECT;
+
                 log_info("HCI_STATE_HALTING, connection %p, handle %u", connection, con_handle);
 
                 // cancel all l2cap connections right away instead of waiting for disconnection complete event ...

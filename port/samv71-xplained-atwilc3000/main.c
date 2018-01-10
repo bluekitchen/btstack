@@ -11,13 +11,12 @@
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_embedded.h"
-#include "classic/btstack_link_key_db.h"
 #include "hal_uart_dma.h"
 #include "hal_cpu.h"
 #include "hal_tick.h"
 #include "hci.h"
 #include "hci_dump.h"
-#include "wilc3000_bt_firmware.h"
+#include "wilc3000_ble_firmware.h"
 
 // #define USE_XDMAC_FOR_USART
 #define XDMA_CH_UART_TX  0
@@ -533,7 +532,6 @@ static void phase2(int status){
     const hci_transport_t * transport = hci_transport_h4_instance(uart_driver);
     hci_init(transport, (void*) &transport_config);
     hci_set_chipset(btstack_chipset_atwilc3000_instance());
-    hci_set_link_key_db(btstack_link_key_db_memory_instance());
     
     // setup app
     btstack_main(0, NULL);
@@ -584,7 +582,7 @@ int main(void)
     printf("Phase 1: Download firmware\n");
 
     // phase #2 start main app
-    btstack_chipset_atwilc3000_download_firmware(uart_driver, transport_config.baudrate_init, transport_config.flowcontrol, atwilc3000_fw_data, atwilc3000_fw_size, &phase2);
+    btstack_chipset_atwilc3000_download_firmware(uart_driver, transport_config.baudrate_init, transport_config.flowcontrol,  (const uint8_t *) firmware_ble, sizeof(firmware_ble), &phase2);
 
 	// go
 	btstack_run_loop_execute();

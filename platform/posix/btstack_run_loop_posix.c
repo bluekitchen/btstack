@@ -209,6 +209,7 @@ static void btstack_run_loop_posix_execute(void) {
                 log_debug("btstack_run_loop_posix_execute: process read ds %p with fd %u\n", ds, ds->fd);
                 ds->process(ds, DATA_SOURCE_CALLBACK_READ);
             }
+            if (data_sources_modified) break;
             if (FD_ISSET(ds->fd, &descriptors_write)) {
                 log_debug("btstack_run_loop_posix_execute: process write ds %p with fd %u\n", ds, ds->fd);
                 ds->process(ds, DATA_SOURCE_CALLBACK_WRITE);

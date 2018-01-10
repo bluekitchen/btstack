@@ -47,6 +47,11 @@ def fix_appendix_pagebreak(line):
         line = "\leavevmode\pagebreak\n" + line
     return line
 
+def fix_tightlist(line):
+    if 'tightlist' in line:
+        return ''
+    else:
+        return line
 
 def main(argv):
     docs_folder = "docs"
@@ -92,8 +97,9 @@ def main(argv):
                 line = fix_listing_hyperref_into_ref(line)
                 line = fix_figure_width_and_type(line)
                 line = fix_appendix_pagebreak(line)
+                line = fix_tightlist(line)
                 aout.write(line)       
 
              
 if __name__ == "__main__":
-   main(sys.argv[1:])
+    main(sys.argv[1:])

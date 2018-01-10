@@ -35,11 +35,17 @@
  *
  */
 
+#define __BTSTACK_FILE__ "spp_streamer_client.c"
+
+/*
+ * spp_streamer_client.c
+ */
+
 // *****************************************************************************
 /* EXAMPLE_START(spp_streamer_client): Client for SPP Streamer
  * 
- * @text The SPP Streamer Clients connects to SPP Streamer and tracks the 
- * amount of received data
+ * @text Note: The SPP Streamer Client scans for and connects to SPP Streamer,
+ * and measures the throughput.
  */
 // *****************************************************************************
 

@@ -1445,7 +1445,7 @@ void bnep_packet_handler(uint8_t packet_type, uint16_t l2cap_cid, uint8_t *packe
 
 static void bnep_channel_state_machine(bnep_channel_t* channel, bnep_channel_event_t *event)
 {
-    log_info("bnep_state_machine: state %u, state var: %02x, event %u", channel->state, channel->state_var, event->type);
+    log_debug("bnep_state_machine: state %u, state var: %02x, event %u", channel->state, channel->state_var, event->type);
  
     if (event->type == BNEP_CH_EVT_READY_TO_SEND) {
         /* Send outstanding packets. */

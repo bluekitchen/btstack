@@ -48,41 +48,13 @@
  * sets up a BNEP server and registers a PANU SDP record and waits for incoming connections.
  * In client mode, it connects to a remote device, does an SDP Query to identify the PANU
  * service and initiates a BNEP connection.
+ *
+ * Note: currently supported only on Linux and Mac.
  */
 
-#include "btstack_config.h"
-
-#include <arpa/inet.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <ifaddrs.h>
-#include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
-#include <net/if_arp.h>
-
-#ifdef __APPLE__
-#include <net/if.h>
-#include <net/if_types.h>
-
-#include <netinet/if_ether.h>
-#include <netinet/in.h>
-#endif
-
-#include <sys/ioctl.h>
-#include <sys/param.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
-#ifdef __linux
-#include <linux/if.h>
-#include <linux/if_tun.h>
-#endif
-
+#include "btstack_config.h"
 #include "btstack.h"
 
 static int record_id = -1;
@@ -98,30 +70,17 @@ static uint32_t sdp_bnep_remote_uuid    = 0;
 static uint8_t   attribute_value[1000];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
-// MBP 2016 static const char * remote_addr_string = "F4-0F-24-3B-1B-E1";
-// Wiko Sunny
-static const char * remote_addr_string = "A0:4C:5B:0F:B2:42";
+// MBP 2016
+static const char * remote_addr_string = "F4-0F-24-3B-1B-E1";
+// Wiko Sunny static const char * remote_addr_string = "A0:4C:5B:0F:B2:42";
+
 static bd_addr_t remote_addr;
 
-static int  tap_fd = -1;
-static uint8_t network_buffer[BNEP_MTU_MIN];
-static size_t  network_buffer_len = 0;
-
-#ifdef __APPLE__
-// tuntaposx provides fixed set of tapX devices
-static const char * tap_dev = "/dev/tap0";
-static char tap_dev_name[16] = "tap0";
-#endif
-
-#ifdef __linux
-// Linux uses single control device to bring up tunX or tapX interface
-static const char * tap_dev = "/dev/net/tun";
-static char tap_dev_name[16] = "bnep%d";
-#endif
-
-
-static btstack_data_source_t tap_dev_ds;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+// outgoing network packet
+static const uint8_t * network_buffer;
+static uint16_t network_buffer_len;
 
 /* @section Main application configuration
  *
@@ -132,6 +91,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 /* LISTING_START(PanuSetup): Panu setup */
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void network_send_packet_callback(const uint8_t * packet, uint16_t size);
 
 static void panu_setup(void){
 
@@ -144,146 +104,12 @@ static void panu_setup(void){
 
     // Initialise BNEP
     bnep_init();
+
     // Minimum L2CAP MTU for bnep is 1691 bytes
     bnep_register_service(packet_handler, BLUETOOTH_SERVICE_CLASS_PANU, 1691);  
-}
-/* LISTING_END */
 
-/* @section TUN / TAP interface routines 
- *
- * @text This example requires a TUN/TAP interface to connect the Bluetooth network interface
- * with the native system. It has been tested on Linux and OS X, but should work on any
- * system that provides TUN/TAP with minor modifications.
- * 
- * On Linux, TUN/TAP is available by default. On OS X, tuntaposx from
- * http://tuntaposx.sourceforge.net needs to be installed.
- *
- * The *tap_alloc* function sets up a virtual network interface with the given Bluetooth Address.
- * It is rather low-level as it sets up and configures a network interface.
- */ 
-
-static int tap_alloc(char *dev, bd_addr_t bd_addr)
-{
-    struct ifreq ifr;
-    int fd_dev;
-    int fd_socket;
-
-    if( (fd_dev = open(tap_dev, O_RDWR)) < 0 ) {
-        fprintf(stderr, "TAP: Error opening %s: %s\n", tap_dev, strerror(errno));
-        return -1;
-    }
-
-#ifdef __linux
-    memset(&ifr, 0, sizeof(ifr));
-
-    ifr.ifr_flags = IFF_TAP | IFF_NO_PI; 
-    if( *dev ) {
-        strncpy(ifr.ifr_name, dev, IFNAMSIZ);
-    }
-
-    int err;
-    if( (err = ioctl(fd_dev, TUNSETIFF, (void *) &ifr)) < 0 ) {
-        fprintf(stderr, "TAP: Error setting device name: %s\n", strerror(errno));
-        close(fd_dev);
-        return -1;
-    }  
-    strcpy(dev, ifr.ifr_name);
-#endif
-#ifdef __APPLE__
-    dev = tap_dev_name;
-#endif    
-
-    fd_socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
-	if (fd_socket < 0) {
-        close(fd_dev);
-		fprintf(stderr, "TAP: Error opening netlink socket: %s\n", strerror(errno));
-		return -1;
-	}
-
-    // Configure the MAC address of the newly created bnep(x) 
-    // device to the local bd_address
-    memset (&ifr, 0, sizeof(struct ifreq));
-    strcpy(ifr.ifr_name, dev);
-#ifdef __linux
-    ifr.ifr_hwaddr.sa_family = ARPHRD_ETHER;
-    memcpy(ifr.ifr_hwaddr.sa_data, bd_addr, sizeof(bd_addr_t));
-	if (ioctl(fd_socket, SIOCSIFHWADDR, &ifr) == -1) {
-        close(fd_dev);
-        close(fd_socket);
-        fprintf(stderr, "TAP: Error setting hw addr: %s\n", strerror(errno));
-        exit(1);
-		return -1;
-	}
-#endif
-#ifdef __APPLE__
-    ifr.ifr_addr.sa_len = ETHER_ADDR_LEN;
-    ifr.ifr_addr.sa_family = AF_LINK;
-    (void)memcpy(ifr.ifr_addr.sa_data, bd_addr, ETHER_ADDR_LEN);
-    if (ioctl(fd_socket, SIOCSIFLLADDR, &ifr) == -1) {
-        close(fd_dev);
-        close(fd_socket);
-        fprintf(stderr, "TAP: Error setting hw addr: %s\n", strerror(errno));
-        exit(1);
-        return -1;
-}
-#endif    
-
-    // Bring the interface up
-	if (ioctl(fd_socket, SIOCGIFFLAGS, &ifr) == -1) {
-        close(fd_dev);
-        close(fd_socket);
-		fprintf(stderr, "TAP: Error reading interface flags: %s\n", strerror(errno));
-		return -1;
-	}
-
-	if ((ifr.ifr_flags & IFF_UP) == 0) {
-		ifr.ifr_flags |= IFF_UP;
-
-		if (ioctl(fd_socket, SIOCSIFFLAGS, &ifr) == -1) {
-            close(fd_dev);
-            close(fd_socket);
-            fprintf(stderr, "TAP: Error set IFF_UP: %s\n", strerror(errno));
-            return -1;
-		}
-	}
-
-	close(fd_socket);
-    
-    return fd_dev;
-}
-
-/*
- * @text Listing processTapData shows how a packet is received from the TAP network interface
- * and forwarded over the BNEP connection.
- * 
- * After successfully reading a network packet, the call to
- * the *bnep_can_send_packet_now* function checks, if BTstack can forward
- * a network packet now. If that's not possible, the received data stays
- * in the network buffer and the data source elements is removed from the
- * run loop. The *process_tap_dev_data* function will not be called until
- * the data source is registered again. This provides a basic flow control.
- */
-
-/* LISTING_START(processTapData): Process incoming network packets */
-static void process_tap_dev_data(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) 
-{
-    UNUSED(ds);
-    UNUSED(callback_type);
-
-    ssize_t len;
-    len = read(ds->fd, network_buffer, sizeof(network_buffer));
-    if (len <= 0){
-        fprintf(stderr, "TAP: Error while reading: %s\n", strerror(errno));
-        return;
-    }
-
-    network_buffer_len = len;
-
-    // disable reading from netif
-    btstack_run_loop_disable_data_source_callbacks(&tap_dev_ds, DATA_SOURCE_CALLBACK_READ);
-
-    // request permission to send
-    bnep_request_can_send_now_event(bnep_cid);
+    // Initialize network interface
+    btstack_network_init(&network_send_packet_callback);
 }
 /* LISTING_END */
 
@@ -441,14 +267,12 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
  * @text The packet handler responds to various HCI Events.
  */
 
-
 /* LISTING_START(packetHandler): Packet Handler */
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
 {
 /* LISTING_PAUSE */
     UNUSED(channel);
 
-    int       rc;
     uint8_t   event;
     bd_addr_t event_addr;
     bd_addr_t local_addr;
@@ -504,22 +328,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         uuid_source = bnep_event_channel_opened_get_source_uuid(packet);
                         uuid_dest   = bnep_event_channel_opened_get_destination_uuid(packet);
                         mtu         = bnep_event_channel_opened_get_mtu(packet);
-                        //bt_flip_addr(event_addr, &packet[9]); 
                         memcpy(&event_addr, &packet[11], sizeof(bd_addr_t));
                         printf("BNEP connection open succeeded to %s source UUID 0x%04x dest UUID: 0x%04x, max frame size %u\n", bd_addr_to_str(event_addr), uuid_source, uuid_dest, mtu);
-                        /* Create the tap interface */
+                        /* Setup network interface */
                         gap_local_bd_addr(local_addr);
-                        tap_fd = tap_alloc(tap_dev_name, local_addr);
-                        if (tap_fd < 0) {
-                            printf("Creating BNEP tap device failed: %s\n", strerror(errno));
-                        } else {
-                            printf("BNEP device \"%s\" allocated.\n", tap_dev_name);
-                            /* Create and register a new runloop data source */
-                            btstack_run_loop_set_data_source_fd(&tap_dev_ds, tap_fd);
-                            btstack_run_loop_set_data_source_handler(&tap_dev_ds, &process_tap_dev_data);
-                            btstack_run_loop_add_data_source(&tap_dev_ds);
-                            btstack_run_loop_enable_data_source_callbacks(&tap_dev_ds, DATA_SOURCE_CALLBACK_READ);
-                        }
+                        btstack_network_up(local_addr);
+                        printf("Network Interface %s activated\n", btstack_network_get_name());
                     }
 					break;
                 
@@ -534,11 +348,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                  */
                 case BNEP_EVENT_CHANNEL_CLOSED:
                     printf("BNEP channel closed\n");
-                    btstack_run_loop_remove_data_source(&tap_dev_ds);
-                    if (tap_fd > 0) {
-                        close(tap_fd);
-                        tap_fd = -1;
-                    }
+                    btstack_network_down();
                     break;
 
                 /* @text BNEP_EVENT_CAN_SEND_NOW indicates that a new packet can be send. This triggers the send of a 
@@ -546,10 +356,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                  */
                 case BNEP_EVENT_CAN_SEND_NOW:
                     if (network_buffer_len > 0) {
-                        bnep_send(bnep_cid, network_buffer, network_buffer_len);
+                        bnep_send(bnep_cid, (uint8_t*) network_buffer, network_buffer_len);
                         network_buffer_len = 0;
-                        // Re-enable the tap device data source
-                        btstack_run_loop_enable_data_source_callbacks(&tap_dev_ds, DATA_SOURCE_CALLBACK_READ);
+                        btstack_network_packet_sent();
                     }
                     break;
                     
@@ -562,16 +371,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
          * It is forwarded to the TAP interface.
          */
         case BNEP_DATA_PACKET:
-            // Write out the ethernet frame to the tap device 
-            if (tap_fd > 0) {
-                rc = write(tap_fd, packet, size);
-                if (rc < 0) {
-                    fprintf(stderr, "TAP: Could not write to TAP device: %s\n", strerror(errno));
-                } else 
-                if (rc != size) {
-                    fprintf(stderr, "TAP: Package written only partially %d of %d bytes\n", rc, size);
-                }
-            }
+            // Write out the ethernet frame to the network interface
+            btstack_network_process_packet(packet, size);
             break;            
             
         default:
@@ -580,6 +381,19 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 /* LISTING_END */
 
+/*
+ * @section Network packet handler
+ * 
+ * @text A pointer to the network packet is stored and a BNEP_EVENT_CAN_SEND_NOW requested
+ */
+
+/* LISTING_START(networkPacketHandler): Network Packet Handler */
+static void network_send_packet_callback(const uint8_t * packet, uint16_t size){
+    network_buffer = packet;
+    network_buffer_len = size;
+    bnep_request_can_send_now_event(bnep_cid);
+}
+/* LISTING_END */
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){

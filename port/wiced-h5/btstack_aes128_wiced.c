@@ -37,6 +37,9 @@
 
 #define __BTSTACK_FILE__ "main.c"
 
+#ifndef WICED_HAVE_MBEDTLS
+
+// pre 5.2
 #include "wiced_security.h"
 
 static aes_context_t wiced_aes128_context;
@@ -46,3 +49,22 @@ void btstack_aes128_calc(uint8_t * key, uint8_t * plaintext, uint8_t * result){
     aes_setkey_enc(&wiced_aes128_context, key, 128);
     aes_crypt_ecb(&wiced_aes128_context, AES_ENCRYPT , plaintext, result);
 }
+
+#else
+
+// 5.2+
+#include <string.h>
+#include "mbedtls/aes.h"
+
+static aes_context_t wiced_aes128_context;
+
+void btstack_aes128_calc(uint8_t * key, uint8_t * plaintext, uint8_t * result);
+void btstack_aes128_calc(uint8_t * key, uint8_t * plaintext, uint8_t * result){
+    memset(&wiced_aes128_context, 0, sizeof(aes_context_t));
+    mbedtls_aes_setkey_enc(&wiced_aes128_context, key, 128);
+    mbedtls_aes_crypt_ecb(&wiced_aes128_context, AES_ENCRYPT, plaintext, result);
+}
+
+#endif
+
+

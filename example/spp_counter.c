@@ -43,6 +43,9 @@
  * @text The Serial port profile (SPP) is widely used as it provides a serial
  * port over Bluetooth. The SPP counter example demonstrates how to setup an SPP
  * service, and provide a periodic timer over RFCOMM.   
+ *
+ * @text Note: To test, please run the spp_counter example, and then pair from 
+ * a remote device, and open the Virtual Serial Port.
  */
 // *****************************************************************************
 

@@ -6,9 +6,10 @@
 #define __BTSTACK_CONFIG
 
 // Port related features
+#define HAVE_BTSTACK_STDIN
 #define HAVE_EMBEDDED_TIME_MS
-#define WICED_BT_UART_MANUAL_CTS_RTS
 #define HAVE_AES128
+#define WICED_BT_UART_MANUAL_CTS_RTS
 
 // BTstack features that can be enabled
 #define ENABLE_BLE

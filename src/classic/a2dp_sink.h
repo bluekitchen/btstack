@@ -47,6 +47,7 @@
 #define __A2DP_SINK_H
 
 #include <stdint.h>
+#include "classic/avdtp.h"
 
 #if defined __cplusplus
 extern "C" {

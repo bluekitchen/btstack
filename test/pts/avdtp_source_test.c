@@ -45,9 +45,9 @@
 
 #include "btstack.h"
 
-#define NUM_CHANNELS                2
-#define A2DP_SAMPLE_RATE            44100
-#define BYTES_PER_AUDIO_SAMPLE      (2*NUM_CHANNELS)
+// #define NUM_CHANNELS                2
+// #define A2DP_SAMPLE_RATE            44100
+// #define BYTES_PER_AUDIO_SAMPLE      (2*NUM_CHANNELS)
 #define AUDIO_TIMEOUT_MS            10 
 #define TABLE_SIZE_441HZ            100
 #define AVDTP_MEDIA_PAYLOAD_HEADER_SIZE 12
@@ -91,13 +91,14 @@ typedef struct {
 
 #ifdef HAVE_BTSTACK_STDIN
 // mac 2011:    static const char * device_addr_string = "04:0C:CE:E4:85:D3";
-// pts:         static const char * device_addr_string = "00:1B:DC:08:0A:A5";
+// pts:         
+static const char * device_addr_string = "00:1B:DC:08:0A:A5";
 // mac 2013:    static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:  static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
-// minijambox:  
-static const char * device_addr_string = "00:21:3C:AC:F7:38";
+// minijambox:  static const char * device_addr_string = "00:21:3C:AC:F7:38";
 // head phones: static const char * device_addr_string = "00:18:09:28:50:18";
-// bt dongle:   static const char * device_addr_string = "00:15:83:5F:9D:46";
+// BT dongle:   static const char * device_addr_string = "00:15:83:5F:9D:46";
+// BT dongle:   static const char * device_addr_string = "00:1A:7D:DA:71:0A";
 #endif
 
 typedef struct {
@@ -129,8 +130,19 @@ static avdtp_stream_endpoint_context_t sc;
 static uint16_t remote_configuration_bitmap;
 static avdtp_capabilities_t remote_configuration;
 static avdtp_context_t a2dp_source_context;
+static btstack_sbc_encoder_state_t sbc_encoder_state;
+static uint8_t is_cmd_triggered_localy = 0;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+static int bytes_per_audio_sample(void){
+    return sc.num_channels * 2;
+}
+
+static int a2dp_sample_rate(void){
+    return sc.sampling_frequency;
+}
+
 
 static void a2dp_source_setup_media_header(uint8_t * media_packet, int size, int *offset, uint8_t marker, uint16_t sequence_number){
     if (size < AVDTP_MEDIA_PAYLOAD_HEADER_SIZE){
@@ -232,11 +244,11 @@ static int fill_sbc_audio_buffer(a2dp_media_sending_context_t * context){
     // perform sbc encodin
     int total_num_bytes_read = 0;
     int num_audio_samples_per_sbc_buffer = btstack_sbc_encoder_num_audio_frames();
-    // printf("num_audio_samples_per_sbc_buffer %d, btstack_sbc_encoder_sbc_buffer_length() %d\n", num_audio_samples_per_sbc_buffer, btstack_sbc_encoder_sbc_buffer_length());
+    
     while (context->samples_ready >= num_audio_samples_per_sbc_buffer
         && (context->max_media_payload_size - context->sbc_storage_count) >= btstack_sbc_encoder_sbc_buffer_length()){
 
-        uint8_t pcm_frame[256*BYTES_PER_AUDIO_SAMPLE];
+        uint8_t pcm_frame[ 256 * bytes_per_audio_sample()];
 
         produce_sine_audio((int16_t *) pcm_frame, num_audio_samples_per_sbc_buffer);
         btstack_sbc_encoder_process_data((int16_t *) pcm_frame);
@@ -263,8 +275,8 @@ static void avdtp_audio_timeout_handler(btstack_timer_source_t * timer){
         update_period_ms = now - context->time_audio_data_sent;
     } 
 
-    uint32_t num_samples = (update_period_ms * A2DP_SAMPLE_RATE) / 1000;
-    context->acc_num_missed_samples += (update_period_ms * A2DP_SAMPLE_RATE) % 1000;
+    uint32_t num_samples = (update_period_ms * a2dp_sample_rate()) / 1000;
+    context->acc_num_missed_samples += (update_period_ms * a2dp_sample_rate()) % 1000;
     
     while (context->acc_num_missed_samples >= 1000){
         num_samples++;
@@ -391,10 +403,31 @@ static void initialize_sbc_encoder(void){
                         sc.block_length, sc.subbands, 
                         sc.allocation_method, sc.sampling_frequency, 
                         sc.max_bitpool_value, sc.channel_mode);
-    btstack_sbc_encoder_init(&sc.sbc_encoder_state, SBC_MODE_STANDARD, 
+
+    btstack_sbc_encoder_init(&sbc_encoder_state, SBC_MODE_STANDARD, 
                         sc.block_length, sc.subbands, 
                         sc.allocation_method, sc.sampling_frequency, 
                         sc.max_bitpool_value, sc.channel_mode);
+}
+
+static void dump_sbc_capability(adtvp_media_codec_information_sbc_t media_codec_sbc){
+    printf("    - sampling_frequency: 0x%02x\n", media_codec_sbc.sampling_frequency_bitmap);
+    printf("    - channel_mode: 0x%02x\n", media_codec_sbc.channel_mode_bitmap);
+    printf("    - block_length: 0x%02x\n", media_codec_sbc.block_length_bitmap);
+    printf("    - subbands: 0x%02x\n", media_codec_sbc.subbands_bitmap);
+    printf("    - allocation_method: 0x%02x\n", media_codec_sbc.allocation_method_bitmap);
+    printf("    - bitpool_value [%d, %d] \n", media_codec_sbc.min_bitpool_value, media_codec_sbc.max_bitpool_value);
+}
+
+static void dump_sbc_configuration(avdtp_media_codec_configuration_sbc_t configuration){
+    printf("Received media codec configuration:\n");
+    printf("    - num_channels: %d\n", configuration.num_channels);
+    printf("    - sampling_frequency: %d\n", configuration.sampling_frequency);
+    printf("    - channel_mode: %d\n", configuration.channel_mode);
+    printf("    - block_length: %d\n", configuration.block_length);
+    printf("    - subbands: %d\n", configuration.subbands);
+    printf("    - allocation_method: %d\n", configuration.allocation_method);
+    printf("    - bitpool_value [%d, %d] \n", configuration.min_bitpool_value, configuration.max_bitpool_value);
 }
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -438,37 +471,92 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
         
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:{
-            // TODO check cid
-            if (!sc.local_stream_endpoint) return;
-            uint8_t sampling_frequency = avdtp_choose_sbc_sampling_frequency(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(packet));
-            uint8_t channel_mode = avdtp_choose_sbc_channel_mode(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(packet));
-            uint8_t block_length = avdtp_choose_sbc_block_length(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_block_length_bitmap(packet));
-            uint8_t subbands = avdtp_choose_sbc_subbands(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_subbands_bitmap(packet));
-            
-            uint8_t allocation_method = avdtp_choose_sbc_allocation_method(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_allocation_method_bitmap(packet));
-            uint8_t max_bitpool_value = avdtp_choose_sbc_max_bitpool_value(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(packet));
-            uint8_t min_bitpool_value = avdtp_choose_sbc_min_bitpool_value(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(packet));
-
-            sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[0] = (sampling_frequency << 4) | channel_mode;
-            sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[1] = (block_length << 4) | (subbands << 2) | allocation_method;
-            sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[2] = min_bitpool_value;
-            sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[3] = max_bitpool_value;
-
-            sc.local_stream_endpoint->remote_configuration_bitmap = store_bit16(sc.local_stream_endpoint->remote_configuration_bitmap, AVDTP_MEDIA_CODEC, 1);
-            sc.local_stream_endpoint->remote_configuration.media_codec.media_type = AVDTP_AUDIO;
-            sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
+            printf("CAPABILITY - MEDIA_CODEC_SBC: \n");
+            adtvp_media_codec_information_sbc_t   sbc_capability;
+            sbc_capability.sampling_frequency_bitmap = avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(packet);
+            sbc_capability.channel_mode_bitmap = avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(packet);
+            sbc_capability.block_length_bitmap = avdtp_subevent_signaling_media_codec_sbc_capability_get_block_length_bitmap(packet);
+            sbc_capability.subbands_bitmap = avdtp_subevent_signaling_media_codec_sbc_capability_get_subbands_bitmap(packet);
+            sbc_capability.allocation_method_bitmap = avdtp_subevent_signaling_media_codec_sbc_capability_get_allocation_method_bitmap(packet);
+            sbc_capability.min_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(packet);
+            sbc_capability.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(packet);
+            dump_sbc_capability(sbc_capability);
             break;
         }
-        
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY:
+            printf("CAPABILITY - MEDIA_TRANSPORT supported on remote.\n");
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY:
+            printf("CAPABILITY - REPORTING supported on remote.\n");
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_RECOVERY_CAPABILITY:
+            printf("CAPABILITY - RECOVERY supported on remote: \n");
+            printf("    - recovery_type                %d\n", avdtp_subevent_signaling_recovery_capability_get_recovery_type(packet));
+            printf("    - maximum_recovery_window_size %d\n", avdtp_subevent_signaling_recovery_capability_get_maximum_recovery_window_size(packet));
+            printf("    - maximum_number_media_packets %d\n", avdtp_subevent_signaling_recovery_capability_get_maximum_number_media_packets(packet));
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY:
+            printf("CAPABILITY - CONTENT_PROTECTION supported on remote: \n");
+            printf("    - cp_type           %d\n", avdtp_subevent_signaling_content_protection_capability_get_cp_type(packet));
+            printf("    - cp_type_value_len %d\n", avdtp_subevent_signaling_content_protection_capability_get_cp_type_value_len(packet));
+            printf("    - cp_type_value     \'%s\'\n", avdtp_subevent_signaling_content_protection_capability_get_cp_type_value(packet));
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY:
+            printf("CAPABILITY - MULTIPLEXING supported on remote: \n");
+            printf("    - fragmentation                  %d\n", avdtp_subevent_signaling_multiplexing_capability_get_fragmentation(packet));
+            printf("    - transport_identifiers_num      %d\n", avdtp_subevent_signaling_multiplexing_capability_get_transport_identifiers_num(packet));
+            printf("    - transport_session_identifier_1 %d\n", avdtp_subevent_signaling_multiplexing_capability_get_transport_session_identifier_1(packet));
+            printf("    - transport_session_identifier_2 %d\n", avdtp_subevent_signaling_multiplexing_capability_get_transport_session_identifier_2(packet));
+            printf("    - transport_session_identifier_3 %d\n", avdtp_subevent_signaling_multiplexing_capability_get_transport_session_identifier_3(packet));
+            printf("    - tcid_1                         %d\n", avdtp_subevent_signaling_multiplexing_capability_get_tcid_1(packet));
+            printf("    - tcid_2                         %d\n", avdtp_subevent_signaling_multiplexing_capability_get_tcid_2(packet));
+            printf("    - tcid_3                         %d\n", avdtp_subevent_signaling_multiplexing_capability_get_tcid_3(packet));
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY:
+            printf("CAPABILITY - DELAY_REPORTING supported on remote.\n");
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY:
+            printf("CAPABILITY - HEADER_COMPRESSION supported on remote: \n");
+            printf("    - back_ch   %d\n", avdtp_subevent_signaling_header_compression_capability_get_back_ch(packet));
+            printf("    - media     %d\n", avdtp_subevent_signaling_header_compression_capability_get_media(packet));
+            printf("    - recovery  %d\n", avdtp_subevent_signaling_header_compression_capability_get_recovery(packet));
+            break;
+
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
-            // TODO check cid
-            printf(" AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION \n");
-            sc.sampling_frequency = avdtp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
-            sc.block_length = avdtp_subevent_signaling_media_codec_sbc_configuration_get_block_length(packet);
-            sc.subbands = avdtp_subevent_signaling_media_codec_sbc_configuration_get_subbands(packet);
-            sc.allocation_method = avdtp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet) - 1;
-            sc.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
-             // TODO: deal with reconfigure: avdtp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
+            avdtp_media_codec_configuration_sbc_t sbc_configuration;
+            sbc_configuration.reconfigure = avdtp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
+            sbc_configuration.num_channels = avdtp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(packet);
+            sbc_configuration.sampling_frequency = avdtp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
+            sbc_configuration.channel_mode = avdtp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
+            sbc_configuration.block_length = avdtp_subevent_signaling_media_codec_sbc_configuration_get_block_length(packet);
+            sbc_configuration.subbands = avdtp_subevent_signaling_media_codec_sbc_configuration_get_subbands(packet);
+            sbc_configuration.allocation_method = avdtp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet);
+            sbc_configuration.min_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_min_bitpool_value(packet);
+            sbc_configuration.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
+            sbc_configuration.frames_per_buffer = sbc_configuration.subbands * sbc_configuration.block_length;
+            dump_sbc_configuration(sbc_configuration);
+
+            sc.block_length = sbc_configuration.block_length;
+            sc.subbands     = sbc_configuration.subbands;
+            sc.allocation_method = sbc_configuration.allocation_method - 1;
+            sc.max_bitpool_value = sbc_configuration.max_bitpool_value;
+            sc.sampling_frequency = sbc_configuration.sampling_frequency;
+            sc.num_channels = 2;
+            switch (sbc_configuration.channel_mode){
+                case AVDTP_SBC_JOINT_STEREO:
+                    sc.channel_mode = 3;
+                    break;
+                case AVDTP_SBC_STEREO:
+                    sc.channel_mode = 2;
+                    break;
+                case AVDTP_SBC_DUAL_CHANNEL:
+                    sc.channel_mode = 1;
+                    break;
+                case AVDTP_SBC_MONO:
+                    sc.channel_mode = 0;
+                    sc.num_channels = 1;
+                    break;
+            }
             break;
         }  
 
@@ -484,8 +572,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         case AVDTP_SUBEVENT_SIGNALING_ACCEPT:
             // TODO check cid
             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
-            printf("Accepted %s\n", avdtp_si2str(signal_identifier));
-
+            if (is_cmd_triggered_localy){
+                is_cmd_triggered_localy = 0;
+                printf("AVDTP Source command accepted\n");
+            }
+            
             switch (signal_identifier){
                 case AVDTP_SI_OPEN:
                     initialize_sbc_encoder();  
@@ -579,30 +670,32 @@ static void show_usage(void){
 
 
 static void stdin_process(char cmd){
+    uint8_t status = ERROR_CODE_SUCCESS;
+    is_cmd_triggered_localy = 1;
     switch (cmd){
         case 'c':
             printf("Establish AVDTP Source connection to %s\n", device_addr_string);
-            avdtp_source_connect(device_addr, &media_tracker.avdtp_cid);
+            status = avdtp_source_connect(device_addr, &media_tracker.avdtp_cid);
             break;
         case 'C':
             printf("Disconnect AVDTP Source\n");
-            avdtp_source_disconnect(media_tracker.avdtp_cid);
+            status = avdtp_source_disconnect(media_tracker.avdtp_cid);
             break;
         case 'd':
             printf("Discover stream endpoints of %s\n", device_addr_string);
-            avdtp_source_discover_stream_endpoints(media_tracker.avdtp_cid);
+            status = avdtp_source_discover_stream_endpoints(media_tracker.avdtp_cid);
             break;
         case 'g':
             printf("Get capabilities of stream endpoint with seid %d\n", media_tracker.remote_seid);
-            avdtp_source_get_capabilities(media_tracker.avdtp_cid, media_tracker.remote_seid);
+            status = avdtp_source_get_capabilities(media_tracker.avdtp_cid, media_tracker.remote_seid);
             break;
         case 'a':
             printf("Get all capabilities of stream endpoint with seid %d\n", media_tracker.remote_seid);
-            avdtp_source_get_all_capabilities(media_tracker.avdtp_cid, media_tracker.remote_seid);
+            status = avdtp_source_get_all_capabilities(media_tracker.avdtp_cid, media_tracker.remote_seid);
             break;
         case 'f':
             printf("Get configuration of stream endpoint with seid %d\n", media_tracker.remote_seid);
-            avdtp_source_get_configuration(media_tracker.avdtp_cid, media_tracker.remote_seid);
+            status = avdtp_source_get_configuration(media_tracker.avdtp_cid, media_tracker.remote_seid);
             break;
         case 's':
             printf("Set configuration of stream endpoint with seid %d\n", media_tracker.remote_seid);
@@ -613,7 +706,7 @@ static void stdin_process(char cmd){
             remote_configuration.media_codec.media_codec_information = (uint8_t *)media_sbc_codec_configuration;
 
             initialize_streaming_context(media_sbc_codec_configuration);
-            avdtp_source_set_configuration(media_tracker.avdtp_cid, media_tracker.local_seid, media_tracker.remote_seid, remote_configuration_bitmap, remote_configuration);
+            status = avdtp_source_set_configuration(media_tracker.avdtp_cid, media_tracker.local_seid, media_tracker.remote_seid, remote_configuration_bitmap, remote_configuration);
             break;
         case 'R':
             printf("Reconfigure stream endpoint with seid %d\n", media_tracker.remote_seid);
@@ -624,32 +717,32 @@ static void stdin_process(char cmd){
             remote_configuration.media_codec.media_codec_information = (uint8_t *)media_sbc_codec_reconfiguration;
             
             initialize_streaming_context(media_sbc_codec_reconfiguration);
-            avdtp_source_reconfigure(media_tracker.avdtp_cid, media_tracker.local_seid, media_tracker.remote_seid, remote_configuration_bitmap, remote_configuration);
+            status = avdtp_source_reconfigure(media_tracker.avdtp_cid, media_tracker.local_seid, media_tracker.remote_seid, remote_configuration_bitmap, remote_configuration);
             break;
         case 'o':
             printf("Establish stream between local %d and remote %d seid\n", media_tracker.local_seid, media_tracker.remote_seid);
             initialize_sbc_encoder();
-            avdtp_source_open_stream(media_tracker.avdtp_cid, media_tracker.local_seid, media_tracker.remote_seid);
+            status = avdtp_source_open_stream(media_tracker.avdtp_cid, media_tracker.local_seid, media_tracker.remote_seid);
             break;
         case 'm': 
             printf("Start stream between local %d and remote %d seid, \n", media_tracker.local_seid, media_tracker.remote_seid);
-            avdtp_source_start_stream(media_tracker.avdtp_cid, media_tracker.local_seid);
+            status = avdtp_source_start_stream(media_tracker.avdtp_cid, media_tracker.local_seid);
             break;
         case 'A':
             printf("Abort stream between local %d and remote %d seid\n", media_tracker.local_seid, media_tracker.remote_seid);
-            avdtp_source_abort_stream(media_tracker.avdtp_cid, media_tracker.local_seid);
+            status = avdtp_source_abort_stream(media_tracker.avdtp_cid, media_tracker.local_seid);
             break;
         case 'S':
             printf("Release stream between local %d and remote %d seid\n", media_tracker.local_seid, media_tracker.remote_seid);
-            avdtp_source_stop_stream(media_tracker.avdtp_cid, media_tracker.local_seid);
+            status = avdtp_source_stop_stream(media_tracker.avdtp_cid, media_tracker.local_seid);
             break;
         case 'P':
             printf("Susspend stream between local %d and remote %d seid\n", media_tracker.local_seid, media_tracker.remote_seid);
-            avdtp_source_suspend(media_tracker.avdtp_cid, media_tracker.local_seid);
+            status = avdtp_source_suspend(media_tracker.avdtp_cid, media_tracker.local_seid);
             break;
         case 'X':
             printf("Stop streaming\n");
-            avdtp_source_stop_stream(media_tracker.avdtp_cid, media_tracker.local_seid);
+            status = avdtp_source_stop_stream(media_tracker.avdtp_cid, media_tracker.local_seid);
             break;
             
         case '\n':
@@ -659,6 +752,9 @@ static void stdin_process(char cmd){
             show_usage();
             break;
 
+    }
+    if (status != ERROR_CODE_SUCCESS){
+        printf("AVDTP Sink cmd \'%c\' failed, status 0x%02x\n", cmd, status);
     }
 }
 #endif
@@ -678,9 +774,10 @@ int btstack_main(int argc, const char * argv[]){
     avdtp_source_init(&a2dp_source_context);
     avdtp_source_register_packet_handler(&packet_handler);
 
-    avdtp_stream_endpoint_t * local_stream_endpoint = a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, (uint8_t *)media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), (uint8_t *)media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
-    media_tracker.local_seid = avdtp_local_seid(local_stream_endpoint);
+    sc.local_stream_endpoint = a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, (uint8_t *) media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), (uint8_t*) media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
+    media_tracker.local_seid = avdtp_local_seid(sc.local_stream_endpoint);
     media_tracker.remote_seid = 1;
+    
 
     // Initialize SDP 
     sdp_init();
@@ -688,9 +785,10 @@ int btstack_main(int argc, const char * argv[]){
     a2dp_source_create_sdp_record(sdp_avdtp_source_service_buffer, 0x10002, 1, NULL, NULL);
     sdp_register_service(sdp_avdtp_source_service_buffer);
     
-    gap_set_local_name("BTstack AVDTP Source PTS Test");
+    gap_set_local_name("BTstack AVDTP Source PTS 00:00:00:00:00:00");
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);
+    sscanf_bd_addr(device_addr_string, device_addr);
 
 #ifdef HAVE_BTSTACK_STDIN
     // parse human readable Bluetooth address

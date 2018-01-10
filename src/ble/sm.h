@@ -53,50 +53,6 @@ typedef struct {
     bd_addr_type_t address_type;
 } sm_lookup_entry_t;
 
-static inline uint8_t sm_pairing_packet_get_code(sm_pairing_packet_t packet){
-    return packet[0];
-}
-static inline uint8_t sm_pairing_packet_get_io_capability(sm_pairing_packet_t packet){
-    return packet[1];
-}
-static inline uint8_t sm_pairing_packet_get_oob_data_flag(sm_pairing_packet_t packet){
-    return packet[2];
-}
-static inline uint8_t sm_pairing_packet_get_auth_req(sm_pairing_packet_t packet){
-    return packet[3];
-}
-static inline uint8_t sm_pairing_packet_get_max_encryption_key_size(sm_pairing_packet_t packet){
-    return packet[4];
-}
-static inline uint8_t sm_pairing_packet_get_initiator_key_distribution(sm_pairing_packet_t packet){
-    return packet[5];
-}
-static inline uint8_t sm_pairing_packet_get_responder_key_distribution(sm_pairing_packet_t packet){
-    return packet[6];
-}
-
-static inline void sm_pairing_packet_set_code(sm_pairing_packet_t packet, uint8_t code){
-    packet[0] = code;
-}
-static inline void sm_pairing_packet_set_io_capability(sm_pairing_packet_t packet, uint8_t io_capability){
-    packet[1] = io_capability;
-}
-static inline void sm_pairing_packet_set_oob_data_flag(sm_pairing_packet_t packet, uint8_t oob_data_flag){
-    packet[2] = oob_data_flag;
-}
-static inline void sm_pairing_packet_set_auth_req(sm_pairing_packet_t packet, uint8_t auth_req){
-    packet[3] = auth_req;
-}
-static inline void sm_pairing_packet_set_max_encryption_key_size(sm_pairing_packet_t packet, uint8_t max_encryption_key_size){
-    packet[4] = max_encryption_key_size;
-}
-static inline void sm_pairing_packet_set_initiator_key_distribution(sm_pairing_packet_t packet, uint8_t initiator_key_distribution){
-    packet[5] = initiator_key_distribution;
-}
-static inline void sm_pairing_packet_set_responder_key_distribution(sm_pairing_packet_t packet, uint8_t responder_key_distribution){
-    packet[6] = responder_key_distribution;
-}
-
 /* API_START */
 
 /**
@@ -291,12 +247,12 @@ int sm_le_device_index(hci_con_handle_t con_handle );
 void sm_use_fixed_ec_keypair(uint8_t * qx, uint8_t * qy, uint8_t * d);
 
 /**
- * @brief Set passkey used with LE Legacy Pairing when we generate and show it instead of random number
+ * @brief Use fixec passkey for Legacy and SC instead of generating a random number
  * @note Can be used to improve security over Just Works if no keyboard or displary are present and 
  *       individual random passkey can be printed on the device during production
  * @param passkey
  */
-void sm_use_fixed_legacy_pairing_passkey_in_display_role(uint32_t passkey);
+void sm_use_fixed_passkey_in_display_role(uint32_t passkey);
 
 /**
  * @brief Allow connection re-encryption in Peripheral (Responder) role for LE Legacy Pairing 

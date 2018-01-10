@@ -76,6 +76,21 @@ typedef struct {
 
 } btstack_tlv_t;
 
+/** 
+ * @brief Make TLV implementation available to BTstack components via Singleton
+ * @note Usually called by port after BD_ADDR was retrieved from Bluetooth Controller
+ * @param tlv_impl
+ * @param tlv_context
+ */
+void btstack_tlv_set_instance(const btstack_tlv_t * tlv_impl, void * tlv_context);
+
+/**
+ * @brief Get current TLV implementation. Used for bonding information, but can be used by application, too.
+ * @param tlv_impl
+ * @param tlv_context
+ */
+void btstack_tlv_get_instance(const btstack_tlv_t ** tlv_impl, void ** tlv_context);
+
 #if defined __cplusplus
 }
 #endif

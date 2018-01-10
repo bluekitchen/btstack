@@ -53,7 +53,6 @@ TARGET_SRAM=le_counter_sram.elf
 # template main file + firmware file
 BTSTACK_ROOT_CONFIG = ../../../
 CSRCS+=${BTSTACK_ROOT_CONFIG}/example/le_counter.c
-CSRCS+=${BTSTACK_ROOT_CONFIG}/port/samv71-xplained-atwilc3000/example/template/wilc3000_bt_firmware.c
 
 # List of C source files.
 CSRCS+= \
@@ -113,16 +112,11 @@ INC_PATH = \
 
 INC_PATH += ${BTSTACK_ROOT_CONFIG}/src/ble
 INC_PATH += ${BTSTACK_ROOT_CONFIG}/src/ble/gatt-service
-INC_PATH += ${BTSTACK_ROOT_CONFIG}/src/classic
 INC_PATH += ${BTSTACK_ROOT_CONFIG}/src
 INC_PATH += ${BTSTACK_ROOT_CONFIG}/3rd-party/micro-ecc
 INC_PATH += ${BTSTACK_ROOT_CONFIG}/platform/embedded
 INC_PATH += ${BTSTACK_ROOT_CONFIG}/chipset/atwilc3000
 INC_PATH += ${BTSTACK_ROOT_CONFIG}/port/samv71-xplained-atwilc3000/example/template
-INC_PATH += ${BTSTACK_ROOT_CONFIG}/3rd-party/hxcmod-player
-INC_PATH += ${BTSTACK_ROOT_CONFIG}/3rd-party/hxcmod-player/mods
-INC_PATH += ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/encoder/include
-INC_PATH += ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/decoder/include
 
 
 # VPATH += ${BTSTACK_ROOT_CONFIG}/src
@@ -134,10 +128,7 @@ INC_PATH += ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/decoder/include
 # VPATH += ${BTSTACK_ROOT_CONFIG}/3rd-party/micro-ecc
 
 CSRCS += \
-	${BTSTACK_ROOT_CONFIG}/3rd-party/hxcmod-player/hxcmod.c 						\
-	${BTSTACK_ROOT_CONFIG}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c 	\
 	${BTSTACK_ROOT_CONFIG}/chipset/atwilc3000/btstack_chipset_atwilc3000.c \
-	${BTSTACK_ROOT_CONFIG}/example/sco_demo_util.c \
 	${BTSTACK_ROOT_CONFIG}/platform/embedded/btstack_run_loop_embedded.c \
 	${BTSTACK_ROOT_CONFIG}/platform/embedded/btstack_uart_block_embedded.c \
 	${BTSTACK_ROOT_CONFIG}/src/ad_parser.c \
@@ -156,64 +147,13 @@ CSRCS += \
 	${BTSTACK_ROOT_CONFIG}/src/btstack_ring_buffer.c \
 	${BTSTACK_ROOT_CONFIG}/src/btstack_run_loop.c \
 	${BTSTACK_ROOT_CONFIG}/src/btstack_util.c \
-	${BTSTACK_ROOT_CONFIG}/src/classic/a2dp_sink.c  		\
-	${BTSTACK_ROOT_CONFIG}/src/classic/a2dp_source.c 		\
-	${BTSTACK_ROOT_CONFIG}/src/classic/avdtp.c  			\
-	${BTSTACK_ROOT_CONFIG}/src/classic/avdtp_acceptor.c  	\
-	${BTSTACK_ROOT_CONFIG}/src/classic/avdtp_initiator.c 	\
-	${BTSTACK_ROOT_CONFIG}/src/classic/avdtp_sink.c  		\
-	${BTSTACK_ROOT_CONFIG}/src/classic/avdtp_source.c 		\
-	${BTSTACK_ROOT_CONFIG}/src/classic/avdtp_util.c  		\
-	${BTSTACK_ROOT_CONFIG}/src/classic/avrcp.c \
-	${BTSTACK_ROOT_CONFIG}/src/classic/avrcp_controller.c \
-	${BTSTACK_ROOT_CONFIG}/src/classic/avrcp_target.c \
-	${BTSTACK_ROOT_CONFIG}/src/classic/btstack_sbc_bludroid.c \
-	${BTSTACK_ROOT_CONFIG}/src/classic/btstack_sbc_plc.c \
-	${BTSTACK_ROOT_CONFIG}/src/classic/hfp.c \
-	${BTSTACK_ROOT_CONFIG}/src/classic/hfp_ag.c \
-	${BTSTACK_ROOT_CONFIG}/src/classic/hfp_hf.c \
-	${BTSTACK_ROOT_CONFIG}/src/classic/hfp_msbc.c \
-	${BTSTACK_ROOT_CONFIG}/src/classic/hfp_gsm_model.c \
-	${BTSTACK_ROOT_CONFIG}/src/classic/hsp_hs.c \
-	${BTSTACK_ROOT_CONFIG}/src/classic/hsp_ag.c \
-	${BTSTACK_ROOT_CONFIG}/src/classic/btstack_link_key_db_memory.c \
-	${BTSTACK_ROOT_CONFIG}/src/classic/goep_client.c \
-	${BTSTACK_ROOT_CONFIG}/src/classic/obex_iterator.c \
-	${BTSTACK_ROOT_CONFIG}/src/classic/pbap_client.c \
-	${BTSTACK_ROOT_CONFIG}/src/classic/rfcomm.c                  \
-	${BTSTACK_ROOT_CONFIG}/src/classic/sdp_client.c              \
-	${BTSTACK_ROOT_CONFIG}/src/classic/sdp_client_rfcomm.c       \
-	${BTSTACK_ROOT_CONFIG}/src/classic/sdp_server.c              \
-	${BTSTACK_ROOT_CONFIG}/src/classic/sdp_util.c              \
-	${BTSTACK_ROOT_CONFIG}/src/classic/spp_server.c            \
+	${BTSTACK_ROOT_CONFIG}/src/btstack_tlv.c \
 	${BTSTACK_ROOT_CONFIG}/src/hci.c \
 	${BTSTACK_ROOT_CONFIG}/src/hci_cmd.c \
 	${BTSTACK_ROOT_CONFIG}/src/hci_dump.c \
 	${BTSTACK_ROOT_CONFIG}/src/hci_transport_h4.c \
 	${BTSTACK_ROOT_CONFIG}/src/l2cap.c \
 	${BTSTACK_ROOT_CONFIG}/src/l2cap_signaling.c \
-    ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/decoder/srce/alloc.c \
-    ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/decoder/srce/bitalloc-sbc.c \
-    ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/decoder/srce/bitalloc.c \
-    ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/decoder/srce/bitstream-decode.c \
-    ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/decoder/srce/decoder-oina.c \
-    ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/decoder/srce/decoder-private.c \
-    ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/decoder/srce/decoder-sbc.c \
-    ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/decoder/srce/dequant.c \
-    ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/decoder/srce/framing-sbc.c \
-    ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/decoder/srce/framing.c \
-    ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/decoder/srce/oi_codec_version.c \
-    ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/decoder/srce/synthesis-8-generated.c \
-    ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/decoder/srce/synthesis-dct8.c \
-    ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/decoder/srce/synthesis-sbc.c \
-    ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/encoder/srce/sbc_analysis.c           \
-    ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/encoder/srce/sbc_dct.c                \
-    ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/encoder/srce/sbc_dct_coeffs.c         \
-    ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/encoder/srce/sbc_enc_bit_alloc_mono.c \
-    ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/encoder/srce/sbc_enc_bit_alloc_ste.c  \
-    ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/encoder/srce/sbc_enc_coeffs.c         \
-    ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/encoder/srce/sbc_encoder.c            \
-    ${BTSTACK_ROOT_CONFIG}/3rd-party/bluedroid/encoder/srce/sbc_packing.c            \
 
 # Additional search paths for libraries.
 LIB_PATH =  \

@@ -112,12 +112,12 @@ void battery_service_server_init(uint8_t value){
 	battery_value_handle_value = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
 	battery_value_handle_client_configuration = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL);
 
-	// register service with ATT DB	
+	// register service with ATT Server
 	battery_service.start_handle   = start_handle;
 	battery_service.end_handle     = end_handle;
 	battery_service.read_callback  = &battery_service_read_callback;
 	battery_service.write_callback = &battery_service_write_callback;
-	att_register_service_handler(&battery_service);
+	att_server_register_service_handler(&battery_service);
 }
 
 void battery_service_server_set_battery_value(uint8_t value){
