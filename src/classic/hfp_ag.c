@@ -411,17 +411,19 @@ static int hfp_ag_send_retrieve_indicators_cmd_via_generator(uint16_t cid, hfp_c
 
 static int hfp_ag_send_retrieve_indicators_status_cmd(uint16_t cid){
     char buffer[40];
-    int offset = snprintf(buffer, sizeof(buffer), "\r\n%s:", HFP_INDICATOR);
-    offset += hfp_ag_indicators_status_join(buffer+offset, sizeof(buffer) - offset - 9);
-    offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n\r\nOK\r\n");
+    const int size = sizeof(buffer);
+    int offset = snprintf(buffer, size, "\r\n%s:", HFP_INDICATOR);
+    offset += hfp_ag_indicators_status_join(buffer+offset, size-offset-9);
+    offset += snprintf(buffer+offset, size-offset, "\r\n\r\nOK\r\n");
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static int hfp_ag_send_retrieve_can_hold_call_cmd(uint16_t cid){
     char buffer[40];
-    int offset = snprintf(buffer, sizeof(buffer), "\r\n%s:", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES);
-    offset += hfp_ag_call_services_join(buffer+offset, sizeof(buffer)-offset-9);
-    offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n\r\nOK\r\n");
+    const int size = sizeof(buffer);
+    int offset = snprintf(buffer, size, "\r\n%s:", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES);
+    offset += hfp_ag_call_services_join(buffer+offset, size-offset-9);
+    offset += snprintf(buffer+offset, size-offset, "\r\n\r\nOK\r\n");
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -432,9 +434,10 @@ static int hfp_ag_send_list_supported_generic_status_indicators_cmd(uint16_t cid
 
 static int hfp_ag_send_retrieve_supported_generic_status_indicators_cmd(uint16_t cid){
     char buffer[40];
-    int offset = snprintf(buffer, sizeof(buffer), "\r\n%s:(", HFP_GENERIC_STATUS_INDICATOR);
-    offset += hfp_hf_indicators_join(buffer+offset, sizeof(buffer) - offset - 10);
-    offset += snprintf(buffer+offset, sizeof(buffer)-offset, ")\r\n\r\nOK\r\n");
+    const int size = sizeof(buffer);
+    int offset = snprintf(buffer, size, "\r\n%s:(", HFP_GENERIC_STATUS_INDICATOR);
+    offset += hfp_hf_indicators_join(buffer+offset, size-offset-10);
+    offset += snprintf(buffer+offset, size-offset, ")\r\n\r\nOK\r\n");
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -454,19 +457,18 @@ static int hfp_ag_send_transfer_ag_indicators_status_cmd(uint16_t cid, hfp_ag_in
 static int hfp_ag_send_report_network_operator_name_cmd(uint16_t cid, hfp_network_opearator_t op){
     char buffer[41];
     if (strlen(op.name) == 0){
-        sprintf(buffer, "\r\n%s:%d,,\r\n\r\nOK\r\n", HFP_QUERY_OPERATOR_SELECTION, op.mode);
+        snprintf(buffer, sizeof(buffer), "\r\n%s:%d,,\r\n\r\nOK\r\n", HFP_QUERY_OPERATOR_SELECTION, op.mode);
     } else {
-        int size = sizeof(buffer);
-        int offset = snprintf(buffer, size,"\r\n%s:%d,%d,", HFP_QUERY_OPERATOR_SELECTION, op.mode, op.format);
-        offset += snprintf(buffer + offset, 16, "%s", op.name);
-        snprintf(buffer + offset, size - offset, "\r\n\r\nOK\r\n");
+        int offset = snprintf(buffer,  sizeof(buffer), "\r\n%s:%d,%d,", HFP_QUERY_OPERATOR_SELECTION, op.mode, op.format);
+        offset += snprintf(buffer+offset, 16, "%s", op.name);
+        snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n\r\nOK\r\n");
     }
     return send_str_over_rfcomm(cid, buffer);
 }
 
 static inline int hfp_ag_send_cmd_with_int(uint16_t cid, const char * cmd, uint8_t value){
     char buffer[30];
-    sprintf(buffer, "\r\n%s:%d\r\n", cmd, value);
+    snprintf(buffer, sizeof(buffer), "\r\n%s:%d\r\n", cmd, value);
     return send_str_over_rfcomm(cid, buffer);
 }
 
