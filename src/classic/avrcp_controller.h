@@ -100,6 +100,13 @@ uint8_t avrcp_controller_disconnect(uint16_t avrcp_cid);
 uint8_t avrcp_controller_unit_info(uint16_t avrcp_cid);
 
 /**
+ * @brief Subunit info.
+ * @param avrcp_cid
+ * @returns status
+ */
+uint8_t avrcp_controller_subunit_info(uint16_t avrcp_cid);
+
+/**
  * @brief Get capabilities.
  * @param avrcp_cid
  * @returns status
