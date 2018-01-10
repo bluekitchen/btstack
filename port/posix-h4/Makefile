@@ -17,7 +17,6 @@ CORE += \
 	main.c \
 	btstack_stdin_posix.c \
 	wav_util.c 					\
-	crc32.c \
 	0000000_META_hci_patches_v5_iram.c \
 	# bluetooth_init_cc2564_2.14.c \
 	# bluetooth_init_cc2564C_1.0.c \
