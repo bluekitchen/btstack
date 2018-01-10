@@ -51,6 +51,7 @@ VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/platform/embedded
 VPATH += ${BTSTACK_ROOT}/example
 VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
+VPATH += ${BTSTACK_ROOT}/chipset/em9301
 
 ######################################
 # source
@@ -86,6 +87,7 @@ Src/stm32l0xx_it.c \
 	att_dispatch.c \
 	att_server.c \
 	battery_service_server.c \
+	btstack_chipset_em9301.c \
 	btstack_linked_list.c \
 	btstack_memory.c \
 	btstack_memory_pool.c \
@@ -106,6 +108,7 @@ Src/stm32l0xx_it.c \
 	le_device_db_memory.c \
 	sm.c \
 	uECC.c \
+	0000000_META_hci_patches_v5_iram.c \
 
 # ASM sources
 ASM_SOURCES =  \
