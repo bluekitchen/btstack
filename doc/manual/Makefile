@@ -1,35 +1,30 @@
-all: update_apis_and_listings html pdf
+all: update_content html pdf
 
 html: 
-	# create docs/ports/existing_ports.md + adds images
-	./ports2markdown.py
-	# re-create docs_final
-	cp -r docs docs_final
 	# docs -> docs_final
 	./markdown2mkdocs.py
+	# generate HTML
 	mkdocs build --clean
-	# ./mkdocs2html.py
+	# post-process HTML
+	./mkdocs2html.py
 
 pdf:
+	rm -rf latex
 	mkdir -p latex
 	cp -r docs/picts latex
-	# create docs/ports/existing_ports.md
-	./ports2markdown.py
 	# create latex/btstack_generated.md -> latex/btstack_final.tex
 	./markdown2tex.py
 	cp btstack_gettingstarted.tex latex
 	cp docs/ports/*.jpg latex
 	cd latex && pdflatex btstack_gettingstarted.tex && pdflatex btstack_gettingstarted.tex
 	mv latex/btstack_gettingstarted.pdf btstack.pdf
-	rm -rf latex tmp
 
-
-preview: update_apis_and_listings html
+preview: update_content html
 	# race condition, open browser before startnig MKdocs
 	open http://127.0.0.1:8000
 	mkdocs serve
 
-update_apis_and_listings:
+update_content:
 	sed -e "s|../doc/manual/docs/||g" ../../chipset/README.md > docs/chipsets.md
 	rm -rf tmp
 	mkdir tmp
@@ -37,6 +32,11 @@ update_apis_and_listings:
 	./update_apis.py	
 	# create docs/examples/examples.md
 	./update_listings.py
+	# create docs/ports/existing_ports.md
+	./ports2markdown.py
+	# re-create docs_final
+	rm -rf docs_final
+	cp -r docs docs_final
 
 clean:
 	rm -rf docs_final tmp btstack *.pdf latex/btstack_generated.* latex/btstack_final.tex
