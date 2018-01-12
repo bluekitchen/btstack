@@ -196,7 +196,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                                 case BLUETOOTH_SERVICE_CLASS_PANU:
                                 case BLUETOOTH_SERVICE_CLASS_NAP:
                                 case BLUETOOTH_SERVICE_CLASS_GN:
-                                    printf(" ** Attribute 0x%04x: BNEP PAN protocol UUID: %04x\n", sdp_event_query_attribute_byte_get_attribute_id(packet), uuid);
+                                    printf(" ** Attribute 0x%04x: BNEP PAN protocol UUID: %04x\n", sdp_event_query_attribute_byte_get_attribute_id(packet), (int) uuid);
                                     break;
                                 default:
                                     break;

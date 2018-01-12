@@ -46,6 +46,7 @@
  */
 // *****************************************************************************
 
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -121,7 +122,7 @@ static void test_track_data(le_streamer_connection_t * context, int bytes_sent){
     if (time_passed < REPORT_INTERVAL_MS) return;
     // print speed
     int bytes_per_second = context->test_data_sent * 1000 / time_passed;
-    printf("%c: %u bytes -> %u.%03u kB/s\n", context->name, context->test_data_sent, bytes_per_second / 1000, bytes_per_second % 1000);
+    printf("%c: %"PRIu32" bytes -> %u.%03u kB/s\n", context->name, context->test_data_sent, bytes_per_second / 1000, bytes_per_second % 1000);
 
     // restart
     context->test_data_start = now;

@@ -189,7 +189,7 @@ static btstack_timer_source_t mousing_timer;
 
 static void mousing_timer_handler(btstack_timer_source_t * ts){
 
-    if (con_handle == HCI_CON_HANDLE_INVALID) return;
+    if (!hid_cid) return;
 
     // simulate left click when corner reached
     if (step % STEPS_PER_DIRECTION == 0){
@@ -207,7 +207,7 @@ static void mousing_timer_handler(btstack_timer_source_t * ts){
     }
 
     // trigger send
-    hids_device_request_can_send_now_event(con_handle);
+    hid_device_request_can_send_now_event(hid_cid);
 
     // set next timer
     btstack_run_loop_set_timer(ts, MOUSE_PERIOD_MS);
@@ -247,7 +247,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             printf("HID Connected, control mouse using 'a','s',''d', 'w' keys for movement and 'l' and 'r' for buttons...\n");
 #else
                             printf("HID Connected, simulating mouse movements...\n");
-                            hid_embedded_start_typing();
+                            hid_embedded_start_mousing();
 #endif
                             break;
                         case HID_SUBEVENT_CONNECTION_CLOSED:
