@@ -21,6 +21,10 @@ VPATH += ${BTSTACK_ROOT}/platform/libusb
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 
+EXAMPLES += 
+	le_data_channel_client  \
+	le_data_channel_server  \
+
 # use pkg-config for portaudio
 # CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags) -DHAVE_PORTAUDIO
 # LDFLAGS += $(shell pkg-config portaudio-2.0 --libs)

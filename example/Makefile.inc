@@ -142,11 +142,16 @@ EXAMPLES = 					\
 	spp_streamer			\
 	spp_streamer_client     \
 
+#	le_data_channel_client  \
+#	le_data_channel_server  \
+
 EXAMPLES_USING_LE =			\
 	ancs_client_demo		\
 	gatt_battery_query      \
 	gatt_browser			\
 	le_counter              \
+	le_data_channel_client  \
+	le_data_channel_server  \
 	le_streamer				\
 	le_streamer_client      \
 	spp_and_le_counter	    \
@@ -285,6 +290,12 @@ avrcp_browsing_client: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} av
 
 dut_mode_classic: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} dut_mode_classic.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+le_data_channel_client: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} le_data_channel_client.c
+	${CC} $(filter-out *.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+le_data_channel_server: ${CORE_OBJ} ${COMMON_OBJ}  ${SM_OBJ} le_data_channel_server.c
+	${CC} $(filter-out *.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:
 	rm -f ${EXAMPLES} *_demo
