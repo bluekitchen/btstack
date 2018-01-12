@@ -1,5 +1,8 @@
 #define __BTSTACK_FILE__ "port.c"
 
+// include STM32 first to avoid warning about redefinition of UNUSED
+#include "stm32f4xx_hal.h"
+
 #include "port.h"
 #include "btstack.h"
 #include "btstack_debug.h"
@@ -11,7 +14,6 @@
 #include "classic/btstack_link_key_db_static.h"
 #include "classic/btstack_link_key_db_tlv.h"
 #include "hal_flash_bank_stm32.h"
-#include "stm32f4xx_hal.h"
 
 //
 extern UART_HandleTypeDef huart2;
