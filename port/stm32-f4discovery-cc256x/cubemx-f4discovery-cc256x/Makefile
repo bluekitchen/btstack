@@ -38,6 +38,7 @@ VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce
 VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player
 VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods
+VPATH += ${BTSTACK_ROOT}/3rd-party/segger-rtt
 VPATH += ${BTSTACK_ROOT}/chipset/cc256x
 VPATH += ${BTSTACK_ROOT}/example
 VPATH += ${BTSTACK_ROOT}/platform/embedded
@@ -159,6 +160,8 @@ device_id_server.c \
 obex_iterator.c \
 pbap_client.c \
 goep_client.c \
+SEGGER_RTT.c \
+SEGGER_RTT_Syscalls_GCC.c \
 
 # ASM sources
 ASM_SOURCES =  \
@@ -231,6 +234,7 @@ C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/hxcmod-player
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/segger-rtt
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/embedded
 C_INCLUDES += -I${BTSTACK_ROOT}/chipset/cc256x
 C_INCLUDES += -I${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/src
