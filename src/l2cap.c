@@ -1563,6 +1563,7 @@ static void l2cap_run(void){
         uint8_t  * l2cap_payload;
         uint16_t pos;
         uint16_t payload_size;
+        uint16_t mps;
         l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
         // log_info("l2cap_run: channel %p, state %u, var 0x%02x", channel, channel->state, channel->state_var);
         switch (channel->state){
@@ -1573,7 +1574,8 @@ static void l2cap_run(void){
                 channel->local_sig_id = l2cap_next_sig_id();
                 channel->credits_incoming =  channel->new_credits_incoming;
                 channel->new_credits_incoming = 0;
-                l2cap_send_le_signaling_packet( channel->con_handle, LE_CREDIT_BASED_CONNECTION_REQUEST, channel->local_sig_id, channel->psm, channel->local_cid, channel->local_mtu, 23, channel->credits_incoming);
+                mps = btstack_min(l2cap_max_le_mtu(), channel->local_mtu);
+                l2cap_send_le_signaling_packet( channel->con_handle, LE_CREDIT_BASED_CONNECTION_REQUEST, channel->local_sig_id, channel->psm, channel->local_cid, channel->local_mtu, mps, channel->credits_incoming);
                 break;
             case L2CAP_STATE_WILL_SEND_LE_CONNECTION_RESPONSE_ACCEPT:
                 if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
@@ -1581,7 +1583,8 @@ static void l2cap_run(void){
                 channel->state = L2CAP_STATE_OPEN;
                 channel->credits_incoming =  channel->new_credits_incoming;
                 channel->new_credits_incoming = 0;
-                l2cap_send_le_signaling_packet(channel->con_handle, LE_CREDIT_BASED_CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->local_mtu, 23, channel->credits_incoming, 0);
+                mps = btstack_min(l2cap_max_le_mtu(), channel->local_mtu);
+                l2cap_send_le_signaling_packet(channel->con_handle, LE_CREDIT_BASED_CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->local_mtu, mps, channel->credits_incoming, 0);
                 // notify client
                 l2cap_emit_le_channel_opened(channel, 0);
                 break;                       
