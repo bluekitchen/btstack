@@ -56,6 +56,7 @@
 #include "btstack.h"
 
 // #define TEST_STREAM_DATA
+#define TEST_PACKET_SIZE 1000
 
 static enum {
     TC_OFF,
@@ -78,7 +79,7 @@ static bd_addr_type_t le_data_channel_addr_type;
 static hci_con_handle_t connection_handle;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-static uint8_t data_channel_buffer[1000];
+static uint8_t data_channel_buffer[TEST_PACKET_SIZE];
 
 /*
  * @section Track throughput
@@ -97,7 +98,7 @@ typedef struct {
     hci_con_handle_t connection_handle;
     uint16_t cid;
     int  counter;
-    char test_data[1000];
+    char test_data[TEST_PACKET_SIZE];
     int  test_data_len;
     uint32_t test_data_sent;
     uint32_t test_data_start;
@@ -297,7 +298,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     break;
             }
             break;
-            
+
         case L2CAP_DATA_PACKET:
             test_track_data(&le_data_channel_connection, size);
             break;

@@ -53,6 +53,7 @@
 #include "btstack.h"
 
 #define TEST_STREAM_DATA
+#define TEST_PACKET_SIZE 1000
 
 #define REPORT_INTERVAL_MS 3000
 #define MAX_NR_CONNECTIONS 3 
@@ -77,7 +78,7 @@ typedef struct {
     hci_con_handle_t connection_handle;
     uint16_t cid;
     int  counter;
-    char test_data[1000];
+    char test_data[TEST_PACKET_SIZE];
     int  test_data_len;
     uint32_t test_data_sent;
     uint32_t test_data_start;
@@ -86,7 +87,7 @@ typedef struct {
 static le_data_channel_connection_t le_data_channel_connection;
 
 static uint16_t initial_credits = L2CAP_LE_AUTOMATIC_CREDITS;
-static uint8_t data_channel_buffer[1000];
+static uint8_t data_channel_buffer[TEST_PACKET_SIZE];
 
 /* @section Main Application Setup
  *
