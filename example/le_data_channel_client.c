@@ -55,6 +55,8 @@
 
 #include "btstack.h"
 
+// #define TEST_STREAM_DATA
+
 static enum {
     TC_OFF,
     TC_IDLE,
@@ -155,6 +157,7 @@ static int advertisement_report_contains_name(const char * name, uint8_t * adver
     return 0;
 }
 
+#ifdef TEST_STREAM_DATA
 /* LISTING_END */
 /*
  * @section Streamer
@@ -181,6 +184,7 @@ static void streamer(void){
     l2cap_le_request_can_send_now_event(le_data_channel_connection.cid);
 } 
 /* LISTING_END */
+#endif
 
 // Either connect to remote specified on command line or start scan for device with "LE Data Channel" in advertisement
 static void le_data_channel_client_start(void){
@@ -206,84 +210,96 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     uint16_t conn_interval;
     hci_con_handle_t handle;
 
-    if (packet_type != HCI_EVENT_PACKET) return;
-    
-    uint8_t event = hci_event_packet_get_type(packet);
-    switch (event) {
-        case BTSTACK_EVENT_STATE:
-            // BTstack activated, get started
-            if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING) {
-                le_data_channel_client_start();
-            } else {
-                state = TC_OFF;
-            }
-            break;
-        case GAP_EVENT_ADVERTISING_REPORT:
-            if (state != TC_W4_SCAN_RESULT) return;
-            // check name in advertisement
-            if (!advertisement_report_contains_name("LE Data Channel", packet)) return;
-            // store address and type
-            gap_event_advertising_report_get_address(packet, le_data_channel_addr);
-            le_data_channel_addr_type = gap_event_advertising_report_get_address_type(packet);
-            // stop scanning, and connect to the device
-            state = TC_W4_CONNECT;
-            gap_stop_scan();
-            printf("Stop scan. Connect to device with addr %s.\n", bd_addr_to_str(le_data_channel_addr));
-            gap_connect(le_data_channel_addr,le_data_channel_addr_type);
-            break;
-        case HCI_EVENT_LE_META:
-            // wait for connection complete
-            if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
-            if (state != TC_W4_CONNECT) return;
-            connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
-            // print connection parameters (without using float operations)
-            conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
-            printf("Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
-            printf("Connection Latency: %u\n", hci_subevent_le_connection_complete_get_conn_latency(packet));  
-            // initialize gatt client context with handle, and add it to the list of active clients
-            // query primary services
-            printf("Connect to performance test channel.\n");
-            state = TC_W4_CHANNEL;
-            l2cap_le_create_channel(&packet_handler, connection_handle, TSPX_le_psm, data_channel_buffer, 
-                                    sizeof(data_channel_buffer), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &le_data_channel_connection.cid);
-            break;
-        case HCI_EVENT_DISCONNECTION_COMPLETE:
-            if (cmdline_addr_found){
-                printf("Disconnected %s\n", bd_addr_to_str(cmdline_addr));
-                return;
-            }
-            printf("Disconnected %s\n", bd_addr_to_str(le_data_channel_addr));
-            if (state == TC_OFF) break;
-            le_data_channel_client_start();
-            break;
-        case L2CAP_EVENT_LE_CHANNEL_OPENED:
-            // inform about new l2cap connection
-            l2cap_event_le_channel_opened_get_address(packet, event_address);
-            psm = l2cap_event_le_channel_opened_get_psm(packet); 
-            cid = l2cap_event_le_channel_opened_get_local_cid(packet); 
-            handle = l2cap_event_le_channel_opened_get_handle(packet);
-            if (packet[2] == 0) {
-                printf("L2CAP: LE Data Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
-                       bd_addr_to_str(event_address), handle, psm, cid,  little_endian_read_16(packet, 15));
-                le_data_channel_connection.cid = cid;
-                le_data_channel_connection.connection_handle = handle;
-                le_data_channel_connection.test_data_len = btstack_min(l2cap_event_le_channel_opened_get_remote_mtu(packet), sizeof(le_data_channel_connection.test_data));
-                state = TC_TEST_DATA;
-                printf("Test packet size: %u\n", le_data_channel_connection.test_data_len);
-                test_reset(&le_data_channel_connection);
-                l2cap_le_request_can_send_now_event(le_data_channel_connection.cid);
-            } else {
-                printf("L2CAP: LE Data Channel connection to device %s failed. status code %u\n", bd_addr_to_str(event_address), packet[2]);
-            }
-            break;
+    switch (packet_type) {
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)) {
+                case BTSTACK_EVENT_STATE:
+                    // BTstack activated, get started
+                    if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING) {
+                        le_data_channel_client_start();
+                    } else {
+                        state = TC_OFF;
+                    }
+                    break;
+                case GAP_EVENT_ADVERTISING_REPORT:
+                    if (state != TC_W4_SCAN_RESULT) return;
+                    // check name in advertisement
+                    if (!advertisement_report_contains_name("LE Data Channel", packet)) return;
+                    // store address and type
+                    gap_event_advertising_report_get_address(packet, le_data_channel_addr);
+                    le_data_channel_addr_type = gap_event_advertising_report_get_address_type(packet);
+                    // stop scanning, and connect to the device
+                    state = TC_W4_CONNECT;
+                    gap_stop_scan();
+                    printf("Stop scan. Connect to device with addr %s.\n", bd_addr_to_str(le_data_channel_addr));
+                    gap_connect(le_data_channel_addr,le_data_channel_addr_type);
+                    break;
+                case HCI_EVENT_LE_META:
+                    // wait for connection complete
+                    if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+                    if (state != TC_W4_CONNECT) return;
+                    connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                    // print connection parameters (without using float operations)
+                    conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
+                    printf("Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
+                    printf("Connection Latency: %u\n", hci_subevent_le_connection_complete_get_conn_latency(packet));  
+                    // initialize gatt client context with handle, and add it to the list of active clients
+                    // query primary services
+                    printf("Connect to performance test channel.\n");
+                    state = TC_W4_CHANNEL;
+                    l2cap_le_create_channel(&packet_handler, connection_handle, TSPX_le_psm, data_channel_buffer, 
+                                            sizeof(data_channel_buffer), L2CAP_LE_AUTOMATIC_CREDITS, LEVEL_0, &le_data_channel_connection.cid);
+                    break;
+                case HCI_EVENT_DISCONNECTION_COMPLETE:
+                    if (cmdline_addr_found){
+                        printf("Disconnected %s\n", bd_addr_to_str(cmdline_addr));
+                        return;
+                    }
+                    printf("Disconnected %s\n", bd_addr_to_str(le_data_channel_addr));
+                    if (state == TC_OFF) break;
+                    le_data_channel_client_start();
+                    break;
+                case L2CAP_EVENT_LE_CHANNEL_OPENED:
+                    // inform about new l2cap connection
+                    l2cap_event_le_channel_opened_get_address(packet, event_address);
+                    psm = l2cap_event_le_channel_opened_get_psm(packet); 
+                    cid = l2cap_event_le_channel_opened_get_local_cid(packet); 
+                    handle = l2cap_event_le_channel_opened_get_handle(packet);
+                    if (packet[2] == 0) {
+                        printf("L2CAP: LE Data Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
+                               bd_addr_to_str(event_address), handle, psm, cid,  little_endian_read_16(packet, 15));
+                        le_data_channel_connection.cid = cid;
+                        le_data_channel_connection.connection_handle = handle;
+                        le_data_channel_connection.test_data_len = btstack_min(l2cap_event_le_channel_opened_get_remote_mtu(packet), sizeof(le_data_channel_connection.test_data));
+                        state = TC_TEST_DATA;
+                        printf("Test packet size: %u\n", le_data_channel_connection.test_data_len);
+                        test_reset(&le_data_channel_connection);
+#ifdef TEST_STREAM_DATA
+                        l2cap_le_request_can_send_now_event(le_data_channel_connection.cid);
+#endif
+                    } else {
+                        printf("L2CAP: LE Data Channel connection to device %s failed. status code %u\n", bd_addr_to_str(event_address), packet[2]);
+                    }
+                    break;
 
-        case L2CAP_EVENT_LE_CAN_SEND_NOW:
-            streamer();
-            break;
+#ifdef TEST_STREAM_DATA
+                case L2CAP_EVENT_LE_CAN_SEND_NOW:
+                    streamer();
+                    break;
+#endif
 
-        case L2CAP_EVENT_LE_CHANNEL_CLOSED:
-            cid = l2cap_event_le_channel_closed_get_local_cid(packet);
-            printf("L2CAP: LE Data Channel closed 0x%02x\n", cid); 
+                case L2CAP_EVENT_LE_CHANNEL_CLOSED:
+                    cid = l2cap_event_le_channel_closed_get_local_cid(packet);
+                    printf("L2CAP: LE Data Channel closed 0x%02x\n", cid); 
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+            
+        case L2CAP_DATA_PACKET:
+            test_track_data(&le_data_channel_connection, size);
             break;
 
         default:

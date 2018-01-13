@@ -52,6 +52,8 @@
 
 #include "btstack.h"
 
+#define TEST_STREAM_DATA
+
 #define REPORT_INTERVAL_MS 3000
 #define MAX_NR_CONNECTIONS 3 
 
@@ -139,7 +141,7 @@ static void test_reset(le_data_channel_connection_t * context){
     context->test_data_sent = 0;
 }
 
-static void test_track_transferred(le_data_channel_connection_t * context, int bytes_transferred){
+static void test_track_data(le_data_channel_connection_t * context, int bytes_transferred){
     context->test_data_sent += bytes_transferred;
     // evaluate
     uint32_t now = btstack_run_loop_get_time_ms();
@@ -154,6 +156,36 @@ static void test_track_transferred(le_data_channel_connection_t * context, int b
     context->test_data_sent  = 0;
 }
 /* LISTING_END(tracking): Tracking throughput */
+
+#ifdef TEST_STREAM_DATA
+/* LISTING_END */
+/*
+ * @section Streamer
+ *
+ * @text The streamer function checks if notifications are enabled and if a notification can be sent now.
+ * It creates some test data - a single letter that gets increased every time - and tracks the data sent.
+ */
+
+ /* LISTING_START(streamer): Streaming code */
+static void streamer(void){
+
+    // create test data
+    le_data_channel_connection.counter++;
+    if (le_data_channel_connection.counter > 'Z') le_data_channel_connection.counter = 'A';
+    memset(le_data_channel_connection.test_data, le_data_channel_connection.counter, le_data_channel_connection.test_data_len);
+
+    // send
+    l2cap_le_send_data(le_data_channel_connection.cid, (uint8_t *) le_data_channel_connection.test_data, le_data_channel_connection.test_data_len);
+
+    // track
+    test_track_data(&le_data_channel_connection, le_data_channel_connection.test_data_len);
+
+    // request another packet
+    l2cap_le_request_can_send_now_event(le_data_channel_connection.cid);
+} 
+/* LISTING_END */
+#endif
+
 
 /* 
  * @section Packet Handler
@@ -229,6 +261,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                                bd_addr_to_str(event_address), handle, psm, cid,  little_endian_read_16(packet, 15));
                         le_data_channel_connection.cid = cid;
                         le_data_channel_connection.connection_handle = handle;
+                        le_data_channel_connection.test_data_len = btstack_min(l2cap_event_le_channel_opened_get_remote_mtu(packet), sizeof(le_data_channel_connection.test_data));
+                        printf("Test packet size: %u\n", le_data_channel_connection.test_data_len);
+                        test_reset(&le_data_channel_connection);
+#ifdef TEST_STREAM_DATA
+                        l2cap_le_request_can_send_now_event(le_data_channel_connection.cid);
+#endif
                     } else {
                         printf("L2CAP: LE Data Channel connection to device %s failed. status code %u\n", bd_addr_to_str(event_address), packet[2]);
                     }
@@ -239,17 +277,19 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     printf("L2CAP: LE Data Channel closed 0x%02x\n", cid); 
                     break;
 
-               case L2CAP_EVENT_LE_PACKET_SENT:
-                    cid = l2cap_event_le_packet_sent_get_local_cid(packet);
-                    printf("L2CAP: LE Data Channel Packet sent0x%02x\n", cid); 
+#ifdef TEST_STREAM_DATA
+                case L2CAP_EVENT_LE_CAN_SEND_NOW:
+                    streamer();
                     break;
+#endif
+
                 default:
                     break;
             }
             break;
 
         case L2CAP_DATA_PACKET:
-            test_track_transferred(&le_data_channel_connection, size);
+            test_track_data(&le_data_channel_connection, size);
             break;
 
         default:
