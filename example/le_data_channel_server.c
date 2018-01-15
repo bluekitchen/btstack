@@ -52,7 +52,7 @@
 
 #include "btstack.h"
 
-#define TEST_STREAM_DATA
+// #define TEST_STREAM_DATA
 #define TEST_PACKET_SIZE 1000
 
 #define REPORT_INTERVAL_MS 3000
@@ -66,7 +66,7 @@ const uint8_t adv_data[] = {
     // Flags general discoverable, BR/EDR not supported
     0x02, 0x01, 0x06, 
     // Name
-    0x0c, 0x09, 'L', 'E', ' ', 'D', 'a', 't', 'a', ' ', 'C', 'h', 'a', 'n', 'n', 'e', 'l', 
+    0x10, 0x09, 'L', 'E', ' ', 'D', 'a', 't', 'a', ' ', 'C', 'h', 'a', 'n', 'n', 'e', 'l', 
 };
 const uint8_t adv_data_len = sizeof(adv_data);
 
@@ -112,6 +112,9 @@ static void le_data_channel_setup(void){
 
     // setup SM: Display only
     sm_init();
+
+    // setup ATT server: iOS disconnects if ATT MTU Exchange fails
+    att_server_init(NULL, NULL, NULL);    
 
     // le data channel setup
     l2cap_le_register_service(&packet_handler, TSPX_le_psm, LEVEL_0);
