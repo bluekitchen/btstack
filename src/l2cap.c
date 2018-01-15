@@ -150,6 +150,7 @@ static l2cap_fixed_channel_t fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_SIZE];
 #ifdef ENABLE_BLE
 // only used for connection parameter update events
 static btstack_packet_handler_t l2cap_event_packet_handler;
+static uint16_t custom_max_mtu;
 #endif
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
@@ -707,6 +708,7 @@ void l2cap_init(void){
 
 #ifdef ENABLE_BLE
     l2cap_event_packet_handler = NULL;
+    custom_max_mtu = 0;
 #endif
     memset(fixed_channels, 0, sizeof(fixed_channels));
 
@@ -1122,7 +1124,14 @@ uint16_t l2cap_max_mtu(void){
 }
 
 uint16_t l2cap_max_le_mtu(void){
+    if (custom_max_mtu != 0) return custom_max_mtu;
     return l2cap_max_mtu();
+}
+
+void l2cap_set_max_le_mtu(uint16_t max_mtu){
+    if (max_mtu < l2cap_max_mtu()){
+        custom_max_mtu = max_mtu;
+    }
 }
 
 #ifdef ENABLE_CLASSIC

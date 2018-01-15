@@ -390,6 +390,11 @@ uint16_t l2cap_max_mtu(void);
  */
 uint16_t l2cap_max_le_mtu(void);
 
+/**
+* @brief Set the max MTU for LE connections, if not set the l2cap_max_mtu will be used.
+*/
+void l2cap_set_max_le_mtu(uint16_t max_mtu);
+
 /** 
  * @brief Creates L2CAP channel to the PSM of a remote device with baseband address. A new baseband connection will be initiated if necessary.
  * @param packet_handler
