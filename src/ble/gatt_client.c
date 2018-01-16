@@ -569,6 +569,7 @@ static void emit_gatt_mtu_exchanged_result_event(gatt_client_t * peripheral, uin
     packet[1] = sizeof(packet) - 2;
     little_endian_store_16(packet, 2, peripheral->con_handle);
     little_endian_store_16(packet, 4, new_mtu);
+    att_dispatch_client_mtu_exchanged(peripheral->con_handle, new_mtu);
     emit_event_new(peripheral->callback, packet, sizeof(packet));
 }
 ///
@@ -1081,6 +1082,12 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
     if (!peripheral) return;
     
     switch (packet[0]){
+        // att_server has negotiated the mtu for this connection
+        case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
+        {
+            peripheral->mtu = little_endian_read_16(packet, 4);
+            break;
+        }
         case ATT_EXCHANGE_MTU_RESPONSE:
         {
             uint16_t remote_rx_mtu = little_endian_read_16(packet, 1);
