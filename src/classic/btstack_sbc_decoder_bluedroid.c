@@ -214,12 +214,15 @@ static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * s
     int input_bytes_to_process = size;
 
     while (input_bytes_to_process){
+
+        // fill buffer with new data
         int bytes_free_in_buffer = SBC_MAX_FRAME_LEN - decoder_state->bytes_in_frame_buffer;
         int bytes_to_append = btstack_min(input_bytes_to_process, bytes_free_in_buffer);
-        if (!bytes_to_append) break;
-        append_received_sbc_data(decoder_state, buffer, bytes_to_append);
-        buffer           += bytes_to_append;
-        input_bytes_to_process -= bytes_to_append;
+        if (bytes_to_append) {
+            append_received_sbc_data(decoder_state, buffer, bytes_to_append);
+            buffer += bytes_to_append;
+            input_bytes_to_process -= bytes_to_append;
+        }
 
         uint16_t bytes_in_buffer_before = decoder_state->bytes_in_frame_buffer;
         uint16_t bytes_processed = 0;
@@ -317,14 +320,15 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
 
     while (input_bytes_to_process > 0){
 
+        // fill buffer with new data
         int bytes_missing_for_complete_msbc_frame = msbc_frame_size - decoder_state->bytes_in_frame_buffer;
         int bytes_to_append = btstack_min(input_bytes_to_process, bytes_missing_for_complete_msbc_frame);
-        
-        append_received_sbc_data(decoder_state, buffer, bytes_to_append);
-        // printf("Append %u bytes, now %u in buffer \n", bytes_to_append, decoder_state->bytes_in_frame_buffer);
-        buffer           += bytes_to_append;
-        input_bytes_to_process -= bytes_to_append;
-        
+        if (bytes_to_append) {
+            append_received_sbc_data(decoder_state, buffer, bytes_to_append);
+            buffer += bytes_to_append;
+            input_bytes_to_process -= bytes_to_append;
+        }
+
         if (decoder_state->bytes_in_frame_buffer < msbc_frame_size){
             // printf("not enough data %d > %d\n", msbc_frame_size, decoder_state->bytes_in_frame_buffer);
             if (input_bytes_to_process){
