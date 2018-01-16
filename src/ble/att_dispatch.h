@@ -89,6 +89,20 @@ void att_dispatch_client_request_can_send_now_event(hci_con_handle_t con_handle)
  */
 void att_dispatch_server_request_can_send_now_event(hci_con_handle_t con_handle);
 
+/** 
+* @brief Used for propogating a updated MTU from att_server to gatt_client
+* @param con_handle
+* @param mtu
+*/
+void att_dispatch_server_mtu_exchanged(hci_con_handle_t con_handle, uint16_t new_mtu);
+
+/**
+* @brief Used for propogating a updated MTU from gatt_client to att_server
+* @param con_handle
+* @param mtu
+*/
+void att_dispatch_client_mtu_exchanged(hci_con_handle_t con_handle, uint16_t new_mtu);
+
 #if defined __cplusplus
 }
 #endif

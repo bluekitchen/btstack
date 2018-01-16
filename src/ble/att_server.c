@@ -141,6 +141,7 @@ static void att_emit_mtu_event(hci_con_handle_t con_handle, uint16_t mtu){
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     little_endian_store_16(event, pos, mtu);
+    att_dispatch_server_mtu_exchanged(con_handle, mtu);
     (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 
@@ -488,6 +489,11 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             log_info("ATT Packet, handle 0x%04x", handle);
             att_server = att_server_for_handle(handle);
             if (!att_server) break;
+
+            // Gatt client have negotiated the mtu for this connection
+            if (packet[0] == ATT_EVENT_MTU_EXCHANGE_COMPLETE){
+                att_server->connection.mtu = little_endian_read_16(packet, 4);
+            }
 
             // handle value indication confirms
             if (packet[0] == ATT_HANDLE_VALUE_CONFIRMATION && att_server->value_indication_handle){
