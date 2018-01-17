@@ -462,7 +462,7 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
                 // The codec apparently does not recover from this.
                 // Re-initialize the codec.
                 log_info("SBC decode: invalid parameters: resetting codec");
-                if (OI_CODEC_SBC_DecoderReset(&(bd_decoder_state.decoder_context), bd_decoder_state.decoder_data, sizeof(bd_decoder_state.decoder_data)) != OI_STATUS_SUCCESS){
+                if (OI_CODEC_mSBC_DecoderReset(&(bd_decoder_state.decoder_context), bd_decoder_state.decoder_data, sizeof(bd_decoder_state.decoder_data)) != OI_STATUS_SUCCESS){
                     log_info("SBC decode: resetting codec failed");
                     
                 }
