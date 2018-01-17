@@ -21,7 +21,8 @@ VPATH += ${BTSTACK_ROOT}/platform/libusb
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 
-EXAMPLES += \
+# override examples for now
+EXAMPLES = \
 	le_data_channel_client  \
 	le_data_channel_server  \
 
