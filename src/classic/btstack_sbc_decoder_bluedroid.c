@@ -212,99 +212,116 @@ static void append_received_sbc_data(bludroid_decoder_state_t * state, uint8_t *
 static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * state, int packet_status_flag, uint8_t * buffer, int size){
     bludroid_decoder_state_t * decoder_state = (bludroid_decoder_state_t*)state->decoder_state;
     int input_bytes_to_process = size;
+    int keep_decoding = 1; 
 
-    while (input_bytes_to_process){
-
-        // fill buffer with new data
-        int bytes_free_in_buffer = SBC_MAX_FRAME_LEN - decoder_state->bytes_in_frame_buffer;
-        int bytes_to_append = btstack_min(input_bytes_to_process, bytes_free_in_buffer);
-        if (bytes_to_append) {
+    while (keep_decoding) {
+        // Fill decoder_state->frame_buffer as much as possible.
+        int bytes_free_in_frame_buffer = SBC_MAX_FRAME_LEN - decoder_state->bytes_in_frame_buffer;
+        int bytes_to_append = btstack_min(input_bytes_to_process, bytes_free_in_frame_buffer);
+        if (bytes_to_append){
             append_received_sbc_data(decoder_state, buffer, bytes_to_append);
             buffer += bytes_to_append;
             input_bytes_to_process -= bytes_to_append;
         }
 
-        uint16_t bytes_in_buffer_before = decoder_state->bytes_in_frame_buffer;
-        uint16_t bytes_processed = 0;
+        // Decode the next frame in decoder_state->frame_buffer.
+        int bytes_in_frame_buffer_before_decoding = decoder_state->bytes_in_frame_buffer;
         const OI_BYTE *frame_data = decoder_state->frame_buffer;
-
-        static int frame_count = 0;
-        while (1){
-            if (corrupt_frame_period > 0){
-               frame_count++;
-
-                if (frame_count % corrupt_frame_period == 0){
-                    *(uint8_t*)&frame_data[5] = 0;
-                    frame_count = 0;
-                }
-            }
-
-            OI_STATUS status = OI_STATUS_SUCCESS;
-            int bad_frame = 0;
-            int zero_seq_found = 0;
-
-            if (decoder_state->first_good_frame_found){
-                zero_seq_found = find_sequence_of_zeros(frame_data, decoder_state->bytes_in_frame_buffer, 20);
-                bad_frame = zero_seq_found || packet_status_flag;
-            } 
-
-            if (bad_frame){
-                status = OI_CODEC_SBC_CHECKSUM_MISMATCH;
-                decoder_state->bytes_in_frame_buffer = 0;
-            } else {
-                memset(decoder_state->pcm_plc_data, 0x55, SBC_MAX_CHANNELS * SBC_MAX_BANDS * SBC_MAX_BLOCKS * 2);
-                status = OI_CODEC_SBC_DecodeFrame(&(decoder_state->decoder_context), 
+        OI_UINT32 frame_data_len = decoder_state->bytes_in_frame_buffer;
+        OI_STATUS status = OI_CODEC_SBC_DecodeFrame(&(decoder_state->decoder_context), 
                                                     &frame_data, 
-                                                    &(decoder_state->bytes_in_frame_buffer), 
+                                                    &frame_data_len,
                                                     decoder_state->pcm_plc_data, 
                                                     &(decoder_state->pcm_bytes));
-            }        
-            
-            bytes_processed = bytes_in_buffer_before - decoder_state->bytes_in_frame_buffer;
-            switch(status){
-                case OI_STATUS_SUCCESS:
-                    decoder_state->first_good_frame_found = 1;
-                    
-                    if (state->mode == SBC_MODE_mSBC){
-                        decoder_state->search_new_sync_word = 1;
-                        decoder_state->sync_word_found = 0;
-                    }
-                    
-                    state->handle_pcm_data(decoder_state->pcm_plc_data, 
-                                        btstack_sbc_decoder_num_samples_per_frame(state), 
-                                        btstack_sbc_decoder_num_channels(state), 
-                                        btstack_sbc_decoder_sample_rate(state), state->context);
-                    state->good_frames_nr++;
-                    continue;
-                case OI_CODEC_SBC_NOT_ENOUGH_HEADER_DATA:
-                case OI_CODEC_SBC_NOT_ENOUGH_BODY_DATA:
-                    // printf("    NOT_ENOUGH_DATA\n");
-                    if (decoder_state->sync_word_found){
-                        decoder_state->search_new_sync_word = 0;
-                    }
-                    break;
-                case OI_CODEC_SBC_NO_SYNCWORD:
-                case OI_CODEC_SBC_CHECKSUM_MISMATCH:
-                    // printf("NO_SYNCWORD or CHECKSUM_MISMATCH\n");
-                    decoder_state->bytes_in_frame_buffer = 0;
-                    if (!decoder_state->first_good_frame_found) break;
+        uint16_t bytes_processed = bytes_in_frame_buffer_before_decoding - frame_data_len;
+    
+        static int frame_count = 0;
+        if (corrupt_frame_period > 0){
+            frame_count++;
 
-                    if (zero_seq_found){
-                        state->zero_frames_nr++;
-                    } else {
-                        state->bad_frames_nr++;
-                    }
-                    if (!plc_enabled) break;
-                    break;
-                default:
-                    log_info("Frame decode error: %d", status);
-                    break;
-            }   
-
-            memmove(decoder_state->frame_buffer, decoder_state->frame_buffer + bytes_processed, decoder_state->bytes_in_frame_buffer);
-            if ((status != OI_STATUS_SUCCESS) || (decoder_state->bytes_in_frame_buffer == 0)) break;
-
+            if (frame_count % corrupt_frame_period == 0){
+                *(uint8_t*)&frame_data[5] = 0;
+                frame_count = 0;
+            }
         }
+
+        // Handle decoding result.
+        switch(status){
+            case OI_STATUS_SUCCESS:
+            case OI_CODEC_SBC_PARTIAL_DECODE:
+                if (state->mode == SBC_MODE_mSBC){
+                    decoder_state->search_new_sync_word = 1;
+                    decoder_state->sync_word_found = 0;
+                }
+
+                state->handle_pcm_data(decoder_state->pcm_plc_data, 
+                                       btstack_sbc_decoder_num_samples_per_frame(state), 
+                                       btstack_sbc_decoder_num_channels(state), 
+                                       btstack_sbc_decoder_sample_rate(state), state->context);
+                state->good_frames_nr++;
+                break;
+                
+            case OI_CODEC_SBC_NOT_ENOUGH_HEADER_DATA:
+            case OI_CODEC_SBC_NOT_ENOUGH_BODY_DATA:
+            case OI_CODEC_SBC_NOT_ENOUGH_AUDIO_DATA:
+                if (decoder_state->sync_word_found){
+                    decoder_state->search_new_sync_word = 0;
+                }
+                if (input_bytes_to_process > 0){
+                    // Should never occur: The SBC code claims there is not enough bytes in the frame_buffer,
+                    // but the frame_buffer was full. (The frame_buffer is always full before decoding when input_bytes_to_process > 0.)
+                    // Clear frame_buffer.
+                    log_info("SBC decode: frame_buffer too small for frame");
+                    bytes_processed = bytes_in_frame_buffer_before_decoding;
+                } else {
+                    // Exit decode loop, because there is not enough data in frame_buffer to decode the next frame.
+                    keep_decoding = 0;
+                }
+                break;
+                
+            case OI_CODEC_SBC_NO_SYNCWORD:
+                // This means the entire frame_buffer did not contain the syncword.
+                // Discard the frame_buffer contents.
+                log_info("SBC decode: no syncword found");
+                bytes_processed = bytes_in_frame_buffer_before_decoding;
+                break;
+                
+            case OI_CODEC_SBC_CHECKSUM_MISMATCH:
+                // The next frame is somehow corrupt.
+                log_info("SBC decode: checksum error");
+                // Did the codec consume any bytes?
+                if (bytes_processed > 0){
+                    // Good. Nothing to do.
+                } else {
+                    // Skip the bogus frame by skipping the header.
+                    bytes_processed = 1;
+                }
+                break;
+                
+            case OI_STATUS_INVALID_PARAMETERS:
+                // This caused by corrupt frames.
+                // The codec apparently does not recover from this.
+                // Re-initialize the codec.
+                log_info("SBC decode: invalid parameters: resetting codec");
+                if (OI_CODEC_SBC_DecoderReset(&(bd_decoder_state.decoder_context), bd_decoder_state.decoder_data, sizeof(bd_decoder_state.decoder_data), 2, 2, FALSE) != OI_STATUS_SUCCESS){
+                    log_info("SBC decode: resetting codec failed");
+                    
+                }
+                break;
+            default:
+                // Anything else went wrong. 
+                // Skip a few bytes and try again.
+                bytes_processed = 1;
+                log_info("SBC decode: unknown status %d", status);
+                break;
+        }   
+        
+        // Remove decoded frame from decoder_state->frame_buffer.
+        if (bytes_processed > bytes_in_frame_buffer_before_decoding) {
+            bytes_processed = bytes_in_frame_buffer_before_decoding;
+        }
+        memmove(decoder_state->frame_buffer, decoder_state->frame_buffer + bytes_processed, bytes_in_frame_buffer_before_decoding - bytes_processed);
+        decoder_state->bytes_in_frame_buffer -= bytes_processed;
     }
 }
 
@@ -337,7 +354,7 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
             break;
         }
         
-        uint16_t bytes_in_buffer_before = decoder_state->bytes_in_frame_buffer;
+        uint16_t bytes_in_frame_buffer_before_decoding = decoder_state->bytes_in_frame_buffer;
         uint16_t bytes_processed = 0;
         const OI_BYTE *frame_data = decoder_state->frame_buffer;
 
@@ -379,7 +396,7 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
                                                 &(decoder_state->pcm_bytes));
         }        
     
-        bytes_processed = bytes_in_buffer_before - decoder_state->bytes_in_frame_buffer;
+        bytes_processed = bytes_in_frame_buffer_before_decoding - decoder_state->bytes_in_frame_buffer;
         OI_UINT32 bytes_in_frame_buffer = msbc_frame_size;
 
         switch(status){
