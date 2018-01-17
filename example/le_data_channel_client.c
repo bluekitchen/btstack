@@ -55,7 +55,7 @@
 
 #include "btstack.h"
 
-// #define TEST_STREAM_DATA
+#define TEST_STREAM_DATA
 #define TEST_PACKET_SIZE 1000
 
 static enum {
