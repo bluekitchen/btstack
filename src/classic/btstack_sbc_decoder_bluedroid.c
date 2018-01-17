@@ -249,11 +249,6 @@ static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * s
         switch(status){
             case OI_STATUS_SUCCESS:
             case OI_CODEC_SBC_PARTIAL_DECODE:
-                if (state->mode == SBC_MODE_mSBC){
-                    decoder_state->search_new_sync_word = 1;
-                    decoder_state->sync_word_found = 0;
-                }
-
                 state->handle_pcm_data(decoder_state->pcm_plc_data, 
                                        btstack_sbc_decoder_num_samples_per_frame(state), 
                                        btstack_sbc_decoder_num_channels(state), 
@@ -264,9 +259,6 @@ static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * s
             case OI_CODEC_SBC_NOT_ENOUGH_HEADER_DATA:
             case OI_CODEC_SBC_NOT_ENOUGH_BODY_DATA:
             case OI_CODEC_SBC_NOT_ENOUGH_AUDIO_DATA:
-                if (decoder_state->sync_word_found){
-                    decoder_state->search_new_sync_word = 0;
-                }
                 if (input_bytes_to_process > 0){
                     // Should never occur: The SBC code claims there is not enough bytes in the frame_buffer,
                     // but the frame_buffer was full. (The frame_buffer is always full before decoding when input_bytes_to_process > 0.)
@@ -327,7 +319,6 @@ static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * s
 
 
 static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * state, int packet_status_flag, uint8_t * buffer, int size){
-
     bludroid_decoder_state_t * decoder_state = (bludroid_decoder_state_t*)state->decoder_state;
     int input_bytes_to_process = size;
     unsigned int msbc_frame_size = 57; 
@@ -402,12 +393,9 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
         switch(status){
             case 0:
                 decoder_state->first_good_frame_found = 1;
-                
-                if (state->mode == SBC_MODE_mSBC){
-                    decoder_state->search_new_sync_word = 1;
-                    decoder_state->sync_word_found = 0;
-                }
-                
+                decoder_state->search_new_sync_word = 1;
+                decoder_state->sync_word_found = 0;
+            
                 btstack_sbc_plc_good_frame(&state->plc_state, decoder_state->pcm_plc_data, decoder_state->pcm_data);
                 state->handle_pcm_data(decoder_state->pcm_data, 
                                     btstack_sbc_decoder_num_samples_per_frame(state), 
@@ -417,6 +405,7 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
                 continue;
             case OI_CODEC_SBC_NOT_ENOUGH_HEADER_DATA:
             case OI_CODEC_SBC_NOT_ENOUGH_BODY_DATA:
+            case OI_CODEC_SBC_NOT_ENOUGH_AUDIO_DATA:
                 // printf("    NOT_ENOUGH_DATA\n");
                 if (decoder_state->sync_word_found){
                     decoder_state->search_new_sync_word = 0;
@@ -428,13 +417,11 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
                 decoder_state->bytes_in_frame_buffer = 0;
                 if (!decoder_state->first_good_frame_found) break;
 
-                if (state->mode == SBC_MODE_mSBC){
-                    if (!decoder_state->sync_word_found){
-                        decoder_state->h2_sequence_nr = (decoder_state->h2_sequence_nr + 1)%4;
-                    }
-                    decoder_state->search_new_sync_word = 1;
-                    decoder_state->sync_word_found = 0;
+                if (!decoder_state->sync_word_found){
+                    decoder_state->h2_sequence_nr = (decoder_state->h2_sequence_nr + 1)%4;
                 }
+                decoder_state->search_new_sync_word = 1;
+                decoder_state->sync_word_found = 0;
 
                 if (zero_seq_found){
                     state->zero_frames_nr++;
@@ -453,7 +440,6 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
                 if (!plc_enabled) break;
                 
                 frame_data = btstack_sbc_plc_zero_signal_frame();
-
                 status = OI_CODEC_SBC_DecodeFrame(&(decoder_state->decoder_context), 
                                                     &frame_data, 
                                                     &bytes_in_frame_buffer, 
@@ -470,6 +456,16 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
                                     btstack_sbc_decoder_sample_rate(state), state->context);
 
                 
+                break;
+            case OI_STATUS_INVALID_PARAMETERS:
+                // This caused by corrupt frames.
+                // The codec apparently does not recover from this.
+                // Re-initialize the codec.
+                log_info("SBC decode: invalid parameters: resetting codec");
+                if (OI_CODEC_SBC_DecoderReset(&(bd_decoder_state.decoder_context), bd_decoder_state.decoder_data, sizeof(bd_decoder_state.decoder_data)) != OI_STATUS_SUCCESS){
+                    log_info("SBC decode: resetting codec failed");
+                    
+                }
                 break;
             default:
                 log_info("Frame decode error: %d", status);
