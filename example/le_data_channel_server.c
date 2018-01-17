@@ -51,6 +51,7 @@
 #include <string.h>
 
 #include "btstack.h"
+#include "le_data_channel_server.h"
 
 // #define TEST_STREAM_DATA
 #define TEST_PACKET_SIZE 1000
@@ -115,7 +116,7 @@ static void le_data_channel_setup(void){
     sm_init();
 
     // setup ATT server: iOS disconnects if ATT MTU Exchange fails
-    att_server_init(NULL, NULL, NULL);    
+    att_server_init(profile_data, NULL, NULL);    
 
     // le data channel setup
     l2cap_le_register_service(&packet_handler, TSPX_le_psm, LEVEL_0);
