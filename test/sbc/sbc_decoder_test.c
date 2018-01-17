@@ -91,6 +91,7 @@ static ssize_t __read(int fd, void *buf, size_t count){
 }
 
 static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
+    UNUSED(context);
     if (!wav_writer_opened){
         wav_writer_opened = 1;
         wav_writer_open(wav_filename, num_channels, sample_rate);

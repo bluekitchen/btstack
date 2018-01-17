@@ -21,6 +21,7 @@ SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/src/classic -I${BTSTACK_ROOT}/platform/posix
 CFLAGS += -I${SBC_DECODER_ROOT}/include 
 CFLAGS += -I${SBC_ENCODER_ROOT}/include 
+CFLAGS += -Werror=unused-parameter
 #CFLAGS += -D PRINT_SAMPLES -D PRINT_SCALEFACTORS -D OI_DEBUG -D TRACE_EXECUTION 
 LDFLAGS += -lCppUTest -lCppUTestExt
 VPATH += ${SBC_DECODER_ROOT}/srce 

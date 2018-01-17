@@ -209,7 +209,7 @@ static void append_received_sbc_data(bludroid_decoder_state_t * state, uint8_t *
 }
 
 
-static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * state, int packet_status_flag, uint8_t * buffer, int size){
+static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * state, uint8_t * buffer, int size){
     bludroid_decoder_state_t * decoder_state = (bludroid_decoder_state_t*)state->decoder_state;
     int input_bytes_to_process = size;
     int keep_decoding = 1; 
@@ -480,6 +480,6 @@ void btstack_sbc_decoder_process_data(btstack_sbc_decoder_state_t * state, int p
     if (state->mode == SBC_MODE_mSBC){
         btstack_sbc_decoder_process_msbc_data(state, packet_status_flag, buffer, size);
     } else {
-        btstack_sbc_decoder_process_sbc_data(state, packet_status_flag, buffer, size);
+        btstack_sbc_decoder_process_sbc_data(state, buffer, size);
     }
 }

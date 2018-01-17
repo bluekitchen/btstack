@@ -89,7 +89,7 @@ typedef struct {
 void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, btstack_sbc_mode_t mode, void (*callback)(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context), void * context);
 
 /**
- * @brief Process received SCO data
+ * @brief Process received SBC data
  * @param state
  * @param packet_status_flag from SCO packet: 0 = OK, 1 = possibly invalid data, 2 = no data received, 3 = data partially lost
  * @param buffer
