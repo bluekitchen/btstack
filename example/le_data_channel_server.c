@@ -106,6 +106,7 @@ static void le_data_channel_setup(void){
     hci_add_event_handler(&hci_event_callback_registration);
 
     l2cap_init();
+    l2cap_register_packet_handler(&packet_handler);
 
     // setup le device db
     le_device_db_init();
@@ -241,8 +242,19 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             // 
                             test_reset(&le_data_channel_connection);
                             break;
+                        case HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE:
+                            // print connection parameters (without using float operations)
+                            conn_interval = hci_subevent_le_connection_update_complete_get_conn_interval(packet);
+                            printf("LE Connection Update:\n");
+                            printf("%c: Connection Interval: %u.%02u ms\n", le_data_channel_connection.name, conn_interval * 125 / 100, 25 * (conn_interval & 3));
+                            printf("%c: Connection Latency: %u\n", le_data_channel_connection.name, hci_subevent_le_connection_update_complete_get_conn_latency(packet));
+                            break;
                     }
                     break;  
+
+                case L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE:
+                    printf("L2CAP Connection Parameter Update Complete, response: %x\n", l2cap_event_connection_parameter_update_response_get_result(packet));
+                    break;
 
                 // LE Data Channels
 
@@ -253,7 +265,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     printf("L2CAP: Accepting incoming LE connection request for 0x%02x, PSM %02x\n", cid, psm); 
                     l2cap_le_accept_connection(cid, data_channel_buffer, sizeof(data_channel_buffer), initial_credits);
                     break;
-
 
                 case L2CAP_EVENT_LE_CHANNEL_OPENED:
                     // inform about new l2cap connection
