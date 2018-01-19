@@ -127,6 +127,8 @@ EXAMPLES = 					\
 	hsp_ag_demo             \
 	hsp_hs_demo             \
 	le_counter              \
+	le_data_channel_client  \
+	le_data_channel_server  \
 	le_streamer				\
 	le_streamer_client      \
 	led_counter				\
@@ -141,9 +143,6 @@ EXAMPLES = 					\
 	spp_counter 			\
 	spp_streamer			\
 	spp_streamer_client     \
-
-#	le_data_channel_client  \
-#	le_data_channel_server  \
 
 EXAMPLES_USING_LE =			\
 	ancs_client_demo		\
