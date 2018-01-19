@@ -4525,3 +4525,37 @@ void hci_disconnect_all(void){
 uint16_t hci_get_manufacturer(void){
     return hci_stack->manufacturer;
 }
+
+static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handle){
+    hci_connection_t * hci_con = hci_connection_for_handle(con_handle);
+    if (!hci_con) return NULL;
+    return &hci_con->sm_connection;
+}
+
+#ifdef ENABLE_BLE
+
+// extracted from sm.c to allow enabling of l2cap le data channels without adding sm.c to the build
+// without sm.c default values from create_connection_for_bd_addr_and_type() resulg in non-encrypted, not-authenticated
+
+int gap_encryption_key_size(hci_con_handle_t con_handle){
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
+    if (!sm_conn) return 0;     // wrong connection
+    if (!sm_conn->sm_connection_encrypted) return 0;
+    return sm_conn->sm_actual_encryption_key_size;
+}
+
+int gap_authenticated(hci_con_handle_t con_handle){
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
+    if (!sm_conn) return 0;     // wrong connection
+    if (!sm_conn->sm_connection_encrypted) return 0; // unencrypted connection cannot be authenticated
+    return sm_conn->sm_connection_authenticated;
+}
+
+authorization_state_t gap_authorization_state(hci_con_handle_t con_handle){
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
+    if (!sm_conn) return AUTHORIZATION_UNKNOWN;     // wrong connection
+    if (!sm_conn->sm_connection_encrypted)               return AUTHORIZATION_UNKNOWN; // unencrypted connection cannot be authorized
+    if (!sm_conn->sm_connection_authenticated)           return AUTHORIZATION_UNKNOWN; // unauthenticatd connection cannot be authorized
+    return sm_conn->sm_connection_authorization_state;
+}
+#endif

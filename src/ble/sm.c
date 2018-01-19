@@ -4063,29 +4063,6 @@ static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handl
     return &hci_con->sm_connection;
 }
 
-// @returns 0 if not encrypted, 7-16 otherwise
-int sm_encryption_key_size(hci_con_handle_t con_handle){
-    sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
-    if (!sm_conn) return 0;     // wrong connection
-    if (!sm_conn->sm_connection_encrypted) return 0;
-    return sm_conn->sm_actual_encryption_key_size;
-}
-
-int sm_authenticated(hci_con_handle_t con_handle){
-    sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
-    if (!sm_conn) return 0;     // wrong connection
-    if (!sm_conn->sm_connection_encrypted) return 0; // unencrypted connection cannot be authenticated
-    return sm_conn->sm_connection_authenticated;
-}
-
-authorization_state_t sm_authorization_state(hci_con_handle_t con_handle){
-    sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
-    if (!sm_conn) return AUTHORIZATION_UNKNOWN;     // wrong connection
-    if (!sm_conn->sm_connection_encrypted)               return AUTHORIZATION_UNKNOWN; // unencrypted connection cannot be authorized
-    if (!sm_conn->sm_connection_authenticated)           return AUTHORIZATION_UNKNOWN; // unauthenticatd connection cannot be authorized
-    return sm_conn->sm_connection_authorization_state;
-}
-
 static void sm_send_security_request_for_connection(sm_connection_t * sm_conn){
     switch (sm_conn->sm_engine_state){
         case SM_GENERAL_IDLE:

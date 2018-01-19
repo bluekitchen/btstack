@@ -216,8 +216,8 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     con_handle = little_endian_read_16(packet, 3);
                     att_server = att_server_for_handle(con_handle);
                     if (!att_server) break;
-                	att_server->connection.encryption_key_size = sm_encryption_key_size(con_handle);
-                	att_server->connection.authenticated = sm_authenticated(con_handle);
+                    att_server->connection.encryption_key_size = gap_encryption_key_size(con_handle);
+                    att_server->connection.authenticated = gap_authenticated(con_handle);
                     if (hci_event_packet_get_type(packet) == HCI_EVENT_ENCRYPTION_CHANGE){
                         // restore CCC values when encrypted
                         if (hci_event_encryption_change_get_encryption_enabled(packet)){
@@ -345,7 +345,7 @@ static int att_server_process_validated_request(att_server_t * att_server){
     && (att_response_buffer[4] == ATT_ERROR_INSUFFICIENT_AUTHORIZATION)
     && (att_server->connection.authenticated)){
 
-        switch (sm_authorization_state(att_server->connection.con_handle)){
+        switch (gap_authorization_state(att_server->connection.con_handle)){
             case AUTHORIZATION_UNKNOWN:
                 l2cap_release_packet_buffer();
                 sm_request_pairing(att_server->connection.con_handle);

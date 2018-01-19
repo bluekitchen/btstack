@@ -53,10 +53,6 @@
 #include "btstack_event.h"
 #include "btstack_memory.h"
 
-#ifdef ENABLE_LE_DATA_CHANNELS
-#include "ble/sm.h"
-#endif
-
 #include <stdarg.h>
 #include <string.h>
 
@@ -2868,13 +2864,13 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 
                 // security: check encryption
                 if (service->required_security_level >= LEVEL_2){
-                    if (sm_encryption_key_size(handle) == 0){
+                    if (gap_encryption_key_size(handle) == 0){
                         // 0x0008 Connection refused - insufficient encryption 
                         l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x0008);
                         return 1;
                     }
                     // anything less than 16 byte key size is insufficient
-                    if (sm_encryption_key_size(handle) < 16){
+                    if (gap_encryption_key_size(handle) < 16){
                         // 0x0007 Connection refused – insufficient encryption key size
                         l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x0007);
                         return 1;
@@ -2883,7 +2879,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 
                 // security: check authencation
                 if (service->required_security_level >= LEVEL_3){
-                    if (!sm_authenticated(handle)){
+                    if (!gap_authenticated(handle)){
                         // 0x0005 Connection refused – insufficient authentication
                         l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x0005);
                         return 1;
@@ -2892,7 +2888,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 
                 // security: check authorization
                 if (service->required_security_level >= LEVEL_4){
-                    if (sm_authorization_state(handle) != AUTHORIZATION_GRANTED){
+                    if (gap_authorization_state(handle) != AUTHORIZATION_GRANTED){
                         // 0x0006 Connection refused – insufficient authorization
                         l2cap_register_signaling_response(handle, LE_CREDIT_BASED_CONNECTION_REQUEST, sig_id, source_cid, 0x0006);
                         return 1;

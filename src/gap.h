@@ -44,7 +44,7 @@ extern "C" {
 
 #include "btstack_defines.h"
 #include "btstack_util.h"
-	
+
 typedef enum {
 
 	// MITM protection not required
@@ -102,6 +102,15 @@ typedef enum {
     GAP_RANDOM_ADDRESS_NON_RESOLVABLE,
     GAP_RANDOM_ADDRESS_RESOLVABLE,
 } gap_random_address_type_t;
+
+// Authorization state
+typedef enum {
+    AUTHORIZATION_UNKNOWN,
+    AUTHORIZATION_PENDING,
+    AUTHORIZATION_DECLINED,
+    AUTHORIZATION_GRANTED
+} authorization_state_t;
+
 
 /* API_START */
 
@@ -358,6 +367,28 @@ int gap_auto_connection_stop(bd_addr_type_t address_typ, bd_addr_t address);
  * @note  Convenience function to stop all active auto connection attempts
  */
 void gap_auto_connection_stop_all(void);
+
+/**
+ *
+ * @brief Get encryption key size.
+ * @param con_handle
+ * @return 0 if not encrypted, 7-16 otherwise
+ */
+int gap_encryption_key_size(hci_con_handle_t con_handle);
+
+/**
+ * @brief Get authentication property.
+ * @param con_handle
+ * @return 1 if bonded with OOB/Passkey (AND MITM protection)
+ */
+int gap_authenticated(hci_con_handle_t con_handle);
+
+/**
+ * @brief Queries authorization state.
+ * @param con_handle
+ * @return authorization_state for the current session
+ */
+authorization_state_t gap_authorization_state(hci_con_handle_t con_handle);
 
 // Classic
 

@@ -153,28 +153,6 @@ void sm_passkey_input(hci_con_handle_t con_handle, uint32_t passkey);
 void sm_keypress_notification(hci_con_handle_t con_handle, uint8_t action);
 
 /**
- *
- * @brief Get encryption key size.
- * @param con_handle
- * @return 0 if not encrypted, 7-16 otherwise
- */
-int sm_encryption_key_size(hci_con_handle_t con_handle);
-
-/**
- * @brief Get authentication property.
- * @param con_handle
- * @return 1 if bonded with OOB/Passkey (AND MITM protection)
- */
-int sm_authenticated(hci_con_handle_t con_handle);
-
-/**
- * @brief Queries authorization state.
- * @param con_handle
- * @return authorization_state for the current session
- */
-authorization_state_t sm_authorization_state(hci_con_handle_t con_handle);
-
-/**
  * @brief Used by att_server.c to request user authorization.
  * @param con_handle
  */

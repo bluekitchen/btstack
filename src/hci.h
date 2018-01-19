@@ -381,14 +381,6 @@ typedef enum {
     IRK_LOOKUP_FAILED
 } irk_lookup_state_t;
 
-// Authorization state
-typedef enum {
-    AUTHORIZATION_UNKNOWN,
-    AUTHORIZATION_PENDING,
-    AUTHORIZATION_DECLINED,
-    AUTHORIZATION_GRANTED
-} authorization_state_t;
-
 typedef uint8_t sm_pairing_packet_t[7];
 
 // connection info available as long as connection exists
