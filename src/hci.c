@@ -4526,13 +4526,13 @@ uint16_t hci_get_manufacturer(void){
     return hci_stack->manufacturer;
 }
 
+#ifdef ENABLE_BLE
+
 static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handle){
     hci_connection_t * hci_con = hci_connection_for_handle(con_handle);
     if (!hci_con) return NULL;
     return &hci_con->sm_connection;
 }
-
-#ifdef ENABLE_BLE
 
 // extracted from sm.c to allow enabling of l2cap le data channels without adding sm.c to the build
 // without sm.c default values from create_connection_for_bd_addr_and_type() resulg in non-encrypted, not-authenticated
