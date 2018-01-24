@@ -31,12 +31,12 @@ EXAMPLE.h: $(COMPONENT_PATH)/EXAMPLE.gatt
 COMPONENT_EXTRA_CLEAN = EXAMPLE.h
 '''
 
-def create_examples(script_path):
+def create_examples(script_path, suffix):
     # path to examples
     examples_embedded = script_path + "/../../example/"
 
     # path to samples
-    example_folder = script_path + "/example/"
+    example_folder = script_path + "/example" + suffix + "/"
 
     print("Creating examples folder")
     if not os.path.exists(example_folder):
@@ -48,7 +48,7 @@ def create_examples(script_path):
     for file in os.listdir(examples_embedded):
         if not file.endswith(".c"):
             continue
-        if file in ['panu_demo.c', 'sco_demo_util.c']:
+        if file in ['panu_demo.c', 'sco_demo_util.c', 'ant_test.c']:
             continue
 
         example = file[:-2]
@@ -61,7 +61,7 @@ def create_examples(script_path):
         os.makedirs(apps_folder)
 
         # copy files
-        for item in ['sdkconfig', 'set_port.sh']:
+        for item in ['sdkconfig' + suffix, 'set_port.sh']:
             shutil.copyfile(script_path + '/template/' + item, apps_folder + '/' + item)
 
         # mark set_port.sh as executable
@@ -101,6 +101,9 @@ def create_examples(script_path):
 if __name__ == '__main__':
     # get script path
     script_path = os.path.abspath(os.path.dirname(sys.argv[0]))
-    create_examples(script_path)
+    suffix = ''
+    if len(sys.argv) > 1:
+        suffix = sys.argv[1]
+    create_examples(script_path, suffix)
 
 
