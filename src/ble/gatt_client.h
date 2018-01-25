@@ -126,7 +126,8 @@ typedef enum {
 typedef enum{
     SEND_MTU_EXCHANGE,
     SENT_MTU_EXCHANGE,
-    MTU_EXCHANGED
+    MTU_EXCHANGED,
+    MTU_AUTO_EXCHANGE_DISABLED
 } gatt_client_mtu_t;
 
 typedef struct gatt_client{
@@ -217,6 +218,16 @@ void gatt_client_init(void);
  * @brief MTU is available after the first query has completed. If status is equal to 0, it returns the real value, otherwise the default value of 23. 
  */
 uint8_t gatt_client_get_mtu(hci_con_handle_t con_handle, uint16_t * mtu);
+
+/**
+* @brief Sets whether a MTU Exchange Request shall be automatically send before the first attribute read request is send.
+*/
+void gatt_client_mtu_enable_auto_negotiation(uint8_t enabled);
+
+/**
+* @brief Sends a MTU Exchange Request, this allows for the client to exchange MTU when gatt_client_mtu_enable_auto_negotiation is disabled.
+*/
+void gatt_client_send_mtu_negotiation(btstack_packet_handler_t callback, hci_con_handle_t con_handle);
 
 /** 
  * @brief Returns if the GATT client is ready to receive a query. It is used with daemon. 
