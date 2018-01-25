@@ -67,6 +67,8 @@ static btstack_linked_list_t gatt_client_value_listeners;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint8_t  pts_suppress_mtu_exchange;
 
+static uint8_t mtu_exchange_enabled;
+
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
 static void gatt_client_hci_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8_t error_code);
@@ -86,7 +88,7 @@ static uint16_t peripheral_mtu(gatt_client_t *peripheral){
 void gatt_client_init(void){
     gatt_client_connections = NULL;
     pts_suppress_mtu_exchange = 0;
-
+    mtu_exchange_enabled = 1;
     // regsister for HCI Events
     hci_event_callback_registration.callback = &gatt_client_hci_event_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
@@ -151,7 +153,11 @@ static gatt_client_t * provide_context_for_conn_handle(hci_con_handle_t con_hand
     memset(context, 0, sizeof(gatt_client_t));
     context->con_handle = con_handle;
     context->mtu = ATT_DEFAULT_MTU;
-    context->mtu_state = SEND_MTU_EXCHANGE;
+    if (mtu_exchange_enabled){
+        context->mtu_state = SEND_MTU_EXCHANGE;
+    } else {
+        context->mtu_state = MTU_AUTO_EXCHANGE_DISABLED;
+    }
     context->gatt_client_state = P_READY;
     btstack_linked_list_add(&gatt_client_connections, (btstack_linked_item_t*)context);
 
@@ -179,9 +185,13 @@ int gatt_client_is_ready(hci_con_handle_t con_handle){
     return is_ready(context);
 }
 
+void gatt_client_mtu_enable_auto_negotiation(uint8_t enabled){
+    mtu_exchange_enabled = enabled;
+}
+
 uint8_t gatt_client_get_mtu(hci_con_handle_t con_handle, uint16_t * mtu){
     gatt_client_t * context = provide_context_for_conn_handle(con_handle);
-    if (context && context->mtu_state == MTU_EXCHANGED){
+    if (context && (context->mtu_state == MTU_EXCHANGED || context->mtu_state == MTU_AUTO_EXCHANGE_DISABLED)){
         *mtu = context->mtu;
         return 0;
     } 
@@ -1891,5 +1901,15 @@ void gatt_client_deserialize_characteristic_descriptor(const uint8_t * packet, i
     reverse_128(&packet[offset+2], descriptor->uuid128);
     if (uuid_has_bluetooth_prefix(descriptor->uuid128)){
         descriptor->uuid16 = big_endian_read_32(descriptor->uuid128, 0);
+    }
+}
+
+void gatt_client_send_mtu_negotiation(btstack_packet_handler_t callback, hci_con_handle_t con_handle){
+    gatt_client_t * context = provide_context_for_conn_handle(con_handle);
+    if (!context) return;
+    if (context->mtu_state == MTU_AUTO_EXCHANGE_DISABLED){
+        context->callback = callback;
+        context->mtu_state = SEND_MTU_EXCHANGE;
+        gatt_client_run();
     }
 }
