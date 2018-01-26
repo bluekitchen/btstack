@@ -2010,6 +2010,16 @@ static void l2cap_handle_hci_disconnect_event(l2cap_channel_t * channel){
 
 #endif
 
+#ifdef ENABLE_LE_DATA_CHANNELS
+static void l2cap_handle_hci_le_disconnect_event(l2cap_channel_t * channel){
+    if (l2cap_send_open_failed_on_hci_disconnect(channel)){
+        l2cap_emit_le_channel_opened(channel, L2CAP_CONNECTION_BASEBAND_DISCONNECT);
+    } else {
+        l2cap_emit_le_channel_closed(channel);
+    }
+    btstack_memory_l2cap_channel_free(channel);
+}
+#endif
 
 static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *packet, uint16_t size){
 
@@ -2085,7 +2095,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
                 if (channel->con_handle != handle) continue;
                 btstack_linked_list_iterator_remove(&it);
-                l2cap_handle_hci_disconnect_event(channel);
+                l2cap_handle_hci_le_disconnect_event(channel);
             }
 #endif
             break;
