@@ -61,8 +61,12 @@ def create_examples(script_path, suffix):
         os.makedirs(apps_folder)
 
         # copy files
-        for item in ['sdkconfig' + suffix, 'set_port.sh']:
-            shutil.copyfile(script_path + '/template/' + item, apps_folder + '/' + item)
+        for item in ['sdkconfig', 'set_port.sh']:
+            src = script_path + '/template/' + item
+            if item == 'sdkconfig':
+                src = src + suffix
+            dst = apps_folder + '/' + item
+            shutil.copyfile(src, dst)
 
         # mark set_port.sh as executable
         os.chmod(apps_folder + '/set_port.sh', 0o755)
