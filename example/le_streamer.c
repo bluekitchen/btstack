@@ -329,10 +329,11 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
             }
             test_reset(context);
             break;
-        case ATT_CHARACTERISTIC_0000FF12_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE:
-            printf("%c: Write to ...FF12... : ", context->name);
-            printf_hexdump(buffer, buffer_size);
-            break;       
+        case ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE:
+            test_track_sent(context, buffer_size);
+            break;
+        default:
+            printf("Write to 0x%04x, len %u\n", att_handle, buffer_size);
     }
     return 0;
 }
