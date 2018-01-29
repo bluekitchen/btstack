@@ -442,6 +442,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
             avrcp_pdu_id_t pdu_id = packet[pos++];
             uint16_t length = big_endian_read_16(packet, pos);
             pos += 2;
+            UNUSED(length);
             // if (browsing_connection->num_packets > 1)
             // if (browsing_connection->num_packets == 1 && (pos + length > size)){
             //     printf("pos + length > size, %d, %d, %d \n", pos, length, size);
