@@ -158,6 +158,7 @@ static int  hci_number_free_acl_slots_for_connection_type( bd_addr_type_t addres
 // called from test/ble_client/advertising_data_parser.c
 void le_handle_advertisement_report(uint8_t *packet, uint16_t size);
 static void hci_remove_from_whitelist(bd_addr_type_t address_type, bd_addr_t address);
+static hci_connection_t * gap_get_outgoing_connection(void);
 #endif
 #endif
 
@@ -2188,6 +2189,7 @@ static void event_handler(uint8_t *packet, int size){
                     addr_type = (bd_addr_type_t)packet[7];
                     log_info("LE Connection_complete (status=%u) type %u, %s", packet[3], addr_type, bd_addr_to_str(addr));
                     conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
+
 #ifdef ENABLE_LE_CENTRAL
                     // if auto-connect, remove from whitelist in both roles
                     if (hci_stack->le_connecting_state == LE_CONNECTING_WHITELIST){
@@ -2195,6 +2197,15 @@ static void event_handler(uint8_t *packet, int size){
                     }
                     // handle error: error is reported only to the initiator -> outgoing connection
                     if (packet[3]){
+
+                        // handle cancelled outgoing connection
+                        // "If the cancellation was successful then, after the Command Complete event for the LE_Create_Connection_Cancel command,
+                        //  either an LE Connection Complete or an LE Enhanced Connection Complete event shall be generated.
+                        //  In either case, the event shall be sent with the error code Unknown Connection Identifier (0x02)."
+                        if (packet[3] == ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER){
+                            conn = gap_get_outgoing_connection();
+                        }
+
                         // outgoing connection establishment is done
                         hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
                         // remove entry
@@ -4032,6 +4043,7 @@ static hci_connection_t * gap_get_outgoing_connection(void){
         switch (conn->state){
             case SEND_CREATE_CONNECTION:
             case SENT_CREATE_CONNECTION:
+            case SENT_CANCEL_CONNECTION:
                 return conn;
             default:
                 break;
