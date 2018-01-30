@@ -40,7 +40,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "att_db_util.h"
+#include "ble/att_db_util.h"
 #include "ble/att_db.h"
 #include "ble/core.h"
 #include "btstack_util.h"
