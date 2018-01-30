@@ -102,6 +102,7 @@ static int  l2cap_channel_ready_for_open(l2cap_channel_t *channel);
 #endif
 #ifdef ENABLE_LE_DATA_CHANNELS
 static void l2cap_emit_le_channel_opened(l2cap_channel_t *channel, uint8_t status);
+static void l2cap_emit_le_channel_closed(l2cap_channel_t * channel);
 static void l2cap_emit_le_incoming_connection(l2cap_channel_t *channel);
 static l2cap_channel_t * l2cap_le_get_channel_for_local_cid(uint16_t local_cid);
 static void l2cap_le_notify_channel_can_send(l2cap_channel_t *channel);
@@ -3483,6 +3484,17 @@ static void l2cap_emit_le_channel_opened(l2cap_channel_t *channel, uint8_t statu
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
+// 2
+static void l2cap_emit_le_channel_closed(l2cap_channel_t * channel){
+    log_info("L2CAP_EVENT_LE_CHANNEL_CLOSED local_cid 0x%x", channel->local_cid);
+    uint8_t event[4];
+    event[0] = L2CAP_EVENT_LE_CHANNEL_CLOSED;
+    event[1] = sizeof(event) - 2;
+    little_endian_store_16(event, 2, channel->local_cid);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
+}
+
 
 static l2cap_channel_t * l2cap_le_get_channel_for_local_cid(uint16_t local_cid){
     btstack_linked_list_iterator_t it;    
