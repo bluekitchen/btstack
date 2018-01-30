@@ -65,7 +65,6 @@
 static btstack_linked_list_t gatt_client_connections;
 static btstack_linked_list_t gatt_client_value_listeners;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
-static uint8_t  pts_suppress_mtu_exchange;
 
 static uint8_t mtu_exchange_enabled;
 
@@ -87,7 +86,6 @@ static uint16_t peripheral_mtu(gatt_client_t *peripheral){
 
 void gatt_client_init(void){
     gatt_client_connections = NULL;
-    pts_suppress_mtu_exchange = 0;
     mtu_exchange_enabled = 1;
     // regsister for HCI Events
     hci_event_callback_registration.callback = &gatt_client_hci_event_packet_handler;
@@ -160,11 +158,6 @@ static gatt_client_t * provide_context_for_conn_handle(hci_con_handle_t con_hand
     }
     context->gatt_client_state = P_READY;
     btstack_linked_list_add(&gatt_client_connections, (btstack_linked_item_t*)context);
-
-    // skip mtu exchange for testing sm with pts
-    if (pts_suppress_mtu_exchange){
-         context->mtu_state = MTU_EXCHANGED;
-    }
     return context;
 }
 
@@ -1877,10 +1870,6 @@ uint8_t gatt_client_cancel_write(btstack_packet_handler_t callback, hci_con_hand
     peripheral->gatt_client_state = P_W2_CANCEL_PREPARED_WRITE;
     gatt_client_run();
     return 0;    
-}
-
-void gatt_client_pts_suppress_mtu_exchange(void){
-    pts_suppress_mtu_exchange = 1;
 }
 
 void gatt_client_deserialize_service(const uint8_t *packet, int offset, gatt_client_service_t *service){

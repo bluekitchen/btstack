@@ -220,7 +220,7 @@ void gatt_client_init(void);
 uint8_t gatt_client_get_mtu(hci_con_handle_t con_handle, uint16_t * mtu);
 
 /**
-* @brief Sets whether a MTU Exchange Request shall be automatically send before the first attribute read request is send.
+* @brief Sets whether a MTU Exchange Request shall be automatically send before the first attribute read request is send. Default is enable.d
 */
 void gatt_client_mtu_enable_auto_negotiation(uint8_t enabled);
 
