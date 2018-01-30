@@ -195,6 +195,18 @@ uint16_t att_db_util_add_characteristic_uuid128(uint8_t * uuid128, uint16_t prop
 	return value_handle;
 }
 
+uint16_t att_db_util_add_descriptor_uuid16(uint16_t uuid16, uint16_t properties, uint8_t * data, uint16_t data_len){
+    uint16_t value_handle = att_db_next_handle;
+    att_db_util_add_attribute_uuid16(uuid16, properties, data, data_len);
+    return value_handle;
+}
+
+uint16_t att_db_util_add_descriptor_uuid128(uint8_t * uuid128, uint16_t properties, uint8_t * data, uint16_t data_len){
+    uint16_t value_handle = att_db_next_handle;
+    att_db_util_add_attribute_uuid128(uuid128, properties, data, data_len);
+    return value_handle;
+ }
+
 uint8_t * att_db_util_get_address(void){
 	return att_db;
 }
