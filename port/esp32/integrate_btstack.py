@@ -49,4 +49,4 @@ for dir in dirs_to_copy:
 	shutil.copytree(local_dir + '/../../' + dir, IDF_BTSTACK + '/' + dir)
 
 # create example/btstack
-create_examples.create_examples(local_dir)
+create_examples.create_examples(local_dir, '')
