@@ -54,6 +54,9 @@
 
 #include "btstack.h"
 
+// prototypes
+static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
 typedef enum {
     TC_OFF,
     TC_IDLE,
@@ -139,6 +142,29 @@ static void test_track_data(le_streamer_connection_t * context, int bytes_sent){
 /* LISTING_END(tracking): Tracking throughput */
 
 
+// stramer
+static void streamer(le_streamer_connection_t * context){
+    if (connection_handle == HCI_CON_HANDLE_INVALID) return;
+
+    // create test data
+    context->counter++;
+    if (context->counter > 'Z') context->counter = 'A';
+    memset(context->test_data, context->counter, context->test_data_len);
+
+    // send
+    uint8_t status = gatt_client_write_value_of_characteristic_without_response(connection_handle, le_streamer_characteristic.value_handle, context->test_data_len, (uint8_t*) context->test_data);
+    if (status){
+        printf("error %02x for write without response!\n", status);
+        return;
+    } else {
+        test_track_data(&le_streamer_connection, context->test_data_len);
+    }
+
+    // request again
+    gatt_client_request_can_write_without_response_event(handle_gatt_client_event, connection_handle);
+}
+
+
 // returns 1 if name is found in advertisement
 static int advertisement_report_contains_name(const char * name, uint8_t * advertisement_report){
     // get advertisement from report event
@@ -168,31 +194,6 @@ static int advertisement_report_contains_name(const char * name, uint8_t * adver
     }
     return 0;
 }
-
-// send function
-static void try_send(le_streamer_connection_t * context){
-    if (connection_handle == HCI_CON_HANDLE_INVALID) return;
-    if (state != TC_W4_TEST_DATA) return;
-
-    while (1){
-        if (!att_dispatch_client_can_send_now(connection_handle)) return;
-
-        // create test data
-        context->counter++;
-        if (context->counter > 'Z') context->counter = 'A';
-        memset(context->test_data, context->counter, context->test_data_len);
-
-        // send
-        uint8_t status = gatt_client_write_value_of_characteristic_without_response(connection_handle, le_streamer_characteristic.value_handle, context->test_data_len, (uint8_t*) context->test_data);
-        if (status){
-            printf("error %02x for write without response!\n", status);
-            return;
-        } else {
-            test_track_data(&le_streamer_connection, context->test_data_len);
-        }
-    }
-}
-
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);
@@ -245,16 +246,17 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     le_streamer_connection.test_data_len = btstack_min(mtu - 3, sizeof(le_streamer_connection.test_data));
                     printf("%c: ATT MTU = %u => use test data of len %u\n", le_streamer_connection.name, mtu, le_streamer_connection.test_data_len);
                     // enable notifications
-                    state = TC_W4_TEST_DATA;
 #if (TEST_MODE & TEST_MODE_ENABLE_NOTIFICATIONS)
                     printf("Start streaming - enable notify on test characteristic.\n");
                     state = TC_W4_ENABLE_NOTIFICATIONS_COMPLETE;
-                    gatt_client_write_client_characteristic_configuration(handle_gatt_client_event, connection_handle, &le_streamer_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);                    
+                    gatt_client_write_client_characteristic_configuration(handle_gatt_client_event, connection_handle,
+                        &le_streamer_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+                    break;
 #endif
+                    state = TC_W4_TEST_DATA;
 #if (TEST_MODE & TEST_MODE_WRITE_WITHOUT_RESPONSE)
                     printf("Start streaming - request can send now.\n");
-                    // note: temporary code until a proper gatt_client_register_for_can_send_write_without_response_callback(..) is implemented
-                    try_send(&le_streamer_connection); 
+                    gatt_client_request_can_write_without_response_event(handle_gatt_client_event, connection_handle);
 #endif
                     break;
                 default:
@@ -268,8 +270,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     printf("Notifications enabled, status %02x\n", gatt_event_query_complete_get_status(packet));
                     state = TC_W4_TEST_DATA;
 #if (TEST_MODE & TEST_MODE_WRITE_WITHOUT_RESPONSE)
-                    // note: temporary code until a proper gatt_client_register_for_can_send_write_without_response_callback(..) is implemented
-                    try_send(&le_streamer_connection);
+                    printf("Start streaming - request can send now.\n");
+                    gatt_client_request_can_write_without_response_event(handle_gatt_client_event, connection_handle);
 #endif
                     break;
                 default:
@@ -288,6 +290,9 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 #endif
                     break;
                 case GATT_EVENT_QUERY_COMPLETE:
+                    break;
+                case GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE:
+                    streamer(&le_streamer_connection);
                     break;
                 default:
                     printf("Unknown packet type %x\n", hci_event_packet_get_type(packet));
@@ -379,9 +384,6 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
         default:
             break;
     }
-
-    // note: temporary code until a proper gatt_client_register_for_can_send_write_without_response_callback(..) is implemented
-    try_send(&le_streamer_connection);
 }
 
 #ifdef HAVE_BTSTACK_STDIN
