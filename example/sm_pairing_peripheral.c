@@ -182,8 +182,28 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     sm_event_identity_created_get_address(packet, addr);
                     printf("Identity resolving failed\n");
                     break;
-            }   
-            break;
+                case SM_EVENT_PAIRING_COMPLETE:
+                    switch (sm_event_pairing_complete_get_status(packet)){
+                        case ERROR_CODE_SUCCESS:
+                            printf("Pairing complete, success\n");
+                            break;
+                        case ERROR_CODE_CONNECTION_TIMEOUT:
+                            printf("Pairing failed, timeout\n");
+                            break;
+                        case ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION:
+                            printf("Pairing faileed, disconnected\n");
+                            break;
+                        case ERROR_CODE_AUTHENTICATION_FAILURE:
+                            printf("Pairing failed, reason = %u\n", sm_event_pairing_complete_get_reason(packet));
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+        }
+        break;
     }
 }
 /* LISTING_END */
