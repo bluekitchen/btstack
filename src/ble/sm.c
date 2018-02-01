@@ -413,6 +413,7 @@ static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handl
 static inline int sm_calc_actual_encryption_key_size(int other);
 static int sm_validate_stk_generation_method(void);
 static void sm_handle_encryption_result(uint8_t * data);
+static void sm_notify_client_status_reason(sm_connection_t * sm_conn, uint8_t status, uint8_t reason);
 
 static void log_info_hex16(const char * name, uint16_t value){
     log_info("%-6s 0x%04x", name, value);
@@ -512,6 +513,7 @@ static void sm_timeout_handler(btstack_timer_source_t * timer){
     log_info("SM timeout");
     sm_connection_t * sm_conn = (sm_connection_t*) btstack_run_loop_get_timer_context(timer);
     sm_conn->sm_engine_state = SM_GENERAL_TIMEOUT;
+    sm_notify_client_status_reason(sm_conn, ERROR_CODE_CONNECTION_TIMEOUT, 0);
     sm_done_for_handle(sm_conn->sm_handle);
 
     // trigger handling of next ready connection
@@ -692,14 +694,6 @@ static void sm_s1_r_prime(sm_key_t r1, sm_key_t r2, uint8_t * r_prime){
     memcpy(&r_prime[0], &r1[8], 8);
 }
 
-static void sm_setup_event_base(uint8_t * event, int event_size, uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address){
-    event[0] = type;
-    event[1] = event_size - 2;
-    little_endian_store_16(event, 2, con_handle);
-    event[4] = addr_type;
-    reverse_bd_addr(address, &event[5]);
-}
-
 static void sm_dispatch_event(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
     UNUSED(channel);
 
@@ -712,6 +706,14 @@ static void sm_dispatch_event(uint8_t packet_type, uint16_t channel, uint8_t * p
         btstack_packet_callback_registration_t * entry = (btstack_packet_callback_registration_t*) btstack_linked_list_iterator_next(&it);
         entry->callback(packet_type, 0, packet, size);
     }
+}
+
+static void sm_setup_event_base(uint8_t * event, int event_size, uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address){
+    event[0] = type;
+    event[1] = event_size - 2;
+    little_endian_store_16(event, 2, con_handle);
+    event[4] = addr_type;
+    reverse_bd_addr(address, &event[5]);
 }
 
 static void sm_notify_client_base(uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address){
@@ -741,10 +743,18 @@ static void sm_notify_client_index(uint8_t type, hci_con_handle_t con_handle, ui
     sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void sm_notify_client_status(uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address, uint8_t result){
-    uint8_t event[18];
+static void sm_notify_client_status(uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address, uint8_t status){
+    uint8_t event[12];
     sm_setup_event_base(event, sizeof(event), type, con_handle, addr_type, address);
-    event[11] = result;
+    event[11] = status;
+    sm_dispatch_event(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
+}
+
+static void sm_notify_client_status_reason(sm_connection_t * sm_conn, uint8_t status, uint8_t reason){
+    uint8_t event[13];
+    sm_setup_event_base(event, sizeof(event), SM_EVENT_PAIRING_COMPLETE, sm_conn->sm_handle, setup->sm_peer_addr_type, setup->sm_peer_address);
+    event[11] = status;
+    event[12] = reason;
     sm_dispatch_event(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
 }
 
@@ -1541,6 +1551,7 @@ static void sm_sc_cmac_done(uint8_t * hash){
             } else {
                 sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
             }
+            sm_notify_client_status_reason(sm_conn, ERROR_CODE_SUCCESS, 0);
             sm_done_for_handle(sm_conn->sm_handle);
             break;
         default:
@@ -2214,6 +2225,7 @@ static void sm_run(void){
                 buffer[1] = setup->sm_pairing_failed_reason;
                 connection->sm_engine_state = connection->sm_role ? SM_RESPONDER_IDLE : SM_INITIATOR_CONNECTED;
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                sm_notify_client_status_reason(connection, ERROR_CODE_AUTHENTICATION_FAILURE, setup->sm_pairing_failed_reason);
                 sm_done_for_handle(connection->sm_handle);
                 break;
             }
@@ -2652,6 +2664,7 @@ static void sm_run(void){
                     if (sm_key_distribution_all_received(connection)){
                         sm_key_distribution_handle_all_received(connection);
                         connection->sm_engine_state = SM_RESPONDER_IDLE;
+                        sm_notify_client_status_reason(connection, ERROR_CODE_SUCCESS, 0);
                         sm_done_for_handle(connection->sm_handle);
                     } else {
                         connection->sm_engine_state = SM_PH3_RECEIVE_KEYS;
@@ -2659,6 +2672,7 @@ static void sm_run(void){
                 } else {
                     // master -> all done
                     connection->sm_engine_state = SM_INITIATOR_CONNECTED;
+                    sm_notify_client_status_reason(connection, ERROR_CODE_SUCCESS, 0);
                     sm_done_for_handle(connection->sm_handle);
                 }
                 break;
@@ -2827,6 +2841,7 @@ static void sm_handle_encryption_result(uint8_t * data){
                     } else {
                         // master -> all done
                         connection->sm_engine_state = SM_INITIATOR_CONNECTED;
+                        sm_notify_client_status_reason(connection, ERROR_CODE_SUCCESS, 0);
                         sm_done_for_handle(connection->sm_handle);
                     }
                 }
@@ -3295,6 +3310,8 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         le_device_db_remove(sm_conn->sm_le_db_index);
                     }
 
+                    sm_notify_client_status_reason(sm_conn, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION, 0);
+
                     sm_conn->sm_engine_state = SM_GENERAL_IDLE;
                     sm_conn->sm_handle = 0;
                     break;
@@ -3423,6 +3440,8 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
     if (!sm_conn) return;
 
     if (sm_pdu_code == SM_CODE_PAIRING_FAILED){
+        sm_notify_client_status_reason(sm_conn, ERROR_CODE_AUTHENTICATION_FAILURE, packet[1]);
+        sm_done_for_handle(con_handle);
         sm_conn->sm_engine_state = sm_conn->sm_role ? SM_RESPONDER_IDLE : SM_INITIATOR_CONNECTED;
         return;
     }
@@ -3793,6 +3812,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                         sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_H6_ILK;
                     } else {
                         sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
+                        sm_notify_client_status_reason(sm_conn, ERROR_CODE_SUCCESS, 0);
                         sm_done_for_handle(sm_conn->sm_handle);
                     }
                 } else {
