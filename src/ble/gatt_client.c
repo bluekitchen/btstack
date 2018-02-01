@@ -1015,7 +1015,12 @@ static void gatt_client_run(void){
         }
         int packet_sent = gatt_client_run_for_peripheral(peripheral);
         if (packet_sent){
+            // request new permission
             att_dispatch_client_request_can_send_now_event(peripheral->con_handle);
+            // requeue client for fairness and exit 
+            // note: iterator has become invalid
+            btstack_linked_list_remove(&gatt_client_connections, (btstack_linked_item_t *) peripheral);
+            btstack_linked_list_add_tail(&gatt_client_connections, (btstack_linked_item_t *) peripheral);
             return;
         }
     }
