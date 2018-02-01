@@ -179,6 +179,24 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
             printf("Display Passkey: %"PRIu32"\n", sm_event_passkey_display_number_get_passkey(packet));
             break;
+        case SM_EVENT_PAIRING_COMPLETE:
+            switch (sm_event_pairing_complete_get_status(packet)){
+                case ERROR_CODE_SUCCESS:
+                    printf("Pairing complete, success\n");
+                    break;
+                case ERROR_CODE_CONNECTION_TIMEOUT:
+                    printf("Pairing failed, timeout\n");
+                    break;
+                case ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION:
+                    printf("Pairing faileed, disconnected\n");
+                    break;
+                case ERROR_CODE_AUTHENTICATION_FAILURE:
+                    printf("Pairing failed, reason = %u\n", sm_event_pairing_complete_get_reason(packet));
+                    break;
+                default:
+                    break;
+            }
+            break;
         case HCI_EVENT_LE_META:
             // wait for connection complete
             if (hci_event_le_meta_get_subevent_code(packet) != HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
