@@ -998,10 +998,22 @@ static int gatt_client_run_for_peripheral( gatt_client_t * peripheral){
             return 1;
         }
 #endif
-
         default:
             break;
     }
+
+    // requested can send snow?
+    if (peripheral->write_without_response_callback){
+        btstack_packet_handler_t packet_handler = peripheral->write_without_response_callback;
+        peripheral->write_without_response_callback = NULL;
+        uint8_t event[4];
+        event[0] = GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE;
+        event[1] = sizeof(event) - 2;
+        little_endian_store_16(event, 2, peripheral->con_handle);
+        packet_handler(HCI_EVENT_PACKET, peripheral->con_handle, event, sizeof(event));
+        return 1; // to trigger requeueing (even if higher layer didn't sent)
+    }
+
     return 0;
 }
 
@@ -1914,4 +1926,13 @@ void gatt_client_send_mtu_negotiation(btstack_packet_handler_t callback, hci_con
         context->mtu_state = SEND_MTU_EXCHANGE;
         gatt_client_run();
     }
+}
+
+uint8_t gatt_client_request_can_write_without_response_event(btstack_packet_handler_t callback, hci_con_handle_t con_handle){
+    gatt_client_t * context = provide_context_for_conn_handle(con_handle);
+    if (!context) return BTSTACK_MEMORY_ALLOC_FAILED;
+    if (context->write_without_response_callback) return GATT_CLIENT_IN_WRONG_STATE;
+    context->write_without_response_callback = callback;
+    att_dispatch_client_request_can_send_now_event(context->con_handle);
+    return 0;
 }
