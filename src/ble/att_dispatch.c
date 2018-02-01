@@ -141,22 +141,20 @@ void att_dispatch_server_request_can_send_now_event(hci_con_handle_t con_handle)
 	l2cap_request_can_send_fix_channel_now_event(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
 }
 
-void att_dispatch_server_mtu_exchanged(hci_con_handle_t con_handle, uint16_t new_mtu){
-    if (!att_client_handler) return;
+static void emit_mtu_exchange_complete(btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle, uint16_t new_mtu){
+    if (!packet_handler) return;
     uint8_t packet[6];
     packet[0] = ATT_EVENT_MTU_EXCHANGE_COMPLETE;
     packet[1] = sizeof(packet) - 2;
     little_endian_store_16(packet, 2, con_handle);
     little_endian_store_16(packet, 4, new_mtu);
-    att_client_handler(ATT_DATA_PACKET, con_handle, packet, 1);
+    packet_handler(HCI_EVENT_PACKET, con_handle, packet, 1);
+}
+
+void att_dispatch_server_mtu_exchanged(hci_con_handle_t con_handle, uint16_t new_mtu){
+    emit_mtu_exchange_complete(att_client_handler, con_handle, new_mtu);
 }
 
 void att_dispatch_client_mtu_exchanged(hci_con_handle_t con_handle, uint16_t new_mtu){
-    if (!att_server_handler) return;
-    uint8_t packet[6];
-    packet[0] = ATT_EVENT_MTU_EXCHANGE_COMPLETE;
-    packet[1] = sizeof(packet) - 2;
-    little_endian_store_16(packet, 2, con_handle);
-    little_endian_store_16(packet, 4, new_mtu);
-    att_server_handler(ATT_DATA_PACKET, con_handle, packet, 1);
+    emit_mtu_exchange_complete(att_server_handler, con_handle, new_mtu);
 }
