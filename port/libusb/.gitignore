@@ -22,6 +22,7 @@ gatt_browser
 gatt_browser.h
 hfp_ag_demo
 hfp_hf_demo
+hid_host_demo
 hid_keyboard_demo
 hid_mouse_demo
 hog_keyboard_demo
@@ -33,6 +34,10 @@ hsp_hs_demo
 l2cap_test
 le_counter
 le_counter.h
+le_counter_work
+le_data_channel_client
+le_data_channel_server
+le_data_channel_server.h
 le_streamer
 le_streamer.h
 le_streamer_client
@@ -46,6 +51,7 @@ sdp_bnep_query
 sdp_general_query
 sdp_rfcomm_query
 sm_pairing_central
+sm_pairing_central.h
 sm_pairing_peripheral
 sm_pairing_peripheral.h
 spp_and_le_counter

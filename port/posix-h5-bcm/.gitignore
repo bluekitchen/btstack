@@ -4,6 +4,7 @@ ble_central_test
 ble_peripheral
 ble_peripheral_sm_minimal
 ble_peripheral_test
+bluetooth_init_cc2560B_1.2_BT_Spec_4.0.c
 bnep_test
 classic_test
 gap_dedicated_bonding
@@ -25,6 +26,7 @@ le_streamer
 le_streamer.h
 led_counter
 profile.h
+sm_pairing_central.h
 sdp_bnep_query
 sdp_general_query
 sdp_rfcomm_query
@@ -32,4 +34,4 @@ spp_and_le_counter
 spp_and_le_counter.h
 spp_counter
 spp_streamer
-bluetooth_init_cc2560B_1.2_BT_Spec_4.0.c
+*.hcd
