@@ -145,7 +145,7 @@ c_prototoype_struct_return = '''/**
  * @note: btstack_type {format}
  */
 static inline void {fn_name}(const uint8_t * event, {result_type} {result_name}){{
-    {code}    
+    {code}
 }}
 '''
 
