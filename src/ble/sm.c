@@ -3724,7 +3724,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
             // handle user cancel pairing?
             if (setup->sm_user_response == SM_USER_RESPONSE_DECLINE){
-                setup->sm_pairing_failed_reason = SM_REASON_PASSKEYT_ENTRY_FAILED;
+                setup->sm_pairing_failed_reason = SM_REASON_PASSKEY_ENTRY_FAILED;
                 sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
                 break;
             }
