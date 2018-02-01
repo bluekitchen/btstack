@@ -741,8 +741,7 @@ static void sm_notify_client_index(uint8_t type, hci_con_handle_t con_handle, ui
     sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void sm_notify_client_authorization(uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address, uint8_t result){
-
+static void sm_notify_client_status(uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address, uint8_t result){
     uint8_t event[18];
     sm_setup_event_base(event, sizeof(event), type, con_handle, addr_type, address);
     event[11] = result;
@@ -4041,14 +4040,14 @@ void sm_authorization_decline(hci_con_handle_t con_handle){
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
     if (!sm_conn) return;     // wrong connection
     sm_conn->sm_connection_authorization_state = AUTHORIZATION_DECLINED;
-    sm_notify_client_authorization(SM_EVENT_AUTHORIZATION_RESULT, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0);
+    sm_notify_client_status(SM_EVENT_AUTHORIZATION_RESULT, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0);
 }
 
 void sm_authorization_grant(hci_con_handle_t con_handle){
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
     if (!sm_conn) return;     // wrong connection
     sm_conn->sm_connection_authorization_state = AUTHORIZATION_GRANTED;
-    sm_notify_client_authorization(SM_EVENT_AUTHORIZATION_RESULT, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 1);
+    sm_notify_client_status(SM_EVENT_AUTHORIZATION_RESULT, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 1);
 }
 
 // GAP Bonding API
