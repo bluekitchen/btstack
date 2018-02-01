@@ -49,14 +49,19 @@
 
 #define ATT_SERVER 0
 #define ATT_CLIENT 1
+#define ATT_MAX    2
 
 struct {
     btstack_packet_handler_t packet_handler;
     uint8_t                  waiting_for_can_send;
-} subscriptions[2];
+} subscriptions[ATT_MAX];
+
+// index of subscription that will get can send now first if waiting for it
+static uint8_t att_round_robin;
 
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
-    int index;
+    uint8_t index;
+    uint8_t i;
     switch (packet_type){
         case ATT_DATA_PACKET:
             // odd PDUs are sent from server to client - even PDUs are sent from client to server
@@ -67,10 +72,13 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             break;
         case HCI_EVENT_PACKET:
             if (packet[0] != L2CAP_EVENT_CAN_SEND_NOW) break;
-            for (index = 0; index < 2 ; index++){
+            for (i = 0; i < ATT_MAX; i++){
+                index = (att_round_robin + i) & 1;
                 if (subscriptions[index].packet_handler && subscriptions[index].waiting_for_can_send){
                     subscriptions[index].waiting_for_can_send = 0;
                     subscriptions[index].packet_handler(packet_type, handle, packet, size);
+                    // fairness
+                    att_round_robin = 1 - index;
                     // stop if client cannot send anymore
                     if (!hci_can_send_acl_le_packet_now()) break;
                 }
