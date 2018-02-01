@@ -728,6 +728,12 @@ typedef uint8_t sm_key_t[16];
  */    
 #define GATT_EVENT_MTU                                           0xAB
 
+/**
+ * @format H
+ * @param handle
+ */
+#define GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE                    0xAC
+
 /** 
  * @format H2
  * @param handle

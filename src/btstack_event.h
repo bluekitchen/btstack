@@ -2104,6 +2104,18 @@ static inline uint16_t gatt_event_mtu_get_MTU(const uint8_t * event){
 }
 #endif
 
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field handle from event GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gatt_event_can_write_without_response_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+#endif
+
 /**
  * @brief Get field handle from event ATT_EVENT_MTU_EXCHANGE_COMPLETE
  * @param event packet
