@@ -187,6 +187,10 @@ typedef enum {
     SM_STATE_VAR_DHKEY_COMMAND_RECEIVED = 1 << 2,
 } sm_state_var_t;
 
+typedef uint8_t sm_key24_t[3];
+typedef uint8_t sm_key56_t[7];
+typedef uint8_t sm_key256_t[32];
+
 //
 // GLOBAL DATA
 //
@@ -687,95 +691,6 @@ static void sm_s1_r_prime(sm_key_t r1, sm_key_t r2, uint8_t * r_prime){
     memcpy(&r_prime[8], &r2[8], 8);
     memcpy(&r_prime[0], &r1[8], 8);
 }
-
-#ifdef ENABLE_LE_SECURE_CONNECTIONS
-// Software implementations of crypto toolbox for LE Secure Connection
-// TODO: replace with code to use AES Engine of HCI Controller
-typedef uint8_t sm_key24_t[3];
-typedef uint8_t sm_key56_t[7];
-typedef uint8_t sm_key256_t[32];
-
-#if 0
-static void aes128_calc_cyphertext(const uint8_t key[16], const uint8_t plaintext[16], uint8_t cyphertext[16]){
-    uint32_t rk[RKLENGTH(KEYBITS)];
-    int nrounds = rijndaelSetupEncrypt(rk, &key[0], KEYBITS);
-    rijndaelEncrypt(rk, nrounds, plaintext, cyphertext);
-}
-
-static void calc_subkeys(sm_key_t k0, sm_key_t k1, sm_key_t k2){
-    memcpy(k1, k0, 16);
-    sm_shift_left_by_one_bit_inplace(16, k1);
-    if (k0[0] & 0x80){
-        k1[15] ^= 0x87;
-    }
-    memcpy(k2, k1, 16);
-    sm_shift_left_by_one_bit_inplace(16, k2);
-    if (k1[0] & 0x80){
-        k2[15] ^= 0x87;
-    }
-}
-
-static void aes_cmac(sm_key_t aes_cmac, const sm_key_t key, const uint8_t * data, int cmac_message_len){
-    sm_key_t k0, k1, k2, zero;
-    memset(zero, 0, 16);
-
-    aes128_calc_cyphertext(key, zero, k0);
-    calc_subkeys(k0, k1, k2);
-
-    int cmac_block_count = (cmac_message_len + 15) / 16;
-
-    // step 3: ..
-    if (cmac_block_count==0){
-        cmac_block_count = 1;
-    }
-
-    // step 4: set m_last
-    sm_key_t cmac_m_last;
-    int sm_cmac_last_block_complete = cmac_message_len != 0 && (cmac_message_len & 0x0f) == 0;
-    int i;
-    if (sm_cmac_last_block_complete){
-        for (i=0;i<16;i++){
-            cmac_m_last[i] = data[cmac_message_len - 16 + i] ^ k1[i];
-        }
-    } else {
-        int valid_octets_in_last_block = cmac_message_len & 0x0f;
-        for (i=0;i<16;i++){
-            if (i < valid_octets_in_last_block){
-                cmac_m_last[i] = data[(cmac_message_len & 0xfff0) + i] ^ k2[i];
-                continue;
-            }
-            if (i == valid_octets_in_last_block){
-                cmac_m_last[i] = 0x80 ^ k2[i];
-                continue;
-            }
-            cmac_m_last[i] = k2[i];
-        }
-    }
-
-    // printf("sm_cmac_start: len %u, block count %u\n", cmac_message_len, cmac_block_count);
-    // LOG_KEY(cmac_m_last);
-
-    // Step 5
-    sm_key_t cmac_x;
-    memset(cmac_x, 0, 16);
-
-    // Step 6
-    sm_key_t sm_cmac_y;
-    for (int block = 0 ; block < cmac_block_count-1 ; block++){
-        for (i=0;i<16;i++){
-            sm_cmac_y[i] = cmac_x[i] ^ data[block * 16 + i];
-        }
-        aes128_calc_cyphertext(key, sm_cmac_y, cmac_x);
-    }
-    for (i=0;i<16;i++){
-        sm_cmac_y[i] = cmac_x[i] ^ cmac_m_last[i];
-    }
-
-    // Step 7
-    aes128_calc_cyphertext(key, sm_cmac_y, aes_cmac);
-}
-#endif
-#endif
 
 static void sm_setup_event_base(uint8_t * event, int event_size, uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address){
     event[0] = type;
