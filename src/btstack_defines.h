@@ -935,6 +935,23 @@ typedef uint8_t sm_key_t[16];
   */
 #define SM_EVENT_IDENTITY_CREATED                                0xDE
 
+ /**
+  * @brief Emitted to inform app that pairing is complete. Possible status values:
+  *        ERROR_CODE_SUCCESS                            -> pairing success
+  *        ERROR_CODE_CONNECTION_TIMEOUT                 -> timeout
+  *        ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION  -> disconnect
+  *        ERROR_CODE_AUTHENTICATION_FAILURE             -> SM protocol error, see reason field with SM_REASON_* from bluetooth.h
+  *
+  * @format H1B11
+  * @param handle
+  * @param addr_type
+  * @param address
+  * @param status
+  * @param reason if status == ERROR_CODE_AUTHENTICATION_FAILURE
+  */
+#define SM_EVENT_PAIRING_COMPLETE                                0xDF
+
+
 // GAP
 
 /**
