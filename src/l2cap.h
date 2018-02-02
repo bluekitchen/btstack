@@ -116,6 +116,13 @@ typedef enum {
     L2CAP_CHANNEL_STATE_VAR_INCOMING               = 1 << 15,  // channel is incoming
 } L2CAP_CHANNEL_STATE_VAR;
 
+typedef enum {
+    L2CAP_CHANNEL_TYPE_CLASSIC,         // Basic or ERTM
+    L2CAP_CHANNEL_TYPE_CONNECTIONLESS,  // Classic
+    L2CAP_CHANNEL_TYPE_LE_FIXED,        // ATT + SM
+    L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL,
+} l2cap_channel_type_t;
+
 typedef struct {
     l2cap_segmentation_and_reassembly_t sar;
     uint16_t len;
@@ -161,6 +168,9 @@ typedef struct {
     
     // packet handler
     btstack_packet_handler_t packet_handler;
+
+    // channel type
+    l2cap_channel_type_t channel_type;
 
     // timer
     btstack_timer_source_t rtx; // also used for ertx

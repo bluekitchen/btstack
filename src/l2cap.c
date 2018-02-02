@@ -112,7 +112,7 @@ static inline l2cap_service_t * l2cap_le_get_service(uint16_t psm);
 #ifdef L2CAP_USES_CHANNELS
 static void l2cap_dispatch_to_channel(l2cap_channel_t *channel, uint8_t type, uint8_t * data, uint16_t size);
 static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid);
-static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t packet_handler, bd_addr_t address, bd_addr_type_t address_type, 
+static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t packet_handler, l2cap_channel_type_t channel_type, bd_addr_t address, bd_addr_type_t address_type, 
         uint16_t psm, uint16_t local_mtu, gap_security_level_t security_level);
 #endif
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
@@ -522,7 +522,7 @@ uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_ad
     uint8_t result = l2cap_ertm_validate_local_config(ertm_config);
     if (result) return result;
 
-    l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, address, BD_ADDR_TYPE_CLASSIC, psm, ertm_config->local_mtu, LEVEL_0);
+    l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, address, BD_ADDR_TYPE_CLASSIC, psm, ertm_config->local_mtu, LEVEL_0);
     if (!channel) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
@@ -1748,7 +1748,7 @@ static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * ch
 #endif
 
 #ifdef L2CAP_USES_CHANNELS
-static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t packet_handler, bd_addr_t address, bd_addr_type_t address_type, 
+static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t packet_handler, l2cap_channel_type_t channel_type, bd_addr_t address, bd_addr_type_t address_type, 
     uint16_t psm, uint16_t local_mtu, gap_security_level_t security_level){
 
     l2cap_channel_t * channel = btstack_memory_l2cap_channel_get();
@@ -1761,6 +1761,7 @@ static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t pac
         
     // fill in 
     channel->packet_handler = packet_handler;
+    channel->channel_type   = channel_type;
     bd_addr_copy(channel->address, address);
     channel->address_type = address_type;
     channel->psm = psm;
@@ -1799,7 +1800,7 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
 
     log_info("L2CAP_CREATE_CHANNEL addr %s psm 0x%x mtu %u -> local mtu %u", bd_addr_to_str(address), psm, mtu, local_mtu);
 
-    l2cap_channel_t * channel = l2cap_create_channel_entry(channel_packet_handler, address, BD_ADDR_TYPE_CLASSIC, psm, local_mtu, LEVEL_0);
+    l2cap_channel_t * channel = l2cap_create_channel_entry(channel_packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, address, BD_ADDR_TYPE_CLASSIC, psm, local_mtu, LEVEL_0);
     if (!channel) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
@@ -2234,7 +2235,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
 
     // alloc structure
     // log_info("l2cap_handle_connection_request register channel");
-    l2cap_channel_t * channel = l2cap_create_channel_entry(service->packet_handler, hci_connection->address, BD_ADDR_TYPE_CLASSIC, 
+    l2cap_channel_t * channel = l2cap_create_channel_entry(service->packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, hci_connection->address, BD_ADDR_TYPE_CLASSIC, 
     psm, service->mtu, service->required_security_level);
     if (!channel){
         // 0x0004 No resources available
@@ -2919,7 +2920,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 }
 
                 // allocate channel
-                channel = l2cap_create_channel_entry(service->packet_handler, connection->address,
+                channel = l2cap_create_channel_entry(service->packet_handler, L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL, connection->address,
                     BD_ADDR_TYPE_LE_RANDOM, le_psm, service->mtu, service->required_security_level);
                 if (!channel){
                     // 0x0004 Connection refused – no resources available
@@ -3630,7 +3631,7 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
 
-    l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, connection->address, connection->address_type, psm, mtu, security_level);
+    l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL, connection->address, connection->address_type, psm, mtu, security_level);
     if (!channel) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
