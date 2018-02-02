@@ -318,6 +318,30 @@ static int avrcp_browsing_controller_send_change_path_cmd(uint16_t cid, avrcp_br
     return l2cap_send(cid, command, pos);
 }
 
+static int avrcp_browsing_controller_send_search_cmd(uint16_t cid, avrcp_browsing_connection_t * connection){
+    uint8_t command[100];
+    int pos = 0; 
+    // transport header
+    // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
+    command[pos++] = (connection->transaction_label << 4) | (AVRCP_SINGLE_PACKET << 2) | (AVRCP_COMMAND_FRAME << 1) | 0;
+    // Profile IDentifier (PID)
+    command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
+    command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
+    command[pos++] = AVRCP_PDU_ID_SEARCH;
+
+    big_endian_store_16(command, pos, 4 + connection->search_str_len);
+    pos += 2;
+
+    big_endian_store_16(command, pos, 0x006A);
+    pos += 2;
+    big_endian_store_16(command, pos, connection->search_str_len);
+    pos += 2;
+
+    memcpy(command+pos,connection->search_str, connection->search_str_len);
+    pos += connection->search_str_len;
+    return l2cap_send(cid, command, pos);
+}
+
 static int avrcp_browsing_controller_send_set_browsed_player_cmd(uint16_t cid, avrcp_browsing_connection_t * connection){
     uint8_t command[100];
     int pos = 0; 
@@ -382,6 +406,12 @@ static void avrcp_browsing_controller_handle_can_send_now(avrcp_browsing_connect
                 connection->change_path = 0;
                 avrcp_browsing_controller_send_change_path_cmd(connection->l2cap_browsing_cid, connection);
                 break;
+            }
+            if (connection->search){
+                connection->state = AVCTP_W2_RECEIVE_RESPONSE;
+                connection->search = 0;
+                avrcp_browsing_controller_send_search_cmd(connection->l2cap_browsing_cid, connection);
+                break;   
             }
             break;
         default:
@@ -487,7 +517,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     break;
                 }
                 case AVRCP_PDU_ID_GET_FOLDER_ITEMS:{
-                    printf("AVRCP_PDU_ID_GET_FOLDER_ITEMS \n");
+                    printf("AVRCP_PDU_ID_GET_FOLDER_ITEMS\n");
                     // send UID counter with done
                     if (!browsing_connection->fragmented){
                         browsing_connection->num_items = big_endian_read_16(packet, pos);
@@ -527,6 +557,11 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     }
                     break;
                 }
+                case AVRCP_PDU_ID_SEARCH:{
+                        uint32_t num_items = big_endian_read_32(packet, pos);
+                        printf("TODO: send as event, search found %d items\n", num_items);
+                        break;
+                    }
                 default:
                     break;
             }
@@ -761,4 +796,35 @@ uint8_t avrcp_browsing_controller_go_up_one_level(uint16_t avrcp_browsing_cid){
 
 uint8_t avrcp_browsing_controller_go_down_one_level(uint16_t avrcp_browsing_cid, uint8_t * folder_uid){
     return avrcp_browsing_controller_change_path(avrcp_browsing_cid, 1, folder_uid);
+}
+
+uint8_t avrcp_browsing_controller_search(uint16_t avrcp_browsing_cid, uint16_t search_str_len, char * search_str){
+    avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid(avrcp_browsing_cid, &avrcp_controller_context);
+    if (!avrcp_connection){
+        log_error("avrcp_browsing_controller_change_path: could not find a connection.");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    
+    avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
+    
+    if (!connection || connection->state != AVCTP_CONNECTION_OPENED){
+        log_error("avrcp_browsing_controller_change_path: connection in wrong state.");
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    } 
+
+    if (!connection->browsed_player_id){
+        log_error("avrcp_browsing_controller_change_path: no browsed player set.");
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    if (!search_str || search_str_len == 0){
+        return AVRCP_BROWSING_ERROR_CODE_INVALID_COMMAND;
+    }
+
+    connection->search = 1;
+  
+    connection->search_str_len = btstack_min(search_str_len, sizeof(connection->search_str)-1);
+    memset(connection->search_str, 0, sizeof(connection->search_str));
+    memcpy(connection->search_str, search_str, connection->search_str_len);
+    avrcp_request_can_send_now(avrcp_connection, connection->l2cap_browsing_cid);
+    return ERROR_CODE_SUCCESS;
 }

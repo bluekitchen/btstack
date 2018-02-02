@@ -202,6 +202,17 @@ uint8_t avrcp_browsing_controller_set_addressed_player(uint16_t avrcp_browsing_c
 uint8_t avrcp_browsing_controller_change_path(uint16_t avrcp_browsing_cid, uint8_t direction, uint8_t * folder_uid);
 uint8_t avrcp_browsing_controller_go_up_one_level(uint16_t avrcp_browsing_cid);
 uint8_t avrcp_browsing_controller_go_down_one_level(uint16_t avrcp_browsing_cid, uint8_t * folder_uid);
+
+
+/**
+ * @brief Searches are performed from the current folder in the Browsed Players virtual filesystem. The search applies to the current folder and all folders below that.
+ * @param avrcp_browsing_cid
+ * @param search_str_len
+ * @param search_str
+ * @return status 
+ **/
+uint8_t avrcp_browsing_controller_search(uint16_t avrcp_browsing_cid, uint16_t search_str_len, char * search_str);
+
 /* API_END */
 
 #if defined __cplusplus

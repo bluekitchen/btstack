@@ -131,6 +131,7 @@ typedef enum {
     AVRCP_PDU_ID_GET_FOLDER_ITEMS = 0x71,
     AVRCP_PDU_ID_CHANGE_PATH = 0x72,
     AVRCP_PDU_ID_PLAY_ITEM = 0x74,
+    AVRCP_PDU_ID_SEARCH = 0x80,
     AVRCP_PDU_ID_UNDEFINED = 0xFF
 } avrcp_pdu_id_t;
 
@@ -324,6 +325,11 @@ typedef struct {
     uint16_t uid_counter;
     uint8_t  folder_uid[8];
 
+    // search str
+    uint16_t search_str_len;
+    uint8_t  search_str[20];
+    uint8_t  search;
+    
     // fragmentation
     uint8_t fragmented;
     avrcp_pdu_id_t fragmented_pdu_id;
