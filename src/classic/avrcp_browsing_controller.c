@@ -383,24 +383,31 @@ static void avrcp_browsing_controller_handle_can_send_now(avrcp_browsing_connect
                 avrcp_browsing_controller_send_change_path_cmd(connection->l2cap_browsing_cid, connection);
                 break;
             }
-            
+            break;
         default:
             return;
     }
 }
 
-static void avrcp_browsing_controller_emit_done(btstack_packet_handler_t callback, uint16_t browsing_cid, uint8_t browsing_status, uint8_t bluetooth_status){
+
+static void avrcp_browsing_controller_emit_done_with_uid_counter(btstack_packet_handler_t callback, uint16_t browsing_cid, uint16_t uid_counter, uint8_t browsing_status, uint8_t bluetooth_status){
     if (!callback) return;
-    uint8_t event[7];
+    uint8_t event[9];
     int pos = 0;
     event[pos++] = HCI_EVENT_AVRCP_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = AVRCP_SUBEVENT_BROWSING_MEDIA_ITEM_DONE;
+    event[pos++] = AVRCP_SUBEVENT_BROWSING_DONE;
     little_endian_store_16(event, pos, browsing_cid);
+    pos += 2;
+    little_endian_store_16(event, pos, uid_counter);
     pos += 2;
     event[pos++] = browsing_status;
     event[pos++] = bluetooth_status;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void avrcp_browsing_controller_emit_done(btstack_packet_handler_t callback, uint16_t browsing_cid, uint8_t browsing_status, uint8_t bluetooth_status){
+    avrcp_browsing_controller_emit_done_with_uid_counter(callback, browsing_cid, 0, browsing_status, bluetooth_status);
 }
 
 static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -410,99 +417,136 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
         case L2CAP_DATA_PACKET:{
             browsing_connection = get_avrcp_browsing_connection_for_l2cap_cid(channel, &avrcp_controller_context);
             if (!browsing_connection) break;
-            browsing_connection->state = AVCTP_CONNECTION_OPENED;
-
-            // printf_hexdump(packet, size);
             int pos = 0;
             uint8_t transport_header = packet[pos++];
             // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
             // uint8_t transaction_label = transport_header >> 4;
             avrcp_packet_type_t avctp_packet_type = (transport_header & 0x0F) >> 2;
-            // uint8_t frame_type = (transport_header & 0x03) >> 1;
-            // uint8_t ipid = transport_header & 0x01;
-            pos += 2;
-            browsing_connection->num_packets = 1;
-            switch (avctp_packet_type){
-                case AVRCP_SINGLE_PACKET:
-                    break;
-                case AVRCP_START_PACKET:
+            
+            avrcp_pdu_id_t pdu_id;
+            uint8_t browsing_status;
+            uint16_t uid_counter;
+            if (!browsing_connection->fragmented){
+                browsing_connection->state = AVCTP_CONNECTION_OPENED;
+                // printf_hexdump(packet, size);
+                // uint8_t frame_type = (transport_header & 0x03) >> 1;
+                // uint8_t ipid = transport_header & 0x01;
+                pos += 2;
+                browsing_connection->num_packets = 1;
+                if (avctp_packet_type == AVRCP_START_PACKET){
                     browsing_connection->num_packets = packet[pos++];
-                    break;
-                case AVRCP_CONTINUE_PACKET:
-                case AVRCP_END_PACKET:
-                    // browsing_connection->num_packets = packet[pos++];
-                    break;
-            }
+                }
     
-            if (pos + 4 > size){
-                avrcp_browsing_controller_emit_done(avrcp_controller_context.browsing_avrcp_callback, channel, AVRCP_BROWSING_ERROR_CODE_INVALID_COMMAND, ERROR_CODE_SUCCESS);
-                return;  
+                if (pos + 4 > size){
+                    avrcp_browsing_controller_emit_done(avrcp_controller_context.browsing_avrcp_callback, channel, AVRCP_BROWSING_ERROR_CODE_INVALID_COMMAND, ERROR_CODE_SUCCESS);
+                    return;  
+                }
+                pdu_id = packet[pos++];
+                // uint16_t length = big_endian_read_16(packet, pos);
+                pos += 2;
+                browsing_status = packet[pos++]; 
+                if (browsing_status != AVRCP_BROWSING_ERROR_CODE_SUCCESS){
+                    avrcp_browsing_controller_emit_done(avrcp_controller_context.browsing_avrcp_callback, channel, browsing_status, ERROR_CODE_SUCCESS);
+                    return;        
+                }
+                uid_counter =  big_endian_read_16(packet, pos);
+                pos += 2;
+            } else {
+                pdu_id = browsing_connection->fragmented_pdu_id;
+                browsing_status = browsing_connection->fragmented_browsing_status;
+                uid_counter = browsing_connection->fragmented_uid_counter;
             }
-            
-            avrcp_pdu_id_t pdu_id = packet[pos++];
-            uint16_t length = big_endian_read_16(packet, pos);
-            pos += 2;
-            UNUSED(length);
-            // if (browsing_connection->num_packets > 1)
-            // if (browsing_connection->num_packets == 1 && (pos + length > size)){
-            //     printf("pos + length > size, %d, %d, %d \n", pos, length, size);
-            //     avrcp_browsing_controller_emit_done(avrcp_controller_context.browsing_avrcp_callback, channel, AVRCP_BROWSING_ERROR_CODE_INVALID_COMMAND, ERROR_CODE_SUCCESS);
-            //     return;  
-            // }
-            
-            uint8_t browsing_status = packet[pos++]; 
-            if (browsing_status != AVRCP_BROWSING_ERROR_CODE_SUCCESS){
-                printf("browsing_status %d\n", browsing_status);
-                avrcp_browsing_controller_emit_done(avrcp_controller_context.browsing_avrcp_callback, channel, browsing_status, ERROR_CODE_SUCCESS);
-                return;        
-            }
-            
+
             uint32_t i;
             switch(pdu_id){
                 case AVRCP_PDU_ID_CHANGE_PATH:
                     printf("AVRCP_PDU_ID_CHANGE_PATH \n");
                     break;
                 case AVRCP_PDU_ID_SET_ADDRESSED_PLAYER:
-                    printf("AVRCP_PDU_ID_CHANGE_PATH \n");
+                    printf("AVRCP_PDU_ID_SET_ADDRESSED_PLAYER \n");
                     break;
                 case AVRCP_PDU_ID_SET_BROWSED_PLAYER:{
-                    browsing_connection->browsed_player_uid_counter = big_endian_read_16(packet, pos);
-                    pos += 2;
-                    uint32_t num_items = big_endian_read_32(packet, pos);
+                    browsing_connection->browsed_player_uid_counter = uid_counter;
+                    // uint32_t num_items = big_endian_read_32(packet, pos);
                     pos += 4;
-                    printf("AVRCP_PDU_ID_SET_BROWSED_PLAYER uuid counter 0x0%2x, num items %d\n", browsing_connection->browsed_player_uid_counter, num_items);
-                    
-                    for (i = 0; i < num_items; i++){
-                        uint16_t browsable_item_length = 5 + big_endian_read_16(packet, pos+3);
-                        printf(" pos %d, len %d\n", pos, browsable_item_length);
-                        // reuse byte to put the new type AVRCP_BROWSING_MEDIA_ROOT_FOLDER
+                    // uint16_t charset = big_endian_read_16(packet, pos);
+                    pos += 2;
+                    uint8_t folder_depth = packet[pos++];
+
+                    for (i = 0; i < folder_depth; i++){
+                        uint16_t folder_name_length = big_endian_read_16(packet, pos);
+                        pos += 2;
+                        // reuse packet and add data type as a header
                         packet[pos-1] = AVRCP_BROWSING_MEDIA_ROOT_FOLDER;
-                        (*avrcp_controller_context.browsing_avrcp_callback)(AVRCP_BROWSING_DATA_PACKET, channel, packet+pos, browsable_item_length+1);
-                        pos += browsable_item_length;
+                        (*avrcp_controller_context.browsing_avrcp_callback)(AVRCP_BROWSING_DATA_PACKET, channel, packet+pos-1, folder_name_length+1);
+                        pos += folder_name_length;
+                    }
+                    if (avctp_packet_type == AVRCP_SINGLE_PACKET || avctp_packet_type == AVRCP_END_PACKET){
+                        avrcp_browsing_controller_emit_done_with_uid_counter(avrcp_controller_context.browsing_avrcp_callback, channel, browsing_connection->browsed_player_uid_counter, browsing_status, ERROR_CODE_SUCCESS);
                     }
                     break;
                 }
                 case AVRCP_PDU_ID_GET_FOLDER_ITEMS:{
-                    // uint16_t uid_counter = big_endian_read_16(packet, pos);
-                    pos += 2;
-                    uint16_t num_items = big_endian_read_16(packet, pos);
-                    pos += 2;
-                    for (i = 0; i < num_items; i++){
-                        uint16_t browsable_item_length = 3 + big_endian_read_16(packet, pos+1);
-                        (*avrcp_controller_context.browsing_avrcp_callback)(AVRCP_BROWSING_DATA_PACKET, channel, packet+pos, browsable_item_length);
-                        pos += browsable_item_length;
-                    }               
+                    printf("AVRCP_PDU_ID_GET_FOLDER_ITEMS \n");
+                    // send UID counter with done
+                    if (!browsing_connection->fragmented){
+                        browsing_connection->num_items = big_endian_read_16(packet, pos);
+                        pos += 2;
+                    } 
+                    while (pos < size){
+                        uint8_t header_size = 1;
+                        if (browsing_connection->fragment_size == 0){
+                            browsing_connection->item_type = packet[pos++];
+                            browsing_connection->item_length = big_endian_read_16(packet, pos);
+                            pos += 2;
+                            // reuse packet and add data type as a header
+                            packet[pos-1] = browsing_connection->item_type;
+                            
+                            if (browsing_connection->item_length + pos > size) {
+                                browsing_connection->fragment_size = size - pos;
+                                browsing_connection->fragment[0] = browsing_connection->item_type;
+                                memcpy(&browsing_connection->fragment[header_size], &packet[pos], browsing_connection->fragment_size);
+                                break;
+                            }
+                            (*avrcp_controller_context.browsing_avrcp_callback)(AVRCP_BROWSING_DATA_PACKET, channel, &packet[pos-header_size], browsing_connection->item_length+header_size);
+                            browsing_connection->num_items--;
+                            pos += browsing_connection->item_length;
+                        } else {
+                            uint16_t remaining_bytes_to_copy = browsing_connection->item_length - browsing_connection->fragment_size;
+                            if (remaining_bytes_to_copy + pos > size) {
+                                memcpy(&browsing_connection->fragment[browsing_connection->fragment_size+1], &packet[pos], size - pos);
+                                browsing_connection->fragment_size += size - pos;
+                                break;
+                            } 
+                            memcpy(&browsing_connection->fragment[browsing_connection->fragment_size+1], &packet[pos], remaining_bytes_to_copy);
+                            (*avrcp_controller_context.browsing_avrcp_callback)(AVRCP_BROWSING_DATA_PACKET, channel, browsing_connection->fragment, browsing_connection->item_length+1);
+                            browsing_connection->num_items--;
+                            browsing_connection->fragment_size = 0;
+                            pos += remaining_bytes_to_copy;
+                        } 
+                    }
                     break;
                 }
                 default:
                     break;
             }
+
             switch (avctp_packet_type){
                 case AVRCP_SINGLE_PACKET:
                 case AVRCP_END_PACKET:
-                    avrcp_browsing_controller_emit_done(avrcp_controller_context.browsing_avrcp_callback, channel, browsing_status, ERROR_CODE_SUCCESS);
+                    browsing_connection->state = AVCTP_CONNECTION_OPENED;
+                    browsing_connection->fragmented = 0;
+                    browsing_connection->num_items = 0;
+                    browsing_connection->fragment_size = 0;
+                    avrcp_browsing_controller_emit_done_with_uid_counter(avrcp_controller_context.browsing_avrcp_callback, channel, uid_counter, browsing_status, ERROR_CODE_SUCCESS);
                     break;
-                default:
+                case AVRCP_START_PACKET:
+                    browsing_connection->fragmented = 1;
+                    browsing_connection->fragmented_pdu_id = pdu_id;
+                    browsing_connection->fragmented_browsing_status = browsing_status;
+                    break;
+                case AVRCP_CONTINUE_PACKET:
+                    browsing_connection->fragmented = 1;
                     break;
             }
             break;
@@ -600,7 +644,7 @@ uint8_t avrcp_avrcp_browsing_decline_incoming_connection(uint16_t avrcp_browsing
  * @param attribute_count
  * @param attribute_list
  **/
-static uint8_t avrcp_browsing_controller_get_folder_items(uint16_t avrcp_browsing_cid, uint8_t scope, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap){
+static uint8_t avrcp_browsing_controller_get_folder_items(uint16_t avrcp_browsing_cid, avrcp_browsing_scope_t scope, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap){
     avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid(avrcp_browsing_cid, &avrcp_controller_context);
     if (!avrcp_connection){
         log_error("avrcp_browsing_controller_disconnect: could not find a connection.");
@@ -620,21 +664,21 @@ static uint8_t avrcp_browsing_controller_get_folder_items(uint16_t avrcp_browsin
 }
 
 uint8_t avrcp_browsing_controller_get_media_players(uint16_t avrcp_browsing_cid, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap){
-    return avrcp_browsing_controller_get_folder_items(avrcp_browsing_cid, 0, start_item, end_item, attr_bitmap);
+    return avrcp_browsing_controller_get_folder_items(avrcp_browsing_cid, AVRCP_BROWSING_MEDIA_PLAYER_LIST, start_item, end_item, attr_bitmap);
 }
 
 uint8_t avrcp_browsing_controller_browse_file_system(uint16_t avrcp_browsing_cid, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap){
     // return avrcp_browsing_controller_get_folder_items(avrcp_browsing_cid, 1, 0, 0xFFFFFFFF, attr_bitmap);
-    return avrcp_browsing_controller_get_folder_items(avrcp_browsing_cid, 1, start_item, end_item, attr_bitmap);
+    return avrcp_browsing_controller_get_folder_items(avrcp_browsing_cid, AVRCP_BROWSING_MEDIA_PLAYER_VIRTUAL_FILESYSTEM, start_item, end_item, attr_bitmap);
 }
 
 uint8_t avrcp_browsing_controller_browse_media(uint16_t avrcp_browsing_cid, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap){
     // return avrcp_browsing_controller_get_folder_items(avrcp_browsing_cid, 2, 0, 0xFFFFFFFF, 0, NULL);
-    return avrcp_browsing_controller_get_folder_items(avrcp_browsing_cid, 2, start_item, end_item, attr_bitmap);
+    return avrcp_browsing_controller_get_folder_items(avrcp_browsing_cid, AVRCP_BROWSING_SEARCH, start_item, end_item, attr_bitmap);
 }
 
 uint8_t avrcp_browsing_controller_browse_now_playing_list(uint16_t avrcp_browsing_cid, uint32_t start_item, uint32_t end_item, uint32_t attr_bitmap){
-    return avrcp_browsing_controller_get_folder_items(avrcp_browsing_cid, 3, start_item, end_item, attr_bitmap);
+    return avrcp_browsing_controller_get_folder_items(avrcp_browsing_cid, AVRCP_BROWSING_NOW_PLAYING, start_item, end_item, attr_bitmap);
 }
 
 
@@ -690,7 +734,7 @@ uint8_t avrcp_browsing_controller_change_path(uint16_t avrcp_browsing_cid, uint8
     
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
     
-    if (!connection || connection->state != AVCTP_CONNECTION_OPENED || !folder_uid){
+    if (!connection || connection->state != AVCTP_CONNECTION_OPENED){
         log_error("avrcp_browsing_controller_change_path: connection in wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 
@@ -699,17 +743,20 @@ uint8_t avrcp_browsing_controller_change_path(uint16_t avrcp_browsing_cid, uint8
         log_error("avrcp_browsing_controller_change_path: no browsed player set.");
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-
+    printf(" send change path\n");
     connection->change_path = 1;
     connection->direction = direction;
-
-    memcpy(connection->folder_uid, folder_uid, 8);
+    memset(connection->folder_uid, 0, 8);
+    if (folder_uid){
+        memcpy(connection->folder_uid, folder_uid, 8);
+    }
+    
     avrcp_request_can_send_now(avrcp_connection, connection->l2cap_browsing_cid);
     return ERROR_CODE_SUCCESS;
 }
 
 uint8_t avrcp_browsing_controller_go_up_one_level(uint16_t avrcp_browsing_cid){
-    return avrcp_browsing_controller_change_path(avrcp_browsing_cid, 0, 0);
+    return avrcp_browsing_controller_change_path(avrcp_browsing_cid, 0, NULL);
 }
 
 uint8_t avrcp_browsing_controller_go_down_one_level(uint16_t avrcp_browsing_cid, uint8_t * folder_uid){

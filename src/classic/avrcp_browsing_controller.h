@@ -202,7 +202,6 @@ uint8_t avrcp_browsing_controller_set_addressed_player(uint16_t avrcp_browsing_c
 uint8_t avrcp_browsing_controller_change_path(uint16_t avrcp_browsing_cid, uint8_t direction, uint8_t * folder_uid);
 uint8_t avrcp_browsing_controller_go_up_one_level(uint16_t avrcp_browsing_cid);
 uint8_t avrcp_browsing_controller_go_down_one_level(uint16_t avrcp_browsing_cid, uint8_t * folder_uid);
-
 /* API_END */
 
 #if defined __cplusplus

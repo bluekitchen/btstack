@@ -57,6 +57,7 @@ extern "C" {
 #define AVRCP_MEDIA_ATTR_COUNT 7
 #define AVRCP_MAX_ATTRIBUTTE_SIZE 100
 #define AVRCP_ATTRIBUTE_HEADER_LEN  8
+#define AVRCP_MAX_FOLDER_NAME_SIZE      20
 
 typedef enum {
     AVRCP_STATUS_INVALID_COMMAND = 0,           // sent if TG received a PDU that it did not understand.
@@ -129,6 +130,7 @@ typedef enum {
     AVRCP_PDU_ID_SET_BROWSED_PLAYER = 0x70,
     AVRCP_PDU_ID_GET_FOLDER_ITEMS = 0x71,
     AVRCP_PDU_ID_CHANGE_PATH = 0x72,
+    AVRCP_PDU_ID_PLAY_ITEM = 0x74,
     AVRCP_PDU_ID_UNDEFINED = 0xFF
 } avrcp_pdu_id_t;
 
@@ -256,6 +258,13 @@ typedef enum {
     AVCTP_W2_RECEIVE_RESPONSE
 } avctp_connection_state_t;
 
+typedef enum {
+    AVRCP_BROWSING_MEDIA_PLAYER_LIST = 0x00,
+    AVRCP_BROWSING_MEDIA_PLAYER_VIRTUAL_FILESYSTEM,
+    AVRCP_BROWSING_SEARCH,
+    AVRCP_BROWSING_NOW_PLAYING
+} avrcp_browsing_scope_t;
+
 typedef struct {
     uint16_t len;
     uint8_t  * value;
@@ -304,7 +313,7 @@ typedef struct {
 
     // get folder item
     uint8_t  get_folder_item;
-    uint8_t  scope;
+    avrcp_browsing_scope_t  scope;
     uint32_t start_item;
     uint32_t end_item;
     uint32_t attr_bitmap;
@@ -314,6 +323,17 @@ typedef struct {
     uint8_t  direction;
     uint16_t uid_counter;
     uint8_t  folder_uid[8];
+
+    // fragmentation
+    uint8_t fragmented;
+    avrcp_pdu_id_t fragmented_pdu_id;
+    uint8_t fragmented_browsing_status;
+    uint16_t fragmented_uid_counter;
+    uint16_t num_items;
+    uint8_t item_type;
+    uint16_t item_length;
+    uint16_t fragment_size;
+    uint8_t  fragment[100];
 } avrcp_browsing_connection_t;
 // BROWSING END
 

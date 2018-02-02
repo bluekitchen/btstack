@@ -1937,13 +1937,14 @@ typedef uint8_t sm_key_t[16];
 
 
 /**
- * @format 1211
+ * @format 12211
  * @param subevent_code
  * @param browsing_cid
+ * @param uid_counter
  * @param browsing_status
  * @param bluetooth_status
  */
-#define AVRCP_SUBEVENT_BROWSING_MEDIA_ITEM_DONE                                0x1E
+#define AVRCP_SUBEVENT_BROWSING_DONE                                          0x1E
 
 
 /**

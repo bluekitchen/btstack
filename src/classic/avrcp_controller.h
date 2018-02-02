@@ -284,6 +284,17 @@ uint8_t avrcp_controller_set_shuffle_mode(uint16_t avrcp_cid, avrcp_shuffle_mode
  * @returns status
  */
 uint8_t avrcp_controller_set_repeat_mode(uint16_t avrcp_cid, avrcp_repeat_mode_t mode);
+
+/**
+ * @brief The PlayItem command starts playing an item indicated by the UID. It is routed to the Addressed Player.
+ * @param avrcp_cid
+ * @param scope
+ * @param uid
+ * @param uid_counter
+ * @return status 
+ **/
+uint8_t avrcp_controller_play_item(uint16_t avrcp_cid, avrcp_browsing_scope_t scope, uint8_t * uid, uint16_t uid_counter);
+
 /* API_END */
 
 // Used by AVRCP controller and AVRCP browsing controller
