@@ -117,10 +117,9 @@ typedef enum {
 } L2CAP_CHANNEL_STATE_VAR;
 
 typedef enum {
-    L2CAP_CHANNEL_TYPE_CLASSIC,         // Basic or ERTM
-    L2CAP_CHANNEL_TYPE_CONNECTIONLESS,  // Classic
-    L2CAP_CHANNEL_TYPE_LE_FIXED,        // ATT + SM
-    L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL,
+    L2CAP_CHANNEL_TYPE_CLASSIC,         // Classic Basic or ERTM
+    L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL, // LE
+    L2CAP_CHANNEL_TYPE_FIXED,           // Classic Connectionless + LE ATT + LE SM
 } l2cap_channel_type_t;
 
 typedef struct {
@@ -161,16 +160,46 @@ typedef struct {
 
 } l2cap_ertm_config_t;
 
-// info regarding an actual connection
+// info regarding an actual channel
+// note: l2cap_fixed_channel and l2cap_channel_t share commmon fields
+
+typedef struct l2cap_fixed_channel {
+    // linked list - assert: first field
+    btstack_linked_item_t    item;
+    
+    // channel type
+    l2cap_channel_type_t channel_type;
+
+    // local cid, primary key for channel lookup
+    uint16_t  local_cid;
+
+    // packet handler
+    btstack_packet_handler_t packet_handler;
+
+    // send request
+    uint8_t waiting_for_can_send_now;
+
+    // -- end of shared prefix
+
+} l2cap_fixed_channel_t;
+
 typedef struct {
     // linked list - assert: first field
     btstack_linked_item_t    item;
     
+    // channel type
+    l2cap_channel_type_t channel_type;
+
+    // local cid, primary key for channel lookup
+    uint16_t  local_cid;
+
     // packet handler
     btstack_packet_handler_t packet_handler;
 
-    // channel type
-    l2cap_channel_type_t channel_type;
+    // send request
+    uint8_t   waiting_for_can_send_now;
+
+    // -- end of shared prefix
 
     // timer
     btstack_timer_source_t rtx; // also used for ertx
@@ -187,7 +216,6 @@ typedef struct {
     uint8_t   remote_sig_id;    // used by other side, needed for delayed response
     uint8_t   local_sig_id;     // own signaling identifier
     
-    uint16_t  local_cid;
     uint16_t  remote_cid;
     
     uint16_t  local_mtu;
@@ -200,7 +228,6 @@ typedef struct {
     gap_security_level_t required_security_level;
 
     uint8_t   reason; // used in decline internal
-    uint8_t   waiting_for_can_send_now;
 
     // LE Data Channels
 

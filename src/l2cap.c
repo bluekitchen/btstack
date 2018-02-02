@@ -74,12 +74,6 @@
 #define L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET 2
 #define L2CAP_SIGNALING_COMMAND_DATA_OFFSET   4
 
-// internal table
-#define L2CAP_FIXED_CHANNEL_TABLE_INDEX_ATTRIBUTE_PROTOCOL 0
-#define L2CAP_FIXED_CHANNEL_TABLE_INDEX_SECURITY_MANAGER_PROTOCOL  1
-#define L2CAP_FIXED_CHANNEL_TABLE_INDEX_CONNECTIONLESS_CHANNEL 2
-#define L2CAP_FIXED_CHANNEL_TABLE_SIZE (L2CAP_FIXED_CHANNEL_TABLE_INDEX_CONNECTIONLESS_CHANNEL+1)
-
 #if defined(ENABLE_LE_DATA_CHANNELS) || defined(ENABLE_CLASSIC)
 #define L2CAP_USES_CHANNELS
 #endif
@@ -120,11 +114,10 @@ static void l2cap_ertm_monitor_timeout_callback(btstack_timer_source_t * ts);
 static void l2cap_ertm_retransmission_timeout_callback(btstack_timer_source_t * ts);
 #endif
 
-typedef struct l2cap_fixed_channel {
-    btstack_packet_handler_t callback;
-    uint8_t waiting_for_can_send_now;
-    uint8_t next_request;
-} l2cap_fixed_channel_t;
+// l2cap_fixed_channel_t entries
+static l2cap_fixed_channel_t l2cap_fixed_channel_att;
+static l2cap_fixed_channel_t l2cap_fixed_channel_sm;
+static l2cap_fixed_channel_t l2cap_fixed_channel_connectionless;
 
 #ifdef ENABLE_CLASSIC
 static btstack_linked_list_t l2cap_services;
@@ -135,19 +128,13 @@ static uint8_t require_security_level2_for_outgoing_sdp;
 static btstack_linked_list_t l2cap_le_services;
 #endif
 
-#ifdef L2CAP_USES_CHANNELS
+// single list of channels for Classic Channels, LE Data Channels, Classic Connectionless, ATT, and SM
 static btstack_linked_list_t l2cap_channels;
-#endif
 
 // used to cache l2cap rejects, echo, and informational requests
 static l2cap_signaling_response_t signaling_responses[NR_PENDING_SIGNALING_RESPONSES];
 static int signaling_responses_pending;
-
 static btstack_packet_callback_registration_t hci_event_callback_registration;
-#define FIXED_CHANNEL_FIFO_INVALID_INDEX 0xff
-static l2cap_fixed_channel_t fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_SIZE];
-static uint8_t fixed_channel_head_index = FIXED_CHANNEL_FIFO_INVALID_INDEX;
-static uint8_t fixed_channel_tail_index = FIXED_CHANNEL_FIFO_INVALID_INDEX;
 
 #ifdef ENABLE_BLE
 // only used for connection parameter update events
@@ -565,7 +552,7 @@ static void l2cap_ertm_notify_channel_can_send(l2cap_channel_t * channel){
 uint8_t l2cap_accept_ertm_connection(uint16_t local_cid, l2cap_ertm_config_t * ertm_config, uint8_t * buffer, uint32_t size){
 
     log_info("L2CAP_ACCEPT_ERTM_CONNECTION local_cid 0x%x", local_cid);
-    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
+    l2cap_channel_t * channel = (l2cap_channel_t*) l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         log_error("l2cap_accept_connection called but local_cid 0x%x not found", local_cid);
         return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
@@ -588,7 +575,7 @@ uint8_t l2cap_accept_ertm_connection(uint16_t local_cid, l2cap_ertm_config_t * e
 }
 
 uint8_t l2cap_ertm_set_busy(uint16_t local_cid){
-    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid( local_cid);
+    l2cap_channel_t * channel = (l2cap_channel_t*) l2cap_get_channel_for_local_cid( local_cid);
     if (!channel) {
         log_error( "l2cap_decline_connection called but local_cid 0x%x not found", local_cid);
         return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
@@ -602,7 +589,7 @@ uint8_t l2cap_ertm_set_busy(uint16_t local_cid){
 }
 
 uint8_t l2cap_ertm_set_ready(uint16_t local_cid){
-    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid( local_cid);
+    l2cap_channel_t * channel = (l2cap_channel_t*) l2cap_get_channel_for_local_cid( local_cid);
     if (!channel) {
         log_error( "l2cap_decline_connection called but local_cid 0x%x not found", local_cid);
         return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
@@ -728,44 +715,19 @@ static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l
 
 #endif
 
-
-static uint16_t l2cap_fixed_channel_table_channel_id_for_index(int index){
-    switch (index){
-        case L2CAP_FIXED_CHANNEL_TABLE_INDEX_ATTRIBUTE_PROTOCOL:
-            return L2CAP_CID_ATTRIBUTE_PROTOCOL;
-        case L2CAP_FIXED_CHANNEL_TABLE_INDEX_SECURITY_MANAGER_PROTOCOL:
-            return L2CAP_CID_SECURITY_MANAGER_PROTOCOL;
-        case L2CAP_FIXED_CHANNEL_TABLE_INDEX_CONNECTIONLESS_CHANNEL:
-            return L2CAP_CID_CONNECTIONLESS_CHANNEL;
-        default:
-            return 0;
-    }  
-}
-static int l2cap_fixed_channel_table_index_for_channel_id(uint16_t channel_id){
-    switch (channel_id){
-        case L2CAP_CID_ATTRIBUTE_PROTOCOL:
-            return L2CAP_FIXED_CHANNEL_TABLE_INDEX_ATTRIBUTE_PROTOCOL;
-        case L2CAP_CID_SECURITY_MANAGER_PROTOCOL:
-            return  L2CAP_FIXED_CHANNEL_TABLE_INDEX_SECURITY_MANAGER_PROTOCOL;
-        case L2CAP_CID_CONNECTIONLESS_CHANNEL:
-            return  L2CAP_FIXED_CHANNEL_TABLE_INDEX_CONNECTIONLESS_CHANNEL;
-        default:
-            return -1;
-        }
-}
-
-static int l2cap_fixed_channel_table_index_is_le(int index){
-    if (index == L2CAP_CID_CONNECTIONLESS_CHANNEL) return 0;
-    return 1;
-}
-
 void l2cap_init(void){
     signaling_responses_pending = 0;
     
-#ifdef ENABLE_CLASSIC
     l2cap_channels = NULL;
+
+#ifdef ENABLE_CLASSIC
     l2cap_services = NULL;
     require_security_level2_for_outgoing_sdp = 0;
+
+    // Setup Connectionless Channel
+    l2cap_fixed_channel_connectionless.local_cid     = L2CAP_CID_CONNECTIONLESS_CHANNEL;
+    l2cap_fixed_channel_connectionless.channel_type  = L2CAP_CHANNEL_TYPE_FIXED;
+    btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) &l2cap_fixed_channel_connectionless);
 #endif
 
 #ifdef ENABLE_LE_DATA_CHANNELS
@@ -775,13 +737,18 @@ void l2cap_init(void){
 #ifdef ENABLE_BLE
     l2cap_event_packet_handler = NULL;
     l2cap_le_custom_max_mtu = 0;
-#endif
-    memset(fixed_channels, 0, sizeof(fixed_channels));
-    int i;
-    for (i=0;i<L2CAP_FIXED_CHANNEL_TABLE_SIZE;i++){
-        fixed_channels[i].next_request = FIXED_CHANNEL_FIFO_INVALID_INDEX;        
-    }
 
+    // Setup fixed ATT Channel
+    l2cap_fixed_channel_att.local_cid    = L2CAP_CID_ATTRIBUTE_PROTOCOL;
+    l2cap_fixed_channel_att.channel_type = L2CAP_CHANNEL_TYPE_FIXED;
+    btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) &l2cap_fixed_channel_att);
+
+    // Setup fixed SM Channel
+    l2cap_fixed_channel_sm.local_cid     = L2CAP_CID_SECURITY_MANAGER_PROTOCOL;
+    l2cap_fixed_channel_sm.channel_type  = L2CAP_CHANNEL_TYPE_FIXED;
+    btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) &l2cap_fixed_channel_sm);
+#endif
+    
     // 
     // register callback with HCI
     //
@@ -804,23 +771,11 @@ void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t
 }
 
 void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t channel_id){
-    UNUSED(con_handle);  // ok: there is no channel
+    UNUSED(con_handle);  // ok: there is no con handle
 
-    int index = l2cap_fixed_channel_table_index_for_channel_id(channel_id);
-    if (index < 0) return;
-
-    // check if already registered
-    if (fixed_channels[index].waiting_for_can_send_now) return;
-
-    // insert into queue
-    if (fixed_channel_tail_index == FIXED_CHANNEL_FIFO_INVALID_INDEX){
-        fixed_channel_head_index = index;
-    } else {
-        fixed_channels[fixed_channel_tail_index].next_request = index;
-    }
-    fixed_channel_tail_index = index;
-    fixed_channels[index].next_request = FIXED_CHANNEL_FIFO_INVALID_INDEX;
-    fixed_channels[index].waiting_for_can_send_now = 1;
+    l2cap_fixed_channel_t * channel = (l2cap_fixed_channel_t *) l2cap_get_channel_for_local_cid(channel_id);
+    if (!channel) return;
+    channel->waiting_for_can_send_now = 1;
     l2cap_notify_channel_can_send();
 }
 
@@ -960,18 +915,29 @@ static void l2cap_emit_incoming_connection(l2cap_channel_t *channel) {
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid){
+static l2cap_fixed_channel_t * l2cap_channel_item_by_cid(uint16_t cid){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
-        l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-        if ( channel->local_cid == local_cid) {
+        l2cap_fixed_channel_t * channel = (l2cap_fixed_channel_t*) btstack_linked_list_iterator_next(&it);
+        if (channel->local_cid == cid) {
             return channel;
         }
     } 
     return NULL;
 }
 
+// used for Classic Channels + LE Data Channels. local_cid >= 0x40
+static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid){
+    if (local_cid < 0x40) return NULL;
+    return (l2cap_channel_t*) l2cap_channel_item_by_cid(local_cid);
+}
+
+// used for fixed channels in LE (ATT/SM) and Classic (Connectionless Channel). CID < 0x04
+static l2cap_fixed_channel_t * l2cap_fixed_channel_for_channel_id(uint16_t local_cid){
+    if (local_cid >= 0x40) return NULL;
+    return (l2cap_fixed_channel_t*) l2cap_channel_item_by_cid(local_cid);
+}
 ///
 
 void l2cap_request_can_send_now_event(uint16_t local_cid){
@@ -1017,12 +983,24 @@ uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid){
     return 0;
 }
 
+static int l2cap_is_dynamic_channel_type(l2cap_channel_type_t channel_type){
+    switch (channel_type){
+        case L2CAP_CHANNEL_TYPE_CLASSIC:
+        case L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+// RTX Timer only exist for dynamic channels
 static l2cap_channel_t * l2cap_channel_for_rtx_timer(btstack_timer_source_t * ts){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
         l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-        if ( &channel->rtx == ts) {
+        if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
+        if (&channel->rtx == ts) {
             return channel;
         }
     }
@@ -1857,7 +1835,8 @@ static void l2cap_handle_connection_failed_for_addr(bd_addr_t address, uint8_t s
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
         l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-        if ( bd_addr_cmp( channel->address, address) != 0) continue;
+        if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
+        if (bd_addr_cmp( channel->address, address) != 0) continue;
         // channel for this address found
         switch (channel->state){
             case L2CAP_STATE_WAIT_CONNECTION_COMPLETE:
@@ -1875,6 +1854,7 @@ static void l2cap_handle_connection_failed_for_addr(bd_addr_t address, uint8_t s
         btstack_linked_list_iterator_init(&it, &l2cap_channels);
         while (btstack_linked_list_iterator_has_next(&it)){
             l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+            if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
             if (channel->state == L2CAP_STATE_EMIT_OPEN_FAILED_AND_DISCARD){
                 done = 0;
                 // failure, forward error code
@@ -1895,6 +1875,7 @@ static void l2cap_handle_connection_success_for_addr(bd_addr_t address, hci_con_
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
         l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+        if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
         if ( ! bd_addr_cmp( channel->address, address) ){
             l2cap_handle_connection_complete(handle, channel);
         }
@@ -1905,8 +1886,6 @@ static void l2cap_handle_connection_success_for_addr(bd_addr_t address, hci_con_
 #endif
 
 static void l2cap_notify_channel_can_send(void){
-
-#ifdef ENABLE_CLASSIC
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -1916,62 +1895,6 @@ static void l2cap_notify_channel_can_send(void){
         channel->waiting_for_can_send_now = 0;
         l2cap_emit_can_send_now(channel->packet_handler, channel->local_cid);
     }
-#endif
-
-#if 1
-    if (fixed_channel_head_index != FIXED_CHANNEL_FIFO_INVALID_INDEX){
-        int can_send = 0;
-        int remove_entry = 1;
-        uint8_t i = fixed_channel_head_index;
-        if (fixed_channels[i].callback && fixed_channels[i].waiting_for_can_send_now){
-            if (l2cap_fixed_channel_table_index_is_le(i)){
-#ifdef ENABLE_BLE
-                can_send = hci_can_send_acl_le_packet_now();
-                remove_entry = can_send;
-#endif
-            } else {
-#ifdef ENABLE_CLASSIC
-                can_send = hci_can_send_acl_classic_packet_now();
-                remove_entry = can_send;
-#endif
-            }
-        }
-        // remove entry
-        if (remove_entry){
-            fixed_channels[i].waiting_for_can_send_now = 0;
-            fixed_channel_head_index = fixed_channels[i].next_request;
-            fixed_channels[i].next_request = FIXED_CHANNEL_FIFO_INVALID_INDEX;
-            if (fixed_channel_head_index == FIXED_CHANNEL_FIFO_INVALID_INDEX){
-                fixed_channel_tail_index = FIXED_CHANNEL_FIFO_INVALID_INDEX;
-            }
-        }
-        // notify
-        if (can_send) {
-            l2cap_emit_can_send_now(fixed_channels[i].callback, l2cap_fixed_channel_table_channel_id_for_index(i));
-        }
-    }
-#else
-    int i;
-    for (i=0;i<L2CAP_FIXED_CHANNEL_TABLE_SIZE;i++){
-        if (!fixed_channels[i].callback) continue;
-        if (!fixed_channels[i].waiting_for_can_send_now) continue;
-        int can_send = 0;
-        if (l2cap_fixed_channel_table_index_is_le(i)){
-#ifdef ENABLE_BLE
-            can_send = hci_can_send_acl_le_packet_now();
-#endif
-        } else {
-#ifdef ENABLE_CLASSIC
-            can_send = hci_can_send_acl_classic_packet_now();
-#endif
-        } 
-        if (!can_send) continue;
-        fixed_channels[i].waiting_for_can_send_now = 0;
-        l2cap_emit_can_send_now(fixed_channels[i].callback, l2cap_fixed_channel_table_channel_id_for_index(i));
-    }
-
-#endif
-
 }
 
 #ifdef L2CAP_USES_CHANNELS
@@ -2099,6 +2022,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
             btstack_linked_list_iterator_init(&it, &l2cap_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+                if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
                 if (channel->con_handle != handle) continue;
                 btstack_linked_list_iterator_remove(&it);
                 switch(channel->channel_type){
@@ -2129,6 +2053,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
             btstack_linked_list_iterator_init(&it, &l2cap_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+                if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
                 if (channel->con_handle != handle) continue;
                 hci_con_used = 1;
                 break;
@@ -2143,6 +2068,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
             btstack_linked_list_iterator_init(&it, &l2cap_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+                if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
                 if (channel->con_handle != handle) continue;
                 l2cap_handle_remote_supported_features_received(channel);
                 break;
@@ -2155,6 +2081,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
             btstack_linked_list_iterator_init(&it, &l2cap_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+                if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
                 if (channel->con_handle != handle) continue;
 
                 gap_security_level_t actual_level = (gap_security_level_t) packet[4];
@@ -2680,6 +2607,7 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
                     btstack_linked_list_iterator_init(&it, &l2cap_channels);
                     while (btstack_linked_list_iterator_has_next(&it)){
                         l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+                        if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
                         if (channel->con_handle != handle) continue;
                         // bail if ERTM was requested but is not supported
                         if ((channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) && ((connection->l2cap_state.extended_feature_mask & 0x08) == 0)){
@@ -2726,6 +2654,7 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
         l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+        if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
         if (channel->con_handle != handle) continue;
         if (code & 1) {
             // match odd commands (responses) by previous signaling identifier 
@@ -2842,6 +2771,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             btstack_linked_list_iterator_init(&it, &l2cap_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * a_channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+                if (!l2cap_is_dynamic_channel_type(a_channel->channel_type)) continue;
                 if (a_channel->con_handle   != handle) continue;
                 if (a_channel->local_sig_id != sig_id) continue;
                 channel = a_channel;
@@ -2886,6 +2816,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 btstack_linked_list_iterator_init(&it, &l2cap_channels);
                 while (btstack_linked_list_iterator_has_next(&it)){
                     l2cap_channel_t * a_channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+                    if (!l2cap_is_dynamic_channel_type(a_channel->channel_type)) continue;
                     if (a_channel->con_handle != handle) continue;
                     if (a_channel->remote_cid != source_cid) continue;
                     // 0x000a Connection refused - Source CID already allocated
@@ -2967,6 +2898,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
             btstack_linked_list_iterator_init(&it, &l2cap_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * a_channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+                if (!l2cap_is_dynamic_channel_type(a_channel->channel_type)) continue;
                 if (a_channel->con_handle   != handle) continue;
                 if (a_channel->local_sig_id != sig_id) continue;
                 channel = a_channel;
@@ -3051,6 +2983,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, uint16_t size){
 #ifdef ENABLE_CLASSIC
     l2cap_channel_t * l2cap_channel;
+    l2cap_fixed_channel_t * l2cap_fixed_channel;
 
     uint16_t channel_id = READ_L2CAP_CHANNEL_ID(packet); 
     switch (channel_id) {
@@ -3073,9 +3006,10 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
             break;
         }
         case L2CAP_CID_CONNECTIONLESS_CHANNEL:
-            if (fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_CONNECTIONLESS_CHANNEL].callback) {
-                (*fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_CONNECTIONLESS_CHANNEL].callback)(UCD_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
-            }
+            l2cap_fixed_channel = l2cap_fixed_channel_for_channel_id(L2CAP_CID_CONNECTIONLESS_CHANNEL);
+            if (!l2cap_fixed_channel) break;
+            if (!l2cap_fixed_channel->packet_handler) break;
+            (*l2cap_fixed_channel->packet_handler)(UCD_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
             break;
 
         default: 
@@ -3266,6 +3200,8 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
 static void l2cap_acl_le_handler(hci_con_handle_t handle, uint8_t *packet, uint16_t size){
 #ifdef ENABLE_BLE
 
+    l2cap_fixed_channel_t * l2cap_fixed_channel;
+
 #ifdef ENABLE_LE_DATA_CHANNELS
     l2cap_channel_t * l2cap_channel;
 #endif
@@ -3284,15 +3220,17 @@ static void l2cap_acl_le_handler(hci_con_handle_t handle, uint8_t *packet, uint1
         }
 
         case L2CAP_CID_ATTRIBUTE_PROTOCOL:
-            if (fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_ATTRIBUTE_PROTOCOL].callback) {
-                (*fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_ATTRIBUTE_PROTOCOL].callback)(ATT_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
-            }
+            l2cap_fixed_channel = l2cap_fixed_channel_for_channel_id(L2CAP_CID_ATTRIBUTE_PROTOCOL);
+            if (!l2cap_fixed_channel) break;
+            if (!l2cap_fixed_channel->packet_handler) break;
+            (*l2cap_fixed_channel->packet_handler)(ATT_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
             break;
 
         case L2CAP_CID_SECURITY_MANAGER_PROTOCOL:
-            if (fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_SECURITY_MANAGER_PROTOCOL].callback) {
-                (*fixed_channels[L2CAP_FIXED_CHANNEL_TABLE_INDEX_SECURITY_MANAGER_PROTOCOL].callback)(SM_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
-            }
+            l2cap_fixed_channel = l2cap_fixed_channel_for_channel_id(L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
+            if (!l2cap_fixed_channel) break;
+            if (!l2cap_fixed_channel->packet_handler) break;
+            (*l2cap_fixed_channel->packet_handler)(SM_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
             break;
 
         default:
@@ -3369,9 +3307,9 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
 
 // Bluetooth 4.0 - allows to register handler for Attribute Protocol and Security Manager Protocol
 void l2cap_register_fixed_channel(btstack_packet_handler_t the_packet_handler, uint16_t channel_id) {
-    int index = l2cap_fixed_channel_table_index_for_channel_id(channel_id);
-    if (index < 0) return;
-    fixed_channels[index].callback = the_packet_handler;
+    l2cap_fixed_channel_t * channel = l2cap_fixed_channel_for_channel_id(channel_id);
+    if (!channel) return;
+    channel->packet_handler = the_packet_handler;
 }
 
 #ifdef ENABLE_CLASSIC
