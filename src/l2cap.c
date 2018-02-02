@@ -84,6 +84,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8
 static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size );
 static void l2cap_notify_channel_can_send(void);
 static void l2cap_emit_can_send_now(btstack_packet_handler_t packet_handler, uint16_t channel);
+static l2cap_fixed_channel_t * l2cap_fixed_channel_for_channel_id(uint16_t local_cid);
 #ifdef ENABLE_CLASSIC
 static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * channel);
 static void l2cap_handle_connection_complete(hci_con_handle_t con_handle, l2cap_channel_t * channel);
@@ -726,7 +727,7 @@ void l2cap_init(void){
 
     // Setup Connectionless Channel
     l2cap_fixed_channel_connectionless.local_cid     = L2CAP_CID_CONNECTIONLESS_CHANNEL;
-    l2cap_fixed_channel_connectionless.channel_type  = L2CAP_CHANNEL_TYPE_FIXED;
+    l2cap_fixed_channel_connectionless.channel_type  = L2CAP_CHANNEL_TYPE_CONNECTIONLESS;
     btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) &l2cap_fixed_channel_connectionless);
 #endif
 
@@ -740,12 +741,12 @@ void l2cap_init(void){
 
     // Setup fixed ATT Channel
     l2cap_fixed_channel_att.local_cid    = L2CAP_CID_ATTRIBUTE_PROTOCOL;
-    l2cap_fixed_channel_att.channel_type = L2CAP_CHANNEL_TYPE_FIXED;
+    l2cap_fixed_channel_att.channel_type = L2CAP_CHANNEL_TYPE_LE_FIXED;
     btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) &l2cap_fixed_channel_att);
 
     // Setup fixed SM Channel
     l2cap_fixed_channel_sm.local_cid     = L2CAP_CID_SECURITY_MANAGER_PROTOCOL;
-    l2cap_fixed_channel_sm.channel_type  = L2CAP_CHANNEL_TYPE_FIXED;
+    l2cap_fixed_channel_sm.channel_type  = L2CAP_CHANNEL_TYPE_LE_FIXED;
     btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) &l2cap_fixed_channel_sm);
 #endif
     
@@ -773,7 +774,7 @@ void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t
 void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t channel_id){
     UNUSED(con_handle);  // ok: there is no con handle
 
-    l2cap_fixed_channel_t * channel = (l2cap_fixed_channel_t *) l2cap_get_channel_for_local_cid(channel_id);
+    l2cap_fixed_channel_t * channel = (l2cap_fixed_channel_t *) l2cap_fixed_channel_for_channel_id(channel_id);
     if (!channel) return;
     channel->waiting_for_can_send_now = 1;
     l2cap_notify_channel_can_send();
@@ -986,6 +987,16 @@ uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid){
 static int l2cap_is_dynamic_channel_type(l2cap_channel_type_t channel_type){
     switch (channel_type){
         case L2CAP_CHANNEL_TYPE_CLASSIC:
+        case L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+static int l2cap_is_le_channel_type(l2cap_channel_type_t channel_type){
+    switch (channel_type){
+        case L2CAP_CHANNEL_TYPE_LE_FIXED:
         case L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL:
             return 1;
         default:
@@ -1886,14 +1897,35 @@ static void l2cap_handle_connection_success_for_addr(bd_addr_t address, hci_con_
 #endif
 
 static void l2cap_notify_channel_can_send(void){
-    btstack_linked_list_iterator_t it;
-    btstack_linked_list_iterator_init(&it, &l2cap_channels);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-        if (!channel->waiting_for_can_send_now) continue;
-        if (!hci_can_send_acl_packet_now(channel->con_handle)) continue;
-        channel->waiting_for_can_send_now = 0;
-        l2cap_emit_can_send_now(channel->packet_handler, channel->local_cid);
+    int done = 0;
+    while (!done){
+        done = 1;
+        btstack_linked_list_iterator_t it;
+        btstack_linked_list_iterator_init(&it, &l2cap_channels);
+        while (btstack_linked_list_iterator_has_next(&it)){
+            l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+            if (!channel->waiting_for_can_send_now) continue;
+            int can_send = 0;
+            if (l2cap_is_le_channel_type(channel->channel_type)){
+#ifdef ENABLE_BLE
+                can_send = hci_can_send_acl_le_packet_now();
+#endif
+            } else {
+#ifdef ENABLE_CLASSIC
+                can_send = hci_can_send_acl_classic_packet_now();
+#endif
+            }
+            if (!can_send) continue;
+            // requeue for fairness
+            btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
+            btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
+            // emit can send
+            channel->waiting_for_can_send_now = 0;
+            l2cap_emit_can_send_now(channel->packet_handler, channel->local_cid);
+            // exit inner loop as we just broke the iterator, but try again
+            done = 0;
+            break;
+        }
     }
 }
 
