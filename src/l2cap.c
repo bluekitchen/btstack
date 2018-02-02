@@ -104,7 +104,6 @@ static int  l2cap_channel_ready_for_open(l2cap_channel_t *channel);
 static void l2cap_emit_le_channel_opened(l2cap_channel_t *channel, uint8_t status);
 static void l2cap_emit_le_channel_closed(l2cap_channel_t * channel);
 static void l2cap_emit_le_incoming_connection(l2cap_channel_t *channel);
-static l2cap_channel_t * l2cap_le_get_channel_for_local_cid(uint16_t local_cid);
 static void l2cap_le_notify_channel_can_send(l2cap_channel_t *channel);
 static void l2cap_le_finialize_channel_close(l2cap_channel_t *channel);
 static inline l2cap_service_t * l2cap_le_get_service(uint16_t psm);
@@ -128,14 +127,16 @@ typedef struct l2cap_fixed_channel {
 } l2cap_fixed_channel_t;
 
 #ifdef ENABLE_CLASSIC
-static btstack_linked_list_t l2cap_channels;
 static btstack_linked_list_t l2cap_services;
 static uint8_t require_security_level2_for_outgoing_sdp;
 #endif
 
 #ifdef ENABLE_LE_DATA_CHANNELS
-static btstack_linked_list_t l2cap_le_channels;
 static btstack_linked_list_t l2cap_le_services;
+#endif
+
+#ifdef L2CAP_USES_CHANNELS
+static btstack_linked_list_t l2cap_channels;
 #endif
 
 // used to cache l2cap rejects, echo, and informational requests
@@ -769,7 +770,6 @@ void l2cap_init(void){
 
 #ifdef ENABLE_LE_DATA_CHANNELS
     l2cap_le_services = NULL;
-    l2cap_le_channels = NULL;
 #endif
 
 #ifdef ENABLE_BLE
@@ -1377,6 +1377,9 @@ static void l2cap_run(void){
     while (btstack_linked_list_iterator_has_next(&it)){
 
         l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+
+        if (channel->channel_type != L2CAP_CHANNEL_TYPE_CLASSIC) continue;
+
         // log_info("l2cap_run: channel %p, state %u, var 0x%02x", channel, channel->state, channel->state_var);
         switch (channel->state){
 
@@ -1567,7 +1570,7 @@ static void l2cap_run(void){
 #endif
 
 #ifdef ENABLE_LE_DATA_CHANNELS
-    btstack_linked_list_iterator_init(&it, &l2cap_le_channels);
+    btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
         uint8_t  * acl_buffer;
         uint8_t  * l2cap_payload;
@@ -1575,6 +1578,9 @@ static void l2cap_run(void){
         uint16_t payload_size;
         uint16_t mps;
         l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+
+        if (channel->channel_type != L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL) continue;
+
         // log_info("l2cap_run: channel %p, state %u, var 0x%02x", channel, channel->state, channel->state_var);
         switch (channel->state){
             case L2CAP_STATE_WILL_SEND_LE_CONNECTION_REQUEST:
@@ -2090,26 +2096,27 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             handle = little_endian_read_16(packet, 3);
             // send l2cap open failed or closed events for all channels on this handle and free them
-#ifdef ENABLE_CLASSIC
             btstack_linked_list_iterator_init(&it, &l2cap_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
                 if (channel->con_handle != handle) continue;
                 btstack_linked_list_iterator_remove(&it);
-                l2cap_stop_rtx(channel);
-                l2cap_handle_hci_disconnect_event(channel);
-            }
+                switch(channel->channel_type){
+#ifdef ENABLE_CLASSIC
+                    case L2CAP_CHANNEL_TYPE_CLASSIC:
+                        l2cap_stop_rtx(channel);
+                        l2cap_handle_hci_disconnect_event(channel);
+                        break;
 #endif
 #ifdef ENABLE_LE_DATA_CHANNELS
-            btstack_linked_list_iterator_init(&it, &l2cap_le_channels);
-            while (btstack_linked_list_iterator_has_next(&it)){
-                l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-                if (channel->con_handle != handle) continue;
-                btstack_linked_list_iterator_remove(&it);
-                l2cap_handle_hci_le_disconnect_event(channel);
-            }
+                    case L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL:
+                        l2cap_handle_hci_le_disconnect_event(channel);
+                        break;
 #endif
-            break;
+                    default:
+                        break;
+                }
+            }
 #endif
 
         // HCI Connection Timeouts
@@ -2832,7 +2839,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
         case COMMAND_REJECT:
             // Find channel for this sig_id and connection handle
             channel = NULL;
-            btstack_linked_list_iterator_init(&it, &l2cap_le_channels);
+            btstack_linked_list_iterator_init(&it, &l2cap_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * a_channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
                 if (a_channel->con_handle   != handle) continue;
@@ -2849,7 +2856,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 l2cap_emit_le_channel_opened(channel, 0x0002);
                                 
                 // discard channel
-                btstack_linked_list_remove(&l2cap_le_channels, (btstack_linked_item_t *) channel);
+                btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
                 btstack_memory_l2cap_channel_free(channel);
                 break;
             }
@@ -2876,7 +2883,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 }
 
                 // go through list of channels for this ACL connection and check if we get a match
-                btstack_linked_list_iterator_init(&it, &l2cap_le_channels);
+                btstack_linked_list_iterator_init(&it, &l2cap_channels);
                 while (btstack_linked_list_iterator_has_next(&it)){
                     l2cap_channel_t * a_channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
                     if (a_channel->con_handle != handle) continue;
@@ -2940,7 +2947,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 channel->state_var |= L2CAP_CHANNEL_STATE_VAR_INCOMING;
 
                 // add to connections list
-                btstack_linked_list_add(&l2cap_le_channels, (btstack_linked_item_t *) channel);
+                btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) channel);
 
                 // post connection request event
                 l2cap_emit_le_incoming_connection(channel);
@@ -2957,7 +2964,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 
             // Find channel for this sig_id and connection handle
             channel = NULL;
-            btstack_linked_list_iterator_init(&it, &l2cap_le_channels);
+            btstack_linked_list_iterator_init(&it, &l2cap_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * a_channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
                 if (a_channel->con_handle   != handle) continue;
@@ -2975,7 +2982,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 l2cap_emit_le_channel_opened(channel, result);
                                 
                 // discard channel
-                btstack_linked_list_remove(&l2cap_le_channels, (btstack_linked_item_t *) channel);
+                btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
                 btstack_memory_l2cap_channel_free(channel);
                 break;
             }
@@ -2995,7 +3002,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 
             // find channel
             local_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 0);
-            channel = l2cap_le_get_channel_for_local_cid(local_cid);
+            channel = l2cap_get_channel_for_local_cid(local_cid);
             if (!channel) {
                 log_error("l2cap: no channel for cid 0x%02x", local_cid);
                 break;
@@ -3019,7 +3026,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 
             // find channel
             local_cid = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET + 0);
-            channel = l2cap_le_get_channel_for_local_cid(local_cid);
+            channel = l2cap_get_channel_for_local_cid(local_cid);
             if (!channel) {
                 log_error("l2cap: no channel for cid 0x%02x", local_cid);
                 break;
@@ -3291,7 +3298,7 @@ static void l2cap_acl_le_handler(hci_con_handle_t handle, uint8_t *packet, uint1
         default:
 
 #ifdef ENABLE_LE_DATA_CHANNELS
-            l2cap_channel = l2cap_le_get_channel_for_local_cid(channel_id);
+            l2cap_channel = l2cap_get_channel_for_local_cid(channel_id);
             if (l2cap_channel) {
                 // credit counting
                 if (l2cap_channel->credits_incoming == 0){
@@ -3505,25 +3512,12 @@ static void l2cap_emit_le_channel_closed(l2cap_channel_t * channel){
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-
-static l2cap_channel_t * l2cap_le_get_channel_for_local_cid(uint16_t local_cid){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &l2cap_le_channels);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-        if ( channel->local_cid == local_cid) {
-            return channel;
-        }
-    } 
-    return NULL;
-}
-
 // finalize closed channel - l2cap_handle_disconnect_request & DISCONNECTION_RESPONSE
 void l2cap_le_finialize_channel_close(l2cap_channel_t * channel){
     channel->state = L2CAP_STATE_CLOSED;
     l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_CHANNEL_CLOSED);
     // discard channel
-    btstack_linked_list_remove(&l2cap_le_channels, (btstack_linked_item_t *) channel);
+    btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
     btstack_memory_l2cap_channel_free(channel);
 }
 
@@ -3573,7 +3567,7 @@ uint8_t l2cap_le_unregister_service(uint16_t psm) {
 
 uint8_t l2cap_le_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buffer, uint16_t mtu, uint16_t initial_credits){
     // get channel
-    l2cap_channel_t * channel = l2cap_le_get_channel_for_local_cid(local_cid);
+    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
 
     // validate state
@@ -3603,7 +3597,7 @@ uint8_t l2cap_le_accept_connection(uint16_t local_cid, uint8_t * receive_sdu_buf
 
 uint8_t l2cap_le_decline_connection(uint16_t local_cid){
     // get channel
-    l2cap_channel_t * channel = l2cap_le_get_channel_for_local_cid(local_cid);
+    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
 
     // validate state
@@ -3650,7 +3644,7 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con
     channel->automatic_credits    = initial_credits == L2CAP_LE_AUTOMATIC_CREDITS;
 
     // add to connections list
-    btstack_linked_list_add(&l2cap_le_channels, (btstack_linked_item_t *) channel);
+    btstack_linked_list_add(&l2cap_channels, (btstack_linked_item_t *) channel);
 
     // go
     l2cap_run();
@@ -3664,7 +3658,7 @@ uint8_t l2cap_le_create_channel(btstack_packet_handler_t packet_handler, hci_con
  */
 uint8_t l2cap_le_provide_credits(uint16_t local_cid, uint16_t credits){
 
-    l2cap_channel_t * channel = l2cap_le_get_channel_for_local_cid(local_cid);
+    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         log_error("l2cap_le_provide_credits no channel for cid 0x%02x", local_cid);
         return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
@@ -3697,7 +3691,7 @@ uint8_t l2cap_le_provide_credits(uint16_t local_cid, uint16_t credits){
  * @param local_cid             L2CAP LE Data Channel Identifier
  */
 int l2cap_le_can_send_now(uint16_t local_cid){
-    l2cap_channel_t * channel = l2cap_le_get_channel_for_local_cid(local_cid);
+    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         log_error("l2cap_le_provide_credits no channel for cid 0x%02x", local_cid);
         return 0;
@@ -3720,7 +3714,7 @@ int l2cap_le_can_send_now(uint16_t local_cid){
  * @param local_cid             L2CAP LE Data Channel Identifier
  */
 uint8_t l2cap_le_request_can_send_now_event(uint16_t local_cid){
-    l2cap_channel_t * channel = l2cap_le_get_channel_for_local_cid(local_cid);
+    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         log_error("l2cap_le_request_can_send_now_event no channel for cid 0x%02x", local_cid);
         return 0;
@@ -3739,7 +3733,7 @@ uint8_t l2cap_le_request_can_send_now_event(uint16_t local_cid){
  */
 uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t len){
 
-    l2cap_channel_t * channel = l2cap_le_get_channel_for_local_cid(local_cid);
+    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         log_error("l2cap_send no channel for cid 0x%02x", local_cid);
         return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
@@ -3769,7 +3763,7 @@ uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t len){
  */
 uint8_t l2cap_le_disconnect(uint16_t local_cid)
 {
-    l2cap_channel_t * channel = l2cap_le_get_channel_for_local_cid(local_cid);
+    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         log_error("l2cap_send no channel for cid 0x%02x", local_cid);
         return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
