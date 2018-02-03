@@ -1428,6 +1428,8 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
     if (hci_stack->substate == HCI_INIT_W4_SEND_BAUD_CHANGE && hci_event_packet_get_type(packet) == HCI_EVENT_VENDOR_SPECIFIC){
         // TODO: track actual command
         command_completed = 1;
+        // Fix: no HCI Command Complete received, so num_cmd_packets not reset
+        hci_stack->num_cmd_packets = 1;
     }
 
     // Late response (> 100 ms) for HCI Reset e.g. on Toshiba TC35661:
@@ -1528,7 +1530,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
                 uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
                 log_info("Local baud rate change to %"PRIu32"(w4_send_baud_change)", baud_rate);
                 hci_stack->hci_transport->set_baudrate(baud_rate);
-            }   
+            }
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
             return;
         case HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT:
