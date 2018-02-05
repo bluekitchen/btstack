@@ -16,6 +16,7 @@
 #define ENABLE_LE_DATA_LENGTH_EXTENSION
 #define ENABLE_LOG_INFO
 #define ENABLE_LOG_ERROR
+// #define ENABLE_SEGGER_RTT
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 100
