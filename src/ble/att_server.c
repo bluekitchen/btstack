@@ -603,7 +603,7 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
         return;
     }
 
-    log_info("tag_for_empy %x, tag_for_lowest_seq_nr %x", tag_for_empty, tag_for_lowest_seq_nr);
+    log_info("tag_for_empy %"PRIx32", tag_for_lowest_seq_nr %"PRIx32, tag_for_empty, tag_for_lowest_seq_nr);
 
     if (value == 0){
         // done
