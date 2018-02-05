@@ -115,6 +115,7 @@ EXAMPLES = 					\
 	gap_dedicated_bonding	\
 	gap_inquiry 			\
 	gap_le_advertisements   \
+	gap_link_keys           \
 	gatt_battery_query		\
 	gatt_browser            \
 	hfp_ag_demo             \
@@ -237,6 +238,9 @@ gap_dedicated_bonding: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} gap_dedicated_bo
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 gap_inquiry: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} gap_inquiry.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+gap_link_keys: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} gap_link_keys.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 panu_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} panu_demo.c
