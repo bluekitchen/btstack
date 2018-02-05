@@ -196,7 +196,7 @@ static void delete_link_key(bd_addr_t bd_addr){
 }
 
 static int iterator_init(btstack_link_key_iterator_t * it){
-    tinydir_dir * dir = malloc(sizeof(tinydir_dir));
+    tinydir_dir * dir = (tinydir_dir *) malloc(sizeof(tinydir_dir));
     if (!dir) return 0;
     it->context = dir;
     tinydir_open(dir, LINK_KEY_PATH);
