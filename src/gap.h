@@ -44,6 +44,7 @@ extern "C" {
 
 #include "btstack_defines.h"
 #include "btstack_util.h"
+#include "classic/btstack_link_key_db.h"
 
 typedef enum {
 
@@ -424,6 +425,30 @@ void gap_drop_link_key_for_bd_addr(bd_addr_t addr);
  * @param link_key_type
  */
 void gap_store_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_key_type_t type);
+
+/**
+ * @brief Setup Link Key iterator
+ * @param it
+ * @returns 1 on success
+ */
+int gap_link_key_iterator_init(btstack_link_key_iterator_t * it);
+
+/**
+ * @brief Get next Link Key
+ * @param it
+ * @brief addr
+ * @brief link_key
+ * @brief type of link key
+ * @returns 1, if valid link key found
+ */
+int gap_link_key_iterator_get_next(btstack_link_key_iterator_t * it, bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * type);
+
+/**
+ * @brief Frees resources allocated by iterator_init
+ * @note Must be called after iteration to free resources
+ * @param it
+ */
+void gap_link_key_iterator_done(btstack_link_key_iterator_t * it);
 
 /**
  * @brief Start GAP Classic Inquiry

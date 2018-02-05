@@ -352,6 +352,20 @@ void gap_store_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_ke
     log_info("gap_store_link_key_for_bd_addr: %s, type %u", bd_addr_to_str(addr), type);
     hci_stack->link_key_db->put_link_key(addr, link_key, type);
 }
+
+int gap_link_key_iterator_init(btstack_link_key_iterator_t * it){
+    if (!hci_stack->link_key_db) return 0;
+    if (!hci_stack->link_key_db->iterator_init) return 0;
+    return hci_stack->link_key_db->iterator_init(it);
+}
+int gap_link_key_iterator_get_next(btstack_link_key_iterator_t * it, bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * type){
+    if (!hci_stack->link_key_db) return 0;
+    return hci_stack->link_key_db->iterator_get_next(it, bd_addr, link_key, type);
+}
+void gap_link_key_iterator_done(btstack_link_key_iterator_t * it){
+    if (!hci_stack->link_key_db) return;
+    hci_stack->link_key_db->iterator_done(it);
+}
 #endif
 
 static int hci_is_le_connection(hci_connection_t * connection){
