@@ -116,9 +116,13 @@ static void l2cap_ertm_retransmission_timeout_callback(btstack_timer_source_t * 
 #endif
 
 // l2cap_fixed_channel_t entries
+#ifdef ENABLE_BLE
 static l2cap_fixed_channel_t l2cap_fixed_channel_att;
 static l2cap_fixed_channel_t l2cap_fixed_channel_sm;
+#endif
+#ifdef ENABLE_CLASSIC
 static l2cap_fixed_channel_t l2cap_fixed_channel_connectionless;
+#endif
 
 #ifdef ENABLE_CLASSIC
 static btstack_linked_list_t l2cap_services;
@@ -915,6 +919,7 @@ static void l2cap_emit_incoming_connection(l2cap_channel_t *channel) {
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
+#endif
 
 static l2cap_fixed_channel_t * l2cap_channel_item_by_cid(uint16_t cid){
     btstack_linked_list_iterator_t it;    
@@ -928,18 +933,18 @@ static l2cap_fixed_channel_t * l2cap_channel_item_by_cid(uint16_t cid){
     return NULL;
 }
 
-// used for Classic Channels + LE Data Channels. local_cid >= 0x40
-static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid){
-    if (local_cid < 0x40) return NULL;
-    return (l2cap_channel_t*) l2cap_channel_item_by_cid(local_cid);
-}
-
 // used for fixed channels in LE (ATT/SM) and Classic (Connectionless Channel). CID < 0x04
 static l2cap_fixed_channel_t * l2cap_fixed_channel_for_channel_id(uint16_t local_cid){
     if (local_cid >= 0x40) return NULL;
     return (l2cap_fixed_channel_t*) l2cap_channel_item_by_cid(local_cid);
 }
-///
+
+// used for Classic Channels + LE Data Channels. local_cid >= 0x40
+#ifdef L2CAP_USES_CHANNELS
+static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid){
+    if (local_cid < 0x40) return NULL;
+    return (l2cap_channel_t*) l2cap_channel_item_by_cid(local_cid);
+}
 
 void l2cap_request_can_send_now_event(uint16_t local_cid){
     l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
@@ -983,7 +988,9 @@ uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid){
     } 
     return 0;
 }
+#endif
 
+#ifdef L2CAP_USES_CHANNELS
 static int l2cap_is_dynamic_channel_type(l2cap_channel_type_t channel_type){
     switch (channel_type){
         case L2CAP_CHANNEL_TYPE_CLASSIC:
@@ -993,6 +1000,7 @@ static int l2cap_is_dynamic_channel_type(l2cap_channel_type_t channel_type){
             return 0;
     }
 }
+#endif
 
 static int l2cap_is_le_channel_type(l2cap_channel_type_t channel_type){
     switch (channel_type){
@@ -1004,6 +1012,7 @@ static int l2cap_is_le_channel_type(l2cap_channel_type_t channel_type){
     }
 }
 
+#ifdef ENABLE_CLASSIC
 // RTX Timer only exist for dynamic channels
 static l2cap_channel_t * l2cap_channel_for_rtx_timer(btstack_timer_source_t * ts){
     btstack_linked_list_iterator_t it;    
