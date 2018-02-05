@@ -10,7 +10,7 @@ Working with nRF52 pca10040 dev board. Public BD ADDR is set to 11:22:33:44:55:6
 
 ## Getting Started
 
-To integrate BTstack into Zephyr, please move the BTstack project into the Zephyr root folder 'zephyr'.
+To integrate BTstack into Zephyr, please move the BTstack project into the Zephyr root folder 'zephyr'. Please use the Zephry '1.9-branch' for now. In the master branch, Zephyr switched the build system to CMake and this port hasn't been update for that yet.
 
 Then integrate BTstack:
 
