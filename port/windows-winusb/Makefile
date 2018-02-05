@@ -13,7 +13,8 @@ CFLAGS  += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror
 
 CFLAGS += -I${BTSTACK_ROOT}/platform/windows \
 		  -I${BTSTACK_ROOT}/platform/posix \
-		  -I${BTSTACK_ROOT}/platform/embedded
+		  -I${BTSTACK_ROOT}/platform/embedded \
+		  -I${BTSTACK_ROOT}/3rd-party/tinydir
 
 VPATH += ${BTSTACK_ROOT}/platform/embedded
 VPATH += ${BTSTACK_ROOT}/platform/posix
