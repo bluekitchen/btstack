@@ -553,7 +553,7 @@ static void l2cap_ertm_notify_channel_can_send(l2cap_channel_t * channel){
 uint8_t l2cap_accept_ertm_connection(uint16_t local_cid, l2cap_ertm_config_t * ertm_config, uint8_t * buffer, uint32_t size){
 
     log_info("L2CAP_ACCEPT_ERTM_CONNECTION local_cid 0x%x", local_cid);
-    l2cap_channel_t * channel = (l2cap_channel_t*) l2cap_get_channel_for_local_cid(local_cid);
+    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
         log_error("l2cap_accept_connection called but local_cid 0x%x not found", local_cid);
         return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
@@ -576,7 +576,7 @@ uint8_t l2cap_accept_ertm_connection(uint16_t local_cid, l2cap_ertm_config_t * e
 }
 
 uint8_t l2cap_ertm_set_busy(uint16_t local_cid){
-    l2cap_channel_t * channel = (l2cap_channel_t*) l2cap_get_channel_for_local_cid( local_cid);
+    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid( local_cid);
     if (!channel) {
         log_error( "l2cap_decline_connection called but local_cid 0x%x not found", local_cid);
         return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
@@ -590,7 +590,7 @@ uint8_t l2cap_ertm_set_busy(uint16_t local_cid){
 }
 
 uint8_t l2cap_ertm_set_ready(uint16_t local_cid){
-    l2cap_channel_t * channel = (l2cap_channel_t*) l2cap_get_channel_for_local_cid( local_cid);
+    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid( local_cid);
     if (!channel) {
         log_error( "l2cap_decline_connection called but local_cid 0x%x not found", local_cid);
         return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
@@ -774,7 +774,7 @@ void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t
 void l2cap_request_can_send_fix_channel_now_event(hci_con_handle_t con_handle, uint16_t channel_id){
     UNUSED(con_handle);  // ok: there is no con handle
 
-    l2cap_fixed_channel_t * channel = (l2cap_fixed_channel_t *) l2cap_fixed_channel_for_channel_id(channel_id);
+    l2cap_fixed_channel_t * channel = l2cap_fixed_channel_for_channel_id(channel_id);
     if (!channel) return;
     channel->waiting_for_can_send_now = 1;
     l2cap_notify_channel_can_send();
