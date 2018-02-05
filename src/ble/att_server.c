@@ -486,7 +486,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             break;
 
         case ATT_DATA_PACKET:
-            log_info("ATT Packet, handle 0x%04x", handle);
+            log_debug("ATT Packet, handle 0x%04x", handle);
             att_server = att_server_for_handle(handle);
             if (!att_server) break;
 
