@@ -418,6 +418,11 @@ void gap_local_bd_addr(bd_addr_t address_buffer);
  */
 void gap_drop_link_key_for_bd_addr(bd_addr_t addr);
 
+/**
+ * @brief Delete all stored link keys
+ */
+void gap_delete_all_link_keys(void);
+
 /** 
  * @brief Store link key for remote device with baseband address
  * @param addr

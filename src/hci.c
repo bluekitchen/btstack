@@ -353,6 +353,22 @@ void gap_store_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_ke
     hci_stack->link_key_db->put_link_key(addr, link_key, type);
 }
 
+void gap_delete_all_link_keys(void){
+    bd_addr_t  addr;
+    link_key_t link_key;
+    link_key_type_t type;
+    btstack_link_key_iterator_t it;
+    int ok = gap_link_key_iterator_init(&it);
+    if (!ok) {
+        log_error("could not initialize iterator");
+        return;
+    }
+    while (gap_link_key_iterator_get_next(&it, addr, link_key, &type)){
+        gap_drop_link_key_for_bd_addr(addr);
+    }
+    gap_link_key_iterator_done(&it);        
+}
+
 int gap_link_key_iterator_init(btstack_link_key_iterator_t * it){
     if (!hci_stack->link_key_db) return 0;
     if (!hci_stack->link_key_db->iterator_init) return 0;
