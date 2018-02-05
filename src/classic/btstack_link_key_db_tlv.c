@@ -174,6 +174,33 @@ static void btstack_link_key_db_tlv_put_link_key(bd_addr_t bd_addr, link_key_t l
     self->btstack_tlv_impl->store_tag(self->btstack_tlv_context, tag_to_use, (uint8_t*) &entry, sizeof(entry));
 }
 
+static int btstack_link_key_db_tlv_iterator_init(btstack_link_key_iterator_t * it){
+    it->context = (void*) 0;
+    return 1;
+}
+
+static int  btstack_link_key_db_tlv_iterator_get_next(btstack_link_key_iterator_t * it, bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * link_key_type){
+    uintptr_t i = (uintptr_t) it->context;
+    int found = 0;
+    while (i<NVM_NUM_LINK_KEYS){
+        link_key_nvm_t entry;
+        uint32_t tag = btstack_link_key_db_tag_for_index(i++);
+        int size = self->btstack_tlv_impl->get_tag(self->btstack_tlv_context, tag, (uint8_t*) &entry, sizeof(entry));
+        if (size == 0) continue;
+        memcpy(bd_addr, entry.bd_addr, 6);
+        memcpy(link_key, entry.link_key, 16);
+        *link_key_type = entry.link_key_type;
+        found = 1;
+        break;
+    }
+    it->context = (void*) i;
+    return found;
+}
+
+static void btstack_link_key_db_tlv_iterator_done(btstack_link_key_iterator_t * it){
+    UNUSED(it);
+}
+
 const btstack_link_key_db_t btstack_link_key_db_tlv = {
     btstack_link_key_db_tlv_open,
     btstack_link_key_db_tlv_set_bd_addr,
@@ -181,6 +208,9 @@ const btstack_link_key_db_t btstack_link_key_db_tlv = {
     btstack_link_key_db_tlv_get_link_key,
     btstack_link_key_db_tlv_put_link_key,
     btstack_link_key_db_tlv_delete_link_key,
+    btstack_link_key_db_tlv_iterator_init,
+    btstack_link_key_db_tlv_iterator_get_next,
+    btstack_link_key_db_tlv_iterator_done,
 };
 
 const btstack_link_key_db_t * btstack_link_key_db_tlv_get_instance(const btstack_tlv_t * btstack_tlv_impl, void * btstack_tlv_context){
