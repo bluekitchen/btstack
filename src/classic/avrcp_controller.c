@@ -283,7 +283,7 @@ static void avrcp_controller_emit_now_playing_info_event(btstack_packet_handler_
                 event[pos++] = 0;
             }
             break;
-        case AVRCP_MEDIA_ATTR_TOTAL_TRACKS:
+        case AVRCP_MEDIA_ATTR_TOTAL_NUM_ITEMS:
             event[subevent_type_pos] = AVRCP_SUBEVENT_NOW_PLAYING_TOTAL_TRACKS_INFO;
             if (value){
                 event[pos++] = btstack_atoi((char *)value);
@@ -1034,6 +1034,37 @@ uint8_t avrcp_controller_disable_notification(uint16_t avrcp_cid, avrcp_notifica
     return ERROR_CODE_SUCCESS;
 }
 
+uint8_t avrcp_controller_set_addressed_player(uint16_t avrcp_cid, uint16_t addressed_player_id){
+    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(avrcp_cid, &avrcp_controller_context);
+    if (!connection){
+        log_error("avrcp_get_capabilities: could not find a connection.");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    connection->state = AVCTP_W2_SEND_COMMAND;
+    
+    connection->transaction_label++;
+    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    connection->command_type = AVRCP_CTYPE_CONTROL;
+    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
+    connection->subunit_id = AVRCP_SUBUNIT_ID;
+    int pos = 0;
+    big_endian_store_24(connection->cmd_operands, pos, BT_SIG_COMPANY_ID);
+    pos += 3;
+    connection->cmd_operands[pos++] = AVRCP_PDU_ID_SET_ADDRESSED_PLAYER; // PDU ID
+    connection->cmd_operands[pos++] = 0;
+    
+    // Parameter Length
+    big_endian_store_16(connection->cmd_operands, pos, 2);
+    pos += 2;
+
+    big_endian_store_16(connection->cmd_operands, pos, addressed_player_id);
+    pos += 2;
+
+    connection->cmd_operands_length = pos;
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
+}
 
 uint8_t avrcp_controller_get_now_playing_info(uint16_t avrcp_cid){
     avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(avrcp_cid, &avrcp_controller_context);

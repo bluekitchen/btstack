@@ -110,7 +110,7 @@ typedef enum {
     AVRCP_MEDIA_ATTR_ARTIST,
     AVRCP_MEDIA_ATTR_ALBUM,
     AVRCP_MEDIA_ATTR_TRACK,
-    AVRCP_MEDIA_ATTR_TOTAL_TRACKS,
+    AVRCP_MEDIA_ATTR_TOTAL_NUM_ITEMS,
     AVRCP_MEDIA_ATTR_GENRE,
     AVRCP_MEDIA_ATTR_SONG_LENGTH_MS,
     AVRCP_MEDIA_ATTR_NONE = 0xFFFFFFFF
@@ -130,7 +130,9 @@ typedef enum {
     AVRCP_PDU_ID_SET_BROWSED_PLAYER = 0x70,
     AVRCP_PDU_ID_GET_FOLDER_ITEMS = 0x71,
     AVRCP_PDU_ID_CHANGE_PATH = 0x72,
+    AVRCP_PDU_ID_GET_ITEM_ATTRIBUTES = 0x73,
     AVRCP_PDU_ID_PLAY_ITEM = 0x74,
+    AVRCP_PDU_ID_GET_TOTAL_NUMBER_OF_ITEMS = 0x75,
     AVRCP_PDU_ID_SEARCH = 0x80,
     AVRCP_PDU_ID_UNDEFINED = 0xFF
 } avrcp_pdu_id_t;
@@ -305,10 +307,7 @@ typedef struct {
     l2cap_ertm_config_t ertm_config;
 
     // players
-    uint8_t  set_addressed_player_id;
     uint8_t  set_browsed_player_id;
-    
-    uint16_t addressed_player_id;
     uint16_t browsed_player_id;
     uint16_t browsed_player_uid_counter;
 
@@ -329,6 +328,10 @@ typedef struct {
     uint16_t search_str_len;
     uint8_t  search_str[20];
     uint8_t  search;
+    
+    // get_item_attributes
+    uint8_t  get_total_nr_items;
+    avrcp_browsing_scope_t get_total_nr_items_scope;
     
     // fragmentation
     uint8_t fragmented;

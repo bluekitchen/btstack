@@ -188,11 +188,10 @@ uint8_t avrcp_browsing_controller_browse_now_playing_list(uint16_t avrcp_browsin
 uint8_t avrcp_browsing_controller_set_browsed_player(uint16_t avrcp_browsing_cid, uint16_t browsed_player_id);
 
 /** 
- * @brief Set addressed player.  
- * @param avrcp_browsing_cid
- * @param addressed_player_id
+ * @brief Get total num attributes
+ * @param scope 
  */
-uint8_t avrcp_browsing_controller_set_addressed_player(uint16_t avrcp_browsing_cid, uint16_t addressed_player_id);
+uint8_t avrcp_browsing_controller_get_total_nr_items(uint16_t avrcp_browsing_cid, avrcp_browsing_scope_t scope);
 
 /**
  * @brief Navigate one level up or down in thhe virtual filesystem. Requires that s browsed player is set.

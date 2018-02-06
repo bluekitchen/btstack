@@ -209,7 +209,7 @@ static int avrcp_target_send_now_playing_info(uint16_t cid, avrcp_connection_t *
                     fragmented = 1;
                     connection->attribute_value_offset = 0;
                     break;
-                case AVRCP_MEDIA_ATTR_TOTAL_TRACKS:
+                case AVRCP_MEDIA_ATTR_TOTAL_NUM_ITEMS:
                     num_bytes_to_write = AVRCP_ATTR_HEADER_LEN + MAX_NUMBER_ATTR_LEN;
                     if (num_free_bytes >= num_bytes_to_write){
                         num_written_bytes = avrcp_target_pack_single_element_attribute_number(packet, pos, attr_id, connection->total_tracks);
