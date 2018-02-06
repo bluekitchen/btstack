@@ -40,7 +40,8 @@
 // *****************************************************************************
 /* EXAMPLE_START(le_data_channel): LE Data Channel Server - Receive data via L2CAP
  *
- * @text IOS 11 and newer supports LE Data Channels for fast transfer via LE
+ * @text iOS 11 and newer supports LE Data Channels for fast transfer via LE
+ *       [https://github.com/bluekitchen/CBL2CAPChannel-Demo](Basic iOS example on GitHub)
  */
  // *****************************************************************************
 
