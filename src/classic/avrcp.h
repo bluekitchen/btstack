@@ -55,7 +55,7 @@ extern "C" {
 
 #define BT_SIG_COMPANY_ID 0x001958
 #define AVRCP_MEDIA_ATTR_COUNT 7
-#define AVRCP_MAX_ATTRIBUTTE_SIZE 100
+#define AVRCP_MAX_ATTRIBUTTE_SIZE 5000
 #define AVRCP_ATTRIBUTE_HEADER_LEN  8
 #define AVRCP_MAX_FOLDER_NAME_SIZE      20
 
@@ -285,10 +285,9 @@ typedef struct {
 } avrcp_track_t;
 
 typedef enum {
-    AVRCP_PARSER_IDLE = 0,
-    AVRCP_PARSER_GET_ATTRIBUTE_HEADER,       // 8 bytes
+    AVRCP_PARSER_GET_ATTRIBUTE_HEADER = 0,       // 8 bytes
     AVRCP_PARSER_GET_ATTRIBUTE_VALUE,
-    AVRCP_PARSER_IGNORE_ATTRIBUTE_VALUE
+    AVRCP_PARSER_CONTINUE_GET_ATTRIBUTE_VALUE
 } avrcp_parser_state_t;
 
 // BROWSING 
@@ -342,7 +341,7 @@ typedef struct {
     uint8_t item_type;
     uint16_t item_length;
     uint16_t fragment_size;
-    uint8_t  fragment[100];
+    uint8_t  fragment[AVRCP_MAX_ATTRIBUTTE_SIZE];
 } avrcp_browsing_connection_t;
 // BROWSING END
 
@@ -422,6 +421,10 @@ typedef struct {
     
     uint8_t  num_attributes;
     uint8_t  num_parsed_attributes;
+
+    // PTS requires definition of max num fragments
+    uint8_t max_num_fragments;
+    uint8_t num_received_fragments;
 } avrcp_connection_t;
 
 typedef enum {

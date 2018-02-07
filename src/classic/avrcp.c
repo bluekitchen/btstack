@@ -373,6 +373,7 @@ static avrcp_connection_t * avrcp_create_connection(bd_addr_t remote_addr, avrcp
     memset(connection, 0, sizeof(avrcp_connection_t));
     connection->state = AVCTP_CONNECTION_IDLE;
     connection->transaction_label = 0xFF;
+    connection->max_num_fragments = 0xFF;
     connection->avrcp_cid = avrcp_get_next_cid();
     memcpy(connection->remote_addr, remote_addr, 6);
     btstack_linked_list_add(&context->connections, (btstack_linked_item_t *) connection);

@@ -93,6 +93,15 @@ uint8_t avrcp_controller_connect(bd_addr_t bd_addr, uint16_t * avrcp_cid);
 uint8_t avrcp_controller_disconnect(uint16_t avrcp_cid);
 
 /**
+ * @brief Set max num fragments in whuch message can be transmited.
+ * @param avrcp_cid
+ * @param max_num_fragments
+ * @returns status
+ */
+uint8_t avrcp_controller_set_max_num_fragments(uint16_t avrcp_cid, uint8_t max_num_fragments);
+
+
+/**
  * @brief Unit info.
  * @param avrcp_cid
  * @returns status

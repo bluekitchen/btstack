@@ -215,7 +215,8 @@ static void avrcp_parser_reset(avrcp_connection_t * connection){
     connection->num_attributes = 0;
     connection->num_parsed_attributes = 0;
     connection->parser_attribute_header_pos = 0;
-    connection->parser_state = AVRCP_PARSER_IDLE;
+    connection->num_received_fragments = 0;
+    connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_HEADER;
 }
 
 static void avrcp_controller_emit_now_playing_info_event_done(btstack_packet_handler_t callback, uint16_t avrcp_cid, uint8_t ctype, uint8_t status){
@@ -301,23 +302,24 @@ static void avrcp_controller_emit_now_playing_info_event(btstack_packet_handler_
 
 static void avrcp_parser_process_byte(uint8_t byte, avrcp_connection_t * connection, avrcp_command_type_t ctype){
     switch(connection->parser_state){
-        case AVRCP_PARSER_GET_ATTRIBUTE_HEADER:
+        case AVRCP_PARSER_GET_ATTRIBUTE_HEADER:{
             if (connection->parser_attribute_header_pos < AVRCP_ATTRIBUTE_HEADER_LEN) {
                 connection->parser_attribute_header[connection->parser_attribute_header_pos++] = byte;
                 connection->list_offset++;
                 break;
             }
-            connection->attribute_value_len = btstack_min(big_endian_read_16(connection->parser_attribute_header, 6), AVRCP_MAX_ATTRIBUTTE_SIZE );
-            // printf(" attr id %d, len to read %d, total len %d  \n", big_endian_read_32(connection->parser_attribute_header, 0), connection->attribute_value_len, big_endian_read_16(connection->parser_attribute_header, 6));
+            uint16_t attribute_total_value_len = big_endian_read_16(connection->parser_attribute_header, 6);
+            connection->attribute_value_len = btstack_min(attribute_total_value_len, AVRCP_MAX_ATTRIBUTTE_SIZE);
             connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_VALUE;
             break;
+        }
         case AVRCP_PARSER_GET_ATTRIBUTE_VALUE:{
             if (connection->attribute_value_offset < connection->attribute_value_len){
                 connection->attribute_value[connection->attribute_value_offset++] = byte;
                 connection->list_offset++;
                 break;
             }
-            // TODO emit event
+            
             uint32_t attribute_id = big_endian_read_32(connection->parser_attribute_header, 0);
             if (attribute_id > AVRCP_MEDIA_ATTR_NONE && attribute_id <= AVRCP_MEDIA_ATTR_SONG_LENGTH_MS){
                 avrcp_controller_emit_now_playing_info_event(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, attribute_id, connection->attribute_value, connection->attribute_value_len);
@@ -325,7 +327,7 @@ static void avrcp_parser_process_byte(uint8_t byte, avrcp_connection_t * connect
             
             if (connection->attribute_value_offset < big_endian_read_16(connection->parser_attribute_header, 6)){
                 // printf("parse until end of valuE, and ignore it\n");
-                connection->parser_state = AVRCP_PARSER_IGNORE_ATTRIBUTE_VALUE;
+                connection->parser_state = AVRCP_PARSER_CONTINUE_GET_ATTRIBUTE_VALUE;
                 break;
             }
 
@@ -339,7 +341,7 @@ static void avrcp_parser_process_byte(uint8_t byte, avrcp_connection_t * connect
             connection->parser_attribute_header_pos = 0;
             break;
         }
-        case AVRCP_PARSER_IGNORE_ATTRIBUTE_VALUE:
+        case AVRCP_PARSER_CONTINUE_GET_ATTRIBUTE_VALUE:
             if (connection->attribute_value_offset < big_endian_read_16(connection->parser_attribute_header, 6)){
                 connection->list_offset++;
                 connection->attribute_value_offset++;
@@ -708,24 +710,27 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             avrcp_parser_reset(connection);
                             connection->list_size = param_length;
                             connection->num_attributes = packet[pos++];
+                            
                             // printf("AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES num_attributes %d, total size %d, packet type 0x%02x \n", connection->num_attributes, connection->list_size, operands[4] & 0x03);
-                            connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_HEADER;
                             avrcp_source_parse_and_emit_element_attrs(packet+pos, size-pos, connection, ctype);
                             
                             if (packet_type == AVRCP_START_PACKET){
-                                if (connection->num_attributes == 1 && connection->parser_state == AVRCP_PARSER_IGNORE_ATTRIBUTE_VALUE){
-                                    avrcp_controller_request_abort_continuation(connection);
-                                } else {
-                                    avrcp_controller_request_continue_response(connection);
-                                }
+                                avrcp_controller_request_continue_response(connection);
                             }
                             break;
                         case AVRCP_CONTINUE_PACKET:
-                            avrcp_source_parse_and_emit_element_attrs(packet+pos, size-pos, connection, ctype);
-                            avrcp_controller_request_continue_response(connection);
-                            break;
                         case AVRCP_END_PACKET:
-                            avrcp_source_parse_and_emit_element_attrs(packet+pos, size-pos, connection, ctype);
+                            connection->num_received_fragments++;
+                            if (connection->num_received_fragments < connection->max_num_fragments){
+                                avrcp_source_parse_and_emit_element_attrs(packet+pos, size-pos, connection, ctype);
+                                if (packet_type == AVRCP_CONTINUE_PACKET){
+                                    avrcp_controller_request_continue_response(connection);
+                                }
+                            } else {
+                                avrcp_controller_request_abort_continuation(connection);
+                                avrcp_controller_emit_now_playing_info_event_done(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, 1);
+                                avrcp_parser_reset(connection);
+                            }
                             break;
                     }
                 }
@@ -1251,5 +1256,15 @@ uint8_t avrcp_controller_play_item(uint16_t avrcp_cid, avrcp_browsing_scope_t sc
     connection->cmd_operands_length = pos;
 
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t avrcp_controller_set_max_num_fragments(uint16_t avrcp_cid, uint8_t max_num_fragments){
+    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(avrcp_cid, &avrcp_controller_context);
+    if (!connection){
+        log_error("avrcp_controller_play_item: could not find a connection.");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    connection->max_num_fragments = max_num_fragments;
     return ERROR_CODE_SUCCESS;
 }
