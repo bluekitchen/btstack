@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - ATT Dispatch: round robin for ATT Server & GATT Client
 - L2CAP: round robin for all L2CAP channels (fixed and dynamic)
 - btstack_link_key_db: addition functions for link key iteration
+- GAP: LE scanning enabled not reset on HCI Reset -> can be enabled before HCI Power Up
 
 ### Fixed
 - tc3556x: fix startup after baud rate change

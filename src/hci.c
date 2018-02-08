@@ -1654,6 +1654,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 
 #ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
         case HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED:
+            log_info("Supported commands %x", hci_stack->local_supported_commands[0] & 0x30);
             if ((hci_stack->local_supported_commands[0] & 0x30) == 0x30){
                 hci_stack->substate = HCI_INIT_LE_SET_EVENT_MASK;
                 return;
@@ -2211,7 +2212,7 @@ static void event_handler(uint8_t *packet, int size){
 #ifdef ENABLE_LE_CENTRAL
                 case HCI_SUBEVENT_LE_ADVERTISING_REPORT:
                     // log_info("advertising report received");
-                    if (hci_stack->le_scanning_state != LE_SCANNING) break;
+                    if (!hci_stack->le_scanning_enabled) break;
                     le_handle_advertisement_report(packet, size);
                     break;
 #endif
@@ -2415,7 +2416,7 @@ static void hci_state_reset(void){
     hci_stack->le_random_address_set = 0;
 #endif
 #ifdef ENABLE_LE_CENTRAL
-    hci_stack->le_scanning_state = LE_SCAN_IDLE;
+    hci_stack->le_scanning_active  = 0;
     hci_stack->le_scan_type = 0xff; 
     hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
     hci_stack->le_whitelist = 0;
@@ -3009,18 +3010,10 @@ static void hci_run(void){
 
 #ifdef ENABLE_LE_CENTRAL
         // handle le scan
-        switch(hci_stack->le_scanning_state){
-            case LE_START_SCAN:
-                hci_stack->le_scanning_state = LE_SCANNING;
-                hci_send_cmd(&hci_le_set_scan_enable, 1, 0);
-                return;
-                
-            case LE_STOP_SCAN:
-                hci_stack->le_scanning_state = LE_SCAN_IDLE;
-                hci_send_cmd(&hci_le_set_scan_enable, 0, 0);
-                return;
-            default:
-                break;
+        if ((hci_stack->le_scanning_enabled != hci_stack->le_scanning_active)){
+            hci_stack->le_scanning_active = hci_stack->le_scanning_enabled;
+            hci_send_cmd(&hci_le_set_scan_enable, hci_stack->le_scanning_enabled, 0);
+            return;
         }
         if (hci_stack->le_scan_type != 0xff){
             // defaults: active scanning, accept all advertisement packets
@@ -4017,14 +4010,12 @@ void gap_set_local_name(const char * local_name){
 
 #ifdef ENABLE_LE_CENTRAL
 void gap_start_scan(void){
-    if (hci_stack->le_scanning_state == LE_SCANNING) return;
-    hci_stack->le_scanning_state = LE_START_SCAN;
+    hci_stack->le_scanning_enabled = 1;
     hci_run();
 }
 
 void gap_stop_scan(void){
-    if ( hci_stack->le_scanning_state == LE_SCAN_IDLE) return;
-    hci_stack->le_scanning_state = LE_STOP_SCAN;
+    hci_stack->le_scanning_enabled = 0;
     hci_run();
 }
 

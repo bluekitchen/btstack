@@ -214,14 +214,6 @@ typedef enum {
     BLUETOOTH_ACTIVE
 } BLUETOOTH_STATE;
 
-// le central scanning state
-typedef enum {
-    LE_SCAN_IDLE,
-    LE_START_SCAN,
-    LE_SCANNING,
-    LE_STOP_SCAN,
-} le_scanning_state_t;
-
 typedef enum {
     LE_CONNECTING_IDLE,
     LE_CONNECTING_DIRECT,
@@ -795,7 +787,9 @@ typedef struct {
 #endif
 
 #ifdef ENABLE_LE_CENTRAL
-    le_scanning_state_t   le_scanning_state;
+    uint8_t   le_scanning_enabled;
+    uint8_t   le_scanning_active;
+
     le_connecting_state_t le_connecting_state;
 
     // buffer for le scan type command - 0xff not set
