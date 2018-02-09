@@ -143,8 +143,13 @@ static gatt_client_t * get_gatt_client_context_for_handle(uint16_t handle){
 // returns existing one, or tries to setup new one
 static gatt_client_t * provide_context_for_conn_handle(hci_con_handle_t con_handle){
     gatt_client_t * context = get_gatt_client_context_for_handle(con_handle);
-    if (context) return  context;
+    if (context) return context;
 
+    // bail if no such hci connection
+    if (!hci_connection_for_handle(con_handle)){
+        log_error("No connection for handle 0x%04x", con_handle);
+        return NULL;
+    }
     context = btstack_memory_gatt_client_get();
     if (!context) return NULL;
     // init state
