@@ -485,7 +485,7 @@ static int media_processing_init(avdtp_media_codec_configuration_sbc_t configura
     memset(ring_buffer_storage, 0, sizeof(ring_buffer_storage));
     btstack_ring_buffer_init(&ring_buffer, ring_buffer_storage, sizeof(ring_buffer_storage));
     audio_stream_started = 0;
-    audio_stream_paused = 0;
+    audio_stream_paused = 1;
 #endif 
     media_initialized = 1;
     return 0;
