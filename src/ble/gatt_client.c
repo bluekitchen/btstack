@@ -1077,14 +1077,28 @@ static void gatt_client_hci_event_packet_handler(uint8_t packet_type, uint16_t c
 
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
 
-    if (packet_type == HCI_EVENT_PACKET && packet[0] == L2CAP_EVENT_CAN_SEND_NOW){
-        gatt_client_run();
+    gatt_client_t * peripheral;
+
+    if (packet_type == HCI_EVENT_PACKET) {
+        switch (packet[0]){
+            case L2CAP_EVENT_CAN_SEND_NOW:
+                gatt_client_run();
+                break;
+            // att_server has negotiated the mtu for this connection, cache if context exists
+            case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
+                peripheral = get_gatt_client_context_for_handle(handle);
+                if (!peripheral) break;
+                peripheral->mtu = little_endian_read_16(packet, 4);
+                break;
+            default:
+                break;
+        }
+        return;
     }
 
     if (packet_type != ATT_DATA_PACKET) return;
 
     // special cases: notifications don't need a context while indications motivate creating one
-    gatt_client_t * peripheral;
     switch (packet[0]){
         case ATT_HANDLE_VALUE_NOTIFICATION:
             report_gatt_notification(handle, little_endian_read_16(packet,1), &packet[3], size-3);
@@ -1100,12 +1114,6 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
     if (!peripheral) return;
     
     switch (packet[0]){
-        // att_server has negotiated the mtu for this connection
-        case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
-        {
-            peripheral->mtu = little_endian_read_16(packet, 4);
-            break;
-        }
         case ATT_EXCHANGE_MTU_RESPONSE:
         {
             uint16_t remote_rx_mtu = little_endian_read_16(packet, 1);
