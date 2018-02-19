@@ -19,7 +19,6 @@ CFLAGS  = \
     -DBTSTACK_TEST \
     -g \
     -Wall \
-    -Wmissing-prototypes \
     -Wnarrowing \
     -I. \
     -I.. \

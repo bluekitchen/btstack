@@ -17,7 +17,8 @@ static void (*registered_hci_event_handler) (uint8_t packet_type, uint16_t chann
 static btstack_linked_list_t     connections;
 static const uint16_t max_mtu = 23;
 static uint8_t  l2cap_stack_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 8 + max_mtu];	// pre buffer + HCI Header + L2CAP header
-uint16_t gatt_client_handle = 0x40;
+static uint16_t gatt_client_handle = 0x40;
+static hci_connection_t hci_connection;
 
 uint16_t get_gatt_client_handle(void){
 	return gatt_client_handle;
@@ -149,8 +150,7 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_t
 	return NULL;
 }
 hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
-	printf("hci_connection_for_handle not implemented in mock backend\n");
-	return NULL;
+	return &hci_connection;
 }
 void hci_connections_get_iterator(btstack_linked_list_iterator_t *it){
 	// printf("hci_connections_get_iterator not implemented in mock backend\n");

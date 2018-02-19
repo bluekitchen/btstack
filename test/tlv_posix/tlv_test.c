@@ -12,6 +12,8 @@
 
 #define TEST_DB "/tmp/test.tlv"
 
+#define TAG(a,b,c,d) ( ((a)<<24) | ((b)<<16) | ((c)<<8) | (d) )
+
 /// TLV
 TEST_GROUP(BSTACK_TLV){
 	const btstack_tlv_t * btstack_tlv_impl;
@@ -38,13 +40,13 @@ TEST_GROUP(BSTACK_TLV){
 };
 
 TEST(BSTACK_TLV, TestMissingTag){
-	uint32_t tag = 'abcd';
+	uint32_t tag = TAG('a','b','c','d');
 	int size = btstack_tlv_impl->get_tag(&btstack_tlv_context, tag, NULL, 0);
 	CHECK_EQUAL(size, 0);
 }
 
 TEST(BSTACK_TLV, TestWriteRead){
-	uint32_t tag = 'abcd';
+	uint32_t tag = TAG('a','b','c','d');
 	uint8_t  data = 7;
 	uint8_t  buffer = data;
 	btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &buffer, 1);
@@ -55,7 +57,7 @@ TEST(BSTACK_TLV, TestWriteRead){
 }
 
 TEST(BSTACK_TLV, TestWriteWriteRead){
-	uint32_t tag = 'abcd';
+	uint32_t tag = TAG('a','b','c','d');
 	uint8_t  data = 7;
 	uint8_t  buffer = data;
 	btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &buffer, 1);
@@ -69,8 +71,8 @@ TEST(BSTACK_TLV, TestWriteWriteRead){
 }
 
 TEST(BSTACK_TLV, TestWriteABARead){
-	uint32_t tag_a = 'aaaa';
-	uint32_t tag_b = 'bbbb';
+	uint32_t tag_a = TAG('a','a','a','a');
+	uint32_t tag_b = TAG('b','b','b','b');;
 	uint8_t  data = 7;
 	uint8_t  buffer = data;
 	btstack_tlv_impl->store_tag(&btstack_tlv_context, tag_a, &buffer, 1);
@@ -87,7 +89,7 @@ TEST(BSTACK_TLV, TestWriteABARead){
 }
 
 TEST(BSTACK_TLV, TestWriteDeleteRead){
-	uint32_t tag = 'abcd';
+	uint32_t tag = TAG('a','b','c','d');
 	uint8_t  data = 7;
 	uint8_t  buffer = data;
 	btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &buffer, 1);
@@ -100,7 +102,7 @@ TEST(BSTACK_TLV, TestWriteDeleteRead){
 }
 
 TEST(BSTACK_TLV, TestMigrate){
-	uint32_t tag = 'abcd';
+	uint32_t tag = TAG('a','b','c','d');
 	uint8_t  data[8];
 	memcpy(data, "01234567", 8);
 
@@ -145,7 +147,7 @@ TEST(BSTACK_TLV, TestMigrate2){
 }
 
 TEST(BSTACK_TLV, TestWriteResetRead){
-    uint32_t tag = 'abcd';
+	uint32_t tag = TAG('a','b','c','d');
     uint8_t  data = 7;
     uint8_t  buffer = data;
     btstack_tlv_impl->store_tag(&btstack_tlv_context, tag, &buffer, 1);
