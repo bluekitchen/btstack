@@ -49,7 +49,6 @@
 #include <string.h>
 
 #include "btstack.h"
-#include "btstack_chipset_csr.h"
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static bd_addr_t cmdline_addr = { };

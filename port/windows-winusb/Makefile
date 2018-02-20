@@ -19,6 +19,7 @@ CFLAGS += -I${BTSTACK_ROOT}/platform/windows \
 VPATH += ${BTSTACK_ROOT}/platform/embedded
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/windows
+VPATH += ${BTSTACK_ROOT}/chipset/csr
 
 # use pkg-config for portaudio
 # CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags) -DHAVE_PORTAUDIO
@@ -29,6 +30,10 @@ VPATH += ${BTSTACK_ROOT}/platform/windows
 
 LDFLAGS += -lsetupapi -lwinusb
 
-EXAMPLES=le_counter hfp_hf_demo
+# csr_set_bd_addr
+EXAMPLES += csr_set_bd_addr
+
+csr_set_bd_addr: ${CORE_OBJ} ${COMMON_OBJ} btstack_chipset_csr.o csr_set_bd_addr.o
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 all: ${EXAMPLES}
