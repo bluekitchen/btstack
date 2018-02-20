@@ -2293,7 +2293,18 @@ static void event_handler(uint8_t *packet, int size){
                     break;
             }
             break;
-#endif            
+#endif
+        case HCI_EVENT_VENDOR_SPECIFIC:
+            // Vendor specific commands often create vendor specific event instead of num completed packets
+            // To avoid getting stuck as num_cmds_packets is zero, reset it to 1 for controllers with this behaviour
+            switch (hci_stack->manufacturer){
+                case BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO:
+                    hci_stack->num_cmd_packets = 1;
+                    break;
+                default:
+                    break;
+            }
+            break;
         default:
             break;
     }
