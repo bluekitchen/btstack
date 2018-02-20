@@ -57,7 +57,6 @@ static avdtp_context_t a2dp_source_context;
 
 static a2dp_state_t app_state = A2DP_IDLE;
 static avdtp_stream_endpoint_context_t sc;
-static int next_remote_sep_index_to_query = 0;
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -189,7 +188,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             }
             
             sc.active_remote_sep = NULL;
-            next_remote_sep_index_to_query = 0;
+            sc.active_remote_sep_index = 0;
             uint8_t event[11];
             int pos = 0;
             event[pos++] = HCI_EVENT_A2DP_META;
@@ -243,6 +242,30 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             log_info("received non SBC codec. not implemented");
             break;
         
+        case AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY:
+            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY, remote seid %d\n", avdtp_subevent_signaling_media_transport_capability_get_remote_seid(packet));
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY:
+            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY, remote seid %d\n", avdtp_subevent_signaling_reporting_capability_get_remote_seid(packet));
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY:
+            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY, remote seid %d\n", avdtp_subevent_signaling_delay_reporting_capability_get_remote_seid(packet));
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_RECOVERY_CAPABILITY:
+            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_RECOVERY_CAPABILITY, remote seid %d\n", avdtp_subevent_signaling_recovery_capability_get_remote_seid(packet));
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY:
+            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY, remote seid %d\n", avdtp_subevent_signaling_content_protection_capability_get_remote_seid(packet));
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY:
+            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY, remote seid %d\n", avdtp_subevent_signaling_header_compression_capability_get_remote_seid(packet));
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY:
+            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY, remote seid %d\n", avdtp_subevent_signaling_multiplexing_capability_get_remote_seid(packet));
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_CAPABILITY_DONE:
+            break;
+
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
             // TODO check cid
             sc.sampling_frequency = avdtp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
@@ -288,26 +311,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             
             switch (app_state){
                 case A2DP_W2_DISCOVER_SEPS:
+                case A2DP_W2_GET_CAPABILITIES:
+                case A2DP_W2_GET_ALL_CAPABILITIES:
                     app_state = A2DP_W2_GET_ALL_CAPABILITIES;
-                    sc.active_remote_sep = avdtp_source_remote_sep(cid, next_remote_sep_index_to_query++);
+                    sc.active_remote_sep = avdtp_source_remote_sep(cid, sc.active_remote_sep_index++);
                     if (!sc.active_remote_sep) {
                         app_state = A2DP_IDLE; 
                         a2dp_streaming_emit_connection_established(a2dp_source_context.a2dp_callback, cid, sc.remote_addr, 0, 0, AVDTP_SEID_DOES_NOT_EXIST);
                         break;
                     }
                     avdtp_source_get_capabilities(cid, sc.active_remote_sep->seid);
-                    break;
-                case A2DP_W2_GET_CAPABILITIES:
-                case A2DP_W2_GET_ALL_CAPABILITIES:
-                    if (next_remote_sep_index_to_query < avdtp_source_remote_seps_num(cid)){
-                        sc.active_remote_sep = avdtp_source_remote_sep(cid, next_remote_sep_index_to_query++);
-                        // printf("Query get caps for seid %d\n", sc.active_remote_sep->seid);
-                        avdtp_source_get_capabilities(cid, sc.active_remote_sep->seid);
-                    } else {
-                        // printf("No more remote seps found\n");
-                        app_state = A2DP_IDLE;
-                        a2dp_streaming_emit_connection_established(a2dp_source_context.a2dp_callback, cid, sc.remote_addr, 0, 0, AVDTP_SEID_DOES_NOT_EXIST);
-                    }
                     break;
                 case A2DP_W2_SET_CONFIGURATION:{
                     if (!sc.local_stream_endpoint) return;

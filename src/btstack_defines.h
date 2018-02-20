@@ -1539,6 +1539,16 @@ typedef uint8_t sm_key_t[16];
  */
 #define AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW   0x14
 
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param local_seid
+ * @param remote_seid
+ */
+#define AVDTP_SUBEVENT_SIGNALING_CAPABILITY_DONE             0x15
+
+
 
 /** A2DP Subevent */
 /* Stream goes through following states:

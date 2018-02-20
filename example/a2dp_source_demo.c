@@ -138,11 +138,10 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 // mac 2013:        static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:      static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
 // Minijambox:      
-// static const char * device_addr_string = "00:21:3C:AC:F7:38";
+static const char * device_addr_string = "00:21:3C:AC:F7:38";
 // Philips SHB9100: static const char * device_addr_string = "00:22:37:05:FD:E8";
 // RT-B6:           static const char * device_addr_string = "00:75:58:FF:C9:7D";
-// BT dongle:       
-static const char * device_addr_string = "00:1A:7D:DA:71:0A";
+// BT dongle:       static const char * device_addr_string = "00:1A:7D:DA:71:0A";
 // Sony MDR-ZX330BT static const char * device_addr_string = "00:18:09:28:50:18";
 
 static bd_addr_t device_addr;
@@ -636,8 +635,7 @@ static void show_usage(void){
     printf("B      - AVDTP Source disconnect\n");
     printf("c      - AVRCP Target create connection to addr %s\n", device_addr_string);
     printf("C      - AVRCP Target disconnect\n");
-    printf("0      - AVRCP reset now playing info\n");
-    
+
     printf("x      - start streaming sine\n");
     if (hxcmod_initialized){
         printf("z      - start streaming '%s'\n", mod_name);
@@ -672,16 +670,6 @@ static void stdin_process(char cmd){
         case '\r':
             break;
 
-        case 't':
-            printf("STREAM_PTS_TEST.\n");
-            data_source = STREAM_PTS_TEST;
-            if (avrcp_connected){
-                avrcp_target_set_now_playing_info(avrcp_cid, &tracks[data_source], sizeof(tracks)/sizeof(avrcp_track_t));
-            }
-            if (!media_tracker.stream_opened) break;
-            status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
-            break;
-
         case 'x':
             if (avrcp_connected){
                 avrcp_target_set_now_playing_info(avrcp_cid, &tracks[data_source], sizeof(tracks)/sizeof(avrcp_track_t));
@@ -700,17 +688,13 @@ static void stdin_process(char cmd){
             if (!media_tracker.stream_opened) break;
             status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
+        
         case 'p':
-            if (!media_tracker.connected) break;
+            if (!media_tracker.stream_opened) break;
             printf("Pause stream.\n");
             status = a2dp_source_pause_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
-        case '0':
-            if (avrcp_connected){
-                avrcp_target_set_now_playing_info(avrcp_cid, NULL, sizeof(tracks)/sizeof(avrcp_track_t));
-                printf("Reset now playing info\n");
-            }
-            break;
+        
         default:
             show_usage();
             return;

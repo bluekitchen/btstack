@@ -1027,6 +1027,8 @@ avdtp_sep_t * avdtp_remote_sep(uint16_t avdtp_cid, uint8_t index, avdtp_context_
         log_error("avdtp_suspend: no connection for AVDTP cid 0x%02x found", avdtp_cid);
         return NULL;
     }
+    if (index == AVDTP_INVALID_SEP_INDEX) return NULL;
+    if (index >= connection->remote_seps_num || index >= AVDTP_MAX_NUM_SEPS) return NULL;
     return &connection->remote_seps[index];
 }
 

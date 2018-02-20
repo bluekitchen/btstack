@@ -928,6 +928,20 @@ static inline void avdtp_signaling_emit_media_codec_other(btstack_packet_handler
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static void avdtp_signaling_emit_capability_done(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid){
+    if (!callback) return;
+    uint8_t event[7];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_SIGNALING_CAPABILITY_DONE;
+    little_endian_store_16(event, pos, avdtp_cid);
+    pos += 2;
+    event[pos++] = local_seid;
+    event[pos++] = remote_seid;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 void avdtp_signaling_emit_media_codec_other_configuration(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, adtvp_media_codec_capabilities_t media_codec){
     if (!callback) return;
     avdtp_signaling_emit_media_codec_other(callback, avdtp_cid, local_seid, remote_seid, media_codec, 0);
@@ -971,6 +985,7 @@ void avdtp_emit_capabilities(btstack_packet_handler_t callback, uint16_t avdtp_c
     if (get_bit16(registered_service_categories, AVDTP_DELAY_REPORTING)){
         avdtp_signaling_emit_delay_reporting_capability(callback, avdtp_cid, local_seid, remote_seid);
     }
+    avdtp_signaling_emit_capability_done(callback, avdtp_cid, local_seid, remote_seid);
 }
 
 void avdtp_emit_configuration(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, avdtp_capabilities_t * configuration, uint16_t configured_service_categories){
