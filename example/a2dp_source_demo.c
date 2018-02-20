@@ -66,6 +66,9 @@
 #include "hxcmod.h"
 #include "mods/mod.h"
 
+// logarithmic volume reduction, samples are divided by 2^x
+// #define VOLUME_REDUCTION 3
+
 #define AVRCP_BROWSING_ENABLED 0
 
 #define NUM_CHANNELS                2
@@ -143,6 +146,7 @@ static const char * device_addr_string = "00:21:3C:AC:F7:38";
 // RT-B6:           static const char * device_addr_string = "00:75:58:FF:C9:7D";
 // BT dongle:       static const char * device_addr_string = "00:1A:7D:DA:71:0A";
 // Sony MDR-ZX330BT static const char * device_addr_string = "00:18:09:28:50:18";
+// Panda (BM6)      static const char * device_addr_string = "4F:3F:66:52:8B:E0";
 
 static bd_addr_t device_addr;
 static uint8_t sdp_a2dp_source_service_buffer[150];
@@ -327,6 +331,16 @@ static void produce_audio(int16_t * pcm_buffer, int num_samples){
         default:
             break;
     }    
+#ifdef VOLUME_REDUCTION
+    int i;
+    for (i=0;i<num_samples*2;i++){
+        if (pcm_buffer[i] > 0){
+            pcm_buffer[i] =     pcm_buffer[i]  >> VOLUME_REDUCTION;
+        } else {
+            pcm_buffer[i] = -((-pcm_buffer[i]) >> VOLUME_REDUCTION);
+        }
+    }
+#endif
 }
 
 static int a2dp_demo_fill_sbc_audio_buffer(a2dp_media_sending_context_t * context){
@@ -631,7 +645,7 @@ static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth  A2DP Source/AVRCP Target Demo %s ---\n", bd_addr_to_str(iut_address));
-    printf("b      - AVDTP Source create  connection to addr %s\n", device_addr_string);
+    printf("b      - AVDTP Source create connection to addr %s\n", device_addr_string);
     printf("B      - AVDTP Source disconnect\n");
     printf("c      - AVRCP Target create connection to addr %s\n", device_addr_string);
     printf("C      - AVRCP Target disconnect\n");
