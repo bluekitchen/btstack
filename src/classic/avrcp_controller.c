@@ -327,7 +327,7 @@ static void avrcp_parser_process_byte(uint8_t byte, avrcp_connection_t * connect
             
             if (connection->attribute_value_offset < big_endian_read_16(connection->parser_attribute_header, 6)){
                 // printf("parse until end of valuE, and ignore it\n");
-                connection->parser_state = AVRCP_PARSER_CONTINUE_GET_ATTRIBUTE_VALUE;
+                connection->parser_state = AVRCP_PARSER_IGNORE_REST_OF_ATTRIBUTE_VALUE;
                 break;
             }
 
@@ -341,7 +341,7 @@ static void avrcp_parser_process_byte(uint8_t byte, avrcp_connection_t * connect
             connection->parser_attribute_header_pos = 0;
             break;
         }
-        case AVRCP_PARSER_CONTINUE_GET_ATTRIBUTE_VALUE:
+        case AVRCP_PARSER_IGNORE_REST_OF_ATTRIBUTE_VALUE:
             if (connection->attribute_value_offset < big_endian_read_16(connection->parser_attribute_header, 6)){
                 connection->list_offset++;
                 connection->attribute_value_offset++;

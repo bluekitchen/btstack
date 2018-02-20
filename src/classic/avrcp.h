@@ -55,7 +55,7 @@ extern "C" {
 
 #define BT_SIG_COMPANY_ID 0x001958
 #define AVRCP_MEDIA_ATTR_COUNT 7
-#define AVRCP_MAX_ATTRIBUTTE_SIZE 5000
+#define AVRCP_MAX_ATTRIBUTTE_SIZE 100
 #define AVRCP_ATTRIBUTE_HEADER_LEN  8
 #define AVRCP_MAX_FOLDER_NAME_SIZE      20
 
@@ -287,8 +287,11 @@ typedef struct {
 typedef enum {
     AVRCP_PARSER_GET_ATTRIBUTE_HEADER = 0,       // 8 bytes
     AVRCP_PARSER_GET_ATTRIBUTE_VALUE,
-    AVRCP_PARSER_CONTINUE_GET_ATTRIBUTE_VALUE
+    AVRCP_PARSER_IGNORE_REST_OF_ATTRIBUTE_VALUE
 } avrcp_parser_state_t;
+
+
+#define AVRCP_BROWSING_ITEM_HEADER_LEN 3
 
 // BROWSING 
 typedef struct {
@@ -308,8 +311,7 @@ typedef struct {
     // players
     uint8_t  set_browsed_player_id;
     uint16_t browsed_player_id;
-    uint16_t browsed_player_uid_counter;
-
+    
     // get folder item
     uint8_t  get_folder_item;
     avrcp_browsing_scope_t  scope;
@@ -332,16 +334,17 @@ typedef struct {
     uint8_t  get_total_nr_items;
     avrcp_browsing_scope_t get_total_nr_items_scope;
     
-    // fragmentation
-    uint8_t fragmented;
-    avrcp_pdu_id_t fragmented_pdu_id;
-    uint8_t fragmented_browsing_status;
-    uint16_t fragmented_uid_counter;
+    avrcp_pdu_id_t pdu_id;
+    uint8_t browsing_status;
     uint16_t num_items;
-    uint8_t item_type;
-    uint16_t item_length;
-    uint16_t fragment_size;
-    uint8_t  fragment[AVRCP_MAX_ATTRIBUTTE_SIZE];
+
+    avrcp_parser_state_t parser_state;
+    uint8_t  parser_attribute_header[AVRCP_BROWSING_ITEM_HEADER_LEN];
+    uint8_t  parser_attribute_header_pos;
+    uint8_t  parsed_attribute_value[AVRCP_MAX_ATTRIBUTTE_SIZE];
+    uint16_t parsed_attribute_value_len;
+    uint16_t parsed_attribute_value_offset;
+    uint8_t  parsed_num_attributes;
 } avrcp_browsing_connection_t;
 // BROWSING END
 

@@ -803,7 +803,7 @@ static void stdin_process(char * cmd, int size){
             switch (cmd[1]){
                 case 'p':
                     // players[next_media_player_item_index()] = 1;
-                    printf("AVRCP Browsing: get media players. Brosing cid 0x%02X\n", browsing_cid);
+                    printf("AVRCP Browsing: get media players. Browsing cid 0x%02X\n", browsing_cid);
                     media_player_item_index = -1;
                     status = avrcp_browsing_controller_get_media_players(browsing_cid, 0, 0xFFFFFFFF, AVRCP_MEDIA_ATTR_ALL);
                     break;
