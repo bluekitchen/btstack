@@ -17,10 +17,17 @@ CFLAGS += -I${BTSTACK_ROOT}/platform/posix \
 VPATH += ${BTSTACK_ROOT}/platform/embedded
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/libusb
+VPATH += ${BTSTACK_ROOT}/chipset/csr
 
 # use pkg-config
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
+
+EXAMPLES += csr_set_bd_addr
+
+csr_set_bd_addr: ${CORE_OBJ} ${COMMON_OBJ} btstack_chipset_csr.o csr_set_bd_addr.o
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
 
 # use pkg-config for portaudio
 # CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags) -DHAVE_PORTAUDIO
