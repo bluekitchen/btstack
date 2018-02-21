@@ -258,7 +258,7 @@ include $(CMSIS_ROOT)/Device/Maxim/$(TARGET_UC)/Source/$(COMPILER)/$(TARGET_LC).
 
 # fetch and convert init scripts
 # use bluetooth_init_cc2564B_1.6_BT_Spec_4.1.c
-# include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
+include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 
 #include ${BTSTACK_ROOT}/example/Makefile.inc
 
