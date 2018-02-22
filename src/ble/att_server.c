@@ -481,19 +481,23 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
     switch (packet_type){
 
         case HCI_EVENT_PACKET:
-            if (packet[0] != L2CAP_EVENT_CAN_SEND_NOW) break;
-            att_server_handle_can_send_now();
+            switch (packet[0]){
+                case L2CAP_EVENT_CAN_SEND_NOW:
+                    att_server_handle_can_send_now();
+                    break;
+                case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
+                    // GATT client has negotiated the mtu for this connection
+                    att_server->connection.mtu = little_endian_read_16(packet, 4);
+                    break;
+                default:
+                    break;
+            }
             break;
 
         case ATT_DATA_PACKET:
             log_debug("ATT Packet, handle 0x%04x", handle);
             att_server = att_server_for_handle(handle);
             if (!att_server) break;
-
-            // Gatt client have negotiated the mtu for this connection
-            if (packet[0] == ATT_EVENT_MTU_EXCHANGE_COMPLETE){
-                att_server->connection.mtu = little_endian_read_16(packet, 4);
-            }
 
             // handle value indication confirms
             if (packet[0] == ATT_HANDLE_VALUE_CONFIRMATION && att_server->value_indication_handle){
