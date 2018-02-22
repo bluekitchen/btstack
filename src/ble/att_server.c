@@ -487,6 +487,8 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                     break;
                 case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
                     // GATT client has negotiated the mtu for this connection
+                    att_server = att_server_for_handle(handle);
+                    if (!att_server) break;
                     att_server->connection.mtu = little_endian_read_16(packet, 4);
                     break;
                 default:
