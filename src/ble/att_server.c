@@ -340,6 +340,16 @@ static int att_server_process_validated_request(att_server_t * att_server){
     uint8_t * att_response_buffer = l2cap_get_outgoing_buffer();
     uint16_t  att_response_size   = att_handle_request(&att_server->connection, att_server->request_buffer, att_server->request_size, att_response_buffer);
 
+#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+    if (att_response_size == ATT_READ_RESPONSE_PENDING){
+        // update state
+        att_server->state = ATT_SERVER_READ_RESPONSE_PENDING;
+
+        // callback with handle ATT_READ_RESPONSE_PENDING
+        att_server_client_read_callback(att_server->connection.con_handle, ATT_READ_RESPONSE_PENDING, 0, NULL, 0);
+    }
+#endif
+
     // intercept "insufficient authorization" for authenticated connections to allow for user authorization
     if ((att_response_size     >= 4)
     && (att_response_buffer[0] == ATT_ERROR_RESPONSE)
@@ -373,6 +383,18 @@ static int att_server_process_validated_request(att_server_t * att_server){
     }
     return 1;
 }
+
+#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+int att_server_read_response_ready(hci_con_handle_t con_handle){
+    att_server_t * att_server = att_server_for_handle(con_handle);
+    if (!att_server)                                             return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    if (att_server->state != ATT_SERVER_READ_RESPONSE_PENDING)   return ERROR_CODE_COMMAND_DISALLOWED;
+
+    att_server->state = ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED;
+    att_dispatch_server_request_can_send_now_event(con_handle);
+    return ERROR_CODE_SUCCESS;
+}
+#endif
 
 static void att_run_for_context(att_server_t * att_server){
     switch (att_server->state){
@@ -828,7 +850,6 @@ void att_server_register_can_send_now_callback(btstack_context_callback_registra
     btstack_linked_list_add_tail(&can_send_now_clients, (btstack_linked_item_t*) callback_registration);
     att_dispatch_server_request_can_send_now_event(con_handle);
 }
-
 
 int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t *value, uint16_t value_len){
     att_server_t * att_server = att_server_for_handle(con_handle);
