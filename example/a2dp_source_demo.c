@@ -665,18 +665,18 @@ static void stdin_process(char cmd){
     switch (cmd){
         case 'b':
             status = a2dp_source_establish_stream(device_addr, media_tracker.local_seid, &media_tracker.a2dp_cid);
-            printf(" - Create AVDTP Source connection to addr %s, cid 0x%02x.\n", bd_addr_to_str(device_addr), media_tracker.a2dp_cid);
+            printf("%c - Create AVDTP Source connection to addr %s, cid 0x%02x.\n", cmd, bd_addr_to_str(device_addr), media_tracker.a2dp_cid);
             break;
         case 'B':
-            printf(" - AVDTP Source Disconnect from cid 0x%2x\n", media_tracker.a2dp_cid);
+            printf("%c - AVDTP Source Disconnect from cid 0x%2x\n", cmd, media_tracker.a2dp_cid);
             status = a2dp_source_disconnect(media_tracker.a2dp_cid);
             break;
         case 'c':
-            printf(" - Create AVRCP Target connection to addr %s.\n", bd_addr_to_str(device_addr));
+            printf("%c - Create AVRCP Target connection to addr %s.\n", cmd, bd_addr_to_str(device_addr));
             status = avrcp_target_connect(device_addr, &avrcp_cid);
             break;
         case 'C':
-            printf(" - AVRCP Target disconnect\n");
+            printf("%c - AVRCP Target disconnect\n", cmd);
             status = avrcp_target_disconnect(avrcp_cid);
             break;
 
@@ -688,7 +688,7 @@ static void stdin_process(char cmd){
             if (avrcp_connected){
                 avrcp_target_set_now_playing_info(avrcp_cid, &tracks[data_source], sizeof(tracks)/sizeof(avrcp_track_t));
             }
-            printf("Playing sine.\n");
+            printf("%c - Play sine.\n", cmd);
             data_source = STREAM_SINE;
             if (!media_tracker.stream_opened) break;
             status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
@@ -697,7 +697,7 @@ static void stdin_process(char cmd){
             if (avrcp_connected){
                 avrcp_target_set_now_playing_info(avrcp_cid, &tracks[data_source], sizeof(tracks)/sizeof(avrcp_track_t));
             }
-            printf("Playing mod.\n");
+            printf("%c - Play mod.\n", cmd);
             data_source = STREAM_MOD;
             if (!media_tracker.stream_opened) break;
             status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
@@ -705,7 +705,7 @@ static void stdin_process(char cmd){
         
         case 'p':
             if (!media_tracker.stream_opened) break;
-            printf("Pause stream.\n");
+            printf("%c - Pause stream.\n", cmd);
             status = a2dp_source_pause_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
             break;
         
@@ -714,7 +714,7 @@ static void stdin_process(char cmd){
             return;
     }
     if (status != ERROR_CODE_SUCCESS){
-        printf("Could not perform command, status 0x%2x\n", status);
+        printf("Could not perform command \'%c\', status 0x%2x\n", cmd, status);
     }
 }
 #endif
