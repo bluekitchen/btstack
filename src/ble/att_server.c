@@ -347,6 +347,10 @@ static int att_server_process_validated_request(att_server_t * att_server){
 
         // callback with handle ATT_READ_RESPONSE_PENDING
         att_server_client_read_callback(att_server->connection.con_handle, ATT_READ_RESPONSE_PENDING, 0, NULL, 0);
+
+        // free reserved buffer
+        l2cap_release_packet_buffer();
+        return 0;
     }
 #endif
 
