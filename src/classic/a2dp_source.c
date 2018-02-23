@@ -161,6 +161,14 @@ static inline void a2dp_signaling_emit_media_codec_sbc(btstack_packet_handler_t 
     (*callback)(HCI_EVENT_PACKET, 0, event, event_size);
 }
 
+static inline void a2dp_signaling_emit_reject_cmd(btstack_packet_handler_t callback, uint8_t * event, uint16_t event_size){
+    if (!callback) return;
+    if (event_size < 18) return;
+    event[0] = HCI_EVENT_A2DP_META;
+    event[2] = A2DP_SUBEVENT_COMMAND_REJECTED;
+    (*callback)(HCI_EVENT_PACKET, 0, event, event_size);
+}
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -186,6 +194,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 a2dp_streaming_emit_connection_established(a2dp_source_context.a2dp_callback, cid, sc.remote_addr, 0, 0, status);
                 break;
             }
+            log_info("A2DP_SUBEVENT_SIGNALING_CONNECTION established avdtp_cid 0x%02x ---", a2dp_source_context.avdtp_cid);
             
             sc.active_remote_sep = NULL;
             sc.active_remote_sep_index = 0;
@@ -199,9 +208,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             reverse_bd_addr(event+pos, sc.remote_addr);
             pos += 6;
             (*a2dp_source_context.a2dp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
-           
-            log_info("A2DP_SUBEVENT_SIGNALING_CONNECTION established avdtp_cid 0x%02x ---", a2dp_source_context.avdtp_cid);
-                
             app_state = A2DP_W2_DISCOVER_SEPS;
             avdtp_source_discover_stream_endpoints(cid);
             break;
@@ -212,7 +218,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:{
             log_info("A2DP received SBC capability.");
             if (!sc.local_stream_endpoint) {
-                printf("local seid %d \n", avdtp_subevent_signaling_media_codec_sbc_capability_get_local_seid(packet));
+                log_error("invalid local seid %d", avdtp_subevent_signaling_media_codec_sbc_capability_get_local_seid(packet));
                 return;
             }
             log_info("A2DP received SBC capability.");
@@ -297,10 +303,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 a2dp_streaming_emit_connection_established(a2dp_source_context.a2dp_callback, cid, address, local_seid, remote_seid, status);
                 break;
             }
-
+            log_info("AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED --- avdtp_cid 0x%02x, local seid %d, remote seid %d", cid, local_seid, remote_seid);
             app_state = A2DP_STREAMING_OPENED;
             a2dp_streaming_emit_connection_established(a2dp_source_context.a2dp_callback, cid, address, local_seid, remote_seid, 0);
-            log_info("AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED --- avdtp_cid 0x%02x, local seid %d, remote seid %d", cid, local_seid, remote_seid);
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_ACCEPT:
@@ -324,8 +329,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     break;
                 case A2DP_W2_SET_CONFIGURATION:{
                     if (!sc.local_stream_endpoint) return;
-                    app_state = A2DP_IDLE;
                     log_info("A2DP initiate set configuration locally and wait for response ... ");
+                    app_state = A2DP_IDLE;
                     avdtp_source_set_configuration(cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), sc.active_remote_sep->seid, sc.local_stream_endpoint->remote_configuration_bitmap, sc.local_stream_endpoint->remote_configuration);
                     break;
                 }
@@ -371,7 +376,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             event[pos++] = A2DP_SUBEVENT_STREAM_STOPPED;
                             little_endian_store_16(event, pos, cid);
                             pos += 2;
-                            log_info("send A2DP_SUBEVENT_STREAM_RELEASED to app");
                             event[pos++] = avdtp_stream_endpoint_seid(sc.local_stream_endpoint);
                             (*a2dp_source_context.a2dp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
                             break;
@@ -387,14 +391,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             
             break;
         case AVDTP_SUBEVENT_SIGNALING_REJECT:
-            app_state = A2DP_IDLE;
-            signal_identifier = avdtp_subevent_signaling_reject_get_signal_identifier(packet);
-            log_info("A2DP Rejected %d", signal_identifier);
-            break;
         case AVDTP_SUBEVENT_SIGNALING_GENERAL_REJECT:
             app_state = A2DP_IDLE;
-            signal_identifier = avdtp_subevent_signaling_general_reject_get_signal_identifier(packet);
-            log_info("A2DP Rejected %d", signal_identifier);
+            a2dp_signaling_emit_reject_cmd(a2dp_source_context.a2dp_callback, packet, size);
             break;
         case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:{
             app_state = A2DP_IDLE;
