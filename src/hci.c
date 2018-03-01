@@ -226,6 +226,15 @@ void gap_set_connection_parameter_range(le_connection_parameter_range_t *range){
 }
 
 /**
+ * @brief Set max number of connections in LE Peripheral role (if Bluetooth Controller supports it)
+ * @note: default: 1
+ * @param max_peripheral_connections
+ */
+void gap_set_max_number_peripheral_connections(int max_peripheral_connections){
+    hci_stack->le_max_number_peripheral_connections = max_peripheral_connections;
+}
+
+/**
  * get hci connections iterator
  *
  * @return hci connections iterator
@@ -1016,6 +1025,31 @@ void le_handle_advertisement_report(uint8_t *packet, uint16_t size){
         pos += data_length;
         offset += data_length + 1; // rssi
         hci_emit_event(event, pos, 1);
+    }
+}
+#endif
+#endif
+
+#ifdef ENABLE_BLE
+#ifdef ENABLE_LE_PERIPHERAL
+static void hci_reenable_advertisements_if_needed(void){
+    if (!hci_stack->le_advertisements_active && hci_stack->le_advertisements_enabled){
+        // get number of active le slave connections
+        int num_slave_connections = 0;
+        btstack_linked_list_iterator_t it;
+        btstack_linked_list_iterator_init(&it, &hci_stack->connections);
+        while (btstack_linked_list_iterator_has_next(&it)){
+            hci_connection_t * con = (hci_connection_t*) btstack_linked_list_iterator_next(&it);
+            log_info("state %u, role %u, le_con %u", con->state, con->role, hci_is_le_connection(con));
+            if (con->state != OPEN) continue;
+            if (con->role  != HCI_ROLE_SLAVE) continue;
+            if (!hci_is_le_connection(con)) continue;
+            num_slave_connections++;
+        }
+        log_info("Num LE Peripheral roles: %u of %u", num_slave_connections, hci_stack->le_max_number_peripheral_connections);
+        if (num_slave_connections < hci_stack->le_max_number_peripheral_connections){
+            hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_ENABLE;
+        }
     }
 }
 #endif
@@ -2145,8 +2179,8 @@ static void event_handler(uint8_t *packet, int size){
             if (!conn) break; 
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_PERIPHERAL
-            if (hci_is_le_connection(conn) && hci_stack->le_advertisements_enabled){
-                hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_ENABLE;
+            if (hci_is_le_connection(conn)){
+                hci_reenable_advertisements_if_needed();
             }
 #endif
 #endif
@@ -2259,8 +2293,6 @@ static void event_handler(uint8_t *packet, int size){
 #ifdef ENABLE_LE_PERIPHERAL
                         // if we're slave, it was an incoming connection, advertisements have stopped
                         hci_stack->le_advertisements_active = 0;
-                        // try to re-enable them
-                        hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_ENABLE;
 #endif
                     }
                     // LE connections are auto-accepted, so just create a connection if there isn't one already
@@ -2276,6 +2308,12 @@ static void event_handler(uint8_t *packet, int size){
                     conn->role  = packet[6];
                     conn->con_handle = little_endian_read_16(packet, 4);
                     
+#ifdef ENABLE_LE_PERIPHERAL
+                    if (packet[6] == HCI_ROLE_SLAVE){
+                        hci_reenable_advertisements_if_needed();
+                    }
+#endif
+
                     // TODO: store - role, peer address type, conn_interval, conn_latency, supervision timeout, master clock
 
                     // restart timer
@@ -2509,6 +2547,10 @@ void hci_init(const hci_transport_t *transport, const void *config){
     hci_stack->le_supervision_timeout     = 0x0048;    // 720 ms
     hci_stack->le_minimum_ce_length       = 2;         // 1.25 ms
     hci_stack->le_maximum_ce_length       = 0x0030;    // 30 ms
+#endif
+
+#ifdef ENABLE_LE_PERIPHERAL
+    hci_stack->le_max_number_peripheral_connections = 1; // only single connection as peripheral
 #endif
 
     // connection parameter range used to answer connection parameter update requests in l2cap

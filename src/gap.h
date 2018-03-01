@@ -340,6 +340,13 @@ void gap_get_connection_parameter_range(le_connection_parameter_range_t * range)
 void gap_set_connection_parameter_range(le_connection_parameter_range_t * range);
 
 /**
+ * @brief Set max number of connections in LE Peripheral role (if Bluetooth Controller supports it)
+ * @note: default: 1
+ * @param max_peripheral_connections
+ */
+void gap_set_max_number_peripheral_connections(int max_peripheral_connections);
+
+/**
  * @brief Connect to remote LE device
  */
 uint8_t gap_connect(bd_addr_t addr, bd_addr_type_t addr_type);

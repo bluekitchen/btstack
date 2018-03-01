@@ -832,6 +832,8 @@ typedef struct {
     uint8_t  le_advertisements_channel_map;
     uint8_t  le_advertisements_filter_policy;
     bd_addr_t le_advertisements_direct_address;
+
+    uint8_t le_max_number_peripheral_connections;
 #endif
 
 #ifdef ENABLE_LE_DATA_LENGTH_EXTENSION

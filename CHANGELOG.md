@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
+
+### Changed
+- GAP: allow to limit number of connections in LE Peripheral role with gap_set_max_number_peripheral_connections
+
+### Fixed
+
+## Changes February 2018
+
+### Added
 - Port for Windows with Zephyr HCI Firmware connected via serial port  
 - em9304: ability to upload patch containers during HCI bootup.
 - GATT Client: gatt_client_request_can_write_without_response_event() causes GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE
