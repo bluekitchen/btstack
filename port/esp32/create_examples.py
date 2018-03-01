@@ -84,7 +84,7 @@ def create_examples(script_path, suffix):
         shutil.copyfile(examples_embedded + file, apps_folder + "/main/" + example + ".c")
 
         # add sco_demo_util.c for audio examples
-        if example in ['hfp_ag_demo','hfp_hf_demo', 'hsp_ag_demo', 'hsp_hf_demo']:
+        if example in ['hfp_ag_demo','hfp_hf_demo', 'hsp_ag_demo', 'hsp_hs_demo']:
             shutil.copy(examples_embedded + 'sco_demo_util.c', apps_folder + '/main/')
             shutil.copy(examples_embedded + 'sco_demo_util.h', apps_folder + '/main/')
 
