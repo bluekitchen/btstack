@@ -60,8 +60,12 @@ property_flags = {
     # custom BTstack extension
     'DYNAMIC':                      0x100,
     'LONG_UUID':                    0x200,
-    'AUTHENTICATION_REQUIRED':      0x400,
-    'AUTHORIZATION_REQUIRED':       0x800,
+
+    # read permissions
+    'READ_PERMISSION_BIT_0':        0x400,
+    'READ_PERMISSION_BIT_1':        0x800,
+
+    # 
     'ENCRYPTION_KEY_SIZE_7':       0x6000,
     'ENCRYPTION_KEY_SIZE_8':       0x7000,
     'ENCRYPTION_KEY_SIZE_9':       0x8000,
@@ -72,14 +76,27 @@ property_flags = {
     'ENCRYPTION_KEY_SIZE_14':      0xd000,
     'ENCRYPTION_KEY_SIZE_15':      0xe000,
     'ENCRYPTION_KEY_SIZE_16':      0xf000,
+    'ENCRYPTION_KEY_SIZE_MASK':    0xf000,
     
     # only used by gatt compiler >= 0xffff
     # Extended Properties
-    'RELIABLE_WRITE':              0x10000,
+    'RELIABLE_WRITE':              0x0010000,
+    'AUTHENTICATION_REQUIRED':     0x0020000,
+    'AUTHORIZATION_REQUIRED':      0x0040000,
+    'READ_ANYBODY':                0x0080000,
+    'READ_ENCRYPTED':              0x0100000,
+    'READ_AUTHENTICATED':          0x0200000,
+    'READ_AUTHORIZED':             0x0400000,
+    'WRITE_ANYBODY':               0x0800000,
+    'WRITE_ENCRYPTED':             0x1000000,
+    'WRITE_AUTHENTICATED':         0x2000000,
+    'WRITE_AUTHORIZED':            0x4000000,
 
     # Broadcast, Notify, Indicate, Extended Properties are only used to describe a GATT Characteristic, but are free to use with att_db
-    'READ_WITHOUT_AUTHENTICATION': 0x0001, 
-    # 0x10
+
+    # write permissions
+    'WRITE_PERMISSION_BIT_0':      0x01,
+    'WRITE_PERMISSION_BIT_1':      0x10,
     # 0x20
     # 0x80
 }
@@ -151,7 +168,55 @@ def parseProperties(properties):
             value |= property_flags[property]
         else:
             print("WARNING: property %s undefined" % (property))
-    return value
+
+    return value;
+
+def gatt_characteristic_properties(properties):
+    return properties & 0xff
+
+def att_flags(properties):
+    print("in %x" % properties)
+    # drop Broadcast (0x01), Notify (0x10), Indicate (0x20)- not used for flags 
+    properties &= 0x1ffce 
+
+    # rw permissions distinct
+    distinct_permissions_used = properties & (
+        property_flags['READ_AUTHORIZED'] |
+        property_flags['READ_AUTHENTICATED'] |
+        property_flags['READ_ENCRYPTED'] |
+        property_flags['READ_ANYBODY'] |
+        property_flags['WRITE_AUTHORIZED'] |
+        property_flags['WRITE_AUTHENTICATED'] |
+        property_flags['WRITE_ENCRYPTED'] |
+        property_flags['WRITE_ANYBODY']
+    ) != 0
+
+    # post process properties
+    encryption_key_size_specified = (properties & property_flags['ENCRYPTION_KEY_SIZE_MASK']) != 0
+
+    # set encrypted for both, if distinct permissions not used
+    if encryption_key_size_specified and not distinct_permissions_used:
+        properties |= property_flags['READ_ENCRYPTED'] | property_flags['WRITE_ENCRYPTED']
+
+    # convert user permissions to att db flags
+    if properties & property_flags['READ_AUTHORIZED']:
+        properties |= property_flags['READ_PERMISSION_BIT_0'] | property_flags['READ_PERMISSION_BIT_1']
+    elif properties & property_flags['READ_AUTHENTICATED']:
+        properties |= property_flags['READ_PERMISSION_BIT_1'] 
+    elif properties & property_flags['READ_ENCRYPTED']:
+        properties |= property_flags['READ_PERMISSION_BIT_0']
+    if properties & property_flags['WRITE_AUTHORIZED']:
+        properties |= property_flags['WRITE_PERMISSION_BIT_0'] | property_flags['WRITE_PERMISSION_BIT_1']
+    elif properties & property_flags['WRITE_AUTHENTICATED']:
+        properties |= property_flags['WRITE_PERMISSION_BIT_1'] 
+    elif properties & property_flags['WRITE_ENCRYPTED']:
+        properties |= property_flags['WRITE_PERMISSION_BIT_0']
+    print("out %x" % properties)
+
+    return properties
+
+def write_permissions_and_key_size(properties):
+    return att_flags(properties) & (property_flags['ENCRYPTION_KEY_SIZE_MASK'] | property_flags['WRITE_PERMISSION_BIT_0'] | property_flags['WRITE_PERMISSION_BIT_1'])
 
 def write_8(fout, value):
     fout.write( "0x%02x, " % (value & 0xff))
@@ -237,7 +302,7 @@ def parseIncludeService(fout, parts):
     global handle
     global total_size
     
-    property = property_flags['READ'];
+    read_only_anybody_flags = property_flags['READ'];
     
     write_indent(fout)
     fout.write('// 0x%04x %s\n' % (handle, '-'.join(parts)))
@@ -254,7 +319,7 @@ def parseIncludeService(fout, parts):
 
     write_indent(fout)
     write_16(fout, size)
-    write_16(fout, property)
+    write_16(fout, read_only_anybody_flags)
     write_16(fout, handle)
     write_16(fout, 0x2802)
     write_16(fout, services[keyUUID][0])
@@ -273,7 +338,7 @@ def parseCharacteristic(fout, parts):
     global current_characteristic_uuid_string
     global characteristic_indices
 
-    property_read = property_flags['READ'];
+    read_only_anybody_flags = property_flags['READ'];
 
     # enumerate characteristics with same UUID, using optional name tag if available
     current_characteristic_uuid_string = c_string_for_uuid(parts[1]);
@@ -298,13 +363,15 @@ def parseCharacteristic(fout, parts):
     write_indent(fout)
     fout.write('// 0x%04x %s\n' % (handle, '-'.join(parts[0:3])))
     
+
+    characteristic_properties = gatt_characteristic_properties(properties)
     size = 2 + 2 + 2 + 2 + (1+2+uuid_size)
     write_indent(fout)
     write_16(fout, size)
-    write_16(fout, property_read)
+    write_16(fout, read_only_anybody_flags)
     write_16(fout, handle)
     write_16(fout, 0x2803)
-    write_8(fout, properties)
+    write_8(fout, characteristic_properties)
     write_16(fout, handle+1)
     write_uuid(uuid)
     fout.write("\n")
@@ -317,19 +384,17 @@ def parseCharacteristic(fout, parts):
     else:
         size = size + len(value.split())
 
-    # drop Broadcast (0x01), Notify (0x10), Indicate (0x20)- not used for flags 
-    # 
-    value_properties = properties & 0x1ffce 
+    value_flags = att_flags(properties)
 
     # add UUID128 flag for value handle
     if uuid_size == 16:
-        value_properties = value_properties | property_flags['LONG_UUID'];
+        value_flags = value_flags | property_flags['LONG_UUID'];
 
     write_indent(fout)
     fout.write('// 0x%04x VALUE-%s-'"'%s'"'\n' % (handle, '-'.join(parts[1:3]),value))
     write_indent(fout)
     write_16(fout, size)
-    write_16(fout, value_properties)
+    write_16(fout, value_flags)
     write_16(fout, handle)
     write_uuid(uuid)
     if is_string(value):
@@ -342,18 +407,17 @@ def parseCharacteristic(fout, parts):
     handle = handle + 1
 
     if add_client_characteristic_configuration(properties):
-        # replace GATT Characterstic Properties with READ|WRITE|READ_WITHOUT_AUTHENTICATION|DYNAMIC
-        ccc_properties = (properties & 0x1fc00) |           \
-            property_flags['READ_WITHOUT_AUTHENTICATION'] | \
-            property_flags['READ'] |                        \
-            property_flags['WRITE'] |                       \
-            property_flags['DYNAMIC'];
+        # use write permissions and encryption key size from attribute value and set READ_ANYBODY | READ | WRITE | DYNAMIC
+        flags  = write_permissions_and_key_size(properties)
+        flags |= property_flags['READ']
+        flags |= property_flags['WRITE']
+        flags |= property_flags['DYNAMIC']
         size = 2 + 2 + 2 + 2 + 2
         write_indent(fout)
         fout.write('// 0x%04x CLIENT_CHARACTERISTIC_CONFIGURATION\n' % (handle))
         write_indent(fout)
         write_16(fout, size)
-        write_16(fout, ccc_properties)
+        write_16(fout, flags)
         write_16(fout, handle)
         write_16(fout, 0x2902)
         write_16(fout, 0)
@@ -367,7 +431,7 @@ def parseCharacteristic(fout, parts):
         fout.write('// 0x%04x CHARACTERISTIC_EXTENDED_PROPERTIES\n' % (handle))
         write_indent(fout)
         write_16(fout, size)
-        write_16(fout, property_flags['READ'])
+        write_16(fout, read_only_anybody_flags)
         write_16(fout, handle)
         write_16(fout, 0x2900)
         write_16(fout, 1)   # Reliable Write
@@ -388,11 +452,16 @@ def parseCharacteristicUserDescription(fout, parts):
     else:
         size = size + len(value.split())
 
+    # use write, write permissions and encryption key size from attribute value and set READ_ANYBODY
+    flags  = write_permissions_and_key_size(properties)
+    flags |= properties & property_flags['WRITE']
+    flags |= property_flags['READ']
+
     write_indent(fout)
     fout.write('// 0x%04x CHARACTERISTIC_USER_DESCRIPTION-%s\n' % (handle, '-'.join(parts[1:])))
     write_indent(fout)
     write_16(fout, size)
-    write_16(fout, properties)
+    write_16(fout, flags)
     write_16(fout, handle)
     write_16(fout, 0x2901)
     if is_string(value):
@@ -409,14 +478,19 @@ def parseServerCharacteristicConfiguration(fout, parts):
     global current_characteristic_uuid_string
 
     properties = parseProperties(parts[1])
-    properties = properties | property_flags['DYNAMIC']
     size = 2 + 2 + 2 + 2
+
+    # use write permissions and encryption key size from attribute value and set READ, WRITE, DYNAMIC, READ_ANYBODY
+    flags  = write_permissions_and_key_size(properties)
+    flags |= property_flags['READ']
+    flags |= property_flags['WRITE']
+    flags |= property_flags['DYNAMIC']
 
     write_indent(fout)
     fout.write('// 0x%04x SERVER_CHARACTERISTIC_CONFIGURATION-%s\n' % (handle, '-'.join(parts[1:])))
     write_indent(fout)
     write_16(fout, size)
-    write_16(fout, properties)
+    write_16(fout, flags)
     write_16(fout, handle)
     write_16(fout, 0x2903)
     fout.write("\n")
@@ -427,7 +501,7 @@ def parseCharacteristicFormat(fout, parts):
     global handle
     global total_size
 
-    property_read = property_flags['READ'];
+    read_only_anybody_flags = property_flags['READ'];
 
     identifier = parts[1]
     presentation_formats[identifier] = handle
@@ -445,7 +519,7 @@ def parseCharacteristicFormat(fout, parts):
     fout.write('// 0x%04x CHARACTERISTIC_FORMAT-%s\n' % (handle, '-'.join(parts[1:])))
     write_indent(fout)
     write_16(fout, size)
-    write_16(fout, property_read)
+    write_16(fout, read_only_anybody_flags)
     write_16(fout, handle)
     write_16(fout, 0x2904)
     write_sequence(fout, format)
@@ -461,14 +535,14 @@ def parseCharacteristicAggregateFormat(fout, parts):
     global handle
     global total_size
 
-    property_read = property_flags['READ'];
+    read_only_anybody_flags = property_flags['READ'];
     size = 2 + 2 + 2 + 2 + (len(parts)-1) * 2
 
     write_indent(fout)
     fout.write('// 0x%04x CHARACTERISTIC_AGGREGATE_FORMAT-%s\n' % (handle, '-'.join(parts[1:])))
     write_indent(fout)
     write_16(fout, size)
-    write_16(fout, property_read)
+    write_16(fout, read_only_anybody_flags)
     write_16(fout, handle)
     write_16(fout, 0x2905)
     for identifier in parts[1:]:
@@ -484,10 +558,8 @@ def parseReportReference(fout, parts):
     global handle
     global total_size
 
-    property_read = property_flags['READ'];
+    read_only_anybody_flags = property_flags['READ'];
     size = 2 + 2 + 2 + 2 + 1 + 1
-
-    properties = parseProperties(parts[1])
     
     report_id = parts[2]
     report_type = parts[3]
@@ -496,7 +568,7 @@ def parseReportReference(fout, parts):
     fout.write('// 0x%04x REPORT_REFERENCE-%s\n' % (handle, '-'.join(parts[1:])))
     write_indent(fout)
     write_16(fout, size)
-    write_16(fout, property_read)
+    write_16(fout, read_only_anybody_flags)
     write_16(fout, handle)
     write_16(fout, 0x2908)
     write_sequence(fout, report_id)
@@ -509,7 +581,7 @@ def parseNumberOfDigitals(fout, parts):
     global handle
     global total_size
 
-    property_read = property_flags['READ'];
+    read_only_anybody_flags = property_flags['READ'];
     size = 2 + 2 + 2 + 2 + 1
 
     no_of_digitals = parts[1]
@@ -518,7 +590,7 @@ def parseNumberOfDigitals(fout, parts):
     fout.write('// 0x%04x NUMBER_OF_DIGITALS-%s\n' % (handle, '-'.join(parts[1:])))
     write_indent(fout)
     write_16(fout, size)
-    write_16(fout, property_read)
+    write_16(fout, read_only_anybody_flags)
     write_16(fout, handle)
     write_16(fout, 0x2909)
     write_sequence(fout, no_of_digitals)
@@ -722,6 +794,7 @@ try:
     print('Created %s' % filename)
 
 except IOError as e:
+
     print(usage)
     sys.exit(1)
 
