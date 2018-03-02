@@ -79,7 +79,6 @@ property_flags = {
 
     # Broadcast, Notify, Indicate, Extended Properties are only used to describe a GATT Characteristic, but are free to use with att_db
     'READ_WITHOUT_AUTHENTICATION': 0x0001, 
-    'PERSISTENT_WRITE_CCC':        0x0010,
     # 0x10
     # 0x20
     # 0x80
@@ -348,8 +347,7 @@ def parseCharacteristic(fout, parts):
             property_flags['READ_WITHOUT_AUTHENTICATION'] | \
             property_flags['READ'] |                        \
             property_flags['WRITE'] |                       \
-            property_flags['DYNAMIC'] |                     \
-            property_flags['PERSISTENT_WRITE_CCC'];
+            property_flags['DYNAMIC'];
         size = 2 + 2 + 2 + 2 + 2
         write_indent(fout)
         fout.write('// 0x%04x CLIENT_CHARACTERISTIC_CONFIGURATION\n' % (handle))
