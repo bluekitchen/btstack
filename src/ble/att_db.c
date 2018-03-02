@@ -66,18 +66,6 @@ static uint16_t uuid16_from_uuid(uint16_t uuid_len, uint8_t * uuid){
 
 // ATT Database
 
-static void att_persistent_ccc_cache(uint16_t handle, uint16_t flags);
-
-static uint8_t const * att_db = NULL;
-static att_read_callback_t  att_read_callback  = NULL;
-static att_write_callback_t att_write_callback = NULL;
-static uint8_t  att_prepare_write_error_code   = 0;
-static uint16_t att_prepare_write_error_handle = 0x0000;
-
-// single cache for att_is_persistent_ccc - stores flags before write callback
-static uint16_t att_persistent_ccc_handle;
-static uint16_t att_persistent_ccc_flags;
-
 // new java-style iterator
 typedef struct att_iterator {
     // private
@@ -90,6 +78,18 @@ typedef struct att_iterator {
     uint16_t value_len;
     uint8_t  const * value;
 } att_iterator_t;
+
+static void att_persistent_ccc_cache(uint16_t handle, att_iterator_t * it);
+
+static uint8_t const * att_db = NULL;
+static att_read_callback_t  att_read_callback  = NULL;
+static att_write_callback_t att_write_callback = NULL;
+static uint8_t  att_prepare_write_error_code   = 0;
+static uint16_t att_prepare_write_error_handle = 0x0000;
+
+// single cache for att_is_persistent_ccc - stores flags before write callback
+static uint16_t att_persistent_ccc_handle;
+static uint16_t att_persistent_ccc_flags;
 
 static void att_iterator_init(att_iterator_t *it){
     it->att_ptr = att_db;
@@ -897,7 +897,7 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
     if (error_code) {
         return setup_error(response_buffer, request_type, handle, error_code);
     }
-    att_persistent_ccc_cache(handle, it.flags);
+    att_persistent_ccc_cache(handle, &it);
     error_code = (*att_write_callback)(att_connection->con_handle, handle, ATT_TRANSACTION_MODE_NONE, 0, request_buffer + 3, request_len - 3);
     if (error_code) {
         return setup_error(response_buffer, request_type, handle, error_code);
@@ -1011,7 +1011,7 @@ static void handle_write_command(att_connection_t * att_connection, uint8_t * re
     if ((it.flags & ATT_PROPERTY_DYNAMIC) == 0) return;
     if ((it.flags & ATT_PROPERTY_WRITE_WITHOUT_RESPONSE) == 0) return;
     if (att_validate_security(att_connection, &it)) return;
-    att_persistent_ccc_cache(handle, it.flags);
+    att_persistent_ccc_cache(handle, &it);
     (*att_write_callback)(att_connection->con_handle, handle, ATT_TRANSACTION_MODE_NONE, 0, request_buffer + 3, request_len - 3);
 }
 
@@ -1185,8 +1185,8 @@ uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uui
 }
 
 // 1-item cache to optimize query during write_callback
-static void att_persistent_ccc_cache(uint16_t handle, uint16_t flags){
-    att_persistent_ccc_flags  = flags;
+static void att_persistent_ccc_cache(uint16_t handle, att_iterator_t * it){
+    att_persistent_ccc_flags  = it->flags;
     att_persistent_ccc_handle = handle;
 }
 
