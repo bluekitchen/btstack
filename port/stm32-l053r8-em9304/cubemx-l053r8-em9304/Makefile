@@ -210,8 +210,9 @@ LIBDIR =
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/le_streamer.map,--cref -Wl,--gc-sections
 
 # default action: build all
+#	ancs_client_demo \
+
 LE_EXAMPLES = \
-	ancs_client_demo \
 	gap_le_advertisements \
 	gatt_battery_query \
 	gatt_browser \
