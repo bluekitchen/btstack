@@ -230,9 +230,12 @@ void gap_set_connection_parameter_range(le_connection_parameter_range_t *range){
  * @note: default: 1
  * @param max_peripheral_connections
  */
+#ifdef ENABLE_LE_PERIPHERAL
 void gap_set_max_number_peripheral_connections(int max_peripheral_connections){
     hci_stack->le_max_number_peripheral_connections = max_peripheral_connections;
+    log_error("gap_set_max_number_peripheral_connections called but ")
 }
+#endif
 
 /**
  * get hci connections iterator
