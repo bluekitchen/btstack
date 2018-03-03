@@ -282,22 +282,45 @@ static inline uint16_t setup_error_invalid_offset(uint8_t * response_buffer, uin
 }
 
 static uint8_t att_validate_security(att_connection_t * att_connection, att_operation_t operation, att_iterator_t * it){
-    UNUSED(operation);
+    int required_security_level = 0;
+    switch (operation){
+        case ATT_READ:
+            if (it->flags & ATT_PROPERTY_READ_PERMISSION_BIT_0) {
+                required_security_level |= 1;
+            }
+            if (it->flags & ATT_PROPERTY_READ_PERMISSION_BIT_1) {
+                required_security_level |= 2;
+            }
+            break;
+        case ATT_WRITE:
+            if (it->flags & ATT_PROPERTY_WRITE_PERMISSION_BIT_0) {
+                required_security_level |= 1;
+            }
+            if (it->flags & ATT_PROPERTY_WRITE_PERMISSION_BIT_1) {
+                required_security_level |= 2;
+            }
+            break;
+    }
+
     int required_encryption_size = it->flags >> 12;
     if (required_encryption_size) required_encryption_size++;   // store -1 to fit into 4 bit
-    log_debug("att_validate_security. flags 0x%04x - req enc size %u, authorized %u, authenticated %u, encryption_key_size %u",
-        it->flags, required_encryption_size, att_connection->authorized, att_connection->authenticated, att_connection->encryption_key_size);
-    if ((it->flags & ATT_PROPERTY_AUTHENTICATION_REQUIRED) && att_connection->authenticated == 0) {
-        return ATT_ERROR_INSUFFICIENT_AUTHENTICATION;
-    }
-    if ((it->flags & ATT_PROPERTY_AUTHORIZATION_REQUIRED) && att_connection->authorized == 0) {
+
+    log_debug("att_validate_security. flags 0x%04x - req enc size %u, req security level %u, authorized %u, authenticated %u, encryption_key_size %u",
+        it->flags, required_encryption_size, required_security_level, att_connection->authorized, att_connection->authenticated, att_connection->encryption_key_size);
+
+    if ((required_security_level >= ATT_SECURITY_AUTHORIZED) && (att_connection->authorized == 0)) {
         return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
     }
-    if (required_encryption_size > 0 && att_connection->encryption_key_size == 0){
-        return ATT_ERROR_INSUFFICIENT_ENCRYPTION;
+    if ((required_security_level >= ATT_SECURITY_AUTHENTICATED) && (att_connection->authenticated == 0)) {
+        return ATT_ERROR_INSUFFICIENT_AUTHENTICATION;
     }
-    if (required_encryption_size > att_connection->encryption_key_size){
-        return ATT_ERROR_INSUFFICIENT_ENCRYPTION_KEY_SIZE;
+    if (required_security_level >= ATT_SECURITY_ENCRYPTED) {
+        if ((required_encryption_size > 0) && (att_connection->encryption_key_size == 0)){
+            return ATT_ERROR_INSUFFICIENT_ENCRYPTION;
+        }
+        if (required_encryption_size > att_connection->encryption_key_size){
+            return ATT_ERROR_INSUFFICIENT_ENCRYPTION_KEY_SIZE;
+        }
     }
     return 0;
 }
