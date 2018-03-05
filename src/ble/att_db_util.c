@@ -52,7 +52,7 @@
 #ifdef MAX_ATT_DB_SIZE
 static uint8_t att_db_storage[MAX_ATT_DB_SIZE];
 #else
-#error Neither HAVE_MALLOC] nor MAX_ATT_DB_SIZE is defined. 
+#error Neither HAVE_MALLOC nor MAX_ATT_DB_SIZE is defined. 
 #endif
 #endif
 
@@ -75,7 +75,9 @@ void att_db_util_init(void){
 	att_db = att_db_storage;
 	att_db_max_size = sizeof(att_db_storage);
 #endif
-	att_db_size = 0;
+	// store att version
+	att_db[0] = ATT_DB_VERSION;
+	att_db_size = 1;
 	att_db_next_handle = 1;
 	att_db_util_set_end_tag();
 }

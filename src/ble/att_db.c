@@ -200,6 +200,12 @@ static int att_copy_value(att_iterator_t *it, uint16_t offset, uint8_t * buffer,
 }
 
 void att_set_db(uint8_t const * db){
+    // validate db version
+    if (db == NULL) return;
+    if (*db++ != ATT_DB_VERSION){
+        log_error("ATT DB version differs, please regenerate .h from .gatt file or update att_db_util.c");
+        return;
+    }
     att_db = db;
 }
 

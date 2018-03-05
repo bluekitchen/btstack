@@ -301,6 +301,7 @@ typedef uint8_t sm_key_t[16];
 
 // ..
 // Internal properties reuse some GATT Characteristic Properties fields
+#define ATT_DB_VERSION                                     0x01
 
 // EVENTS
 

@@ -17,9 +17,10 @@ import sys
 
 header = '''
 // {0} generated from {1} for BTstack
+// att db format version 1
 
-// binary representation
-// attribute size in bytes (16), flags(16), handle (16), uuid (16/128), value(...)
+// binary attribute representation:
+// - size in bytes (16), flags(16), handle (16), uuid (16/128), value(...)
 
 #include <stdint.h>
 
@@ -825,7 +826,12 @@ def parse(fname_in, fin, fname_out, fout):
     
     fout.write(header.format(fname_out, fname_in))
     fout.write('{\n')
-    
+    write_indent(fout)
+    fout.write('// ATT DB Version\n')
+    write_indent(fout)
+    fout.write('1,\n')
+    fout.write("\n")
+ 
     parseLines(fname_in, fin, fout)
 
     serviceDefinitionComplete(fout)
