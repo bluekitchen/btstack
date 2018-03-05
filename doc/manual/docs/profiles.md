@@ -22,7 +22,6 @@ undiscoverable again, once a connection is established. See Listing
 [below](#lst:Discoverable) for an example.
 
 ~~~~ {#lst:Discoverable .c caption="{Setting discoverable mode.}"}
-
     int main(void){
         ...
         // make discoverable
@@ -59,7 +58,6 @@ Extended Inquiry Result (EIR). A code snippet is shown in Listing
 [below](#lst:DiscoverDevices).
 
 ~~~~ {#lst:DiscoverDevices .c caption="{Discover remote devices.}"}
-
     void print_inquiry_results(uint8_t *packet){
         int event = packet[0];
         int numResponses = hci_event_inquiry_result_get_num_responses(packet);
@@ -129,7 +127,6 @@ full I/O capabilities. To support pairing with older devices using a
 PIN, see Listing [below](#lst:PinCodeRequest).
 
 ~~~~ {#lst:PinCodeRequest .c caption="{PIN code request.}"}
-
     void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
         ...
         switch (event) {
@@ -407,7 +404,6 @@ it is compact and can be placed in ROM.
 The current format is shown in Listing [below](#lst:GATTServerProfile).
 
 ~~~~ {#lst:GATTServerProfile .c caption="{GATT profile.}"}
-
     // import service_name
     #import <service_name.gatt>
 
@@ -420,14 +416,13 @@ The current format is shown in Listing [below](#lst:GATTServerProfile).
     ...
 ~~~~
 
-Properties can be a list of READ | WRITE | WRITE_WITHOUT_RESPONSE
-| NOTIFY | INDICATE | DYNAMIC.
+UUIDs are either 16 bit (1800) or 128 bit
+(00001234-0000-1000-8000-00805F9B34FB).
 
 Value can either be a string (“this is a string”), or, a sequence of hex
 bytes (e.g. 01 02 03).
 
-UUIDs are either 16 bit (1800) or 128 bit
-(00001234-0000-1000-8000-00805F9B34FB).
+Properties can be a list of properties combined using '|'
 
 Reads/writes to a Characteristic that is defined with the DYNAMIC flag,
 are forwarded to the application via callback. Otherwise, the
@@ -437,9 +432,26 @@ constant value.
 Adding NOTIFY and/or INDICATE automatically creates an addition Client
 Configuration Characteristic.
 
+Property                | Meaning
+------------------------|-----------------------------------------------
+READ                    | Characteristic can be read
+WRITE                   | Characteristic can be written using Write Request
+WRITE_WITHOUT_RESPONSE  | Characteristic can be written using Write Command
+NOTIFY                  | Characteristic allows notifications by server
+INDICATE                | Characteristic allows indication by server
+DYNAMIC                 | Read or writes to Characteristic are handled by application
+
 To require encryption or authentication before a Characteristic can be
-accessed, you can add ENCRYPTION_KEY_SIZE_X - with X in 7..16 -
-or AUTHENTICATION_REQUIRED.
+accessed, you can add one or more of the following properties:
+
+Property                | Meaning
+------------------------|-----------------------------------------------
+AUTHENTICATION_REQUIRED | Read and Write operatsions require Authentication
+READ_ENCRYPTED          | Read operations require Encryption
+READ_AUTHENTICATED      | Read operations require Authentication
+WRITE_ENCRYPTED         | Write operations require Encryption
+WRITE_AUTHENTICATED     | Write operations require Authentication
+ENCRYPTION_KEY_SIZE_X   | Require encryption size >= X, with W in [7..16]
 
 To use already implemented GATT Services, you can import it
 using the *#import <service_name.gatt>* command. See [list of provided services](gatt_services.md).
