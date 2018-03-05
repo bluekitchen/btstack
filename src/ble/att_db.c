@@ -305,8 +305,8 @@ static uint8_t att_validate_security(att_connection_t * att_connection, att_oper
     int required_encryption_size = it->flags >> 12;
     if (required_encryption_size) required_encryption_size++;   // store -1 to fit into 4 bit
 
-    log_debug("att_validate_security. flags 0x%04x - req enc size %u, req security level %u, authorized %u, authenticated %u, encryption_key_size %u",
-        it->flags, required_encryption_size, required_security_level, att_connection->authorized, att_connection->authenticated, att_connection->encryption_key_size);
+    log_info("att_validate_security. flags 0x%04x (=> security level %u, key size %u) authorized %u, authenticated %u, encryption_key_size %u",
+        it->flags, required_security_level, required_encryption_size, att_connection->authorized, att_connection->authenticated, att_connection->encryption_key_size);
 
     if ((required_security_level >= ATT_SECURITY_AUTHORIZED) && (att_connection->authorized == 0)) {
         return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
@@ -546,10 +546,8 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
         }
 
         // check security requirements
-        if ((it.flags & ATT_DB_FLAGS_READ_WITHOUT_AUTHENTICATION) == 0){
-            error_code = att_validate_security(att_connection, ATT_READ, &it);
-            if (error_code) break;
-        }
+        error_code = att_validate_security(att_connection, ATT_READ, &it);
+        if (error_code) break;
 
         att_update_value_len(&it, att_connection->con_handle);
         
@@ -644,11 +642,9 @@ static uint16_t handle_read_request2(att_connection_t * att_connection, uint8_t 
     }
 
     // check security requirements
-    if ((it.flags & ATT_DB_FLAGS_READ_WITHOUT_AUTHENTICATION) == 0){
-        uint8_t error_code = att_validate_security(att_connection, ATT_READ, &it);
-        if (error_code) {
-            return setup_error(response_buffer, request_type, handle, error_code);
-        }
+    uint8_t error_code = att_validate_security(att_connection, ATT_READ, &it);
+    if (error_code) {
+        return setup_error(response_buffer, request_type, handle, error_code);
     }
 
     att_update_value_len(&it, att_connection->con_handle);
@@ -696,11 +692,9 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
     }
 
     // check security requirements
-    if ((it.flags & ATT_DB_FLAGS_READ_WITHOUT_AUTHENTICATION) == 0){
-        uint8_t error_code = att_validate_security(att_connection, ATT_READ, &it);
-        if (error_code) {
-            return setup_error(response_buffer, request_type, handle, error_code);
-        }
+    uint8_t error_code = att_validate_security(att_connection, ATT_READ, &it);
+    if (error_code) {
+        return setup_error(response_buffer, request_type, handle, error_code);
     }
 
     att_update_value_len(&it, att_connection->con_handle);
@@ -776,10 +770,9 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
         }
 
         // check security requirements
-        if ((it.flags & ATT_DB_FLAGS_READ_WITHOUT_AUTHENTICATION) == 0){
-            error_code = att_validate_security(att_connection, ATT_READ, &it);
-            if (error_code) break;
-        }
+        error_code = att_validate_security(att_connection, ATT_READ, &it);
+        if (error_code) break;
+
         att_update_value_len(&it, att_connection->con_handle);
         
 #ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
