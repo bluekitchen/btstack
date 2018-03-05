@@ -47,6 +47,8 @@ assigned_uuids = {
     'GATT_SERVICE_CHANGED' : 0x2a05,
 }
 
+security_permsission = ['ANYBODY','ENCRYPTED', 'AUTHENTICATED', 'AUTHORIZED']
+
 property_flags = {
     # GATT Characteristic Properties
     'BROADCAST' :                   0x01,
@@ -175,9 +177,8 @@ def gatt_characteristic_properties(properties):
     return properties & 0xff
 
 def att_flags(properties):
-    print("in %x" % properties)
-    # drop Broadcast (0x01), Notify (0x10), Indicate (0x20)- not used for flags 
-    properties &= 0x1ffce 
+    # drop Broadcast (0x01), Notify (0x10), Indicate (0x20) - not used for flags 
+    properties &= 0xffffffce 
 
     # rw permissions distinct
     distinct_permissions_used = properties & (
@@ -194,28 +195,47 @@ def att_flags(properties):
     # post process properties
     encryption_key_size_specified = (properties & property_flags['ENCRYPTION_KEY_SIZE_MASK']) != 0
 
-    # set encrypted for both, if distinct permissions not used
+    # if distinct permissions not used and encyrption key size specified -> set READ/WRITE Encrypted
     if encryption_key_size_specified and not distinct_permissions_used:
         properties |= property_flags['READ_ENCRYPTED'] | property_flags['WRITE_ENCRYPTED']
 
-    # convert user permissions to att db flags
+    # if distinct permissions not used and authentication is requires -> set READ/WRITE Authenticated
+    if properties & property_flags['AUTHENTICATION_REQUIRED'] and not distinct_permissions_used:
+        properties |= property_flags['READ_AUTHENTICATED'] | property_flags['WRITE_AUTHENTICATED']
+
+    # if distinct permissions not used and authorized is requires -> set READ/WRITE Authorized
+    if properties & property_flags['AUTHORIZATION_REQUIRED'] and not distinct_permissions_used:
+        properties |= property_flags['READ_AUTHORIZED'] | property_flags['WRITE_AUTHORIZED']
+
+    # determine read/write security requirements
+    read_security_level  = 0
+    write_security_level = 0 
     if properties & property_flags['READ_AUTHORIZED']:
-        properties |= property_flags['READ_PERMISSION_BIT_0'] | property_flags['READ_PERMISSION_BIT_1']
+        read_security_level = 3
     elif properties & property_flags['READ_AUTHENTICATED']:
-        properties |= property_flags['READ_PERMISSION_BIT_1'] 
+        read_security_level = 2
     elif properties & property_flags['READ_ENCRYPTED']:
-        properties |= property_flags['READ_PERMISSION_BIT_0']
+        read_security_level = 1
     if properties & property_flags['WRITE_AUTHORIZED']:
-        properties |= property_flags['WRITE_PERMISSION_BIT_0'] | property_flags['WRITE_PERMISSION_BIT_1']
+        write_security_level = 3
     elif properties & property_flags['WRITE_AUTHENTICATED']:
-        properties |= property_flags['WRITE_PERMISSION_BIT_1'] 
+        write_security_level = 2
     elif properties & property_flags['WRITE_ENCRYPTED']:
+        write_security_level = 1
+
+    # map security requirements to flags
+    if read_security_level & 2:
+        properties |= property_flags['READ_PERMISSION_BIT_1']
+    if read_security_level & 1:
+        properties |= property_flags['READ_PERMISSION_BIT_0']
+    if write_security_level & 2:
+        properties |= property_flags['WRITE_PERMISSION_BIT_1']
+    if write_security_level & 1:
         properties |= property_flags['WRITE_PERMISSION_BIT_0']
-    print("out %x" % properties)
 
     return properties
 
-def write_permissions_and_key_size(properties):
+def write_permissions_and_key_size_flags_from_properties(properties):
     return att_flags(properties) & (property_flags['ENCRYPTION_KEY_SIZE_MASK'] | property_flags['WRITE_PERMISSION_BIT_0'] | property_flags['WRITE_PERMISSION_BIT_1'])
 
 def write_8(fout, value):
@@ -240,6 +260,28 @@ def write_sequence(fout, text):
 def write_indent(fout):
     fout.write("    ")
 
+def read_permissions_from_flags(flags):
+    permissions = 0
+    if flags & property_flags['READ_PERMISSION_BIT_0']:
+        permissions |= 1
+    if flags & property_flags['READ_PERMISSION_BIT_1']:
+        permissions |= 2
+    return permissions
+
+def write_permissions_from_flags(flags):
+    permissions = 0
+    if flags & property_flags['WRITE_PERMISSION_BIT_0']:
+        permissions |= 1
+    if flags & property_flags['WRITE_PERMISSION_BIT_1']:
+        permissions |= 2
+    return permissions
+
+def encryption_key_size_from_flags(flags):
+    encryption_key_size = (flags & 0xf000) >> 12
+    if encryption_key_size > 0:
+        encryption_key_size += 1
+    return encryption_key_size
+
 def is_string(text):
     for item in text.split(" "):
         if not all(c in string.hexdigits for c in item):
@@ -258,6 +300,29 @@ def serviceDefinitionComplete(fout):
         defines_for_services.append('#define ATT_SERVICE_%s_END_HANDLE 0x%04x' % (current_service_uuid_string, handle-1))
         services[current_service_uuid_string] = [current_service_start_handle, handle-1]
 
+def dump_flags(fout, flags):
+    global security_permsission
+    encryption_key_size = encryption_key_size_from_flags(flags)
+    read_permissions    = security_permsission[read_permissions_from_flags(flags)]
+    write_permissions   = security_permsission[write_permissions_from_flags(flags)]
+    write_indent(fout)
+    fout.write('// ')
+    first = 1
+    if flags & property_flags['READ']:
+        fout.write('READ_%s' % read_permissions)
+        first = 0
+    if flags & (property_flags['WRITE'] | property_flags['WRITE_WITHOUT_RESPONSE']):
+        if not first:
+            fout.write(', ')
+        first = 0
+        fout.write('WRITE_%s' % write_permissions)
+    if encryption_key_size > 0:
+        if not first:
+            fout.write(', ')
+        first = 0
+        fout.write('ENCRYPTION_KEY_SIZE=%u' % encryption_key_size)
+    fout.write('\n')
+
 def parseService(fout, parts, service_type):
     global handle
     global total_size
@@ -266,7 +331,7 @@ def parseService(fout, parts, service_type):
 
     serviceDefinitionComplete(fout)
 
-    property = property_flags['READ'];
+    read_only_anybody_flags = property_flags['READ'];
     
     write_indent(fout)
     fout.write('// 0x%04x %s\n' % (handle, '-'.join(parts)))
@@ -281,7 +346,7 @@ def parseService(fout, parts, service_type):
 
     write_indent(fout)
     write_16(fout, size)
-    write_16(fout, property)
+    write_16(fout, read_only_anybody_flags)
     write_16(fout, handle)
     write_16(fout, service_type)
     write_uuid(uuid)
@@ -392,6 +457,9 @@ def parseCharacteristic(fout, parts):
 
     write_indent(fout)
     fout.write('// 0x%04x VALUE-%s-'"'%s'"'\n' % (handle, '-'.join(parts[1:3]),value))
+
+    dump_flags(fout, value_flags)
+
     write_indent(fout)
     write_16(fout, size)
     write_16(fout, value_flags)
@@ -408,13 +476,17 @@ def parseCharacteristic(fout, parts):
 
     if add_client_characteristic_configuration(properties):
         # use write permissions and encryption key size from attribute value and set READ_ANYBODY | READ | WRITE | DYNAMIC
-        flags  = write_permissions_and_key_size(properties)
+        flags  = write_permissions_and_key_size_flags_from_properties(properties)
         flags |= property_flags['READ']
         flags |= property_flags['WRITE']
         flags |= property_flags['DYNAMIC']
         size = 2 + 2 + 2 + 2 + 2
+
         write_indent(fout)
         fout.write('// 0x%04x CLIENT_CHARACTERISTIC_CONFIGURATION\n' % (handle))
+
+        dump_flags(fout, flags)
+
         write_indent(fout)
         write_16(fout, size)
         write_16(fout, flags)
@@ -453,12 +525,15 @@ def parseCharacteristicUserDescription(fout, parts):
         size = size + len(value.split())
 
     # use write, write permissions and encryption key size from attribute value and set READ_ANYBODY
-    flags  = write_permissions_and_key_size(properties)
+    flags  = write_permissions_and_key_size_flags_from_properties(properties)
     flags |= properties & property_flags['WRITE']
     flags |= property_flags['READ']
 
     write_indent(fout)
     fout.write('// 0x%04x CHARACTERISTIC_USER_DESCRIPTION-%s\n' % (handle, '-'.join(parts[1:])))
+
+    dump_flags(fout, flags)
+
     write_indent(fout)
     write_16(fout, size)
     write_16(fout, flags)
@@ -481,13 +556,16 @@ def parseServerCharacteristicConfiguration(fout, parts):
     size = 2 + 2 + 2 + 2
 
     # use write permissions and encryption key size from attribute value and set READ, WRITE, DYNAMIC, READ_ANYBODY
-    flags  = write_permissions_and_key_size(properties)
+    flags  = write_permissions_and_key_size_flags_from_properties(properties)
     flags |= property_flags['READ']
     flags |= property_flags['WRITE']
     flags |= property_flags['DYNAMIC']
 
     write_indent(fout)
     fout.write('// 0x%04x SERVER_CHARACTERISTIC_CONFIGURATION-%s\n' % (handle, '-'.join(parts[1:])))
+
+    dump_flags(fout, flags)
+
     write_indent(fout)
     write_16(fout, size)
     write_16(fout, flags)
