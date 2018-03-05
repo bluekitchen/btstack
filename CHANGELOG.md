@@ -7,10 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
-ATT Server: support for delayed ATT read response, see example/att_delayed_read_response.c
+- GAP: allow to limit number of connections in LE Peripheral role with gap_set_max_number_peripheral_connections
+- ATT Server: support for delayed ATT read response, see example/att_delayed_read_response.c
+- ATT Server: allow to specify security requirements seperately for read/writes. .h files need to be regenerated
 
 ### Changed
-- GAP: allow to limit number of connections in LE Peripheral role with gap_set_max_number_peripheral_connections
 
 ### Fixed
 - RFCOMM: fix infinite loop on L2CAP connection error (regression from 4c3eeed1)
