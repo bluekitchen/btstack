@@ -16,6 +16,7 @@
 #define ENABLE_CLASSIC
 #define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_CENTRAL
+#define ENABLE_LE_DATA_CHANNELS
 #define ENABLE_LE_DATA_LENGTH_EXTENSION
 #define ENABLE_LE_SECURE_CONNECTIONS
 // ESP32 supports ECDH HCI Commands, but micro-ecc lib is already provided anyway

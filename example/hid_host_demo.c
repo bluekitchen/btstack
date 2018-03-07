@@ -47,6 +47,7 @@
  * record and opens the HID Control + Interrupt channels
  */
 
+#include <inttypes.h>
 #include <stdio.h>
 
 #include "btstack_config.h"
@@ -371,7 +372,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
                 case HCI_EVENT_USER_CONFIRMATION_REQUEST:
                     // inform about user confirmation request
-                    printf("SSP User Confirmation Request with numeric value '%06u'\n", little_endian_read_32(packet, 8));
+                    printf("SSP User Confirmation Request with numeric value '%"PRIu32"'\n", little_endian_read_32(packet, 8));
                     printf("SSP User Confirmation Auto accept\n");
                     break;
 

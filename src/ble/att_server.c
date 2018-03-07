@@ -141,6 +141,7 @@ static void att_emit_mtu_event(hci_con_handle_t con_handle, uint16_t mtu){
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     little_endian_store_16(event, pos, mtu);
+    att_dispatch_server_mtu_exchanged(con_handle, mtu);
     (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 
@@ -216,8 +217,8 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     con_handle = little_endian_read_16(packet, 3);
                     att_server = att_server_for_handle(con_handle);
                     if (!att_server) break;
-                	att_server->connection.encryption_key_size = sm_encryption_key_size(con_handle);
-                	att_server->connection.authenticated = sm_authenticated(con_handle);
+                    att_server->connection.encryption_key_size = gap_encryption_key_size(con_handle);
+                    att_server->connection.authenticated = gap_authenticated(con_handle);
                     if (hci_event_packet_get_type(packet) == HCI_EVENT_ENCRYPTION_CHANGE){
                         // restore CCC values when encrypted
                         if (hci_event_encryption_change_get_encryption_enabled(packet)){
@@ -345,7 +346,7 @@ static int att_server_process_validated_request(att_server_t * att_server){
     && (att_response_buffer[4] == ATT_ERROR_INSUFFICIENT_AUTHORIZATION)
     && (att_server->connection.authenticated)){
 
-        switch (sm_authorization_state(att_server->connection.con_handle)){
+        switch (gap_authorization_state(att_server->connection.con_handle)){
             case AUTHORIZATION_UNKNOWN:
                 l2cap_release_packet_buffer();
                 sm_request_pairing(att_server->connection.con_handle);
@@ -480,12 +481,23 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
     switch (packet_type){
 
         case HCI_EVENT_PACKET:
-            if (packet[0] != L2CAP_EVENT_CAN_SEND_NOW) break;
-            att_server_handle_can_send_now();
+            switch (packet[0]){
+                case L2CAP_EVENT_CAN_SEND_NOW:
+                    att_server_handle_can_send_now();
+                    break;
+                case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
+                    // GATT client has negotiated the mtu for this connection
+                    att_server = att_server_for_handle(handle);
+                    if (!att_server) break;
+                    att_server->connection.mtu = little_endian_read_16(packet, 4);
+                    break;
+                default:
+                    break;
+            }
             break;
 
         case ATT_DATA_PACKET:
-            log_info("ATT Packet, handle 0x%04x", handle);
+            log_debug("ATT Packet, handle 0x%04x", handle);
             att_server = att_server_for_handle(handle);
             if (!att_server) break;
 
@@ -597,7 +609,7 @@ static void att_server_persistent_ccc_write(hci_con_handle_t con_handle, uint16_
         return;
     }
 
-    log_info("tag_for_empy %x, tag_for_lowest_seq_nr %x", tag_for_empty, tag_for_lowest_seq_nr);
+    log_info("tag_for_empy %"PRIx32", tag_for_lowest_seq_nr %"PRIx32, tag_for_empty, tag_for_lowest_seq_nr);
 
     if (value == 0){
         // done

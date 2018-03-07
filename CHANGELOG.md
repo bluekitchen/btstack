@@ -7,12 +7,61 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
-- Port for Windows with Zephyr HCI Firmware connected via serial port  
-- em9304: ability to upload patch containers during HCI bootup.
 
 ### Changed
+- GAP: allow to limit number of connections in LE Peripheral role with gap_set_max_number_peripheral_connections
 
 ### Fixed
+
+## Changes February 2018
+
+### Added
+- Port for Windows with Zephyr HCI Firmware connected via serial port  
+- em9304: ability to upload patch containers during HCI bootup.
+- GATT Client: gatt_client_request_can_write_without_response_event() causes GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE
+- SM: new event SM_EVENT_PAIRING_COMPLETE
+- GAP: support iteration over stored Classic link keys: gap_link_key_iterator_init, gap_link_key_iterator_get_next, gap_link_key_iterator_done
+- GAP: add gap_delete_all_link_keys
+
+### Changed
+- GATT Client: round robin for multiple connections
+- ATT Dispatch: round robin for ATT Server & GATT Client
+- L2CAP: round robin for all L2CAP channels (fixed and dynamic)
+- btstack_link_key_db: addition functions for link key iteration
+- GAP: LE scanning enabled not reset on HCI Reset -> can be enabled before HCI Power Up
+- CSR: set all keys in psram instead of default
+
+### Fixed
+- tc3556x: fix startup after baud rate change
+
+
+## Changes January 2018
+
+### Added
+- Port for Windows with Zephyr HCI Firmware connected via serial port
+- em9304: upload patch containers during HCI bootup
+- Makefile for STM32-F4Discovery port
+- support for console out via SEGGER RTT
+- LE Data Channels example in BTstack and [https://github.com/bluekitchen/CBL2CAPChannel-Demo](iOS example on GitHub)
+- LE Streamer Client can send as fast as possbile as well
+- L2CAP: option to limit ATT MTU via l2cap_set_max_le_mtu
+
+### Changed
+- HCI: allow to set hci_set_master_slave_policy (0: try to become master, 1: accept slave)
+- GAP: gap_set_connection_parameters includes scan interval and window params
+- GATT Client: GATT_EVENT_MTU indicates max MTU
+- ATT DB Util: attribute handle is returned for new Services and Characteristics
+
+### Fixed
+- Windows: retry serial port operations if not all bytes have been read/written
+- HFP: avoid buffer overflows setting up messages
+- SBC Decoder: improved error handling for invalid SBC audio data
+- GAP: fix Connection Parameter Response in Central role
+- ATT DB Util: update pointer to database in case of realloc
+- GATT Client: set UUID16 field if 16-bit UUID is stored as UUID128
+- GAP: release HCI Connnection after gap_le_conne
+- ATT: Exchanged MTU is propagate to ATT Server and GATT Client
+
 
 ## Changes December 2017
 

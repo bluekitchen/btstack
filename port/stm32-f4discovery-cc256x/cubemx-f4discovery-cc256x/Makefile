@@ -28,54 +28,54 @@ OPT = -Og
 #######################################
 # paths
 #######################################
-# source path
-SOURCES_DIR =  \
-Application/User/Src \
-Drivers/STM32F4xx_HAL_Driver \
-Drivers \
-Application/User \
-Application \
-Application/MAKEFILE \
-Drivers/CMSIS \
-
-# firmware library path
-PERIFLIB_PATH = 
 
 # Build path
 BUILD_DIR = build
 
 BTSTACK_ROOT = ../../..
+VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
+VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce
+VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce
+VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player
+VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods
+VPATH += ${BTSTACK_ROOT}/3rd-party/segger-rtt
+VPATH += ${BTSTACK_ROOT}/chipset/cc256x
+VPATH += ${BTSTACK_ROOT}/example
+VPATH += ${BTSTACK_ROOT}/platform/embedded
+VPATH += ${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/eclipse-template/src
+VPATH += ${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/eclipse-template/system/src/cmsis
+VPATH += ${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/eclipse-template/system/src/stm32f4xx
+VPATH += ${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/src
+VPATH += ${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/src/bsp
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service
 VPATH += ${BTSTACK_ROOT}/src/classic
-VPATH += ${BTSTACK_ROOT}/platform/embedded
-VPATH += ${BTSTACK_ROOT}/example
-VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
-VPATH += ${BTSTACK_ROOT}/chipset/cc256x
-VPATH += ${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/eclipse-template/src
-VPATH += ${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/src
 
 ######################################
 # source
 ######################################
 # C sources
 C_SOURCES =  \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c \
+stm32f4xx_hal.c \
+stm32f4xx_hal_cortex.c \
+stm32f4xx_hal_dma.c \
+stm32f4xx_hal_dma_ex.c \
+stm32f4xx_hal_flash.c \
+stm32f4xx_hal_flash_ex.c \
+stm32f4xx_hal_flash_ramfunc.c \
+stm32f4xx_hal_gpio.c \
+stm32f4xx_hal_i2c.c \
+stm32f4xx_hal_i2c_ex.c \
+stm32f4xx_hal_i2s.c \
+stm32f4xx_hal_i2s_ex.c \
+stm32f4xx_hal_pwr.c \
+stm32f4xx_hal_pwr_ex.c \
+stm32f4xx_hal_rcc.c \
+stm32f4xx_hal_rcc_ex.c \
+stm32f4xx_hal_tim.c \
+stm32f4xx_hal_tim_ex.c \
+stm32f4xx_hal_uart.c \
 dma.c \
 gpio.c \
 main.c \
@@ -83,39 +83,85 @@ stm32f4xx_hal_msp.c \
 stm32f4xx_it.c \
 system_stm32f4xx.c \
 usart.c \
-	port.c \
-	ad_parser.c \
-	ancs_client.c \
-	att_db.c \
-	att_dispatch.c \
-	att_server.c \
-	battery_service_server.c \
-	btstack_linked_list.c \
-	btstack_memory.c \
-	btstack_memory_pool.c \
-	btstack_ring_buffer.c \
-	btstack_run_loop.c \
-	btstack_run_loop_embedded.c \
-	btstack_tlv.c \
-	btstack_uart_block_embedded.c \
-	btstack_util.c \
-	device_information_service_server.c \
-	gatt_client.c \
-	hci.c \
-	hci_cmd.c \
-	hci_dump.c \
-	hci_transport_h4.c \
-	l2cap.c \
-	l2cap_signaling.c \
-	le_device_db_memory.c \
-	sm.c \
-	uECC.c \
-	btstack_chipset_cc256x.c \
-	bluetooth_init_cc2564B_1.6_BT_Spec_4.1.c \
-	hal_flash_bank_stm32.c \
-	btstack_tlv_flash_bank.c \
-	le_device_db_tlv.c \
-	btstack_link_key_db_tlv.c \
+port.c \
+ad_parser.c \
+ancs_client.c \
+att_db.c \
+att_dispatch.c \
+att_server.c \
+battery_service_server.c \
+btstack_linked_list.c \
+btstack_memory.c \
+btstack_memory_pool.c \
+btstack_ring_buffer.c \
+btstack_run_loop.c \
+btstack_run_loop_embedded.c \
+btstack_tlv.c \
+btstack_uart_block_embedded.c \
+btstack_util.c \
+device_information_service_server.c \
+hids_device.c \
+gatt_client.c \
+hci.c \
+hci_cmd.c \
+hci_dump.c \
+hci_transport_h4.c \
+l2cap.c \
+l2cap_signaling.c \
+le_device_db_memory.c \
+sm.c \
+uECC.c \
+btstack_chipset_cc256x.c \
+bluetooth_init_cc2564B_1.6_BT_Spec_4.1.c \
+hal_audio_dma.c \
+hal_flash_bank_stm32.c \
+btstack_tlv_flash_bank.c \
+le_device_db_tlv.c \
+btstack_link_key_db_tlv.c \
+audio.c \
+cs43l22.c \
+stm32f4_discovery.c \
+stm32f4_discovery_audio.c \
+a2dp_sink.c \
+a2dp_source.c \
+avdtp.c \
+avdtp_acceptor.c \
+avdtp_initiator.c \
+avdtp_sink.c \
+avdtp_source.c \
+avdtp_util.c \
+avrcp.c \
+avrcp_browsing_controller.c \
+avrcp_controller.c \
+avrcp_media_item_iterator.c \
+avrcp_target.c \
+sdp_util.c \
+sdp_server.c \
+sdp_client.c \
+sdp_client_rfcomm.c \
+spp_server.c \
+btstack_sbc_decoder_bluedroid.c \
+btstack_sbc_encoder_bluedroid.c \
+btstack_sbc_plc.c \
+hxcmod.c \
+nao-deceased_by_disease.c \
+hfp_ag.c \
+hfp_hf.c \
+hfp.c \
+hfp_gsm_model.c \
+hfp_msbc.c \
+hsp_hs.c \
+hsp_ag.c \
+hid_device.c \
+rfcomm.c \
+sco_demo_util.c \
+btstack_hid_parser.c \
+device_id_server.c \
+obex_iterator.c \
+pbap_client.c \
+goep_client.c \
+SEGGER_RTT.c \
+SEGGER_RTT_Syscalls_GCC.c \
 
 # ASM sources
 ASM_SOURCES =  \
@@ -184,9 +230,15 @@ C_INCLUDES += -I${BTSTACK_ROOT}/src/ble/gatt-service
 C_INCLUDES += -I${BTSTACK_ROOT}/src/classic
 C_INCLUDES += -I${BTSTACK_ROOT}/src
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/hxcmod-player
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/segger-rtt
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/embedded
 C_INCLUDES += -I${BTSTACK_ROOT}/chipset/cc256x
 C_INCLUDES += -I${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/src
+C_INCLUDES += -I${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/src/bsp
 C_INCLUDES += -I${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/eclipse-template/include
 C_INCLUDES += -I${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/eclipse-template/system/include/stm32f4xx
 C_INCLUDES += -I${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/eclipse-template/system/include/cmsis
@@ -229,14 +281,58 @@ LE_EXAMPLES = \
 	sm_pairing_peripheral \
 	sm_pairing_central 
 
+EXAMPLES = 					\
+	a2dp_sink_demo			\
+	a2dp_source_demo       \
+	ancs_client_demo		\
+	dut_mode_classic        \
+	gap_dedicated_bonding	\
+	gap_inquiry 			\
+	gap_le_advertisements   \
+	gatt_battery_query		\
+	gatt_browser            \
+	hfp_ag_demo             \
+	hfp_hf_demo             \
+	hid_host_demo           \
+	hid_keyboard_demo 	    \
+	hid_mouse_demo          \
+	hog_keyboard_demo       \
+	hog_mouse_demo          \
+	hsp_ag_demo             \
+	hsp_hs_demo             \
+	le_counter              \
+	le_streamer				\
+	le_streamer_client      \
+	pbap_client_demo		\
+	sdp_bnep_query 			\
+	sdp_general_query		\
+	sdp_rfcomm_query		\
+	sm_pairing_central      \
+	sm_pairing_peripheral   \
+	spp_and_le_counter 		\
+	spp_and_le_streamer     \
+	spp_counter 			\
+	spp_streamer			\
+	spp_streamer_client     \
+
 GATT_FILES = \
 	ancs_client_demo.gatt \
 	le_counter.gatt \
 	le_streamer.gatt \
 	gatt_browser.gatt \
 	gatt_battery_query.gatt \
+	hog_keyboard_demo.gatt \
+	hog_mouse_demo.gatt \
 	sm_pairing_peripheral.gatt \
 	sm_pairing_central.gatt \
+	spp_and_le_counter.gatt \
+	spp_and_le_streamer.gatt \
+
+include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
+include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
+
+C_SOURCES += ${SBC_ENCODER}
+C_SOURCES += ${SBC_DECODER}
 
 #######################################
 # build the application
@@ -251,23 +347,32 @@ vpath %.s $(sort $(dir $(ASM_SOURCES)))
 all: \
 	$(OBJECTS) \
 	$(addprefix $(BUILD_DIR)/,$(GATT_FILES:.gatt=.h)) \
-	$(addprefix $(BUILD_DIR)/,$(LE_EXAMPLES:=.elf)) \
-	$(addprefix $(BUILD_DIR)/,$(LE_EXAMPLES:=.hex)) \
-	$(addprefix $(BUILD_DIR)/,$(LE_EXAMPLES:=.bin))
+	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.elf)) \
+	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.hex)) \
+	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.bin))
 
 include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
-
 
 $(BUILD_DIR)/%.h: %.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
-$(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
+# $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
+# 	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
+
+# $(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
+# 	$(AS) -c $(CFLAGS) $< -o $@
+
+# $(BUILD_DIR)/%.elf: $(OBJECTS) Makefile %.o
+# 	$(CC) $(filter-out Makefile,$^)  $(LDFLAGS) -o $@
+# 	$(SZ) $@
+
+$(BUILD_DIR)/%.o: %.c | $(BUILD_DIR) 
 	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
 
-$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
+$(BUILD_DIR)/%.o: %.s | $(BUILD_DIR)
 	$(AS) -c $(CFLAGS) $< -o $@
 
-$(BUILD_DIR)/%.elf: $(OBJECTS) Makefile %.o
+$(BUILD_DIR)/%.elf: $(OBJECTS) %.o
 	$(CC) $(filter-out Makefile,$^)  $(LDFLAGS) -o $@
 	$(SZ) $@
 

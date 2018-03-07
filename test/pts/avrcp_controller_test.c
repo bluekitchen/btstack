@@ -137,22 +137,21 @@ static int next_player_index(){
 
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    if (packet_type != HCI_EVENT_PACKET) return;
+    // if (packet_type != HCI_EVENT_PACKET) return;
     UNUSED(channel);
     UNUSED(size);
     bd_addr_t event_addr;
     uint16_t local_cid;
     uint8_t  status = 0xFF;
     int pos;
-    // printf("packet_handler packet type 0x%02X, HCI_EVENT_AVRCP_META 0x%02X, subevent 0x%02X\n", hci_event_packet_get_type(packet), HCI_EVENT_AVRCP_META, packet[2]);
+    // printf("packet_handler packet type 0x%02X, HCI_EVENT_AVRCP_META 0x%02X, subevent 0x%02X\n", packet_type, HCI_EVENT_AVRCP_META, packet[2]);
     
-    switch (hci_event_packet_get_type(packet)) {   
+    switch (packet_type) {   
         case AVRCP_BROWSING_DATA_PACKET:
             pos = 0;
             browsing_query_active = 1;
             avrcp_browsing_item_type_t data_type = (avrcp_browsing_item_type_t)packet[pos++];
             pos += 2; // length
-
             switch (data_type){
                 case AVRCP_BROWSING_MEDIA_ROOT_FOLDER:{
                     avrcp_browsing_root_folder_t root_folder;
@@ -161,7 +160,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     root_folder.depth = packet[pos++];
                     root_folder.name_len = big_endian_read_16(packet, pos);
                     pos += 2;
-
                     memset(root_folder.name, 0, AVRCP_BROWSING_MAX_FOLDER_NAME_LEN);
                     root_folder.name_len = btstack_min(big_endian_read_16(packet, pos), AVRCP_BROWSING_MAX_FOLDER_NAME_LEN - 1);
                     memcpy(root_folder.name, packet+pos, root_folder.name_len);
@@ -240,189 +238,191 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 }
 
                 default:
-                    log_error("AVRCP browsing: unknown browsable item type 0%02x", data_type);
+                    printf("AVRCP browsing: unknown browsable item type 0%02x\n", data_type);
                     break;
             }
             break;
-        case HCI_EVENT_AVDTP_META:
-            switch (packet[2]){
-                case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
-                    avdtp_cid = avdtp_subevent_signaling_connection_established_get_avdtp_cid(packet);
-                    status    = avdtp_subevent_signaling_connection_established_get_status(packet);
-                    if (status != ERROR_CODE_SUCCESS){
-                        printf("AVDTP connection establishment failed: status 0x%02x.\n", status);
-                        break;    
+        case HCI_EVENT_PACKET:
+            switch (packet[0]){
+                case HCI_EVENT_AVDTP_META:
+                    switch (packet[2]){
+                        case AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED:
+                            avdtp_cid = avdtp_subevent_signaling_connection_established_get_avdtp_cid(packet);
+                            status    = avdtp_subevent_signaling_connection_established_get_status(packet);
+                            if (status != ERROR_CODE_SUCCESS){
+                                printf("AVDTP connection establishment failed: status 0x%02x.\n", status);
+                                break;    
+                            }
+                            printf("AVDTP connection established: avdtp_cid 0x%02x.\n", avdtp_cid);
+                            break;
+                        case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
+                            avdtp_cid = avdtp_subevent_signaling_connection_released_get_avdtp_cid(packet);
+                            printf("AVDTP connection released: avdtp_cid 0x%02x.\n", avdtp_cid);
+                            break;
+                        default:
+                            printf("AVDTP event not parsed.\n");
+                            break; 
                     }
-                    printf("AVDTP connection established: avdtp_cid 0x%02x.\n", avdtp_cid);
-                    break;
-                case AVDTP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
-                    avdtp_cid = avdtp_subevent_signaling_connection_released_get_avdtp_cid(packet);
-                    printf("AVDTP connection released: avdtp_cid 0x%02x.\n", avdtp_cid);
-                    break;
-                default:
-                    printf("AVDTP event not parsed.\n");
-                    break; 
-            }
-            break;   
-          
-        case HCI_EVENT_AVRCP_META:
-            switch (packet[2]){
-                case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
-                    local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
-                    if (browsing_cid != 0 && browsing_cid != local_cid) {
-                        printf("AVRCP Controller connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", browsing_cid, local_cid);
-                        return;
+                    break;   
+                  
+                case HCI_EVENT_AVRCP_META:
+                    switch (packet[2]){
+                        case AVRCP_SUBEVENT_CONNECTION_ESTABLISHED: {
+                            local_cid = avrcp_subevent_connection_established_get_avrcp_cid(packet);
+                            if (browsing_cid != 0 && browsing_cid != local_cid) {
+                                printf("AVRCP Controller connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", browsing_cid, local_cid);
+                                return;
+                            }
+
+                            status = avrcp_subevent_connection_established_get_status(packet);
+                            if (status != ERROR_CODE_SUCCESS){
+                                printf("AVRCP Controller connection failed: status 0x%02x\n", status);
+                                browsing_cid = 0;
+                                return;
+                            }
+                            
+                            avrcp_cid = local_cid;
+                            avrcp_connected = 1;
+                            avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
+                            printf("AVRCP Controller connected.\n");
+                            return;
+                        }
+                        case AVRCP_SUBEVENT_CONNECTION_RELEASED:
+                            printf("AVRCP Controller Client released.\n");
+                            browsing_cid = 0;
+                            avrcp_browsing_connected = 0;
+                            folder_index = 0;
+                            memset(folders, 0, sizeof(folders));
+                            return;
+                        case AVRCP_SUBEVENT_INCOMING_BROWSING_CONNECTION:
+                            local_cid = avrcp_subevent_incoming_browsing_connection_get_browsing_cid(packet);
+                            if (browsing_cid != 0 && browsing_cid != local_cid) {
+                                printf("AVRCP Browsing Client connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", browsing_cid, local_cid);
+                                avrcp_avrcp_browsing_decline_incoming_connection(browsing_cid);
+                                return;
+                            }
+                            browsing_cid = local_cid;
+                            printf("AVRCP Browsing Client configure incoming connection, browsing cid 0x%02x\n", browsing_cid);
+                            avrcp_avrcp_browsing_configure_incoming_connection(browsing_cid, ertm_buffer, sizeof(ertm_buffer), &ertm_config);
+                            break;
+
+                        case AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED: {
+                            local_cid = avrcp_subevent_browsing_connection_established_get_browsing_cid(packet);
+                            if (browsing_cid != 0 && browsing_cid != local_cid) {
+                                printf("AVRCP Browsing Client connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", browsing_cid, local_cid);
+                                return;
+                            }
+
+                            status = avrcp_subevent_browsing_connection_established_get_status(packet);
+                            if (status != ERROR_CODE_SUCCESS){
+                                printf("AVRCP Browsing Client connection failed: status 0x%02x\n", status);
+                                browsing_cid = 0;
+                                return;
+                            }
+                            
+                            browsing_cid = local_cid;
+                            avrcp_browsing_connected = 1;
+                            avrcp_subevent_browsing_connection_established_get_bd_addr(packet, event_addr);
+                            printf("AVRCP Browsing Client connected\n");
+                            return;
+                        }
+                        case AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED:
+                            printf("AVRCP Browsing Controller released\n");
+                            browsing_cid = 0;
+                            avrcp_browsing_connected = 0;
+                            return;
+                        case AVRCP_SUBEVENT_BROWSING_MEDIA_ITEM_DONE:
+                            browsing_query_active = 0;
+                            if (avrcp_subevent_browsing_media_item_done_get_browsing_status(packet) != AVRCP_BROWSING_ERROR_CODE_SUCCESS){
+                                printf("AVRCP Browsing query done with browsing status 0x%02x, bluetooth status 0x%02x.\n", 
+                                    avrcp_subevent_browsing_media_item_done_get_browsing_status(packet),
+                                    avrcp_subevent_browsing_media_item_done_get_bluetooth_status(packet));
+                                break;    
+                            }
+                            printf("AVRCP Browsing cmd: DONE.\n");
+                            break;
+                        default:
+                            break;
                     }
 
-                    status = avrcp_subevent_connection_established_get_status(packet);
-                    if (status != ERROR_CODE_SUCCESS){
-                        printf("AVRCP Controller connection failed: status 0x%02x\n", status);
-                        browsing_cid = 0;
-                        return;
-                    }
+                    local_cid = little_endian_read_16(packet, 3);
+                    if (local_cid != avrcp_cid) return;
+                    // avoid printing INTERIM status
+                    status = packet[5];
+                    if (status == AVRCP_CTYPE_RESPONSE_INTERIM) return;
+                    printf("AVRCP: command status: %s, ", avrcp_ctype2str(status));
                     
-                    avrcp_cid = local_cid;
-                    avrcp_connected = 1;
-                    avrcp_subevent_connection_established_get_bd_addr(packet, event_addr);
-                    printf("AVRCP Controller connected.\n");
-                    return;
-                }
-                case AVRCP_SUBEVENT_CONNECTION_RELEASED:
-                    printf("AVRCP Controller Client released.\n");
-                    browsing_cid = 0;
-                    avrcp_browsing_connected = 0;
-                    folder_index = 0;
-                    memset(folders, 0, sizeof(folders));
-                    return;
-                case AVRCP_SUBEVENT_INCOMING_BROWSING_CONNECTION:
-                    local_cid = avrcp_subevent_incoming_browsing_connection_get_browsing_cid(packet);
-                    if (browsing_cid != 0 && browsing_cid != local_cid) {
-                        printf("AVRCP Browsing Client connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", browsing_cid, local_cid);
-                        avrcp_avrcp_browsing_decline_incoming_connection(browsing_cid);
-                        return;
-                    }
-                    browsing_cid = local_cid;
-                    printf("AVRCP Browsing Client configure incoming connection, browsing cid 0x%02x\n", browsing_cid);
-                    avrcp_avrcp_browsing_configure_incoming_connection(browsing_cid, ertm_buffer, sizeof(ertm_buffer), &ertm_config);
-                    break;
+                    switch (packet[2]){
+                        case AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED:
+                            printf("notification, playback status changed %s\n", avrcp_play_status2str(avrcp_subevent_notification_playback_status_changed_get_play_status(packet)));
+                            return;
+                        case AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED:
+                            printf("notification, playing content changed\n");
+                            return;
+                        case AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED:
+                            printf("notification track changed\n");
+                            return;
+                        case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
+                            printf("notification absolute volume changed %d\n", avrcp_subevent_notification_volume_changed_get_absolute_volume(packet));
+                            return;
+                        case AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED:
+                            printf("notification changed\n");
+                            return; 
+                        case AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE:{
+                            uint8_t shuffle_mode = avrcp_subevent_shuffle_and_repeat_mode_get_shuffle_mode(packet);
+                            uint8_t repeat_mode  = avrcp_subevent_shuffle_and_repeat_mode_get_repeat_mode(packet);
+                            printf("%s, %s\n", avrcp_shuffle2str(shuffle_mode), avrcp_repeat2str(repeat_mode));
+                            break;
+                        }
+                        case AVRCP_SUBEVENT_NOW_PLAYING_TITLE_INFO:
+                            if (avrcp_subevent_now_playing_title_info_get_value_len(packet) > 0){
+                                memcpy(avrcp_value, avrcp_subevent_now_playing_title_info_get_value(packet), avrcp_subevent_now_playing_title_info_get_value_len(packet));
+                                printf("    Title: %s\n", avrcp_value);
+                            }  
+                            break;
 
-                case AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED: {
-                    local_cid = avrcp_subevent_browsing_connection_established_get_browsing_cid(packet);
-                    if (browsing_cid != 0 && browsing_cid != local_cid) {
-                        printf("AVRCP Browsing Client connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", browsing_cid, local_cid);
-                        return;
+                        case AVRCP_SUBEVENT_NOW_PLAYING_ARTIST_INFO:
+                            if (avrcp_subevent_now_playing_artist_info_get_value_len(packet) > 0){
+                                memcpy(avrcp_value, avrcp_subevent_now_playing_artist_info_get_value(packet), avrcp_subevent_now_playing_artist_info_get_value_len(packet));
+                                printf("    Artist: %s\n", avrcp_value);
+                            }  
+                            break;
+                        
+                        case AVRCP_SUBEVENT_NOW_PLAYING_ALBUM_INFO:
+                            if (avrcp_subevent_now_playing_album_info_get_value_len(packet) > 0){
+                                memcpy(avrcp_value, avrcp_subevent_now_playing_album_info_get_value(packet), avrcp_subevent_now_playing_album_info_get_value_len(packet));
+                                printf("    Album: %s\n", avrcp_value);
+                            }  
+                            break;
+                        
+                        case AVRCP_SUBEVENT_NOW_PLAYING_GENRE_INFO:
+                            if (avrcp_subevent_now_playing_genre_info_get_value_len(packet) > 0){
+                                memcpy(avrcp_value, avrcp_subevent_now_playing_genre_info_get_value(packet), avrcp_subevent_now_playing_genre_info_get_value_len(packet));
+                                printf("    Genre: %s\n", avrcp_value);
+                            }  
+                            break;
+                        
+                        case AVRCP_SUBEVENT_PLAY_STATUS:
+                            printf("song length: %d ms, song position: %d ms, play status: %s\n", 
+                                avrcp_subevent_play_status_get_song_length(packet), 
+                                avrcp_subevent_play_status_get_song_position(packet),
+                                avrcp_play_status2str(avrcp_subevent_play_status_get_play_status(packet)));
+                            break;
+                        case AVRCP_SUBEVENT_OPERATION_COMPLETE:
+                            printf("operation done %s\n", avrcp_operation2str(avrcp_subevent_operation_complete_get_operation_id(packet)));
+                            break;
+                        case AVRCP_SUBEVENT_OPERATION_START:
+                            printf("operation start %s\n", avrcp_operation2str(avrcp_subevent_operation_complete_get_operation_id(packet)));
+                            break;
+                        case AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE:
+                            // response to set shuffle and repeat mode
+                            printf("\n");
+                            break;
+                        default:
+                            printf("AVRCP event not parsed.\n");
+                            break;
                     }
-
-                    status = avrcp_subevent_browsing_connection_established_get_status(packet);
-                    if (status != ERROR_CODE_SUCCESS){
-                        printf("AVRCP Browsing Client connection failed: status 0x%02x\n", status);
-                        browsing_cid = 0;
-                        return;
-                    }
-                    
-                    browsing_cid = local_cid;
-                    avrcp_browsing_connected = 1;
-                    avrcp_subevent_browsing_connection_established_get_bd_addr(packet, event_addr);
-                    printf("AVRCP Browsing Client connected\n");
-                    return;
-                }
-                case AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED:
-                    printf("AVRCP Browsing Controller released\n");
-                    browsing_cid = 0;
-                    avrcp_browsing_connected = 0;
-                    return;
-                case AVRCP_SUBEVENT_BROWSING_MEDIA_ITEM_DONE:
-                    browsing_query_active = 0;
-                    if (avrcp_subevent_browsing_media_item_done_get_browsing_status(packet) != AVRCP_BROWSING_ERROR_CODE_SUCCESS){
-                        printf("AVRCP Browsing query done with browsing status 0x%02x, bluetooth status 0x%02x.\n", 
-                            avrcp_subevent_browsing_media_item_done_get_browsing_status(packet),
-                            avrcp_subevent_browsing_media_item_done_get_bluetooth_status(packet));
-                        break;    
-                    }
-                    printf("AVRCP Browsing cmd: DONE.\n");
-                    break;
-                default:
-                    break;
             }
-
-            local_cid = little_endian_read_16(packet, 3);
-            if (local_cid != avrcp_cid) return;
-            // avoid printing INTERIM status
-            status = packet[5];
-            if (status == AVRCP_CTYPE_RESPONSE_INTERIM) return;
-            printf("AVRCP: command status: %s, ", avrcp_ctype2str(status));
-            
-            switch (packet[2]){
-                case AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED:
-                    printf("notification, playback status changed %s\n", avrcp_play_status2str(avrcp_subevent_notification_playback_status_changed_get_play_status(packet)));
-                    return;
-                case AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED:
-                    printf("notification, playing content changed\n");
-                    return;
-                case AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED:
-                    printf("notification track changed\n");
-                    return;
-                case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
-                    printf("notification absolute volume changed %d\n", avrcp_subevent_notification_volume_changed_get_absolute_volume(packet));
-                    return;
-                case AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED:
-                    printf("notification changed\n");
-                    return; 
-                case AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE:{
-                    uint8_t shuffle_mode = avrcp_subevent_shuffle_and_repeat_mode_get_shuffle_mode(packet);
-                    uint8_t repeat_mode  = avrcp_subevent_shuffle_and_repeat_mode_get_repeat_mode(packet);
-                    printf("%s, %s\n", avrcp_shuffle2str(shuffle_mode), avrcp_repeat2str(repeat_mode));
-                    break;
-                }
-                case AVRCP_SUBEVENT_NOW_PLAYING_TITLE_INFO:
-                    if (avrcp_subevent_now_playing_title_info_get_value_len(packet) > 0){
-                        memcpy(avrcp_value, avrcp_subevent_now_playing_title_info_get_value(packet), avrcp_subevent_now_playing_title_info_get_value_len(packet));
-                        printf("    Title: %s\n", avrcp_value);
-                    }  
-                    break;
-
-                case AVRCP_SUBEVENT_NOW_PLAYING_ARTIST_INFO:
-                    if (avrcp_subevent_now_playing_artist_info_get_value_len(packet) > 0){
-                        memcpy(avrcp_value, avrcp_subevent_now_playing_artist_info_get_value(packet), avrcp_subevent_now_playing_artist_info_get_value_len(packet));
-                        printf("    Artist: %s\n", avrcp_value);
-                    }  
-                    break;
-                
-                case AVRCP_SUBEVENT_NOW_PLAYING_ALBUM_INFO:
-                    if (avrcp_subevent_now_playing_album_info_get_value_len(packet) > 0){
-                        memcpy(avrcp_value, avrcp_subevent_now_playing_album_info_get_value(packet), avrcp_subevent_now_playing_album_info_get_value_len(packet));
-                        printf("    Album: %s\n", avrcp_value);
-                    }  
-                    break;
-                
-                case AVRCP_SUBEVENT_NOW_PLAYING_GENRE_INFO:
-                    if (avrcp_subevent_now_playing_genre_info_get_value_len(packet) > 0){
-                        memcpy(avrcp_value, avrcp_subevent_now_playing_genre_info_get_value(packet), avrcp_subevent_now_playing_genre_info_get_value_len(packet));
-                        printf("    Genre: %s\n", avrcp_value);
-                    }  
-                    break;
-                
-                case AVRCP_SUBEVENT_PLAY_STATUS:
-                    printf("song length: %d ms, song position: %d ms, play status: %s\n", 
-                        avrcp_subevent_play_status_get_song_length(packet), 
-                        avrcp_subevent_play_status_get_song_position(packet),
-                        avrcp_play_status2str(avrcp_subevent_play_status_get_play_status(packet)));
-                    break;
-                case AVRCP_SUBEVENT_OPERATION_COMPLETE:
-                    printf("operation done %s\n", avrcp_operation2str(avrcp_subevent_operation_complete_get_operation_id(packet)));
-                    break;
-                case AVRCP_SUBEVENT_OPERATION_START:
-                    printf("operation start %s\n", avrcp_operation2str(avrcp_subevent_operation_complete_get_operation_id(packet)));
-                    break;
-                case AVRCP_SUBEVENT_PLAYER_APPLICATION_VALUE_RESPONSE:
-                    // response to set shuffle and repeat mode
-                    printf("\n");
-                    break;
-                default:
-                    printf("AVRCP event not parsed.\n");
-                    break;
-            }  
-            break;   
         default:
             break;
     }
@@ -446,6 +446,7 @@ static void show_usage(void){
     printf("\n--- Bluetooth AVRCP Commands %s ---\n", bd_addr_to_str(iut_address));
     printf("q - get capabilities: supported events\n");
     printf("w - get unit info\n");
+    printf("* - get subunit info\n");
     printf("r - get play status\n");
     printf("t - get now playing info\n");
     printf("1 - play\n");
@@ -479,18 +480,19 @@ static void show_usage(void){
     printf("y/Y - register/deregister UIDS_CHANGED\n");
     printf("v/V - register/deregister VOLUME_CHANGED\n");
 
+    printf("p      - Get media players\n");
     printf("I      - Set first found player as addressed player\n");
     printf("O      - Set first found player as browsed player\n");
     
-    printf("p      - Get media players\n");
-    printf("Q      - Browse folders\n");
-    printf("P      - Go up one level\n");
-    printf("W      - Go down one level\n");
-    printf("T      - Browse media items\n");
-
+    printf("Q      - Browse folders (Get Folder Items with the Virtual File System scope)\n");
+    printf("P      - Browse media items\n");
+    printf("W      - Go up one level\n");
+    printf("T      - Go down one level\n");
+    
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
+
 #endif
 
 static uint8_t media_sbc_codec_capabilities[] = {
@@ -549,6 +551,10 @@ static void stdin_process(char cmd){
         case 'w':
             printf("AVRCP: get unit info\n");
             avrcp_controller_unit_info(avrcp_cid);
+            break;
+        case '*':
+            printf("AVRCP: get subunit info\n");
+            avrcp_controller_subunit_info(avrcp_cid);
             break;
         case 'r':
             printf("AVRCP: get play status\n");
@@ -754,11 +760,10 @@ static void stdin_process(char cmd){
             status = avrcp_browsing_controller_set_browsed_player(browsing_cid, players[0]);
             break;
         case 'p':
-            players[next_player_index()] = 1;
-
-            // printf("AVRCP Browsing: get media players. Brosing cid 0x%02X\n", browsing_cid);
-            // player_index = -1;
-            // status = avrcp_browsing_controller_get_media_players(browsing_cid, 0, 0xFFFFFFFF, AVRCP_MEDIA_ATTR_ALL);
+            // players[next_player_index()] = 1;
+            printf("AVRCP Browsing: get media players. Brosing cid 0x%02X\n", browsing_cid);
+            player_index = -1;
+            status = avrcp_browsing_controller_get_media_players(browsing_cid, 0, 0xFFFFFFFF, AVRCP_MEDIA_ATTR_ALL);
             break;
         case 'Q':
             printf("AVRCP Browsing: browse folders\n");

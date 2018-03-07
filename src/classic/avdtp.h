@@ -502,6 +502,7 @@ typedef struct {
     int min_bitpool_value;
     int max_bitpool_value;
     avdtp_stream_endpoint_t * local_stream_endpoint;
+    uint8_t active_remote_sep_index;
     avdtp_sep_t * active_remote_sep;
 } avdtp_stream_endpoint_context_t;
 

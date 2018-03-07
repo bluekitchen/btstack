@@ -1,4 +1,5 @@
 sbc_decoder_test
 sbc_encoder_test
-sine_wave.pydata_sine_stereo_sbc.h
+sine_wave.py
+data_sine_stereo_sbc.h
 sbc_decoder_sine

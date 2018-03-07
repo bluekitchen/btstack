@@ -33,3 +33,4 @@ template/sdkconfig.old
 create_examples.pyc
 example/
 template/build/
+sdkconfig_*

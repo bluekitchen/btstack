@@ -435,17 +435,26 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     uint8_t pdu_id;
     uint16_t param_length;
     switch (avrcp_cmd_opcode(packet,size)){
+        case AVRCP_CMD_OPCODE_SUBUNIT_INFO:{
+            if (connection->state != AVCTP_W2_RECEIVE_RESPONSE) return;
+            connection->state = AVCTP_CONNECTION_OPENED;
+            // operands:
+            memcpy(operands, packet+pos, 5);
+            uint8_t unit_type = operands[1] >> 3;
+            uint8_t max_subunit_ID = operands[1] & 0x07;
+            log_info("    SUBUNIT INFO response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), unit_type 0x%02x, max_subunit_ID %d", ctype, subunit_type, subunit_id, opcode, unit_type, max_subunit_ID);
+            break;
+        }
         case AVRCP_CMD_OPCODE_UNIT_INFO:{
             if (connection->state != AVCTP_W2_RECEIVE_RESPONSE) return;
             connection->state = AVCTP_CONNECTION_OPENED;
-            
             // operands:
             memcpy(operands, packet+pos, 5);
             uint8_t unit_type = operands[1] >> 3;
             uint8_t unit = operands[1] & 0x07;
             uint32_t company_id = operands[2] << 16 | operands[3] << 8 | operands[4];
             log_info("    UNIT INFO response: ctype 0x%02x (0C), subunit_type 0x%02x (1F), subunit_id 0x%02x (07), opcode 0x%02x (30), unit_type 0x%02x, unit %d, company_id 0x%06" PRIx32,
-                ctype, subunit_type, subunit_id, opcode, unit_type, unit, company_id );
+                ctype, subunit_type, subunit_id, opcode, unit_type, unit, company_id);
             break;
         }
         case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:
@@ -851,6 +860,27 @@ uint8_t avrcp_controller_unit_info(uint16_t avrcp_cid){
     connection->subunit_type = AVRCP_SUBUNIT_TYPE_UNIT; //vendor unique
     connection->subunit_id =   AVRCP_SUBUNIT_ID_IGNORE;
     memset(connection->cmd_operands, 0xFF, connection->cmd_operands_length);
+    connection->cmd_operands_length = 5;
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t avrcp_controller_subunit_info(uint16_t avrcp_cid){
+    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(avrcp_cid, &avrcp_controller_context);
+    if (!connection){
+        log_error("avrcp_unit_info: could not find a connection.");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    connection->state = AVCTP_W2_SEND_COMMAND;
+    
+    connection->transaction_label++;
+    connection->command_opcode = AVRCP_CMD_OPCODE_SUBUNIT_INFO;
+    connection->command_type = AVRCP_CTYPE_STATUS;
+    connection->subunit_type = AVRCP_SUBUNIT_TYPE_UNIT; //vendor unique
+    connection->subunit_id =   AVRCP_SUBUNIT_ID_IGNORE;
+    memset(connection->cmd_operands, 0xFF, connection->cmd_operands_length);
+    connection->cmd_operands[0] = 7; // page: 0, extention_code: 7
     connection->cmd_operands_length = 5;
     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;

@@ -53,7 +53,7 @@ CSR, which has been acquired by Qualcomm, provides all relevant information on t
 
 Chipset              | Type      | HCI Transport  | BD_ADDR (1)  | SCO over HCI (2) | LE DLE | Multiple LE Roles    | BTstack folder | Comment
 -------------------- |-----------| ---------------|--------------|------------------|--------|----------------------|----------------|---------
-Atmel ATWILC3000     | LE (4)    | H4             | Yes          | Don't know       | No     |         No           | atwilc3000     | Firmware size: 270 kB
+Atmel ATWILC3000     | LE (4)    | H4             | Yes          | Don't know       | No     |         No           | atwilc3000     | BLE Firmware size: 60 kB
 Broadcom UART        | Dual mode | H4, H5         | Rarely       | Probably (2)     | No     |      Maybe (3)       | bcm            | Max UART baudrate 2 mbps
 Broadcom USB Dongles | Dual mode | USB            | Yes          | Yes              | No     |         No           | bcm            |
 CSR UART             | Dual mode | H4, H5, BCSP   | Rarely       | No (didn't work) | No     |         No           | csr            |
@@ -64,7 +64,7 @@ EM 9301              | LE        | SPI, H4        | No           | n.a.         
 EM 9304              | LE        | SPI, H4        | Yes          | n.a.             | Yes    |        Yes           | em9301         | Custom HCI SPI implementation
 Nordic nRF           | LE        | H4             | Fixed Random | n.a.             | Yes    |        Yes           |                | Requires HCI firmware
 STM STLC2500D        | Classic   | H4             | No           | No (didn't try)  | n.a    |         n.a.         | stlc2500d      | Custom deep sleep management not supported
-Toshiba TC35661      | Dual mode | H4             | No           | No (didn't try)  | No     |         No           | tc3566         | HCI version not tested. See below
+Toshiba TC35661      | Dual mode | H4             | No           | No (didn't try)  | No     |         No           | tc3566         | Only -007, -009 models provide full HCI. See below
 TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL | Yes          | Yes              | No     |    Yes for CC256XC   | cc256x         | Also WL185x, WL187x, and WL189x
 
 **Notes**:
@@ -77,7 +77,7 @@ TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL | Yes          | Yes          
 
 ## Atmel/Microchip
 
-The ATILC3000 Bluetooth/Wifi combo controller has been used with Linux on embedded devices by Atmel/Microchip. Drivers and documentation are available from a [GitHub repository](https://github.com/atwilc3000). The ATWILC3000 has a basic HCI implementation stored in ROM and requires a firmware image to be uploaded before it can be used. Only the BLE Controller is currently qualified as [https://www.bluetooth.org/tpg/QLI_viewQDL.cfm?qid=36402](QDID 99659). Please note: the Bluetooth firmware is 270 kB.
+The ATILC3000 Bluetooth/Wifi combo controller has been used with Linux on embedded devices by Atmel/Microchip. Drivers and documentation are available from a [GitHub repository](https://github.com/atwilc3000). The ATWILC3000 has a basic HCI implementation stored in ROM and requires a firmware image to be uploaded before it can be used. Only the BLE Controller is currently qualified as [https://www.bluetooth.org/tpg/QLI_viewQDL.cfm?qid=36402](QDID 99659). Please note: the BLE firmware is around 60 kB. It might need a separate Wifi firmware as well.
 
 **BD Addr** can be set with vendor-specific command although all chipsets have an official address stored. The BD_ADDR lookup results in "Newport Media Inc." which was [acquired by Atmel](http://www.atmel.com/about/news/release.aspx?reference=tcm:26-62532) in 2014.
 
@@ -262,9 +262,9 @@ SCO Data can be routed over HCI, so HFP Wide-Band Speech is supported.
 
 ## Toshiba
 
-The Toshiba TC35661 Dual-Mode chipset is available in three variants: standalone incl. binary Bluetooth stack, as a module with embedded stack or with a regular HCI interface. The HCI variant has the model number TC35661–007.
+The Toshiba TC35661 Dual-Mode chipset is available in three variants: standalone incl. binary Bluetooth stack, as a module with embedded stack or with a regular HCI interface. The HCI variant has the model number TC35661–007 resp TC35561-009 for the newer silicon.
 
-We've tried their USB Evaluation Stick that contains an USB-to-UART adapter and the PAN1026 module that contains the TC35661 -501. We have been told by our distributor that the -501 variant also supports the HCI interface. However, while our tests have shown that Classic Bluetooth with SPP works fine with this variant, none of the LE commands work.
+We first tried their USB Evaluation Stick that contains an USB-to-UART adapter and the PAN1026 module that contains the TC35661 -501. While it does support the HCI interface and Bluetooth Classic operations worked as expected, LE HCI Commands are not supported. With the -007 and the -009 models, everything works as expected.
 
 **SCO data** might work. We didn't try.
 

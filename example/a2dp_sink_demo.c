@@ -60,6 +60,7 @@
  */
 // *****************************************************************************
 
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -118,7 +119,7 @@ static btstack_ring_buffer_t ring_buffer;
 #define DMA_AUDIO_FRAMES 128
 #define DMA_MAX_FILL_FRAMES 1
 #define NUM_AUDIO_BUFFERS 2
-
+static void hal_audio_dma_process(btstack_data_source_t * ds, btstack_data_source_callback_type_t callback_type);
 static uint16_t audio_samples[(DMA_AUDIO_FRAMES + DMA_MAX_FILL_FRAMES)*2*NUM_AUDIO_BUFFERS];
 static uint16_t audio_samples_len[NUM_AUDIO_BUFFERS];
 static uint8_t ring_buffer_storage[(OPTIMAL_FRAMES_MAX + ADDITIONAL_FRAMES) * MAX_SBC_FRAME_SIZE];
@@ -243,7 +244,7 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
 #ifdef HAVE_BTSTACK_STDIN
 static void stdin_process(char cmd);
 #endif
-#if defined(HAVE_PORTAUDIO) || defined(STORE_SBC_TO_WAV_FILE)
+#if defined(HAVE_PORTAUDIO) || defined(STORE_SBC_TO_WAV_FILE) || defined(HAVE_AUDIO_DMA)
 static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context);
 #endif
 
@@ -375,7 +376,7 @@ void hal_audio_dma_done(void){
 		// start playing silence
 		audio_stream_paused = 1;
 		hal_audio_dma_play((const uint8_t *) silent_buffer, DMA_AUDIO_FRAMES*4);
-		printf("%6u - paused - bytes in buffer %u\n", (int) btstack_run_loop_get_time_ms(), btstack_ring_buffer_bytes_available(&ring_buffer));
+		printf("%6u - paused - bytes in buffer %"PRIu32"\n", (int) btstack_run_loop_get_time_ms(), btstack_ring_buffer_bytes_available(&ring_buffer));
 		return;
 	}
 	playback_buffer = next_playback_buffer;
@@ -484,7 +485,7 @@ static int media_processing_init(avdtp_media_codec_configuration_sbc_t configura
     memset(ring_buffer_storage, 0, sizeof(ring_buffer_storage));
     btstack_ring_buffer_init(&ring_buffer, ring_buffer_storage, sizeof(ring_buffer_storage));
     audio_stream_started = 0;
-    audio_stream_paused = 0;
+    audio_stream_paused = 1;
 #endif 
     media_initialized = 1;
     return 0;
@@ -498,7 +499,7 @@ static void media_processing_close(void){
     wav_writer_close();
     int total_frames_nr = state.good_frames_nr + state.bad_frames_nr + state.zero_frames_nr;
 
-    printf("WAV Writer: Decoding done. Processed totaly %d frames:\n - %d good\n - %d bad\n - %d zero frames\n", total_frames_nr, state.good_frames_nr, state.bad_frames_nr, state.zero_frames_nr);
+    printf("WAV Writer: Decoding done. Processed totaly %d frames:\n - %d good\n - %d bad\n", total_frames_nr, state.good_frames_nr, total_frames_nr - state.good_frames_nr);
     printf("WAV Writer: Written %d frames to wav file: %s\n", frame_count, wav_filename);
 #endif
 
@@ -818,7 +819,7 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             break;
         
         case AVRCP_SUBEVENT_PLAY_STATUS:
-            printf("song length: %d ms, song position: %d ms, play status: %s\n", 
+            printf("song length: %"PRIu32" ms, song position: %"PRIu32" ms, play status: %s\n", 
                 avrcp_subevent_play_status_get_song_length(packet), 
                 avrcp_subevent_play_status_get_song_position(packet),
                 avrcp_play_status2str(avrcp_subevent_play_status_get_play_status(packet)));

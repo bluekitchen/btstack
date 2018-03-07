@@ -187,6 +187,10 @@ typedef enum {
     SM_STATE_VAR_DHKEY_COMMAND_RECEIVED = 1 << 2,
 } sm_state_var_t;
 
+typedef uint8_t sm_key24_t[3];
+typedef uint8_t sm_key56_t[7];
+typedef uint8_t sm_key256_t[32];
+
 //
 // GLOBAL DATA
 //
@@ -409,6 +413,7 @@ static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handl
 static inline int sm_calc_actual_encryption_key_size(int other);
 static int sm_validate_stk_generation_method(void);
 static void sm_handle_encryption_result(uint8_t * data);
+static void sm_notify_client_status_reason(sm_connection_t * sm_conn, uint8_t status, uint8_t reason);
 
 static void log_info_hex16(const char * name, uint16_t value){
     log_info("%-6s 0x%04x", name, value);
@@ -508,6 +513,7 @@ static void sm_timeout_handler(btstack_timer_source_t * timer){
     log_info("SM timeout");
     sm_connection_t * sm_conn = (sm_connection_t*) btstack_run_loop_get_timer_context(timer);
     sm_conn->sm_engine_state = SM_GENERAL_TIMEOUT;
+    sm_notify_client_status_reason(sm_conn, ERROR_CODE_CONNECTION_TIMEOUT, 0);
     sm_done_for_handle(sm_conn->sm_handle);
 
     // trigger handling of next ready connection
@@ -688,103 +694,6 @@ static void sm_s1_r_prime(sm_key_t r1, sm_key_t r2, uint8_t * r_prime){
     memcpy(&r_prime[0], &r1[8], 8);
 }
 
-#ifdef ENABLE_LE_SECURE_CONNECTIONS
-// Software implementations of crypto toolbox for LE Secure Connection
-// TODO: replace with code to use AES Engine of HCI Controller
-typedef uint8_t sm_key24_t[3];
-typedef uint8_t sm_key56_t[7];
-typedef uint8_t sm_key256_t[32];
-
-#if 0
-static void aes128_calc_cyphertext(const uint8_t key[16], const uint8_t plaintext[16], uint8_t cyphertext[16]){
-    uint32_t rk[RKLENGTH(KEYBITS)];
-    int nrounds = rijndaelSetupEncrypt(rk, &key[0], KEYBITS);
-    rijndaelEncrypt(rk, nrounds, plaintext, cyphertext);
-}
-
-static void calc_subkeys(sm_key_t k0, sm_key_t k1, sm_key_t k2){
-    memcpy(k1, k0, 16);
-    sm_shift_left_by_one_bit_inplace(16, k1);
-    if (k0[0] & 0x80){
-        k1[15] ^= 0x87;
-    }
-    memcpy(k2, k1, 16);
-    sm_shift_left_by_one_bit_inplace(16, k2);
-    if (k1[0] & 0x80){
-        k2[15] ^= 0x87;
-    }
-}
-
-static void aes_cmac(sm_key_t aes_cmac, const sm_key_t key, const uint8_t * data, int cmac_message_len){
-    sm_key_t k0, k1, k2, zero;
-    memset(zero, 0, 16);
-
-    aes128_calc_cyphertext(key, zero, k0);
-    calc_subkeys(k0, k1, k2);
-
-    int cmac_block_count = (cmac_message_len + 15) / 16;
-
-    // step 3: ..
-    if (cmac_block_count==0){
-        cmac_block_count = 1;
-    }
-
-    // step 4: set m_last
-    sm_key_t cmac_m_last;
-    int sm_cmac_last_block_complete = cmac_message_len != 0 && (cmac_message_len & 0x0f) == 0;
-    int i;
-    if (sm_cmac_last_block_complete){
-        for (i=0;i<16;i++){
-            cmac_m_last[i] = data[cmac_message_len - 16 + i] ^ k1[i];
-        }
-    } else {
-        int valid_octets_in_last_block = cmac_message_len & 0x0f;
-        for (i=0;i<16;i++){
-            if (i < valid_octets_in_last_block){
-                cmac_m_last[i] = data[(cmac_message_len & 0xfff0) + i] ^ k2[i];
-                continue;
-            }
-            if (i == valid_octets_in_last_block){
-                cmac_m_last[i] = 0x80 ^ k2[i];
-                continue;
-            }
-            cmac_m_last[i] = k2[i];
-        }
-    }
-
-    // printf("sm_cmac_start: len %u, block count %u\n", cmac_message_len, cmac_block_count);
-    // LOG_KEY(cmac_m_last);
-
-    // Step 5
-    sm_key_t cmac_x;
-    memset(cmac_x, 0, 16);
-
-    // Step 6
-    sm_key_t sm_cmac_y;
-    for (int block = 0 ; block < cmac_block_count-1 ; block++){
-        for (i=0;i<16;i++){
-            sm_cmac_y[i] = cmac_x[i] ^ data[block * 16 + i];
-        }
-        aes128_calc_cyphertext(key, sm_cmac_y, cmac_x);
-    }
-    for (i=0;i<16;i++){
-        sm_cmac_y[i] = cmac_x[i] ^ cmac_m_last[i];
-    }
-
-    // Step 7
-    aes128_calc_cyphertext(key, sm_cmac_y, aes_cmac);
-}
-#endif
-#endif
-
-static void sm_setup_event_base(uint8_t * event, int event_size, uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address){
-    event[0] = type;
-    event[1] = event_size - 2;
-    little_endian_store_16(event, 2, con_handle);
-    event[4] = addr_type;
-    reverse_bd_addr(address, &event[5]);
-}
-
 static void sm_dispatch_event(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
     UNUSED(channel);
 
@@ -797,6 +706,14 @@ static void sm_dispatch_event(uint8_t packet_type, uint16_t channel, uint8_t * p
         btstack_packet_callback_registration_t * entry = (btstack_packet_callback_registration_t*) btstack_linked_list_iterator_next(&it);
         entry->callback(packet_type, 0, packet, size);
     }
+}
+
+static void sm_setup_event_base(uint8_t * event, int event_size, uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address){
+    event[0] = type;
+    event[1] = event_size - 2;
+    little_endian_store_16(event, 2, con_handle);
+    event[4] = addr_type;
+    reverse_bd_addr(address, &event[5]);
 }
 
 static void sm_notify_client_base(uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address){
@@ -826,11 +743,18 @@ static void sm_notify_client_index(uint8_t type, hci_con_handle_t con_handle, ui
     sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void sm_notify_client_authorization(uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address, uint8_t result){
-
-    uint8_t event[18];
+static void sm_notify_client_status(uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address, uint8_t status){
+    uint8_t event[12];
     sm_setup_event_base(event, sizeof(event), type, con_handle, addr_type, address);
-    event[11] = result;
+    event[11] = status;
+    sm_dispatch_event(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
+}
+
+static void sm_notify_client_status_reason(sm_connection_t * sm_conn, uint8_t status, uint8_t reason){
+    uint8_t event[13];
+    sm_setup_event_base(event, sizeof(event), SM_EVENT_PAIRING_COMPLETE, sm_conn->sm_handle, setup->sm_peer_addr_type, setup->sm_peer_address);
+    event[11] = status;
+    event[12] = reason;
     sm_dispatch_event(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
 }
 
@@ -1627,6 +1551,7 @@ static void sm_sc_cmac_done(uint8_t * hash){
             } else {
                 sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
             }
+            sm_notify_client_status_reason(sm_conn, ERROR_CODE_SUCCESS, 0);
             sm_done_for_handle(sm_conn->sm_handle);
             break;
         default:
@@ -2300,6 +2225,7 @@ static void sm_run(void){
                 buffer[1] = setup->sm_pairing_failed_reason;
                 connection->sm_engine_state = connection->sm_role ? SM_RESPONDER_IDLE : SM_INITIATOR_CONNECTED;
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                sm_notify_client_status_reason(connection, ERROR_CODE_AUTHENTICATION_FAILURE, setup->sm_pairing_failed_reason);
                 sm_done_for_handle(connection->sm_handle);
                 break;
             }
@@ -2738,6 +2664,7 @@ static void sm_run(void){
                     if (sm_key_distribution_all_received(connection)){
                         sm_key_distribution_handle_all_received(connection);
                         connection->sm_engine_state = SM_RESPONDER_IDLE;
+                        sm_notify_client_status_reason(connection, ERROR_CODE_SUCCESS, 0);
                         sm_done_for_handle(connection->sm_handle);
                     } else {
                         connection->sm_engine_state = SM_PH3_RECEIVE_KEYS;
@@ -2745,6 +2672,7 @@ static void sm_run(void){
                 } else {
                     // master -> all done
                     connection->sm_engine_state = SM_INITIATOR_CONNECTED;
+                    sm_notify_client_status_reason(connection, ERROR_CODE_SUCCESS, 0);
                     sm_done_for_handle(connection->sm_handle);
                 }
                 break;
@@ -2913,6 +2841,7 @@ static void sm_handle_encryption_result(uint8_t * data){
                     } else {
                         // master -> all done
                         connection->sm_engine_state = SM_INITIATOR_CONNECTED;
+                        sm_notify_client_status_reason(connection, ERROR_CODE_SUCCESS, 0);
                         sm_done_for_handle(connection->sm_handle);
                     }
                 }
@@ -3381,6 +3310,8 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         le_device_db_remove(sm_conn->sm_le_db_index);
                     }
 
+                    sm_notify_client_status_reason(sm_conn, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION, 0);
+
                     sm_conn->sm_engine_state = SM_GENERAL_IDLE;
                     sm_conn->sm_handle = 0;
                     break;
@@ -3509,6 +3440,8 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
     if (!sm_conn) return;
 
     if (sm_pdu_code == SM_CODE_PAIRING_FAILED){
+        sm_notify_client_status_reason(sm_conn, ERROR_CODE_AUTHENTICATION_FAILURE, packet[1]);
+        sm_done_for_handle(con_handle);
         sm_conn->sm_engine_state = sm_conn->sm_role ? SM_RESPONDER_IDLE : SM_INITIATOR_CONNECTED;
         return;
     }
@@ -3809,7 +3742,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
             // handle user cancel pairing?
             if (setup->sm_user_response == SM_USER_RESPONSE_DECLINE){
-                setup->sm_pairing_failed_reason = SM_REASON_PASSKEYT_ENTRY_FAILED;
+                setup->sm_pairing_failed_reason = SM_REASON_PASSKEY_ENTRY_FAILED;
                 sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
                 break;
             }
@@ -3879,6 +3812,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                         sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_H6_ILK;
                     } else {
                         sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
+                        sm_notify_client_status_reason(sm_conn, ERROR_CODE_SUCCESS, 0);
                         sm_done_for_handle(sm_conn->sm_handle);
                     }
                 } else {
@@ -4063,29 +3997,6 @@ static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handl
     return &hci_con->sm_connection;
 }
 
-// @returns 0 if not encrypted, 7-16 otherwise
-int sm_encryption_key_size(hci_con_handle_t con_handle){
-    sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
-    if (!sm_conn) return 0;     // wrong connection
-    if (!sm_conn->sm_connection_encrypted) return 0;
-    return sm_conn->sm_actual_encryption_key_size;
-}
-
-int sm_authenticated(hci_con_handle_t con_handle){
-    sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
-    if (!sm_conn) return 0;     // wrong connection
-    if (!sm_conn->sm_connection_encrypted) return 0; // unencrypted connection cannot be authenticated
-    return sm_conn->sm_connection_authenticated;
-}
-
-authorization_state_t sm_authorization_state(hci_con_handle_t con_handle){
-    sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
-    if (!sm_conn) return AUTHORIZATION_UNKNOWN;     // wrong connection
-    if (!sm_conn->sm_connection_encrypted)               return AUTHORIZATION_UNKNOWN; // unencrypted connection cannot be authorized
-    if (!sm_conn->sm_connection_authenticated)           return AUTHORIZATION_UNKNOWN; // unauthenticatd connection cannot be authorized
-    return sm_conn->sm_connection_authorization_state;
-}
-
 static void sm_send_security_request_for_connection(sm_connection_t * sm_conn){
     switch (sm_conn->sm_engine_state){
         case SM_GENERAL_IDLE:
@@ -4149,14 +4060,14 @@ void sm_authorization_decline(hci_con_handle_t con_handle){
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
     if (!sm_conn) return;     // wrong connection
     sm_conn->sm_connection_authorization_state = AUTHORIZATION_DECLINED;
-    sm_notify_client_authorization(SM_EVENT_AUTHORIZATION_RESULT, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0);
+    sm_notify_client_status(SM_EVENT_AUTHORIZATION_RESULT, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0);
 }
 
 void sm_authorization_grant(hci_con_handle_t con_handle){
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
     if (!sm_conn) return;     // wrong connection
     sm_conn->sm_connection_authorization_state = AUTHORIZATION_GRANTED;
-    sm_notify_client_authorization(SM_EVENT_AUTHORIZATION_RESULT, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 1);
+    sm_notify_client_status(SM_EVENT_AUTHORIZATION_RESULT, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 1);
 }
 
 // GAP Bonding API

@@ -355,7 +355,7 @@ int app_main(void){
     printf("BTstack: setup\n");
 
     // enable packet logger
-    hci_dump_open(NULL, HCI_DUMP_STDOUT);
+    // hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
     /// GET STARTED with BTstack ///
     btstack_memory_init();

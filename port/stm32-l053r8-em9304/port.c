@@ -59,10 +59,16 @@
 #include "hci_dump.h"
 #include "btstack_debug.h"
 
+#ifdef ENABLE_SEGGER_RTT
+#include "SEGGER_RTT.h"
+#endif
+
 // retarget printf
 #include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
+
+#ifndef ENABLE_SEGGER_RTT
 
 int _write(int file, char *ptr, int len){
     uint8_t cr = '\r';
@@ -79,6 +85,8 @@ int _write(int file, char *ptr, int len){
     errno = EIO;
     return -1;
 }
+
+#endif
 
 int _read(int file, char * ptr, int len){
     (void)(file);

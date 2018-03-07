@@ -126,7 +126,8 @@ typedef enum {
 typedef enum{
     SEND_MTU_EXCHANGE,
     SENT_MTU_EXCHANGE,
-    MTU_EXCHANGED
+    MTU_EXCHANGED,
+    MTU_AUTO_EXCHANGE_DISABLED
 } gatt_client_mtu_t;
 
 typedef struct gatt_client{
@@ -137,6 +138,9 @@ typedef struct gatt_client{
     // user callback 
     btstack_packet_handler_t callback;
     
+    // can write without response callback
+    btstack_packet_handler_t write_without_response_callback;
+
     hci_con_handle_t con_handle;
     
     uint8_t   address_type;
@@ -217,6 +221,16 @@ void gatt_client_init(void);
  * @brief MTU is available after the first query has completed. If status is equal to 0, it returns the real value, otherwise the default value of 23. 
  */
 uint8_t gatt_client_get_mtu(hci_con_handle_t con_handle, uint16_t * mtu);
+
+/**
+* @brief Sets whether a MTU Exchange Request shall be automatically send before the first attribute read request is send. Default is enable.d
+*/
+void gatt_client_mtu_enable_auto_negotiation(uint8_t enabled);
+
+/**
+* @brief Sends a MTU Exchange Request, this allows for the client to exchange MTU when gatt_client_mtu_enable_auto_negotiation is disabled.
+*/
+void gatt_client_send_mtu_negotiation(btstack_packet_handler_t callback, hci_con_handle_t con_handle);
 
 /** 
  * @brief Returns if the GATT client is ready to receive a query. It is used with daemon. 
@@ -348,6 +362,14 @@ void gatt_client_listen_for_characteristic_value_updates(gatt_client_notificatio
 void gatt_client_stop_listening_for_characteristic_value_updates(gatt_client_notification_t * notification);
 
 /**
+ * @brief Requests GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE that guarantees a single successful gatt_client_write_value_of_characteristic_without_response
+ * @param packet_handler
+ * @param con_handle
+ * @returns status
+ */
+uint8_t gatt_client_request_can_write_without_response_event(btstack_packet_handler_t callback, hci_con_handle_t con_handle);
+
+/**
  * @brief -> gatt complete event
  */
 uint8_t gatt_client_prepare_write(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint16_t length, uint8_t * data);
@@ -369,9 +391,6 @@ uint8_t gatt_client_cancel_write(btstack_packet_handler_t callback, hci_con_hand
 void gatt_client_deserialize_service(const uint8_t *packet, int offset, gatt_client_service_t *service);
 void gatt_client_deserialize_characteristic(const uint8_t * packet, int offset, gatt_client_characteristic_t * characteristic);
 void gatt_client_deserialize_characteristic_descriptor(const uint8_t * packet, int offset, gatt_client_characteristic_descriptor_t * descriptor);
-
-// only used for testing
-void gatt_client_pts_suppress_mtu_exchange(void);
 
 #if defined __cplusplus
 }

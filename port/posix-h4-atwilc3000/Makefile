@@ -22,6 +22,7 @@ CFLAGS  += -g -Wall -Werror \
 	-I$(BTSTACK_ROOT)/platform/posix \
 	-I$(BTSTACK_ROOT)/chipset/atwilc3000 \
 	-I$(BTSTACK_ROOT)/platform/embedded \
+	-I${BTSTACK_ROOT}/3rd-party/tinydir
 
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/chipset/atwilc3000

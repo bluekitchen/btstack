@@ -728,6 +728,12 @@ typedef uint8_t sm_key_t[16];
  */    
 #define GATT_EVENT_MTU                                           0xAB
 
+/**
+ * @format H
+ * @param handle
+ */
+#define GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE                    0xAC
+
 /** 
  * @format H2
  * @param handle
@@ -928,6 +934,23 @@ typedef uint8_t sm_key_t[16];
   * @param index
   */
 #define SM_EVENT_IDENTITY_CREATED                                0xDE
+
+ /**
+  * @brief Emitted to inform app that pairing is complete. Possible status values:
+  *        ERROR_CODE_SUCCESS                            -> pairing success
+  *        ERROR_CODE_CONNECTION_TIMEOUT                 -> timeout
+  *        ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION  -> disconnect
+  *        ERROR_CODE_AUTHENTICATION_FAILURE             -> SM protocol error, see reason field with SM_REASON_* from bluetooth.h
+  *
+  * @format H1B11
+  * @param handle
+  * @param addr_type
+  * @param address
+  * @param status
+  * @param reason if status == ERROR_CODE_AUTHENTICATION_FAILURE
+  */
+#define SM_EVENT_PAIRING_COMPLETE                                0xDF
+
 
 // GAP
 
@@ -1515,6 +1538,16 @@ typedef uint8_t sm_key_t[16];
  * @param sequence_number
  */
 #define AVDTP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW   0x14
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param local_seid
+ * @param remote_seid
+ */
+#define AVDTP_SUBEVENT_SIGNALING_CAPABILITY_DONE             0x15
+
 
 
 /** A2DP Subevent */

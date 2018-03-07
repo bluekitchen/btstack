@@ -42,6 +42,8 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include "tinydir.h"
+
 #include "btstack_config.h"
 #include "btstack_link_key_db_fs.h"
 #include "btstack_debug.h"
@@ -62,7 +64,7 @@
 #define LINK_KEY_STRING_LEN 17
 
 static bd_addr_t local_addr;
-// note: sizeof for string literals works at compile time while strlen only works with some optimizations turned on. sizeof inlcudes the  \0
+// note: sizeof for string literals works at compile time while strlen only works with some optimizations turned on. sizeof includes the  \0
 static char keypath[sizeof(LINK_KEY_PATH) + sizeof(LINK_KEY_PREFIX) + LINK_KEY_STRING_LEN + sizeof(LINK_KEY_FOR) + LINK_KEY_STRING_LEN + sizeof(LINK_KEY_SUFFIX) + 1];
 
 static char bd_addr_to_dash_str_buffer[6*3];  // 12-45-78-01-34-67\0
@@ -151,14 +153,13 @@ static void put_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t
     fclose(wFile);
 }
 
-static int get_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * link_key_type) {
-    set_path(bd_addr);
-    if (access(keypath, R_OK)) return 0;
+static int read_link_key(const char * path, link_key_t link_key, link_key_type_t * link_key_type){
+    if (access(path, R_OK)) return 0;
     
     char link_key_str[LINK_KEY_STR_LEN + 1];
     char link_key_type_str[2];
 
-    FILE * rFile = fopen(keypath,"r+");
+    FILE * rFile = fopen(path,"r+");
     size_t objects_read = fread(link_key_str, LINK_KEY_STR_LEN, 1, rFile );
     if (objects_read == 1){
         link_key_str[LINK_KEY_STR_LEN] = 0;
@@ -181,13 +182,61 @@ static int get_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t 
     return 1;
 }
 
+static int get_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * link_key_type) {
+    set_path(bd_addr);
+    return read_link_key(keypath, link_key, link_key_type);
+}
+
 static void delete_link_key(bd_addr_t bd_addr){
     set_path(bd_addr);
     if (access(keypath, R_OK)) return;
-
     if(remove(keypath) != 0){
         log_error("File %s could not be deleted.\n", keypath);
     }
+}
+
+static int iterator_init(btstack_link_key_iterator_t * it){
+    tinydir_dir * dir = (tinydir_dir *) malloc(sizeof(tinydir_dir));
+    if (!dir) return 0;
+    it->context = dir;
+    tinydir_open(dir, LINK_KEY_PATH);
+    return 1;
+}
+
+static int  iterator_get_next(btstack_link_key_iterator_t * it, bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * type){
+    (void)bd_addr;
+    (void)link_key;
+    UNUSED(type);
+    tinydir_dir * dir = (tinydir_dir*) it->context;
+
+    // construct prefix
+    strcpy(keypath, LINK_KEY_PREFIX);
+    strcat(keypath, bd_addr_to_dash_str(local_addr));
+    strcat(keypath, LINK_KEY_FOR);
+
+    while (dir->has_next) {
+        tinydir_file file;
+        tinydir_readfile(dir, &file);
+        tinydir_next(dir);
+        // compare 
+        if (strncmp(keypath, file.name, strlen(keypath)) == 0){
+            // parse bd_addr
+            const int addr_offset = sizeof(LINK_KEY_PREFIX) + LINK_KEY_STRING_LEN + sizeof(LINK_KEY_FOR) - 2;   // -1 for each sizeof
+            sscanf_bd_addr(&file.name[addr_offset], bd_addr);
+            // path found, read file
+            strcpy(keypath, LINK_KEY_PATH);
+            strcat(keypath, file.name);
+            read_link_key(keypath, link_key, type);
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static void iterator_done(btstack_link_key_iterator_t * it){
+    tinydir_close((tinydir_dir*)it->context);
+    free(it->context);
+    it->context = NULL;
 }
 
 static const btstack_link_key_db_t btstack_link_key_db_fs = {
@@ -197,6 +246,9 @@ static const btstack_link_key_db_t btstack_link_key_db_fs = {
     &get_link_key,
     &put_link_key,
     &delete_link_key,
+    &iterator_init,
+    &iterator_get_next,
+    &iterator_done,
 };
 
 const btstack_link_key_db_t * btstack_link_key_db_fs_instance(void){

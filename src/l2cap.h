@@ -116,6 +116,13 @@ typedef enum {
     L2CAP_CHANNEL_STATE_VAR_INCOMING               = 1 << 15,  // channel is incoming
 } L2CAP_CHANNEL_STATE_VAR;
 
+typedef enum {
+    L2CAP_CHANNEL_TYPE_CLASSIC,         // Classic Basic or ERTM
+    L2CAP_CHANNEL_TYPE_CONNECTIONLESS,  // Classic Connectionless
+    L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL, // LE
+    L2CAP_CHANNEL_TYPE_LE_FIXED,        // LE ATT + SM
+} l2cap_channel_type_t;
+
 typedef struct {
     l2cap_segmentation_and_reassembly_t sar;
     uint16_t len;
@@ -154,13 +161,46 @@ typedef struct {
 
 } l2cap_ertm_config_t;
 
-// info regarding an actual connection
+// info regarding an actual channel
+// note: l2cap_fixed_channel and l2cap_channel_t share commmon fields
+
+typedef struct l2cap_fixed_channel {
+    // linked list - assert: first field
+    btstack_linked_item_t    item;
+    
+    // channel type
+    l2cap_channel_type_t channel_type;
+
+    // local cid, primary key for channel lookup
+    uint16_t  local_cid;
+
+    // packet handler
+    btstack_packet_handler_t packet_handler;
+
+    // send request
+    uint8_t waiting_for_can_send_now;
+
+    // -- end of shared prefix
+
+} l2cap_fixed_channel_t;
+
 typedef struct {
     // linked list - assert: first field
     btstack_linked_item_t    item;
     
+    // channel type
+    l2cap_channel_type_t channel_type;
+
+    // local cid, primary key for channel lookup
+    uint16_t  local_cid;
+
     // packet handler
     btstack_packet_handler_t packet_handler;
+
+    // send request
+    uint8_t   waiting_for_can_send_now;
+
+    // -- end of shared prefix
 
     // timer
     btstack_timer_source_t rtx; // also used for ertx
@@ -177,7 +217,6 @@ typedef struct {
     uint8_t   remote_sig_id;    // used by other side, needed for delayed response
     uint8_t   local_sig_id;     // own signaling identifier
     
-    uint16_t  local_cid;
     uint16_t  remote_cid;
     
     uint16_t  local_mtu;
@@ -190,7 +229,6 @@ typedef struct {
     gap_security_level_t required_security_level;
 
     uint8_t   reason; // used in decline internal
-    uint8_t   waiting_for_can_send_now;
 
     // LE Data Channels
 
@@ -393,6 +431,11 @@ uint16_t l2cap_max_mtu(void);
  * @brief Get max MTU for LE connections based on btstack configuration
  */
 uint16_t l2cap_max_le_mtu(void);
+
+/**
+* @brief Set the max MTU for LE connections, if not set l2cap_max_mtu() will be used.
+*/
+void l2cap_set_max_le_mtu(uint16_t max_mtu);
 
 /** 
  * @brief Creates L2CAP channel to the PSM of a remote device with baseband address. A new baseband connection will be initiated if necessary.

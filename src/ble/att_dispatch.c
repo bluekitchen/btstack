@@ -47,42 +47,61 @@
 #include "btstack_debug.h"
 #include "l2cap.h"
 
-static btstack_packet_handler_t att_client_handler;
-static btstack_packet_handler_t att_server_handler;
+#define ATT_SERVER 0
+#define ATT_CLIENT 1
+#define ATT_MAX    2
 
-static uint8_t att_client_waiting_for_can_send;
-static uint8_t att_server_waiting_for_can_send;
+struct {
+    btstack_packet_handler_t packet_handler;
+    uint8_t                  waiting_for_can_send;
+} subscriptions[ATT_MAX];
+
+// index of subscription that will get can send now first if waiting for it
+static uint8_t att_round_robin;
+
+// track can send now requests
+static uint8_t can_send_now_pending;
 
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
-	switch (packet_type){
-		case ATT_DATA_PACKET:
-			// log_info("att_data_packet with opcode 0x%x", packet[0]);
-			if (packet[0] & 1){
-				// odd PDUs are sent from server to client
-				if (!att_client_handler) return;
-				att_client_handler(packet_type, handle, packet, size);
-			} else {
-				// even PDUs are sent from client to server
-				if (!att_server_handler) return;
-				att_server_handler(packet_type, handle, packet, size);
-			}
-			break;
-		case HCI_EVENT_PACKET:
-			if (packet[0] != L2CAP_EVENT_CAN_SEND_NOW) break;
-			if (att_server_handler && att_server_waiting_for_can_send){
-				att_server_waiting_for_can_send = 0;
-				att_server_handler(packet_type, handle, packet, size);
-				// stop if client cannot send anymore
-				if (!hci_can_send_acl_le_packet_now()) break;
-			}
-			if (att_client_handler && att_client_waiting_for_can_send){
-				att_client_waiting_for_can_send = 0;
-				att_client_handler(packet_type, handle, packet, size);
-			}
-			break;
-		default:
-			break;
-	}
+    uint8_t index;
+    uint8_t i;
+    switch (packet_type){
+        case ATT_DATA_PACKET:
+            // odd PDUs are sent from server to client - even PDUs are sent from client to server
+            index = packet[0] & 1;
+            // log_info("att_data_packet with opcode 0x%x", packet[0]);
+            if (!subscriptions[index].packet_handler) return;
+            subscriptions[index].packet_handler(packet_type, handle, packet, size);
+            break;
+        case HCI_EVENT_PACKET:
+            if (packet[0] != L2CAP_EVENT_CAN_SEND_NOW) break;
+            can_send_now_pending = 0;
+            for (i = 0; i < ATT_MAX; i++){
+                index = (att_round_robin + i) & 1;
+                if (subscriptions[index].packet_handler && subscriptions[index].waiting_for_can_send){
+                    subscriptions[index].waiting_for_can_send = 0;
+                    subscriptions[index].packet_handler(packet_type, handle, packet, size);
+                    // fairness: prioritize next service
+                    att_round_robin = (index + 1) % ATT_MAX;
+                    // stop if client cannot send anymore
+                    if (!hci_can_send_acl_le_packet_now()) break;
+                }
+            }
+            // check if more can send now events are needed
+            if (!can_send_now_pending){
+                for (i = 0; i < ATT_MAX; i++){
+                    if (subscriptions[i].waiting_for_can_send){
+                        can_send_now_pending = 1;        
+                        // note: con_handle is not used, so we can pass in anything
+                        l2cap_request_can_send_fix_channel_now_event(0, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+                        break;
+                    }
+                }
+            }
+            break;
+        default:
+            break;
+    }
 }
 
 /**
@@ -90,8 +109,8 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
  * @param packet_hander for ATT client packets
  */
 void att_dispatch_register_client(btstack_packet_handler_t packet_handler){
-	att_client_handler = packet_handler;
-	l2cap_register_fixed_channel(att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+    subscriptions[ATT_CLIENT].packet_handler = packet_handler;
+    l2cap_register_fixed_channel(att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
 }
 
 /**
@@ -99,8 +118,8 @@ void att_dispatch_register_client(btstack_packet_handler_t packet_handler){
  * @param packet_hander for ATT server packets
  */
 void att_dispatch_register_server(btstack_packet_handler_t packet_handler){
-	att_server_handler = packet_handler;
-	l2cap_register_fixed_channel(att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+    subscriptions[ATT_SERVER].packet_handler = packet_handler;
+    l2cap_register_fixed_channel(att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
 }
 
 /**
@@ -108,7 +127,7 @@ void att_dispatch_register_server(btstack_packet_handler_t packet_handler){
  * @param handle
  */
 int att_dispatch_client_can_send_now(hci_con_handle_t con_handle){
-	return l2cap_can_send_fixed_channel_packet_now(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+    return l2cap_can_send_fixed_channel_packet_now(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
 }
 
 /**
@@ -116,7 +135,7 @@ int att_dispatch_client_can_send_now(hci_con_handle_t con_handle){
  * @param handle
  */
 int att_dispatch_server_can_send_now(hci_con_handle_t con_handle){
-	return l2cap_can_send_fixed_channel_packet_now(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+    return l2cap_can_send_fixed_channel_packet_now(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
 }
 
 /** 
@@ -126,8 +145,11 @@ int att_dispatch_server_can_send_now(hci_con_handle_t con_handle){
  * @param con_handle
  */
 void att_dispatch_client_request_can_send_now_event(hci_con_handle_t con_handle){
-	att_client_waiting_for_can_send = 1;
-	l2cap_request_can_send_fix_channel_now_event(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+    subscriptions[ATT_CLIENT].waiting_for_can_send = 1;
+    if (!can_send_now_pending){
+        can_send_now_pending = 1;        
+        l2cap_request_can_send_fix_channel_now_event(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+    }
 }
 
 /** 
@@ -137,6 +159,27 @@ void att_dispatch_client_request_can_send_now_event(hci_con_handle_t con_handle)
  * @param con_handle
  */
 void att_dispatch_server_request_can_send_now_event(hci_con_handle_t con_handle){
-	att_server_waiting_for_can_send = 1;
-	l2cap_request_can_send_fix_channel_now_event(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+    subscriptions[ATT_SERVER].waiting_for_can_send = 1;
+    if (!can_send_now_pending){
+        can_send_now_pending = 1;        
+        l2cap_request_can_send_fix_channel_now_event(con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+    }
+}
+
+static void emit_mtu_exchange_complete(btstack_packet_handler_t packet_handler, hci_con_handle_t con_handle, uint16_t new_mtu){
+    if (!packet_handler) return;
+    uint8_t packet[6];
+    packet[0] = ATT_EVENT_MTU_EXCHANGE_COMPLETE;
+    packet[1] = sizeof(packet) - 2;
+    little_endian_store_16(packet, 2, con_handle);
+    little_endian_store_16(packet, 4, new_mtu);
+    packet_handler(HCI_EVENT_PACKET, con_handle, packet, 1);
+}
+
+void att_dispatch_server_mtu_exchanged(hci_con_handle_t con_handle, uint16_t new_mtu){
+    emit_mtu_exchange_complete(subscriptions[ATT_CLIENT].packet_handler, con_handle, new_mtu);
+}
+
+void att_dispatch_client_mtu_exchanged(hci_con_handle_t con_handle, uint16_t new_mtu){
+    emit_mtu_exchange_complete(subscriptions[ATT_SERVER].packet_handler, con_handle, new_mtu);
 }

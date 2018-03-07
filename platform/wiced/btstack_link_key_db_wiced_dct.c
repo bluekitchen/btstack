@@ -204,6 +204,33 @@ static void link_key_db_put_link_key(bd_addr_t bd_addr, link_key_t link_key, lin
 static void link_key_db_set_local_bd_addr(bd_addr_t bd_addr){
 }
 
+static int link_key_db_tlv_iterator_init(btstack_link_key_iterator_t * it){
+    it->context = (void*) 0;
+    return 1;
+}
+
+static int  link_key_db_tlv_iterator_get_next(btstack_link_key_iterator_t * it, bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * link_key_type){
+    uintptr_t i = (uintptr_t) it->context;
+    int found = 0;
+    while (i<NVM_NUM_LINK_KEYS){
+		link_key_nvm_t item;
+		link_key_read(i++, &item);
+		if (item.magic != LINK_KEY_MAGIC) continue;
+
+        memcpy(bd_addr, item.bd_addr, 6);
+        memcpy(link_key, item.link_key, 16);
+        *link_key_type = item.link_key_type;
+        found = 1;
+        break;
+    }
+    it->context = (void*) i;
+    return found;
+}
+
+static void link_key_db_tlv_iterator_done(btstack_link_key_iterator_t * it){
+    UNUSED(it);
+}
+
 const btstack_link_key_db_t btstack_link_key_db_wiced_dct = {
     link_key_db_init,
     link_key_db_set_local_bd_addr,	
@@ -211,6 +238,9 @@ const btstack_link_key_db_t btstack_link_key_db_wiced_dct = {
     link_key_db_get_link_key,
     link_key_db_put_link_key,
     link_key_db_delete_link_key,
+    link_key_db_tlv_iterator_init,
+    link_key_db_tlv_iterator_get_next,
+    link_key_db_tlv_iterator_done,
 };
 
 // custom function

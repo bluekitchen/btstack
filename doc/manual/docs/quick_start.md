@@ -26,7 +26,7 @@ GitHub.
 
 ## Let's Go
 
-The easiest way to try BTstack is on a regular desktop setup like macOS, Linux or Windows together with a standard USB Bluetooht Controller. Running BTstack on destkop speeds up the devlopment cycle a log and also provides direct access to full packet log files in cases something doesn't work as expected. The same code can then later be run unmodified on an embedded target.
+The easiest way to try BTstack is on a regular desktop setup like macOS, Linux or Windows together with a standard USB Bluetooth Controller. Running BTstack on desktop speeds up the development cycle a lot and also provides direct access to full packet log files in cases something doesn't work as expected. The same code can then later be run unmodified on an embedded target.
 
 For macOS and Linux, please see [libusb](ports/existing_ports.md#libusbPort) port.
 For Windows, please see [windows-winusb](ports/existing_ports.md#windows-winusbPort) port.

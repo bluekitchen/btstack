@@ -34,6 +34,7 @@ CFLAGS  += -g -Wall -Werror \
 	-I$(BTSTACK_ROOT)/chipset/em9301 \
 	-I$(BTSTACK_ROOT)/chipset/stlc2500d \
 	-I$(BTSTACK_ROOT)/chipset/tc3566x \
+	-I${BTSTACK_ROOT}/3rd-party/tinydir
 
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/embedded

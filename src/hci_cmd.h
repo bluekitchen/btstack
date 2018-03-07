@@ -148,6 +148,7 @@ extern const hci_cmd_t hci_write_extended_inquiry_response;
 extern const hci_cmd_t hci_write_inquiry_mode;
 extern const hci_cmd_t hci_write_le_host_supported;
 extern const hci_cmd_t hci_write_link_policy_settings;
+extern const hci_cmd_t hci_write_default_link_policy_setup;
 extern const hci_cmd_t hci_write_link_supervision_timeout;
 extern const hci_cmd_t hci_write_local_name;
 extern const hci_cmd_t hci_write_loopback_mode;

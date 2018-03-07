@@ -14,10 +14,12 @@
 #define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_CENTRAL
 #define ENABLE_CLASSIC
+#define ENABLE_LE_DATA_CHANNELS
 // #define ENABLE_LOG_INFO
 #define ENABLE_LOG_ERROR
 #define ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
 // #define ENABLE_EHCILL
+// #define ENABLE_SEGGER_RTT
 
 
 // BTstack configuration. buffers, sizes, ...

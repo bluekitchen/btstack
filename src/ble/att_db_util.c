@@ -40,7 +40,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "att_db_util.h"
+#include "ble/att_db_util.h"
 #include "ble/att_db.h"
 #include "ble/core.h"
 #include "btstack_util.h"
@@ -96,6 +96,7 @@ static int att_db_util_assert_space(uint16_t size){
 	}
 	att_db = new_db;
 	att_db_max_size = new_size;
+    att_set_db(att_db); // Update att_db with the new db
 	return 1;
 #else
 	log_error("att_db: out of memory");
@@ -142,16 +143,20 @@ static void att_db_util_add_attribute_uuid128(uint8_t * uuid128, uint16_t flags,
 	att_db_util_set_end_tag();
 }
 
-void att_db_util_add_service_uuid16(uint16_t uuid16){
+uint16_t att_db_util_add_service_uuid16(uint16_t uuid16){
 	uint8_t buffer[2];
 	little_endian_store_16(buffer, 0, uuid16);
+	uint16_t service_handle = att_db_next_handle;
 	att_db_util_add_attribute_uuid16(GATT_PRIMARY_SERVICE_UUID, ATT_PROPERTY_READ, buffer, 2);
+	return service_handle;
 }
 
-void att_db_util_add_service_uuid128(uint8_t * uuid128){
+uint16_t att_db_util_add_service_uuid128(uint8_t * uuid128){
 	uint8_t buffer[16];
 	reverse_128(uuid128, buffer);
+	uint16_t service_handle = att_db_next_handle;
 	att_db_util_add_attribute_uuid16(GATT_PRIMARY_SERVICE_UUID, ATT_PROPERTY_READ, buffer, 16);
+	return service_handle;
 }
 
 static void att_db_util_add_client_characteristic_configuration(uint16_t properties){
@@ -193,6 +198,18 @@ uint16_t att_db_util_add_characteristic_uuid128(uint8_t * uuid128, uint16_t prop
 	}
 	return value_handle;
 }
+
+uint16_t att_db_util_add_descriptor_uuid16(uint16_t uuid16, uint16_t properties, uint8_t * data, uint16_t data_len){
+    uint16_t descriptor_handler = att_db_next_handle;
+    att_db_util_add_attribute_uuid16(uuid16, properties, data, data_len);
+    return descriptor_handler;
+}
+
+uint16_t att_db_util_add_descriptor_uuid128(uint8_t * uuid128, uint16_t properties, uint8_t * data, uint16_t data_len){
+    uint16_t descriptor_handler = att_db_next_handle;
+    att_db_util_add_attribute_uuid128(uuid128, properties, data, data_len);
+    return descriptor_handler;
+ }
 
 uint8_t * att_db_util_get_address(void){
 	return att_db;

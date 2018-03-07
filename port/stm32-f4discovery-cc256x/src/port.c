@@ -1,5 +1,8 @@
 #define __BTSTACK_FILE__ "port.c"
 
+// include STM32 first to avoid warning about redefinition of UNUSED
+#include "stm32f4xx_hal.h"
+
 #include "port.h"
 #include "btstack.h"
 #include "btstack_debug.h"
@@ -11,7 +14,10 @@
 #include "classic/btstack_link_key_db_static.h"
 #include "classic/btstack_link_key_db_tlv.h"
 #include "hal_flash_bank_stm32.h"
-#include "stm32f4xx_hal.h"
+
+#ifdef ENABLE_SEGGER_RTT
+#include "SEGGER_RTT.h"
+#endif
 
 //
 extern UART_HandleTypeDef huart2;
@@ -190,6 +196,8 @@ void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
 	HAL_UART_Receive_DMA( &huart3, data, size );
 }
 
+#ifndef ENABLE_SEGGER_RTT
+
 /**
  * Use USART_CONSOLE as a console.
  * This is a syscall for newlib
@@ -222,12 +230,15 @@ int _write(int file, char *ptr, int len){
 	return len;
 #endif
 }
+
 int _read(int file, char * ptr, int len){
 	UNUSED(file);
 	UNUSED(ptr);
 	UNUSED(len);
 	return -1;
 }
+
+#endif
 
 int _close(int file){
 	UNUSED(file);
@@ -301,7 +312,7 @@ void port_main(void){
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_embedded_get_instance());
 
-	 hci_dump_open( NULL, HCI_DUMP_STDOUT );
+	// hci_dump_open( NULL, HCI_DUMP_STDOUT );
 
 	// init HCI
     hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), (void*) &config);

@@ -1200,7 +1200,7 @@ typedef enum {
 
 // Pairing Failed Reasons
 #define SM_REASON_RESERVED                     0x00
-#define SM_REASON_PASSKEYT_ENTRY_FAILED        0x01
+#define SM_REASON_PASSKEY_ENTRY_FAILED         0x01
 #define SM_REASON_OOB_NOT_AVAILABLE            0x02
 #define SM_REASON_AUTHENTHICATION_REQUIREMENTS 0x03
 #define SM_REASON_CONFIRM_VALUE_FAILED         0x04

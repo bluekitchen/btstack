@@ -50,6 +50,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "btstack_config.h"
 
@@ -97,7 +98,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     printf("Just Works Confirmed.\n");
                     break;
                 case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
-                    printf("Passkey display: %06u.\n", sm_event_passkey_display_number_get_passkey(packet));
+                    printf("Passkey display: %"PRIu32"\n", sm_event_passkey_display_number_get_passkey(packet));
                     break;
             }
             break;

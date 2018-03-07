@@ -214,14 +214,6 @@ typedef enum {
     BLUETOOTH_ACTIVE
 } BLUETOOTH_STATE;
 
-// le central scanning state
-typedef enum {
-    LE_SCAN_IDLE,
-    LE_START_SCAN,
-    LE_SCANNING,
-    LE_STOP_SCAN,
-} le_scanning_state_t;
-
 typedef enum {
     LE_CONNECTING_IDLE,
     LE_CONNECTING_DIRECT,
@@ -380,14 +372,6 @@ typedef enum {
     IRK_LOOKUP_SUCCEEDED,
     IRK_LOOKUP_FAILED
 } irk_lookup_state_t;
-
-// Authorization state
-typedef enum {
-    AUTHORIZATION_UNKNOWN,
-    AUTHORIZATION_PENDING,
-    AUTHORIZATION_DECLINED,
-    AUTHORIZATION_GRANTED
-} authorization_state_t;
 
 typedef uint8_t sm_pairing_packet_t[7];
 
@@ -803,7 +787,9 @@ typedef struct {
 #endif
 
 #ifdef ENABLE_LE_CENTRAL
-    le_scanning_state_t   le_scanning_state;
+    uint8_t   le_scanning_enabled;
+    uint8_t   le_scanning_active;
+
     le_connecting_state_t le_connecting_state;
 
     // buffer for le scan type command - 0xff not set
@@ -822,6 +808,8 @@ typedef struct {
     uint16_t le_supervision_timeout;
     uint16_t le_minimum_ce_length;
     uint16_t le_maximum_ce_length;
+    uint16_t le_connection_scan_interval;
+    uint16_t le_connection_scan_window;
 #endif
 
     le_connection_parameter_range_t le_connection_parameter_range;
@@ -844,6 +832,8 @@ typedef struct {
     uint8_t  le_advertisements_channel_map;
     uint8_t  le_advertisements_filter_policy;
     bd_addr_t le_advertisements_direct_address;
+
+    uint8_t le_max_number_peripheral_connections;
 #endif
 
 #ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
@@ -855,6 +845,10 @@ typedef struct {
     // custom BD ADDR
     bd_addr_t custom_bd_addr; 
     uint8_t   custom_bd_addr_set;
+
+#ifdef ENABLE_CLASSIC
+    uint8_t master_slave_policy;
+#endif
 
 } hci_stack_t;
 
@@ -1006,6 +1000,11 @@ uint8_t* hci_get_outgoing_packet_buffer(void);
  */
 void hci_release_packet_buffer(void);
 
+/**
+* @brief Sets the master/slave policy
+* @param policy (0: attempt to become master, 1: let connecting device decide)
+*/
+void hci_set_master_slave_policy(uint8_t policy);
 
 /* API_END */
 

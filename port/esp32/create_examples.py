@@ -31,12 +31,12 @@ EXAMPLE.h: $(COMPONENT_PATH)/EXAMPLE.gatt
 COMPONENT_EXTRA_CLEAN = EXAMPLE.h
 '''
 
-def create_examples(script_path):
+def create_examples(script_path, suffix):
     # path to examples
     examples_embedded = script_path + "/../../example/"
 
     # path to samples
-    example_folder = script_path + "/example/"
+    example_folder = script_path + "/example" + suffix + "/"
 
     print("Creating examples folder")
     if not os.path.exists(example_folder):
@@ -48,7 +48,7 @@ def create_examples(script_path):
     for file in os.listdir(examples_embedded):
         if not file.endswith(".c"):
             continue
-        if file in ['panu_demo.c', 'sco_demo_util.c']:
+        if file in ['panu_demo.c', 'sco_demo_util.c', 'ant_test.c']:
             continue
 
         example = file[:-2]
@@ -62,7 +62,11 @@ def create_examples(script_path):
 
         # copy files
         for item in ['sdkconfig', 'set_port.sh']:
-            shutil.copyfile(script_path + '/template/' + item, apps_folder + '/' + item)
+            src = script_path + '/template/' + item
+            if item == 'sdkconfig':
+                src = src + suffix
+            dst = apps_folder + '/' + item
+            shutil.copyfile(src, dst)
 
         # mark set_port.sh as executable
         os.chmod(apps_folder + '/set_port.sh', 0o755)
@@ -80,7 +84,7 @@ def create_examples(script_path):
         shutil.copyfile(examples_embedded + file, apps_folder + "/main/" + example + ".c")
 
         # add sco_demo_util.c for audio examples
-        if example in ['hfp_ag_demo','hfp_hf_demo', 'hsp_ag_demo', 'hsp_hf_demo']:
+        if example in ['hfp_ag_demo','hfp_hf_demo', 'hsp_ag_demo', 'hsp_hs_demo']:
             shutil.copy(examples_embedded + 'sco_demo_util.c', apps_folder + '/main/')
             shutil.copy(examples_embedded + 'sco_demo_util.h', apps_folder + '/main/')
 
@@ -101,6 +105,9 @@ def create_examples(script_path):
 if __name__ == '__main__':
     # get script path
     script_path = os.path.abspath(os.path.dirname(sys.argv[0]))
-    create_examples(script_path)
+    suffix = ''
+    if len(sys.argv) > 1:
+        suffix = sys.argv[1]
+    create_examples(script_path, suffix)
 
 

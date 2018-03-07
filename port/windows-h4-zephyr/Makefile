@@ -22,6 +22,7 @@ CFLAGS += -I${BTSTACK_ROOT}/platform/posix \
 		  -I${BTSTACK_ROOT}/platform/windows \
 		  -I${BTSTACK_ROOT}/platform/embedded \
 		  -I$(BTSTACK_ROOT)/chipset/zephyr \
+		  -I${BTSTACK_ROOT}/3rd-party/tinydir
 
 VPATH += ${BTSTACK_ROOT}/platform/windows
 VPATH += ${BTSTACK_ROOT}/platform/posix

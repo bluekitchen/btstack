@@ -149,7 +149,9 @@ int main(int argc, const char * argv[]){
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
 	    
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
+    const char * pklg_path = "/tmp/hci_dump.pklg";
+    hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+    printf("Packet Log: %s\n", pklg_path);
 
     // pick serial port and configure uart block driver
     transport_config.device_name = "/dev/tty.usbmodem1442311";

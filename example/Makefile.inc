@@ -115,6 +115,7 @@ EXAMPLES = 					\
 	gap_dedicated_bonding	\
 	gap_inquiry 			\
 	gap_le_advertisements   \
+	gap_link_keys           \
 	gatt_battery_query		\
 	gatt_browser            \
 	hfp_ag_demo             \
@@ -127,6 +128,8 @@ EXAMPLES = 					\
 	hsp_ag_demo             \
 	hsp_hs_demo             \
 	le_counter              \
+	le_data_channel_client  \
+	le_data_channel_server  \
 	le_streamer				\
 	le_streamer_client      \
 	led_counter				\
@@ -147,6 +150,8 @@ EXAMPLES_USING_LE =			\
 	gatt_battery_query      \
 	gatt_browser			\
 	le_counter              \
+	le_data_channel_client  \
+	le_data_channel_server  \
 	le_streamer				\
 	le_streamer_client      \
 	spp_and_le_counter	    \
@@ -235,6 +240,9 @@ gap_dedicated_bonding: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} gap_dedicated_bo
 gap_inquiry: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} gap_inquiry.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
+gap_link_keys: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} gap_link_keys.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
 panu_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} panu_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
@@ -286,11 +294,18 @@ avrcp_browsing_client: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} av
 dut_mode_classic: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} dut_mode_classic.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
+le_data_channel_client: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} le_data_channel_client.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+le_data_channel_server: le_data_channel_server.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} le_data_channel_server.c
+	${CC} $(filter-out le_data_channel_server.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
 clean:
 	rm -f ${EXAMPLES} *_demo
 	rm -f  *.o *.out *.hex *.exe *.wav *.sbc
 	rm -f  ancs_client_demo.h profile.h spp_and_le_counter.h le_counter.h le_streamer.h hog_keyboard_demo.h hog_mouse_demo.h
-	rm -f  gatt_battery_query.h gatt_browser.h sm_pairing_peripheral.h spp_and_le_streamer.h
+	rm -f  gatt_battery_query.h gatt_browser.h sm_pairing_peripheral.h spp_and_le_streamer.h 
+	rm -f  le_data_channel_server.h sm_pairing_central.h
 	rm -rf *.dSYM
 	rm -rf ${BTSTACK_ROOT}/src/*.o
 	rm -rf ${BTSTACK_ROOT}/src/ble/*.o

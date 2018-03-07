@@ -196,10 +196,16 @@ static void local_version_information_handler(uint8_t * packet){
         case BLUETOOTH_COMPANY_ID_EM_MICROELECTRONIC_MARIN_SA:
             printf("EM Microelectronics - using EM9301 driver.\n");
             hci_set_chipset(btstack_chipset_em9301_instance());
+            use_fast_uart();
             break;
         case BLUETOOTH_COMPANY_ID_NORDIC_SEMICONDUCTOR_ASA:
             printf("Nordic Semiconductor nRF5 chipset.\n");
             break;        
+        case BLUETOOTH_COMPANY_ID_TOSHIBA_CORP:
+            printf("Toshiba - using TC3566x driver.\n");
+            hci_set_chipset(btstack_chipset_tc3566x_instance());
+            use_fast_uart();
+            break;
         default:
             printf("Unknown manufacturer / manufacturer not supported yet.\n");
             break;
@@ -213,7 +219,9 @@ int main(int argc, const char * argv[]){
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
 	    
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
+    const char * pklg_path = "/tmp/hci_dump.pklg";
+    hci_dump_open(pklg_path, HCI_DUMP_PACKETLOGGER);
+    printf("Packet Log: %s\n", pklg_path);
 
     // pick serial port
     // config.device_name = "/dev/tty.usbserial-A900K2WS"; // DFROBOT

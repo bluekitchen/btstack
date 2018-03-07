@@ -44,7 +44,8 @@ extern "C" {
 
 #include "btstack_defines.h"
 #include "btstack_util.h"
-	
+#include "classic/btstack_link_key_db.h"
+
 typedef enum {
 
 	// MITM protection not required
@@ -102,6 +103,15 @@ typedef enum {
     GAP_RANDOM_ADDRESS_NON_RESOLVABLE,
     GAP_RANDOM_ADDRESS_RESOLVABLE,
 } gap_random_address_type_t;
+
+// Authorization state
+typedef enum {
+    AUTHORIZATION_UNKNOWN,
+    AUTHORIZATION_PENDING,
+    AUTHORIZATION_DECLINED,
+    AUTHORIZATION_GRANTED
+} authorization_state_t;
+
 
 /* API_START */
 
@@ -280,6 +290,8 @@ void gap_scan_response_set_data(uint8_t scan_response_data_length, uint8_t * sca
 
 /**
  * @brief Set connection parameters for outgoing connections
+ * @param conn_scan_interval (unit: 0.625 msec), default: 60 ms
+ * @param conn_scan_window (unit: 0.625 msec), default: 30 ms
  * @param conn_interval_min (unit: 1.25ms), default: 10 ms
  * @param conn_interval_max (unit: 1.25ms), default: 30 ms
  * @param conn_latency, default: 4
@@ -287,9 +299,9 @@ void gap_scan_response_set_data(uint8_t scan_response_data_length, uint8_t * sca
  * @param min_ce_length (unit: 0.625ms), default: 10 ms
  * @param max_ce_length (unit: 0.625ms), default: 30 ms
  */
-
-void gap_set_connection_parameters(uint16_t conn_interval_min, uint16_t conn_interval_max,
-	uint16_t conn_latency, uint16_t supervision_timeout, uint16_t min_ce_length, uint16_t max_ce_length);
+void gap_set_connection_parameters(uint16_t conn_scan_interval, uint16_t conn_scan_window, 
+    uint16_t conn_interval_min, uint16_t conn_interval_max, uint16_t conn_latency,
+    uint16_t supervision_timeout, uint16_t min_ce_length, uint16_t max_ce_length);
 
 /**
  * @brief Request an update of the connection parameter for a given LE connection
@@ -328,6 +340,13 @@ void gap_get_connection_parameter_range(le_connection_parameter_range_t * range)
 void gap_set_connection_parameter_range(le_connection_parameter_range_t * range);
 
 /**
+ * @brief Set max number of connections in LE Peripheral role (if Bluetooth Controller supports it)
+ * @note: default: 1
+ * @param max_peripheral_connections
+ */
+void gap_set_max_number_peripheral_connections(int max_peripheral_connections);
+
+/**
  * @brief Connect to remote LE device
  */
 uint8_t gap_connect(bd_addr_t addr, bd_addr_type_t addr_type);
@@ -359,6 +378,28 @@ int gap_auto_connection_stop(bd_addr_type_t address_typ, bd_addr_t address);
  */
 void gap_auto_connection_stop_all(void);
 
+/**
+ *
+ * @brief Get encryption key size.
+ * @param con_handle
+ * @return 0 if not encrypted, 7-16 otherwise
+ */
+int gap_encryption_key_size(hci_con_handle_t con_handle);
+
+/**
+ * @brief Get authentication property.
+ * @param con_handle
+ * @return 1 if bonded with OOB/Passkey (AND MITM protection)
+ */
+int gap_authenticated(hci_con_handle_t con_handle);
+
+/**
+ * @brief Queries authorization state.
+ * @param con_handle
+ * @return authorization_state for the current session
+ */
+authorization_state_t gap_authorization_state(hci_con_handle_t con_handle);
+
 // Classic
 
 /**
@@ -384,6 +425,11 @@ void gap_local_bd_addr(bd_addr_t address_buffer);
  */
 void gap_drop_link_key_for_bd_addr(bd_addr_t addr);
 
+/**
+ * @brief Delete all stored link keys
+ */
+void gap_delete_all_link_keys(void);
+
 /** 
  * @brief Store link key for remote device with baseband address
  * @param addr
@@ -391,6 +437,30 @@ void gap_drop_link_key_for_bd_addr(bd_addr_t addr);
  * @param link_key_type
  */
 void gap_store_link_key_for_bd_addr(bd_addr_t addr, link_key_t link_key, link_key_type_t type);
+
+/**
+ * @brief Setup Link Key iterator
+ * @param it
+ * @returns 1 on success
+ */
+int gap_link_key_iterator_init(btstack_link_key_iterator_t * it);
+
+/**
+ * @brief Get next Link Key
+ * @param it
+ * @brief addr
+ * @brief link_key
+ * @brief type of link key
+ * @returns 1, if valid link key found
+ */
+int gap_link_key_iterator_get_next(btstack_link_key_iterator_t * it, bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * type);
+
+/**
+ * @brief Frees resources allocated by iterator_init
+ * @note Must be called after iteration to free resources
+ * @param it
+ */
+void gap_link_key_iterator_done(btstack_link_key_iterator_t * it);
 
 /**
  * @brief Start GAP Classic Inquiry

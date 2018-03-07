@@ -36,7 +36,8 @@ You can quit the monitor with CTRL-].
 
 ## Old Make Versions
 
-Compilation fails with older versions of the make tool, e.g. make 3.8.1 (from 2006) provided by the current Xcode 9 on macOS.
+Compilation fails with older versions of the make tool, e.g. make 3.8.1 (from 2006) provided by the current Xcode 9 on macOS or Ubuntu 14.04.1 LTS.
+
 Interestingly, if you run make a second time, it completes the compilation.
 
 ## Configuration

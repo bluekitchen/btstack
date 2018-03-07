@@ -82,6 +82,11 @@ void CHECK_EQUAL_ARRAY(const uint8_t * expected, uint8_t * actual, int size){
     }
 }
 
+// mock
+extern "C"
+void att_set_db(uint8_t const * db){
+}
+
 TEST_GROUP(AttDbUtil){
     void setup(void){
         att_db_util_init();

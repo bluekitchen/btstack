@@ -290,7 +290,7 @@ HAL_StatusTypeDef HAL_I2S_Init(I2S_HandleTypeDef *hi2s)
 #else
     i2sclk = HAL_RCCEx_GetPeriphCLKFreq(RCC_PERIPHCLK_I2S);
 #endif
-    printf("i2sclk %u, packetlen %u, freq %u\n", i2sclk, packetlength, hi2s->Init.AudioFreq);
+    // printf("i2sclk %u, packetlen %u, freq %u\n", i2sclk, packetlength, hi2s->Init.AudioFreq);
     /* Compute the Real divider depending on the MCLK output state, with a floating point */
     if(hi2s->Init.MCLKOutput == I2S_MCLKOUTPUT_ENABLE)
     {
@@ -311,7 +311,7 @@ HAL_StatusTypeDef HAL_I2S_Init(I2S_HandleTypeDef *hi2s)
     }
 
     /* Remove the flatting point */
-    printf("tmp %u\n", tmp);
+    // printf("tmp %u\n", tmp);
     tmp = tmp / 10U;
 
     /* Check the parity of the divider */
@@ -319,7 +319,7 @@ HAL_StatusTypeDef HAL_I2S_Init(I2S_HandleTypeDef *hi2s)
 
     /* Compute the i2sdiv prescaler */
     i2sdiv = (uint16_t)((tmp - i2sodd) / 2U);
-    printf("i2sdiv %u, i2sodd %u\n", i2sdiv, i2sodd);
+    // printf("i2sdiv %u, i2sodd %u\n", i2sdiv, i2sodd);
     /* Get the Mask for the Odd bit (SPI_I2SPR[8]) register */
     i2sodd = (uint32_t) (i2sodd << 8U);
   }

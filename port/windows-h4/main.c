@@ -187,6 +187,11 @@ static void local_version_information_handler(uint8_t * packet){
         case BLUETOOTH_COMPANY_ID_NORDIC_SEMICONDUCTOR_ASA:
             printf("Nordic Semiconductor nRF5 chipset.\n");
             break;        
+        case BLUETOOTH_COMPANY_ID_TOSHIBA_CORP:
+            printf("Toshiba - using TC3566x driver.\n");
+            hci_set_chipset(btstack_chipset_tc3566x_instance());
+            use_fast_uart();
+            break;
         default:
             printf("Unknown manufacturer / manufacturer not supported yet.\n");
             break;

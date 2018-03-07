@@ -46,6 +46,7 @@
  */
 // *****************************************************************************
 
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,13 +54,18 @@
 
 #include "btstack.h"
 
+// prototypes
+static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
 typedef enum {
     TC_OFF,
     TC_IDLE,
     TC_W4_SCAN_RESULT,
     TC_W4_CONNECT,
     TC_W4_SERVICE_RESULT,
-    TC_W4_CHARACTERISTIC_RESULT,
+    TC_W4_CHARACTERISTIC_RX_RESULT,
+    TC_W4_CHARACTERISTIC_TX_RESULT,
+    TC_W4_ENABLE_NOTIFICATIONS_COMPLETE,
     TC_W4_TEST_DATA
 } gc_state_t;
 
@@ -71,11 +77,15 @@ static bd_addr_t      le_streamer_addr;
 static bd_addr_type_t le_streamer_addr_type;
 
 static hci_con_handle_t connection_handle;
-static uint8_t le_streamer_service_uuid[16]        = { 0x00, 0x00, 0xFF, 0x10, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
-static uint8_t le_streamer_characteristic_uuid[16] = { 0x00, 0x00, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
+
+// On the GATT Server, RX Characteristic is used for receive data via Write, and TX Characteristic is used to send data via Notifications
+static uint8_t le_streamer_service_uuid[16]           = { 0x00, 0x00, 0xFF, 0x10, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
+static uint8_t le_streamer_characteristic_rx_uuid[16] = { 0x00, 0x00, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
+static uint8_t le_streamer_characteristic_tx_uuid[16] = { 0x00, 0x00, 0xFF, 0x12, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
 
 static gatt_client_service_t le_streamer_service;
-static gatt_client_characteristic_t le_streamer_characteristic;
+static gatt_client_characteristic_t le_streamer_characteristic_rx;
+static gatt_client_characteristic_t le_streamer_characteristic_tx;
 
 static gatt_client_notification_t notification_listener;
 static int listener_registered;
@@ -92,13 +102,19 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 /* LISTING_START(tracking): Tracking throughput */
 
+#define TEST_MODE_WRITE_WITHOUT_RESPONSE 1
+#define TEST_MODE_ENABLE_NOTIFICATIONS   2
+#define TEST_MODE_DUPLEX                 3
+
+// configure test mode: send only, receive only, full duplex
+#define TEST_MODE TEST_MODE_DUPLEX
+
 #define REPORT_INTERVAL_MS 3000
 
 // support for multiple clients
 typedef struct {
     char name;
     int le_notification_enabled;
-    hci_con_handle_t connection_handle;
     int  counter;
     char test_data[200];
     int  test_data_len;
@@ -121,13 +137,36 @@ static void test_track_data(le_streamer_connection_t * context, int bytes_sent){
     if (time_passed < REPORT_INTERVAL_MS) return;
     // print speed
     int bytes_per_second = context->test_data_sent * 1000 / time_passed;
-    printf("%c: %u bytes -> %u.%03u kB/s\n", context->name, context->test_data_sent, bytes_per_second / 1000, bytes_per_second % 1000);
+    printf("%c: %"PRIu32" bytes -> %u.%03u kB/s\n", context->name, context->test_data_sent, bytes_per_second / 1000, bytes_per_second % 1000);
 
     // restart
     context->test_data_start = now;
     context->test_data_sent  = 0;
 }
 /* LISTING_END(tracking): Tracking throughput */
+
+
+// stramer
+static void streamer(le_streamer_connection_t * context){
+    if (connection_handle == HCI_CON_HANDLE_INVALID) return;
+
+    // create test data
+    context->counter++;
+    if (context->counter > 'Z') context->counter = 'A';
+    memset(context->test_data, context->counter, context->test_data_len);
+
+    // send
+    uint8_t status = gatt_client_write_value_of_characteristic_without_response(connection_handle, le_streamer_characteristic_rx.value_handle, context->test_data_len, (uint8_t*) context->test_data);
+    if (status){
+        printf("error %02x for write without response!\n", status);
+        return;
+    } else {
+        test_track_data(&le_streamer_connection, context->test_data_len);
+    }
+
+    // request again
+    gatt_client_request_can_write_without_response_event(handle_gatt_client_event, connection_handle);
+}
 
 
 // returns 1 if name is found in advertisement
@@ -165,6 +204,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     UNUSED(channel);
     UNUSED(size);
 
+    uint16_t mtu;
     switch(state){
         case TC_W4_SERVICE_RESULT:
             switch(hci_event_packet_get_type(packet)){
@@ -179,19 +219,40 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         break;  
                     } 
                     // service query complete, look for characteristic
-                    state = TC_W4_CHARACTERISTIC_RESULT;
-                    printf("Search for LE Streamer test characteristic.\n");
-                    gatt_client_discover_characteristics_for_service_by_uuid128(handle_gatt_client_event, connection_handle, &le_streamer_service, le_streamer_characteristic_uuid);
+                    state = TC_W4_CHARACTERISTIC_RX_RESULT;
+                    printf("Search for LE Streamer RX characteristic.\n");
+                    gatt_client_discover_characteristics_for_service_by_uuid128(handle_gatt_client_event, connection_handle, &le_streamer_service, le_streamer_characteristic_rx_uuid);
                     break;
                 default:
                     break;
             }
             break;
             
-        case TC_W4_CHARACTERISTIC_RESULT:
+        case TC_W4_CHARACTERISTIC_RX_RESULT:
             switch(hci_event_packet_get_type(packet)){
                 case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
-                    gatt_event_characteristic_query_result_get_characteristic(packet, &le_streamer_characteristic);
+                    gatt_event_characteristic_query_result_get_characteristic(packet, &le_streamer_characteristic_rx);
+                    break;
+                case GATT_EVENT_QUERY_COMPLETE:
+                    if (packet[4] != 0){
+                        printf("CHARACTERISTIC_QUERY_RESULT - Error status %x.\n", packet[4]);
+                        gap_disconnect(connection_handle);
+                        break;  
+                    } 
+                    // rx characteristiic found, look for tx characteristic
+                    state = TC_W4_CHARACTERISTIC_TX_RESULT;
+                    printf("Search for LE Streamer TX characteristic.\n");
+                    gatt_client_discover_characteristics_for_service_by_uuid128(handle_gatt_client_event, connection_handle, &le_streamer_service, le_streamer_characteristic_tx_uuid);
+                    break;
+                default:
+                    break;
+            }
+            break;
+
+        case TC_W4_CHARACTERISTIC_TX_RESULT:
+            switch(hci_event_packet_get_type(packet)){
+                case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
+                    gatt_event_characteristic_query_result_get_characteristic(packet, &le_streamer_characteristic_tx);
                     break;
                 case GATT_EVENT_QUERY_COMPLETE:
                     if (packet[4] != 0){
@@ -201,14 +262,42 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     } 
                     // register handler for notifications
                     listener_registered = 1;
-                    gatt_client_listen_for_characteristic_value_updates(&notification_listener, handle_gatt_client_event, connection_handle, &le_streamer_characteristic);
-                    // enable notifications
-                    state = TC_W4_TEST_DATA;
-                    printf("Start streaming - enable notify on test characteristic.\n");
-                    gatt_client_write_client_characteristic_configuration(handle_gatt_client_event, connection_handle, &le_streamer_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+                    gatt_client_listen_for_characteristic_value_updates(&notification_listener, handle_gatt_client_event, connection_handle, &le_streamer_characteristic_tx);
                     // setup tracking
                     le_streamer_connection.name = 'A';
+                    le_streamer_connection.test_data_len = ATT_DEFAULT_MTU - 3;
                     test_reset(&le_streamer_connection);
+                    gatt_client_get_mtu(connection_handle, &mtu);
+                    le_streamer_connection.test_data_len = btstack_min(mtu - 3, sizeof(le_streamer_connection.test_data));
+                    printf("%c: ATT MTU = %u => use test data of len %u\n", le_streamer_connection.name, mtu, le_streamer_connection.test_data_len);
+                    // enable notifications
+#if (TEST_MODE & TEST_MODE_ENABLE_NOTIFICATIONS)
+                    printf("Start streaming - enable notify on test characteristic.\n");
+                    state = TC_W4_ENABLE_NOTIFICATIONS_COMPLETE;
+                    gatt_client_write_client_characteristic_configuration(handle_gatt_client_event, connection_handle,
+                        &le_streamer_characteristic_tx, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+                    break;
+#endif
+                    state = TC_W4_TEST_DATA;
+#if (TEST_MODE & TEST_MODE_WRITE_WITHOUT_RESPONSE)
+                    printf("Start streaming - request can send now.\n");
+                    gatt_client_request_can_write_without_response_event(handle_gatt_client_event, connection_handle);
+#endif
+                    break;
+                default:
+                    break;
+            }
+            break;
+
+        case TC_W4_ENABLE_NOTIFICATIONS_COMPLETE:
+            switch(hci_event_packet_get_type(packet)){
+                case GATT_EVENT_QUERY_COMPLETE:
+                    printf("Notifications enabled, status %02x\n", gatt_event_query_complete_get_status(packet));
+                    state = TC_W4_TEST_DATA;
+#if (TEST_MODE & TEST_MODE_WRITE_WITHOUT_RESPONSE)
+                    printf("Start streaming - request can send now.\n");
+                    gatt_client_request_can_write_without_response_event(handle_gatt_client_event, connection_handle);
+#endif
                     break;
                 default:
                     break;
@@ -218,14 +307,12 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
         case TC_W4_TEST_DATA:
             switch(hci_event_packet_get_type(packet)){
                 case GATT_EVENT_NOTIFICATION:
-#if 0                
-                    printf("Data: ");
-                    printf_hexdump( gatt_event_notification_get_value(packet), gatt_event_notification_get_value_length(packet));
-#else
                     test_track_data(&le_streamer_connection, gatt_event_notification_get_value_length(packet));
-#endif
                     break;
                 case GATT_EVENT_QUERY_COMPLETE:
+                    break;
+                case GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE:
+                    streamer(&le_streamer_connection);
                     break;
                 default:
                     printf("Unknown packet type %x\n", hci_event_packet_get_type(packet));
@@ -301,6 +388,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             // unregister listener
+            connection_handle = HCI_CON_HANDLE_INVALID;
             if (listener_registered){
                 listener_registered = 0;
                 gatt_client_stop_listening_for_characteristic_value_updates(&notification_listener);

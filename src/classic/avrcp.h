@@ -286,6 +286,9 @@ typedef struct {
     avctp_connection_state_t state;
     uint8_t  wait_to_send;
     uint8_t  transaction_label;
+    // used for AVCTP fragmentation
+    uint8_t  num_packets;
+    uint16_t bytes_to_send;
 
     uint8_t *ertm_buffer;
     uint32_t ertm_buffer_size;
