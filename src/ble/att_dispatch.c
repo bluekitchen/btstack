@@ -173,7 +173,7 @@ static void emit_mtu_exchange_complete(btstack_packet_handler_t packet_handler, 
     packet[1] = sizeof(packet) - 2;
     little_endian_store_16(packet, 2, con_handle);
     little_endian_store_16(packet, 4, new_mtu);
-    packet_handler(HCI_EVENT_PACKET, con_handle, packet, 1);
+    packet_handler(ATT_DATA_PACKET, con_handle, packet, 1);
 }
 
 void att_dispatch_server_mtu_exchanged(hci_con_handle_t con_handle, uint16_t new_mtu){
