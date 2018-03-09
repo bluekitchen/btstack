@@ -118,6 +118,7 @@ EXAMPLES = 					\
 	gap_link_keys           \
 	gatt_battery_query		\
 	gatt_browser            \
+	gatt_heart_rate_client	\
 	hfp_ag_demo             \
 	hfp_hf_demo             \
 	hid_host_demo           \
@@ -220,6 +221,9 @@ le_streamer: le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OB
 	${CC} $(filter-out le_streamer.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 le_streamer_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ} le_streamer_client.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+gatt_heart_rate_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ} gatt_heart_rate_client.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 spp_and_le_counter: spp_and_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} spp_and_le_counter.c
