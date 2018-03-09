@@ -21,7 +21,8 @@ Copyright 2017, BlueKitchen GmbH
 
 header = '''
 /**
- * bluetooth_company_id.h generated from Bluetooth SIG website for BTstack
+ * bluetooth_company_id.h generated from Bluetooth SIG website for BTstack by tool/bluetooth_company_id.py
+ * {datetime}
  */
 
 #ifndef __BLUETOOTH_COMPANY_ID_H

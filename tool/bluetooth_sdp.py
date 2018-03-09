@@ -20,6 +20,7 @@ Copyright 2017, BlueKitchen GmbH
 header = '''/**
  * bluetooth_sdp.h generated from Bluetooth SIG website for BTstack by tool/bluetooth_sdp.py
  * {page}
+ * {datetime}
  */
 
 #ifndef __BLUETOOTH_SDP_H
@@ -93,7 +94,7 @@ def scrape_attributes(fout, tree, table_name):
 
 def scrape_page(fout, url):
     print("Parsing %s" % url)    
-    fout.write(header.format(page=url))
+    fout.write(header.format(page=url,datetime=str(datetime.datetime.now())))
 
     # get from web
     r = requests.get(url)

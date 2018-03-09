@@ -17,7 +17,8 @@ Copyright 2016, BlueKitchen GmbH
 
 header = '''
 /**
- * bluetooth_gatt.h generated from Bluetooth SIG website for BTstack
+ * bluetooth_gatt.h generated from Bluetooth SIG website for BTstack tool/bluetooth_gatt.py
+ * {datetime}
  */
 
 #ifndef __BLUETOOTH_GATT_H
