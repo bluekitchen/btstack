@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: allow to limit number of connections in LE Peripheral role with gap_set_max_number_peripheral_connections
 
 ### Fixed
+- RFCOMM: fix infinite loop on L2CAP connection error (regression from 4c3eeed1)
 
 ## Changes February 2018
 
