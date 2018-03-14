@@ -72,7 +72,9 @@ static const char    hsp_hs_service_name[] = "Headset Test";
 static hci_con_handle_t sco_handle = 0;
 
 static char hs_cmd_buffer[100];
-static bd_addr_t device_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
+// mac 2013: 
+static const char * device_addr_string = "84:38:35:65:d1:15";
+static bd_addr_t device_addr;
 
 /* @section Audio Transfer Setup 
  *
@@ -304,6 +306,9 @@ int btstack_main(int argc, const char * argv[]){
     gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
     gap_set_class_of_device(0x240404);
 
+    // Parse human readable Bluetooth address.
+    sscanf_bd_addr(device_addr_string, device_addr);
+    
     // turn on!
     hci_power_control(HCI_POWER_ON);
     return 0;
