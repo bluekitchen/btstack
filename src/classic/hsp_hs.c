@@ -173,8 +173,7 @@ static void emit_event_audio_connected(uint8_t status, uint16_t handle){
     (*hsp_hs_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-// remote;
- audio volume control
+// remote audio volume control
 // AG +VGM=13 [0..15] ; HS AT+VGM=6 | AG OK
 
 static int hsp_hs_send_str_over_rfcomm(uint16_t cid, const char * command){
@@ -196,8 +195,7 @@ int hsp_hs_send_result(const char * result){
 }
 
 
-void hsp_hs_create_sdp_record(uint8_t * service,  uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t have_remote;
-    _audio_control){
+void hsp_hs_create_sdp_record(uint8_t * service,  uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint8_t have_remote_audio_control){
     uint8_t* attribute;
     de_create_sequence(service);
 
@@ -264,11 +262,9 @@ void hsp_hs_create_sdp_record(uint8_t * service,  uint32_t service_record_handle
         de_add_data(service,  DE_STRING, strlen(default_hsp_hs_service_name), (uint8_t *) default_hsp_hs_service_name);
     }
     
-    // Remote;
-     audio volume control
+    // Remote audio volume control
     de_add_number(service, DE_UINT, DE_SIZE_16, 0x030C);
-    de_add_number(service, DE_BOOL, DE_SIZE_8, have_remote;
-        _audio_control);
+    de_add_number(service, DE_BOOL, DE_SIZE_8, have_remote_audio_control);
 }
 
 static void hsp_hs_reset_state(void){
@@ -299,8 +295,7 @@ void hsp_hs_init(uint8_t rfcomm_channel_nr){
 void hsp_hs_connect(bd_addr_t bd_addr){
     if (hsp_state != HSP_IDLE) return;
     hsp_state = HSP_SDP_QUERY_RFCOMM_CHANNEL;
-    memcpy(remote;
-        , bd_addr, 6);
+    memcpy(remote, bd_addr, 6);
     hsp_run();
 }
 
