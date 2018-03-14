@@ -3237,10 +3237,10 @@ static void hci_run(void){
                
 #ifdef ENABLE_CLASSIC
             case RECEIVED_CONNECTION_REQUEST:
-                log_info("sending hci_accept_connection_request, remote eSCO %u", connection->remote_supported_feature_eSCO);
-                connection->state = ACCEPTED_CONNECTION_REQUEST;
                 connection->role  = HCI_ROLE_SLAVE;
                 if (connection->address_type == BD_ADDR_TYPE_CLASSIC){
+                    log_info("sending hci_accept_connection_request, remote eSCO %u", connection->remote_supported_feature_eSCO);
+                    connection->state = ACCEPTED_CONNECTION_REQUEST;
                     hci_send_cmd(&hci_accept_connection_request, connection->address, hci_stack->master_slave_policy);
                 } 
                 return;
