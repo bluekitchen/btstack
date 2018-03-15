@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - RFCOMM: fix infinite loop on L2CAP connection error (regression from 4c3eeed1)
 - HSP HS: accept incomming SCO connection
+- SM: fix iteration over LE Device DB entries for bonding and address resolving
 
 ## Changes February 2018
 
