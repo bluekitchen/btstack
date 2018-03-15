@@ -260,6 +260,10 @@ int le_device_db_count(void){
     return counter;
 }
 
+int le_device_db_max_count(void){
+    return LE_DEVICE_MEMORY_SIZE;
+}
+
 // free device
 void le_device_db_remove(int index){
     le_devices[index].addr_type = INVALID_ENTRY_ADDR_TYPE;

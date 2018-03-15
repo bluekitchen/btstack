@@ -170,6 +170,10 @@ int le_device_db_count(void){
 	return num_valid_entries;
 }
 
+int le_device_db_max_count(void){
+    return NVM_NUM_DEVICE_DB_ENTRIES;
+}
+
 void le_device_db_remove(int index){
 	// delete entry in TLV
 	le_device_db_tlv_delete(index);
