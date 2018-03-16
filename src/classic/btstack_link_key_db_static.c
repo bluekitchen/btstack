@@ -134,6 +134,31 @@ static void link_key_db_put_link_key(bd_addr_t bd_addr, link_key_t link_key, lin
 static void link_key_db_set_local_bd_addr(bd_addr_t bd_addr){
 }
 
+static int link_key_db_tlv_iterator_init(btstack_link_key_iterator_t * it){
+    it->context = (void*) 0;
+    return 1;
+}
+
+static int  link_key_db_tlv_iterator_get_next(btstack_link_key_iterator_t * it, bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * link_key_type){
+    uintptr_t i = (uintptr_t) it->context;
+
+    int num_entries = sizeof(link_key_db) / sizeof(link_key_entry_t);
+    if (i >= num_entries) return 0;
+
+    // fetch values
+    *link_key_type = (link_key_type_t) link_key_db[i].link_key_type;
+    sscanf_link_key(link_key_db[i].link_key, link_key);
+    sscanf_bd_addr(link_key_db[i].bd_addr, bd_addr);
+
+    // next
+    it->context = (void*) i+1;
+    return 1;
+}
+
+static void link_key_db_tlv_iterator_done(btstack_link_key_iterator_t * it){
+    UNUSED(it);
+}
+
 static const btstack_link_key_db_t btstack_link_key_db_static = {
     link_key_db_init,
     link_key_db_set_local_bd_addr,	
@@ -141,6 +166,9 @@ static const btstack_link_key_db_t btstack_link_key_db_static = {
     link_key_db_get_link_key,
     link_key_db_put_link_key,
     link_key_db_delete_link_key,
+    link_key_db_tlv_iterator_init,
+    link_key_db_tlv_iterator_get_next,
+    link_key_db_tlv_iterator_done,
 };
 
 const btstack_link_key_db_t * btstack_link_key_db_static_instance(void){
