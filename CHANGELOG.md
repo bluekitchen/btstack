@@ -20,8 +20,6 @@ ATT Server: support for delayed ATT read response, see example/att_delayed_read_
 ## Changes February 2018
 
 ### Added
-- Port for Windows with Zephyr HCI Firmware connected via serial port  
-- em9304: ability to upload patch containers during HCI bootup.
 - GATT Client: gatt_client_request_can_write_without_response_event() causes GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE
 - SM: new event SM_EVENT_PAIRING_COMPLETE
 - GAP: support iteration over stored Classic link keys: gap_link_key_iterator_init, gap_link_key_iterator_get_next, gap_link_key_iterator_done
