@@ -4327,6 +4327,10 @@ uint8_t gap_disconnect(hci_con_handle_t handle){
         hci_emit_disconnection_complete(handle, 0);
         return 0;
     }
+    // ignore if already disconnected
+    if (conn->state == RECEIVED_DISCONNECTION_COMPLETE){
+        return 0;
+    }
     conn->state = SEND_DISCONNECT;
     hci_run();
     return 0;
