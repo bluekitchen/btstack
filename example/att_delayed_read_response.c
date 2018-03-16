@@ -129,7 +129,7 @@ static void att_invalidate_value(struct btstack_timer_source *ts){
  */
 
  /* LISTING_START(att_read_delay): ATT Read Delay Handler */
-
+#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
 static void att_update_value(struct btstack_timer_source *ts){
     UNUSED(ts);
     value_ready = 1;
@@ -145,6 +145,7 @@ static void att_update_value(struct btstack_timer_source *ts){
     btstack_run_loop_set_timer(&att_timer, ATT_VALUE_DELAY_MS);
     btstack_run_loop_add_timer(&att_timer);
 } 
+#endif
 
 /* LISTING_END */
 
