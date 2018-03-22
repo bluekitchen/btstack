@@ -194,7 +194,7 @@ int nibble_for_char(char c);
  * @brief Compare two Bluetooth addresses
  * @param a
  * @param b
- * @return true if equal
+ * @return 0 if equal
  */
 int bd_addr_cmp(const bd_addr_t a, const bd_addr_t b);
 

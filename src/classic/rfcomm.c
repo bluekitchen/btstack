@@ -988,12 +988,15 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
                 multiplexer->state = RFCOMM_MULTIPLEXER_SHUTTING_DOWN;
 
                 // emit rfcomm_channel_opened with status and free channel
-                int done = 0;
-                while (!done){
+                // note: repeatedly go over list until full iteration causes no further change
+                int done;
+                do {
+                    done = 1;
                     btstack_linked_item_t * it = (btstack_linked_item_t *) &rfcomm_channels;
                     while (it->next) {
                         rfcomm_channel_t * channel = (rfcomm_channel_t *) it->next;
                         if (channel->multiplexer == multiplexer){
+                            done = 0;
                             rfcomm_emit_channel_opened(channel, status);
                             btstack_linked_list_remove(&rfcomm_channels, (btstack_linked_item_t *) channel);
                             btstack_memory_rfcomm_channel_free(channel);
@@ -1002,7 +1005,7 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
                             it = it->next;
                         }
                     }
-                }
+                } while (!done);
 
                 // free multiplexer
                 rfcomm_multiplexer_free(multiplexer);

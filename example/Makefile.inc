@@ -108,8 +108,9 @@ HXCMOD_PLAYER = \
 	${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c 	\
 
 EXAMPLES = 					\
+	att_delayed_read_response \
 	a2dp_sink_demo			\
-	a2dp_source_demo       \
+	a2dp_source_demo        \
 	ancs_client_demo		\
 	dut_mode_classic        \
 	gap_dedicated_bonding	\
@@ -118,6 +119,7 @@ EXAMPLES = 					\
 	gap_link_keys           \
 	gatt_battery_query		\
 	gatt_browser            \
+	gatt_heart_rate_client	\
 	hfp_ag_demo             \
 	hfp_hf_demo             \
 	hid_host_demo           \
@@ -204,6 +206,9 @@ spp_counter: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} spp_counter.c
 le_counter: le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} battery_service_server.o le_counter.c
 	${CC} $(filter-out le_counter.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
+att_delayed_read_response: att_delayed_read_response.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} att_delayed_read_response.c
+	${CC} $(filter-out att_delayed_read_response.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
 hog_keyboard_demo: hog_keyboard_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} battery_service_server.o device_information_service_server.o hids_device.o btstack_ring_buffer.o hog_keyboard_demo.c
 	${CC} $(filter-out hog_keyboard_demo.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
@@ -220,6 +225,9 @@ le_streamer: le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OB
 	${CC} $(filter-out le_streamer.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 le_streamer_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ} le_streamer_client.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+gatt_heart_rate_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ} gatt_heart_rate_client.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 spp_and_le_counter: spp_and_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} spp_and_le_counter.c

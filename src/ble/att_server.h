@@ -112,6 +112,16 @@ int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, ui
  */
 int att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t *value, uint16_t value_len);
 
+#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+/*
+ * @brief read response ready - called after returning ATT_READ_RESPONSE_PENDING in an att_read_callback before
+ * @nore The ATT Server will retry handling the current ATT request
+ * @param con_handle
+ * @return 0 if ok, error otherwise
+ */
+int att_server_read_response_ready(hci_con_handle_t con_handle);
+#endif
+
 /* API_END */
 
 #if defined __cplusplus

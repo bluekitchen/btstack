@@ -167,21 +167,29 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
     uint32_t tag;
     uint16_t bytes_to_upload;
     uint32_t crc;
+    uint32_t container_size;
 
 	switch (upload_state){
 		case UPLOAD_IDLE:
 			// check for 'em93' tag
 			tag = little_endian_read_32(container_blob_data, container_blob_offset);
 			if (0x656d3933 != tag) {
-				log_error("Expected 0x656d3933 ('em934') but got %08x", tag);
+				log_error("Expected 0x656d3933 ('em934') but got %08x", (int) tag);
 				return BTSTACK_CHIPSET_DONE;
 			}
 			// fetch info for current container
-			container_end = container_blob_offset + little_endian_read_32(container_blob_data, container_blob_offset + 4);
+			container_size = little_endian_read_32(container_blob_data, container_blob_offset + 4);
+			container_end = container_blob_offset + container_size;
 			// start uploading (<= 59 bytes)
 			patch_sequence_number = 1;
 			bytes_to_upload = btstack_min(59, container_end - container_blob_offset);
 			crc = btstack_crc32(&container_blob_data[container_blob_offset], bytes_to_upload); 
+			log_info("Container type 0x%02x, id %u, build nr %u, user build nr %u, size %u", 
+				(int) container_blob_data[container_blob_offset+9], 
+				(int) container_blob_data[container_blob_offset+10], 
+				(int) little_endian_read_16(container_blob_data, container_blob_offset+12), 
+				(int) little_endian_read_16(container_blob_data, container_blob_offset+14), 
+				(int) container_size);
 			// build command
 		    little_endian_store_16(hci_cmd_buffer, 0, HCI_OPCODE_EM_WRITE_PATCH_START);
 		    hci_cmd_buffer[2] = 5 + bytes_to_upload;

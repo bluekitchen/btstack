@@ -169,6 +169,34 @@ static inline void a2dp_signaling_emit_reject_cmd(btstack_packet_handler_t callb
     (*callback)(HCI_EVENT_PACKET, 0, event, event_size);
 }
 
+static void a2dp_signaling_emit_connection_established(btstack_packet_handler_t callback, uint16_t cid, bd_addr_t addr, uint8_t status){
+    if (!callback) return;
+    uint8_t event[12];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_A2DP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED;
+    little_endian_store_16(event, pos, cid);
+    pos += 2;
+    reverse_bd_addr(addr,&event[pos]);
+    pos += 6;
+    event[pos++] = status;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void a2dp_signaling_emit_control_command(btstack_packet_handler_t callback, uint16_t cid, uint8_t local_seid, uint8_t cmd){
+    if (!callback) return;
+    uint8_t event[6];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_A2DP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = cmd;
+    little_endian_store_16(event, pos, cid);
+    pos += 2;
+    event[pos++] = local_seid;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -191,24 +219,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             
             if (status != 0){
                 log_info("AVDTP_SUBEVENT_SIGNALING_CONNECTION failed status %d ---", status);
-                a2dp_streaming_emit_connection_established(a2dp_source_context.a2dp_callback, cid, sc.remote_addr, 0, 0, status);
+                app_state = A2DP_IDLE;
+                a2dp_signaling_emit_connection_established(a2dp_source_context.a2dp_callback, cid, sc.remote_addr, status);
                 break;
             }
             log_info("A2DP_SUBEVENT_SIGNALING_CONNECTION established avdtp_cid 0x%02x ---", a2dp_source_context.avdtp_cid);
-            
             sc.active_remote_sep = NULL;
             sc.active_remote_sep_index = 0;
-            uint8_t event[11];
-            int pos = 0;
-            event[pos++] = HCI_EVENT_A2DP_META;
-            event[pos++] = sizeof(event) - 2;
-            event[pos++] = A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED;
-            little_endian_store_16(event, pos, cid);
-            pos += 2;
-            reverse_bd_addr(event+pos, sc.remote_addr);
-            pos += 6;
-            (*a2dp_source_context.a2dp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
             app_state = A2DP_W2_DISCOVER_SEPS;
+            a2dp_signaling_emit_connection_established(a2dp_source_context.a2dp_callback, cid, sc.remote_addr, status);
             avdtp_source_discover_stream_endpoints(cid);
             break;
         }
@@ -299,7 +318,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             remote_seid = avdtp_subevent_streaming_connection_established_get_remote_seid(packet);
             local_seid  = avdtp_subevent_streaming_connection_established_get_local_seid(packet);
             if (status != 0){
-                log_info("AVDTP_SUBEVENT_STREAMING_CONNECTION could not be established, status %d ---", status);
+                log_info("AVDTP_SUBEVENT_STREAMING_CONNECTION could not be established, avdtp_cid 0x%02x, status 0x%02x ---", cid, status);
                 a2dp_streaming_emit_connection_established(a2dp_source_context.a2dp_callback, cid, address, local_seid, remote_seid, status);
                 break;
             }
@@ -343,43 +362,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 case A2DP_STREAMING_OPENED:
                     if (!a2dp_source_context.a2dp_callback) return;
                     switch (signal_identifier){
-                        case  AVDTP_SI_START:{
-                            uint8_t event[6];
-                            int pos = 0;
-                            event[pos++] = HCI_EVENT_A2DP_META;
-                            event[pos++] = sizeof(event) - 2;
-                            event[pos++] = A2DP_SUBEVENT_STREAM_STARTED;
-                            little_endian_store_16(event, pos, cid);
-                            pos += 2;
-                            event[pos++] = avdtp_stream_endpoint_seid(sc.local_stream_endpoint);
-                            (*a2dp_source_context.a2dp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+                        case  AVDTP_SI_START:
+                            a2dp_signaling_emit_control_command(a2dp_source_context.a2dp_callback, cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), A2DP_SUBEVENT_STREAM_STARTED);
                             break;
-                        }
-                        case AVDTP_SI_SUSPEND:{
-                            uint8_t event[6];
-                            int pos = 0;
-                            event[pos++] = HCI_EVENT_A2DP_META;
-                            event[pos++] = sizeof(event) - 2;
-                            event[pos++] = A2DP_SUBEVENT_STREAM_SUSPENDED;
-                            little_endian_store_16(event, pos, cid);
-                            pos += 2;
-                            event[pos++] = avdtp_stream_endpoint_seid(sc.local_stream_endpoint);
-                            (*a2dp_source_context.a2dp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+                        case AVDTP_SI_SUSPEND:
+                            a2dp_signaling_emit_control_command(a2dp_source_context.a2dp_callback, cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), A2DP_SUBEVENT_STREAM_SUSPENDED);
                             break;
-                        }
                         case AVDTP_SI_ABORT:
-                        case AVDTP_SI_CLOSE:{
-                            uint8_t event[6];
-                            int pos = 0;
-                            event[pos++] = HCI_EVENT_A2DP_META;
-                            event[pos++] = sizeof(event) - 2;
-                            event[pos++] = A2DP_SUBEVENT_STREAM_STOPPED;
-                            little_endian_store_16(event, pos, cid);
-                            pos += 2;
-                            event[pos++] = avdtp_stream_endpoint_seid(sc.local_stream_endpoint);
-                            (*a2dp_source_context.a2dp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+                        case AVDTP_SI_CLOSE:
+                            a2dp_signaling_emit_control_command(a2dp_source_context.a2dp_callback, cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), A2DP_SUBEVENT_STREAM_STOPPED);
                             break;
-                        }
                         default:
                             break;
                     }

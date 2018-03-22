@@ -2179,6 +2179,7 @@ static void event_handler(uint8_t *packet, int size){
             // re-enable advertisements for le connections if active
             conn = hci_connection_for_handle(handle);
             if (!conn) break; 
+            conn->state = RECEIVED_DISCONNECTION_COMPLETE;
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_PERIPHERAL
             if (hci_is_le_connection(conn)){
@@ -2186,7 +2187,6 @@ static void event_handler(uint8_t *packet, int size){
             }
 #endif
 #endif
-            conn->state = RECEIVED_DISCONNECTION_COMPLETE;
             break;
 
         case HCI_EVENT_HARDWARE_ERROR:
@@ -3237,10 +3237,10 @@ static void hci_run(void){
                
 #ifdef ENABLE_CLASSIC
             case RECEIVED_CONNECTION_REQUEST:
-                log_info("sending hci_accept_connection_request, remote eSCO %u", connection->remote_supported_feature_eSCO);
-                connection->state = ACCEPTED_CONNECTION_REQUEST;
                 connection->role  = HCI_ROLE_SLAVE;
                 if (connection->address_type == BD_ADDR_TYPE_CLASSIC){
+                    log_info("sending hci_accept_connection_request, remote eSCO %u", connection->remote_supported_feature_eSCO);
+                    connection->state = ACCEPTED_CONNECTION_REQUEST;
                     hci_send_cmd(&hci_accept_connection_request, connection->address, hci_stack->master_slave_policy);
                 } 
                 return;
@@ -4325,6 +4325,10 @@ uint8_t gap_disconnect(hci_con_handle_t handle){
     hci_connection_t * conn = hci_connection_for_handle(handle);
     if (!conn){
         hci_emit_disconnection_complete(handle, 0);
+        return 0;
+    }
+    // ignore if already disconnected
+    if (conn->state == RECEIVED_DISCONNECTION_COMPLETE){
         return 0;
     }
     conn->state = SEND_DISCONNECT;

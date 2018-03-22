@@ -104,41 +104,48 @@ if len(sys.argv) > 2:
 with open (outfile, 'wb') as fout:
 	with open (infile, 'rt') as fin:
 		packet_counter = 0
+		line_conter = 0
 		for line in fin:
-			timestamp = None
-			# strip newlines
-			line = line.strip("\n\r")
-			# skip empyt lines
-			if len(line) == 0: 
-				continue
-			parts = re.match('\[(.*)\] (.*)', line)
-			if parts and len(parts.groups()) == 2:
-				(timestamp, line) = parts.groups()
-			rest = chop(line,'CMD => ')
-			if rest:
-				handleHexPacket(fout, timestamp, 0, rest)
-				continue
-			rest = chop(line,'EVT <= ')
-			if rest:
-				handleHexPacket(fout, timestamp, 1, rest)
-				continue
-			rest = chop(line,'ACL => ')
-			if rest:
-				handleHexPacket(fout, timestamp, 2, rest)
-				continue
-			rest = chop(line,'ACL <= ')
-			if rest:
-				handleHexPacket(fout, timestamp, 3, rest)
-				continue
-			rest = chop(line,'SCO => ')
-			if rest:
-				handleHexPacket(fout, timestamp, 8, rest)
-				continue
-			rest = chop(line,'SCO <= ')
-			if rest:
-				handleHexPacket(fout, timestamp, 9, rest)
-				continue
-			rest = chop(line,'LOG -- ')
-			if rest:
-				line = rest
-			dumpPacket(fout, timestamp, 0xfc, line.encode('ascii'))
+			try:
+				line_conter += 1
+				timestamp = None
+				# strip newlines
+				line = line.strip("\n\r")
+				# skip empyt lines
+				if len(line) == 0: 
+					continue
+				parts = re.match('\[(.*)\] (.*)', line)
+				if parts and len(parts.groups()) == 2:
+					(timestamp, line) = parts.groups()
+				rest = chop(line,'CMD => ')
+				if rest:
+					handleHexPacket(fout, timestamp, 0, rest)
+					continue
+				rest = chop(line,'EVT <= ')
+				if rest:
+					handleHexPacket(fout, timestamp, 1, rest)
+					continue
+				rest = chop(line,'ACL => ')
+				if rest:
+					handleHexPacket(fout, timestamp, 2, rest)
+					continue
+				rest = chop(line,'ACL <= ')
+				if rest:
+					handleHexPacket(fout, timestamp, 3, rest)
+					continue
+				rest = chop(line,'SCO => ')
+				if rest:
+					handleHexPacket(fout, timestamp, 8, rest)
+					continue
+				rest = chop(line,'SCO <= ')
+				if rest:
+					handleHexPacket(fout, timestamp, 9, rest)
+					continue
+				rest = chop(line,'LOG -- ')
+				if rest:
+					line = rest
+				dumpPacket(fout, timestamp, 0xfc, line.encode('ascii'))
+			except:
+				print("Error in line %u: '%s'" % (line_conter, line))
+
+print("\nPacket Log: %s" % outfile)

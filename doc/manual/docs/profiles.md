@@ -440,7 +440,7 @@ Adding NOTIFY and/or INDICATE automatically creates an addition Client
 Configuration Characteristic.
 
 To require encryption or authentication before a Characteristic can be
-accessed, you can add ENCRYPTION_KEY_SIZE_X - with $X \in [7..16]$ -
+accessed, you can add ENCRYPTION_KEY_SIZE_X - with X in 7..16 -
 or AUTHENTICATION_REQUIRED.
 
 To use already implemented GATT Services, you can import it
@@ -455,6 +455,19 @@ compiler creates a list of defines in the generated \*.h file.
 Similar to other protocols, it might be not possible to send any time.
 To send a Notification, you can call *att_server_request_can_send_now*
 to receive a ATT_EVENT_CAN_SEND_NOW event.
+
+If your application cannot handle an ATT Read Request in the *att_read_callback*
+in some situations, you can enable support for this by adding ENABLE_ATT_DELAYED_READ_RESPONSE
+to *btstack_config.h*. Now, you can store the requested attribute handle and return
+*ATT_READ_RESPONSE_PENDING* instead of the length of the provided data when you don't have the data ready. 
+For ATT operations that read more than one attribute, your *att_read_callback*
+might get called multiple times as well. To let you know that all necessary
+attribute handles have been 'requested' by the *att_server*, you'll get a final
+*att_read_callback* with the attribute handle of *ATT_READ_RESPONSE_PENDING*.
+When you've got the data for all requested attributes ready, you can call
+*att_server_read_response_ready*, which will trigger processing of the current request.
+Please keep in mind that there is only one active ATT operation and that it has a 30 second
+timeout after which the ATT server is considered defunct by the GATT Client.
 
 ### Implementing Standard GATT Services {#sec:GATTStandardServices}
 

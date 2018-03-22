@@ -127,6 +127,30 @@ static void put_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t
     btstack_linked_list_add(&db_mem_link_keys, (btstack_linked_item_t *) record);
 }
 
+static int iterator_init(btstack_link_key_iterator_t * it){
+    it->context = (void*) db_mem_link_keys;
+    return 1;
+}
+
+static int  iterator_get_next(btstack_link_key_iterator_t * it, bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * link_key_type){
+    btstack_link_key_db_memory_entry_t *item = (btstack_link_key_db_memory_entry_t *) it->context;
+    if (item == NULL) return 0;
+
+    // fetch values
+    memcpy(bd_addr,  item->bd_addr, 6);
+    memcpy(link_key, item->link_key, 16);
+    *link_key_type = item->link_key_type;
+
+    // next
+    it->context = (void *) item->item.next;
+
+    return 1;
+}
+
+static void iterator_done(btstack_link_key_iterator_t * it){
+    UNUSED(it);
+}
+
 const btstack_link_key_db_t btstack_link_key_db_memory = {
     db_open,
     db_set_local_bd_addr,
@@ -134,6 +158,9 @@ const btstack_link_key_db_t btstack_link_key_db_memory = {
     get_link_key,
     put_link_key,
     delete_link_key,
+    iterator_init,
+    iterator_get_next,
+    iterator_done,
 };
 
 const btstack_link_key_db_t * btstack_link_key_db_memory_instance(void){

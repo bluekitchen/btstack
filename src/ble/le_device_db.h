@@ -84,10 +84,16 @@ void le_device_db_set_local_bd_addr(bd_addr_t bd_addr);
 int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk);
 
 /**
- * @brief get number of devices in db for enumeration
+ * @brief get number of devices in db
  * @returns number of device in db
  */
 int le_device_db_count(void);
+
+/**
+ * @brief get max number of devices in db for enumeration
+ * @returns max number of device in db
+ */
+int le_device_db_max_count(void);
 
 /**
  * @brief get device information: addr type and address needed to identify device

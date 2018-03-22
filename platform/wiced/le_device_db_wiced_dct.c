@@ -191,6 +191,10 @@ int le_device_db_count(void){
     return counter;
 }
 
+int le_device_db_max_count(void){
+    return NVM_NUM_LE_DEVICES;
+}
+
 // get device information: addr type and address
 void le_device_db_info(int device_index, int * addr_type, bd_addr_t addr, sm_key_t irk){
 	int absolute_index = le_device_db_get_absolute_index_for_device_index(device_index);

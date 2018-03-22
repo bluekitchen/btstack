@@ -77,7 +77,7 @@
 
 static const char default_hsp_hs_service_name[] = "Headset";
 
-static bd_addr_t remote = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
+static bd_addr_t remote;
 static uint8_t channel_nr = 0;
 
 static uint16_t mtu;
@@ -92,6 +92,7 @@ static int hs_speaker_gain = -1;
 
 static uint8_t hs_send_button_press = 0;
 static uint8_t wait_ok = 0;
+static uint8_t hs_accept_sco_connection = 0;
 
 static uint8_t hs_support_custom_indications = 0;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -367,6 +368,34 @@ static void hsp_run(void){
 
     if (wait_ok) return;
 
+    if (hs_accept_sco_connection && hci_can_send_command_packet_now()){
+        hs_accept_sco_connection = 0;
+        
+        log_info("HSP: sending hci_accept_connection_request.");
+        // remote supported feature eSCO is set if link type is eSCO
+        // eSCO: S4 - max latency == transmission interval = 0x000c == 12 ms, 
+        uint16_t max_latency;
+        uint8_t  retransmission_effort;
+        uint16_t packet_types;
+        
+        if (hci_remote_esco_supported(rfcomm_handle)){
+            max_latency = 0x000c;
+            retransmission_effort = 0x02;
+            packet_types = 0x388;
+        } else {
+            max_latency = 0xffff;
+            retransmission_effort = 0xff;
+            packet_types = 0x003f;
+        }
+        
+        uint16_t sco_voice_setting = hci_get_sco_voice_setting();
+        
+        log_info("HFP: sending hci_accept_connection_request, sco_voice_setting %02x", sco_voice_setting);
+        hci_send_cmd(&hci_accept_synchronous_connection, remote, 8000, 8000, max_latency, 
+                        sco_voice_setting, retransmission_effort, packet_types);
+        return;
+    }
+
     if (hsp_release_audio_connection){
         if (!rfcomm_can_send_packet_now(rfcomm_cid)) {
             rfcomm_request_can_send_now_event(rfcomm_cid);
@@ -451,9 +480,8 @@ static void hsp_run(void){
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);    // ok: no channel for HCI_EVENT_PACKET and only single active RFCOMM channel
-
-    // printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
     if (packet_type == RFCOMM_DATA_PACKET){
+        // printf("packet_handler type RFCOMM_DATA_PACKET %u, packet[0] %x\n", packet_type, packet[0]);
         // skip over leading newline
         while (size > 0 && (packet[0] == '\n' || packet[0] == '\r')){
             size--;
@@ -494,8 +522,26 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     uint8_t event = hci_event_packet_get_type(packet);
     bd_addr_t event_addr;
     uint16_t handle;
-
+    // printf("packet_handler HCI_EVENT_PACKET type %u, packet[0] %x\n", packet_type, packet[0]);
     switch (event) {
+        case HCI_EVENT_CONNECTION_REQUEST:
+            switch(hci_event_connection_request_get_link_type(packet)){
+                case 0: //  SCO
+                case 2: // eSCO
+                    hci_event_connection_request_get_bd_addr(packet, event_addr);
+                    printf("remote device %s\n", bd_addr_to_str(remote));
+                    printf("accept sco for device %s\n", bd_addr_to_str(event_addr));
+
+                    if (bd_addr_cmp(event_addr, remote) == 0){
+                        printf("hs_accept_sco_connection \n");
+                        hs_accept_sco_connection = 1;
+                    }
+                    break;
+                default:
+                    break;                    
+            }            
+            break;
+
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
             if (hsp_state < HSP_RFCOMM_CONNECTION_ESTABLISHED) return;
             int index = 2;

@@ -791,7 +791,7 @@ implementation. The constant data are automatically served by the ATT server upo
 request. To receive the dynamic data, such is characteristic value, the
 application needs to register read and/or write callback. In addition,
 notifications and indications can be sent. Please see Section on 
-[GATT server](section:profiles/#sec:GATTServerProfile) for more.
+[GATT server](profiles/#sec:GATTServerProfile) for more.
 
 ## SMP - Security Manager Protocol {#sec:smpProtocols}
 

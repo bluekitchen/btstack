@@ -1315,7 +1315,7 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
     // lookup device based on IRK
     if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION){
         int i;
-        for (i=0; i < le_device_db_count(); i++){
+        for (i=0; i < le_device_db_max_count(); i++){
             sm_key_t irk;
             bd_addr_t address;
             int address_type;
@@ -1332,7 +1332,7 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
     log_info("sm peer addr type %u, peer addres %s", setup->sm_peer_addr_type, bd_addr_to_str(setup->sm_peer_address));
     if (le_db_index < 0 && setup->sm_peer_addr_type == BD_ADDR_TYPE_LE_PUBLIC){
         int i;
-        for (i=0; i < le_device_db_count(); i++){
+        for (i=0; i < le_device_db_max_count(); i++){
             bd_addr_t address;
             int address_type;
             le_device_db_info(i, &address_type, address, NULL);
@@ -2003,8 +2003,8 @@ static void sm_run(void){
 
     // -- Continue with CSRK device lookup by public or resolvable private address
     if (!sm_address_resolution_idle()){
-        log_info("LE Device Lookup: device %u/%u", sm_address_resolution_test, le_device_db_count());
-        while (sm_address_resolution_test < le_device_db_count()){
+        log_info("LE Device Lookup: device %u/%u", sm_address_resolution_test, le_device_db_max_count());
+        while (sm_address_resolution_test < le_device_db_max_count()){
             int addr_type;
             bd_addr_t addr;
             sm_key_t irk;
@@ -2034,7 +2034,7 @@ static void sm_run(void){
             return;
         }
 
-        if (sm_address_resolution_test >= le_device_db_count()){
+        if (sm_address_resolution_test >= le_device_db_max_count()){
             log_info("LE Device Lookup: not found");
             sm_address_resolution_handle_event(ADDRESS_RESOLUTION_FAILED);
         }

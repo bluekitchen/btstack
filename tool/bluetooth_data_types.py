@@ -17,8 +17,9 @@ Copyright 2016, BlueKitchen GmbH
 '''
 
 header = '''/**
- * bluetooth_data_types.h generated from Bluetooth SIG website for BTstack
+ * bluetooth_data_types.h generated from Bluetooth SIG website for BTstack by tool/bluetooth_data_types.py
  * {url}
+ * {datetime}
  */
 
 #ifndef __BLUETOOTH_DATA_TYPES_H

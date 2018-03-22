@@ -90,7 +90,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             // check if more can send now events are needed
             if (!can_send_now_pending){
                 for (i = 0; i < ATT_MAX; i++){
-                    if (subscriptions[i].waiting_for_can_send){
+                    if (subscriptions[i].packet_handler && subscriptions[i].waiting_for_can_send){
                         can_send_now_pending = 1;        
                         // note: con_handle is not used, so we can pass in anything
                         l2cap_request_can_send_fix_channel_now_event(0, L2CAP_CID_ATTRIBUTE_PROTOCOL);

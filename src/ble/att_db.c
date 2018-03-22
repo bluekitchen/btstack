@@ -494,6 +494,10 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
     uint8_t error_code = 0;
     uint16_t first_matching_but_unreadable_handle = 0;
 
+#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+    int read_request_pending = 0;
+#endif
+
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
         
@@ -520,6 +524,13 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
 
         att_update_value_len(&it, att_connection->con_handle);
         
+#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+        if (it.value_len == ATT_READ_RESPONSE_PENDING){
+            read_request_pending = 1;
+        }
+        if (read_request_pending) continue;
+#endif
+
         // check if value has same len as last one
         uint16_t this_pair_len = 2 + it.value_len;
         if (offset > 1){
@@ -549,6 +560,10 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
         offset += bytes_copied;
     }
     
+#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+    if (read_request_pending) return ATT_READ_RESPONSE_PENDING;
+#endif
+
     // at least one attribute could be read
     if (offset > 1){
         response_buffer[0] = ATT_READ_BY_TYPE_RESPONSE;
@@ -609,6 +624,10 @@ static uint16_t handle_read_request2(att_connection_t * att_connection, uint8_t 
 
     att_update_value_len(&it, att_connection->con_handle);
 
+#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+    if (it.value_len == ATT_READ_RESPONSE_PENDING) return ATT_READ_RESPONSE_PENDING;
+#endif
+
     uint16_t offset   = 1;
     // limit data
     if (offset + it.value_len > response_buffer_size) {
@@ -657,6 +676,10 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
 
     att_update_value_len(&it, att_connection->con_handle);
 
+#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+    if (it.value_len == ATT_READ_RESPONSE_PENDING) return ATT_READ_RESPONSE_PENDING;
+#endif
+
     if (value_offset > it.value_len){
         return setup_error_invalid_offset(response_buffer, request_type, handle);
     }
@@ -698,6 +721,11 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
     int i;
     uint8_t error_code = 0;
     uint16_t handle = 0;
+
+#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+    int read_request_pending = 0;
+#endif
+
     for (i=0;i<num_handles;i++){
         handle = little_endian_read_16(handles, i << 1);
         
@@ -725,6 +753,13 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
         }
         att_update_value_len(&it, att_connection->con_handle);
         
+#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+        if (it.value_len == ATT_READ_RESPONSE_PENDING) {
+            read_request_pending = 1;
+        }
+        if (read_request_pending) continue;
+#endif
+
         // limit data
         if (offset + it.value_len > response_buffer_size) {
             it.value_len = response_buffer_size - 1;
