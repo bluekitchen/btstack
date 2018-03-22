@@ -2179,6 +2179,7 @@ static void event_handler(uint8_t *packet, int size){
             // re-enable advertisements for le connections if active
             conn = hci_connection_for_handle(handle);
             if (!conn) break; 
+            conn->state = RECEIVED_DISCONNECTION_COMPLETE;
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_PERIPHERAL
             if (hci_is_le_connection(conn)){
@@ -2186,7 +2187,6 @@ static void event_handler(uint8_t *packet, int size){
             }
 #endif
 #endif
-            conn->state = RECEIVED_DISCONNECTION_COMPLETE;
             break;
 
         case HCI_EVENT_HARDWARE_ERROR:
