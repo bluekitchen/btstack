@@ -94,6 +94,7 @@ CFLAGS += -I${BTSTACK_ROOT}/src/classic
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include -D OI_DEBUG
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/eCC
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/tinydir
 CFLAGS += -I${BTSTACK_ROOT}/platform/posix 
 CFLAGS += -I${BTSTACK_ROOT}/platform/embedded 
 CFLAGS += -I${BTSTACK_ROOT}/port/libusb 
