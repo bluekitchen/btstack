@@ -21,3 +21,5 @@ le_data_channel
 profile.h
 sco_loopback
 sco_loopbackiopt
+sm_test.h
+sm_test
