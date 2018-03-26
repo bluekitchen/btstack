@@ -444,13 +444,11 @@ static void avrcp_parser_reset(avrcp_browsing_connection_t * connection){
 
 static void avrcp_browsing_parser_process_byte(uint8_t byte, avrcp_browsing_connection_t * connection){
     uint8_t prepended_header_size = 1;
-
     switch(connection->parser_state){
         case AVRCP_PARSER_GET_ATTRIBUTE_HEADER:{
-            if (connection->parser_attribute_header_pos < AVRCP_BROWSING_ITEM_HEADER_LEN) {
-                connection->parser_attribute_header[connection->parser_attribute_header_pos++] = byte;
-                break;
-            }
+            connection->parser_attribute_header[connection->parser_attribute_header_pos++] = byte;
+            if (connection->parser_attribute_header_pos < AVRCP_BROWSING_ITEM_HEADER_LEN) break;
+
             uint16_t attribute_total_value_len = big_endian_read_16(connection->parser_attribute_header, 1);
             connection->parsed_attribute_value[connection->parsed_attribute_value_offset++] = connection->parser_attribute_header[0];   // prepend with item type
             connection->parsed_attribute_value_len = btstack_min(attribute_total_value_len, AVRCP_MAX_ATTRIBUTTE_SIZE - prepended_header_size);                 // reduce AVRCP_MAX_ATTRIBUTTE_SIZE for the size ot item type
