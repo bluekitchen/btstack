@@ -12,6 +12,8 @@ import time
 import signal
 import select
 import fcntl
+import csv
+import shutil
 
 usb_paths = ['3', '5']
 
@@ -127,27 +129,62 @@ def run(nodes):
                     print('%s pairing complete' % node.get_name())
                     return
 
-# shutdown previous sm_test instances
-try:
-    subprocess.call("killall sm_test", shell = True)
-except:
-    pass
+def run_test(test_descriptor):
+    # shutdown previous sm_test instances
+    try:
+        subprocess.call("killall sm_test", shell = True)
+    except:
+        pass
 
-# start up slave process
-iut = Node()
-iut.set_name('Slave')
-iut.usb_path = usb_paths[0]
-iut.start_process()
+    test_name = test_descriptor['name']
+    print('Test: %s' % test_name)
 
-nodes = [iut]
+    # start up slave process
+    slave = Node()
+    slave.set_name('Slave')
+    slave.usb_path = usb_paths[0]
+    slave.start_process()
 
-# run test
-try:
-    run(nodes)
-except KeyboardInterrupt:
-    pass
+    nodes = [slave]
 
-# shutdown
-for node in nodes:
-    node.terminate()
-print("Done")
+    # run test
+    try:
+        run(nodes)
+    except KeyboardInterrupt:
+        pass
+
+    # identify iut and tester
+    if '/SLA/' in test_descriptor['name']:
+        iut    = nodes[0]
+        tester = nodes[1]
+    else:
+        iut    = nodes[1]
+        tester = nodes[0]
+
+    # move hci logs into result folder
+    test_folder =  test_descriptor['test_folder']
+    os.makedirs(test_folder)
+    shutil.move(iut.get_packet_log(), test_folder + '/iut.pklg')
+    shutil.move(tester.get_packet_log(), test_folder + '/tester.pklg')
+
+    # shutdown
+    for node in nodes:
+        node.terminate()
+    print("Done\n")
+
+# read tests
+with open('sm_test.csv') as csvfile:
+    reader = csv.DictReader(csvfile)
+    for test_descriptor in reader:
+        test_name = test_descriptor['name']
+        test_folder = test_name.replace('/', '_')
+        test_descriptor['test_folder'] = test_folder
+
+        # check if result folder exists
+        if os.path.exists(test_folder):
+            print('Test: %s (completed)' % test_name)
+            continue
+
+        # run test
+        run_test(test_descriptor)
+
