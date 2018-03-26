@@ -122,23 +122,24 @@ int main(int argc, const char * argv[]){
 
     uint8_t usb_path[USB_MAX_PATH_LEN];
     int usb_path_len = 0;
+    const char * usb_path_string = NULL;
     if (argc >= 3 && strcmp(argv[1], "-u") == 0){
         // parse command line options for "-u 11:22:33"
-        const char * port_str = argv[2];
+        usb_path_string = argv[2];
         printf("Specified USB Path: ");
         while (1){
             char * delimiter;
-            int port = strtol(port_str, &delimiter, 16);
+            int port = strtol(usb_path_string, &delimiter, 16);
             usb_path[usb_path_len] = port;
             usb_path_len++;
             printf("%02x ", port);
             if (!delimiter) break;
             if (*delimiter != ':' && *delimiter != '-') break;
-            port_str = delimiter+1;
+            usb_path_string = delimiter+1;
         }
         printf("\n");
         argc -= 2;
-        memmove(&argv[0], &argv[2], argc * sizeof(char *));
+        memmove(&argv[1], &argv[3], (argc-1) * sizeof(char *));
     }
 
 	/// GET STARTED with BTstack ///
@@ -155,7 +156,7 @@ int main(int argc, const char * argv[]){
     strcpy(pklg_path, "/tmp/hci_dump");
     if (usb_path_len){
         strcat(pklg_path, "_");
-        strcat(pklg_path, argv[2]);
+        strcat(pklg_path, usb_path_string);
     }
     strcat(pklg_path, ".pklg");
     printf("Packet Log: %s\n", pklg_path);
