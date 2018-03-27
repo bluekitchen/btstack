@@ -76,11 +76,10 @@ const uint8_t adv_data_len = sizeof(adv_data);
 // test profile
 #include "sm_test.h"
 
-static int sm_have_oob_data = 0;
+static uint8_t sm_have_oob_data = 0;
 static uint8_t sm_io_capabilities = 0;
 static uint8_t sm_auth_req = 0;
 static uint8_t sm_failure = 0;
-
 // static uint8_t * sm_oob_data = (uint8_t *) "0123456789012345"; // = { 0x30...0x39, 0x30..0x35}
 static uint8_t sm_oob_data[] = { 0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,  };
 
@@ -381,6 +380,7 @@ static void stdin_process(char c){
 
 static int get_oob_data_callback(uint8_t address_type, bd_addr_t addr, uint8_t * oob_data){
     UNUSED(address_type);
+    log_info("get_oob_data_callback for %s", bd_addr_to_str(addr));
     (void)addr;
     if(!sm_have_oob_data) return 0;
     memcpy(oob_data, sm_oob_data, 16);
@@ -410,6 +410,10 @@ int btstack_main(int argc, const char * argv[]){
             arg++;
             sm_failure = atoi(argv[arg++]);
         }
+        if(!strcmp(argv[arg], "-o") || !strcmp(argv[arg], "--oob")){
+            arg++;
+            sm_have_oob_data = atoi(argv[arg++]);
+        }
     }
 
     // parse command line flags
@@ -417,6 +421,7 @@ int btstack_main(int argc, const char * argv[]){
     printf("Security Managet Tester starting up...\n");
     log_info("IO_CAPABILITIES: %u", sm_io_capabilities);
     log_info("AUTH_REQ: %u", sm_auth_req);
+    log_info("HAVE_OOB: %u", sm_have_oob_data);
     log_info("FAILURE: %u", sm_failure);
     if (we_are_central){
         log_info("ROLE: CENTRAL");

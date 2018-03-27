@@ -48,8 +48,8 @@ failures = [
 # tester config
 debug      = False
 regenerate = False
-# usb_paths = ['4', '6']
-usb_paths = ['3', '5']
+usb_paths = ['4', '6']
+# usb_paths = ['3', '5']
 
 class Node:
 
@@ -114,6 +114,8 @@ class Node:
         args.append(self.io_capabilities)
         args.append('-r')
         args.append(self.auth_req)
+        args.append('-o')
+        args.append(self.oob_data)
         print('%s - "%s"' % (self.name, ' '.join(args)))
         self.p = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         (self.stdin, self.stdout) = (self.p.stdin, self.p.stdout)
@@ -177,6 +179,7 @@ def run(test_descriptor, nodes):
                         master.set_peer_addr(addr)
                         master.set_auth_req(test_descriptor[master_role + '_auth_req'])
                         master.set_io_capabilities(test_descriptor[master_role + '_io_capabilities'])
+                        master.set_oob_data(test_descriptor[master_role + '_oob_data'])
                         if master_role == 'tester':
                             master.set_failure(test_descriptor['tester_failure'])
                         master.start_process()
@@ -323,6 +326,7 @@ def run_test(test_descriptor):
     slave.usb_path = usb_paths[0]
     slave.set_auth_req(test_descriptor[slave_role + '_auth_req'])
     slave.set_io_capabilities(test_descriptor[slave_role + '_io_capabilities'])
+    slave.set_oob_data(test_descriptor[slave_role + '_oob_data'])
     if slave_role == 'tester':
         slave.set_failure(test_descriptor['tester_failure'])
 
