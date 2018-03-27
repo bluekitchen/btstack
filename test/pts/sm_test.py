@@ -15,7 +15,8 @@ import fcntl
 import csv
 import shutil
 
-usb_paths = ['3', '5']
+usb_paths = ['4', '6']
+# usb_paths = ['3', '5']
 
 class Node:
 
@@ -29,6 +30,15 @@ class Node:
 
     def set_name(self, name):
         self.name = name
+
+    def set_auth_req(self, auth_req):
+        self.auth_req = auth_req
+
+    def set_io_capabilities(self, io_capabilities):
+        self.io_capabilities = io_capabilities
+
+    def set_oob_data(self, oob_data):
+        self.oob_data = oob_data
 
     def set_usb_path(self, path):
         self.usb_path = path
@@ -60,6 +70,8 @@ class Node:
         if self.peer_addr != None:
             args.append('-a')
             args.append(self.peer_addr)
+        args.append('-r')
+        args.append(self.auth_req)
         print('%s - "%s"' % (self.name, ' '.join(args)))
         self.p = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         (self.stdin, self.stdout) = (self.p.stdin, self.p.stdout)
@@ -87,7 +99,7 @@ class Node:
         self.write('x')
         self.p.terminate()
 
-def run(nodes):
+def run(test_descriptor, nodes):
     state = 'W4_SLAVE_BD_ADDR'
 
     while True:
@@ -112,12 +124,16 @@ def run(nodes):
                     if state == 'W4_SLAVE_BD_ADDR':
                         # peripheral started, start central
                         state = 'W4_CONNECTED'
-                        node = Node()
-                        node.set_name('Master')
-                        node.usb_path = usb_paths[1]
-                        node.set_peer_addr(addr)
-                        node.start_process()
-                        nodes.append(node)
+                        master_role = test_descriptor['master_role']
+                        master = Node()
+                        # configure master
+                        master.set_name(master_role)
+                        master.usb_path = usb_paths[1]
+                        master.set_peer_addr(addr)
+                        master.set_auth_req(test_descriptor[master_role + '_auth_req'])
+                        master.set_io_capabilities(test_descriptor[master_role + '_io_capabilities'])
+                        master.start_process()
+                        nodes.append(master)
                 if line.startswith('CONNECTED:'):
                     print('%s connected' % node.get_name())
                     if state == 'W4_CONNECTED':
@@ -139,22 +155,36 @@ def run_test(test_descriptor):
     test_name = test_descriptor['name']
     print('Test: %s' % test_name)
 
-    # start up slave process
+    if '/SLA/' in test_descriptor['name']:
+        iut_role = 'SLAVE'
+        slave_role = 'iut'
+        test_descriptor['master_role'] = 'tester'
+    else:
+        iut_role = 'MASTER'
+        slave_role = 'tester'
+        test_descriptor['master_role'] = 'iut'
+
     slave = Node()
-    slave.set_name('Slave')
+
+    # configure slave
+    slave.set_name(slave_role)
     slave.usb_path = usb_paths[0]
+    slave.set_auth_req(test_descriptor[slave_role + '_auth_req'])
+    slave.set_io_capabilities(test_descriptor[slave_role + '_io_capabilities'])
+
+    # start up slave
     slave.start_process()
 
     nodes = [slave]
 
     # run test
     try:
-        run(nodes)
+        run(test_descriptor, nodes)
     except KeyboardInterrupt:
         pass
 
     # identify iut and tester
-    if '/SLA/' in test_descriptor['name']:
+    if iut_role == 'SLAVE':
         iut    = nodes[0]
         tester = nodes[1]
     else:
@@ -186,5 +216,6 @@ with open('sm_test.csv') as csvfile:
             continue
 
         # run test
+        print(test_descriptor)
         run_test(test_descriptor)
 

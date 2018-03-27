@@ -266,12 +266,12 @@ int btstack_main(int argc, const char * argv[]){
     // parse command line flags
 
     printf("Security Managet Tester starting up...\n");
-    printf("IO_CAPABILITIES: %u\n", sm_io_capabilities);
-    printf("AUTH_REQ: %u\n", sm_auth_req);
+    log_info("IO_CAPABILITIES: %u", sm_io_capabilities);
+    log_info("AUTH_REQ: %u", sm_auth_req);
     if (we_are_central){
-        printf("ROLE: CENTRAL\n");
+        log_info("ROLE: CENTRAL");
     } else {
-        printf("ROLE: PERIPHERAL\n");
+        log_info("ROLE: PERIPHERAL");
 
         // setup advertisements
         uint16_t adv_int_min = 0x0030;
@@ -294,10 +294,10 @@ int btstack_main(int argc, const char * argv[]){
     // setup le device db
     le_device_db_init();
 
-    // setup SM: Display only
+    // setup SM io capabilities & auth req
     sm_init();
     sm_set_io_capabilities(sm_io_capabilities);
-    sm_set_authentication_requirements( sm_auth_req); 
+    sm_set_authentication_requirements(sm_auth_req); 
     sm_register_oob_data_callback(get_oob_data_callback);
 
     sm_event_callback_registration.callback = &app_packet_handler;

@@ -89,6 +89,8 @@ include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
 CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-variable -Wunused-parameter
 # -Werror 
 CFLAGS += -D ENABLE_LE_DATA_CHANNELS
+CFLAGS += -D ENABLE_LE_SECURE_CONNECTIONS
+CFLAGS += -D ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
 CFLAGS += -I..
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/src/classic
