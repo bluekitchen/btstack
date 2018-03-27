@@ -347,8 +347,13 @@ def run_test(test_descriptor):
             iut    = nodes[1]
             tester = nodes[0]
 
-        # move hci logs into result folder
         test_folder =  test_descriptor['test_folder']
+
+        # rename folder if test not ok
+        if test_descriptor['tester_failure'] != test_descriptor['iut_pairing_complete_status']:
+            test_folder = 'TEST_FAIL-' + test_folder
+
+        # move hci logs into result folder
         os.makedirs(test_folder)
         shutil.move(iut.get_packet_log(),    test_folder + '/iut.pklg')
         shutil.move(tester.get_packet_log(), test_folder + '/tester.pklg')
