@@ -164,9 +164,14 @@ def run(test_descriptor, nodes):
                     test_descriptor[node.get_name()+'_pairing_complete_reason'] = reason
                     print('%s pairing complete: status %s, reason %s' % (node.get_name(), status, reason))
                     pairing_complete.append(node.get_name())
-                    # check if both are complete
+                    # pairing complete?
                     if len(pairing_complete) == 2:
-                        return
+                        # on error, test is finished, else wait for notify
+                        if status != '0':
+                            return
+                if line.startswith('COUNTER'):
+                    print('%s notification received' % node.get_name())
+                    return;
 
 def write_config(fout, test_descriptor):
     attributes = [
@@ -216,6 +221,12 @@ def run_test(test_descriptor):
     # shutdown previous sm_test instances
     try:
         subprocess.call("killall sm_test", shell = True)
+    except:
+        pass
+
+    # trash all bonding informatino
+    try:
+        subprocess.call("rm /tmp/btstack_*", shell = True)
     except:
         pass
 

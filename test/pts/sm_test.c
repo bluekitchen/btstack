@@ -93,14 +93,32 @@ static int ui_digits_for_passkey = 0;
 static btstack_timer_source_t heartbeat;
 static uint8_t counter = 0;
 
-static uint16_t handle = 0;
+static uint16_t connection_handle = 0;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 
-// static uint8_t adv_data_len;
-// static uint8_t adv_data[32];
+static int wait_for_pairing_complete;
 
+typedef enum {
+    TC_IDLE,
+    TC_W4_SCAN_RESULT,
+    TC_W4_CONNECT,
+    TC_W4_SERVICE_RESULT,
+    TC_W4_CHARACTERISTIC_RESULT,
+    TC_W4_SUBSCRIBED,
+    TC_SUBSCRIBED
+} gc_state_t;
+
+static gc_state_t state = TC_IDLE;
+
+static uint8_t le_counter_service_uuid[16]        = { 0x00, 0x00, 0xFF, 0x10, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
+static uint8_t le_counter_characteristic_uuid[16] = { 0x00, 0x00, 0xFF, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
+
+static gatt_client_service_t le_counter_service;
+static gatt_client_characteristic_t le_counter_characteristic;
+
+static gatt_client_notification_t notification_listener;
 static void  heartbeat_handler(struct btstack_timer_source *ts){
     // restart timer
     btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
@@ -130,10 +148,93 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t attribute_ha
     printf_hexdump(buffer, buffer_size);
 
     switch (attribute_handle){
+        case ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_CLIENT_CONFIGURATION_HANDLE:
+            // short cut, send right away
+            att_server_request_can_send_now_event(con_handle);
+            break;
         default:
             break;
     }
     return 0;
+}
+
+static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+
+    int status;
+    char message[30];
+
+    switch(state){
+        case TC_W4_SERVICE_RESULT:
+            switch(hci_event_packet_get_type(packet)){
+                case GATT_EVENT_SERVICE_QUERY_RESULT:
+                    gatt_event_service_query_result_get_service(packet, &le_counter_service);
+                    break;
+                case GATT_EVENT_QUERY_COMPLETE:
+                    if (packet[4] != 0){
+                        printf("SERVICE_QUERY_RESULT - Error status %x.\n", packet[4]);
+                        gap_disconnect(connection_handle);
+                        break;  
+                    } 
+                    state = TC_W4_CHARACTERISTIC_RESULT;
+                    printf("Search for counter characteristic.\n");
+                    gatt_client_discover_characteristics_for_service_by_uuid128(handle_gatt_client_event, connection_handle, &le_counter_service, le_counter_characteristic_uuid);
+                    break;
+                default:
+                    break;
+            }
+            break;
+            
+        case TC_W4_CHARACTERISTIC_RESULT:
+            switch(hci_event_packet_get_type(packet)){
+                case GATT_EVENT_CHARACTERISTIC_QUERY_RESULT:
+                    gatt_event_characteristic_query_result_get_characteristic(packet, &le_counter_characteristic);
+                    break;
+                case GATT_EVENT_QUERY_COMPLETE:
+                    if (packet[4] != 0){
+                        printf("CHARACTERISTIC_QUERY_RESULT - Error status %x.\n", packet[4]);
+                        gap_disconnect(connection_handle);
+                        break;  
+                    } 
+                    state = TC_W4_SUBSCRIBED;
+                    printf("Configure counter for notify.\n");
+                    status = gatt_client_write_client_characteristic_configuration(handle_gatt_client_event, connection_handle, &le_counter_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case TC_W4_SUBSCRIBED:
+            switch(hci_event_packet_get_type(packet)){
+                case GATT_EVENT_QUERY_COMPLETE:
+                    // register handler for notifications
+                    state = TC_SUBSCRIBED;
+                    printf("Subscribed, start listening\n");
+                    gatt_client_listen_for_characteristic_value_updates(&notification_listener, handle_gatt_client_event, connection_handle, &le_counter_characteristic);
+                    break;
+                default:
+                    break;
+            }
+            break;
+
+        case TC_SUBSCRIBED:
+            switch(hci_event_packet_get_type(packet)){
+                case GATT_EVENT_NOTIFICATION:
+                    memset(message, 0, sizeof(message));
+                    memcpy(message, gatt_event_notification_get_value(packet), gatt_event_notification_get_value_length(packet));
+                    printf("COUNTER: %s\n", message);
+                    log_info("COUNTER: %s", message);
+                    break;
+                default:
+                    break;
+            }
+
+        default:
+            break;
+    }
+    fflush(stdout);
 }
 
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -148,7 +249,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                         gap_local_bd_addr(local_addr);
                         printf("BD_ADDR: %s\n", bd_addr_to_str(local_addr));
-
+                        wait_for_pairing_complete = 1;
                         // start connecting if we're central
                         if (we_are_central){
                             printf("CENTRAL: connect to %s\n", bd_addr_to_str(peer_address));
@@ -159,11 +260,11 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case HCI_EVENT_LE_META:
                     switch (hci_event_le_meta_get_subevent_code(packet)) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                            handle = little_endian_read_16(packet, 4);
-                            printf("CONNECTED: Connection handle 0x%04x\n", handle);
+                            connection_handle = little_endian_read_16(packet, 4);
+                            printf("CONNECTED: Connection handle 0x%04x\n", connection_handle);
                             if (we_are_central){
                                 printf("REQUEST_PAIRING\n");
-                                sm_request_pairing(handle);
+                                sm_request_pairing(connection_handle);
                             }
                             break;
                         default:
@@ -191,9 +292,18 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case SM_EVENT_AUTHORIZATION_REQUEST:
                     break;
                 case SM_EVENT_PAIRING_COMPLETE:
+                    if (!wait_for_pairing_complete) break;
                     printf("PAIRING_COMPLETE: %u,%u\n", sm_event_pairing_complete_get_status(packet), sm_event_pairing_complete_get_reason(packet));
+                    if (we_are_central){
+                        printf("Search for LE Counter service.\n");
+                        state = TC_W4_SERVICE_RESULT;
+                        gatt_client_discover_primary_services_by_uuid128(handle_gatt_client_event, connection_handle, le_counter_service_uuid);
+                    }
                     break;
                 case ATT_EVENT_HANDLE_VALUE_INDICATION_COMPLETE:
+                    break;
+                case ATT_EVENT_CAN_SEND_NOW:
+                    att_server_notify(connection_handle, ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t *) "Pairing Success!", 16);
                     break;
                 default:
                     break;
@@ -213,7 +323,7 @@ static void stdin_process(char c){
         ui_digits_for_passkey--;
         if (ui_digits_for_passkey == 0){
             printf("Sending Passkey '%06x'\n", ui_passkey);
-            sm_passkey_input(handle, ui_passkey);
+            sm_passkey_input(connection_handle, ui_passkey);
         }
         return;
     }
@@ -221,7 +331,7 @@ static void stdin_process(char c){
     switch (c){
         case 'a': // accept just works
             printf("accepting just works\n");
-            sm_just_works_confirm(handle);
+            sm_just_works_confirm(connection_handle);
             break;
         case 'x':
             printf("Exit\n");
@@ -293,6 +403,9 @@ int btstack_main(int argc, const char * argv[]){
     
     // setup le device db
     le_device_db_init();
+
+    // 
+    gatt_client_init();
 
     // setup SM io capabilities & auth req
     sm_init();
