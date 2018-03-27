@@ -29,8 +29,25 @@ SM_AUTHREQ_MITM_PROTECTION   = 0x04
 SM_AUTHREQ_SECURE_CONNECTION = 0x08
 SM_AUTHREQ_KEYPRESS          = 0x10
 
+failures = [
+'RESERVED',
+'PASSKEY_ENTRY_FAILED',
+'OOB_NOT_AVAILABLE',
+'AUTHENTHICATION_REQUIREMENTS',
+'CONFIRM_VALUE_FAILED',
+'PAIRING_NOT_SUPPORTED',
+'ENCRYPTION_KEY_SIZE',
+'COMMAND_NOT_SUPPORTED',
+'UNSPECIFIED_REASON',
+'REPEATED_ATTEMPTS',
+'INVALID_PARAMETERS',
+'DHKEY_CHECK_FAILED',
+'NUMERIC_COMPARISON_FAILED',
+]
+
 # tester config
-regenerate = True
+debug = True
+regenerate = False
 # usb_paths = ['4', '6']
 usb_paths = ['3', '5']
 
@@ -40,6 +57,7 @@ class Node:
         self.name = 'node'
         self._got_line = False
         self.peer_addr = None
+        self.failure   = None
 
     def get_name(self):
         return self.name
@@ -55,6 +73,9 @@ class Node:
 
     def set_oob_data(self, oob_data):
         self.oob_data = oob_data
+
+    def set_failure(self, failure):
+        self.failure = failure
 
     def set_usb_path(self, path):
         self.usb_path = path
@@ -86,6 +107,9 @@ class Node:
         if self.peer_addr != None:
             args.append('-a')
             args.append(self.peer_addr)
+        if self.failure != None:
+            args.append('-f')
+            args.append(self.failure)
         args.append('-r')
         args.append(self.auth_req)
         print('%s - "%s"' % (self.name, ' '.join(args)))
@@ -128,7 +152,8 @@ def run(test_descriptor, nodes):
             node.read_stdout()
             if node.got_line():
                 line = node.fetch_line()
-                # print('%s: %s' % (node.get_name(), line))
+                if debug:
+                    print('%s: %s' % (node.get_name(), line))
                 if line.startswith('Packet Log: '):
                     path = line.split(': ')[1]
                     node.set_packet_log(path)
@@ -148,6 +173,8 @@ def run(test_descriptor, nodes):
                         master.set_peer_addr(addr)
                         master.set_auth_req(test_descriptor[master_role + '_auth_req'])
                         master.set_io_capabilities(test_descriptor[master_role + '_io_capabilities'])
+                        if master_role == 'tester':
+                            master.set_failure(test_descriptor['tester_failure'])
                         master.start_process()
                         nodes.append(master)
                 if line.startswith('CONNECTED:'):
@@ -156,7 +183,12 @@ def run(test_descriptor, nodes):
                         state = 'W4_PAIRING'
                 if line.startswith('JUST_WORKS_REQUEST'):
                     print('%s just works requested' % node.get_name())
-                    node.write('a')
+                    if node.get_name() == 'tester' and  test_descriptor['tester_failure'] == '12':
+                        print('Decline bonding')
+                        node.write('d')
+                    else:
+                        print('Accept bonding')
+                        node.write('a')
                 if line.startswith('PAIRING_COMPLETE'):
                     result = line.split(': ')[1]
                     (status,reason) = result.split(',')
@@ -179,9 +211,11 @@ def write_config(fout, test_descriptor):
         '---',
         'bd_addr',
         'role',
+        'failure',
         'io_capabilities',
         'mitm',
         'secure_connection',
+        'rfu',
         'oob_data',
         'pairing_complete_status',
         'pairing_complete_reason']
@@ -190,8 +224,8 @@ def write_config(fout, test_descriptor):
     fout.write('Test: %s\n' % test_descriptor['name'])
     fout.write('Date: %s\n' % str(datetime.datetime.now()))
     fout.write('\n')
-    attribute_len = 25
-    value_len     = 30
+    attribute_len = 28
+    value_len     = 35
     format_string = '%%-%us|%%-%us|%%-%us\n' % (attribute_len, value_len, value_len)
     for attribute in attributes:
         name = attribute
@@ -212,6 +246,12 @@ def write_config(fout, test_descriptor):
         elif attribute == 'secure_connection':
             iut    = (int(test_descriptor['iut_auth_req'   ]) & SM_AUTHREQ_SECURE_CONNECTION) >> 3
             tester = (int(test_descriptor['tester_auth_req']) & SM_AUTHREQ_SECURE_CONNECTION) >> 3
+        elif attribute == 'rfu':
+            iut    = (int(test_descriptor['iut_auth_req'   ]) & 192) >> 6
+            tester = (int(test_descriptor['tester_auth_req']) & 192) >> 6
+        elif attribute == 'failure':
+            iut    = ''
+            tester = failures[int(test_descriptor['tester_failure'])]
         else:
             iut    = test_descriptor['iut_'    + attribute]
             tester = test_descriptor['tester_' + attribute]
@@ -235,16 +275,18 @@ def run_test(test_descriptor):
 
     if '/SLA/' in test_descriptor['name']:
         iut_role    = 'responder'
-        tester_role = 'master'
+        tester_role = 'initiator'
         slave_role  = 'iut'
-        test_descriptor['master_role'] = 'tester'
+        master_role = 'tester'
     else:
         iut_role    = 'initiator'
-        tester_role = "slave"
+        tester_role = 'responder'
         slave_role  = 'tester'
-        test_descriptor['master_role'] = 'iut'
+        master_role = 'iut'
     test_descriptor['iut_role'   ] = iut_role
     test_descriptor['tester_role'] = tester_role
+    test_descriptor['master_role'] = master_role
+    test_descriptor['slave_role']  = slave_role
 
     slave = Node()
 
@@ -253,6 +295,8 @@ def run_test(test_descriptor):
     slave.usb_path = usb_paths[0]
     slave.set_auth_req(test_descriptor[slave_role + '_auth_req'])
     slave.set_io_capabilities(test_descriptor[slave_role + '_io_capabilities'])
+    if slave_role == 'tester':
+        slave.set_failure(test_descriptor['tester_failure'])
 
     # start up slave
     slave.start_process()
@@ -264,7 +308,7 @@ def run_test(test_descriptor):
         run(test_descriptor, nodes)
 
         # identify iut and tester
-        if iut_role == 'slave':
+        if iut_role == 'responder':
             iut    = nodes[0]
             tester = nodes[1]
         else:
@@ -274,12 +318,12 @@ def run_test(test_descriptor):
         # move hci logs into result folder
         test_folder =  test_descriptor['test_folder']
         os.makedirs(test_folder)
-        shutil.move(iut.get_packet_log(), test_folder + '/iut.pklg')
+        shutil.move(iut.get_packet_log(),    test_folder + '/iut.pklg')
         shutil.move(tester.get_packet_log(), test_folder + '/tester.pklg')
 
         # write config
         with open (test_folder + '/config.txt', "wt") as fout:
-            test_descriptor['iut_bd_addr'] = iut.get_bd_addr()
+            test_descriptor['iut_bd_addr']    = iut.get_bd_addr()
             test_descriptor['tester_bd_addr'] = tester.get_bd_addr()
             write_config(fout, test_descriptor)
 
@@ -297,6 +341,12 @@ with open('sm_test.csv') as csvfile:
     reader = csv.DictReader(csvfile)
     for test_descriptor in reader:
         test_name = test_descriptor['name']
+
+        if test_name.startswith('#'):
+            continue
+        if len(test_name) == 0:
+            continue
+
         test_folder = test_name.replace('/', '_')
         test_descriptor['test_folder'] = test_folder
 

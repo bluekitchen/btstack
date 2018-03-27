@@ -79,7 +79,7 @@ const uint8_t adv_data_len = sizeof(adv_data);
 static int sm_have_oob_data = 0;
 static uint8_t sm_io_capabilities = 0;
 static uint8_t sm_auth_req = 0;
-
+static uint8_t sm_failure = 0;
 
 // static uint8_t * sm_oob_data = (uint8_t *) "0123456789012345"; // = { 0x30...0x39, 0x30..0x35}
 static uint8_t sm_oob_data[] = { 0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,  };
@@ -294,6 +294,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case SM_EVENT_PAIRING_COMPLETE:
                     if (!wait_for_pairing_complete) break;
                     printf("PAIRING_COMPLETE: %u,%u\n", sm_event_pairing_complete_get_status(packet), sm_event_pairing_complete_get_reason(packet));
+                    if (sm_event_pairing_complete_get_status(packet)) break;
                     if (we_are_central){
                         printf("Search for LE Counter service.\n");
                         state = TC_W4_SERVICE_RESULT;
@@ -333,6 +334,10 @@ static void stdin_process(char c){
             printf("accepting just works\n");
             sm_just_works_confirm(connection_handle);
             break;
+        case 'd':
+            printf("decline bonding\n");
+            sm_bonding_decline(connection_handle);
+            break;
         case 'x':
             printf("Exit\n");
             exit(0);
@@ -371,6 +376,10 @@ int btstack_main(int argc, const char * argv[]){
             arg++;
             sm_auth_req = atoi(argv[arg++]);
         }
+        if(!strcmp(argv[arg], "-f") || !strcmp(argv[arg], "--failure")){
+            arg++;
+            sm_failure = atoi(argv[arg++]);
+        }
     }
 
     // parse command line flags
@@ -378,6 +387,7 @@ int btstack_main(int argc, const char * argv[]){
     printf("Security Managet Tester starting up...\n");
     log_info("IO_CAPABILITIES: %u", sm_io_capabilities);
     log_info("AUTH_REQ: %u", sm_auth_req);
+    log_info("FAILURE: %u", sm_failure);
     if (we_are_central){
         log_info("ROLE: CENTRAL");
     } else {
@@ -412,6 +422,10 @@ int btstack_main(int argc, const char * argv[]){
     sm_set_io_capabilities(sm_io_capabilities);
     sm_set_authentication_requirements(sm_auth_req); 
     sm_register_oob_data_callback(get_oob_data_callback);
+
+    if (sm_failure < SM_REASON_NUMERIC_COMPARISON_FAILED){
+        sm_test_set_pairing_failure(sm_failure);
+    }
 
     sm_event_callback_registration.callback = &app_packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
