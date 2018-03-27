@@ -197,6 +197,10 @@ typedef uint8_t sm_key256_t[32];
 
 static uint8_t test_use_fixed_local_csrk;
 
+#ifdef ENABLE_TESTING_SUPPORT
+static uint8_t test_pairing_failure;
+#endif
+
 // configuration
 static uint8_t sm_accepted_stk_generation_methods;
 static uint8_t sm_max_encryption_key_size;
@@ -2105,6 +2109,13 @@ static void sm_run(void){
                     // recover pairing request
                     memcpy(&setup->sm_m_preq, &sm_connection->sm_m_preq, sizeof(sm_pairing_packet_t));
                     err = sm_stk_generation_init(sm_connection);
+
+#ifdef ENABLE_TESTING_SUPPORT
+                    if (test_pairing_failure < SM_REASON_DHKEY_CHECK_FAILED){
+                        log_info("testing_support: respond with pairing failure %u", test_pairing_failure);
+                        err = test_pairing_failure;
+                    }
+#endif
                     if (err){
                         setup->sm_pairing_failed_reason = err;
                         sm_connection->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
@@ -3545,6 +3556,13 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
             // store s_confirm
             reverse_128(&packet[1], setup->sm_peer_confirm);
+
+#ifdef ENABLE_TESTING_SUPPORT
+            if (test_pairing_failure == SM_REASON_CONFIRM_VALUE_FAILED){
+                log_info("testing_support: reset confirm value");
+                memset(setup->sm_peer_confirm, 0, 16);
+            }
+#endif
             sm_conn->sm_engine_state = SM_PH2_SEND_PAIRING_RANDOM;
             break;
 
@@ -3660,6 +3678,12 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             // received confirm value
             reverse_128(&packet[1], setup->sm_peer_confirm);
 
+#ifdef ENABLE_TESTING_SUPPORT
+            if (test_pairing_failure == SM_REASON_CONFIRM_VALUE_FAILED){
+                log_info("testing_support: reset confirm value");
+                memset(setup->sm_peer_confirm, 0, 16);
+            }
+#endif
             if (IS_RESPONDER(sm_conn->sm_role)){
                 // responder
                 if (sm_passkey_used(setup->sm_stk_generation_method)){
@@ -3735,6 +3759,12 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             // received confirm value
             reverse_128(&packet[1], setup->sm_peer_confirm);
 
+#ifdef ENABLE_TESTING_SUPPORT
+            if (test_pairing_failure == SM_REASON_CONFIRM_VALUE_FAILED){
+                log_info("testing_support: reset confirm value");
+                memset(setup->sm_peer_confirm, 0, 16);
+            }
+#endif
             // notify client to hide shown passkey
             if (setup->sm_stk_generation_method == PK_INIT_INPUT){
                 sm_notify_client_base(SM_EVENT_PASSKEY_DISPLAY_CANCEL, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
@@ -3889,6 +3919,12 @@ void sm_test_set_irk(sm_key_t irk){
 void sm_test_use_fixed_local_csrk(void){
     test_use_fixed_local_csrk = 1;
 }
+
+#ifdef ENABLE_TESTING_SUPPORT
+void sm_test_set_pairing_failure(int reason){
+    test_pairing_failure = reason;
+}
+#endif
 
 void sm_init(void){
     // set some (BTstack default) ER and IR

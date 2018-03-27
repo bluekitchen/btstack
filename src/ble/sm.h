@@ -249,6 +249,10 @@ void sm_test_set_irk(sm_key_t irk);
 void sm_test_use_fixed_local_csrk(void);
 void sm_test_use_fixed_ec_keypair(void);
 
+#ifdef ENABLE_TESTING_SUPPORT
+void sm_test_set_pairing_failure(int reason);
+#endif
+
 #if defined __cplusplus
 }
 #endif
