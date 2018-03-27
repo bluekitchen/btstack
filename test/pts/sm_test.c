@@ -282,6 +282,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     printf("PASSKEY_INPUT_NUMBER\n");
                     ui_passkey = 0;
                     ui_digits_for_passkey = 6;
+                    // sm_keypress_notification(connection_handle, SM_KEYPRESS_PASSKEY_ENTRY_STARTED);
                     break;
                 case SM_EVENT_PASSKEY_DISPLAY_NUMBER:
                     // display number
@@ -313,8 +314,34 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     fflush(stdout);
 }
 
-static void stdin_process(char c){
+#define KEYPRESS_DELAY 100
+static btstack_timer_source_t passkey_timer;
+static int num_keypresses_to_send;
 
+static void passkey_entry_complete(btstack_timer_source_t * ts){
+    if (num_keypresses_to_send > 0){
+        num_keypresses_to_send--;
+        // sm_keypress_notification(connection_handle, SM_KEYPRESS_PASSKEY_DIGIT_ENTERED);
+        btstack_run_loop_set_timer(ts, KEYPRESS_DELAY);
+        btstack_run_loop_add_timer(ts);
+        return;
+    }
+    if (num_keypresses_to_send == 0){
+        num_keypresses_to_send--;
+        // sm_keypress_notification(connection_handle, SM_KEYPRESS_PASSKEY_ENTRY_COMPLETED);
+        btstack_run_loop_set_timer(ts, KEYPRESS_DELAY);
+        btstack_run_loop_add_timer(ts);
+        return;
+    }
+    printf("\nSending Passkey '%06u'\n", ui_passkey);
+    if (sm_failure == SM_REASON_PASSKEY_ENTRY_FAILED){
+        // simulate passkey failure
+        ui_passkey--;        
+    }
+    sm_passkey_input(connection_handle, ui_passkey);
+}
+
+static void stdin_process(char c){
     // passkey input
     if (ui_digits_for_passkey){
         if (c < '0' || c > '9') return;
@@ -323,8 +350,11 @@ static void stdin_process(char c){
         ui_passkey = ui_passkey * 10 + c - '0';
         ui_digits_for_passkey--;
         if (ui_digits_for_passkey == 0){
-            printf("Sending Passkey '%06x'\n", ui_passkey);
-            sm_passkey_input(connection_handle, ui_passkey);
+            num_keypresses_to_send = 6;
+            // set one-shot timer
+            passkey_timer.process = &passkey_entry_complete;
+            btstack_run_loop_set_timer(&passkey_timer, KEYPRESS_DELAY);
+            btstack_run_loop_add_timer(&passkey_timer);
         }
         return;
     }
@@ -423,7 +453,7 @@ int btstack_main(int argc, const char * argv[]){
     sm_set_authentication_requirements(sm_auth_req); 
     sm_register_oob_data_callback(get_oob_data_callback);
 
-    if (sm_failure < SM_REASON_NUMERIC_COMPARISON_FAILED){
+    if (sm_failure < SM_REASON_NUMERIC_COMPARISON_FAILED && sm_failure != SM_REASON_PASSKEY_ENTRY_FAILED){
         sm_test_set_pairing_failure(sm_failure);
     }
 

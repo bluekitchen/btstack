@@ -60,5 +60,49 @@ SM/MAS/SCJW/BI-01-C/04,0,0,8,8,0,0,9
 # tester responds with pairing failure during phase 2
 SM/MAS/SCJW/BI-01-C/05,0,0,8,8,0,0,12
 
-# tester responds with pairing failure during phase 2
+# TODO: tester responds with pairing failure during phase 2
 SM/SLA/SCJW/BI-02-C,0,3,8,8,0,0,4
+
+# -- Passkey Entry (SCPK) --
+
+# TODO: keypress notifications prevent pairing exchange
+SM/MAS/SCPK/BV-01-C,0,2,24,28,0,0,0
+SM/SLA/SCPK/BV-02-C/01,2,4,24,12,0,0,0
+SM/SLA/SCPK/BV-02-C/02,2,4,24,28,0,0,0
+
+# additional bits set in authreq
+
+SM/SLA/SCPK/BV-03-C/01,0,2,8,76,0,0,0
+SM/SLA/SCPK/BV-03-C/02,0,2,8,140,0,0,0
+SM/SLA/SCPK/BV-03-C/03,0,2,8,204,0,0,0
+
+# same as SM/SLA/SCPK/BV-03-C, just with IUT in Initiator role
+
+SM/MAS/SCPK/BV-03-C/01,0,2,8,76,0,0,0
+SM/MAS/SCPK/BV-03-C/02,0,2,8,140,0,0,0
+SM/MAS/SCPK/BV-03-C/03,0,2,8,204,0,0,0
+
+# tester responds with pairing failure in responder role
+
+SM/MAS/SCPK/BI-01-C/01,0,0,8,8,0,0,3
+SM/MAS/SCPK/BI-01-C/02,0,0,8,8,0,0,8
+SM/MAS/SCPK/BI-01-C/03,0,0,8,8,0,0,5
+SM/MAS/SCPK/BI-01-C/04,0,0,8,8,0,0,9
+
+# TODO: we enter incorrect Passkey, and get DHKey Check error instead of passkey entry failed
+SM/MAS/SCPK/BI-01-C/05,0,2,8,12,0,0,1
+
+SM/SLA/SCPK/BI-04-C/01,0,0,8,8,0,0,3
+SM/SLA/SCPK/BI-04-C/02,0,0,8,8,0,0,8
+SM/SLA/SCPK/BI-04-C/03,0,0,8,8,0,0,5
+SM/SLA/SCPK/BI-04-C/04,0,0,8,8,0,0,9
+
+# TODO: tester responds with pairing failure during phase 2
+SM/MAS/SCPK/BI-02-C,0,3,8,8,0,0,4
+
+# TODO: tester responds with pairing failure during phase 2
+SM/SLA/SCPK/BI-03-C,0,3,8,8,0,0,4
+
+# TODO: we enter incorrect Passkey, and get DHKey Check error instead of passkey entry failed
+SM/SLA/SCPK/BI-04-C/05,0,2,8,12,0,0,1
+

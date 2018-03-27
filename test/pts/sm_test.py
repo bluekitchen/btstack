@@ -30,7 +30,7 @@ SM_AUTHREQ_SECURE_CONNECTION = 0x08
 SM_AUTHREQ_KEYPRESS          = 0x10
 
 failures = [
-'RESERVED',
+'',
 'PASSKEY_ENTRY_FAILED',
 'OOB_NOT_AVAILABLE',
 'AUTHENTHICATION_REQUIREMENTS',
@@ -46,7 +46,7 @@ failures = [
 ]
 
 # tester config
-debug = True
+debug      = False
 regenerate = False
 # usb_paths = ['4', '6']
 usb_paths = ['3', '5']
@@ -110,6 +110,8 @@ class Node:
         if self.failure != None:
             args.append('-f')
             args.append(self.failure)
+        args.append('-i')
+        args.append(self.io_capabilities)
         args.append('-r')
         args.append(self.auth_req)
         print('%s - "%s"' % (self.name, ' '.join(args)))
@@ -133,7 +135,9 @@ class Node:
         self.peer_addr = addr
 
     def write(self, string):
-        self.stdin.write(string)
+        for c in string:
+            self.stdin.write(string)
+            time.sleep (0.1);
 
     def terminate(self):
         self.write('x')
@@ -158,7 +162,7 @@ def run(test_descriptor, nodes):
                     path = line.split(': ')[1]
                     node.set_packet_log(path)
                     print('%s log %s' % (node.get_name(), path))
-                if line.startswith('BD_ADDR: '):
+                elif line.startswith('BD_ADDR: '):
                     addr = line.split(': ')[1]
                     node.set_bd_addr(addr)
                     print('%s started' % node.get_name())
@@ -177,11 +181,11 @@ def run(test_descriptor, nodes):
                             master.set_failure(test_descriptor['tester_failure'])
                         master.start_process()
                         nodes.append(master)
-                if line.startswith('CONNECTED:'):
+                elif line.startswith('CONNECTED:'):
                     print('%s connected' % node.get_name())
                     if state == 'W4_CONNECTED':
                         state = 'W4_PAIRING'
-                if line.startswith('JUST_WORKS_REQUEST'):
+                elif line.startswith('JUST_WORKS_REQUEST'):
                     print('%s just works requested' % node.get_name())
                     if node.get_name() == 'tester' and  test_descriptor['tester_failure'] == '12':
                         print('Decline bonding')
@@ -189,7 +193,21 @@ def run(test_descriptor, nodes):
                     else:
                         print('Accept bonding')
                         node.write('a')
-                if line.startswith('PAIRING_COMPLETE'):
+                elif line.startswith('PASSKEY_DISPLAY_NUMBER'):
+                    passkey = line.split(': ')[1]
+                    print('%s passkey display %s' % (node.get_name(), passkey))
+                    test_descriptor['passkey'] = passkey
+                    if state == 'W4_PAIRING':
+                        state = 'W4_PASSKEY_INPUT'
+                    else:
+                        test_descriptor['waiting_node'].write(test_descriptor['passkey'])
+                elif line.startswith('PASSKEY_INPUT_NUMBER'):
+                    if state == 'W4_PASSKEY_INPUT':
+                        node.write(test_descriptor['passkey'])
+                    else:
+                        test_descriptor['waiting_node'] = node
+                        state = 'W4_PASSKEY_DISPLAY'
+                elif line.startswith('PAIRING_COMPLETE'):
                     result = line.split(': ')[1]
                     (status,reason) = result.split(',')
                     test_descriptor[node.get_name()+'_pairing_complete_status'] = status
@@ -201,7 +219,7 @@ def run(test_descriptor, nodes):
                         # on error, test is finished, else wait for notify
                         if status != '0':
                             return
-                if line.startswith('COUNTER'):
+                elif line.startswith('COUNTER'):
                     print('%s notification received' % node.get_name())
                     return;
 
@@ -215,8 +233,10 @@ def write_config(fout, test_descriptor):
         'io_capabilities',
         'mitm',
         'secure_connection',
+        'keypress',
         'rfu',
         'oob_data',
+        'passkey',
         'pairing_complete_status',
         'pairing_complete_reason']
 
@@ -246,9 +266,17 @@ def write_config(fout, test_descriptor):
         elif attribute == 'secure_connection':
             iut    = (int(test_descriptor['iut_auth_req'   ]) & SM_AUTHREQ_SECURE_CONNECTION) >> 3
             tester = (int(test_descriptor['tester_auth_req']) & SM_AUTHREQ_SECURE_CONNECTION) >> 3
+        elif attribute == 'keypress':
+            iut    = (int(test_descriptor['iut_auth_req'   ]) & SM_AUTHREQ_KEYPRESS)          >> 4
+            tester = (int(test_descriptor['tester_auth_req']) & SM_AUTHREQ_KEYPRESS)          >> 4
         elif attribute == 'rfu':
             iut    = (int(test_descriptor['iut_auth_req'   ]) & 192) >> 6
             tester = (int(test_descriptor['tester_auth_req']) & 192) >> 6
+        elif attribute == 'passkey':
+            if not 'passkey' in test_descriptor:
+                continue
+            iut    = test_descriptor['passkey']
+            tester = test_descriptor['passkey']
         elif attribute == 'failure':
             iut    = ''
             tester = failures[int(test_descriptor['tester_failure'])]
