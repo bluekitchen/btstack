@@ -191,7 +191,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case SM_EVENT_AUTHORIZATION_REQUEST:
                     break;
                 case SM_EVENT_PAIRING_COMPLETE:
-                    printf("PAIRING_COMPLETE\n");
+                    printf("PAIRING_COMPLETE: %u,%u\n", sm_event_pairing_complete_get_status(packet), sm_event_pairing_complete_get_reason(packet));
                     break;
                 case ATT_EVENT_HANDLE_VALUE_INDICATION_COMPLETE:
                     break;

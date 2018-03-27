@@ -14,9 +14,25 @@ import select
 import fcntl
 import csv
 import shutil
+import datetime
 
-usb_paths = ['4', '6']
-# usb_paths = ['3', '5']
+io_capabilities = [
+'IO_CAPABILITY_DISPLAY_ONLY',
+'IO_CAPABILITY_DISPLAY_YES_NO',
+'IO_CAPABILITY_KEYBOARD_ONLY',
+'IO_CAPABILITY_NO_INPUT_NO_OUTPUT',
+'IO_CAPABILITY_KEYBOARD_DISPLAY']
+
+SM_AUTHREQ_NO_BONDING        = 0x00
+SM_AUTHREQ_BONDING           = 0x01
+SM_AUTHREQ_MITM_PROTECTION   = 0x04
+SM_AUTHREQ_SECURE_CONNECTION = 0x08
+SM_AUTHREQ_KEYPRESS          = 0x10
+
+# tester config
+regenerate = True
+# usb_paths = ['4', '6']
+usb_paths = ['3', '5']
 
 class Node:
 
@@ -86,7 +102,7 @@ class Node:
     def set_bd_addr(self, addr):
         self.bd_addr = addr
 
-    def get_bd_addr(self, addr):
+    def get_bd_addr(self):
         return self.bd_addr
 
     def set_peer_addr(self, addr):
@@ -101,7 +117,7 @@ class Node:
 
 def run(test_descriptor, nodes):
     state = 'W4_SLAVE_BD_ADDR'
-
+    pairing_complete = []
     while True:
         # create map fd -> node
         nodes_by_fd = { node.get_stdout_fd():node for node in nodes}
@@ -142,8 +158,59 @@ def run(test_descriptor, nodes):
                     print('%s just works requested' % node.get_name())
                     node.write('a')
                 if line.startswith('PAIRING_COMPLETE'):
-                    print('%s pairing complete' % node.get_name())
-                    return
+                    result = line.split(': ')[1]
+                    (status,reason) = result.split(',')
+                    test_descriptor[node.get_name()+'_pairing_complete_status'] = status
+                    test_descriptor[node.get_name()+'_pairing_complete_reason'] = reason
+                    print('%s pairing complete: status %s, reason %s' % (node.get_name(), status, reason))
+                    pairing_complete.append(node.get_name())
+                    # check if both are complete
+                    if len(pairing_complete) == 2:
+                        return
+
+def write_config(fout, test_descriptor):
+    attributes = [
+        'header',
+        '---',
+        'bd_addr',
+        'role',
+        'io_capabilities',
+        'mitm',
+        'secure_connection',
+        'oob_data',
+        'pairing_complete_status',
+        'pairing_complete_reason']
+
+    # header
+    fout.write('Test: %s\n' % test_descriptor['name'])
+    fout.write('Date: %s\n' % str(datetime.datetime.now()))
+    fout.write('\n')
+    attribute_len = 25
+    value_len     = 30
+    format_string = '%%-%us|%%-%us|%%-%us\n' % (attribute_len, value_len, value_len)
+    for attribute in attributes:
+        name = attribute
+        if attribute == 'header':
+            name  = 'Attribute'
+            iut   = 'IUT'
+            tester = 'Tester'
+        elif attribute == '---':
+            name   = '-' * attribute_len
+            iut    = '-' * value_len
+            tester = '-' * value_len
+        elif attribute == 'io_capabilities':
+            iut    = io_capabilities[int(test_descriptor['iut_io_capabilities'   ])]
+            tester = io_capabilities[int(test_descriptor['tester_io_capabilities'])]
+        elif attribute == 'mitm':
+            iut    = (int(test_descriptor['iut_auth_req'   ]) & SM_AUTHREQ_MITM_PROTECTION)   >> 2
+            tester = (int(test_descriptor['tester_auth_req']) & SM_AUTHREQ_MITM_PROTECTION)   >> 2
+        elif attribute == 'secure_connection':
+            iut    = (int(test_descriptor['iut_auth_req'   ]) & SM_AUTHREQ_SECURE_CONNECTION) >> 3
+            tester = (int(test_descriptor['tester_auth_req']) & SM_AUTHREQ_SECURE_CONNECTION) >> 3
+        else:
+            iut    = test_descriptor['iut_'    + attribute]
+            tester = test_descriptor['tester_' + attribute]
+        fout.write(format_string % (name, iut, tester))
 
 def run_test(test_descriptor):
     # shutdown previous sm_test instances
@@ -156,13 +223,17 @@ def run_test(test_descriptor):
     print('Test: %s' % test_name)
 
     if '/SLA/' in test_descriptor['name']:
-        iut_role = 'SLAVE'
-        slave_role = 'iut'
+        iut_role    = 'responder'
+        tester_role = 'master'
+        slave_role  = 'iut'
         test_descriptor['master_role'] = 'tester'
     else:
-        iut_role = 'MASTER'
-        slave_role = 'tester'
+        iut_role    = 'initiator'
+        tester_role = "slave"
+        slave_role  = 'tester'
         test_descriptor['master_role'] = 'iut'
+    test_descriptor['iut_role'   ] = iut_role
+    test_descriptor['tester_role'] = tester_role
 
     slave = Node()
 
@@ -180,27 +251,35 @@ def run_test(test_descriptor):
     # run test
     try:
         run(test_descriptor, nodes)
+
+        # identify iut and tester
+        if iut_role == 'slave':
+            iut    = nodes[0]
+            tester = nodes[1]
+        else:
+            iut    = nodes[1]
+            tester = nodes[0]
+
+        # move hci logs into result folder
+        test_folder =  test_descriptor['test_folder']
+        os.makedirs(test_folder)
+        shutil.move(iut.get_packet_log(), test_folder + '/iut.pklg')
+        shutil.move(tester.get_packet_log(), test_folder + '/tester.pklg')
+
+        # write config
+        with open (test_folder + '/config.txt', "wt") as fout:
+            test_descriptor['iut_bd_addr'] = iut.get_bd_addr()
+            test_descriptor['tester_bd_addr'] = tester.get_bd_addr()
+            write_config(fout, test_descriptor)
+
     except KeyboardInterrupt:
-        pass
-
-    # identify iut and tester
-    if iut_role == 'SLAVE':
-        iut    = nodes[0]
-        tester = nodes[1]
-    else:
-        iut    = nodes[1]
-        tester = nodes[0]
-
-    # move hci logs into result folder
-    test_folder =  test_descriptor['test_folder']
-    os.makedirs(test_folder)
-    shutil.move(iut.get_packet_log(), test_folder + '/iut.pklg')
-    shutil.move(tester.get_packet_log(), test_folder + '/tester.pklg')
+        print('Interrupted')
 
     # shutdown
     for node in nodes:
         node.terminate()
     print("Done\n")
+
 
 # read tests
 with open('sm_test.csv') as csvfile:
@@ -210,10 +289,13 @@ with open('sm_test.csv') as csvfile:
         test_folder = test_name.replace('/', '_')
         test_descriptor['test_folder'] = test_folder
 
-        # check if result folder exists
+        # skip test if regenerate not requested
         if os.path.exists(test_folder):
-            print('Test: %s (completed)' % test_name)
-            continue
+            if regenerate:
+                shutil.rmtree(test_folder)
+            else: 
+                print('Test: %s (completed)' % test_name)
+                continue
 
         # run test
         print(test_descriptor)

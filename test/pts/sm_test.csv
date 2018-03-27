@@ -1,2 +1,2 @@
-name,iut_io_capabilities,tester_io_capabilities,iut_auth_req,tester_auth_req,
-SM/MAS/SCJW/BV-01-C,0,0,8,8,
+name,iut_io_capabilities,tester_io_capabilities,iut_auth_req,tester_auth_req,iut_oob_data,tester_oob_data,
+SM/MAS/SCJW/BV-01-C,0,0,8,8,0,0
