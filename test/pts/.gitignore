@@ -24,3 +24,4 @@ sco_loopbackiopt
 sm_test.h
 sm_test
 SM_*
+TEST_FAIL-*
