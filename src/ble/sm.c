@@ -3731,9 +3731,10 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             reverse_128(&packet[1], setup->sm_peer_nonce);
 
             // validate confirm value if Cb = f4(Pkb, Pka, Nb, z)
-            // only check for JUST WORK/NC in initiator role AND passkey entry
-            if (sm_conn->sm_role || sm_passkey_used(setup->sm_stk_generation_method)) {
+            // only check for JUST WORK/NC in initiator role OR passkey entry
+            if (!IS_RESPONDER(sm_conn->sm_role) || sm_passkey_used(setup->sm_stk_generation_method)) {
                  sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION;
+                 break;
             }
 
             sm_sc_state_after_receiving_random(sm_conn);
