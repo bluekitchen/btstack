@@ -161,13 +161,6 @@ static void att_handle_value_indication_timeout(btstack_timer_source_t *ts){
     att_handle_value_indication_notify_client(ATT_HANDLE_VALUE_INDICATION_TIMEOUT, att_server->connection.con_handle, att_handle);
 }
 
-static void att_device_identified(att_server_t * att_server, uint8_t index){
-    att_server->ir_lookup_active = 0;
-    att_server->ir_le_device_db_index = index;
-    log_info("Remote device with conn 0%04x registered with index id %u", (int) att_server->connection.con_handle, att_server->ir_le_device_db_index);
-    att_run_for_context(att_server);
-}
-
 static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     UNUSED(channel); // ok: there is no channel
@@ -251,7 +244,10 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     con_handle = sm_event_identity_created_get_handle(packet);
                     att_server = att_server_for_handle(con_handle);
                     if (!att_server) return;
-                    att_device_identified(att_server, sm_event_identity_resolving_succeeded_get_index(packet));
+                    att_server->ir_lookup_active = 0;
+                    att_server->ir_le_device_db_index = sm_event_identity_resolving_succeeded_get_index(packet);
+                    log_info("SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED");
+                    att_run_for_context(att_server);
                     break;
                 case SM_EVENT_IDENTITY_RESOLVING_FAILED:
                     con_handle = sm_event_identity_resolving_failed_get_handle(packet);
@@ -281,13 +277,23 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     att_server->ir_le_device_db_index = -1;
                     break;
 
-                // Pairing completed
+                // Bonding completed
                 case SM_EVENT_IDENTITY_CREATED:
                     con_handle = sm_event_identity_created_get_handle(packet);
                     att_server = att_server_for_handle(con_handle);
                     if (!att_server) return;
                     att_server->pairing_active = 0;
-                    att_device_identified(att_server, sm_event_identity_created_get_index(packet));
+                    att_server->ir_le_device_db_index = sm_event_identity_created_get_index(packet);
+                    att_run_for_context(att_server);
+                    break;
+
+                // Pairing complete (with/without bonding=storing of pairing information)
+                case SM_EVENT_PAIRING_COMPLETE:
+                    con_handle = sm_event_pairing_complete_get_handle(packet);
+                    att_server = att_server_for_handle(con_handle);
+                    if (!att_server) return;
+                    att_server->pairing_active = 0;
+                    att_run_for_context(att_server);
                     break;
 
                 // Authorization
@@ -688,6 +694,8 @@ static void att_server_persistent_ccc_restore(att_server_t * att_server){
     if (!att_server) return;
     int le_device_index = att_server->ir_le_device_db_index;
     log_info("Restore CCC values of remote %s, le device id %d", bd_addr_to_str(att_server->peer_address), le_device_index);
+    // check if bonded
+    if (le_device_index < 0) return;
     // get btstack_tlv
     const btstack_tlv_t * tlv_impl = NULL;
     void * tlv_context;
