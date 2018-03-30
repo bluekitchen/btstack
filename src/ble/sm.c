@@ -1146,10 +1146,14 @@ static void sm_done_for_handle(hci_con_handle_t con_handle){
 }
 
 static int sm_key_distribution_flags_for_auth_req(void){
-    int flags = SM_KEYDIST_ID_KEY | SM_KEYDIST_SIGN;
+
+    int flags = SM_KEYDIST_ID_KEY;
     if (sm_auth_req & SM_AUTHREQ_BONDING){
-        // encryption information only if bonding requested
+        // encryption and signing information only if bonding requested
         flags |= SM_KEYDIST_ENC_KEY;
+#ifdef ENABLE_LE_SIGNED_WRITE
+        flags | = SM_KEYDIST_SIGN;
+#endif
     }
     return flags;
 }
