@@ -60,7 +60,7 @@ SM/MAS/SCJW/BI-01-C/04,0,0,8,8,0,0,9
 # tester responds with pairing failure during phase 2
 SM/MAS/SCJW/BI-01-C/05,0,0,8,8,0,0,12
 
-# TODO: tester responds with pairing failure during phase 2
+# tester responds with pairing failure during phase 2
 SM/SLA/SCJW/BI-02-C,0,3,8,8,0,0,4
 
 # -- Passkey Entry (SCPK) --
