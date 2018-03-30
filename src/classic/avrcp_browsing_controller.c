@@ -453,41 +453,43 @@ static void avrcp_browsing_parser_process_byte(uint8_t byte, avrcp_browsing_conn
             connection->parsed_attribute_value[connection->parsed_attribute_value_offset++] = connection->parser_attribute_header[0];   // prepend with item type
             connection->parsed_attribute_value_len = btstack_min(attribute_total_value_len, AVRCP_MAX_ATTRIBUTTE_SIZE - prepended_header_size);                 // reduce AVRCP_MAX_ATTRIBUTTE_SIZE for the size ot item type
             connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_VALUE;
+            // printf("AVRCP_PARSER_GET_ATTRIBUTE_HEADER value len %d, to parse %d, offset %d\n", attribute_total_value_len, connection->parsed_attribute_value_len, connection->parsed_attribute_value_offset);
             break;
         }
         case AVRCP_PARSER_GET_ATTRIBUTE_VALUE:{
+            connection->parsed_attribute_value[connection->parsed_attribute_value_offset++] = byte;
             if (connection->parsed_attribute_value_offset < connection->parsed_attribute_value_len + prepended_header_size){
-                connection->parsed_attribute_value[connection->parsed_attribute_value_offset++] = byte;
                 break;
             }
             if (connection->parsed_attribute_value_offset < big_endian_read_16(connection->parser_attribute_header, 1)){
                 connection->parser_state = AVRCP_PARSER_IGNORE_REST_OF_ATTRIBUTE_VALUE;
                 break;
             }
-            
-            connection->parsed_num_attributes++;
+            connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_HEADER;
             (*avrcp_controller_context.browsing_avrcp_callback)(AVRCP_BROWSING_DATA_PACKET, connection->l2cap_browsing_cid, &connection->parsed_attribute_value[0], connection->parsed_attribute_value_offset);
+            connection->parsed_num_attributes++;
+            connection->parsed_attribute_value_offset = 0;
+            connection->parser_attribute_header_pos = 0;
                 
             if (connection->parsed_num_attributes == connection->num_items){
                 avrcp_parser_reset(connection);
-                connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_HEADER;
-                connection->parser_attribute_header_pos = 0;
                 break;
             }
             break;
         }
         case AVRCP_PARSER_IGNORE_REST_OF_ATTRIBUTE_VALUE:
+            connection->parsed_attribute_value_offset++;
             if (connection->parsed_attribute_value_offset < big_endian_read_16(connection->parser_attribute_header, 1) + prepended_header_size){
-                connection->parsed_attribute_value_offset++;
                 break;
             }
-            connection->parsed_num_attributes++;
+            connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_HEADER;
             (*avrcp_controller_context.browsing_avrcp_callback)(AVRCP_BROWSING_DATA_PACKET, connection->l2cap_browsing_cid, &connection->parsed_attribute_value[0], connection->parsed_attribute_value_offset);
-            
+            connection->parsed_num_attributes++;
+            connection->parsed_attribute_value_offset = 0;
+            connection->parser_attribute_header_pos = 0;
+                
             if (connection->parsed_num_attributes == connection->num_items){
                 avrcp_parser_reset(connection);
-                connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_HEADER;
-                connection->parser_attribute_header_pos = 0;
                 break;
             }
             break;
