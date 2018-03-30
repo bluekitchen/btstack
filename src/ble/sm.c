@@ -1269,9 +1269,9 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                         break;
                     }
 #ifdef ENABLE_LE_CENTRAL
-                    if (!sm_connection->sm_bonding_requested && !sm_connection->sm_security_request_received) break;
+                    if (!sm_connection->sm_pairing_requested && !sm_connection->sm_security_request_received) break;
                     sm_connection->sm_security_request_received = 0;
-                    sm_connection->sm_bonding_requested = 0;
+                    sm_connection->sm_pairing_requested = 0;
                     le_device_db_encryption_get(sm_connection->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL);
                     if (!sm_is_null_key(ltk)){
                         sm_connection->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
@@ -1290,9 +1290,9 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                         break;
                     }
 #ifdef ENABLE_LE_CENTRAL
-                    if (!sm_connection->sm_bonding_requested && !sm_connection->sm_security_request_received) break;
+                    if (!sm_connection->sm_pairing_requested && !sm_connection->sm_security_request_received) break;
                     sm_connection->sm_security_request_received = 0;
-                    sm_connection->sm_bonding_requested = 0;
+                    sm_connection->sm_pairing_requested = 0;
                     sm_connection->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
 #endif
                     break;
@@ -4081,11 +4081,11 @@ void sm_request_pairing(hci_con_handle_t con_handle){
                         }
                         break;
                 default:
-                    sm_conn->sm_bonding_requested = 1;
+                    sm_conn->sm_pairing_requested = 1;
                     break;
             }
         } else if (sm_conn->sm_engine_state == SM_GENERAL_IDLE){
-            sm_conn->sm_bonding_requested = 1;
+            sm_conn->sm_pairing_requested = 1;
         }
     }
     sm_run();
