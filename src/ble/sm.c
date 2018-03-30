@@ -1316,80 +1316,90 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
 
     int le_db_index = -1;
 
-    // lookup device based on IRK
-    if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION){
-        int i;
-        for (i=0; i < le_device_db_max_count(); i++){
-            sm_key_t irk;
-            bd_addr_t address;
-            int address_type;
-            le_device_db_info(i, &address_type, address, irk);
-            if (memcmp(irk, setup->sm_peer_irk, 16) == 0){
-                log_info("sm: device found for IRK, updating");
-                le_db_index = i;
-                break;
+    // only store pairing information if both sides are bondable, i.e., the bonadble flag is set
+    int bonding_enabed = ( sm_pairing_packet_get_auth_req(setup->sm_m_preq)
+                         & sm_pairing_packet_get_auth_req(setup->sm_s_pres)
+                         & SM_AUTHREQ_BONDING ) != 0;
+
+    if (bonding_enabed){
+
+        // lookup device based on IRK
+        if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION){
+            int i;
+            for (i=0; i < le_device_db_max_count(); i++){
+                sm_key_t irk;
+                bd_addr_t address;
+                int address_type;
+                le_device_db_info(i, &address_type, address, irk);
+                if (memcmp(irk, setup->sm_peer_irk, 16) == 0){
+                    log_info("sm: device found for IRK, updating");
+                    le_db_index = i;
+                    break;
+                }
             }
         }
-    }
 
-    // if not found, lookup via public address if possible
-    log_info("sm peer addr type %u, peer addres %s", setup->sm_peer_addr_type, bd_addr_to_str(setup->sm_peer_address));
-    if (le_db_index < 0 && setup->sm_peer_addr_type == BD_ADDR_TYPE_LE_PUBLIC){
-        int i;
-        for (i=0; i < le_device_db_max_count(); i++){
-            bd_addr_t address;
-            int address_type;
-            le_device_db_info(i, &address_type, address, NULL);
-            log_info("device %u, sm peer addr type %u, peer addres %s", i, address_type, bd_addr_to_str(address));
-            if (address_type == BD_ADDR_TYPE_LE_PUBLIC && memcmp(address, setup->sm_peer_address, 6) == 0){
-                log_info("sm: device found for public address, updating");
-                le_db_index = i;
-                break;
+        // if not found, lookup via public address if possible
+        log_info("sm peer addr type %u, peer addres %s", setup->sm_peer_addr_type, bd_addr_to_str(setup->sm_peer_address));
+        if (le_db_index < 0 && setup->sm_peer_addr_type == BD_ADDR_TYPE_LE_PUBLIC){
+            int i;
+            for (i=0; i < le_device_db_max_count(); i++){
+                bd_addr_t address;
+                int address_type;
+                le_device_db_info(i, &address_type, address, NULL);
+                log_info("device %u, sm peer addr type %u, peer addres %s", i, address_type, bd_addr_to_str(address));
+                if (address_type == BD_ADDR_TYPE_LE_PUBLIC && memcmp(address, setup->sm_peer_address, 6) == 0){
+                    log_info("sm: device found for public address, updating");
+                    le_db_index = i;
+                    break;
+                }
             }
         }
-    }
 
-    // if not found, add to db
-    if (le_db_index < 0) {
-        le_db_index = le_device_db_add(setup->sm_peer_addr_type, setup->sm_peer_address, setup->sm_peer_irk);
-    }
+        // if not found, add to db
+        if (le_db_index < 0) {
+            le_db_index = le_device_db_add(setup->sm_peer_addr_type, setup->sm_peer_address, setup->sm_peer_irk);
+        }
 
-    if (le_db_index >= 0){
+        if (le_db_index >= 0){
 
-        sm_notify_client_index(SM_EVENT_IDENTITY_CREATED, sm_conn->sm_handle, setup->sm_peer_addr_type, setup->sm_peer_address, le_db_index);
+            sm_notify_client_index(SM_EVENT_IDENTITY_CREATED, sm_conn->sm_handle, setup->sm_peer_addr_type, setup->sm_peer_address, le_db_index);
 
 #ifdef ENABLE_LE_SIGNED_WRITE
-        // store local CSRK
-        if (setup->sm_key_distribution_send_set & SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
-            log_info("sm: store local CSRK");
-            le_device_db_local_csrk_set(le_db_index, setup->sm_local_csrk);
-            le_device_db_local_counter_set(le_db_index, 0);
-        }
+            // store local CSRK
+            if (setup->sm_key_distribution_send_set & SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
+                log_info("sm: store local CSRK");
+                le_device_db_local_csrk_set(le_db_index, setup->sm_local_csrk);
+                le_device_db_local_counter_set(le_db_index, 0);
+            }
 
-        // store remote CSRK
-        if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
-            log_info("sm: store remote CSRK");
-            le_device_db_remote_csrk_set(le_db_index, setup->sm_peer_csrk);
-            le_device_db_remote_counter_set(le_db_index, 0);
-        }
+            // store remote CSRK
+            if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
+                log_info("sm: store remote CSRK");
+                le_device_db_remote_csrk_set(le_db_index, setup->sm_peer_csrk);
+                le_device_db_remote_counter_set(le_db_index, 0);
+            }
 #endif
-        // store encryption information for secure connections: LTK generated by ECDH
-        if (setup->sm_use_secure_connections){
-            log_info("sm: store SC LTK (key size %u, authenticated %u)", sm_conn->sm_actual_encryption_key_size, sm_conn->sm_connection_authenticated);
-            uint8_t zero_rand[8];
-            memset(zero_rand, 0, 8);
-            le_device_db_encryption_set(le_db_index, 0, zero_rand, setup->sm_ltk, sm_conn->sm_actual_encryption_key_size,
-                sm_conn->sm_connection_authenticated, sm_conn->sm_connection_authorization_state == AUTHORIZATION_GRANTED);
-        }
+            // store encryption information for secure connections: LTK generated by ECDH
+            if (setup->sm_use_secure_connections){
+                log_info("sm: store SC LTK (key size %u, authenticated %u)", sm_conn->sm_actual_encryption_key_size, sm_conn->sm_connection_authenticated);
+                uint8_t zero_rand[8];
+                memset(zero_rand, 0, 8);
+                le_device_db_encryption_set(le_db_index, 0, zero_rand, setup->sm_ltk, sm_conn->sm_actual_encryption_key_size,
+                    sm_conn->sm_connection_authenticated, sm_conn->sm_connection_authorization_state == AUTHORIZATION_GRANTED);
+            }
 
-        // store encryption information for legacy pairing: peer LTK, EDIV, RAND
-        else if ( (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION)
-               && (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_MASTER_IDENTIFICATION )){
-            log_info("sm: set encryption information (key size %u, authenticated %u)", sm_conn->sm_actual_encryption_key_size, sm_conn->sm_connection_authenticated);
-            le_device_db_encryption_set(le_db_index, setup->sm_peer_ediv, setup->sm_peer_rand, setup->sm_peer_ltk,
-                sm_conn->sm_actual_encryption_key_size, sm_conn->sm_connection_authenticated, sm_conn->sm_connection_authorization_state == AUTHORIZATION_GRANTED);
+            // store encryption information for legacy pairing: peer LTK, EDIV, RAND
+            else if ( (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION)
+                   && (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_MASTER_IDENTIFICATION )){
+                log_info("sm: set encryption information (key size %u, authenticated %u)", sm_conn->sm_actual_encryption_key_size, sm_conn->sm_connection_authenticated);
+                le_device_db_encryption_set(le_db_index, setup->sm_peer_ediv, setup->sm_peer_rand, setup->sm_peer_ltk,
+                    sm_conn->sm_actual_encryption_key_size, sm_conn->sm_connection_authenticated, sm_conn->sm_connection_authorization_state == AUTHORIZATION_GRANTED);
 
+            }
         }
+    } else {
+        log_info("Ignoring received keys, bonding not enabled");
     }
 
     // keep le_db_index
