@@ -97,8 +97,6 @@ static uint16_t connection_handle = 0;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 
-static int wait_for_pairing_complete;
-
 typedef enum {
     TC_IDLE,
     TC_W4_SCAN_RESULT,
@@ -248,7 +246,6 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                         gap_local_bd_addr(local_addr);
                         printf("BD_ADDR: %s\n", bd_addr_to_str(local_addr));
-                        wait_for_pairing_complete = 1;
                         // start connecting if we're central
                         if (we_are_central){
                             printf("CENTRAL: connect to %s\n", bd_addr_to_str(peer_address));
@@ -292,7 +289,6 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case SM_EVENT_AUTHORIZATION_REQUEST:
                     break;
                 case SM_EVENT_PAIRING_COMPLETE:
-                    if (!wait_for_pairing_complete) break;
                     printf("PAIRING_COMPLETE: %u,%u\n", sm_event_pairing_complete_get_status(packet), sm_event_pairing_complete_get_reason(packet));
                     if (sm_event_pairing_complete_get_status(packet)) break;
                     if (we_are_central){
