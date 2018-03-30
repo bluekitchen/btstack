@@ -1152,7 +1152,7 @@ static int sm_key_distribution_flags_for_auth_req(void){
         // encryption and signing information only if bonding requested
         flags |= SM_KEYDIST_ENC_KEY;
 #ifdef ENABLE_LE_SIGNED_WRITE
-        flags | = SM_KEYDIST_SIGN;
+        flags |= SM_KEYDIST_SIGN;
 #endif
     }
     return flags;
