@@ -3567,9 +3567,18 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
+
             // store pairing request
             memcpy(&setup->sm_s_pres, packet, sizeof(sm_pairing_packet_t));
             err = sm_stk_generation_init(sm_conn);
+
+#ifdef ENABLE_TESTING_SUPPORT
+            if (0 < test_pairing_failure && test_pairing_failure < SM_REASON_DHKEY_CHECK_FAILED){
+                log_info("testing_support: abort with pairing failure %u", test_pairing_failure);
+                err = test_pairing_failure;
+            }
+#endif
+
             if (err){
                 setup->sm_pairing_failed_reason = err;
                 sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
@@ -4170,22 +4179,31 @@ void sm_bonding_decline(hci_con_handle_t con_handle){
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
     if (!sm_conn) return;     // wrong connection
     setup->sm_user_response = SM_USER_RESPONSE_DECLINE;
-
-    if (sm_conn->sm_engine_state == SM_PH1_W4_USER_RESPONSE){
-        switch (setup->sm_stk_generation_method){
-            case PK_RESP_INPUT:
-            case PK_INIT_INPUT:
-            case OK_BOTH_INPUT:
-                sm_pairing_error(sm_conn, SM_GENERAL_SEND_PAIRING_FAILED);
-                break;
-            case NK_BOTH_INPUT:
-                sm_pairing_error(sm_conn, SM_REASON_NUMERIC_COMPARISON_FAILED);
-                break;
-            case JUST_WORKS:
-            case OOB:
-                sm_pairing_error(sm_conn, SM_REASON_UNSPECIFIED_REASON);
-                break;
-        }
+    log_info("decline, state %u", sm_conn->sm_engine_state);
+    switch(sm_conn->sm_engine_state){
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+        case SM_SC_W4_USER_RESPONSE:
+        case SM_SC_W4_CONFIRMATION:
+        case SM_SC_W4_PUBLIC_KEY_COMMAND:
+#endif
+        case SM_PH1_W4_USER_RESPONSE:
+            switch (setup->sm_stk_generation_method){
+                case PK_RESP_INPUT:
+                case PK_INIT_INPUT:
+                case OK_BOTH_INPUT:
+                    sm_pairing_error(sm_conn, SM_REASON_PASSKEY_ENTRY_FAILED);
+                    break;
+                case NK_BOTH_INPUT:
+                    sm_pairing_error(sm_conn, SM_REASON_NUMERIC_COMPARISON_FAILED);
+                    break;
+                case JUST_WORKS:
+                case OOB:
+                    sm_pairing_error(sm_conn, SM_REASON_UNSPECIFIED_REASON);
+                    break;
+            }
+            break;
+        default:
+            break;
     }
     sm_run();
 }
