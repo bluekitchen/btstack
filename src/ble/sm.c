@@ -2374,6 +2374,8 @@ static void sm_run(void){
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 
             case SM_SC_SEND_PUBLIC_KEY_COMMAND: {
+                int trigger_user_response = 0;
+
                 uint8_t buffer[65];
                 buffer[0] = SM_CODE_PAIRING_PUBLIC_KEY;
                 //
@@ -2408,7 +2410,7 @@ static void sm_run(void){
                             // initiator
                             connection->sm_engine_state = SM_SC_W4_PUBLIC_KEY_COMMAND;
                         }
-                        sm_trigger_user_response(connection);
+                        trigger_user_response = 1;
                         break;
                     case OOB:
                         // TODO: implement SC OOB
@@ -2417,6 +2419,11 @@ static void sm_run(void){
 
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                 sm_timeout_reset(connection);
+
+                // trigger user response after sending pdu
+                if (trigger_user_response){
+                    sm_trigger_user_response(connection);
+                }
                 break;
             }
             case SM_SC_SEND_CONFIRMATION: {
