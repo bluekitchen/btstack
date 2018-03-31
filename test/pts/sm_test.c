@@ -322,6 +322,9 @@ static void stdin_process(char c){
             printf("\n");
             fflush(stdout);
             sm_keypress_notification(connection_handle, SM_KEYPRESS_PASSKEY_ENTRY_COMPLETED);
+            if (sm_failure == SM_REASON_PASSKEY_ENTRY_FAILED){
+                ui_passkey--;
+            }
             sm_passkey_input(connection_handle, ui_passkey);
          }
         return;
