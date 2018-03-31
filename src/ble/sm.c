@@ -315,7 +315,7 @@ typedef struct sm_setup_context {
 
     // user response, (Phase 1 and/or 2)
     uint8_t   sm_user_response;
-    uint8_t   sm_keypress_notification;
+    uint8_t   sm_keypress_notification; // bitmap: passkey started, digit entered, digit erased, passkey cleared, passkey complete, 3 bit count
 
     // defines which keys will be send after connection is encrypted - calculated during Phase 1, used Phase 3
     int       sm_key_distribution_send_set;
@@ -1161,7 +1161,7 @@ static int sm_key_distribution_flags_for_auth_req(void){
 static void sm_reset_setup(void){
     // fill in sm setup
     setup->sm_state_vars = 0;
-    setup->sm_keypress_notification = 0xff;
+    setup->sm_keypress_notification = 0;
     sm_reset_tk();
 }
 
@@ -2125,7 +2125,7 @@ static void sm_run(void){
                     err = sm_stk_generation_init(sm_connection);
 
 #ifdef ENABLE_TESTING_SUPPORT
-                    if (test_pairing_failure < SM_REASON_DHKEY_CHECK_FAILED){
+                    if (0 < test_pairing_failure && test_pairing_failure < SM_REASON_DHKEY_CHECK_FAILED){
                         log_info("testing_support: respond with pairing failure %u", test_pairing_failure);
                         err = test_pairing_failure;
                     }
@@ -2226,12 +2226,43 @@ static void sm_run(void){
         }
 
         // send keypress notifications
-        if (setup->sm_keypress_notification != 0xff){
+        if (setup->sm_keypress_notification){
+            int i;
+            uint8_t flags       = setup->sm_keypress_notification & 0x1f;
+            uint8_t num_actions = setup->sm_keypress_notification >> 5;
+            uint8_t action = 0;
+            for (i=SM_KEYPRESS_PASSKEY_ENTRY_STARTED;i<=SM_KEYPRESS_PASSKEY_ENTRY_COMPLETED;i++){
+                if (flags & (1<<i)){
+                    int clear_flag = 1;
+                    switch (i){
+                        case SM_KEYPRESS_PASSKEY_ENTRY_STARTED:
+                        case SM_KEYPRESS_PASSKEY_CLEARED:
+                        case SM_KEYPRESS_PASSKEY_ENTRY_COMPLETED:
+                        default:
+                            break;
+                        case SM_KEYPRESS_PASSKEY_DIGIT_ENTERED:
+                        case SM_KEYPRESS_PASSKEY_DIGIT_ERASED:
+                            num_actions--;
+                            clear_flag = num_actions == 0;
+                            break;
+                    }
+                    if (clear_flag){
+                        flags &= ~(1<<i);
+                    }
+                    action = i;
+                    break;
+                }
+            }
+            setup->sm_keypress_notification = (num_actions << 5) | flags;
+
+            // send keypress notification
             uint8_t buffer[2];
             buffer[0] = SM_CODE_KEYPRESS_NOTIFICATION;
-            buffer[1] = setup->sm_keypress_notification;
-            setup->sm_keypress_notification = 0xff;
+            buffer[1] = action;
             l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+
+            // try
+            l2cap_request_can_send_fix_channel_now_event(sm_active_connection_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
             return;
         }
 
@@ -2240,7 +2271,9 @@ static void sm_run(void){
         UNUSED(key_distribution_flags);
 
         log_info("sm_run: state %u", connection->sm_engine_state);
-
+        if (!l2cap_can_send_fixed_channel_packet_now(sm_active_connection_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL)) {
+            log_info("sm_run // cannot send");
+        }
         switch (connection->sm_engine_state){
 
             // general
@@ -4199,7 +4232,47 @@ void sm_keypress_notification(hci_con_handle_t con_handle, uint8_t action){
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
     if (!sm_conn) return;     // wrong connection
     if (action > SM_KEYPRESS_PASSKEY_ENTRY_COMPLETED) return;
-    setup->sm_keypress_notification = action;
+    uint8_t num_actions = setup->sm_keypress_notification >> 5;
+    uint8_t flags = setup->sm_keypress_notification & 0x1f;
+    switch (action){
+        case SM_KEYPRESS_PASSKEY_ENTRY_STARTED:
+        case SM_KEYPRESS_PASSKEY_ENTRY_COMPLETED:
+            flags |= (1 << action);
+            break;
+        case SM_KEYPRESS_PASSKEY_CLEARED:
+            // clear counter, keypress & erased flags + set passkey cleared
+            flags = (flags & 0x19) | (1 << SM_KEYPRESS_PASSKEY_CLEARED);
+            break;
+        case SM_KEYPRESS_PASSKEY_DIGIT_ENTERED:
+            if (flags & (1 << SM_KEYPRESS_PASSKEY_DIGIT_ERASED)){
+                // erase actions queued
+                num_actions--;
+                if (num_actions == 0){
+                    // clear counter, keypress & erased flags
+                    flags &= 0x19;
+                }
+                break;
+            }
+            num_actions++;
+            flags |= (1 << SM_KEYPRESS_PASSKEY_DIGIT_ENTERED);
+            break;
+        case SM_KEYPRESS_PASSKEY_DIGIT_ERASED:
+            if (flags & (1 << SM_KEYPRESS_PASSKEY_DIGIT_ENTERED)){
+                // enter actions queued
+                num_actions--;
+                if (num_actions == 0){
+                    // clear counter, keypress & erased flags
+                    flags &= 0x19;
+                }
+                break;
+            }
+            num_actions++;
+            flags |= (1 << SM_KEYPRESS_PASSKEY_DIGIT_ERASED);
+            break;
+        default:
+            break;
+    }
+    setup->sm_keypress_notification = (num_actions << 5) | flags;
     sm_run();
 }
 
