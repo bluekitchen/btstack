@@ -349,8 +349,17 @@ def run_test(test_descriptor):
 
         test_folder =  test_descriptor['test_folder']
 
+        # check result
+        test_ok = True
+        if  test_descriptor['tester_failure'] != '0':
+            # expect status != 0 if tester_failure set
+            test_ok &= test_descriptor['iut_pairing_complete_status'] != '0'
+            test_ok &= test_descriptor['iut_pairing_complete_reason'] == test_descriptor['tester_failure']
+        else:
+            test_ok &= test_descriptor['iut_pairing_complete_status'] == '0' 
+
         # rename folder if test not ok
-        if test_descriptor['tester_failure'] != test_descriptor['iut_pairing_complete_status']:
+        if not test_ok:
             test_folder = 'TEST_FAIL-' + test_folder
 
         # move hci logs into result folder
