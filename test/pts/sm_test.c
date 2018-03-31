@@ -311,8 +311,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 
 static void stdin_process(char c){
     // passkey input
-    if (ui_digits_for_passkey){
-        if (c < '0' || c > '9') return;
+    if (ui_digits_for_passkey && c >= '0' && c <= '9'){
         printf("%c", c);
         fflush(stdout);
         ui_passkey = ui_passkey * 10 + c - '0';
@@ -322,9 +321,6 @@ static void stdin_process(char c){
             printf("\n");
             fflush(stdout);
             sm_keypress_notification(connection_handle, SM_KEYPRESS_PASSKEY_ENTRY_COMPLETED);
-            if (sm_failure == SM_REASON_PASSKEY_ENTRY_FAILED){
-                ui_passkey--;
-            }
             sm_passkey_input(connection_handle, ui_passkey);
          }
         return;

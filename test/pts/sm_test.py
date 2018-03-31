@@ -205,7 +205,10 @@ def run(test_descriptor, nodes):
                     else:
                         test_descriptor['waiting_node'].write(test_descriptor['passkey'])
                 elif line.startswith('PASSKEY_INPUT_NUMBER'):
-                    if state == 'W4_PASSKEY_INPUT':
+                    if node.get_name() == 'tester' and  test_descriptor['tester_failure'] == '1':
+                        print('Decline bonding')
+                        node.write('d')
+                    elif state == 'W4_PASSKEY_INPUT':
                         node.write(test_descriptor['passkey'])
                     else:
                         test_descriptor['waiting_node'] = node
