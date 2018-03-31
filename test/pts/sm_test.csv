@@ -57,8 +57,10 @@ SM/MAS/SCJW/BI-01-C/02,0,0,8,8,0,0,8
 SM/MAS/SCJW/BI-01-C/03,0,0,8,8,0,0,5
 SM/MAS/SCJW/BI-01-C/04,0,0,8,8,0,0,9
 
-# TODO: tester responds with pairing failure during phase 2
-SM/MAS/SCJW/BI-01-C/05,0,0,8,8,0,0,12
+SM/MAS/SCJW/BI-01-C/05,1,1,12,12,0,0,12
+
+# IO Cababilities + MITM -> Numeric Comparison -> Numeric Comparison Failed
+SM/MAS/SCJW/BI-01-C/05,1,1,12,12,0,0,12
 
 # tester responds with pairing failure during phase 2
 SM/SLA/SCJW/BI-02-C,0,3,8,8,0,0,4

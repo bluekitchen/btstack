@@ -271,7 +271,9 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
                 case SM_EVENT_JUST_WORKS_REQUEST:
                     printf("JUST_WORKS_REQUEST\n");
-                    // sm_just_works_confirm(little_endian_read_16(packet, 2));
+                    break;
+                case SM_EVENT_NUMERIC_COMPARISON_REQUEST:
+                    printf("NUMERIC_COMPARISON_REQUEST\n");
                     break;
                 case SM_EVENT_PASSKEY_INPUT_NUMBER:
                     // display number

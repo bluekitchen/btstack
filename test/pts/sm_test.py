@@ -196,6 +196,14 @@ def run(test_descriptor, nodes):
                     else:
                         print('Accept bonding')
                         node.write('a')
+                elif line.startswith('NUMERIC_COMPARISON_REQUEST'):
+                    print('%s numeric comparison requested' % node.get_name())
+                    if node.get_name() == 'tester' and  test_descriptor['tester_failure'] == '12':
+                        print('Decline bonding')
+                        node.write('d')
+                    else:
+                        print('Accept bonding')
+                        node.write('a')
                 elif line.startswith('PASSKEY_DISPLAY_NUMBER'):
                     passkey = line.split(': ')[1]
                     print('%s passkey display %s' % (node.get_name(), passkey))
