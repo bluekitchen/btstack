@@ -376,6 +376,14 @@ def run_test(test_descriptor):
         else:
             test_ok &= test_descriptor['iut_pairing_complete_status'] == '0' 
 
+        # check pairing method
+        if 'SCJW' in test_name and ( test_descriptor['method'] != 'Just Works' and test_descriptor['method' != 'Numeric Comparison']):
+            test_ok = False
+        if 'SCPK' in test_name and test_descriptor['method'] != 'Passkey Entry':
+            test_ok = False
+        if 'SCOB' in test_name and test_descriptor['method'] != 'OOB':
+            test_ok = False
+
         # rename folder if test not ok
         if not test_ok:
             test_folder = 'TEST_FAIL-' + test_folder
