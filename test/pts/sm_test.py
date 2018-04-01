@@ -190,6 +190,7 @@ def run(test_descriptor, nodes):
                         state = 'W4_PAIRING'
                 elif line.startswith('JUST_WORKS_REQUEST'):
                     print('%s just works requested' % node.get_name())
+                    test_descriptor['method'] = 'Just Works'
                     if node.get_name() == 'tester' and  test_descriptor['tester_failure'] == '12':
                         print('Decline bonding')
                         node.write('d')
@@ -198,6 +199,7 @@ def run(test_descriptor, nodes):
                         node.write('a')
                 elif line.startswith('NUMERIC_COMPARISON_REQUEST'):
                     print('%s numeric comparison requested' % node.get_name())
+                    test_descriptor['method'] = 'Numeric Comparison'
                     if node.get_name() == 'tester' and  test_descriptor['tester_failure'] == '12':
                         print('Decline bonding')
                         node.write('d')
@@ -213,6 +215,7 @@ def run(test_descriptor, nodes):
                     else:
                         test_descriptor['waiting_node'].write(test_descriptor['passkey'])
                 elif line.startswith('PASSKEY_INPUT_NUMBER'):
+                    test_descriptor['method'] = 'Passkey Entry'
                     if node.get_name() == 'tester' and  test_descriptor['tester_failure'] == '1':
                         print('Decline bonding')
                         node.write('d')
@@ -250,6 +253,7 @@ def write_config(fout, test_descriptor):
         'keypress',
         'rfu',
         'oob_data',
+        'method',
         'passkey',
         'pairing_complete_status',
         'pairing_complete_reason']
@@ -291,6 +295,9 @@ def write_config(fout, test_descriptor):
                 continue
             iut    = test_descriptor['passkey']
             tester = test_descriptor['passkey']
+        elif attribute == 'method':
+            iut    = test_descriptor['method']
+            tester = test_descriptor['method']
         elif attribute == 'failure':
             iut    = ''
             tester = failures[int(test_descriptor['tester_failure'])]
