@@ -234,6 +234,14 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     fflush(stdout);
 }
 
+static void sc_oob_callback(const uint8_t * confirm_value, const uint8_t * random_value){
+    printf("OOB_CONFIRM: ");
+    printf_hexdump(confirm_value, 16);
+    printf("OOB_RANDOM: ");
+    printf_hexdump(random_value, 16);
+    fflush(stdout);
+}
+
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -246,11 +254,8 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                         gap_local_bd_addr(local_addr);
                         printf("BD_ADDR: %s\n", bd_addr_to_str(local_addr));
-                        // start connecting if we're central
-                        if (we_are_central){
-                            printf("CENTRAL: connect to %s\n", bd_addr_to_str(peer_address));
-                            gap_connect(peer_address, BD_ADDR_TYPE_LE_PUBLIC);
-                        }
+                        // generate OOB data
+                        sm_generate_sc_oob_data(sc_oob_callback);
                     }
                     break;
                 case HCI_EVENT_LE_META:
@@ -333,9 +338,17 @@ static void stdin_process(char c){
             printf("accepting just works\n");
             sm_just_works_confirm(connection_handle);
             break;
+        case 'c':
+            printf("CENTRAL: connect to %s\n", bd_addr_to_str(peer_address));
+            gap_connect(peer_address, BD_ADDR_TYPE_LE_PUBLIC);
+            break;
         case 'd':
             printf("decline bonding\n");
             sm_bonding_decline(connection_handle);
+            break;
+        case 'g':
+            printf("generate oob data\n");
+            sm_generate_sc_oob_data(sc_oob_callback);
             break;
         case 'x':
             printf("Exit\n");

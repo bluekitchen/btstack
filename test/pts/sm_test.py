@@ -170,7 +170,7 @@ def run(test_descriptor, nodes):
                     print('%s started' % node.get_name())
                     if state == 'W4_SLAVE_BD_ADDR':
                         # peripheral started, start central
-                        state = 'W4_CONNECTED'
+                        state = 'W4_MASTER_BD_ADDR'
                         master_role = test_descriptor['master_role']
                         master = Node()
                         # configure master
@@ -184,6 +184,15 @@ def run(test_descriptor, nodes):
                             master.set_failure(test_descriptor['tester_failure'])
                         master.start_process()
                         nodes.append(master)
+                    if state == 'W4_MASTER_BD_ADDR':
+                        # central started, start connecting
+                        node.write('c')
+                elif line.startswith('OOB_CONFIRM:'):
+                    confirm = line.split('OOB_CONFIRM: ')[1]
+                    test_descriptor[node.get_name()+'_oob_confirm'] = confirm
+                elif line.startswith('OOB_RANDOM:'):
+                    random = line.split('OOB_RANDOM: ')[1]
+                    test_descriptor[node.get_name()+'_oob_random'] = random
                 elif line.startswith('CONNECTED:'):
                     print('%s connected' % node.get_name())
                     if state == 'W4_CONNECTED':
@@ -332,6 +341,7 @@ def run_test(test_descriptor):
         tester_role = 'responder'
         slave_role  = 'tester'
         master_role = 'iut'
+
     test_descriptor['iut_role'   ] = iut_role
     test_descriptor['tester_role'] = tester_role
     test_descriptor['master_role'] = master_role
