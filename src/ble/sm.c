@@ -782,25 +782,31 @@ static void sm_setup_tk(void){
 #endif
     log_info("Secure pairing: %u", setup->sm_use_secure_connections);
 
+
+    // decide if OOB will be used based on SC vs. Legacy and oob flags
+    int use_oob = 0;
+    if (setup->sm_use_secure_connections){
+        // In LE Secure Connections pairing, the out of band method is used if at least
+        // one device has the peer device's out of band authentication data available.
+        use_oob = sm_pairing_packet_get_oob_data_flag(setup->sm_m_preq) | sm_pairing_packet_get_oob_data_flag(setup->sm_s_pres);
+    } else {
+        // In LE legacy pairing, the out of band method is used if both the devices have
+        // the other device's out of band authentication data available. 
+        use_oob = sm_pairing_packet_get_oob_data_flag(setup->sm_m_preq) & sm_pairing_packet_get_oob_data_flag(setup->sm_s_pres);
+    }
+    if (use_oob){
+        log_info("SM: have OOB data");
+        log_info_key("OOB", setup->sm_tk);
+        setup->sm_stk_generation_method = OOB;
+        return;
+    }
+
     // If both devices have not set the MITM option in the Authentication Requirements
     // Flags, then the IO capabilities shall be ignored and the Just Works association
     // model shall be used.
     if (((sm_pairing_packet_get_auth_req(setup->sm_m_preq) & SM_AUTHREQ_MITM_PROTECTION) == 0)
     &&  ((sm_pairing_packet_get_auth_req(setup->sm_s_pres) & SM_AUTHREQ_MITM_PROTECTION) == 0)){
         log_info("SM: MITM not required by both -> JUST WORKS");
-        return;
-    }
-
-    // TODO: with LE SC, OOB is used to transfer data OOB during pairing, single device with OOB is sufficient
-
-    // If both devices have out of band authentication data, then the Authentication
-    // Requirements Flags shall be ignored when selecting the pairing method and the
-    // Out of Band pairing method shall be used.
-    if (sm_pairing_packet_get_oob_data_flag(setup->sm_m_preq)
-    &&  sm_pairing_packet_get_oob_data_flag(setup->sm_s_pres)){
-        log_info("SM: have OOB data");
-        log_info_key("OOB", setup->sm_tk);
-        setup->sm_stk_generation_method = OOB;
         return;
     }
 
@@ -1464,7 +1470,7 @@ static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
                 }
                 break;
             case OOB:
-                // TODO: implement SC OOB
+                sm_sc_prepare_dhkey_check(sm_conn);
                 break;
         }
     }
@@ -2413,7 +2419,13 @@ static void sm_run(void){
                         trigger_user_response = 1;
                         break;
                     case OOB:
-                        // TODO: implement SC OOB
+                        if (IS_RESPONDER(connection->sm_role)){
+                            // responder
+                            connection->sm_engine_state = SM_SC_W4_PAIRING_RANDOM;
+                        } else {
+                            // initiator
+                            connection->sm_engine_state = SM_SC_W4_PUBLIC_KEY_COMMAND;
+                        }
                         break;
                 }
 
@@ -3046,6 +3058,11 @@ static void sm_handle_random_result(uint8_t * data){
             break;
         case SM_SC_W4_GET_RANDOM_B:
             memcpy(&setup->sm_local_nonce[8], data, 8);
+            // OOB
+            if (setup->sm_stk_generation_method == OOB){
+                connection->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;
+                break;
+            } 
             // initiator & jw/nc -> send pairing random
             if (connection->sm_role == 0 && sm_just_works_or_numeric_comparison(setup->sm_stk_generation_method)){
                 connection->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;
@@ -3706,6 +3723,8 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             setup->sm_state_vars |= SM_STATE_VAR_DHKEY_NEEDED;
 #endif
 
+
+            log_info("public key received, generation method %u", setup->sm_stk_generation_method);
             if (IS_RESPONDER(sm_conn->sm_role)){
                 // responder
                 sm_conn->sm_engine_state = SM_SC_SEND_PUBLIC_KEY_COMMAND;
@@ -3730,7 +3749,9 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                         sm_sc_start_calculating_local_confirm(sm_conn);
                         break;
                     case OOB:
-                        // TODO: implement SC OOB
+                        // generate Nx
+                        log_info("Generate Nx");
+                        sm_conn->sm_engine_state = SM_SC_W2_GET_RANDOM_A;
                         break;
                 }
             }
@@ -3781,7 +3802,8 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
             // validate confirm value if Cb = f4(Pkb, Pka, Nb, z)
             // only check for JUST WORK/NC in initiator role OR passkey entry
-            if (!IS_RESPONDER(sm_conn->sm_role) || sm_passkey_used(setup->sm_stk_generation_method)) {
+            if ( (!IS_RESPONDER(sm_conn->sm_role) && sm_just_works_or_numeric_comparison(setup->sm_stk_generation_method)) 
+            ||   (sm_passkey_used(setup->sm_stk_generation_method)) ) {
                  sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION;
                  break;
             }
