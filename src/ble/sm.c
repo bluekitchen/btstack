@@ -187,6 +187,16 @@ typedef enum {
     SM_STATE_VAR_DHKEY_COMMAND_RECEIVED = 1 << 2,
 } sm_state_var_t;
 
+typedef enum {
+    SM_SC_OOB_IDLE,
+    SM_SC_OOB_W2_GET_RANDOM_1,
+    SM_SC_OOB_W4_RANDOM_1,
+    SM_SC_OOB_W2_GET_RANDOM_2,
+    SM_SC_OOB_W4_RANDOM_2,
+    SM_SC_OOB_W2_CALC_CONFIRM,
+    SM_SC_OOB_W4_CONFIRM,
+} sm_sc_oob_state_t;
+
 typedef uint8_t sm_key24_t[3];
 typedef uint8_t sm_key56_t[7];
 typedef uint8_t sm_key256_t[32];
@@ -212,6 +222,12 @@ static uint32_t sm_fixed_passkey_in_display_role;
 static uint8_t sm_reconstruct_ltk_without_le_device_db_entry;
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 static uint8_t sm_have_ec_keypair;
+#endif
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+static uint8_t sm_sc_oob_random[16];
+static void (*sm_sc_oob_callback)(const uint8_t * confirm_value, const uint8_t * random_value);
+static sm_sc_oob_state_t sm_sc_oob_state;
 #endif
 
 // Security Manager Master Keys, please use sm_set_er(er) and sm_set_ir(ir) with your own 128 bit random values
@@ -1484,6 +1500,12 @@ static void sm_sc_cmac_done(uint8_t * hash){
     log_info("sm_sc_cmac_done: ");
     log_info_hexdump(hash, 16);
 
+    if (sm_sc_oob_state == SM_SC_OOB_W4_CONFIRM){
+        sm_sc_oob_state = SM_SC_OOB_IDLE;
+        (*sm_sc_oob_callback)(sm_sc_oob_random, hash);
+        return;
+    }
+
     sm_connection_t * sm_conn = sm_cmac_connection;
     sm_cmac_connection = NULL;
 #ifdef ENABLE_CLASSIC
@@ -2063,6 +2085,28 @@ static void sm_run(void){
             sm_address_resolution_handle_event(ADDRESS_RESOLUTION_FAILED);
         }
     }
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    // TODO: we need to verify that nobody's already waiting for random data
+    switch (sm_sc_oob_state){
+        case SM_SC_OOB_W2_GET_RANDOM_1:
+            sm_sc_oob_state = SM_SC_OOB_W4_RANDOM_1;
+            sm_random_start(NULL);
+            return;
+        case SM_SC_OOB_W2_GET_RANDOM_2:
+            sm_sc_oob_state = SM_SC_OOB_W4_RANDOM_2;
+            sm_random_start(NULL);
+            return;
+        case SM_SC_OOB_W2_CALC_CONFIRM:
+            if (!sm_cmac_ready()) break;
+            if (ec_key_generation_state != EC_KEY_GENERATION_DONE) break;
+            sm_sc_oob_state = SM_SC_OOB_W4_CONFIRM;
+            f4_engine(NULL, ec_q, ec_q, sm_sc_oob_random, 0);
+            break;
+        default:
+            break;
+    }
+#endif
 
     // handle basic actions that don't requires the full context
     hci_connections_get_iterator(&it);
@@ -3047,6 +3091,21 @@ static void sm_handle_random_result(uint8_t * data){
             break;
     }
 
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    switch (sm_sc_oob_state){
+        case SM_SC_OOB_W4_RANDOM_1:
+            memcpy(&sm_sc_oob_random[0], data, 8);
+            sm_sc_oob_state = SM_SC_OOB_W2_GET_RANDOM_2;
+            return;
+        case SM_SC_OOB_W4_RANDOM_2:
+            memcpy(&sm_sc_oob_random[8], data, 8);
+            sm_sc_oob_state = SM_SC_OOB_W2_CALC_CONFIRM;
+            return;
+        default:
+            break;
+    }
+#endif
+    
     // retrieve sm_connection provided to sm_random_start
     sm_connection_t * connection = (sm_connection_t *) sm_random_context;
     if (!connection) return;
@@ -4322,6 +4381,16 @@ void sm_keypress_notification(hci_con_handle_t con_handle, uint8_t action){
     setup->sm_keypress_notification = (num_actions << 5) | flags;
     sm_run();
 }
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+uint8_t sm_generate_sc_oob_data(void (*callback)(const uint8_t * confirm_value, const uint8_t * random_value)){
+    if (sm_sc_oob_state != SM_SC_OOB_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    sm_sc_oob_callback = callback;
+    sm_sc_oob_state = SM_SC_OOB_W2_GET_RANDOM_1;
+    sm_run();
+    return 0;
+}
+#endif
 
 /**
  * @brief Identify device in LE Device DB

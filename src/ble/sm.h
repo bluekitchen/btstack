@@ -242,6 +242,15 @@ void sm_use_fixed_passkey_in_display_role(uint32_t passkey);
  */
 void sm_allow_ltk_reconstruction_without_le_device_db_entry(int allow);
 
+/**
+ * @brief Generate OOB data for LE Secure Connections
+ * @note This generates a 128 bit random number ra and then calculates Ca = f4(PKa, PKa, ra, 0)
+ *       New OOB data should be generated for each pairing
+ * @param callback
+ * @returns status
+ */
+uint8_t sm_generate_sc_oob_data(void (*callback)(const uint8_t * confirm_value, const uint8_t * random_value));
+
 /* API_END */
 
 // PTS testing
