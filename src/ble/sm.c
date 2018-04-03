@@ -406,7 +406,7 @@ static uint16_t sm_active_connection_handle = HCI_CON_HANDLE_INVALID;
 // @returns 1 if oob data is available
 // stores oob data in provided 16 byte buffer if not null
 static int (*sm_get_oob_data)(uint8_t addres_type, bd_addr_t addr, uint8_t * oob_data) = NULL;
-static int (*sm_get_sc_oob_data)(uint8_t addres_type, bd_addr_t addr, uint8_t * oob_sc_local_random, uint8_t * oob_sc_peer_confirm, uint8_t * oob_sc_peer_random);
+static int (*sm_get_sc_oob_data)(uint8_t addres_type, bd_addr_t addr, uint8_t * oob_sc_peer_confirm, uint8_t * oob_sc_peer_random);
 
 // horizontal: initiator capabilities
 // vertial:    responder capabilities
@@ -793,8 +793,6 @@ static void sm_setup_tk(void){
     setup->sm_use_secure_connections = ( sm_pairing_packet_get_auth_req(setup->sm_m_preq)
                                        & sm_pairing_packet_get_auth_req(setup->sm_s_pres)
                                        & SM_AUTHREQ_SECURE_CONNECTION ) != 0;
-    memset(setup->sm_ra, 0, 16);
-    memset(setup->sm_rb, 0, 16);
 #else
     setup->sm_use_secure_connections = 0;
 #endif
@@ -1203,14 +1201,23 @@ static void sm_init_setup(sm_connection_t * sm_conn){
 
     // if available and SC supported, also ask for SC OOB Data
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
+    memset(setup->sm_ra, 0, 16);
+    memset(setup->sm_rb, 0, 16);
     if (setup->sm_have_oob_data && (sm_auth_req & SM_AUTHREQ_SECURE_CONNECTION)){
         if (sm_get_sc_oob_data){
-            setup->sm_have_oob_data = (*sm_get_sc_oob_data)(
-                sm_conn->sm_peer_addr_type,
-                sm_conn->sm_peer_address,
-                setup->sm_local_random,
-                setup->sm_peer_confirm,
-                setup->sm_peer_random);
+            if (IS_RESPONDER(sm_conn->sm_role)){
+                setup->sm_have_oob_data = (*sm_get_sc_oob_data)(
+                    sm_conn->sm_peer_addr_type,
+                    sm_conn->sm_peer_address,
+                    setup->sm_peer_confirm,
+                    setup->sm_ra);
+            } else {
+                setup->sm_have_oob_data = (*sm_get_sc_oob_data)(
+                    sm_conn->sm_peer_addr_type,
+                    sm_conn->sm_peer_address,
+                    setup->sm_peer_confirm,
+                    setup->sm_rb);
+            }
         } else {
             setup->sm_have_oob_data = 0;
         }
@@ -1483,7 +1490,13 @@ static void sm_sc_start_calculating_local_confirm(sm_connection_t * sm_conn){
 static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
     if (IS_RESPONDER(sm_conn->sm_role)){
         // Responder
-        sm_conn->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;
+        if (setup->sm_stk_generation_method == OOB){
+            // generate Nb
+            log_info("Generate Nb");
+            sm_conn->sm_engine_state = SM_SC_W2_GET_RANDOM_A;
+        } else {
+            sm_conn->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;
+        }
     } else {
         // Initiator role
         switch (setup->sm_stk_generation_method){
@@ -1799,7 +1812,11 @@ static void sm_sc_calculate_local_confirm(sm_connection_t * sm_conn){
 static void sm_sc_calculate_remote_confirm(sm_connection_t * sm_conn){
     // OOB
     if (setup->sm_stk_generation_method == OOB){
-        f4_engine(sm_conn, setup->sm_peer_q, setup->sm_peer_q, setup->sm_peer_random, 0);
+        if (IS_RESPONDER(sm_conn->sm_role)){
+            f4_engine(sm_conn, setup->sm_peer_q, setup->sm_peer_q, setup->sm_ra, 0);
+        } else {
+            f4_engine(sm_conn, setup->sm_peer_q, setup->sm_peer_q, setup->sm_rb, 0);
+        }
         return;
     }
 
@@ -3832,8 +3849,8 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                         sm_sc_start_calculating_local_confirm(sm_conn);
                         break;
                     case OOB:
-                        // generate Nx
-                        log_info("Generate Nx");
+                        // generate Na
+                        log_info("Generate Na");
                         sm_conn->sm_engine_state = SM_SC_W2_GET_RANDOM_A;
                         break;
                 }
@@ -3891,10 +3908,36 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                  break;
             }
 
-            // validate confirm value if Cb = f4(PKb, Pkb, rb, 0) for OOB if data received
-            if (setup->sm_stk_generation_method == OOB && setup->sm_have_oob_data){
-                 sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION;
-                 break;
+            // OOB
+            if (setup->sm_stk_generation_method == OOB){
+
+                // setup local random, set to zero if remote did not receive our data
+                log_info("Received nonce, setup local random ra/rb for dhkey check");
+                if (IS_RESPONDER(sm_conn->sm_role)){
+                    if (sm_pairing_packet_get_oob_data_flag(setup->sm_m_preq) == 0){
+                        log_info("Reset rb as A does not have OOB data");
+                        memset(setup->sm_rb, 0, 16);
+                    } else {
+                        memcpy(setup->sm_rb, sm_sc_oob_random, 16);
+                        log_info("Use stored rb");
+                        log_info_hexdump(setup->sm_rb, 16);
+                    }
+                }  else {
+                    if (sm_pairing_packet_get_oob_data_flag(setup->sm_s_pres) == 0){
+                        log_info("Reset ra as B does not have OOB data");
+                        memset(setup->sm_ra, 0, 16);
+                    } else {
+                        memcpy(setup->sm_ra, sm_sc_oob_random, 16);
+                        log_info("Use stored ra");
+                        log_info_hexdump(setup->sm_ra, 16);
+                    }
+                }
+
+                // validate confirm value if Cb = f4(PKb, Pkb, rb, 0) for OOB if data received
+                if (setup->sm_have_oob_data){
+                     sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION;
+                     break;
+                }
             }
 
             // TODO: we only get here for Responder role with JW/NC
@@ -4048,7 +4091,7 @@ void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t address
     sm_get_oob_data = get_oob_data_callback;
 }
 
-void sm_register_sc_oob_data_callback( int (*get_sc_oob_data_callback)(uint8_t address_type, bd_addr_t addr, uint8_t * oob_sc_local_random, uint8_t * oob_sc_peer_confirm, uint8_t * oob_sc_peer_random)){
+void sm_register_sc_oob_data_callback( int (*get_sc_oob_data_callback)(uint8_t address_type, bd_addr_t addr, uint8_t * oob_sc_peer_confirm, uint8_t * oob_sc_peer_random)){
     sm_get_sc_oob_data = get_sc_oob_data_callback;
 }
 

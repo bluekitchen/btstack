@@ -245,7 +245,7 @@ void sm_allow_ltk_reconstruction_without_le_device_db_entry(int allow);
 /**
  * @brief Generate OOB data for LE Secure Connections
  * @note This generates a 128 bit random number ra and then calculates Ca = f4(PKa, PKa, ra, 0)
- *       New OOB data should be generated for each pairing
+ *       New OOB data should be generated for each pairing. Ra is used for subsequent OOB pairings
  * @param callback
  * @returns status
  */
@@ -257,7 +257,7 @@ uint8_t sm_generate_sc_oob_data(void (*callback)(const uint8_t * confirm_value, 
  * @note the oob_sc_local_random usually is the random_value returend by sm_generate_sc_oob_data
  * @param get_oob_data_callback
  */
-void sm_register_sc_oob_data_callback( int (*get_sc_oob_data_callback)(uint8_t address_type, bd_addr_t addr, uint8_t * oob_sc_local_random, uint8_t * oob_sc_peer_confirm, uint8_t * oob_sc_peer_random));
+void sm_register_sc_oob_data_callback( int (*get_sc_oob_data_callback)(uint8_t address_type, bd_addr_t addr, uint8_t * oob_sc_peer_confirm, uint8_t * oob_sc_peer_random));
 
 /* API_END */
 
