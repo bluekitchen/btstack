@@ -48,8 +48,8 @@ failures = [
 # tester config
 debug      = False
 regenerate = False
-usb_paths = ['4', '6']
-# usb_paths = ['3', '5']
+# usb_paths = ['4', '6']
+usb_paths = ['3', '5']
 
 class Node:
 
@@ -137,9 +137,7 @@ class Node:
         self.peer_addr = addr
 
     def write(self, string):
-        for c in string:
-            self.stdin.write(string)
-            time.sleep (0.1);
+        self.stdin.write(string)
 
     def terminate(self):
         self.write('x')
@@ -184,18 +182,39 @@ def run(test_descriptor, nodes):
                             master.set_failure(test_descriptor['tester_failure'])
                         master.start_process()
                         nodes.append(master)
-                    if state == 'W4_MASTER_BD_ADDR':
+                        #
+                        if node.get_name() == 'iut':
+                            iut_node = node
+                            tester_node = master
+                        else:
+                            iut_node = master
+                            tester_node = node
+                    elif state == 'W4_MASTER_BD_ADDR':
                         # central started, start connecting
                         node.write('c')
-                elif line.startswith('OOB_CONFIRM:'):
+                        print('start to connect')
+                        state = 'W4_CONNECTED'
+                elif line.startswith('LOCAL_OOB_CONFIRM:'):
                     confirm = line.split('OOB_CONFIRM: ')[1]
                     test_descriptor[node.get_name()+'_oob_confirm'] = confirm
-                elif line.startswith('OOB_RANDOM:'):
+                elif line.startswith('LOCAL_OOB_RANDOM:'):
                     random = line.split('OOB_RANDOM: ')[1]
                     test_descriptor[node.get_name()+'_oob_random'] = random
                 elif line.startswith('CONNECTED:'):
                     print('%s connected' % node.get_name())
-                    if state == 'W4_CONNECTED':
+                    if state == 'W4_CONNECTED' and node == nodes[1]:
+                        # simulate OOK exchange if requested
+                        if test_descriptor['tester_oob_data'] == '1':
+                            print('Simulate IUT -> Tester OOB')
+                            tester_node.write('o' + test_descriptor['iut_oob_confirm'])
+                            tester_node.write('r' + test_descriptor['iut_oob_random'])
+                            test_descriptor['method'] = 'OOB'
+                        if test_descriptor['iut_oob_data'] == '1':
+                            print('Simulate Tester -> IUT OOB')
+                            iut_node.write('o' + test_descriptor['tester_oob_confirm'])
+                            iut_node.write('r' + test_descriptor['tester_oob_random'])
+                            test_descriptor['method'] = 'OOB'
+                        node.write('p')
                         state = 'W4_PAIRING'
                 elif line.startswith('JUST_WORKS_REQUEST'):
                     print('%s just works requested' % node.get_name())
@@ -411,6 +430,7 @@ def run_test(test_descriptor):
 
     except KeyboardInterrupt:
         print('Interrupted')
+        test_descriptor['interrupted'] = 'EXIT'
 
     # shutdown
     for node in nodes:
@@ -444,3 +464,5 @@ with open('sm_test.csv') as csvfile:
         print(test_descriptor)
         run_test(test_descriptor)
 
+        if 'interrupted' in test_descriptor:
+            break

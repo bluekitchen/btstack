@@ -80,14 +80,24 @@ static uint8_t sm_have_oob_data = 0;
 static uint8_t sm_io_capabilities = 0;
 static uint8_t sm_auth_req = 0;
 static uint8_t sm_failure = 0;
-// static uint8_t * sm_oob_data = (uint8_t *) "0123456789012345"; // = { 0x30...0x39, 0x30..0x35}
-static uint8_t sm_oob_data[] = { 0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,  };
+
+// legacy pairing oob
+static uint8_t sm_oob_tk_data[] = { 0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,  };
+
+// sc pairing oob
+static uint8_t sm_oob_local_random[16];
+static uint8_t sm_oob_peer_random[16];
+static uint8_t sm_oob_peer_confirm[16];
 
 static int       we_are_central = 0;
 static bd_addr_t peer_address;
 
 static int ui_passkey = 0;
 static int ui_digits_for_passkey = 0;
+static int ui_oob_confirm;
+static int ui_oob_random;
+static int ui_oob_pos;
+static int ui_oob_nibble;
 
 static btstack_timer_source_t heartbeat;
 static uint8_t counter = 0;
@@ -122,6 +132,34 @@ static void  heartbeat_handler(struct btstack_timer_source *ts){
     btstack_run_loop_add_timer(ts);
     counter++;
 } 
+
+static int get_oob_data_callback(uint8_t address_type, bd_addr_t addr, uint8_t * oob_data){
+    UNUSED(address_type);
+    (void)addr;
+    log_info("get_oob_data_callback for %s", bd_addr_to_str(addr));
+    if(!sm_have_oob_data) return 0;
+    memcpy(oob_data, sm_oob_tk_data, 16);
+    return 1;
+}
+
+static int get_sc_oob_data_callback(uint8_t address_type, bd_addr_t addr, uint8_t * oob_sc_peer_confirm, uint8_t * oob_sc_peer_random){
+    UNUSED(address_type);
+    (void)addr;
+    log_info("get_sc_oob_data_callback for %s", bd_addr_to_str(addr));
+    if(!sm_have_oob_data) return 0;
+    memcpy(oob_sc_peer_confirm, sm_oob_peer_confirm, 16);
+    memcpy(oob_sc_peer_random,  sm_oob_peer_random, 16);
+    return 1;
+}
+
+static void sc_local_oob_generated_callback(const uint8_t * confirm_value, const uint8_t * random_value){
+    printf("LOCAL_OOB_CONFIRM: ");
+    printf_hexdump(confirm_value, 16);
+    printf("LOCAL_OOB_RANDOM: ");
+    printf_hexdump(random_value, 16);
+    fflush(stdout);
+    memcpy(sm_oob_local_random, random_value, 16);
+}
 
 // ATT Client Read Callback for Dynamic Data
 // - if buffer == NULL, don't copy data, just return size of value
@@ -234,14 +272,6 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
     fflush(stdout);
 }
 
-static void sc_oob_callback(const uint8_t * confirm_value, const uint8_t * random_value){
-    printf("OOB_CONFIRM: ");
-    printf_hexdump(confirm_value, 16);
-    printf("OOB_RANDOM: ");
-    printf_hexdump(random_value, 16);
-    fflush(stdout);
-}
-
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -255,7 +285,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                         gap_local_bd_addr(local_addr);
                         printf("BD_ADDR: %s\n", bd_addr_to_str(local_addr));
                         // generate OOB data
-                        sm_generate_sc_oob_data(sc_oob_callback);
+                        sm_generate_sc_oob_data(sc_local_oob_generated_callback);
                     }
                     break;
                 case HCI_EVENT_LE_META:
@@ -263,10 +293,6 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                             connection_handle = little_endian_read_16(packet, 4);
                             printf("CONNECTED: Connection handle 0x%04x\n", connection_handle);
-                            if (we_are_central){
-                                printf("REQUEST_PAIRING\n");
-                                sm_request_pairing(connection_handle);
-                            }
                             break;
                         default:
                             break;
@@ -333,6 +359,41 @@ static void stdin_process(char c){
         return;
     }
 
+    if (ui_oob_confirm){
+        if (c == ' ') return;
+        ui_oob_nibble = (ui_oob_nibble << 4) | nibble_for_char(c);
+        if ((ui_oob_pos & 1) == 1){
+            sm_oob_peer_confirm[ui_oob_pos >> 1] = ui_oob_nibble;
+            ui_oob_nibble = 0;
+        }
+        ui_oob_pos++;
+        if (ui_oob_pos == 32){
+            ui_oob_confirm = 0;
+            printf("PEER_OOB_CONFIRM: ");
+            printf_hexdump(sm_oob_peer_confirm, 16);
+            fflush(stdout);
+        }
+        return;
+    }
+
+    if (ui_oob_random){
+        if (c == ' ') return;
+        ui_oob_nibble = (ui_oob_nibble << 4) | nibble_for_char(c);
+        if ((ui_oob_pos & 1) == 1){
+            sm_oob_peer_random[ui_oob_pos >> 1] = ui_oob_nibble;
+            ui_oob_nibble = 0;
+        }
+        ui_oob_pos++;
+        if (ui_oob_pos == 32){
+            ui_oob_random = 0;
+            printf("PEER_OOB_RANDOM: ");
+            printf_hexdump(sm_oob_peer_random, 16);
+            fflush(stdout);
+        }
+        return;
+    }
+
+
     switch (c){
         case 'a': // accept just works
             printf("accepting just works\n");
@@ -346,9 +407,19 @@ static void stdin_process(char c){
             printf("decline bonding\n");
             sm_bonding_decline(connection_handle);
             break;
-        case 'g':
-            printf("generate oob data\n");
-            sm_generate_sc_oob_data(sc_oob_callback);
+        case 'o':
+            printf("receive oob confirm value\n");
+            ui_oob_confirm = 1;
+            ui_oob_pos = 0;
+            break;
+        case 'r':
+            printf("receive oob random value\n");
+            ui_oob_random = 1;
+            ui_oob_pos = 0;
+            break;
+        case 'p':
+            printf("REQUEST_PAIRING\n");
+            sm_request_pairing(connection_handle);
             break;
         case 'x':
             printf("Exit\n");
@@ -359,15 +430,6 @@ static void stdin_process(char c){
     }
     fflush(stdout);
     return;
-}
-
-static int get_oob_data_callback(uint8_t address_type, bd_addr_t addr, uint8_t * oob_data){
-    UNUSED(address_type);
-    log_info("get_oob_data_callback for %s", bd_addr_to_str(addr));
-    (void)addr;
-    if(!sm_have_oob_data) return 0;
-    memcpy(oob_data, sm_oob_data, 16);
-    return 1;
 }
 
 int btstack_main(int argc, const char * argv[]);
@@ -440,6 +502,7 @@ int btstack_main(int argc, const char * argv[]){
     sm_set_io_capabilities(sm_io_capabilities);
     sm_set_authentication_requirements(sm_auth_req); 
     sm_register_oob_data_callback(get_oob_data_callback);
+    sm_register_sc_oob_data_callback(get_sc_oob_data_callback);
 
     if (sm_failure < SM_REASON_NUMERIC_COMPARISON_FAILED && sm_failure != SM_REASON_PASSKEY_ENTRY_FAILED){
         sm_test_set_pairing_failure(sm_failure);
