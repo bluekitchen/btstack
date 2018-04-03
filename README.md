@@ -1,6 +1,3 @@
-**_Note: Major API Changes. For older projects, you may use the [v0.9 branch](https://github.com/bluekitchen/btstack/tree/v0.9).
-Please see [Migration notes](https://github.com/bluekitchen/btstack/blob/master/doc/manual/docs/appendix/migration.md)_**
-
 # Welcome to BTstack
 
 BTstack is [BlueKitchen's](http://bluekitchen-gmbh.com) implementation of the official Bluetooth stack.
@@ -76,7 +73,7 @@ No build server | [freertos](https://github.com/bluekitchen/btstack/tree/develop
 
 Chipset                      | Type      | HCI Transport   | SCO over HCI (2) | BTstack folder | Comment
 ---------------------------- |-----------| ----------------|------------------|----------------|---------
-Atmel ATWILC3000             | Dual mode | H4              | Don't know       | atwilc3000     | Firmware size: 270 kB
+Atmel ATWILC3000             | LE        | H4              | n.a.             | atwilc3000     | Firmware size: 60 kB
 Broadcom UART                | Dual mode | H4, H5          | Probably         | bcm            | Max UART baudrate 2 mbps
 Broadcom USB Dongles         | Dual mode | USB             | Yes              | bcm            |
 CSR UART                     | Dual mode | H4, H5, BCSP    | No (didn't work) | csr            |
