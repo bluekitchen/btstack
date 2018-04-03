@@ -238,6 +238,9 @@ def run(test_descriptor, nodes):
                     passkey = line.split(': ')[1]
                     print('%s passkey display %s' % (node.get_name(), passkey))
                     test_descriptor['passkey'] = passkey
+                    if node.get_name() == 'tester' and  test_descriptor['tester_failure'] == '1':
+                        print('Decline bonding')
+                        node.write('d')
                     if state == 'W4_PAIRING':
                         state = 'W4_PASSKEY_INPUT'
                     else:
@@ -324,6 +327,8 @@ def write_config(fout, test_descriptor):
             iut    = test_descriptor['passkey']
             tester = test_descriptor['passkey']
         elif attribute == 'method':
+            if not 'method' in test_descriptor:
+                continue
             iut    = test_descriptor['method']
             tester = test_descriptor['method']
         elif attribute == 'failure':
@@ -406,12 +411,14 @@ def run_test(test_descriptor):
             test_ok &= test_descriptor['iut_pairing_complete_status'] == '0' 
 
         # check pairing method
-        if 'SCJW' in test_name and ( test_descriptor['method'] != 'Just Works' and test_descriptor['method' != 'Numeric Comparison']):
-            test_ok = False
-        if 'SCPK' in test_name and test_descriptor['method'] != 'Passkey Entry':
-            test_ok = False
-        if 'SCOB' in test_name and test_descriptor['method'] != 'OOB':
-            test_ok = False
+        if 'method' in test_descriptor:
+            method = test_descriptor['method']
+            if 'SCJW' in test_name and (method != 'Just Works' and method != 'Numeric Comparison'):
+                test_ok = False
+            if 'SCPK' in test_name and method != 'Passkey Entry':
+                test_ok = False
+            if 'SCOB' in test_name and method != 'OOB':
+                test_ok = False
 
         # rename folder if test not ok
         if not test_ok:
