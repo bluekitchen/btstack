@@ -340,6 +340,7 @@ typedef struct sm_setup_context {
     // Phase 2 (Pairing over SMP)
     stk_generation_method_t sm_stk_generation_method;
     sm_key_t  sm_tk;
+    uint8_t   sm_have_oob_data;
     uint8_t   sm_use_secure_connections;
 
     sm_key_t  sm_c1_t3_value;   // c1 calculation
@@ -405,6 +406,7 @@ static uint16_t sm_active_connection_handle = HCI_CON_HANDLE_INVALID;
 // @returns 1 if oob data is available
 // stores oob data in provided 16 byte buffer if not null
 static int (*sm_get_oob_data)(uint8_t addres_type, bd_addr_t addr, uint8_t * oob_data) = NULL;
+static int (*sm_get_sc_oob_data)(uint8_t addres_type, bd_addr_t addr, uint8_t * oob_sc_local_random, uint8_t * oob_sc_peer_confirm, uint8_t * oob_sc_peer_random);
 
 // horizontal: initiator capabilities
 // vertial:    responder capabilities
@@ -1193,11 +1195,27 @@ static void sm_init_setup(sm_connection_t * sm_conn){
     setup->sm_peer_addr_type = sm_conn->sm_peer_addr_type;
     memcpy(setup->sm_peer_address, sm_conn->sm_peer_address, 6);
 
-    // query client for OOB data
-    int have_oob_data = 0;
+    // query client for Legacy Pairing OOB data
+    setup->sm_have_oob_data = 0;
     if (sm_get_oob_data) {
-        have_oob_data = (*sm_get_oob_data)(sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, setup->sm_tk);
+        setup->sm_have_oob_data = (*sm_get_oob_data)(sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, setup->sm_tk);
     }
+
+    // if available and SC supported, also ask for SC OOB Data
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    if (setup->sm_have_oob_data && (sm_auth_req & SM_AUTHREQ_SECURE_CONNECTION)){
+        if (sm_get_sc_oob_data){
+            setup->sm_have_oob_data = (*sm_get_sc_oob_data)(
+                sm_conn->sm_peer_addr_type,
+                sm_conn->sm_peer_address,
+                setup->sm_local_random,
+                setup->sm_peer_confirm,
+                setup->sm_peer_random);
+        } else {
+            setup->sm_have_oob_data = 0;
+        }
+    }
+#endif
 
     sm_pairing_packet_t * local_packet;
     if (IS_RESPONDER(sm_conn->sm_role)){
@@ -1220,7 +1238,7 @@ static void sm_init_setup(sm_connection_t * sm_conn){
 
     uint8_t auth_req = sm_auth_req;
     sm_pairing_packet_set_io_capability(*local_packet, sm_io_capabilities);
-    sm_pairing_packet_set_oob_data_flag(*local_packet, have_oob_data);
+    sm_pairing_packet_set_oob_data_flag(*local_packet, setup->sm_have_oob_data);
     sm_pairing_packet_set_auth_req(*local_packet, auth_req);
     sm_pairing_packet_set_max_encryption_key_size(*local_packet, sm_max_encryption_key_size);
 }
@@ -1502,7 +1520,7 @@ static void sm_sc_cmac_done(uint8_t * hash){
 
     if (sm_sc_oob_state == SM_SC_OOB_W4_CONFIRM){
         sm_sc_oob_state = SM_SC_OOB_IDLE;
-        (*sm_sc_oob_callback)(sm_sc_oob_random, hash);
+        (*sm_sc_oob_callback)(hash, sm_sc_oob_random);
         return;
     }
 
@@ -1779,6 +1797,12 @@ static void sm_sc_calculate_local_confirm(sm_connection_t * sm_conn){
 }
 
 static void sm_sc_calculate_remote_confirm(sm_connection_t * sm_conn){
+    // OOB
+    if (setup->sm_stk_generation_method == OOB){
+        f4_engine(sm_conn, setup->sm_peer_q, setup->sm_peer_q, setup->sm_peer_random, 0);
+        return;
+    }
+
     uint8_t z = 0;
     if (setup->sm_stk_generation_method != JUST_WORKS && setup->sm_stk_generation_method != NK_BOTH_INPUT){
         // some form of passkey
@@ -3867,6 +3891,13 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                  break;
             }
 
+            // validate confirm value if Cb = f4(PKb, Pkb, rb, 0) for OOB if data received
+            if (setup->sm_stk_generation_method == OOB && setup->sm_have_oob_data){
+                 sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CHECK_CONFIRMATION;
+                 break;
+            }
+
+            // TODO: we only get here for Responder role with JW/NC
             sm_sc_state_after_receiving_random(sm_conn);
             break;
 
@@ -4013,8 +4044,12 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 }
 
 // Security Manager Client API
-void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_type, bd_addr_t addr, uint8_t * oob_data)){
+void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t address_type, bd_addr_t addr, uint8_t * oob_data)){
     sm_get_oob_data = get_oob_data_callback;
+}
+
+void sm_register_sc_oob_data_callback( int (*get_sc_oob_data_callback)(uint8_t address_type, bd_addr_t addr, uint8_t * oob_sc_local_random, uint8_t * oob_sc_peer_confirm, uint8_t * oob_sc_peer_random)){
+    sm_get_sc_oob_data = get_sc_oob_data_callback;
 }
 
 void sm_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
