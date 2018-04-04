@@ -1945,7 +1945,7 @@ static void sm_run(void){
                     sm_timeout_start(sm_connection);
                     // generate random number first, if we need to show passkey
                     if (setup->sm_stk_generation_method == PK_INIT_INPUT){
-                        btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_random, 8, &sm_handle_random_result_ph2_tk, sm_connection);
+                        btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph2_tk, sm_connection);
                         break;
                     }
                     sm_connection->sm_engine_state = SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE;
@@ -3221,7 +3221,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
             // generate random number first, if we need to show passkey
             if (setup->sm_stk_generation_method == PK_RESP_INPUT){
-                btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_random, 8, &sm_handle_random_result_ph2_tk, sm_conn);
+                btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph2_tk, sm_conn);
                 break;
             }
 
