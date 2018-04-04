@@ -1044,10 +1044,16 @@ static void l2cap_rtx_timeout(btstack_timer_source_t * ts){
     btstack_memory_l2cap_channel_free(channel);
 }
 
+#endif
+
+#ifdef L2CAP_USES_CHANNELS
 static void l2cap_stop_rtx(l2cap_channel_t * channel){
     log_info("l2cap_stop_rtx for local cid 0x%02x", channel->local_cid);
     btstack_run_loop_remove_timer(&channel->rtx);
 }
+#endif
+
+#ifdef ENABLE_CLASSIC
 
 static void l2cap_start_rtx(l2cap_channel_t * channel){
     l2cap_stop_rtx(channel);
@@ -1979,7 +1985,9 @@ static int l2cap_send_open_failed_on_hci_disconnect(l2cap_channel_t * channel){
     // still, the compiler insists on a return value
     return 0;
 }
+#endif
 
+#ifdef ENABLE_CLASSIC
 static void l2cap_handle_hci_disconnect_event(l2cap_channel_t * channel){
     if (l2cap_send_open_failed_on_hci_disconnect(channel)){
         l2cap_emit_channel_opened(channel, L2CAP_CONNECTION_BASEBAND_DISCONNECT);
@@ -1988,7 +1996,6 @@ static void l2cap_handle_hci_disconnect_event(l2cap_channel_t * channel){
     }
     btstack_memory_l2cap_channel_free(channel);
 }
-
 #endif
 
 #ifdef ENABLE_LE_DATA_CHANNELS
@@ -3363,7 +3370,9 @@ void l2cap_finialize_channel_close(l2cap_channel_t * channel){
     btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
     btstack_memory_l2cap_channel_free(channel);
 }
+#endif
 
+#ifdef L2CAP_USES_CHANNELS
 static l2cap_service_t * l2cap_get_service_internal(btstack_linked_list_t * services, uint16_t psm){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, services);
@@ -3375,11 +3384,12 @@ static l2cap_service_t * l2cap_get_service_internal(btstack_linked_list_t * serv
     }
     return NULL;
 }
+#endif
 
+#ifdef ENABLE_CLASSIC
 static inline l2cap_service_t * l2cap_get_service(uint16_t psm){
     return l2cap_get_service_internal(&l2cap_services, psm);
 }
-
 
 uint8_t l2cap_register_service(btstack_packet_handler_t service_packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level){
     
