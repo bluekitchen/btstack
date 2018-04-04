@@ -413,6 +413,7 @@ static void sm_handle_random_result_rau(void * arg);
 static void sm_handle_random_result_sc_get_random(void * arg);
 #endif
 static void sm_notify_client_status_reason(sm_connection_t * sm_conn, uint8_t status, uint8_t reason);
+static int sm_passkey_entry(stk_generation_method_t method);
 
 static void log_info_hex16(const char * name, uint16_t value){
     log_info("%-6s 0x%04x", name, value);
@@ -1443,6 +1444,7 @@ static const uint8_t f5_key_id[] = { 0x62, 0x74, 0x6c, 0x65 };
 static const uint8_t f5_length[] = { 0x01, 0x00};
 
 static void f5_calculate_salt(sm_connection_t * sm_conn){
+    log_info("f5_calculate_salt");
     // calculate salt for f5
     const uint16_t message_len = 32;
     sm_cmac_connection = sm_conn;
@@ -1548,7 +1550,7 @@ static void g2_calculate(sm_connection_t * sm_conn) {
 
 static void sm_sc_calculate_local_confirm(sm_connection_t * sm_conn){
     uint8_t z = 0;
-    if (setup->sm_stk_generation_method != JUST_WORKS && setup->sm_stk_generation_method != NK_BOTH_INPUT){
+    if (sm_passkey_entry(setup->sm_stk_generation_method)){
         // some form of passkey
         uint32_t pk = big_endian_read_32(setup->sm_tk, 12);
         z = 0x80 | ((pk >> setup->sm_passkey_bit) & 1);
@@ -1569,7 +1571,7 @@ static void sm_sc_calculate_remote_confirm(sm_connection_t * sm_conn){
     }
 
     uint8_t z = 0;
-    if (setup->sm_stk_generation_method != JUST_WORKS && setup->sm_stk_generation_method != NK_BOTH_INPUT){
+    if (sm_passkey_entry(setup->sm_stk_generation_method)){
         // some form of passkey
         uint32_t pk = big_endian_read_32(setup->sm_tk, 12);
         // sm_passkey_bit was increased before sending confirm value
@@ -2237,7 +2239,9 @@ static void sm_run(void){
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_PAIRING_RANDOM;
                 reverse_128(setup->sm_local_nonce, &buffer[1]);
-                if (setup->sm_stk_generation_method != JUST_WORKS && setup->sm_stk_generation_method != NK_BOTH_INPUT && setup->sm_passkey_bit < 20){
+                log_info("stk method %u, num bits %u", setup->sm_stk_generation_method, setup->sm_passkey_bit);
+                if (sm_passkey_entry(setup->sm_stk_generation_method) && setup->sm_passkey_bit < 20){
+                    log_info("SM_SC_SEND_PAIRING_RANDOM A");
                     if (IS_RESPONDER(connection->sm_role)){
                         // responder
                         connection->sm_engine_state = SM_SC_W4_CONFIRMATION;
@@ -2246,11 +2250,14 @@ static void sm_run(void){
                         connection->sm_engine_state = SM_SC_W4_PAIRING_RANDOM;
                     }
                 } else {
+                    log_info("SM_SC_SEND_PAIRING_RANDOM B");
                     if (IS_RESPONDER(connection->sm_role)){
                         // responder
                         if (setup->sm_stk_generation_method == NK_BOTH_INPUT){
+                            log_info("SM_SC_SEND_PAIRING_RANDOM B1");
                             connection->sm_engine_state = SM_SC_W2_CALCULATE_G2;
                         } else {
+                            log_info("SM_SC_SEND_PAIRING_RANDOM B2");
                             sm_sc_prepare_dhkey_check(connection);
                         }
                     } else {
@@ -3061,6 +3068,18 @@ static int sm_passkey_used(stk_generation_method_t method){
             return 0;
     }
 }
+
+static int sm_passkey_entry(stk_generation_method_t method){
+    switch (method){
+        case PK_RESP_INPUT:
+        case PK_INIT_INPUT:
+        case OK_BOTH_INPUT:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
 #endif
 
 /**
