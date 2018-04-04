@@ -170,22 +170,11 @@ void sm_authorization_decline(hci_con_handle_t con_handle);
  */
 void sm_authorization_grant(hci_con_handle_t con_handle);
 
-
 /**
- * @brief Check if CMAC AES engine is ready
- * @return ready
+ * @brief Support for signed writes, used by att_server.
+ * @returns ready
  */
- int sm_cmac_ready(void);
-
-/*
- * @brief Generic CMAC AES
- * @param key
- * @param message_len
- * @param get_byte_callback
- * @param done_callback
- * @note hash is 16 bytes in big endian
- */
-void sm_cmac_general_start(const sm_key_t key, uint16_t message_len, uint8_t (*get_byte_callback)(uint16_t offset), void (*done_callback)(uint8_t * hash));
+int sm_cmac_ready(void);
 
 /**
  * @brief Support for signed writes, used by att_server.
@@ -214,15 +203,6 @@ int sm_address_resolution_lookup(uint8_t addr_type, bd_addr_t addr);
  * @return index from le_device_db or -1 if not found/identified
  */
 int sm_le_device_index(hci_con_handle_t con_handle );
-
-/**
- * @brief Set Elliptic Key Public/Private Keypair
- * @note Using the same key for more than one device is not recommended. 
- * @param qx 32 bytes
- * @param qy 32 bytes
- * @param d  32 bytes
- */
-void sm_use_fixed_ec_keypair(uint8_t * qx, uint8_t * qy, uint8_t * d);
 
 /**
  * @brief Use fixec passkey for Legacy and SC instead of generating a random number
@@ -264,7 +244,6 @@ void sm_register_sc_oob_data_callback( int (*get_sc_oob_data_callback)(uint8_t a
 // PTS testing
 void sm_test_set_irk(sm_key_t irk);
 void sm_test_use_fixed_local_csrk(void);
-void sm_test_use_fixed_ec_keypair(void);
 
 #ifdef ENABLE_TESTING_SUPPORT
 void sm_test_set_pairing_failure(int reason);

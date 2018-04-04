@@ -36,6 +36,7 @@ COMMON += \
 	l2cap.c			            \
 	l2cap_signaling.c	        \
 	btstack_tlv.c               \
+	btstack_crypto.c            \
 
 CLASSIC += \
 	btstack_link_key_db_memory.c   \
