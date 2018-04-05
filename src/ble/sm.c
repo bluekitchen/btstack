@@ -114,11 +114,11 @@ typedef enum {
 
 typedef enum {
     JUST_WORKS,
-    PK_RESP_INPUT,  // Initiator displays PK, responder inputs PK
-    PK_INIT_INPUT,  // Responder displays PK, initiator inputs PK
-    OK_BOTH_INPUT,  // Only input on both, both input PK
-    NK_BOTH_INPUT,  // Only numerical compparison (yes/no) on on both sides
-    OOB             // OOB available on both sides
+    PK_RESP_INPUT,       // Initiator displays PK, responder inputs PK
+    PK_INIT_INPUT,       // Responder displays PK, initiator inputs PK
+    PK_BOTH_INPUT,       // Only input on both, both input PK
+    NUMERIC_COMPARISON,  // Only numerical compparison (yes/no) on on both sides
+    OOB                  // OOB available on one (SC) or both sides (legacy)
 } stk_generation_method_t;
 
 typedef enum {
@@ -369,7 +369,7 @@ static int (*sm_get_sc_oob_data)(uint8_t addres_type, bd_addr_t addr, uint8_t * 
 static const stk_generation_method_t stk_generation_method [5] [5] = {
     { JUST_WORKS,      JUST_WORKS,       PK_INIT_INPUT,   JUST_WORKS,    PK_INIT_INPUT },
     { JUST_WORKS,      JUST_WORKS,       PK_INIT_INPUT,   JUST_WORKS,    PK_INIT_INPUT },
-    { PK_RESP_INPUT,   PK_RESP_INPUT,    OK_BOTH_INPUT,   JUST_WORKS,    PK_RESP_INPUT },
+    { PK_RESP_INPUT,   PK_RESP_INPUT,    PK_BOTH_INPUT,   JUST_WORKS,    PK_RESP_INPUT },
     { JUST_WORKS,      JUST_WORKS,       JUST_WORKS,      JUST_WORKS,    JUST_WORKS    },
     { PK_RESP_INPUT,   PK_RESP_INPUT,    PK_INIT_INPUT,   JUST_WORKS,    PK_RESP_INPUT },
 };
@@ -377,11 +377,11 @@ static const stk_generation_method_t stk_generation_method [5] [5] = {
 // uses numeric comparison if one side has DisplayYesNo and KeyboardDisplay combinations
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 static const stk_generation_method_t stk_generation_method_with_secure_connection[5][5] = {
-    { JUST_WORKS,      JUST_WORKS,       PK_INIT_INPUT,   JUST_WORKS,    PK_INIT_INPUT },
-    { JUST_WORKS,      NK_BOTH_INPUT,    PK_INIT_INPUT,   JUST_WORKS,    NK_BOTH_INPUT },
-    { PK_RESP_INPUT,   PK_RESP_INPUT,    OK_BOTH_INPUT,   JUST_WORKS,    PK_RESP_INPUT },
-    { JUST_WORKS,      JUST_WORKS,       JUST_WORKS,      JUST_WORKS,    JUST_WORKS    },
-    { PK_RESP_INPUT,   NK_BOTH_INPUT,    PK_INIT_INPUT,   JUST_WORKS,    NK_BOTH_INPUT },
+    { JUST_WORKS,      JUST_WORKS,         PK_INIT_INPUT,   JUST_WORKS,    PK_INIT_INPUT      },
+    { JUST_WORKS,      NUMERIC_COMPARISON, PK_INIT_INPUT,   JUST_WORKS,    NUMERIC_COMPARISON },
+    { PK_RESP_INPUT,   PK_RESP_INPUT,      PK_BOTH_INPUT,   JUST_WORKS,    PK_RESP_INPUT      },
+    { JUST_WORKS,      JUST_WORKS,         JUST_WORKS,      JUST_WORKS,    JUST_WORKS         },
+    { PK_RESP_INPUT,   NUMERIC_COMPARISON, PK_INIT_INPUT,   JUST_WORKS,    NUMERIC_COMPARISON },
 };
 #endif
 
@@ -924,11 +924,11 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
                 sm_notify_client_base(SM_EVENT_PASSKEY_INPUT_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
             }
             break;
-        case OK_BOTH_INPUT:
+        case PK_BOTH_INPUT:
             setup->sm_user_response = SM_USER_RESPONSE_PENDING;
             sm_notify_client_base(SM_EVENT_PASSKEY_INPUT_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
             break;
-        case NK_BOTH_INPUT:
+        case NUMERIC_COMPARISON:
             setup->sm_user_response = SM_USER_RESPONSE_PENDING;
             sm_notify_client_passkey(SM_EVENT_NUMERIC_COMPARISON_REQUEST, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, big_endian_read_32(setup->sm_tk, 12));
             break;
@@ -1296,12 +1296,12 @@ static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
                 sm_sc_prepare_dhkey_check(sm_conn);
                 break;
 
-            case NK_BOTH_INPUT:
+            case NUMERIC_COMPARISON:
                 sm_conn->sm_engine_state = SM_SC_W2_CALCULATE_G2;
                 break;
             case PK_INIT_INPUT:
             case PK_RESP_INPUT:
-            case OK_BOTH_INPUT:
+            case PK_BOTH_INPUT:
                 if (setup->sm_passkey_bit < 20) {
                     sm_sc_start_calculating_local_confirm(sm_conn);
                 } else {
@@ -2176,7 +2176,7 @@ static void sm_run(void){
                 // passkey entry: notify app to show passkey or to request passkey
                 switch (setup->sm_stk_generation_method){
                     case JUST_WORKS:
-                    case NK_BOTH_INPUT:
+                    case NUMERIC_COMPARISON:
                         if (IS_RESPONDER(connection->sm_role)){
                             // responder
                             sm_sc_start_calculating_local_confirm(connection);
@@ -2187,7 +2187,7 @@ static void sm_run(void){
                         break;
                     case PK_INIT_INPUT:
                     case PK_RESP_INPUT:
-                    case OK_BOTH_INPUT:
+                    case PK_BOTH_INPUT:
                         // use random TK for display
                         memcpy(setup->sm_ra, setup->sm_tk, 16);
                         memcpy(setup->sm_rb, setup->sm_tk, 16);
@@ -2253,7 +2253,7 @@ static void sm_run(void){
                     log_info("SM_SC_SEND_PAIRING_RANDOM B");
                     if (IS_RESPONDER(connection->sm_role)){
                         // responder
-                        if (setup->sm_stk_generation_method == NK_BOTH_INPUT){
+                        if (setup->sm_stk_generation_method == NUMERIC_COMPARISON){
                             log_info("SM_SC_SEND_PAIRING_RANDOM B1");
                             connection->sm_engine_state = SM_SC_W2_CALCULATE_G2;
                         } else {
@@ -3052,7 +3052,7 @@ static inline int sm_calc_actual_encryption_key_size(int other){
 static int sm_just_works_or_numeric_comparison(stk_generation_method_t method){
     switch (method){
         case JUST_WORKS:
-        case NK_BOTH_INPUT:
+        case NUMERIC_COMPARISON:
             return 1;
         default:
             return 0;
@@ -3073,7 +3073,7 @@ static int sm_passkey_entry(stk_generation_method_t method){
     switch (method){
         case PK_RESP_INPUT:
         case PK_INIT_INPUT:
-        case OK_BOTH_INPUT:
+        case PK_BOTH_INPUT:
             return 1;
         default:
             return 0;
@@ -3092,11 +3092,11 @@ static int sm_validate_stk_generation_method(void){
             return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_JUST_WORKS) != 0;
         case PK_RESP_INPUT:
         case PK_INIT_INPUT:
-        case OK_BOTH_INPUT:
+        case PK_BOTH_INPUT:
             return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_PASSKEY) != 0;
         case OOB:
             return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_OOB) != 0;
-        case NK_BOTH_INPUT:
+        case NUMERIC_COMPARISON:
             return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_NUMERIC_COMPARISON) != 0;
             return 1;
         default:
@@ -3328,14 +3328,14 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 // passkey entry: notify app to show passkey or to request passkey
                 switch (setup->sm_stk_generation_method){
                     case JUST_WORKS:
-                    case NK_BOTH_INPUT:
+                    case NUMERIC_COMPARISON:
                         sm_conn->sm_engine_state = SM_SC_W4_CONFIRMATION;
                         break;
                     case PK_RESP_INPUT:
                         sm_sc_start_calculating_local_confirm(sm_conn);
                         break;
                     case PK_INIT_INPUT:
-                    case OK_BOTH_INPUT:
+                    case PK_BOTH_INPUT:
                         if (setup->sm_user_response != SM_USER_RESPONSE_PASSKEY){
                             sm_conn->sm_engine_state = SM_SC_W4_USER_RESPONSE;
                             break;
@@ -3815,10 +3815,10 @@ void sm_bonding_decline(hci_con_handle_t con_handle){
             switch (setup->sm_stk_generation_method){
                 case PK_RESP_INPUT:
                 case PK_INIT_INPUT:
-                case OK_BOTH_INPUT:
+                case PK_BOTH_INPUT:
                     sm_pairing_error(sm_conn, SM_REASON_PASSKEY_ENTRY_FAILED);
                     break;
-                case NK_BOTH_INPUT:
+                case NUMERIC_COMPARISON:
                     sm_pairing_error(sm_conn, SM_REASON_NUMERIC_COMPARISON_FAILED);
                     break;
                 case JUST_WORKS:
