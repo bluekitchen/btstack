@@ -71,15 +71,16 @@ No build server | [freertos](https://github.com/bluekitchen/btstack/tree/develop
 
 ## Supported Chipsets
 
-Chipset                      | Type      | HCI Transport   | SCO over HCI (2) | BTstack folder | Comment
+Chipset                      | Type      | HCI Transport   | SCO over HCI     | BTstack folder | Comment
 ---------------------------- |-----------| ----------------|------------------|----------------|---------
 Atmel ATWILC3000             | LE        | H4              | n.a.             | atwilc3000     | Firmware size: 60 kB
 Broadcom UART                | Dual mode | H4, H5          | Probably         | bcm            | Max UART baudrate 2 mbps
 Broadcom USB Dongles         | Dual mode | USB             | Yes              | bcm            |
 CSR UART                     | Dual mode | H4, H5, BCSP    | No (didn't work) | csr            |
 CSR USB Dongles              | Dual mode | USB             | Yes              | csr            |
+Cypress CYW20704             | Dual mode | H4, H5, USB     | Probably         | bcm            |
 Dialog Semiconductor DA14581 | LE        | H4, SPI         | n.a.             | da14581        | Official HCI firmware used
-Espressif ESP32              | Dual mode | VHCI            | Probably         |                | SoC with Bluetooth and Wifi
+Espressif ESP32              | Dual mode | VHCI            | Not yet          |                | SoC with Bluetooth and Wifi
 EM 9301, 9304                | LE        | SPI             | n.a.             | em9301         | Custom HCI SPI implementation
 Nordic nRF                   | LE        | H4              | n.a.             |                | Requires custom HCI firmware
 STM STLC2500D                | Classic   | H4              | No (didn't try)  | stlc2500d      | Custom deep sleep management not supported

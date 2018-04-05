@@ -53,13 +53,14 @@ CSR, which has been acquired by Qualcomm, provides all relevant information on t
 
 Chipset              | Type      | HCI Transport  | BD_ADDR (1)  | SCO over HCI (2) | LE DLE | Multiple LE Roles    | BTstack folder | Comment
 -------------------- |-----------| ---------------|--------------|------------------|--------|----------------------|----------------|---------
-Atmel ATWILC3000     | LE (4)    | H4             | Yes          | Don't know       | No     |         No           | atwilc3000     | BLE Firmware size: 60 kB
+Atmel ATWILC3000     | LE        | H4             | Yes          | Don't know       | No     |         No           | atwilc3000     | BLE Firmware size: 60 kB
 Broadcom UART        | Dual mode | H4, H5         | Rarely       | Probably (2)     | No     |      Maybe (3)       | bcm            | Max UART baudrate 2 mbps
 Broadcom USB Dongles | Dual mode | USB            | Yes          | Yes              | No     |         No           | bcm            |
 CSR UART             | Dual mode | H4, H5, BCSP   | Rarely       | No (didn't work) | No     |         No           | csr            |
 CSR USB Dongles      | Dual mode | USB            | Mostly       | Yes              | No     |         No           | csr            |
+Cypress CYW20704     | Dual mode | H4, H5, USB    | Don't know   | Probably (2)     | Yes    |        Yes           | bcm            |
 Dialog DA14581       | LE        | H4, SPI        | No           | n.a.             | No     |         No           | da14581        | Official HCI firmware included in BTstack
-Espressif ESP32      | Dual mode | VHCI           | Yes          | Probably         | Yes    |        Yes           |                | SoC with Bluetooth and Wifi
+Espressif ESP32      | Dual mode | VHCI           | Yes          | Not yet          | Yes    |        Yes           |                | SoC with Bluetooth and Wifi
 EM 9301              | LE        | SPI, H4        | No           | n.a.             | No     |         No           | em9301         | Custom HCI SPI implementation
 EM 9304              | LE        | SPI, H4        | Yes          | n.a.             | Yes    |        Yes           | em9301         | Custom HCI SPI implementation
 Nordic nRF           | LE        | H4             | Fixed Random | n.a.             | Yes    |        Yes           |                | Requires HCI firmware
@@ -69,15 +70,14 @@ TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL | Yes          | Yes          
 
 **Notes**:
 
-  1. BD_ADDR: Indciates if Bluetooth chipset compes with its own valid MAC Addess. Better Broadcom and CSR dongles usually come with a MAC address from the dongle manufacturer, but cheaper ones might come with identical addresses.
+  1. BD_ADDR: Indiates if Bluetooth chipset compes with its own valid MAC Addess. Better Broadcom and CSR dongles usually come with a MAC address from the dongle manufacturer, but cheaper ones might come with identical addresses.
   2. SCO over HCI: All Bluetooth Classic chipsets support SCO over HCI, for those that are marked with No, we either didn't try or didn't found enough information to configure it correctly.
   3. Multiple LE Roles: Apple uses Broadcom Bluetooth+Wifi in their iOS devices and newer iOS versions support multiple concurrent LE roles,
   so at least some Broadcom models support multiple concurrent LE roles.
-  4. Only BLE qualified - [https://www.bluetooth.org/tpg/QLI_viewQDL.cfm?qid=36402](QDID 99659).
 
 ## Atmel/Microchip
 
-The ATILC3000 Bluetooth/Wifi combo controller has been used with Linux on embedded devices by Atmel/Microchip. Drivers and documentation are available from a [GitHub repository](https://github.com/atwilc3000). The ATWILC3000 has a basic HCI implementation stored in ROM and requires a firmware image to be uploaded before it can be used. Only the BLE Controller is currently qualified as [https://www.bluetooth.org/tpg/QLI_viewQDL.cfm?qid=36402](QDID 99659). Please note: the BLE firmware is around 60 kB. It might need a separate Wifi firmware as well.
+The ATILC3000 Bluetooth/Wifi combo controller has been used with Linux on embedded devices by Atmel/Microchip. Drivers and documentation are available from a [GitHub repository](https://github.com/atwilc3000). The ATWILC3000 has a basic HCI implementation stored in ROM and requires a firmware image to be uploaded before it can be used. The BLE Controller is qualified as [QDID 99659](https://www.bluetooth.org/tpg/QLI_viewQDL.cfm?qid=36402). Please note: the BLE firmware is around 60 kB. It might need a separate Wifi firmware as well.
 
 **BD Addr** can be set with vendor-specific command although all chipsets have an official address stored. The BD_ADDR lookup results in "Newport Media Inc." which was [acquired by Atmel](http://www.atmel.com/about/news/release.aspx?reference=tcm:26-62532) in 2014.
 
@@ -88,7 +88,10 @@ The ATILC3000 Bluetooth/Wifi combo controller has been used with Linux on embedd
 ## Broadcom/Cypress Semiconductor
 
 Before the Broadcom Wifi+Bluetooth division was taken over by Cypress Semiconductor, it was not possible to buy Broadcom chipset in low quantities. Nevertheless, module manufacturers like Ampak created modules that contained Broadcom BCM chipsets (Bluetooth as well as Bluetooth+Wifi combos) that might already have been pre-tested for FCC and similar certifications.
+
 A popular example is the Ampak AP6212A module that contains an BCM 43438A1 and is used on the Raspberry Pi 3, the RedBear Duo, and the RedBear IoT pHAT for older Raspberry Pi models.
+
+The CYW20704 A2 controller supports both DLE as well as multiple LE roles and is available e.g. from [LairdTech](https://www.lairdtech.com/bt850-bt851-and-bt860-series-modules-adapter-dvks-0002) as UART module (BT860), USB module (BT850), and USB dongle.
 
 The best source for documentation on vendor specific commands so far has been the source code for blueZ and the Bluedroid Bluetooth stack from Android.
 
@@ -108,7 +111,7 @@ BTstack supports uploading of the init script in two variants: using .hcd files 
 
 **BTstack integration**: The common code for all Broadcom chipsets is provided by *btstack_chipset_bcm.c*. During the setup, *btstack_chipset_bcm_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function.
 
-SCO Data can be routed over HCI for both USB dongles and UART connections, however BTstack does not provide any form of flow control for UART connections. HSP and HFP Narrow Band Speech is supported via I2C/PCM pins.
+SCO Data can be routed over HCI for both USB dongles and UART connections, however BTstack does not support flow control for UART connections. HSP and HFP Narrow Band Speech is supported via I2C/PCM pins.
 
 ## CSR / Qualcomm Incorporated
 
@@ -145,7 +148,9 @@ It does not implement the Data Length Extension or supports multiple concurrent 
 
 ## Espressif ESP32
 
-The ESP32 is a SoC with a built-in Dual mode Bluetooth and Wifi radio. The HCI Controller is implemented in software and accessed via a so called Virtual HCI (VHCI) interface. It supports both LE Data Length Extensions (DLE) as well as multiple LE roles. Flow control between the VHCI and BTstack is problematic as there's no way to stop the VHCI from delivering packets. BTstack impelemts the Host Controller to Host Flow Control to deal with this. Right now, this works for HCI Events and Classic ACL packets but not for LE ACL packets. Espressif is working on a solution for this: https://github.com/espressif/esp-idf/issues/644
+The ESP32 is a SoC with a built-in Dual mode Bluetooth and Wifi radio. The HCI Controller is implemented in software and accessed via a so called Virtual HCI (VHCI) interface. It supports both LE Data Length Extensions (DLE) as well as multiple LE roles. SCO isn't supported currently, but [Espressif is working on it](https://github.com/espressif/esp-idf/issues/1118).
+
+Bluetooth/Wifi Co-existance didn't work until recently and [seems to have been fixed](https://github.com/espressif/esp-idf/issues/1291)
 
 ## EM Microelectronic Marin
 
@@ -155,16 +160,15 @@ In December 2016, EM released the new EM9304 that also features an HCI mode and 
 
 EM9304 is used by the 'stm32-l053r8-em9304' port in BTstack. The port.c file also contains an IRQ+DMA-driven implementation of the SPI H4 protocol specified in the [datasheet](http://www.emmicroelectronic.com/sites/default/files/public/products/datasheets/9304-ds_0.pdf).
 
-**BD Addr** must be set during startup for EM9301 since it does not have a stored fix address. The EM9304 comes with an valid address stored in Flash/OTP.
+**BD Addr** must be set during startup for EM9301 since it does not have a stored fix address. The EM9304 comes with an valid address stored in OTP.
 
 **SCO data** is not supported since it is LE only.
 
-**Baud rate** could be set for UART mode. For SPI, the master controls the speed via the SPI Clock line. With 3.3V, 16 Mhz is supported.
+**Baud rate** can be set for UART mode. For SPI, the master controls the speed via the SPI Clock line. With 3.3V, 16 Mhz is supported.
 
-**Init scripts** are not required although it is possible to upload small firmware patches to RAM or the OTP memory.
+**Init scripts** are not required although it is possible to upload small firmware patches to RAM or the OTP memory (EM9304 only).
 
 **BTstack integration**: The common code for the EM9304 is provided by *btstack_chipset_em9301.c*. During the setup, *btstack_chipset_em9301_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. It enables to set the BD Addr during start.
-
 
 ## Nordic nRF5 series
 
