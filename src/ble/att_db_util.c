@@ -127,7 +127,8 @@ static void att_db_util_add_attribute_uuid16(uint16_t uuid16, uint16_t flags, ui
 	att_db_util_set_end_tag();
 }
 
-static void att_db_util_add_attribute_uuid128(uint8_t * uuid128, uint16_t flags, uint8_t * data, uint16_t data_len){
+static void att_db_util_add_attribute_uuid128(const uint8_t * uuid128, uint16_t flags, uint8_t * data, uint16_t data_len){
+	printf("add flags %04x\n", flags);
 	int size = 2 + 2 + 2 + 16 + data_len;
 	if (!att_db_util_assert_space(size)) return;
 	flags |= ATT_PROPERTY_UUID128;
@@ -153,7 +154,7 @@ uint16_t att_db_util_add_service_uuid16(uint16_t uuid16){
 	return service_handle;
 }
 
-uint16_t att_db_util_add_service_uuid128(uint8_t * uuid128){
+uint16_t att_db_util_add_service_uuid128(const uint8_t * uuid128){
 	uint8_t buffer[16];
 	reverse_128(uuid128, buffer);
 	uint16_t service_handle = att_db_next_handle;
@@ -161,55 +162,78 @@ uint16_t att_db_util_add_service_uuid128(uint8_t * uuid128){
 	return service_handle;
 }
 
-static void att_db_util_add_client_characteristic_configuration(uint16_t properties){
+static void att_db_util_add_client_characteristic_configuration(uint16_t flags){
 	uint8_t buffer[2];
 	// drop permission for read (0xc00), keep write permissions (0x0011)
-	uint16_t flags = (properties & 0x1f311) | ATT_PROPERTY_READ | ATT_PROPERTY_WRITE | ATT_PROPERTY_READ_ANYBODY | ATT_PROPERTY_DYNAMIC;
+	flags = (flags & 0x1f311) | ATT_PROPERTY_READ | ATT_PROPERTY_WRITE | ATT_PROPERTY_DYNAMIC;
 	little_endian_store_16(buffer, 0, 0); 
 	att_db_util_add_attribute_uuid16(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION, flags, buffer, 2);
 }
 
-uint16_t att_db_util_add_characteristic_uuid16(uint16_t uuid16, uint16_t properties, uint8_t * data, uint16_t data_len){
+static uint16_t att_db_util_encode_permissions(uint16_t properties, uint8_t read_permission, uint8_t write_permission){
+    // drop Broadcast (0x01), Notify (0x10), Indicate (0x20) - not used for flags 
+    uint16_t flags = properties & 0xfffce;
+    // if encryption requested, set encryption key size to 16
+    if ((read_permission > ATT_SECURITY_NONE) || (write_permission > ATT_SECURITY_NONE)){
+    	flags |= 0xf000;
+    }
+    // encode read/write security levels
+    if (read_permission & 1){
+    	flags |= ATT_PROPERTY_READ_PERMISSION_BIT_0;
+    }
+    if (read_permission & 1){
+    	flags |= ATT_PROPERTY_READ_PERMISSION_BIT_1;
+    }
+    if (write_permission & 1){
+    	flags |= ATT_PROPERTY_WRITE_PERMISSION_BIT_0;
+    }
+    if (write_permission & 1){
+    	flags |= ATT_PROPERTY_WRITE_PERMISSION_BIT_1;
+    }
+	return flags;
+}
+
+uint16_t att_db_util_add_characteristic_uuid16(uint16_t uuid16, uint16_t properties, uint8_t read_permission, uint8_t write_permission, uint8_t * data, uint16_t data_len){
 	uint8_t buffer[5];
 	buffer[0] = properties;
 	little_endian_store_16(buffer, 1, att_db_next_handle + 1);
 	little_endian_store_16(buffer, 3, uuid16);
 	att_db_util_add_attribute_uuid16(GATT_CHARACTERISTICS_UUID, ATT_PROPERTY_READ, buffer, sizeof(buffer));
-	// drop Broadcast, Notify, Indicate - not used for flags 
-	uint16_t value_flags = properties & 0x1ffce;
+	uint16_t flags = att_db_util_encode_permissions(properties, read_permission, write_permission);	
 	uint16_t value_handle = att_db_next_handle;
-	att_db_util_add_attribute_uuid16(uuid16, value_flags, data, data_len);
+	att_db_util_add_attribute_uuid16(uuid16, flags, data, data_len);
 	if (properties & (ATT_PROPERTY_NOTIFY | ATT_PROPERTY_INDICATE)){
-		att_db_util_add_client_characteristic_configuration(properties);
+		att_db_util_add_client_characteristic_configuration(flags);
 	}
 	return value_handle;
 }
 
-uint16_t att_db_util_add_characteristic_uuid128(uint8_t * uuid128, uint16_t properties, uint8_t * data, uint16_t data_len){
+uint16_t att_db_util_add_characteristic_uuid128(const uint8_t * uuid128, uint16_t properties, uint8_t read_permission, uint8_t write_permission, uint8_t * data, uint16_t data_len){
 	uint8_t buffer[19];
 	buffer[0] = properties;
 	little_endian_store_16(buffer, 1, att_db_next_handle + 1);
 	reverse_128(uuid128, &buffer[3]);
 	att_db_util_add_attribute_uuid16(GATT_CHARACTERISTICS_UUID, ATT_PROPERTY_READ, buffer, sizeof(buffer));
-	// drop Broadcast, Notify, Indicate - not used for flags 
-	uint16_t value_flags = properties & 0x1ffce;
+	uint16_t flags = att_db_util_encode_permissions(properties, read_permission, write_permission);	
 	uint16_t value_handle = att_db_next_handle;
-	att_db_util_add_attribute_uuid128(uuid128, value_flags, data, data_len);
+	att_db_util_add_attribute_uuid128(uuid128, flags, data, data_len);
 	if (properties & (ATT_PROPERTY_NOTIFY | ATT_PROPERTY_INDICATE)){
-		att_db_util_add_client_characteristic_configuration(properties);
+		att_db_util_add_client_characteristic_configuration(flags);
 	}
 	return value_handle;
 }
 
-uint16_t att_db_util_add_descriptor_uuid16(uint16_t uuid16, uint16_t properties, uint8_t * data, uint16_t data_len){
+uint16_t att_db_util_add_descriptor_uuid16(uint16_t uuid16, uint16_t properties, uint8_t read_permission, uint8_t write_permission, uint8_t * data, uint16_t data_len){
     uint16_t descriptor_handler = att_db_next_handle;
-    att_db_util_add_attribute_uuid16(uuid16, properties, data, data_len);
+	uint16_t flags = att_db_util_encode_permissions(properties, read_permission, write_permission);	
+    att_db_util_add_attribute_uuid16(uuid16, flags, data, data_len);
     return descriptor_handler;
 }
 
-uint16_t att_db_util_add_descriptor_uuid128(uint8_t * uuid128, uint16_t properties, uint8_t * data, uint16_t data_len){
+uint16_t att_db_util_add_descriptor_uuid128(const uint8_t * uuid128, uint16_t properties, uint8_t read_permission, uint8_t write_permission, uint8_t * data, uint16_t data_len){
     uint16_t descriptor_handler = att_db_next_handle;
-    att_db_util_add_attribute_uuid128(uuid128, properties, data, data_len);
+	uint16_t flags = att_db_util_encode_permissions(properties, read_permission, write_permission);	
+    att_db_util_add_attribute_uuid128(uuid128, flags, data, data_len);
     return descriptor_handler;
  }
 

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - SM: support pairing using Out-of-Band (OOB) data with LE Secure Connections
 
 ### Changed
+- att_db_util: added security requirement arguments to characteristic creators
 
 ### Fixed
 
