@@ -51,8 +51,18 @@ extern "C" {
 #endif
 
 #include "btstack_chipset.h"
+#include "hci_cmd.h"
 
 const btstack_chipset_t * btstack_chipset_em9301_instance(void);
+
+// vendor specific commands
+extern const hci_cmd_t hci_vendor_em_set_public_address;
+extern const hci_cmd_t hci_vendor_em_set_uart_baudrate;
+extern const hci_cmd_t hci_vendor_em_transmitter_test;
+extern const hci_cmd_t hci_vendor_em_transmitter_test_end;
+extern const hci_cmd_t hci_vendor_em_patch_query;
+extern const hci_cmd_t hci_vendor_em_set_memory_mode;
+extern const hci_cmd_t hci_vendor_em_set_sleep_options;
 
 #if defined __cplusplus
 }

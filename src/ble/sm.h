@@ -76,7 +76,7 @@ void sm_set_ir(sm_key_t ir);
  * @brief Registers OOB Data Callback. The callback should set the oob_data and return 1 if OOB data is availble
  * @param get_oob_data_callback
  */
-void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_type, bd_addr_t addr, uint8_t * oob_data));
+void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t address_type, bd_addr_t addr, uint8_t * oob_data));
 
 /**
  * @brief Add event packet handler. 
@@ -242,12 +242,33 @@ void sm_use_fixed_passkey_in_display_role(uint32_t passkey);
  */
 void sm_allow_ltk_reconstruction_without_le_device_db_entry(int allow);
 
+/**
+ * @brief Generate OOB data for LE Secure Connections
+ * @note This generates a 128 bit random number ra and then calculates Ca = f4(PKa, PKa, ra, 0)
+ *       New OOB data should be generated for each pairing. Ra is used for subsequent OOB pairings
+ * @param callback
+ * @returns status
+ */
+uint8_t sm_generate_sc_oob_data(void (*callback)(const uint8_t * confirm_value, const uint8_t * random_value));
+
+/**
+ *
+ * @brief Registers OOB Data Callback for LE Secure Conections. The callback should set all arguments and return 1 if OOB data is availble
+ * @note the oob_sc_local_random usually is the random_value returend by sm_generate_sc_oob_data
+ * @param get_oob_data_callback
+ */
+void sm_register_sc_oob_data_callback( int (*get_sc_oob_data_callback)(uint8_t address_type, bd_addr_t addr, uint8_t * oob_sc_peer_confirm, uint8_t * oob_sc_peer_random));
+
 /* API_END */
 
 // PTS testing
 void sm_test_set_irk(sm_key_t irk);
 void sm_test_use_fixed_local_csrk(void);
 void sm_test_use_fixed_ec_keypair(void);
+
+#ifdef ENABLE_TESTING_SUPPORT
+void sm_test_set_pairing_failure(int reason);
+#endif
 
 #if defined __cplusplus
 }

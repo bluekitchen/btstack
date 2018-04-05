@@ -88,16 +88,21 @@ include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
 
 CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-variable -Wunused-parameter
 # -Werror 
+CFLAGS += -D ENABLE_LE_DATA_CHANNELS
+CFLAGS += -D ENABLE_LE_SECURE_CONNECTIONS
+CFLAGS += -D ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
+CFLAGS += -D ENABLE_TESTING_SUPPORT
 CFLAGS += -I..
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/src/classic
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include -D OI_DEBUG
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/eCC
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/tinydir
 CFLAGS += -I${BTSTACK_ROOT}/platform/posix 
 CFLAGS += -I${BTSTACK_ROOT}/platform/embedded 
 CFLAGS += -I${BTSTACK_ROOT}/port/libusb 
-CFLAGS += -D ENABLE_LE_DATA_CHANNELS
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/tinydir
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble
@@ -130,7 +135,7 @@ AVDTP_OBJ  = $(AVDTP:.c=.o)
 HXCMOD_PLAYER_OBJ = ${HXCMOD_PLAYER:.c=.o}
 
 EXAMPLES  = iopt ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback le_data_channel
-EXAMPLES += avdtp_source_test avdtp_sink_test le_data_channel avrcp_controller_test 
+EXAMPLES += avdtp_source_test avdtp_sink_test le_data_channel avrcp_controller_test sm_test
 # avrcp_target_test
 
 all: ${EXAMPLES}
@@ -183,6 +188,9 @@ sco_loopback: ${CORE_OBJ} ${COMMON_OBJ} sco_loopback.c
 
 iopt: ${CORE_OBJ} ${COMMON_OBJ} pan.o hsp_ag.o hsp_hs.o hfp_ag.o hfp_hf.o hfp_gsm_model.o iopt.c hfp.o ${SDP_CLIENT}
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+sm_test: sm_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ}  ${SM_OBJ} sm_test.o
+	${CC} $(filter-out sm_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 myclean:
 	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc ${BTSTACK_ROOT}/port/libusb/*.o ${BTSTACK_ROOT}/src/*.o ${BTSTACK_ROOT}/src/classic/*.o ${BTSTACK_ROOT}/src/ble/*.o

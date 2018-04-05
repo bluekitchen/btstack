@@ -52,7 +52,7 @@
 #ifdef MAX_ATT_DB_SIZE
 static uint8_t att_db_storage[MAX_ATT_DB_SIZE];
 #else
-#error Neither HAVE_MALLOC] nor MAX_ATT_DB_SIZE is defined. 
+#error Neither HAVE_MALLOC nor MAX_ATT_DB_SIZE is defined. 
 #endif
 #endif
 
@@ -75,7 +75,9 @@ void att_db_util_init(void){
 	att_db = att_db_storage;
 	att_db_max_size = sizeof(att_db_storage);
 #endif
-	att_db_size = 0;
+	// store att version
+	att_db[0] = ATT_DB_VERSION;
+	att_db_size = 1;
 	att_db_next_handle = 1;
 	att_db_util_set_end_tag();
 }
@@ -161,8 +163,8 @@ uint16_t att_db_util_add_service_uuid128(uint8_t * uuid128){
 
 static void att_db_util_add_client_characteristic_configuration(uint16_t properties){
 	uint8_t buffer[2];
-	// keep authentication flags
-	uint16_t flags = (properties & 0x1ff00) | ATT_DB_PERSISTENT_WRITE_CCC | ATT_DB_FLAGS_READ_WITHOUT_AUTHENTICATION | ATT_PROPERTY_READ | ATT_PROPERTY_WRITE | ATT_PROPERTY_DYNAMIC;
+	// drop permission for read (0xc00), keep write permissions (0x0011)
+	uint16_t flags = (properties & 0x1f311) | ATT_PROPERTY_READ | ATT_PROPERTY_WRITE | ATT_PROPERTY_READ_ANYBODY | ATT_PROPERTY_DYNAMIC;
 	little_endian_store_16(buffer, 0, 0); 
 	att_db_util_add_attribute_uuid16(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION, flags, buffer, 2);
 }

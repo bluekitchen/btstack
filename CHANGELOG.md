@@ -7,15 +7,24 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
-ATT Server: support for delayed ATT read response, see example/att_delayed_read_response.c
+- SM: support pairing using Out-of-Band (OOB) data with LE Secure Connections
 
 ### Changed
+
+### Fixed
+
+## Changes March 2018
+
+### Added
 - GAP: allow to limit number of connections in LE Peripheral role with gap_set_max_number_peripheral_connections
+- ATT Server: support for delayed ATT read response, see example/att_delayed_read_response.c
+- ATT Server: allow to specify security requirements seperately for read/writes. .h files need to be regenerated
 
 ### Fixed
 - RFCOMM: fix infinite loop on L2CAP connection error (regression from 4c3eeed1)
 - HSP HS: accept incomming SCO connection
 - SM: fix iteration over LE Device DB entries for bonding and address resolving
+- SM: store pairing information only if both devices have requested bonding
 
 ## Changes February 2018
 

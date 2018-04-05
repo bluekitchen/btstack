@@ -60,8 +60,60 @@
 #define HCI_OPCODE_EM_WRITE_PATCH_CONTINUE     (0xFC28)
 #define HCI_OPCODE_EM_WRITE_PATCH_ABORT        (0xFC29)
 #define HCI_OPCODE_EM_CPU_RESET                (0xFC32)
-#define HCI_OPCODE_EM_PATCH_QUERY              (0xFC34)
 
+/**
+ * @param bd_addr
+ */
+const hci_cmd_t hci_vendor_em_set_public_address = {
+    0xFC02, "B"
+};
+
+/**
+ * @param baud_rate_index
+ */
+const hci_cmd_t hci_vendor_em_set_uart_baudrate = {
+    0xFC07, "1"
+};
+
+/**
+ * @param transmitter_test_mode
+ * @param channel_number
+ * @param packet_length
+ * @param packet_payload_type
+ */
+const hci_cmd_t hci_vendor_em_transmitter_test = {
+    0xFC11, "1111"
+};
+
+/**
+ */
+const hci_cmd_t hci_vendor_em_transmitter_test_end = {
+    0xFC12, ""
+};
+
+/**
+ * @param patch_index
+ */
+const hci_cmd_t hci_vendor_em_patch_query = {
+    0xFC34, "2"
+};
+
+/**
+ * Change the state of the selected memory.
+ * @param memory_attribute
+ */
+const hci_cmd_t hci_vendor_em_set_memory_mode = {
+    0xFC2B, "1"
+};
+
+/**
+ * @param sleep_option_settings
+ */
+const hci_cmd_t hci_vendor_em_set_sleep_options = {
+    0xFC2D, "1"
+};
+
+// baudrate to index for hci_vendor_em_set_uart_baudrate
 static const uint32_t baudrates[] = {
 	      0, 
 	      0,
