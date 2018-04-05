@@ -436,7 +436,9 @@ static inline int sm_calc_actual_encryption_key_size(int other);
 static int sm_validate_stk_generation_method(void);
 static void sm_handle_encryption_result(uint8_t * data);
 static void sm_notify_client_status_reason(sm_connection_t * sm_conn, uint8_t status, uint8_t reason);
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
 static int sm_passkey_entry(stk_generation_method_t method);
+#endif
 
 static void log_info_hex16(const char * name, uint16_t value){
     log_info("%-6s 0x%04x", name, value);
