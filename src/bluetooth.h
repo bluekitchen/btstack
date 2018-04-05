@@ -1100,6 +1100,14 @@ typedef enum {
 // MARK: Attribute Property Flag, BTstack extension
 // value is asked from client
 #define ATT_PROPERTY_DYNAMIC             0x100
+
+// Security levels
+#define ATT_SECURITY_NONE 0
+#define ATT_SECURITY_ENCRYPTED 1
+#define ATT_SECURITY_AUTHENTICATED 2
+#define ATT_SECURITY_AUTHORIZED 3
+
+// internal additions
 // 128 bit UUID used
 #define ATT_PROPERTY_UUID128             0x200
 // Read/Write Permission bits
@@ -1107,22 +1115,7 @@ typedef enum {
 #define ATT_PROPERTY_READ_PERMISSION_BIT_1  0x0800
 #define ATT_PROPERTY_WRITE_PERMISSION_BIT_0 0x0001
 #define ATT_PROPERTY_WRITE_PERMISSION_BIT_1 0x0010
-// Security levels
-#define ATT_SECURITY_NONE 0
-#define ATT_SECURITY_ENCRYPTED 1
-#define ATT_SECURITY_AUTHENTICATED 2
-#define ATT_SECURITY_AUTHORIZED 3
-// Masks for use with att_db_util function
-#define ATT_PROPERTY_READ_ANYBODY        (0)
-#define ATT_PROPERTY_READ_ENCRYPTED      (ATT_PROPERTY_READ_PERMISSION_BIT_0)
-#define ATT_PROPERTY_READ_AUTHENTICATED  (ATT_PROPERTY_READ_PERMISSION_BIT_1)
-#define ATT_PROPERTY_READ_AUTHORIZED     (ATT_PROPERTY_READ_PERMISSION_BIT_0|ATT_PROPERTY_READ_PERMISSION_BIT_1)
-#define ATT_PROPERTY_WRITE_ANYBODY       (0)
-#define ATT_PROPERTY_WRITE_ENCRYPTED     (ATT_PROPERTY_WRITE_PERMISSION_BIT_0)
-#define ATT_PROPERTY_WRITE_AUTHENTICATED (ATT_PROPERTY_WRITE_PERMISSION_BIT_1)
-#define ATT_PROPERTY_WRITE_AUTHORIZED    (ATT_PROPERTY_WRITE_PERMISSION_BIT_0|ATT_PROPERTY_WRITE_PERMISSION_BIT_1)
 
-// Encryption key size stored in upper 4 bits, 0 == no encryption, encryption key size - 1 otherwise
 
 // ATT Transaction Timeout of 30 seconds for Command/Response or Indication/Confirmation
 #define ATT_TRANSACTION_TIMEOUT_MS     30000
