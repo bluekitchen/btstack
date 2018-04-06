@@ -181,6 +181,8 @@ extern const hci_cmd_t hci_le_read_supported_features;
 extern const hci_cmd_t hci_le_read_supported_states;
 extern const hci_cmd_t hci_le_read_white_list_size;
 extern const hci_cmd_t hci_le_receiver_test;
+extern const hci_cmd_t hci_le_remote_connection_parameter_request_reply;
+extern const hci_cmd_t hci_le_remote_connection_parameter_request_negative_reply;
 extern const hci_cmd_t hci_le_remove_device_from_white_list;
 extern const hci_cmd_t hci_le_set_advertise_enable;
 extern const hci_cmd_t hci_le_set_advertising_data;

@@ -1109,6 +1109,29 @@ OPCODE(OGF_LE_CONTROLLER, 0x1f), "1"
 };
 
 /**
+ * @param conn_handle
+ * @param conn_interval_min ([0x0006,0x0c80], unit: 1.25 msec)
+ * @param conn_interval_max ([0x0006,0x0c80], unit: 1.25 msec)
+ * @param conn_latency ([0x0000,0x03e8], number of connection events)
+ * @param supervision_timeout ([0x000a,0x0c80], unit: 10 msec)
+ * @param minimum_CE_length ([0x0000,0xffff], unit: 0.625 msec)
+ * @param maximum_CE_length ([0x0000,0xffff], unit: 0.625 msec)
+ */
+const hci_cmd_t hci_le_remote_connection_parameter_request_reply = {
+OPCODE(OGF_LE_CONTROLLER, 0x20), "H222222"
+// return: status, connection handle
+};
+
+/**
+ * @param con_handle
+ * @param reason
+ */
+const hci_cmd_t hci_le_remote_connection_parameter_request_negative_reply = {
+OPCODE(OGF_LE_CONTROLLER, 0x21), "H1"
+// return: status, connection handle
+};
+
+/**
  * @param con_handle
  * @param tx_octets
  * @param tx_time
@@ -1117,7 +1140,6 @@ const hci_cmd_t hci_le_set_data_length = {
 OPCODE(OGF_LE_CONTROLLER, 0x22), "H22"
 // return: status, connection handle
 };
-
 
 /**
  */
