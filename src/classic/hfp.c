@@ -362,11 +362,12 @@ static void remove_hfp_connection_context(hfp_connection_t * hfp_connection){
     btstack_memory_hfp_connection_free(hfp_connection);
 }
 
-static hfp_connection_t * provide_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr){
+static hfp_connection_t * provide_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr, hfp_role_t local_role){
     hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (hfp_connection) return  hfp_connection;
     hfp_connection = create_hfp_connection_context();
     memcpy(hfp_connection->remote_addr, bd_addr, 6);
+    hfp_connection->local_role = local_role;
     return hfp_connection;
 }
 
@@ -535,7 +536,7 @@ static void hfp_handle_failed_sco_connection(uint8_t status){
 }
 
 
-void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, hfp_role_t local_role){
     UNUSED(channel);    // ok: no channel
 
     bd_addr_t event_addr;
@@ -564,7 +565,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
         case RFCOMM_EVENT_INCOMING_CONNECTION:
             // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
             rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr); 
-            hfp_connection = provide_hfp_connection_context_for_bd_addr(event_addr);
+            hfp_connection = provide_hfp_connection_context_for_bd_addr(event_addr, local_role);
             if (!hfp_connection){
                 log_info("hfp: no memory to accept incoming connection - decline");
                 rfcomm_decline_connection(rfcomm_event_incoming_connection_get_rfcomm_cid(packet));
@@ -691,7 +692,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             if (!hfp_connection) break;
             if (hfp_connection->state == HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART){
                 hfp_connection->state = HFP_IDLE;
-                hfp_establish_service_level_connection(hfp_connection->remote_addr, hfp_connection->service_uuid);
+                hfp_establish_service_level_connection(hfp_connection->remote_addr, hfp_connection->service_uuid, local_role);
                 break;
             }
             
@@ -1361,8 +1362,8 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
     }  
 }
 
-void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid){
-    hfp_connection_t * hfp_connection = provide_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid, hfp_role_t local_role){
+    hfp_connection_t * hfp_connection = provide_hfp_connection_context_for_bd_addr(bd_addr, local_role);
     log_info("hfp_connect %s, hfp_connection %p", bd_addr_to_str(bd_addr), hfp_connection);
     
     if (!hfp_connection) {

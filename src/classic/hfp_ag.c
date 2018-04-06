@@ -2008,7 +2008,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 hfp_run_for_context(get_hfp_connection_context_for_rfcomm_cid(rfcomm_cid));
                 return;
             }
-            hfp_handle_hci_event(packet_type, channel, packet, size);
+            hfp_handle_hci_event(packet_type, channel, packet, size, HFP_ROLE_AG);
             break;
         default:
             break;
@@ -2068,7 +2068,7 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr){
 }
 
 void hfp_ag_establish_service_level_connection(bd_addr_t bd_addr){
-    hfp_establish_service_level_connection(bd_addr, BLUETOOTH_SERVICE_CLASS_HANDSFREE);
+    hfp_establish_service_level_connection(bd_addr, BLUETOOTH_SERVICE_CLASS_HANDSFREE, HFP_ROLE_AG);
 }
 
 void hfp_ag_release_service_level_connection(hci_con_handle_t acl_handle){

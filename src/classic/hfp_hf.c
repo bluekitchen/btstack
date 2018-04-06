@@ -1078,7 +1078,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             hfp_handle_rfcomm_event(packet_type, channel, packet, size);
             break;
         case HCI_EVENT_PACKET:
-            hfp_handle_hci_event(packet_type, channel, packet, size);
+            hfp_handle_hci_event(packet_type, channel, packet, size, HFP_ROLE_HF);
             break;
         default:
             break;
@@ -1128,7 +1128,7 @@ void hfp_hf_init_hf_indicators(int indicators_nr, uint16_t * indicators){
 }
 
 void hfp_hf_establish_service_level_connection(bd_addr_t bd_addr){
-    hfp_establish_service_level_connection(bd_addr, BLUETOOTH_SERVICE_CLASS_HANDSFREE_AUDIO_GATEWAY);
+    hfp_establish_service_level_connection(bd_addr, BLUETOOTH_SERVICE_CLASS_HANDSFREE_AUDIO_GATEWAY, HFP_ROLE_HF);
 }
 
 void hfp_hf_release_service_level_connection(hci_con_handle_t acl_handle){
