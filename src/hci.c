@@ -226,6 +226,27 @@ void gap_set_connection_parameter_range(le_connection_parameter_range_t *range){
 }
 
 /**
+ * @brief Test if connection parameters are inside in existing rage
+ * @param conn_interval_min (unit: 1.25ms)
+ * @param conn_interval_max (unit: 1.25ms)
+ * @param conn_latency
+ * @param supervision_timeout (unit: 10ms)
+ * @returns 1 if included
+ */
+int gap_connection_parameter_range_included(le_connection_parameter_range_t * existing_range, uint16_t le_conn_interval_min, uint16_t le_conn_interval_max, uint16_t le_conn_latency, uint16_t le_supervision_timeout){
+    if (le_conn_interval_min < existing_range->le_conn_interval_min) return 0;
+    if (le_conn_interval_max > existing_range->le_conn_interval_max) return 0;
+
+    if (le_conn_latency < existing_range->le_conn_latency_min) return 0;
+    if (le_conn_latency > existing_range->le_conn_latency_max) return 0;
+
+    if (le_supervision_timeout < existing_range->le_supervision_timeout_min) return 0;
+    if (le_supervision_timeout > existing_range->le_supervision_timeout_max) return 0;
+
+    return 1;
+}
+
+/**
  * @brief Set max number of connections in LE Peripheral role (if Bluetooth Controller supports it)
  * @note: default: 1
  * @param max_peripheral_connections
@@ -2328,7 +2349,33 @@ static void event_handler(uint8_t *packet, int size){
                     break;
 
             // log_info("LE buffer size: %u, count %u", little_endian_read_16(packet,6), packet[8]);
-                    
+                 
+                case HCI_SUBEVENT_LE_REMOTE_CONNECTION_PARAMETER_REQUEST:
+                    // connection
+                    handle = hci_subevent_le_remote_connection_parameter_request_get_connection_handle(packet);
+                    conn = hci_connection_for_handle(handle);
+                    if (conn) {
+                        // read arguments
+                        uint16_t le_conn_interval_min   = hci_subevent_le_remote_connection_parameter_request_get_interval_min(packet);
+                        uint16_t le_conn_interval_max   = hci_subevent_le_remote_connection_parameter_request_get_interval_max(packet);
+                        uint16_t le_conn_latency        = hci_subevent_le_remote_connection_parameter_request_get_latency(packet);
+                        uint16_t le_supervision_timeout = hci_subevent_le_remote_connection_parameter_request_get_timeout(packet);
+
+                        // validate against current connection parameter range
+                        le_connection_parameter_range_t existing_range;
+                        gap_get_connection_parameter_range(&existing_range);
+                        int update_parameter = gap_connection_parameter_range_included(&existing_range, le_conn_interval_min, le_conn_interval_max, le_conn_latency, le_supervision_timeout);
+                        if (update_parameter){
+                            conn->le_con_parameter_update_state = CON_PARAMETER_UPDATE_REPLY;
+                            conn->le_conn_interval_min = le_conn_interval_min;
+                            conn->le_conn_interval_max = le_conn_interval_max;
+                            conn->le_conn_latency = le_conn_latency;
+                            conn->le_supervision_timeout = le_supervision_timeout;
+                        } else {
+                            conn->le_con_parameter_update_state = CON_PARAMETER_UPDATE_DENY;
+                        }
+                    }
+                    break;
                 default:
                     break;
             }
@@ -3351,14 +3398,26 @@ static void hci_run(void){
         }
 
 #ifdef ENABLE_BLE
-        if (connection->le_con_parameter_update_state == CON_PARAMETER_UPDATE_CHANGE_HCI_CON_PARAMETERS){
-            connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE; 
-            
-            uint16_t connection_interval_min = connection->le_conn_interval_min;
-            connection->le_conn_interval_min = 0;
-            hci_send_cmd(&hci_le_connection_update, connection->con_handle, connection_interval_min,
-                connection->le_conn_interval_max, connection->le_conn_latency, connection->le_supervision_timeout,
-                0x0000, 0xffff);
+        switch (connection->le_con_parameter_update_state){
+            // response to L2CAP CON PARAMETER UPDATE REQUEST
+            case CON_PARAMETER_UPDATE_CHANGE_HCI_CON_PARAMETERS:
+                connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE; 
+                hci_send_cmd(&hci_le_connection_update, connection->con_handle, connection->le_conn_interval_min,
+                    connection->le_conn_interval_max, connection->le_conn_latency, connection->le_supervision_timeout,
+                    0x0000, 0xffff);
+                break;
+            case CON_PARAMETER_UPDATE_REPLY:
+                connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
+                hci_send_cmd(&hci_le_remote_connection_parameter_request_reply, connection->con_handle, connection->le_conn_interval_min,
+                    connection->le_conn_interval_max, connection->le_conn_latency, connection->le_supervision_timeout,
+                    0x0000, 0xffff);
+                break;
+            case CON_PARAMETER_UPDATE_NEGATIVE_REPLY:
+                connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE; 
+                hci_send_cmd(&hci_le_remote_connection_parameter_request_negative_reply, ERROR_CODE_UNSUPPORTED_LMP_PARAMETER_VALUE_UNSUPPORTED_LL_PARAMETER_VALUE);
+                break;
+            default:
+                break;
         }
 #endif
     }

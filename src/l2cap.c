@@ -2766,7 +2766,6 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                     // reject command without notifying upper layer when not in master role
                     return 0;
                 }
-                int update_parameter = 1;
                 le_connection_parameter_range_t existing_range;
                 gap_get_connection_parameter_range(&existing_range);
                 uint16_t le_conn_interval_min   = little_endian_read_16(command,L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
@@ -2774,15 +2773,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 uint16_t le_conn_latency        = little_endian_read_16(command,L2CAP_SIGNALING_COMMAND_DATA_OFFSET+4);
                 uint16_t le_supervision_timeout = little_endian_read_16(command,L2CAP_SIGNALING_COMMAND_DATA_OFFSET+6);
 
-                if (le_conn_interval_min < existing_range.le_conn_interval_min) update_parameter = 0;
-                if (le_conn_interval_max > existing_range.le_conn_interval_max) update_parameter = 0;
-
-                if (le_conn_latency < existing_range.le_conn_latency_min) update_parameter = 0;
-                if (le_conn_latency > existing_range.le_conn_latency_max) update_parameter = 0;
-
-                if (le_supervision_timeout < existing_range.le_supervision_timeout_min) update_parameter = 0;
-                if (le_supervision_timeout > existing_range.le_supervision_timeout_max) update_parameter = 0;
-
+                int update_parameter = gap_connection_parameter_range_included(&existing_range, le_conn_interval_min, le_conn_interval_max, le_conn_latency, le_supervision_timeout);
                 if (update_parameter){
                     connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_SEND_RESPONSE;
                     connection->le_conn_interval_min = le_conn_interval_min;

@@ -340,6 +340,16 @@ void gap_get_connection_parameter_range(le_connection_parameter_range_t * range)
 void gap_set_connection_parameter_range(le_connection_parameter_range_t * range);
 
 /**
+ * @brief Test if connection parameters are inside in existing rage
+ * @param conn_interval_min (unit: 1.25ms)
+ * @param conn_interval_max (unit: 1.25ms)
+ * @param conn_latency
+ * @param supervision_timeout (unit: 10ms)
+ * @returns 1 if included
+ */
+int gap_connection_parameter_range_included(le_connection_parameter_range_t * existing_range, uint16_t le_conn_interval_min, uint16_t le_conn_interval_max, uint16_t le_conn_latency, uint16_t le_supervision_timeout);
+
+/**
  * @brief Set max number of connections in LE Peripheral role (if Bluetooth Controller supports it)
  * @note: default: 1
  * @param max_peripheral_connections
