@@ -391,7 +391,7 @@ static uint16_t l2cap_setup_options_ertm_request(l2cap_channel_t * channel, uint
     config_options[pos++] = L2CAP_CONFIG_OPTION_TYPE_FRAME_CHECK_SEQUENCE;
     config_options[pos++] = 1;     // length
     config_options[pos++] = channel->fcs_option;
-    return pos;
+    return pos; // 11+4+3=18
 }
 
 static uint16_t l2cap_setup_options_ertm_response(l2cap_channel_t * channel, uint8_t * config_options){
@@ -425,7 +425,7 @@ static uint16_t l2cap_setup_options_ertm_response(l2cap_channel_t * channel, uin
     config_options[pos++] = 1;     // length
     config_options[pos++] = channel->fcs_option;
 #endif
-    return pos;
+    return pos; // 11+4=15
 }
 
 static int l2cap_ertm_send_supervisor_frame(l2cap_channel_t * channel, uint16_t control){
@@ -1376,7 +1376,11 @@ static void l2cap_run(void){
 #endif
 
 #ifdef ENABLE_CLASSIC
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    uint8_t  config_options[18];
+#else
     uint8_t  config_options[10];
+#endif
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
 
@@ -2766,7 +2770,6 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                     // reject command without notifying upper layer when not in master role
                     return 0;
                 }
-                int update_parameter = 1;
                 le_connection_parameter_range_t existing_range;
                 gap_get_connection_parameter_range(&existing_range);
 
@@ -2775,15 +2778,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                 uint16_t le_conn_latency        = little_endian_read_16(command,L2CAP_SIGNALING_COMMAND_DATA_OFFSET+4);
                 uint16_t le_supervision_timeout = little_endian_read_16(command,L2CAP_SIGNALING_COMMAND_DATA_OFFSET+6);
 
-                if (le_conn_interval_min < existing_range.le_conn_interval_min) update_parameter = 0;
-                if (le_conn_interval_max > existing_range.le_conn_interval_max) update_parameter = 0;
-
-                if (le_conn_latency < existing_range.le_conn_latency_min) update_parameter = 0;
-                if (le_conn_latency > existing_range.le_conn_latency_max) update_parameter = 0;
-
-                if (le_supervision_timeout < existing_range.le_supervision_timeout_min) update_parameter = 0;
-                if (le_supervision_timeout > existing_range.le_supervision_timeout_max) update_parameter = 0;
-
+                int update_parameter = gap_connection_parameter_range_included(&existing_range, le_conn_interval_min, le_conn_interval_max, le_conn_latency, le_supervision_timeout);
                 if (update_parameter){
                     connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_SEND_RESPONSE;
                     connection->le_conn_interval_min = le_conn_interval_min;
