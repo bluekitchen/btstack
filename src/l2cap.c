@@ -391,7 +391,7 @@ static uint16_t l2cap_setup_options_ertm_request(l2cap_channel_t * channel, uint
     config_options[pos++] = L2CAP_CONFIG_OPTION_TYPE_FRAME_CHECK_SEQUENCE;
     config_options[pos++] = 1;     // length
     config_options[pos++] = channel->fcs_option;
-    return pos;
+    return pos; // 11+4+3=18
 }
 
 static uint16_t l2cap_setup_options_ertm_response(l2cap_channel_t * channel, uint8_t * config_options){
@@ -425,7 +425,7 @@ static uint16_t l2cap_setup_options_ertm_response(l2cap_channel_t * channel, uin
     config_options[pos++] = 1;     // length
     config_options[pos++] = channel->fcs_option;
 #endif
-    return pos;
+    return pos; // 11+4=15
 }
 
 static int l2cap_ertm_send_supervisor_frame(l2cap_channel_t * channel, uint16_t control){
@@ -1376,7 +1376,11 @@ static void l2cap_run(void){
 #endif
 
 #ifdef ENABLE_CLASSIC
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    uint8_t  config_options[18];
+#else
     uint8_t  config_options[10];
+#endif
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
 
