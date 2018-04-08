@@ -214,8 +214,10 @@ static void hfp_emit_event_for_context(hfp_connection_t * hfp_connection, uint8_
     switch (hfp_connection->local_role){
         case HFP_ROLE_HF:
             callback = hfp_hf_callback;
+            break;
         case HFP_ROLE_AG:
             callback = hfp_ag_callback;
+            break;
         default:
             return;
     }
