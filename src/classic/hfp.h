@@ -155,6 +155,11 @@ extern "C" {
 #define HFP_CODEC_MSBC 0x02
 
 typedef enum {
+    HFP_ROLE_AG = 0,
+    HFP_ROLE_HF,
+} hfp_role_t;
+
+typedef enum {
     HFP_CMD_NONE = 0,
     HFP_CMD_ERROR,
     HFP_CMD_UNKNOWN,
@@ -474,6 +479,9 @@ typedef struct{
 typedef struct hfp_connection {
     btstack_linked_item_t    item;
     
+    // local role: HF or AG
+    hfp_role_t local_role;
+
     bd_addr_t remote_addr;
     hci_con_handle_t acl_handle;
     hci_con_handle_t sco_handle;
@@ -485,7 +493,7 @@ typedef struct hfp_connection {
     hfp_state_t state;
     hfp_codecs_state_t codecs_state;
     
-    // needed for reestablishing connection
+    // needed for reestablishing connection - service uuid of the remote
     uint16_t service_uuid;
 
     // used during service level connection establishment
@@ -633,16 +641,18 @@ int get_bit(uint16_t bitmap, int position);
 int store_bit(uint32_t bitmap, int position, uint8_t value);
 // UTILS_END
 
-void hfp_set_callback(btstack_packet_handler_t callback);
+void hfp_set_ag_callback(btstack_packet_handler_t callback);
+void hfp_set_ag_rfcomm_packet_handler(btstack_packet_handler_t handler);
 
-void hfp_set_packet_handler_for_rfcomm_connections(btstack_packet_handler_t handler);
+void hfp_set_hf_callback(btstack_packet_handler_t callback);
+void hfp_set_hf_rfcomm_packet_handler(btstack_packet_handler_t handler);
 
 void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t service_uuid, int rfcomm_channel_nr, const char * name);
-void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-void hfp_emit_event(btstack_packet_handler_t callback, uint8_t event_subtype, uint8_t value);
-void hfp_emit_simple_event(btstack_packet_handler_t callback, uint8_t event_subtype);
-void hfp_emit_string_event(btstack_packet_handler_t callback, uint8_t event_subtype, const char * value);
-void hfp_emit_slc_connection_event(btstack_packet_handler_t callback, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr);
+void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, hfp_role_t local_role);
+void hfp_emit_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, uint8_t value);
+void hfp_emit_simple_event(hfp_connection_t * hfp_connection, uint8_t event_subtype);
+void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value);
+void hfp_emit_slc_connection_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr);
 
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr);
@@ -652,7 +662,7 @@ hfp_connection_t * get_hfp_connection_context_for_acl_handle(uint16_t handle);
 btstack_linked_list_t * hfp_get_connections(void);
 void hfp_parse(hfp_connection_t * connection, uint8_t byte, int isHandsFree);
 
-void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid);
+void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid, hfp_role_t local_role);
 void hfp_release_service_level_connection(hfp_connection_t * connection);
 void hfp_reset_context_flags(hfp_connection_t * connection);
 

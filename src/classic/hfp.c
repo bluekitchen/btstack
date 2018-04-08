@@ -99,13 +99,21 @@ static const char * hfp_ag_features[] = {
 
 static btstack_linked_list_t hfp_connections = NULL;
 static void parse_sequence(hfp_connection_t * context);
-static btstack_packet_handler_t hfp_callback;
-static btstack_packet_handler_t rfcomm_packet_handler;
+
+static btstack_packet_handler_t hfp_hf_callback;
+static btstack_packet_handler_t hfp_ag_callback;
+
+static btstack_packet_handler_t hfp_hf_rfcomm_packet_handler;
+static btstack_packet_handler_t hfp_ag_rfcomm_packet_handler;
 
 static hfp_connection_t * sco_establishment_active;
 
-void hfp_set_callback(btstack_packet_handler_t callback){
-    hfp_callback = callback;
+void hfp_set_hf_callback(btstack_packet_handler_t callback){
+    hfp_hf_callback = callback;
+}
+
+void hfp_set_ag_callback(btstack_packet_handler_t callback){
+    hfp_ag_callback = callback;
 }
 
 const char * hfp_hf_feature(int index){
@@ -200,27 +208,40 @@ int join_bitmap(char * buffer, int buffer_size, uint32_t values, int values_nr){
     return offset;
 }
 
-void hfp_emit_simple_event(btstack_packet_handler_t callback, uint8_t event_subtype){
-    if (!callback) return;
+static void hfp_emit_event_for_context(hfp_connection_t * hfp_connection, uint8_t * packet, uint16_t size){
+    if (!hfp_connection) return;
+    btstack_packet_handler_t callback = NULL;
+    switch (hfp_connection->local_role){
+        case HFP_ROLE_HF:
+            callback = hfp_hf_callback;
+            break;
+        case HFP_ROLE_AG:
+            callback = hfp_ag_callback;
+            break;
+        default:
+            return;
+    }
+    (*callback)(HCI_EVENT_PACKET, 0, packet, size);
+}
+
+void hfp_emit_simple_event(hfp_connection_t * hfp_connection, uint8_t event_subtype){
     uint8_t event[3];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = event_subtype;
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
-void hfp_emit_event(btstack_packet_handler_t callback, uint8_t event_subtype, uint8_t value){
-    if (!callback) return;
+void hfp_emit_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, uint8_t value){
     uint8_t event[4];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = event_subtype;
     event[3] = value; // status 0 == OK
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
-void hfp_emit_slc_connection_event(btstack_packet_handler_t callback, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr){
-    if (!callback) return;
+void hfp_emit_slc_connection_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr){
     uint8_t event[12];
     int pos = 0;
     event[pos++] = HCI_EVENT_HFP_META;
@@ -231,11 +252,10 @@ void hfp_emit_slc_connection_event(btstack_packet_handler_t callback, uint8_t st
     pos += 2;
     reverse_bd_addr(addr,&event[pos]);
     pos += 6;
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
-static void hfp_emit_sco_event(btstack_packet_handler_t callback, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr, uint8_t  negotiated_codec){
-    if (!callback) return;
+static void hfp_emit_sco_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr, uint8_t  negotiated_codec){
     uint8_t event[13];
     int pos = 0;
     event[pos++] = HCI_EVENT_HFP_META;
@@ -247,11 +267,10 @@ static void hfp_emit_sco_event(btstack_packet_handler_t callback, uint8_t status
     reverse_bd_addr(addr,&event[pos]);
     pos += 6;
     event[pos++] = negotiated_codec;
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
-void hfp_emit_string_event(btstack_packet_handler_t callback, uint8_t event_subtype, const char * value){
-    if (!callback) return;
+void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value){
     uint8_t event[40];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
@@ -259,7 +278,7 @@ void hfp_emit_string_event(btstack_packet_handler_t callback, uint8_t event_subt
     int size = ( strlen(value) < sizeof(event) - 4) ? (int) strlen(value) : (int) sizeof(event) - 4;
     strncpy((char*)&event[3], value, size);
     event[3 + size] = 0;
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    hfp_emit_event_for_context(hfp_connection, event, sizeof(event));
 }
 
 btstack_linked_list_t * hfp_get_connections(void){
@@ -362,11 +381,12 @@ static void remove_hfp_connection_context(hfp_connection_t * hfp_connection){
     btstack_memory_hfp_connection_free(hfp_connection);
 }
 
-static hfp_connection_t * provide_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr){
+static hfp_connection_t * provide_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr, hfp_role_t local_role){
     hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (hfp_connection) return  hfp_connection;
     hfp_connection = create_hfp_connection_context();
     memcpy(hfp_connection->remote_addr, bd_addr, 6);
+    hfp_connection->local_role = local_role;
     return hfp_connection;
 }
 
@@ -478,11 +498,12 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
             if (hfp_connection->rfcomm_channel_nr > 0){
                 hfp_connection->state = HFP_W4_RFCOMM_CONNECTED;
                 log_info("HFP: SDP_EVENT_QUERY_COMPLETE context %p, addr %s, state %d", hfp_connection, bd_addr_to_str( hfp_connection->remote_addr),  hfp_connection->state);
-                rfcomm_create_channel(rfcomm_packet_handler, hfp_connection->remote_addr, hfp_connection->rfcomm_channel_nr, NULL); 
+                btstack_packet_handler_t packet_handler = hfp_connection->local_role == HFP_ROLE_AG ? hfp_ag_rfcomm_packet_handler : hfp_hf_rfcomm_packet_handler;
+                rfcomm_create_channel(packet_handler, hfp_connection->remote_addr, hfp_connection->rfcomm_channel_nr, NULL); 
                 break;
             }
             hfp_connection->state = HFP_IDLE;
-            hfp_emit_slc_connection_event(hfp_callback, sdp_event_query_complete_get_status(packet), HCI_CON_HANDLE_INVALID, hfp_connection->remote_addr);
+            hfp_emit_slc_connection_event(hfp_connection, sdp_event_query_complete_get_status(packet), HCI_CON_HANDLE_INVALID, hfp_connection->remote_addr);
             log_info("rfcomm service not found, status %u.", sdp_event_query_complete_get_status(packet));
             break;
         default:
@@ -535,7 +556,7 @@ static void hfp_handle_failed_sco_connection(uint8_t status){
 }
 
 
-void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, hfp_role_t local_role){
     UNUSED(channel);    // ok: no channel
 
     bd_addr_t event_addr;
@@ -564,7 +585,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
         case RFCOMM_EVENT_INCOMING_CONNECTION:
             // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
             rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr); 
-            hfp_connection = provide_hfp_connection_context_for_bd_addr(event_addr);
+            hfp_connection = provide_hfp_connection_context_for_bd_addr(event_addr, local_role);
             if (!hfp_connection){
                 log_info("hfp: no memory to accept incoming connection - decline");
                 rfcomm_decline_connection(rfcomm_event_incoming_connection_get_rfcomm_cid(packet));
@@ -591,7 +612,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             if (!hfp_connection || hfp_connection->state != HFP_W4_RFCOMM_CONNECTED) return;
 
             if (status) {
-                hfp_emit_slc_connection_event(hfp_callback, status, rfcomm_event_channel_opened_get_con_handle(packet), event_addr);
+                hfp_emit_slc_connection_event(hfp_connection, status, rfcomm_event_channel_opened_get_con_handle(packet), event_addr);
                 remove_hfp_connection_context(hfp_connection);
             } else {
                 hfp_connection->acl_handle = rfcomm_event_channel_opened_get_con_handle(packet);
@@ -681,7 +702,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             hfp_connection->sco_handle = sco_handle;
             hfp_connection->establish_audio_connection = 0;
             hfp_connection->state = HFP_AUDIO_CONNECTION_ESTABLISHED;
-            hfp_emit_sco_event(hfp_callback, packet[2], sco_handle, event_addr, hfp_connection->negotiated_codec);
+            hfp_emit_sco_event(hfp_connection, packet[2], sco_handle, event_addr, hfp_connection->negotiated_codec);
             break;                
         }
 
@@ -691,11 +712,11 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             if (!hfp_connection) break;
             if (hfp_connection->state == HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART){
                 hfp_connection->state = HFP_IDLE;
-                hfp_establish_service_level_connection(hfp_connection->remote_addr, hfp_connection->service_uuid);
+                hfp_establish_service_level_connection(hfp_connection->remote_addr, hfp_connection->service_uuid, local_role);
                 break;
             }
             
-            hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
+            hfp_emit_event(hfp_connection, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
             remove_hfp_connection_context(hfp_connection);
             break;
 
@@ -715,7 +736,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 hfp_connection->sco_handle = 0;
                 hfp_connection->release_audio_connection = 0;
                 hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-                hfp_emit_event(hfp_callback, HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED, 0);
+                hfp_emit_event(hfp_connection, HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED, 0);
                 break;
             }
             break;
@@ -1361,8 +1382,8 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
     }  
 }
 
-void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid){
-    hfp_connection_t * hfp_connection = provide_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid, hfp_role_t local_role){
+    hfp_connection_t * hfp_connection = provide_hfp_connection_context_for_bd_addr(bd_addr, local_role);
     log_info("hfp_connect %s, hfp_connection %p", bd_addr_to_str(bd_addr), hfp_connection);
     
     if (!hfp_connection) {
@@ -1450,7 +1471,10 @@ void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
         sco_voice_setting, hfp_link_settings[setting].retransmission_effort, hfp_link_settings[setting].packet_types); // all types 0x003f, only 2-ev3 0x380
 }
 
-void hfp_set_packet_handler_for_rfcomm_connections(btstack_packet_handler_t handler){
-    rfcomm_packet_handler = handler;
+void hfp_set_ag_rfcomm_packet_handler(btstack_packet_handler_t handler){
+    hfp_ag_rfcomm_packet_handler = handler;
+}
+void hfp_set_hf_rfcomm_packet_handler(btstack_packet_handler_t handler){
+    hfp_hf_rfcomm_packet_handler = handler;
 }
 
