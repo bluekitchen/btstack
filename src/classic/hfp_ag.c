@@ -106,7 +106,6 @@ static int hfp_ag_response_and_hold_active = 0;
 static hfp_phone_number_t * subscriber_numbers = NULL;
 static int subscriber_numbers_count = 0;
 
-static btstack_packet_callback_registration_t hci_event_callback_registration;
 hfp_ag_indicator_t * hfp_ag_get_ag_indicators(hfp_connection_t * hfp_connection);
 
 
@@ -2005,18 +2004,6 @@ static void hfp_run(void){
     }
 }
 
-static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    switch (packet_type){
-        case HCI_EVENT_PACKET:
-            hfp_handle_hci_event(packet_type, channel, packet, size, HFP_ROLE_AG);
-            break;
-        default:
-            break;
-    }
-
-    hfp_run();
-}
-
 static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet_type){
         case RFCOMM_DATA_PACKET:
@@ -2071,9 +2058,7 @@ void hfp_ag_init_call_hold_services(int call_hold_services_nr, const char * call
 
 
 void hfp_ag_init(uint16_t rfcomm_channel_nr){
-    // register for HCI events
-    hci_event_callback_registration.callback = &hci_packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
+    hfp_init();
 
     rfcomm_register_service(&rfcomm_packet_handler, rfcomm_channel_nr, 0xffff);  
     hfp_set_ag_rfcomm_packet_handler(&rfcomm_packet_handler);

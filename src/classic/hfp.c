@@ -106,6 +106,8 @@ static btstack_packet_handler_t hfp_ag_callback;
 static btstack_packet_handler_t hfp_hf_rfcomm_packet_handler;
 static btstack_packet_handler_t hfp_ag_rfcomm_packet_handler;
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
 static hfp_connection_t * sco_establishment_active;
 
 void hfp_set_hf_callback(btstack_packet_handler_t callback){
@@ -498,7 +500,18 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
             if (hfp_connection->rfcomm_channel_nr > 0){
                 hfp_connection->state = HFP_W4_RFCOMM_CONNECTED;
                 log_info("HFP: SDP_EVENT_QUERY_COMPLETE context %p, addr %s, state %d", hfp_connection, bd_addr_to_str( hfp_connection->remote_addr),  hfp_connection->state);
-                btstack_packet_handler_t packet_handler = hfp_connection->local_role == HFP_ROLE_AG ? hfp_ag_rfcomm_packet_handler : hfp_hf_rfcomm_packet_handler;
+                btstack_packet_handler_t packet_handler;
+                switch (hfp_connection->local_role){
+                    case HFP_ROLE_AG:
+                        packet_handler = hfp_ag_rfcomm_packet_handler;
+                        break;
+                    case HFP_ROLE_HF:
+                        packet_handler = hfp_hf_rfcomm_packet_handler;
+                        break;
+                    default:
+                        log_error("Role %x", hfp_connection->local_role);
+                        return;
+                }
                 rfcomm_create_channel(packet_handler, hfp_connection->remote_addr, hfp_connection->rfcomm_channel_nr, NULL); 
                 break;
             }
@@ -583,6 +596,9 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             break;
         
         case RFCOMM_EVENT_INCOMING_CONNECTION:
+            if (local_role > 1){
+                log_error("hfp_handle_hci_event role %x", local_role);
+            }
             // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
             rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr); 
             hfp_connection = provide_hfp_connection_context_for_bd_addr(event_addr, local_role);
@@ -707,6 +723,9 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
         }
 
         case RFCOMM_EVENT_CHANNEL_CLOSED:
+            if (local_role > 1){
+                log_error("hfp_handle_hci_event role %x", local_role);
+            }
             rfcomm_cid = little_endian_read_16(packet,2);
             hfp_connection = get_hfp_connection_context_for_rfcomm_cid(rfcomm_cid);
             if (!hfp_connection) break;
@@ -1478,3 +1497,11 @@ void hfp_set_hf_rfcomm_packet_handler(btstack_packet_handler_t handler){
     hfp_hf_rfcomm_packet_handler = handler;
 }
 
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    hfp_handle_hci_event(packet_type, channel, packet, size, HFP_ROLE_INVALID);
+}
+
+void hfp_init(void){
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+}
