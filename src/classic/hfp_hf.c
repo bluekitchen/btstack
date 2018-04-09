@@ -160,8 +160,6 @@ static int has_hf_indicators_feature(hfp_connection_t * hfp_connection){
     return hf && ag;
 }
 
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-
 void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint16_t supported_features, int wide_band_speech){
     if (!name){
         name = default_hfp_hf_service_name;
@@ -955,7 +953,7 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *hfp_connection){
 }
 
 
-static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void hfp_hf_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);    // ok: only called with RFCOMM_DATA_PACKET
 
     // assertion: size >= 1 as rfcomm.c does not deliver empty packets
@@ -1071,10 +1069,21 @@ static void hfp_run(void){
     }
 }
 
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    switch (packet_type){
+        case HCI_EVENT_PACKET:
+            hfp_handle_hci_event(packet_type, channel, packet, size, HFP_ROLE_HF);
+            break;
+        default:
+            break;
+    }
+    hfp_run();
+}
+
+static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet_type){
         case RFCOMM_DATA_PACKET:
-            hfp_handle_rfcomm_event(packet_type, channel, packet, size);
+            hfp_hf_handle_rfcomm_event(packet_type, channel, packet, size);
             break;
         case HCI_EVENT_PACKET:
             hfp_handle_hci_event(packet_type, channel, packet, size, HFP_ROLE_HF);
@@ -1087,12 +1096,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 void hfp_hf_init(uint16_t rfcomm_channel_nr){
     // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
+    hci_event_callback_registration.callback = &hci_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-    rfcomm_register_service(packet_handler, rfcomm_channel_nr, 0xffff);  
-
-    hfp_set_hf_rfcomm_packet_handler(&packet_handler);
+    rfcomm_register_service(rfcomm_packet_handler, rfcomm_channel_nr, 0xffff);  
+    hfp_set_hf_rfcomm_packet_handler(&rfcomm_packet_handler);
 
     hfp_supported_features = HFP_DEFAULT_HF_SUPPORTED_FEATURES;
     hfp_codecs_nr = 0;

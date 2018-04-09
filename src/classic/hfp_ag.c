@@ -69,7 +69,6 @@
 #include "classic/sdp_util.h"
 
 // private prototypes
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void hfp_run_for_context(hfp_connection_t *hfp_connection);
 static void hfp_ag_hf_start_ringing(hfp_connection_t * hfp_connection);
 static void hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection);
@@ -1797,7 +1796,7 @@ static hfp_generic_status_indicator_t *get_hf_indicator_by_number(int number){
     return NULL;
 }
 
-static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);    // ok: only called with RFCOMM_DATA_PACKET
 
     // assertion: size >= 1 as rfcomm.c does not deliver empty packets
@@ -2006,10 +2005,22 @@ static void hfp_run(void){
     }
 }
 
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void hci_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    switch (packet_type){
+        case HCI_EVENT_PACKET:
+            hfp_handle_hci_event(packet_type, channel, packet, size, HFP_ROLE_AG);
+            break;
+        default:
+            break;
+    }
+
+    hfp_run();
+}
+
+static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet_type){
         case RFCOMM_DATA_PACKET:
-            hfp_handle_rfcomm_data(packet_type, channel, packet, size);
+            hfp_ag_handle_rfcomm_data(packet_type, channel, packet, size);
             break;
         case HCI_EVENT_PACKET:
             if (packet[0] == RFCOMM_EVENT_CAN_SEND_NOW){
@@ -2025,7 +2036,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
     hfp_run();
 }
-
 
 void hfp_ag_init_codecs(int codecs_nr, uint8_t * codecs){
     if (codecs_nr > HFP_MAX_NUM_CODECS){
@@ -2062,16 +2072,15 @@ void hfp_ag_init_call_hold_services(int call_hold_services_nr, const char * call
 
 void hfp_ag_init(uint16_t rfcomm_channel_nr){
     // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
+    hci_event_callback_registration.callback = &hci_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-    rfcomm_register_service(&packet_handler, rfcomm_channel_nr, 0xffff);  
+    rfcomm_register_service(&rfcomm_packet_handler, rfcomm_channel_nr, 0xffff);  
+    hfp_set_ag_rfcomm_packet_handler(&rfcomm_packet_handler);
     
     hfp_ag_response_and_hold_active = 0;
     subscriber_numbers = NULL;
     subscriber_numbers_count = 0;
-
-    hfp_set_ag_rfcomm_packet_handler(&packet_handler);
 
     hfp_gsm_init();
 }
