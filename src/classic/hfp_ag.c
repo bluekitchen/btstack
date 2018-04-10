@@ -69,7 +69,6 @@
 #include "classic/sdp_util.h"
 
 // private prototypes
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void hfp_run_for_context(hfp_connection_t *hfp_connection);
 static void hfp_ag_hf_start_ringing(hfp_connection_t * hfp_connection);
 static void hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection);
@@ -107,7 +106,6 @@ static int hfp_ag_response_and_hold_active = 0;
 static hfp_phone_number_t * subscriber_numbers = NULL;
 static int subscriber_numbers_count = 0;
 
-static btstack_packet_callback_registration_t hci_event_callback_registration;
 hfp_ag_indicator_t * hfp_ag_get_ag_indicators(hfp_connection_t * hfp_connection);
 
 
@@ -1612,6 +1610,11 @@ static void hfp_run_for_context(hfp_connection_t *hfp_connection){
     if (!hfp_connection) return;
     if (!hfp_connection->rfcomm_cid) return;
 
+    if (hfp_connection->local_role != HFP_ROLE_AG) {
+        log_info("HFP AG%p, wrong role %u", hfp_connection, hfp_connection->local_role);
+        return;
+    }
+
     if (!rfcomm_can_send_packet_now(hfp_connection->rfcomm_cid)) {
         log_info("hfp_run_for_context: request can send for 0x%02x", hfp_connection->rfcomm_cid);
         rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
@@ -1797,7 +1800,7 @@ static hfp_generic_status_indicator_t *get_hf_indicator_by_number(int number){
     return NULL;
 }
 
-static void hfp_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);    // ok: only called with RFCOMM_DATA_PACKET
 
     // assertion: size >= 1 as rfcomm.c does not deliver empty packets
@@ -2002,14 +2005,15 @@ static void hfp_run(void){
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (hfp_connection->local_role != HFP_ROLE_AG) continue;
         hfp_run_for_context(hfp_connection);
     }
 }
 
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet_type){
         case RFCOMM_DATA_PACKET:
-            hfp_handle_rfcomm_data(packet_type, channel, packet, size);
+            hfp_ag_handle_rfcomm_data(packet_type, channel, packet, size);
             break;
         case HCI_EVENT_PACKET:
             if (packet[0] == RFCOMM_EVENT_CAN_SEND_NOW){
@@ -2025,7 +2029,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
     hfp_run();
 }
-
 
 void hfp_ag_init_codecs(int codecs_nr, uint8_t * codecs){
     if (codecs_nr > HFP_MAX_NUM_CODECS){
@@ -2061,17 +2064,14 @@ void hfp_ag_init_call_hold_services(int call_hold_services_nr, const char * call
 
 
 void hfp_ag_init(uint16_t rfcomm_channel_nr){
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
+    hfp_init();
 
-    rfcomm_register_service(&packet_handler, rfcomm_channel_nr, 0xffff);  
+    rfcomm_register_service(&rfcomm_packet_handler, rfcomm_channel_nr, 0xffff);  
+    hfp_set_ag_rfcomm_packet_handler(&rfcomm_packet_handler);
     
     hfp_ag_response_and_hold_active = 0;
     subscriber_numbers = NULL;
     subscriber_numbers_count = 0;
-
-    hfp_set_ag_rfcomm_packet_handler(&packet_handler);
 
     hfp_gsm_init();
 }

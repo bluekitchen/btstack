@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - att_db_util: added security requirement arguments to characteristic creators
 
 ### Fixed
+- hci: fix buffer overrun in gap_inquiry_explode
 
 ## Changes March 2018
 

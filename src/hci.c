@@ -3780,7 +3780,7 @@ static void hci_notify_if_sco_can_send_now(void){
 
 // parsing end emitting has been merged to reduce code size
 static void gap_inquiry_explode(uint8_t * packet){
-    uint8_t event[15+GAP_INQUIRY_MAX_NAME_LEN];
+    uint8_t event[19+GAP_INQUIRY_MAX_NAME_LEN];
 
     uint8_t * eir_data;
     ad_context_t context;

@@ -52,6 +52,7 @@
 
 #include "bluetooth_sdp.h"
 #include "btstack_debug.h"
+#include "btstack_event.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "classic/core.h"
@@ -84,8 +85,6 @@ static hfp_callsetup_status_t hfp_callsetup_status;
 static hfp_callheld_status_t hfp_callheld_status;
 
 static char phone_number[25]; 
-
-static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 void hfp_hf_register_packet_handler(btstack_packet_handler_t callback){
     if (callback == NULL){
@@ -159,8 +158,6 @@ static int has_hf_indicators_feature(hfp_connection_t * hfp_connection){
     int ag = get_bit(hfp_connection->remote_supported_features, HFP_AGSF_HF_INDICATORS);
     return hf && ag;
 }
-
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle, int rfcomm_channel_nr, const char * name, uint16_t supported_features, int wide_band_speech){
     if (!name){
@@ -555,6 +552,11 @@ static void hfp_run_for_context(hfp_connection_t * hfp_connection){
     if (!hfp_connection) return;
     if (!hfp_connection->rfcomm_cid) return;
 
+    if (hfp_connection->local_role != HFP_ROLE_HF) {
+        log_info("HFP HF%p, wrong role %u", hfp_connection, hfp_connection->local_role);
+        return;
+    }
+
     if (hfp_connection->hf_accept_sco && hci_can_send_command_packet_now()){
 
         hfp_connection->hf_accept_sco = 0;
@@ -591,8 +593,10 @@ static void hfp_run_for_context(hfp_connection_t * hfp_connection){
         return;
     }
 
-    if (!rfcomm_can_send_packet_now(hfp_connection->rfcomm_cid)) return;
-    
+    if (!rfcomm_can_send_packet_now(hfp_connection->rfcomm_cid)) {
+        rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
+        return;
+    }
     int done = hfp_hf_run_for_context_service_level_connection(hfp_connection);
     if (!done){
         done = hfp_hf_run_for_context_service_level_connection_queries(hfp_connection);
@@ -955,7 +959,7 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *hfp_connection){
 }
 
 
-static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void hfp_hf_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);    // ok: only called with RFCOMM_DATA_PACKET
 
     // assertion: size >= 1 as rfcomm.c does not deliver empty packets
@@ -1067,16 +1071,22 @@ static void hfp_run(void){
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (hfp_connection->local_role != HFP_ROLE_HF) continue;
         hfp_run_for_context(hfp_connection);
     }
 }
 
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet_type){
         case RFCOMM_DATA_PACKET:
-            hfp_handle_rfcomm_event(packet_type, channel, packet, size);
+            hfp_hf_handle_rfcomm_event(packet_type, channel, packet, size);
             break;
         case HCI_EVENT_PACKET:
+            if (packet[0] == RFCOMM_EVENT_CAN_SEND_NOW){
+                uint16_t rfcomm_cid = rfcomm_event_can_send_now_get_rfcomm_cid(packet);
+                hfp_run_for_context(get_hfp_connection_context_for_rfcomm_cid(rfcomm_cid));
+                return;
+            }
             hfp_handle_hci_event(packet_type, channel, packet, size, HFP_ROLE_HF);
             break;
         default:
@@ -1086,13 +1096,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 }
 
 void hfp_hf_init(uint16_t rfcomm_channel_nr){
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
+    hfp_init();
 
-    rfcomm_register_service(packet_handler, rfcomm_channel_nr, 0xffff);  
-
-    hfp_set_hf_rfcomm_packet_handler(&packet_handler);
+    rfcomm_register_service(rfcomm_packet_handler, rfcomm_channel_nr, 0xffff);  
+    hfp_set_hf_rfcomm_packet_handler(&rfcomm_packet_handler);
 
     hfp_supported_features = HFP_DEFAULT_HF_SUPPORTED_FEATURES;
     hfp_codecs_nr = 0;
