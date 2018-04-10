@@ -272,7 +272,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     printf("media_type 0x%02x, charset 0x%02x, actual len %d, name %s\n", media_type, charset, value_len, value);
                     
                     uint8_t num_attributes = packet[pos++];
-                    printf("Num media attributes %d\n", num_attributes);
+                    // printf("Num media attributes %d\n", num_attributes);
                     // for (avrcp_media_item_iterator_init(&media_item_context, size-pos, packet+pos); avrcp_media_item_iterator_has_more(&media_item_context); avrcp_media_item_iterator_next(&media_item_context)){
                     //     uint32_t attr_id            = avrcp_media_item_iterator_get_attr_id(&media_item_context);
                     //     uint16_t attr_charset       = avrcp_media_item_iterator_get_attr_charset(&media_item_context);
@@ -390,7 +390,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                 break;    
                             }
                             browsing_uid_counter = avrcp_subevent_browsing_done_get_uid_counter(packet);
-                            printf("DONE.\n");
+                            printf("DONE, browsing_uid_counter %d.\n", browsing_uid_counter);
                             break;
 
                         default:

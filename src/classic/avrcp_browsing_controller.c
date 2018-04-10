@@ -566,7 +566,7 @@ static void avrcp_browsing_parse_and_emit_element_attrs(uint8_t * packet, uint16
     }
 }
 
-static void avrcp_browsing_controller_emit_done(btstack_packet_handler_t callback, uint16_t browsing_cid, uint8_t browsing_status, uint8_t bluetooth_status){
+static void avrcp_browsing_controller_emit_failed(btstack_packet_handler_t callback, uint16_t browsing_cid, uint8_t browsing_status, uint8_t bluetooth_status){
     avrcp_browsing_controller_emit_done_with_uid_counter(callback, browsing_cid, 0, browsing_status, bluetooth_status);
 }
 
@@ -596,7 +596,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     } 
                     if (pos + 4 > size){
                         browsing_connection->state = AVCTP_CONNECTION_OPENED;
-                        avrcp_browsing_controller_emit_done(avrcp_controller_context.browsing_avrcp_callback, channel, AVRCP_BROWSING_ERROR_CODE_INVALID_COMMAND, ERROR_CODE_SUCCESS);
+                        avrcp_browsing_controller_emit_failed(avrcp_controller_context.browsing_avrcp_callback, channel, AVRCP_BROWSING_ERROR_CODE_INVALID_COMMAND, ERROR_CODE_SUCCESS);
                         return;  
                     }
                     browsing_connection->pdu_id = packet[pos++];
@@ -605,7 +605,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     browsing_connection->browsing_status = packet[pos++]; 
                     if (browsing_connection->browsing_status != AVRCP_BROWSING_ERROR_CODE_SUCCESS){
                         browsing_connection->state = AVCTP_CONNECTION_OPENED;
-                        avrcp_browsing_controller_emit_done(avrcp_controller_context.browsing_avrcp_callback, channel, browsing_connection->browsing_status, ERROR_CODE_SUCCESS);
+                        avrcp_browsing_controller_emit_failed(avrcp_controller_context.browsing_avrcp_callback, channel, browsing_connection->browsing_status, ERROR_CODE_SUCCESS);
                         return;        
                     }
                     browsing_connection->uid_counter =  big_endian_read_16(packet, pos);
@@ -618,10 +618,10 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
             uint32_t i;
             switch(browsing_connection->pdu_id){
                 case AVRCP_PDU_ID_CHANGE_PATH:
-                    printf("AVRCP_PDU_ID_CHANGE_PATH \n");
+                    // printf("AVRCP_PDU_ID_CHANGE_PATH \n");
                     break;
                 case AVRCP_PDU_ID_SET_ADDRESSED_PLAYER:
-                    printf("AVRCP_PDU_ID_SET_ADDRESSED_PLAYER \n");
+                    // printf("AVRCP_PDU_ID_SET_ADDRESSED_PLAYER \n");
                     break;
                 case AVRCP_PDU_ID_GET_TOTAL_NUMBER_OF_ITEMS:{
                     uint32_t num_items = big_endian_read_32(packet, pos);
@@ -648,14 +648,12 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                 }
 
                 case AVRCP_PDU_ID_GET_FOLDER_ITEMS:{
-                    printf(" AVRCP_PDU_ID_GET_FOLDER_ITEMS\n");
                     switch (avctp_packet_type){
                         case AVRCP_SINGLE_PACKET:
                         case AVRCP_START_PACKET:
                             avrcp_parser_reset(browsing_connection);
                             browsing_connection->num_items = big_endian_read_16(packet, pos); //num_items
                             pos += 2;
-                            printf(" num items %d\n", browsing_connection->num_items);
                             avrcp_browsing_parse_and_emit_element_attrs(packet+pos, size-pos, browsing_connection);
                             break;
                         
@@ -686,7 +684,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                 case AVRCP_END_PACKET:
                     // printf("reset browsing connection state to OPENED\n");
                     browsing_connection->state = AVCTP_CONNECTION_OPENED;
-                    avrcp_browsing_controller_emit_done(avrcp_controller_context.browsing_avrcp_callback, channel, browsing_connection->browsing_status, ERROR_CODE_SUCCESS);
+                    avrcp_browsing_controller_emit_done_with_uid_counter(avrcp_controller_context.browsing_avrcp_callback, channel, browsing_connection->uid_counter, browsing_connection->browsing_status, ERROR_CODE_SUCCESS);
                     break;
                 default:
                     break;
