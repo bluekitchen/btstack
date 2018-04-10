@@ -547,7 +547,8 @@ static void show_usage(void){
     printf("pl - Get total num items in MEDIA_PLAYER_LIST\n");
     printf("pm - Set max num fragments to 0x02\n");
     printf("pM - Set max num fragments to 0xFF\n");
-
+    printf("pv - Get item attributes with virtual file system scope\n");
+                    
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -838,7 +839,7 @@ static void stdin_process(char * cmd, int size){
                     break;
                 case 'P':
                     printf("AVRCP Browsing: browse media items\n");
-                    avrcp_browsing_controller_browse_media(browsing_cid, 0, 0xFFFFFFFF, AVRCP_MEDIA_ATTR_ALL);
+                    avrcp_browsing_controller_browse_media(browsing_cid, 1, 10, AVRCP_MEDIA_ATTR_ALL);
                     break;
                 case 'W':
                     printf("AVRCP Browsing: go up one level\n");
@@ -904,7 +905,28 @@ static void stdin_process(char * cmd, int size){
                     printf("Set max num fragments to 0xFF\n");
                     status = avrcp_controller_set_max_num_fragments(avrcp_cid, 0xFF);
                     break;
-                
+                case 'A':
+                    if (folder_index < 0 && !parent_folder_set){
+                        printf("AVRCP Browsing: no folders available\n");
+                        break;
+                    }
+                    if (!parent_folder_set){
+                        parent_folder_set = 1;
+                        memcpy(parent_folder_name, folders[playable_folder_index].name, folders[playable_folder_index].name_len);
+                        memcpy(parent_folder_uid, folders[playable_folder_index].uid, 8);
+                    }
+                    printf("AVRCP Browsing: go down one level of %s\n", (char *)parent_folder_name);
+                    status = avrcp_browsing_controller_go_down_one_level(browsing_cid, parent_folder_uid);
+                    folder_index = -1;
+                    break;
+                case '1':
+                    printf("Get item attributes with virtual file system scope, counter %d, scope %d\n", browsing_uid_counter, AVRCP_BROWSING_MEDIA_PLAYER_VIRTUAL_FILESYSTEM);
+                    avrcp_browsing_controller_get_item_attributes_with_virtual_file_system_scope(browsing_cid, media_element_items[0].uid, browsing_uid_counter, 1 << AVRCP_MEDIA_ATTR_TITLE);
+                    break;
+                case '2':
+                    printf("Get item attributes with virtual file system scope, counter %d, scope %d\n", browsing_uid_counter, AVRCP_BROWSING_MEDIA_PLAYER_VIRTUAL_FILESYSTEM);
+                    avrcp_browsing_controller_get_item_attributes_with_virtual_file_system_scope(browsing_cid, media_element_items[1].uid, browsing_uid_counter, 1 << AVRCP_MEDIA_ATTR_TITLE);
+                    break;
                 default:
                     break;
             }

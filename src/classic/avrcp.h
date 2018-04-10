@@ -104,6 +104,7 @@ typedef enum {
     AVRCP_CAPABILITY_ID_EVENT = 0x03
 } avrcp_capability_id_t;
 
+#define AVRCP_BROWSING_MAX_NUM_ATTR_IDS 8
 typedef enum {
     AVRCP_MEDIA_ATTR_ALL = 0,
     AVRCP_MEDIA_ATTR_TITLE,
@@ -113,6 +114,7 @@ typedef enum {
     AVRCP_MEDIA_ATTR_TOTAL_NUM_ITEMS,
     AVRCP_MEDIA_ATTR_GENRE,
     AVRCP_MEDIA_ATTR_SONG_LENGTH_MS,
+    AVRCP_MEDIA_ATTR_DEFAULT_COVER_ART,
     AVRCP_MEDIA_ATTR_NONE = 0xFFFFFFFF
 } avrcp_media_attribute_id_t;
 
@@ -312,19 +314,23 @@ typedef struct {
     uint8_t  set_browsed_player_id;
     uint16_t browsed_player_id;
     
-    // get folder item
-    uint8_t  get_folder_item;
     avrcp_browsing_scope_t  scope;
+    uint8_t  folder_uid[8]; // or media element
+    uint16_t uid_counter;
+
+    // get folder item
+    uint8_t  get_folder_items;
     uint32_t start_item;
     uint32_t end_item;
     uint32_t attr_bitmap;
 
+    // item attrs
+    uint8_t get_item_attributes;
+
     // change_path
     uint8_t  change_path;
     uint8_t  direction;
-    uint16_t uid_counter;
-    uint8_t  folder_uid[8];
-
+    
     // search str
     uint16_t search_str_len;
     uint8_t  search_str[20];

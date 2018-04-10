@@ -203,6 +203,8 @@ uint8_t avrcp_browsing_controller_go_up_one_level(uint16_t avrcp_browsing_cid);
 uint8_t avrcp_browsing_controller_go_down_one_level(uint16_t avrcp_browsing_cid, uint8_t * folder_uid);
 
 
+uint8_t avrcp_browsing_controller_get_item_attributes_with_virtual_file_system_scope(uint16_t avrcp_browsing_cid, uint8_t * uid, uint16_t uid_counter, uint32_t attr_bitmap);
+
 /**
  * @brief Searches are performed from the current folder in the Browsed Players virtual filesystem. The search applies to the current folder and all folders below that.
  * @param avrcp_browsing_cid
