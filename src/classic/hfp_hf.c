@@ -552,6 +552,11 @@ static void hfp_run_for_context(hfp_connection_t * hfp_connection){
     if (!hfp_connection) return;
     if (!hfp_connection->rfcomm_cid) return;
 
+    if (hfp_connection->local_role != HFP_ROLE_HF) {
+        log_info("HFP HF%p, wrong role %u", hfp_connection, hfp_connection->local_role);
+        return;
+    }
+
     if (hfp_connection->hf_accept_sco && hci_can_send_command_packet_now()){
 
         hfp_connection->hf_accept_sco = 0;
@@ -1066,6 +1071,7 @@ static void hfp_run(void){
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (hfp_connection->local_role != HFP_ROLE_HF) continue;
         hfp_run_for_context(hfp_connection);
     }
 }
