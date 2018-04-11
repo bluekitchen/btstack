@@ -568,10 +568,13 @@ static void show_usage(void){
     printf("pl - Get total num items for media player list scope\n");
     printf("pL - Get total num items for now playing scope\n");
                     
-    printf("pi - Play first media item %s for virtual filesystem scope \n", (char *)parent_folder_name);
-    printf("pt - Play first media item %s for search scope \n", (char *)parent_folder_name);
-    printf("pr - Play first media item %s for now playing scope\n", (char *)parent_folder_name);
+    printf("pi - Play first media item for virtual filesystem scope \n");
+    printf("pt - Play first media item for search scope \n");
+    printf("pr - Play first media item for now playing scope\n");
     
+    printf("p3 - Add to now playing: first media item from virtual file system\n");
+    printf("p4 - Add to now playing: first media item from search folder\n");
+
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -940,7 +943,7 @@ static void stdin_process(char * cmd, int size){
                     break;
                 
                 case 'i':
-                    printf("Play first media item %s for virtual filesystem scope\n", (char *)parent_folder_name);
+                    printf("Play first media item for virtual filesystem scope\n");
                     if (media_element_item_index < 0){
                         printf("AVRCP Browsing: no media items found\n");
                         break;
@@ -949,7 +952,7 @@ static void stdin_process(char * cmd, int size){
                     status = avrcp_controller_play_item_for_scope(avrcp_cid, media_element_items[0].uid, media_element_item_index, AVRCP_BROWSING_MEDIA_PLAYER_VIRTUAL_FILESYSTEM);
                     break;
                 case 't':
-                    printf("Play first media item %s for search scope\n", (char *)parent_folder_name);
+                    printf("Play first media item for search scope\n");
                     if (media_element_item_index < 0){
                         printf("AVRCP Browsing: no media items found\n");
                         break;
@@ -958,7 +961,7 @@ static void stdin_process(char * cmd, int size){
                     status = avrcp_controller_play_item_for_scope(avrcp_cid, media_element_items[0].uid, media_element_item_index, AVRCP_BROWSING_SEARCH);
                     break;
                 case 'r':
-                    printf("Play first media item %s for now playing scope\n", (char *)parent_folder_name);
+                    printf("Play first media item for now playing scope\n");
                     if (media_element_item_index < 0){
                         printf("AVRCP Browsing: no media items found\n");
                         break;
@@ -967,6 +970,26 @@ static void stdin_process(char * cmd, int size){
                     status = avrcp_controller_play_item_for_scope(avrcp_cid, media_element_items[0].uid, media_element_item_index, AVRCP_BROWSING_NOW_PLAYING);
                     break;
 
+                case '3':
+                    printf("Add to now playing: first media item from virtual file system\n");
+                    if (media_element_item_index < 0){
+                        printf("AVRCP Browsing: no media items found\n");
+                        break;
+                    }
+                    // printf_hexdump(media_element_items[0].uid, 8);
+                    status = avrcp_controller_add_item_from_scope_to_now_playing_list(avrcp_cid, media_element_items[0].uid, media_element_item_index, AVRCP_BROWSING_MEDIA_PLAYER_VIRTUAL_FILESYSTEM);
+                    break;
+
+                case '4':
+                    printf("Add to now playing: first media item from search folder\n");
+                    if (media_element_item_index < 0){
+                        printf("AVRCP Browsing: no media items found\n");
+                        break;
+                    }
+                    // printf_hexdump(media_element_items[0].uid, 8);
+                    status = avrcp_controller_add_item_from_scope_to_now_playing_list(avrcp_cid, media_element_items[0].uid, media_element_item_index, AVRCP_BROWSING_SEARCH);
+                    break;
+                
                 default:
                     break;
             }

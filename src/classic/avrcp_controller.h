@@ -303,6 +303,15 @@ uint8_t avrcp_controller_set_repeat_mode(uint16_t avrcp_cid, avrcp_repeat_mode_t
  **/
 uint8_t avrcp_controller_play_item_for_scope(uint16_t avrcp_cid, uint8_t * uid, uint16_t uid_counter, avrcp_browsing_scope_t scope);
 
+/**
+ * @brief Adds an item indicated by the UID to the Now Playing queue.
+ * @param avrcp_cid
+ * @param uid
+ * @param uid_counter
+ * @param scope
+ **/
+uint8_t avrcp_controller_add_item_from_scope_to_now_playing_list(uint16_t avrcp_cid, uint8_t * uid, uint16_t uid_counter, avrcp_browsing_scope_t scope);
+
 /** 
  * @brief Set addressed player.  
  * @param avrcp_cid

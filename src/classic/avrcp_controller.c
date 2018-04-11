@@ -1239,10 +1239,13 @@ uint8_t avrcp_controller_disconnect(uint16_t avrcp_cid){
 uint8_t avrcp_controller_play_item_for_scope(uint16_t avrcp_cid, uint8_t * uid, uint16_t uid_counter, avrcp_browsing_scope_t scope){
     avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(avrcp_cid, &avrcp_controller_context);
     if (!connection){
-        log_error("avrcp_controller_play_item: could not find a connection.");
+        log_error("Could not find a connection with cid 0%02x.", avrcp_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
-    if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (connection->state != AVCTP_CONNECTION_OPENED){
+        log_error("Connection in wrong state, expected %d, received %d", AVCTP_CONNECTION_OPENED, connection->state);
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    } 
     connection->state = AVCTP_W2_SEND_COMMAND;
 
     connection->transaction_label++;
@@ -1254,6 +1257,46 @@ uint8_t avrcp_controller_play_item_for_scope(uint16_t avrcp_cid, uint8_t * uid, 
     big_endian_store_24(connection->cmd_operands, pos, BT_SIG_COMPANY_ID);
     pos += 3;
     connection->cmd_operands[pos++] = AVRCP_PDU_ID_PLAY_ITEM; // PDU ID
+    // reserved
+    connection->cmd_operands[pos++] = 0;
+    // Parameter Length
+    big_endian_store_16(connection->cmd_operands, pos, 11);
+    pos += 2;
+    connection->cmd_operands[pos++]  = scope;
+    memset(&connection->cmd_operands[pos], 0, 8);
+    if (uid){
+        memcpy(&connection->cmd_operands[pos], uid, 8);
+    }
+    pos += 8;
+    big_endian_store_16(connection->cmd_operands, pos, uid_counter);
+    pos += 2;
+    connection->cmd_operands_length = pos;
+
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t avrcp_controller_add_item_from_scope_to_now_playing_list(uint16_t avrcp_cid, uint8_t * uid, uint16_t uid_counter, avrcp_browsing_scope_t scope){
+    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(avrcp_cid, &avrcp_controller_context);
+    if (!connection){
+        log_error("Could not find a connection with cid 0%02x.", avrcp_cid);
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED){
+        log_error("Connection in wrong state, expected %d, received %d", AVCTP_CONNECTION_OPENED, connection->state);
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    } 
+    connection->state = AVCTP_W2_SEND_COMMAND;
+
+    connection->transaction_label++;
+    connection->command_type = AVRCP_CTYPE_CONTROL;
+    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL;
+    connection->subunit_id = AVRCP_SUBUNIT_ID;
+    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    int pos = 0;
+    big_endian_store_24(connection->cmd_operands, pos, BT_SIG_COMPANY_ID);
+    pos += 3;
+    connection->cmd_operands[pos++] = AVRCP_PDU_ADD_TO_NOW_PLAYING; // PDU ID
     // reserved
     connection->cmd_operands[pos++] = 0;
     // Parameter Length
