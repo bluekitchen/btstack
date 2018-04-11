@@ -1100,6 +1100,7 @@ void hfp_hf_init(uint16_t rfcomm_channel_nr){
 
     rfcomm_register_service(rfcomm_packet_handler, rfcomm_channel_nr, 0xffff);  
     hfp_set_hf_rfcomm_packet_handler(&rfcomm_packet_handler);
+    hfp_set_hf_run_for_context(hfp_run_for_context);
 
     hfp_supported_features = HFP_DEFAULT_HF_SUPPORTED_FEATURES;
     hfp_codecs_nr = 0;

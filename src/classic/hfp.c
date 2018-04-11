@@ -106,17 +106,11 @@ static btstack_packet_handler_t hfp_ag_callback;
 static btstack_packet_handler_t hfp_hf_rfcomm_packet_handler;
 static btstack_packet_handler_t hfp_ag_rfcomm_packet_handler;
 
+static void (*hfp_hf_run_for_context)(hfp_connection_t * hfp_connection);
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static hfp_connection_t * sco_establishment_active;
-
-void hfp_set_hf_callback(btstack_packet_handler_t callback){
-    hfp_hf_callback = callback;
-}
-
-void hfp_set_ag_callback(btstack_packet_handler_t callback){
-    hfp_ag_callback = callback;
-}
 
 const char * hfp_hf_feature(int index){
     if (index > HFP_HF_FEATURES_SIZE){
@@ -580,15 +574,18 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
     log_debug("HFP packet_handler type %u, event type %x, size %u", packet_type, hci_event_packet_get_type(packet), size);
 
     switch (hci_event_packet_get_type(packet)) {
+
         case HCI_EVENT_CONNECTION_REQUEST:
-            // printf("hfp HCI_EVENT_CONNECTION_REQUEST\n");
             switch(hci_event_connection_request_get_link_type(packet)){
                 case 0: //  SCO
                 case 2: // eSCO
                     hci_event_connection_request_get_bd_addr(packet, event_addr);
                     hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr);
                     if (!hfp_connection) break;
+                    log_info("hf accept sco\n");
                     hfp_connection->hf_accept_sco = 1;
+                    if (!hfp_hf_run_for_context) break;
+                    (*hfp_hf_run_for_context)(hfp_connection);
                     break;
                 default:
                     break;                    
@@ -1490,11 +1487,24 @@ void hfp_setup_synchronous_connection(hfp_connection_t * hfp_connection){
         sco_voice_setting, hfp_link_settings[setting].retransmission_effort, hfp_link_settings[setting].packet_types); // all types 0x003f, only 2-ev3 0x380
 }
 
+void hfp_set_hf_callback(btstack_packet_handler_t callback){
+    hfp_hf_callback = callback;
+}
+
+void hfp_set_ag_callback(btstack_packet_handler_t callback){
+    hfp_ag_callback = callback;
+}
+
 void hfp_set_ag_rfcomm_packet_handler(btstack_packet_handler_t handler){
     hfp_ag_rfcomm_packet_handler = handler;
 }
+
 void hfp_set_hf_rfcomm_packet_handler(btstack_packet_handler_t handler){
     hfp_hf_rfcomm_packet_handler = handler;
+}
+
+void hfp_set_hf_run_for_context(void (*callback)(hfp_connection_t * hfp_connection)){
+    hfp_hf_run_for_context = callback;
 }
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
