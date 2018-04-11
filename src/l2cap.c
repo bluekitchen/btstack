@@ -1497,6 +1497,7 @@ static void l2cap_run(void){
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
         // send s-frame to acknowledge received packets
+        if (channel->con_handle == HCI_CON_HANDLE_INVALID) continue;
         if (!hci_can_send_acl_packet_now(channel->con_handle)) continue;
 
         if (channel->tx_send_index != channel->tx_write_index){
@@ -1785,7 +1786,7 @@ static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t pac
 
     // 
     channel->local_cid = l2cap_next_local_cid();
-    channel->con_handle = 0;
+    channel->con_handle = HCI_CON_HANDLE_INVALID;
 
     // set initial state
     channel->state = L2CAP_STATE_WILL_SEND_CREATE_CONNECTION;
