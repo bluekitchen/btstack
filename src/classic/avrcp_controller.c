@@ -673,6 +673,20 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
                             break;
                         }
+                        case AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED:{
+                            uint8_t event[7];
+                            int offset = 0;
+                            event[offset++] = HCI_EVENT_AVRCP_META;
+                            event[offset++] = sizeof(event) - 2;
+                            event[offset++] = AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED;
+                            little_endian_store_16(event, offset, connection->avrcp_cid);
+                            offset += 2;
+                            event[offset++] = ctype;
+                            event[offset++] = packet[pos++] & 0x7F;
+                            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+                            break;
+                        }
+
                         // case AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED:{
                         //     uint8_t num_PlayerApplicationSettingAttributes = packet[pos++];
                         //     int i;
@@ -1222,7 +1236,7 @@ uint8_t avrcp_controller_disconnect(uint16_t avrcp_cid){
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avrcp_controller_play_item(uint16_t avrcp_cid, avrcp_browsing_scope_t scope, uint8_t * uid, uint16_t uid_counter){
+uint8_t avrcp_controller_play_item_for_scope(uint16_t avrcp_cid, uint8_t * uid, uint16_t uid_counter, avrcp_browsing_scope_t scope){
     avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(avrcp_cid, &avrcp_controller_context);
     if (!connection){
         log_error("avrcp_controller_play_item: could not find a connection.");

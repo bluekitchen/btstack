@@ -244,9 +244,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 }
                 
                 case AVRCP_BROWSING_MEDIA_ELEMENT_ITEM:{
-                    printf("Received media element item UID: ");
                     int index = next_media_element_item_index();
                     memcpy(media_element_items[index].uid, packet+pos, 8);
+                    printf("Received media element item UID (index %d): ", index);
                     
                     uint32_t media_uid_high = big_endian_read_32(packet, pos);
                     pos += 4;
@@ -269,21 +269,35 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     // printf("Media UID: 0x%08" PRIx32 "%08" PRIx32 ", media_type 0x%02x, charset 0x%02x, actual len %d, name %s\n", media_uid_high, media_uid_low, media_type, charset, value_len, value);
                     
                     printf_hexdump(media_element_items[index].uid, 8);
-                    printf("media_type 0x%02x, charset 0x%02x, actual len %d, name %s\n", media_type, charset, value_len, value);
-                    
                     uint8_t num_attributes = packet[pos++];
-                    // printf("Num media attributes %d\n", num_attributes);
-                    // for (avrcp_media_item_iterator_init(&media_item_context, size-pos, packet+pos); avrcp_media_item_iterator_has_more(&media_item_context); avrcp_media_item_iterator_next(&media_item_context)){
-                    //     uint32_t attr_id            = avrcp_media_item_iterator_get_attr_id(&media_item_context);
-                    //     uint16_t attr_charset       = avrcp_media_item_iterator_get_attr_charset(&media_item_context);
-                    //     uint16_t attr_value_length  = avrcp_media_item_iterator_get_attr_value_len(&media_item_context);
-                    //     const uint8_t * attr_value  = avrcp_media_item_iterator_get_attr_value(&media_item_context);
+                    printf("  Media type 0x%02x, charset 0x%02x, actual len %d, name %s, num attributes %d:\n", media_type, charset, value_len, value, num_attributes);
                     
-                    //     // printf("Attr ID 0x%08" PRIx32 ", charset %d, attr_value_length %d, value %s", attr_id, attr_charset, attr_value_length, attr_value);
-                    // }
+                    avrcp_media_item_context_t media_item_context;
+                    for (avrcp_media_item_iterator_init(&media_item_context, size-pos, packet+pos); avrcp_media_item_iterator_has_more(&media_item_context); avrcp_media_item_iterator_next(&media_item_context)){
+                        uint32_t attr_id            = avrcp_media_item_iterator_get_attr_id(&media_item_context);
+                        uint16_t attr_charset       = avrcp_media_item_iterator_get_attr_charset(&media_item_context);
+                        uint16_t attr_value_length  = avrcp_media_item_iterator_get_attr_value_len(&media_item_context);
+                        const uint8_t * attr_value  = avrcp_media_item_iterator_get_attr_value(&media_item_context);
+                    
+                        printf("    - attr ID 0x%08" PRIx32 ", charset 0x%02x, actual len %d, name %s\n", attr_id, attr_charset, attr_value_length, attr_value);
+                    }
                     break;
                 }
 
+                case AVRCP_BROWSING_MEDIA_ELEMENT_ITEM_ATTRIBUTE:{
+                    uint8_t num_attributes = packet[pos++];
+                    printf("Num media attributes %d:\n", num_attributes);
+                    avrcp_media_item_context_t media_item_context;
+                    for (avrcp_media_item_iterator_init(&media_item_context, size-pos, packet+pos); avrcp_media_item_iterator_has_more(&media_item_context); avrcp_media_item_iterator_next(&media_item_context)){
+                        uint32_t attr_id            = avrcp_media_item_iterator_get_attr_id(&media_item_context);
+                        uint16_t attr_charset       = avrcp_media_item_iterator_get_attr_charset(&media_item_context);
+                        uint16_t attr_value_length  = avrcp_media_item_iterator_get_attr_value_len(&media_item_context);
+                        uint8_t * attr_value  = avrcp_media_item_iterator_get_attr_value(&media_item_context);
+                        attr_value[attr_value_length] = 0;
+
+                        printf("    - attr ID 0x%08" PRIx32 ", charset 0x%02x, actual len %d, name %s\n", attr_id, attr_charset, attr_value_length, attr_value);
+                    }
+                }
                 default:
                     printf("AVRCP browsing: unknown browsable item type 0%02x\n", data_type);
                     break;
@@ -535,20 +549,29 @@ static void show_usage(void){
     printf("pp - get media players. Browsing cid 0x%02X\n", browsing_cid);
     printf("pI - Set addressed player\n");
     printf("pO - Set browsed player\n");
-    printf("pQ - browse folders\n");
-    printf("pP - browse media items\n");
+    
     printf("pW - go up one level\n");
     printf("pT - go down one level of %s\n", (char *)parent_folder_name);
-    printf("pi - Play item %s, MEDIA_PLAYER_VIRTUAL_FILESYSTEM\n", (char *)parent_folder_name);
+    
+    printf("pQ - browse folders\n");
+    printf("pP - browse media items\n");
     printf("pj - browse now playing items\n");
-    printf("pn - search 3\n");
     printf("ps - browse search folder\n");
-    printf("pt - Play item %s, AVRCP_BROWSING_SEARCH\n", (char *)parent_folder_name);
-    printf("pl - Get total num items in MEDIA_PLAYER_LIST\n");
+    printf("pn - search 3\n");
+    
     printf("pm - Set max num fragments to 0x02\n");
     printf("pM - Set max num fragments to 0xFF\n");
-    printf("pv - Get item attributes with virtual file system scope\n");
+    
+    printf("p1 - Get item attributes of first media element for virtual file system scope\n");
+    printf("p2 - Get item attributes of first media element for now playing scope\n");
+    
+    printf("pl - Get total num items for media player list scope\n");
+    printf("pL - Get total num items for now playing scope\n");
                     
+    printf("pi - Play first media item %s for virtual filesystem scope \n", (char *)parent_folder_name);
+    printf("pt - Play first media item %s for search scope \n", (char *)parent_folder_name);
+    printf("pr - Play first media item %s for now playing scope\n", (char *)parent_folder_name);
+    
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -860,15 +883,7 @@ static void stdin_process(char * cmd, int size){
                     status = avrcp_browsing_controller_go_down_one_level(browsing_cid, parent_folder_uid);
                     folder_index = -1;
                     break;
-                case 'i':
-                    printf("Play item %s, MEDIA_PLAYER_VIRTUAL_FILESYSTEM\n", (char *)parent_folder_name);
-                    if (media_element_item_index < 0){
-                        printf("AVRCP Browsing: no media items found\n");
-                        break;
-                    }
-                    // printf_hexdump(media_element_items[0].uid, 8);
-                    status = avrcp_controller_play_item(avrcp_cid, AVRCP_BROWSING_MEDIA_PLAYER_VIRTUAL_FILESYSTEM, media_element_items[0].uid, media_element_item_index);
-                    break;
+                
                 case 'j':
                     printf("AVRCP Browsing: browse now playing items\n");
                     playable_folder_index = 0;
@@ -883,19 +898,6 @@ static void stdin_process(char * cmd, int size){
                     printf("AVRCP Browsing: browse search folder\n");
                     media_element_item_index = -1;
                     status = avrcp_browsing_controller_browse_media(browsing_cid, 0, 0xFFFFFFFF, AVRCP_MEDIA_ATTR_ALL);
-                    break;
-                case 't':
-                    printf("Play item %s, AVRCP_BROWSING_SEARCH\n", (char *)parent_folder_name);
-                    if (media_element_item_index < 0){
-                        printf("AVRCP Browsing: no media items found\n");
-                        break;
-                    }
-                    // printf_hexdump(media_element_items[0].uid, 8);
-                    status = avrcp_controller_play_item(avrcp_cid, AVRCP_BROWSING_SEARCH, media_element_items[0].uid, media_element_item_index);
-                    break;
-                case 'l': 
-                    printf("Get total num items in MEDIA_PLAYER_LIST\n");
-                    status = avrcp_browsing_controller_get_total_nr_items(browsing_cid, AVRCP_BROWSING_MEDIA_PLAYER_LIST);
                     break;
                 case 'm':
                     printf("Set max num fragments to 0x02\n");
@@ -920,13 +922,51 @@ static void stdin_process(char * cmd, int size){
                     folder_index = -1;
                     break;
                 case '1':
-                    printf("Get item attributes with virtual file system scope, counter %d, scope %d\n", browsing_uid_counter, AVRCP_BROWSING_MEDIA_PLAYER_VIRTUAL_FILESYSTEM);
-                    avrcp_browsing_controller_get_item_attributes_with_virtual_file_system_scope(browsing_cid, media_element_items[0].uid, browsing_uid_counter, 1 << AVRCP_MEDIA_ATTR_TITLE);
+                    printf("Get item attributes of first media item for virtual file system scope\n");
+                    avrcp_browsing_controller_get_item_attributes_for_scope(browsing_cid, media_element_items[0].uid, browsing_uid_counter, 1 << AVRCP_MEDIA_ATTR_TITLE, AVRCP_BROWSING_MEDIA_PLAYER_VIRTUAL_FILESYSTEM);
                     break;
                 case '2':
-                    printf("Get item attributes with virtual file system scope, counter %d, scope %d\n", browsing_uid_counter, AVRCP_BROWSING_MEDIA_PLAYER_VIRTUAL_FILESYSTEM);
-                    avrcp_browsing_controller_get_item_attributes_with_virtual_file_system_scope(browsing_cid, media_element_items[1].uid, browsing_uid_counter, 1 << AVRCP_MEDIA_ATTR_TITLE);
+                    printf("Get item attributes of first media item for now playing scope\n");
+                    avrcp_browsing_controller_get_item_attributes_for_scope(browsing_cid, media_element_items[0].uid, browsing_uid_counter, 1 << AVRCP_MEDIA_ATTR_TITLE, AVRCP_BROWSING_NOW_PLAYING);
                     break;
+                
+                case 'l': 
+                    printf("Get total num items for media player list scope\n");
+                    status = avrcp_browsing_controller_get_total_nr_items_for_scope(browsing_cid, AVRCP_BROWSING_MEDIA_PLAYER_LIST);
+                    break;
+                case 'L': 
+                    printf("Get total num items for now playing scope.\n");
+                    status = avrcp_browsing_controller_get_total_nr_items_for_scope(browsing_cid, AVRCP_BROWSING_NOW_PLAYING);
+                    break;
+                
+                case 'i':
+                    printf("Play first media item %s for virtual filesystem scope\n", (char *)parent_folder_name);
+                    if (media_element_item_index < 0){
+                        printf("AVRCP Browsing: no media items found\n");
+                        break;
+                    }
+                    // printf_hexdump(media_element_items[0].uid, 8);
+                    status = avrcp_controller_play_item_for_scope(avrcp_cid, media_element_items[0].uid, media_element_item_index, AVRCP_BROWSING_MEDIA_PLAYER_VIRTUAL_FILESYSTEM);
+                    break;
+                case 't':
+                    printf("Play first media item %s for search scope\n", (char *)parent_folder_name);
+                    if (media_element_item_index < 0){
+                        printf("AVRCP Browsing: no media items found\n");
+                        break;
+                    }
+                    // printf_hexdump(media_element_items[0].uid, 8);
+                    status = avrcp_controller_play_item_for_scope(avrcp_cid, media_element_items[0].uid, media_element_item_index, AVRCP_BROWSING_SEARCH);
+                    break;
+                case 'r':
+                    printf("Play first media item %s for now playing scope\n", (char *)parent_folder_name);
+                    if (media_element_item_index < 0){
+                        printf("AVRCP Browsing: no media items found\n");
+                        break;
+                    }
+                    // printf_hexdump(media_element_items[0].uid, 8);
+                    status = avrcp_controller_play_item_for_scope(avrcp_cid, media_element_items[0].uid, media_element_item_index, AVRCP_BROWSING_NOW_PLAYING);
+                    break;
+
                 default:
                     break;
             }

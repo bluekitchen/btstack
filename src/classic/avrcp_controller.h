@@ -297,12 +297,11 @@ uint8_t avrcp_controller_set_repeat_mode(uint16_t avrcp_cid, avrcp_repeat_mode_t
 /**
  * @brief The PlayItem command starts playing an item indicated by the UID. It is routed to the Addressed Player.
  * @param avrcp_cid
- * @param scope
  * @param uid
  * @param uid_counter
- * @return status 
+ * @param scope
  **/
-uint8_t avrcp_controller_play_item(uint16_t avrcp_cid, avrcp_browsing_scope_t scope, uint8_t * uid, uint16_t uid_counter);
+uint8_t avrcp_controller_play_item_for_scope(uint16_t avrcp_cid, uint8_t * uid, uint16_t uid_counter, avrcp_browsing_scope_t scope);
 
 /** 
  * @brief Set addressed player.  

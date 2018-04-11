@@ -64,7 +64,7 @@ int  avrcp_media_item_iterator_has_more(const avrcp_media_item_context_t * conte
 
 void avrcp_media_item_iterator_next(avrcp_media_item_context_t * context){
     int chunk_len = big_endian_read_16(context->data, context->offset + 6);
-    int new_offset = context->offset + 1 + chunk_len;
+    int new_offset = context->offset + 2 + 2 + 4 + chunk_len;
     // avoid uint8_t overrun
     if (new_offset > 0xffff){
         new_offset = 0xffff;

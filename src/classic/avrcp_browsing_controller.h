@@ -58,7 +58,8 @@ typedef enum {
 	AVRCP_BROWSING_MEDIA_PLAYER_ITEM = 0x01,
 	AVRCP_BROWSING_FOLDER_ITEM,
 	AVRCP_BROWSING_MEDIA_ELEMENT_ITEM,
-	AVRCP_BROWSING_MEDIA_ROOT_FOLDER
+	AVRCP_BROWSING_MEDIA_ROOT_FOLDER,
+	AVRCP_BROWSING_MEDIA_ELEMENT_ITEM_ATTRIBUTE
 } avrcp_browsing_item_type_t;
 
 typedef enum {
@@ -189,12 +190,14 @@ uint8_t avrcp_browsing_controller_set_browsed_player(uint16_t avrcp_browsing_cid
 
 /** 
  * @brief Get total num attributes
+ * @param avrcp_browsing_cid
  * @param scope 
  */
-uint8_t avrcp_browsing_controller_get_total_nr_items(uint16_t avrcp_browsing_cid, avrcp_browsing_scope_t scope);
+uint8_t avrcp_browsing_controller_get_total_nr_items_for_scope(uint16_t avrcp_browsing_cid, avrcp_browsing_scope_t scope);
 
 /**
  * @brief Navigate one level up or down in thhe virtual filesystem. Requires that s browsed player is set.
+ * @param avrcp_browsing_cid
  * @param direction     0-folder up, 1-folder down    
  * @param folder_uid    8 bytes long
  **/
@@ -203,7 +206,15 @@ uint8_t avrcp_browsing_controller_go_up_one_level(uint16_t avrcp_browsing_cid);
 uint8_t avrcp_browsing_controller_go_down_one_level(uint16_t avrcp_browsing_cid, uint8_t * folder_uid);
 
 
-uint8_t avrcp_browsing_controller_get_item_attributes_with_virtual_file_system_scope(uint16_t avrcp_browsing_cid, uint8_t * uid, uint16_t uid_counter, uint32_t attr_bitmap);
+/**
+ * @brief Retrives metadata information (title, artist, album, ...) about a media element with given uid. 
+ * @param avrcp_browsing_cid
+ * @param uid 			 media element uid 
+ * @param uid_counter    Used to detect change to the media database on target device. A TG device that supports the UID Counter shall update the value of the counter on each change to the media database.
+ * @param attr_bitmap    0x00000000 - retrieve all, chek avrcp_media_attribute_id_t in avrcp.h for detailed bit position description.
+ * @param scope          check avrcp_browsing_scope_t in avrcp.h
+ **/
+uint8_t avrcp_browsing_controller_get_item_attributes_for_scope(uint16_t avrcp_browsing_cid, uint8_t * uid, uint16_t uid_counter, uint32_t attr_bitmap, avrcp_browsing_scope_t scope);
 
 /**
  * @brief Searches are performed from the current folder in the Browsed Players virtual filesystem. The search applies to the current folder and all folders below that.
