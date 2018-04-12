@@ -97,8 +97,9 @@ static const char * hfp_ag_features[] = {
     "Reserved for future definition"
 };
 
-static btstack_linked_list_t hfp_connections = NULL;
 static void parse_sequence(hfp_connection_t * context);
+
+static btstack_linked_list_t hfp_connections = NULL;
 
 static btstack_packet_handler_t hfp_hf_callback;
 static btstack_packet_handler_t hfp_ag_callback;

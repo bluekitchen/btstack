@@ -146,6 +146,17 @@ static int get_ag_indicator_index_for_name(const char * name){
     return -1;
 }
 
+static hfp_connection_t * get_hfp_ag_connection_context_for_acl_handle(uint16_t handle){
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, hfp_get_connections());
+    while (btstack_linked_list_iterator_has_next(&it)){
+        hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
+        if (hfp_connection->acl_handle != handle)      continue;
+        if (hfp_connection->local_role != HFP_ROLE_AG) continue;
+        return hfp_connection;
+    }
+    return NULL;
+}
 
 void hfp_ag_register_packet_handler(btstack_packet_handler_t callback){
     if (callback == NULL){
@@ -2081,7 +2092,7 @@ void hfp_ag_establish_service_level_connection(bd_addr_t bd_addr){
 }
 
 void hfp_ag_release_service_level_connection(hci_con_handle_t acl_handle){
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
         log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
         return;
@@ -2091,7 +2102,7 @@ void hfp_ag_release_service_level_connection(hci_con_handle_t acl_handle){
 }
 
 void hfp_ag_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle, hfp_cme_error_t error){
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
         log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
         return;
@@ -2123,7 +2134,7 @@ static void hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection){
 }
 
 void hfp_ag_establish_audio_connection(hci_con_handle_t acl_handle){
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
         log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
         return;
@@ -2135,7 +2146,7 @@ void hfp_ag_establish_audio_connection(hci_con_handle_t acl_handle){
 }
 
 void hfp_ag_release_audio_connection(hci_con_handle_t acl_handle){
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
         log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
         return;
@@ -2259,7 +2270,7 @@ void hfp_ag_set_battery_level(int level){
 
 void hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle, int activate){
     if (!get_bit(hfp_supported_features, HFP_AGSF_VOICE_RECOGNITION_FUNCTION)) return;
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
         log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
         return;
@@ -2280,7 +2291,7 @@ void hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle, int activate
 }
 
 void hfp_ag_set_microphone_gain(hci_con_handle_t acl_handle, int gain){
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
         log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
         return;
@@ -2294,7 +2305,7 @@ void hfp_ag_set_microphone_gain(hci_con_handle_t acl_handle, int gain){
 }
 
 void hfp_ag_set_speaker_gain(hci_con_handle_t acl_handle, int gain){
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
         log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
         return;
@@ -2307,7 +2318,7 @@ void hfp_ag_set_speaker_gain(hci_con_handle_t acl_handle, int gain){
 }
 
 void hfp_ag_send_phone_number_for_voice_tag(hci_con_handle_t acl_handle, const char * number){
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
         log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
         return;
@@ -2317,7 +2328,7 @@ void hfp_ag_send_phone_number_for_voice_tag(hci_con_handle_t acl_handle, const c
 }
 
 void hfp_ag_reject_phone_number_for_voice_tag(hci_con_handle_t acl_handle){
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
         log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
         return;
@@ -2326,7 +2337,7 @@ void hfp_ag_reject_phone_number_for_voice_tag(hci_con_handle_t acl_handle){
 }
 
 void hfp_ag_send_dtmf_code_done(hci_con_handle_t acl_handle){
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
         log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
         return;
@@ -2344,7 +2355,7 @@ void hfp_ag_clear_last_dialed_number(void){
 }
 
 void hfp_ag_notify_incoming_call_waiting(hci_con_handle_t acl_handle){
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_acl_handle(acl_handle);
+    hfp_connection_t * hfp_connection = get_hfp_ag_connection_context_for_acl_handle(acl_handle);
     if (!hfp_connection){
         log_error("HFP AG: ACL connection 0x%2x is not found.", acl_handle);
         return;
