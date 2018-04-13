@@ -564,16 +564,19 @@ static void show_usage(void){
     
     printf("p1 - Get item attributes of first media element for virtual file system scope\n");
     printf("p2 - Get item attributes of first media element for now playing scope\n");
+    printf("p3 - Get item attributes of first media element for search scope\n");
+    printf("p4 - Get item attributes of first media element for media player list scope\n");
     
     printf("pl - Get total num items for media player list scope\n");
     printf("pL - Get total num items for now playing scope\n");
-                    
+    printf("pS - Get total num items for search scope\n");
+
     printf("pi - Play first media item for virtual filesystem scope \n");
     printf("pt - Play first media item for search scope \n");
     printf("pr - Play first media item for now playing scope\n");
-    
-    printf("p3 - Add to now playing: first media item from virtual file system\n");
-    printf("p4 - Add to now playing: first media item from search folder\n");
+
+    printf("p5 - Add to now playing: first media item from virtual file system\n");
+    printf("p6 - Add to now playing: first media item from search folder\n");
 
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -932,6 +935,14 @@ static void stdin_process(char * cmd, int size){
                     printf("Get item attributes of first media item for now playing scope\n");
                     avrcp_browsing_controller_get_item_attributes_for_scope(browsing_cid, media_element_items[0].uid, browsing_uid_counter, 1 << AVRCP_MEDIA_ATTR_TITLE, AVRCP_BROWSING_NOW_PLAYING);
                     break;
+                case '3':
+                    printf("Get item attributes of first media item for search scope\n");
+                    avrcp_browsing_controller_get_item_attributes_for_scope(browsing_cid, media_element_items[0].uid, browsing_uid_counter, 1 << AVRCP_MEDIA_ATTR_TITLE, AVRCP_BROWSING_SEARCH);
+                    break;
+                case '4':
+                    printf("Get item attributes of first media item for media player list scope\n");
+                    avrcp_browsing_controller_get_item_attributes_for_scope(browsing_cid, media_element_items[0].uid, browsing_uid_counter, 1 << AVRCP_MEDIA_ATTR_TITLE, AVRCP_BROWSING_MEDIA_PLAYER_LIST);
+                    break;
                 
                 case 'l': 
                     printf("Get total num items for media player list scope\n");
@@ -940,6 +951,10 @@ static void stdin_process(char * cmd, int size){
                 case 'L': 
                     printf("Get total num items for now playing scope.\n");
                     status = avrcp_browsing_controller_get_total_nr_items_for_scope(browsing_cid, AVRCP_BROWSING_NOW_PLAYING);
+                    break;
+                case 'S': 
+                    printf("Get total num items for search scope.\n");
+                    status = avrcp_browsing_controller_get_total_nr_items_for_scope(browsing_cid, AVRCP_BROWSING_SEARCH);
                     break;
                 
                 case 'i':
@@ -970,7 +985,7 @@ static void stdin_process(char * cmd, int size){
                     status = avrcp_controller_play_item_for_scope(avrcp_cid, media_element_items[0].uid, media_element_item_index, AVRCP_BROWSING_NOW_PLAYING);
                     break;
 
-                case '3':
+                case '53':
                     printf("Add to now playing: first media item from virtual file system\n");
                     if (media_element_item_index < 0){
                         printf("AVRCP Browsing: no media items found\n");
@@ -980,7 +995,7 @@ static void stdin_process(char * cmd, int size){
                     status = avrcp_controller_add_item_from_scope_to_now_playing_list(avrcp_cid, media_element_items[0].uid, media_element_item_index, AVRCP_BROWSING_MEDIA_PLAYER_VIRTUAL_FILESYSTEM);
                     break;
 
-                case '4':
+                case '6':
                     printf("Add to now playing: first media item from search folder\n");
                     if (media_element_item_index < 0){
                         printf("AVRCP Browsing: no media items found\n");
