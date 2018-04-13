@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - hci: fix buffer overrun in gap_inquiry_explode
+- sdp: free service record item on sdp_unregister_service
 
 ## Changes March 2018
 
