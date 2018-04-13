@@ -45,7 +45,7 @@
 #include "btstack_config.h"
 
 #ifndef ENABLE_BLE
-#error "ENABLE_BLE not defined but Classic protocol or profile include. Please add ENABLE_BLE in btstack_config.h, or remove all Classic protocols and profiles"
+#error "ENABLE_BLE not defined but BLE protocol or profile include. Please add ENABLE_BLE in btstack_config.h, or remove all BLE protocols and profiles"
 #endif
 
 #endif
