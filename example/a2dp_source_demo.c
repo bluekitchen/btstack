@@ -245,12 +245,12 @@ static int a2dp_source_and_avrcp_services_init(void){
     a2dp_source_register_packet_handler(&a2dp_source_packet_handler);
 
     // Create stream endpoint.
-    avdtp_stream_endpoint_t * local_stream_endpoint = a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
-    if (!local_stream_endpoint){
+    uint8_t status = a2dp_source_create_stream_endpoint(AVDTP_AUDIO, AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration), &media_tracker.local_seid);
+    if (status != ERROR_CODE_SUCCESS){
         printf("A2DP Source: not enough memory to create local stream endpoint\n");
         return 1;
     }
-    media_tracker.local_seid = avdtp_local_seid(local_stream_endpoint);
+    
 
     // Initialize AVRCP Target.
     avrcp_target_init();
