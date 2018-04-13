@@ -201,7 +201,7 @@ static void btstack_link_key_db_tlv_iterator_done(btstack_link_key_iterator_t * 
     UNUSED(it);
 }
 
-const btstack_link_key_db_t btstack_link_key_db_tlv = {
+static const btstack_link_key_db_t btstack_link_key_db_tlv = {
     btstack_link_key_db_tlv_open,
     btstack_link_key_db_tlv_set_bd_addr,
     btstack_link_key_db_tlv_close,
