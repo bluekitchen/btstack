@@ -594,9 +594,6 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             break;
         
         case RFCOMM_EVENT_INCOMING_CONNECTION:
-            if (local_role > 1){
-                log_error("hfp_handle_hci_event role %x", local_role);
-            }
             // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
             rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr); 
             hfp_connection = provide_hfp_connection_context_for_bd_addr(event_addr, local_role);
