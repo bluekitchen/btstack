@@ -1768,11 +1768,14 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             return;
 #endif /* ENABLE_SCO_OVER_HCI */
 
+// avoid compile error due to duplicate cases: HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT == HCI_INIT_DONE-1
+#if defined(ENABLE_BLE) || defined(ENABLE_LE_DATA_LENGTH_EXTENSION) || defined(ENABLE_LE_CENTRAL)
         // Response to command before init done state -> init done
         case (HCI_INIT_DONE-1):
             hci_init_done();
             return;
-
+#endif
+            
         default:
             break;
     }
