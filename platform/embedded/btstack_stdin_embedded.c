@@ -44,16 +44,25 @@
  *
  */
 
-#include "hal_stdin.h"
+#include "btstack_config.h"
 
 #include "btstack_stdin.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_embedded.h"
 
-volatile int stdin_character_received;
-volatile char stdin_character;
+#ifdef ENABLE_SEGGER_RTT
+#include "SEGGER_RTT.h"
+#else
+#include "hal_stdin.h"
+#endif
+
 static void (*stdin_handler)(char c);
 static btstack_data_source_t stdin_data_source;
+
+#ifndef ENABLE_SEGGER_RTT
+
+volatile int stdin_character_received;
+volatile char stdin_character;
 
 static void btstack_stdin_handler(char c){
 	stdin_character = c;
@@ -63,11 +72,20 @@ static void btstack_stdin_handler(char c){
 
 static void btstack_stdin_process(struct btstack_data_source *ds, btstack_data_source_callback_type_t callback_type){
 	if (!stdin_character_received) return;
-	if (stdin_handler){
-		(*stdin_handler)(stdin_character);
-	}
+	(*stdin_handler)(stdin_character);
 	stdin_character_received = 0;
 }
+
+#else
+
+static void btstack_stdin_process(struct btstack_data_source *ds, btstack_data_source_callback_type_t callback_type){
+	if (SEGGER_RTT_HasKey()){
+		int stdin_character = SEGGER_RTT_GetKey();
+		(*stdin_handler)((uint8_t)stdin_character);
+	}
+}
+
+#endif
 
 void btstack_stdin_setup(void (*handler)(char c)){
 	// set handler
@@ -78,6 +96,8 @@ void btstack_stdin_setup(void (*handler)(char c)){
 	btstack_run_loop_enable_data_source_callbacks(&stdin_data_source, DATA_SOURCE_CALLBACK_POLL);
 	btstack_run_loop_add_data_source(&stdin_data_source);
 
-	// start receiving
+#ifndef ENABLE_SEGGER_RTT
+	// start receiving via hal_stdin.h
 	hal_stdin_setup(&btstack_stdin_handler);
+#endif
 }
