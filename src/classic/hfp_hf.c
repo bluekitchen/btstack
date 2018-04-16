@@ -266,6 +266,10 @@ static int hfp_hf_send_dtmf(uint16_t cid, char code){
     return send_str_over_rfcomm(cid, buffer);
 }
 
+static int hfp_hf_cmd_ata(uint16_t cid){
+    return send_str_over_rfcomm(cid, "ATA\r\n");
+}
+
 static int hfp_hf_cmd_exchange_supported_features(uint16_t cid){
     return hfp_hf_send_cmd_with_int(cid, HFP_SUPPORTED_FEATURES, hfp_supported_features);
 }
@@ -300,10 +304,6 @@ static int hfp_hf_cmd_query_operator_name(uint16_t cid){
 
 static int hfp_hf_cmd_trigger_codec_connection_setup(uint16_t cid){
     return hfp_hf_send_cmd(cid, HFP_TRIGGER_CODEC_CONNECTION_SETUP);
-}
-
-static int hfp_hf_cmd_ata(uint16_t cid){
-    return hfp_hf_send_cmd(cid, HFP_ANSWER_CALL);
 }
 
 static int hfp_hf_set_microphone_gain_cmd(uint16_t cid, int gain){
