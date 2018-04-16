@@ -303,7 +303,7 @@ static int hfp_hf_cmd_trigger_codec_connection_setup(uint16_t cid){
 }
 
 static int hfp_hf_cmd_ata(uint16_t cid){
-    return hfp_hf_send_cmd(cid, HFP_CALL_ANSWERED);
+    return hfp_hf_send_cmd(cid, HFP_ANSWER_CALL);
 }
 
 static int hfp_hf_set_microphone_gain_cmd(uint16_t cid, int gain){

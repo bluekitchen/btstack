@@ -798,7 +798,7 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
         return HFP_CMD_TURN_OFF_EC_AND_NR;
     }
 
-    if (strncmp(line_buffer, HFP_CALL_ANSWERED, strlen(HFP_CALL_ANSWERED)) == 0){
+    if (strncmp(line_buffer, HFP_ANSWER_CALL, strlen(HFP_ANSWER_CALL)) == 0){
         return HFP_CMD_CALL_ANSWERED;
     }
 

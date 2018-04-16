@@ -14,8 +14,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - att_db_util: added security requirement arguments to characteristic creators
 
 ### Fixed
-- hci: fix buffer overrun in gap_inquiry_explode
-- sdp: free service record item on sdp_unregister_service
+- HFP: fix answer call command
+- HCI: fix buffer overrun in gap_inquiry_explode
+- SDP: free service record item on sdp_unregister_service
 
 ## Changes March 2018
 
