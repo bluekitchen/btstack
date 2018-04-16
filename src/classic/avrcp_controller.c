@@ -301,64 +301,67 @@ static void avrcp_controller_emit_now_playing_info_event(btstack_packet_handler_
 }
 
 static void avrcp_parser_process_byte(uint8_t byte, avrcp_connection_t * connection, avrcp_command_type_t ctype){
+    uint16_t attribute_total_value_len;
+    uint32_t attribute_id;
     switch(connection->parser_state){
-        case AVRCP_PARSER_GET_ATTRIBUTE_HEADER:{
+        case AVRCP_PARSER_GET_ATTRIBUTE_HEADER:
             if (connection->parser_attribute_header_pos < AVRCP_ATTRIBUTE_HEADER_LEN) {
                 connection->parser_attribute_header[connection->parser_attribute_header_pos++] = byte;
                 connection->list_offset++;
+                return;
+            }
+            attribute_total_value_len = big_endian_read_16(connection->parser_attribute_header, 6);
+            connection->attribute_value_len = btstack_min(attribute_total_value_len, AVRCP_MAX_ATTRIBUTTE_SIZE);
+            if (connection->attribute_value_len == 0){
+                // emit attribute although len == 0
+                attribute_id = big_endian_read_32(connection->parser_attribute_header, 0);
+                avrcp_controller_emit_now_playing_info_event(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, attribute_id, connection->attribute_value, connection->attribute_value_len);
                 break;
             }
-            uint16_t attribute_total_value_len = big_endian_read_16(connection->parser_attribute_header, 6);
-            connection->attribute_value_len = btstack_min(attribute_total_value_len, AVRCP_MAX_ATTRIBUTTE_SIZE);
             connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_VALUE;
-            break;
-        }
-        case AVRCP_PARSER_GET_ATTRIBUTE_VALUE:{
+            return;
+
+        case AVRCP_PARSER_GET_ATTRIBUTE_VALUE:
             if (connection->attribute_value_offset < connection->attribute_value_len){
                 connection->attribute_value[connection->attribute_value_offset++] = byte;
                 connection->list_offset++;
-                break;
+                return;
             }
             
-            uint32_t attribute_id = big_endian_read_32(connection->parser_attribute_header, 0);
-            if (attribute_id > AVRCP_MEDIA_ATTR_NONE && attribute_id <= AVRCP_MEDIA_ATTR_SONG_LENGTH_MS){
-                avrcp_controller_emit_now_playing_info_event(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, attribute_id, connection->attribute_value, connection->attribute_value_len);
-            }
-            
-            if (connection->attribute_value_offset < big_endian_read_16(connection->parser_attribute_header, 6)){
-                // printf("parse until end of valuE, and ignore it\n");
+            // emit (potentially partial) attribute
+            attribute_id = big_endian_read_32(connection->parser_attribute_header, 0);
+            avrcp_controller_emit_now_playing_info_event(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, attribute_id, connection->attribute_value, connection->attribute_value_len);
+
+            // ignore rest of attribute
+            attribute_total_value_len = big_endian_read_16(connection->parser_attribute_header, 6);
+            if (connection->attribute_value_offset < attribute_total_value_len){
                 connection->parser_state = AVRCP_PARSER_IGNORE_REST_OF_ATTRIBUTE_VALUE;
-                break;
+                return;
             }
-
-            if (connection->list_offset == connection->list_size){
-                avrcp_parser_reset(connection);
-                avrcp_controller_emit_now_playing_info_event_done(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, 0);
-                break;
-            }
-
-            connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_HEADER;
-            connection->parser_attribute_header_pos = 0;
             break;
-        }
+
         case AVRCP_PARSER_IGNORE_REST_OF_ATTRIBUTE_VALUE:
-            if (connection->attribute_value_offset < big_endian_read_16(connection->parser_attribute_header, 6)){
+            attribute_total_value_len = big_endian_read_16(connection->parser_attribute_header, 6);
+            if (connection->attribute_value_offset < attribute_total_value_len){
                 connection->list_offset++;
                 connection->attribute_value_offset++;
-                break;
+                return;
             }
-            // printf("read %d, total %d\n", connection->attribute_value_offset, big_endian_read_16(connection->parser_attribute_header, 6));
-            
-            if (connection->list_offset == connection->list_size){
-                avrcp_parser_reset(connection);
-                avrcp_controller_emit_now_playing_info_event_done(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, 0);
-                break;
-            }
-            connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_HEADER;
-            connection->parser_attribute_header_pos = 0;
             break;
+
         default:
-            break;
+            return;
+    }
+
+    // attribute fully read, check if more to come
+    if (connection->list_offset < connection->list_size){
+        // more to come
+        connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_HEADER;
+        connection->parser_attribute_header_pos = 0;
+    } else {
+        // fully done
+        avrcp_parser_reset(connection);
+        avrcp_controller_emit_now_playing_info_event_done(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, 0);
     }
 }
 
