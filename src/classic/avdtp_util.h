@@ -52,8 +52,6 @@
 extern "C" {
 #endif
 
-#define AVDTP_INVALID_SEP_INDEX 0xff
-
 avdtp_connection_t * avdtp_connection_for_bd_addr(bd_addr_t addr, avdtp_context_t * context);
 avdtp_connection_t * avdtp_connection_for_avdtp_cid(uint16_t l2cap_cid, avdtp_context_t * context);
 avdtp_connection_t * avdtp_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid, avdtp_context_t * context);
@@ -85,6 +83,8 @@ void avdtp_signaling_emit_connection_released(btstack_packet_handler_t callback,
 void avdtp_streaming_emit_connection_released(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid);
 
 void avdtp_signaling_emit_sep(btstack_packet_handler_t callback, uint16_t avdtp_cid, avdtp_sep_t sep);
+void avdtp_signaling_emit_sep_done(btstack_packet_handler_t callback, uint16_t avdtp_cid);
+
 void avdtp_signaling_emit_accept(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t seid, avdtp_signal_identifier_t identifier);
 void avdtp_signaling_emit_general_reject(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t int_seid, avdtp_signal_identifier_t identifier);
 void avdtp_signaling_emit_reject(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t int_seid, avdtp_signal_identifier_t identifier);
@@ -102,10 +102,7 @@ uint8_t avdtp_request_can_send_now_acceptor(avdtp_connection_t * connection, uin
 uint8_t avdtp_request_can_send_now_initiator(avdtp_connection_t * connection, uint16_t l2cap_cid);
 uint8_t avdtp_request_can_send_now_self(avdtp_connection_t * connection, uint16_t l2cap_cid);
 
-uint8_t avdtp_get_index_of_remote_stream_endpoint_with_seid(avdtp_stream_endpoint_t * stream_endpoint, uint16_t acp_seid);
-
-void avdtp_initialize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint);
-uint8_t avdtp_find_remote_sep(avdtp_connection_t * connection, uint8_t remote_seid);
+void avdtp_reset_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint);
 
 // uint16_t avdtp_cid(avdtp_stream_endpoint_t * stream_endpoint);
 uint8_t  avdtp_local_seid(avdtp_stream_endpoint_t * stream_endpoint);

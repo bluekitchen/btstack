@@ -97,6 +97,9 @@ extern "C" {
 
 // ACP to INT, Procedure Error Codes
 #define BAD_STATE 0x31
+
+#define AVDTP_INVALID_SEP_SEID 0xFF
+
 // Signal Identifier fields
 typedef enum {
     AVDTP_SI_NONE = 0x00,
@@ -412,8 +415,8 @@ typedef struct {
     uint8_t error_code;
 
     // store configurations with remote seps
-    avdtp_sep_t remote_seps[AVDTP_MAX_NUM_SEPS];
-    uint8_t remote_seps_num;
+    // avdtp_sep_t remote_seps[AVDTP_MAX_NUM_SEPS];
+    // uint8_t remote_seps_num;
 
     // store current role
     uint8_t is_initiator;
@@ -445,6 +448,7 @@ typedef struct avdtp_stream_endpoint {
     
     // original capabilities
     avdtp_sep_t sep;
+    avdtp_sep_t remote_sep;
     hci_con_handle_t media_con_handle;
     uint16_t l2cap_media_cid;
     uint16_t l2cap_reporting_cid;
@@ -457,7 +461,7 @@ typedef struct avdtp_stream_endpoint {
     // active connection
     avdtp_connection_t * connection;
     // currently active remote seid
-    uint8_t remote_sep_index;
+    // uint8_t remote_sep_index;
     avdtp_capabilities_t remote_capabilities;
     uint16_t remote_capabilities_bitmap;
     
@@ -477,7 +481,6 @@ typedef struct avdtp_stream_endpoint {
     uint8_t send_stream;
     uint8_t abort_stream;
     uint8_t suspend_stream;
-    
     uint16_t sequence_number;
 } avdtp_stream_endpoint_t;
 
@@ -553,8 +556,6 @@ uint8_t avdtp_get_all_capabilities(uint16_t avdtp_cid, uint8_t remote_seid, avdt
 uint8_t avdtp_get_configuration(uint16_t avdtp_cid, uint8_t remote_seid, avdtp_context_t * context);
 uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context);
 uint8_t avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote_seid, uint16_t configured_services_bitmap, avdtp_capabilities_t configuration, avdtp_context_t * context);
-uint8_t avdtp_remote_seps_num(uint16_t avdtp_cid, avdtp_context_t * context);
-avdtp_sep_t * avdtp_remote_sep(uint16_t avdtp_cid, uint8_t index, avdtp_context_t * context);
 
 void avdtp_initialize_sbc_configuration_storage(avdtp_stream_endpoint_t * stream_endpoint, uint8_t * config_storage, uint16_t storage_size, uint8_t * packet, uint16_t packet_size);
 uint8_t avdtp_choose_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_channel_mode_bitmap);
@@ -571,6 +572,7 @@ void avdtp_configuration_timeout_handler(btstack_timer_source_t * timer);
 void avdtp_configuration_timer_start(avdtp_connection_t * connection);
 void avdtp_configuration_timer_stop(avdtp_connection_t * connection);
 
+uint8_t is_avdtp_remote_seid_registered(avdtp_stream_endpoint_t * stream_endpoint);
 #if defined __cplusplus
 }
 #endif

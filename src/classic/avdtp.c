@@ -654,7 +654,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     local_cid = l2cap_event_channel_closed_get_local_cid(packet);
                     connection = avdtp_connection_for_l2cap_signaling_cid(local_cid, context);
                     stream_endpoint = avdtp_stream_endpoint_for_l2cap_cid(local_cid, context);
-                    log_info("Neceived L2CAP_EVENT_CHANNEL_CLOSED, cid 0x%2x, connection %p, stream_endpoint %p", local_cid, connection, stream_endpoint);
+                    log_info("Received L2CAP_EVENT_CHANNEL_CLOSED, cid 0x%2x, connection %p, stream_endpoint %p", local_cid, connection, stream_endpoint);
 
                     if (stream_endpoint){
                         if (stream_endpoint->l2cap_media_cid == local_cid){
@@ -662,11 +662,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                             if (connection) {
                                 avdtp_streaming_emit_connection_released(context->avdtp_callback, connection->avdtp_cid, avdtp_local_seid(stream_endpoint));
                             }
-                            stream_endpoint->l2cap_media_cid = 0;
-                            stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;
-                            stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
-                            stream_endpoint->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
-                            stream_endpoint->remote_sep_index = 0;
+                            avdtp_reset_stream_endpoint(stream_endpoint);
                             if (connection && connection->disconnect){
                                 avdtp_request_can_send_now_self(connection, connection->l2cap_signaling_cid);
                             }
@@ -686,19 +682,17 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     }
 
                     if (connection){
-                        btstack_run_loop_remove_timer(&connection->configuration_timer);
-                        avdtp_signaling_emit_connection_released(context->avdtp_callback, connection->avdtp_cid);
-                        
-                        btstack_linked_list_remove(avdtp_connections, (btstack_linked_item_t*) connection); 
                         btstack_linked_list_iterator_t it;    
                         btstack_linked_list_iterator_init(&it, stream_endpoints);
                         while (btstack_linked_list_iterator_has_next(&it)){
                             avdtp_stream_endpoint_t * _stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
-                            
                             if (_stream_endpoint->connection == connection){
-                                avdtp_initialize_stream_endpoint(_stream_endpoint);
+                                avdtp_reset_stream_endpoint(_stream_endpoint);
                             }
                         }
+                        btstack_run_loop_remove_timer(&connection->configuration_timer);
+                        avdtp_signaling_emit_connection_released(context->avdtp_callback, connection->avdtp_cid);
+                        btstack_linked_list_remove(avdtp_connections, (btstack_linked_item_t*) connection); 
                         btstack_memory_avdtp_connection_free(connection);
                         break;
                     }
@@ -749,10 +743,6 @@ uint8_t avdtp_open_stream(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote
         log_error("avdtp_media_connect: no connection for signaling cid 0x%02x found", avdtp_cid);
         return AVDTP_CONNECTION_DOES_NOT_EXIST;
     }
-    if (avdtp_find_remote_sep(connection, remote_seid) == 0xFF){
-        log_error("avdtp_media_connect: no remote sep for seid %d found", remote_seid);
-        return AVDTP_SEID_DOES_NOT_EXIST;
-    }
 
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) {
         log_error("avdtp_media_connect: wrong connection state %d", connection->state);
@@ -764,10 +754,14 @@ uint8_t avdtp_open_stream(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote
         log_error("avdtp_media_connect: no stream_endpoint with seid %d found", local_seid);
         return AVDTP_SEID_DOES_NOT_EXIST;
     }
+
+    if (stream_endpoint->remote_sep.seid != remote_seid){
+        log_error("avdtp_media_connect: no remote sep with seid %d registered with the stream endpoint", remote_seid);
+        return AVDTP_SEID_DOES_NOT_EXIST;
+    }
     
     if (stream_endpoint->state < AVDTP_STREAM_ENDPOINT_CONFIGURED) return AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE;
-    if (stream_endpoint->remote_sep_index == AVDTP_INVALID_SEP_INDEX) return AVDTP_SEID_DOES_NOT_EXIST;
-
+    
     connection->initiator_transaction_label++;
     connection->remote_seid = remote_seid;
     connection->local_seid = local_seid;
@@ -795,8 +789,9 @@ uint8_t avdtp_start_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context
         return AVDTP_MEDIA_CONNECTION_DOES_NOT_EXIST;
     }
 
-    if (stream_endpoint->remote_sep_index == AVDTP_INVALID_SEP_INDEX || stream_endpoint->start_stream){
-        return AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE;
+    if (!is_avdtp_remote_seid_registered(stream_endpoint)){
+        log_error("avdtp_media_connect: no remote sep registered with the stream endpoint");
+        return AVDTP_SEID_DOES_NOT_EXIST;
     }
 
     stream_endpoint->start_stream = 1;
@@ -822,8 +817,11 @@ uint8_t avdtp_stop_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context_
         log_error("avdtp_stop_stream: no media connection for stream_endpoint with seid %d found", local_seid);
         return AVDTP_MEDIA_CONNECTION_DOES_NOT_EXIST;
     }
-    if (stream_endpoint->remote_sep_index == 0xFF || stream_endpoint->stop_stream) return ERROR_CODE_SUCCESS;
     
+    if (!is_avdtp_remote_seid_registered(stream_endpoint) || stream_endpoint->stop_stream){
+        return ERROR_CODE_SUCCESS;
+    }
+
     stream_endpoint->stop_stream = 1;
     connection->local_seid = local_seid;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
@@ -847,7 +845,10 @@ uint8_t avdtp_abort_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context
         log_error("avdtp_abort_stream: no media connection for stream_endpoint with seid %d found", local_seid);
         return AVDTP_MEDIA_CONNECTION_DOES_NOT_EXIST;
     }
-    if (stream_endpoint->remote_sep_index == 0xFF || stream_endpoint->abort_stream) return ERROR_CODE_SUCCESS;
+
+    if (!is_avdtp_remote_seid_registered(stream_endpoint) || stream_endpoint->abort_stream){
+        return ERROR_CODE_SUCCESS;
+    }
     
     stream_endpoint->abort_stream = 1;
     connection->local_seid = local_seid;
@@ -871,8 +872,11 @@ uint8_t avdtp_suspend_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_conte
         log_error("avdtp_suspend_stream: no media connection for stream_endpoint with seid %d found", local_seid);
         return AVDTP_MEDIA_CONNECTION_DOES_NOT_EXIST;
     }
-    if (stream_endpoint->remote_sep_index == 0xFF || stream_endpoint->suspend_stream) return ERROR_CODE_SUCCESS;
     
+    if (!is_avdtp_remote_seid_registered(stream_endpoint) || stream_endpoint->suspend_stream){
+        return ERROR_CODE_SUCCESS;
+    }
+
     stream_endpoint->suspend_stream = 1;
     connection->local_seid = local_seid;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
@@ -956,6 +960,7 @@ uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t 
     }
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED || 
         connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) {
+        log_error("connection in wrong state, %d, initiator state %d", connection->state, connection->initiator_connection_state);
         return AVDTP_CONNECTION_IN_WRONG_STATE;
     }
     
@@ -965,7 +970,7 @@ uint8_t avdtp_set_configuration(uint16_t avdtp_cid, uint8_t local_seid, uint8_t 
         return AVDTP_STREAM_ENDPOINT_DOES_NOT_EXIST;
     } 
     if (stream_endpoint->state >= AVDTP_STREAM_ENDPOINT_CONFIGURED){
-        log_error("Ntream endpoint seid %d in wrong state", local_seid);
+        log_error("Stream endpoint seid %d in wrong state %d", local_seid, stream_endpoint->state);
         return AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE;
     }
     connection->active_stream_endpoint = (void*) stream_endpoint;    
@@ -1006,10 +1011,11 @@ uint8_t avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote
         return AVDTP_STREAM_ENDPOINT_DOES_NOT_EXIST;
     }  
 
-    if (stream_endpoint->remote_sep_index == 0xFF){
+    if (!is_avdtp_remote_seid_registered(stream_endpoint)){
         log_error("avdtp_reconfigure: no associated remote sep");
         return AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE;
     } 
+
     connection->initiator_transaction_label++;
     connection->remote_seid = remote_seid;
     connection->local_seid = local_seid;
@@ -1017,26 +1023,6 @@ uint8_t avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote
     stream_endpoint->remote_configuration = configuration;
     stream_endpoint->initiator_config_state = AVDTP_INITIATOR_W2_RECONFIGURE_STREAM_WITH_SEID;
     return avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
-}
-
-uint8_t avdtp_remote_seps_num(uint16_t avdtp_cid, avdtp_context_t * context){
-    avdtp_connection_t * connection = avdtp_connection_for_avdtp_cid(avdtp_cid, context);
-    if (!connection){
-        log_error("avdtp_suspend: no connection for AVDTP cid 0x%02x found", avdtp_cid);
-        return 0;
-    }
-    return connection->remote_seps_num;
-}
-
-avdtp_sep_t * avdtp_remote_sep(uint16_t avdtp_cid, uint8_t index, avdtp_context_t * context){
-    avdtp_connection_t * connection = avdtp_connection_for_avdtp_cid(avdtp_cid, context);
-    if (!connection){
-        log_error("avdtp_suspend: no connection for AVDTP cid 0x%02x found", avdtp_cid);
-        return NULL;
-    }
-    if (index == AVDTP_INVALID_SEP_INDEX) return NULL;
-    if (index >= connection->remote_seps_num || index >= AVDTP_MAX_NUM_SEPS) return NULL;
-    return &connection->remote_seps[index];
 }
 
 void avdtp_initialize_sbc_configuration_storage(avdtp_stream_endpoint_t * stream_endpoint, uint8_t * config_storage, uint16_t storage_size, uint8_t * packet, uint16_t packet_size){
@@ -1160,4 +1146,11 @@ uint8_t avdtp_choose_sbc_min_bitpool_value(avdtp_stream_endpoint_t * stream_endp
     if (!stream_endpoint) return 0;
     uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
     return btstack_max(media_codec[2], remote_min_bitpool_value);
+}
+
+uint8_t is_avdtp_remote_seid_registered(avdtp_stream_endpoint_t * stream_endpoint){
+    if (!stream_endpoint) return 0;
+    if (stream_endpoint->remote_sep.seid == 0) return 0;
+    if (stream_endpoint->remote_sep.seid > 0x3E) return 0;
+    return 1;
 }
