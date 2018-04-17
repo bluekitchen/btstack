@@ -157,7 +157,6 @@ void a2dp_sink_register_media_handler(void (*callback)(uint8_t local_seid, uint8
 
 void a2dp_sink_init(void){
     avdtp_sink_init(&a2dp_sink_context);
-    l2cap_register_service(&packet_handler, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, LEVEL_0);
 }
 
 uint8_t a2dp_sink_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, 
