@@ -43,6 +43,7 @@
 #include <string.h>
 
 #include "btstack.h"
+#include "btstack_stdin_pts.h"
 
 #define AVRCP_BROWSING_ENABLED 1
 #define AVRCP_BROWSING_MAX_PLAYERS          10
@@ -106,6 +107,7 @@ typedef struct {
     uint8_t  num_attributes;
 } avrcp_browsable_media_element_item_t;
 
+void btstack_stdin_pts_setup(void (*stdin_handler)(char * c, int size));
 
 static uint8_t  parent_folder_set = 0;
 static uint8_t  parent_folder_uid[8];
@@ -248,9 +250,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     memcpy(media_element_items[index].uid, packet+pos, 8);
                     printf("Received media element item UID (index %d): ", index);
                     
-                    uint32_t media_uid_high = big_endian_read_32(packet, pos);
+                    // uint32_t media_uid_high = big_endian_read_32(packet, pos);
                     pos += 4;
-                    uint32_t media_uid_low  = big_endian_read_32(packet, pos+4);
+                    // uint32_t media_uid_low  = big_endian_read_32(packet, pos+4);
                     pos += 4;
                     
                     avrcp_browsing_media_type_t media_type = packet[pos++];
@@ -292,9 +294,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         uint32_t attr_id            = avrcp_media_item_iterator_get_attr_id(&media_item_context);
                         uint16_t attr_charset       = avrcp_media_item_iterator_get_attr_charset(&media_item_context);
                         uint16_t attr_value_length  = avrcp_media_item_iterator_get_attr_value_len(&media_item_context);
-                        uint8_t * attr_value  = avrcp_media_item_iterator_get_attr_value(&media_item_context);
-                        attr_value[attr_value_length] = 0;
-
+                        const uint8_t * attr_value  = avrcp_media_item_iterator_get_attr_value(&media_item_context);
                         printf("    - attr ID 0x%08" PRIx32 ", charset 0x%02x, actual len %d, name %s\n", attr_id, attr_charset, attr_value_length, attr_value);
                     }
                 }
@@ -321,7 +321,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             printf("AVDTP connection released: avdtp_cid 0x%02x.\n", avdtp_cid);
                             break;
                         default:
-                            printf("AVDTP event not parsed.\n");
+                            // printf("AVDTP event not parsed.\n");
                             break; 
                     }
                     break;   
@@ -985,7 +985,7 @@ static void stdin_process(char * cmd, int size){
                     status = avrcp_controller_play_item_for_scope(avrcp_cid, media_element_items[0].uid, media_element_item_index, AVRCP_BROWSING_NOW_PLAYING);
                     break;
 
-                case '53':
+                case '5':
                     printf("Add to now playing: first media item from virtual file system\n");
                     if (media_element_item_index < 0){
                         printf("AVRCP Browsing: no media items found\n");
