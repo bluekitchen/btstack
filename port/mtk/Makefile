@@ -44,6 +44,7 @@ BTdaemon_OBJS = $(libBTstack_OBJS) \
 	btstack_link_key_db_memory.o   \
 	btstack_memory.o               \
 	btstack_memory_pool.o          \
+	btstack_crypto.o               \
 	daemon.o 				       \
 	gatt_client.o                  \
 	hci.o                          \
