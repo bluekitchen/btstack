@@ -89,6 +89,7 @@ Src/stm32l0xx_it.c \
 	att_server.c \
 	battery_service_server.c \
 	btstack_chipset_em9301.c \
+	btstack_crypto.c \
 	btstack_linked_list.c \
 	btstack_memory.c \
 	btstack_memory_pool.c \
@@ -211,11 +212,13 @@ LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BU
 
 # default action: build all
 #	ancs_client_demo \
+#	gatt_battery_query \
+#	gatt_battery_query.gatt \
+#	gatt_browser \
+#	gatt_browser.gatt \
 
 LE_EXAMPLES = \
 	gap_le_advertisements \
-	gatt_battery_query \
-	gatt_browser \
 	le_counter \
 	le_streamer \
 	le_streamer_client \
@@ -226,8 +229,6 @@ GATT_FILES = \
 	ancs_client_demo.gatt \
 	le_counter.gatt \
 	le_streamer.gatt \
-	gatt_browser.gatt \
-	gatt_battery_query.gatt \
 	sm_pairing_peripheral.gatt \
 	sm_pairing_central.gatt \
 

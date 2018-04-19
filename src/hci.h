@@ -233,7 +233,6 @@ typedef enum {
 typedef enum {
 
     // general states
-    // state = 0
     SM_GENERAL_IDLE,
     SM_GENERAL_SEND_PAIRING_FAILED,
     SM_GENERAL_TIMEOUT, // no other security messages are exchanged
@@ -254,23 +253,17 @@ typedef enum {
     SM_PH2_C1_W4_RANDOM_B,
 
     // calculate confirm value for local side
-    // state = 10
     SM_PH2_C1_GET_ENC_A,
     SM_PH2_C1_W4_ENC_A,
-    SM_PH2_C1_GET_ENC_B,
-    SM_PH2_C1_W4_ENC_B,
 
     // calculate confirm value for remote side
     SM_PH2_C1_GET_ENC_C,
     SM_PH2_C1_W4_ENC_C,
-    SM_PH2_C1_GET_ENC_D,
-    SM_PH2_C1_W4_ENC_D,
 
     SM_PH2_C1_SEND_PAIRING_CONFIRM,
     SM_PH2_SEND_PAIRING_RANDOM,
 
     // calc STK
-    // state = 20
     SM_PH2_CALC_STK,
     SM_PH2_W4_STK,
 
@@ -278,24 +271,15 @@ typedef enum {
 
     // Phase 3: Transport Specific Key Distribution
     // calculate DHK, Y, EDIV, and LTK
-    SM_PH3_GET_RANDOM,
-    SM_PH3_W4_RANDOM,
-    SM_PH3_GET_DIV,
-    SM_PH3_W4_DIV,
     SM_PH3_Y_GET_ENC,
     SM_PH3_Y_W4_ENC,
     SM_PH3_LTK_GET_ENC,
-    // state = 30
-    SM_PH3_LTK_W4_ENC,
-    SM_PH3_CSRK_GET_ENC,
-    SM_PH3_CSRK_W4_ENC,
 
     // exchange keys
     SM_PH3_DISTRIBUTE_KEYS,
     SM_PH3_RECEIVE_KEYS,
 
     // RESPONDER ROLE
-    // state = 35
     SM_RESPONDER_IDLE,
     SM_RESPONDER_SEND_SECURITY_REQUEST,
     SM_RESPONDER_PH0_RECEIVED_LTK_REQUEST,
@@ -310,15 +294,11 @@ typedef enum {
     SM_RESPONDER_PH2_SEND_LTK_REPLY,
 
     // Phase 4: re-establish previously distributed LTK
-    // state == 46
     SM_RESPONDER_PH4_Y_GET_ENC,
     SM_RESPONDER_PH4_Y_W4_ENC,
-    SM_RESPONDER_PH4_LTK_GET_ENC,
-    SM_RESPONDER_PH4_LTK_W4_ENC,
     SM_RESPONDER_PH4_SEND_LTK_REPLY,
 
     // INITITIATOR ROLE
-    // state = 51
     SM_INITIATOR_CONNECTED,
     SM_INITIATOR_PH0_HAS_LTK,
     SM_INITIATOR_PH0_SEND_START_ENCRYPTION,

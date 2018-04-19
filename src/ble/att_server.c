@@ -65,6 +65,9 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "btstack_tlv.h"
+#ifdef ENABLE_LE_SIGNED_WRITE
+#include "ble/sm.h"
+#endif
 
 #ifndef NVN_NUM_GATT_SERVER_CCC
 #define NVN_NUM_GATT_SERVER_CCC 20
