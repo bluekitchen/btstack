@@ -706,7 +706,6 @@ static void btstack_crypto_handle_encryption_result(const uint8_t * data){
 	btstack_crypto_aes128_cmac_t * btstack_crypto_cmac;
     btstack_crypto_ccm_t         * btstack_crypto_ccm;
 	uint8_t result[16];
-    uint16_t bytes_to_process;
 
     btstack_crypto_t * btstack_crypto = (btstack_crypto_t*) btstack_linked_list_get_first_item(&btstack_crypto_operations);
 	if (!btstack_crypto) return;
@@ -753,7 +752,6 @@ static void btstack_crypto_handle_encryption_result(const uint8_t * data){
                     break;           
                 case CCM_W4_XN:
                     reverse_128(data, btstack_crypto_ccm->x_i);
-                    bytes_to_process = btstack_min(btstack_crypto_ccm->block_len, 16);
                     btstack_crypto_ccm_next_block(btstack_crypto_ccm, CCM_CALCULATE_SN);
                     break;
                 case CCM_W4_S0:
