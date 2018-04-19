@@ -246,10 +246,10 @@ static sm_aes128_state_t  sm_aes128_state;
 
 // crypto 
 static btstack_crypto_random_t   sm_crypto_random_request;
-static btstack_crypto_random_t   sm_crypto_random_oob_request;
 static btstack_crypto_aes128_t   sm_crypto_aes128_request;
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 static btstack_crypto_ecc_p256_t sm_crypto_ecc_p256_request;
+static btstack_crypto_random_t   sm_crypto_random_oob_request;
 #endif
 
 // temp storage for random data
@@ -403,17 +403,19 @@ static void sm_handle_encryption_result_enc_csrk(void *arg);
 static void sm_handle_encryption_result_enc_d(void * arg);
 static void sm_handle_encryption_result_enc_ph3_ltk(void *arg);
 static void sm_handle_encryption_result_enc_ph3_y(void *arg);
+#ifdef ENABLE_LE_PERIPHERAL
 static void sm_handle_encryption_result_enc_ph4_ltk(void *arg);
 static void sm_handle_encryption_result_enc_ph4_y(void *arg);
+#endif
 static void sm_handle_encryption_result_enc_stk(void *arg);
 static void sm_handle_encryption_result_rau(void *arg);
 static void sm_handle_random_result_ph2_tk(void * arg);
 static void sm_handle_random_result_rau(void * arg);
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 static void sm_handle_random_result_sc_get_random(void * arg);
+static int sm_passkey_entry(stk_generation_method_t method);
 #endif
 static void sm_notify_client_status_reason(sm_connection_t * sm_conn, uint8_t status, uint8_t reason);
-static int sm_passkey_entry(stk_generation_method_t method);
 
 static void log_info_hex16(const char * name, uint16_t value){
     log_info("%-6s 0x%04x", name, value);
@@ -2590,6 +2592,7 @@ static void sm_handle_encryption_result_enc_ph3_y(void *arg){
     btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_er, sm_aes128_plaintext, setup->sm_ltk, sm_handle_encryption_result_enc_ph3_ltk, connection);
 }
 
+#ifdef ENABLE_LE_PERIPHERAL
 // sm_aes128_state stays active
 static void sm_handle_encryption_result_enc_ph4_y(void *arg){
     sm_connection_t * connection = (sm_connection_t*) arg;
@@ -2604,6 +2607,7 @@ static void sm_handle_encryption_result_enc_ph4_y(void *arg){
     sm_d1_d_prime(setup->sm_local_div, 0, sm_aes128_plaintext);
     btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_er, sm_aes128_plaintext, setup->sm_ltk, sm_handle_encryption_result_enc_ph4_ltk, connection);
 }
+#endif
 
 // sm_aes128_state stays active
 static void sm_handle_encryption_result_enc_ph3_ltk(void *arg){
