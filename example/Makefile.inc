@@ -37,6 +37,7 @@ COMMON += \
 	l2cap_signaling.c	        \
 	btstack_tlv.c               \
 	btstack_crypto.c            \
+	uECC.c                      \
 
 CLASSIC += \
 	btstack_link_key_db_memory.c   \
@@ -74,9 +75,6 @@ MBEDTLS = 					\
 	sm_mbedtls_allocator.c  \
 	memory_buffer_alloc.c   \
 	platform.c 				\
-
-MICROECC = \
-	uECC.c
 
 # List of files for Bluedroid SBC codec
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
@@ -168,7 +166,7 @@ EXAMPLES_USING_LE =			\
 CORE_OBJ    = $(CORE:.c=.o)
 COMMON_OBJ  = $(COMMON:.c=.o)
 CLASSIC_OBJ  = $(CLASSIC:.c=.o)
-SM_OBJ = $(SM:.c=.o) $(MICROECC:.c=.o)
+SM_OBJ = $(SM:.c=.o)
 ATT_OBJ     = $(ATT:.c=.o)
 GATT_CLIENT_OBJ = $(GATT_CLIENT:.c=.o)
 GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
