@@ -155,9 +155,9 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     
                     if (!is_avdtp_remote_seid_registered(stream_endpoint)){
                         stream_endpoint->remote_sep = sep;
-                        stream_endpoint->state = AVDTP_STREAM_ENDPOINT_CONFIGURED;
                         log_info("INT: update seid %d, to %p", stream_endpoint->remote_sep.seid, stream_endpoint);
                     } 
+                    stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
                     break;
 
                 case AVDTP_SI_SET_CONFIGURATION:{

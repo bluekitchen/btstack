@@ -490,7 +490,7 @@ void avdtp_prepare_capabilities(avdtp_signaling_packet_t * signaling_packet, uin
     
     for (i = 1; i < 9; i++){
         int registered_category = get_bit16(registered_service_categories, i);
-        if (!registered_category && (identifier == AVDTP_SI_SET_CONFIGURATION || identifier == AVDTP_SI_RECONFIGURE)){
+        if (!registered_category && (identifier == AVDTP_SI_SET_CONFIGURATION)){
             // TODO: introduce bitmap of mandatory categories
             if (i == 1){
                 registered_category = 1;
@@ -502,7 +502,6 @@ void avdtp_prepare_capabilities(avdtp_signaling_packet_t * signaling_packet, uin
             signaling_packet->size += avdtp_pack_service_capabilities(signaling_packet->command+signaling_packet->size, sizeof(signaling_packet->command)-signaling_packet->size, capabilities, (avdtp_service_category_t)i, pack_all_capabilities);
         }
     }
-    
     signaling_packet->signal_identifier = (avdtp_signal_identifier_t)identifier;
     signaling_packet->transaction_label = transaction_label;
 }
