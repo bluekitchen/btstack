@@ -85,7 +85,7 @@ static void gap_le_advertisements_setup(void){
  */
 
 /* LISTING_START(GAPLEAdvDataTypesAndFlags): Advertising data types and flags */
-static char * ad_types[] = {
+static const char * ad_types[] = {
     "", 
     "Flags",
     "Incomplete List of 16-bit Service Class UUIDs",
@@ -115,7 +115,7 @@ static char * ad_types[] = {
     "Advertising Interval"
 };
 
-static char * flags[] = {
+static const char * flags[] = {
     "LE Limited Discoverable Mode",
     "LE General Discoverable Mode",
     "BR/EDR Not Supported",

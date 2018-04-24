@@ -69,6 +69,7 @@ static uint8_t rfcomm_reserved_buffer[1000];
 
 hfp_connection_t * hfp_context;
 
+void (*registered_hci_packet_handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 void (*registered_rfcomm_packet_handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 void (*registered_sdp_app_callback)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -129,6 +130,7 @@ void print_without_newlines(uint8_t *data, uint16_t len){
 
 extern "C" void l2cap_init(void){}
 extern "C" void hci_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
+    registered_hci_packet_handler = callback_handler->callback;
 }
 
 int  rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
@@ -201,7 +203,7 @@ static void hci_event_sco_complete(void){
     little_endian_store_16(event,  pos, 0);   pos += 2; // tx_packet_length
 
     event[pos++] = 0; // air_mode
-    (*registered_rfcomm_packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*registered_hci_packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 int hci_send_cmd(const hci_cmd_t *cmd, ...){
@@ -327,7 +329,7 @@ void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason){
     event[2] = 0; // status = OK
     little_endian_store_16(event, 3, handle);
     event[5] = reason;
-    (*registered_rfcomm_packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*registered_hci_packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 uint8_t gap_disconnect(hci_con_handle_t handle){

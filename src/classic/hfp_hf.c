@@ -66,6 +66,8 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
 static const char default_hfp_hf_service_name[] = "Hands-Free unit";
 static uint16_t hfp_supported_features = HFP_DEFAULT_HF_SUPPORTED_FEATURES;
 static uint8_t hfp_codecs_nr = 0;
@@ -1099,7 +1101,7 @@ static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
                 hfp_run_for_context(get_hfp_connection_context_for_rfcomm_cid(rfcomm_cid));
                 return;
             }
-            hfp_handle_hci_event(packet_type, channel, packet, size, HFP_ROLE_HF);
+            hfp_handle_rfcomm_event(packet_type, channel, packet, size, HFP_ROLE_HF);
             break;
         default:
             break;
@@ -1110,8 +1112,14 @@ static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
 void hfp_hf_init(uint16_t rfcomm_channel_nr){
     hfp_init();
 
+    hci_event_callback_registration.callback = &hfp_handle_hci_event;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     rfcomm_register_service(rfcomm_packet_handler, rfcomm_channel_nr, 0xffff);  
+
+    // used to set packet handler for outgoing rfcomm connections - could be handled by emitting an event to us
     hfp_set_hf_rfcomm_packet_handler(&rfcomm_packet_handler);
+
     hfp_set_hf_run_for_context(hfp_run_for_context);
 
     hfp_supported_features = HFP_DEFAULT_HF_SUPPORTED_FEATURES;

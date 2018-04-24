@@ -81,6 +81,8 @@ void set_hfp_ag_indicators(hfp_ag_indicator_t * indicators, int indicator_nr);
 int get_hfp_ag_indicators_nr(hfp_connection_t * context);
 hfp_ag_indicator_t * get_hfp_ag_indicators(hfp_connection_t * context);
 
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
 // gobals
 static const char default_hfp_ag_service_name[] = "Voice gateway";
 
@@ -2032,7 +2034,7 @@ static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
                 hfp_run_for_context(get_hfp_connection_context_for_rfcomm_cid(rfcomm_cid));
                 return;
             }
-            hfp_handle_hci_event(packet_type, channel, packet, size, HFP_ROLE_AG);
+            hfp_handle_rfcomm_event(packet_type, channel, packet, size, HFP_ROLE_AG);
             break;
         default:
             break;
@@ -2075,9 +2077,15 @@ void hfp_ag_init_call_hold_services(int call_hold_services_nr, const char * call
 
 
 void hfp_ag_init(uint16_t rfcomm_channel_nr){
+
     hfp_init();
 
+    hci_event_callback_registration.callback = &hfp_handle_hci_event;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     rfcomm_register_service(&rfcomm_packet_handler, rfcomm_channel_nr, 0xffff);  
+
+    // used to set packet handler for outgoing rfcomm connections - could be handled by emitting an event to us
     hfp_set_ag_rfcomm_packet_handler(&rfcomm_packet_handler);
     
     hfp_ag_response_and_hold_active = 0;

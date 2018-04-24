@@ -48,6 +48,7 @@ BTdaemon_SOURCES =      \
     att_dispatch.c              \
     att_server.c                \
     bnep.c                      \
+    btstack_crypto.c            \
     btstack_memory.c            \
     btstack_memory_pool.c       \
     btstack_tlv.c               \

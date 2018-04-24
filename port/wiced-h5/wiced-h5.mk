@@ -43,6 +43,7 @@ $(NAME)_SOURCES += \
 	../../src/classic/sdp_client_rfcomm.c \
 	../../src/classic/sdp_util.c          \
 	../../src/classic/spp_server.c        \
+	../../src/btstack_crypto.c            \
 	../../src/btstack_linked_list.c       \
 	../../src/btstack_memory.c            \
 	../../src/btstack_memory_pool.c       \

@@ -138,9 +138,11 @@ CSRCS += \
 	${BTSTACK_ROOT_CONFIG}/src/ble/att_server.c \
 	${BTSTACK_ROOT_CONFIG}/src/ble/gatt-service/battery_service_server.c \
 	${BTSTACK_ROOT_CONFIG}/src/ble/gatt-service/device_information_service_server.c \
+	${BTSTACK_ROOT_CONFIG}/src/ble/gatt-service/hids_device.c \
 	${BTSTACK_ROOT_CONFIG}/src/ble/gatt_client.c \
 	${BTSTACK_ROOT_CONFIG}/src/ble/le_device_db_memory.c \
 	${BTSTACK_ROOT_CONFIG}/src/ble/sm.c \
+	${BTSTACK_ROOT_CONFIG}/src/btstack_crypto.c \
 	${BTSTACK_ROOT_CONFIG}/src/btstack_linked_list.c \
 	${BTSTACK_ROOT_CONFIG}/src/btstack_memory.c \
 	${BTSTACK_ROOT_CONFIG}/src/btstack_memory_pool.c \

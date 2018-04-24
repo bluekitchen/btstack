@@ -17,6 +17,7 @@ VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
 
 COMMON = \
+    btstack_crypto.c    		\
     btstack_linked_list.c		\
     btstack_memory.c			\
     btstack_memory_pool.c		\
