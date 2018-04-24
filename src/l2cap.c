@@ -3137,7 +3137,8 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                             case L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT:
                                 log_info("L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT");
                                 l2cap_ertm_process_req_seq(l2cap_channel, req_seq);
-                                // rsetart transmittion from last unacknowledted packet (earlier packets already freed in l2cap_ertm_process_req_seq)
+                                // restart transmittion from last unacknowledted packet (earlier packets already freed in l2cap_ertm_process_req_seq)
+                                l2cap_channel->unacked_frames = 0;
                                 l2cap_channel->tx_send_index = l2cap_channel->tx_read_index;
                                 break;
                             case L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY:
