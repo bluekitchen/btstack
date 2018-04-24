@@ -796,6 +796,7 @@ uint8_t avdtp_start_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context
 
     stream_endpoint->start_stream = 1;
     connection->local_seid = local_seid;
+    connection->remote_seid = stream_endpoint->remote_sep.seid;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
@@ -824,6 +825,7 @@ uint8_t avdtp_stop_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context_
 
     stream_endpoint->stop_stream = 1;
     connection->local_seid = local_seid;
+    connection->remote_seid = stream_endpoint->remote_sep.seid;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
@@ -852,6 +854,7 @@ uint8_t avdtp_abort_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_context
     
     stream_endpoint->abort_stream = 1;
     connection->local_seid = local_seid;
+    connection->remote_seid = stream_endpoint->remote_sep.seid;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
@@ -879,6 +882,7 @@ uint8_t avdtp_suspend_stream(uint16_t avdtp_cid, uint8_t local_seid, avdtp_conte
 
     stream_endpoint->suspend_stream = 1;
     connection->local_seid = local_seid;
+    connection->remote_seid = stream_endpoint->remote_sep.seid;
     avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }
