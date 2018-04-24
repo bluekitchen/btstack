@@ -87,6 +87,9 @@ void avrcp_target_set_subunit_info(uint16_t avrcp_cid, avrcp_subunit_type_t subu
 uint8_t avrcp_target_playing_content_changed(uint16_t avrcp_cid);
 uint8_t avrcp_target_battery_status_changed(uint16_t avrcp_cid, avrcp_battery_status_t battery_status);
 uint8_t avrcp_target_volume_changed(uint16_t avrcp_cid, uint8_t volume_percentage);
+uint8_t avrcp_target_track_changed(uint16_t avrcp_cid, uint8_t * trackID);
+
+// uint8_t avrcp_target_trigger_notification(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id);
 
 
 uint8_t avrcp_target_operation_rejected(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand);

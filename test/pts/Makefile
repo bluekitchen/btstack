@@ -135,14 +135,13 @@ AVDTP_OBJ  = $(AVDTP:.c=.o)
 HXCMOD_PLAYER_OBJ = ${HXCMOD_PLAYER:.c=.o}
 
 EXAMPLES  = iopt ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback le_data_channel
-EXAMPLES += avdtp_source_test avdtp_sink_test le_data_channel avrcp_controller_test sm_test
-# avrcp_target_test
+EXAMPLES += avdtp_source_test avdtp_sink_test le_data_channel avrcp_controller_test sm_test avrcp_target_test
 
 all: ${EXAMPLES}
 
 # compile .gatt descriptions
-# avrcp_target_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_ENCODER_OBJ} ${SM_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} avrcp.o avrcp_target.o avrcp_target_test.c
-# 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+avrcp_target_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_ENCODER_OBJ} ${SM_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} avrcp_media_item_iterator.o avrcp_controller.o avrcp_browsing_controller.o btstack_stdin_pts.o avrcp.o avrcp_target.o avrcp_target_test.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 avrcp_controller_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} sdp_client.o avrcp.o avrcp_media_item_iterator.o avrcp_controller.o avrcp_browsing_controller.o btstack_stdin_pts.o avrcp_controller_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
