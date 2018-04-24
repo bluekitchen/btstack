@@ -83,8 +83,8 @@ void avdtp_reset_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint){
 
     stream_endpoint->sep.in_use = 0;
     memset(&stream_endpoint->remote_sep, 0, sizeof(avdtp_sep_t));
-    memset(&stream_endpoint->remote_capabilities, 0, sizeof(avdtp_capabilities_t));
-    memset(&stream_endpoint->remote_configuration, 0, sizeof(avdtp_capabilities_t));
+    // memset(&stream_endpoint->remote_capabilities, 0, sizeof(avdtp_capabilities_t));
+    // memset(&stream_endpoint->remote_configuration, 0, sizeof(avdtp_capabilities_t));
     
     stream_endpoint->remote_capabilities_bitmap = 0;
     stream_endpoint->remote_configuration_bitmap = 0;
