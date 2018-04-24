@@ -361,6 +361,7 @@ typedef enum {
     AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CAPABILITIES,
     AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_ALL_CAPABILITIES,
     AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_GET_CONFIGURATION,
+    AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SEND_DELAY_REPORT,
     AVDTP_SIGNALING_CONNECTION_INITIATOR_W4_ANSWER
 } avdtp_initiator_connection_state_t;
 
@@ -398,6 +399,9 @@ typedef struct {
 
     uint8_t local_seid;
     uint8_t remote_seid;
+
+    uint16_t delay_ms;
+
     // for repeating the set_configuration 
     void * active_stream_endpoint;
 
