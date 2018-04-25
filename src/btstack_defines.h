@@ -1942,6 +1942,14 @@ typedef uint8_t sm_key_t[16];
  */
 #define AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED                            0x1D
 
+/**
+ * @format 1214
+ * @param subevent_code
+ * @param browsing_cid
+ * @param scope
+ * @param attr_bitmap
+ */
+#define AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS                             0x1E
 
 /**
  * @format 12211
