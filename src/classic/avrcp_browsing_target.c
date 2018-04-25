@@ -57,43 +57,27 @@ static void avrcp_browsing_target_request_can_send_now(avrcp_browsing_connection
 }
 
 static int avrcp_browsing_target_handle_can_send_now(avrcp_browsing_connection_t * connection){
-
     int pos = 0; 
-    l2cap_reserve_packet_buffer();
-    uint8_t * packet = l2cap_get_outgoing_buffer();
-
-    // transport header
-    // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
-
-    // TODO: check for fragmentation
+    // l2cap_reserve_packet_buffer();
+    // uint8_t * packet = l2cap_get_outgoing_buffer();
+    uint8_t packet[100];
     connection->packet_type = AVRCP_SINGLE_PACKET;
-    printf("ttransaction %d \n", connection->transaction_label);
+
     packet[pos++] = (connection->transaction_label << 4) | (connection->packet_type << 2) | (AVRCP_RESPONSE_FRAME << 1) | 0;
     // Profile IDentifier (PID)
     packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
     packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
-    // command_type
-    // packet[pos++] = connection->command_type;
-    // // subunit_type | subunit ID
-    // packet[pos++] = (connection->subunit_type << 3) | connection->subunit_id;
-    // // opcode
-    // packet[pos++] = (uint8_t)connection->command_opcode;
-    // operands
-        // company id is 3 bytes long
-    // big_endian_store_24(packet, pos, BT_SIG_COMPANY_ID);
-    // pos += 3;
     memcpy(packet+pos, connection->cmd_operands, connection->cmd_operands_length);
     // printf_hexdump(packet+pos, connection->cmd_operands_length);
 
     pos += connection->cmd_operands_length;
     connection->wait_to_send = 0;
-    printf(" send reject \n");
-    printf_hexdump(packet, pos);
-    return l2cap_send_prepared(connection->l2cap_browsing_cid, pos);
+    // return l2cap_send_prepared(connection->l2cap_browsing_cid, pos);
+    return l2cap_send(connection->l2cap_browsing_cid, packet, pos);
 }
 
 
-static uint8_t avrcp_browsing_target_response_reject(avrcp_browsing_connection_t * connection, avrcp_status_code_t status){
+static uint8_t avrcp_browsing_target_response_general_reject(avrcp_browsing_connection_t * connection, avrcp_status_code_t status){
     // AVRCP_CTYPE_RESPONSE_REJECTED
     int pos = 0;
     connection->cmd_operands[pos++] = AVRCP_PDU_ID_GENERAL_REJECT;
@@ -386,9 +370,9 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
             switch (avctp_packet_type){
                 case AVRCP_SINGLE_PACKET:
                 case AVRCP_END_PACKET:
-                    printf("send avrcp_browsing_target_response_reject\n");
+                    printf("send avrcp_browsing_target_response_general_reject\n");
                     browsing_connection->state = AVCTP_CONNECTION_OPENED;
-                    avrcp_browsing_target_response_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
+                    avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
                     // avrcp_browsing_target_emit_done_with_uid_counter(avrcp_target_context.browsing_avrcp_callback, channel, browsing_connection->uid_counter, browsing_connection->browsing_status, ERROR_CODE_SUCCESS);
                     break;
                 default:

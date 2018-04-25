@@ -251,6 +251,15 @@ static void avrcp_browser_packet_handler(uint8_t packet_type, uint16_t channel, 
 static int avrcp_browsing_controller_send_get_folder_items_cmd(uint16_t cid, avrcp_browsing_connection_t * connection){
     uint8_t command[100];
     int pos = 0; 
+
+    // // if (connection->cmd_operands[3] == AVRCP_PDU_ID_GET_CAPABILITIES){
+    //     printf("cheet\n");
+    //     uint8_t buffer[] = {0xB0, 0x11, 0x0E, 0xFF, 0x00, 0x02, 0xFF, 0xFF};
+    //     memcpy(command, buffer, sizeof(buffer));
+    //     pos =  sizeof(buffer);
+    //     return l2cap_send(cid, command, pos);
+    // // }
+
     // transport header
     // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
     command[pos++] = (connection->transaction_label << 4) | (AVRCP_SINGLE_PACKET << 2) | (AVRCP_COMMAND_FRAME << 1) | 0;
@@ -293,6 +302,7 @@ static int avrcp_browsing_controller_send_get_folder_items_cmd(uint16_t cid, avr
         }
         bit_position++;
     }
+    
     
     return l2cap_send(cid, command, pos);
 }
@@ -578,10 +588,12 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
         case L2CAP_DATA_PACKET:{
             browsing_connection = get_avrcp_browsing_connection_for_l2cap_cid(channel, &avrcp_controller_context);
             if (!browsing_connection) break;
+            printf("received \n");
+            printf_hexdump(packet,size);
             int pos = 0;
             uint8_t transport_header = packet[pos++];
             // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
-            // uint8_t transaction_label = transport_header >> 4;
+            browsing_connection->transaction_label = transport_header >> 4;
             avrcp_packet_type_t avctp_packet_type = (transport_header & 0x0F) >> 2;
             // printf("L2CAP_DATA_PACKET, packet type %d\n", avctp_packet_type);
             switch (avctp_packet_type){
