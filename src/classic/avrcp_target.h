@@ -97,6 +97,10 @@ uint8_t avrcp_target_operation_accepted(uint16_t avrcp_cid, avrcp_operation_id_t
 uint8_t avrcp_target_operation_not_implemented(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand);
 
 /* API_END */
+
+ // Used by AVRCP target and AVRCP browsing target
+extern avrcp_context_t avrcp_target_context;
+
 #if defined __cplusplus
 }
 #endif

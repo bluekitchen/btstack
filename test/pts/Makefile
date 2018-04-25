@@ -129,7 +129,7 @@ EXAMPLES += avdtp_source_test avdtp_sink_test le_data_channel avrcp_controller_t
 all: ${EXAMPLES}
 
 # compile .gatt descriptions
-avrcp_target_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_ENCODER_OBJ} ${SM_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} avrcp_media_item_iterator.o avrcp_controller.o avrcp_browsing_controller.o btstack_stdin_pts.o avrcp.o avrcp_target.o avrcp_target_test.c
+avrcp_target_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_ENCODER_OBJ} ${SM_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} sdp_client.o avrcp.o avrcp_media_item_iterator.o avrcp.o avrcp_target.o avrcp_browsing_target.o btstack_stdin_pts.o  avrcp_target_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 avrcp_controller_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} sdp_client.o avrcp.o avrcp_media_item_iterator.o avrcp_controller.o avrcp_browsing_controller.o btstack_stdin_pts.o avrcp_controller_test.o

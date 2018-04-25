@@ -199,7 +199,8 @@ uint8_t avrcp_cmd_opcode(uint8_t *packet, uint16_t size){
     return packet[cmd_opcode_index];
 }
 
-void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name){
+void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, 
+    const char * service_name, const char * service_provider_name){
     uint8_t* attribute;
     de_create_sequence(service);
 
@@ -579,7 +580,8 @@ void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
     uint16_t local_cid;
     uint8_t  status;
     avrcp_connection_t * connection = NULL;
-    
+    uint16_t psm;
+
     if (packet_type != HCI_EVENT_PACKET) return;
 
     switch (hci_event_packet_get_type(packet)) {
@@ -595,10 +597,19 @@ void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 l2cap_decline_connection(local_cid);
                 break;
             }
-            connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
-            connection->l2cap_signaling_cid = local_cid;
-            log_info("L2CAP_EVENT_INCOMING_CONNECTION avrcp_cid 0x%02x, l2cap_signaling_cid 0x%02x", connection->avrcp_cid, connection->l2cap_signaling_cid);
-            l2cap_accept_connection(local_cid);
+            
+            psm = l2cap_event_incoming_connection_get_psm(packet);
+            if (psm == PSM_AVCTP){
+                if (!connection->l2cap_signaling_cid){
+                    connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
+                    connection->l2cap_signaling_cid = local_cid;
+                    log_info("L2CAP_EVENT_INCOMING_CONNECTION avrcp_cid 0x%02x, l2cap_signaling_cid 0x%02x", connection->avrcp_cid, connection->l2cap_signaling_cid);
+                    l2cap_accept_connection(local_cid);
+                    break;
+                }
+            }
+            log_info("L2CAP_EVENT_INCOMING_CONNECTION local_cid 0x%02x, psm 0x%2x, decline connection", local_cid, psm);
+            l2cap_decline_connection(local_cid);
             break;
             
         case L2CAP_EVENT_CHANNEL_OPENED:
@@ -620,14 +631,18 @@ void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 btstack_memory_avrcp_connection_free(connection);
                 break;
             }
-            connection->l2cap_signaling_cid = local_cid;
-            connection->song_length_ms = 0xFFFFFFFF;
-            connection->song_position_ms = 0xFFFFFFFF;
-            connection->playback_status = AVRCP_PLAYBACK_STATUS_ERROR;
 
-            log_info("L2CAP_EVENT_CHANNEL_OPENED avrcp_cid 0x%02x, l2cap_signaling_cid 0x%02x", connection->avrcp_cid, connection->l2cap_signaling_cid);
-            connection->state = AVCTP_CONNECTION_OPENED;
-            avrcp_emit_connection_established(context->avrcp_callback, connection->avrcp_cid, event_addr, ERROR_CODE_SUCCESS);
+            psm = l2cap_event_channel_opened_get_psm(packet);
+            if (psm == PSM_AVCTP){
+                connection->l2cap_signaling_cid = local_cid;
+                connection->song_length_ms = 0xFFFFFFFF;
+                connection->song_position_ms = 0xFFFFFFFF;
+                connection->playback_status = AVRCP_PLAYBACK_STATUS_ERROR;
+
+                log_info("L2CAP_EVENT_CHANNEL_OPENED avrcp_cid 0x%02x, l2cap_signaling_cid 0x%02x", connection->avrcp_cid, connection->l2cap_signaling_cid);
+                connection->state = AVCTP_CONNECTION_OPENED;
+                avrcp_emit_connection_established(context->avrcp_callback, connection->avrcp_cid, event_addr, ERROR_CODE_SUCCESS);
+            }
             break;
         
         case L2CAP_EVENT_CHANNEL_CLOSED:

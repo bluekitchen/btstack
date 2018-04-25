@@ -51,7 +51,7 @@
 static const uint8_t AVRCP_NOTIFICATION_TRACK_SELECTED[] = {0,0,0,0,0,0,0,0};
 static const uint8_t AVRCP_NOTIFICATION_TRACK_NOT_SELECTED[] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 
-static avrcp_context_t avrcp_target_context;
+avrcp_context_t avrcp_target_context;
 
 void avrcp_target_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name){
     avrcp_create_sdp_record(0, service, service_record_handle, browsing, supported_features, service_name, service_provider_name);
@@ -315,6 +315,26 @@ static uint8_t avrcp_target_response_accept(avrcp_connection_t * connection, avr
     connection->subunit_type = subunit_type; 
     connection->subunit_id =   subunit_id;
     connection->command_opcode = opcode;
+    // company id is 3 bytes long
+    int pos = connection->cmd_operands_length;
+    connection->cmd_operands[pos++] = pdu_id;
+    connection->cmd_operands[pos++] = 0;
+    // param length
+    big_endian_store_16(connection->cmd_operands, pos, 1);
+    pos += 2;
+    connection->cmd_operands[pos++] = status;
+    connection->cmd_operands_length = pos;
+    connection->state = AVCTP_W2_SEND_RESPONSE;
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
+static uint8_t avrcp_reject_browsing_connection(avrcp_connection_t * connection,  avrcp_pdu_id_t pdu_id, avrcp_status_code_t status){
+    // AVRCP_CTYPE_RESPONSE_REJECTED
+    connection->command_type = AVRCP_CTYPE_RESPONSE_REJECTED;
+    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL; 
+    connection->subunit_id =   0;
+    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     // company id is 3 bytes long
     int pos = connection->cmd_operands_length;
     connection->cmd_operands[pos++] = pdu_id;
@@ -728,8 +748,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     // uint8_t ipid = transport_header & 0x01;
     // uint8_t byte_value = packet[2];
     // uint16_t pid = (byte_value << 8) | packet[2];
-    
-    // avrcp_command_type_t ctype = (avrcp_command_type_t) packet[3];
+    avrcp_command_type_t ctype = (avrcp_command_type_t) packet[3];
     // uint8_t byte_value = packet[4];
     avrcp_subunit_type_t subunit_type = (avrcp_subunit_type_t) (packet[4] >> 3);
     avrcp_subunit_id_t   subunit_id   = (avrcp_subunit_id_t) (packet[4] & 0x07);
@@ -996,7 +1015,7 @@ static void avrcp_target_reset_notification(avrcp_connection_t * connection, uin
     
 }
 
-static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     avrcp_connection_t * connection;
     switch (packet_type) {
         case L2CAP_DATA_PACKET:
@@ -1093,8 +1112,8 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
 void avrcp_target_init(void){
     avrcp_target_context.role = AVRCP_TARGET;
     avrcp_target_context.connections = NULL;
-    avrcp_target_context.packet_handler = avrcp_controller_packet_handler;
-    l2cap_register_service(&avrcp_controller_packet_handler, BLUETOOTH_PROTOCOL_AVCTP, 0xffff, LEVEL_0);
+    avrcp_target_context.packet_handler = avrcp_target_packet_handler;
+    l2cap_register_service(&avrcp_target_packet_handler, BLUETOOTH_PROTOCOL_AVCTP, 0xffff, LEVEL_0);
 }
 
 void avrcp_target_register_packet_handler(btstack_packet_handler_t callback){
