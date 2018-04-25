@@ -159,6 +159,7 @@ static uint8_t request_continuous_pass_through_press_control_cmd(uint16_t avrcp_
 static int avrcp_send_cmd(uint16_t cid, avrcp_connection_t * connection){
     uint8_t command[30];
     int pos = 0; 
+
     // transport header
     // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
     command[pos++] = (connection->transaction_label << 4) | (AVRCP_SINGLE_PACKET << 2) | (AVRCP_COMMAND_FRAME << 1) | 0;
@@ -1305,7 +1306,7 @@ uint8_t avrcp_controller_add_item_from_scope_to_now_playing_list(uint16_t avrcp_
     int pos = 0;
     big_endian_store_24(connection->cmd_operands, pos, BT_SIG_COMPANY_ID);
     pos += 3;
-    connection->cmd_operands[pos++] = AVRCP_PDU_ADD_TO_NOW_PLAYING; // PDU ID
+    connection->cmd_operands[pos++] = AVRCP_PDU_ID_ADD_TO_NOW_PLAYING; // PDU ID
     // reserved
     connection->cmd_operands[pos++] = 0;
     // Parameter Length

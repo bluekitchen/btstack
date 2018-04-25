@@ -136,7 +136,9 @@ typedef enum {
     AVRCP_PDU_ID_PLAY_ITEM = 0x74,
     AVRCP_PDU_ID_GET_TOTAL_NUMBER_OF_ITEMS = 0x75,
     AVRCP_PDU_ID_SEARCH = 0x80,
-    AVRCP_PDU_ADD_TO_NOW_PLAYING = 0x90,
+    AVRCP_PDU_ID_ADD_TO_NOW_PLAYING = 0x90,
+    AVRCP_PDU_ID_GENERAL_REJECT = 0xA0,
+    
     AVRCP_PDU_ID_UNDEFINED = 0xFF
 } avrcp_pdu_id_t;
 
@@ -323,7 +325,7 @@ typedef struct {
     // players
     uint8_t  set_browsed_player_id;
     uint16_t browsed_player_id;
-    
+
     avrcp_browsing_scope_t  scope;
     uint8_t  folder_uid[8]; // or media element
     uint16_t uid_counter;
@@ -361,6 +363,17 @@ typedef struct {
     uint16_t parsed_attribute_value_len;
     uint16_t parsed_attribute_value_offset;
     uint8_t  parsed_num_attributes;
+
+    
+    // command
+    // uint8_t transaction_label;
+    avrcp_command_opcode_t command_opcode;
+    avrcp_command_type_t command_type;
+    avrcp_subunit_type_t subunit_type;
+    avrcp_subunit_id_t   subunit_id;
+    avrcp_packet_type_t  packet_type;
+    uint8_t cmd_operands[20];
+    uint8_t cmd_operands_length;
 } avrcp_browsing_connection_t;
 // BROWSING END
 
@@ -441,6 +454,9 @@ typedef struct {
     uint8_t  num_attributes;
     uint8_t  num_parsed_attributes;
 
+    uint8_t addressed_player_changed;
+    uint16_t addressed_player_id;
+    uint16_t uid_counter;
     // PTS requires definition of max num fragments
     uint8_t max_num_fragments;
     uint8_t num_received_fragments;
