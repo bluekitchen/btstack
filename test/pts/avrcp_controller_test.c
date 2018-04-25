@@ -360,12 +360,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             local_cid = avrcp_subevent_incoming_browsing_connection_get_browsing_cid(packet);
                             if (browsing_cid != 0 && browsing_cid != local_cid) {
                                 printf("AVRCP Browsing Client connection failed, expected 0x%02X l2cap cid, received 0x%02X\n", browsing_cid, local_cid);
-                                avrcp_avrcp_browsing_decline_incoming_connection(browsing_cid);
+                                avrcp_browsing_controller_decline_incoming_connection(browsing_cid);
                                 return;
                             }
                             browsing_cid = local_cid;
                             printf("AVRCP Browsing Client configure incoming connection, browsing cid 0x%02x\n", browsing_cid);
-                            avrcp_avrcp_browsing_configure_incoming_connection(browsing_cid, ertm_buffer, sizeof(ertm_buffer), &ertm_config);
+                            avrcp_browsing_controller_configure_incoming_connection(browsing_cid, ertm_buffer, sizeof(ertm_buffer), &ertm_config);
                             break;
 
                         case AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED: {

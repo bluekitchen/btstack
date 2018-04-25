@@ -128,14 +128,14 @@ uint8_t avrcp_browsing_controller_connect(bd_addr_t bd_addr, uint8_t * ertm_buff
  * @param ertm_config
  * @returns status
  */
-uint8_t avrcp_avrcp_browsing_configure_incoming_connection(uint16_t avrcp_browsing_cid, uint8_t * ertm_buffer, uint32_t size, l2cap_ertm_config_t * ertm_config);
+uint8_t avrcp_browsing_controller_configure_incoming_connection(uint16_t avrcp_browsing_cid, uint8_t * ertm_buffer, uint32_t size, l2cap_ertm_config_t * ertm_config);
 
 /**
  * @brief Decline incoming connection.
  * @param avrcp_browsing_cid
  * @returns status
  */
-uint8_t avrcp_avrcp_browsing_decline_incoming_connection(uint16_t avrcp_browsing_cid);
+uint8_t avrcp_browsing_controller_decline_incoming_connection(uint16_t avrcp_browsing_cid);
 
 
 /**

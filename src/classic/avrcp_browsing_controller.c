@@ -48,7 +48,7 @@
 
 #define PSM_AVCTP_BROWSING              0x001b
 
-void avrcp_browser_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avrcp_context_t * context);
+static void avrcp_browser_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avrcp_context_t * context);
 static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static avrcp_connection_t * get_avrcp_connection_for_browsing_cid(uint16_t browsing_cid, avrcp_context_t * context){
@@ -169,7 +169,7 @@ static uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, avrcp_context_t * c
 
 }
 
-void avrcp_browser_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avrcp_context_t * context){
+static void avrcp_browser_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avrcp_context_t * context){
     UNUSED(channel);
     UNUSED(size);
     bd_addr_t event_addr;
@@ -748,19 +748,19 @@ uint8_t avrcp_browsing_controller_disconnect(uint16_t avrcp_browsing_cid){
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avrcp_avrcp_browsing_configure_incoming_connection(uint16_t avrcp_browsing_cid, uint8_t * ertm_buffer, uint32_t size, l2cap_ertm_config_t * ertm_config){
+uint8_t avrcp_browsing_controller_configure_incoming_connection(uint16_t avrcp_browsing_cid, uint8_t * ertm_buffer, uint32_t size, l2cap_ertm_config_t * ertm_config){
     avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid(avrcp_browsing_cid, &avrcp_controller_context);
     if (!avrcp_connection){
-        log_error("avrcp_avrcp_browsing_decline_incoming_connection: could not find a connection.");
+        log_error("avrcp_browsing_controller_decline_incoming_connection: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (!avrcp_connection->browsing_connection){
-        log_error("avrcp_avrcp_browsing_decline_incoming_connection: no browsing connection.");
+        log_error("avrcp_browsing_controller_decline_incoming_connection: no browsing connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     } 
 
     if (avrcp_connection->browsing_connection->state != AVCTP_CONNECTION_W4_ERTM_CONFIGURATION){
-        log_error("avrcp_avrcp_browsing_decline_incoming_connection: browsing connection in a wrong state.");
+        log_error("avrcp_browsing_controller_decline_incoming_connection: browsing connection in a wrong state.");
         return ERROR_CODE_COMMAND_DISALLOWED;
     } 
 
@@ -772,10 +772,10 @@ uint8_t avrcp_avrcp_browsing_configure_incoming_connection(uint16_t avrcp_browsi
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avrcp_avrcp_browsing_decline_incoming_connection(uint16_t avrcp_browsing_cid){
+uint8_t avrcp_browsing_controller_decline_incoming_connection(uint16_t avrcp_browsing_cid){
     avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid(avrcp_browsing_cid, &avrcp_controller_context);
     if (!avrcp_connection){
-        log_error("avrcp_avrcp_browsing_decline_incoming_connection: could not find a connection.");
+        log_error("avrcp_browsing_controller_decline_incoming_connection: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (!avrcp_connection->browsing_connection) return ERROR_CODE_SUCCESS;
