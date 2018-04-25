@@ -74,6 +74,7 @@ static void stdin_process(char buffer){
     }
 }
 
+static uint8_t device_id_sdp_service_buffer[100];
 static uint8_t pan_service_buffer[200];
 static uint8_t spp_service_buffer[200];     // rfcomm 1
 static uint8_t hsp_ag_service_buffer[200];  // rfcomm 2
@@ -91,6 +92,11 @@ int btstack_main(int argc, const char * argv[]){
     sdp_init();
 
     // Create and register SDP records
+
+    // See https://www.bluetooth.com/specifications/assigned-numbers/company-identifiers if you don't have a USB Vendor ID and need a Bluetooth Vendor ID
+    // device info: BlueKitchen GmbH, product 1, version 1
+    device_id_create_sdp_record(device_id_sdp_service_buffer, 0x10003, DEVICE_ID_VENDOR_ID_SOURCE_BLUETOOTH, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 1, 1);
+    sdp_register_service(device_id_sdp_service_buffer);
     
     spp_create_sdp_record((uint8_t*) spp_service_buffer, 0x10001, 1, "SPP");
     sdp_register_service((uint8_t*)spp_service_buffer);

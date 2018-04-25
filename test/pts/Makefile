@@ -1,17 +1,6 @@
 # Makefile for libusb based PTS tests
 BTSTACK_ROOT = ../..
 
-
-CLASSIC += \
-	btstack_link_key_db_memory.c   \
-	sdp_util.c	                \
-	spp_server.c  				\
-	rfcomm.c	                \
-	bnep.c	                    \
-	sdp_server.c			    \
-	device_id_server.c          \
-
-
 CORE += \
 	btstack_memory.c            \
 	btstack_linked_list.c	    \
@@ -25,6 +14,7 @@ CORE += \
 	
 COMMON += \
 	hci.c			            \
+	device_id_server.c          \
 	ad_parser.c                 \
 	hci_cmd.c		            \
 	hci_dump.c		            \
@@ -128,7 +118,6 @@ ATT_OBJ     = $(ATT:.c=.o)
 SM_OBJ = $(SM:.c=.o) $(MICROECC:.c=.o)
 GATT_CLIENT_OBJ = $(GATT_CLIENT:.c=.o)
 GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
-CLASSIC_OBJ  = $(CLASSIC:.c=.o) 
 SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
 SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 AVDTP_OBJ  = $(AVDTP:.c=.o)
