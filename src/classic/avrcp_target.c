@@ -329,26 +329,6 @@ static uint8_t avrcp_target_response_accept(avrcp_connection_t * connection, avr
     return ERROR_CODE_SUCCESS;
 }
 
-static uint8_t avrcp_reject_browsing_connection(avrcp_connection_t * connection,  avrcp_pdu_id_t pdu_id, avrcp_status_code_t status){
-    // AVRCP_CTYPE_RESPONSE_REJECTED
-    connection->command_type = AVRCP_CTYPE_RESPONSE_REJECTED;
-    connection->subunit_type = AVRCP_SUBUNIT_TYPE_PANEL; 
-    connection->subunit_id =   0;
-    connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
-    // company id is 3 bytes long
-    int pos = connection->cmd_operands_length;
-    connection->cmd_operands[pos++] = pdu_id;
-    connection->cmd_operands[pos++] = 0;
-    // param length
-    big_endian_store_16(connection->cmd_operands, pos, 1);
-    pos += 2;
-    connection->cmd_operands[pos++] = status;
-    connection->cmd_operands_length = pos;
-    connection->state = AVCTP_W2_SEND_RESPONSE;
-    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
-    return ERROR_CODE_SUCCESS;
-}
-
 static uint8_t avrcp_target_response_reject(avrcp_connection_t * connection, avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id, avrcp_command_opcode_t opcode, avrcp_pdu_id_t pdu_id, avrcp_status_code_t status){
     // AVRCP_CTYPE_RESPONSE_REJECTED
     connection->command_type = AVRCP_CTYPE_RESPONSE_REJECTED;
@@ -748,7 +728,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     // uint8_t ipid = transport_header & 0x01;
     // uint8_t byte_value = packet[2];
     // uint16_t pid = (byte_value << 8) | packet[2];
-    avrcp_command_type_t ctype = (avrcp_command_type_t) packet[3];
+    // avrcp_command_type_t ctype = (avrcp_command_type_t) packet[3];
     // uint8_t byte_value = packet[4];
     avrcp_subunit_type_t subunit_type = (avrcp_subunit_type_t) (packet[4] >> 3);
     avrcp_subunit_id_t   subunit_id   = (avrcp_subunit_id_t) (packet[4] & 0x07);
