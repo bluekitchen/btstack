@@ -395,6 +395,32 @@ static uint8_t avrcp_target_response_vendor_dependent_interim(avrcp_connection_t
     return ERROR_CODE_SUCCESS;
 }
 
+static uint8_t avrcp_target_response_addressed_player_changed_interim(avrcp_connection_t * connection, avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id, avrcp_command_opcode_t opcode, avrcp_pdu_id_t pdu_id){
+    connection->command_type = AVRCP_CTYPE_RESPONSE_INTERIM;
+    connection->subunit_type = subunit_type; 
+    connection->subunit_id =   subunit_id;
+    connection->command_opcode = opcode;
+    printf("avrcp_target_response_addressed_player_changed_interim \n");
+    // company id is 3 bytes long
+    int pos = connection->cmd_operands_length;
+    connection->cmd_operands[pos++] = pdu_id;
+    connection->cmd_operands[pos++] = 0;
+    // param length
+    big_endian_store_16(connection->cmd_operands, pos, 5);
+    pos += 2;
+    connection->cmd_operands[pos++] = AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED;
+    big_endian_read_16( &connection->cmd_operands[pos], connection->addressed_player_id);
+    pos += 2;
+    big_endian_read_16( &connection->cmd_operands[pos], connection->uid_counter);
+    pos += 2;
+    
+    connection->cmd_operands_length = pos;
+    connection->state = AVCTP_W2_SEND_RESPONSE;
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
+
 // static uint8_t avrcp_target_response_vendor_dependent_changed(avrcp_connection_t * connection, avrcp_pdu_id_t pdu_id, uint8_t event_id){
 //     connection->command_opcode = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
 //     connection->command_type = AVRCP_CTYPE_RESPONSE_CHANGED_STABLE;
@@ -659,12 +685,28 @@ uint8_t avrcp_target_track_changed(uint16_t avrcp_cid, uint8_t * track_id){
 uint8_t avrcp_target_playing_content_changed(uint16_t avrcp_cid){
     avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(avrcp_cid, &avrcp_target_context);
     if (!connection){
-        log_error("avrcp_unit_info: could not find a connection.");
+        log_error("avrcp_target_playing_content_changed: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
     }
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_NOW_PLAYING_CONTENT_CHANGED)) {
         connection->playing_content_changed = 1;
         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    }
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t avrcp_target_addressed_player_changed(uint16_t avrcp_cid, uint16_t player_id, uint16_t uid_counter){
+    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(avrcp_cid, &avrcp_target_context);
+    if (!connection){
+        log_error("avrcp_unit_info: could not find a connection.");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+    }
+    if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED)) {
+        printf("send AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED\n");
+        // connection->addressed_player_changed = 1;
+        // connection->uid_counter = uid_counter;
+        // connection->addressed_player_id = player_id;
+        // avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     }
     return ERROR_CODE_SUCCESS;
 }
@@ -803,10 +845,22 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
         case AVRCP_CMD_OPCODE_VENDOR_DEPENDENT:
             pdu_id = pdu[0];
             // 1 - reserved
-            // 2-3 param length, 
+            // 2-3 param length,
+            printf_hexdump(packet, size);
+                     
+            uint16_t length = big_endian_read_16(pdu, 1);
             memcpy(connection->cmd_operands, company_id, 3);
             connection->cmd_operands_length = 3;
             switch (pdu_id){
+                case AVRCP_PDU_ID_SET_ADDRESSED_PLAYER:{
+                    if (length == 0){
+                        printf(" reject id\n");
+                        avrcp_target_response_reject(connection, subunit_type, subunit_id, opcode, pdu_id, AVRCP_STATUS_INVALID_PLAYER_ID);
+                        break;
+                    } 
+                    avrcp_target_response_accept(connection, subunit_type, subunit_id, opcode, pdu_id, AVRCP_STATUS_SUCCESS);
+                    break;
+                }
                 case AVRCP_PDU_ID_GET_CAPABILITIES:{
                     avrcp_capability_id_t capability_id = (avrcp_capability_id_t) pdu[pos];
                     switch (capability_id){
@@ -898,9 +952,13 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             break;
                         case AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED:
                         case AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED:
-                        case AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED:
                         case AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED:
                             avrcp_target_response_not_implemented(connection, subunit_type, subunit_id, opcode, pdu_id, event_id);
+                            return;
+                        case AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED:
+                            connection->notifications_enabled |= event_mask;
+                            printf("respond with interim AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED\n");
+                            avrcp_target_response_addressed_player_changed_interim(connection, subunit_type, subunit_id, opcode, pdu_id);
                             return;
                         default:
                             avrcp_target_response_reject(connection, subunit_type, subunit_id, opcode, pdu_id, AVRCP_STATUS_INVALID_PARAMETER);
@@ -937,6 +995,53 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             break;
     }
 }
+
+static int avrcp_target_send_addressed_player_changed_notification(uint16_t cid, avrcp_connection_t * connection, uint16_t uid, uint16_t uid_counter){
+    if (!connection){
+        log_error("avrcp tartget: could not find a connection.");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
+    }
+    printf("avrcp_target_send_addressed_player_changed_notification \n");
+    connection->command_opcode  = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
+    connection->command_type    = AVRCP_CTYPE_RESPONSE_CHANGED_STABLE;
+    connection->subunit_type    = AVRCP_SUBUNIT_TYPE_PANEL; 
+    connection->subunit_id      = AVRCP_SUBUNIT_ID;
+
+    uint16_t pos = 0; 
+    l2cap_reserve_packet_buffer();
+    uint8_t * packet = l2cap_get_outgoing_buffer();
+
+    connection->packet_type = AVRCP_SINGLE_PACKET;
+    packet[pos++] = (connection->transaction_label << 4) | (connection->packet_type << 2) | (AVRCP_RESPONSE_FRAME << 1) | 0;
+    // Profile IDentifier (PID)
+    packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
+    packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
+
+    // command_type
+    packet[pos++] = connection->command_type;
+    // subunit_type | subunit ID
+    packet[pos++] = (connection->subunit_type << 3) | connection->subunit_id;
+    // opcode
+    packet[pos++] = (uint8_t)connection->command_opcode;
+
+    // company id is 3 bytes long
+    big_endian_store_24(packet, pos, BT_SIG_COMPANY_ID);
+    pos += 3;
+
+    packet[pos++] = AVRCP_PDU_ID_REGISTER_NOTIFICATION; 
+    packet[pos++] = 0;
+    big_endian_store_16(packet, pos, 5);
+    pos += 2;
+    packet[pos++] = AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED;
+    big_endian_store_16(packet, pos, uid);
+    pos += 2;
+    big_endian_store_16(packet, pos, uid_counter);
+    pos += 2;
+    
+    connection->wait_to_send = 0;
+    return l2cap_send_prepared(cid, pos);
+}
+
 
 static int avrcp_target_send_notification(uint16_t cid, avrcp_connection_t * connection, uint8_t notification_id, uint8_t * value, uint16_t value_len){
     if (!connection){
@@ -990,6 +1095,7 @@ static void avrcp_target_reset_notification(avrcp_connection_t * connection, uin
         log_error("avrcp tartget: could not find a connection.");
         return;
     }
+    printf("reset notification\n");
     connection->notifications_enabled &= ~(1 << notification_id);
     connection->command_opcode  = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     
@@ -1040,6 +1146,14 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
                         break;
                     }
+                    
+                    // if (connection->addressed_player_changed){
+                    //     connection->playback_status_changed = 0;
+                    //     avrcp_target_send_addressed_player_changed_notification(connection->l2cap_signaling_cid, connection, connection->addressed_player_id, connection->uid_counter);
+                    //     avrcp_target_reset_notification(connection, AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED);
+                    //     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+                    //     break;
+                    // }
                     
                     if (connection->playing_content_changed){
                         connection->playing_content_changed = 0;

@@ -51,6 +51,63 @@
 static void avrcp_browser_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avrcp_context_t * context);
 static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
+static void avrcp_browsing_target_request_can_send_now(avrcp_browsing_connection_t * connection, uint16_t l2cap_cid){
+    connection->wait_to_send = 1;
+    l2cap_request_can_send_now_event(l2cap_cid);
+}
+
+static int avrcp_browsing_target_handle_can_send_now(avrcp_browsing_connection_t * connection){
+
+    int pos = 0; 
+    l2cap_reserve_packet_buffer();
+    uint8_t * packet = l2cap_get_outgoing_buffer();
+
+    // transport header
+    // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
+
+    // TODO: check for fragmentation
+    connection->packet_type = AVRCP_SINGLE_PACKET;
+    printf("ttransaction %d \n", connection->transaction_label);
+    packet[pos++] = (connection->transaction_label << 4) | (connection->packet_type << 2) | (AVRCP_RESPONSE_FRAME << 1) | 0;
+    // Profile IDentifier (PID)
+    packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
+    packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
+    // command_type
+    // packet[pos++] = connection->command_type;
+    // // subunit_type | subunit ID
+    // packet[pos++] = (connection->subunit_type << 3) | connection->subunit_id;
+    // // opcode
+    // packet[pos++] = (uint8_t)connection->command_opcode;
+    // operands
+        // company id is 3 bytes long
+    // big_endian_store_24(packet, pos, BT_SIG_COMPANY_ID);
+    // pos += 3;
+    memcpy(packet+pos, connection->cmd_operands, connection->cmd_operands_length);
+    // printf_hexdump(packet+pos, connection->cmd_operands_length);
+
+    pos += connection->cmd_operands_length;
+    connection->wait_to_send = 0;
+    printf(" send reject \n");
+    printf_hexdump(packet, pos);
+    return l2cap_send_prepared(connection->l2cap_browsing_cid, pos);
+}
+
+
+static uint8_t avrcp_browsing_target_response_reject(avrcp_browsing_connection_t * connection, avrcp_status_code_t status){
+    // AVRCP_CTYPE_RESPONSE_REJECTED
+    int pos = 0;
+    connection->cmd_operands[pos++] = AVRCP_PDU_ID_GENERAL_REJECT;
+    // connection->cmd_operands[pos++] = 0;
+    // param length
+    big_endian_store_16(connection->cmd_operands, pos, 1);
+    pos += 2;
+    connection->cmd_operands[pos++] = status;
+    connection->cmd_operands_length = 4;
+    connection->state = AVCTP_W2_SEND_RESPONSE;
+    avrcp_browsing_target_request_can_send_now(connection, connection->l2cap_browsing_cid);
+    return ERROR_CODE_SUCCESS;
+}
+
 static avrcp_connection_t * get_avrcp_connection_for_browsing_cid(uint16_t browsing_cid, avrcp_context_t * context){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, (btstack_linked_list_t *)  &context->connections);
@@ -82,6 +139,21 @@ static avrcp_browsing_connection_t * get_avrcp_browsing_connection_for_l2cap_cid
         return connection->browsing_connection;
     }
     return NULL;
+}
+
+static void avrcp_browsing_target_emit_get_folder_items(btstack_packet_handler_t callback, uint16_t browsing_cid, avrcp_browsing_connection_t * connection){
+    if (!callback) return;
+    uint8_t event[10];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVRCP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS;
+    little_endian_store_16(event, pos, browsing_cid);
+    pos += 2;
+    event[pos++] = connection->scope;
+    big_endian_store_32(event, pos, connection->attr_bitmap);
+    pos += 4;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void avrcp_emit_browsing_connection_established(btstack_packet_handler_t callback, uint16_t browsing_cid, bd_addr_t addr, uint8_t status){
@@ -249,7 +321,6 @@ static void avrcp_browser_packet_handler(uint8_t packet_type, uint16_t channel, 
 }
 
 
-
 static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     avrcp_browsing_connection_t * browsing_connection;
 
@@ -257,14 +328,84 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
         case L2CAP_DATA_PACKET:{
             browsing_connection = get_avrcp_browsing_connection_for_l2cap_cid(channel, &avrcp_target_context);
             if (!browsing_connection) break;
+            printf_hexdump(packet,size);
+
+            int pos = 0;
+            uint8_t transport_header = packet[pos++];
+            // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
+            browsing_connection->transaction_label = transport_header >> 4;
+            avrcp_packet_type_t avctp_packet_type = (transport_header & 0x0F) >> 2;
+            printf("L2CAP_DATA_PACKET, transaction_label %d\n", browsing_connection->transaction_label);
+            switch (avctp_packet_type){
+                case AVRCP_SINGLE_PACKET:
+                case AVRCP_START_PACKET:
+                    // uint8_t frame_type = (transport_header & 0x03) >> 1;
+                    // uint8_t ipid = transport_header & 0x01;
+                    browsing_connection->subunit_type = packet[pos++] >> 2;
+                    browsing_connection->subunit_id = 0;
+                    browsing_connection->command_opcode = packet[pos++];
+                    // printf("subunit_id")
+                    // pos += 2;
+                    browsing_connection->num_packets = 1;
+                    if (avctp_packet_type == AVRCP_START_PACKET){
+                        browsing_connection->num_packets = packet[pos++];
+                    } 
+                    browsing_connection->pdu_id = packet[pos++];
+                    // uint16_t length = big_endian_read_16(packet, pos);
+                    // pos += 2;
+                    break;
+                default:
+                    break;
+            }
+            printf("pdu id 0x%2x\n", browsing_connection->pdu_id);
+            // uint32_t i;
+            switch(browsing_connection->pdu_id){
+                case AVRCP_PDU_ID_GET_FOLDER_ITEMS:
+                    printf("\n");
+                    browsing_connection->scope = packet[pos++];
+                    browsing_connection->start_item = big_endian_read_32(packet, pos);
+                    pos += 4;
+                    browsing_connection->end_item = big_endian_read_32(packet, pos);
+                    pos += 4;
+                    uint8_t attr_count = packet[pos++];
+
+                    while (attr_count){
+                        uint32_t attr_id = big_endian_read_32(packet, pos);
+                        pos += 4;
+                        browsing_connection->attr_bitmap |= (1 << attr_id);
+                        attr_count--;
+                    }
+                    avrcp_browsing_target_emit_get_folder_items(avrcp_target_context.browsing_avrcp_callback, channel, browsing_connection);
+
+                    break;
+                default:
+                    printf(" not parsed pdu ID 0x%02x\n", browsing_connection->pdu_id);
+                    break;
+            }
+
+            switch (avctp_packet_type){
+                case AVRCP_SINGLE_PACKET:
+                case AVRCP_END_PACKET:
+                    printf("send avrcp_browsing_target_response_reject\n");
+                    browsing_connection->state = AVCTP_CONNECTION_OPENED;
+                    avrcp_browsing_target_response_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
+                    // avrcp_browsing_target_emit_done_with_uid_counter(avrcp_target_context.browsing_avrcp_callback, channel, browsing_connection->uid_counter, browsing_connection->browsing_status, ERROR_CODE_SUCCESS);
+                    break;
+                default:
+                    break;
+            }
+            // printf(" paket done\n");
             break;
         }
+        
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)){
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     browsing_connection = get_avrcp_browsing_connection_for_l2cap_cid(channel, &avrcp_target_context);
                     if (!browsing_connection) break;
-                    // avrcp_browsing_target_handle_can_send_now(browsing_connection);
+                    if (browsing_connection->state != AVCTP_W2_SEND_RESPONSE) return;
+                    browsing_connection->state = AVCTP_CONNECTION_OPENED;
+                    avrcp_browsing_target_handle_can_send_now(browsing_connection);
                     break;
                 default:
                     avrcp_browser_packet_handler(packet_type, channel, packet, size, &avrcp_target_context);

@@ -547,6 +547,10 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             printf("AVRCP Browsing Client connected\n");
             return;
         }
+        case AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS:
+            printf(" AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS \n");
+            break;
+
         case AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED:
             printf("AVRCP Browsing Controller released\n");
             browsing_cid = 0;

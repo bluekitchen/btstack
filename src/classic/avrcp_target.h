@@ -85,6 +85,8 @@ void avrcp_target_set_unit_info(uint16_t avrcp_cid, avrcp_subunit_type_t unit_ty
 void avrcp_target_set_subunit_info(uint16_t avrcp_cid, avrcp_subunit_type_t subunit_type, const uint8_t * subunit_info_data, uint16_t subunit_info_data_size);
 
 uint8_t avrcp_target_playing_content_changed(uint16_t avrcp_cid);
+uint8_t avrcp_target_addressed_player_changed(uint16_t avrcp_cid, uint16_t player_id, uint16_t uid_counter);
+
 uint8_t avrcp_target_battery_status_changed(uint16_t avrcp_cid, avrcp_battery_status_t battery_status);
 uint8_t avrcp_target_volume_changed(uint16_t avrcp_cid, uint8_t volume_percentage);
 uint8_t avrcp_target_track_changed(uint16_t avrcp_cid, uint8_t * trackID);
