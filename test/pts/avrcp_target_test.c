@@ -198,6 +198,11 @@ static const uint8_t subunit_info[] = {
     7,7,7,7
 };
 
+static uint8_t media_player_list[] = {};
+static uint8_t virtual_filesystem_list[] = {};
+static uint8_t search_list[] = {};
+static uint8_t now_playing_list[] = {};
+
 static uint32_t company_id = 0x112233;
 static uint8_t companies_num = 1;
 static uint8_t companies[] = {
@@ -547,10 +552,26 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             printf("AVRCP Browsing Client connected\n");
             return;
         }
-        case AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS:
+        case AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS:{
+            avrcp_browsing_scope_t scope = avrcp_subevent_browsing_get_folder_items_get_scope(packet);
+            switch (scope){
+                case AVRCP_BROWSING_MEDIA_PLAYER_LIST:
+                    avrcp_subevent_browsing_get_folder_items_response(browsing_cid, media_player_list, sizeof(media_player_list));
+                    break;
+                case AVRCP_BROWSING_MEDIA_PLAYER_VIRTUAL_FILESYSTEM:
+                    avrcp_subevent_browsing_get_folder_items_response(browsing_cid, virtual_filesystem_list, sizeof(virtual_filesystem_list));
+                    break;
+                case AVRCP_BROWSING_SEARCH:
+                    avrcp_subevent_browsing_get_folder_items_response(browsing_cid, search_list, sizeof(search_list));
+                    break;
+                case AVRCP_BROWSING_NOW_PLAYING:
+                    avrcp_subevent_browsing_get_folder_items_response(browsing_cid, now_playing_list, sizeof(now_playing_list));
+                    break;
+            }
             printf(" AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS \n");
+            
             break;
-
+        }
         case AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED:
             printf("AVRCP Browsing Controller released\n");
             browsing_cid = 0;

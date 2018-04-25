@@ -704,8 +704,8 @@ uint8_t avrcp_target_addressed_player_changed(uint16_t avrcp_cid, uint16_t playe
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED)) {
         printf("send AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED\n");
         // connection->addressed_player_changed = 1;
-        // connection->uid_counter = uid_counter;
-        // connection->addressed_player_id = player_id;
+        connection->uid_counter = uid_counter;
+        connection->addressed_player_id = player_id;
         // avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     }
     return ERROR_CODE_SUCCESS;
@@ -996,12 +996,12 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     }
 }
 
+#if 0
 static int avrcp_target_send_addressed_player_changed_notification(uint16_t cid, avrcp_connection_t * connection, uint16_t uid, uint16_t uid_counter){
     if (!connection){
         log_error("avrcp tartget: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
     }
-    printf("avrcp_target_send_addressed_player_changed_notification \n");
     connection->command_opcode  = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type    = AVRCP_CTYPE_RESPONSE_CHANGED_STABLE;
     connection->subunit_type    = AVRCP_SUBUNIT_TYPE_PANEL; 
@@ -1041,7 +1041,7 @@ static int avrcp_target_send_addressed_player_changed_notification(uint16_t cid,
     connection->wait_to_send = 0;
     return l2cap_send_prepared(cid, pos);
 }
-
+#endif
 
 static int avrcp_target_send_notification(uint16_t cid, avrcp_connection_t * connection, uint8_t notification_id, uint8_t * value, uint16_t value_len){
     if (!connection){

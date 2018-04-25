@@ -470,3 +470,12 @@ uint8_t avrcp_browsing_target_decline_incoming_connection(uint16_t avrcp_browsin
     avrcp_connection->browsing_connection = NULL;
     return ERROR_CODE_SUCCESS;
 }
+
+uint8_t avrcp_subevent_browsing_get_folder_items_response(uint16_t browsing_cid, uint8_t * attr_list, uint16_t attr_list_size){
+    UNUSED(browsing_cid);
+    UNUSED(attr_list);
+    UNUSED(attr_list_size);
+    
+    return ERROR_CODE_SUCCESS;
+}
+
