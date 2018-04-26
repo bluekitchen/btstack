@@ -156,7 +156,7 @@ static uint8_t request_continuous_pass_through_press_control_cmd(uint16_t avrcp_
     return request_pass_through_press_control_cmd(avrcp_cid, opid, playback_speed, 1, &avrcp_controller_context);
 }
 
-static int avrcp_send_cmd(uint16_t cid, avrcp_connection_t * connection){
+static int avrcp_send_cmd(avrcp_connection_t * connection){
     uint8_t command[30];
     int pos = 0; 
 
@@ -177,7 +177,7 @@ static int avrcp_send_cmd(uint16_t cid, avrcp_connection_t * connection){
     memcpy(command+pos, connection->cmd_operands, connection->cmd_operands_length);
     pos += connection->cmd_operands_length;
 
-    return l2cap_send(cid, command, pos);
+    return l2cap_send(connection->l2cap_signaling_cid, command, pos);
 }
 
 static int avrcp_register_notification(avrcp_connection_t * connection, avrcp_notification_event_id_t event_id){
@@ -805,12 +805,12 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
     switch (connection->state){
         case AVCTP_W2_SEND_PRESS_COMMAND:
             connection->state = AVCTP_W2_RECEIVE_PRESS_RESPONSE;
-            avrcp_send_cmd(connection->l2cap_signaling_cid, connection);
+            avrcp_send_cmd(connection);
             break;
         case AVCTP_W2_SEND_COMMAND:
         case AVCTP_W2_SEND_RELEASE_COMMAND:
             connection->state = AVCTP_W2_RECEIVE_RESPONSE;
-            avrcp_send_cmd(connection->l2cap_signaling_cid, connection);
+            avrcp_send_cmd(connection);
             break;
         case AVCTP_CONNECTION_OPENED:
             if (connection->notifications_to_register != 0){
@@ -819,7 +819,7 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
                         connection->notifications_to_register &= ~ (1 << i);
                         avrcp_prepare_notification(connection, (avrcp_notification_event_id_t) i);
                         connection->state = AVCTP_W2_RECEIVE_RESPONSE;
-                        avrcp_send_cmd(connection->l2cap_signaling_cid, connection);
+                        avrcp_send_cmd(connection);
                         return;    
                     }
                 }
