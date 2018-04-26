@@ -74,7 +74,6 @@ static uint16_t battery_service_read_callback(hci_con_handle_t con_handle, uint1
 	if (attribute_handle == battery_value_handle_client_configuration){
 		if (buffer){
 			little_endian_store_16(buffer, 0, battery_value_client_configuration);
-			battery_value_client_configuration_connection = con_handle;
 		}
 		return 2;
 	}
@@ -89,6 +88,7 @@ static int battery_service_write_callback(hci_con_handle_t con_handle, uint16_t 
 
 	if (attribute_handle == battery_value_handle_client_configuration){
 		battery_value_client_configuration = little_endian_read_16(buffer, 0);
+		battery_value_client_configuration_connection = con_handle;
 	}
 	return 0;
 }
