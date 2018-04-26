@@ -167,6 +167,7 @@ static uint16_t avrcp_get_max_payload_size_for_packet_type(avrcp_packet_type_t p
         case AVRCP_END_PACKET:
             return AVRCP_CMD_BUFFER_SIZE - 1;
     }
+    return 0;
 }
 
 static int avrcp_send_cmd(avrcp_connection_t * connection, avrcp_packet_type_t packet_type){
