@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "le_counter.c"
+#define __BTSTACK_FILE__ "gatt_profiles.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(le_counter): LE Peripheral - Heartbeat Counter over GATT
@@ -52,9 +52,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "le_counter.h"
+#include "gatt_profiles.h"
 #include "btstack.h"
 #include "ble/gatt-service/battery_service_server.h"
+#include "ble/gatt-service/device_information_service_server.h"
 
 #define HEARTBEAT_PERIOD_MS 1000
 
@@ -143,6 +144,25 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
 }
 /* LISTING_END */
 
+static void show_usage(void){
+    printf("## BAS\n");
+    printf("a - send 50% battery level\n");
+}
+
+static void stdin_process(char c){
+    switch (c){
+        case 'a': // accept just works
+        printf("BAS: Sending 50%% battery level\n");
+            battery_service_server_set_battery_value(50);
+            break;
+        case 'c':
+            break;
+        default:
+            show_usage();
+            break;
+    }
+}
+
 int btstack_main(void);
 int btstack_main(void)
 {
@@ -177,6 +197,8 @@ int btstack_main(void)
     gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
     gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
     gap_advertisements_enable(1);
+
+    btstack_stdin_setup(stdin_process);
 
     // turn on!
 	hci_power_control(HCI_POWER_ON);
