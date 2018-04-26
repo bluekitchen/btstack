@@ -6226,34 +6226,6 @@ static inline uint16_t avrcp_subevent_browsing_connection_released_get_browsing_
 }
 
 /**
- * @brief Get field browsing_cid from event AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS
- * @param event packet
- * @return browsing_cid
- * @note: btstack_type 2
- */
-static inline uint16_t avrcp_subevent_browsing_get_folder_items_get_browsing_cid(const uint8_t * event){
-    return little_endian_read_16(event, 3);
-}
-/**
- * @brief Get field scope from event AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS
- * @param event packet
- * @return scope
- * @note: btstack_type 1
- */
-static inline uint8_t avrcp_subevent_browsing_get_folder_items_get_scope(const uint8_t * event){
-    return event[5];
-}
-/**
- * @brief Get field attr_bitmap from event AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS
- * @param event packet
- * @return attr_bitmap
- * @note: btstack_type 4
- */
-static inline uint32_t avrcp_subevent_browsing_get_folder_items_get_attr_bitmap(const uint8_t * event){
-    return little_endian_read_32(event, 6);
-}
-
-/**
  * @brief Get field browsing_cid from event AVRCP_SUBEVENT_BROWSING_DONE
  * @param event packet
  * @return browsing_cid
@@ -6288,6 +6260,53 @@ static inline uint8_t avrcp_subevent_browsing_done_get_browsing_status(const uin
  */
 static inline uint8_t avrcp_subevent_browsing_done_get_bluetooth_status(const uint8_t * event){
     return event[8];
+}
+
+/**
+ * @brief Get field browsing_cid from event AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS
+ * @param event packet
+ * @return browsing_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_browsing_get_folder_items_get_browsing_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field scope from event AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS
+ * @param event packet
+ * @return scope
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_browsing_get_folder_items_get_scope(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field attr_bitmap from event AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS
+ * @param event packet
+ * @return attr_bitmap
+ * @note: btstack_type 4
+ */
+static inline uint32_t avrcp_subevent_browsing_get_folder_items_get_attr_bitmap(const uint8_t * event){
+    return little_endian_read_32(event, 6);
+}
+
+/**
+ * @brief Get field browsing_cid from event AVRCP_SUBEVENT_BROWSING_GET_TOTAL_NUM_ITEMS
+ * @param event packet
+ * @return browsing_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_browsing_get_total_num_items_get_browsing_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field scope from event AVRCP_SUBEVENT_BROWSING_GET_TOTAL_NUM_ITEMS
+ * @param event packet
+ * @return scope
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_browsing_get_total_num_items_get_scope(const uint8_t * event){
+    return event[5];
 }
 
 /**
