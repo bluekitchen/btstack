@@ -383,6 +383,7 @@ typedef struct {
     btstack_linked_item_t    item;
     bd_addr_t remote_addr;
     uint16_t l2cap_signaling_cid;
+    uint16_t l2cap_mtu;
     uint16_t avrcp_cid;
 
     uint16_t avrcp_browsing_cid;
@@ -402,8 +403,10 @@ typedef struct {
     avrcp_subunit_id_t   subunit_id;
     avrcp_packet_type_t  packet_type;
 
+    // regular commands
     uint8_t cmd_operands[20];
     uint8_t cmd_operands_length;
+
     btstack_timer_source_t press_and_hold_cmd_timer;
     uint8_t  continuous_fast_forward_cmd;
     uint16_t notifications_enabled;

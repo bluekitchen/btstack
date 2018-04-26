@@ -635,6 +635,7 @@ void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
             psm = l2cap_event_channel_opened_get_psm(packet);
             if (psm == PSM_AVCTP){
                 connection->l2cap_signaling_cid = local_cid;
+                connection->l2cap_mtu = l2cap_event_channel_opened_get_remote_mtu(packet);
                 connection->song_length_ms = 0xFFFFFFFF;
                 connection->song_position_ms = 0xFFFFFFFF;
                 connection->playback_status = AVRCP_PLAYBACK_STATUS_ERROR;
