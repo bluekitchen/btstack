@@ -187,7 +187,8 @@ int btstack_main(void)
 
     // setup device information service
     device_information_service_server_init();
-
+    device_information_service_server_set_pnp_id(1, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 0x0001, 0x001);
+    
     // setup advertisements
     uint16_t adv_int_min = 0x0030;
     uint16_t adv_int_max = 0x0030;
