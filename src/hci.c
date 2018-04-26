@@ -1708,7 +1708,6 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             hci_stack->substate = HCI_INIT_LE_SET_EVENT_MASK;
             return;
 
-
 #ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
         case HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED:
             log_info("Supported commands %x", hci_stack->local_supported_commands[0] & 0x30);
@@ -1717,7 +1716,6 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
                 return;
             }
             // explicit fall through to reduce repetitions
-#endif
 
 #ifdef ENABLE_LE_CENTRAL
             hci_stack->substate = HCI_INIT_READ_WHITE_LIST_SIZE;
@@ -1725,7 +1723,9 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             hci_init_done();
 #endif
             return;
-#endif
+#endif  /* ENABLE_LE_DATA_LENGTH_EXTENSION */
+
+#endif  /* ENABLE_BLE */
             
 #ifdef ENABLE_SCO_OVER_HCI
         case HCI_INIT_W4_WRITE_SCAN_ENABLE:
