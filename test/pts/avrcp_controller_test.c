@@ -67,8 +67,8 @@ static const char * device_addr_string = "00:1B:DC:07:32:EF";
 #endif
 static bd_addr_t device_addr;
 
-static const char * fragmented_message = "Hello PTS, this is the very special AVCRCP message to test the AVCTP framgentation";
-
+static const uint8_t fragmented_message[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
 typedef struct {
     uint16_t  charset;
@@ -1012,7 +1012,8 @@ static void stdin_process(char * cmd, int size){
                 
                 case 'f':
                     printf("Send fragmented command\n");
-                    status = avrcp_controller_send_custom_command(avrcp_cid, AVRCP_CTYPE_CONTROL, AVRCP_SUBUNIT_TYPE_PANEL, AVRCP_SUBUNIT_ID, AVRCP_CMD_OPCODE_VENDOR_DEPENDENT, (const uint8_t*) fragmented_message, strlen(fragmented_message));
+                    status = avrcp_controller_send_custom_command(avrcp_cid, AVRCP_CTYPE_CONTROL, AVRCP_SUBUNIT_TYPE_PANEL, AVRCP_SUBUNIT_ID, AVRCP_CMD_OPCODE_VENDOR_DEPENDENT,
+                     fragmented_message, sizeof(fragmented_message));
                     break;
 
                 default:
@@ -1077,6 +1078,10 @@ int btstack_main(int argc, const char * argv[]){
     gap_set_local_name("BTstack AVRCP Controller PTS 00:00:00:00:00:00");
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);
+
+    printf("TSPX_avctp_iut_command_data: ");
+    int i; for (i=0;i<sizeof(fragmented_message);i++){ printf("%02x", fragmented_message[i]);}
+    printf("\n");
 
 #ifdef HAVE_BTSTACK_STDIN
     // parse human readable Bluetooth address
