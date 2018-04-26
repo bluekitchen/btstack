@@ -25,3 +25,5 @@ sm_test.h
 sm_test
 SM_*
 TEST_FAIL-*
+gatt_profiles.h
+gatt_profiles

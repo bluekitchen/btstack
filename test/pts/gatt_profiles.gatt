@@ -1,0 +1,8 @@
+PRIMARY_SERVICE, GAP_SERVICE
+CHARACTERISTIC, GAP_DEVICE_NAME, READ, "GATT Profiles"
+
+// add Battery Service
+#import <battery_service.gatt>
+
+// add Device ID Service
+#import <device_information_service.gatt>
