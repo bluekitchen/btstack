@@ -186,10 +186,12 @@ static void sco_demo_sine_wave_int16_at_16000_hz_host_endian(unsigned int num_sa
     }
 }
 
+#define MAX_NUM_SAMPLES (16*8)
 static void sco_demo_msbc_fill_sine_audio_frame(void){
     if (!hfp_msbc_can_encode_audio_frame_now()) return;
     int num_samples = hfp_msbc_num_audio_samples_per_frame();
-    int16_t sample_buffer[num_samples];
+    if (num_samples > MAX_NUM_SAMPLES) return;
+    int16_t sample_buffer[MAX_NUM_SAMPLES];
     sco_demo_sine_wave_int16_at_16000_hz_host_endian(num_samples, sample_buffer);
     hfp_msbc_encode_audio_frame(sample_buffer);
     num_audio_frames++;
