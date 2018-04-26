@@ -102,7 +102,7 @@ uint8_t avrcp_browsing_target_decline_incoming_connection(uint16_t avrcp_browsin
  */
 uint8_t avrcp_browsing_target_disconnect(uint16_t avrcp_browsing_cid);
 
-uint8_t avrcp_subevent_browsing_get_folder_items_response(uint16_t browsing_cid, uint8_t * attr_list, uint16_t attr_list_size);
+uint8_t avrcp_subevent_browsing_get_folder_items_response(uint16_t browsing_cid, uint16_t uid_counter, uint8_t * attr_list, uint16_t attr_list_size);
 
 /* API_END */
 

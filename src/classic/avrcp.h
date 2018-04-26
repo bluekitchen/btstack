@@ -364,7 +364,9 @@ typedef struct {
     uint16_t parsed_attribute_value_offset;
     uint8_t  parsed_num_attributes;
 
-    
+    // get folder items data
+    uint8_t * attr_list;
+    uint16_t attr_list_size;
     // command
     // uint8_t transaction_label;
     avrcp_command_opcode_t command_opcode;
@@ -372,7 +374,7 @@ typedef struct {
     avrcp_subunit_type_t subunit_type;
     avrcp_subunit_id_t   subunit_id;
     avrcp_packet_type_t  packet_type;
-    uint8_t cmd_operands[20];
+    uint8_t cmd_operands[200];
     uint8_t cmd_operands_length;
 } avrcp_browsing_connection_t;
 // BROWSING END

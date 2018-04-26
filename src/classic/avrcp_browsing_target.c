@@ -58,9 +58,12 @@ static void avrcp_browsing_target_request_can_send_now(avrcp_browsing_connection
 
 static int avrcp_browsing_target_handle_can_send_now(avrcp_browsing_connection_t * connection){
     int pos = 0; 
+    // printf("avrcp_browsing_target_handle_can_send_now, cmd_operands_length %d\n", connection->cmd_operands_length);
+    // printf_hexdump(connection->cmd_operands, connection->cmd_operands_length);
+
     // l2cap_reserve_packet_buffer();
     // uint8_t * packet = l2cap_get_outgoing_buffer();
-    uint8_t packet[100];
+    uint8_t packet[300];
     connection->packet_type = AVRCP_SINGLE_PACKET;
 
     packet[pos++] = (connection->transaction_label << 4) | (connection->packet_type << 2) | (AVRCP_RESPONSE_FRAME << 1) | 0;
@@ -68,8 +71,7 @@ static int avrcp_browsing_target_handle_can_send_now(avrcp_browsing_connection_t
     packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
     packet[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
     memcpy(packet+pos, connection->cmd_operands, connection->cmd_operands_length);
-    // printf_hexdump(packet+pos, connection->cmd_operands_length);
-
+    
     pos += connection->cmd_operands_length;
     connection->wait_to_send = 0;
     // return l2cap_send_prepared(connection->l2cap_browsing_cid, pos);
@@ -343,36 +345,35 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
             }
             printf("pdu id 0x%2x\n", browsing_connection->pdu_id);
             // uint32_t i;
-            switch(browsing_connection->pdu_id){
-                case AVRCP_PDU_ID_GET_FOLDER_ITEMS:
-                    printf("\n");
-                    browsing_connection->scope = packet[pos++];
-                    browsing_connection->start_item = big_endian_read_32(packet, pos);
-                    pos += 4;
-                    browsing_connection->end_item = big_endian_read_32(packet, pos);
-                    pos += 4;
-                    uint8_t attr_count = packet[pos++];
-
-                    while (attr_count){
-                        uint32_t attr_id = big_endian_read_32(packet, pos);
-                        pos += 4;
-                        browsing_connection->attr_bitmap |= (1 << attr_id);
-                        attr_count--;
-                    }
-                    avrcp_browsing_target_emit_get_folder_items(avrcp_target_context.browsing_avrcp_callback, channel, browsing_connection);
-
-                    break;
-                default:
-                    printf(" not parsed pdu ID 0x%02x\n", browsing_connection->pdu_id);
-                    break;
-            }
-
             switch (avctp_packet_type){
                 case AVRCP_SINGLE_PACKET:
                 case AVRCP_END_PACKET:
-                    printf("send avrcp_browsing_target_response_general_reject\n");
+                    switch(browsing_connection->pdu_id){
+                        case AVRCP_PDU_ID_GET_FOLDER_ITEMS:
+                            printf("\n");
+                            browsing_connection->scope = packet[pos++];
+                            browsing_connection->start_item = big_endian_read_32(packet, pos);
+                            pos += 4;
+                            browsing_connection->end_item = big_endian_read_32(packet, pos);
+                            pos += 4;
+                            uint8_t attr_count = packet[pos++];
+
+                            while (attr_count){
+                                uint32_t attr_id = big_endian_read_32(packet, pos);
+                                pos += 4;
+                                browsing_connection->attr_bitmap |= (1 << attr_id);
+                                attr_count--;
+                            }
+                            avrcp_browsing_target_emit_get_folder_items(avrcp_target_context.browsing_avrcp_callback, channel, browsing_connection);
+
+                            break;
+                        default:
+                            printf("send avrcp_browsing_target_response_general_reject\n");
+                            avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
+                            printf(" not parsed pdu ID 0x%02x\n", browsing_connection->pdu_id);
+                            break;
+                    }
                     browsing_connection->state = AVCTP_CONNECTION_OPENED;
-                    avrcp_browsing_target_response_general_reject(browsing_connection, AVRCP_STATUS_INVALID_COMMAND);
                     // avrcp_browsing_target_emit_done_with_uid_counter(avrcp_target_context.browsing_avrcp_callback, channel, browsing_connection->uid_counter, browsing_connection->browsing_status, ERROR_CODE_SUCCESS);
                     break;
                 default:
@@ -471,11 +472,61 @@ uint8_t avrcp_browsing_target_decline_incoming_connection(uint16_t avrcp_browsin
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avrcp_subevent_browsing_get_folder_items_response(uint16_t browsing_cid, uint8_t * attr_list, uint16_t attr_list_size){
-    UNUSED(browsing_cid);
-    UNUSED(attr_list);
-    UNUSED(attr_list_size);
+uint8_t avrcp_subevent_browsing_get_folder_items_response(uint16_t avrcp_browsing_cid, uint16_t uid_counter, uint8_t * attr_list, uint16_t attr_list_size){
+    avrcp_connection_t * avrcp_connection = get_avrcp_connection_for_browsing_cid(avrcp_browsing_cid, &avrcp_target_context);
+    if (!avrcp_connection){
+        log_error("avrcp_browsing_controller_disconnect: could not find a connection.");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
     
+    
+    avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
+    if (!connection){
+        printf("avrcp_subevent_browsing_get_folder_items_response: could not find a connection.\n");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+    if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    
+    if (connection->state != AVCTP_CONNECTION_OPENED) {
+        printf("avrcp_subevent_browsing_get_folder_items_response: wrong state.\n");
+        return ERROR_CODE_COMMAND_DISALLOWED;
+    }
+    int pos = 0;
+
+    connection->cmd_operands[pos++] = AVRCP_PDU_ID_GET_FOLDER_ITEMS;
+    big_endian_store_16(connection->cmd_operands, pos, attr_list_size);
+    pos += 2;
+    
+    connection->cmd_operands[pos++] = AVRCP_STATUS_SUCCESS;
+    big_endian_store_16(connection->cmd_operands, pos, uid_counter);
+    pos += 2;
+    
+    // TODO: fragmentation
+    if (attr_list_size >  sizeof(connection->cmd_operands)){
+        connection->attr_list = attr_list;
+        connection->attr_list_size = attr_list_size;
+        printf(" todo: list too big, invoke fragmentation\n");
+        return 1;
+    }
+    memcpy(&connection->cmd_operands[pos], attr_list, attr_list_size);
+    pos += attr_list_size;
+    connection->cmd_operands_length = pos;    
+    // printf_hexdump(connection->cmd_operands, connection->cmd_operands_length);
+
+    connection->state = AVCTP_W2_SEND_RESPONSE;
+    avrcp_browsing_target_request_can_send_now(connection, connection->l2cap_browsing_cid);
     return ERROR_CODE_SUCCESS;
 }
+
+/*
+int pos = 0;
+    connection->cmd_operands[pos++] = AVRCP_PDU_ID_GENERAL_REJECT;
+    // connection->cmd_operands[pos++] = 0;
+    // param length
+    big_endian_store_16(connection->cmd_operands, pos, 1);
+    pos += 2;
+    connection->cmd_operands[pos++] = status;
+    connection->cmd_operands_length = 4;
+    connection->state = AVCTP_W2_SEND_RESPONSE;
+*/
 
