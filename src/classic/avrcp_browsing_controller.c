@@ -588,8 +588,8 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
         case L2CAP_DATA_PACKET:{
             browsing_connection = get_avrcp_browsing_connection_for_l2cap_cid(channel, &avrcp_controller_context);
             if (!browsing_connection) break;
-            printf("received \n");
-            printf_hexdump(packet,size);
+            // printf("received \n");
+            // printf_hexdump(packet,size);
             int pos = 0;
             uint8_t transport_header = packet[pos++];
             // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
@@ -636,7 +636,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                 case AVRCP_PDU_ID_GET_TOTAL_NUMBER_OF_ITEMS:{
                     uint32_t num_items = big_endian_read_32(packet, pos);
                     pos += 4;
-                    printf("TODO: send event, uid_counter %d, num_items %d\n", browsing_connection->uid_counter, num_items);
+                    // printf("TODO: send event, uid_counter %d, num_items %d\n", browsing_connection->uid_counter, num_items);
                     break;
                 }
                 case AVRCP_PDU_ID_SET_BROWSED_PLAYER:{
@@ -687,7 +687,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     browsing_connection->uid_counter =  big_endian_read_16(packet, pos);
                     pos += 2;
                     uint32_t num_items = big_endian_read_32(packet, pos);
-                    printf("TODO: send as event, search found %d items\n", num_items);
+                    // printf("TODO: send as event, search found %d items\n", num_items);
                     break;
                 }
                 case AVRCP_PDU_ID_GET_ITEM_ATTRIBUTES:
@@ -696,7 +696,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     break;
                 
                 default:
-                    printf(" not parsed pdu ID 0x%02x\n", browsing_connection->pdu_id);
+                    log_info(" not parsed pdu ID 0x%02x", browsing_connection->pdu_id);
                     break;
             }
 
@@ -839,7 +839,6 @@ static uint8_t avrcp_browsing_controller_get_folder_items(uint16_t avrcp_browsin
     avrcp_browsing_connection_t * connection = avrcp_connection->browsing_connection;
     if (connection->state != AVCTP_CONNECTION_OPENED) {
         log_error("avrcp_browsing_controller_get_folder_items: connection in wrong state %d, expected %d.", connection->state, AVCTP_CONNECTION_OPENED);
-        printf("avrcp_browsing_controller_get_folder_items: : connection in wrong state %d, expected %d\n", connection->state, AVCTP_CONNECTION_OPENED);
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
     
@@ -914,7 +913,6 @@ uint8_t avrcp_browsing_controller_change_path(uint16_t avrcp_browsing_cid, uint8
         log_error("avrcp_browsing_controller_change_path: no browsed player set.");
         return ERROR_CODE_COMMAND_DISALLOWED;
     }
-    printf(" send change path\n");
     connection->change_path = 1;
     connection->direction = direction;
     memset(connection->folder_uid, 0, 8);

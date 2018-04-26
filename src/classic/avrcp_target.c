@@ -400,7 +400,7 @@ static uint8_t avrcp_target_response_addressed_player_changed_interim(avrcp_conn
     connection->subunit_type = subunit_type; 
     connection->subunit_id =   subunit_id;
     connection->command_opcode = opcode;
-    printf("avrcp_target_response_addressed_player_changed_interim \n");
+    // printf("avrcp_target_response_addressed_player_changed_interim \n");
     // company id is 3 bytes long
     int pos = connection->cmd_operands_length;
     connection->cmd_operands[pos++] = pdu_id;
@@ -702,7 +702,7 @@ uint8_t avrcp_target_addressed_player_changed(uint16_t avrcp_cid, uint16_t playe
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER; 
     }
     if (connection->notifications_enabled & (1 << AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED)) {
-        printf("send AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED\n");
+        // printf("send AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED\n");
         // connection->addressed_player_changed = 1;
         connection->uid_counter = uid_counter;
         connection->addressed_player_id = player_id;
@@ -828,7 +828,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 case AVRCP_OPERATION_ID_LEFT:
                 case AVRCP_OPERATION_ID_RIGHT:
                 case AVRCP_OPERATION_ID_ROOT_MENU:
-                    printf("received op 0x%02x\n", operation_id);
                     avrcp_target_operation_accepted(connection->avrcp_cid, packet[6], packet[7], packet[8]);
                     avrcp_target_emit_operation(avrcp_target_context.avrcp_callback, connection->avrcp_cid, operation_id, packet[7], packet[8]);
                     break;
@@ -852,7 +851,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             switch (pdu_id){
                 case AVRCP_PDU_ID_SET_ADDRESSED_PLAYER:{
                     if (length == 0){
-                        printf(" reject id\n");
                         avrcp_target_response_reject(connection, subunit_type, subunit_id, opcode, pdu_id, AVRCP_STATUS_INVALID_PLAYER_ID);
                         break;
                     } 
@@ -955,7 +953,6 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                             return;
                         case AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED:
                             connection->notifications_enabled |= event_mask;
-                            printf("respond with interim AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED\n");
                             avrcp_target_response_addressed_player_changed_interim(connection, subunit_type, subunit_id, opcode, pdu_id);
                             return;
                         default:
@@ -968,14 +965,14 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     uint16_t param_length = big_endian_read_16(pdu,2);
                     if (param_length != 1){
                         avrcp_target_response_reject(connection, subunit_type, subunit_id, opcode, pdu_id, AVRCP_STATUS_INVALID_COMMAND);
-                        printf("param_length is %d != 1 \n", param_length);
+                        // printf("param_length is %d != 1 \n", param_length);
                         break;
                     }
 
                     uint8_t absolute_volume = pdu[4];
                     if (absolute_volume > 0x7F){
                         avrcp_target_response_reject(connection, subunit_type, subunit_id, opcode, pdu_id, AVRCP_STATUS_INVALID_COMMAND);
-                        printf("absolute_volume %d  > 127 \n", absolute_volume);
+                        // printf("absolute_volume %d  > 127 \n", absolute_volume);
                         break;
                     }
                     connection->volume_percentage = absolute_volume;
@@ -1093,7 +1090,6 @@ static void avrcp_target_reset_notification(avrcp_connection_t * connection, uin
         log_error("avrcp tartget: could not find a connection.");
         return;
     }
-    printf("reset notification\n");
     connection->notifications_enabled &= ~(1 << notification_id);
     connection->command_opcode  = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     
