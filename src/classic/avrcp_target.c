@@ -846,9 +846,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
             pdu_id = pdu[0];
             // 1 - reserved
             // 2-3 param length,
-            printf_hexdump(packet, size);
-                     
-            uint16_t length = big_endian_read_16(pdu, 1);
+            uint16_t length = big_endian_read_16(pdu, 2);
             memcpy(connection->cmd_operands, company_id, 3);
             connection->cmd_operands_length = 3;
             switch (pdu_id){
