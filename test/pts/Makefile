@@ -150,6 +150,9 @@ ble_peripheral_test.h: ble_peripheral_test.gatt
 ble_central_test.h: ble_central_test.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 	
+ble_peripheral_test: ble_peripheral_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ble_peripheral_test.o
+	${CC} $(filter-out ble_peripheral_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
 ble_central_test: ble_central_test.h ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ad_parser.o ble_central_test.c
 	${CC} $(filter-out ble_central_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
