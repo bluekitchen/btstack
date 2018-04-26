@@ -272,7 +272,8 @@ typedef enum {
     AVCTP_W2_SEND_COMMAND,
     AVCTP_W2_SEND_RESPONSE,
     AVCTP_W2_RECEIVE_PRESS_RESPONSE,
-    AVCTP_W2_RECEIVE_RESPONSE
+    AVCTP_W2_RECEIVE_RESPONSE,
+    AVCTP_W2_SEND_FRAGMENTED_COMMAND,
 } avctp_connection_state_t;
 
 typedef enum {
@@ -406,6 +407,11 @@ typedef struct {
     // regular commands
     uint8_t cmd_operands[20];
     uint8_t cmd_operands_length;
+
+    // long/fragmented commands
+    const uint8_t * cmd_operands_fragmented_buffer;
+    uint16_t  cmd_operands_fragmented_pos;
+    uint16_t  cmd_operands_fragmented_len;
 
     btstack_timer_source_t press_and_hold_cmd_timer;
     uint8_t  continuous_fast_forward_cmd;

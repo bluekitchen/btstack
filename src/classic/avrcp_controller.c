@@ -156,26 +156,57 @@ static uint8_t request_continuous_pass_through_press_control_cmd(uint16_t avrcp_
     return request_pass_through_press_control_cmd(avrcp_cid, opid, playback_speed, 1, &avrcp_controller_context);
 }
 
-static int avrcp_send_cmd(avrcp_connection_t * connection){
-    uint8_t command[30];
+#define AVRCP_CMD_BUFFER_SIZE 30
+static uint16_t avrcp_get_max_payload_size_for_packet_type(avrcp_packet_type_t packet_type){
+    switch (packet_type){
+        case AVRCP_SINGLE_PACKET:
+            return AVRCP_CMD_BUFFER_SIZE - 3;
+        case AVRCP_START_PACKET:
+            return AVRCP_CMD_BUFFER_SIZE - 4;
+        case AVRCP_CONTINUE_PACKET:
+        case AVRCP_END_PACKET:
+            return AVRCP_CMD_BUFFER_SIZE - 1;
+    }
+}
+
+static int avrcp_send_cmd(avrcp_connection_t * connection, avrcp_packet_type_t packet_type){
+    uint8_t command[AVRCP_CMD_BUFFER_SIZE];
     int pos = 0; 
+    uint16_t max_bytes = sizeof(command) - 1;
 
     // transport header
     // Transaction label | Packet_type | C/R | IPID (1 == invalid profile identifier)
-    command[pos++] = (connection->transaction_label << 4) | (AVRCP_SINGLE_PACKET << 2) | (AVRCP_COMMAND_FRAME << 1) | 0;
-    // Profile IDentifier (PID)
-    command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
-    command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
+    command[pos++] = (connection->transaction_label << 4) | (packet_type << 2) | (AVRCP_COMMAND_FRAME << 1) | 0;
 
-    // command_type
-    command[pos++] = connection->command_type;
-    // subunit_type | subunit ID
-    command[pos++] = (connection->subunit_type << 3) | connection->subunit_id;
-    // opcode
-    command[pos++] = (uint8_t)connection->command_opcode;
-    // operands
-    memcpy(command+pos, connection->cmd_operands, connection->cmd_operands_length);
-    pos += connection->cmd_operands_length;
+    if (packet_type == AVRCP_START_PACKET){
+        // num packets: (3 bytes overhead (PID, num packets) + command) / (MTU - transport header)
+        command[pos++] = ((connection->cmd_operands_fragmented_len + 3 - 1) / (AVRCP_CMD_BUFFER_SIZE - 1)) + 1;
+        max_bytes -= 3;
+    }
+
+    if (packet_type == AVRCP_SINGLE_PACKET || packet_type == AVRCP_START_PACKET){
+        // Profile IDentifier (PID)
+        command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
+        command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
+
+        // command_type
+        command[pos++] = connection->command_type;
+        // subunit_type | subunit ID
+        command[pos++] = (connection->subunit_type << 3) | connection->subunit_id;
+        // opcode
+        command[pos++] = (uint8_t)connection->command_opcode;
+    }
+
+    if (packet_type == AVRCP_SINGLE_PACKET){
+        // operands
+        memcpy(command+pos, connection->cmd_operands, connection->cmd_operands_length);
+        pos += connection->cmd_operands_length;
+    } else {
+        uint16_t bytes_to_copy = btstack_min(connection->cmd_operands_fragmented_len-connection->cmd_operands_fragmented_pos, max_bytes);
+        memcpy(command+pos, &connection->cmd_operands_fragmented_buffer[connection->cmd_operands_fragmented_pos], bytes_to_copy);
+        pos += bytes_to_copy;
+        connection->cmd_operands_fragmented_pos += bytes_to_copy;
+    }
 
     return l2cap_send(connection->l2cap_signaling_cid, command, pos);
 }
@@ -805,12 +836,12 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
     switch (connection->state){
         case AVCTP_W2_SEND_PRESS_COMMAND:
             connection->state = AVCTP_W2_RECEIVE_PRESS_RESPONSE;
-            avrcp_send_cmd(connection);
+            avrcp_send_cmd(connection, AVRCP_SINGLE_PACKET);
             break;
         case AVCTP_W2_SEND_COMMAND:
         case AVCTP_W2_SEND_RELEASE_COMMAND:
             connection->state = AVCTP_W2_RECEIVE_RESPONSE;
-            avrcp_send_cmd(connection);
+            avrcp_send_cmd(connection, AVRCP_SINGLE_PACKET);
             break;
         case AVCTP_CONNECTION_OPENED:
             if (connection->notifications_to_register != 0){
@@ -819,12 +850,25 @@ static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection
                         connection->notifications_to_register &= ~ (1 << i);
                         avrcp_prepare_notification(connection, (avrcp_notification_event_id_t) i);
                         connection->state = AVCTP_W2_RECEIVE_RESPONSE;
-                        avrcp_send_cmd(connection);
+                        avrcp_send_cmd(connection, AVRCP_SINGLE_PACKET);
                         return;    
                     }
                 }
             }
             return;
+        case AVCTP_W2_SEND_FRAGMENTED_COMMAND:
+            if (connection->cmd_operands_fragmented_pos == 0){
+                 avrcp_send_cmd(connection, AVRCP_START_PACKET);
+                 avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+            } else {
+                if (connection->cmd_operands_fragmented_len - connection->cmd_operands_fragmented_pos > avrcp_get_max_payload_size_for_packet_type(AVRCP_CONTINUE_PACKET)){
+                     avrcp_send_cmd(connection, AVRCP_CONTINUE_PACKET);
+                     avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+                 } else {
+                    connection->state = AVCTP_W2_RECEIVE_RESPONSE;
+                    avrcp_send_cmd(connection, AVRCP_END_PACKET);
+                 }
+            }
         default:
             return;
     }
@@ -1333,5 +1377,28 @@ uint8_t avrcp_controller_set_max_num_fragments(uint16_t avrcp_cid, uint8_t max_n
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     connection->max_num_fragments = max_num_fragments;
+    return ERROR_CODE_SUCCESS;
+}
+
+uint8_t avrcp_controller_send_custom_command(uint16_t avrcp_cid, avrcp_command_type_t command_type, avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id, avrcp_command_opcode_t command_opcode, const uint8_t * command_buffer, uint16_t command_len){
+    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(avrcp_cid, &avrcp_controller_context);
+    if (!connection){
+        log_error("avrcp_controller_play_item: could not find a connection.");
+        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    }
+
+    if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    connection->state = AVCTP_W2_SEND_FRAGMENTED_COMMAND;
+
+    connection->transaction_label++;
+    connection->command_opcode = command_opcode;
+    connection->command_type = command_type;
+    connection->subunit_type = subunit_type;
+    connection->subunit_id = subunit_id;
+    connection->cmd_operands_fragmented_buffer = command_buffer;
+    connection->cmd_operands_fragmented_pos = 0;
+    connection->cmd_operands_fragmented_len = command_len;
+
+    avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
     return ERROR_CODE_SUCCESS;
 }

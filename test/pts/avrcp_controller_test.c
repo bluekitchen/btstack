@@ -67,6 +67,9 @@ static const char * device_addr_string = "00:1B:DC:07:32:EF";
 #endif
 static bd_addr_t device_addr;
 
+static const char * fragmented_message = "Hello PTS, this is the very special AVCRCP message to test the AVCTP framgentation";
+
+
 typedef struct {
     uint16_t  charset;
     uint8_t   depth;
@@ -578,6 +581,8 @@ static void show_usage(void){
     printf("p5 - Add to now playing: first media item from virtual file system\n");
     printf("p6 - Add to now playing: first media item from search folder\n");
 
+    printf("pf - Send fragmented (long) command\n");
+
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -1005,6 +1010,11 @@ static void stdin_process(char * cmd, int size){
                     status = avrcp_controller_add_item_from_scope_to_now_playing_list(avrcp_cid, media_element_items[0].uid, media_element_item_index, AVRCP_BROWSING_SEARCH);
                     break;
                 
+                case 'f':
+                    printf("Send fragmented command\n");
+                    status = avrcp_controller_send_custom_command(avrcp_cid, AVRCP_CTYPE_CONTROL, AVRCP_SUBUNIT_TYPE_PANEL, AVRCP_SUBUNIT_ID, AVRCP_CMD_OPCODE_VENDOR_DEPENDENT, (const uint8_t*) fragmented_message, strlen(fragmented_message));
+                    break;
+
                 default:
                     break;
             }

@@ -322,6 +322,18 @@ uint8_t avrcp_controller_set_addressed_player(uint16_t avrcp_cid, uint16_t addre
 
 /* API_END */
 
+/** 
+ * @brief Send custom command
+ * @param avrcp_cid
+ * @param command_type
+ * @param subunit_type
+ * @param subunit ID
+ * @param command_opcode
+ * @param command_buffer
+ * @param command_len
+ */
+uint8_t avrcp_controller_send_custom_command(uint16_t avrcp_cid, avrcp_command_type_t command_type, avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id, avrcp_command_opcode_t command_opcode, const uint8_t * command_buffer, uint16_t command_len);
+
 // Used by AVRCP controller and AVRCP browsing controller
 extern avrcp_context_t avrcp_controller_context;
 
