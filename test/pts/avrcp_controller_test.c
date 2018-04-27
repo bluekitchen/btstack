@@ -518,16 +518,30 @@ static void show_usage(void){
     printf("* - get subunit info\n");
     printf("r - get play status\n");
     printf("t - get now playing info\n");
-    printf("1 - play\n");
-    printf("2 - stop\n");
-    printf("3 - pause\n");
-    printf("4 - fast forward\n");
-    printf("5 - rewind\n");
-    printf("6 - forward\n");
-    printf("7 - backward\n");
-    printf("8 - volume up\n");
-    printf("9 - volume down\n");
-    printf("0 - mute\n");
+    
+    printf("01 - play\n");
+    printf("02 - stop\n");
+    printf("03 - pause\n");
+    printf("04 - fast forward\n");
+    printf("05 - rewind\n");
+    printf("06 - forward\n");
+    printf("07 - backward\n");
+    printf("08 - volume up\n");
+    printf("09 - volume down\n");
+    printf("00 - mute\n");
+
+    printf("11 - press and hold: play\n");
+    printf("12 - press and hold: stop\n");
+    printf("13 - press and hold: pause\n");
+    printf("14 - press and hold: fast forward\n");
+    printf("15 - press and hold: rewind\n");
+    printf("16 - press and hold: forward\n");
+    printf("17 - press and hold: backward\n");
+    printf("18 - press and hold: volume up\n");
+    printf("19 - press and hold: volume down\n");
+    printf("10 - press and hold: mute\n");
+    printf("2  - release press and hold cmd\n");
+
     printf("R - absolute volume of 50 percent\n");
     printf("u - skip\n");
     printf("i - query repeat and shuffle mode\n");
@@ -660,45 +674,102 @@ static void stdin_process(char * cmd, int size){
             printf("AVRCP: get now playing info\n");
             avrcp_controller_get_now_playing_info(avrcp_cid);
             break;
-        case '1':
-            printf("AVRCP: play\n");
-            avrcp_controller_play(avrcp_cid);
-            break;
-        case '2':
-            printf("AVRCP: stop\n");
-            avrcp_controller_stop(avrcp_cid);
-            break;
-        case '3':
-            printf("AVRCP: pause\n");
-            avrcp_controller_pause(avrcp_cid);
-            break;
-        case '4':
-            printf("AVRCP: fast forward\n");
-            avrcp_controller_fast_forward(avrcp_cid);
-            break;
-        case '5':
-            printf("AVRCP: rewind\n");
-            avrcp_controller_rewind(avrcp_cid);
-            break;
-        case '6':
-            printf("AVRCP: forward\n");
-            avrcp_controller_forward(avrcp_cid); 
-            break;
-        case '7':
-            printf("AVRCP: backward\n");
-            avrcp_controller_backward(avrcp_cid);
-            break;
-        case '8':
-            printf("AVRCP: volume up\n");
-            avrcp_controller_volume_up(avrcp_cid);
-            break;
-        case '9':
-            printf("AVRCP: volume down\n");
-            avrcp_controller_volume_down(avrcp_cid);
-            break;
         case '0':
-            printf("AVRCP: mute\n");
-            avrcp_controller_mute(avrcp_cid);
+            switch (cmd[1]){
+                case '1':
+                    printf("AVRCP: play\n");
+                    avrcp_controller_play(avrcp_cid);
+                    break;
+                case '2':
+                    printf("AVRCP: stop\n");
+                    avrcp_controller_stop(avrcp_cid);
+                    break;
+                case '3':
+                    printf("AVRCP: pause\n");
+                    avrcp_controller_pause(avrcp_cid);
+                    break;
+                case '4':
+                    printf("AVRCP: fast forward\n");
+                    avrcp_controller_fast_forward(avrcp_cid);
+                    break;
+                case '5':
+                    printf("AVRCP: rewind\n");
+                    avrcp_controller_rewind(avrcp_cid);
+                    break;
+                case '6':
+                    printf("AVRCP: forward\n");
+                    avrcp_controller_forward(avrcp_cid); 
+                    break;
+                case '7':
+                    printf("AVRCP: backward\n");
+                    avrcp_controller_backward(avrcp_cid);
+                    break;
+                case '8':
+                    printf("AVRCP: volume up\n");
+                    avrcp_controller_volume_up(avrcp_cid);
+                    break;
+                case '9':
+                    printf("AVRCP: volume down\n");
+                    avrcp_controller_volume_down(avrcp_cid);
+                    break;
+                case '0':
+                    printf("AVRCP: mute\n");
+                    avrcp_controller_mute(avrcp_cid);
+                    break;
+                default:
+                    break;
+            }
+            break;
+         
+         case '1':
+            switch (cmd[1]){
+                case '1':
+                    printf("AVRCP: play\n");
+                    avrcp_controller_press_and_hold_play(avrcp_cid);
+                    break;
+                case '2':
+                    printf("AVRCP: stop\n");
+                    avrcp_controller_press_and_hold_stop(avrcp_cid);
+                    break;
+                case '3':
+                    printf("AVRCP: pause\n");
+                    avrcp_controller_press_and_hold_pause(avrcp_cid);
+                    break;
+                case '4':
+                    printf("AVRCP: fast forward\n");
+                    avrcp_controller_press_and_hold_fast_forward(avrcp_cid);
+                    break;
+                case '5':
+                    printf("AVRCP: rewind\n");
+                    avrcp_controller_press_and_hold_rewind(avrcp_cid);
+                    break;
+                case '6':
+                    printf("AVRCP: forward\n");
+                    avrcp_controller_press_and_hold_forward(avrcp_cid); 
+                    break;
+                case '7':
+                    printf("AVRCP: backward\n");
+                    avrcp_controller_press_and_hold_backward(avrcp_cid);
+                    break;
+                case '8':
+                    printf("AVRCP: volume up\n");
+                    avrcp_controller_press_and_hold_volume_up(avrcp_cid);
+                    break;
+                case '9':
+                    printf("AVRCP: volume down\n");
+                    avrcp_controller_press_and_hold_volume_down(avrcp_cid);
+                    break;
+                case '0':
+                    printf("AVRCP: mute\n");
+                    avrcp_controller_press_and_hold_mute(avrcp_cid);
+                    break;
+                default:
+                    break;
+            }
+            break;
+
+         case '2':
+            avrcp_controller_release_press_and_hold_cmd(avrcp_cid);
             break;
         case 'R':
             printf("AVRCP: absolute volume of 50 percent\n");

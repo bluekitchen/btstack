@@ -1013,10 +1013,6 @@ uint8_t avrcp_controller_backward(uint16_t avrcp_cid){
     return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_BACKWARD, 0);
 }
 
-uint8_t avrcp_controller_start_rewind(uint16_t avrcp_cid){
-    return request_continuous_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_REWIND, 0);
-}
-
 uint8_t avrcp_controller_volume_up(uint16_t avrcp_cid){
     return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_VOLUME_UP, 0);
 }
@@ -1033,20 +1029,6 @@ uint8_t avrcp_controller_skip(uint16_t avrcp_cid){
     return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_SKIP, 0);
 }
 
-uint8_t avrcp_controller_stop_rewind(uint16_t avrcp_cid){
-    avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(avrcp_cid, &avrcp_controller_context);
-    if (!connection){
-        log_error("avrcp_stop_rewind: could not find a connection.");
-        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    }
-    if (connection->state != AVCTP_W4_STOP) return ERROR_CODE_COMMAND_DISALLOWED;
-    return request_pass_through_release_control_cmd(connection);
-}
-
-uint8_t avrcp_controller_start_fast_forward(uint16_t avrcp_cid){
-    return request_continuous_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_FAST_FORWARD, 0);
-}
-
 uint8_t avrcp_controller_fast_forward(uint16_t avrcp_cid){
     return request_single_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_FAST_FORWARD, 0);
 }
@@ -1056,15 +1038,51 @@ uint8_t avrcp_controller_rewind(uint16_t avrcp_cid){
 }
 
 
-uint8_t avrcp_controller_stop_fast_forward(uint16_t avrcp_cid){
+/* start cmds */
+
+uint8_t avrcp_controller_release_press_and_hold_cmd(uint16_t avrcp_cid){
     avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(avrcp_cid, &avrcp_controller_context);
     if (!connection){
-        log_error("avrcp_stop_fast_forward: could not find a connection.");
+        log_error("avrcp_stop_play: could not find a connection.");
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
     if (connection->state != AVCTP_W4_STOP) return ERROR_CODE_COMMAND_DISALLOWED;
     return request_pass_through_release_control_cmd(connection);
 }
+
+uint8_t avrcp_controller_press_and_hold_play(uint16_t avrcp_cid){
+    return request_continuous_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_PLAY, 0);
+}
+uint8_t avrcp_controller_press_and_hold_stop(uint16_t avrcp_cid){
+    return request_continuous_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_STOP, 0);
+}
+uint8_t avrcp_controller_press_and_hold_pause(uint16_t avrcp_cid){
+    return request_continuous_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_PAUSE, 0);
+}
+uint8_t avrcp_controller_press_and_hold_forward(uint16_t avrcp_cid){
+    return request_continuous_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_FORWARD, 0);
+}
+uint8_t avrcp_controller_press_and_hold_backward(uint16_t avrcp_cid){
+    return request_continuous_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_BACKWARD, 0);
+}
+uint8_t avrcp_controller_press_and_hold_fast_forward(uint16_t avrcp_cid){
+    return request_continuous_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_FAST_FORWARD, 0);
+}
+uint8_t avrcp_controller_press_and_hold_rewind(uint16_t avrcp_cid){
+    return request_continuous_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_REWIND, 0);
+}
+uint8_t avrcp_controller_press_and_hold_volume_up(uint16_t avrcp_cid){
+    return request_continuous_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_VOLUME_UP, 0);
+}
+uint8_t avrcp_controller_press_and_hold_volume_down(uint16_t avrcp_cid){
+    return request_continuous_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_VOLUME_DOWN, 0);
+}
+uint8_t avrcp_controller_press_and_hold_mute(uint16_t avrcp_cid){
+    return request_continuous_pass_through_press_control_cmd(avrcp_cid, AVRCP_OPERATION_ID_MUTE, 0);
+}
+
+
+/* stop continuous cmds */
 
 uint8_t avrcp_controller_get_play_status(uint16_t avrcp_cid){
     avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(avrcp_cid, &avrcp_controller_context);
