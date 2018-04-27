@@ -399,7 +399,8 @@ typedef struct {
     // PID check
     uint8_t reject_transport_header;
     uint8_t transport_header;
-    
+    uint16_t invalid_pid;
+
     // command
     uint8_t transaction_label;
     avrcp_command_opcode_t command_opcode;

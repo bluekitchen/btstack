@@ -605,8 +605,8 @@ uint8_t avrcp_target_play_status(uint16_t avrcp_cid, uint32_t song_length_ms, ui
 }
 
 static uint8_t avrcp_target_now_playing_info(avrcp_connection_t * connection){
-    connection->now_playing_info_response = 1;
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
+    connection->now_playing_info_response = 1;
     connection->command_opcode  = AVRCP_CMD_OPCODE_VENDOR_DEPENDENT;
     connection->command_type    = AVRCP_CTYPE_RESPONSE_IMPLEMENTED_STABLE;
     connection->subunit_type    = AVRCP_SUBUNIT_TYPE_PANEL; 
@@ -764,30 +764,44 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     UNUSED(size);
 
     // uint8_t opcode;
-    
+    uint16_t pid = 0;
     uint8_t transport_header = packet[0];
     connection->transaction_label = transport_header >> 4;
-    // uint8_t packet_type = (transport_header & 0x0F) >> 2;
     // uint8_t frame_type = (transport_header & 0x03) >> 1;
+    avrcp_packet_type_t packet_type = (transport_header & 0x0F) >> 2;
+    switch (packet_type){
+        case AVRCP_SINGLE_PACKET:
+            pid =  big_endian_read_16(packet, 1);
+            break;
+        case AVRCP_START_PACKET:
+            pid =  big_endian_read_16(packet, 2);
+            break;
+        default:
+            break;
+    }
+        
+    switch (packet_type){
+        case AVRCP_SINGLE_PACKET:
+        case AVRCP_START_PACKET:
+            if (pid != BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL){
+                log_info("Invalid pid 0x%02x, expected 0x%02x", connection->invalid_pid, BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL);
+                connection->reject_transport_header = 1;
+                connection->invalid_pid = pid;
+                connection->transport_header = (connection->transaction_label << 4) | (AVRCP_SINGLE_PACKET << 2 ) | (AVRCP_RESPONSE_FRAME << 1) | 1;
+                connection->state = AVCTP_W2_SEND_RESPONSE;
+                avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+                return;
+            }   
+            break;
+        default:
+            break;
+    }
 
-    uint16_t pid = big_endian_read_16(packet, 1);
-    printf("PID 0x%02x, BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL 0x%02x, header 0x%02x\n",pid,  BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL, transport_header);
-    if (pid != BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL){
-        connection->reject_transport_header = 1;
-        connection->transport_header = (connection->transaction_label << 4) | (AVRCP_SINGLE_PACKET << 2 ) | (AVRCP_RESPONSE_FRAME << 1) | 0;
-
-        printf("reject pid, header 0x%02x\n", connection->transport_header);
-        connection->state = AVCTP_W2_SEND_RESPONSE;
-        avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
-        return;
-    }   
-     
     // avrcp_command_type_t ctype = (avrcp_command_type_t) packet[3];
     // uint8_t byte_value = packet[4];
     avrcp_subunit_type_t subunit_type = (avrcp_subunit_type_t) (packet[4] >> 3);
     avrcp_subunit_id_t   subunit_id   = (avrcp_subunit_id_t) (packet[4] & 0x07);
     // opcode = packet[pos++];
-    
     // printf("    Transport header 0x%02x (transaction_label %d, packet_type %d, frame_type %d, ipid %d), pid 0x%4x\n", 
     //     transport_header, transaction_label, packet_type, frame_type, ipid, pid);
     // printf_hexdump(packet+pos, size-pos);
@@ -1118,16 +1132,6 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                         log_error("Connection not found\n");
                         break;
                     }
-
-                    if (connection->reject_transport_header){
-                        connection->reject_transport_header = 0;
-                        printf("send reject_transport_header \n");
-                        l2cap_reserve_packet_buffer();
-                        uint8_t * out_buffer = l2cap_get_outgoing_buffer();
-                        out_buffer[0] = connection->transport_header;
-                        l2cap_send_prepared(connection->l2cap_signaling_cid, 1);
-                        break;
-                    }
                     
                     if (connection->abort_continue_response){
                         connection->abort_continue_response = 0;
@@ -1189,6 +1193,20 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                         avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
                         break;
                     }
+
+                    if (connection->reject_transport_header){
+                        printf(" reject_transport_header\n");
+                        connection->state = AVCTP_CONNECTION_OPENED;
+                        connection->reject_transport_header = 0;
+                        l2cap_reserve_packet_buffer();
+                        uint8_t * out_buffer = l2cap_get_outgoing_buffer();
+                        out_buffer[0] = connection->transport_header;
+                        big_endian_store_16(out_buffer, 1, connection->invalid_pid);
+                        l2cap_send_prepared(connection->l2cap_signaling_cid, 3);
+                        avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+                        break;
+                    }
+                    
 
                     switch (connection->state){
                         case AVCTP_W2_SEND_RESPONSE:

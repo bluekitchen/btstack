@@ -731,7 +731,8 @@ static void show_usage(void){
     printf("h - trigger notification BATT_STATUS_CHANGED\n");
     printf("l - trigger notification NOW_PLAYING_CONTENT_CHANGED\n");
 
-    printf("t - select track\n");
+    printf("t - select track with short info\n");
+    printf("t - select track with long info\n");
     
     // printf("x      - start streaming sine\n");
     
@@ -768,58 +769,20 @@ static void stdin_process(char * cmd, int size){
         case '\n':
         case '\r':
             break;
-       
-
-
-        case 'a':
-            printf("AVRCP: trigger notification PLAYBACK_STATUS_CHANGED\n");
-            // avrcp_target_trigger_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED);
-            break;
+        
         case 's':{
             printf("AVRCP: trigger notification TRACK_CHANGED\n");
             uint8_t track_id[8] = {0x00, 0x03, 0x02, 0x01, 0x00, 0x03, 0x02, 0x01};
             avrcp_target_track_changed(avrcp_cid, track_id);
             break;
         }
-        case 'd':
-            printf("AVRCP: trigger notification TRACK_REACHED_END\n");
-            // avrcp_target_trigger_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_END);
-            break;
-        case 'f':
-            printf("AVRCP: trigger notification TRACK_REACHED_START\n");
-            // avrcp_target_trigger_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_REACHED_START);
-            break;
-        case 'g':
-            printf("AVRCP: trigger notification PLAYBACK_POS_CHANGED\n");
-            // avrcp_target_trigger_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED);
-            break;
         case 'h':
             printf("AVRCP: trigger notification BATT_STATUS_CHANGED\n");
             avrcp_target_battery_status_changed(avrcp_cid, AVRCP_BATTERY_STATUS_CRITICAL);
             break;
-        case 'j':
-            printf("AVRCP: trigger notification SYSTEM_STATUS_CHANGED\n");
-            // avrcp_target_trigger_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_SYSTEM_STATUS_CHANGED);
-            break;
-        case 'k':
-            printf("AVRCP: trigger notification PLAYER_APPLICATION_SETTING_CHANGED\n");
-            // avrcp_target_trigger_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYER_APPLICATION_SETTING_CHANGED);
-            break;
         case 'l':
             printf("AVRCP: trigger notification NOW_PLAYING_CONTENT_CHANGED\n");
             avrcp_target_playing_content_changed(avrcp_cid);
-            break;
-        case 'm':
-            printf("AVRCP: trigger notification AVAILABLE_PLAYERS_CHANGED\n");
-            // avrcp_target_trigger_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED);
-            break;
-        case 'n':
-            printf("AVRCP: trigger notification ADDRESSED_PLAYER_CHANGED\n");
-            // avrcp_target_trigger_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED);
-            break;
-        case 'y':
-            printf("AVRCP: trigger notification UIDS_CHANGED\n");
-            // avrcp_target_trigger_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED);
             break;
         case 'v':
             printf("AVRCP: trigger notification VOLUME_CHANGED 20per\n");
@@ -827,53 +790,16 @@ static void stdin_process(char * cmd, int size){
             break;
         case 't':
             if (avrcp_connected){
-                avrcp_target_set_now_playing_info(avrcp_cid, &tracks[data_source], sizeof(tracks)/sizeof(avrcp_track_t));
+                printf("AVRCP: Set now playing info, with short info\n");
+                avrcp_target_set_now_playing_info(avrcp_cid, &tracks[0], sizeof(tracks)/sizeof(avrcp_track_t));
             }
             break;
-       // case 'p':
-       //      if (avrcp_connected){
-       //          avrcp_target_volume_changed(avrcp_cid, &tracks[data_source], sizeof(tracks)/sizeof(avrcp_track_t));
-       //      }
-       //      break;
-         // case 't':
-        //     printf("STREAM_PTS_TEST.\n");
-        //     data_source = STREAM_PTS_TEST;
-        //     if (avrcp_connected){
-        //         avrcp_target_set_now_playing_info(avrcp_cid, &tracks[data_source], sizeof(tracks)/sizeof(avrcp_track_t));
-        //     }
-        //     if (!media_tracker.stream_opened) break;
-        //     status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
-        //     break;
-
-        // case 'x':
-        //     if (avrcp_connected){
-        //         avrcp_target_set_now_playing_info(avrcp_cid, &tracks[data_source], sizeof(tracks)/sizeof(avrcp_track_t));
-        //     }
-        //     printf("Playing sine.\n");
-        //     data_source = STREAM_SINE;
-        //     if (!media_tracker.stream_opened) break;
-        //     status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
-        //     break;
-        // case 'z':
-        //     if (avrcp_connected){
-        //         avrcp_target_set_now_playing_info(avrcp_cid, &tracks[data_source], sizeof(tracks)/sizeof(avrcp_track_t));
-        //     }
-        //     printf("Playing mod.\n");
-        //     data_source = STREAM_MOD;
-        //     if (!media_tracker.stream_opened) break;
-        //     status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
-        //     break;
-        // case 'p':
-        //     if (!media_tracker.connected) break;
-        //     printf("Pause stream.\n");
-        //     status = a2dp_source_pause_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
-        //     break;
-        // case '0':
-        //     if (avrcp_connected){
-        //         avrcp_target_set_now_playing_info(avrcp_cid, NULL, sizeof(tracks)/sizeof(avrcp_track_t));
-        //         printf("Reset now playing info\n");
-        //     }
-        //     break;
+        case 'T':
+            if (avrcp_connected){
+                printf("AVRCP: Set now playing info, with long info\n");
+                avrcp_target_set_now_playing_info(avrcp_cid, &tracks[2], sizeof(tracks)/sizeof(avrcp_track_t));
+            }
+            break;
 
 
         case 'p':
