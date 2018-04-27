@@ -209,6 +209,9 @@ static void cmac_done(uint8_t * hash){
 }
 
 static uint8_t m[128];
+
+#if 0
+// CMAC calculation has been moved to btstack_crypto
 static uint8_t get_byte(uint16_t offset){
     // printf ("get byte %02u -> %02x\n", offset, m[offset]);
     return m[offset];
@@ -235,6 +238,7 @@ static void validate_message(const char * name, const char * message_string, con
     }
     CHECK_EQUAL_ARRAY(cmac, cmac_hash, 16);
 }
+#endif
 
 #define VALIDATE_MESSAGE(NAME) validate_message(#NAME, NAME##_string, cmac_##NAME##_string)
 
@@ -244,15 +248,17 @@ TEST_GROUP(SecurityManager){
         if (first){
             first = 0;
             btstack_memory_init();
-            btstack_run_loop_init(btstack_run_loop_posix_get_instance());            
+            btstack_run_loop_init(btstack_run_loop_posix_get_instance());
         }
 	    sm_init();
 	    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
 	    sm_set_authentication_requirements( SM_AUTHREQ_BONDING ); 
         sm_event_callback_registration.callback = &app_packet_handler;
-        sm_add_event_handler(&sm_event_callback_registration);	}
+        sm_add_event_handler(&sm_event_callback_registration);	
+    }
 };
 
+#if 0
 TEST(SecurityManager, CMACTest){
 
     mock_init();
@@ -288,6 +294,7 @@ TEST(SecurityManager, CMACTest){
     VALIDATE_MESSAGE(m40);
     VALIDATE_MESSAGE(m64);
 }
+#endif
 
 TEST(SecurityManager, MainTest){
 
@@ -296,7 +303,6 @@ TEST(SecurityManager, MainTest){
 
     // expect le encrypt commmand
     CHECK_HCI_COMMAND(test_command_packet_01);
-
     aes128_report_result();
 
     // expect le encrypt commmand
@@ -440,6 +446,6 @@ TEST(SecurityManager, MainTest){
 }
 
 int main (int argc, const char * argv[]){
-    // hci_dump_open("hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
+    // hci_dump_open("hci_dump.pklg", HCI_DUMP_STDOUT); // HCI_DUMP_PACKETLOGGER
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

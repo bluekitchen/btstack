@@ -92,7 +92,7 @@ typedef struct {
 #ifdef HAVE_BTSTACK_STDIN
 // mac 2011:    static const char * device_addr_string = "04:0C:CE:E4:85:D3";
 // pts:         
-static const char * device_addr_string = "00:1B:DC:08:0A:A5";
+static const char * device_addr_string = "00:1B:DC:07:32:EF";
 // mac 2013:    static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:  static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
 // minijambox:  static const char * device_addr_string = "00:21:3C:AC:F7:38";

@@ -5041,6 +5041,16 @@ static inline uint8_t avdtp_subevent_signaling_capability_done_get_remote_seid(c
 }
 
 /**
+ * @brief Get field avdtp_cid from event AVDTP_SUBEVENT_SIGNALING_SEP_DICOVERY_DONE
+ * @param event packet
+ * @return avdtp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avdtp_subevent_signaling_sep_dicovery_done_get_avdtp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
  * @brief Get field a2dp_cid from event A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW
  * @param event packet
  * @return a2dp_cid
@@ -6216,31 +6226,87 @@ static inline uint16_t avrcp_subevent_browsing_connection_released_get_browsing_
 }
 
 /**
- * @brief Get field browsing_cid from event AVRCP_SUBEVENT_BROWSING_MEDIA_ITEM_DONE
+ * @brief Get field browsing_cid from event AVRCP_SUBEVENT_BROWSING_DONE
  * @param event packet
  * @return browsing_cid
  * @note: btstack_type 2
  */
-static inline uint16_t avrcp_subevent_browsing_media_item_done_get_browsing_cid(const uint8_t * event){
+static inline uint16_t avrcp_subevent_browsing_done_get_browsing_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field browsing_status from event AVRCP_SUBEVENT_BROWSING_MEDIA_ITEM_DONE
+ * @brief Get field uid_counter from event AVRCP_SUBEVENT_BROWSING_DONE
+ * @param event packet
+ * @return uid_counter
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_browsing_done_get_uid_counter(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field browsing_status from event AVRCP_SUBEVENT_BROWSING_DONE
  * @param event packet
  * @return browsing_status
  * @note: btstack_type 1
  */
-static inline uint8_t avrcp_subevent_browsing_media_item_done_get_browsing_status(const uint8_t * event){
-    return event[5];
+static inline uint8_t avrcp_subevent_browsing_done_get_browsing_status(const uint8_t * event){
+    return event[7];
 }
 /**
- * @brief Get field bluetooth_status from event AVRCP_SUBEVENT_BROWSING_MEDIA_ITEM_DONE
+ * @brief Get field bluetooth_status from event AVRCP_SUBEVENT_BROWSING_DONE
  * @param event packet
  * @return bluetooth_status
  * @note: btstack_type 1
  */
-static inline uint8_t avrcp_subevent_browsing_media_item_done_get_bluetooth_status(const uint8_t * event){
-    return event[6];
+static inline uint8_t avrcp_subevent_browsing_done_get_bluetooth_status(const uint8_t * event){
+    return event[8];
+}
+
+/**
+ * @brief Get field browsing_cid from event AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS
+ * @param event packet
+ * @return browsing_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_browsing_get_folder_items_get_browsing_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field scope from event AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS
+ * @param event packet
+ * @return scope
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_browsing_get_folder_items_get_scope(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field attr_bitmap from event AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS
+ * @param event packet
+ * @return attr_bitmap
+ * @note: btstack_type 4
+ */
+static inline uint32_t avrcp_subevent_browsing_get_folder_items_get_attr_bitmap(const uint8_t * event){
+    return little_endian_read_32(event, 6);
+}
+
+/**
+ * @brief Get field browsing_cid from event AVRCP_SUBEVENT_BROWSING_GET_TOTAL_NUM_ITEMS
+ * @param event packet
+ * @return browsing_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_browsing_get_total_num_items_get_browsing_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field scope from event AVRCP_SUBEVENT_BROWSING_GET_TOTAL_NUM_ITEMS
+ * @param event packet
+ * @return scope
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_browsing_get_total_num_items_get_scope(const uint8_t * event){
+    return event[5];
 }
 
 /**

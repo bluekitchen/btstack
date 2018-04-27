@@ -1547,6 +1547,13 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_SUBEVENT_SIGNALING_CAPABILITY_DONE             0x15
 
 
+/**
+ * @format 12
+ * @param subevent_code
+ * @param avdtp_cid
+ */
+#define AVDTP_SUBEVENT_SIGNALING_SEP_DICOVERY_DONE           0x16
+
 
 /** A2DP Subevent */
 /* Stream goes through following states:
@@ -1935,16 +1942,32 @@ typedef uint8_t sm_key_t[16];
  */
 #define AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED                            0x1D
 
-
 /**
- * @format 1211
+ * @format 12211
  * @param subevent_code
  * @param browsing_cid
+ * @param uid_counter
  * @param browsing_status
  * @param bluetooth_status
  */
-#define AVRCP_SUBEVENT_BROWSING_MEDIA_ITEM_DONE                                0x1E
+#define AVRCP_SUBEVENT_BROWSING_DONE                                          0x1E
 
+/**
+ * @format 1214
+ * @param subevent_code
+ * @param browsing_cid
+ * @param scope
+ * @param attr_bitmap
+ */
+#define AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS                             0x1F
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param browsing_cid
+ * @param scope
+ */
+#define AVRCP_SUBEVENT_BROWSING_GET_TOTAL_NUM_ITEMS                             0x20
 
 /**
  * @format 121BH1

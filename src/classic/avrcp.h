@@ -57,6 +57,7 @@ extern "C" {
 #define AVRCP_MEDIA_ATTR_COUNT 7
 #define AVRCP_MAX_ATTRIBUTTE_SIZE 100
 #define AVRCP_ATTRIBUTE_HEADER_LEN  8
+#define AVRCP_MAX_FOLDER_NAME_SIZE      20
 
 typedef enum {
     AVRCP_STATUS_INVALID_COMMAND = 0,           // sent if TG received a PDU that it did not understand.
@@ -103,15 +104,17 @@ typedef enum {
     AVRCP_CAPABILITY_ID_EVENT = 0x03
 } avrcp_capability_id_t;
 
+#define AVRCP_BROWSING_MAX_NUM_ATTR_IDS 8
 typedef enum {
-    AVRCP_MEDIA_ATTR_ALL = 0,
+    AVRCP_MEDIA_ATTR_ALL = 0x00000000,
     AVRCP_MEDIA_ATTR_TITLE,
     AVRCP_MEDIA_ATTR_ARTIST,
     AVRCP_MEDIA_ATTR_ALBUM,
     AVRCP_MEDIA_ATTR_TRACK,
-    AVRCP_MEDIA_ATTR_TOTAL_TRACKS,
+    AVRCP_MEDIA_ATTR_TOTAL_NUM_ITEMS,
     AVRCP_MEDIA_ATTR_GENRE,
     AVRCP_MEDIA_ATTR_SONG_LENGTH_MS,
+    AVRCP_MEDIA_ATTR_DEFAULT_COVER_ART,
     AVRCP_MEDIA_ATTR_NONE = 0xFFFFFFFF
 } avrcp_media_attribute_id_t;
 
@@ -129,6 +132,13 @@ typedef enum {
     AVRCP_PDU_ID_SET_BROWSED_PLAYER = 0x70,
     AVRCP_PDU_ID_GET_FOLDER_ITEMS = 0x71,
     AVRCP_PDU_ID_CHANGE_PATH = 0x72,
+    AVRCP_PDU_ID_GET_ITEM_ATTRIBUTES = 0x73,
+    AVRCP_PDU_ID_PLAY_ITEM = 0x74,
+    AVRCP_PDU_ID_GET_TOTAL_NUMBER_OF_ITEMS = 0x75,
+    AVRCP_PDU_ID_SEARCH = 0x80,
+    AVRCP_PDU_ID_ADD_TO_NOW_PLAYING = 0x90,
+    AVRCP_PDU_ID_GENERAL_REJECT = 0xA0,
+    
     AVRCP_PDU_ID_UNDEFINED = 0xFF
 } avrcp_pdu_id_t;
 
@@ -208,6 +218,15 @@ typedef enum {
 } avrcp_command_opcode_t;
 
 typedef enum {
+    AVRCP_OPERATION_ID_CHANNEL_UP = 0x30,
+    AVRCP_OPERATION_ID_CHANNEL_DOWN = 0x31,
+    AVRCP_OPERATION_ID_SELECT = 0x00,
+    AVRCP_OPERATION_ID_UP = 0x01,
+    AVRCP_OPERATION_ID_DOWN = 0x02,
+    AVRCP_OPERATION_ID_LEFT = 0x03,
+    AVRCP_OPERATION_ID_RIGHT = 0x04,
+    AVRCP_OPERATION_ID_ROOT_MENU = 0x09,
+
     AVRCP_OPERATION_ID_SKIP = 0x3C,
     AVRCP_OPERATION_ID_VOLUME_UP = 0x41,
     AVRCP_OPERATION_ID_VOLUME_DOWN = 0x42,
@@ -253,8 +272,16 @@ typedef enum {
     AVCTP_W2_SEND_COMMAND,
     AVCTP_W2_SEND_RESPONSE,
     AVCTP_W2_RECEIVE_PRESS_RESPONSE,
-    AVCTP_W2_RECEIVE_RESPONSE
+    AVCTP_W2_RECEIVE_RESPONSE,
+    AVCTP_W2_SEND_FRAGMENTED_COMMAND,
 } avctp_connection_state_t;
+
+typedef enum {
+    AVRCP_BROWSING_MEDIA_PLAYER_LIST = 0x00,
+    AVRCP_BROWSING_MEDIA_PLAYER_VIRTUAL_FILESYSTEM,
+    AVRCP_BROWSING_SEARCH,
+    AVRCP_BROWSING_NOW_PLAYING
+} avrcp_browsing_scope_t;
 
 typedef struct {
     uint16_t len;
@@ -273,11 +300,13 @@ typedef struct {
 } avrcp_track_t;
 
 typedef enum {
-    AVRCP_PARSER_IDLE = 0,
-    AVRCP_PARSER_GET_ATTRIBUTE_HEADER,       // 8 bytes
+    AVRCP_PARSER_GET_ATTRIBUTE_HEADER = 0,       // 8 bytes
     AVRCP_PARSER_GET_ATTRIBUTE_VALUE,
-    AVRCP_PARSER_IGNORE_ATTRIBUTE_VALUE
+    AVRCP_PARSER_IGNORE_REST_OF_ATTRIBUTE_VALUE
 } avrcp_parser_state_t;
+
+
+#define AVRCP_BROWSING_ITEM_HEADER_LEN 3
 
 // BROWSING 
 typedef struct {
@@ -295,25 +324,59 @@ typedef struct {
     l2cap_ertm_config_t ertm_config;
 
     // players
-    uint8_t  set_addressed_player_id;
     uint8_t  set_browsed_player_id;
-    
-    uint16_t addressed_player_id;
     uint16_t browsed_player_id;
-    uint16_t browsed_player_uid_counter;
+
+    avrcp_browsing_scope_t  scope;
+    uint8_t  folder_uid[8]; // or media element
+    uint16_t uid_counter;
 
     // get folder item
-    uint8_t  get_folder_item;
-    uint8_t  scope;
+    uint8_t  get_folder_items;
     uint32_t start_item;
     uint32_t end_item;
     uint32_t attr_bitmap;
 
+    // item attrs
+    uint8_t get_item_attributes;
+
     // change_path
     uint8_t  change_path;
     uint8_t  direction;
-    uint16_t uid_counter;
-    uint8_t  folder_uid[8];
+    
+    // search str
+    uint16_t search_str_len;
+    uint8_t  search_str[20];
+    uint8_t  search;
+    
+    // get_item_attributes
+    uint8_t  get_total_nr_items;
+    avrcp_browsing_scope_t get_total_nr_items_scope;
+    
+    avrcp_pdu_id_t pdu_id;
+    uint8_t browsing_status;
+    uint16_t num_items;
+
+    avrcp_parser_state_t parser_state;
+    uint8_t  parser_attribute_header[AVRCP_BROWSING_ITEM_HEADER_LEN];
+    uint8_t  parser_attribute_header_pos;
+    uint8_t  parsed_attribute_value[AVRCP_MAX_ATTRIBUTTE_SIZE];
+    uint16_t parsed_attribute_value_len;
+    uint16_t parsed_attribute_value_offset;
+    uint8_t  parsed_num_attributes;
+
+    // get folder items data
+    uint8_t * attr_list;
+    uint16_t attr_list_size;
+    // command
+    // uint8_t transaction_label;
+    avrcp_command_opcode_t command_opcode;
+    avrcp_command_type_t command_type;
+    avrcp_subunit_type_t subunit_type;
+    avrcp_subunit_id_t   subunit_id;
+    avrcp_packet_type_t  packet_type;
+    uint8_t cmd_operands[200];
+    uint8_t cmd_operands_length;
 } avrcp_browsing_connection_t;
 // BROWSING END
 
@@ -321,6 +384,7 @@ typedef struct {
     btstack_linked_item_t    item;
     bd_addr_t remote_addr;
     uint16_t l2cap_signaling_cid;
+    uint16_t l2cap_mtu;
     uint16_t avrcp_cid;
 
     uint16_t avrcp_browsing_cid;
@@ -332,6 +396,11 @@ typedef struct {
     avctp_connection_state_t state;
     uint8_t wait_to_send;
 
+    // PID check
+    uint8_t reject_transport_header;
+    uint8_t transport_header;
+    uint16_t invalid_pid;
+
     // command
     uint8_t transaction_label;
     avrcp_command_opcode_t command_opcode;
@@ -340,8 +409,15 @@ typedef struct {
     avrcp_subunit_id_t   subunit_id;
     avrcp_packet_type_t  packet_type;
 
+    // regular commands
     uint8_t cmd_operands[20];
     uint8_t cmd_operands_length;
+
+    // long/fragmented commands
+    const uint8_t * cmd_operands_fragmented_buffer;
+    uint16_t  cmd_operands_fragmented_pos;
+    uint16_t  cmd_operands_fragmented_len;
+
     btstack_timer_source_t press_and_hold_cmd_timer;
     uint8_t  continuous_fast_forward_cmd;
     uint16_t notifications_enabled;
@@ -393,6 +469,13 @@ typedef struct {
     
     uint8_t  num_attributes;
     uint8_t  num_parsed_attributes;
+
+    uint8_t addressed_player_changed;
+    uint16_t addressed_player_id;
+    uint16_t uid_counter;
+    // PTS requires definition of max num fragments
+    uint8_t max_num_fragments;
+    uint8_t num_received_fragments;
 } avrcp_connection_t;
 
 typedef enum {

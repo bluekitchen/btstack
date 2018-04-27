@@ -765,7 +765,10 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
     if (!avrcp_cid) return;
 
     // ignore INTERIM status
-    if (status == AVRCP_CTYPE_RESPONSE_INTERIM) return;
+    if (status == AVRCP_CTYPE_RESPONSE_INTERIM){
+        printf(" INTERIM response \n"); 
+        return;
+    } 
             
     printf("AVRCP demo: command status: %s, ", avrcp_ctype2str(status));
     switch (packet[2]){
@@ -982,6 +985,9 @@ static void show_usage(void){
     printf("X - disable repeat mode\n");
     printf("z - shuffle all tracks\n");
     printf("Z - disable shuffle mode\n");
+
+    printf("a/A - register/deregister TRACK_CHANGED\n");
+
     printf("---\n");
 }
 #endif
@@ -1050,19 +1056,19 @@ static void stdin_process(char cmd){
             break;
         case 'u':
             printf(" - start fast forward\n");
-            status = avrcp_controller_start_fast_forward(avrcp_cid);
+            status = avrcp_controller_press_and_hold_fast_forward(avrcp_cid);
             break;
         case 'U':
             printf(" - stop fast forward\n");
-            status = avrcp_controller_stop_fast_forward(avrcp_cid);
+            status = avrcp_controller_release_press_and_hold_cmd(avrcp_cid);
             break;
         case 'n':
             printf(" - start rewind\n");
-            status = avrcp_controller_start_rewind(avrcp_cid);
+            status = avrcp_controller_press_and_hold_rewind(avrcp_cid);
             break;
         case 'N':
             printf(" - stop rewind\n");
-            status = avrcp_controller_stop_rewind(avrcp_cid);
+            status = avrcp_controller_release_press_and_hold_cmd(avrcp_cid);
             break;
         case 'i':
             printf(" - forward\n");
@@ -1116,6 +1122,15 @@ static void stdin_process(char cmd){
             printf(" - disable shuffle mode\n");
             status = avrcp_controller_set_shuffle_mode(avrcp_cid, AVRCP_SHUFFLE_MODE_OFF);
             break;
+        case 'a':
+            printf("AVRCP: enable notification TRACK_CHANGED\n");
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
+            break;
+        case 'A':
+            printf("AVRCP: disable notification TRACK_CHANGED\n");
+            avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
+            break;
+
         default:
             show_usage();
             return;

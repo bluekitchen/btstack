@@ -93,6 +93,15 @@ uint8_t avrcp_controller_connect(bd_addr_t bd_addr, uint16_t * avrcp_cid);
 uint8_t avrcp_controller_disconnect(uint16_t avrcp_cid);
 
 /**
+ * @brief Set max num fragments in whuch message can be transmited.
+ * @param avrcp_cid
+ * @param max_num_fragments
+ * @returns status
+ */
+uint8_t avrcp_controller_set_max_num_fragments(uint16_t avrcp_cid, uint8_t max_num_fragments);
+
+
+/**
  * @brief Unit info.
  * @param avrcp_cid
  * @returns status
@@ -120,12 +129,22 @@ uint8_t avrcp_controller_get_supported_company_ids(uint16_t avrcp_cid);
  */
 uint8_t avrcp_controller_get_supported_events(uint16_t avrcp_cid);
 
+
+
+/**
+ * @brief Stops continuous cmd (play, pause, volume up, ...). Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
+ * @param avrcp_cid
+ * @returns status
+ */
+uint8_t avrcp_controller_release_press_and_hold_cmd(uint16_t avrcp_cid);
+
 /**
  * @brief Play. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
  * @param avrcp_cid
  * @returns status
  */
 uint8_t avrcp_controller_play(uint16_t avrcp_cid);
+uint8_t avrcp_controller_press_and_hold_play(uint16_t avrcp_cid);
 
 /**
  * @brief Stop. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
@@ -133,6 +152,7 @@ uint8_t avrcp_controller_play(uint16_t avrcp_cid);
  * @returns status
  */
 uint8_t avrcp_controller_stop(uint16_t avrcp_cid);
+uint8_t avrcp_controller_press_and_hold_stop(uint16_t avrcp_cid);
 
 /**
  * @brief Pause. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
@@ -140,20 +160,7 @@ uint8_t avrcp_controller_stop(uint16_t avrcp_cid);
  * @returns status
  */
 uint8_t avrcp_controller_pause(uint16_t avrcp_cid);
-
-/**
- * @brief Start Fast Forward. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_controller_start_fast_forward(uint16_t avrcp_cid);
-
-/**
- * @brief Stop Fast Forward. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_controller_stop_fast_forward(uint16_t avrcp_cid);
+uint8_t avrcp_controller_press_and_hold_pause(uint16_t avrcp_cid);
 
 /**
  * @brief Single step - fast forward. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
@@ -161,20 +168,8 @@ uint8_t avrcp_controller_stop_fast_forward(uint16_t avrcp_cid);
  * @returns status
  */
 uint8_t avrcp_controller_fast_forward(uint16_t avrcp_cid);
+uint8_t avrcp_controller_press_and_hold_fast_forward(uint16_t avrcp_cid);
 
-/**
- * @brief Stop Rewind. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_controller_start_rewind(uint16_t avrcp_cid);
-
-/**
- * @brief Stop Rewind. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_controller_stop_rewind(uint16_t avrcp_cid);
 
 /**
  * @brief Single step rewind. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
@@ -182,6 +177,7 @@ uint8_t avrcp_controller_stop_rewind(uint16_t avrcp_cid);
  * @returns status
  */
 uint8_t avrcp_controller_rewind(uint16_t avrcp_cid);
+uint8_t avrcp_controller_press_and_hold_rewind(uint16_t avrcp_cid);
 
 /**
  * @brief Forward. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
@@ -189,6 +185,7 @@ uint8_t avrcp_controller_rewind(uint16_t avrcp_cid);
  * @returns status
  */
 uint8_t avrcp_controller_forward(uint16_t avrcp_cid); 
+uint8_t avrcp_controller_press_and_hold_forward(uint16_t avrcp_cid); 
 
 /**
  * @brief Backward. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
@@ -196,7 +193,30 @@ uint8_t avrcp_controller_forward(uint16_t avrcp_cid);
  * @returns status
  */
 uint8_t avrcp_controller_backward(uint16_t avrcp_cid);
+uint8_t avrcp_controller_press_and_hold_backward(uint16_t avrcp_cid);
 
+/**
+ * @brief Turns the volume to high. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
+ * @param avrcp_cid
+ * @returns status
+ */
+uint8_t avrcp_controller_volume_up(uint16_t avrcp_cid);
+uint8_t avrcp_controller_press_and_hold_volume_up(uint16_t avrcp_cid);
+/**
+ * @brief Turns the volume to low. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
+ * @param avrcp_cid
+ * @returns status
+ */
+uint8_t avrcp_controller_volume_down(uint16_t avrcp_cid);
+uint8_t avrcp_controller_press_and_hold_volume_down(uint16_t avrcp_cid);
+
+/**
+ * @brief Puts the sound out. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
+ * @param avrcp_cid
+ * @returns status
+ */
+uint8_t avrcp_controller_mute(uint16_t avrcp_cid);
+uint8_t avrcp_controller_press_and_hold_mute(uint16_t avrcp_cid);
 
 /**
  * @brief Get play status. Returns event of type AVRCP_SUBEVENT_PLAY_STATUS (length, position, play_status).
@@ -236,26 +256,6 @@ uint8_t avrcp_controller_get_now_playing_info(uint16_t avrcp_cid);
  */
 uint8_t avrcp_controller_set_absolute_volume(uint16_t avrcp_cid, uint8_t volume);
 
-/**
- * @brief Turns the volume to high. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_controller_volume_up(uint16_t avrcp_cid);
-
-/**
- * @brief Turns the volume to low. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_controller_volume_down(uint16_t avrcp_cid);
-
-/**
- * @brief Puts the sound out. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
- * @param avrcp_cid
- * @returns status
- */
-uint8_t avrcp_controller_mute(uint16_t avrcp_cid);
 
 /**
  * @brief Skip to next playing media. Event AVRCP_SUBEVENT_OPERATION_COMPLETE returns operation id and status.
@@ -284,7 +284,46 @@ uint8_t avrcp_controller_set_shuffle_mode(uint16_t avrcp_cid, avrcp_shuffle_mode
  * @returns status
  */
 uint8_t avrcp_controller_set_repeat_mode(uint16_t avrcp_cid, avrcp_repeat_mode_t mode);
+
+/**
+ * @brief The PlayItem command starts playing an item indicated by the UID. It is routed to the Addressed Player.
+ * @param avrcp_cid
+ * @param uid
+ * @param uid_counter
+ * @param scope
+ **/
+uint8_t avrcp_controller_play_item_for_scope(uint16_t avrcp_cid, uint8_t * uid, uint16_t uid_counter, avrcp_browsing_scope_t scope);
+
+/**
+ * @brief Adds an item indicated by the UID to the Now Playing queue.
+ * @param avrcp_cid
+ * @param uid
+ * @param uid_counter
+ * @param scope
+ **/
+uint8_t avrcp_controller_add_item_from_scope_to_now_playing_list(uint16_t avrcp_cid, uint8_t * uid, uint16_t uid_counter, avrcp_browsing_scope_t scope);
+
+/** 
+ * @brief Set addressed player.  
+ * @param avrcp_cid
+ * @param addressed_player_id
+ */
+uint8_t avrcp_controller_set_addressed_player(uint16_t avrcp_cid, uint16_t addressed_player_id);
+
+
 /* API_END */
+
+/** 
+ * @brief Send custom command
+ * @param avrcp_cid
+ * @param command_type
+ * @param subunit_type
+ * @param subunit ID
+ * @param command_opcode
+ * @param command_buffer
+ * @param command_len
+ */
+uint8_t avrcp_controller_send_custom_command(uint16_t avrcp_cid, avrcp_command_type_t command_type, avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id, avrcp_command_opcode_t command_opcode, const uint8_t * command_buffer, uint16_t command_len);
 
 // Used by AVRCP controller and AVRCP browsing controller
 extern avrcp_context_t avrcp_controller_context;

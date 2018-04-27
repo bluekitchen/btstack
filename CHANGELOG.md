@@ -7,13 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
+- Crypto: btstack_crypo.h provides cryptographic functions for random data generation, AES128, EEC, CBC-MAC (Mesh)
 - SM: support pairing using Out-of-Band (OOB) data with LE Secure Connections
+- Embedded: support btstack_stdin via SEGGER RTT
 
 ### Changed
 - att_db_util: added security requirement arguments to characteristic creators
+- SM: use btstack_crypto for cryptographpic functions
 
 ### Fixed
-- hci: fix buffer overrun in gap_inquiry_explode
+- HFP: fix answer call command
+- HCI: fix buffer overrun in gap_inquiry_explode
+- SDP: free service record item on sdp_unregister_service
 
 ## Changes March 2018
 

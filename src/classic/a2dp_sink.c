@@ -157,7 +157,6 @@ void a2dp_sink_register_media_handler(void (*callback)(uint8_t local_seid, uint8
 
 void a2dp_sink_init(void){
     avdtp_sink_init(&a2dp_sink_context);
-    l2cap_register_service(&packet_handler, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, LEVEL_0);
 }
 
 uint8_t a2dp_sink_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, 
@@ -328,6 +327,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             cid = avdtp_subevent_signaling_accept_get_avdtp_cid(packet);
             loc_seid = avdtp_subevent_signaling_accept_get_local_seid(packet);
             a2dp_emit_cmd_rejected(a2dp_sink_context.a2dp_callback, packet, size);
+            app_state = A2DP_IDLE;
             break;
         case AVDTP_SUBEVENT_STREAMING_CONNECTION_RELEASED:
             cid = avdtp_subevent_streaming_connection_released_get_avdtp_cid(packet);

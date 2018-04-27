@@ -48,11 +48,6 @@ script_path = os.path.abspath(os.path.dirname(sys.argv[0])) + '/../'
 # get btstack root
 btstack_root = script_path + '../../'
 
-## pick correct init script based on your hardware
-# - init script for ATWILC300 SHIELD
-
-subprocess.call("make -C ../../chipset/atwilc3000", shell=True)
-
 # path to examples
 examples_embedded = btstack_root + 'example/'
 
@@ -111,7 +106,7 @@ for file in example_files:
                     if len(gatt_h):
                         fout.write("all: %s.h wilc3000_ble_firmware.h\n" % example)
                     else:
-                        fout.write("all: le_counter.h wilc3000_ble_firmware.h\n")
+                        fout.write("all: wilc3000_ble_firmware.h\n")
                     continue
                 fout.write(line)
 

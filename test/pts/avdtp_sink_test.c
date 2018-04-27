@@ -124,7 +124,7 @@ typedef struct {
 
 // mac 2011:    static const char * device_addr_string = "04:0C:CE:E4:85:D3";
 // pts:         
-static const char * device_addr_string = "00:1B:DC:08:0A:A5";
+static const char * device_addr_string = "00:1B:DC:07:32:EF";
 // mac 2013:    static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:  static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
 // minijambox:  static const char * device_addr_string = "00:21:3C:AC:F7:38";
@@ -609,6 +609,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:
             printf("Received SBC codec capabilities\n");
+
             sbc_capability.sampling_frequency_bitmap = avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(packet);
             sbc_capability.channel_mode_bitmap = avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(packet);
             sbc_capability.block_length_bitmap = avdtp_subevent_signaling_media_codec_sbc_capability_get_block_length_bitmap(packet);
@@ -632,6 +633,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             sbc_configuration.frames_per_buffer = sbc_configuration.subbands * sbc_configuration.block_length;
             dump_sbc_configuration(sbc_configuration);
             
+            avdtp_sink_delay_report(avdtp_cid, remote_seid, 100);
             media_processing_close();
             media_processing_init(sbc_configuration);
             break;
@@ -704,9 +706,12 @@ static uint8_t media_sbc_codec_configuration[] = {
 }; 
 
 static uint8_t media_sbc_codec_reconfiguration[] = {
-    (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
-    (AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_SNR,
-    2, 53
+    // (AVDTP_SBC_44100 << 4) | AVDTP_SBC_STEREO,
+    // (AVDTP_SBC_BLOCK_LENGTH_16 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_SNR,
+    // 32, 32
+    (AVDTP_SBC_44100 << 4) | AVDTP_SBC_MONO,
+    (AVDTP_SBC_BLOCK_LENGTH_8 << 4) | (AVDTP_SBC_SUBBANDS_8 << 2) | AVDTP_SBC_ALLOCATION_METHOD_LOUDNESS,
+    32, 32 
 }; 
 
 #ifdef HAVE_BTSTACK_STDIN
@@ -726,6 +731,7 @@ static void show_usage(void){
     printf("A      - abort stream with %d\n", remote_seid);
     printf("P      - suspend (pause) stream with %d\n", remote_seid);
     printf("S      - stop (release) stream with %d\n", remote_seid);
+    printf("D      - send delay report");
     printf("C      - disconnect\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -771,6 +777,7 @@ static void stdin_process(char cmd){
             break;
         case 'R':
             printf("Reconfigure stream endpoint with seid %d\n", remote_seid);
+            remote_configuration_bitmap = 0;
             remote_configuration_bitmap = store_bit16(remote_configuration_bitmap, AVDTP_MEDIA_CODEC, 1);
             remote_configuration.media_codec.media_type = AVDTP_AUDIO;
             remote_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
@@ -798,7 +805,10 @@ static void stdin_process(char cmd){
             printf("Suspend stream between local %d and remote %d seid\n", local_seid, remote_seid);
             status = avdtp_sink_suspend(avdtp_cid, local_seid);
             break;
-
+        case 'D':
+            printf("Send delay report between local %d and remote %d seid\n", local_seid, remote_seid);
+            status = avdtp_sink_delay_report(avdtp_cid, remote_seid, 100);
+            break;
         case '\n':
         case '\r':
             is_cmd_triggered_localy = 0;

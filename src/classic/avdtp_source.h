@@ -152,8 +152,6 @@ uint8_t avdtp_source_suspend(uint16_t avdtp_cid, uint8_t local_seid);
 
 avdtp_stream_endpoint_t * avdtp_source_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type);
 
-uint8_t avdtp_source_remote_seps_num(uint16_t avdtp_cid);
-avdtp_sep_t * avdtp_source_remote_sep(uint16_t avdtp_cid, uint8_t index);
 /* API_END */
 
 #if defined __cplusplus

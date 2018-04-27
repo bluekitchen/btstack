@@ -1708,7 +1708,6 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             hci_stack->substate = HCI_INIT_LE_SET_EVENT_MASK;
             return;
 
-
 #ifdef ENABLE_LE_DATA_LENGTH_EXTENSION
         case HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED:
             log_info("Supported commands %x", hci_stack->local_supported_commands[0] & 0x30);
@@ -1717,7 +1716,6 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
                 return;
             }
             // explicit fall through to reduce repetitions
-#endif
 
 #ifdef ENABLE_LE_CENTRAL
             hci_stack->substate = HCI_INIT_READ_WHITE_LIST_SIZE;
@@ -1725,7 +1723,9 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             hci_init_done();
 #endif
             return;
-#endif
+#endif  /* ENABLE_LE_DATA_LENGTH_EXTENSION */
+
+#endif  /* ENABLE_BLE */
             
 #ifdef ENABLE_SCO_OVER_HCI
         case HCI_INIT_W4_WRITE_SCAN_ENABLE:
@@ -1768,11 +1768,14 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             return;
 #endif /* ENABLE_SCO_OVER_HCI */
 
+// avoid compile error due to duplicate cases: HCI_INIT_W4_BCM_WRITE_SCO_PCM_INT == HCI_INIT_DONE-1
+#if defined(ENABLE_BLE) || defined(ENABLE_LE_DATA_LENGTH_EXTENSION) || defined(ENABLE_LE_CENTRAL)
         // Response to command before init done state -> init done
         case (HCI_INIT_DONE-1):
             hci_init_done();
             return;
-
+#endif
+            
         default:
             break;
     }
@@ -4698,13 +4701,13 @@ uint16_t hci_get_manufacturer(void){
     return hci_stack->manufacturer;
 }
 
+#ifdef ENABLE_BLE
+
 static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handle){
     hci_connection_t * hci_con = hci_connection_for_handle(con_handle);
     if (!hci_con) return NULL;
     return &hci_con->sm_connection;
 }
-
-#ifdef ENABLE_BLE
 
 // extracted from sm.c to allow enabling of l2cap le data channels without adding sm.c to the build
 // without sm.c default values from create_connection_for_bd_addr_and_type() resulg in non-encrypted, not-authenticated

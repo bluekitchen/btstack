@@ -152,6 +152,7 @@ void sdp_unregister_service(uint32_t service_record_handle){
     service_record_item_t * record_item = sdp_get_record_item_for_handle(service_record_handle);
     if (!record_item) return;
     btstack_linked_list_remove(&sdp_service_records, (btstack_linked_item_t *) record_item);
+    btstack_memory_service_record_item_free(record_item);
 }
 
 // PDU

@@ -1,5 +1,6 @@
 obj-y +=  \
 	ad_parser.o \
+	btstack_crypto.o \
 	btstack_linked_list.o \
 	btstack_memory.o \
 	btstack_memory_pool.o \

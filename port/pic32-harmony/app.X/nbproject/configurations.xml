@@ -278,6 +278,7 @@
           <itemPath>../../../src/btstack_slip.c</itemPath>
           <itemPath>../../../src/ad_parser.c</itemPath>
           <itemPath>../../../src/btstack_tlv.c</itemPath>
+          <itemPath>../../../src/btstack_crypto.c</itemPath>
         </logicalFolder>
       </logicalFolder>
       <logicalFolder name="f2" displayName="framework" projectFiles="true">

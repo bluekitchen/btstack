@@ -1212,6 +1212,7 @@ uint16_t l2cap_max_mtu(void){
     return HCI_ACL_PAYLOAD_SIZE - L2CAP_HEADER_SIZE;
 }
 
+#ifdef ENABLE_BLE
 uint16_t l2cap_max_le_mtu(void){
     if (l2cap_le_custom_max_mtu != 0) return l2cap_le_custom_max_mtu;
     return l2cap_max_mtu();
@@ -1222,6 +1223,7 @@ void l2cap_set_max_le_mtu(uint16_t max_mtu){
         l2cap_le_custom_max_mtu = max_mtu;
     }
 }
+#endif
 
 #ifdef ENABLE_CLASSIC
 
@@ -1497,6 +1499,7 @@ static void l2cap_run(void){
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
         // send s-frame to acknowledge received packets
+        if (channel->con_handle == HCI_CON_HANDLE_INVALID) continue;
         if (!hci_can_send_acl_packet_now(channel->con_handle)) continue;
 
         if (channel->tx_send_index != channel->tx_write_index){
@@ -1785,7 +1788,7 @@ static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t pac
 
     // 
     channel->local_cid = l2cap_next_local_cid();
-    channel->con_handle = 0;
+    channel->con_handle = HCI_CON_HANDLE_INVALID;
 
     // set initial state
     channel->state = L2CAP_STATE_WILL_SEND_CREATE_CONNECTION;
@@ -3135,7 +3138,8 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                             case L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT:
                                 log_info("L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT");
                                 l2cap_ertm_process_req_seq(l2cap_channel, req_seq);
-                                // rsetart transmittion from last unacknowledted packet (earlier packets already freed in l2cap_ertm_process_req_seq)
+                                // restart transmittion from last unacknowledted packet (earlier packets already freed in l2cap_ertm_process_req_seq)
+                                l2cap_channel->unacked_frames = 0;
                                 l2cap_channel->tx_send_index = l2cap_channel->tx_read_index;
                                 break;
                             case L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY:

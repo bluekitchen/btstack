@@ -1,17 +1,6 @@
 # Makefile for libusb based PTS tests
 BTSTACK_ROOT = ../..
 
-
-CLASSIC += \
-	btstack_link_key_db_memory.c   \
-	sdp_util.c	                \
-	spp_server.c  				\
-	rfcomm.c	                \
-	bnep.c	                    \
-	sdp_server.c			    \
-	device_id_server.c          \
-
-
 CORE += \
 	btstack_memory.c            \
 	btstack_linked_list.c	    \
@@ -25,6 +14,7 @@ CORE += \
 	
 COMMON += \
 	hci.c			            \
+	device_id_server.c          \
 	ad_parser.c                 \
 	hci_cmd.c		            \
 	hci_dump.c		            \
@@ -50,6 +40,8 @@ ATT	+= \
 GATT_SERVER += \
 	att_db.c 				 	    \
 	att_server.c        	    \
+	battery_service_server.c     \
+	device_information_service_server.c  \
 
 GATT_CLIENT += \
 	gatt_client.c        	    \
@@ -106,6 +98,7 @@ CFLAGS += -I${BTSTACK_ROOT}/3rd-party/tinydir
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble
+VPATH += ${BTSTACK_ROOT}/src/gatt-service
 VPATH += ${BTSTACK_ROOT}/src/ble/mesh
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/platform/posix
@@ -128,23 +121,21 @@ ATT_OBJ     = $(ATT:.c=.o)
 SM_OBJ = $(SM:.c=.o) $(MICROECC:.c=.o)
 GATT_CLIENT_OBJ = $(GATT_CLIENT:.c=.o)
 GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
-CLASSIC_OBJ  = $(CLASSIC:.c=.o) 
 SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
 SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 AVDTP_OBJ  = $(AVDTP:.c=.o)
 HXCMOD_PLAYER_OBJ = ${HXCMOD_PLAYER:.c=.o}
 
 EXAMPLES  = iopt ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback le_data_channel
-EXAMPLES += avdtp_source_test avdtp_sink_test le_data_channel avrcp_controller_test sm_test
-# avrcp_target_test
+EXAMPLES += avdtp_source_test avdtp_sink_test le_data_channel avrcp_controller_test sm_test avrcp_target_test gatt_profiles
 
 all: ${EXAMPLES}
 
 # compile .gatt descriptions
-# avrcp_target_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_ENCODER_OBJ} ${SM_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} avrcp.o avrcp_target.o avrcp_target_test.c
-# 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+avrcp_target_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_ENCODER_OBJ} ${SM_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} sdp_client.o avrcp.o avrcp_media_item_iterator.o avrcp.o avrcp_target.o avrcp_browsing_target.o btstack_stdin_pts.o  avrcp_target_test.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-avrcp_controller_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} sdp_client.o avrcp.o avrcp_media_item_iterator.o avrcp_controller.o avrcp_browsing_controller.o avrcp_controller_test.o
+avrcp_controller_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} sdp_client.o avrcp.o avrcp_media_item_iterator.o avrcp_controller.o avrcp_browsing_controller.o btstack_stdin_pts.o avrcp_controller_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 avdtp_sink_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_DECODER_OBJ} ${SM_OBJ} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} avdtp_sink_test.o
@@ -164,6 +155,9 @@ ble_peripheral_test: ble_peripheral_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} 
 
 ble_central_test: ble_central_test.h ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ad_parser.o ble_central_test.c
 	${CC} $(filter-out ble_central_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+gatt_profiles.h: gatt_profiles.gatt
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
 le_data_channel: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${ATT_OBJ} ad_parser.o le_data_channel.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
@@ -191,6 +185,12 @@ iopt: ${CORE_OBJ} ${COMMON_OBJ} pan.o hsp_ag.o hsp_hs.o hfp_ag.o hfp_hf.o hfp_gs
 
 sm_test: sm_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ}  ${SM_OBJ} sm_test.o
 	${CC} $(filter-out sm_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+gatt_profiles.h: gatt_profiles.gatt
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+
+gatt_profiles: gatt_profiles.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} gatt_profiles.o
+	${CC} $(filter-out gatt_profiles.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 myclean:
 	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc ${BTSTACK_ROOT}/port/libusb/*.o ${BTSTACK_ROOT}/src/*.o ${BTSTACK_ROOT}/src/classic/*.o ${BTSTACK_ROOT}/src/ble/*.o

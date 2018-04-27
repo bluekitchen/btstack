@@ -70,15 +70,33 @@ const char * avdtp_si2str(uint16_t index){
     return avdtp_si_name[index];
 }
 
-void avdtp_initialize_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint){
+void avdtp_reset_stream_endpoint(avdtp_stream_endpoint_t * stream_endpoint){
+    stream_endpoint->media_con_handle = 0;
+    stream_endpoint->l2cap_media_cid = 0;
+    stream_endpoint->l2cap_reporting_cid = 0;
+    stream_endpoint->l2cap_recovery_cid = 0;
+
     stream_endpoint->connection = NULL;
     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_IDLE;
     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE;
     stream_endpoint->initiator_config_state = AVDTP_INITIATOR_STREAM_CONFIG_IDLE;
-    stream_endpoint->remote_sep_index = AVDTP_INVALID_SEP_INDEX;
-    stream_endpoint->media_disconnect = 0;
+
     stream_endpoint->sep.in_use = 0;
-    stream_endpoint->remote_sep_index = 0;
+    memset(&stream_endpoint->remote_sep, 0, sizeof(avdtp_sep_t));
+    // memset(&stream_endpoint->remote_capabilities, 0, sizeof(avdtp_capabilities_t));
+    // memset(&stream_endpoint->remote_configuration, 0, sizeof(avdtp_capabilities_t));
+    
+    stream_endpoint->remote_capabilities_bitmap = 0;
+    stream_endpoint->remote_configuration_bitmap = 0;
+
+    stream_endpoint->media_disconnect = 0;
+    stream_endpoint->media_connect = 0;
+    stream_endpoint->start_stream = 0;
+    stream_endpoint->stop_stream = 0;
+    stream_endpoint->send_stream = 0;
+    stream_endpoint->abort_stream = 0;
+    stream_endpoint->suspend_stream = 0;
+    stream_endpoint->sequence_number = 0;
 }
 
 avdtp_stream_endpoint_t * avdtp_stream_endpoint_for_seid(uint16_t seid, avdtp_context_t * context){
@@ -175,12 +193,8 @@ avdtp_stream_endpoint_t * avdtp_stream_endpoint_associated_with_acp_seid(uint16_
     btstack_linked_list_iterator_init(&it, &context->stream_endpoints);
     while (btstack_linked_list_iterator_has_next(&it)){
         avdtp_stream_endpoint_t * stream_endpoint = (avdtp_stream_endpoint_t *)btstack_linked_list_iterator_next(&it);
-
-        if (stream_endpoint->remote_sep_index != AVDTP_INVALID_SEP_INDEX){
-            if (!stream_endpoint->connection) continue;
-            if (stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].seid == acp_seid){
-                return stream_endpoint;
-            }
+        if (stream_endpoint->remote_sep.seid == acp_seid){
+            return stream_endpoint;
         }
     }
     return NULL;
@@ -476,7 +490,7 @@ void avdtp_prepare_capabilities(avdtp_signaling_packet_t * signaling_packet, uin
     
     for (i = 1; i < 9; i++){
         int registered_category = get_bit16(registered_service_categories, i);
-        if (!registered_category && (identifier == AVDTP_SI_SET_CONFIGURATION || identifier == AVDTP_SI_RECONFIGURE)){
+        if (!registered_category && (identifier == AVDTP_SI_SET_CONFIGURATION)){
             // TODO: introduce bitmap of mandatory categories
             if (i == 1){
                 registered_category = 1;
@@ -488,7 +502,6 @@ void avdtp_prepare_capabilities(avdtp_signaling_packet_t * signaling_packet, uin
             signaling_packet->size += avdtp_pack_service_capabilities(signaling_packet->command+signaling_packet->size, sizeof(signaling_packet->command)-signaling_packet->size, capabilities, (avdtp_service_category_t)i, pack_all_capabilities);
         }
     }
-    
     signaling_packet->signal_identifier = (avdtp_signal_identifier_t)identifier;
     signaling_packet->transaction_label = transaction_label;
 }
@@ -618,6 +631,19 @@ void avdtp_signaling_emit_sep(btstack_packet_handler_t callback, uint16_t avdtp_
     event[pos++] = sep.type;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
+
+void avdtp_signaling_emit_sep_done(btstack_packet_handler_t callback, uint16_t avdtp_cid){
+    if (!callback) return;
+    uint8_t event[5];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_AVDTP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = AVDTP_SUBEVENT_SIGNALING_SEP_DICOVERY_DONE;
+    little_endian_store_16(event, pos, avdtp_cid);
+    pos += 2;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 
 void avdtp_signaling_emit_accept(btstack_packet_handler_t callback, uint16_t avdtp_cid, uint8_t local_seid, avdtp_signal_identifier_t identifier){
     if (!callback) return;
@@ -1024,32 +1050,6 @@ uint8_t avdtp_request_can_send_now_self(avdtp_connection_t * connection, uint16_
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t avdtp_get_index_of_remote_stream_endpoint_with_seid(avdtp_stream_endpoint_t * stream_endpoint, uint16_t seid){
-    if (!stream_endpoint->connection) return AVDTP_INVALID_SEP_INDEX;
-    if (stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].seid == seid){
-        return stream_endpoint->remote_sep_index;
-    }
-    int i;
-    for (i=0; i < stream_endpoint->connection->remote_seps_num; i++){
-        if (stream_endpoint->connection->remote_seps[i].seid == seid){
-            return i;
-        }
-    }
-    return AVDTP_INVALID_SEP_INDEX;
-}
-
-uint8_t avdtp_find_remote_sep(avdtp_connection_t * connection, uint8_t remote_seid){
-    if (!connection) return AVDTP_INVALID_SEP_INDEX;    
-    int i;
-    for (i = 0; i < connection->remote_seps_num; i++){
-        if (connection->remote_seps[i].seid == remote_seid){
-            return i;
-        }
-    }
-    return AVDTP_INVALID_SEP_INDEX;
-}
-
-
 uint8_t avdtp_local_seid(avdtp_stream_endpoint_t * stream_endpoint){
     if (!stream_endpoint) return 0;
     return stream_endpoint->sep.seid;
@@ -1057,9 +1057,8 @@ uint8_t avdtp_local_seid(avdtp_stream_endpoint_t * stream_endpoint){
 }
 
 uint8_t avdtp_remote_seid(avdtp_stream_endpoint_t * stream_endpoint){
-    if (!stream_endpoint) return 0;
-    if (!stream_endpoint->connection) return 0;
-    return stream_endpoint->connection->remote_seps[stream_endpoint->remote_sep_index].seid;
+    if (!stream_endpoint) return AVDTP_INVALID_SEP_SEID;
+    return stream_endpoint->remote_sep.seid;
 }
 
 void a2dp_streaming_emit_connection_established(btstack_packet_handler_t callback, uint16_t cid, bd_addr_t addr, uint8_t local_seid, uint8_t remote_seid, uint8_t status){

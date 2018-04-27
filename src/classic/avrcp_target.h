@@ -85,8 +85,13 @@ void avrcp_target_set_unit_info(uint16_t avrcp_cid, avrcp_subunit_type_t unit_ty
 void avrcp_target_set_subunit_info(uint16_t avrcp_cid, avrcp_subunit_type_t subunit_type, const uint8_t * subunit_info_data, uint16_t subunit_info_data_size);
 
 uint8_t avrcp_target_playing_content_changed(uint16_t avrcp_cid);
+uint8_t avrcp_target_addressed_player_changed(uint16_t avrcp_cid, uint16_t player_id, uint16_t uid_counter);
+
 uint8_t avrcp_target_battery_status_changed(uint16_t avrcp_cid, avrcp_battery_status_t battery_status);
 uint8_t avrcp_target_volume_changed(uint16_t avrcp_cid, uint8_t volume_percentage);
+uint8_t avrcp_target_track_changed(uint16_t avrcp_cid, uint8_t * trackID);
+
+// uint8_t avrcp_target_trigger_notification(uint16_t avrcp_cid, avrcp_notification_event_id_t event_id);
 
 
 uint8_t avrcp_target_operation_rejected(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand);
@@ -94,6 +99,10 @@ uint8_t avrcp_target_operation_accepted(uint16_t avrcp_cid, avrcp_operation_id_t
 uint8_t avrcp_target_operation_not_implemented(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint8_t operands_length, uint8_t operand);
 
 /* API_END */
+
+ // Used by AVRCP target and AVRCP browsing target
+extern avrcp_context_t avrcp_target_context;
+
 #if defined __cplusplus
 }
 #endif

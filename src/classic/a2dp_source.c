@@ -49,6 +49,7 @@
 #include "classic/avdtp_source.h"
 #include "classic/a2dp_source.h"
 
+#define AVDTP_MAX_SEP_NUM 10
 #define AVDTP_MEDIA_PAYLOAD_HEADER_SIZE 12
 
 static const char * default_a2dp_source_service_name = "BTstack A2DP Source Service";
@@ -57,6 +58,8 @@ static avdtp_context_t a2dp_source_context;
 
 static a2dp_state_t app_state = A2DP_IDLE;
 static avdtp_stream_endpoint_context_t sc;
+static avdtp_sep_t remote_seps[AVDTP_MAX_SEP_NUM];
+static int remote_seps_index = 0;
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -227,12 +230,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             sc.active_remote_sep = NULL;
             sc.active_remote_sep_index = 0;
             app_state = A2DP_W2_DISCOVER_SEPS;
+            remote_seps_index = 0;
+            memset(remote_seps, 0, sizeof(avdtp_sep_t) * AVDTP_MAX_SEP_NUM);
             a2dp_signaling_emit_connection_established(a2dp_source_context.a2dp_callback, cid, sc.remote_addr, status);
             avdtp_source_discover_stream_endpoints(cid);
             break;
         }
-        case AVDTP_SUBEVENT_SIGNALING_SEP_FOUND:
-            break;
 
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CAPABILITY:{
             log_info("A2DP received SBC capability.");
@@ -327,6 +330,21 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             a2dp_streaming_emit_connection_established(a2dp_source_context.a2dp_callback, cid, address, local_seid, remote_seid, 0);
             break;
 
+        case AVDTP_SUBEVENT_SIGNALING_SEP_FOUND:{
+            avdtp_sep_t sep;
+            sep.seid = avdtp_subevent_signaling_sep_found_get_remote_seid(packet);;
+            sep.in_use = avdtp_subevent_signaling_sep_found_get_in_use(packet);
+            sep.media_type = avdtp_subevent_signaling_sep_found_get_media_type(packet);
+            sep.type = avdtp_subevent_signaling_sep_found_get_sep_type(packet);
+            log_info("Found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)", sep.seid, sep.in_use, sep.media_type, sep.type);
+            remote_seps[remote_seps_index++] = sep;
+            break;
+        }
+        case AVDTP_SUBEVENT_SIGNALING_SEP_DICOVERY_DONE:
+            app_state = A2DP_W2_GET_CAPABILITIES;
+            sc.active_remote_sep_index = 0;
+            break;
+
         case AVDTP_SUBEVENT_SIGNALING_ACCEPT:
             // TODO check cid
             signal_identifier = avdtp_subevent_signaling_accept_get_signal_identifier(packet);
@@ -334,17 +352,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             log_info("A2DP Accepted %d, state %d", signal_identifier, app_state);
             
             switch (app_state){
-                case A2DP_W2_DISCOVER_SEPS:
                 case A2DP_W2_GET_CAPABILITIES:
-                case A2DP_W2_GET_ALL_CAPABILITIES:
-                    app_state = A2DP_W2_GET_ALL_CAPABILITIES;
-                    sc.active_remote_sep = avdtp_source_remote_sep(cid, sc.active_remote_sep_index++);
-                    if (!sc.active_remote_sep) {
-                        app_state = A2DP_IDLE; 
-                        a2dp_streaming_emit_connection_established(a2dp_source_context.a2dp_callback, cid, sc.remote_addr, 0, 0, AVDTP_SEID_DOES_NOT_EXIST);
-                        break;
+                    if (sc.active_remote_sep_index < remote_seps_index){
+                        sc.active_remote_sep = &remote_seps[sc.active_remote_sep_index++];
+                        avdtp_source_get_capabilities(cid, sc.active_remote_sep->seid);
                     }
-                    avdtp_source_get_capabilities(cid, sc.active_remote_sep->seid);
                     break;
                 case A2DP_W2_SET_CONFIGURATION:{
                     if (!sc.local_stream_endpoint) return;
@@ -430,7 +442,6 @@ void a2dp_source_register_packet_handler(btstack_packet_handler_t callback){
 
 void a2dp_source_init(void){
     avdtp_source_init(&a2dp_source_context);
-    l2cap_register_service(&packet_handler, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, LEVEL_0);
 }
 
 avdtp_stream_endpoint_t * a2dp_source_create_stream_endpoint(avdtp_media_type_t media_type, avdtp_media_codec_type_t media_codec_type, 

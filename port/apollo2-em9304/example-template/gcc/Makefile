@@ -105,34 +105,19 @@ VPATH += ${AM_SoftwareRoot}/third_party/btstack/src
 VPATH += ${AM_SoftwareRoot}/third_party/btstack/src/ble
 VPATH += ${AM_SoftwareRoot}/third_party/btstack/src/ble/gatt-service
 
-SRC += ad_parser.c
-SRC += ancs_client.c
-SRC += att_db.c
-SRC += att_dispatch.c
-SRC += att_server.c
-SRC += battery_service_server.c
 SRC += btstack_em9304_spi_embedded.c
-SRC += btstack_linked_list.c
-SRC += btstack_memory.c
-SRC += btstack_memory_pool.c
 SRC += btstack_port.c
-SRC += btstack_ring_buffer.c
-SRC += btstack_run_loop.c
 SRC += btstack_run_loop_embedded.c
-SRC += btstack_tlv.c
 SRC += btstack_uart_block_embedded.c
-SRC += btstack_util.c
-SRC += device_information_service_server.c
-SRC += gatt_client.c
-SRC += hci.c
-SRC += hci_cmd.c
-SRC += hci_dump.c
-SRC += hci_transport_em9304_spi.c
-SRC += l2cap.c
-SRC += l2cap_signaling.c
-SRC += le_device_db_memory.c
-SRC += sm.c
 SRC += uECC.c
+
+-include ${AM_SoftwareRoot}/third_party/btstack/src/Makefile.inc
+-include ${AM_SoftwareRoot}/third_party/btstack/src/ble/Makefile.inc
+-include ${AM_SoftwareRoot}/third_party/btstack/src/ble/gatt-service/Makefile.inc
+
+SRC += $(SRC_FILES)
+SRC += $(filter-out att_db_util.c le_device_db_tlv.c,$(SRC_BLE_FILES))
+SRC += $(SRC_BLE_GATT_SERVICE_FILES)
 
 SRC += $(TARGET).c
 

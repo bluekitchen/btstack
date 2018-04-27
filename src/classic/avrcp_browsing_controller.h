@@ -58,7 +58,8 @@ typedef enum {
 	AVRCP_BROWSING_MEDIA_PLAYER_ITEM = 0x01,
 	AVRCP_BROWSING_FOLDER_ITEM,
 	AVRCP_BROWSING_MEDIA_ELEMENT_ITEM,
-	AVRCP_BROWSING_MEDIA_ROOT_FOLDER
+	AVRCP_BROWSING_MEDIA_ROOT_FOLDER,
+	AVRCP_BROWSING_MEDIA_ELEMENT_ITEM_ATTRIBUTE
 } avrcp_browsing_item_type_t;
 
 typedef enum {
@@ -127,14 +128,14 @@ uint8_t avrcp_browsing_controller_connect(bd_addr_t bd_addr, uint8_t * ertm_buff
  * @param ertm_config
  * @returns status
  */
-uint8_t avrcp_avrcp_browsing_configure_incoming_connection(uint16_t avrcp_browsing_cid, uint8_t * ertm_buffer, uint32_t size, l2cap_ertm_config_t * ertm_config);
+uint8_t avrcp_browsing_controller_configure_incoming_connection(uint16_t avrcp_browsing_cid, uint8_t * ertm_buffer, uint32_t size, l2cap_ertm_config_t * ertm_config);
 
 /**
  * @brief Decline incoming connection.
  * @param avrcp_browsing_cid
  * @returns status
  */
-uint8_t avrcp_avrcp_browsing_decline_incoming_connection(uint16_t avrcp_browsing_cid);
+uint8_t avrcp_browsing_controller_decline_incoming_connection(uint16_t avrcp_browsing_cid);
 
 
 /**
@@ -188,20 +189,41 @@ uint8_t avrcp_browsing_controller_browse_now_playing_list(uint16_t avrcp_browsin
 uint8_t avrcp_browsing_controller_set_browsed_player(uint16_t avrcp_browsing_cid, uint16_t browsed_player_id);
 
 /** 
- * @brief Set addressed player.  
+ * @brief Get total num attributes
  * @param avrcp_browsing_cid
- * @param addressed_player_id
+ * @param scope 
  */
-uint8_t avrcp_browsing_controller_set_addressed_player(uint16_t avrcp_browsing_cid, uint16_t addressed_player_id);
+uint8_t avrcp_browsing_controller_get_total_nr_items_for_scope(uint16_t avrcp_browsing_cid, avrcp_browsing_scope_t scope);
 
 /**
  * @brief Navigate one level up or down in thhe virtual filesystem. Requires that s browsed player is set.
+ * @param avrcp_browsing_cid
  * @param direction     0-folder up, 1-folder down    
  * @param folder_uid    8 bytes long
  **/
 uint8_t avrcp_browsing_controller_change_path(uint16_t avrcp_browsing_cid, uint8_t direction, uint8_t * folder_uid);
 uint8_t avrcp_browsing_controller_go_up_one_level(uint16_t avrcp_browsing_cid);
 uint8_t avrcp_browsing_controller_go_down_one_level(uint16_t avrcp_browsing_cid, uint8_t * folder_uid);
+
+
+/**
+ * @brief Retrives metadata information (title, artist, album, ...) about a media element with given uid. 
+ * @param avrcp_browsing_cid
+ * @param uid 			 media element uid 
+ * @param uid_counter    Used to detect change to the media database on target device. A TG device that supports the UID Counter shall update the value of the counter on each change to the media database.
+ * @param attr_bitmap    0x00000000 - retrieve all, chek avrcp_media_attribute_id_t in avrcp.h for detailed bit position description.
+ * @param scope          check avrcp_browsing_scope_t in avrcp.h
+ **/
+uint8_t avrcp_browsing_controller_get_item_attributes_for_scope(uint16_t avrcp_browsing_cid, uint8_t * uid, uint16_t uid_counter, uint32_t attr_bitmap, avrcp_browsing_scope_t scope);
+
+/**
+ * @brief Searches are performed from the current folder in the Browsed Players virtual filesystem. The search applies to the current folder and all folders below that.
+ * @param avrcp_browsing_cid
+ * @param search_str_len
+ * @param search_str
+ * @return status 
+ **/
+uint8_t avrcp_browsing_controller_search(uint16_t avrcp_browsing_cid, uint16_t search_str_len, char * search_str);
 
 /* API_END */
 

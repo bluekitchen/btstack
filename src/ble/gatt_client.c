@@ -756,19 +756,19 @@ static void trigger_next_query(gatt_client_t * peripheral, uint16_t last_result_
     peripheral->gatt_client_state = next_query_state;
 }
 
-static inline void trigger_next_included_service_query(gatt_client_t * peripheral, uint16_t last_result_handle){
+static void trigger_next_included_service_query(gatt_client_t * peripheral, uint16_t last_result_handle){
     trigger_next_query(peripheral, last_result_handle, P_W2_SEND_INCLUDED_SERVICE_QUERY);
 }
 
-static inline void trigger_next_service_query(gatt_client_t * peripheral, uint16_t last_result_handle){
+static void trigger_next_service_query(gatt_client_t * peripheral, uint16_t last_result_handle){
     trigger_next_query(peripheral, last_result_handle, P_W2_SEND_SERVICE_QUERY);
 }
 
-static inline void trigger_next_service_by_uuid_query(gatt_client_t * peripheral, uint16_t last_result_handle){
+static void trigger_next_service_by_uuid_query(gatt_client_t * peripheral, uint16_t last_result_handle){
     trigger_next_query(peripheral, last_result_handle, P_W2_SEND_SERVICE_WITH_UUID_QUERY);
 }
 
-static inline void trigger_next_characteristic_query(gatt_client_t * peripheral, uint16_t last_result_handle){
+static void trigger_next_characteristic_query(gatt_client_t * peripheral, uint16_t last_result_handle){
     if (is_query_done(peripheral, last_result_handle)){
         // report last characteristic
         characteristic_end_found(peripheral, peripheral->end_group_handle);
@@ -776,15 +776,15 @@ static inline void trigger_next_characteristic_query(gatt_client_t * peripheral,
     trigger_next_query(peripheral, last_result_handle, P_W2_SEND_ALL_CHARACTERISTICS_OF_SERVICE_QUERY);
 }
 
-static inline void trigger_next_characteristic_descriptor_query(gatt_client_t * peripheral, uint16_t last_result_handle){
+static void trigger_next_characteristic_descriptor_query(gatt_client_t * peripheral, uint16_t last_result_handle){
     trigger_next_query(peripheral, last_result_handle, P_W2_SEND_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY);
 }
 
-static inline void trigger_next_read_by_type_query(gatt_client_t * peripheral, uint16_t last_result_handle){
+static void trigger_next_read_by_type_query(gatt_client_t * peripheral, uint16_t last_result_handle){
     trigger_next_query(peripheral, last_result_handle, P_W2_SEND_READ_BY_TYPE_REQUEST);
 }
 
-static inline void trigger_next_prepare_write_query(gatt_client_t * peripheral, gatt_client_state_t next_query_state, gatt_client_state_t done_state){
+static void trigger_next_prepare_write_query(gatt_client_t * peripheral, gatt_client_state_t next_query_state, gatt_client_state_t done_state){
     peripheral->attribute_offset += write_blob_length(peripheral);
     uint16_t next_blob_length =  write_blob_length(peripheral);
     
@@ -795,7 +795,7 @@ static inline void trigger_next_prepare_write_query(gatt_client_t * peripheral, 
     peripheral->gatt_client_state = next_query_state;
 }
 
-static inline void trigger_next_blob_query(gatt_client_t * peripheral, gatt_client_state_t next_query_state, uint16_t received_blob_length){
+static void trigger_next_blob_query(gatt_client_t * peripheral, gatt_client_state_t next_query_state, uint16_t received_blob_length){
     
     uint16_t max_blob_length = peripheral_mtu(peripheral) - 1;
     if (received_blob_length < max_blob_length){

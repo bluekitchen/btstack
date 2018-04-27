@@ -131,7 +131,7 @@ extern "C" {
 #define HFP_EXTENDED_AUDIO_GATEWAY_ERROR "+CME ERROR"
 #define HFP_TRIGGER_CODEC_CONNECTION_SETUP "+BCC"
 #define HFP_CONFIRM_COMMON_CODEC "+BCS"
-#define HFP_CALL_ANSWERED "ATA"
+#define HFP_ANSWER_CALL "ATA"
 #define HFP_HANG_UP_CALL "+CHUP"
 #define HFP_CHANGE_IN_BAND_RING_TONE_SETTING "+BSIR"
 #define HFP_CALL_PHONE_NUMBER "ATD"
@@ -647,11 +647,13 @@ void hfp_set_ag_rfcomm_packet_handler(btstack_packet_handler_t handler);
 
 void hfp_set_hf_callback(btstack_packet_handler_t callback);
 void hfp_set_hf_rfcomm_packet_handler(btstack_packet_handler_t handler);
+void hfp_set_hf_run_for_context(void (*callbcack)(hfp_connection_t * hfp_connection));
 
 void hfp_init(void);
 
 void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t service_uuid, int rfcomm_channel_nr, const char * name);
-void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, hfp_role_t local_role);
+void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, hfp_role_t local_role);
 void hfp_emit_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, uint8_t value);
 void hfp_emit_simple_event(hfp_connection_t * hfp_connection, uint8_t event_subtype);
 void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, const char * value);

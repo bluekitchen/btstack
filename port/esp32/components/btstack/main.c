@@ -364,8 +364,9 @@ int app_main(void){
     // init HCI
     hci_init(transport_get_instance(), NULL);
 
-    // setup TLV ESP32 implementation
+    // setup TLV ESP32 implementation and register with system
     const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_esp32_get_instance();
+    btstack_tlv_set_instance(btstack_tlv_impl, NULL);
 
     // setup Link Key DB using TLV
     const btstack_link_key_db_t * btstack_link_key_db = btstack_link_key_db_tlv_get_instance(btstack_tlv_impl, NULL);
