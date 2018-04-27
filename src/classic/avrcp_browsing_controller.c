@@ -634,8 +634,8 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     // printf("AVRCP_PDU_ID_SET_ADDRESSED_PLAYER \n");
                     break;
                 case AVRCP_PDU_ID_GET_TOTAL_NUMBER_OF_ITEMS:{
-                    uint32_t num_items = big_endian_read_32(packet, pos);
-                    pos += 4;
+                    // uint32_t num_items = big_endian_read_32(packet, pos);
+                    // pos += 4;
                     // printf("TODO: send event, uid_counter %d, num_items %d\n", browsing_connection->uid_counter, num_items);
                     break;
                 }
@@ -686,7 +686,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                 case AVRCP_PDU_ID_SEARCH:{
                     browsing_connection->uid_counter =  big_endian_read_16(packet, pos);
                     pos += 2;
-                    uint32_t num_items = big_endian_read_32(packet, pos);
+                    // uint32_t num_items = big_endian_read_32(packet, pos);
                     // printf("TODO: send as event, search found %d items\n", num_items);
                     break;
                 }

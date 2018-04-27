@@ -370,7 +370,8 @@ static uint8_t avrcp_target_response_not_implemented(avrcp_connection_t * connec
     return ERROR_CODE_SUCCESS;
 }
 
-static uint8_t avrcp_target_response_vendor_dependent_interim(avrcp_connection_t * connection, avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id, avrcp_command_opcode_t opcode, avrcp_pdu_id_t pdu_id, uint8_t event_id, const uint8_t * value, uint16_t value_len){
+static uint8_t avrcp_target_response_vendor_dependent_interim(avrcp_connection_t * connection, avrcp_subunit_type_t subunit_type, avrcp_subunit_id_t subunit_id, 
+    avrcp_command_opcode_t opcode, avrcp_pdu_id_t pdu_id, uint8_t event_id, const uint8_t * value, uint16_t value_len){
     connection->command_type = AVRCP_CTYPE_RESPONSE_INTERIM;
     connection->subunit_type = subunit_type; 
     connection->subunit_id =   subunit_id;
@@ -400,7 +401,7 @@ static uint8_t avrcp_target_response_addressed_player_changed_interim(avrcp_conn
     connection->subunit_type = subunit_type; 
     connection->subunit_id =   subunit_id;
     connection->command_opcode = opcode;
-    // printf("avrcp_target_response_addressed_player_changed_interim \n");
+    
     // company id is 3 bytes long
     int pos = connection->cmd_operands_length;
     connection->cmd_operands[pos++] = pdu_id;
@@ -962,21 +963,16 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     break;
                 }
                 case AVRCP_PDU_ID_SET_ABSOLUTE_VOLUME: {
-                    uint16_t param_length = big_endian_read_16(pdu,2);
-                    if (param_length != 1){
+                    if (length != 1){
                         avrcp_target_response_reject(connection, subunit_type, subunit_id, opcode, pdu_id, AVRCP_STATUS_INVALID_COMMAND);
-                        // printf("param_length is %d != 1 \n", param_length);
                         break;
                     }
 
                     uint8_t absolute_volume = pdu[4];
-                    if (absolute_volume > 0x7F){
-                        avrcp_target_response_reject(connection, subunit_type, subunit_id, opcode, pdu_id, AVRCP_STATUS_INVALID_COMMAND);
-                        // printf("absolute_volume %d  > 127 \n", absolute_volume);
-                        break;
+                    if (absolute_volume < 0x80){
+                        connection->volume_percentage = absolute_volume;
                     }
-                    connection->volume_percentage = absolute_volume;
-                    avrcp_target_response_accept(connection, subunit_type, subunit_id, opcode, pdu_id, absolute_volume);
+                    avrcp_target_response_accept(connection, subunit_type, subunit_id, opcode, pdu_id, connection->volume_percentage);
                     break;
                 }
                 default:
