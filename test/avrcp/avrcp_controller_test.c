@@ -259,19 +259,19 @@ static void stdin_process(char cmd){
             break;
         case 'm':
             printf(" - start fast forward\n");
-            status = avrcp_controller_start_fast_forward(avrcp_cid);
+            status = avrcp_controller_press_and_hold_fast_forward(avrcp_cid);
             break;
         case 'M':
             printf(" - stop fast forward\n");
-            status = avrcp_controller_stop_fast_forward(avrcp_cid);
+            status = avrcp_controller_release_press_and_hold_cmd(avrcp_cid);
             break;
         case 'n':
             printf(" - start rewind\n");
-            status = avrcp_controller_start_rewind(avrcp_cid);
+            status = avrcp_controller_press_and_hold_rewind(avrcp_cid);
             break;
         case 'N':
             printf(" - stop rewind\n");
-            status = avrcp_controller_stop_rewind(avrcp_cid);
+            status = avrcp_controller_release_press_and_hold_cmd(avrcp_cid);
             break;
         case 'o':
             printf(" - forward\n");
