@@ -520,6 +520,7 @@ static uint8_t avrcp_target_unit_info(avrcp_connection_t * connection){
     return ERROR_CODE_SUCCESS;
 }
 
+
 static uint8_t avrcp_target_subunit_info(avrcp_connection_t * connection, uint8_t offset){
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
     if (offset - 4 > connection->subunit_info_data_size) return AVRCP_STATUS_INVALID_PARAMETER;
@@ -768,9 +769,19 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     connection->transaction_label = transport_header >> 4;
     // uint8_t packet_type = (transport_header & 0x0F) >> 2;
     // uint8_t frame_type = (transport_header & 0x03) >> 1;
-    // uint8_t ipid = transport_header & 0x01;
-    // uint8_t byte_value = packet[2];
-    // uint16_t pid = (byte_value << 8) | packet[2];
+
+    uint16_t pid = big_endian_read_16(packet, 1);
+    printf("PID 0x%02x, BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL 0x%02x, header 0x%02x\n",pid,  BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL, transport_header);
+    if (pid != BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL){
+        connection->reject_transport_header = 1;
+        connection->transport_header = (connection->transaction_label << 4) | (AVRCP_SINGLE_PACKET << 2 ) | (AVRCP_RESPONSE_FRAME << 1) | 0;
+
+        printf("reject pid, header 0x%02x\n", connection->transport_header);
+        connection->state = AVCTP_W2_SEND_RESPONSE;
+        avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+        return;
+    }   
+     
     // avrcp_command_type_t ctype = (avrcp_command_type_t) packet[3];
     // uint8_t byte_value = packet[4];
     avrcp_subunit_type_t subunit_type = (avrcp_subunit_type_t) (packet[4] >> 3);
@@ -1105,6 +1116,16 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                     connection = get_avrcp_connection_for_l2cap_signaling_cid(channel, &avrcp_target_context);
                     if (!connection) {
                         log_error("Connection not found\n");
+                        break;
+                    }
+
+                    if (connection->reject_transport_header){
+                        connection->reject_transport_header = 0;
+                        printf("send reject_transport_header \n");
+                        l2cap_reserve_packet_buffer();
+                        uint8_t * out_buffer = l2cap_get_outgoing_buffer();
+                        out_buffer[0] = connection->transport_header;
+                        l2cap_send_prepared(connection->l2cap_signaling_cid, 1);
                         break;
                     }
                     

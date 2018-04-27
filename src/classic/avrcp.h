@@ -396,6 +396,10 @@ typedef struct {
     avctp_connection_state_t state;
     uint8_t wait_to_send;
 
+    // PID check
+    uint8_t reject_transport_header;
+    uint8_t transport_header;
+    
     // command
     uint8_t transaction_label;
     avrcp_command_opcode_t command_opcode;
