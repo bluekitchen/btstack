@@ -146,7 +146,7 @@ static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_h
 
 static void show_usage(void){
     printf("## BAS\n");
-    printf("a - send 50% battery level\n");
+    printf("a - send 50%% battery level\n");
 }
 
 static void stdin_process(char c){
