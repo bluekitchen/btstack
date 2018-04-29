@@ -146,7 +146,8 @@ COMMON = \
     btstack_tlv.o             \
     btstack_tlv_flash_bank.o  \
     btstack_stdin_embedded.o  \
-
+    btstack_crypto.o          \
+    
 CLASSIC = \
     btstack_link_key_db_tlv.o \
     rfcomm.o                  \
