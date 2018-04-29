@@ -1,20 +1,21 @@
 site_name: BTstack Manual v1.0
 site_dir: btstack
 docs_dir: docs_final
+extra_css: ['btstack.css']
 pages:
-- [index.md, Welcome]
-- [quick_start.md, Quick Start]
-- [architecture.md, BTstack Architecture]
-- [how_to.md, How to configure BTstack]
-- [protocols.md, Protocols]
-- [profiles.md, Profiles]
-- [gatt_services.md, Implemented GATT Services]
-- [examples/examples.md, Embedded Examples]
-- [chipsets.md, Chipsets]
-- [porting.md, Porting to Other Platforms]
-- [ports/existing_ports.md, Existing Ports]
-- [integration.md, Integrating with Existing Systems]
-- [appendix/apis.md, APIs]
-- [appendix/events_errors.md, Events and Errors]
-- [appendix/migration.md, Migration to v1.0]
+- 'Welcome': index.md
+- 'Quick Start': quick_start.md
+- 'BTstack Architecture': architecture.md
+- 'How to configure Btstack': how_to.md
+- 'Protocols': protocols.md
+- 'Profiles':  profiles.md
+- 'Implemented GATT Services': gatt_services.md
+- 'Embedded Examples': examples/examples.md
+- 'Chipsets': chipsets.md
+- 'Porting to Other Platforms': porting.md
+- 'Existing Ports': ports/existing_ports.md
+- 'Integrating with Existing Systems': integration.md
+- 'APIs': appendix/apis.md
+- 'Eventts and Errors': appendix/events_errors.md
+- 'Migration to v1.0': appendix/migration.md
 theme: readthedocs

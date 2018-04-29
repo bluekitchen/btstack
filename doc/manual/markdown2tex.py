@@ -62,8 +62,8 @@ def main(argv):
         with open(yml_file, 'r') as yin:
             doc = yaml.load(yin)
             for page in doc["pages"]:
-                md_file = page[0]
-                title = page[1]
+                title   = page.keys()[0]
+                md_file = page.values()[0]
                 with open(docs_folder +"/"+ md_file, 'r') as mdin:
                     aout.write("\n\n#"+ title +"\n\n")
                     for line in mdin:

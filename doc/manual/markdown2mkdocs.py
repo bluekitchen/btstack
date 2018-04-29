@@ -76,8 +76,9 @@ def main(argv):
     with open(yml_file, 'r') as yin:
         doc = yaml.load(yin)
         for page in doc["pages"]:
-            source_file = md_template +"/"+ page[0]
-            dest_file   = md_final +"/"+ page[0]
+            mk_file = page.values()[0]
+            source_file = md_template +"/"+ mk_file
+            dest_file   = md_final +"/"+ mk_file
             print("Processing %s -> %s" % (source_file, dest_file))
             with open(dest_file, 'w') as mdout:
                 with open(source_file, 'r') as mdin:
