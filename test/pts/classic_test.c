@@ -68,10 +68,9 @@
 
 static void show_usage(void);
 
-// static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
-// static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};
-static bd_addr_t remote = {0x00, 0x1b, 0xdc, 0x07, 0x32, 0xef};
-static bd_addr_t remote_rfcomm = {0x00, 0x00, 0x91, 0xE0, 0xD4, 0xC7};
+static bd_addr_t remote;
+static bd_addr_t remote_rfcomm;
+static const char * remote_addr_string = "00:1B:DC:08:E2:72";
 
 static uint8_t rfcomm_channel_nr = 1;
 
@@ -180,6 +179,8 @@ static void continue_remote_names(void){
 }
 
 static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
+    UNUSED(size);
+
     bd_addr_t addr;
     int i;
     int numResponses;
@@ -266,6 +267,9 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
 
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+
+    UNUSED(channel);
+    UNUSED(packet_type);
 
     uint16_t psm;
     uint32_t passkey;
@@ -401,6 +405,10 @@ static void handle_found_service(const char * name, uint8_t port){
 }
 
 static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(packet_type);
+    UNUSED(size);
+
     switch (packet[0]){
         case SDP_EVENT_QUERY_RFCOMM_SERVICE:
             handle_found_service(sdp_event_query_rfcomm_service_get_name(packet),
@@ -492,7 +500,7 @@ static void stdin_process(char c){
         if (c == '\n'){
             printf("\nSending Pin '%s'\n", ui_pin);
             ui_pin[ui_pin_offset] = 0;
-            gap_pin_code_response(remote, ui_pin);
+            gap_pin_code_response(remote, (const char*) ui_pin);
         } else {
             ui_pin[ui_pin_offset++] = c;
         }
@@ -753,7 +761,9 @@ static void sdp_create_dummy_service(uint8_t *service, const char *name){
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
-
+    (void) argv;
+    (void) argc;
+    
     printf("Starting up..\n");
 
     hci_disable_l2cap_timeout_check();
@@ -791,6 +801,10 @@ int btstack_main(int argc, const char * argv[]){
     
     gap_discoverable_control(0);
     gap_connectable_control(0);
+
+    // parse human readable Bluetooth address
+    sscanf_bd_addr(remote_addr_string, remote);
+    sscanf_bd_addr(remote_addr_string, remote_rfcomm);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
