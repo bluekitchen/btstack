@@ -181,13 +181,13 @@ static uint16_t att_db_util_encode_permissions(uint16_t properties, uint8_t read
     if (read_permission & 1){
     	flags |= ATT_PROPERTY_READ_PERMISSION_BIT_0;
     }
-    if (read_permission & 1){
+    if (read_permission & 2){
     	flags |= ATT_PROPERTY_READ_PERMISSION_BIT_1;
     }
     if (write_permission & 1){
     	flags |= ATT_PROPERTY_WRITE_PERMISSION_BIT_0;
     }
-    if (write_permission & 1){
+    if (write_permission & 2){
     	flags |= ATT_PROPERTY_WRITE_PERMISSION_BIT_1;
     }
 	return flags;
