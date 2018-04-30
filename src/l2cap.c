@@ -794,10 +794,12 @@ uint8_t *l2cap_get_outgoing_buffer(void){
     return hci_get_outgoing_packet_buffer() + COMPLETE_L2CAP_HEADER; // 8 bytes
 }
 
+// only for L2CAP Basic Channels
 int l2cap_reserve_packet_buffer(void){
     return hci_reserve_packet_buffer();
 }
 
+// only for L2CAP Basic Channels
 void l2cap_release_packet_buffer(void){
     hci_release_packet_buffer();
 }
@@ -1097,6 +1099,7 @@ static int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_
 }
 
 // assumption - only on Classic connections
+// cannot be used for L2CAP ERTM
 int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     
     if (!hci_is_packet_buffer_reserved()){

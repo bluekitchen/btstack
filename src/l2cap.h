@@ -523,21 +523,25 @@ void l2cap_request_can_send_now_event(uint16_t local_cid);
 
 /** 
  * @brief Reserve outgoing buffer
+ * @note Only for L2CAP Basic Mode Channels
  */
 int  l2cap_reserve_packet_buffer(void);
 
 /** 
  * @brief Get outgoing buffer and prepare data.
+ * @note Only for L2CAP Basic Mode Channels
  */
 uint8_t *l2cap_get_outgoing_buffer(void);
 
 /** 
  * @brief Send L2CAP packet prepared in outgoing buffer to channel
+ * @note Only for L2CAP Basic Mode Channels
  */
 int l2cap_send_prepared(uint16_t local_cid, uint16_t len);
 
 /** 
  * @brief Release outgoing buffer (only needed if l2cap_send_prepared is not called)
+ * @note Only for L2CAP Basic Mode Channels
  */
 void l2cap_release_packet_buffer(void);
 
