@@ -619,8 +619,8 @@ void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
             
             connection = get_avrcp_connection_for_bd_addr(event_addr, context);
             if (!connection){
-                log_error("Failed to alloc AVRCP connection structure");
-                avrcp_emit_connection_established(context->avrcp_callback, connection->avrcp_cid, event_addr, BTSTACK_MEMORY_ALLOC_FAILED);
+                // TODO: validate if this cannot happen. If not,  drop disconnect call
+                log_error("AVRCP connection lookup failed");
                 l2cap_disconnect(local_cid, 0); // reason isn't used
                 break;
             }
