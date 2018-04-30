@@ -235,6 +235,16 @@ uint16_t gatt_server_get_value_handle_for_characteristic_with_uuid16(uint16_t st
 // returns 0 if not found
 uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
 
+
+// returns 1 if service found. only primary service.
+int gatt_server_get_get_handle_range_for_service_with_uuid128(const uint8_t * uuid128, uint16_t * start_handle, uint16_t * end_handle);
+
+// returns 0 if not found
+uint16_t gatt_server_get_value_handle_for_characteristic_with_uuid128(uint16_t start_handle, uint16_t end_handle, const uint8_t * uuid128);
+
+// returns 0 if not found
+uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uuid128(uint16_t start_handle, uint16_t end_handle, const uint8_t * uuid128);
+
 // non-user functionality for att_server
 
 /*
