@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - att_db_util: added security requirement arguments to characteristic creators
 - SM: use btstack_crypto for cryptographpic functions
+- GAP: security level for Classic protocols (asides SDP) raised to 2 (encryption)
 
 ### Fixed
 - HFP: fix answer call command

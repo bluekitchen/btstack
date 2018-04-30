@@ -424,7 +424,7 @@ static void avrcp_browsing_target_packet_handler(uint8_t packet_type, uint16_t c
 
 void avrcp_browsing_target_init(void){
     avrcp_target_context.browsing_packet_handler = avrcp_browsing_target_packet_handler;
-    l2cap_register_service(&avrcp_browsing_target_packet_handler, PSM_AVCTP_BROWSING, 0xffff, LEVEL_0);
+    l2cap_register_service(&avrcp_browsing_target_packet_handler, PSM_AVCTP_BROWSING, 0xffff, LEVEL_2);
 }
 
 void avrcp_browsing_target_register_packet_handler(btstack_packet_handler_t callback){
