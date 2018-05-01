@@ -329,8 +329,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
 void hid_device_init(void){
     memset(hid_device, 0, sizeof(hid_device_t));
     hid_device->cid = 1;
-    l2cap_register_service(packet_handler, PSM_HID_INTERRUPT, 100, LEVEL_0);
-    l2cap_register_service(packet_handler, PSM_HID_CONTROL,   100, LEVEL_0);                                      
+    l2cap_register_service(packet_handler, PSM_HID_INTERRUPT, 100, LEVEL_2);
+    l2cap_register_service(packet_handler, PSM_HID_CONTROL,   100, LEVEL_2);                                      
 }
 
 /**

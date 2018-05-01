@@ -4052,12 +4052,28 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
         return;
     }
     gap_security_level_t current_level = gap_security_level(con_handle);
-    log_info("gap_request_security_level %u, current level %u", requested_level, current_level);
-    if (current_level >= requested_level){
+    log_info("gap_request_security_level requested level %u, planned level %u, current level %u", 
+        requested_level, connection->requested_security_level, current_level);
+
+    // assumption: earlier requested security higher than current level => security request is active
+    if (current_level < connection->requested_security_level){
+        if (connection->requested_security_level < requested_level){
+            // increase requested level as new level is higher
+
+            // TODO: handle re-authentication when done
+
+            connection->requested_security_level = requested_level;
+        }
+        return;
+    }
+
+    // no request active, notify if security sufficient
+    if (requested_level <= current_level){
         hci_emit_security_level(con_handle, current_level);
         return;
     }
 
+    // start pairing to increase security level
     connection->requested_security_level = requested_level;
 
 #if 0
@@ -4077,7 +4093,7 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
     }
 #endif
 
-    // try to authenticate connection
+    // start to authenticate connection
     connection->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
     hci_run();
 }

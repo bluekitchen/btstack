@@ -23,16 +23,16 @@ BTstack is free for non-commercial use. However, for commercial use, <a href="ma
 
 ### Supported Protocols and Profiles
 
-**Protocols:** L2CAP, RFCOMM, SDP, BNEP, ATT, SM (incl. LE Secure Connections).
+**Protocols:** L2CAP (incl. LE Data Channels), RFCOMM, SDP, BNEP, AVDTP, AVCTP, ATT, SM (incl. LE Secure Connections).
 
-**Profiles:** GAP, IOP, HFP, HSP, SPP, PAN, GATT.
+**Profiles:** GAP, IOP, HFP, HSP, SPP, PAN, A2DP, AVRCP, GATT.
 
-**Beta Stage:** A2DP, AVRCP, HID, HOGP.
+**Beta Stage:** HID, HOGP.
 
 **In Development:** BLE Mesh, AVRCP Browsing and more.
 
-It has been qualified with the the Bluetooth SIG for GAP, IOP, HFP, HSP, SPP, PAN profiles and
-GATT, SM of the Bluetooth 4.2 LE Central and Peripheral roles (QD ID 25340). For information on MFi/iAP2 support, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us</a>.
+It has been qualified with the Bluetooth SIG (QDID 110883) for GAP, IOP, HFP, HSP, SPP, PAN, A2DP, AVRCP profiles and
+GATT, SM of the Bluetooth 5 specification. For information on MFi/iAP2 support, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us</a>.
 
 
 ## Evaluation Platforms
@@ -53,6 +53,7 @@ No build Server | [stm32-l053rb-em9304](https://github.com/bluekitchen/btstack/t
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badges/port-wiced-h4-master.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-wiced-h4-master)                           | [wiced-h4](https://github.com/bluekitchen/btstack/tree/master/port/wiced-h4) | Broadcom platforms that support the WICED SDK via H4 UART, e.g. [RedBear Duo](https://redbear.cc/product/wifi-ble/redbear-duo.html) with Broadcom BCM43438 A1 or the [Inventek Systems ISM4334x](https://www.inventeksys.com/products-page/wifi-modules/serial-wifi/ism43341-m4g-l44-cu-embedded-serial-to-wifi-ble-nfc-module/) with Broadcom BCM43340
 No build server | [wiced-h5](https://github.com/bluekitchen/btstack/tree/master/port/wiced-h5) | Broadcom platforms that support the WICED SDK via H5 UART
 
+
 #### Other Platforms:     
 Status             | Port  | Platform
 -------------------| ------|---------
@@ -68,6 +69,7 @@ No build server | [windows-winusb](https://github.com/bluekitchen/btstack/tree/m
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badges/port-mtk-master.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-mtk-master)           | [mtk](https://github.com/bluekitchen/btstack/tree/master/port/mtk) | daemon for rooted Android devices, based on Mediatek MT65xx processor, Java and C client-server API
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badges/port-ios-master.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-ios-master)           | [ios](https://github.com/bluekitchen/btstack/tree/master/port/ios) | daemon for iOS jailbreak devices, C client-server API
 No build server | [freertos](https://github.com/bluekitchen/btstack/tree/master/platform/freertos) | [FreeRTOS](http://www.freertos.org): Run BTstack on a dedicated thread, not thread-safe.
+
 
 ## Supported Chipsets
 

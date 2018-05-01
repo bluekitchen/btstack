@@ -106,7 +106,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     avdtp_packet_handler(packet_type, channel, packet, size, avdtp_sink_context);
 }
 
-// TODO: find out which security level is needed, and replace LEVEL_0 in avdtp_sink_init
 void avdtp_sink_init(avdtp_context_t * avdtp_context){
     if (!avdtp_context){
         log_error("avdtp_source_context is NULL");
@@ -118,7 +117,7 @@ void avdtp_sink_init(avdtp_context_t * avdtp_context){
     avdtp_sink_context->stream_endpoints_id_counter = 0;
     avdtp_sink_context->packet_handler = packet_handler;
 
-    l2cap_register_service(&packet_handler, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, LEVEL_0);
+    l2cap_register_service(&packet_handler, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, LEVEL_2);
 }
 
 avdtp_stream_endpoint_t * avdtp_sink_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type){
