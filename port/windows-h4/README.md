@@ -4,7 +4,29 @@ The Windows-H4 port uses the native run loop and allows to use Bluetooth Control
 
 Make sure to manually reset the Bluetooth Controller before starting any of the examples.
 
+## Toolchain
+
+The port requires a Unix-like toolchain. We successfully used [mingw-w64](https://mingw-w64.org/doku.php) to compile and run the examples. mingw64-w64 is based on [MingW](mingw.org) which has a good summary 'MinGW provides a complete Open Source programming tool set which is suitable for the development of native MS-Windows applications, and which do not depend on any 3rd-party C-Runtime DLLs.'
+
+We've used the Msys2 package available from their [downloads page](https://mingw-w64.org/doku.php/download) on Windows 10, 64-bit and use the MSYS2 MinGW 32-bit start menu item to compile 32-bit binaries that run on both 32/64-bit systems.
+
+IN the MSYS2 shell, you can install git, winpty, and python with pacman:
+
+    $ pacman -S git
+    $ pacman -S winpty
+    $ pacman -S python
+
+## Compilation
+
+With mingw64 installed, just go to the port/windows-winusb directory and run make
+
+    $ cd btstack/port/windows-winusb
+    $ make
+
+## Console Output
+
 When running the examples in the MSYS2 shell, the console input (via btstack_stdin_support) doesn't work. It works in the older MSYS and also the regular CMD.exe environment. Another option is to install WinPTY and then start the example via WinPTY like this:
 
-    $ winpty ./hfp_hf_demo.exe
+    $ winpty ./spp_and_le_counter.exe
+
 
