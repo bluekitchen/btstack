@@ -69,9 +69,11 @@
  */
  
 /* LISTING_START(MainConfiguration): Init L2CAP SM ATT Server */
+#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
 static btstack_timer_source_t att_timer;
 static hci_con_handle_t con_handle;
 static int value_ready;
+#endif
 
 static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
 
@@ -115,12 +117,13 @@ static void example_setup(void){
  *
  * @text The att_invalidate_value handler 'invalidates' the value of the single Characteristic provided in this example
  */
-
+#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
 static void att_invalidate_value(struct btstack_timer_source *ts){
     UNUSED(ts);
     printf("Value got stale\n");
     value_ready = 0;
 } 
+#endif
 
 /*
  * @section att_update_value Handler
@@ -189,6 +192,7 @@ static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t a
             break;
     }
 #else
+    UNUSED(connection_handle);
     // useless code when ENABLE_ATT_DELAYED_READ_RESPONSE is not defined - but avoids built errors
     if (att_handle == ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE){
         printf("ENABLE_ATT_DELAYED_READ_RESPONSE not defined in btstack_config.h, responding right away");
