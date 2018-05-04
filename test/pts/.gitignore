@@ -11,8 +11,13 @@ ble_peripheral_test
 ble_peripheral_test.h
 bnep_test
 classic_test
+gatt_profiles
+gatt_profiles.h
 hfp_ag_test
 hfp_hf_test
+hrp_col_test
+hrp_server_test
+hrp_server_test.h
 hsp_ag_test
 hsp_hs_test
 iopt
@@ -21,9 +26,7 @@ le_data_channel
 profile.h
 sco_loopback
 sco_loopbackiopt
-sm_test.h
-sm_test
 SM_*
+sm_test
+sm_test.h
 TEST_FAIL-*
-gatt_profiles.h
-gatt_profiles
