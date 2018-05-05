@@ -90,6 +90,7 @@ att_db.c \
 att_dispatch.c \
 att_server.c \
 battery_service_server.c \
+btstack_crypto.c \
 btstack_linked_list.c \
 btstack_memory.c \
 btstack_memory_pool.c \
