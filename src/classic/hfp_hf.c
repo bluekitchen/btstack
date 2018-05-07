@@ -205,7 +205,7 @@ static inline int hfp_hf_send_cmd_with_mark(uint16_t cid, const char * cmd, cons
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static inline int hfp_hf_send_cmd_with_int(uint16_t cid, const char * cmd, uint8_t value){
+static inline int hfp_hf_send_cmd_with_int(uint16_t cid, const char * cmd, uint16_t value){
     char buffer[40];
     snprintf(buffer, sizeof(buffer), "AT%s=%d\r\n", cmd, value);
     return send_str_over_rfcomm(cid, buffer);
