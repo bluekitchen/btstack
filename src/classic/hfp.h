@@ -680,6 +680,8 @@ void hfp_hf_drop_mSBC_if_eSCO_not_supported(uint8_t * codecs, uint8_t * codecs_n
 const char * hfp_hf_feature(int index);
 const char * hfp_ag_feature(int index);
 
+void hfp_log_rfcomm_message(const char * tag, uint8_t * packet, uint16_t size);
+
 #if defined __cplusplus
 }
 #endif

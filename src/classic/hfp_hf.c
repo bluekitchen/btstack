@@ -972,7 +972,6 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *hfp_connection){
     hfp_connection->command = HFP_CMD_NONE;
 }
 
-
 static void hfp_hf_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);    // ok: only called with RFCOMM_DATA_PACKET
 
@@ -982,18 +981,16 @@ static void hfp_hf_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, ui
     hfp_connection_t * hfp_connection = get_hfp_connection_context_for_rfcomm_cid(channel);
     if (!hfp_connection) return;
 
-    // temp overwrite last byte (most likely \n for log_info)
-    char last_char = packet[size-1];
-    packet[size-1] = 0;
-    log_info("HFP_RX %s", packet);
-    packet[size-1] = last_char;
-            
+    hfp_log_rfcomm_message("HFP_HF_RX", packet, size);
+
     // process messages byte-wise
-    int pos, i, value;
+    int pos;
     for (pos = 0; pos < size ; pos++){
         hfp_parse(hfp_connection, packet[pos], 1);
     } 
 
+    int value;
+    int i;
     switch (hfp_connection->command){
         case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
             hfp_connection->command = HFP_CMD_NONE;

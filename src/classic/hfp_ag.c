@@ -1833,19 +1833,16 @@ static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uin
     hfp_connection_t * hfp_connection = get_hfp_connection_context_for_rfcomm_cid(channel);
     if (!hfp_connection) return;
     
-    // temp overwrite last byte (most likely \n for log_info)
-    char last_char = packet[size-1];
-    packet[size-1] = 0;
-    log_info("HFP_RX %s", packet);
-    packet[size-1] = last_char;
+    hfp_log_rfcomm_message("HFP_AG_RX", packet, size);
     
     // process messages byte-wise
     int pos;
     for (pos = 0; pos < size ; pos++){
         hfp_parse(hfp_connection, packet[pos], 0);
     }
-    hfp_generic_status_indicator_t * indicator;
+
     int value;
+    hfp_generic_status_indicator_t * indicator;
     switch(hfp_connection->command){
         case HFP_CMD_RESPONSE_AND_HOLD_QUERY:
             if (hfp_ag_response_and_hold_active){

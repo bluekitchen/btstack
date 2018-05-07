@@ -1518,3 +1518,31 @@ void hfp_set_hf_run_for_context(void (*callback)(hfp_connection_t * hfp_connecti
 
 void hfp_init(void){
 }
+
+#define HFP_HF_RX_DEBUG_PRINT_LINE 80
+
+void hfp_log_rfcomm_message(const char * tag, uint8_t * packet, uint16_t size){
+#ifdef ENABLE_LOG_INFO
+    // encode \n\r
+    char printable[HFP_HF_RX_DEBUG_PRINT_LINE+2];
+    int i;
+    int pos;
+    for (i=0,pos=0;(pos < size) && (i < (HFP_HF_RX_DEBUG_PRINT_LINE - 3)); pos++){
+        switch (packet[pos]){
+            case '\n':
+                printable[i++] = '\\';
+                printable[i++] = 'n';
+                break;
+            case '\r':
+                printable[i++] = '\\';
+                printable[i++] = 'r';
+                break;
+            default:
+                printable[i++] = packet[pos];
+                break;
+        }
+    }
+    printable[i] = 0;
+    log_info("%s: '%s'", tag, printable);
+#endif
+}
