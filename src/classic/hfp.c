@@ -773,6 +773,7 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
 }
 // translates command string into hfp_command_t CMD
 static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
+    log_info("command '%s', handsfree %u", line_buffer, isHandsFree);
     int offset = isHandsFree ? 0 : 2;
 
     if (strncmp(line_buffer+offset, HFP_LIST_CURRENT_CALLS, strlen(HFP_LIST_CURRENT_CALLS)) == 0){
