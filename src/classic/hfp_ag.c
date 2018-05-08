@@ -1339,6 +1339,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                     log_info("AG terminate call");
                     break;
             }
+            hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_CALL_TERMINATED);
             break;
 
         case HFP_AG_TERMINATE_CALL_BY_AG:
