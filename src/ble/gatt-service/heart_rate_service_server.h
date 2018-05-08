@@ -65,7 +65,7 @@ typedef enum {
 	HEART_RATE_SERVICE_SENSOR_CONTACT_UNSUPPORTED,
 	HEART_RATE_SERVICE_SENSOR_CONTACT_NO_CONTACT,
 	HEART_RATE_SERVICE_SENSOR_CONTACT_HAVE_CONTACT
-} heart_rate_service_sensor_contact_t;
+} heart_rate_service_sensor_contact_status_t;
 
 
 /**
@@ -76,25 +76,21 @@ void heart_rate_service_server_init(heart_rate_service_body_sensor_location_t lo
 
 
 /**
- * @brief Register callback to receive event "Reset Energy Expended"
- * @param heart_rate in range 0-8
+ * @brief Add Energy Expended to the internal accumulator.
+ * @param energy_expended   energy expended in kilo Joules since the last update
  */
-void heart_rate_service_register_reset_energy_expended_callback(btstack_packet_handler_t callback);
+void heart_rate_service_add_energy_expended(uint16_t energy_expended_kJ);
 
 /**
  * @brief Update heart rate (unit: beats per minute)
  * @note triggers notifications if subscribed
  * @param heart_rate 		beats per second, range 0-255
  * @param contact    
- * @param energy_expended   accumulated energy expended in kilo Joules since the last time it was reset
  * @param rr_interval_count 
  * @param rr_intervals      resolution in 1/1024 seconds
- * @return status           ERROR_CODE_SUCCESS if succesfully queued 
  */
-uint8_t heart_rate_service_server_update_heart_rate_values(uint16_t heart_rate, 
-	heart_rate_service_sensor_contact_t contact, uint16_t energy_expended, 
-	int rr_interval_count, uint16_t * rr_intervals);
-
+void heart_rate_service_server_update_heart_rate_values(uint16_t heart_rate, 
+	heart_rate_service_sensor_contact_status_t contact, int rr_interval_count, uint16_t * rr_intervals);
 
 /* API_END */
 

@@ -64,7 +64,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static hci_con_handle_t con_handle;
 
 static uint16_t heart_rate = 100;
-static heart_rate_service_sensor_contact_t contact;
+static heart_rate_service_sensor_contact_status_t contact;
 static uint16_t energy_expended;
 static int rr_interval_count;
 static uint16_t rr_intervals[10];
@@ -105,7 +105,7 @@ static void heartbeat_handler(struct btstack_timer_source *ts){
         energy_expended++;
     }
 
-    heart_rate_service_server_update_heart_rate_values(heart_rate, HEART_RATE_SERVICE_SENSOR_CONTACT_HAVE_CONTACT, energy_expended, rr_interval_count, &rr_intervals[0]);
+    heart_rate_service_server_update_heart_rate_values(heart_rate, HEART_RATE_SERVICE_SENSOR_CONTACT_HAVE_CONTACT, rr_interval_count, &rr_intervals[0]);
 
     btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
     btstack_run_loop_add_timer(ts);
