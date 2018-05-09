@@ -57,23 +57,15 @@
 #include "ble/gatt-service/heart_rate_service_server.h"
 
 #define HEARTBEAT_PERIOD_MS 1000
+#define ENERGY_EXPENDED_SUPPORTED 1
 
-static int  le_notification_enabled;
 static btstack_timer_source_t heartbeat;
-static btstack_packet_callback_registration_t hci_event_callback_registration;
-static hci_con_handle_t con_handle;
 
 static uint16_t heart_rate = 100;
-static heart_rate_service_sensor_contact_status_t contact;
-static uint16_t energy_expended;
-static int rr_interval_count;
-static uint16_t rr_intervals[10];
+static int rr_interval_count = 2;
+static uint16_t rr_intervals[] = {0x55, 0x66};
 
-static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
-static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
-static void  heartbeat_handler(struct btstack_timer_source *ts);
-static void beat(void);
+static void heartbeat_handler(struct btstack_timer_source *ts);
 
 const uint8_t adv_data[] = {
     // Flags general discoverable, BR/EDR not supported
@@ -83,72 +75,54 @@ const uint8_t adv_data[] = {
 };
 const uint8_t adv_data_len = sizeof(adv_data);
 
-
-static int  counter = 0;
-static char counter_string[30];
-static int  counter_string_len;
-
-static void beat(void){
-    counter++;
-    counter_string_len = sprintf(counter_string, "BTstack counter %04u", counter);
-    puts(counter_string);
-}
-
 static void heartbeat_handler(struct btstack_timer_source *ts){
-    if (le_notification_enabled) {
-        beat();
-        att_server_request_can_send_now_event(con_handle);
-    }
 
     // simulate increase of energy spent 
-    if (energy_expended < 0xFFFF) {
-        energy_expended++;
-    }
-
-    heart_rate_service_server_update_heart_rate_values(heart_rate, HEART_RATE_SERVICE_SENSOR_CONTACT_HAVE_CONTACT, rr_interval_count, &rr_intervals[0]);
-
+    // heart_rate_service_server_update_heart_rate_values(heart_rate, HEART_RATE_SERVICE_SENSOR_CONTACT_HAVE_CONTACT, rr_interval_count, &rr_intervals[0]);
     btstack_run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
     btstack_run_loop_add_timer(ts);
 } 
 
-static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    UNUSED(channel);
-    UNUSED(size);
+#ifdef HAVE_BTSTACK_STDIN
 
-    switch (packet_type) {
-        case HCI_EVENT_PACKET:
-            switch (hci_event_packet_get_type(packet)) {
-                case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    le_notification_enabled = 0;
-                    break;
-                case ATT_EVENT_CAN_SEND_NOW:
-                    break;
-            }
+static void show_usage(void){
+    bd_addr_t      iut_address;
+    gap_local_bd_addr(iut_address);
+    printf("\n--- Bluetooth HRP Server Test Console %s ---\n", bd_addr_to_str(iut_address));
+    printf("c   - notify heart rate measurement, no contact with sensor\n");
+    printf("e   - add 50kJ energy expended\n");
+    printf("n   - notify heart rate measurement, contact with sensor\n");
+    printf("Ctrl-c - exit\n");
+    printf("---\n");
+}
+
+
+static void stdin_process(char cmd){
+    switch (cmd){
+        case 'n': 
+            printf("Notify heart rate measurement, contact with sensor\n");
+            heart_rate_service_server_update_heart_rate_values(heart_rate, HEART_RATE_SERVICE_SENSOR_CONTACT_HAVE_CONTACT, rr_interval_count, &rr_intervals[0]);
+            break;
+        case 'c': 
+            printf("Notify heart rate measurement, no contact with sensor\n");
+            heart_rate_service_server_update_heart_rate_values(heart_rate, HEART_RATE_SERVICE_SENSOR_CONTACT_NO_CONTACT, rr_interval_count, &rr_intervals[0]);
+            break;
+        case 'e': 
+            printf("Add 50kJ energy expended\n");
+            heart_rate_service_add_energy_expended(50);
+            break;
+        case '\n':
+        case '\r':
+            break;
+        default:
+            show_usage();
             break;
     }
 }
-
-static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
-    UNUSED(connection_handle);
-
-    return 0;
-}
-
-static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-    UNUSED(transaction_mode);
-    UNUSED(offset);
-    UNUSED(buffer_size);
-    
-    return 0;
-}
-
+#endif
 
 int btstack_main(void);
 int btstack_main(void){
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     l2cap_init();
 
     // setup le device db
@@ -158,11 +132,11 @@ int btstack_main(void){
     sm_init();
 
     // setup ATT server
-    att_server_init(profile_data, att_read_callback, att_write_callback);    
-    att_server_register_packet_handler(packet_handler);
+    att_server_init(profile_data, NULL, NULL);    
 
-    // setup battery service
-    heart_rate_service_server_init(HEART_RATE_SERVICE_BODY_SENSOR_LOCATION_HAND);
+    // setup heart rate service
+    heart_rate_service_server_init(HEART_RATE_SERVICE_BODY_SENSOR_LOCATION_HAND, ENERGY_EXPENDED_SUPPORTED);
+    printf("Heart rate service: body sensor location 0x%02x\n", HEART_RATE_SERVICE_BODY_SENSOR_LOCATION_HAND);
 
     // setup advertisements
     uint16_t adv_int_min = 0x0030;
@@ -174,14 +148,15 @@ int btstack_main(void){
     gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
     gap_advertisements_enable(1);
 
-    // set one-shot timer
+    // setup simulated heartbeat measurement
     heartbeat.process = &heartbeat_handler;
     btstack_run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
     btstack_run_loop_add_timer(&heartbeat);
 
-    // beat once
-    beat();
 
+#ifdef HAVE_BTSTACK_STDIN
+    btstack_stdin_setup(stdin_process);
+#endif
     // turn on!
 	hci_power_control(HCI_POWER_ON);
 	    
