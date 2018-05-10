@@ -953,6 +953,14 @@ static int sm_key_distribution_all_received(sm_connection_t * sm_conn){
         // master / initiator
         recv_flags = sm_key_distribution_flags_for_set(sm_pairing_packet_get_responder_key_distribution(setup->sm_s_pres));
     }
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    // LTK (= encyrption information & master identification) only used exchanged for LE Legacy Connection
+    if (setup->sm_use_secure_connections){
+        recv_flags &= ~(SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION | SM_KEYDIST_FLAG_MASTER_IDENTIFICATION);
+    }
+#endif
+
     log_debug("sm_key_distribution_all_received: received 0x%02x, expecting 0x%02x", setup->sm_key_distribution_received_set, recv_flags);
     return recv_flags == setup->sm_key_distribution_received_set;
 }
@@ -1066,12 +1074,19 @@ static int sm_stk_generation_init(sm_connection_t * sm_conn){
     sm_conn->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(sm_pairing_packet_get_max_encryption_key_size(*remote_packet));
     if (sm_conn->sm_actual_encryption_key_size == 0) return SM_REASON_ENCRYPTION_KEY_SIZE;
 
-    // decide on STK generation method
+    // decide on STK generation method / SC
     sm_setup_tk();
     log_info("SMP: generation method %u", setup->sm_stk_generation_method);
 
     // check if STK generation method is acceptable by client
     if (!sm_validate_stk_generation_method()) return SM_REASON_AUTHENTHICATION_REQUIREMENTS;
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    // LTK (= encyrption information & master identification) only used exchanged for LE Legacy Connection
+    if (setup->sm_use_secure_connections){
+        remote_key_request &= ~SM_KEYDIST_ENC_KEY;
+    }
+#endif
 
     // identical to responder
     sm_setup_key_distribution(remote_key_request);
@@ -2297,9 +2312,6 @@ static void sm_run(void){
 
                 if (setup->sm_use_secure_connections){
                     connection->sm_engine_state = SM_SC_W4_PUBLIC_KEY_COMMAND;
-                    // skip LTK/EDIV for SC
-                    log_info("sm: dropping encryption information flag");
-                    key_distribution_flags &= ~SM_KEYDIST_ENC_KEY;
                 } else {
                     connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_CONFIRM;
                 }

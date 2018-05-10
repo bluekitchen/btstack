@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+- SM: Fix LE Secure Connection pairing in Central role
+
+## Changes April 2018
+
+### Added
 - Crypto: btstack_crypo.h provides cryptographic functions for random data generation, AES128, EEC, CBC-MAC (Mesh)
 - SM: support pairing using Out-of-Band (OOB) data with LE Secure Connections
 - Embedded: support btstack_stdin via SEGGER RTT
