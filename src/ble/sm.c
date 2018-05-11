@@ -1882,6 +1882,9 @@ static void sm_run(void){
     }
 #endif
 
+    // assert that we can send at least commands - cmd might have been sent by crypto engine
+    if (!hci_can_send_command_packet_now()) return;
+
     // handle basic actions that don't requires the full context
     hci_connections_get_iterator(&it);
     while((sm_active_connection_handle == HCI_CON_HANDLE_INVALID) && btstack_linked_list_iterator_has_next(&it)){
