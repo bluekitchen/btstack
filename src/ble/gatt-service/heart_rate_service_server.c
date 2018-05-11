@@ -37,10 +37,6 @@
 
 #define __BTSTACK_FILE__ "heart_rate_service_server.c"
 
-/**
- * Implementation of the GATT Battery Service Server 
- * To use with your application, add '#import <heart_rate_service.gatt' to your .gatt file
- */
 
 #include "bluetooth.h"
 #include "btstack_defines.h"
@@ -85,10 +81,8 @@ typedef struct {
 	uint16_t sensor_location_value_handle;
 	heart_rate_service_body_sensor_location_t sensor_location;
 	
-	// characteristic: Hear Rate Control Point
-	// uint8_t HEART_RATE_reset_energy_expended;
+	// characteristic: Heart Rate Control Point
 	uint16_t control_point_value_handle;
-	
 } heart_rate_t;
 
 static att_service_handler_t heart_rate_service;
@@ -242,13 +236,13 @@ void heart_rate_service_add_energy_expended(uint16_t energy_expended_kJ){
 	}
 }
 
-void heart_rate_service_server_update_heart_rate_values(uint16_t beats_per_minute, 
+void heart_rate_service_server_update_heart_rate_values(uint16_t heart_rate_bpm, 
 	heart_rate_service_sensor_contact_status_t sensor_contact, int rr_interval_count, uint16_t * rr_intervals){
 	heart_rate_t * instance = &heart_rate;
 
 	printf("update_heart_rate_values, notify %u con_handle %04x\n", instance->measurement_client_configuration_descriptor_notify, instance->con_handle);	
 	
-	instance->measurement_bpm = beats_per_minute;
+	instance->measurement_bpm = heart_rate_bpm;
 	instance->sensor_contact = sensor_contact;
 	instance->rr_interval_count = rr_interval_count;
 	instance->rr_intervals = rr_intervals;
