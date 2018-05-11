@@ -1679,3 +1679,11 @@ void hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number, i
     }
 }
 
+int hfp_hf_in_band_ringtone_active(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
+    if (!hfp_connection) {
+        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
+        return 0;
+    }
+    return get_bit(hfp_connection->remote_supported_features, HFP_AGSF_IN_BAND_RING_TONE);
+}

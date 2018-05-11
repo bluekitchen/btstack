@@ -416,6 +416,12 @@ void hfp_hf_query_subscriber_number(hci_con_handle_t acl_handle);
  */
 void hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number, int value);
 
+/*
+ * @brief Tests if in-band ringtone is active on AG (requires SLC)
+ * @aram acl_handler of the AG
+ */
+int hfp_hf_in_band_ringtone_active(hci_con_handle_t acl_handle);
+
 /* API_END */
 
 #if defined __cplusplus
