@@ -71,7 +71,9 @@ const uint8_t adv_data[] = {
     // Flags general discoverable, BR/EDR not supported
     0x02, 0x01, 0x06, 
     // Name
-    0x12, 0x09, 'H', 'e', 'a', 'r', 't', ' ', 'R', 'a', 't', 'e', ' ', 'S', 'e', 'r', 'v', 'e','r'
+    0x12, 0x09, 'H', 'e', 'a', 'r', 't', ' ', 'R', 'a', 't', 'e', ' ', 'S', 'e', 'r', 'v', 'e','r',
+    // 16-bit Service UUIDs
+    0x03, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, ORG_BLUETOOTH_SERVICE_HEART_RATE & 0xff, ORG_BLUETOOTH_SERVICE_HEART_RATE >> 8
 };
 const uint8_t adv_data_len = sizeof(adv_data);
 
