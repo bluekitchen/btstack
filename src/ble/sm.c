@@ -1114,6 +1114,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
 #ifdef ENABLE_LE_CENTRAL
     sm_key_t ltk;
     int have_ltk;
+    int pairing_need;
 #endif
     switch (mode){
         case ADDRESS_RESOLUTION_GENERAL:
@@ -1136,14 +1137,21 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
 #ifdef ENABLE_LE_CENTRAL
                     le_device_db_encryption_get(sm_connection->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL);
                     have_ltk = !sm_is_null_key(ltk);
-                    log_info("central: bonding requested %u, remote security request %u, have ltk %u", sm_connection->sm_pairing_requested, sm_connection->sm_security_request_received, have_ltk);
-                    if (!sm_connection->sm_pairing_requested && !sm_connection->sm_security_request_received) break;
+                    pairing_need = sm_connection->sm_pairing_requested || sm_connection->sm_security_request_received;
+                    log_info("central: pairing request local %u, remote %u => action %u. have_ltk %u",
+                        sm_connection->sm_pairing_requested, sm_connection->sm_security_request_received, pairing_need, have_ltk);
+                    // reset requests
                     sm_connection->sm_security_request_received = 0;
                     sm_connection->sm_pairing_requested = 0;
-                    if (!sm_is_null_key(ltk)){
+                    // have ltk -> start encryption
+                    if (have_ltk){
                         sm_connection->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
-                    } else {
+                        break;
+                    }
+                    // pairint_request -> send pairing request
+                    if (pairing_need){
                         sm_connection->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
+                        break;
                     }
 #endif
                     break;
