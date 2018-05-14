@@ -1631,37 +1631,28 @@ static void hfp_ag_send_call_status(hfp_connection_t * hfp_connection, int call_
     send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
 }
 
-static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
-    if (!hfp_connection) return;
-    if (!hfp_connection->rfcomm_cid) return;
 
-    if (hfp_connection->local_role != HFP_ROLE_AG) {
-        log_info("HFP AG%p, wrong role %u", hfp_connection, hfp_connection->local_role);
-        return;
-    }
-
-    if (!rfcomm_can_send_packet_now(hfp_connection->rfcomm_cid)) {
-        log_info("hfp_ag_run_for_context: request can send for 0x%02x", hfp_connection->rfcomm_cid);
-        rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
-        return;
-    }
+// sends pending command, returns if command was sent
+static int hfp_ag_send_commands(hfp_connection_t *hfp_connection){
+    
     if (hfp_connection->send_status_of_current_calls){
         hfp_connection->ok_pending = 0; 
         if (hfp_connection->next_call_index < hfp_gsm_get_number_of_calls()){
             hfp_connection->next_call_index++;
             hfp_ag_send_call_status(hfp_connection, hfp_connection->next_call_index);
+            return 1;
         } else {
+            // TODO: this code should be removed. check a) before setting send_status_of_current_calls, or b) right before hfp_ag_send_call_status above
             hfp_connection->next_call_index = 0;
             hfp_connection->ok_pending = 1;
             hfp_connection->send_status_of_current_calls = 0;
         }
-        return;
     } 
 
     if (hfp_connection->ag_notify_incoming_call_waiting){
         hfp_connection->ag_notify_incoming_call_waiting = 0;
         hfp_ag_send_call_waiting_notification(hfp_connection->rfcomm_cid);
-        return;
+        return 1;
     }
 
     if (hfp_connection->command == HFP_CMD_UNKNOWN){
@@ -1669,14 +1660,14 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
         hfp_connection->send_error = 0;
         hfp_connection->command = HFP_CMD_NONE;
         hfp_ag_send_error(hfp_connection->rfcomm_cid);
-        return;
+        return 1;
     }
 
     if (hfp_connection->send_error){
         hfp_connection->send_error = 0;
         hfp_connection->command = HFP_CMD_NONE;
         hfp_ag_send_error(hfp_connection->rfcomm_cid); 
-        return;
+        return 1;
     }
 
     // note: before update AG indicators and ok_pending 
@@ -1684,14 +1675,14 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
         int status = hfp_connection->send_response_and_hold_status - 1;
         hfp_connection->send_response_and_hold_status = 0;
         hfp_ag_send_set_response_and_hold(hfp_connection->rfcomm_cid, status);
-        return;
+        return 1;
     }
 
     if (hfp_connection->ok_pending){
         hfp_connection->ok_pending = 0;
         hfp_connection->command = HFP_CMD_NONE;
         hfp_ag_send_ok(hfp_connection->rfcomm_cid);
-        return;
+        return 1;
     }
 
     // update AG indicators
@@ -1705,7 +1696,7 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
                     break;
                 }
                 hfp_ag_send_transfer_ag_indicators_status_cmd(hfp_connection->rfcomm_cid, &hfp_ag_indicators[i]);
-                return;
+                return 1;
             }
         }
     }
@@ -1714,14 +1705,14 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
         hfp_connection->ag_ring = 0;
         hfp_connection->command = HFP_CMD_NONE;
         hfp_ag_send_ring(hfp_connection->rfcomm_cid);
-        return;
+        return 1;
     }
 
     if (hfp_connection->ag_send_clip){
         hfp_connection->ag_send_clip = 0;
         hfp_connection->command = HFP_CMD_NONE;
         hfp_ag_send_clip(hfp_connection->rfcomm_cid);
-        return;
+        return 1;
     }
     
     if (hfp_connection->send_phone_number_for_voice_tag){
@@ -1729,7 +1720,7 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
         hfp_connection->command = HFP_CMD_NONE;
         hfp_connection->ok_pending = 1;
         hfp_ag_send_phone_number_for_voice_tag_cmd(hfp_connection->rfcomm_cid);
-        return;
+        return 1;
     }
 
     if (hfp_connection->send_subscriber_number){
@@ -1742,33 +1733,56 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
             hfp_ag_send_ok(hfp_connection->rfcomm_cid);
         }
         hfp_connection->command = HFP_CMD_NONE;
-
+        return 1;
     }
 
     if (hfp_connection->send_microphone_gain){
         hfp_connection->send_microphone_gain = 0;
         hfp_connection->command = HFP_CMD_NONE;
         hfp_ag_send_set_microphone_gain_cmd(hfp_connection->rfcomm_cid, hfp_connection->microphone_gain);
-        return;
+        return 1;
     }
     
     if (hfp_connection->send_speaker_gain){
         hfp_connection->send_speaker_gain = 0;
         hfp_connection->command = HFP_CMD_NONE;
         hfp_ag_send_set_speaker_gain_cmd(hfp_connection->rfcomm_cid, hfp_connection->speaker_gain);
-        return;
+        return 1;
     }
     
     if (hfp_connection->send_ag_status_indicators){
         hfp_connection->send_ag_status_indicators = 0;
         hfp_ag_send_retrieve_indicators_status_cmd(hfp_connection->rfcomm_cid);
+        return 1;
+    }
+
+    return 0;
+}
+
+static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
+
+    if (!hfp_connection) return;
+
+    if (!hfp_connection->rfcomm_cid) return;
+
+    if (hfp_connection->local_role != HFP_ROLE_AG) {
+        log_info("HFP AG%p, wrong role %u", hfp_connection, hfp_connection->local_role);
         return;
     }
+
+    if (!rfcomm_can_send_packet_now(hfp_connection->rfcomm_cid)) {
+        log_info("hfp_ag_run_for_context: request can send for 0x%02x", hfp_connection->rfcomm_cid);
+        rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
+        return;
+    }
+
+    int cmd_sent = hfp_ag_send_commands(hfp_connection);
 
     // trigger codec exchange if requested by app
     if (hfp_connection->trigger_codec_exchange){
         log_info("trigger codec, command %u, codec state %u", hfp_connection->command, hfp_connection->codecs_state);
     }
+
     if (hfp_connection->trigger_codec_exchange && hfp_connection->command == HFP_CMD_NONE){
         switch (hfp_connection->codecs_state){
             case HFP_CODECS_IDLE:
@@ -1783,7 +1797,10 @@ static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
         }
     }
 
-    int cmd_sent = hfp_ag_run_for_context_service_level_connection(hfp_connection);
+    if (!cmd_sent){
+        cmd_sent = hfp_ag_run_for_context_service_level_connection(hfp_connection);
+    }
+
     if (!cmd_sent){
         cmd_sent = hfp_ag_run_for_context_service_level_connection_queries(hfp_connection);
     } 
