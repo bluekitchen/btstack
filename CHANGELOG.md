@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
+- GAP: re-encrypt outgoing connection if bonded
+- ATT Server: wait until re-encryption is complete
+- GATT Client: wait until re-encryption is complete
 
 ### Changed
 
