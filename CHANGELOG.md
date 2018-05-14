@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - SM: Fix LE Secure Connection pairing in Central role
+- le_device_db_tlv: fix seq nr management
 
 ## Changes April 2018
 

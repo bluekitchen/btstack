@@ -191,7 +191,7 @@ void le_device_db_remove(int index){
 int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
 
     uint32_t highest_seq_nr = 0;
-    uint32_t lowest_seq_nr  = 0;
+    uint32_t lowest_seq_nr  = 0xFFFFFFFF;
     int index_for_lowest_seq_nr = -1;
     int index_for_addr  = -1;
     int index_for_empty = -1;
@@ -211,7 +211,7 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
                 highest_seq_nr = entry.seq_nr;
             }
             // find entry with lowest seq nr
-            if ((index_for_lowest_seq_nr == 0) || (entry.seq_nr < lowest_seq_nr)){
+            if ((index_for_lowest_seq_nr == -1) || (entry.seq_nr < lowest_seq_nr)){
                 index_for_lowest_seq_nr = i;
                 lowest_seq_nr = entry.seq_nr;
             }
@@ -246,7 +246,8 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     entry.addr_type = addr_type;
     memcpy(entry.addr, addr, 6);
     memcpy(entry.irk, irk, 16);
-#ifdef ENABLE_LE_SIGNED_WRITE
+    entry.seq_nr = highest_seq_nr + 1;
+ #ifdef ENABLE_LE_SIGNED_WRITE
     entry.remote_counter = 0; 
 #endif
 
