@@ -555,6 +555,15 @@ int gap_ssp_confirmation_negative(bd_addr_t addr);
 void gap_le_get_own_address(uint8_t * addr_type, bd_addr_t addr);
 
 
+/**
+ * @brief Get state of connection re-encryptiong for bonded devices when in central role
+ * @note used by gatt_client and att_server to wait for re-encryption
+ * @param con_handle
+ * @return 1 if security setup is active
+ */
+int gap_reconnect_security_setup_active(hci_con_handle_t con_handle);
+
+
 /* API_END*/
 
 #if defined __cplusplus
