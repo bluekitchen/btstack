@@ -221,7 +221,8 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                             att_server_persistent_ccc_restore(att_server);
                         } 
                     }
-                	break;
+                    att_run_for_context(att_server);
+                    break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     // check handle
@@ -412,6 +413,9 @@ int att_server_read_response_ready(hci_con_handle_t con_handle){
 static void att_run_for_context(att_server_t * att_server){
     switch (att_server->state){
         case ATT_SERVER_REQUEST_RECEIVED:
+
+            // wait until re-encryption as central is complete
+            if (gap_reconnect_security_setup_active(att_server->connection.con_handle)) break;
 
             // wait until pairing is complete
             if (att_server->pairing_active) break;
