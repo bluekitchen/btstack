@@ -822,6 +822,9 @@ static int is_value_valid(gatt_client_t *peripheral, uint8_t *packet, uint16_t s
 static int gatt_client_run_for_peripheral( gatt_client_t * peripheral){
     // log_info("- handle_peripheral_list, mtu state %u, client state %u", peripheral->mtu_state, peripheral->gatt_client_state);
 
+    // wait until re-encryption as central is complete
+    if (gap_reconnect_security_setup_active(peripheral->con_handle)) return 0;
+
     switch (peripheral->mtu_state) {
         case SEND_MTU_EXCHANGE:
             peripheral->mtu_state = SENT_MTU_EXCHANGE;
