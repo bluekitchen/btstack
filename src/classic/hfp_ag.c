@@ -69,7 +69,7 @@
 #include "classic/sdp_util.h"
 
 // private prototypes
-static void hfp_run_for_context(hfp_connection_t *hfp_connection);
+static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection);
 static void hfp_ag_hf_start_ringing(hfp_connection_t * hfp_connection);
 static void hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection);
 
@@ -833,7 +833,7 @@ static void hfp_timeout_handler(btstack_timer_source_t * timer){
     btstack_run_loop_set_timer(& hfp_connection->hfp_timeout, 2000); // 2 seconds timeout
     btstack_run_loop_add_timer(& hfp_connection->hfp_timeout);
 
-    hfp_run_for_context(hfp_connection);
+    hfp_ag_run_for_context(hfp_connection);
 }
 
 static void hfp_timeout_start(hfp_connection_t * hfp_connection){
@@ -889,7 +889,7 @@ static void hfp_ag_trigger_incoming_call(void){
         if (hfp_connection->call_state == HFP_CALL_ACTIVE){
             hfp_connection->call_state = HFP_CALL_W2_SEND_CALL_WAITING;
         }
-        hfp_run_for_context(hfp_connection);
+        hfp_ag_run_for_context(hfp_connection);
     }
 }
 
@@ -904,7 +904,7 @@ static void hfp_ag_transfer_callsetup_state(void){
         if (hfp_connection->local_role != HFP_ROLE_AG) continue;
         hfp_ag_establish_service_level_connection(hfp_connection->remote_addr);
         hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, indicator_index, 1);
-        hfp_run_for_context(hfp_connection);
+        hfp_ag_run_for_context(hfp_connection);
     }
 }
 
@@ -919,7 +919,7 @@ static void hfp_ag_transfer_call_state(void){
         if (hfp_connection->local_role != HFP_ROLE_AG) continue;
         hfp_ag_establish_service_level_connection(hfp_connection->remote_addr);
         hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, indicator_index, 1);
-        hfp_run_for_context(hfp_connection);
+        hfp_ag_run_for_context(hfp_connection);
     }
 }
 
@@ -934,7 +934,7 @@ static void hfp_ag_transfer_callheld_state(void){
         if (hfp_connection->local_role != HFP_ROLE_AG) continue;
         hfp_ag_establish_service_level_connection(hfp_connection->remote_addr);
         hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, indicator_index, 1);
-        hfp_run_for_context(hfp_connection);
+        hfp_ag_run_for_context(hfp_connection);
     }
 }
 
@@ -968,7 +968,7 @@ static void hfp_ag_hf_accept_call(hfp_connection_t * source){
         } else {
             hfp_connection->call_state = HFP_CALL_IDLE;
         }
-        hfp_run_for_context(hfp_connection);
+        hfp_ag_run_for_context(hfp_connection);
     }    
 }
 
@@ -990,7 +990,7 @@ static void hfp_ag_ag_accept_call(void){
         hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, call_indicator_index, 1);
         hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
 
-        hfp_run_for_context(hfp_connection);
+        hfp_ag_run_for_context(hfp_connection);
         break;  // only single 
     }    
 }
@@ -1007,7 +1007,7 @@ static void hfp_ag_trigger_reject_call(void){
         hfp_ag_hf_stop_ringing(connection);
         connection->ag_indicators_status_update_bitmap = store_bit(connection->ag_indicators_status_update_bitmap, callsetup_indicator_index, 1);
         connection->call_state = HFP_CALL_IDLE;
-        hfp_run_for_context(connection);
+        hfp_ag_run_for_context(connection);
     }    
 }
 
@@ -1033,7 +1033,7 @@ static void hfp_ag_trigger_terminate_call(void){
         hfp_connection->call_state = HFP_CALL_IDLE;
         hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, call_indicator_index, 1);
         hfp_connection->release_audio_connection = 1;
-        hfp_run_for_context(hfp_connection);
+        hfp_ag_run_for_context(hfp_connection);
     }
     hfp_ag_emit_simple_event(HFP_SUBEVENT_CALL_TERMINATED);
 }
@@ -1408,7 +1408,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
             // directly reject call if number of free slots is exceeded
             if (!hfp_gsm_call_possible()){
                 hfp_connection->send_error = 1;
-                hfp_run_for_context(hfp_connection);  
+                hfp_ag_run_for_context(hfp_connection);  
                 break;
             }
             hfp_gsm_handle_event_with_call_number(HFP_AG_OUTGOING_CALL_INITIATED, (const char *) &hfp_connection->line_buffer[3]);
@@ -1422,7 +1422,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
             // directly reject call if number of free slots is exceeded
             if (!hfp_gsm_call_possible()){
                 hfp_connection->send_error = 1;
-                hfp_run_for_context(hfp_connection);  
+                hfp_ag_run_for_context(hfp_connection);  
                 break;
             }
 
@@ -1451,7 +1451,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
             hfp_gsm_handle_event(HFP_AG_OUTGOING_CALL_REJECTED);
             hfp_connection->call_state = HFP_CALL_IDLE;
             hfp_connection->send_error = 1;
-            hfp_run_for_context(hfp_connection);
+            hfp_ag_run_for_context(hfp_connection);
             break;
 
         case HFP_AG_OUTGOING_CALL_ACCEPTED:{
@@ -1631,7 +1631,7 @@ static void hfp_ag_send_call_status(hfp_connection_t * hfp_connection, int call_
     send_str_over_rfcomm(hfp_connection->rfcomm_cid, buffer);
 }
 
-static void hfp_run_for_context(hfp_connection_t *hfp_connection){
+static void hfp_ag_run_for_context(hfp_connection_t *hfp_connection){
     if (!hfp_connection) return;
     if (!hfp_connection->rfcomm_cid) return;
 
@@ -1641,7 +1641,7 @@ static void hfp_run_for_context(hfp_connection_t *hfp_connection){
     }
 
     if (!rfcomm_can_send_packet_now(hfp_connection->rfcomm_cid)) {
-        log_info("hfp_run_for_context: request can send for 0x%02x", hfp_connection->rfcomm_cid);
+        log_info("hfp_ag_run_for_context: request can send for 0x%02x", hfp_connection->rfcomm_cid);
         rfcomm_request_can_send_now_event(hfp_connection->rfcomm_cid);
         return;
     }
@@ -2028,7 +2028,7 @@ static void hfp_run(void){
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (hfp_connection->local_role != HFP_ROLE_AG) continue;
-        hfp_run_for_context(hfp_connection);
+        hfp_ag_run_for_context(hfp_connection);
     }
 }
 
@@ -2040,7 +2040,7 @@ static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
         case HCI_EVENT_PACKET:
             if (packet[0] == RFCOMM_EVENT_CAN_SEND_NOW){
                 uint16_t rfcomm_cid = rfcomm_event_can_send_now_get_rfcomm_cid(packet);
-                hfp_run_for_context(get_hfp_connection_context_for_rfcomm_cid(rfcomm_cid));
+                hfp_ag_run_for_context(get_hfp_connection_context_for_rfcomm_cid(rfcomm_cid));
                 return;
             }
             hfp_handle_rfcomm_event(packet_type, channel, packet, size, HFP_ROLE_AG);
@@ -2115,7 +2115,7 @@ void hfp_ag_release_service_level_connection(hci_con_handle_t acl_handle){
         return;
     }
     hfp_release_service_level_connection(hfp_connection);
-    hfp_run_for_context(hfp_connection);
+    hfp_ag_run_for_context(hfp_connection);
 }
 
 void hfp_ag_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl_handle, hfp_cme_error_t error){
@@ -2129,7 +2129,7 @@ void hfp_ag_report_extended_audio_gateway_error_result_code(hci_con_handle_t acl
         return;
     }
     hfp_connection->extended_audio_gateway_error = error;
-    hfp_run_for_context(hfp_connection);
+    hfp_ag_run_for_context(hfp_connection);
 }
 
 static void hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection){
@@ -2159,7 +2159,7 @@ void hfp_ag_establish_audio_connection(hci_con_handle_t acl_handle){
     hfp_connection->trigger_codec_exchange = 0;
     hfp_connection->establish_audio_connection = 0;
     hfp_ag_setup_audio_connection(hfp_connection);
-    hfp_run_for_context(hfp_connection);
+    hfp_ag_run_for_context(hfp_connection);
 }
 
 void hfp_ag_release_audio_connection(hci_con_handle_t acl_handle){
@@ -2169,7 +2169,7 @@ void hfp_ag_release_audio_connection(hci_con_handle_t acl_handle){
         return;
     }
     hfp_release_audio_connection(hfp_connection);
-    hfp_run_for_context(hfp_connection);
+    hfp_ag_run_for_context(hfp_connection);
 }
 
 /**
@@ -2187,7 +2187,7 @@ void hfp_ag_set_use_in_band_ring_tone(int use_in_band_ring_tone){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
         if (hfp_connection->local_role != HFP_ROLE_AG) continue;
         hfp_connection->command = HFP_CMD_CHANGE_IN_BAND_RING_TONE_SETTING;
-        hfp_run_for_context(hfp_connection);
+        hfp_ag_run_for_context(hfp_connection);
     }
 }
 
@@ -2267,7 +2267,7 @@ static void hfp_ag_set_ag_indicator(const char * name, int value){
         }
         log_info("AG indicator '%s' changed to %u, request transfer statur", hfp_ag_indicators[indicator_index].name, value);
         hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, indicator_index, 1);
-        hfp_run_for_context(hfp_connection);
+        hfp_ag_run_for_context(hfp_connection);
     }    
 }
 
@@ -2306,7 +2306,7 @@ void hfp_ag_activate_voice_recognition(hci_con_handle_t acl_handle, int activate
 
     hfp_connection->ag_activate_voice_recognition = activate;
     hfp_connection->command = HFP_CMD_AG_ACTIVATE_VOICE_RECOGNITION;
-    hfp_run_for_context(hfp_connection);
+    hfp_ag_run_for_context(hfp_connection);
 }
 
 void hfp_ag_set_microphone_gain(hci_con_handle_t acl_handle, int gain){
@@ -2320,7 +2320,7 @@ void hfp_ag_set_microphone_gain(hci_con_handle_t acl_handle, int gain){
         hfp_connection->microphone_gain = gain;
         hfp_connection->send_microphone_gain = 1;
     } 
-    hfp_run_for_context(hfp_connection);
+    hfp_ag_run_for_context(hfp_connection);
 }
 
 void hfp_ag_set_speaker_gain(hci_con_handle_t acl_handle, int gain){
@@ -2333,7 +2333,7 @@ void hfp_ag_set_speaker_gain(hci_con_handle_t acl_handle, int gain){
         hfp_connection->speaker_gain = gain;
         hfp_connection->send_speaker_gain = 1;
     } 
-    hfp_run_for_context(hfp_connection);
+    hfp_ag_run_for_context(hfp_connection);
 }
 
 void hfp_ag_send_phone_number_for_voice_tag(hci_con_handle_t acl_handle, const char * number){
@@ -2382,6 +2382,6 @@ void hfp_ag_notify_incoming_call_waiting(hci_con_handle_t acl_handle){
     if (!hfp_connection->call_waiting_notification_enabled) return;
     
     hfp_connection->ag_notify_incoming_call_waiting = 1;
-    hfp_run_for_context(hfp_connection);
+    hfp_ag_run_for_context(hfp_connection);
 }
 
