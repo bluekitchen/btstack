@@ -4675,13 +4675,20 @@ uint16_t hci_get_sco_voice_setting(void){
  *  @return Length of SCO packets in bytes (not audio frames)
  */
 int hci_get_sco_packet_length(void){
+    int sco_packet_length = 0;
+
+#ifdef ENABLE_CLASSIC
+#ifdef ENABLE_SCO_OVER_HCI
     // see Core Spec for H2 USB Transfer. 
 
     // CVSD requires twice as much bytes
     int multiplier = hci_stack->sco_voice_setting & 0x0020 ? 2 : 1;
 
     // 3 byte SCO header + 24 bytes per connection
-    return 3 + 24 * hci_number_sco_connections() * multiplier;
+    sco_packet_length = 3 + 24 * hci_number_sco_connections() * multiplier;
+#endif
+#endif
+    return sco_packet_length;
 }
 
 /**
