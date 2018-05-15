@@ -1204,14 +1204,20 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
             for (i=0; i < le_device_db_max_count(); i++){
                 sm_key_t irk;
                 bd_addr_t address;
-                int address_type;
+                int address_type = BD_ADDR_TYPE_UNKNOWN;
                 le_device_db_info(i, &address_type, address, irk);
-                if (memcmp(irk, setup->sm_peer_irk, 16) == 0){
-                    log_info("sm: device found for IRK, updating");
-                    le_db_index = i;
-                    break;
-                }
+                // check if valid entry retrieved
+                if (address_type == BD_ADDR_TYPE_UNKNOWN) continue;
+                // compare IRK
+                if (memcmp(irk, setup->sm_peer_irk, 16) != 0) continue;
+
+                log_info("sm: device found for IRK, updating");
+                le_db_index = i;
+                break;
             }
+        } else {
+            // assert IRK is set to zero
+            memset(setup->sm_peer_irk, 0, 16);
         }
 
         // if not found, lookup via public address if possible
