@@ -1240,7 +1240,7 @@ uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uui
             if (characteristic_found) break;
             continue;
         }
-        if (att_iterator_match_uuid16(&it, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION)){
+        if (characteristic_found && att_iterator_match_uuid16(&it, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION)){
             return it.handle;
         }
     }
@@ -1319,7 +1319,7 @@ uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uui
             if (characteristic_found) break;
             continue;
         }
-        if (att_iterator_match_uuid16(&it, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION)){
+        if (characteristic_found && att_iterator_match_uuid16(&it, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION)){
             return it.handle;
         }
     }

@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - SM: Fix LE Secure Connection pairing in Central role
 - le_device_db_tlv: fix seq nr management
 - SM: improve le_device_db lookup and storing of IRK
+- GATT Server: fix lookup for Client Characteristic Configuration in services with multiple Characteristics
 
 ## Changes April 2018
 
