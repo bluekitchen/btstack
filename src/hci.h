@@ -109,10 +109,12 @@ extern "C" {
 #endif
 
 // additional pre-buffer space for packets to Bluetooth module, for now, used for HCI Transport H4 DMA
+#ifndef HCI_OUTGOING_PRE_BUFFER_SIZE
 #ifdef HAVE_HOST_CONTROLLER_API
 #define HCI_OUTGOING_PRE_BUFFER_SIZE 0
 #else
 #define HCI_OUTGOING_PRE_BUFFER_SIZE 1
+#endif
 #endif
 
 // BNEP may uncompress the IP Header by 16 bytes
