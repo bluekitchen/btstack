@@ -4676,8 +4676,12 @@ uint16_t hci_get_sco_voice_setting(void){
  */
 int hci_get_sco_packet_length(void){
     // see Core Spec for H2 USB Transfer. 
-    if (hci_stack->sco_voice_setting & 0x0020) return 51;
-    return 27;
+
+    // CVSD requires twice as much bytes
+    int multiplier = hci_stack->sco_voice_setting & 0x0020 ? 2 : 1;
+
+    // 3 byte SCO header + 24 bytes per connection
+    return 3 + 24 * hci_number_sco_connections() * multiplier;
 }
 
 /**
