@@ -862,7 +862,6 @@ void att_server_request_can_send_now_event(hci_con_handle_t con_handle){
 void att_server_register_can_send_now_callback(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
     // check if valid con handle
     if (gap_get_connection_type(con_handle) != GAP_CONNECTION_LE) return;
-    callback_registration->context = (void*)(uintptr_t) con_handle;
     btstack_linked_list_add_tail(&can_send_now_clients, (btstack_linked_item_t*) callback_registration);
     att_dispatch_server_request_can_send_now_event(con_handle);
 }
