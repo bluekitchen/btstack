@@ -66,10 +66,14 @@ static btstack_linked_list_t gatt_client_connections;
 static btstack_linked_list_t gatt_client_value_listeners;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
+#ifdef ENABLE_GATT_CLIENT_PAIRING
+static btstack_packet_callback_registration_t sm_event_callback_registration;
+#endif
+
 static uint8_t mtu_exchange_enabled;
 
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
-static void gatt_client_hci_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8_t error_code);
 
 #ifdef ENABLE_LE_SIGNED_WRITE
@@ -87,9 +91,16 @@ static uint16_t peripheral_mtu(gatt_client_t *peripheral){
 void gatt_client_init(void){
     gatt_client_connections = NULL;
     mtu_exchange_enabled = 1;
+
     // regsister for HCI Events
-    hci_event_callback_registration.callback = &gatt_client_hci_event_packet_handler;
+    hci_event_callback_registration.callback = &gatt_client_event_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
+
+#ifdef ENABLE_GATT_CLIENT_PAIRING
+    // register for SM Events
+    sm_event_callback_registration.callback = &gatt_client_event_packet_handler;
+    sm_add_event_handler(&sm_event_callback_registration);
+#endif
 
     // and ATT Client PDUs
     att_dispatch_register_client(gatt_client_att_packet_handler);
@@ -825,6 +836,11 @@ static int gatt_client_run_for_peripheral( gatt_client_t * peripheral){
     // wait until re-encryption as central is complete
     if (gap_reconnect_security_setup_active(peripheral->con_handle)) return 0;
 
+#ifdef ENABLE_GATT_CLIENT_PAIRING
+    // wait until pairing complete
+    if (peripheral->wait_for_pairing_complete) return 0;
+#endif
+
     switch (peripheral->mtu_state) {
         case SEND_MTU_EXCHANGE:
             peripheral->mtu_state = SENT_MTU_EXCHANGE;
@@ -1052,25 +1068,46 @@ static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8
     emit_gatt_complete_event(peripheral, error_code);
 }
 
-static void gatt_client_hci_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);    // ok: handling own l2cap events
     UNUSED(size);       // ok: there is no channel
     
     if (packet_type != HCI_EVENT_PACKET) return;
 
+    hci_con_handle_t con_handle;
+    gatt_client_t * peripheral;
     switch (hci_event_packet_get_type(packet)) {
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-        {
             log_info("GATT Client: HCI_EVENT_DISCONNECTION_COMPLETE");
-            hci_con_handle_t con_handle = little_endian_read_16(packet,3);
-            gatt_client_t * peripheral = get_gatt_client_context_for_handle(con_handle);
+            con_handle = little_endian_read_16(packet,3);
+            peripheral = get_gatt_client_context_for_handle(con_handle);
             if (!peripheral) break;
             gatt_client_report_error_if_pending(peripheral, ATT_ERROR_HCI_DISCONNECT_RECEIVED);
             
             btstack_linked_list_remove(&gatt_client_connections, (btstack_linked_item_t *) peripheral);
             btstack_memory_gatt_client_free(peripheral);
             break;
-        }
+
+#ifdef ENABLE_GATT_CLIENT_PAIRING
+        // Pairing complete (with/without bonding=storing of pairing information)
+        case SM_EVENT_PAIRING_COMPLETE:
+            con_handle = sm_event_pairing_complete_get_handle(packet);
+            peripheral = get_gatt_client_context_for_handle(con_handle);
+            if (!peripheral) break;
+
+            if (peripheral->wait_for_pairing_complete){
+                peripheral->wait_for_pairing_complete = 0;
+                if (sm_event_pairing_complete_get_status(packet)){
+                    log_info("pairing failed, report previous error 0x%x", peripheral->pending_error_code);
+                    gatt_client_handle_transaction_complete(peripheral);
+                    emit_gatt_complete_event(peripheral, peripheral->pending_error_code);
+                } else {
+                    log_info("pairing success, retry operation");
+                }
+            }
+            break;
+#endif
+
         default:
             break;
     }
@@ -1401,7 +1438,102 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     }
                     break;
                 }
-                default:                
+
+#ifdef ENABLE_GATT_CLIENT_PAIRING
+
+                case ATT_ERROR_INSUFFICIENT_AUTHENTICATION:
+                case ATT_ERROR_INSUFFICIENT_ENCRYPTION_KEY_SIZE:
+                case ATT_ERROR_INSUFFICIENT_ENCRYPTION:
+                    // security too low
+                    if (peripheral->security_counter > 0) {
+                        gatt_client_report_error_if_pending(peripheral, packet[4]);
+                        break;
+                    }
+                    // start security
+                    peripheral->security_counter++;
+
+                    // setup action
+                    int retry = 1;
+                    switch (peripheral->gatt_client_state){
+                        case P_W4_READ_CHARACTERISTIC_VALUE_RESULT:
+                            peripheral->gatt_client_state = P_W2_SEND_READ_CHARACTERISTIC_VALUE_QUERY ;
+                            break;
+                        case P_W4_READ_BLOB_RESULT:
+                            peripheral->gatt_client_state = P_W2_SEND_READ_BLOB_QUERY;
+                            break;
+                        case P_W4_READ_BY_TYPE_RESPONSE:
+                            peripheral->gatt_client_state = P_W2_SEND_READ_BY_TYPE_REQUEST;
+                            break;
+                        case P_W4_READ_MULTIPLE_RESPONSE:
+                            peripheral->gatt_client_state = P_W2_SEND_READ_MULTIPLE_REQUEST;
+                            break;
+                        case P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
+                            peripheral->gatt_client_state = P_W2_SEND_WRITE_CHARACTERISTIC_VALUE;
+                            break;
+                        case P_W4_PREPARE_WRITE_RESULT:
+                            peripheral->gatt_client_state = P_W2_PREPARE_WRITE;
+                            break;
+                        case P_W4_PREPARE_WRITE_SINGLE_RESULT:
+                            peripheral->gatt_client_state = P_W2_PREPARE_WRITE_SINGLE;
+                            break;
+                        case P_W4_PREPARE_RELIABLE_WRITE_RESULT:
+                            peripheral->gatt_client_state = P_W2_PREPARE_RELIABLE_WRITE;
+                            break;
+                        case P_W4_EXECUTE_PREPARED_WRITE_RESULT:
+                            peripheral->gatt_client_state = P_W2_EXECUTE_PREPARED_WRITE;
+                            break;
+                        case P_W4_CANCEL_PREPARED_WRITE_RESULT:
+                            peripheral->gatt_client_state = P_W2_CANCEL_PREPARED_WRITE;
+                            break;
+                        case P_W4_CANCEL_PREPARED_WRITE_DATA_MISMATCH_RESULT:
+                            peripheral->gatt_client_state = P_W2_CANCEL_PREPARED_WRITE_DATA_MISMATCH;
+                            break;
+                        case P_W4_READ_CHARACTERISTIC_DESCRIPTOR_RESULT:
+                            peripheral->gatt_client_state = P_W2_SEND_READ_CHARACTERISTIC_DESCRIPTOR_QUERY;
+                            break;
+                        case P_W4_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_RESULT:
+                            peripheral->gatt_client_state = P_W2_SEND_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_QUERY;
+                            break;
+                        case P_W4_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT:
+                            peripheral->gatt_client_state = P_W2_SEND_WRITE_CHARACTERISTIC_DESCRIPTOR;
+                            break;
+                        case P_W4_CLIENT_CHARACTERISTIC_CONFIGURATION_RESULT:
+                            peripheral->gatt_client_state = P_W2_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
+                            break;
+                        case P_W4_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT:
+                            peripheral->gatt_client_state = P_W2_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR;
+                            break;
+                        case P_W4_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT:
+                            peripheral->gatt_client_state = P_W2_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR;
+                            break;
+#ifdef ENABLE_LE_SIGNED_WRITE
+                        case P_W4_SEND_SINGED_WRITE_DONE:
+                            peripheral->gatt_client_state = P_W2_SEND_SIGNED_WRITE;
+                            break;
+#endif
+                        default:
+                            log_info("retry not supported for state %x", peripheral->gatt_client_state);
+                            retry = 0;
+                            break;
+                    }
+
+                    if (!retry) {
+                        gatt_client_report_error_if_pending(peripheral, packet[4]);
+                        break;
+                    }
+
+                    log_info("security error, start pairing");
+
+                    // requrest pairing
+                    peripheral->wait_for_pairing_complete = 1;
+                    peripheral->pending_error_code = packet[4];
+                    sm_request_pairing(peripheral->con_handle);
+                    break;
+#endif
+
+                // nothing we can do about that
+                case ATT_ERROR_INSUFFICIENT_AUTHORIZATION:
+                default:
                     gatt_client_report_error_if_pending(peripheral, packet[4]);
                     break;
             }

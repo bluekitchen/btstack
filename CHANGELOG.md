@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - ATT Server: wait until re-encryption is complete
 - GATT Client: wait until re-encryption is complete
 - ATT Server: added att_server_request_to_send_notification and att_server_request_to_send_indication
+- GATT Client: if ENABLE_GATT_CLIENT_PAIRING, GATT Client starts pairing and retry operation on security error
 
 ### Changed
 - ATT Server: att_server_register_can_send_now_callback is deprecated, use att_server_request_to_send_notification/indication instead
