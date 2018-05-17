@@ -413,6 +413,9 @@ typedef struct {
 
     att_connection_t        connection;
 
+    btstack_linked_list_t   notification_requests;
+    btstack_linked_list_t   indication_requests;
+
     uint16_t                request_size;
     uint8_t                 request_buffer[ATT_REQUEST_BUFFER_SIZE];
 

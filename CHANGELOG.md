@@ -10,8 +10,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: re-encrypt outgoing connection if bonded
 - ATT Server: wait until re-encryption is complete
 - GATT Client: wait until re-encryption is complete
+- ATT Server: added att_server_request_to_send_notification and att_server_request_to_send_indication
 
 ### Changed
+- ATT Server: att_server_register_can_send_now_callback is deprecated, use att_server_request_to_send_notification/indication instead
 
 ### Fixed
 - SM: Fix LE Secure Connection pairing in Central role
