@@ -92,7 +92,7 @@ static btstack_packet_callback_registration_t sm_event_callback_registration;
 static btstack_packet_handler_t               att_client_packet_handler = NULL;
 static btstack_linked_list_t                  can_send_now_clients;
 static btstack_linked_list_t                  service_handlers;
-static uint8_t                                att_client_waiting_for_can_send;
+static btstack_context_callback_registration_t att_client_waiting_for_can_send_registration;
 
 static att_read_callback_t                    att_server_client_read_callback;
 static att_write_callback_t                   att_server_client_write_callback;
@@ -148,7 +148,8 @@ static void att_emit_mtu_event(hci_con_handle_t con_handle, uint16_t mtu){
     (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 
-static void att_emit_can_send_now_event(void){
+static void att_emit_can_send_now_event(void * context){
+    UNUSED(context);
     if (!att_client_packet_handler) return;
 
     uint8_t event[] = { ATT_EVENT_CAN_SEND_NOW, 0};
@@ -484,7 +485,7 @@ static void att_server_handle_can_send_now(void){
         att_server_t * att_server = &connection->att_server;
         if (att_server->state == ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED){
             int sent = att_server_process_validated_request(att_server);
-            if (sent && (att_client_waiting_for_can_send || !btstack_linked_list_empty(&can_send_now_clients))){
+            if (sent && !btstack_linked_list_empty(&can_send_now_clients)){
                 att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
                 return;
             }
@@ -500,16 +501,11 @@ static void att_server_handle_can_send_now(void){
 
         // request again if needed
         if (!att_dispatch_server_can_send_now(con_handle)){
-            if (!btstack_linked_list_empty(&can_send_now_clients) || att_client_waiting_for_can_send){
+            if (!btstack_linked_list_empty(&can_send_now_clients)){
                 att_dispatch_server_request_can_send_now_event(con_handle);
             }
             return;
         }
-    }
-
-    if (att_client_waiting_for_can_send){
-        att_client_waiting_for_can_send = 0;
-        att_emit_can_send_now_event();
     }
 }
 
@@ -855,8 +851,8 @@ int  att_server_can_send_packet_now(hci_con_handle_t con_handle){
 
 void att_server_request_can_send_now_event(hci_con_handle_t con_handle){
     log_debug("att_server_request_can_send_now_event 0x%04x", con_handle);
-    att_client_waiting_for_can_send = 1;
-    att_dispatch_server_request_can_send_now_event(con_handle);
+    att_client_waiting_for_can_send_registration.callback = &att_emit_can_send_now_event;
+    att_server_register_can_send_now_callback(&att_client_waiting_for_can_send_registration, con_handle);
 }
 
 void att_server_register_can_send_now_callback(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
