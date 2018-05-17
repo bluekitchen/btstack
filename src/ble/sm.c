@@ -2976,8 +2976,17 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     log_info("Encryption state change: %u, key size %u", sm_conn->sm_connection_encrypted,
                         sm_conn->sm_actual_encryption_key_size);
                     log_info("event handler, state %u", sm_conn->sm_engine_state);
+
+                    // encryption change event concludes re-encryption for bonded devices (even if it fails)
+                    if (sm_conn->sm_engine_state == SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED){
+                        sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
+                        sm_done_for_handle(sm_conn->sm_handle);
+                        break;
+                    }
+
                     if (!sm_conn->sm_connection_encrypted) break;
-                    // continue if part of initial pairing
+
+                    // continue pairing
                     switch (sm_conn->sm_engine_state){
                         case SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED:
                             sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
