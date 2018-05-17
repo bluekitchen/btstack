@@ -89,8 +89,9 @@ void att_server_request_can_send_now_event(hci_con_handle_t con_handle);
  * @note callback might happend during call to this function
  * @param callback_registration to point to callback function and context information
  * @param con_handle
+ * @return 0 if ok, error otherwise
  */
-void att_server_register_can_send_now_callback(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle);
+int att_server_register_can_send_now_callback(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle);
 
 /*
  * @brief notify client about attribute value change

@@ -90,7 +90,6 @@ typedef struct {
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 static btstack_packet_handler_t               att_client_packet_handler = NULL;
-static btstack_linked_list_t                  can_send_now_clients;
 static btstack_linked_list_t                  service_handlers;
 static btstack_context_callback_registration_t att_client_waiting_for_can_send_registration;
 
@@ -478,35 +477,64 @@ static void att_server_handle_can_send_now(void){
 
     // NOTE: we get l2cap fixed channel instead of con_handle 
 
+    int can_send_now = 1;
+
+    // process all server requests
     btstack_linked_list_iterator_t it;
     hci_connections_get_iterator(&it);
     while(btstack_linked_list_iterator_has_next(&it)){
         hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
         att_server_t * att_server = &connection->att_server;
         if (att_server->state == ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED){
-            int sent = att_server_process_validated_request(att_server);
-            if (sent && !btstack_linked_list_empty(&can_send_now_clients)){
+            if (can_send_now){
+                att_server_process_validated_request(att_server);
+                can_send_now = att_dispatch_server_can_send_now(att_server->connection.con_handle);
+            } else {
+                // can_send_now == 0
                 att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
                 return;
             }
         }
     }
 
-    while (!btstack_linked_list_empty(&can_send_now_clients)){
-        // handle first client
-        btstack_context_callback_registration_t * client = (btstack_context_callback_registration_t*) can_send_now_clients;
-        hci_con_handle_t con_handle = (uintptr_t) client->context;
-        btstack_linked_list_remove(&can_send_now_clients, (btstack_linked_item_t *) client);
-        client->callback(client->context);
+    hci_con_handle_t request_con_handle = HCI_CON_HANDLE_INVALID;
+    while (1){
+        hci_connections_get_iterator(&it);
+        while(btstack_linked_list_iterator_has_next(&it)){
+            hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
+            att_server_t * att_server = &connection->att_server;
 
-        // request again if needed
-        if (!att_dispatch_server_can_send_now(con_handle)){
-            if (!btstack_linked_list_empty(&can_send_now_clients)){
-                att_dispatch_server_request_can_send_now_event(con_handle);
+            if (!btstack_linked_list_empty(&att_server->can_send_now_clients)){
+                if (can_send_now){
+                    btstack_context_callback_registration_t * client = (btstack_context_callback_registration_t*) att_server->can_send_now_clients;
+                    btstack_linked_list_remove(&att_server->can_send_now_clients, (btstack_linked_item_t *) client);
+                    client->callback(client->context);
+                    can_send_now = att_dispatch_server_can_send_now(att_server->connection.con_handle);
+                    // track if there's more to send, but keep iterating
+                    if (request_con_handle == HCI_CON_HANDLE_INVALID && !btstack_linked_list_empty(&att_server->can_send_now_clients)){
+                        request_con_handle = att_server->connection.con_handle;
+                    }
+                } else {
+                    // can_send_now == 0
+                    att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
+                    return;
+                }
             }
-            return;
         }
+
+        // Exit loop, if we cannot send (request_con_handle will be set)
+        if (!can_send_now) break;
+
+        // Exit loop, if we can send but there are also no further request
+        if (request_con_handle == HCI_CON_HANDLE_INVALID) break;
+
+        // Finally, if we still can send and there are requests, just try again
+        request_con_handle = HCI_CON_HANDLE_INVALID;
     }
+
+    if (request_con_handle == HCI_CON_HANDLE_INVALID) return;
+
+    att_dispatch_server_request_can_send_now_event(request_con_handle);
 }
 
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
@@ -855,11 +883,12 @@ void att_server_request_can_send_now_event(hci_con_handle_t con_handle){
     att_server_register_can_send_now_callback(&att_client_waiting_for_can_send_registration, con_handle);
 }
 
-void att_server_register_can_send_now_callback(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
-    // check if valid con handle
-    if (gap_get_connection_type(con_handle) != GAP_CONNECTION_LE) return;
-    btstack_linked_list_add_tail(&can_send_now_clients, (btstack_linked_item_t*) callback_registration);
+int att_server_register_can_send_now_callback(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
+    att_server_t * att_server = att_server_for_handle(con_handle);
+    if (!att_server) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    btstack_linked_list_add_tail(&att_server->can_send_now_clients, (btstack_linked_item_t*) callback_registration);
     att_dispatch_server_request_can_send_now_event(con_handle);
+    return ERROR_CODE_SUCCESS;
 }
 
 int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t *value, uint16_t value_len){
