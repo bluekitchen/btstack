@@ -1990,20 +1990,6 @@ static void sm_run(void){
                     sm_reset_setup();
                     sm_start_calculating_ltk_from_ediv_and_rand(sm_connection);
                     break;
-#endif
-#ifdef ENABLE_LE_CENTRAL
-                case SM_INITIATOR_PH0_HAS_LTK:
-                    sm_reset_setup();
-                    sm_load_security_info(sm_connection);
-                    sm_connection->sm_engine_state = SM_INITIATOR_PH0_SEND_START_ENCRYPTION;
-                    break;
-                case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
-                    sm_reset_setup();
-                    sm_init_setup(sm_connection);
-                    sm_timeout_start(sm_connection);
-                    sm_connection->sm_engine_state = SM_INITIATOR_PH1_SEND_PAIRING_REQUEST;
-                    break;
-#endif
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
                 case SM_SC_RECEIVED_LTK_REQUEST:
@@ -2030,7 +2016,23 @@ static void sm_run(void){
                             break;
                     }
                     break;
+#endif /* ENABLE_LE_SECURE_CONNECTIONS */
+#endif /* ENABLE_LE_PERIPHERAL */
+
+#ifdef ENABLE_LE_CENTRAL
+                case SM_INITIATOR_PH0_HAS_LTK:
+                    sm_reset_setup();
+                    sm_load_security_info(sm_connection);
+                    sm_connection->sm_engine_state = SM_INITIATOR_PH0_SEND_START_ENCRYPTION;
+                    break;
+                case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
+                    sm_reset_setup();
+                    sm_init_setup(sm_connection);
+                    sm_timeout_start(sm_connection);
+                    sm_connection->sm_engine_state = SM_INITIATOR_PH1_SEND_PAIRING_REQUEST;
+                    break;
 #endif
+
                 default:
                     done = 0;
                     break;
@@ -3221,21 +3223,17 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
-            if (sm_conn->sm_irk_lookup_state == IRK_LOOKUP_FAILED){
-                sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
-                break;
-            }
-            if (sm_conn->sm_irk_lookup_state == IRK_LOOKUP_SUCCEEDED){
-                sm_key_t ltk;
-                le_device_db_encryption_get(sm_conn->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL);
-                if (!sm_is_null_key(ltk)){
-                    log_info("sm: Setting up previous ltk/ediv/rand for device index %u", sm_conn->sm_le_db_index);
-                    sm_conn->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
-                } else {
+
+            // IRK complete?
+            switch (sm_conn->sm_irk_lookup_state){
+                case IRK_LOOKUP_FAILED:
+                case IRK_LOOKUP_SUCCEEDED:
                     sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
-                }
-                break;
+                    break;
+                default:
+                    break;
             }
+
             // otherwise, store security request
             sm_conn->sm_security_request_received = 1;
             break;
@@ -3798,23 +3796,12 @@ void sm_request_pairing(hci_con_handle_t con_handle){
         sm_send_security_request_for_connection(sm_conn);
     } else {
         // used as a trigger to start central/master/initiator security procedures
-        uint16_t ediv;
-        sm_key_t ltk;
         if (sm_conn->sm_engine_state == SM_INITIATOR_CONNECTED){
             switch (sm_conn->sm_irk_lookup_state){
+                case IRK_LOOKUP_SUCCEEDED:
                 case IRK_LOOKUP_FAILED:
-                    log_info("irk lookup failed, send pairing request");
                     sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
                     break;
-                case IRK_LOOKUP_SUCCEEDED:
-                        le_device_db_encryption_get(sm_conn->sm_le_db_index, &ediv, NULL, ltk, NULL, NULL, NULL);
-                        if (!sm_is_null_key(ltk) || ediv){
-                            log_info("sm: Setting up previous ltk/ediv/rand for device index %u", sm_conn->sm_le_db_index);
-                            sm_conn->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
-                        } else {
-                            sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
-                        }
-                        break;
                 default:
                     log_info("irk lookup pending");
                     sm_conn->sm_pairing_requested = 1;
