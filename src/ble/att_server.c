@@ -479,6 +479,36 @@ static void att_run_for_context(att_server_t * att_server){
     }   
 }
 
+static int att_server_data_ready_for_phase(att_server_t * att_server,  att_server_run_phase_t phase){
+    switch (phase){
+        case ATT_SERVER_RUN_PHASE_1_REQUESTS:
+            return att_server->state == ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED;
+        case ATT_SERVER_RUN_PHASE_2_INDICATIONS:
+             return (!btstack_linked_list_empty(&att_server->indication_requests) && att_server->value_indication_handle == 0);
+        case ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS:
+            return (!btstack_linked_list_empty(&att_server->notification_requests));
+    }
+}
+
+static void att_server_trigger_send_for_phase(att_server_t * att_server,  att_server_run_phase_t phase){
+    btstack_context_callback_registration_t * client;
+    switch (phase){
+        case ATT_SERVER_RUN_PHASE_1_REQUESTS:
+            att_server_process_validated_request(att_server);
+            break;
+        case ATT_SERVER_RUN_PHASE_2_INDICATIONS:
+            client = (btstack_context_callback_registration_t*) att_server->indication_requests;
+            btstack_linked_list_remove(&att_server->indication_requests, (btstack_linked_item_t *) client);
+            client->callback(client->context);
+            break;
+       case ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS:
+            client = (btstack_context_callback_registration_t*) att_server->notification_requests;
+            btstack_linked_list_remove(&att_server->notification_requests, (btstack_linked_item_t *) client);
+            client->callback(client->context);
+            break;
+    }
+}
+
 static void att_server_handle_can_send_now(void){
 
     // NOTE: we get l2cap fixed channel instead of con_handle 
@@ -494,55 +524,19 @@ static void att_server_handle_can_send_now(void){
             while(btstack_linked_list_iterator_has_next(&it)){
                 hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
                 att_server_t * att_server = &connection->att_server;
-                switch ((att_server_run_phase_t) phase){
-                    case ATT_SERVER_RUN_PHASE_1_REQUESTS:
-                        if (att_server->state == ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED){
-                            if (can_send_now){
-                                att_server_process_validated_request(att_server);
-                                can_send_now = att_dispatch_server_can_send_now(att_server->connection.con_handle);
-                            } else {
-                                // can_send_now == 0
-                                att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
-                                return;
-                            }
+                int data_ready = att_server_data_ready_for_phase(att_server, phase);
+                if (data_ready){
+                    if (can_send_now){
+                        att_server_trigger_send_for_phase(att_server, phase);
+                        can_send_now = att_dispatch_server_can_send_now(att_server->connection.con_handle);
+                        data_ready = att_server_data_ready_for_phase(att_server, phase);
+                        if (request_con_handle == HCI_CON_HANDLE_INVALID && data_ready){
+                            request_con_handle = att_server->connection.con_handle;
                         }
-                        break;
-                    case ATT_SERVER_RUN_PHASE_2_INDICATIONS:
-                        if (!btstack_linked_list_empty(&att_server->indication_requests) && att_server->value_indication_handle == 0){
-                            if (can_send_now){
-                                btstack_context_callback_registration_t * client = (btstack_context_callback_registration_t*) att_server->indication_requests;
-                                btstack_linked_list_remove(&att_server->indication_requests, (btstack_linked_item_t *) client);
-                                client->callback(client->context);
-                                can_send_now = att_dispatch_server_can_send_now(att_server->connection.con_handle);
-                                // track if there's more to send, but keep iterating - only true if callee didn't send indication
-                                if (request_con_handle == HCI_CON_HANDLE_INVALID && att_server->value_indication_handle == 0 && !btstack_linked_list_empty(&att_server->indication_requests)){
-                                    request_con_handle = att_server->connection.con_handle;
-                                }
-                            } else {
-                                // can_send_now == 0
-                                att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
-                                return;
-                            }
-                        }
-                        break;
-                    case ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS:
-                        if (!btstack_linked_list_empty(&att_server->notification_requests)){
-                            if (can_send_now){
-                                btstack_context_callback_registration_t * client = (btstack_context_callback_registration_t*) att_server->notification_requests;
-                                btstack_linked_list_remove(&att_server->notification_requests, (btstack_linked_item_t *) client);
-                                client->callback(client->context);
-                                can_send_now = att_dispatch_server_can_send_now(att_server->connection.con_handle);
-                                // track if there's more to send, but keep iterating
-                                if (request_con_handle == HCI_CON_HANDLE_INVALID && !btstack_linked_list_empty(&att_server->notification_requests)){
-                                    request_con_handle = att_server->connection.con_handle;
-                                }
-                            } else {
-                                // can_send_now == 0
-                                att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
-                                return;
-                            }
-                        }
-                        break;
+                    } else {
+                        att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
+                        return;
+                    }
                 }
             }
 
