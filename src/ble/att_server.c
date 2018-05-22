@@ -102,9 +102,8 @@ static btstack_context_callback_registration_t att_client_waiting_for_can_send_r
 static att_read_callback_t                    att_server_client_read_callback;
 static att_write_callback_t                   att_server_client_write_callback;
 
-// track CCC 1-entry cache
-// static att_server_t *    att_persistent_ccc_server;
-// static hci_con_handle_t  att_persistent_ccc_con_handle;
+// round robin
+static hci_con_handle_t att_server_last_can_send_now = HCI_CON_HANDLE_INVALID;
 
 static att_server_t * att_server_for_handle(hci_con_handle_t con_handle){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
@@ -511,26 +510,42 @@ static void att_server_trigger_send_for_phase(att_server_t * att_server,  att_se
 
 static void att_server_handle_can_send_now(void){
 
-    // NOTE: we get l2cap fixed channel instead of con_handle 
-
+    hci_con_handle_t request_con_handle   = HCI_CON_HANDLE_INVALID;
+    hci_con_handle_t last_send_con_handle = HCI_CON_HANDLE_INVALID;
     int can_send_now = 1;
-    hci_con_handle_t request_con_handle = HCI_CON_HANDLE_INVALID;
-
     int phase;
+
     for (phase = ATT_SERVER_RUN_PHASE_1_REQUESTS; phase <= ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS; phase++){
-        btstack_linked_list_iterator_t it;
+        hci_con_handle_t skip_connections_until = att_server_last_can_send_now;
         while (1){
+            btstack_linked_list_iterator_t it;
             hci_connections_get_iterator(&it);
             while(btstack_linked_list_iterator_has_next(&it)){
                 hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
                 att_server_t * att_server = &connection->att_server;
+
                 int data_ready = att_server_data_ready_for_phase(att_server, phase);
+
+                // log_debug("phase %u, handle 0x%04x, skip until 0x%04x, data ready %u", phase, att_server->connection.con_handle, skip_connections_until, data_ready);
+
+                // skip until last sender found (which is also skipped)
+                if (skip_connections_until != HCI_CON_HANDLE_INVALID){
+                    if (data_ready && request_con_handle == HCI_CON_HANDLE_INVALID){
+                        request_con_handle = att_server->connection.con_handle;
+                    }
+                    if (skip_connections_until == att_server->connection.con_handle){
+                        skip_connections_until = HCI_CON_HANDLE_INVALID;
+                    }
+                    continue;
+                };
+
                 if (data_ready){
                     if (can_send_now){
                         att_server_trigger_send_for_phase(att_server, phase);
+                        last_send_con_handle = att_server->connection.con_handle;
                         can_send_now = att_dispatch_server_can_send_now(att_server->connection.con_handle);
                         data_ready = att_server_data_ready_for_phase(att_server, phase);
-                        if (request_con_handle == HCI_CON_HANDLE_INVALID && data_ready){
+                        if (data_ready && request_con_handle == HCI_CON_HANDLE_INVALID){
                             request_con_handle = att_server->connection.con_handle;
                         }
                     } else {
@@ -540,6 +555,9 @@ static void att_server_handle_can_send_now(void){
                 }
             }
 
+            // stop skipping (handles disconnect by last send connection)
+            skip_connections_until = HCI_CON_HANDLE_INVALID;
+
             // Exit loop, if we cannot send
             if (!can_send_now) break;
 
@@ -548,6 +566,10 @@ static void att_server_handle_can_send_now(void){
 
             // Finally, if we still can send and there are requests, just try again
             request_con_handle = HCI_CON_HANDLE_INVALID;
+        }
+        // update last send con handle for round robin
+        if (last_send_con_handle != HCI_CON_HANDLE_INVALID){
+            att_server_last_can_send_now = last_send_con_handle;
         }
     }
 
