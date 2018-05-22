@@ -78,6 +78,12 @@ static att_write_callback_t att_server_write_callback_for_handle(uint16_t handle
 static void att_server_persistent_ccc_restore(att_server_t * att_server);
 static void att_server_persistent_ccc_clear(att_server_t * att_server);
 
+typedef enum {
+    ATT_SERVER_RUN_PHASE_1_REQUESTS,
+    ATT_SERVER_RUN_PHASE_2_INDICATIONS,
+    ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS,
+} att_server_run_phase_t;
+
 //
 typedef struct {
     uint32_t seq_nr;
@@ -478,106 +484,80 @@ static void att_server_handle_can_send_now(void){
     // NOTE: we get l2cap fixed channel instead of con_handle 
 
     int can_send_now = 1;
-
-    // process all server requests
-    btstack_linked_list_iterator_t it;
     hci_con_handle_t request_con_handle = HCI_CON_HANDLE_INVALID;
-    while (1){
-        hci_connections_get_iterator(&it);
-        while(btstack_linked_list_iterator_has_next(&it)){
-            hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
-            att_server_t * att_server = &connection->att_server;
-            if (att_server->state == ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED){
-                if (can_send_now){
-                    att_server_process_validated_request(att_server);
-                    can_send_now = att_dispatch_server_can_send_now(att_server->connection.con_handle);
-                } else {
-                    // can_send_now == 0
-                    att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
-                    return;
+
+    int phase;
+    for (phase = ATT_SERVER_RUN_PHASE_1_REQUESTS; phase <= ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS; phase++){
+        btstack_linked_list_iterator_t it;
+        while (1){
+            hci_connections_get_iterator(&it);
+            while(btstack_linked_list_iterator_has_next(&it)){
+                hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
+                att_server_t * att_server = &connection->att_server;
+                switch ((att_server_run_phase_t) phase){
+                    case ATT_SERVER_RUN_PHASE_1_REQUESTS:
+                        if (att_server->state == ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED){
+                            if (can_send_now){
+                                att_server_process_validated_request(att_server);
+                                can_send_now = att_dispatch_server_can_send_now(att_server->connection.con_handle);
+                            } else {
+                                // can_send_now == 0
+                                att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
+                                return;
+                            }
+                        }
+                        break;
+                    case ATT_SERVER_RUN_PHASE_2_INDICATIONS:
+                        if (!btstack_linked_list_empty(&att_server->indication_requests) && att_server->value_indication_handle == 0){
+                            if (can_send_now){
+                                btstack_context_callback_registration_t * client = (btstack_context_callback_registration_t*) att_server->indication_requests;
+                                btstack_linked_list_remove(&att_server->indication_requests, (btstack_linked_item_t *) client);
+                                client->callback(client->context);
+                                can_send_now = att_dispatch_server_can_send_now(att_server->connection.con_handle);
+                                // track if there's more to send, but keep iterating - only true if callee didn't send indication
+                                if (request_con_handle == HCI_CON_HANDLE_INVALID && att_server->value_indication_handle == 0 && !btstack_linked_list_empty(&att_server->indication_requests)){
+                                    request_con_handle = att_server->connection.con_handle;
+                                }
+                            } else {
+                                // can_send_now == 0
+                                att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
+                                return;
+                            }
+                        }
+                        break;
+                    case ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS:
+                        if (!btstack_linked_list_empty(&att_server->notification_requests)){
+                            if (can_send_now){
+                                btstack_context_callback_registration_t * client = (btstack_context_callback_registration_t*) att_server->notification_requests;
+                                btstack_linked_list_remove(&att_server->notification_requests, (btstack_linked_item_t *) client);
+                                client->callback(client->context);
+                                can_send_now = att_dispatch_server_can_send_now(att_server->connection.con_handle);
+                                // track if there's more to send, but keep iterating
+                                if (request_con_handle == HCI_CON_HANDLE_INVALID && !btstack_linked_list_empty(&att_server->notification_requests)){
+                                    request_con_handle = att_server->connection.con_handle;
+                                }
+                            } else {
+                                // can_send_now == 0
+                                att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
+                                return;
+                            }
+                        }
+                        break;
                 }
             }
+
+            // Exit loop, if we cannot send
+            if (!can_send_now) break;
+
+            // Exit loop, if we can send but there are also no further request
+            if (request_con_handle == HCI_CON_HANDLE_INVALID) break;
+
+            // Finally, if we still can send and there are requests, just try again
+            request_con_handle = HCI_CON_HANDLE_INVALID;
         }
-        // Exit loop, if we cannot send
-        if (!can_send_now) break;
-
-        // Exit loop, if we can send but there are also no further request
-        if (request_con_handle == HCI_CON_HANDLE_INVALID) break;
-
-        // Finally, if we still can send and there are requests, just try again
-        request_con_handle = HCI_CON_HANDLE_INVALID;
-    }
-
-    // then send indications
-    while (1){
-        hci_connections_get_iterator(&it);
-        while(btstack_linked_list_iterator_has_next(&it)){
-            hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
-            att_server_t * att_server = &connection->att_server;
-            if (!btstack_linked_list_empty(&att_server->indication_requests) && att_server->value_indication_handle == 0){
-                if (can_send_now){
-                    btstack_context_callback_registration_t * client = (btstack_context_callback_registration_t*) att_server->indication_requests;
-                    btstack_linked_list_remove(&att_server->indication_requests, (btstack_linked_item_t *) client);
-                    client->callback(client->context);
-                    can_send_now = att_dispatch_server_can_send_now(att_server->connection.con_handle);
-                    // track if there's more to send, but keep iterating - only true if callee didn't send indication
-                    if (request_con_handle == HCI_CON_HANDLE_INVALID && att_server->value_indication_handle == 0 && !btstack_linked_list_empty(&att_server->indication_requests)){
-                        request_con_handle = att_server->connection.con_handle;
-                    }
-                } else {
-                    // can_send_now == 0
-                    att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
-                    return;
-                }
-            }
-        }
-
-        // Exit loop, if we cannot send (request_con_handle will be set)
-        if (!can_send_now) break;
-
-        // Exit loop, if we can send but there are also no further request
-        if (request_con_handle == HCI_CON_HANDLE_INVALID) break;
-
-        // Finally, if we still can send and there are requests, just try again
-        request_con_handle = HCI_CON_HANDLE_INVALID;
-    }
-
-    // finally send notifications
-    while (1){
-        hci_connections_get_iterator(&it);
-        while(btstack_linked_list_iterator_has_next(&it)){
-            hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
-            att_server_t * att_server = &connection->att_server;
-            if (!btstack_linked_list_empty(&att_server->notification_requests)){
-                if (can_send_now){
-                    btstack_context_callback_registration_t * client = (btstack_context_callback_registration_t*) att_server->notification_requests;
-                    btstack_linked_list_remove(&att_server->notification_requests, (btstack_linked_item_t *) client);
-                    client->callback(client->context);
-                    can_send_now = att_dispatch_server_can_send_now(att_server->connection.con_handle);
-                    // track if there's more to send, but keep iterating
-                    if (request_con_handle == HCI_CON_HANDLE_INVALID && !btstack_linked_list_empty(&att_server->notification_requests)){
-                        request_con_handle = att_server->connection.con_handle;
-                    }
-                } else {
-                    // can_send_now == 0
-                    att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
-                    return;
-                }
-            }
-        }
-
-        // Exit loop, if we cannot send (request_con_handle will be set)
-        if (!can_send_now) break;
-
-        // Exit loop, if we can send but there are also no further request
-        if (request_con_handle == HCI_CON_HANDLE_INVALID) break;
-
-        // Finally, if we still can send and there are requests, just try again
-        request_con_handle = HCI_CON_HANDLE_INVALID;
     }
 
     if (request_con_handle == HCI_CON_HANDLE_INVALID) return;
-
     att_dispatch_server_request_can_send_now_event(request_con_handle);
 }
 
