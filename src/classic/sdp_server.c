@@ -44,6 +44,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "bluetooth.h"
 #include "bluetooth_sdp.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
@@ -52,6 +53,7 @@
 #include "classic/sdp_server.h"
 #include "classic/sdp_util.h"
 #include "hci_dump.h"
+#include "hci.h"
 #include "l2cap.h"
 
 // max reserved ServiceRecordHandle
@@ -59,7 +61,7 @@
 
 // max SDP response matches L2CAP PDU -- allow to use smaller buffer
 #ifndef SDP_RESPONSE_BUFFER_SIZE
-#define SDP_RESPONSE_BUFFER_SIZE (HCI_ACL_BUFFER_SIZE-HCI_ACL_HEADER_SIZE)
+#define SDP_RESPONSE_BUFFER_SIZE (HCI_ACL_PAYLOAD_SIZE-L2CAP_HEADER_SIZE)
 #endif
 
 static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
