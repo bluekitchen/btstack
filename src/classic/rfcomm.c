@@ -777,6 +777,7 @@ static void rfcomm_multiplexer_finalize(rfcomm_multiplexer_t * multiplexer){
             // emit appropriate events
             switch(channel->state){
                 case RFCOMM_CHANNEL_OPEN:
+                case RFCOMM_CHANNEL_W4_UA_AFTER_DISC:
                     rfcomm_emit_channel_closed(channel);
                     break;
                 case RFCOMM_CHANNEL_SEND_UA_AFTER_DISC:
