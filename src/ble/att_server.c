@@ -481,23 +481,33 @@ static void att_server_handle_can_send_now(void){
 
     // process all server requests
     btstack_linked_list_iterator_t it;
-    hci_connections_get_iterator(&it);
-    while(btstack_linked_list_iterator_has_next(&it)){
-        hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
-        att_server_t * att_server = &connection->att_server;
-        if (att_server->state == ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED){
-            if (can_send_now){
-                att_server_process_validated_request(att_server);
-                can_send_now = att_dispatch_server_can_send_now(att_server->connection.con_handle);
-            } else {
-                // can_send_now == 0
-                att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
-                return;
+    hci_con_handle_t request_con_handle = HCI_CON_HANDLE_INVALID;
+    while (1){
+        hci_connections_get_iterator(&it);
+        while(btstack_linked_list_iterator_has_next(&it)){
+            hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
+            att_server_t * att_server = &connection->att_server;
+            if (att_server->state == ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED){
+                if (can_send_now){
+                    att_server_process_validated_request(att_server);
+                    can_send_now = att_dispatch_server_can_send_now(att_server->connection.con_handle);
+                } else {
+                    // can_send_now == 0
+                    att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
+                    return;
+                }
             }
         }
+        // Exit loop, if we cannot send
+        if (!can_send_now) break;
+
+        // Exit loop, if we can send but there are also no further request
+        if (request_con_handle == HCI_CON_HANDLE_INVALID) break;
+
+        // Finally, if we still can send and there are requests, just try again
+        request_con_handle = HCI_CON_HANDLE_INVALID;
     }
 
-    hci_con_handle_t request_con_handle = HCI_CON_HANDLE_INVALID;
     while (1){
         hci_connections_get_iterator(&it);
         while(btstack_linked_list_iterator_has_next(&it)){
