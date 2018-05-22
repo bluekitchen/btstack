@@ -508,13 +508,12 @@ static void att_server_handle_can_send_now(void){
         request_con_handle = HCI_CON_HANDLE_INVALID;
     }
 
+    // then send indications
     while (1){
         hci_connections_get_iterator(&it);
         while(btstack_linked_list_iterator_has_next(&it)){
             hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
             att_server_t * att_server = &connection->att_server;
-
-            // handle indications first
             if (!btstack_linked_list_empty(&att_server->indication_requests) && att_server->value_indication_handle == 0){
                 if (can_send_now){
                     btstack_context_callback_registration_t * client = (btstack_context_callback_registration_t*) att_server->indication_requests;
@@ -531,8 +530,24 @@ static void att_server_handle_can_send_now(void){
                     return;
                 }
             }
+        }
 
-            // then notifications
+        // Exit loop, if we cannot send (request_con_handle will be set)
+        if (!can_send_now) break;
+
+        // Exit loop, if we can send but there are also no further request
+        if (request_con_handle == HCI_CON_HANDLE_INVALID) break;
+
+        // Finally, if we still can send and there are requests, just try again
+        request_con_handle = HCI_CON_HANDLE_INVALID;
+    }
+
+    // finally send notifications
+    while (1){
+        hci_connections_get_iterator(&it);
+        while(btstack_linked_list_iterator_has_next(&it)){
+            hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
+            att_server_t * att_server = &connection->att_server;
             if (!btstack_linked_list_empty(&att_server->notification_requests)){
                 if (can_send_now){
                     btstack_context_callback_registration_t * client = (btstack_context_callback_registration_t*) att_server->notification_requests;
