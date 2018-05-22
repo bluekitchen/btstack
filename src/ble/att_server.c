@@ -534,8 +534,8 @@ static void att_server_handle_can_send_now(void){
                             request_con_handle = att_server->connection.con_handle;
                         }
                     } else {
-                        att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
-                        return;
+                        request_con_handle = att_server->connection.con_handle;
+                        break;
                     }
                 }
             }
