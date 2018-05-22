@@ -487,6 +487,8 @@ static int att_server_data_ready_for_phase(att_server_t * att_server,  att_serve
         case ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS:
             return (!btstack_linked_list_empty(&att_server->notification_requests));
     }
+    // avoid warning
+    return 0;
 }
 
 static void att_server_trigger_send_for_phase(att_server_t * att_server,  att_server_run_phase_t phase){
