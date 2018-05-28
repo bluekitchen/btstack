@@ -521,7 +521,7 @@ def parseCharacteristicUserDescription(fout, parts):
 
     size = 2 + 2 + 2 + 2
     if is_string(value):
-        size = size + len(value) - 2
+        size = size + len(value)
     else:
         size = size + len(value.split())
 
