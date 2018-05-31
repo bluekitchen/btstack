@@ -4586,7 +4586,7 @@ static int gap_pairing_set_state_and_run(bd_addr_t addr, uint8_t state){
  * @return 0 if ok
  */
 int gap_pin_code_response(bd_addr_t addr, const char * pin){
-    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
     hci_stack->gap_pairing_pin = pin;
     return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_PIN);
 }
@@ -4598,7 +4598,7 @@ int gap_pin_code_response(bd_addr_t addr, const char * pin){
  * @return 0 if ok
  */
 int gap_pin_code_negative(bd_addr_t addr){
-    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
     return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_PIN_NEGATIVE);
 }
 
@@ -4609,7 +4609,7 @@ int gap_pin_code_negative(bd_addr_t addr){
  * @return 0 if ok
  */
 int gap_ssp_passkey_response(bd_addr_t addr, uint32_t passkey){
-    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
     hci_stack->gap_pairing_passkey = passkey;
     return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_PASSKEY);
 }
@@ -4621,7 +4621,7 @@ int gap_ssp_passkey_response(bd_addr_t addr, uint32_t passkey){
  * @return 0 if ok
  */
 int gap_ssp_passkey_negative(bd_addr_t addr){
-    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
     return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_PASSKEY_NEGATIVE);
 }
 
@@ -4632,7 +4632,7 @@ int gap_ssp_passkey_negative(bd_addr_t addr){
  * @return 0 if ok
  */
 int gap_ssp_confirmation_response(bd_addr_t addr){
-    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
     return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_CONFIRMATION);
 }
 
@@ -4643,7 +4643,7 @@ int gap_ssp_confirmation_response(bd_addr_t addr){
  * @return 0 if ok
  */
 int gap_ssp_confirmation_negative(bd_addr_t addr){
-    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
     return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_CONFIRMATION_NEGATIVE);
 }
 
