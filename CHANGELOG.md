@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## Fixed
+- HFP: Fix Wide Band Speech bit in SDP record for both HF/AG. Missing bit prevents macOS from using mSBC
+
+## Changes May 2018
+
 ### Added
 - GAP: re-encrypt outgoing connection if bonded
 - ATT Server: wait until re-encryption is complete
