@@ -170,8 +170,19 @@ void hfp_hf_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const ch
     }
     hfp_create_sdp_record(service, SDP_Handsfree, rfcomm_channel_nr, name);
 
+    // Construct SupportedFeatures for SDP bitmap:
+    // 
+    // "The values of the “SupportedFeatures” bitmap given in Table 5.4 shall be the same as the values
+    //  of the Bits 0 to 4 of the unsolicited result code +BRSF"
+    //
+    // Wide band speech (bit 5) requires Codec negotiation
+    //
+    uint16_t sdp_features = supported_features & 0x1f;
+    if (wide_band_speech && (supported_features & (1 << HFP_HFSF_CODEC_NEGOTIATION))){
+        sdp_features |= 1 << 5;
+    }
     de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);    // Hands-Free Profile - SupportedFeatures
-    de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
+    de_add_number(service, DE_UINT, DE_SIZE_16, sdp_features);
 }
 
 static int hfp_hf_cmd_exchange_supported_features(uint16_t cid){
