@@ -165,6 +165,8 @@ static void att_handle_value_indication_timeout(btstack_timer_source_t *ts){
     hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) context;
     att_server_t * att_server = att_server_for_handle(con_handle);
     if (!att_server) return;
+    // @note: after a transcation timeout, no more requests shall be sent over this ATT Bearer 
+    // (that's why we don't reset the value_indication_handle)
     uint16_t att_handle = att_server->value_indication_handle;
     att_handle_value_indication_notify_client(ATT_HANDLE_VALUE_INDICATION_TIMEOUT, att_server->connection.con_handle, att_handle);
 }
@@ -236,9 +238,13 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     if (!att_server) break;
                     att_clear_transaction_queue(&att_server->connection);
                     att_server->connection.con_handle = 0;
-                    att_server->value_indication_handle = 0; // reset error state
                     att_server->pairing_active = 0;
                     att_server->state = ATT_SERVER_IDLE;
+                    if (att_server->value_indication_handle){
+                        uint16_t att_handle = att_server->value_indication_handle;
+                        att_server->value_indication_handle = 0; // reset error state
+                        att_handle_value_indication_notify_client(ATT_HANDLE_VALUE_INDICATION_DISCONNECT, att_server->connection.con_handle, att_handle);
+                    }
                     break;
                     
                 // Identity Resolving

@@ -165,6 +165,7 @@ typedef uint8_t sm_key_t[16];
 
 #define ATT_HANDLE_VALUE_INDICATION_IN_PROGRESS            0x90 
 #define ATT_HANDLE_VALUE_INDICATION_TIMEOUT                0x91
+#define ATT_HANDLE_VALUE_INDICATION_DISCONNECT             0x92
 
 #define GATT_CLIENT_NOT_CONNECTED                          0x93
 #define GATT_CLIENT_BUSY                                   0x94
