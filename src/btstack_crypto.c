@@ -570,7 +570,7 @@ static void btstack_crypto_run(void){
             btstack_crypto_aes128 = (btstack_crypto_aes128_t *) btstack_crypto;
 #ifdef USE_BTSTACK_AES128
             btstack_aes128_calc(btstack_crypto_aes128->key, btstack_crypto_aes128->plaintext, btstack_crypto_aes128->ciphertext);
-            btstack_crypto_done();
+            btstack_crypto_done(btstack_crypto);
 #else
             btstack_crypto_aes128_start(btstack_crypto_aes128->key, btstack_crypto_aes128->plaintext);
 #endif
