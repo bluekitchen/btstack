@@ -242,6 +242,23 @@ static struct baudrate_config {
 #endif
 };
 
+// copy from gpio.c
+#define OFS_LIB_PAOUT   ((uint32_t)&P1->OUT - (uint32_t)P1)
+static uint32_t GPIO_PORT_TO_BASE[] =
+{   0x00,
+    (uint32_t)P1,
+    (uint32_t)P1+1,
+    (uint32_t)P3,
+    (uint32_t)P3+1,
+    (uint32_t)P5,
+    (uint32_t)P5+1,
+    (uint32_t)P7,
+    (uint32_t)P7+1,
+    (uint32_t)P9,
+    (uint32_t)P9+1,
+    (uint32_t)PJ
+    };
+
 static inline void hal_uart_dma_enable_rx(void){
     MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P5, GPIO_PIN6);
 }
@@ -250,22 +267,27 @@ static inline void hal_uart_dma_disable_rx(void){
     MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P5, GPIO_PIN6);
 }
 
+// tries to optimize path to RTS high
 void EUSCIA2_IRQHandler(void){ 
 
-    uint32_t status = MAP_UART_getEnabledInterruptStatus(EUSCI_A2_BASE);
+    // raise RTS  prophylactically
+    // GPIO_setOutputHighOnPin(GPIO_PORT_P5, GPIO_PIN6);
+    uint32_t baseAddress = GPIO_PORT_TO_BASE[5];
+    HWREG16(baseAddress + OFS_LIB_PAOUT) |= GPIO_PIN6;
+
+    // regular IRQ handler
+    uint_fast8_t status = MAP_UART_getEnabledInterruptStatus(EUSCI_A2_BASE);    
 
     MAP_UART_clearInterruptFlag(EUSCI_A2_BASE, status);
 
     // RX Complete
     if (status & EUSCI_A_UART_RECEIVE_INTERRUPT_FLAG){
-
         if (bytes_to_read) {
             *rx_buffer_ptr = UART_receiveData(EUSCI_A2_BASE);
             ++rx_buffer_ptr;
             --bytes_to_read;
         }
         if (bytes_to_read == 0){
-            hal_uart_dma_disable_rx();
 
             // disable RXIE
             UART_disableInterrupt(EUSCI_A2_BASE, EUSCI_A_UART_RECEIVE_INTERRUPT);
@@ -290,6 +312,11 @@ void EUSCIA2_IRQHandler(void){
             // done
             (*tx_done_handler)();
         }
+    }
+
+    // lower RTS again if waiting for data
+    if (bytes_to_read) {
+        hal_uart_dma_enable_rx();
     }
 }
 
