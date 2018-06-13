@@ -120,8 +120,9 @@ static uint8_t  btstack_crypto_cmac_block_current;
 static uint8_t  btstack_crypto_cmac_block_count;
 
 // state for AES-CCM
+#ifndef USE_BTSTACK_AES128
 static uint8_t btstack_crypto_ccm_s[16];
-
+#endif
 
 #ifdef ENABLE_ECC_P256
 
@@ -302,6 +303,8 @@ static void btstack_crypto_cmac_start(btstack_crypto_aes128_cmac_t * btstack_cry
     btstack_crypto_cmac_handle_aes_engine_ready(btstack_crypto_cmac);
 }
 
+#ifndef USE_BTSTACK_AES128
+
 /*
   To encrypt the message data we use Counter (CTR) mode.  We first
   define the key stream blocks by:
@@ -360,6 +363,7 @@ static void btstack_crypto_ccm_setup_b_0(btstack_crypto_ccm_t * btstack_crypto_c
     memcpy(&b0[1], btstack_crypto_ccm->nonce, 13);
     big_endian_store_16(b0, 14, btstack_crypto_ccm->message_len);
 }
+#endif
 
 #ifdef ENABLE_ECC_P256
 
@@ -471,6 +475,9 @@ static void btstack_crypto_ecc_p256_calculate_dhkey_software(btstack_crypto_ecc_
 
 #endif
 
+#ifdef USE_BTSTACK_AES128
+// CCM not implemented using software AES128 yet
+#else
 
 static void btstack_crypto_ccm_calc_s0(btstack_crypto_ccm_t * btstack_crypto_ccm){
     btstack_crypto_ccm->state = CCM_W4_S0;
@@ -505,6 +512,7 @@ static void btstack_crypto_ccm_calc_xn(btstack_crypto_ccm_t * btstack_crypto_ccm
     memcpy(&btstack_crypto_ccm_buffer[i], &btstack_crypto_ccm->x_i[i], 16 - bytes_to_decrypt);
     btstack_crypto_aes128_start(btstack_crypto_ccm->key, btstack_crypto_ccm_buffer);
 }
+#endif
 
 static void btstack_crypto_ccm_handle_s0(btstack_crypto_ccm_t * btstack_crypto_ccm, const uint8_t * data){
     // data is little-endian, flip on the fly
@@ -589,6 +597,7 @@ static void btstack_crypto_run(void){
         case BTSTACK_CRYPTO_CCM_ENCRYPT_BLOCK:
         case BTSTACK_CRYPTO_CCM_DECRYPT_BLOCK:
 #ifdef USE_BTSTACK_AES128
+            UNUSED(btstack_crypto_ccm);
             log_error("ccm not implemented for software aes128 yet");
 #else
             btstack_crypto_ccm = (btstack_crypto_ccm_t *) btstack_crypto;
