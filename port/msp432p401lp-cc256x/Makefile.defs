@@ -61,6 +61,7 @@ CFLAGS=-mthumb             \
        -std=c99            \
        -Dgcc               \
        -D${PART}           \
+       -specs=nano.specs   \
        -c
 
 #
@@ -76,22 +77,7 @@ LD=arm-none-eabi-ld
 #
 # The flags passed to the linker.
 #
-LDFLAGS=--gc-sections
-
-#
-# Get the location of libgcc.a from the GCC front-end.
-#
-LIBGCC:=${shell ${CC} ${CFLAGS} -print-libgcc-file-name}
-
-#
-# Get the location of libc_nano.a from the GCC front-end.
-#
-LIBC:=${shell ${CC} ${CFLAGS} -print-file-name=libc.a}
-
-#
-# Get the location of libm.a from the GCC front-end.
-#
-LIBM:=${shell ${CC} ${CFLAGS} -print-file-name=libm.a}
+LDFLAGS= --gc-sections
 
 #
 # The command for extracting images from the linked executables.
@@ -161,31 +147,6 @@ ${COMPILER}${SUFFIX}/%.a:
 	     echo ${AR} -cr ${@} ${^}; \
 	 fi
 	@${AR} -cr ${@} ${^}
-
-#
-# The rule for linking the application.
-#
-# ${COMPILER}${SUFFIX}/%.axf:
-# 	@if [ 'x${SCATTERgcc_${notdir ${@:.axf=}}}' = x ];                    \
-# 	 then                                                                 \
-# 	     ldname="${ROOT}/gcc/standalone.ld";                              \
-# 	 else                                                                 \
-# 	     ldname="${SCATTERgcc_${notdir ${@:.axf=}}}";                     \
-# 	 fi;                                                                  \
-# 	 if [ 'x${VERBOSE}' = x ];                                            \
-# 	 then                                                                 \
-# 	     echo "  LD          ${@} ${LNK_SCP}";                                  \
-# 	 else                                                                 \
-# 	     echo ${LD} -T $${ldname}                                         \
-# 	          ${LDFLAGSgcc_${notdir ${@:.axf=}}}                          \
-# 	          ${LDFLAGS} -o ${@} $(filter %.o %.a, ${^})                  \
-# 	          '${LIBM}' '${LIBC}' '${LIBGCC}';                            \
-# 	 fi;                                                                  \
-# 	${LD} -T $${ldname}                                                   \
-# 	      ${LDFLAGSgcc_${notdir ${@:.axf=}}}                              \
-# 	      ${LDFLAGS} -o ${@} $(filter %.o %.a, ${^})                      \
-# 	      '${LIBM}' '${LIBC}' '${LIBGCC}'
-# 	@${OBJCOPY} -O binary ${@} ${@:.axf=.bin}
 
 endif
 

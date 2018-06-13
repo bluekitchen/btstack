@@ -214,9 +214,11 @@ OBJECTS = $(BTSTACK_SOURCES:%.c=$(COMPILER)/%.o) $(PORT_SOURCES:%.o=$(COMPILER)/
 
 CFLAGSgcc=-DTARGET_IS_MSP432P4XX
 
-#
-# The rule for linking the application.
-#
+LDFLAGS2 = ${CPU} ${FPU} -specs=nano.specs  -lc -lm -lnosys -Wl,--gc-sections
+
+# #
+# # The rule for linking the application.
+# #
 ${COMPILER}${SUFFIX}/%.elf: ${OBJECTS} ${COMPILER}/%.o ${ROOT}/driverlib/MSP432P4xx/${COMPILER}/msp432p4xx_driverlib.a
 	@ \
 	 ldname="linker_script_gcc.ld";                                       \
@@ -224,15 +226,9 @@ ${COMPILER}${SUFFIX}/%.elf: ${OBJECTS} ${COMPILER}/%.o ${ROOT}/driverlib/MSP432P
 	 then                                                                 \
 	     echo "  LD          ${@} ${LNK_SCP}";                            \
 	 else                                                                 \
-	     echo ${LD} -T $${ldname}                                         \
-	          ${LDFLAGSgcc_${notdir ${@:.elf=}}}                          \
-	          ${LDFLAGS} -o ${@} $(filter %.o %.a, ${^})                  \
-	          '${LIBM}' '${LIBC}' '${LIBGCC}';                            \
+	     echo ${CC} -T linker_script_gcc.ld ${LDFLAGS2} -o ${@} $(filter %.o %.a, ${^}); \
 	 fi;                                                                  \
-	${LD} -T $${ldname}                                                   \
-	      ${LDFLAGSgcc_${notdir ${@:.elf=}}}                              \
-	      ${LDFLAGS} -o ${@} $(filter %.o %.a, ${^})                      \
-	      '${LIBM}' '${LIBC}' '${LIBGCC}'
+ 	${CC} -T linker_script_gcc.ld ${LDFLAGS2} -o ${@} $(filter %.o %.a, ${^})
 	@${OBJCOPY} -O binary ${@} ${@:.elf=.bin}
 
 #
