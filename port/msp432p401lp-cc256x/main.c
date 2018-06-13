@@ -15,9 +15,14 @@
 #include "btstack_defines.h"
 #include "btstack_debug.h"
 #include "btstack_memory.h"
+#include "btstack_tlv.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_embedded.h"
 #include "hci_dump.h"
+#include "btstack_tlv_flash_bank.h"
+#include "hal_flash_bank_msp432.h"
+#include "classic/btstack_link_key_db_tlv.h"
+#include "ble/le_device_db_tlv.h"
 
 static hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
@@ -26,6 +31,9 @@ static hci_transport_config_uart_t config = {
     1,      // flow control
     NULL,
 };
+
+static hal_flash_bank_msp432_t   hal_flash_bank_context;
+static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
 
 #ifndef ENABLE_SEGGER_RTT
 
@@ -378,6 +386,15 @@ static void rc_callback(void){
 
 #include "SEGGER_RTT.h"
 
+// HAL FLASH MSP432 Configuration - use two last 4kB sectors
+#define HAL_FLASH_BANK_SIZE      4096
+#define HAL_FLASH_BANK_0_SECTOR  FLASH_SECTOR30
+#define HAL_FLASH_BANK_1_SECTOR  FLASH_SECTOR31
+#define HAL_FLASH_BANK_0_ADDR    0x3E000
+#define HAL_FLASH_BANK_1_ADDR    0x3F000
+
+int btstack_main(const int argc, const char * argvp[]);
+
 int main(void)
 {
     volatile uint32_t ii;
@@ -397,15 +414,15 @@ int main(void)
     hci_init(hci_transport_h4_instance(btstack_uart_block_embedded_instance()), (void*) &config);
     hci_set_chipset(btstack_chipset_cc256x_instance());
 
-#if 0
     // setup TLV Flash Sector implementation
-    const hal_flash_bank_t * hal_flash_bank_impl = hal_flash_bank_stm32_init_instance(
+    const hal_flash_bank_t * hal_flash_bank_impl = hal_flash_bank_msp432_init_instance(
             &hal_flash_bank_context,
             HAL_FLASH_BANK_SIZE,
             HAL_FLASH_BANK_0_SECTOR,
             HAL_FLASH_BANK_1_SECTOR,
             HAL_FLASH_BANK_0_ADDR,
             HAL_FLASH_BANK_1_ADDR);
+
     const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(
             &btstack_tlv_flash_bank_context,
             hal_flash_bank_impl,
@@ -421,13 +438,15 @@ int main(void)
     // setup LE Device DB using TLV
     le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
 
+#if 0
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
+#endif
+
     // hand over to btstack embedded code
     btstack_main(0, NULL);
-#endif
 
     hci_power_control(HCI_POWER_ON);
 
@@ -451,19 +470,6 @@ int main(void)
         delay_ms(10);
     }
 #endif
-
-    /* Configuring P1.0 as output */
-    MAP_GPIO_setAsOutputPin(GPIO_PORT_P1, GPIO_PIN0);
-
-    while (1)
-    {
-        /* Delay Loop */
-        for(ii=0;ii<5000;ii++)
-        {
-        }
-        // SEGGER_RTT_printf(0, "Hi! tick %u\n", (int) systick / 1000);
-        MAP_GPIO_toggleOutputOnPin(GPIO_PORT_P1, GPIO_PIN0);
-    }
 }
 
 

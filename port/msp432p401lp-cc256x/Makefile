@@ -61,6 +61,7 @@ IPATH += ${BTSTACK_ROOT}/chipset/cc256x
 IPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include
 IPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
 IPATH += .
+IPATH += ${COMPILER}
 
 BTSTACK_SOURCES = \
 ad_parser.c \
@@ -135,18 +136,24 @@ pbap_client.c \
 PORT_SOURCES = \
 	btstack_chipset_cc256x.o \
 	bluetooth_init_cc2564B_1.6_BT_Spec_4.1.o \
+	hal_flash_bank_msp432.o \
 	main.o \
 	startup_msp432p401r_${COMPILER}.o \
 	system_msp432p401r.o \
 	SEGGER_RTT.o \
 	SEGGER_RTT_Syscalls_GCC.o \
 	SEGGER_RTT_printf.o \
+	le_counter.o \
 
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
 
 BTSTACK_SOURCES += ${SBC_ENCODER}
 BTSTACK_SOURCES += ${SBC_DECODER}
+
+# compile .gatt descriptions
+${COMPILER}/%.h: %.gatt
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@
 
 OBJECTS = $(BTSTACK_SOURCES:%.c=$(COMPILER)/%.o) $(PORT_SOURCES:%.o=$(COMPILER)/%.o)
 
@@ -174,6 +181,7 @@ OBJECTS = $(BTSTACK_SOURCES:%.c=$(COMPILER)/%.o) $(PORT_SOURCES:%.o=$(COMPILER)/
 #
 # Rules for building the uart_loopback_24mhz_brclk example.
 #
+${COMPILER}/uart_loopback_24mhz_brclk.axf: ${COMPILER}/le_counter.h
 ${COMPILER}/uart_loopback_24mhz_brclk.axf: ${OBJECTS}
 ${COMPILER}/uart_loopback_24mhz_brclk.axf: ${ROOT}/driverlib/MSP432P4xx/${COMPILER}/msp432p4xx_driverlib.a
 ${COMPILER}/uart_loopback_24mhz_brclk.axf: linker_script_gcc.ld
