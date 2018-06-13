@@ -7,7 +7,6 @@
 
 // Port related features
 #define HAVE_EMBEDDED_TIME_MS
-#define HAVE_AUDIO_DMA
 
 // BTstack features that can be enabled
 #define ENABLE_BLE

@@ -165,26 +165,27 @@ ${COMPILER}${SUFFIX}/%.a:
 #
 # The rule for linking the application.
 #
-${COMPILER}${SUFFIX}/%.axf:
-	@if [ 'x${SCATTERgcc_${notdir ${@:.axf=}}}' = x ];                    \
-	 then                                                                 \
-	     ldname="${ROOT}/gcc/standalone.ld";                              \
-	 else                                                                 \
-	     ldname="${SCATTERgcc_${notdir ${@:.axf=}}}";                     \
-	 fi;                                                                  \
-	 if [ 'x${VERBOSE}' = x ];                                            \
-	 then                                                                 \
-	     echo "  LD          ${@} ${LNK_SCP}";                                  \
-	 else                                                                 \
-	     echo ${LD} -T $${ldname}                                         \
-	          ${LDFLAGSgcc_${notdir ${@:.axf=}}}                          \
-	          ${LDFLAGS} -o ${@} $(filter %.o %.a, ${^})                  \
-	          '${LIBM}' '${LIBC}' '${LIBGCC}';                            \
-	 fi;                                                                  \
-	${LD} -T $${ldname}                                                   \
-	      ${LDFLAGSgcc_${notdir ${@:.axf=}}}                              \
-	      ${LDFLAGS} -o ${@} $(filter %.o %.a, ${^})                      \
-	      '${LIBM}' '${LIBC}' '${LIBGCC}'
-	@${OBJCOPY} -O binary ${@} ${@:.axf=.bin}
+# ${COMPILER}${SUFFIX}/%.axf:
+# 	@if [ 'x${SCATTERgcc_${notdir ${@:.axf=}}}' = x ];                    \
+# 	 then                                                                 \
+# 	     ldname="${ROOT}/gcc/standalone.ld";                              \
+# 	 else                                                                 \
+# 	     ldname="${SCATTERgcc_${notdir ${@:.axf=}}}";                     \
+# 	 fi;                                                                  \
+# 	 if [ 'x${VERBOSE}' = x ];                                            \
+# 	 then                                                                 \
+# 	     echo "  LD          ${@} ${LNK_SCP}";                                  \
+# 	 else                                                                 \
+# 	     echo ${LD} -T $${ldname}                                         \
+# 	          ${LDFLAGSgcc_${notdir ${@:.axf=}}}                          \
+# 	          ${LDFLAGS} -o ${@} $(filter %.o %.a, ${^})                  \
+# 	          '${LIBM}' '${LIBC}' '${LIBGCC}';                            \
+# 	 fi;                                                                  \
+# 	${LD} -T $${ldname}                                                   \
+# 	      ${LDFLAGSgcc_${notdir ${@:.axf=}}}                              \
+# 	      ${LDFLAGS} -o ${@} $(filter %.o %.a, ${^})                      \
+# 	      '${LIBM}' '${LIBC}' '${LIBGCC}'
+# 	@${OBJCOPY} -O binary ${@} ${@:.axf=.bin}
+
 endif
 
