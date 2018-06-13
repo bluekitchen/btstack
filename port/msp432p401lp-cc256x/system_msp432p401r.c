@@ -104,7 +104,7 @@
 //     <12000000> 12 MHz
 //     <24000000> 24 MHz
 //     <48000000> 48 MHz
-#define  __SYSTEM_CLOCK    24000000
+#define  __SYSTEM_CLOCK    1500000
 
 /*--------------------- Power Regulator Configuration -----------------------*/
 //  Power Regulator Mode

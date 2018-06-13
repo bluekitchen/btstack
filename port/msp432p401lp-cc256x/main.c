@@ -27,7 +27,7 @@
 static hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
-    1000000,      // main baudrate
+    460800,      // main baudrate
     1,      // flow control
     NULL,
 };
@@ -156,7 +156,7 @@ void SysTick_Handler(void)
 static void init_systick(void){
     // Configuring SysTick to trigger every ms (48 Mhz / 48000 = 1 ms)
     MAP_SysTick_enableModule();
-    MAP_SysTick_setPeriod(24000);
+    MAP_SysTick_setPeriod(48000);
     // MAP_Interrupt_enableSleepOnIsrExit();
     MAP_SysTick_enableInterrupt();
 }
@@ -219,6 +219,8 @@ static struct baudrate_config {
     uint8_t  second_mod_reg;
     uint8_t  oversampling;
 } baudrate_configs[] = {
+#if 0
+    // Config for 24 Mhz
     {  115200, 13,  0, 37, 1},
     {  230400,  6,  8, 32, 1},
     {  460800,  3,  4,  2, 1},
@@ -226,6 +228,18 @@ static struct baudrate_config {
     { 1000000,  1,  8,  0, 1},
     { 2000000, 12,  0,  0, 0},
     { 3000000,  8,  0,  0, 0},
+    { 3000000,  6,  0,  0, 0},
+#else
+    // Config for 48 Mhz
+    {  115200, 26,  1,  111, 1},
+    {  230400, 13,  0,   37, 1},
+    {  460800,  6,  8,   32, 1},
+    {  921600,  3,  4,    2, 1},
+    { 1000000,  3,  0,  0, 1},
+    { 2000000,  1,  8,  0, 1},
+    { 3000000, 16,  0,  0, 0},
+    { 3000000, 12,  0,  0, 0},
+#endif
 };
 
 static inline void hal_uart_dma_enable_rx(void){
@@ -371,19 +385,6 @@ void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len){
 
 // End of HAL UART DMA
 
-#if 0
-static uint8_t hci_reset[] = { 1, 3, 0x0c, 0};
-static uint8_t rx_buffer[10];
-static volatile int w4_tc;
-static volatile int w4_rc;
-static void tc_callback(void){
-    w4_tc = 0;
-}
-static void rc_callback(void){
-    w4_rc = 0;
-}
-#endif
-
 #include "SEGGER_RTT.h"
 
 // HAL FLASH MSP432 Configuration - use two last 4kB sectors
@@ -397,10 +398,14 @@ int btstack_main(const int argc, const char * argvp[]);
 
 int main(void)
 {
-    volatile uint32_t ii;
-
     /* Halting the Watchdog */
     MAP_WDT_A_holdTimer();
+
+    /* Setting our MCLK to 48MHz - directly setting it in system_msp432p401r didn't work */
+    MAP_PCM_setCoreVoltageLevel(PCM_VCORE1);
+    FlashCtl_setWaitState(FLASH_BANK0, 2);
+    FlashCtl_setWaitState(FLASH_BANK1, 2);
+    MAP_CS_setDCOCenteredFrequency(CS_DCO_FREQUENCY_48);
 
     init_systick();
 
