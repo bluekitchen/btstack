@@ -84,7 +84,7 @@ Espressif ESP32              | Dual mode | VHCI            | Not yet          | 
 EM 9301, 9304                | LE        | SPI             | n.a.             | em9301         | Custom HCI SPI implementation
 Nordic nRF                   | LE        | H4              | n.a.             |                | Requires custom HCI firmware
 STM STLC2500D                | Classic   | H4              | No (didn't try)  | stlc2500d      | Custom deep sleep management not supported
-Toshiba TC35661              | Dual mode | H4              | No (didn't try)  | tc3566         | HCI version not tested.
+Toshiba TC35661              | Dual mode | H4              | No               | tc3566         |
 TI CC256x, WL183x            | Dual mode | H4, H5, eHCILL  | Yes              | cc256x         | Also WL185x, WL187x, and WL189x
 
 [More infos on supported chipsets](https://bluekitchen-gmbh.com/btstack/develop/chipsets/)
