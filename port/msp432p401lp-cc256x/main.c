@@ -242,38 +242,30 @@ static struct baudrate_config {
 #endif
 };
 
-// copy from gpio.c
-#define OFS_LIB_PAOUT   ((uint32_t)&P1->OUT - (uint32_t)P1)
-static uint32_t GPIO_PORT_TO_BASE[] =
-{   0x00,
-    (uint32_t)P1,
-    (uint32_t)P1+1,
-    (uint32_t)P3,
-    (uint32_t)P3+1,
-    (uint32_t)P5,
-    (uint32_t)P5+1,
-    (uint32_t)P7,
-    (uint32_t)P7+1,
-    (uint32_t)P9,
-    (uint32_t)P9+1,
-    (uint32_t)PJ
-    };
-
-static inline void hal_uart_dma_enable_rx(void){
-    MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P5, GPIO_PIN6);
+static void hal_uart_dma_enable_rx(void){
+    // MAP_GPIO_setOutputLowOnPin(GPIO_PORT_P5, GPIO_PIN6);
+    HWREG16(&P5->OUT) &= ~GPIO_PIN6;
 }
 
-static inline void hal_uart_dma_disable_rx(void){
-    MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P5, GPIO_PIN6);
+static void hal_uart_dma_disable_rx(void){
+    // MAP_GPIO_setOutputHighOnPin(GPIO_PORT_P5, GPIO_PIN6);
+    HWREG16(&P5->OUT) |= GPIO_PIN6;
 }
 
 // tries to optimize path to RTS high
 void EUSCIA2_IRQHandler(void){ 
 
     // raise RTS  prophylactically
+
+    // Call Library: 2 Instructions + Call to Library
     // GPIO_setOutputHighOnPin(GPIO_PORT_P5, GPIO_PIN6);
-    uint32_t baseAddress = GPIO_PORT_TO_BASE[5];
-    HWREG16(baseAddress + OFS_LIB_PAOUT) |= GPIO_PIN6;
+
+    // Copied code from library: 13 Instructioncs
+    // uint32_t baseAddress = GPIO_PORT_TO_BASE[5];
+    // HWREG16(baseAddress + OFS_LIB_PAOUT) |= GPIO_PIN6;
+
+    // basic optimization: 7 instructions
+    HWREG16(&P5->OUT) |= GPIO_PIN6;
 
     // regular IRQ handler
     uint_fast8_t status = MAP_UART_getEnabledInterruptStatus(EUSCI_A2_BASE);    
@@ -316,7 +308,10 @@ void EUSCIA2_IRQHandler(void){
 
     // lower RTS again if waiting for data
     if (bytes_to_read) {
-        hal_uart_dma_enable_rx();
+        // hal_uart_dma_enable_rx();
+
+        // basic optimization: 7 instructions
+        HWREG16(&P5->OUT) &= ~GPIO_PIN6;
     }
 }
 
