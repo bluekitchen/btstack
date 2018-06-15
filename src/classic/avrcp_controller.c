@@ -329,13 +329,15 @@ static void avrcp_controller_emit_now_playing_info_event(btstack_packet_handler_
             break;
     }
     event[data_len_pos] = pos - 2;
-    // printf("send attr len %d,  value %s\n", value_len, value);
+    // printf("Send attribute 0x%02x, len %u\n", attr_id, value_len);
+    // printf_hexdump(value, value_len);
     (*callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void avrcp_parser_process_byte(uint8_t byte, avrcp_connection_t * connection, avrcp_command_type_t ctype){
     uint16_t attribute_total_value_len;
     uint32_t attribute_id;
+    // printf("avrcp_parser_process_byte: %02x, state %02x\n", byte, connection->parser_state);
     switch(connection->parser_state){
         case AVRCP_PARSER_GET_ATTRIBUTE_HEADER:
             connection->parser_attribute_header[connection->parser_attribute_header_pos++] = byte;
@@ -397,6 +399,7 @@ static void avrcp_parser_process_byte(uint8_t byte, avrcp_connection_t * connect
         // more to come, reset parser
         connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_HEADER;
         connection->parser_attribute_header_pos = 0;
+        connection->attribute_value_offset = 0;
     } else {
         // fully done
         avrcp_parser_reset(connection);
