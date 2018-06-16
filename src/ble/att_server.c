@@ -75,6 +75,7 @@
 
 static void att_run_for_context(att_server_t * att_server);
 static att_write_callback_t att_server_write_callback_for_handle(uint16_t handle);
+static btstack_packet_handler_t att_server_packet_handler_for_handle(uint16_t handle);
 static void att_server_persistent_ccc_restore(att_server_t * att_server);
 static void att_server_persistent_ccc_clear(att_server_t * att_server);
 
@@ -125,7 +126,8 @@ static att_server_t * att_server_for_state(att_server_state_t state){
 #endif
 
 static void att_handle_value_indication_notify_client(uint8_t status, uint16_t client_handle, uint16_t attribute_handle){
-    if (!att_client_packet_handler) return;
+    btstack_packet_handler_t packet_handler = att_server_packet_handler_for_handle(attribute_handle);
+    if (!packet_handler) return;
     
     uint8_t event[7];
     int pos = 0;
@@ -138,9 +140,23 @@ static void att_handle_value_indication_notify_client(uint8_t status, uint16_t c
     (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 
-static void att_emit_mtu_event(hci_con_handle_t con_handle, uint16_t mtu){
-    if (!att_client_packet_handler) return;
+static void att_emit_event_to_all(const uint8_t * event, uint16_t size){
+    // dispatch to app level handler
+    if (att_client_packet_handler){
+        (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t*) event, size);
+    }
 
+    // dispatch to service handlers
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &service_handlers);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        att_service_handler_t * handler = (att_service_handler_t*) btstack_linked_list_iterator_next(&it);
+        if (!handler->packet_handler) continue;
+        (*handler->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t*) event, size);
+    }
+}
+
+static void att_emit_mtu_event(hci_con_handle_t con_handle, uint16_t mtu){
     uint8_t event[6];
     int pos = 0;
     event[pos++] = ATT_EVENT_MTU_EXCHANGE_COMPLETE;
@@ -148,8 +164,12 @@ static void att_emit_mtu_event(hci_con_handle_t con_handle, uint16_t mtu){
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     little_endian_store_16(event, pos, mtu);
+
+    // also dispatch to GATT Clients
     att_dispatch_server_mtu_exchanged(con_handle, mtu);
-    (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
+
+    // dispatch to app level handler and service handlers
+    att_emit_event_to_all(&event[0], sizeof(event));
 }
 
 static void att_emit_can_send_now_event(void * context){
@@ -207,6 +227,8 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                             // workaround: identity resolving can already be complete, at least store result
                             att_server->ir_le_device_db_index = sm_le_device_index(con_handle);
                             att_server->pairing_active = 0;
+                            // notify all
+                            att_emit_event_to_all(packet, size);
                             break;
 
                         default:
@@ -245,6 +267,8 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                         att_server->value_indication_handle = 0; // reset error state
                         att_handle_value_indication_notify_client(ATT_HANDLE_VALUE_INDICATION_DISCONNECT, att_server->connection.con_handle, att_handle);
                     }
+                    // notify all
+                    att_emit_event_to_all(packet, size);
                     break;
                     
                 // Identity Resolving
@@ -825,6 +849,12 @@ static att_write_callback_t att_server_write_callback_for_handle(uint16_t handle
     att_service_handler_t * handler = att_service_handler_for_handle(handle);
     if (handler) return handler->write_callback;
     return att_server_client_write_callback;
+}
+
+static btstack_packet_handler_t att_server_packet_handler_for_handle(uint16_t handle){
+    att_service_handler_t * handler = att_service_handler_for_handle(handle);
+    if (handler) return handler->packet_handler;
+    return att_client_packet_handler;
 }
 
 static void att_notify_write_callbacks(hci_con_handle_t con_handle, uint16_t transaction_mode){

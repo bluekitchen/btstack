@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - ATT Server: send ATT_EVENT_HANDLE_VALUE_INDICATION_COMPLETE with status ATT_HANDLE_VALUE_INDICATION_DISCONNECT on disconnect
 - AVRCP Controller: fix parsing of now playing info
 
+## Changed
+- ATT Server: ATT_HANDLE_VALUE_INDICATION_DISCONNECT is delivered to service handler if registered
+
+## Added
+- ATT Server: packet handler field added to att_service_handler_t to receive: connect/disconnect, atu exchange, indication complete
+
 ## Changes May 2018
 
 ### Added
