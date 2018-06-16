@@ -245,6 +245,11 @@ static int transport_open(void){
         return -1;
     }
 
+#ifdef ENABLE_SCO_OVER_HCI
+    ret = esp_bredr_sco_datapath_set(ESP_SCO_DATA_PATH_HCI);
+    log_info("transport: configure SCO over HCI, result 0x%04x", ret);
+#endif
+
     return 0;
 }
 
