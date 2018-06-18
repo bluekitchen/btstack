@@ -75,7 +75,7 @@ ENABLE_EHCILL                    | Enable eHCILL low power mode on TI CC256x/WL1
 ENABLE_LOG_DEBUG                 | Enable log_debug messages
 ENABLE_LOG_ERROR                 | Enable log_error messages
 ENABLE_LOG_INFO                  | Enable log_info messages
-ENABLE_SCO_OVER_HCI              | Enable SCO over HCI for chipsets (only TI CC256x/WL18xx, CSR + Broadcom H2/USB))
+ENABLE_SCO_OVER_HCI              | Enable SCO over HCI for chipsets (if supported)
 ENABLE_HFP_WIDE_BAND_SPEECH      | Enable support for mSBC codec used in HFP profile for Wide-Band Speech
 ENBALE_LE_PERIPHERAL             | Enable support for LE Peripheral Role in HCI and Security Manager
 ENBALE_LE_CENTRAL                | Enable support for LE Central Role in HCI and Security Manager
