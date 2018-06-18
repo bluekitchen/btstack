@@ -27,8 +27,7 @@ AC_PROG_MAKE_SET
 # iPhone/iPod touch cross-compilation uses theos
 SDK_PATH="$DEVELOPER_PATH/SDKs/iPhoneOS$SDK_VERSION.sdk"
 if test "x$target" = xiphone; then
-    echo "Cross-compiling for iPhone/iPod touch uses theos"
-    ./config-iphone.sh
+    echo "Cross-compiling for iPhone/iPod touch uses theos, please checkout port/ios"
     exit 0
 fi
 
