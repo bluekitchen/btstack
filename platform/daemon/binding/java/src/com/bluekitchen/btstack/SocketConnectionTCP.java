@@ -74,7 +74,7 @@ public class SocketConnectionTCP extends SocketConnection {
 		int channel    = Util.readBt16(inHeader, 2);
 		int len        = Util.readBt16(inHeader, 4);
 		
-		Util.readExactly(in, inPayload, 0, len);
+		bytes_read = Util.readExactly(in, inPayload, 0, len);
 		if (bytes_read != len) return null;
 
 		Packet packet = new Packet(packetType, channel ,inPayload, len);
