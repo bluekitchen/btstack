@@ -235,7 +235,7 @@ static void avrcp_prepare_notification(avrcp_connection_t * connection, avrcp_no
     big_endian_store_16(connection->cmd_operands, pos, 5);     // parameter length
     pos += 2;
     connection->cmd_operands[pos++] = event_id; 
-    big_endian_store_32(connection->cmd_operands, pos, 0);
+    big_endian_store_32(connection->cmd_operands, pos, 1); // send notification on playback position every second, for other notifications it is ignored
     pos += 4;
     connection->cmd_operands_length = pos;
     // AVRCP_SPEC_V14.pdf 166
@@ -656,6 +656,21 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     }
                     
                     switch (event_id){
+                        case AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED:{
+                            uint32_t song_position = big_endian_read_32(packet, pos);
+                            uint8_t event[10];
+                            int offset = 0;
+                            event[offset++] = HCI_EVENT_AVRCP_META;
+                            event[offset++] = sizeof(event) - 2;
+                            event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED;
+                            little_endian_store_16(event, offset, connection->avrcp_cid);
+                            offset += 2;
+                            event[offset++] = ctype;
+                            little_endian_store_32(event, offset, song_position);
+                            offset += 4;
+                            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+                            break;
+                        }
                         case AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED:{
                             uint8_t event[7];
                             int offset = 0;

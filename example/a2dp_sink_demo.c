@@ -766,12 +766,26 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
 
     // ignore INTERIM status
     if (status == AVRCP_CTYPE_RESPONSE_INTERIM){
-        printf(" INTERIM response \n"); 
+        switch (packet[2]){
+            case AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED:{
+                uint32_t playback_position_ms = avrcp_subevent_notification_playback_pos_changed_get_playback_position_ms(packet);
+                if (playback_position_ms == AVRCP_NO_TRACK_SELECTED_PLAYBACK_POSITION_CHANGED){
+                    printf("notification, playback position changed, no track is selected\n");
+                }  
+                break;
+            }
+            default:
+                printf(" INTERIM response \n"); 
+                break;
+        }
         return;
     } 
             
     printf("AVRCP demo: command status: %s, ", avrcp_ctype2str(status));
     switch (packet[2]){
+        case AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED:
+            printf("notification, playback position changed, position %d ms\n", avrcp_subevent_notification_playback_pos_changed_get_playback_position_ms(packet));
+            break;
         case AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED:
             printf("notification, playback status changed %s\n", avrcp_play_status2str(avrcp_subevent_notification_playback_status_changed_get_play_status(packet)));
             return;
@@ -987,6 +1001,7 @@ static void show_usage(void){
     printf("Z - disable shuffle mode\n");
 
     printf("a/A - register/deregister TRACK_CHANGED\n");
+    printf("d/D - register/deregister PLAYBACK_POS_CHANGED\n");
 
     printf("---\n");
 }
@@ -1125,6 +1140,14 @@ static void stdin_process(char cmd){
         case 'A':
             printf("AVRCP: disable notification TRACK_CHANGED\n");
             avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_TRACK_CHANGED);
+            break;
+        case 'd':
+            printf("AVRCP: enable notification PLAYBACK_POS_CHANGED\n");
+            avrcp_controller_enable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED);
+            break;
+        case 'D':
+            printf("AVRCP: disable notification PLAYBACK_POS_CHANGED\n");
+            avrcp_controller_disable_notification(avrcp_cid, AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED);
             break;
 
         default:

@@ -6310,6 +6310,34 @@ static inline uint8_t avrcp_subevent_browsing_get_total_num_items_get_scope(cons
 }
 
 /**
+ * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED
+ * @param event packet
+ * @return avrcp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avrcp_subevent_notification_playback_pos_changed_get_avrcp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field command_type from event AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED
+ * @param event packet
+ * @return command_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t avrcp_subevent_notification_playback_pos_changed_get_command_type(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field playback_position_ms from event AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED
+ * @param event packet
+ * @return playback_position_ms
+ * @note: btstack_type 4
+ */
+static inline uint32_t avrcp_subevent_notification_playback_pos_changed_get_playback_position_ms(const uint8_t * event){
+    return little_endian_read_32(event, 6);
+}
+
+/**
  * @brief Get field goep_cid from event GOEP_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return goep_cid
