@@ -26,7 +26,7 @@
 #include "sbc_encoder.h"
 #include "sbc_enc_func_declare.h"
 
-SINT16 EncMaxShiftCounter;
+
 
 /*************************************************************************************************
  * SBC encoder scramble code
@@ -82,20 +82,8 @@ SINT16 EncMaxShiftCounter;
 #define SBC_PRTC_SYNC_MASK      0x10
 #define SBC_PRTC_CIDX           0
 #define SBC_PRTC_LIDX           1
-typedef struct
-{
-    UINT8   use;
-    UINT8   idx;
-} tSBC_FR_CB;
 
-typedef struct
-{
-    tSBC_FR_CB      fr[2];
-    UINT8           init;
-    UINT8           index;
-    UINT8           base;
-} tSBC_PRTC_CB;
-tSBC_PRTC_CB sbc_prtc_cb;
+
 
 #define SBC_PRTC_IDX(sc) (((sc) & 0x3) + (((sc) & 0x30) >> 2))
 #define SBC_PRTC_CHK_INIT(ar) {if(sbc_prtc_cb.init == 0){sbc_prtc_cb.init=1; ar[0] &= ~SBC_PRTC_SYNC_MASK;}}
@@ -393,23 +381,23 @@ void SBC_Encoder_Init(SBC_ENC_PARAMS *pstrEncParams)
     if (pstrEncParams->s16NumOfSubBands==4)
     {
         if (pstrEncParams->s16NumOfChannels==1)
-            EncMaxShiftCounter=((ENC_VX_BUFFER_SIZE-4*10)>>2)<<2;
+            pstrEncParams->EncMaxShiftCounter=((ENC_VX_BUFFER_SIZE-4*10)>>2)<<2;
         else
-            EncMaxShiftCounter=((ENC_VX_BUFFER_SIZE-4*10*2)>>3)<<2;
+            pstrEncParams->EncMaxShiftCounter=((ENC_VX_BUFFER_SIZE-4*10*2)>>3)<<2;
     }
     else
     {
         if (pstrEncParams->s16NumOfChannels==1)
-            EncMaxShiftCounter=((ENC_VX_BUFFER_SIZE-8*10)>>3)<<3;
+            pstrEncParams->EncMaxShiftCounter=((ENC_VX_BUFFER_SIZE-8*10)>>3)<<3;
         else
-            EncMaxShiftCounter=((ENC_VX_BUFFER_SIZE-8*10*2)>>4)<<3;
+            pstrEncParams->EncMaxShiftCounter=((ENC_VX_BUFFER_SIZE-8*10*2)>>4)<<3;
     }
 
     // APPL_TRACE_EVENT("SBC_Encoder_Init : bitrate %d, bitpool %d",
     //         pstrEncParams->u16BitRate, pstrEncParams->s16BitPool);
 
-    SbcAnalysisInit();
-
-    memset(&sbc_prtc_cb, 0, sizeof(tSBC_PRTC_CB));
-    sbc_prtc_cb.base = 6 + pstrEncParams->s16NumOfChannels*pstrEncParams->s16NumOfSubBands/2;
+    SbcAnalysisInit(pstrEncParams);
+    
+    memset(&(pstrEncParams->sbc_prtc_cb), 0, sizeof(tSBC_PRTC_CB));
+    (pstrEncParams->sbc_prtc_cb).base = 6 + pstrEncParams->s16NumOfChannels*pstrEncParams->s16NumOfSubBands/2;
 }

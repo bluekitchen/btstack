@@ -56,61 +56,59 @@
 #define MSBC_PADDING_SIZE 1
 #define MSBC_EXTRA_SIZE (MSBC_HEADER_H2_SIZE + MSBC_PADDING_SIZE)
 
-static const uint8_t msbc_header_h2_byte_0         = 1;
-static const uint8_t msbc_header_h2_byte_1_table[] = { 0x08, 0x38, 0xc8, 0xf8 };
 
-static btstack_sbc_encoder_state_t state;
-static int msbc_sequence_number;
 
-static uint8_t msbc_buffer[2*(MSBC_FRAME_SIZE + MSBC_EXTRA_SIZE)];
-static int msbc_buffer_offset = 0; 
+//static btstack_sbc_encoder_state_t state;
 
-void hfp_msbc_init(void){
-    btstack_sbc_encoder_init(&state, SBC_MODE_mSBC, 16, 8, 0, 16000, 26, 0);
-    msbc_buffer_offset = 0;
-    msbc_sequence_number = 0;
+
+
+
+void hfp_msbc_init(btstack_sbc_encoder_state_t* state){
+    btstack_sbc_encoder_init(state, SBC_MODE_mSBC, 16, 8, 0, 16000, 26, 0);
+    state->msbc_buffer_offset = 0;
+    state->msbc_sequence_number = 0;
 }
 
-int hfp_msbc_can_encode_audio_frame_now(void){
-    return sizeof(msbc_buffer) - msbc_buffer_offset >= MSBC_FRAME_SIZE + MSBC_EXTRA_SIZE; 
+int hfp_msbc_can_encode_audio_frame_now(btstack_sbc_encoder_state_t* state){
+    return sizeof(state->msbc_buffer) - state->msbc_buffer_offset >= MSBC_FRAME_SIZE + MSBC_EXTRA_SIZE; 
 }
 
-void hfp_msbc_encode_audio_frame(int16_t * pcm_samples){
-    if (!hfp_msbc_can_encode_audio_frame_now()) return;
+void hfp_msbc_encode_audio_frame(btstack_sbc_encoder_state_t* state, int16_t * pcm_samples){
+    if (!hfp_msbc_can_encode_audio_frame_now(state)) return;
 
     // Synchronization Header H2
-    msbc_buffer[msbc_buffer_offset++] = msbc_header_h2_byte_0;
-    msbc_buffer[msbc_buffer_offset++] = msbc_header_h2_byte_1_table[msbc_sequence_number];
-    msbc_sequence_number = (msbc_sequence_number + 1) & 3;
+    state->msbc_buffer[state->msbc_buffer_offset++] = msbc_header_h2_byte_0;
+    state->msbc_buffer[state->msbc_buffer_offset++] = msbc_header_h2_byte_1_table[state->msbc_sequence_number];
+    state->msbc_sequence_number = (state->msbc_sequence_number + 1) & 3;
 
     // SBC Frame
-    btstack_sbc_encoder_process_data(pcm_samples);
-    memcpy(msbc_buffer + msbc_buffer_offset, btstack_sbc_encoder_sbc_buffer(), MSBC_FRAME_SIZE);
-    msbc_buffer_offset += MSBC_FRAME_SIZE;
+    btstack_sbc_encoder_process_data(state, pcm_samples);
+    memcpy(state->msbc_buffer + state->msbc_buffer_offset, btstack_sbc_encoder_sbc_buffer(state), MSBC_FRAME_SIZE);
+    state->msbc_buffer_offset += MSBC_FRAME_SIZE;
 
     // Final padding to use 60 bytes for 120 audio samples
-    msbc_buffer[msbc_buffer_offset++] = 0;
+    state->msbc_buffer[state->msbc_buffer_offset++] = 0;
 }
 
-void hfp_msbc_read_from_stream(uint8_t * buf, int size){
+void hfp_msbc_read_from_stream(btstack_sbc_encoder_state_t* state, uint8_t * buf, int size){
     int bytes_to_copy = size;
-    if (size > msbc_buffer_offset){
-        bytes_to_copy = msbc_buffer_offset;
-        log_error("sbc frame storage is smaller then the output buffer");
+    if (size > state->msbc_buffer_offset){
+        bytes_to_copy = state->msbc_buffer_offset;
+        printf("sbc frame storage is smaller then the output buffer");
         return;
     }
 
-    memcpy(buf, msbc_buffer, bytes_to_copy);
-    memmove(msbc_buffer, msbc_buffer + bytes_to_copy, sizeof(msbc_buffer) - bytes_to_copy);
-    msbc_buffer_offset -= bytes_to_copy;
+    memcpy(buf, state->msbc_buffer, bytes_to_copy);
+    memmove(state->msbc_buffer, state->msbc_buffer + bytes_to_copy, sizeof(state->msbc_buffer) - bytes_to_copy);
+    state->msbc_buffer_offset -= bytes_to_copy;
 }
 
-int hfp_msbc_num_bytes_in_stream(void){
-    return msbc_buffer_offset;
+int hfp_msbc_num_bytes_in_stream(btstack_sbc_encoder_state_t* state){
+    return state->msbc_buffer_offset;
 }
 
-int hfp_msbc_num_audio_samples_per_frame(void){
-    return btstack_sbc_encoder_num_audio_frames();
+int hfp_msbc_num_audio_samples_per_frame(btstack_sbc_encoder_state_t* state){
+    return btstack_sbc_encoder_num_audio_frames(state);
 }
 
 

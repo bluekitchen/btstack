@@ -45,10 +45,36 @@
 
 #include <stdint.h>
 #include "btstack_sbc_plc.h"
+#include "oi_codec_sbc.h"
+#include "oi_assert.h"
+#include "sbc_encoder.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
+
+
+#define mSBC_SYNCWORD 0xad
+#define SBC_SYNCWORD 0x9c
+#define SBC_MAX_CHANNELS 2
+// #define LOG_FRAME_STATUS
+
+#define DECODER_DATA_SIZE (SBC_MAX_CHANNELS*SBC_MAX_BLOCKS*SBC_MAX_BANDS * 4 + SBC_CODEC_MIN_FILTER_BUFFERS*SBC_MAX_BANDS*SBC_MAX_CHANNELS * 2)
+
+typedef struct {
+    OI_UINT32 bytes_in_frame_buffer;
+    OI_CODEC_SBC_DECODER_CONTEXT decoder_context;
+    
+    uint8_t frame_buffer[SBC_MAX_FRAME_LEN];
+    int16_t pcm_plc_data[SBC_MAX_CHANNELS * SBC_MAX_BANDS * SBC_MAX_BLOCKS];
+    int16_t pcm_data[SBC_MAX_CHANNELS * SBC_MAX_BANDS * SBC_MAX_BLOCKS];
+    uint32_t pcm_bytes;
+    OI_UINT32 decoder_data[(DECODER_DATA_SIZE+3)/4]; 
+    int h2_sequence_nr;
+    int search_new_sync_word;
+    int sync_word_found;
+    int first_good_frame_found; 
+} bludroid_decoder_state_t;
 
 typedef enum{
     SBC_MODE_STANDARD,
@@ -67,12 +93,36 @@ typedef struct {
     int good_frames_nr;
     int bad_frames_nr;
     int zero_frames_nr;
+    bludroid_decoder_state_t bd_decoder_state;
 } btstack_sbc_decoder_state_t;
+
+#define MSBC_FRAME_SIZE 57
+#define MSBC_HEADER_H2_SIZE 2
+#define MSBC_PADDING_SIZE 1
+#define MSBC_EXTRA_SIZE (MSBC_HEADER_H2_SIZE + MSBC_PADDING_SIZE)
+
+#define mSBC_SYNCWORD 0xad
+#define SBC_SYNCWORD 0x9c
+#define SBC_MAX_CHANNELS 2
+
+static const uint8_t msbc_header_h2_byte_0         = 1;
+static const uint8_t msbc_header_h2_byte_1_table[] = { 0x08, 0x38, 0xc8, 0xf8 };
+
+
+typedef struct {
+    SBC_ENC_PARAMS context;
+    int num_data_bytes;
+    uint8_t sbc_packet[1000];
+} bludroid_encoder_state_t;
 
 typedef struct {
     // private
     void * encoder_state;
     btstack_sbc_mode_t mode;
+    int msbc_sequence_number;
+    uint8_t msbc_buffer[4*(MSBC_FRAME_SIZE + MSBC_EXTRA_SIZE)];
+    int msbc_buffer_offset;
+    bludroid_encoder_state_t bd_encoder_state;
 } btstack_sbc_encoder_state_t;
 
 /* API_START */
@@ -132,23 +182,23 @@ void btstack_sbc_encoder_init(btstack_sbc_encoder_state_t * state, btstack_sbc_m
  * @brief Encode PCM data
  * @param buffer with samples in host endianess
  */
-void btstack_sbc_encoder_process_data(int16_t * input_buffer);
+void btstack_sbc_encoder_process_data(btstack_sbc_encoder_state_t* state, int16_t * input_buffer);
 
 /**
  * @brief Return SBC frame
  */
-uint8_t * btstack_sbc_encoder_sbc_buffer(void);
+uint8_t * btstack_sbc_encoder_sbc_buffer(btstack_sbc_encoder_state_t* state);
 
 /**
  * @brief Return SBC frame length
  */
-uint16_t  btstack_sbc_encoder_sbc_buffer_length(void);
+uint16_t  btstack_sbc_encoder_sbc_buffer_length(btstack_sbc_encoder_state_t* state);
 
 /**
  * @brief Return number of audio frames required for one SBC packet
  * @note  each audio frame contains 2 sample values in stereo modes
  */
-int  btstack_sbc_encoder_num_audio_frames(void);
+int btstack_sbc_encoder_num_audio_frames(btstack_sbc_encoder_state_t* state);
 
 /* API_END */
 

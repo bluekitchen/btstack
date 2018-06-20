@@ -64,6 +64,7 @@
 
 #define DECODER_DATA_SIZE (SBC_MAX_CHANNELS*SBC_MAX_BLOCKS*SBC_MAX_BANDS * 4 + SBC_CODEC_MIN_FILTER_BUFFERS*SBC_MAX_BANDS*SBC_MAX_CHANNELS * 2)
 
+/*
 typedef struct {
     OI_UINT32 bytes_in_frame_buffer;
     OI_CODEC_SBC_DECODER_CONTEXT decoder_context;
@@ -78,9 +79,9 @@ typedef struct {
     int sync_word_found;
     int first_good_frame_found; 
 } bludroid_decoder_state_t;
-
+*/
 static btstack_sbc_decoder_state_t * sbc_decoder_state_singleton = NULL;
-static bludroid_decoder_state_t bd_decoder_state;
+//bludroid_decoder_state_t bd_decoder_state;
 
 // Testing only - START
 static int plc_enabled = 1;
@@ -160,14 +161,21 @@ void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, btstack_sbc_m
     if (sbc_decoder_state_singleton && sbc_decoder_state_singleton != state ){
         log_error("SBC decoder: different sbc decoder state is allready registered");
     } 
+    memset(state, 0, sizeof(btstack_sbc_decoder_state_t));
+    state->handle_pcm_data = callback;
+    state->mode = mode;
+    state->context = context;
+    state->decoder_state = &(state->bd_decoder_state);
+  //  state->bd_decoder_state = &(state->bd_decoder_state);
+    
     OI_STATUS status = OI_STATUS_SUCCESS;
     switch (mode){
         case SBC_MODE_STANDARD:
             // note: we always request stereo output, even for mono input
-            status = OI_CODEC_SBC_DecoderReset(&(bd_decoder_state.decoder_context), bd_decoder_state.decoder_data, sizeof(bd_decoder_state.decoder_data), 2, 2, FALSE);
+            status = OI_CODEC_SBC_DecoderReset(&((state->bd_decoder_state).decoder_context), (state->bd_decoder_state).decoder_data, sizeof((state->bd_decoder_state).decoder_data), 2, 2, FALSE);
             break;
         case SBC_MODE_mSBC:
-            status = OI_CODEC_mSBC_DecoderReset(&(bd_decoder_state.decoder_context), bd_decoder_state.decoder_data, sizeof(bd_decoder_state.decoder_data));
+            status = OI_CODEC_mSBC_DecoderReset(&((state->bd_decoder_state).decoder_context), (state->bd_decoder_state).decoder_data, sizeof((state->bd_decoder_state).decoder_data));
             break;
         default:
             break;
@@ -179,21 +187,18 @@ void btstack_sbc_decoder_init(btstack_sbc_decoder_state_t * state, btstack_sbc_m
     
     sbc_decoder_state_singleton = state;
     
-    bd_decoder_state.bytes_in_frame_buffer = 0;
-    bd_decoder_state.pcm_bytes = sizeof(bd_decoder_state.pcm_data);
-    bd_decoder_state.h2_sequence_nr = -1;
-    bd_decoder_state.sync_word_found = 0;
-    bd_decoder_state.search_new_sync_word = 0;
+    (state->bd_decoder_state).bytes_in_frame_buffer = 0;
+    (state->bd_decoder_state).pcm_bytes = sizeof((state->bd_decoder_state).pcm_data);
+    (state->bd_decoder_state).h2_sequence_nr = -1;
+    (state->bd_decoder_state).sync_word_found = 0;
+    (state->bd_decoder_state).search_new_sync_word = 0;
     if (mode == SBC_MODE_mSBC){
-        bd_decoder_state.search_new_sync_word = 1;
+        (state->bd_decoder_state).search_new_sync_word = 1;
     }
-    bd_decoder_state.first_good_frame_found = 0;
+    (state->bd_decoder_state).first_good_frame_found = 0;
 
-    memset(state, 0, sizeof(btstack_sbc_decoder_state_t));
-    state->handle_pcm_data = callback;
-    state->mode = mode;
-    state->context = context;
-    state->decoder_state = &bd_decoder_state;
+   
+ 
     btstack_sbc_plc_init(&state->plc_state);
 }
 
@@ -294,9 +299,9 @@ static void btstack_sbc_decoder_process_sbc_data(btstack_sbc_decoder_state_t * s
                 // This caused by corrupt frames.
                 // The codec apparently does not recover from this.
                 // Re-initialize the codec.
-                log_info("SBC decode: invalid parameters: resetting codec");
-                if (OI_CODEC_SBC_DecoderReset(&(bd_decoder_state.decoder_context), bd_decoder_state.decoder_data, sizeof(bd_decoder_state.decoder_data), 2, 2, FALSE) != OI_STATUS_SUCCESS){
-                    log_info("SBC decode: resetting codec failed");
+               
+                if (OI_CODEC_SBC_DecoderReset(&((state->bd_decoder_state).decoder_context), (state->bd_decoder_state).decoder_data, sizeof((state->bd_decoder_state).decoder_data), 2, 2, FALSE) != OI_STATUS_SUCCESS){
+                    printf("SBC decode: resetting codec failed");
                     
                 }
                 break;
@@ -462,7 +467,7 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
                 // The codec apparently does not recover from this.
                 // Re-initialize the codec.
                 log_info("SBC decode: invalid parameters: resetting codec");
-                if (OI_CODEC_mSBC_DecoderReset(&(bd_decoder_state.decoder_context), bd_decoder_state.decoder_data, sizeof(bd_decoder_state.decoder_data)) != OI_STATUS_SUCCESS){
+                if (OI_CODEC_mSBC_DecoderReset(&((state->bd_decoder_state).decoder_context), (state->bd_decoder_state).decoder_data, sizeof((state->bd_decoder_state).decoder_data)) != OI_STATUS_SUCCESS){
                     log_info("SBC decode: resetting codec failed");
                     
                 }

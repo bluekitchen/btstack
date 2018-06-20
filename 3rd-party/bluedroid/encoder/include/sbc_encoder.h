@@ -156,6 +156,20 @@
 
 #include "sbc_types.h"
 
+typedef struct
+{
+    UINT8   use;
+    UINT8   idx;
+} tSBC_FR_CB;
+
+typedef struct
+{
+    tSBC_FR_CB      fr[2];
+    UINT8           init;
+    UINT8           index;
+    UINT8           base;
+} tSBC_PRTC_CB;
+
 typedef struct SBC_ENC_PARAMS_TAG
 {
     SINT16 s16SamplingFreq;                         /* 16k, 32k, 44.1k or 48k*/
@@ -197,6 +211,13 @@ typedef struct SBC_ENC_PARAMS_TAG
     /* BK4BTSTACK_CHANGE START */
     UINT8  mSBCEnabled;
     /* BK4BTSTACK_CHANGE END */
+    
+    SINT32   s32DCTY[16];//  = {0};
+    SINT32   s32X[ENC_VX_BUFFER_SIZE/2];
+    SINT16   *s16X;//=(SINT16*) s32X;      /* s16X must be 32 bits aligned cf  SHIFTUP_X8_2*/
+    tSBC_PRTC_CB sbc_prtc_cb;
+    SINT16 ShiftCounter;
+    SINT16 EncMaxShiftCounter;
 }SBC_ENC_PARAMS;
 
 #ifdef __cplusplus

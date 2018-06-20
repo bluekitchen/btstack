@@ -294,7 +294,7 @@ static int a2dp_source_and_avrcp_services_init(void){
 /* LISTING_END */
 
 static void a2dp_demo_send_media_packet(void){
-    int num_bytes_in_frame = btstack_sbc_encoder_sbc_buffer_length();
+    int num_bytes_in_frame = btstack_sbc_encoder_sbc_buffer_length(&sbc_encoder_state);
     int bytes_in_storage = media_tracker.sbc_storage_count;
     uint8_t num_frames = bytes_in_storage / num_bytes_in_frame;
     a2dp_source_stream_send_media_payload(media_tracker.a2dp_cid, media_tracker.local_seid, media_tracker.sbc_storage, bytes_in_storage, num_frames, 0);
@@ -344,17 +344,17 @@ static void produce_audio(int16_t * pcm_buffer, int num_samples){
 static int a2dp_demo_fill_sbc_audio_buffer(a2dp_media_sending_context_t * context){
     // perform sbc encodin
     int total_num_bytes_read = 0;
-    unsigned int num_audio_samples_per_sbc_buffer = btstack_sbc_encoder_num_audio_frames();
+    unsigned int num_audio_samples_per_sbc_buffer = btstack_sbc_encoder_num_audio_frames(&sbc_encoder_state);
     while (context->samples_ready >= num_audio_samples_per_sbc_buffer
-        && (context->max_media_payload_size - context->sbc_storage_count) >= btstack_sbc_encoder_sbc_buffer_length()){
+        && (context->max_media_payload_size - context->sbc_storage_count) >= btstack_sbc_encoder_sbc_buffer_length(&sbc_encoder_state)){
 
         int16_t pcm_frame[256*NUM_CHANNELS];
 
         produce_audio(pcm_frame, num_audio_samples_per_sbc_buffer);
-        btstack_sbc_encoder_process_data(pcm_frame);
+        btstack_sbc_encoder_process_data(&sbc_encoder_state, pcm_frame);
         
-        uint16_t sbc_frame_size = btstack_sbc_encoder_sbc_buffer_length(); 
-        uint8_t * sbc_frame = btstack_sbc_encoder_sbc_buffer();
+        uint16_t sbc_frame_size = btstack_sbc_encoder_sbc_buffer_length(&sbc_encoder_state); 
+        uint8_t * sbc_frame = btstack_sbc_encoder_sbc_buffer(&sbc_encoder_state);
         
         total_num_bytes_read += num_audio_samples_per_sbc_buffer;
         memcpy(&context->sbc_storage[context->sbc_storage_count], sbc_frame, sbc_frame_size);
@@ -389,7 +389,7 @@ static void a2dp_demo_audio_timeout_handler(btstack_timer_source_t * timer){
 
     a2dp_demo_fill_sbc_audio_buffer(context);
 
-    if ((context->sbc_storage_count + btstack_sbc_encoder_sbc_buffer_length()) > context->max_media_payload_size){
+    if ((context->sbc_storage_count + btstack_sbc_encoder_sbc_buffer_length(&sbc_encoder_state)) > context->max_media_payload_size){
         // schedule sending
         context->sbc_ready_to_send = 1;
         a2dp_source_stream_endpoint_request_can_send_now(context->a2dp_cid, context->local_seid);
