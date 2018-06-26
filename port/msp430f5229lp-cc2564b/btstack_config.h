@@ -16,6 +16,7 @@
 // #define ENABLE_LOG_ERROR
 // #define ENABLE_LOG_INFO 
 // #define ENABLE_EHCILL
+#define ENABLE_SCO_OVER_HCI
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 52
