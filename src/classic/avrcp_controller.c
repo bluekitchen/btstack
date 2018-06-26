@@ -85,7 +85,7 @@ static void avrcp_emit_operation_status(btstack_packet_handler_t callback, uint8
 
 static void avrcp_press_and_hold_timeout_handler(btstack_timer_source_t * timer){
     UNUSED(timer);
-    avrcp_connection_t * connection = btstack_run_loop_get_timer_context(timer);
+    avrcp_connection_t * connection = (avrcp_connection_t*) btstack_run_loop_get_timer_context(timer);
     btstack_run_loop_set_timer(&connection->press_and_hold_cmd_timer, 2000); // 2 seconds timeout
     btstack_run_loop_add_timer(&connection->press_and_hold_cmd_timer);
     connection->state = AVCTP_W2_SEND_PRESS_COMMAND;
@@ -355,7 +355,7 @@ static void avrcp_parser_process_byte(uint8_t byte, avrcp_connection_t * connect
             
             // emit empty attribute
             attribute_id = big_endian_read_32(connection->parser_attribute_header, 0);
-            avrcp_controller_emit_now_playing_info_event(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, attribute_id, connection->attribute_value, connection->attribute_value_len);
+            avrcp_controller_emit_now_playing_info_event(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, (avrcp_media_attribute_id_t) attribute_id, connection->attribute_value, connection->attribute_value_len);
 
             // done, see below
             break;
@@ -368,7 +368,7 @@ static void avrcp_parser_process_byte(uint8_t byte, avrcp_connection_t * connect
             
             // emit (potentially partial) attribute
             attribute_id = big_endian_read_32(connection->parser_attribute_header, 0);
-            avrcp_controller_emit_now_playing_info_event(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, attribute_id, connection->attribute_value, connection->attribute_value_len);
+            avrcp_controller_emit_now_playing_info_event(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, (avrcp_media_attribute_id_t) attribute_id, connection->attribute_value, connection->attribute_value_len);
 
             attribute_total_value_len = big_endian_read_16(connection->parser_attribute_header, 6);
             if (connection->attribute_value_offset < attribute_total_value_len){
@@ -777,7 +777,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
 
                 case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:{
-                    avrcp_packet_type_t packet_type = operands[4] & 0x03;
+                    avrcp_packet_type_t packet_type = (avrcp_packet_type_t) (operands[4] & 0x03);
                     switch (packet_type){
                         case AVRCP_START_PACKET:
                         case AVRCP_SINGLE_PACKET:
