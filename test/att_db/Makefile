@@ -6,7 +6,6 @@ BTSTACK_ROOT =  ../..
 
 CFLAGS  = -g -Wall \
 		  -I.. \
-		  -I${BTSTACK_ROOT}/example/libusb \
 		  -I${BTSTACK_ROOT}/src
 		  
 LDFLAGS += -lCppUTest -lCppUTestExt 
