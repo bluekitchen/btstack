@@ -674,9 +674,10 @@ uint8_t avrcp_connect(bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * a
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
     
-    if (!avrcp_cid) return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
-    
-    *avrcp_cid = connection->avrcp_cid; 
+    if (avrcp_cid){
+        *avrcp_cid = connection->avrcp_cid;
+    }
+
     connection->state = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
     
     context->avrcp_l2cap_psm = 0;
