@@ -944,9 +944,9 @@ static int usb_try_open_device(const char * device_path){
     if (!result) goto exit_on_error;
 
     // ignore virtual Bluetooth adapter of VMware
-    if (usb_is_vmware_bluetooth_adapter(device_path) {
-            log_info("Ignoring simulated VMware Bluetooth adapter");
-            usb_free_resources();
+    if (usb_is_vmware_bluetooth_adapter(device_path)) {
+        log_info("Ignoring simulated VMware Bluetooth adapter");
+        usb_free_resources();
         return -1;
     }
 
