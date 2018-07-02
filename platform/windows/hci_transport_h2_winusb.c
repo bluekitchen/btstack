@@ -328,6 +328,12 @@ static int usb_is_known_bluetooth_device(const char * device_path){
     return 0;
 }
 
+static int usb_is_vmware_bluetooth_adapter(const char * device_path){
+    // VMware Vendor ID 0e0f
+    const char * pos = strstr(device_path, "\\usb#vid_0e0f&pid");
+    return pos ? 1 : 0;
+}
+
 #ifdef ENABLE_SCO_OVER_HCI
 static void sco_ring_init(void){
     sco_ring_write = 0;
@@ -936,6 +942,14 @@ static int usb_try_open_device(const char * device_path){
     USB_INTERFACE_DESCRIPTOR usb_interface_descriptor;
     result = WinUsb_QueryInterfaceSettings(usb_interface_0_handle, 0, &usb_interface_descriptor);
     if (!result) goto exit_on_error;
+
+    // ignore virtual Bluetooth adapter of VMware
+    if (usb_is_vmware_bluetooth_adapter(device_path) {
+            log_info("Ignoring simulated VMware Bluetooth adapter");
+            usb_free_resources();
+        return -1;
+    }
+
     // 
     if (usb_interface_descriptor.bInterfaceClass    != 0xe0 ||
         usb_interface_descriptor.bInterfaceSubClass != 0x01 || 
