@@ -89,7 +89,7 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
  */
 void hci_dump_log(int log_level, const char * format, ...)
 #ifdef __GNUC__
-__attribute__ ((format (__printf__, 2, 3)));
+__attribute__ ((format (__printf__, 2, 3)))
 #endif
 ;
 
