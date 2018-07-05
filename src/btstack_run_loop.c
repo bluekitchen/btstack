@@ -81,6 +81,14 @@ int btstack_run_loop_get_data_source_fd(btstack_data_source_t *ds){
     return ds->fd;
 }
 
+void btstack_run_loop_set_data_source_handle(btstack_data_source_t *ds, void * handle){
+    ds->handle = handle;
+}
+
+void * btstack_run_loop_get_data_source_handle(btstack_data_source_t *ds){
+    return ds->handle;
+}
+
 void btstack_run_loop_enable_data_source_callbacks(btstack_data_source_t *ds, uint16_t callbacks){
     btstack_run_loop_assert();
     if (the_run_loop->enable_data_source_callbacks){

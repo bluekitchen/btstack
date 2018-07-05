@@ -173,6 +173,21 @@ void btstack_run_loop_set_data_source_fd(btstack_data_source_t * data_source, in
  */
 int btstack_run_loop_get_data_source_fd(btstack_data_source_t * data_source);
 
+
+/**
+ * @brief Set data source file descriptor. 
+ * @param data_source
+ * @param handle
+ * @note No effect if port doensn't have file descriptors
+ */
+void btstack_run_loop_set_data_source_handle(btstack_data_source_t * data_source, void * handle);
+
+/**
+ * @brief Get data source file descriptor. 
+ * @param data_source
+ */
+void * btstack_run_loop_get_data_source_handle(btstack_data_source_t * data_source);
+
 /**
  * @brief Enable callbacks for a data source
  * @param data_source to remove
