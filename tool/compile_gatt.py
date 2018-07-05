@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
-# BLE GATT configuration generator for use with BTstack, v0.1
-# Copyright 2011 Matthias Ringwald
+# BLE GATT configuration generator for use with BTstack
+# Copyright 2018 BlueKitchen GmbH
 #
 # Format of input file:
 # PRIMARY_SERVICE, SERVICE_UUID
@@ -14,6 +14,7 @@ import os
 import re
 import string
 import sys
+import argparse
 
 header = '''
 // {0} generated from {1} for BTstack
@@ -27,14 +28,9 @@ header = '''
 const uint8_t profile_data[] =
 '''
 
-usage = '''
-Usage: ./compile_gatt.py profile.gatt profile.h
-'''
-
-
 print('''
-BLE configuration generator for use with BTstack, v0.1
-Copyright 2011 Matthias Ringwald
+BLE configuration generator for use with BTstack
+Copyright 2018 BlueKitchen GmbH
 ''')
 
 assigned_uuids = {
@@ -104,7 +100,6 @@ property_flags = {
     # 0x80
 }
 
-btstack_root = ''
 services = dict()
 characteristic_indices = dict()
 presentation_formats = dict()
@@ -693,14 +688,15 @@ def parseLines(fname_in, fin, fout):
             imported_file = ''
             parts = re.match('#import\s+<(.*)>\w*',line)
             if parts and len(parts.groups()) == 1:
-                imported_file = btstack_root+'/src/ble/gatt-service/' + parts.groups()[0]
+                imported_file = parts.groups()[0]
             parts = re.match('#import\s+"(.*)"\w*',line)
             if parts and len(parts.groups()) == 1:
-                imported_file = os.path.abspath(os.path.dirname(fname_in) + '/'+parts.groups()[0])
+                imported_file = parts.groups()[0]
             if len(imported_file) == 0:
                 print('ERROR: #import in file %s - line %u neither <name.gatt> nor "name.gatt" form', (fname_in, line_count))
                 continue
 
+            imported_file = getFile( imported_file )
             print("Importing %s" % imported_file)
             try:
                 imported_fin = codecs.open (imported_file, encoding='utf-8')
@@ -860,19 +856,47 @@ def listHandles(fout):
         fout.write(define)
         fout.write('\n')
 
-if (len(sys.argv) < 3):
-    print(usage)
-    sys.exit(1)
+def getFile( fileName ):
+    inc = args.I
+    for d in inc:
+        fullFile = d[0] + fileName
+        print("test %s" % fullFile)
+        if os.path.isfile( fullFile ) == True:
+            return fullFile
+    print ("'{0}' not found".format( fileName ))
+    print ("Include paths: %s" % ", ".join(inc))
+    exit(-1)
+
+
+btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')
+default_includes = [ btstack_root + '/src/', btstack_root + '/src/ble/gatt-service/'] 
+
+parser = argparse.ArgumentParser(description='BLE GATT configuration generator for use with BTstack')
+
+parser.add_argument('-I', action='append', nargs=1, metavar='includes', 
+        help='include search path for .gatt service files and bluetooth_gatt.h (default: %s)' % ", ".join(default_includes))
+parser.add_argument('gattfile', metavar='gattfile', type=str,
+        help='gatt file to be compiled')
+parser.add_argument('hfile', metavar='hfile', type=str,
+        help='header file to be generated')
+
+args = parser.parse_args()
+
+# append default include paths
+if args.I == None:
+    args.I = []
+for d in default_includes:
+    args.I.append([d])
+
 try:
     # read defines from bluetooth_gatt.h
-    btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')
-    gen_path = btstack_root + '/src/bluetooth_gatt.h'
+    gen_path = getFile( 'bluetooth_gatt.h' )
     bluetooth_gatt = read_defines(gen_path)
 
-    filename = sys.argv[2]
-    fin  = codecs.open (sys.argv[1], encoding='utf-8')
+    filename = args.hfile
+    fin  = codecs.open (args.gattfile, encoding='utf-8')
     fout = open (filename, 'w')
-    parse(sys.argv[1], fin, filename, fout)
+    parse(args.gattfile, fin, filename, fout)
     listHandles(fout)    
     fout.close()
     print('Created %s' % filename)
