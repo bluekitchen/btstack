@@ -755,7 +755,7 @@ typedef struct {
     union {
         const char * gap_pairing_pin;
         uint32_t     gap_pairing_passkey;
-    };
+    } gap_pairing_input;
     
     uint16_t  sco_voice_setting;
     uint16_t  sco_voice_setting_active;
