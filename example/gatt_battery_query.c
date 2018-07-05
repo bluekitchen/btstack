@@ -77,7 +77,7 @@ static advertising_report_t report;
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-static bd_addr_t cmdline_addr = { };
+static bd_addr_t cmdline_addr;
 static int cmdline_addr_found = 0;
 
 static hci_con_handle_t connection_handle;

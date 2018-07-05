@@ -72,7 +72,7 @@ static const char * sensor_contact_string[] = {
     "good contact"
 };
 
-static bd_addr_t cmdline_addr = { };
+static bd_addr_t cmdline_addr;
 static int cmdline_addr_found = 0;
 
 // addr and type of device with correct name
