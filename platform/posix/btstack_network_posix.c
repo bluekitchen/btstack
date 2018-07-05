@@ -304,5 +304,3 @@ void btstack_network_packet_sent(void){
     // Re-enable the tap device data source
     btstack_run_loop_enable_data_source_callbacks(&tap_dev_ds, DATA_SOURCE_CALLBACK_READ);
 }
-
-
