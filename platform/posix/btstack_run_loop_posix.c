@@ -72,7 +72,7 @@ static struct timeval init_tv;
  */
 static void btstack_run_loop_posix_add_data_source(btstack_data_source_t *ds){
     data_sources_modified = 1;
-    // log_info("btstack_run_loop_posix_add_data_source %x with fd %u\n", (int) ds, ds->fd);
+    // log_info("btstack_run_loop_posix_add_data_source %x with fd %u\n", (int) ds, ds->source.fd);
     btstack_linked_list_add(&data_sources, (btstack_linked_item_t *) ds);
 }
 
@@ -164,20 +164,20 @@ static void btstack_run_loop_posix_execute(void) {
         btstack_linked_list_iterator_init(&it, &data_sources);
         while (btstack_linked_list_iterator_has_next(&it)){
             btstack_data_source_t *ds = (btstack_data_source_t*) btstack_linked_list_iterator_next(&it);
-            if (ds->fd < 0) continue;
+            if (ds->source.fd < 0) continue;
             if (ds->flags & DATA_SOURCE_CALLBACK_READ){
-                FD_SET(ds->fd, &descriptors_read);
-                if (ds->fd > highest_fd) {
-                    highest_fd = ds->fd;
+                FD_SET(ds->source.fd, &descriptors_read);
+                if (ds->source.fd > highest_fd) {
+                    highest_fd = ds->source.fd;
                 }
-                log_debug("btstack_run_loop_execute adding fd %u for read", ds->fd);
+                log_debug("btstack_run_loop_execute adding fd %u for read", ds->source.fd);
             }
             if (ds->flags & DATA_SOURCE_CALLBACK_WRITE){
-                FD_SET(ds->fd, &descriptors_write);
-                if (ds->fd > highest_fd) {
-                    highest_fd = ds->fd;
+                FD_SET(ds->source.fd, &descriptors_write);
+                if (ds->source.fd > highest_fd) {
+                    highest_fd = ds->source.fd;
                 }
-                log_debug("btstack_run_loop_execute adding fd %u for write", ds->fd);
+                log_debug("btstack_run_loop_execute adding fd %u for write", ds->source.fd);
             }
         }
         
@@ -204,14 +204,14 @@ static void btstack_run_loop_posix_execute(void) {
         btstack_linked_list_iterator_init(&it, &data_sources);
         while (btstack_linked_list_iterator_has_next(&it) && !data_sources_modified){
             btstack_data_source_t *ds = (btstack_data_source_t*) btstack_linked_list_iterator_next(&it);
-            log_debug("btstack_run_loop_posix_execute: check ds %p with fd %u\n", ds, ds->fd);
-            if (FD_ISSET(ds->fd, &descriptors_read)) {
-                log_debug("btstack_run_loop_posix_execute: process read ds %p with fd %u\n", ds, ds->fd);
+            log_debug("btstack_run_loop_posix_execute: check ds %p with fd %u\n", ds, ds->source.fd);
+            if (FD_ISSET(ds->source.fd, &descriptors_read)) {
+                log_debug("btstack_run_loop_posix_execute: process read ds %p with fd %u\n", ds, ds->source.fd);
                 ds->process(ds, DATA_SOURCE_CALLBACK_READ);
             }
             if (data_sources_modified) break;
-            if (FD_ISSET(ds->fd, &descriptors_write)) {
-                log_debug("btstack_run_loop_posix_execute: process write ds %p with fd %u\n", ds, ds->fd);
+            if (FD_ISSET(ds->source.fd, &descriptors_write)) {
+                log_debug("btstack_run_loop_posix_execute: process write ds %p with fd %u\n", ds, ds->source.fd);
                 ds->process(ds, DATA_SOURCE_CALLBACK_WRITE);
             }
         }

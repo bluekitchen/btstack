@@ -74,7 +74,7 @@ typedef struct btstack_data_source {
 	    int  fd;
     	// handle on windows
     	void * handle;	
-    };
+    } source;
 
     // callback to call for enabled callback types
     void  (*process)(struct btstack_data_source *ds, btstack_data_source_callback_type_t callback_type);

@@ -401,8 +401,8 @@ static int btstack_uart_windows_open(void){
     overlapped_write.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 
     // setup read + write data sources
-    transport_data_source_read.handle = overlapped_read.hEvent;
-    transport_data_source_write.handle = overlapped_write.hEvent;
+    transport_data_source_read.source.handle = overlapped_read.hEvent;
+    transport_data_source_write.source.handle = overlapped_write.hEvent;
     btstack_run_loop_set_data_source_handler(&transport_data_source_read,  &btstack_uart_windows_process_read);
     btstack_run_loop_set_data_source_handler(&transport_data_source_write, &btstack_uart_windows_process_write);
     btstack_run_loop_add_data_source(&transport_data_source_read);

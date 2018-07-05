@@ -89,7 +89,7 @@ static void btstack_uart_posix_process_write(btstack_data_source_t *ds) {
     uint32_t start = btstack_run_loop_get_time_ms();
 
     // write up to write_bytes_len to fd
-    int bytes_written = (int) write(ds->fd, write_bytes_data, write_bytes_len);
+    int bytes_written = (int) write(ds->source.fd, write_bytes_data, write_bytes_len);
     uint32_t end = btstack_run_loop_get_time_ms();
     if (end - start > 10){
         log_info("write took %u ms", end - start);
@@ -130,7 +130,7 @@ static void btstack_uart_posix_process_read(btstack_data_source_t *ds) {
     uint32_t start = btstack_run_loop_get_time_ms();
     
     // read up to bytes_to_read data in
-    ssize_t bytes_read = read(ds->fd, read_bytes_data, read_bytes_len);
+    ssize_t bytes_read = read(ds->source.fd, read_bytes_data, read_bytes_len);
     // log_info("btstack_uart_posix_process_read need %u bytes, got %d", read_bytes_len, (int) bytes_read);
     uint32_t end = btstack_run_loop_get_time_ms();
     if (end - start > 10){
@@ -157,7 +157,7 @@ static void btstack_uart_posix_process_read(btstack_data_source_t *ds) {
 }
 
 static void hci_uart_posix_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
-    if (ds->fd < 0) return;
+    if (ds->source.fd < 0) return;
     switch (callback_type){
         case DATA_SOURCE_CALLBACK_READ:
             btstack_uart_posix_process_read(ds);
@@ -172,7 +172,7 @@ static void hci_uart_posix_process(btstack_data_source_t *ds, btstack_data_sourc
 
 static int btstack_uart_posix_set_baudrate(uint32_t baudrate){
 
-    int fd = transport_data_source.fd;
+    int fd = transport_data_source.source.fd;
 
     log_info("h4_set_baudrate %u", baudrate);
 
@@ -269,7 +269,7 @@ static void btstack_uart_posix_set_flowcontrol_option(struct termios * toptions,
 }
 
 static int btstack_uart_posix_set_parity(int parity){
-    int fd = transport_data_source.fd;
+    int fd = transport_data_source.source.fd;
     struct termios toptions;
     if (tcgetattr(fd, &toptions) < 0) {
         log_error("btstack_uart_posix_set_parity: Couldn't get term attributes");
@@ -285,7 +285,7 @@ static int btstack_uart_posix_set_parity(int parity){
 
 
 static int btstack_uart_posix_set_flowcontrol(int flowcontrol){
-    int fd = transport_data_source.fd;
+    int fd = transport_data_source.source.fd;
     struct termios toptions;
     if (tcgetattr(fd, &toptions) < 0) {
         log_error("btstack_uart_posix_set_parity: Couldn't get term attributes");
@@ -343,7 +343,7 @@ static int btstack_uart_posix_open(void){
     }
 
     // store fd in data source
-    transport_data_source.fd = fd;
+    transport_data_source.source.fd = fd;
     
     // also set baudrate
     if (btstack_uart_posix_set_baudrate(baudrate) < 0){
@@ -367,8 +367,8 @@ static int btstack_uart_posix_close_new(void){
     btstack_run_loop_remove_data_source(&transport_data_source);
     
     // then close device 
-    close(transport_data_source.fd);
-    transport_data_source.fd = -1;
+    close(transport_data_source.source.fd);
+    transport_data_source.source.fd = -1;
     return 0;
 }
 

@@ -66,7 +66,7 @@ static void (*stdin_handler)(char c);
 static WINAPI DWORD stdin_reader_thread_process(void * p){
     while (1){
         key_read_buffer = getch();
-        SignalObjectAndWait(stdin_source.handle, key_processed_handle, INFINITE, FALSE);        
+        SignalObjectAndWait(stdin_source.source.handle, key_processed_handle, INFINITE, FALSE);        
     }
     return 0;
 }
@@ -96,7 +96,7 @@ void btstack_stdin_setup(void (*handler)(char c)){
     // asynchronous io on stdin via OVERLAPPED seems to be problematic. 
 
     // Use separate thread and event objects instead
-    stdin_source.handle  = CreateEvent(NULL, FALSE, FALSE, NULL);
+    stdin_source.source.handle  = CreateEvent(NULL, FALSE, FALSE, NULL);
     key_processed_handle = CreateEvent(NULL, FALSE, FALSE, NULL);
     // default attributes, default stack size, proc, args, start immediately, don't care for thread id
     stdin_reader_thread_handle = CreateThread(NULL, 0, &stdin_reader_thread_process, NULL, 0, NULL);
@@ -121,7 +121,7 @@ void btstack_stdin_reset(void){
     CloseHandle(stdin_reader_thread_handle);
 
     // free events
-    CloseHandle(stdin_source.handle);
+    CloseHandle(stdin_source.source.handle);
     CloseHandle(key_processed_handle);
 }
 

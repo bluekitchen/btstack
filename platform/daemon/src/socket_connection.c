@@ -515,8 +515,8 @@ void socket_connection_send_packet(connection_t *conn, uint16_t type, uint16_t c
     little_endian_store_16(header, 0, type);
     little_endian_store_16(header, 2, channel);
     little_endian_store_16(header, 4, size);
-    write(conn->ds.fd, header, 6);
-    write(conn->ds.fd, packet, size);
+    write(conn->ds.source.fd, header, 6);
+    write(conn->ds.source.fd, packet, size);
 }
 
 /**
@@ -568,9 +568,9 @@ connection_t * socket_connection_open_tcp(const char *address, uint16_t port){
 int socket_connection_close_tcp(connection_t * connection){
     if (!connection) return -1;
 #ifdef _WIN32
-    shutdown(connection->ds.fd, SD_BOTH);
+    shutdown(connection->ds.source.fd, SD_BOTH);
 #else    
-    shutdown(connection->ds.fd, SHUT_RDWR);
+    shutdown(connection->ds.source.fd, SHUT_RDWR);
 #endif
     socket_connection_free_connection(connection);
     return 0;
@@ -605,9 +605,9 @@ connection_t * socket_connection_open_unix(void){
 int socket_connection_close_unix(connection_t * connection){
     if (!connection) return -1;
 #ifdef _WIN32
-    shutdown(connection->ds.fd, SD_BOTH);
+    shutdown(connection->ds.source.fd, SD_BOTH);
 #else    
-    shutdown(connection->ds.fd, SHUT_RDWR);
+    shutdown(connection->ds.source.fd, SHUT_RDWR);
 #endif 
     socket_connection_free_connection(connection);
     return 0;
