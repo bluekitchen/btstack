@@ -75,7 +75,7 @@ typedef enum {
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static bd_addr_t peer_addr;
-static state_t state;;
+static state_t state;
 
 // SPP
 static uint16_t  rfcomm_mtu;
