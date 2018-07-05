@@ -181,8 +181,7 @@ static int avrcp_target_send_now_playing_info(uint16_t cid, avrcp_connection_t *
         packet[pos_packet_type] = AVRCP_SINGLE_PACKET;
         connection->packet_type = AVRCP_SINGLE_PACKET;
         packet[pos++] = count_set_bits_uint32(connection->now_playing_info_attr_bitmap);
-        // C++ compatible version of connection->next_attr_id++
-        connection->next_attr_id = (avrcp_media_attribute_id_t) (((int) connection->next_attr_id) + 1);
+        connection->next_attr_id = AVRCP_MEDIA_ATTR_ALL;
     }
     // printf("updated connection->next_attr_id %d, connection->attribute_value_offset %d \n", connection->next_attr_id, connection->attribute_value_offset);
     
