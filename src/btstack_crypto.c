@@ -164,9 +164,9 @@ static void btstack_crypto_aes128_start(const sm_key_t key, const sm_key_t plain
 
 static uint8_t btstack_crypto_cmac_get_byte(btstack_crypto_aes128_cmac_t * btstack_crypto_cmac, uint16_t pos){
 	if (btstack_crypto_cmac->btstack_crypto.operation == BTSTACK_CRYPTO_CMAC_GENERATOR){
-		return (*btstack_crypto_cmac->get_byte_callback)(pos);
+		return (*btstack_crypto_cmac->data.get_byte_callback)(pos);
 	} else {
-		return btstack_crypto_cmac->message[pos]; 
+		return btstack_crypto_cmac->data.message[pos]; 
 	}
 }
 
@@ -897,7 +897,7 @@ void btstack_crypto_aes128_cmac_generator(btstack_crypto_aes128_cmac_t * request
 	request->btstack_crypto.operation         		   = BTSTACK_CRYPTO_CMAC_GENERATOR;
 	request->key 									   = key;
 	request->size 									   = size;
-	request->get_byte_callback 						   = get_byte_callback;
+	request->data.get_byte_callback					   = get_byte_callback;
 	request->hash 									   = hash;
 	btstack_linked_list_add_tail(&btstack_crypto_operations, (btstack_linked_item_t*) request);
 	btstack_crypto_run();
@@ -909,7 +909,7 @@ void btstack_crypto_aes128_cmac_message(btstack_crypto_aes128_cmac_t * request, 
 	request->btstack_crypto.operation         		   = BTSTACK_CRYPTO_CMAC_MESSAGE;
 	request->key 									   = key;
 	request->size 									   = size;
-	request->message        						   = message;
+	request->data.message      						   = message;
 	request->hash 									   = hash;
 	btstack_linked_list_add_tail(&btstack_crypto_operations, (btstack_linked_item_t*) request);
 	btstack_crypto_run();
@@ -921,7 +921,7 @@ void btstack_crypto_aes128_cmac_zero(btstack_crypto_aes128_cmac_t * request, uin
     request->btstack_crypto.operation                  = BTSTACK_CRYPTO_CMAC_MESSAGE;
     request->key                                       = zero;
     request->size                                      = len;
-    request->message                                   = message;
+    request->data.message                              = message;
     request->hash                                      = hash;
     btstack_linked_list_add_tail(&btstack_crypto_operations, (btstack_linked_item_t*) request);
     btstack_crypto_run();
