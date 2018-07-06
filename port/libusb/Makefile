@@ -7,10 +7,14 @@ COMMON  += hci_transport_h2_libusb.c btstack_run_loop_posix.c le_device_db_fs.c 
 
 include ${BTSTACK_ROOT}/example/Makefile.inc
 
-CFLAGS  += -g -std=c99 -Wall -Wnewline-eof -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-parameter -Wredundant-decls -Wsign-compare
-CFLAGS += -Wc11-extensions
+CFLAGS  += -g -std=c99 -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-parameter -Wredundant-decls -Wsign-compare
 # CFLAGS += -Werror
-CFLAGS += -pedantic
+# CFLAGS += -pedantic
+
+# only LLVM
+# CFLAGS += -Wnewline-eof
+# CFLAGS += -Wc11-extensions
+# CFLAGS += -Wgnu-empty-initializer
 
 CFLAGS += -I${BTSTACK_ROOT}/platform/posix \
 		  -I${BTSTACK_ROOT}/platform/embedded \
