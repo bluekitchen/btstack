@@ -57,7 +57,8 @@ No build server | [wiced-h5](https://github.com/bluekitchen/btstack/tree/develop
 Status             | Port  | Platform
 -------------------| ------|---------
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badges/port-posix-h4-develop.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-posix-h4-develop) | [posix-h4](https://github.com/bluekitchen/btstack/tree/develop/port/posix-h4) | Unix-based system connected to Bluetooth module via H4 over serial port   
-No build server | [posix-h4-da14581](https://github.com/bluekitchen/btstack/tree/develop/port/posix-h4-da14581) | Unix-based system connected to Dialog Semiconductor DA14581 via H4 over serial port   
+No build server | [posix-h4-da14581](https://github.com/bluekitchen/btstack/tree/develop/port/posix-h4-da14581) | Unix-based system connected to Dialog Semiconductor DA14581 via H4 over serial port
+No build server | [posix-h4-da14585](https://github.com/bluekitchen/btstack/tree/develop/port/posix-h4-da14585) | Unix-based system connected to Dialog Semiconductor DA14585 via H4 over serial port   
 No build server | [posix-h5](https://github.com/bluekitchen/btstack/tree/develop/port/posix-h5) | Unix-based system connected to Bluetooth module via H5 over serial port   
 No build server | [posix-h5-bcm](https://github.com/bluekitchen/btstack/tree/develop/port/posix-h5) | Unix-based system connected to Broadcom/Cypress Bluetooth module via H5 over serial port   
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badges/port-libusb-develop.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-libusb-develop) | [libusb](https://github.com/bluekitchen/btstack/tree/develop/port/libusb) | Unix-based system with dedicated USB Bluetooth dongle
@@ -79,7 +80,7 @@ Broadcom USB Dongles         | Dual mode | USB             | Yes              | 
 CSR UART                     | Dual mode | H4, H5, BCSP    | No (didn't work) | csr            |
 CSR USB Dongles              | Dual mode | USB             | Yes              | csr            |
 Cypress CYW20704             | Dual mode | H4, H5, USB     | Probably         | bcm            |
-Dialog Semiconductor DA14581 | LE        | H4, SPI         | n.a.             | da14581        | Official HCI firmware used
+Dialog Semiconductor DA14581, DA14585 | LE        | H4, SPI         | n.a.             | da14581        | Official HCI firmware used
 Espressif ESP32              | Dual mode | VHCI            | Not yet          |                | SoC with Bluetooth and Wifi
 EM 9301, 9304                | LE        | SPI             | n.a.             | em9301         | Custom HCI SPI implementation
 Nordic nRF                   | LE        | H4              | n.a.             |                | Requires custom HCI firmware
