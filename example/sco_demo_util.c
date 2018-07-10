@@ -624,7 +624,7 @@ void sco_demo_send(hci_con_handle_t sco_handle){
 
         if (!pa_input_paused){
             int num_samples = hfp_msbc_num_audio_samples_per_frame();
-            if (hfp_msbc_can_encode_audio_frame_now() && btstack_ring_buffer_bytes_available(&pa_input_ring_buffer) >= (num_samples * MSBC_BYTES_PER_FRAME)){
+            if (hfp_msbc_can_encode_audio_frame_now() && btstack_ring_buffer_bytes_available(&pa_input_ring_buffer) >= (unsigned int)(num_samples * MSBC_BYTES_PER_FRAME)){
                 int16_t sample_buffer[num_samples];
                 uint32_t bytes_read;
                 btstack_ring_buffer_read(&pa_input_ring_buffer, (uint8_t*) sample_buffer, num_samples * MSBC_BYTES_PER_FRAME, &bytes_read);
@@ -667,7 +667,7 @@ void sco_demo_send(hci_con_handle_t sco_handle){
             // flip 16 on big endian systems
             // @note We don't use (uint16_t *) casts since all sample addresses are odd which causes crahses on some systems
             if (btstack_is_big_endian()){
-                int i;
+                unsigned int i;
                 for (i=0;i<bytes_read;i+=2){
                     uint8_t tmp        = sample_data[i*2];
                     sample_data[i*2]   = sample_data[i*2+1];
