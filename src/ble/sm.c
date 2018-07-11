@@ -2233,6 +2233,14 @@ static void sm_run(void){
                 reverse_256(&ec_q[0],  &buffer[1]);
                 reverse_256(&ec_q[32], &buffer[33]);
 
+#ifdef ENABLE_TESTING_SUPPORT
+                if (test_pairing_failure == SM_REASON_DHKEY_CHECK_FAILED){
+                    log_info("testing_support: invalidating public key");
+                    // flip single bit of public key coordinate
+                    buffer[1] ^= 1;
+                }
+#endif
+
                 // stk generation method
                 // passkey entry: notify app to show passkey or to request passkey
                 switch (setup->sm_stk_generation_method){
@@ -3374,8 +3382,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             err = btstack_crypto_ecc_p256_validate_public_key(setup->sm_peer_q);
             if (err){
                 log_error("sm: peer public key invalid %x", err);
-                // uses "unspecified reason", there is no "public key invalid" error code
-                sm_pdu_received_in_wrong_state(sm_conn);
+                sm_pairing_error(sm_conn, SM_REASON_DHKEY_CHECK_FAILED);
                 break;
             }
 
