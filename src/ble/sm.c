@@ -3688,6 +3688,10 @@ static void sm_ec_generated(void * arg){
     UNUSED(arg);
     ec_key_generation_state = EC_KEY_GENERATION_DONE;
 }
+static void sm_ec_generate_new_key(void){
+    ec_key_generation_state = EC_KEY_GENERATION_ACTIVE;
+    btstack_crypto_ecc_p256_generate_key(&sm_crypto_ecc_p256_request, ec_q, &sm_ec_generated, NULL);
+}
 #endif
 
 #ifdef ENABLE_TESTING_SUPPORT
@@ -3746,8 +3750,7 @@ void sm_init(void){
     l2cap_register_fixed_channel(sm_pdu_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-    ec_key_generation_state = EC_KEY_GENERATION_ACTIVE;
-    btstack_crypto_ecc_p256_generate_key(&sm_crypto_ecc_p256_request, ec_q, &sm_ec_generated, NULL);
+    sm_ec_generate_new_key();
 #endif
 }
 
