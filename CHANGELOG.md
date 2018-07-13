@@ -6,15 +6,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## Fixed
+### Changed
+- SM: Generate new EC Public Keypair after each pairing 
+
+## Changes June 2018
+
+### Fixed
 - HFP: Fix Wide Band Speech bit in SDP record for both HF/AG. Missing bit prevents macOS from using mSBC
 - ATT Server: send ATT_EVENT_HANDLE_VALUE_INDICATION_COMPLETE with status ATT_HANDLE_VALUE_INDICATION_DISCONNECT on disconnect
 - AVRCP Controller: fix parsing of now playing info
 
-## Changed
+### Changed
 - ATT Server: ATT_HANDLE_VALUE_INDICATION_DISCONNECT is delivered to service handler if registered
 
-## Added
+### Added
 - ATT Server: packet handler field added to att_service_handler_t to receive: connect/disconnect, atu exchange, indication complete
 
 ## Changes May 2018

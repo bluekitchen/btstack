@@ -972,6 +972,13 @@ static void sm_done_for_handle(hci_con_handle_t con_handle){
         sm_timeout_stop();
         sm_active_connection_handle = HCI_CON_HANDLE_INVALID;
         log_info("sm: connection 0x%x released setup context", con_handle);
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+        // generate new ec key after each pairing (that used it)
+        if (setup->sm_use_secure_connections){
+            sm_ec_generate_new_key();
+        }
+#endif
     }
 }
 
