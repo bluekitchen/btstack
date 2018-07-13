@@ -146,6 +146,7 @@ typedef enum {
 } address_resolution_event_t;
 
 typedef enum {
+    EC_KEY_GENERATION_IDLE,
     EC_KEY_GENERATION_ACTIVE,
     EC_KEY_GENERATION_DONE,
 } ec_key_generation_state_t;
@@ -412,6 +413,7 @@ static void sm_handle_encryption_result_rau(void *arg);
 static void sm_handle_random_result_ph2_tk(void * arg);
 static void sm_handle_random_result_rau(void * arg);
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
+static void sm_ec_generate_new_key(void);
 static void sm_handle_random_result_sc_get_random(void * arg);
 static int sm_passkey_entry(stk_generation_method_t method);
 #endif
@@ -1946,6 +1948,20 @@ static void sm_run(void){
             int done = 1;
             int err;
             UNUSED(err);
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+            // assert ec key is ready
+            if (sm_connection->sm_engine_state == SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED 
+            ||  sm_connection->sm_engine_state == SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST){
+                if (ec_key_generation_state == EC_KEY_GENERATION_IDLE){
+                    sm_ec_generate_new_key();
+                }
+                if (ec_key_generation_state != EC_KEY_GENERATION_DONE){
+                    continue;
+                }
+           }
+#endif
+
             switch (sm_connection->sm_engine_state) {
 #ifdef ENABLE_LE_PERIPHERAL
                 case SM_RESPONDER_SEND_SECURITY_REQUEST:
@@ -3687,8 +3703,11 @@ void sm_test_use_fixed_local_csrk(void){
 static void sm_ec_generated(void * arg){
     UNUSED(arg);
     ec_key_generation_state = EC_KEY_GENERATION_DONE;
+    // trigger pairing if pending for ec key
+    sm_run();
 }
 static void sm_ec_generate_new_key(void){
+    log_info("sm: generate new ec key");
     ec_key_generation_state = EC_KEY_GENERATION_ACTIVE;
     btstack_crypto_ecc_p256_generate_key(&sm_crypto_ecc_p256_request, ec_q, &sm_ec_generated, NULL);
 }
