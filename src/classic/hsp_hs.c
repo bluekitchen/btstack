@@ -615,7 +615,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 rfcomm_handle = rfcomm_event_channel_opened_get_con_handle(packet);
                 rfcomm_cid = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
                 mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
-                rfcomm_event_channel_opened_get_bd_addr(packet, event);
+                rfcomm_event_channel_opened_get_bd_addr(packet, remote);
                 log_info("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u, handle %02x", rfcomm_cid, mtu, rfcomm_handle);
                 hsp_state = HSP_RFCOMM_CONNECTION_ESTABLISHED;
             }
