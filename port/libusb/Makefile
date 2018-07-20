@@ -4,7 +4,7 @@ BTSTACK_ROOT = ../..
 CORE += main.c btstack_stdin_posix.c btstack_tlv_posix.c
 
 COMMON  += hci_transport_h2_libusb.c btstack_run_loop_posix.c le_device_db_fs.c btstack_link_key_db_fs.c wav_util.c btstack_network_posix.c
-COMMON += btstack_audio_portaudio.c btstack_audio.c
+COMMON += btstack_audio_portaudio.c
 
 include ${BTSTACK_ROOT}/example/Makefile.inc
 

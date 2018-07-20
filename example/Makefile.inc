@@ -35,6 +35,7 @@ COMMON += \
 	hci_dump.c		            \
 	l2cap.c			            \
 	l2cap_signaling.c	        \
+	btstack_audio.c             \
 	btstack_tlv.c               \
 	btstack_crypto.c            \
 	uECC.c                      \
