@@ -16,6 +16,7 @@ COMMON  += \
 			btstack_chipset_stlc2500d.c \
 			btstack_chipset_tc3566x.c \
 			btstack_chipset_bcm.c \
+			btstack_audio.c             \
 			wav_util.c 					\
 
 # examples
