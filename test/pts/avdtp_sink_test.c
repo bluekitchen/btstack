@@ -151,7 +151,7 @@ static avdtp_capabilities_t remote_configuration;
 static avdtp_context_t a2dp_sink_context;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
-#if defined(HAVE_PORTAUDIO) || defined(STORE_SBC_TO_WAV_FILE) || defined(HAVE_AUDIO_DMA) 
+#if defined(HAVE_PORTAUDIO) || defined(STORE_SBC_TO_WAV_FILE)
 static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context);
 #endif
 
@@ -194,73 +194,6 @@ static int portaudio_callback( const void *inputBuffer, void *outputBuffer,
         audio_stream_paused = 1;
     }
     return 0;
-}
-#endif
-
-#ifdef HAVE_AUDIO_DMA
-static int next_buffer(int current){
-    if (current == NUM_AUDIO_BUFFERS-1) return 0;
-    return current + 1;
-}
-static uint8_t * start_of_buffer(int num){
-    return (uint8_t *) &audio_samples[num * DMA_AUDIO_FRAMES * 2];
-}
-void hal_audio_dma_done(void){
-    if (audio_stream_paused){
-        hal_audio_dma_play((const uint8_t *) silent_buffer, DMA_AUDIO_FRAMES*4);
-        return;
-    }
-    // next buffer
-    int next_playback_buffer = next_buffer(playback_buffer);
-    uint8_t * playback_data;
-    if (next_playback_buffer == write_buffer){
-
-        // TODO: stop codec while playing silence when getting 'stream paused'
-
-        // start playing silence
-        audio_stream_paused = 1;
-        hal_audio_dma_play((const uint8_t *) silent_buffer, DMA_AUDIO_FRAMES*4);
-        printf("%6u - paused - bytes in buffer %u\n", (int) btstack_run_loop_get_time_ms(), btstack_ring_buffer_bytes_available(&ring_buffer));
-        return;
-    }
-    playback_buffer = next_playback_buffer;
-    playback_data = start_of_buffer(playback_buffer);
-    hal_audio_dma_play(playback_data, audio_samples_len[playback_buffer]);
-    // btstack_run_loop_embedded_trigger();
-}
-#endif
-
-
-#ifdef HAVE_AUDIO_DMA
-static void hal_audio_dma_process(btstack_data_source_t * ds, btstack_data_source_callback_type_t callback_type){
-    UNUSED(ds);
-    UNUSED(callback_type);
-
-    if (!media_initialized) return;
-
-    int trigger_resume = 0;
-    if (audio_stream_paused) {
-        if (sbc_frame_size && btstack_ring_buffer_bytes_available(&ring_buffer) >= OPTIMAL_FRAMES_MIN * sbc_frame_size){
-            trigger_resume = 1;
-            // reset buffers
-            playback_buffer = NUM_AUDIO_BUFFERS - 1;
-            write_buffer = 0;
-        } else {
-            return;
-        }
-    }
-
-    while (playback_buffer != write_buffer && btstack_ring_buffer_bytes_available(&ring_buffer) >= sbc_frame_size ){
-        uint8_t frame[MAX_SBC_FRAME_SIZE];
-        uint32_t bytes_read = 0;
-        btstack_ring_buffer_read(&ring_buffer, frame, sbc_frame_size, &bytes_read);
-        btstack_sbc_decoder_process_data(&state, 0, frame, sbc_frame_size);
-    }
-
-    if (trigger_resume){
-        printf("%6u - resume\n", (int) btstack_run_loop_get_time_ms());
-        audio_stream_paused = 0;
-    }
 }
 #endif
 
@@ -317,15 +250,8 @@ static int media_processing_init(avdtp_media_codec_configuration_sbc_t configura
     log_info("PortAudio: stream opened");
     printf("PortAudio: stream opened\n");
 #endif
-#ifdef HAVE_AUDIO_DMA
-    audio_stream_paused  = 1;
-    hal_audio_dma_init(configuration.sampling_frequency);
-    hal_audio_dma_set_audio_played(&hal_audio_dma_done);
-    // start playing silence
-    hal_audio_dma_done();
-#endif
 
- #if defined(HAVE_PORTAUDIO) || defined (HAVE_AUDIO_DMA)
+ #if defined(HAVE_PORTAUDIO)
     memset(ring_buffer_storage, 0, sizeof(ring_buffer_storage));
     btstack_ring_buffer_init(&ring_buffer, ring_buffer_storage, sizeof(ring_buffer_storage));
     audio_stream_started = 0;
@@ -351,7 +277,7 @@ static void media_processing_close(void){
     fclose(sbc_file);
 #endif     
 
-#if defined(HAVE_PORTAUDIO) || defined (HAVE_AUDIO_DMA)
+#if defined(HAVE_PORTAUDIO)
     audio_stream_started = 0;
 #endif
 
@@ -378,10 +304,6 @@ static void media_processing_close(void){
         return;
     } 
 #endif
-
-#ifdef HAVE_AUDIO_DMA
-    hal_audio_dma_close();
-#endif
 }
 
 
@@ -406,31 +328,9 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     
     avdtp_sbc_codec_header_t sbc_header;
     if (!read_sbc_header(packet, size, &pos, &sbc_header)) return;
-
-#ifdef HAVE_AUDIO_DMA
-    // store sbc frame size for buffer management
-    sbc_frame_size = (size-pos)/ sbc_header.num_frames;
-#endif
     
 #if defined(HAVE_PORTAUDIO) || defined(STORE_SBC_TO_WAV_FILE)
     btstack_sbc_decoder_process_data(&state, 0, packet+pos, size-pos);
-#endif
-
-#ifdef HAVE_AUDIO_DMA
-    btstack_ring_buffer_write(&ring_buffer,  packet+pos, size-pos);
-
-    // decide on audio sync drift based on number of sbc frames in queue
-    int sbc_frames_in_buffer = btstack_ring_buffer_bytes_available(&ring_buffer) / sbc_frame_size;
-    if (sbc_frames_in_buffer < OPTIMAL_FRAMES_MIN){
-        sbc_samples_fix = 1;    // duplicate last sample
-    } else if (sbc_frames_in_buffer <= OPTIMAL_FRAMES_MAX){
-        sbc_samples_fix = 0;    // nothing to do
-    } else {
-        sbc_samples_fix = -1;   // drop last sample
-    }
-
-    // dump
-    printf("%6u %03u %d\n",  (int) btstack_run_loop_get_time_ms(), sbc_frames_in_buffer, sbc_samples_fix);
 #endif
 
 #ifdef STORE_SBC_TO_SBC_FILE
@@ -468,25 +368,6 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
         }
         audio_stream_started = 1; 
     }
-#endif
-
-#ifdef HAVE_AUDIO_DMA
-    // store in ring buffer
-    uint8_t * write_data = start_of_buffer(write_buffer);
-    uint16_t len = num_samples*num_channels*2;
-    memcpy(write_data, data, len);
-    audio_samples_len[write_buffer] = len;
-
-    // add/drop audio frame to fix drift
-    if (sbc_samples_fix > 0){
-        memcpy(write_data + len, write_data + len - 4, 4);
-        audio_samples_len[write_buffer] += 4;
-    }
-    if (sbc_samples_fix < 0){
-        audio_samples_len[write_buffer] -= 4;
-    }
-
-    write_buffer = next_buffer(write_buffer);
 #endif
 }
 #endif
