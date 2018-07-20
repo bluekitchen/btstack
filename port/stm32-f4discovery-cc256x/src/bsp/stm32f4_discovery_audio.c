@@ -192,8 +192,10 @@ __IO uint16_t AudioInVolume = DEFAULT_AUDIO_IN_VOLUME;
   * @{
   */ 
 static uint8_t I2S3_Init(uint32_t AudioFreq);
-static uint8_t I2S2_Init(uint32_t AudioFreq);
-static void PDMDecoder_Init(uint32_t AudioFreq, uint32_t ChnlNbr);
+
+// static uint8_t I2S2_Init(uint32_t AudioFreq);
+// static void PDMDecoder_Init(uint32_t AudioFreq, uint32_t ChnlNbr);
+
 /**
   * @}
   */ 
@@ -1061,7 +1063,6 @@ static void PDMDecoder_Init(uint32_t AudioFreq, uint32_t ChnlNbr)
     PDM_Filter_Init((PDMFilter_InitStruct *)&Filter[i]);
   }  
 }
-#endif
 
 /**
   * @brief  Initializes the Audio Codec audio interface (I2S)
@@ -1097,6 +1098,7 @@ static uint8_t I2S2_Init(uint32_t AudioFreq)
     return AUDIO_OK; 
   }
 }  
+#endif
 
 /**
   * @}
