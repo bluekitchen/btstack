@@ -134,6 +134,7 @@ EXAMPLES = 					\
 	le_streamer				\
 	le_streamer_client      \
 	led_counter				\
+	mod_player	            \
 	pbap_client_demo		\
 	sdp_bnep_query 			\
 	sdp_general_query		\
@@ -306,6 +307,9 @@ le_data_channel_client: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} le_data_channel_clie
 
 le_data_channel_server: le_data_channel_server.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} le_data_channel_server.c
 	${CC} $(filter-out le_data_channel_server.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+mod_player: ${CORE_OBJ} ${COMMON_OBJ} ${HXCMOD_PLAYER_OBJ} btstack_audio.o mod_player.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:
 	rm -f ${EXAMPLES} *_demo
