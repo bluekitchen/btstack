@@ -7,6 +7,8 @@ CORE += \
 	btstack_memory_pool.c       \
 	btstack_run_loop.c		    \
 	btstack_util.c 	            \
+	btstack_audio.c             \
+	btstack_audio_portaudio.c   \
 	main.c 						\
 	btstack_stdin_posix.c       \
 	btstack_tlv.c 		\
