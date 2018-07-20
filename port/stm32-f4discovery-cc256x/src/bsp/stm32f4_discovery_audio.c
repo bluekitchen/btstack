@@ -569,6 +569,13 @@ __weak void BSP_AUDIO_OUT_MspInit(I2S_HandleTypeDef *hi2s, void *Params)
     hdma_i2sTx.Init.PeriphDataAlignment = I2S3_DMAx_PERIPH_DATA_SIZE;
     hdma_i2sTx.Init.MemDataAlignment    = I2S3_DMAx_MEM_DATA_SIZE;
     hdma_i2sTx.Init.Mode                = DMA_NORMAL;
+
+    // BK: use circular DMA for hal_audio.h
+#ifdef HAVE_HAL_AUDIO
+    hdma_i2sTx.Init.Mode                = DMA_CIRCULAR;
+#endif
+    // BK: use circular DMA (end)
+
     hdma_i2sTx.Init.Priority            = DMA_PRIORITY_HIGH;
     hdma_i2sTx.Init.FIFOMode            = DMA_FIFOMODE_ENABLE;         
     hdma_i2sTx.Init.FIFOThreshold       = DMA_FIFO_THRESHOLD_FULL;
