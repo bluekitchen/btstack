@@ -93,6 +93,7 @@ void btstack_audio_set_instance(const btstack_audio_t * audio_impl);
 // common implementations
 const btstack_audio_t * btstack_audio_portaudio_get_instance(void);
 const btstack_audio_t * btstack_audio_embedded_get_instance(void);
+const btstack_audio_t * btstack_audio_esp32_get_instance(void);
 
 #if defined __cplusplus
 }
