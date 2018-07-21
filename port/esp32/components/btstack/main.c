@@ -57,6 +57,7 @@
 #include "hci_dump.h"
 #include "esp_bt.h"
 #include "btstack_debug.h"
+#include "btstack_audio.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -383,6 +384,9 @@ int app_main(void){
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
+
+    // setup i2s audio
+    btstack_audio_set_instance(btstack_audio_esp32_get_instance());
 
     btstack_main(0, NULL);
 
