@@ -685,5 +685,15 @@ uint8_t avrcp_connect(bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * a
     context->avrcp_cid = connection->avrcp_cid;
     connection->browsing_l2cap_psm = 0;
     sdp_query_context = context;
-    return sdp_client_query_uuid16(&avrcp_handle_sdp_client_query_result, bd_addr, BLUETOOTH_PROTOCOL_AVCTP);
+
+    uint8_t status = sdp_client_query_uuid16(&avrcp_handle_sdp_client_query_result, bd_addr, BLUETOOTH_PROTOCOL_AVCTP);
+
+    // free connection struct in case of SDP connection error
+    if (status){
+        log_info("AVRCP: SDP query failed with status 0x%02x.", status);
+        btstack_linked_list_remove(&sdp_query_context->connections, (btstack_linked_item_t*) connection);
+        btstack_memory_avrcp_connection_free(connection);
+    }
+
+    return status;
 }
