@@ -6,8 +6,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- btstack_audio.h: application level API for audio playback and recording
+- embedded/hal_audio.h: low-level API for audio playback and recording
+- HID Device: hid_device_connect(..) function
+- ESP32: implement hal_audio
+- DA14585: support for Dialog Semiconductor DA14585 LE-only controller
+
 ### Changed
 - SM: Generate new EC Public Keypair after each pairing 
+- btstack.h: only include classic headers if ENABLE_CLASSIC is defined
+- windows: ignore virtual Bluetooth adapter provided by VMware
 
 ## Changes June 2018
 
