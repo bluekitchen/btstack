@@ -37,6 +37,8 @@
 
 #include <stdint.h>
 #include "btstack_defines.h"
+#include "bluetooth.h"
+
 /**
  * @brief Create HID Device SDP service record. 
  * @param service Empty buffer in which a new service record will be stored.
@@ -74,6 +76,15 @@ void hid_device_init(void);
  * @param callback
  */
 void hid_device_register_packet_handler(btstack_packet_handler_t callback);
+
+
+/*
+ * @brief Create HID connection to HID Host
+ * @param addr
+ * @param hid_cid to use for other commands
+ * @result status
+ */
+uint8_t hid_device_connect(bd_addr_t addr, uint16_t * hid_cid);
 
 /**
  * @brief Request can send now event to send HID Report
