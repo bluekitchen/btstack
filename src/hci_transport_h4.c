@@ -211,6 +211,12 @@ static void hci_transport_h4_block_read(void){
             
         case H4_W4_EVENT_HEADER:
             bytes_to_read = hci_packet[2];
+            // check Event length
+            if (HCI_EVENT_HEADER_SIZE + bytes_to_read >  HCI_INCOMING_PACKET_BUFFER_SIZE){
+                log_error("hci_transport_h4: invalid Event len %d - only space for %u", bytes_to_read, HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_EVENT_HEADER_SIZE);
+                hci_transport_h4_reset_statemachine();
+                break;
+            }
             h4_state = H4_W4_PAYLOAD;
             break;
             
@@ -220,13 +226,19 @@ static void hci_transport_h4_block_read(void){
             if (HCI_ACL_HEADER_SIZE + bytes_to_read >  HCI_INCOMING_PACKET_BUFFER_SIZE){
                 log_error("hci_transport_h4: invalid ACL payload len %d - only space for %u", bytes_to_read, HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_ACL_HEADER_SIZE);
                 hci_transport_h4_reset_statemachine();
-                break;              
+                break;
             }
             h4_state = H4_W4_PAYLOAD;
             break;
             
         case H4_W4_SCO_HEADER:
             bytes_to_read = hci_packet[3];
+            // check SCO length
+            if (HCI_SCO_HEADER_SIZE + bytes_to_read >  HCI_INCOMING_PACKET_BUFFER_SIZE){
+                log_error("hci_transport_h4: invalid SCO payload len %d - only space for %u", bytes_to_read, HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_SCO_HEADER_SIZE);
+                hci_transport_h4_reset_statemachine();
+                break;
+            }
             h4_state = H4_W4_PAYLOAD;
             break;
 
