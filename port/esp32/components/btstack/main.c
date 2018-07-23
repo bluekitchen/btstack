@@ -86,7 +86,7 @@ static uint8_t hci_ringbuffer_storage[HCI_HOST_ACL_PACKET_NUM   * (2 + 1 + HCI_A
                                       MAX_NR_HOST_EVENT_PACKETS * (2 + 1 + HCI_EVENT_BUFFER_SIZE)];
 
 static btstack_ring_buffer_t hci_ringbuffer;
-static uint8_t hci_receive_buffer[1 + HCI_PACKET_BUFFER_SIZE];
+static uint8_t hci_receive_buffer[1 + HCI_INCOMING_PACKET_BUFFER_SIZE];
 static SemaphoreHandle_t ring_buffer_mutex;
 
 // data source for integration with BTstack Runloop

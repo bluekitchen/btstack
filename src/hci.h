@@ -91,20 +91,35 @@ extern "C" {
 
 #define HCI_ACL_BUFFER_SIZE        (HCI_ACL_HEADER_SIZE   + HCI_ACL_PAYLOAD_SIZE)
     
-// size of hci buffers, big enough for command, event, or acl packet without H4 packet type
-// @note cmd buffer is bigger than event buffer
-#ifdef HCI_PACKET_BUFFER_SIZE
-    #if HCI_PACKET_BUFFER_SIZE < HCI_ACL_BUFFER_SIZE
-        #error HCI_PACKET_BUFFER_SIZE must be equal or larger than HCI_ACL_BUFFER_SIZE
+// size of hci incoming buffer, big enough for event or acl packet without H4 packet type
+#ifdef HCI_INCOMING_PACKET_BUFFER_SIZE
+    #if HCI_INCOMING_PACKET_BUFFER_SIZE < HCI_ACL_BUFFER_SIZE
+        #error HCI_INCOMING_PACKET_BUFFER_SIZE must be equal or larger than HCI_ACL_BUFFER_SIZE
     #endif
-    #if HCI_PACKET_BUFFER_SIZE < HCI_CMD_BUFFER_SIZE
-        #error HCI_PACKET_BUFFER_SIZE must be equal or larger than HCI_CMD_BUFFER_SIZE
+    #if HCI_INCOMING_PACKET_BUFFER_SIZE < HCI_EVENT_BUFFER_SIZE
+        #error HCI_INCOMING_PACKET_BUFFER_SIZE must be equal or larger than HCI_EVENT_BUFFER_SIZE
+    #endif
+#else
+    #if HCI_ACL_BUFFER_SIZE > HCI_EVENT_BUFFER_SIZE
+        #define HCI_INCOMING_PACKET_BUFFER_SIZE HCI_ACL_BUFFER_SIZE
+    #else
+        #define HCI_INCOMING_PACKET_BUFFER_SIZE HCI_EVENT_BUFFER_SIZE
+    #endif
+#endif
+
+// size of hci outgoing buffer, big enough for command or acl packet without H4 packet type
+#ifdef HCI_OUTGOING_PACKET_BUFFER_SIZE
+    #if HCI_OUTGOING_PACKET_BUFFER_SIZE < HCI_ACL_BUFFER_SIZE
+        #error HCI_OUTGOING_PACKET_BUFFER_SIZE must be equal or larger than HCI_ACL_BUFFER_SIZE
+    #endif
+    #if HCI_OUTGOING_PACKET_BUFFER_SIZE < HCI_CMD_BUFFER_SIZE
+        #error HCI_OUTGOING_PACKET_BUFFER_SIZE must be equal or larger than HCI_CMD_BUFFER_SIZE
     #endif
 #else
     #if HCI_ACL_BUFFER_SIZE > HCI_CMD_BUFFER_SIZE
-        #define HCI_PACKET_BUFFER_SIZE HCI_ACL_BUFFER_SIZE
+        #define HCI_OUTGOING_PACKET_BUFFER_SIZE HCI_ACL_BUFFER_SIZE
     #else
-        #define HCI_PACKET_BUFFER_SIZE HCI_CMD_BUFFER_SIZE
+        #define HCI_OUTGOING_PACKET_BUFFER_SIZE HCI_CMD_BUFFER_SIZE
     #endif
 #endif
 
@@ -688,7 +703,7 @@ typedef struct {
 
     // single buffer for HCI packet assembly + additional prebuffer for H4 drivers
     uint8_t   * hci_packet_buffer;
-    uint8_t   hci_packet_buffer_data[HCI_OUTGOING_PRE_BUFFER_SIZE + HCI_PACKET_BUFFER_SIZE];
+    uint8_t   hci_packet_buffer_data[HCI_OUTGOING_PRE_BUFFER_SIZE + HCI_OUTGOING_PACKET_BUFFER_SIZE];
     uint8_t   hci_packet_buffer_reserved;
     uint16_t  acl_fragmentation_pos;
     uint16_t  acl_fragmentation_total_size;

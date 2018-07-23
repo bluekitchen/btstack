@@ -70,8 +70,8 @@ static hci_transport_h4_t * hci_transport_h4 = NULL;
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
 // packet bufffers
-static uint8_t hci_packet_out[1+HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
-static uint8_t hci_packet_in[1+HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
+static uint8_t hci_packet_out[1+HCI_OUTGOING_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, cmd header   +   cmd data)
+static uint8_t hci_packet_in[ 1+HCI_INCOMING_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
 
 static int h4_open(void){
     int fd = mtk_bt_enable();

@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - SM: Generate new EC Public Keypair after each pairing 
 - btstack.h: only include classic headers if ENABLE_CLASSIC is defined
 - windows: ignore virtual Bluetooth adapter provided by VMware
+- Replaced HCI_PACKET_BUFFER_SIZE with HCI_INCOMING_PACKET_BUFFER_SIZE and HCI_OUTGOING_PACKET_BUFFER_SIZE
 
 ## Changes June 2018
 
