@@ -14,7 +14,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - DA14585: support for Dialog Semiconductor DA14585 LE-only controller
 
 ### Changed
-- SM: Generate new EC Public Keypair after each pairing 
+- Errata 10734:
+  - SM: Generate new EC Public Keypair after each pairing
+  - SM: Abort failure with DHKEY_CHECK_FAILED if received public key is invalid (instead of unspecified error)
 - btstack.h: only include classic headers if ENABLE_CLASSIC is defined
 - windows: ignore virtual Bluetooth adapter provided by VMware
 - Replaced HCI_PACKET_BUFFER_SIZE with HCI_INCOMING_PACKET_BUFFER_SIZE and HCI_OUTGOING_PACKET_BUFFER_SIZE
