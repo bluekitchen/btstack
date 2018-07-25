@@ -44,10 +44,13 @@
 // *****************************************************************************
 
 #include <stdint.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <signal.h>
+#include <errno.h>
 
 #include "btstack_config.h"
 
@@ -64,9 +67,16 @@
 
 #include "btstack_chipset_bcm.h"
 #include "btstack_chipset_bcm_download_firmware.h"
+#include "btstack_control_raspi.h"
 
 int btstack_main(int argc, const char * argv[]);
 
+typedef enum  {
+    UART_INVALID,
+    UART_SOFTWARE_NO_FLOW,
+    UART_HARDWARE_NO_FLOW,
+    UART_HARDWARE_FLOW
+} uart_type_t;
 
 static hci_transport_config_uart_t transport_config = {
     HCI_TRANSPORT_CONFIG_UART,
@@ -118,6 +128,65 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
+// see https://github.com/RPi-Distro/pi-bluetooth/blob/master/usr/bin/btuart
+static int raspi_get_bd_addr(bd_addr_t bd_addr){
+
+    FILE *fd = fopen( "/proc/device-tree/serial-number", "r" );
+    if( fd == NULL ){
+        fprintf(stderr, "can't read serial number, %s\n", strerror( errno ) );
+        return -1;
+    }
+    fscanf( fd, "%*08" SCNx32 "%*02" SCNx8 "%02" SCNx8 "%02" SCNx8 "%02" SCNx8, &addr[3], &addr[4], &addr[5] );
+    fclose( fd );
+
+    addr[0] =  0xb8; addr[1]  = 0x27; addr[2] =  0xeb;
+    addr[3] ^= 0xaa; addr[4] ^= 0xaa; addr[5] ^= 0xaa;
+
+    return 0;
+}
+
+// see https://github.com/RPi-Distro/pi-bluetooth/blob/master/usr/bin/btuart
+// on UART_INVALID errno is set
+static uart_type_t raspi_get_bluetooth_uart_type(void){
+    uint8_t deviceUart0[21] = { 0 };
+    uint8_t deviceSerial1[21] = { 0 };
+    int fd = fopen( "/proc/device-tree/aliases/uart0", "r" );
+    if( fd == NULL ) return UART_INVALID;
+
+    fscanf( fd, "%20s", deviceUart0 );
+    fclose( fd );
+    
+    fd = fopen( "/proc/device-tree/aliases/serial1", "r" );
+    if( fd == NULL ) return UART_INVALID;
+
+    fscanf( fd, "%20s", deviceSerial1 );
+    fclose( fd );
+  
+    if( strncmp( deviceUart0, deviceSerial1, 21 ) == 0 )
+    {
+        // HW uart
+        size_t count = 0;
+        uint8_t buf[16];
+        fd = fopen( "/proc/device-tree/soc/gpio@7e200000/uart0_pins/brcm,pins", "r" );
+        if( fd == NULL ) return UART_INVALID;
+
+        count = fread( buf, 1, 16, fd );
+        fclose( fd );
+    
+        if( count == 16 )
+        {
+            return UART_HARDWARE_FLOW;
+
+        } else
+        {
+            return UART_HARDWARE_NO_FLOW;
+        }
+    } else
+    {
+        return UART_SOFTWARE_NO_FLOW;
+    }    
+}
+
 static void phase2(int status);
 int main(int argc, const char * argv[]){
 
@@ -135,24 +204,39 @@ int main(int argc, const char * argv[]){
     // pick serial port and configure uart block driver
     transport_config.device_name = "/dev/serial1";
 
-    // TODO: derive BD_ADD from serial number
-    // https://github.com/RPi-Distro/pi-bluetooth/blob/master/usr/bin/btuart
+    // derive bd_addr from serial number
+    bd_addr_t addr = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 };
+    raspi_get_bd_addr(addr);
 
-    // TODO: check device tree if flowcontrol is supported/connected
-    // https://github.com/RPi-Distro/pi-bluetooth/blob/master/usr/bin/btuart
-
-    // TODO: decide on baud rate based on hw flowcontrol and if hw uart (uart0) is used
-    // https://github.com/RPi-Distro/pi-bluetooth/blob/master/usr/bin/btuart
-
-    // TODO: power cycle Bluetooth module
-    // toggle interal gpio 128
+    // set UART config based on raspi Bluetooth UART type
+    uart_type_t uart_type = raspi_get_bluetooth_uart_type();
+    switch (raspi_get_bluetooth_uart_type()){
+        case UART_INVALID:
+            fprintf(stderr, "can't verify HW uart, %s\n", strerror( errno ) );
+            return -1;
+        case UART_SOFTWARE_NO_FLOW:
+            printf("Software UART without flowcontrol\n");
+            transport_config.baudrate_main = 460800;
+            transport_config.flowcontrol = 0;
+            break;
+        case UART_HARDWARE_NO_FLOW:
+            printf("Hardware UART without flowcontrol\n");
+            transport_config.baudrate_main = 921600;
+            transport_config.flowcontrol = 0;
+            break;
+        case UART_HARDWARE_FLOW:
+            printf("Hardware UART with flowcontrol\n");
+            transport_config.baudrate_main = 3000000;
+            transport_config.flowcontrol = 1;
+            break;
+    }
 
     // get BCM chipset driver
     const btstack_chipset_t * chipset = btstack_chipset_bcm_instance();
     chipset->init(&transport_config);
 
     // set path to firmware files
-    btstack_chipset_bcm_set_hcd_folder_path("/lib/firmware");
+    btstack_chipset_bcm_set_hcd_folder_path("/lib/firmware/brcm");
 
     // set chipset name
     btstack_chipset_bcm_set_device_name("BCM43430A1");
@@ -170,6 +254,11 @@ int main(int argc, const char * argv[]){
     const hci_transport_t * transport = hci_transport_h5_instance(uart_driver);
     const btstack_link_key_db_t * link_key_db = btstack_link_key_db_fs_instance();
     hci_init(transport, (void*) &transport_config);
+    hci_set_bd_addr( addr );
+
+    // btstack_control_t *control = btstack_control_raspi_get_instance();
+    // hci_set_control( control );
+
     hci_set_link_key_db(link_key_db);
     hci_set_chipset(btstack_chipset_bcm_instance());
 
@@ -185,6 +274,10 @@ int main(int argc, const char * argv[]){
 
     // phase #1 download firmware
     printf("Phase 1: Download firmware\n");
+
+    // control->off();
+    // sleep( 1 );
+    // control->on();
 
     // phase #2 start main app
     btstack_chipset_bcm_download_firmware(uart_driver, transport_config.baudrate_main, &phase2);
