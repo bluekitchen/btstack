@@ -78,10 +78,11 @@ typedef enum  {
     UART_HARDWARE_FLOW
 } uart_type_t;
 
+// default config, updated depending on RasperryPi UART configuration
 static hci_transport_config_uart_t transport_config = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
-    460800,  // main baudrate
+    0,       // main baudrate
     0,       // flow control
     NULL,
 };
@@ -129,14 +130,14 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 
 // see https://github.com/RPi-Distro/pi-bluetooth/blob/master/usr/bin/btuart
-static int raspi_get_bd_addr(bd_addr_t bd_addr){
+static int raspi_get_bd_addr(bd_addr_t addr){
 
     FILE *fd = fopen( "/proc/device-tree/serial-number", "r" );
     if( fd == NULL ){
         fprintf(stderr, "can't read serial number, %s\n", strerror( errno ) );
         return -1;
     }
-    fscanf( fd, "%*08" SCNx32 "%*02" SCNx8 "%02" SCNx8 "%02" SCNx8 "%02" SCNx8, &addr[3], &addr[4], &addr[5] );
+    fscanf( fd, "%*08u" "%*02u" "%02" SCNx8 "%02" SCNx8 "%02" SCNx8, &addr[3], &addr[4], &addr[5] );
     fclose( fd );
 
     addr[0] =  0xb8; addr[1]  = 0x27; addr[2] =  0xeb;
@@ -148,41 +149,37 @@ static int raspi_get_bd_addr(bd_addr_t bd_addr){
 // see https://github.com/RPi-Distro/pi-bluetooth/blob/master/usr/bin/btuart
 // on UART_INVALID errno is set
 static uart_type_t raspi_get_bluetooth_uart_type(void){
-    uint8_t deviceUart0[21] = { 0 };
-    uint8_t deviceSerial1[21] = { 0 };
-    int fd = fopen( "/proc/device-tree/aliases/uart0", "r" );
-    if( fd == NULL ) return UART_INVALID;
 
+    uint8_t deviceUart0[21] = { 0 };
+    FILE *fd = fopen( "/proc/device-tree/aliases/uart0", "r" );
+    if( fd == NULL ) return UART_INVALID;
     fscanf( fd, "%20s", deviceUart0 );
     fclose( fd );
     
+    uint8_t deviceSerial1[21] = { 0 };
     fd = fopen( "/proc/device-tree/aliases/serial1", "r" );
     if( fd == NULL ) return UART_INVALID;
-
     fscanf( fd, "%20s", deviceSerial1 );
     fclose( fd );
   
-    if( strncmp( deviceUart0, deviceSerial1, 21 ) == 0 )
-    {
+    // test if uart0 is an alias for serial1
+    if( strncmp( (const char *) deviceUart0, (const char *) deviceSerial1, 21 ) == 0 ){
         // HW uart
         size_t count = 0;
         uint8_t buf[16];
         fd = fopen( "/proc/device-tree/soc/gpio@7e200000/uart0_pins/brcm,pins", "r" );
         if( fd == NULL ) return UART_INVALID;
-
         count = fread( buf, 1, 16, fd );
         fclose( fd );
-    
-        if( count == 16 )
-        {
-            return UART_HARDWARE_FLOW;
 
-        } else
-        {
+        // contains assigned pins
+        int pins = count / 4;
+        if( pins == 4 ){
+            return UART_HARDWARE_FLOW;
+        } else {
             return UART_HARDWARE_NO_FLOW;
         }
-    } else
-    {
+    } else {
         return UART_SOFTWARE_NO_FLOW;
     }    
 }
@@ -209,7 +206,6 @@ int main(int argc, const char * argv[]){
     raspi_get_bd_addr(addr);
 
     // set UART config based on raspi Bluetooth UART type
-    uart_type_t uart_type = raspi_get_bluetooth_uart_type();
     switch (raspi_get_bluetooth_uart_type()){
         case UART_INVALID:
             fprintf(stderr, "can't verify HW uart, %s\n", strerror( errno ) );
@@ -236,7 +232,7 @@ int main(int argc, const char * argv[]){
     chipset->init(&transport_config);
 
     // set path to firmware files
-    btstack_chipset_bcm_set_hcd_folder_path("/lib/firmware/brcm");
+    btstack_chipset_bcm_set_hcd_folder_path("/lib/firmware");
 
     // set chipset name
     btstack_chipset_bcm_set_device_name("BCM43430A1");
