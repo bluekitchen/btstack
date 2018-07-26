@@ -232,7 +232,7 @@ int main(int argc, const char * argv[]){
     chipset->init(&transport_config);
 
     // set path to firmware files
-    btstack_chipset_bcm_set_hcd_folder_path("/lib/firmware");
+    btstack_chipset_bcm_set_hcd_folder_path("/lib/firmware/brcm");
 
     // set chipset name
     btstack_chipset_bcm_set_device_name("BCM43430A1");
@@ -271,7 +271,7 @@ int main(int argc, const char * argv[]){
     btstack_control_t *control = btstack_control_raspi_get_instance();
     control->init(NULL);
     control->off();
-    sleep( 1 );
+    usleep( 100000 );
     control->on();
 
     // phase #2 start main app
