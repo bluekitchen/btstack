@@ -67,7 +67,7 @@
 
 #include "btstack_chipset_bcm.h"
 #include "btstack_chipset_bcm_download_firmware.h"
-#include "btstack_control_raspi.h"
+// #include "btstack_control_raspi.h"
 
 int btstack_main(int argc, const char * argv[]);
 
