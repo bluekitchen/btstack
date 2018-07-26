@@ -4,6 +4,7 @@ BTSTACK_ROOT = ../..
 CORE += \
 	btstack_chipset_bcm.c \
 	btstack_chipset_bcm_download_firmware.c \
+	btstack_control_raspi.c \
 	btstack_link_key_db_fs.c \
 	btstack_run_loop_posix.c \
 	btstack_uart_block_posix.c \

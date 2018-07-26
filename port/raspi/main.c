@@ -67,7 +67,7 @@
 
 #include "btstack_chipset_bcm.h"
 #include "btstack_chipset_bcm_download_firmware.h"
-// #include "btstack_control_raspi.h"
+#include "btstack_control_raspi.h"
 
 int btstack_main(int argc, const char * argv[]);
 
@@ -251,12 +251,8 @@ int main(int argc, const char * argv[]){
     const btstack_link_key_db_t * link_key_db = btstack_link_key_db_fs_instance();
     hci_init(transport, (void*) &transport_config);
     hci_set_bd_addr( addr );
-
-    // btstack_control_t *control = btstack_control_raspi_get_instance();
-    // hci_set_control( control );
-
-    hci_set_link_key_db(link_key_db);
     hci_set_chipset(btstack_chipset_bcm_instance());
+    hci_set_link_key_db(link_key_db);
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
@@ -271,9 +267,12 @@ int main(int argc, const char * argv[]){
     // phase #1 download firmware
     printf("Phase 1: Download firmware\n");
 
-    // control->off();
-    // sleep( 1 );
-    // control->on();
+    // power cycle Bluetooth controller
+    btstack_control_t *control = btstack_control_raspi_get_instance();
+    control->init(NULL);
+    control->off();
+    sleep( 1 );
+    control->on();
 
     // phase #2 start main app
     btstack_chipset_bcm_download_firmware(uart_driver, transport_config.baudrate_main, &phase2);
