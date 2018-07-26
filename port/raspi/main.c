@@ -137,7 +137,7 @@ static int raspi_get_bd_addr(bd_addr_t addr){
         fprintf(stderr, "can't read serial number, %s\n", strerror( errno ) );
         return -1;
     }
-    fscanf( fd, "%*08u" "%*02u" "%02" SCNx8 "%02" SCNx8 "%02" SCNx8, &addr[3], &addr[4], &addr[5] );
+    fscanf( fd, "%*08x" "%*02x" "%02" SCNx8 "%02" SCNx8 "%02" SCNx8, &addr[3], &addr[4], &addr[5] );
     fclose( fd );
 
     addr[0] =  0xb8; addr[1]  = 0x27; addr[2] =  0xeb;
