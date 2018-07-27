@@ -24,6 +24,9 @@ GLOBAL_DEFINES += CRLF_STDIO_REPLACEMENT
 $(NAME)_SOURCES := ../../../libraries/btstack/example/EXAMPLE.c
 $(NAME)_COMPONENTS += btstack/port/wiced-h4
 
+# micro-ecc of WICED tree used for SECP256R1 in LE Secure Connections
+MICRO_ECC := MICRO_ECC_COMPONENT
+
 # Additional CFLAGS for BTstack Component compilation
 BTSTACK_CFLAGS += ADDITIONAL_CFLAGS
 
@@ -66,7 +69,7 @@ else:
 wiced_version = "%u.%u" % (wiced_version_major, wiced_version_minor)
 
 # show WICED version
-print("Found WICED SDK version: %s" % wiced_version)
+print("\nFound WICED SDK version: %s" % wiced_version)
 
 additional_cflags = ""
 if wiced_version < "3.4.0":
@@ -82,13 +85,20 @@ else:
     bluetooth_firmware_file = 'bt_firmware_controller.c'
 print("Bluetooth Firmware name: %s" % bluetooth_firmware_file)
 
+# micro-ecc moved in 6.2 from libraries/crypto/micro-ecc to WICED/security/BESL/crypto_internal/micro-ecc
+if wiced_version < "6.2":
+    micro_ecc_component = "crypto/micro-ecc"
+else:
+    micro_ecc_component = "BESL/crypto_internal/micro-ecc"
+print("micro-ecc component: %s" % micro_ecc_component)
+
 # path to examples
 examples_embedded = script_path + "/../../example/"
 
 # path to WICED/apps/btstack
 apps_btstack = wiced_root + "/apps/btstack/"
 
-print("Creating examples in apps/btstack:")
+print("\nCreating examples in apps/btstack:")
 
 # iterate over btstack examples
 for file in os.listdir(examples_embedded):
@@ -103,7 +113,12 @@ for file in os.listdir(examples_embedded):
 
     # create .mk file
     with open(apps_folder + example + ".mk", "wt") as fout:
-        fout.write(mk_template.replace("EXAMPLE", example).replace("TOOL", script_path).replace("ADDITIONAL_CFLAGS", additional_cflags).replace("DATE",time.strftime("%c")).replace('BLUETOOTH_FIRMWARE_FILE', bluetooth_firmware_file))
+        fout.write(mk_template.replace("EXAMPLE", example)
+            .replace("TOOL", script_path)
+            .replace("ADDITIONAL_CFLAGS", additional_cflags)
+            .replace("DATE",time.strftime("%c"))
+            .replace('BLUETOOTH_FIRMWARE_FILE', bluetooth_firmware_file)
+            .replace('MICRO_ECC_COMPONENT', micro_ecc_component))
 
     # create update_gatt.sh if .gatt file is present
     gatt_path = examples_embedded + example + ".gatt"
