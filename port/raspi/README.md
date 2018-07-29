@@ -1,12 +1,12 @@
 # BTstack Port for Raspberry Pi 3 with BCM4343 Bluetooth/Wifi Controller
 
-Tested with Raspberry Pi 3 Model B V1.2.
+Tested with Raspberry Pi 3 Model B V1.2 and Raspberry Pi Zero W V1.1.
 
-With minor fixes, the port should also work with the Raspberry Pi Zero W as well as with older Raspberry Pi models that use the [RedBear pHAT](https://redbear.cc/product/rpi/iot-phat.html). See TODO at the end.
+With minor fixes, the port should also work with older Raspberry Pi models that use the [RedBear pHAT](https://redbear.cc/product/rpi/iot-phat.html). See TODO at the end.
 
-## Raspberry Pi 3 Setup
+## Raspberry Pi 3 / Zero W Setup
 
-There are various options for setting up the Raspberry Pi 3, have a look at the Internet. Here's what we did:
+There are various options for setting up the Raspberry Pi, have a look at the Internet. Here's what we did:
 
 ### Install Raspian Stretch Lite:
 
@@ -96,5 +96,5 @@ Copy one of the examples to the Rasperry Pi and just run them. BTstack will alwa
 	BTstack up and running at B8:27:EB:27:AF:56
 
 ## TODO
-- Raspberry Pi Zero W: Power cycle via pin 128 doesn't seem to work. H4 could be used instead of h5-bcm. The current h5-bcm doesn't work at 3 mbps.
+- Raspberry Pi Zero W: Check if higher baud rate can be used, 3 mbps does not work.
 - Raspberry + RedBear IoT pHAT (AP6212A = BCM4343) port: IoT pHAT need to get detected and the UART configured appropriately.

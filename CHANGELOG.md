@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HID Device: hid_device_connect(..) function
 - ESP32: implement hal_audio
 - DA14585: support for Dialog Semiconductor DA14585 LE-only controller
-- Rasperry Pi 3 port in port/raspi
+- Rasperry Pi 3 + Raspberry Pi Zero W port in port/raspi
 
 ### Changed
 - Errata 10734:

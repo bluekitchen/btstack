@@ -225,22 +225,22 @@ int main(int argc, const char * argv[]){
             return -1;
         case UART_SOFTWARE_NO_FLOW:
             // ??
-            printf("Software UART without flowcontro, BT_REG_EN at GPIO 128l\n");
+            printf("Software UART without flowcontrol, 460800 baud, H5, BT_REG_EN at GPIO 128l\n");
             transport_config.baudrate_main = 460800;
             transport_config.flowcontrol = 0;
             btstack_control_raspi_set_bt_reg_en_pin(128);
             break;
         case UART_HARDWARE_NO_FLOW:
             // Raspberry Pi 3 B
-            printf("Hardware UART without flowcontrol, BT_REG_EN at GPIOO 128\n");
+            printf("Hardware UART without flowcontrol, 921600 baud, H5, BT_REG_EN at GPIOO 128\n");
             transport_config.baudrate_main = 921600;
             transport_config.flowcontrol = 0;
             btstack_control_raspi_set_bt_reg_en_pin(128);
             break;
         case UART_HARDWARE_FLOW:
             // Raspberry Pi Zero W
-            printf("Hardware UART with flowcontrol, BT_REG_EN at GPIO 45\n");
-            transport_config.baudrate_main = 3000000;
+            printf("Hardware UART with flowcontrol, 921600 baud, H4, BT_REG_EN at GPIO 45\n");
+            transport_config.baudrate_main = 921600;
             transport_config.flowcontrol = 1;
             btstack_control_raspi_set_bt_reg_en_pin(45);
             break;
@@ -265,8 +265,15 @@ int main(int argc, const char * argv[]){
     uart_config.device_name = transport_config.device_name;
     uart_driver->init(&uart_config);
 
+    // HW with FlowControl -> we can use regular h4 mode
+    const hci_transport_t * transport;
+    if (transport_config.flowcontrol){
+        transport = hci_transport_h4_instance(uart_driver);
+    } else {
+        transport = hci_transport_h5_instance(uart_driver);
+    }
+
     // setup HCI (to be able to use bcm chipset driver)
-    const hci_transport_t * transport = hci_transport_h5_instance(uart_driver);
     const btstack_link_key_db_t * link_key_db = btstack_link_key_db_fs_instance();
     hci_init(transport, (void*) &transport_config);
     hci_set_bd_addr( addr );
@@ -283,9 +290,6 @@ int main(int argc, const char * argv[]){
     main_argc = argc;
     main_argv = argv;
 
-    // phase #1 download firmware
-    printf("Phase 1: Download firmware\n");
-
     // power cycle Bluetooth controller
     btstack_control_t *control = btstack_control_raspi_get_instance();
     control->init(NULL);
@@ -293,8 +297,17 @@ int main(int argc, const char * argv[]){
     usleep( 100000 );
     control->on();
 
-    // phase #2 start main app
-    btstack_chipset_bcm_download_firmware(uart_driver, transport_config.baudrate_main, &phase2);
+    // for h4, we're done
+    if (transport_config.flowcontrol){
+        // setup app
+        btstack_main(main_argc, main_argv);
+    } else {
+        // phase #1 download firmware
+        printf("Phase 1: Download firmware\n");
+
+        // phase #2 start main app
+        btstack_chipset_bcm_download_firmware(uart_driver, transport_config.baudrate_main, &phase2);
+    }
 
     // go
     btstack_run_loop_execute();    
