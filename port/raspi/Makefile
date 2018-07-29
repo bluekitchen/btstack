@@ -7,6 +7,7 @@ CORE += \
 	btstack_control_raspi.c \
 	btstack_link_key_db_fs.c \
 	btstack_run_loop_posix.c \
+	btstack_tlv_posix.c \
 	btstack_uart_block_posix.c \
 	btstack_slip.c \
 	hci_transport_h5.c \
