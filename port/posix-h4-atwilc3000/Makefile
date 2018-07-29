@@ -19,6 +19,8 @@ include ${BTSTACK_ROOT}/example/Makefile.inc
 # firmware
 include ${BTSTACK_ROOT}/chipset/atwilc3000/Makefile.inc
 
+all: wilc3000_ble_firmware.h
+
 CFLAGS  += -g -Wall -Werror \
 	-I$(BTSTACK_ROOT)/platform/posix \
 	-I$(BTSTACK_ROOT)/chipset/atwilc3000 \
