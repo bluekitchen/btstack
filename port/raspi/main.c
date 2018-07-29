@@ -224,19 +224,25 @@ int main(int argc, const char * argv[]){
             fprintf(stderr, "can't verify HW uart, %s\n", strerror( errno ) );
             return -1;
         case UART_SOFTWARE_NO_FLOW:
-            printf("Software UART without flowcontrol\n");
+            // ??
+            printf("Software UART without flowcontro, BT_REG_EN at GPIO 128l\n");
             transport_config.baudrate_main = 460800;
             transport_config.flowcontrol = 0;
+            btstack_control_raspi_set_bt_reg_en_pin(128);
             break;
         case UART_HARDWARE_NO_FLOW:
-            printf("Hardware UART without flowcontrol\n");
+            // Raspberry Pi 3 B
+            printf("Hardware UART without flowcontrol, BT_REG_EN at GPIOO 128\n");
             transport_config.baudrate_main = 921600;
             transport_config.flowcontrol = 0;
+            btstack_control_raspi_set_bt_reg_en_pin(128);
             break;
         case UART_HARDWARE_FLOW:
-            printf("Hardware UART with flowcontrol\n");
+            // Raspberry Pi Zero W
+            printf("Hardware UART with flowcontrol, BT_REG_EN at GPIO 45\n");
             transport_config.baudrate_main = 3000000;
             transport_config.flowcontrol = 1;
+            btstack_control_raspi_set_bt_reg_en_pin(45);
             break;
     }
 

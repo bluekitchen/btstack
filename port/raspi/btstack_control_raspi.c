@@ -20,9 +20,11 @@
 #define RPI_FIRMWARE_STATUS_SUCCESS (0x80000000)
 #define RPI_FIRMWARE_STATUS_ERROR   (0x80000001)
 
-// BCM4343 power management pins on main CPU
-#define BT_REG_ON   (128)
-#define WL_REG_ON   (129)
+static uint8_t bt_reg_en;
+
+void btstack_control_raspi_set_bt_reg_en_pin(uint8_t bt_reg_en_pin){
+	bt_reg_en = bt_reg_en_pin;
+}
 
 // fd for firmware interface
 static int fd = -1;
@@ -62,13 +64,13 @@ static void raspi_init (const void *config) {
 
 static int raspi_on (){
     log_info("raspi_on");
-    raspi_gpio_set( BT_REG_ON, 1 );
+    raspi_gpio_set( bt_reg_en, 1 );
     return 0;
 }
 
 static int raspi_off(void){
     log_info("raspi_off");
-    raspi_gpio_set( BT_REG_ON, 0 );
+    raspi_gpio_set( bt_reg_en, 0 );
     return 0;
 }
 
