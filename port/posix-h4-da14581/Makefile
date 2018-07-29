@@ -6,6 +6,7 @@ CORE += \
 	hci_581_active_uart.c \
 	btstack_link_key_db_fs.c \
 	btstack_run_loop_posix.c \
+	btstack_tlv_posix.c \
 	btstack_uart_block_posix.c \
 	hci_transport_h4.c \
 	le_device_db_fs.c \
