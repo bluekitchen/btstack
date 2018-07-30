@@ -204,6 +204,14 @@ int main(int argc, const char * argv[]){
     // config.device_name = "/dev/tty.usbserial-A9OVNX5P"; // RedBear IoT pHAT breakout board
     config.device_name = "/dev/tty.usbserial-A900K0VK"; // CSR8811 breakout board
 
+    // accept path from command line
+    if (argc >= 3 && strcmp(argv[1], "-u") == 0){
+        config.device_name = argv[2];
+        argc -= 2;
+        memmove(&argv[1], &argv[3], (argc-1) * sizeof(char *));
+    }
+    printf("H5 device: %s\n", config.device_name);
+
     // init HCI
     const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();
     const hci_transport_t * transport = hci_transport_h5_instance(uart_driver);
