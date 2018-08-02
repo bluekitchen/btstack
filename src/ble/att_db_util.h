@@ -105,7 +105,7 @@ uint16_t att_db_util_add_characteristic_uuid16(uint16_t uuid16, uint16_t propert
 uint16_t att_db_util_add_characteristic_uuid128(const uint8_t * uuid128, uint16_t properties, uint8_t read_permission, uint8_t write_permission, uint8_t * data, uint16_t data_len);
 
 /**
-* @brief Add descriptor with 128-bit UUID, properties, and data
+* @brief Add descriptor with 16-bit UUID, properties, and data
 * @param uuid16
 * @param properties        - see ATT_PROPERTY_* in src/bluetooth.h
 * @param read_permissions  - see ATT_SECURITY_* in src/bluetooth.h
@@ -118,7 +118,7 @@ uint16_t att_db_util_add_descriptor_uuid16(uint16_t uuid16, uint16_t properties,
 
 /**
 * @brief Add descriptor with 128-bit UUID, properties, and data
-* @param uuid16
+* @param uuid128
 * @param properties        - see ATT_PROPERTY_* in src/bluetooth.h
 * @param read_permissions  - see ATT_SECURITY_* in src/bluetooth.h
 * @param write_permissions - see ATT_SECURITY_* in src/bluetooth.h
