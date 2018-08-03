@@ -70,8 +70,8 @@ static hci_transport_h4_t * hci_transport_h4 = NULL;
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
 // packet bufffers
-static uint8_t hci_packet_out[1+HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
-static uint8_t hci_packet_in[1+HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
+static uint8_t hci_packet_out[1+HCI_OUTGOING_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, cmd header   +   cmd data)
+static uint8_t hci_packet_in[ 1+HCI_INCOMING_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
 
 static int h4_open(void){
     int fd = mtk_bt_enable();
@@ -94,7 +94,7 @@ static int h4_open(void){
 
 static int h4_close(void){
 
-    mtk_bt_disable(hci_transport_h4->ds->fd);
+    mtk_bt_disable(hci_transport_h4->ds->source.fd);
 
     // first remove run loop handler
 	btstack_run_loop_remove_data_source(hci_transport_h4->ds);
@@ -114,7 +114,7 @@ static int h4_send_packet(uint8_t packet_type, uint8_t * packet, int size){
     memcpy(&hci_packet_out[1], packet, size);
 
     // send
-    int res = mtk_bt_write(hci_transport_h4->ds->fd, hci_packet_out, size + 1);
+    int res = mtk_bt_write(hci_transport_h4->ds->source.fd, hci_packet_out, size + 1);
 
     return 0;
 }
@@ -124,10 +124,10 @@ static void   h4_register_packet_handler(void (*handler)(uint8_t packet_type, ui
 }
 
 static void h4_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
-    if (hci_transport_h4->ds->fd == 0) return;
+    if (hci_transport_h4->ds->source.fd == 0) return;
 
     // read up to bytes_to_read data in
-    ssize_t bytes_read = mtk_bt_read(hci_transport_h4->ds->fd, &hci_packet_in[0], sizeof(hci_packet_in));
+    ssize_t bytes_read = mtk_bt_read(hci_transport_h4->ds->source.fd, &hci_packet_in[0], sizeof(hci_packet_in));
 
     if (bytes_read == 0) return;
 

@@ -35,37 +35,87 @@
  *
  */
 
-#include "hal_audio_dma.h"
+#include "hal_audio.h"
 #include "stm32f4_discovery_audio.h"
 
-static void (*audio_played_handler)(void);
+#define OUTPUT_BUFFER_NUM_SAMPLES       512
+#define NUM_OUTPUT_BUFFERS              2
+
+static void (*audio_played_handler)(uint8_t buffer_index);
 static int started;
 
+// our storage
+static int16_t output_buffer[NUM_OUTPUT_BUFFERS * OUTPUT_BUFFER_NUM_SAMPLES * 2];   // stereo
+
+void  BSP_AUDIO_OUT_HalfTransfer_CallBack(void){
+	(*audio_played_handler)(0);
+}
+
 void BSP_AUDIO_OUT_TransferComplete_CallBack(void){
-	if (audio_played_handler){
-		audio_played_handler();
+	(*audio_played_handler)(1);
+}
+
+/**
+ * @brief Setup audio codec for specified samplerate and number channels
+ * @param Channels
+ * @param Sample rate
+ * @param Buffer played callback
+ * @param Buffer recorded callback (use NULL if no recording)
+ */
+void hal_audio_init(uint8_t channels, 
+                    uint32_t sample_rate,
+                    void (*buffer_played_callback)  (uint8_t buffer_index),
+                    void (*buffer_recorded_callback)(const int16_t * buffer, uint16_t num_samples)){
+
+	audio_played_handler = buffer_played_callback;
+	UNUSED(buffer_recorded_callback);
+	BSP_AUDIO_OUT_Init(OUTPUT_DEVICE_BOTH, 80, sample_rate);
+}
+
+/**
+ * @brief Get number of output buffers in HAL
+ * @returns num buffers
+ */
+uint16_t hal_audio_get_num_output_buffers(void){
+	return NUM_OUTPUT_BUFFERS;
+}
+
+/**
+ * @brief Get size of single output buffer in HAL
+ * @returns buffer size
+ */
+uint16_t hal_audio_get_num_output_buffer_samples(void){
+	return OUTPUT_BUFFER_NUM_SAMPLES;
+}
+
+/**
+ * @brief Reserve output buffer
+ * @returns buffer
+ */
+int16_t * hal_audio_get_output_buffer(uint8_t buffer_index){
+	switch (buffer_index){
+		case 0:
+			return output_buffer;
+		case 1:
+			return &output_buffer[OUTPUT_BUFFER_NUM_SAMPLES * 2];
+		default:
+			return NULL;
 	}
 }
 
-void hal_audio_dma_init(uint32_t sample_rate){
-	BSP_AUDIO_OUT_Init(OUTPUT_DEVICE_BOTH, 100, sample_rate);
+/**
+ * @brief Start stream
+ */
+void hal_audio_start(void){
+	started = 1;
+	// BSP_AUDIO_OUT_Play gets number bytes -> 1 frame - 16 bit/stereo = 4 bytes
+	BSP_AUDIO_OUT_Play( (uint16_t*) output_buffer, NUM_OUTPUT_BUFFERS * OUTPUT_BUFFER_NUM_SAMPLES * 4);
 }
 
-void hal_audio_dma_set_audio_played(void (*handler)(void)){
-	audio_played_handler = handler;
-}
-
-void hal_audio_dma_play(const uint8_t * audio_data, uint16_t audio_len){
-	if (!started){
-		started = 1;
-		BSP_AUDIO_OUT_Play(audio_data, audio_len);
-	} else {
-		BSP_AUDIO_OUT_ChangeBuffer(audio_data, audio_len >> 1);
-	}
-}
-
-void hal_audio_dma_close(void){
+/**
+ * @brief Close audio codec
+ */
+void hal_audio_close(void){
 	started = 0;
 	BSP_AUDIO_OUT_Stop(CODEC_PDWN_HW);
 }
-

@@ -1928,7 +1928,7 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:{
             int offset = 3;
             for (i=0; i<packet[2];i++){
-                handle = little_endian_read_16(packet, offset);
+                handle = little_endian_read_16(packet, offset) & 0x0fff;
                 offset += 2;
                 uint16_t num_packets = little_endian_read_16(packet, offset);
                 offset += 2;
@@ -3084,13 +3084,13 @@ static void hci_run(void){
         hci_stack->gap_pairing_state = GAP_PAIRING_STATE_IDLE;
         switch (state){
             case GAP_PAIRING_STATE_SEND_PIN:
-                hci_send_cmd(&hci_pin_code_request_reply, hci_stack->gap_pairing_addr, strlen(hci_stack->gap_pairing_pin), hci_stack->gap_pairing_pin);
+                hci_send_cmd(&hci_pin_code_request_reply, hci_stack->gap_pairing_addr, strlen(hci_stack->gap_pairing_input.gap_pairing_pin), hci_stack->gap_pairing_input.gap_pairing_pin);
                 break;
             case GAP_PAIRING_STATE_SEND_PIN_NEGATIVE:
                 hci_send_cmd(&hci_pin_code_request_negative_reply, hci_stack->gap_pairing_addr);
                 break;
             case GAP_PAIRING_STATE_SEND_PASSKEY:
-                hci_send_cmd(&hci_user_passkey_request_reply, hci_stack->gap_pairing_addr, hci_stack->gap_pairing_passkey);
+                hci_send_cmd(&hci_user_passkey_request_reply, hci_stack->gap_pairing_addr, hci_stack->gap_pairing_input.gap_pairing_passkey);
                 break;
             case GAP_PAIRING_STATE_SEND_PASSKEY_NEGATIVE:
                 hci_send_cmd(&hci_user_passkey_request_negative_reply, hci_stack->gap_pairing_addr);
@@ -4586,8 +4586,8 @@ static int gap_pairing_set_state_and_run(bd_addr_t addr, uint8_t state){
  * @return 0 if ok
  */
 int gap_pin_code_response(bd_addr_t addr, const char * pin){
-    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
-    hci_stack->gap_pairing_pin = pin;
+    if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    hci_stack->gap_pairing_input.gap_pairing_pin = pin;
     return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_PIN);
 }
 
@@ -4598,7 +4598,7 @@ int gap_pin_code_response(bd_addr_t addr, const char * pin){
  * @return 0 if ok
  */
 int gap_pin_code_negative(bd_addr_t addr){
-    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
     return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_PIN_NEGATIVE);
 }
 
@@ -4609,8 +4609,8 @@ int gap_pin_code_negative(bd_addr_t addr){
  * @return 0 if ok
  */
 int gap_ssp_passkey_response(bd_addr_t addr, uint32_t passkey){
-    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
-    hci_stack->gap_pairing_passkey = passkey;
+    if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    hci_stack->gap_pairing_input.gap_pairing_passkey = passkey;
     return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_PASSKEY);
 }
 
@@ -4621,7 +4621,7 @@ int gap_ssp_passkey_response(bd_addr_t addr, uint32_t passkey){
  * @return 0 if ok
  */
 int gap_ssp_passkey_negative(bd_addr_t addr){
-    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
     return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_PASSKEY_NEGATIVE);
 }
 
@@ -4632,7 +4632,7 @@ int gap_ssp_passkey_negative(bd_addr_t addr){
  * @return 0 if ok
  */
 int gap_ssp_confirmation_response(bd_addr_t addr){
-    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
     return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_CONFIRMATION);
 }
 
@@ -4643,7 +4643,7 @@ int gap_ssp_confirmation_response(bd_addr_t addr){
  * @return 0 if ok
  */
 int gap_ssp_confirmation_negative(bd_addr_t addr){
-    if (hci_stack->gap_pairing_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
+    if (hci_stack->gap_pairing_state != GAP_PAIRING_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
     return gap_pairing_set_state_and_run(addr, GAP_PAIRING_STATE_SEND_CONFIRMATION_NEGATIVE);
 }
 
@@ -4675,9 +4675,20 @@ uint16_t hci_get_sco_voice_setting(void){
  *  @return Length of SCO packets in bytes (not audio frames)
  */
 int hci_get_sco_packet_length(void){
+    int sco_packet_length = 0;
+
+#ifdef ENABLE_CLASSIC
+#ifdef ENABLE_SCO_OVER_HCI
     // see Core Spec for H2 USB Transfer. 
-    if (hci_stack->sco_voice_setting & 0x0020) return 51;
-    return 27;
+
+    // CVSD requires twice as much bytes
+    int multiplier = hci_stack->sco_voice_setting & 0x0020 ? 2 : 1;
+
+    // 3 byte SCO header + 24 bytes per connection
+    sco_packet_length = 3 + 24 * hci_number_sco_connections() * multiplier;
+#endif
+#endif
+    return sco_packet_length;
 }
 
 /**

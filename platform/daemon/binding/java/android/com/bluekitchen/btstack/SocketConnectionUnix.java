@@ -47,7 +47,7 @@ public class SocketConnectionUnix extends SocketConnection {
 		if (out == null) return false;
 
 		try {
-			System.out.println("Send "); Util.hexdump(packet.getBuffer(), packet.getPayloadLen());
+			// System.out.println("Send "); Util.hexdump(packet.getBuffer(), packet.getPayloadLen());
 			out.write(headerForPacket(packet));
 			out.write(packet.getBuffer());
 			out.flush();

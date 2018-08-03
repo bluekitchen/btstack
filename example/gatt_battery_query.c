@@ -77,7 +77,7 @@ static advertising_report_t report;
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-static bd_addr_t cmdline_addr = { };
+static bd_addr_t cmdline_addr;
 static int cmdline_addr_found = 0;
 
 static hci_con_handle_t connection_handle;
@@ -209,7 +209,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         
                         if (gatt_event_characteristic_value_query_result_get_value_length(packet) < 1) break;
                         battery_level = gatt_event_characteristic_value_query_result_get_value(packet)[0];
-                        printf("Battry level %d \n", battery_level);
+                        printf("Battery level %d \n", battery_level);
                     break;
 
                 case GATT_EVENT_QUERY_COMPLETE:
@@ -217,8 +217,6 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         printf("CHARACTERISTIC_VALUE_QUERY_RESULT - Error status %x.\n", packet[4]);
                         break;  
                     }
-                    // Use timer if repeated request is needed and notification is not supperted
-                    gap_disconnect(connection_handle);
                     break;
                 default:
                     printf("Unknown packet type %x\n", hci_event_packet_get_type(packet));

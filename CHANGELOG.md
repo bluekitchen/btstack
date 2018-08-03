@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
+- btstack_audio.h: application level API for audio playback and recording
+- embedded/hal_audio.h: low-level API for audio playback and recording
+- HID Device: hid_device_connect(..) function
+- ESP32: implement hal_audio
+- DA14585: support for Dialog Semiconductor DA14585 LE-only controller
+- Rasperry Pi 3 + Raspberry Pi Zero W port in port/raspi
+
+### Changed
+- Errata 10734:
+  - SM: Generate new EC Public Keypair after each pairing
+  - SM: Abort failure with DHKEY_CHECK_FAILED if received public key is invalid (instead of unspecified error)
+- btstack.h: only include classic headers if ENABLE_CLASSIC is defined
+- windows: ignore virtual Bluetooth adapter provided by VMware
+- Replaced HCI_PACKET_BUFFER_SIZE with HCI_INCOMING_PACKET_BUFFER_SIZE and HCI_OUTGOING_PACKET_BUFFER_SIZE
+
+## Changes June 2018
+
+### Fixed
+- HFP: Fix Wide Band Speech bit in SDP record for both HF/AG. Missing bit prevents macOS from using mSBC
+- ATT Server: send ATT_EVENT_HANDLE_VALUE_INDICATION_COMPLETE with status ATT_HANDLE_VALUE_INDICATION_DISCONNECT on disconnect
+- AVRCP Controller: fix parsing of now playing info
+
+### Changed
+- ATT Server: ATT_HANDLE_VALUE_INDICATION_DISCONNECT is delivered to service handler if registered
+
+### Added
+- ATT Server: packet handler field added to att_service_handler_t to receive: connect/disconnect, atu exchange, indication complete
+
+## Changes May 2018
+
+### Added
+- GAP: re-encrypt outgoing connection if bonded
+- ATT Server: wait until re-encryption is complete
+- GATT Client: wait until re-encryption is complete
+- ATT Server: added att_server_request_to_send_notification and att_server_request_to_send_indication
+- GATT Client: if ENABLE_GATT_CLIENT_PAIRING, GATT Client starts pairing and retry operation on security error
+
+### Changed
+- ATT Server: att_server_register_can_send_now_callback is deprecated, use att_server_request_to_send_notification/indication instead
+
+### Fixed
+- SM: Fix LE Secure Connection pairing in Central role
+- le_device_db_tlv: fix seq nr management
+- SM: improve le_device_db lookup and storing of IRK
+- GATT Server: fix lookup for Client Characteristic Configuration in services with multiple Characteristics
+- RFCOMM: emit channel closed on HCI/L2CAP disconnect after sending DISC while expecting UA
+
+## Changes April 2018
+
+### Added
 - Crypto: btstack_crypo.h provides cryptographic functions for random data generation, AES128, EEC, CBC-MAC (Mesh)
 - SM: support pairing using Out-of-Band (OOB) data with LE Secure Connections
 - Embedded: support btstack_stdin via SEGGER RTT

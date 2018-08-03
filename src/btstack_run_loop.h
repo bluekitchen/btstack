@@ -74,7 +74,7 @@ typedef struct btstack_data_source {
 	    int  fd;
     	// handle on windows
     	void * handle;	
-    };
+    } source;
 
     // callback to call for enabled callback types
     void  (*process)(struct btstack_data_source *ds, btstack_data_source_callback_type_t callback_type);
@@ -172,6 +172,21 @@ void btstack_run_loop_set_data_source_fd(btstack_data_source_t * data_source, in
  * @param data_source
  */
 int btstack_run_loop_get_data_source_fd(btstack_data_source_t * data_source);
+
+
+/**
+ * @brief Set data source file descriptor. 
+ * @param data_source
+ * @param handle
+ * @note No effect if port doensn't have file descriptors
+ */
+void btstack_run_loop_set_data_source_handle(btstack_data_source_t * data_source, void * handle);
+
+/**
+ * @brief Get data source file descriptor. 
+ * @param data_source
+ */
+void * btstack_run_loop_get_data_source_handle(btstack_data_source_t * data_source);
 
 /**
  * @brief Enable callbacks for a data source

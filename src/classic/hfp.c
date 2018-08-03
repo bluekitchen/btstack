@@ -382,6 +382,9 @@ static hfp_connection_t * provide_hfp_connection_context_for_bd_addr(bd_addr_t b
     hfp_connection = create_hfp_connection_context();
     memcpy(hfp_connection->remote_addr, bd_addr, 6);
     hfp_connection->local_role = local_role;
+
+    log_info("Create HFP context %p: role %u, addr %s", hfp_connection, local_role, bd_addr_to_str(bd_addr));
+
     return hfp_connection;
 }
 
@@ -773,6 +776,7 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
 }
 // translates command string into hfp_command_t CMD
 static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
+    log_info("command '%s', handsfree %u", line_buffer, isHandsFree);
     int offset = isHandsFree ? 0 : 2;
 
     if (strncmp(line_buffer+offset, HFP_LIST_CURRENT_CALLS, strlen(HFP_LIST_CURRENT_CALLS)) == 0){
@@ -1517,4 +1521,32 @@ void hfp_set_hf_run_for_context(void (*callback)(hfp_connection_t * hfp_connecti
 }
 
 void hfp_init(void){
+}
+
+#define HFP_HF_RX_DEBUG_PRINT_LINE 80
+
+void hfp_log_rfcomm_message(const char * tag, uint8_t * packet, uint16_t size){
+#ifdef ENABLE_LOG_INFO
+    // encode \n\r
+    char printable[HFP_HF_RX_DEBUG_PRINT_LINE+2];
+    int i;
+    int pos;
+    for (i=0,pos=0;(pos < size) && (i < (HFP_HF_RX_DEBUG_PRINT_LINE - 3)); pos++){
+        switch (packet[pos]){
+            case '\n':
+                printable[i++] = '\\';
+                printable[i++] = 'n';
+                break;
+            case '\r':
+                printable[i++] = '\\';
+                printable[i++] = 'r';
+                break;
+            default:
+                printable[i++] = packet[pos];
+                break;
+        }
+    }
+    printable[i] = 0;
+    log_info("%s: '%s'", tag, printable);
+#endif
 }

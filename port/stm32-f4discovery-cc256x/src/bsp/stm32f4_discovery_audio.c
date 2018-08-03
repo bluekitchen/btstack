@@ -192,8 +192,10 @@ __IO uint16_t AudioInVolume = DEFAULT_AUDIO_IN_VOLUME;
   * @{
   */ 
 static uint8_t I2S3_Init(uint32_t AudioFreq);
-static uint8_t I2S2_Init(uint32_t AudioFreq);
-static void PDMDecoder_Init(uint32_t AudioFreq, uint32_t ChnlNbr);
+
+// static uint8_t I2S2_Init(uint32_t AudioFreq);
+// static void PDMDecoder_Init(uint32_t AudioFreq, uint32_t ChnlNbr);
+
 /**
   * @}
   */ 
@@ -569,6 +571,13 @@ __weak void BSP_AUDIO_OUT_MspInit(I2S_HandleTypeDef *hi2s, void *Params)
     hdma_i2sTx.Init.PeriphDataAlignment = I2S3_DMAx_PERIPH_DATA_SIZE;
     hdma_i2sTx.Init.MemDataAlignment    = I2S3_DMAx_MEM_DATA_SIZE;
     hdma_i2sTx.Init.Mode                = DMA_NORMAL;
+
+    // BK: use circular DMA for hal_audio.h
+#ifdef HAVE_HAL_AUDIO
+    hdma_i2sTx.Init.Mode                = DMA_CIRCULAR;
+#endif
+    // BK: use circular DMA (end)
+
     hdma_i2sTx.Init.Priority            = DMA_PRIORITY_HIGH;
     hdma_i2sTx.Init.FIFOMode            = DMA_FIFOMODE_ENABLE;         
     hdma_i2sTx.Init.FIFOThreshold       = DMA_FIFO_THRESHOLD_FULL;
@@ -1054,7 +1063,6 @@ static void PDMDecoder_Init(uint32_t AudioFreq, uint32_t ChnlNbr)
     PDM_Filter_Init((PDMFilter_InitStruct *)&Filter[i]);
   }  
 }
-#endif
 
 /**
   * @brief  Initializes the Audio Codec audio interface (I2S)
@@ -1090,6 +1098,7 @@ static uint8_t I2S2_Init(uint32_t AudioFreq)
     return AUDIO_OK; 
   }
 }  
+#endif
 
 /**
   * @}

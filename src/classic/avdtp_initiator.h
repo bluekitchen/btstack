@@ -46,6 +46,7 @@
 #define __AVDTP_INT_H
 
 #include <stdint.h>
+#include "classic/avdtp.h"
 
 #if defined __cplusplus
 extern "C" {

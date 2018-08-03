@@ -184,9 +184,11 @@ void hfp_hf_create_sdp_record(uint8_t * service, uint32_t service_record_handle,
     // "The values of the “SupportedFeatures” bitmap given in Table 5.4 shall be the same as the values
     //  of the Bits 0 to 4 of the unsolicited result code +BRSF"
     //
+    // Wide band speech (bit 5) requires Codec negotiation
+    //
     uint16_t sdp_features = supported_features & 0x1f;
-    if (supported_features & wide_band_speech){
-        sdp_features |= 1 << 5; // Wide band speech bit
+    if (wide_band_speech && (supported_features & (1 << HFP_HFSF_CODEC_NEGOTIATION))){
+        sdp_features |= 1 << 5;
     }
     de_add_number(service, DE_UINT, DE_SIZE_16, 0x0311);    // Hands-Free Profile - SupportedFeatures
     de_add_number(service, DE_UINT, DE_SIZE_16, sdp_features);
@@ -205,7 +207,7 @@ static inline int hfp_hf_send_cmd_with_mark(uint16_t cid, const char * cmd, cons
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static inline int hfp_hf_send_cmd_with_int(uint16_t cid, const char * cmd, uint8_t value){
+static inline int hfp_hf_send_cmd_with_int(uint16_t cid, const char * cmd, uint16_t value){
     char buffer[40];
     snprintf(buffer, sizeof(buffer), "AT%s=%d\r\n", cmd, value);
     return send_str_over_rfcomm(cid, buffer);
@@ -972,7 +974,6 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *hfp_connection){
     hfp_connection->command = HFP_CMD_NONE;
 }
 
-
 static void hfp_hf_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);    // ok: only called with RFCOMM_DATA_PACKET
 
@@ -982,18 +983,16 @@ static void hfp_hf_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, ui
     hfp_connection_t * hfp_connection = get_hfp_connection_context_for_rfcomm_cid(channel);
     if (!hfp_connection) return;
 
-    // temp overwrite last byte (most likely \n for log_info)
-    char last_char = packet[size-1];
-    packet[size-1] = 0;
-    log_info("HFP_RX %s", packet);
-    packet[size-1] = last_char;
-            
+    hfp_log_rfcomm_message("HFP_HF_RX", packet, size);
+
     // process messages byte-wise
-    int pos, i, value;
+    int pos;
     for (pos = 0; pos < size ; pos++){
         hfp_parse(hfp_connection, packet[pos], 1);
     } 
 
+    int value;
+    int i;
     switch (hfp_connection->command){
         case HFP_CMD_GET_SUBSCRIBER_NUMBER_INFORMATION:
             hfp_connection->command = HFP_CMD_NONE;
@@ -1682,3 +1681,11 @@ void hfp_hf_set_hf_indicator(hci_con_handle_t acl_handle, int assigned_number, i
     }
 }
 
+int hfp_hf_in_band_ringtone_active(hci_con_handle_t acl_handle){
+    hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
+    if (!hfp_connection) {
+        log_error("HFP HF: ACL handle 0x%2x is not found.", acl_handle);
+        return 0;
+    }
+    return get_bit(hfp_connection->remote_supported_features, HFP_AGSF_IN_BAND_RING_TONE);
+}

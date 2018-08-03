@@ -2099,7 +2099,9 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
                         break;
                 }
             }
+            break;
 #endif
+
 
         // HCI Connection Timeouts
 #ifdef ENABLE_CLASSIC

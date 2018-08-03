@@ -131,7 +131,7 @@ static  H4_STATE h4_state;
 static int bytes_to_read;
 static int read_pos;
 
-static uint8_t hci_packet[1+HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
+static uint8_t hci_packet[1+HCI_INCOMING_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
 
 static void h4_init(const void * transport_config){
     // check for hci_transport_config_uart_t

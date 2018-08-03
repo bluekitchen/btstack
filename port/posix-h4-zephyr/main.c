@@ -62,8 +62,15 @@
 #include "hci_dump.h"
 #include "btstack_stdin.h"
 #include "btstack_chipset_zephyr.h"
+#include "btstack_tlv_posix.h"
 
 int btstack_main(int argc, const char * argv[]);
+
+#define TLV_DB_PATH_PREFIX "/tmp/btstack_"
+#define TLV_DB_PATH_POSTFIX ".tlv"
+static char tlv_db_path[100];
+static const btstack_tlv_t * tlv_impl;
+static btstack_tlv_posix_t   tlv_context;
 
 static hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
@@ -85,6 +92,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case BTSTACK_EVENT_STATE:
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
             printf("BTstack up and running as %s\n",  bd_addr_to_str(static_address));
+            // setup TLV
+            strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
+            strcat(tlv_db_path, bd_addr_to_str(addr));
+            strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
+            tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
+            btstack_tlv_set_instance(tlv_impl, &tlv_context);
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
             if (memcmp(packet, read_static_address_command_complete_prefix, sizeof(read_static_address_command_complete_prefix)) == 0){
@@ -137,7 +150,7 @@ int main(int argc, const char * argv[]){
     if (argc >= 3 && strcmp(argv[1], "-u") == 0){
         config.device_name = argv[2];
         argc -= 2;
-        memmove(&argv[0], &argv[2], argc * sizeof(char *));
+        memmove(&argv[1], &argv[3], (argc-1) * sizeof(char *));
     }
     printf("H4 device: %s\n", config.device_name);
 

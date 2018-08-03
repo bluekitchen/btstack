@@ -71,7 +71,7 @@ typedef struct advertising_report {
     const uint8_t * data;
 } advertising_report_t;
 
-static bd_addr_t cmdline_addr = { };
+static bd_addr_t cmdline_addr;
 static int cmdline_addr_found = 0;
 
 static hci_con_handle_t connection_handler;

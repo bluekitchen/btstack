@@ -27,8 +27,7 @@ AC_PROG_MAKE_SET
 # iPhone/iPod touch cross-compilation uses theos
 SDK_PATH="$DEVELOPER_PATH/SDKs/iPhoneOS$SDK_VERSION.sdk"
 if test "x$target" = xiphone; then
-    echo "Cross-compiling for iPhone/iPod touch uses theos"
-    ./config-iphone.sh
+    echo "Cross-compiling for iPhone/iPod touch uses theos, please checkout port/ios"
     exit 0
 fi
 
@@ -126,7 +125,8 @@ echo "#define __BTSTACK_CONFIG"                 >> btstack_config.h
 echo                                            >> btstack_config.h
 
 echo "// Port related features"                 >> btstack_config.h
-echo "#define HAVE_POSIX_TIME"                        >> btstack_config.h
+echo "#define HAVE_POSIX_FILE_IO"               >> btstack_config.h
+echo "#define HAVE_POSIX_TIME"                  >> btstack_config.h
 echo "#define HAVE_MALLOC"                      >> btstack_config.h
 echo                                            >> btstack_config.h
 

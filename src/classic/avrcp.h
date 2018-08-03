@@ -48,6 +48,7 @@
 #include <stdint.h>
 #include "btstack_run_loop.h"
 #include "btstack_linked_list.h"
+#include "l2cap.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -58,6 +59,9 @@ extern "C" {
 #define AVRCP_MAX_ATTRIBUTTE_SIZE 100
 #define AVRCP_ATTRIBUTE_HEADER_LEN  8
 #define AVRCP_MAX_FOLDER_NAME_SIZE      20
+
+#define AVRCP_NO_TRACK_SELECTED_PLAYBACK_POSITION_CHANGED    0xFFFFFFFF
+// #define AVRCP_NO_TRACK_SELECTED_TRACK_CHANGED                0xFFFFFFFFFFFFFFFF
 
 typedef enum {
     AVRCP_STATUS_INVALID_COMMAND = 0,           // sent if TG received a PDU that it did not understand.
@@ -106,7 +110,7 @@ typedef enum {
 
 #define AVRCP_BROWSING_MAX_NUM_ATTR_IDS 8
 typedef enum {
-    AVRCP_MEDIA_ATTR_ALL = 0x00000000,
+    AVRCP_MEDIA_ATTR_ALL = 0x0000,
     AVRCP_MEDIA_ATTR_TITLE,
     AVRCP_MEDIA_ATTR_ARTIST,
     AVRCP_MEDIA_ATTR_ALBUM,
@@ -115,7 +119,7 @@ typedef enum {
     AVRCP_MEDIA_ATTR_GENRE,
     AVRCP_MEDIA_ATTR_SONG_LENGTH_MS,
     AVRCP_MEDIA_ATTR_DEFAULT_COVER_ART,
-    AVRCP_MEDIA_ATTR_NONE = 0xFFFFFFFF
+    AVRCP_MEDIA_ATTR_NONE = 0x7FFF
 } avrcp_media_attribute_id_t;
 
 typedef enum {

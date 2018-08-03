@@ -61,6 +61,7 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "btstack_stdin.h"
+#include "btstack_tlv_posix.h"
 
 #include "btstack_chipset_csr.h"
 #include "btstack_chipset_cc256x.h"
@@ -70,6 +71,11 @@
 
 int btstack_main(int argc, const char * argv[]);
 
+#define TLV_DB_PATH_PREFIX "/tmp/btstack_"
+#define TLV_DB_PATH_POSTFIX ".tlv"
+static char tlv_db_path[100];
+static const btstack_tlv_t * tlv_impl;
+static btstack_tlv_posix_t   tlv_context;
 
 static hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
@@ -158,6 +164,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
             gap_local_bd_addr(addr);
             printf("BTstack up and running at %s\n",  bd_addr_to_str(addr));
+            // setup TLV
+            strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
+            strcat(tlv_db_path, bd_addr_to_str(addr));
+            strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
+            tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
+            btstack_tlv_set_instance(tlv_impl, &tlv_context);
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_name)){
@@ -191,6 +203,14 @@ int main(int argc, const char * argv[]){
     // config.device_name = "/dev/tty.usbserial-A50285BI"; // BOOST-CC2564MODA New
     // config.device_name = "/dev/tty.usbserial-A9OVNX5P"; // RedBear IoT pHAT breakout board
     config.device_name = "/dev/tty.usbserial-A900K0VK"; // CSR8811 breakout board
+
+    // accept path from command line
+    if (argc >= 3 && strcmp(argv[1], "-u") == 0){
+        config.device_name = argv[2];
+        argc -= 2;
+        memmove(&argv[1], &argv[3], (argc-1) * sizeof(char *));
+    }
+    printf("H5 device: %s\n", config.device_name);
 
     // init HCI
     const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();

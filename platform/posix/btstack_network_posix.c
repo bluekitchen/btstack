@@ -120,7 +120,7 @@ static void process_tap_dev_data(btstack_data_source_t *ds, btstack_data_source_
     UNUSED(callback_type);
 
     ssize_t len;
-    len = read(ds->fd, network_buffer, sizeof(network_buffer));
+    len = read(ds->source.fd, network_buffer, sizeof(network_buffer));
     if (len <= 0){
         fprintf(stderr, "TAP: Error while reading: %s\n", strerror(errno));
         return;
@@ -304,5 +304,3 @@ void btstack_network_packet_sent(void){
     // Re-enable the tap device data source
     btstack_run_loop_enable_data_source_callbacks(&tap_dev_ds, DATA_SOURCE_CALLBACK_READ);
 }
-
-

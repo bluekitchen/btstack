@@ -384,7 +384,7 @@ static uint16_t hci_transport_em9304_spi_bytes_to_read;
 static uint16_t hci_transport_em9304_spi_read_pos;
 
 // incoming packet buffer
-static uint8_t hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 1 + HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
+static uint8_t hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + HCI_INCOMING_PACKET_BUFFER_SIZE + 1]; // packet type + max(acl header + acl payload, event header + event data)
 static uint8_t * hci_packet = &hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE];
 
 static void hci_transport_em9304_spi_block_read(void);
@@ -437,16 +437,22 @@ static void hci_transport_em9304_spi_block_read(void){
             
         case H4_W4_EVENT_HEADER:
             hci_transport_em9304_spi_bytes_to_read = hci_packet[2];
+            // check ACL length
+            if (HCI_EVENT_HEADER_SIZE + hci_transport_em9304_spi_bytes_to_read >  HCI_INCOMING_PACKET_BUFFER_SIZE){
+                log_error("invalid Event len %d - only space for %u", hci_transport_em9304_spi_bytes_to_read, HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_EVENT_HEADER_SIZE);
+                hci_transport_em9304_spi_reset_statemachine();
+                break;
+            }
             hci_transport_em9304_h4_state = H4_W4_PAYLOAD;
             break;
             
         case H4_W4_ACL_HEADER:
             hci_transport_em9304_spi_bytes_to_read = little_endian_read_16( hci_packet, 3);
             // check ACL length
-            if (HCI_ACL_HEADER_SIZE + hci_transport_em9304_spi_bytes_to_read >  HCI_PACKET_BUFFER_SIZE){
-                log_error("invalid ACL payload len %d - only space for %u", hci_transport_em9304_spi_bytes_to_read, HCI_PACKET_BUFFER_SIZE - HCI_ACL_HEADER_SIZE);
+            if (HCI_ACL_HEADER_SIZE + hci_transport_em9304_spi_bytes_to_read >  HCI_INCOMING_PACKET_BUFFER_SIZE){
+                log_error("invalid ACL payload len %d - only space for %u", hci_transport_em9304_spi_bytes_to_read, HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_ACL_HEADER_SIZE);
                 hci_transport_em9304_spi_reset_statemachine();
-                break;              
+                break;
             }
             hci_transport_em9304_h4_state = H4_W4_PAYLOAD;
             break;

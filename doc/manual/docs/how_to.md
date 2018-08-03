@@ -75,11 +75,12 @@ ENABLE_EHCILL                    | Enable eHCILL low power mode on TI CC256x/WL1
 ENABLE_LOG_DEBUG                 | Enable log_debug messages
 ENABLE_LOG_ERROR                 | Enable log_error messages
 ENABLE_LOG_INFO                  | Enable log_info messages
-ENABLE_SCO_OVER_HCI              | Enable SCO over HCI for chipsets (only TI CC256x/WL18xx, CSR + Broadcom H2/USB))
+ENABLE_SCO_OVER_HCI              | Enable SCO over HCI for chipsets (if supported)
 ENABLE_HFP_WIDE_BAND_SPEECH      | Enable support for mSBC codec used in HFP profile for Wide-Band Speech
 ENBALE_LE_PERIPHERAL             | Enable support for LE Peripheral Role in HCI and Security Manager
 ENBALE_LE_CENTRAL                | Enable support for LE Central Role in HCI and Security Manager
 ENABLE_LE_SECURE_CONNECTIONS     | Enable LE Secure Connections
+ENABLE_GATT_CLIENT_PAIRING       | Enable GATT Client to start pairing and retry operation on security error
 ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS | Use [micro-ecc library](https://github.com/kmackay/micro-ecc) for ECC operations
 ENABLE_LE_DATA_CHANNELS          | Enable LE Data Channels in credit-based flow control mode
 ENABLE_LE_DATA_LENGTH_EXTENSION  | Enable LE Data Length Extension support

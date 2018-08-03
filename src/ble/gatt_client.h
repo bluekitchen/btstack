@@ -145,7 +145,8 @@ typedef struct gatt_client{
     
     uint8_t   address_type;
     bd_addr_t address;
-    uint16_t mtu;
+
+    uint16_t          mtu;
     gatt_client_mtu_t mtu_state;
     
     uint16_t uuid16;
@@ -174,11 +175,18 @@ typedef struct gatt_client{
     
     uint8_t  filter_with_uuid;
     uint8_t  send_confirmation;
-   
+
     int      le_device_index;
     uint8_t  cmac[8];
 
     btstack_timer_source_t gc_timeout;
+
+#ifdef ENABLE_GATT_CLIENT_PAIRING
+    uint8_t  security_counter;
+    uint8_t  wait_for_pairing_complete;
+    uint8_t  pending_error_code;
+#endif
+
 } gatt_client_t;
 
 typedef struct gatt_client_notification {

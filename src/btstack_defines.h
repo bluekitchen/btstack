@@ -165,6 +165,7 @@ typedef uint8_t sm_key_t[16];
 
 #define ATT_HANDLE_VALUE_INDICATION_IN_PROGRESS            0x90 
 #define ATT_HANDLE_VALUE_INDICATION_TIMEOUT                0x91
+#define ATT_HANDLE_VALUE_INDICATION_DISCONNECT             0x92
 
 #define GATT_CLIENT_NOT_CONNECTED                          0x93
 #define GATT_CLIENT_BUSY                                   0x94
@@ -1940,7 +1941,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param browsing_cid
  */
-#define AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED                            0x1D
+#define AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED                           0x1D
 
 /**
  * @format 12211
@@ -1959,7 +1960,7 @@ typedef uint8_t sm_key_t[16];
  * @param scope
  * @param attr_bitmap
  */
-#define AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS                             0x1F
+#define AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS                              0x1F
 
 /**
  * @format 121
@@ -1967,7 +1968,17 @@ typedef uint8_t sm_key_t[16];
  * @param browsing_cid
  * @param scope
  */
-#define AVRCP_SUBEVENT_BROWSING_GET_TOTAL_NUM_ITEMS                             0x20
+#define AVRCP_SUBEVENT_BROWSING_GET_TOTAL_NUM_ITEMS                           0x20
+
+/**
+ * @format 1214
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param command_type
+ * @param playback_position_ms
+ */
+#define AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED                      0x21
+
 
 /**
  * @format 121BH1

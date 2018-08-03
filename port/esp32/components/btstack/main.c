@@ -57,6 +57,7 @@
 #include "hci_dump.h"
 #include "esp_bt.h"
 #include "btstack_debug.h"
+#include "btstack_audio.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -85,7 +86,7 @@ static uint8_t hci_ringbuffer_storage[HCI_HOST_ACL_PACKET_NUM   * (2 + 1 + HCI_A
                                       MAX_NR_HOST_EVENT_PACKETS * (2 + 1 + HCI_EVENT_BUFFER_SIZE)];
 
 static btstack_ring_buffer_t hci_ringbuffer;
-static uint8_t hci_receive_buffer[1 + HCI_PACKET_BUFFER_SIZE];
+static uint8_t hci_receive_buffer[1 + HCI_INCOMING_PACKET_BUFFER_SIZE];
 static SemaphoreHandle_t ring_buffer_mutex;
 
 // data source for integration with BTstack Runloop
@@ -245,6 +246,11 @@ static int transport_open(void){
         return -1;
     }
 
+#ifdef ENABLE_SCO_OVER_HCI
+    ret = esp_bredr_sco_datapath_set(ESP_SCO_DATA_PATH_HCI);
+    log_info("transport: configure SCO over HCI, result 0x%04x", ret);
+#endif
+
     return 0;
 }
 
@@ -378,6 +384,9 @@ int app_main(void){
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
+
+    // setup i2s audio
+    btstack_audio_set_instance(btstack_audio_esp32_get_instance());
 
     btstack_main(0, NULL);
 

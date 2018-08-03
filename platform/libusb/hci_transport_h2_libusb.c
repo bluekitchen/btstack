@@ -67,6 +67,14 @@
 #include "hci.h"
 #include "hci_transport.h"
 
+// deal with changes in libusb API:
+#ifdef LIBUSB_API_VERSION
+#if LIBUSB_API_VERSION >= 0x01000106
+// since 1.0.22, libusb_set_option replaces libusb_set_debug
+#define libusb_set_debug(context,level) libusb_set_option(context, LIBUSB_OPTION_LOG_LEVEL, level)
+#endif
+#endif
+
 #if (USB_VENDOR_ID != 0) && (USB_PRODUCT_ID != 0)
 #define HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
 #endif
@@ -573,6 +581,8 @@ static const uint16_t known_bt_devices[] = {
     0x0a5c, 0x21e8,
     // Asus BT400
     0x0b05, 0x17cb,
+    // BCM20702B0 (Generic USB Detuned Class 1 @ 20 MHz)
+    0x0a5c, 0x22be
 };
 
 static int num_known_devices = sizeof(known_bt_devices) / sizeof(uint16_t) / 2;

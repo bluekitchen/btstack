@@ -35,42 +35,68 @@
  *
  */
 
-#ifndef __HAL_AUDIO_DMA_H
-#define __HAL_AUDIO_DMA_H
+#ifndef __BTSTACK_AUDIO_DMA_H
+#define __BTSTACK_AUDIO_DMA_H
 
 #include <stdint.h>
 
+#if defined __cplusplus
+extern "C" {
+#endif
+
 /*
- *  hal_audio_dma.h
+ *  btstack_audio.h
  *
- *  Hardware abstraction layer that provides block-wise audio playback
- *
+ *  Abstraction layer for 16-bit audio playback and recording within BTstack
  */
+
+typedef struct {
+
+	/**
+	 * @brief Setup audio codec for specified samplerate and number of channels
+	 * @param Channels (1=mono, 2=stereo)
+	 * @param Sample rate
+	 * @param Playback callback
+	 * @param Recording callback
+	 * @return 1 on success
+	 */
+	int (*init)(uint8_t channels,
+				uint32_t samplerate, 
+				void (*playback) (      int16_t * buffer, uint16_t num_samples),
+				void (*recording)(const int16_t * buffer, uint16_t num_samples));
+
+	/** 
+	 * @brief Start stream
+	 */
+	void (*start_stream)(void);
+
+	/**
+	 * @brief Close audio codec
+	 */
+	void (*close)(void);
+
+} btstack_audio_t;
 
 /**
- * @brief Setup audio codec for specified samplerate
- * @param Sample rate
+ * @brief Get BTstack Audio Instance
+ * @returns btstack_audio implementation
  */
-void hal_audio_dma_init(uint32_t sample_rate);
+const btstack_audio_t * btstack_audio_get_instance(void);
 
 /**
- * @brief Set callback to call when audio was sent
- * @param handler
+ * @brief Get BTstack Audio Instance
+ * @param btstack_audio implementation
  */
+void btstack_audio_set_instance(const btstack_audio_t * audio_impl);
 
-void hal_audio_dma_set_audio_played(void (*handler)(void));
 
-/**
- * @brief Play audio
- * @param audio_data
- * @param audio_len in bytes
- */
+// common implementations
+const btstack_audio_t * btstack_audio_portaudio_get_instance(void);
+const btstack_audio_t * btstack_audio_embedded_get_instance(void);
+const btstack_audio_t * btstack_audio_esp32_get_instance(void);
 
-void hal_audio_dma_play(const uint8_t * audio_data, uint16_t audio_len);
-
-/**
- * @brief Close audio codec
- */
-void hal_audio_dma_close(void);
+#if defined __cplusplus
+}
+#endif
 
 #endif

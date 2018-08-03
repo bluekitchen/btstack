@@ -166,7 +166,7 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
         }
         init_script_offset += param_len;
 
-    } while (memcmp(hci_cmd_buffer, download_command, sizeof(download_command)) == 1);
+    } while (memcmp(hci_cmd_buffer, download_command, sizeof(download_command)) == 0);
     return BTSTACK_CHIPSET_VALID_COMMAND;
 }
 

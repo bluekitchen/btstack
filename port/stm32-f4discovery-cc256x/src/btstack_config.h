@@ -7,7 +7,8 @@
 
 // Port related features
 #define HAVE_EMBEDDED_TIME_MS
-#define HAVE_AUDIO_DMA
+#define HAVE_HAL_AUDIO
+#define HAVE_BTSTACK_STDIN
 
 // BTstack features that can be enabled
 #define ENABLE_BLE
@@ -17,17 +18,18 @@
 #define ENABLE_LE_DATA_CHANNELS
 // #define ENABLE_LOG_INFO
 #define ENABLE_LOG_ERROR
+#define ENABLE_SCO_OVER_HCI
+#define ENABLE_HFP_WIDE_BAND_SPEECH
 #define ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
 // #define ENABLE_EHCILL
 // #define ENABLE_SEGGER_RTT
 
-
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 1021
 #define MAX_NR_GATT_CLIENTS 1
-#define MAX_NR_HCI_CONNECTIONS 1
+#define MAX_NR_HCI_CONNECTIONS 2
 #define MAX_NR_L2CAP_SERVICES  3
-#define MAX_NR_L2CAP_CHANNELS  3
+#define MAX_NR_L2CAP_CHANNELS  4
 #define MAX_NR_RFCOMM_MULTIPLEXERS 1
 #define MAX_NR_RFCOMM_SERVICES 1
 #define MAX_NR_RFCOMM_CHANNELS 1

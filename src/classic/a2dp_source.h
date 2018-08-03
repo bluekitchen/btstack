@@ -47,6 +47,7 @@
 #define __A2DP_SOURCE_H
 
 #include <stdint.h>
+#include "avdtp.h"
 
 #if defined __cplusplus
 extern "C" {

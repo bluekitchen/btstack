@@ -95,7 +95,7 @@ static uint16_t              tx_worker_data_size;
 static wiced_worker_thread_t rx_worker_thread;
 static int                   rx_worker_read_pos;
 
-static uint8_t hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 1 + HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
+static uint8_t hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + HCI_INCOMING_PACKET_BUFFER_SIZE + 1]; // packet type + max(acl header + acl payload, event header + event data)
 static uint8_t * hci_packet = &hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE];
 
 #ifdef WICED_BT_UART_MANUAL_CTS_RTS

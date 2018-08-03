@@ -226,9 +226,10 @@ static uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, avrcp_context_t * c
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
     
-    if (!browsing_cid) return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
+    if (browsing_cid){
+        *browsing_cid = avrcp_connection->avrcp_browsing_cid; 
+    }
     
-    *browsing_cid = avrcp_connection->avrcp_browsing_cid; 
     connection->ertm_buffer = ertm_buffer;
     connection->ertm_buffer_size = size;
     avrcp_connection->browsing_connection = connection;

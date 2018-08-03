@@ -278,8 +278,8 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
 }
 
 static int hci_dump_log_level_active(int log_level){
-    if (log_level < 0) return 0;
-    if (log_level > LOG_LEVEL_ERROR) return 0;
+    if (log_level < HCI_DUMP_LOG_LEVEL_DEBUG) return 0;
+    if (log_level > HCI_DUMP_LOG_LEVEL_ERROR) return 0;
     return log_level_enabled[log_level];
 }
 
@@ -327,8 +327,8 @@ void hci_dump_close(void){
 }
 
 void hci_dump_enable_log_level(int log_level, int enable){
-    if (log_level < 0) return;
-    if (log_level > LOG_LEVEL_ERROR) return;
+    if (log_level < HCI_DUMP_LOG_LEVEL_DEBUG) return;
+    if (log_level > HCI_DUMP_LOG_LEVEL_ERROR) return;
     log_level_enabled[log_level] = enable;
 }
 

@@ -7,6 +7,8 @@ CORE += \
 	btstack_memory_pool.c       \
 	btstack_run_loop.c		    \
 	btstack_util.c 	            \
+	btstack_audio.c             \
+	btstack_audio_portaudio.c   \
 	main.c 						\
 	btstack_stdin_posix.c       \
 	btstack_tlv.c 		\
@@ -127,11 +129,19 @@ AVDTP_OBJ  = $(AVDTP:.c=.o)
 HXCMOD_PLAYER_OBJ = ${HXCMOD_PLAYER:.c=.o}
 
 EXAMPLES  = iopt ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback le_data_channel
-EXAMPLES += avdtp_source_test avdtp_sink_test le_data_channel avrcp_controller_test sm_test avrcp_target_test gatt_profiles
+EXAMPLES += avdtp_source_test avdtp_sink_test le_data_channel avrcp_controller_test sm_test avrcp_target_test gatt_profiles hrp_col_test hrp_server_test
 
 all: ${EXAMPLES}
 
-# compile .gatt descriptions
+hrp_server_test.h: hrp_server_test.gatt
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	
+hrp_server_test: hrp_server_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} heart_rate_service_server.o hrp_server_test.c
+	${CC} $(filter-out hrp_server_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+hrp_col_test: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ} hrp_col_test.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
 avrcp_target_test: ${CORE_OBJ} ${COMMON_OBJ} ${SBC_ENCODER_OBJ} ${SM_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} sdp_client.o avrcp.o avrcp_media_item_iterator.o avrcp.o avrcp_target.o avrcp_browsing_target.o btstack_stdin_pts.o  avrcp_target_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 

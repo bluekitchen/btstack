@@ -777,6 +777,7 @@ static void rfcomm_multiplexer_finalize(rfcomm_multiplexer_t * multiplexer){
             // emit appropriate events
             switch(channel->state){
                 case RFCOMM_CHANNEL_OPEN:
+                case RFCOMM_CHANNEL_W4_UA_AFTER_DISC:
                     rfcomm_emit_channel_closed(channel);
                     break;
                 case RFCOMM_CHANNEL_SEND_UA_AFTER_DISC:
@@ -1989,7 +1990,7 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
         case RFCOMM_CHANNEL_SEND_DISC:
             switch (event->type) {
                 case CH_EVT_READY_TO_SEND:
-                    channel->state = RFCOMM_CHANNEL_W4_UA_AFTER_UA;
+                    channel->state = RFCOMM_CHANNEL_W4_UA_AFTER_DISC;
                     rfcomm_send_disc(multiplexer, channel->dlci);
                     break;
                 default:
@@ -1997,7 +1998,7 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
             }
             break;
 
-        case RFCOMM_CHANNEL_W4_UA_AFTER_UA:
+        case RFCOMM_CHANNEL_W4_UA_AFTER_DISC:
             switch (event->type){
                 case CH_EVT_RCVD_UA:
                     channel->state = RFCOMM_CHANNEL_CLOSED;

@@ -17,6 +17,7 @@ SRC_FILES = \
     hci_transport_em9304_spi.c \
     hci.c \
     btstack_slip.c \
+    btstack_audio.c \
     hci_transport_h5.c \
     btstack_tlv.c \
     btstack_crypto.c \

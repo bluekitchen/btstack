@@ -61,6 +61,7 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "btstack_stdin.h"
+#include "btstack_audio.h"
 #include "btstack_tlv_posix.h"
 
 #define TLV_DB_PATH_PREFIX "/tmp/btstack_"
@@ -116,7 +117,6 @@ void hal_led_toggle(void){
     printf("LED State %u\n", led_state);
 }
 
-
 #define USB_MAX_PATH_LEN 7
 int main(int argc, const char * argv[]){
 
@@ -168,6 +168,10 @@ int main(int argc, const char * argv[]){
 #ifdef ENABLE_CLASSIC
     hci_set_link_key_db(btstack_link_key_db_fs_instance());
 #endif    
+
+#ifdef HAVE_PORTAUDIO
+    btstack_audio_set_instance(btstack_audio_portaudio_get_instance());
+#endif
 
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;

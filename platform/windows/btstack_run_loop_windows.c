@@ -159,10 +159,10 @@ static void btstack_run_loop_windows_execute(void) {
         btstack_linked_list_iterator_init(&it, &data_sources);
         while (btstack_linked_list_iterator_has_next(&it)){
             btstack_data_source_t *ds = (btstack_data_source_t*) btstack_linked_list_iterator_next(&it);
-            if (ds->handle == 0) continue;
+            if (ds->source.handle == 0) continue;
             if (ds->flags & (DATA_SOURCE_CALLBACK_READ | DATA_SOURCE_CALLBACK_WRITE)){
-                handles[num_handles++] = ds->handle;
-                log_debug("btstack_run_loop_execute adding handle %p", ds->handle);
+                handles[num_handles++] = ds->source.handle;
+                log_debug("btstack_run_loop_execute adding handle %p", ds->source.handle);
             }
         }
 
@@ -194,13 +194,13 @@ static void btstack_run_loop_windows_execute(void) {
             btstack_linked_list_iterator_init(&it, &data_sources);
             while (btstack_linked_list_iterator_has_next(&it)){
                 btstack_data_source_t *ds = (btstack_data_source_t*) btstack_linked_list_iterator_next(&it);
-                log_debug("btstack_run_loop_windows_execute: check ds %p with handle %p\n", ds, ds->handle);
-                if (triggered_handle == ds->handle){
+                log_debug("btstack_run_loop_windows_execute: check ds %p with handle %p\n", ds, ds->source.handle);
+                if (triggered_handle == ds->source.handle){
                     if (ds->flags & DATA_SOURCE_CALLBACK_READ){
-                        log_debug("btstack_run_loop_windows_execute: process read ds %p with handle %p\n", ds, ds->handle);
+                        log_debug("btstack_run_loop_windows_execute: process read ds %p with handle %p\n", ds, ds->source.handle);
                         ds->process(ds, DATA_SOURCE_CALLBACK_READ);
                     } else if (ds->flags & DATA_SOURCE_CALLBACK_WRITE){
-                        log_debug("btstack_run_loop_windows_execute: process write ds %p with handle %p\n", ds, ds->handle);
+                        log_debug("btstack_run_loop_windows_execute: process write ds %p with handle %p\n", ds, ds->source.handle);
                         ds->process(ds, DATA_SOURCE_CALLBACK_WRITE);
                     }
                     break;

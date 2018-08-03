@@ -51,7 +51,7 @@
 #include "btstack.h"
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
-static bd_addr_t cmdline_addr = { };
+static bd_addr_t cmdline_addr;
 static btstack_timer_source_t warm_boot_timer;
 static int cmdline_addr_found;
 static const char * prog_name;

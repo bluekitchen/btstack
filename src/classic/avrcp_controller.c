@@ -85,7 +85,7 @@ static void avrcp_emit_operation_status(btstack_packet_handler_t callback, uint8
 
 static void avrcp_press_and_hold_timeout_handler(btstack_timer_source_t * timer){
     UNUSED(timer);
-    avrcp_connection_t * connection = btstack_run_loop_get_timer_context(timer);
+    avrcp_connection_t * connection = (avrcp_connection_t*) btstack_run_loop_get_timer_context(timer);
     btstack_run_loop_set_timer(&connection->press_and_hold_cmd_timer, 2000); // 2 seconds timeout
     btstack_run_loop_add_timer(&connection->press_and_hold_cmd_timer);
     connection->state = AVCTP_W2_SEND_PRESS_COMMAND;
@@ -235,7 +235,7 @@ static void avrcp_prepare_notification(avrcp_connection_t * connection, avrcp_no
     big_endian_store_16(connection->cmd_operands, pos, 5);     // parameter length
     pos += 2;
     connection->cmd_operands[pos++] = event_id; 
-    big_endian_store_32(connection->cmd_operands, pos, 0);
+    big_endian_store_32(connection->cmd_operands, pos, 1); // send notification on playback position every second, for other notifications it is ignored
     pos += 4;
     connection->cmd_operands_length = pos;
     // AVRCP_SPEC_V14.pdf 166
@@ -329,13 +329,15 @@ static void avrcp_controller_emit_now_playing_info_event(btstack_packet_handler_
             break;
     }
     event[data_len_pos] = pos - 2;
-    // printf("send attr len %d,  value %s\n", value_len, value);
+    // printf("Send attribute 0x%02x, len %u\n", attr_id, value_len);
+    // printf_hexdump(value, value_len);
     (*callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static void avrcp_parser_process_byte(uint8_t byte, avrcp_connection_t * connection, avrcp_command_type_t ctype){
     uint16_t attribute_total_value_len;
     uint32_t attribute_id;
+    // printf("avrcp_parser_process_byte: %02x, state %02x\n", byte, connection->parser_state);
     switch(connection->parser_state){
         case AVRCP_PARSER_GET_ATTRIBUTE_HEADER:
             connection->parser_attribute_header[connection->parser_attribute_header_pos++] = byte;
@@ -353,7 +355,7 @@ static void avrcp_parser_process_byte(uint8_t byte, avrcp_connection_t * connect
             
             // emit empty attribute
             attribute_id = big_endian_read_32(connection->parser_attribute_header, 0);
-            avrcp_controller_emit_now_playing_info_event(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, attribute_id, connection->attribute_value, connection->attribute_value_len);
+            avrcp_controller_emit_now_playing_info_event(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, (avrcp_media_attribute_id_t) attribute_id, connection->attribute_value, connection->attribute_value_len);
 
             // done, see below
             break;
@@ -366,7 +368,7 @@ static void avrcp_parser_process_byte(uint8_t byte, avrcp_connection_t * connect
             
             // emit (potentially partial) attribute
             attribute_id = big_endian_read_32(connection->parser_attribute_header, 0);
-            avrcp_controller_emit_now_playing_info_event(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, attribute_id, connection->attribute_value, connection->attribute_value_len);
+            avrcp_controller_emit_now_playing_info_event(avrcp_controller_context.avrcp_callback, connection->avrcp_cid, ctype, (avrcp_media_attribute_id_t) attribute_id, connection->attribute_value, connection->attribute_value_len);
 
             attribute_total_value_len = big_endian_read_16(connection->parser_attribute_header, 6);
             if (connection->attribute_value_offset < attribute_total_value_len){
@@ -397,6 +399,7 @@ static void avrcp_parser_process_byte(uint8_t byte, avrcp_connection_t * connect
         // more to come, reset parser
         connection->parser_state = AVRCP_PARSER_GET_ATTRIBUTE_HEADER;
         connection->parser_attribute_header_pos = 0;
+        connection->attribute_value_offset = 0;
     } else {
         // fully done
         avrcp_parser_reset(connection);
@@ -653,6 +656,21 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                     }
                     
                     switch (event_id){
+                        case AVRCP_NOTIFICATION_EVENT_PLAYBACK_POS_CHANGED:{
+                            uint32_t song_position = big_endian_read_32(packet, pos);
+                            uint8_t event[10];
+                            int offset = 0;
+                            event[offset++] = HCI_EVENT_AVRCP_META;
+                            event[offset++] = sizeof(event) - 2;
+                            event[offset++] = AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED;
+                            little_endian_store_16(event, offset, connection->avrcp_cid);
+                            offset += 2;
+                            event[offset++] = ctype;
+                            little_endian_store_32(event, offset, song_position);
+                            offset += 4;
+                            (*avrcp_controller_context.avrcp_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+                            break;
+                        }
                         case AVRCP_NOTIFICATION_EVENT_PLAYBACK_STATUS_CHANGED:{
                             uint8_t event[7];
                             int offset = 0;
@@ -759,7 +777,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
                 }
 
                 case AVRCP_PDU_ID_GET_ELEMENT_ATTRIBUTES:{
-                    avrcp_packet_type_t packet_type = operands[4] & 0x03;
+                    avrcp_packet_type_t packet_type = (avrcp_packet_type_t) (operands[4] & 0x03);
                     switch (packet_type){
                         case AVRCP_START_PACKET:
                         case AVRCP_SINGLE_PACKET:

@@ -612,9 +612,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 hsp_hs_reset_state();
             } else {
                 // data: event(8) , len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
-                rfcomm_handle = little_endian_read_16(packet, 9);
-                rfcomm_cid = little_endian_read_16(packet, 12);
-                mtu = little_endian_read_16(packet, 14);
+                rfcomm_handle = rfcomm_event_channel_opened_get_con_handle(packet);
+                rfcomm_cid = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
+                mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
+                rfcomm_event_channel_opened_get_bd_addr(packet, remote);
                 log_info("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u, handle %02x", rfcomm_cid, mtu, rfcomm_handle);
                 hsp_state = HSP_RFCOMM_CONNECTION_ESTABLISHED;
             }

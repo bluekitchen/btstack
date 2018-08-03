@@ -89,7 +89,7 @@ typedef struct {
 	union {
 		uint8_t (*get_byte_callback)(uint16_t pos);
 		const uint8_t * message;
-	};
+	} data;
 	uint8_t  * hash;
 } btstack_crypto_aes128_cmac_t;
 

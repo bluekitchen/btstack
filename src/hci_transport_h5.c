@@ -110,7 +110,7 @@ static const uint8_t link_control_sleep[] =  { 0x07, 0x78};
 #define LINK_CONTROL_MAX_LEN 3
 
 // incoming pre-bufffer + 4 bytes H5 header + max(acl header + acl payload, event header + event data) + 2 bytes opt CRC
-static uint8_t   hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 6 + HCI_PACKET_BUFFER_SIZE];
+static uint8_t   hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 6 + HCI_INCOMING_PACKET_BUFFER_SIZE];
 
 // outgoing slip encoded buffer. +4 to assert that DIC fits in buffer. +1 to assert that last SOF fits in buffer.
 static uint8_t   slip_outgoing_buffer[LINK_SLIP_TX_CHUNK_LEN+4+1];
@@ -276,7 +276,7 @@ static void hci_transport_slip_send_frame(const uint8_t * header, const uint8_t 
 // SLIP Incoming
 
 static void hci_transport_slip_init(void){
-    btstack_slip_decoder_init(&hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE], 6 + HCI_PACKET_BUFFER_SIZE);
+    btstack_slip_decoder_init(&hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE], 6 + HCI_INCOMING_PACKET_BUFFER_SIZE);
 }
 
 // H5 Three-Wire Implementation
@@ -711,7 +711,7 @@ static void hci_transport_h5_process_frame(uint16_t frame_size){
 
 // recommendet time until resend: 3 * time of largest packet
 static uint16_t hci_transport_link_calc_resend_timeout(uint32_t baudrate){
-    uint32_t max_packet_size_in_bit = (HCI_PACKET_BUFFER_SIZE + 6) << 3;
+    uint32_t max_packet_size_in_bit = (HCI_INCOMING_PACKET_BUFFER_SIZE + 6) << 3;
     uint32_t t_max_x3_ms = max_packet_size_in_bit * 3000 / baudrate;
 
     // allow for BTstack logging and other delays

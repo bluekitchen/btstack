@@ -75,8 +75,15 @@
 
 static void att_run_for_context(att_server_t * att_server);
 static att_write_callback_t att_server_write_callback_for_handle(uint16_t handle);
+static btstack_packet_handler_t att_server_packet_handler_for_handle(uint16_t handle);
 static void att_server_persistent_ccc_restore(att_server_t * att_server);
 static void att_server_persistent_ccc_clear(att_server_t * att_server);
+
+typedef enum {
+    ATT_SERVER_RUN_PHASE_1_REQUESTS,
+    ATT_SERVER_RUN_PHASE_2_INDICATIONS,
+    ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS,
+} att_server_run_phase_t;
 
 //
 typedef struct {
@@ -90,16 +97,14 @@ typedef struct {
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 static btstack_packet_handler_t               att_client_packet_handler = NULL;
-static btstack_linked_list_t                  can_send_now_clients;
 static btstack_linked_list_t                  service_handlers;
-static uint8_t                                att_client_waiting_for_can_send;
+static btstack_context_callback_registration_t att_client_waiting_for_can_send_registration;
 
 static att_read_callback_t                    att_server_client_read_callback;
 static att_write_callback_t                   att_server_client_write_callback;
 
-// track CCC 1-entry cache
-// static att_server_t *    att_persistent_ccc_server;
-// static hci_con_handle_t  att_persistent_ccc_con_handle;
+// round robin
+static hci_con_handle_t att_server_last_can_send_now = HCI_CON_HANDLE_INVALID;
 
 static att_server_t * att_server_for_handle(hci_con_handle_t con_handle){
     hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
@@ -121,7 +126,8 @@ static att_server_t * att_server_for_state(att_server_state_t state){
 #endif
 
 static void att_handle_value_indication_notify_client(uint8_t status, uint16_t client_handle, uint16_t attribute_handle){
-    if (!att_client_packet_handler) return;
+    btstack_packet_handler_t packet_handler = att_server_packet_handler_for_handle(attribute_handle);
+    if (!packet_handler) return;
     
     uint8_t event[7];
     int pos = 0;
@@ -134,9 +140,23 @@ static void att_handle_value_indication_notify_client(uint8_t status, uint16_t c
     (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 
-static void att_emit_mtu_event(hci_con_handle_t con_handle, uint16_t mtu){
-    if (!att_client_packet_handler) return;
+static void att_emit_event_to_all(const uint8_t * event, uint16_t size){
+    // dispatch to app level handler
+    if (att_client_packet_handler){
+        (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t*) event, size);
+    }
 
+    // dispatch to service handlers
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &service_handlers);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        att_service_handler_t * handler = (att_service_handler_t*) btstack_linked_list_iterator_next(&it);
+        if (!handler->packet_handler) continue;
+        (*handler->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t*) event, size);
+    }
+}
+
+static void att_emit_mtu_event(hci_con_handle_t con_handle, uint16_t mtu){
     uint8_t event[6];
     int pos = 0;
     event[pos++] = ATT_EVENT_MTU_EXCHANGE_COMPLETE;
@@ -144,11 +164,16 @@ static void att_emit_mtu_event(hci_con_handle_t con_handle, uint16_t mtu){
     little_endian_store_16(event, pos, con_handle);
     pos += 2;
     little_endian_store_16(event, pos, mtu);
+
+    // also dispatch to GATT Clients
     att_dispatch_server_mtu_exchanged(con_handle, mtu);
-    (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
+
+    // dispatch to app level handler and service handlers
+    att_emit_event_to_all(&event[0], sizeof(event));
 }
 
-static void att_emit_can_send_now_event(void){
+static void att_emit_can_send_now_event(void * context){
+    UNUSED(context);
     if (!att_client_packet_handler) return;
 
     uint8_t event[] = { ATT_EVENT_CAN_SEND_NOW, 0};
@@ -160,6 +185,8 @@ static void att_handle_value_indication_timeout(btstack_timer_source_t *ts){
     hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) context;
     att_server_t * att_server = att_server_for_handle(con_handle);
     if (!att_server) return;
+    // @note: after a transcation timeout, no more requests shall be sent over this ATT Bearer 
+    // (that's why we don't reset the value_indication_handle)
     uint16_t att_handle = att_server->value_indication_handle;
     att_handle_value_indication_notify_client(ATT_HANDLE_VALUE_INDICATION_TIMEOUT, att_server->connection.con_handle, att_handle);
 }
@@ -200,6 +227,8 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                             // workaround: identity resolving can already be complete, at least store result
                             att_server->ir_le_device_db_index = sm_le_device_index(con_handle);
                             att_server->pairing_active = 0;
+                            // notify all
+                            att_emit_event_to_all(packet, size);
                             break;
 
                         default:
@@ -221,7 +250,8 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                             att_server_persistent_ccc_restore(att_server);
                         } 
                     }
-                	break;
+                    att_run_for_context(att_server);
+                    break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     // check handle
@@ -230,9 +260,16 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     if (!att_server) break;
                     att_clear_transaction_queue(&att_server->connection);
                     att_server->connection.con_handle = 0;
-                    att_server->value_indication_handle = 0; // reset error state
                     att_server->pairing_active = 0;
                     att_server->state = ATT_SERVER_IDLE;
+                    if (att_server->value_indication_handle){
+                        btstack_run_loop_remove_timer(&att_server->value_indication_timer);
+                        uint16_t att_handle = att_server->value_indication_handle;
+                        att_server->value_indication_handle = 0; // reset error state
+                        att_handle_value_indication_notify_client(ATT_HANDLE_VALUE_INDICATION_DISCONNECT, att_server->connection.con_handle, att_handle);
+                    }
+                    // notify all
+                    att_emit_event_to_all(packet, size);
                     break;
                     
                 // Identity Resolving
@@ -413,6 +450,9 @@ static void att_run_for_context(att_server_t * att_server){
     switch (att_server->state){
         case ATT_SERVER_REQUEST_RECEIVED:
 
+            // wait until re-encryption as central is complete
+            if (gap_reconnect_security_setup_active(att_server->connection.con_handle)) break;
+
             // wait until pairing is complete
             if (att_server->pairing_active) break;
 
@@ -469,44 +509,105 @@ static void att_run_for_context(att_server_t * att_server){
     }   
 }
 
+static int att_server_data_ready_for_phase(att_server_t * att_server,  att_server_run_phase_t phase){
+    switch (phase){
+        case ATT_SERVER_RUN_PHASE_1_REQUESTS:
+            return att_server->state == ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED;
+        case ATT_SERVER_RUN_PHASE_2_INDICATIONS:
+             return (!btstack_linked_list_empty(&att_server->indication_requests) && att_server->value_indication_handle == 0);
+        case ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS:
+            return (!btstack_linked_list_empty(&att_server->notification_requests));
+    }
+    // avoid warning
+    return 0;
+}
+
+static void att_server_trigger_send_for_phase(att_server_t * att_server,  att_server_run_phase_t phase){
+    btstack_context_callback_registration_t * client;
+    switch (phase){
+        case ATT_SERVER_RUN_PHASE_1_REQUESTS:
+            att_server_process_validated_request(att_server);
+            break;
+        case ATT_SERVER_RUN_PHASE_2_INDICATIONS:
+            client = (btstack_context_callback_registration_t*) att_server->indication_requests;
+            btstack_linked_list_remove(&att_server->indication_requests, (btstack_linked_item_t *) client);
+            client->callback(client->context);
+            break;
+       case ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS:
+            client = (btstack_context_callback_registration_t*) att_server->notification_requests;
+            btstack_linked_list_remove(&att_server->notification_requests, (btstack_linked_item_t *) client);
+            client->callback(client->context);
+            break;
+    }
+}
+
 static void att_server_handle_can_send_now(void){
 
-    // NOTE: we get l2cap fixed channel instead of con_handle 
+    hci_con_handle_t request_con_handle   = HCI_CON_HANDLE_INVALID;
+    hci_con_handle_t last_send_con_handle = HCI_CON_HANDLE_INVALID;
+    int can_send_now = 1;
+    int phase;
 
-    btstack_linked_list_iterator_t it;
-    hci_connections_get_iterator(&it);
-    while(btstack_linked_list_iterator_has_next(&it)){
-        hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
-        att_server_t * att_server = &connection->att_server;
-        if (att_server->state == ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED){
-            int sent = att_server_process_validated_request(att_server);
-            if (sent && (att_client_waiting_for_can_send || !btstack_linked_list_empty(&can_send_now_clients))){
-                att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
-                return;
+    for (phase = ATT_SERVER_RUN_PHASE_1_REQUESTS; phase <= ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS; phase++){
+        hci_con_handle_t skip_connections_until = att_server_last_can_send_now;
+        while (1){
+            btstack_linked_list_iterator_t it;
+            hci_connections_get_iterator(&it);
+            while(btstack_linked_list_iterator_has_next(&it)){
+                hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
+                att_server_t * att_server = &connection->att_server;
+
+                int data_ready = att_server_data_ready_for_phase(att_server, phase);
+
+                // log_debug("phase %u, handle 0x%04x, skip until 0x%04x, data ready %u", phase, att_server->connection.con_handle, skip_connections_until, data_ready);
+
+                // skip until last sender found (which is also skipped)
+                if (skip_connections_until != HCI_CON_HANDLE_INVALID){
+                    if (data_ready && request_con_handle == HCI_CON_HANDLE_INVALID){
+                        request_con_handle = att_server->connection.con_handle;
+                    }
+                    if (skip_connections_until == att_server->connection.con_handle){
+                        skip_connections_until = HCI_CON_HANDLE_INVALID;
+                    }
+                    continue;
+                };
+
+                if (data_ready){
+                    if (can_send_now){
+                        att_server_trigger_send_for_phase(att_server, phase);
+                        last_send_con_handle = att_server->connection.con_handle;
+                        can_send_now = att_dispatch_server_can_send_now(att_server->connection.con_handle);
+                        data_ready = att_server_data_ready_for_phase(att_server, phase);
+                        if (data_ready && request_con_handle == HCI_CON_HANDLE_INVALID){
+                            request_con_handle = att_server->connection.con_handle;
+                        }
+                    } else {
+                        request_con_handle = att_server->connection.con_handle;
+                        break;
+                    }
+                }
             }
+
+            // stop skipping (handles disconnect by last send connection)
+            skip_connections_until = HCI_CON_HANDLE_INVALID;
+
+            // Exit loop, if we cannot send
+            if (!can_send_now) break;
+
+            // Exit loop, if we can send but there are also no further request
+            if (request_con_handle == HCI_CON_HANDLE_INVALID) break;
+
+            // Finally, if we still can send and there are requests, just try again
+            request_con_handle = HCI_CON_HANDLE_INVALID;
+        }
+        // update last send con handle for round robin
+        if (last_send_con_handle != HCI_CON_HANDLE_INVALID){
+            att_server_last_can_send_now = last_send_con_handle;
         }
     }
 
-    while (!btstack_linked_list_empty(&can_send_now_clients)){
-        // handle first client
-        btstack_context_callback_registration_t * client = (btstack_context_callback_registration_t*) can_send_now_clients;
-        hci_con_handle_t con_handle = (uintptr_t) client->context;
-        btstack_linked_list_remove(&can_send_now_clients, (btstack_linked_item_t *) client);
-        client->callback(client->context);
-
-        // request again if needed
-        if (!att_dispatch_server_can_send_now(con_handle)){
-            if (!btstack_linked_list_empty(&can_send_now_clients) || att_client_waiting_for_can_send){
-                att_dispatch_server_request_can_send_now_event(con_handle);
-            }
-            return;
-        }
-    }
-
-    if (att_client_waiting_for_can_send){
-        att_client_waiting_for_can_send = 0;
-        att_emit_can_send_now_event();
-    }
+    if (request_con_handle == HCI_CON_HANDLE_INVALID) return;
+    att_dispatch_server_request_can_send_now_event(request_con_handle);
 }
 
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
@@ -542,6 +643,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                 uint16_t att_handle = att_server->value_indication_handle;
                 att_server->value_indication_handle = 0;    
                 att_handle_value_indication_notify_client(0, att_server->connection.con_handle, att_handle);
+                att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
                 return;
             }
 
@@ -750,6 +852,12 @@ static att_write_callback_t att_server_write_callback_for_handle(uint16_t handle
     return att_server_client_write_callback;
 }
 
+static btstack_packet_handler_t att_server_packet_handler_for_handle(uint16_t handle){
+    att_service_handler_t * handler = att_service_handler_for_handle(handle);
+    if (handler) return handler->packet_handler;
+    return att_client_packet_handler;
+}
+
 static void att_notify_write_callbacks(hci_con_handle_t con_handle, uint16_t transaction_mode){
     // notify all callbacks
     btstack_linked_list_iterator_t it;
@@ -845,29 +953,36 @@ void att_server_register_packet_handler(btstack_packet_handler_t handler){
     att_client_packet_handler = handler;    
 }
 
+
+// to be deprecated
 int  att_server_can_send_packet_now(hci_con_handle_t con_handle){
-	return att_dispatch_server_can_send_now(con_handle);
+    return att_dispatch_server_can_send_now(con_handle);
+}
+
+int att_server_register_can_send_now_callback(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
+    return att_server_request_to_send_notification(callback_registration, con_handle);
 }
 
 void att_server_request_can_send_now_event(hci_con_handle_t con_handle){
-    log_debug("att_server_request_can_send_now_event 0x%04x", con_handle);
-    att_client_waiting_for_can_send = 1;
+    att_client_waiting_for_can_send_registration.callback = &att_emit_can_send_now_event;
+    att_server_request_to_send_notification(&att_client_waiting_for_can_send_registration, con_handle);
+}
+// end of deprecated
+
+int att_server_request_to_send_notification(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
+    att_server_t * att_server = att_server_for_handle(con_handle);
+    if (!att_server) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    btstack_linked_list_add_tail(&att_server->notification_requests, (btstack_linked_item_t*) callback_registration);
     att_dispatch_server_request_can_send_now_event(con_handle);
+    return ERROR_CODE_SUCCESS;
 }
 
-void att_server_register_can_send_now_callback(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
-    // check if valid con handle
-    switch (gap_get_connection_type(con_handle)){
-        case BD_ADDR_TYPE_LE_PUBLIC:
-        case BD_ADDR_TYPE_LE_RANDOM:
-            break;
-        default:
-            // con handle not valid for att send
-            return;
-    }
-    callback_registration->context = (void*)(uintptr_t) con_handle;
-    btstack_linked_list_add_tail(&can_send_now_clients, (btstack_linked_item_t*) callback_registration);
+int att_server_request_to_send_indication(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
+    att_server_t * att_server = att_server_for_handle(con_handle);
+    if (!att_server) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    btstack_linked_list_add_tail(&att_server->indication_requests, (btstack_linked_item_t*) callback_registration);
     att_dispatch_server_request_can_send_now_event(con_handle);
+    return ERROR_CODE_SUCCESS;
 }
 
 int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t *value, uint16_t value_len){

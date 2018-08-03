@@ -90,10 +90,15 @@ att_db.c \
 att_dispatch.c \
 att_server.c \
 battery_service_server.c \
+btstack_audio.c \
+btstack_audio_embedded.c \
+btstack_crypto.c \
+btstack_cvsd_plc.c \
 btstack_linked_list.c \
 btstack_memory.c \
 btstack_memory_pool.c \
 btstack_ring_buffer.c \
+btstack_stdin_embedded.c \
 btstack_run_loop.c \
 btstack_run_loop_embedded.c \
 btstack_tlv.c \
@@ -113,7 +118,6 @@ sm.c \
 uECC.c \
 btstack_chipset_cc256x.c \
 bluetooth_init_cc2564B_1.6_BT_Spec_4.1.c \
-hal_audio_dma.c \
 hal_flash_bank_stm32.c \
 btstack_tlv_flash_bank.c \
 le_device_db_tlv.c \
@@ -122,6 +126,7 @@ audio.c \
 cs43l22.c \
 stm32f4_discovery.c \
 stm32f4_discovery_audio.c \
+hal_audio_f4discovery.c \
 a2dp_sink.c \
 a2dp_source.c \
 avdtp.c \
@@ -300,6 +305,7 @@ EXAMPLES = 					\
 	hog_mouse_demo          \
 	hsp_ag_demo             \
 	hsp_hs_demo             \
+	mod_player              \
 	le_counter              \
 	le_streamer				\
 	le_streamer_client      \

@@ -146,6 +146,7 @@ typedef enum {
 } address_resolution_event_t;
 
 typedef enum {
+    EC_KEY_GENERATION_IDLE,
     EC_KEY_GENERATION_ACTIVE,
     EC_KEY_GENERATION_DONE,
 } ec_key_generation_state_t;
@@ -412,6 +413,7 @@ static void sm_handle_encryption_result_rau(void *arg);
 static void sm_handle_random_result_ph2_tk(void * arg);
 static void sm_handle_random_result_rau(void * arg);
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
+static void sm_ec_generate_new_key(void);
 static void sm_handle_random_result_sc_get_random(void * arg);
 static int sm_passkey_entry(stk_generation_method_t method);
 #endif
@@ -953,6 +955,14 @@ static int sm_key_distribution_all_received(sm_connection_t * sm_conn){
         // master / initiator
         recv_flags = sm_key_distribution_flags_for_set(sm_pairing_packet_get_responder_key_distribution(setup->sm_s_pres));
     }
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    // LTK (= encyrption information & master identification) only used exchanged for LE Legacy Connection
+    if (setup->sm_use_secure_connections){
+        recv_flags &= ~(SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION | SM_KEYDIST_FLAG_MASTER_IDENTIFICATION);
+    }
+#endif
+
     log_debug("sm_key_distribution_all_received: received 0x%02x, expecting 0x%02x", setup->sm_key_distribution_received_set, recv_flags);
     return recv_flags == setup->sm_key_distribution_received_set;
 }
@@ -962,6 +972,13 @@ static void sm_done_for_handle(hci_con_handle_t con_handle){
         sm_timeout_stop();
         sm_active_connection_handle = HCI_CON_HANDLE_INVALID;
         log_info("sm: connection 0x%x released setup context", con_handle);
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+        // generate new ec key after each pairing (that used it)
+        if (setup->sm_use_secure_connections){
+            sm_ec_generate_new_key();
+        }
+#endif
     }
 }
 
@@ -1066,12 +1083,19 @@ static int sm_stk_generation_init(sm_connection_t * sm_conn){
     sm_conn->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(sm_pairing_packet_get_max_encryption_key_size(*remote_packet));
     if (sm_conn->sm_actual_encryption_key_size == 0) return SM_REASON_ENCRYPTION_KEY_SIZE;
 
-    // decide on STK generation method
+    // decide on STK generation method / SC
     sm_setup_tk();
     log_info("SMP: generation method %u", setup->sm_stk_generation_method);
 
     // check if STK generation method is acceptable by client
     if (!sm_validate_stk_generation_method()) return SM_REASON_AUTHENTHICATION_REQUIREMENTS;
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    // LTK (= encyrption information & master identification) only used exchanged for LE Legacy Connection
+    if (setup->sm_use_secure_connections){
+        remote_key_request &= ~SM_KEYDIST_ENC_KEY;
+    }
+#endif
 
     // identical to responder
     sm_setup_key_distribution(remote_key_request);
@@ -1098,6 +1122,8 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
     sm_connection_t * sm_connection;
 #ifdef ENABLE_LE_CENTRAL
     sm_key_t ltk;
+    int have_ltk;
+    int pairing_need;
 #endif
     switch (mode){
         case ADDRESS_RESOLUTION_GENERAL:
@@ -1118,15 +1144,23 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                         break;
                     }
 #ifdef ENABLE_LE_CENTRAL
-                    log_info("central: bonding requested %u, prev security request %u", sm_connection->sm_pairing_requested, sm_connection->sm_security_request_received);
-                    if (!sm_connection->sm_pairing_requested && !sm_connection->sm_security_request_received) break;
+                    le_device_db_encryption_get(sm_connection->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL);
+                    have_ltk = !sm_is_null_key(ltk);
+                    pairing_need = sm_connection->sm_pairing_requested || sm_connection->sm_security_request_received;
+                    log_info("central: pairing request local %u, remote %u => action %u. have_ltk %u",
+                        sm_connection->sm_pairing_requested, sm_connection->sm_security_request_received, pairing_need, have_ltk);
+                    // reset requests
                     sm_connection->sm_security_request_received = 0;
                     sm_connection->sm_pairing_requested = 0;
-                    le_device_db_encryption_get(sm_connection->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL);
-                    if (!sm_is_null_key(ltk)){
+                    // have ltk -> start encryption
+                    if (have_ltk){
                         sm_connection->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
-                    } else {
+                        break;
+                    }
+                    // pairint_request -> send pairing request
+                    if (pairing_need){
                         sm_connection->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
+                        break;
                     }
 #endif
                     break;
@@ -1179,14 +1213,20 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
             for (i=0; i < le_device_db_max_count(); i++){
                 sm_key_t irk;
                 bd_addr_t address;
-                int address_type;
+                int address_type = BD_ADDR_TYPE_UNKNOWN;
                 le_device_db_info(i, &address_type, address, irk);
-                if (memcmp(irk, setup->sm_peer_irk, 16) == 0){
-                    log_info("sm: device found for IRK, updating");
-                    le_db_index = i;
-                    break;
-                }
+                // check if valid entry retrieved
+                if (address_type == BD_ADDR_TYPE_UNKNOWN) continue;
+                // compare IRK
+                if (memcmp(irk, setup->sm_peer_irk, 16) != 0) continue;
+
+                log_info("sm: device found for IRK, updating");
+                le_db_index = i;
+                break;
             }
+        } else {
+            // assert IRK is set to zero
+            memset(setup->sm_peer_irk, 0, 16);
         }
 
         // if not found, lookup via public address if possible
@@ -1867,6 +1907,9 @@ static void sm_run(void){
     }
 #endif
 
+    // assert that we can send at least commands - cmd might have been sent by crypto engine
+    if (!hci_can_send_command_packet_now()) return;
+
     // handle basic actions that don't requires the full context
     hci_connections_get_iterator(&it);
     while((sm_active_connection_handle == HCI_CON_HANDLE_INVALID) && btstack_linked_list_iterator_has_next(&it)){
@@ -1912,6 +1955,20 @@ static void sm_run(void){
             int done = 1;
             int err;
             UNUSED(err);
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+            // assert ec key is ready
+            if (sm_connection->sm_engine_state == SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED 
+            ||  sm_connection->sm_engine_state == SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST){
+                if (ec_key_generation_state == EC_KEY_GENERATION_IDLE){
+                    sm_ec_generate_new_key();
+                }
+                if (ec_key_generation_state != EC_KEY_GENERATION_DONE){
+                    continue;
+                }
+           }
+#endif
+
             switch (sm_connection->sm_engine_state) {
 #ifdef ENABLE_LE_PERIPHERAL
                 case SM_RESPONDER_SEND_SECURITY_REQUEST:
@@ -1956,20 +2013,6 @@ static void sm_run(void){
                     sm_reset_setup();
                     sm_start_calculating_ltk_from_ediv_and_rand(sm_connection);
                     break;
-#endif
-#ifdef ENABLE_LE_CENTRAL
-                case SM_INITIATOR_PH0_HAS_LTK:
-                    sm_reset_setup();
-                    sm_load_security_info(sm_connection);
-                    sm_connection->sm_engine_state = SM_INITIATOR_PH0_SEND_START_ENCRYPTION;
-                    break;
-                case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
-                    sm_reset_setup();
-                    sm_init_setup(sm_connection);
-                    sm_timeout_start(sm_connection);
-                    sm_connection->sm_engine_state = SM_INITIATOR_PH1_SEND_PAIRING_REQUEST;
-                    break;
-#endif
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
                 case SM_SC_RECEIVED_LTK_REQUEST:
@@ -1996,7 +2039,23 @@ static void sm_run(void){
                             break;
                     }
                     break;
+#endif /* ENABLE_LE_SECURE_CONNECTIONS */
+#endif /* ENABLE_LE_PERIPHERAL */
+
+#ifdef ENABLE_LE_CENTRAL
+                case SM_INITIATOR_PH0_HAS_LTK:
+                    sm_reset_setup();
+                    sm_load_security_info(sm_connection);
+                    sm_connection->sm_engine_state = SM_INITIATOR_PH0_SEND_START_ENCRYPTION;
+                    break;
+                case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
+                    sm_reset_setup();
+                    sm_init_setup(sm_connection);
+                    sm_timeout_start(sm_connection);
+                    sm_connection->sm_engine_state = SM_INITIATOR_PH1_SEND_PAIRING_REQUEST;
+                    break;
 #endif
+
                 default:
                     done = 0;
                     break;
@@ -2174,6 +2233,14 @@ static void sm_run(void){
                 reverse_256(&ec_q[0],  &buffer[1]);
                 reverse_256(&ec_q[32], &buffer[33]);
 
+#ifdef ENABLE_TESTING_SUPPORT
+                if (test_pairing_failure == SM_REASON_DHKEY_CHECK_FAILED){
+                    log_info("testing_support: invalidating public key");
+                    // flip single bit of public key coordinate
+                    buffer[1] ^= 1;
+                }
+#endif
+
                 // stk generation method
                 // passkey entry: notify app to show passkey or to request passkey
                 switch (setup->sm_stk_generation_method){
@@ -2297,9 +2364,6 @@ static void sm_run(void){
 
                 if (setup->sm_use_secure_connections){
                     connection->sm_engine_state = SM_SC_W4_PUBLIC_KEY_COMMAND;
-                    // skip LTK/EDIV for SC
-                    log_info("sm: dropping encryption information flag");
-                    key_distribution_flags &= ~SM_KEYDIST_ENC_KEY;
                 } else {
                     connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_CONFIRM;
                 }
@@ -2945,8 +3009,17 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     log_info("Encryption state change: %u, key size %u", sm_conn->sm_connection_encrypted,
                         sm_conn->sm_actual_encryption_key_size);
                     log_info("event handler, state %u", sm_conn->sm_engine_state);
+
+                    // encryption change event concludes re-encryption for bonded devices (even if it fails)
+                    if (sm_conn->sm_engine_state == SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED){
+                        sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
+                        sm_done_for_handle(sm_conn->sm_handle);
+                        break;
+                    }
+
                     if (!sm_conn->sm_connection_encrypted) break;
-                    // continue if part of initial pairing
+
+                    // continue pairing
                     switch (sm_conn->sm_engine_state){
                         case SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED:
                             sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
@@ -3181,21 +3254,17 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
-            if (sm_conn->sm_irk_lookup_state == IRK_LOOKUP_FAILED){
-                sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
-                break;
-            }
-            if (sm_conn->sm_irk_lookup_state == IRK_LOOKUP_SUCCEEDED){
-                sm_key_t ltk;
-                le_device_db_encryption_get(sm_conn->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL);
-                if (!sm_is_null_key(ltk)){
-                    log_info("sm: Setting up previous ltk/ediv/rand for device index %u", sm_conn->sm_le_db_index);
-                    sm_conn->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
-                } else {
+
+            // IRK complete?
+            switch (sm_conn->sm_irk_lookup_state){
+                case IRK_LOOKUP_FAILED:
+                case IRK_LOOKUP_SUCCEEDED:
                     sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
-                }
-                break;
+                    break;
+                default:
+                    break;
             }
+
             // otherwise, store security request
             sm_conn->sm_security_request_received = 1;
             break;
@@ -3313,8 +3382,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             err = btstack_crypto_ecc_p256_validate_public_key(setup->sm_peer_q);
             if (err){
                 log_error("sm: peer public key invalid %x", err);
-                // uses "unspecified reason", there is no "public key invalid" error code
-                sm_pdu_received_in_wrong_state(sm_conn);
+                sm_pairing_error(sm_conn, SM_REASON_DHKEY_CHECK_FAILED);
                 break;
             }
 
@@ -3649,6 +3717,13 @@ void sm_test_use_fixed_local_csrk(void){
 static void sm_ec_generated(void * arg){
     UNUSED(arg);
     ec_key_generation_state = EC_KEY_GENERATION_DONE;
+    // trigger pairing if pending for ec key
+    sm_run();
+}
+static void sm_ec_generate_new_key(void){
+    log_info("sm: generate new ec key");
+    ec_key_generation_state = EC_KEY_GENERATION_ACTIVE;
+    btstack_crypto_ecc_p256_generate_key(&sm_crypto_ecc_p256_request, ec_q, &sm_ec_generated, NULL);
 }
 #endif
 
@@ -3708,8 +3783,7 @@ void sm_init(void){
     l2cap_register_fixed_channel(sm_pdu_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-    ec_key_generation_state = EC_KEY_GENERATION_ACTIVE;
-    btstack_crypto_ecc_p256_generate_key(&sm_crypto_ecc_p256_request, ec_q, &sm_ec_generated, NULL);
+    sm_ec_generate_new_key();
 #endif
 }
 
@@ -3758,23 +3832,12 @@ void sm_request_pairing(hci_con_handle_t con_handle){
         sm_send_security_request_for_connection(sm_conn);
     } else {
         // used as a trigger to start central/master/initiator security procedures
-        uint16_t ediv;
-        sm_key_t ltk;
         if (sm_conn->sm_engine_state == SM_INITIATOR_CONNECTED){
             switch (sm_conn->sm_irk_lookup_state){
+                case IRK_LOOKUP_SUCCEEDED:
                 case IRK_LOOKUP_FAILED:
-                    log_info("irk lookup failed, send pairing request");
                     sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
                     break;
-                case IRK_LOOKUP_SUCCEEDED:
-                        le_device_db_encryption_get(sm_conn->sm_le_db_index, &ediv, NULL, ltk, NULL, NULL, NULL);
-                        if (!sm_is_null_key(ltk) || ediv){
-                            log_info("sm: Setting up previous ltk/ediv/rand for device index %u", sm_conn->sm_le_db_index);
-                            sm_conn->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
-                        } else {
-                            sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
-                        }
-                        break;
                 default:
                     log_info("irk lookup pending");
                     sm_conn->sm_pairing_requested = 1;
@@ -4019,3 +4082,26 @@ void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, u
         direct_address_typ, direct_address, channel_map, filter_policy);
 }
 #endif
+
+int gap_reconnect_security_setup_active(hci_con_handle_t con_handle){
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
+     // wrong connection
+    if (!sm_conn) return 0;
+    // already encrypted
+    if (sm_conn->sm_connection_encrypted) return 0;
+    // only central can re-encrypt
+    if (sm_conn->sm_role == HCI_ROLE_SLAVE) return 0;
+    // irk status?
+    switch(sm_conn->sm_irk_lookup_state){
+        case IRK_LOOKUP_FAILED:
+            // done, cannot setup encryption
+            return 0;
+        case IRK_LOOKUP_SUCCEEDED:
+            break;
+        default:
+            // IR Lookup pending
+            return 1;
+    }
+    // IRK Lookup Succeeded, re-encryption should be initiated. When done, state gets reset
+    return sm_conn->sm_engine_state != SM_INITIATOR_CONNECTED;
+}

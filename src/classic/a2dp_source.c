@@ -334,8 +334,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             avdtp_sep_t sep;
             sep.seid = avdtp_subevent_signaling_sep_found_get_remote_seid(packet);;
             sep.in_use = avdtp_subevent_signaling_sep_found_get_in_use(packet);
-            sep.media_type = avdtp_subevent_signaling_sep_found_get_media_type(packet);
-            sep.type = avdtp_subevent_signaling_sep_found_get_sep_type(packet);
+            sep.media_type = (avdtp_media_type_t) avdtp_subevent_signaling_sep_found_get_media_type(packet);
+            sep.type = (avdtp_sep_type_t) avdtp_subevent_signaling_sep_found_get_sep_type(packet);
             log_info("Found sep: seid %u, in_use %d, media type %d, sep type %d (1-SNK)", sep.seid, sep.in_use, sep.media_type, sep.type);
             remote_seps[remote_seps_index++] = sep;
             break;
