@@ -55,6 +55,10 @@
 
 static void show_usage(void){
     printf("\n--- CLI for IOP Testing ---\n");
+    printf("A2DP Sink\n");
+    printf("A2DP Source\n");
+    printf("AVRCP Controller\n");
+    printf("AVRCP Target\n");
     printf("HSP AG\n");
     printf("HSP HF\n");
     printf("HFP AG\n");
@@ -81,6 +85,12 @@ static uint8_t hsp_ag_service_buffer[200];  // rfcomm 2
 static uint8_t hsp_hs_service_buffer[200];  // rfcomm 3
 static uint8_t hfp_ag_service_buffer[200];  // rfcomm 4
 static uint8_t hfp_hf_service_buffer[200];  // rfcomm 5
+static uint8_t a2dp_sink_service_buffer[150];
+static uint8_t a2dp_source_service_buffer[150];
+static uint8_t avrcp_controller_service_buffer[200];
+static uint8_t avrcp_target_service_buffer[200];
+
+#define AVRCP_BROWSING_ENABLED 0
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
@@ -95,7 +105,7 @@ int btstack_main(int argc, const char * argv[]){
 
     // See https://www.bluetooth.com/specifications/assigned-numbers/company-identifiers if you don't have a USB Vendor ID and need a Bluetooth Vendor ID
     // device info: BlueKitchen GmbH, product 1, version 1
-    device_id_create_sdp_record(device_id_sdp_service_buffer, 0x10003, DEVICE_ID_VENDOR_ID_SOURCE_BLUETOOTH, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 1, 1);
+    device_id_create_sdp_record(device_id_sdp_service_buffer, 0x10000, DEVICE_ID_VENDOR_ID_SOURCE_BLUETOOTH, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 1, 1);
     sdp_register_service(device_id_sdp_service_buffer);
     
     spp_create_sdp_record((uint8_t*) spp_service_buffer, 0x10001, 1, "SPP");
@@ -117,8 +127,20 @@ int btstack_main(int argc, const char * argv[]){
     hfp_hf_create_sdp_record((uint8_t *)hfp_hf_service_buffer, 0x10006, 5, "HFP HS", 0, 1);
     sdp_register_service((uint8_t *)hfp_hf_service_buffer);    
 
+    a2dp_sink_create_sdp_record(a2dp_sink_service_buffer, 0x10007, 1, NULL, NULL);
+    sdp_register_service(a2dp_sink_service_buffer);
+    
+    avrcp_controller_create_sdp_record(avrcp_controller_service_buffer, 0x10008, AVRCP_BROWSING_ENABLED, 1, NULL, NULL);
+    sdp_register_service(avrcp_controller_service_buffer);
+
+    a2dp_source_create_sdp_record(a2dp_source_service_buffer, 0x10009, 1, NULL, NULL);
+    sdp_register_service(a2dp_source_service_buffer);
+    
+    avrcp_target_create_sdp_record(avrcp_target_service_buffer, 0x1000a, AVRCP_BROWSING_ENABLED, 1, NULL, NULL);
+    sdp_register_service(avrcp_target_service_buffer);
+
     // set CoD for all this
-    gap_set_class_of_device(0x6A0000);  // Networking, Capturing, Audio, Telehpony / Misc
+    gap_set_class_of_device(0x6E0000);  // Networking, Rendering (Spekaer), Capturing (Microphone), Audio, Telehpony / Misc
 
     gap_discoverable_control(1);
 
