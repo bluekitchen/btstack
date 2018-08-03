@@ -801,7 +801,7 @@ static void stdin_process(char cmd){
             case 'c':
                 break;
             default:
-                printf("Not connected. Please use 'c' to establish an AVRCP connection with device (addr %s).\n", cmd, bd_addr_to_str(device_addr));
+                printf("Not connected. Please use 'c' to establish an AVRCP connection with device (addr %s).\n", bd_addr_to_str(device_addr));
                 return;    
         }
     }
