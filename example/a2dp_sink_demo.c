@@ -795,18 +795,15 @@ static void show_usage(void){
 #ifdef HAVE_BTSTACK_STDIN
 static void stdin_process(char cmd){
     uint8_t status = ERROR_CODE_SUCCESS;
-    printf("stdin_process \n");
     if (!avrcp_connected){
         switch (cmd){
             case 'b':
-            case 'B':
             case 'c':
                 break;
             default:
-                printf("Command '%c' cannot be performed - please use 'c' to establish an AVRCP connection with device (addr %s).\n", cmd, bd_addr_to_str(device_addr));
+                printf("Not connected. Please use 'c' to establish an AVRCP connection with device (addr %s).\n", cmd, bd_addr_to_str(device_addr));
                 return;    
         }
-    
     }
     
     switch (cmd){
