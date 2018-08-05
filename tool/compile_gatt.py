@@ -475,6 +475,7 @@ def parseCharacteristic(fout, parts):
         flags  = write_permissions_and_key_size_flags_from_properties(properties)
         flags |= property_flags['READ']
         flags |= property_flags['WRITE']
+        flags |= property_flags['WRITE_WITHOUT_RESPONSE']
         flags |= property_flags['DYNAMIC']
         size = 2 + 2 + 2 + 2 + 2
 
