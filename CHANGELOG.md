@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- GATT Server: Allow enable Notifications/Indication with Write Command. Fixes issue with some Android devices.
+
+## Changes June 2018
+
 ### Added
 - btstack_audio.h: application level API for audio playback and recording
 - embedded/hal_audio.h: low-level API for audio playback and recording
