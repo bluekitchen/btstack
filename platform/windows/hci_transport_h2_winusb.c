@@ -992,7 +992,7 @@ static int usb_try_open_device(const char * device_path){
 		usb_overlapped_sco_in[i].hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 		// log_info_hexdump(&usb_overlapped_sco_in[i], sizeof(OVERLAPPED));
         // log_info("data source SCO in %u, handle %p", i, usb_overlapped_sco_in[i].hEvent);
-		usb_data_source_sco_in[i].handle = usb_overlapped_sco_in[i].hEvent;
+		usb_data_source_sco_in[i].source.handle = usb_overlapped_sco_in[i].hEvent;
 	    btstack_run_loop_set_data_source_handler(&usb_data_source_sco_in[i], &usb_process_sco_in);
         btstack_run_loop_add_data_source(&usb_data_source_sco_in[i]);
 	}
@@ -1001,7 +1001,7 @@ static int usb_try_open_device(const char * device_path){
     for (i=0;i<SCO_RING_BUFFER_COUNT;i++){
         usb_overlapped_sco_out[i].hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
         // log_info("data source SCO out %u, handle %p", i, usb_overlapped_sco_out[i].hEvent);
-        usb_data_source_sco_out[i].handle = usb_overlapped_sco_out[i].hEvent;
+        usb_data_source_sco_out[i].source.handle = usb_overlapped_sco_out[i].hEvent;
         btstack_run_loop_set_data_source_handler(&usb_data_source_sco_out[i], &usb_process_sco_out);
         btstack_run_loop_add_data_source(&usb_data_source_sco_out[i]);
     }
@@ -1018,19 +1018,19 @@ static int usb_try_open_device(const char * device_path){
     usb_overlapped_acl_out.hEvent     = CreateEvent(NULL, TRUE, FALSE, NULL);
 
 	// setup btstack data soures
-    usb_data_source_event_in.handle = usb_overlapped_event_in.hEvent;
+    usb_data_source_event_in.source.handle = usb_overlapped_event_in.hEvent;
     btstack_run_loop_set_data_source_handler(&usb_data_source_event_in, &usb_process_event_in);
     btstack_run_loop_add_data_source(&usb_data_source_event_in);
 
-    usb_data_source_command_out.handle = usb_overlapped_command_out.hEvent;
+    usb_data_source_command_out.source.handle = usb_overlapped_command_out.hEvent;
     btstack_run_loop_set_data_source_handler(&usb_data_source_command_out, &usb_process_command_out);
     btstack_run_loop_add_data_source(&usb_data_source_command_out);
 
-    usb_data_source_acl_in.handle = usb_overlapped_acl_in.hEvent;
+    usb_data_source_acl_in.source.handle = usb_overlapped_acl_in.hEvent;
     btstack_run_loop_set_data_source_handler(&usb_data_source_acl_in, &usb_process_acl_in);
     btstack_run_loop_add_data_source(&usb_data_source_acl_in);
 
-    usb_data_source_acl_out.handle = usb_overlapped_acl_out.hEvent;
+    usb_data_source_acl_out.source.handle = usb_overlapped_acl_out.hEvent;
     btstack_run_loop_set_data_source_handler(&usb_data_source_acl_out, &usb_process_acl_out);
     btstack_run_loop_add_data_source(&usb_data_source_acl_out);
 
