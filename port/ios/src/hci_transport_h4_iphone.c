@@ -252,7 +252,7 @@ static int h4_close(void){
 	btstack_run_loop_remove_data_source(hci_transport_h4->ds);
     
     // close device 
-    close(hci_transport_h4->ds->fd);
+    close(hci_transport_h4->ds->source.fd);
     
     // let module sleep
     h4_enforce_wake_off();
