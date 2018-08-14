@@ -87,6 +87,16 @@ static int socket_packet_handler(connection_t *connection, uint16_t packet_type,
 // init BTstack library
 int bt_open(void){
 
+#ifndef HAVE_UNIX_SOCKETS
+    // without unix sockets, default to TCP
+    if (!daemon_tcp_address){
+        daemon_tcp_address = "127.0.0.1";
+    }
+    if (!daemon_tcp_port){
+        daemon_tcp_port = BTSTACK_PORT;
+    }
+#endif
+
     socket_connection_init();
 
     socket_connection_register_packet_callback(socket_packet_handler);
@@ -95,7 +105,9 @@ int bt_open(void){
     if (daemon_tcp_address) {
         btstack_connection = socket_connection_open_tcp(daemon_tcp_address,daemon_tcp_port);
     } else {
+#ifdef HAVE_UNIX_SOCKETS
         btstack_connection = socket_connection_open_unix();
+#endif
     }
     if (!btstack_connection) return -1;
 

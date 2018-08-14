@@ -1955,6 +1955,11 @@ int main (int argc,  char * const * argv){
         }
     }
     
+#ifndef HAVE_UNIX_SOCKETS
+    // TCP is default if there are no unix sockets
+    tcp_flag = 1;
+#endif
+
     if (tcp_flag){
         printf("BTstack Daemon started on port %u\n", BTSTACK_PORT);
     } else {
@@ -2096,7 +2101,9 @@ int main (int argc,  char * const * argv){
     if (tcp_flag) {
         socket_connection_create_tcp(BTSTACK_PORT);
     } else {
+#ifdef HAVE_UNIX_SOCKETS
         socket_connection_create_unix(BTSTACK_UNIX);
+#endif
     }
 #endif
     socket_connection_register_packet_callback(&daemon_client_handler);
