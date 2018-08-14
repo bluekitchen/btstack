@@ -199,7 +199,11 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 }
 
 int main (int argc, const char * argv[]){
+#ifdef _WIN32
 	btstack_run_loop_init(btstack_run_loop_posix_get_instance());
+#else
+	btstack_run_loop_init(btstack_run_loop_windows_get_instance());
+#endif
 	int err = bt_open();
 	if (err) {
 		printf("Failed to open connection to BTdaemon\n");

@@ -54,11 +54,12 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <unistd.h>
-#include <getopt.h>
 
 #ifdef _WIN32
 #include "Winsock2.h"
 #endif
+
+#include <getopt.h>
 
 #include "btstack.h"
 #include "btstack_client.h"
@@ -67,7 +68,12 @@
 #include "btstack_event.h"
 #include "btstack_linked_list.h"
 #include "btstack_run_loop.h"
+
+#ifdef _WIN32
+#include "btstack_run_loop_windows.h"
+#else
 #include "btstack_run_loop_posix.h"
+#endif
 #include "btstack_version.h"
 #include "classic/btstack_link_key_db.h"
 #include "classic/rfcomm.h"
@@ -1992,9 +1998,13 @@ int main (int argc,  char * const * argv){
     hci_transport_config_uart.device_name   = UART_DEVICE;
 
 #ifndef HAVE_PLATFORM_IPHONE_OS
+#ifdef _WIN32
+    uart_block_implementation = btstack_uart_block_windows_instance();
+#else
     uart_block_implementation = btstack_uart_block_posix_instance();
 #endif
-
+#endif
+    
 #ifdef HAVE_PLATFORM_IPHONE_OS
     // use default (max) UART baudrate over netgraph interface
     hci_transport_config_uart.baudrate_init = 0;
@@ -2026,8 +2036,12 @@ int main (int argc,  char * const * argv){
     btstack_device_name_db = BTSTACK_DEVICE_NAME_DB_INSTANCE();
 #endif
 
+#ifdef _WIN32
+    btstack_run_loop_init(btstack_run_loop_windows_get_instance());
+#else
     btstack_run_loop_init(btstack_run_loop_posix_get_instance());
-    
+#endif
+
     // init power management notifications
     if (control && control->register_for_power_notifications){
         control->register_for_power_notifications(power_notification_callback);

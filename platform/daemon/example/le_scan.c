@@ -81,7 +81,11 @@ int main (int argc, const char * argv[]){
 	printf("le_scan started\n");
 	printf("- connecting to BTstack Daemon\n");
 	// start stack
+#ifdef _WIN32
 	btstack_run_loop_init(btstack_run_loop_posix_get_instance());
+#else
+	btstack_run_loop_init(btstack_run_loop_windows_get_instance());
+#endif
 	int err = bt_open();
 	if (err) {
 		printf("-> Failed to open connection to BTstack Daemon\n");
