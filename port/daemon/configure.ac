@@ -42,6 +42,7 @@ case "$host_os" in
         BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_corefoundation_instance"
         UNIX_SOCKETS=yes
         HCI_USB_LIB=libusb
+        UART_BLOCK=posix
         ;;
     mingw*)
         echo "Building on mingw32"
@@ -54,6 +55,7 @@ case "$host_os" in
         # BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_memory_instance"
         UNIX_SOCKETS=no
         HCI_USB_LIB=winusb
+        UART_BLOCK=windows
         ;;
     *)
         btstack_run_loop_SOURCES="btstack_run_loop_posix.c"
@@ -64,6 +66,7 @@ case "$host_os" in
         # BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_fs_instance"
         UNIX_SOCKETS=yes
         HCI_USB_LIB=libusb
+        UART_BLOCK=posix
     ;;
 esac
 
@@ -168,6 +171,7 @@ if test "x$HCI_TRANSPORT" = xUSB; then
     echo "#define USB_PRODUCT_ID $USB_PRODUCT_ID" >> btstack_config.h
     echo "#define USB_VENDOR_ID $USB_VENDOR_ID" >> btstack_config.h
 else
+    UART_SOURCES=btstack_uart_block_$UART_BLOCK.c
     echo "#define HAVE_TRANSPORT_H4" >> btstack_config.h
     echo "#define UART_DEVICE \"$UART_DEVICE\"" >> btstack_config.h
     echo "#define UART_SPEED $UART_SPEED" >> btstack_config.h
@@ -185,6 +189,7 @@ echo "#endif"               >> btstack_config.h
 AC_SUBST(HAVE_LIBUSB)
 AC_SUBST(REMOTE_DEVICE_DB_SOURCES)
 AC_SUBST(USB_SOURCES)
+AC_SUBST(UART_SOURCES)
 AC_SUBST(btstack_run_loop_SOURCES)
 AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)

@@ -27,6 +27,7 @@ VPATH += ${BTSTACK_ROOT}/src/classic
 remote_device_db_sources = @REMOTE_DEVICE_DB_SOURCES@
 btstack_run_loop_sources = @btstack_run_loop_SOURCES@
 usb_sources = @USB_SOURCES@
+uart_sources = @UART_SOURCES@
 
 libBTstack_SOURCES =    \
     btstack.c           \
@@ -44,6 +45,7 @@ libBTstack_SOURCES =    \
 BTdaemon_SOURCES =      \
     $(libBTstack_SOURCES)       \
     $(usb_sources)              \
+    $(uart_sources)             \
     $(remote_device_db_sources) \
     ad_parser.c                 \
     att_db.c                    \
@@ -54,7 +56,6 @@ BTdaemon_SOURCES =      \
     btstack_memory.c            \
     btstack_memory_pool.c       \
     btstack_tlv.c               \
-    btstack_uart_block_posix.c  \
     daemon.c                    \
     gatt_client.c               \
     hci.c                       \
