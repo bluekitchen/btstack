@@ -84,7 +84,13 @@ struct sockaddr_un {
     char sun_path[UNIX_PATH_MAX];  
 };
 //
+#endif
+
+// has been missing on mingw32 in the past
+#ifndef S_IRWXG
 #define S_IRWXG 0
+#endif
+#ifndef S_IRWXO
 #define S_IRWXO 0
 #endif
 
