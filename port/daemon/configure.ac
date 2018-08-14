@@ -41,7 +41,7 @@ case "$host_os" in
         BTSTACK_LINK_KEY_DB_INSTANCE="btstack_link_key_db_corefoundation_instance"
         BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_corefoundation_instance"
         UNIX_SOCKETS=yes
-        LIBUSB_REQUIRED_FOR_USB=yes
+        HCI_USB_LIB=libusb
         ;;
     mingw*)
         echo "Building on mingw32"
@@ -53,7 +53,7 @@ case "$host_os" in
         BTSTACK_LINK_KEY_DB_INSTANCE="btstack_link_key_db_memory_instance"
         # BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_memory_instance"
         UNIX_SOCKETS=no
-        LIBUSB_REQUIRED_FOR_USB=no
+        HCI_USB_LIB=winusb
         ;;
     *)
         btstack_run_loop_SOURCES="btstack_run_loop_posix.c"
@@ -63,7 +63,7 @@ case "$host_os" in
         BTSTACK_LINK_KEY_DB_INSTANCE="btstack_link_key_db_memory_instance"
         # BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_fs_instance"
         UNIX_SOCKETS=yes
-        LIBUSB_REQUIRED_FOR_USB=yes
+        HCI_USB_LIB=libusb
     ;;
 esac
 
@@ -77,7 +77,7 @@ if test "x$HCI_TRANSPORT" = xh4; then
 fi
 
 # validate USB support on non-windows
-if test "x$HCI_TRANSPORT" = xUSB && test "x$LIBUSB_REQUIRED_FOR_USB" == xyes; then
+if test "x$HCI_TRANSPORT" = xUSB && test "x$HCI_USB_LIB" == xlibusb; then
     # pkg-config needed
     PKG_PROG_PKG_CONFIG
     # libusb installed?
@@ -163,7 +163,7 @@ echo                                            >> btstack_config.h
 
 echo "// Daemon configuration" >> btstack_config.h
 if test "x$HCI_TRANSPORT" = xUSB; then
-    USB_SOURCES=hci_transport_h2_libusb.c
+    USB_SOURCES=hci_transport_h2_$HCI_USB_LIB.c
     echo "#define HAVE_TRANSPORT_USB" >> btstack_config.h
     echo "#define USB_PRODUCT_ID $USB_PRODUCT_ID" >> btstack_config.h
     echo "#define USB_VENDOR_ID $USB_VENDOR_ID" >> btstack_config.h
