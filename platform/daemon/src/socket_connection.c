@@ -447,58 +447,6 @@ int socket_connection_create_launchd(void){
 }
 #endif
 
-/** 
- * create socket data_source for unix domain socket
- */
-int socket_connection_create_unix(char *path){
-        
-    // create btstack_data_source_t
-    btstack_data_source_t *ds = calloc(sizeof(btstack_data_source_t), 1);
-    if (ds == NULL) return -1;
-
-	// create unix socket
-    int fd = socket (AF_UNIX, SOCK_STREAM, 0);
-	if (fd < 0) {
-		log_error( "Error creating socket ...(%s)", strerror(errno));
-		free(ds);
-        return -1;
-	}
-	log_info ("Socket created at %s", path);
-	
-    struct sockaddr_un addr;
-    memset(&addr, 0, sizeof(addr));
-	addr.sun_family = AF_UNIX;
-    strcpy(addr.sun_path, path);
-    unlink(path);
-    
-	const int y = 1;
-	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void*) &y, sizeof(int));
-    
-	if (bind (fd, (struct sockaddr *) &addr, sizeof (addr) ) ) {
-		log_error( "Error on bind() ...(%s)", strerror(errno));
-		free(ds);
-        return -1;
-	}
-
-    // http://blog.henning.makholm.net/2008/06/unix-domain-socket-woes.html
-    // make socket accept from all clients
-    chmod(path, S_IRWXU | S_IRWXG | S_IRWXO);
-    //
-
-	if (listen(fd, MAX_PENDING_CONNECTIONS)) {
-		log_error( "Error on listen() ...(%s)", strerror(errno));
-		free(ds);
-        return -1;
-	}
-    
-    btstack_run_loop_set_data_source_fd(ds, fd);
-    btstack_run_loop_set_data_source_handler(ds, &socket_connection_accept);
-    btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
-    btstack_run_loop_add_data_source(ds);
-
-	log_info ("Server up and running ...");
-    return 0;
-}
 
 /**
  * set packet handler for all auto-accepted connections 
@@ -576,6 +524,60 @@ int socket_connection_close_tcp(connection_t * connection){
     return 0;
 }
 
+#ifdef HAVE_UNIX_SOCKETS
+
+/** 
+ * create socket data_source for unix domain socket
+ */
+int socket_connection_create_unix(char *path){
+        
+    // create btstack_data_source_t
+    btstack_data_source_t *ds = calloc(sizeof(btstack_data_source_t), 1);
+    if (ds == NULL) return -1;
+
+    // create unix socket
+    int fd = socket (AF_UNIX, SOCK_STREAM, 0);
+    if (fd < 0) {
+        log_error( "Error creating socket ...(%s)", strerror(errno));
+        free(ds);
+        return -1;
+    }
+    log_info ("Socket created at %s", path);
+    
+    struct sockaddr_un addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    strcpy(addr.sun_path, path);
+    unlink(path);
+    
+    const int y = 1;
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void*) &y, sizeof(int));
+    
+    if (bind (fd, (struct sockaddr *) &addr, sizeof (addr) ) ) {
+        log_error( "Error on bind() ...(%s)", strerror(errno));
+        free(ds);
+        return -1;
+    }
+
+    // http://blog.henning.makholm.net/2008/06/unix-domain-socket-woes.html
+    // make socket accept from all clients
+    chmod(path, S_IRWXU | S_IRWXG | S_IRWXO);
+    //
+
+    if (listen(fd, MAX_PENDING_CONNECTIONS)) {
+        log_error( "Error on listen() ...(%s)", strerror(errno));
+        free(ds);
+        return -1;
+    }
+    
+    btstack_run_loop_set_data_source_fd(ds, fd);
+    btstack_run_loop_set_data_source_handler(ds, &socket_connection_accept);
+    btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
+    btstack_run_loop_add_data_source(ds);
+
+    log_info ("Server up and running ...");
+    return 0;
+}
 
 /**
  * create socket connection to BTdaemon 
@@ -612,6 +614,8 @@ int socket_connection_close_unix(connection_t * connection){
     socket_connection_free_connection(connection);
     return 0;
 }
+
+#endif /* HAVE_UNIX_SOCKETS */
 
 /**
  * Init socket connection module
