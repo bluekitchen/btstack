@@ -54,8 +54,11 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <unistd.h>
-
 #include <getopt.h>
+
+#ifdef _WIN32
+#include "Winsock2.h"
+#endif
 
 #include "btstack.h"
 #include "btstack_client.h"
