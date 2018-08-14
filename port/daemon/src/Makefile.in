@@ -76,18 +76,18 @@ all: libBTstack.$(BTSTACK_LIB_EXTENSION) BTdaemon libBTstackServer.$(BTSTACK_LIB
 
 libBTstack.$(BTSTACK_LIB_EXTENSION): $(libBTstack_SOURCES)
 		$(BTSTACK_ROOT)/tool/get_version.sh
-		$(CC) $(CFLAGS) $(BTSTACK_LIB_LDFLAGS) $(LDFLAGS) $^ -o $@
+		$(CC) $(CFLAGS) $^ $(LDFLAGS) $(BTSTACK_LIB_LDFLAGS) -o $@
 
 # libBTstack.a: $(libBTstack_SOURCES:.c=.o) $(libBTstack_SOURCES:.m=.o)
 #		ar cru $@ $(libBTstack_SOURCES:.c=.o) $(libBTstack_SOURCES:.m=.o)
 #		ranlib $@
 
 BTdaemon: $(BTdaemon_SOURCES)
-		$(CC) $(CFLAGS) $(LDFLAGS) $(LIBUSB_CFLAGS) $(LIBUSB_LDFLAGS) -o $@ $^ 
+		$(CC) $(CFLAGS) $(LIBUSB_CFLAGS) $^ $(LDFLAGS) $(LIBUSB_LDFLAGS) -o $@
 
 libBTstackServer.$(BTSTACK_LIB_EXTENSION): $(BTdaemon_SOURCES)
 		$(BTSTACK_ROOT)/tool/get_version.sh
-		$(CC) $(CFLAGS) $(BTSTACK_LIB_LDFLAGS) $(LIBUSB_CFLAGS) $(LIBUSB_LDFLAGS) -o $@ $^ $(LDFLAGS)
+		$(CC) $(CFLAGS) $(LIBUSB_CFLAGS) $^ $(LDFLAGS) $(LIBUSB_LDFLAGS) $(BTSTACK_LIB_LDFLAGS) -o $@
 
 clean:
 	rm -rf libBTstack* BTdaemon *.o
