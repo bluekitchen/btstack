@@ -31,30 +31,6 @@ if test "x$target" = xiphone; then
     exit 0
 fi
 
-# use capitals for transport type
-if test "x$HCI_TRANSPORT" = xusb; then
-    HCI_TRANSPORT="USB"
-fi
-if test "x$HCI_TRANSPORT" = xh4; then
-    HCI_TRANSPORT="H4"
-fi
-
-# validate USB support
-if test "x$HCI_TRANSPORT" = xUSB; then
-    # pkg-config needed
-    PKG_PROG_PKG_CONFIG
-    # libusb installed?
-    PKG_CHECK_MODULES([LIBUSB], [libusb-1.0], HAVE_LIBUSB="yes", HAVE_LIBUSB="no")
-    if test "$HAVE_LIBUSB" == "no" ; then 
-        AC_MSG_ERROR(USB Transport requested but libusb-1.0 not found using pkg-config. Please set PKG_CONFIG_PATH correctly and/or install libusb-1.0 from your distribution or from http://libusb.sourceforge.net/api-1.0/)
-    fi
-    LIBUSB_LDFLAGS=$LIBUSB_LIBS
-fi
-AM_CONDITIONAL(HAVE_LIBUSB, [test "x$HAVE_LIBUSB" == "xyes"])
-
-echo
-echo "BTstack configured for HCI $HCI_TRANSPORT Transport"
-
 case "$host_os" in
     darwin*)
         btstack_run_loop_SOURCES="btstack_run_loop_posix.c btstack_run_loop_corefoundation.m"
@@ -90,6 +66,32 @@ case "$host_os" in
         LIBUSB_REQUIRED_FOR_USB=yes
     ;;
 esac
+
+
+# use capitals for transport type
+if test "x$HCI_TRANSPORT" = xusb; then
+    HCI_TRANSPORT="USB"
+fi
+if test "x$HCI_TRANSPORT" = xh4; then
+    HCI_TRANSPORT="H4"
+fi
+
+# validate USB support on non-windows
+if test "x$HCI_TRANSPORT" = xUSB && test "x$LIBUSB_REQUIRED_FOR_USB" == xyes; then
+    # pkg-config needed
+    PKG_PROG_PKG_CONFIG
+    # libusb installed?
+    PKG_CHECK_MODULES([LIBUSB], [libusb-1.0], HAVE_LIBUSB="yes", HAVE_LIBUSB="no")
+    if test "$HAVE_LIBUSB" == "no" ; then
+        AC_MSG_ERROR(USB Transport requested but libusb-1.0 not found using pkg-config. Please set PKG_CONFIG_PATH correctly and/or install libusb-1.0 from your distribution or from http://libusb.sourceforge.net/api-1.0/)
+    fi
+    LIBUSB_LDFLAGS=$LIBUSB_LIBS
+fi
+AM_CONDITIONAL(HAVE_LIBUSB, [test "x$HAVE_LIBUSB" == "xyes"])
+
+echo
+echo "BTstack configured for HCI $HCI_TRANSPORT Transport"
+
 
 # treat warnings seriously
 CFLAGS="$CFLAGS -Werror -Wall -Wpointer-arith"
