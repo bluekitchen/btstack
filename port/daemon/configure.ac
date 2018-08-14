@@ -55,11 +55,9 @@ AM_CONDITIONAL(HAVE_LIBUSB, [test "x$HAVE_LIBUSB" == "xyes"])
 echo
 echo "BTstack configured for HCI $HCI_TRANSPORT Transport"
 
-btstack_run_loop_SOURCES="btstack_run_loop_posix.c"
-UNIX_SOCKETS=no
 case "$host_os" in
     darwin*)
-        btstack_run_loop_SOURCES="$btstack_run_loop_SOURCES btstack_run_loop_corefoundation.m"
+        btstack_run_loop_SOURCES="btstack_run_loop_posix.c btstack_run_loop_corefoundation.m"
         LDFLAGS="$LDFLAGS -framework CoreFoundation -framework Foundation"
         BTSTACK_LIB_LDFLAGS="-dynamiclib -install_name \$(prefix)/lib/libBTstack.dylib"
         BTSTACK_LIB_EXTENSION="dylib"
@@ -67,23 +65,29 @@ case "$host_os" in
         BTSTACK_LINK_KEY_DB_INSTANCE="btstack_link_key_db_corefoundation_instance"
         BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_corefoundation_instance"
         UNIX_SOCKETS=yes
+        LIBUSB_REQUIRED_FOR_USB=yes
         ;;
     mingw*)
         echo "Building on mingw32"
+        btstack_run_loop_SOURCES="btstack_run_loop_windows.c"
         LDFLAGS="$LDFLAGS -lws2_32"
         BTSTACK_LIB_LDFLAGS="-shared"
         BTSTACK_LIB_EXTENSION="dll"
         REMOTE_DEVICE_DB_SOURCES="btstack_link_key_db_memory.c rfcomm_service_db_memory.c"
         BTSTACK_LINK_KEY_DB_INSTANCE="btstack_link_key_db_memory_instance"
         # BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_memory_instance"
+        UNIX_SOCKETS=no
+        LIBUSB_REQUIRED_FOR_USB=no
         ;;
     *)
+        btstack_run_loop_SOURCES="btstack_run_loop_posix.c"
         BTSTACK_LIB_LDFLAGS="-shared -Wl,-rpath,\$(prefix)/lib"
         BTSTACK_LIB_EXTENSION="so"
         REMOTE_DEVICE_DB_SOURCES="btstack_link_key_db_memory.c rfcomm_service_db_memory.c"
         BTSTACK_LINK_KEY_DB_INSTANCE="btstack_link_key_db_memory_instance"
         # BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_fs_instance"
         UNIX_SOCKETS=yes
+        LIBUSB_REQUIRED_FOR_USB=yes
     ;;
 esac
 

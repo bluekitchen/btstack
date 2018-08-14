@@ -7,6 +7,7 @@ LDFLAGS = @LDFLAGS@
 CFLAGS = @CFLAGS@ \
     -I $(BTSTACK_ROOT)/platform/daemon/src \
     -I $(BTSTACK_ROOT)/platform/posix \
+    -I $(BTSTACK_ROOT)/platform/windows \
     -I $(BTSTACK_ROOT)/src \
     -I..
 BTSTACK_LIB_LDFLAGS = @BTSTACK_LIB_LDFLAGS@
@@ -18,6 +19,7 @@ VPATH += ${BTSTACK_ROOT}/platform/daemon/src
 VPATH += ${BTSTACK_ROOT}/platform/corefoundation
 VPATH += ${BTSTACK_ROOT}/platform/libusb
 VPATH += ${BTSTACK_ROOT}/platform/posix
+VPATH += ${BTSTACK_ROOT}/platform/windows
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/src/classic
