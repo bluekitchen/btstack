@@ -242,7 +242,7 @@ void socket_connection_hci_process(btstack_data_source_t *socket_ds, btstack_dat
     UNUSED(callback_type);
     connection_t *conn = (connection_t *) socket_ds;
 
-    log_info("socket_connection_hci_process, callback %x", callback_type);
+    log_debug("socket_connection_hci_process, callback %x", callback_type);
 
     // get socket_fd
     int socket_fd = conn->socket_fd;
@@ -266,7 +266,7 @@ void socket_connection_hci_process(btstack_data_source_t *socket_ds, btstack_dat
     int bytes_read = read(socket_fd, &conn->buffer[conn->bytes_read], conn->bytes_to_read);
 #endif
 
-    log_info("socket_connection_hci_process fd %x, bytes read %d", socket_fd, bytes_read);
+    log_debug("socket_connection_hci_process fd %x, bytes read %d", socket_fd, bytes_read);
     if (bytes_read <= 0){
         // connection broken (no particular channel, no date yet)
         socket_connection_emit_connection_closed(conn);
