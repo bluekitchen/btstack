@@ -55,7 +55,6 @@ case "$host_os" in
         # BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_memory_instance"
         UNIX_SOCKETS=no
         HCI_USB_LIB=winusb
-        USB_LDFLAGS="-lsetupapi -lwinusb"
         UART_BLOCK=windows
         ;;
     *)
@@ -80,6 +79,11 @@ if test "x$HCI_TRANSPORT" = xh4; then
     HCI_TRANSPORT="H4"
 fi
 
+# set linker flags for winusb if selected
+if test "x$HCI_TRANSPORT" = xUSB && test "x$HCI_USB_LIB" == xwinusb; then
+    USB_LDFLAGS="-lsetupapi -lwinusb"
+fi
+
 # validate USB support on non-windows
 if test "x$HCI_TRANSPORT" = xUSB && test "x$HCI_USB_LIB" == xlibusb; then
     # pkg-config needed
@@ -89,9 +93,9 @@ if test "x$HCI_TRANSPORT" = xUSB && test "x$HCI_USB_LIB" == xlibusb; then
     if test "$HAVE_LIBUSB" == "no" ; then
         AC_MSG_ERROR(USB Transport requested but libusb-1.0 not found using pkg-config. Please set PKG_CONFIG_PATH correctly and/or install libusb-1.0 from your distribution or from http://libusb.sourceforge.net/api-1.0/)
     fi
-    USB_LDFLAGS=$LIBUSB_LIBS
+    USB_CFLAGS = $LIBUSB_CFLAGS
+    USB_LDFLAGS= $LIBUSB_LIBS
 fi
-AM_CONDITIONAL(HAVE_LIBUSB, [test "x$HAVE_LIBUSB" == "xyes"])
 
 echo
 echo "BTstack configured for HCI $HCI_TRANSPORT Transport"
@@ -105,19 +109,19 @@ BTSTACK_LIB_LDFLAGS+=" -fpic"
 
 # summary
 
-echo "CC:                      $CC"
-echo "CFLAGS:                  $CFLAGS"
-echo "LDFLAGS:                 $LDFLAGS"
-echo "BTSTACK_LIB_LDFLAGS:     $BTSTACK_LIB_LDFLAGS"
+echo "CC:                  $CC"
+echo "CFLAGS:              $CFLAGS"
+echo "LDFLAGS:             $LDFLAGS"
+echo "BTSTACK_LIB_LDFLAGS: $BTSTACK_LIB_LDFLAGS"
 
 if test "x$HCI_TRANSPORT" = xUSB; then
-    echo "USB_PRODUCT_ID:          $USB_PRODUCT_ID"
-    echo "USB_VENDOR_ID:           $USB_VENDOR_ID"
-    echo "USB_CFLAGS:              $USB_CFLAGS"
-    echo "USB_LDFLAGS:             $USB_LDFLAGS"
+    echo "USB_PRODUCT_ID:      $USB_PRODUCT_ID"
+    echo "USB_VENDOR_ID:       $USB_VENDOR_ID"
+    echo "USB_CFLAGS:          $USB_CFLAGS"
+    echo "USB_LDFLAGS:         $USB_LDFLAGS"
 else
-    echo "UART_DEVICE:             $UART_DEVICE"
-    echo "UART_SPEED:              $UART_SPEED"
+    echo "UART_DEVICE:         $UART_DEVICE"
+    echo "UART_SPEED:          $UART_SPEED"
 fi
 
 echo "BTSTACK_LINK_KEY_DB:     $BTSTACK_LINK_KEY_DB_INSTANCE"
@@ -187,7 +191,6 @@ fi
 echo                        >> btstack_config.h
 echo "#endif"               >> btstack_config.h
 
-AC_SUBST(HAVE_LIBUSB)
 AC_SUBST(REMOTE_DEVICE_DB_SOURCES)
 AC_SUBST(USB_SOURCES)
 AC_SUBST(UART_SOURCES)

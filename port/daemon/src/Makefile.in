@@ -1,19 +1,19 @@
 BTSTACK_ROOT = ../../..
 
-prefix = @prefix@
+prefix  = @prefix@
 
-CC = @CC@
+CC      = @CC@
 LDFLAGS = @LDFLAGS@
-CFLAGS = @CFLAGS@ \
+CFLAGS  = @CFLAGS@ \
     -I $(BTSTACK_ROOT)/platform/daemon/src \
     -I $(BTSTACK_ROOT)/platform/posix \
     -I $(BTSTACK_ROOT)/platform/windows \
     -I $(BTSTACK_ROOT)/src \
     -I..
-BTSTACK_LIB_LDFLAGS = @BTSTACK_LIB_LDFLAGS@
+BTSTACK_LIB_LDFLAGS   = @BTSTACK_LIB_LDFLAGS@
 BTSTACK_LIB_EXTENSION = @BTSTACK_LIB_EXTENSION@
-LIBUSB_CFLAGS = @LIBUSB_CFLAGS@
-LIBUSB_LDFLAGS = @LIBUSB_LDFLAGS@
+USB_CFLAGS            = @USB_CFLAGS@
+USB_LDFLAGS           = @USB_LDFLAGS@
 
 VPATH += ${BTSTACK_ROOT}/platform/daemon/src
 VPATH += ${BTSTACK_ROOT}/platform/corefoundation
@@ -86,11 +86,11 @@ libBTstack.$(BTSTACK_LIB_EXTENSION): $(libBTstack_SOURCES)
 #		ranlib $@
 
 BTdaemon: $(BTdaemon_SOURCES)
-		$(CC) $(CFLAGS) $(LIBUSB_CFLAGS) $^ $(LDFLAGS) $(LIBUSB_LDFLAGS) -o $@
+		$(CC) $(CFLAGS) $(USB_CFLAGS) $^ $(LDFLAGS) $(USB_LDFLAGS) -o $@
 
 libBTstackServer.$(BTSTACK_LIB_EXTENSION): $(BTdaemon_SOURCES)
 		$(BTSTACK_ROOT)/tool/get_version.sh
-		$(CC) $(CFLAGS) $(LIBUSB_CFLAGS) $^ $(LDFLAGS) $(LIBUSB_LDFLAGS) $(BTSTACK_LIB_LDFLAGS) -o $@
+		$(CC) $(CFLAGS) $(USB_CFLAGS) $^ $(LDFLAGS) $(USB_LDFLAGS) $(BTSTACK_LIB_LDFLAGS) -o $@
 
 clean:
 	rm -rf libBTstack* BTdaemon *.o
