@@ -563,8 +563,14 @@ void socket_connection_send_packet(connection_t *conn, uint16_t type, uint16_t c
     little_endian_store_16(header, 0, type);
     little_endian_store_16(header, 2, channel);
     little_endian_store_16(header, 4, size);
+#ifdef _WIN32
+    int flags = 0;
+    send(conn->socket_fd, (const char *) header, 6, flags);
+    send(conn->socket_fd, (const char *) packet, size, flags);
+#else
     write(conn->socket_fd, header, 6);
     write(conn->socket_fd, packet, size);
+#endif
 }
 
 /**
