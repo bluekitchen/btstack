@@ -34,7 +34,7 @@ fi
 case "$host_os" in
     darwin*)
         btstack_run_loop_SOURCES="btstack_run_loop_posix.c btstack_run_loop_corefoundation.m"
-        LDFLAGS="$LDFLAGS -framework CoreFoundation -framework Foundation"
+        LDFLAGS+="-framework CoreFoundation -framework Foundation"
         BTSTACK_LIB_LDFLAGS="-dynamiclib -install_name \$(prefix)/lib/libBTstack.dylib"
         BTSTACK_LIB_EXTENSION="dylib"
         REMOTE_DEVICE_DB_SOURCES="btstack_link_key_db_corefoundation.m btstack_device_name_db_corefoundation.m rfcomm_service_db_corefoundation.m"
@@ -47,7 +47,7 @@ case "$host_os" in
     mingw*)
         echo "Building on mingw32"
         btstack_run_loop_SOURCES="btstack_run_loop_windows.c"
-        LDFLAGS="$LDFLAGS -lws2_32"
+        LDFLAGS+="-lws2_32"
         BTSTACK_LIB_LDFLAGS="-shared"
         BTSTACK_LIB_EXTENSION="dll"
         REMOTE_DEVICE_DB_SOURCES="btstack_link_key_db_memory.c rfcomm_service_db_memory.c"
@@ -93,8 +93,10 @@ if test "x$HCI_TRANSPORT" = xUSB && test "x$HCI_USB_LIB" == xlibusb; then
     if test "$HAVE_LIBUSB" == "no" ; then
         AC_MSG_ERROR(USB Transport requested but libusb-1.0 not found using pkg-config. Please set PKG_CONFIG_PATH correctly and/or install libusb-1.0 from your distribution or from http://libusb.sourceforge.net/api-1.0/)
     fi
-    USB_CFLAGS = $LIBUSB_CFLAGS
-    USB_LDFLAGS= $LIBUSB_LIBS
+    echo $LIBUSB_CFLAGS
+    echo $LIBUSB_LIBS
+    USB_CFLAGS=$LIBUSB_CFLAGS
+    USB_LDFLAGS=$LIBUSB_LIBS
 fi
 
 echo
@@ -109,19 +111,19 @@ BTSTACK_LIB_LDFLAGS+=" -fpic"
 
 # summary
 
-echo "CC:                  $CC"
-echo "CFLAGS:              $CFLAGS"
-echo "LDFLAGS:             $LDFLAGS"
-echo "BTSTACK_LIB_LDFLAGS: $BTSTACK_LIB_LDFLAGS"
+echo "CC:                      $CC"
+echo "CFLAGS:                  $CFLAGS"
+echo "LDFLAGS:                 $LDFLAGS"
+echo "BTSTACK_LIB_LDFLAGS:     $BTSTACK_LIB_LDFLAGS"
 
 if test "x$HCI_TRANSPORT" = xUSB; then
-    echo "USB_PRODUCT_ID:      $USB_PRODUCT_ID"
-    echo "USB_VENDOR_ID:       $USB_VENDOR_ID"
-    echo "USB_CFLAGS:          $USB_CFLAGS"
-    echo "USB_LDFLAGS:         $USB_LDFLAGS"
+    echo "USB_PRODUCT_ID:          $USB_PRODUCT_ID"
+    echo "USB_VENDOR_ID:           $USB_VENDOR_ID"
+    echo "USB_CFLAGS:              $USB_CFLAGS"
+    echo "USB_LDFLAGS:             $USB_LDFLAGS"
 else
-    echo "UART_DEVICE:         $UART_DEVICE"
-    echo "UART_SPEED:          $UART_SPEED"
+    echo "UART_DEVICE:             $UART_DEVICE"
+    echo "UART_SPEED:              $UART_SPEED"
 fi
 
 echo "BTSTACK_LINK_KEY_DB:     $BTSTACK_LINK_KEY_DB_INSTANCE"
