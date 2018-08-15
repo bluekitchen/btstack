@@ -1986,7 +1986,7 @@ int main (int argc,  char * const * argv){
     socket_connection_init();
 
     btstack_control_t * control = NULL;
-    void * config;
+    void * config = NULL;
     const btstack_uart_block_t * uart_block_implementation = NULL;
     (void) uart_block_implementation;
     
