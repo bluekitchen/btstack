@@ -127,6 +127,7 @@ typedef struct linked_connection {
 struct connection {
     btstack_data_source_t ds;                // used for run loop
     linked_connection_t linked_connection;   // used for connection list
+    int socket_fd;                           // ds only stores event handle in win32
     SOCKET_STATE state;
     uint16_t bytes_read;
     uint16_t bytes_to_read;
@@ -137,6 +138,10 @@ struct connection {
 static btstack_linked_list_t connections = NULL;
 static btstack_linked_list_t parked = NULL;
 
+#ifdef _WIN32
+// workaround as btstack_data_source_t only stores windows event (instead of fd)
+static int tcp_socket_fd;
+#endif
 
 /** client packet handler */
 
@@ -158,6 +163,12 @@ static void socket_connection_free_connection(connection_t *conn){
     // and from connection list
     btstack_linked_list_remove(&connections, &conn->linked_connection.item);
     
+#ifdef _WIN32
+    if (conn->ds.source.handle){
+        WSACloseEvent(conn->ds.source.handle);
+    }
+#endif
+
     // destroy
     free(conn);
 }
@@ -172,13 +183,35 @@ static void socket_connection_init_statemachine(connection_t *connection){
 static connection_t * socket_connection_register_new_connection(int fd){
     // create connection objec 
     connection_t * conn = malloc( sizeof(connection_t));
-    if (conn == NULL) return 0;
+    if (conn == NULL) return NULL;
 
     // store reference from linked item to base object
     conn->linked_connection.connection = conn;
 
+    // keep fd around
+    conn->socket_fd = fd;
+
+#ifdef _WIN32
+    // wrap fd in windows event and configure for accept and close
+    WSAEVENT event = WSACreateEvent();
+    if (!event){
+        log_error("Error creating WSAEvent for socket");
+        return NULL;
+    }
+    int res = WSAEventSelect(fd, event, FD_READ | FD_WRITE | FD_CLOSE);
+    if (res == SOCKET_ERROR){
+        log_error("WSAEventSelect() error: %d\n" , WSAGetLastError());
+        free(conn);
+        return NULL;
+    }
+#endif
+
     btstack_run_loop_set_data_source_handler(&conn->ds, &socket_connection_hci_process);
+#ifdef _WIN32
+    conn->ds.source.handle = event;
+#else
     btstack_run_loop_set_data_source_fd(&conn->ds, fd);
+#endif
     btstack_run_loop_enable_data_source_callbacks(&conn->ds, DATA_SOURCE_CALLBACK_READ);
     
     // prepare state machine and
@@ -205,11 +238,35 @@ void static socket_connection_emit_connection_closed(connection_t *connection){
     (*socket_connection_packet_callback)(connection, DAEMON_EVENT_PACKET, 0, (uint8_t *) &event, 1);
 }
 
-void socket_connection_hci_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
+void socket_connection_hci_process(btstack_data_source_t *socket_ds, btstack_data_source_callback_type_t callback_type) {
     UNUSED(callback_type);
-    connection_t *conn = (connection_t *) ds;
-    int fd = btstack_run_loop_get_data_source_fd(ds);
-    int bytes_read = read(fd, &conn->buffer[conn->bytes_read], conn->bytes_to_read);
+    connection_t *conn = (connection_t *) socket_ds;
+
+    log_info("socket_connection_hci_process, callback %x", callback_type);
+
+    // get socket_fd
+    int socket_fd = conn->socket_fd;
+
+#ifdef _WIN32
+    // sync state
+    WSANETWORKEVENTS network_events;
+    if (WSAEnumNetworkEvents(socket_fd, socket_ds->source.handle, &network_events) == SOCKET_ERROR){
+        log_error("WSAEnumNetworkEvents() failed with error %d\n", WSAGetLastError());
+        return;
+    }
+    // check if read possible
+    if ((network_events.lNetworkEvents & FD_READ) == 0) return;
+#endif
+
+    // read from socket
+#ifdef _WIN32
+    int flags = 0;
+    int bytes_read = recv(socket_fd, (char*) &conn->buffer[conn->bytes_read], conn->bytes_to_read, flags);
+#else
+    int bytes_read = read(socket_fd, &conn->buffer[conn->bytes_read], conn->bytes_to_read);
+#endif
+
+    log_info("socket_connection_hci_process fd %x, bytes read %d", socket_fd, bytes_read);
     if (bytes_read <= 0){
         // connection broken (no particular channel, no date yet)
         socket_connection_emit_connection_closed(conn);
@@ -250,8 +307,8 @@ void socket_connection_hci_process(btstack_data_source_t *ds, btstack_data_sourc
         // "park" if dispatch failed
         if (dispatch_err) {
             log_info("socket_connection_hci_process dispatch failed -> park connection");
-            btstack_run_loop_remove_data_source(ds);
-            btstack_linked_list_add_tail(&parked, (btstack_linked_item_t *) ds);
+            btstack_run_loop_remove_data_source(socket_ds);
+            btstack_linked_list_add_tail(&parked, (btstack_linked_item_t *) socket_ds);
         }
     }
 }
@@ -292,7 +349,22 @@ static void socket_connection_accept(btstack_data_source_t *socket_ds, btstack_d
     UNUSED(callback_type);
     struct sockaddr_storage ss;
     socklen_t slen = sizeof(ss);
+
+    // get socket_fd
+#ifdef _WIN32
+    int socket_fd = tcp_socket_fd;
+#else
     int socket_fd = btstack_run_loop_get_data_source_fd(socket_ds);
+#endif
+
+#ifdef _WIN32
+    // sync state
+    WSANETWORKEVENTS network_events;
+    if (WSAEnumNetworkEvents(socket_fd, socket_ds->source.handle, &network_events) == SOCKET_ERROR){
+        log_error("WSAEnumNetworkEvents() failed with error %d\n", WSAGetLastError());
+        return;
+    }
+#endif
 
 	/* New connection coming in! */
 	int fd = accept(socket_fd, (struct sockaddr *)&ss, &slen);
@@ -327,6 +399,23 @@ int socket_connection_create_tcp(int port){
 	}
     
 	log_info ("Socket created for port %u", port);
+
+#ifdef _WIN32
+    // wrap fd in windows event and configure for accept and close
+    WSAEVENT event = WSACreateEvent();
+    if (!event){
+        log_error("Error creating WSAEvent for socket");
+        return -1;
+    }
+    int res = WSAEventSelect(fd, event, FD_ACCEPT | FD_CLOSE);
+    if (res == SOCKET_ERROR){
+        log_error("WSAEventSelect() error: %d\n" , WSAGetLastError());
+        free(ds);
+        return -1;
+    }
+    // keep fd around
+    tcp_socket_fd = fd;
+#endif
 	
     struct sockaddr_in addr;
 	addr.sin_family = AF_INET;
@@ -348,7 +437,11 @@ int socket_connection_create_tcp(int port){
         return -1;
 	}
     
+#ifdef _WIN32
+    ds->source.handle = event;
+#else
     btstack_run_loop_set_data_source_fd(ds, fd);
+#endif
     btstack_run_loop_set_data_source_handler(ds, &socket_connection_accept);
     btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
     btstack_run_loop_add_data_source(ds);
@@ -469,8 +562,8 @@ void socket_connection_send_packet(connection_t *conn, uint16_t type, uint16_t c
     little_endian_store_16(header, 0, type);
     little_endian_store_16(header, 2, channel);
     little_endian_store_16(header, 4, size);
-    write(conn->ds.source.fd, header, 6);
-    write(conn->ds.source.fd, packet, size);
+    write(conn->socket_fd, header, 6);
+    write(conn->socket_fd, packet, size);
 }
 
 /**
@@ -627,11 +720,23 @@ int socket_connection_close_unix(connection_t * connection){
  * Init socket connection module
  */
 void socket_connection_init(void){
+
     // just ignore broken sockets - NO_SO_SIGPIPE
 #ifndef _WIN32
     sig_t result = signal(SIGPIPE, SIG_IGN);
     if (result){
         log_error("socket_connection_init: failed to ignore SIGPIPE, error: %s", strerror(errno));
+    }
+#endif
+
+#ifdef _WIN32
+    // TODO: call WSACleanup with wsa data on shutdown
+    WSADATA wsa;
+    int res = WSAStartup(MAKEWORD(2, 2), &wsa);
+    log_info("WSAStartup(v2.2) = %x", res);
+    if (res){
+        log_error("WSAStartup error: %d", WSAGetLastError());
+        return;
     }
 #endif
 }
