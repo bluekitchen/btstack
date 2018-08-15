@@ -405,6 +405,7 @@ int socket_connection_create_tcp(int port){
     WSAEVENT event = WSACreateEvent();
     if (!event){
         log_error("Error creating WSAEvent for socket");
+        free(ds);
         return -1;
     }
     int res = WSAEventSelect(fd, event, FD_ACCEPT | FD_CLOSE);
