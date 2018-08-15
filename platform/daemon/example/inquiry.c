@@ -49,7 +49,12 @@
 #include <string.h>
 
 #include "btstack_client.h"
+
+#ifdef _WIN32
 #include "btstack_run_loop_posix.h"
+#else
+#include "btstack_run_loop_posix.h"
+#endif
 
 #define MAX_DEVICES 10
 struct device {
@@ -239,9 +244,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 int main (int argc, const char * argv[]){
 	// start stack
 #ifdef _WIN32
-	btstack_run_loop_init(btstack_run_loop_posix_get_instance());
-#else
 	btstack_run_loop_init(btstack_run_loop_windows_get_instance());
+#else
+	btstack_run_loop_init(btstack_run_loop_posix_get_instance());
 #endif
 	int err = bt_open();
 	if (err) {
