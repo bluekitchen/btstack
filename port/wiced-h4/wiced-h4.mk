@@ -29,7 +29,6 @@ $(NAME)_SOURCES += \
 	../../src/ble/att_dispatch.c 		  \
 	../../src/ble/att_server.c   		  \
 	../../src/ble/gatt_client.c   		  \
-	../../src/ble/le_device_db_memory.c   \
 	../../src/ble/gatt-service/battery_service_server.c   \
 	../../src/ble/sm.c          		  \
 	../../src/classic/hfp.c 			  \
