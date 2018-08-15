@@ -52,7 +52,7 @@
 #include "hci_cmd.h"
 
 #ifdef _WIN32
-#include "btstack_run_loop_posix.h"
+#include "btstack_run_loop_windows.h"
 #else
 #include "btstack_run_loop_posix.h"
 #endif
