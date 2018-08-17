@@ -153,7 +153,7 @@ static void goep_client_packet_handler(uint8_t packet_type, uint16_t channel, ui
                 case RFCOMM_EVENT_CAN_SEND_NOW:
                     goep_client_emit_can_send_now_event(goep_client);
                     break;
-                case RFCOMM_CHANNEL_CLOSED:
+                case RFCOMM_EVENT_CHANNEL_CLOSED:
                     goep_client->state = GOEP_INIT;
                     goep_client_emit_connection_closed_event(goep_client);
                     break;
