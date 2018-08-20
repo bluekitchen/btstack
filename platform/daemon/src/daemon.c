@@ -68,6 +68,7 @@
 #include "btstack_event.h"
 #include "btstack_linked_list.h"
 #include "btstack_run_loop.h"
+#include "btstack_server.h"
 
 #ifdef _WIN32
 #include "btstack_run_loop_windows.h"
@@ -1927,7 +1928,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
 static char hostname[30];
 
-static int btstack_server_run(int tcp_flag){
+int btstack_server_run(int tcp_flag){
 
     if (tcp_flag){
         printf("BTstack Daemon started on port %u\n", BTSTACK_PORT);
@@ -2100,6 +2101,8 @@ static int btstack_server_run(int tcp_flag){
     btstack_run_loop_execute();
     return 0;
 }
+
+
 
 int main (int argc,  char * const * argv){
     
