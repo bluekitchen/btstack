@@ -1800,7 +1800,7 @@ static int clients_require_discoverable(void){
 
 static void usage(const char * name) {
     printf("%s, BTstack background daemon\n", name);
-    printf("usage: %s [--help] [--tcp port]\n", name);
+    printf("usage: %s [--help] [--tcp]\n", name);
     printf("    --help   display this usage\n");
     printf("    --tcp    use TCP server on port %u\n", BTSTACK_PORT);
     printf("Without the --tcp option, BTstack daemon is listening on unix domain socket %s\n\n", BTSTACK_UNIX);
@@ -1927,47 +1927,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
 static char hostname[30];
 
-int main (int argc,  char * const * argv){
-    
-    static int tcp_flag = 0;
-    
-    while (1) {
-        static struct option long_options[] = {
-            { "tcp", no_argument, &tcp_flag, 1 },
-            { "help", no_argument, 0, 0 },
-            { 0,0,0,0 } // This is a filler for -1
-        };
-        
-        int c;
-        int option_index = -1;
-        
-        c = getopt_long(argc, argv, "h", long_options, &option_index);
-        
-        if (c == -1) break; // no more option
-        
-        // treat long parameter first
-        if (option_index == -1) {
-            switch (c) {
-                case '?':
-                case 'h':
-                    usage(argv[0]);
-                    return 0;
-                    break;
-            }
-        } else {
-            switch (option_index) {
-                case 1:
-                    usage(argv[0]);
-                    return 0;
-                    break;
-            }
-        }
-    }
-    
-#ifndef HAVE_UNIX_SOCKETS
-    // TCP is default if there are no unix sockets
-    tcp_flag = 1;
-#endif
+static int btstack_server_run(int tcp_flag){
 
     if (tcp_flag){
         printf("BTstack Daemon started on port %u\n", BTSTACK_PORT);
@@ -2139,4 +2099,46 @@ int main (int argc,  char * const * argv){
         // go!
     btstack_run_loop_execute();
     return 0;
+}
+
+int main (int argc,  char * const * argv){
+    
+    int tcp_flag = 0;
+    struct option long_options[] = {
+        { "tcp", no_argument, &tcp_flag, 1 },
+        { "help", no_argument, 0, 0 },
+        { 0,0,0,0 } // This is a filler for -1
+    };
+    
+    while (1) {
+        int c;
+        int option_index = -1;
+        c = getopt_long(argc, argv, "h", long_options, &option_index);
+        if (c == -1) break; // no more option
+        
+        // treat long parameter first
+        if (option_index == -1) {
+            switch (c) {
+                case '?':
+                case 'h':
+                    usage(argv[0]);
+                    return 0;
+                    break;
+            }
+        } else {
+            switch (option_index) {
+                case 1:
+                    usage(argv[0]);
+                    return 0;
+                    break;
+            }
+        }
+    }
+    
+#ifndef HAVE_UNIX_SOCKETS
+    // TCP is default if there are no unix sockets
+    tcp_flag = 1;
+#endif
+
+    btstack_server_run(tcp_flag);
 }
