@@ -2102,7 +2102,9 @@ int btstack_server_run(int tcp_flag){
     return 0;
 }
 
-
+int btstack_server_run_tcp(void){
+     return btstack_server_run(1);
+}
 
 int main (int argc,  char * const * argv){
     
