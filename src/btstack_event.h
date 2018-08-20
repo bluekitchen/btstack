@@ -6479,6 +6479,34 @@ static inline uint8_t pbap_subevent_operation_completed_get_status(const uint8_t
 }
 
 /**
+ * @brief Get field goep_cid from event PBAP_SUBEVENT_PHONEBOOK_SIZE
+ * @param event packet
+ * @return goep_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t pbap_subevent_phonebook_size_get_goep_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event PBAP_SUBEVENT_PHONEBOOK_SIZE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t pbap_subevent_phonebook_size_get_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field phoneboook_size from event PBAP_SUBEVENT_PHONEBOOK_SIZE
+ * @param event packet
+ * @return phoneboook_size
+ * @note: btstack_type 2
+ */
+static inline uint16_t pbap_subevent_phonebook_size_get_phoneboook_size(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+
+/**
  * @brief Get field hid_cid from event HID_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return hid_cid
