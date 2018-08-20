@@ -157,7 +157,7 @@ void    goep_client_add_header_count(uint16_t goep_cid, uint32_t count);
  * @param lenght of application parameters
  * @param daa 
  */
-void    goep_client_add_header_application_parameters(uint16_t goep_cid, uint16_t length, uint8_t * data);
+void    goep_client_add_header_application_parameters(uint16_t goep_cid, uint16_t length, const uint8_t * data);
 
 // int  goep_client_add_body_static(uint16_t goep_cid,  uint32_t length, uint8_t * data);
 // int  goep_client_add_body_dynamic(uint16_t goep_cid, uint32_t length, void (*data_callback)(uint32_t offset, uint8_t * buffer, uint32_t len));

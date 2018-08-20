@@ -293,13 +293,21 @@ void goep_client_create_set_path_request(uint16_t goep_cid, uint8_t flags){
     goep_client_packet_add_connection_id(goep_cid);
 }
 
-void goep_client_add_header_target(uint16_t goep_cid, uint16_t length, const uint8_t * target){
+static void goep_client_add_header(uint16_t goep_cid, uint8_t header_type, uint16_t header_length, const uint8_t * header_data){
     UNUSED(goep_cid);
     uint8_t header[3];
-    header[0] = OBEX_HEADER_TARGET;
-    big_endian_store_16(header, 1, 1 + 2 + length);
+    header[0] = header_type;
+    big_endian_store_16(header, 1, 1 + 2 + header_length);
     goep_client_packet_append(&header[0], sizeof(header));
-    goep_client_packet_append(target, length);
+    goep_client_packet_append(header_data, header_length);
+}
+
+void goep_client_add_header_target(uint16_t goep_cid, uint16_t length, const uint8_t * target){
+    goep_client_add_header(goep_cid, OBEX_HEADER_TARGET, length,  target);
+}
+
+void goep_client_add_header_application_parameters(uint16_t goep_cid, uint16_t length, const uint8_t * data){
+    goep_client_add_header(goep_cid, OBEX_HEADER_APPLICATION_PARAMETERS, length,  data);
 }
 
 void goep_client_add_header_name(uint16_t goep_cid, const char * name){
