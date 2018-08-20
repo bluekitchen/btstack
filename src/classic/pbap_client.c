@@ -371,7 +371,7 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                                     uint8_t len = data[i++];
                                     if (tag == PBAP_APPLICATION_PARAMETER_PHONEBOOK_SIZE && len == 2){
                                         have_size = 1;
-                                        phonebook_size = big_endian_read_16(data, 0);
+                                        phonebook_size = big_endian_read_16(data, i);
                                     }
                                     i+=len;
                                 }
