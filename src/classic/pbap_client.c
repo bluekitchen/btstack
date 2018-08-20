@@ -93,12 +93,14 @@ typedef enum {
     PBAP_CONNECT_RESPONSE_RECEIVED,
     PBAP_CONNECTED,
     //
-    PBAP_W2_PULL_PHONE_BOOK,
-    PBAP_W4_PHONE_BOOK,
+    PBAP_W2_PULL_PHONEBOOK,
+    PBAP_W4_PHONEBOOK,
     PBAP_W2_SET_PATH_ROOT,
     PBAP_W4_SET_PATH_ROOT_COMPLETE,
     PBAP_W2_SET_PATH_ELEMENT,
     PBAP_W4_SET_PATH_ELEMENT_COMPLETE,
+    PBAP_W2_GET_PHONEBOOK_SIZE,
+    PBAP_W4_GET_PHONEBOOK_SIZE_COMPLETE,
 } pbap_state_t;
 
 typedef struct pbap_client {
@@ -116,7 +118,7 @@ typedef struct pbap_client {
 static pbap_client_t _pbap_client;
 static pbap_client_t * pbap_client = &_pbap_client;
 
-static inline void pbap_client_emit_connected_event(pbap_client_t * context, uint8_t status){
+static void pbap_client_emit_connected_event(pbap_client_t * context, uint8_t status){
     uint8_t event[15];
     int pos = 0;
     event[pos++] = HCI_EVENT_PBAP_META;
@@ -135,7 +137,7 @@ static inline void pbap_client_emit_connected_event(pbap_client_t * context, uin
     context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
 }   
 
-static inline void pbap_client_emit_connection_closed_event(pbap_client_t * context){
+static void pbap_client_emit_connection_closed_event(pbap_client_t * context){
     uint8_t event[5];
     int pos = 0;
     event[pos++] = HCI_EVENT_PBAP_META;
@@ -148,7 +150,7 @@ static inline void pbap_client_emit_connection_closed_event(pbap_client_t * cont
     context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
 }   
 
-static inline void pbap_client_emit_operation_complete_event(pbap_client_t * context, uint8_t status){
+static void pbap_client_emit_operation_complete_event(pbap_client_t * context, uint8_t status){
     uint8_t event[6];
     int pos = 0;
     event[pos++] = HCI_EVENT_PBAP_META;
@@ -162,10 +164,27 @@ static inline void pbap_client_emit_operation_complete_event(pbap_client_t * con
     context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
 }
 
+static void pbap_client_emit_phonebook_size_event(pbap_client_t * context, uint8_t status, uint16_t phonebook_size){
+    uint8_t event[8];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_PBAP_META;
+    pos++;  // skip len
+    event[pos++] = PBAP_SUBEVENT_PHONEBOOK_SIZE;
+    little_endian_store_16(event,pos,context->cid);
+    pos+=2;
+    event[pos++] = status;
+    little_endian_store_16(event,pos, phonebook_size);
+    pos+=2;
+    event[1] = pos - 2;
+    if (pos != sizeof(event)) log_error("pbap_client_emit_phonebook_size_event size %u", pos);
+    context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
+}
+
 static void pbap_handle_can_send_now(void){
     uint8_t  path_element[20];
     uint16_t path_element_start;
     uint16_t path_element_len;
+    uint8_t  application_parameters[20];
 
     switch (pbap_client->state){
         case PBAP_W2_SEND_CONNECT_REQUEST:
@@ -176,12 +195,23 @@ static void pbap_handle_can_send_now(void){
             // send packet
             goep_client_execute(pbap_client->goep_cid);
             return;
-        case PBAP_W2_PULL_PHONE_BOOK:
+        case PBAP_W2_PULL_PHONEBOOK:
+        case PBAP_W2_GET_PHONEBOOK_SIZE:
             goep_client_create_get_request(pbap_client->goep_cid);
             goep_client_add_header_type(pbap_client->goep_cid, pbap_type);
             goep_client_add_header_name(pbap_client->goep_cid, pbap_name);
-            // state
-            pbap_client->state = PBAP_W4_PHONE_BOOK;
+            if (pbap_client->state == PBAP_W2_GET_PHONEBOOK_SIZE){
+                // Regular TLV wih 1-byte len
+                application_parameters[0] = PBAP_APPLICATION_PARAMETER_MAX_LIST_COUNT;
+                application_parameters[1] = 2;
+                big_endian_store_16(application_parameters, 2, 0);
+                goep_client_add_header_application_parameters(pbap_client->goep_cid, 4, &application_parameters[0]);
+                // state
+                pbap_client->state = PBAP_W4_GET_PHONEBOOK_SIZE_COMPLETE;
+            } else {
+                // state
+                pbap_client->state = PBAP_W4_PHONEBOOK;
+            }
             // send packet
             goep_client_execute(pbap_client->goep_cid);
             break;
@@ -304,7 +334,7 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                         pbap_client_emit_operation_complete_event(pbap_client, OBEX_UNKNOWN_ERROR);
                     }
                     break;
-                case PBAP_W4_PHONE_BOOK:
+                case PBAP_W4_PHONEBOOK:
                     for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(pbap_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
                         uint8_t hi = obex_iterator_get_hi(&it);
                         if (hi == OBEX_HEADER_BODY || hi == OBEX_HEADER_END_OF_BODY){
@@ -314,7 +344,7 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                         }
                     }
                     if (packet[0] == OBEX_RESP_CONTINUE){
-                        pbap_client->state = PBAP_W2_PULL_PHONE_BOOK;
+                        pbap_client->state = PBAP_W2_PULL_PHONEBOOK;
                         goep_client_request_can_send_now(pbap_client->goep_cid);                
                     } else if (packet[0] == OBEX_RESP_SUCCESS){
                         pbap_client->state = PBAP_CONNECTED;
@@ -323,6 +353,36 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                         pbap_client->state = PBAP_CONNECTED;
                         pbap_client_emit_operation_complete_event(pbap_client, OBEX_UNKNOWN_ERROR);
                     }
+                    break;
+                case PBAP_W4_GET_PHONEBOOK_SIZE_COMPLETE:
+                    pbap_client->state = PBAP_CONNECTED;
+                    if (packet[0] == OBEX_RESP_SUCCESS){
+                        int have_size = 0;
+                        uint16_t phonebook_size;
+                        for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(pbap_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
+                            uint8_t hi = obex_iterator_get_hi(&it);
+                            if (hi == OBEX_HEADER_APPLICATION_PARAMETERS){
+                                uint16_t     data_len = obex_iterator_get_data_len(&it);
+                                const uint8_t  * data =  obex_iterator_get_data(&it);
+                                // iterate over application headers (TLV with 1 bytes len)
+                                unsigned int i = 0;
+                                while (i<data_len){
+                                    uint8_t tag = data[i++];
+                                    uint8_t len = data[i++];
+                                    if (tag == PBAP_APPLICATION_PARAMETER_PHONEBOOK_SIZE && len == 2){
+                                        have_size = 1;
+                                        phonebook_size = big_endian_read_16(data, 0);
+                                    }
+                                    i+=len;
+                                }
+                            }
+                        }
+                        if (have_size){
+                            pbap_client_emit_phonebook_size_event(pbap_client, 0, phonebook_size);
+                            break;
+                        }
+                    }
+                    pbap_client_emit_phonebook_size_event(pbap_client, OBEX_UNKNOWN_ERROR, 0);
                     break;
                 default:
                     break;
@@ -356,11 +416,19 @@ uint8_t pbap_disconnect(uint16_t pbap_cid){
     return 0;
 }
 
+uint8_t pbap_get_phonebook_size(uint16_t pbap_cid){
+    UNUSED(pbap_cid);
+    if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
+    pbap_client->state = PBAP_W2_GET_PHONEBOOK_SIZE;
+    goep_client_request_can_send_now(pbap_client->goep_cid);
+    return 0;
+}
+
 uint8_t pbap_pull_phonebook(uint16_t pbap_cid){
     UNUSED(pbap_cid);
     if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
-    pbap_client->state = PBAP_W2_PULL_PHONE_BOOK;
-    goep_client_request_can_send_now(pbap_client->goep_cid);                
+    pbap_client->state = PBAP_W2_PULL_PHONEBOOK;
+    goep_client_request_can_send_now(pbap_client->goep_cid);
     return 0;
 }
 
@@ -370,6 +438,6 @@ uint8_t pbap_set_phonebook(uint16_t pbap_cid, const char * path){
     pbap_client->state = PBAP_W2_SET_PATH_ROOT;
     pbap_client->current_folder = path;
     pbap_client->set_path_offset = 0;
-    goep_client_request_can_send_now(pbap_client->goep_cid);                
+    goep_client_request_can_send_now(pbap_client->goep_cid);
     return 0;
 }

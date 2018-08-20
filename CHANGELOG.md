@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- PBAP: added pbap_get_phonebook_size() to get phonebook entry count
+
 ### Fixed
 - GATT Server: Allow enable Notifications/Indication with Write Command. Fixes issue with some Android devices.
 
