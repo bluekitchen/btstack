@@ -79,4 +79,41 @@
 
 #define OBEX_CONNECTION_ID_INVALID         0xFFFFFFFF
 
+/**
+ * PBAP
+ */
+
+// PBAP Application Parameters Tag IDs
+
+// Order - 0x01 - 1 byte: 0x00 = indexed 0x01 = alphanumeric 0x02 = phonetic
+#define PBAP_APPLICATION_PARAMETER_ORDER 0x01
+// SearchValue - 0x02 - variable - Text
+#define PBAP_APPLICATION_PARAMETER_SEARCH_VALUE 0x02
+// SearchProperty - 0x03 - 1 byte - 0x00= Name 0x01= Number 0x02= Sound
+#define PBAP_APPLICATION_PARAMETER_SEARCH_PROPERTY 0x03
+// MaxListCount - 0x04 - 2 bytes - 0x0000 to 0xFFFF
+#define PBAP_APPLICATION_PARAMETER_MAX_LIST_COUNT 0x04
+// ListStartOffset - 0x05 - 2 bytes - 0x0000 to 0xFFFF
+#define PBAP_APPLICATION_PARAMETER_LIST_START_OFFSET 0x05
+// PropertySelector - 0x06 - 8 bytes - 64 bits mask
+#define PBAP_APPLICATION_PARAMETER_PROPERTY_SELECTOR 0x06
+// Format - 0x07 - 1 byte - 0x00 = 2.1 0x01 = 3.0
+#define PBAP_APPLICATION_PARAMETER_FORMAT 0x07
+// PhonebookSize - 0x08 - 2 bytes - 0x0000 to 0xFFFF
+#define PBAP_APPLICATION_PARAMETER_PHONEBOOK_SIZE 0x08
+// NewMissedCalls - 0x09 - 1 byte - 0x00 to 0xFF
+#define PBAP_APPLICATION_PARAMETER_NEW_MISSED_CALLS 0x09
+// PrimaryVersionCounter - 0x0A - 16 bytes - 0 to (2128 – 1)
+#define PBAP_APPLICATION_PARAMETER_PRIMARY_VERSION_COUNTER 0x0A
+// SecondaryVersionCounter - 0x0B - 16 bytes - 0 to (2128 – 1)
+#define PBAP_APPLICATION_PARAMETER_SECONDARY_VERSION_COUNTER 0x0B
+// vCardSelector - 0x0C - 8 bytes - 64 bits mask
+#define PBAP_APPLICATION_PARAMETER_VCARD_SELECTOR 0x0C
+// DatabaseIdentifier - 0x0D - 16 bytes - 0 to (2128 – 1)
+#define PBAP_APPLICATION_PARAMETER_DATABASE_IDENTIFIER 0x0D
+// vCardSelectorOperator - 0x0E - 1 byte - 0x00 = OR 0x01 = AND
+#define PBAP_APPLICATION_PARAMETER_VCARD_SELECTOR_OPERATOR 0x0E
+// ResetNewMissedCalls -   0x0F -  1 byte
+#define PBAP_APPLICATION_PARAMETER_RESET_NEW_MISSED_CALLS 0x0F
+
 #endif
