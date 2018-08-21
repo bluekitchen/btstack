@@ -298,6 +298,14 @@ typedef uint8_t sm_key_t[16];
 #define GATT_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION           0X81
 #define GATT_GET_MTU                                             0x82
 
+// SM 0x90
+#define SM_SET_AUTHENTICATION_REQUIREMENTS 0x90
+#define SM_SET_IO_CAPABILITIES             0x92
+#define SM_BONDING_DECLINE                 0x93
+#define SM_JUST_WORKS_CONFIRM              0x94
+#define SM_NUMERIC_COMPARISON_CONFIRM      0x95
+#define SM_PASSKEY_INPUT                   0x96
+
 // ATT
 
 // ..

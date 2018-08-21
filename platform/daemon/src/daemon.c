@@ -194,7 +194,7 @@ static void start_power_off_timer(void);
 static void stop_power_off_timer(void);
 static client_state_t * client_for_connection(connection_t *connection);
 static void hci_emit_system_bluetooth_enabled(uint8_t enabled);
-static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size);
+static void stack_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size);
 
 
 // MARK: globals
@@ -215,6 +215,7 @@ static btstack_linked_list_t gatt_client_helpers = NULL;   // list of used gatt 
 static void (*bluetooth_status_handler)(BLUETOOTH_STATE state) = dummy_bluetooth_status_handler;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static btstack_packet_callback_registration_t sm_event_callback_registration;
 
 static int global_enable = 0;
 
@@ -1035,7 +1036,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case RFCOMM_CREATE_CHANNEL:
             reverse_bd_addr(&packet[3], addr);
             rfcomm_channel = packet[9];
-            status = rfcomm_create_channel(&rfcomm_packet_handler, addr, rfcomm_channel, &cid);
+            status = rfcomm_create_channel(&stack_packet_handler, addr, rfcomm_channel, &cid);
             if (status){
                 send_rfcomm_create_channel_failed(connection, addr, rfcomm_channel, status);
             } else {
@@ -1046,7 +1047,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             reverse_bd_addr(&packet[3], addr);
             rfcomm_channel = packet[9];
             rfcomm_credits = packet[10];
-            status = rfcomm_create_channel_with_initial_credits(&rfcomm_packet_handler, addr, rfcomm_channel, rfcomm_credits, &cid );
+            status = rfcomm_create_channel_with_initial_credits(&stack_packet_handler, addr, rfcomm_channel, rfcomm_credits, &cid );
             if (status){
                 send_rfcomm_create_channel_failed(connection, addr, rfcomm_channel, status);
             } else {
@@ -1061,14 +1062,14 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case RFCOMM_REGISTER_SERVICE:
             rfcomm_channel = packet[3];
             mtu = little_endian_read_16(packet, 4);
-            status = rfcomm_register_service(&rfcomm_packet_handler, rfcomm_channel, mtu);
+            status = rfcomm_register_service(&stack_packet_handler, rfcomm_channel, mtu);
             rfcomm_emit_service_registered(connection, status, rfcomm_channel);
             break;
         case RFCOMM_REGISTER_SERVICE_WITH_CREDITS:
             rfcomm_channel = packet[3];
             mtu = little_endian_read_16(packet, 4);
             rfcomm_credits = packet[6];
-            status = rfcomm_register_service_with_initial_credits(&rfcomm_packet_handler, rfcomm_channel, mtu, rfcomm_credits);
+            status = rfcomm_register_service_with_initial_credits(&stack_packet_handler, rfcomm_channel, mtu, rfcomm_credits);
             rfcomm_emit_service_registered(connection, status, rfcomm_channel);
             break;
         case RFCOMM_UNREGISTER_SERVICE:
@@ -1306,6 +1307,26 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             send_gatt_mtu_event(connection, handle, mtu);
             break;
         }
+#endif
+#ifdef ENABLE_BLE
+        case SM_SET_AUTHENTICATION_REQUIREMENTS:
+            sm_set_authentication_requirements(packet[3]);
+            break;
+        case SM_SET_IO_CAPABILITIES:
+            sm_set_io_capabilities(packet[3]);
+            break;
+        case SM_BONDING_DECLINE:
+            sm_bonding_decline(little_endian_read_16(packet, 3));
+            break;
+        case SM_JUST_WORKS_CONFIRM:
+            sm_just_works_confirm(little_endian_read_16(packet, 3));
+            break;
+        case SM_NUMERIC_COMPARISON_CONFIRM:
+            sm_numeric_comparison_confirm(little_endian_read_16(packet, 3));    
+            break;
+        case SM_PASSKEY_INPUT:
+            sm_passkey_input(little_endian_read_16(packet, 3), little_endian_read_32(packet, 5));
+            break;
 #endif
     default:
             log_error("Error: command %u not implemented:", READ_CMD_OCF(packet));
@@ -1636,10 +1657,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
     daemon_emit_packet(connection, packet_type, channel, packet, size);
 }
 
-static void l2cap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
-    daemon_packet_handler(NULL, packet_type, channel, packet, size);
-}
-static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
+static void stack_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
     daemon_packet_handler(NULL, packet_type, channel, packet, size);
 }
 
@@ -2041,12 +2059,12 @@ int btstack_server_run(int tcp_flag){
 #endif
 
     // register for HCI events
-    hci_event_callback_registration.callback = &l2cap_packet_handler;
+    hci_event_callback_registration.callback = &stack_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     // init L2CAP
     l2cap_init();
-    l2cap_register_packet_handler(&l2cap_packet_handler);
+    l2cap_register_packet_handler(&stack_packet_handler);
     timeout.process = daemon_no_connections_timeout;
 
 #ifdef ENABLE_RFCOMM
@@ -2059,15 +2077,18 @@ int btstack_server_run(int tcp_flag){
 #endif
 
 #ifdef ENABLE_BLE
-    // GATT Client
-    gatt_client_init();
+    le_device_db_init();
 
-    // sm_init();
+    sm_init();
+    sm_event_callback_registration.callback = &stack_packet_handler;
+    sm_add_event_handler(&sm_event_callback_registration);
     // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
     // sm_set_authentication_requirements( SM_AUTHREQ_BONDING | SM_AUTHREQ_MITM_PROTECTION); 
 
+    // GATT Client
+    gatt_client_init();
+
     // GATT Server - empty attribute database
-    le_device_db_init();
     att_server_init(NULL, NULL, NULL);    
 
 #endif
