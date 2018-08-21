@@ -964,7 +964,7 @@ static int sm_key_distribution_all_received(sm_connection_t * sm_conn){
 #endif
 
     log_debug("sm_key_distribution_all_received: received 0x%02x, expecting 0x%02x", setup->sm_key_distribution_received_set, recv_flags);
-    return recv_flags == setup->sm_key_distribution_received_set;
+    return (setup->sm_key_distribution_received_set & recv_flags) == recv_flags;
 }
 
 static void sm_done_for_handle(hci_con_handle_t con_handle){
