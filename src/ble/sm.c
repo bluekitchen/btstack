@@ -2358,20 +2358,29 @@ static void sm_run(void){
 
 #ifdef ENABLE_LE_PERIPHERAL
             case SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE:
-                // echo initiator for now
                 sm_pairing_packet_set_code(setup->sm_s_pres,SM_CODE_PAIRING_RESPONSE);
+
+                // start with initiator key dist flags
                 key_distribution_flags = sm_key_distribution_flags_for_auth_req();
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+                // LTK (= encyrption information & master identification) only exchanged for LE Legacy Connection
+                if (setup->sm_use_secure_connections){
+                    key_distribution_flags &= ~SM_KEYDIST_ENC_KEY;
+                }
+#endif
+                // setup in response 
+                sm_pairing_packet_set_initiator_key_distribution(setup->sm_s_pres, sm_pairing_packet_get_initiator_key_distribution(setup->sm_m_preq) & key_distribution_flags);
+                sm_pairing_packet_set_responder_key_distribution(setup->sm_s_pres, sm_pairing_packet_get_responder_key_distribution(setup->sm_m_preq) & key_distribution_flags);
+
+                // update key distribution after ENC was dropped
+                sm_setup_key_distribution(sm_pairing_packet_get_responder_key_distribution(setup->sm_s_pres));
 
                 if (setup->sm_use_secure_connections){
                     connection->sm_engine_state = SM_SC_W4_PUBLIC_KEY_COMMAND;
                 } else {
                     connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_CONFIRM;
                 }
-
-                sm_pairing_packet_set_initiator_key_distribution(setup->sm_s_pres, sm_pairing_packet_get_initiator_key_distribution(setup->sm_m_preq) & key_distribution_flags);
-                sm_pairing_packet_set_responder_key_distribution(setup->sm_s_pres, sm_pairing_packet_get_responder_key_distribution(setup->sm_m_preq) & key_distribution_flags);
-                // update key distribution after ENC was dropped
-                sm_setup_key_distribution(sm_pairing_packet_get_responder_key_distribution(setup->sm_s_pres));
 
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
                 sm_timeout_reset(connection);
