@@ -60,4 +60,11 @@ int btstack_server_run(int tcp_flag);
  */
 int btstack_server_run_tcp(void);
 
+/**
+ * @brief Set path for BTstack for packet log and persistent data
+ * @brief Defaults to /tmp
+ * @param poath
+ */
+void btstack_server_set_storage_path(const char * path);
+
 #endif

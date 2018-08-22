@@ -228,63 +228,12 @@ static const int attribute_value_buffer_size = sizeof(attribute_value);
 static uint8_t serviceSearchPattern[200];
 static uint8_t attributeIDList[50];
 static void * sdp_client_query_connection;
-    
+
+static char string_buffer[1000];
+
 static int loggingEnabled;
 
-// stashed code from l2cap.c and rfcomm.c -- needed for new implementation
-#if 0
-static void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
-    
-    log_info("DAEMON_EVENT_L2CAP_CREDITS local_cid 0x%x credits %u", channel->local_cid, credits);
-    
-    uint8_t event[5];
-    event[0] = DAEMON_EVENT_L2CAP_CREDITS;
-    event[1] = sizeof(event) - 2;
-    little_endian_store_16(event, 2, channel->local_cid);
-    event[4] = credits;
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
-}
-
-static void l2cap_hand_out_credits(void){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &l2cap_channels);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-        if (channel->state != L2CAP_STATE_OPEN) continue;
-        if (!hci_number_free_acl_slots_for_handle(channel->handle)) return;
-        l2cap_emit_credits(channel, 1);
-    }
-}
-static void rfcomm_emit_credits(rfcomm_channel_t * channel, uint8_t credits) {
-    log_info("DAEMON_EVENT_RFCOMM_CREDITS cid 0x%02x credits %u", channel->rfcomm_cid, credits);
-    uint8_t event[5];
-    event[0] = DAEMON_EVENT_RFCOMM_CREDITS;
-    event[1] = sizeof(event) - 2;
-    little_endian_store_16(event, 2, channel->rfcomm_cid);
-    event[4] = credits;
-    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-    (*app_packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
-}
-static void rfcomm_hand_out_credits(void){
-    btstack_linked_item_t * it;
-    for (it = (btstack_linked_item_t *) rfcomm_channels; it ; it = it->next){
-        rfcomm_channel_t * channel = (rfcomm_channel_t *) it;
-        if (channel->state != RFCOMM_CHANNEL_OPEN) {
-            // log_info("DAEMON_EVENT_RFCOMM_CREDITS: multiplexer not open");
-            continue;
-        }
-        if (!channel->credits_outgoing) {
-            // log_info("DAEMON_EVENT_RFCOMM_CREDITS: no outgoing credits");
-            continue;
-        }
-        // channel open, multiplexer has l2cap credits and we didn't hand out credit before -> go!
-        // log_info("DAEMON_EVENT_RFCOMM_CREDITS: 1");
-        rfcomm_emit_credits(channel, 1);
-    }        
-}
-
-#endif
+static const char * btstack_server_storage_path;
 
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
     log_info("Bluetooth status: %u\n", state);
@@ -1400,7 +1349,22 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
 
 static void daemon_set_logging_enabled(int enabled){
     if (enabled && !loggingEnabled){
-        hci_dump_open(BTSTACK_LOG_FILE, BTSTACK_LOG_TYPE);
+        // construct path to log file
+        switch (BTSTACK_LOG_TYPE){
+            case HCI_DUMP_STDOUT:
+                snprintf(string_buffer, sizeof(string_buffer), "stdout");
+                break;
+            case HCI_DUMP_PACKETLOGGER:
+                snprintf(string_buffer, sizeof(string_buffer), "%s/hci_dump.pklg", btstack_server_storage_path);
+                break;
+            case HCI_DUMP_BLUEZ:
+                snprintf(string_buffer, sizeof(string_buffer), "%s/hci_dump.snoop", btstack_server_storage_path);
+                break;
+            default:
+                break;
+        }
+        hci_dump_open(string_buffer, BTSTACK_LOG_TYPE);
+        printf("Logging to %s\n", string_buffer);
     }
     if (!enabled && loggingEnabled){
         hci_dump_close();
@@ -1822,7 +1786,7 @@ static void usage(const char * name) {
     printf("usage: %s [--help] [--tcp]\n", name);
     printf("    --help   display this usage\n");
     printf("    --tcp    use TCP server on port %u\n", BTSTACK_PORT);
-    printf("Without the --tcp option, BTstack daemon is listening on unix domain socket %s\n\n", BTSTACK_UNIX);
+    printf("Without the --tcp option, BTstack Server is listening on unix domain socket %s\n\n", BTSTACK_UNIX);
 }
 
 #ifdef HAVE_PLATFORM_IPHONE_OS 
@@ -1949,9 +1913,14 @@ static char hostname[30];
 int btstack_server_run(int tcp_flag){
 
     if (tcp_flag){
-        printf("BTstack Daemon started on port %u\n", BTSTACK_PORT);
+        printf("BTstack Server started on port %u\n", BTSTACK_PORT);
     } else {
-        printf("BTstack Daemon started on socket %s\n", BTSTACK_UNIX);
+        printf("BTstack Server started on socket %s\n", BTSTACK_UNIX);
+    }
+
+    // handle default init
+    if (!btstack_server_storage_path){
+        btstack_server_storage_path = strdup("/tmp");
     }
 
     // make stdout unbuffered
@@ -2167,4 +2136,13 @@ int main (int argc,  char * const * argv){
 #endif
 
     btstack_server_run(tcp_flag);
+}
+
+void btstack_server_set_storage_path(const char * path){
+    if (btstack_server_storage_path){
+        free((void*)btstack_server_storage_path);
+        btstack_server_storage_path = NULL;
+    }
+    btstack_server_storage_path = strdup(path);
+    log_info("Storage path %s", btstack_server_storage_path);
 }
