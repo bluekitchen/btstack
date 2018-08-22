@@ -225,7 +225,7 @@ void pan_create_nap_sdp_record(uint8_t *service, uint32_t service_record_handle,
 	pan_create_service(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_NAP, network_packet_types, name, description, security_desc, net_access_type, max_net_access_rate, IPv4Subnet, IPv6Subnet);
 }
 
-void pan_create_gn_sdp_service(uint8_t *service, uint32_t service_record_handle, uint16_t * network_packet_types, const char *name, const char *description, security_description_t security_desc,
+void pan_create_gn_sdp_record(uint8_t *service, uint32_t service_record_handle, uint16_t * network_packet_types, const char *name, const char *description, security_description_t security_desc,
 	const char *IPv4Subnet, const char *IPv6Subnet){
 	pan_create_service(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_GN, network_packet_types, name, description, security_desc, PAN_NET_ACCESS_TYPE_NONE, 0, IPv4Subnet, IPv6Subnet);
 }
