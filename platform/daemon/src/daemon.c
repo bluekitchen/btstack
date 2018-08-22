@@ -68,6 +68,8 @@
 #include "btstack_event.h"
 #include "btstack_linked_list.h"
 #include "btstack_run_loop.h"
+#include "btstack_tlv_posix.h"
+
 #include "btstack_server.h"
 
 #ifdef _WIN32
@@ -77,6 +79,7 @@
 #endif
 #include "btstack_version.h"
 #include "classic/btstack_link_key_db.h"
+#include "classic/btstack_link_key_db_tlv.h"
 #include "classic/rfcomm.h"
 #include "classic/sdp_server.h"
 #include "classic/sdp_client.h"
@@ -94,6 +97,7 @@
 #include "ble/att_server.h"
 #include "ble/att_db.h"
 #include "ble/le_device_db.h"
+#include "ble/le_device_db_tlv.h"
 #include "ble/sm.h"
 #endif
 
@@ -234,6 +238,11 @@ static char string_buffer[1000];
 static int loggingEnabled;
 
 static const char * btstack_server_storage_path;
+
+// TLV
+static int                   tlv_setup_done;
+static const btstack_tlv_t * tlv_impl;
+static btstack_tlv_posix_t   tlv_context;
 
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
     log_info("Bluetooth status: %u\n", state);
@@ -1437,56 +1446,6 @@ static void daemon_retry_parked(void){
     retry_mutex = 0;
 }
 
-#if 0
-
-Minimal Code for LE Peripheral
-
-enum {
-    SET_ADVERTISEMENT_PARAMS = 1 << 0,
-    SET_ADVERTISEMENT_DATA   = 1 << 1,
-    ENABLE_ADVERTISEMENTS    = 1 << 2,
-};
-
-const uint8_t adv_data[] = {
-    // Flags general discoverable
-    0x02, 0x01, 0x02, 
-    // Name
-    0x08, 0x09, 'B', 'T', 's', 't', 'a', 'c', 'k' 
-};
-uint8_t adv_data_len = sizeof(adv_data);
-static uint16_t todos = 0;
-
-static void app_run(void){
-
-    if (!hci_can_send_command_packet_now()) return;
-
-    if (todos & SET_ADVERTISEMENT_DATA){
-        log_info("app_run: set advertisement data\n");
-        todos &= ~SET_ADVERTISEMENT_DATA;
-        hci_send_cmd(&hci_le_set_advertising_data, adv_data_len, adv_data);
-        return;
-    }    
-
-    if (todos & SET_ADVERTISEMENT_PARAMS){
-        todos &= ~SET_ADVERTISEMENT_PARAMS;
-        uint8_t adv_type = 0;   // default
-        bd_addr_t null_addr;
-        memset(null_addr, 0, 6);
-        uint16_t adv_int_min = 0x0030;
-        uint16_t adv_int_max = 0x0030;
-        hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, 0, 0, &null_addr, 0x07, 0x00);
-        return;
-    }    
-
-    if (todos & ENABLE_ADVERTISEMENTS){
-        log_info("app_run: enable advertisements\n");
-        todos &= ~ENABLE_ADVERTISEMENTS;
-        hci_send_cmd(&hci_le_set_advertise_enable, 1);
-        return;
-    }
-}
-#endif 
-
 static void daemon_emit_packet(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (connection) {
         socket_connection_send_packet(connection, packet_type, channel, packet, size);
@@ -1504,6 +1463,29 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
         case HCI_EVENT_PACKET:
             deamon_status_event_handler(packet, size);
             switch (hci_event_packet_get_type(packet)){
+
+                case BTSTACK_EVENT_STATE:
+                    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
+                    if (tlv_setup_done) break;
+                    // setup TLV using local address as part of the name
+                    gap_local_bd_addr(addr);
+                    log_info("BTstack up and running at %s",  bd_addr_to_str(addr));
+                    snprintf(string_buffer, sizeof(string_buffer), "%s/btstack_%s.tlv", btstack_server_storage_path, bd_addr_to_str(addr));
+                    tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, string_buffer);
+                    btstack_tlv_set_instance(tlv_impl, &tlv_context);
+
+                    // setup link key db as well, if not done already (a big ugly, but will be evaluated at compile time)
+                    if ((void *)&BTSTACK_LINK_KEY_DB_INSTANCE == (void *)&btstack_link_key_db_tlv_get_instance){
+                        hci_set_link_key_db(btstack_link_key_db_tlv_get_instance(tlv_impl, &tlv_context));
+                    }
+                    
+                    // init le device db to use TLV
+                    le_device_db_tlv_configure(tlv_impl, &tlv_context);
+                    le_device_db_init();
+                    le_device_db_set_local_bd_addr(addr);
+
+                    tlv_setup_done = 1;
+                    break;
 
                 case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
                     // ACL buffer freed...
@@ -1975,9 +1957,12 @@ int btstack_server_run(int tcp_flag){
     platform_iphone_register_window_manager_restart(update_ui_status);
     platform_iphone_register_preferences_changed(preferences_changed_callback);
 #endif
-    
+
 #ifdef BTSTACK_LINK_KEY_DB_INSTANCE
-    btstack_link_key_db = BTSTACK_LINK_KEY_DB_INSTANCE();
+    // setup link key db, if not done already (a big ugly, but will be evaluated at compile time)
+    if ((void *)&BTSTACK_LINK_KEY_DB_INSTANCE != (void *)&btstack_link_key_db_tlv_get_instance){
+        btstack_link_key_db = BTSTACK_LINK_KEY_DB_INSTANCE();
+    }
 #endif
 
 #ifdef BTSTACK_DEVICE_NAME_DB_INSTANCE
@@ -2005,7 +1990,7 @@ int btstack_server_run(int tcp_flag){
     daemon_set_logging_enabled(newLoggingEnabled);
     
     // dump version
-    log_info("BTdaemon started\n");
+    log_info("BTStack Server started\n");
     log_info("version %s, build %s", BTSTACK_VERSION, BTSTACK_DATE);
 
     // init HCI
@@ -2046,8 +2031,6 @@ int btstack_server_run(int tcp_flag){
 #endif
 
 #ifdef ENABLE_BLE
-    le_device_db_init();
-
     sm_init();
     sm_event_callback_registration.callback = &stack_packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);

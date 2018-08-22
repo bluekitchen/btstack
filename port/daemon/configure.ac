@@ -50,8 +50,8 @@ case "$host_os" in
         LDFLAGS+="-lws2_32"
         BTSTACK_LIB_LDFLAGS="-shared"
         BTSTACK_LIB_EXTENSION="dll"
-        REMOTE_DEVICE_DB_SOURCES="btstack_link_key_db_memory.c rfcomm_service_db_memory.c"
-        BTSTACK_LINK_KEY_DB_INSTANCE="btstack_link_key_db_memory_instance"
+        REMOTE_DEVICE_DB_SOURCES="btstack_link_key_db_tlv.c rfcomm_service_db_memory.c"
+        BTSTACK_LINK_KEY_DB_INSTANCE="btstack_link_key_db_tlv_instance"
         # BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_memory_instance"
         UNIX_SOCKETS=no
         HCI_USB_LIB=winusb
@@ -61,8 +61,8 @@ case "$host_os" in
         btstack_run_loop_SOURCES="btstack_run_loop_posix.c"
         BTSTACK_LIB_LDFLAGS="-shared -Wl,-rpath,\$(prefix)/lib"
         BTSTACK_LIB_EXTENSION="so"
-        REMOTE_DEVICE_DB_SOURCES="btstack_link_key_db_memory.c rfcomm_service_db_memory.c"
-        BTSTACK_LINK_KEY_DB_INSTANCE="btstack_link_key_db_memory_instance"
+        REMOTE_DEVICE_DB_SOURCES="btstack_link_key_db_tlv.c rfcomm_service_db_memory.c"
+        BTSTACK_LINK_KEY_DB_INSTANCE="btstack_link_key_db_tlv_get_instance"
         # BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_fs_instance"
         UNIX_SOCKETS=yes
         HCI_USB_LIB=libusb
@@ -126,8 +126,7 @@ else
     echo "UART_SPEED:              $UART_SPEED"
 fi
 
-echo "BTSTACK_LINK_KEY_DB:     $BTSTACK_LINK_KEY_DB_INSTANCE"
-echo "BTSTACK_DEVICE_NAME_DB:  $BTSTACK_DEVICE_NAME_DB_INSTANCE"
+echo "Persistent storage:      $REMOTE_DEVICE_DB_SOURCES"
 echo "UNIX_SOCKETS:            $UNIX_SOCKETS"
 echo
 
@@ -169,7 +168,7 @@ echo                                            >> btstack_config.h
 
 echo "// BTstack configuration. buffers, sizes, .." >> btstack_config.h
 echo "#define HCI_ACL_PAYLOAD_SIZE 1021"        >> btstack_config.h
-echo "#define MAX_NR_LE_DEVICE_DB_ENTRIES 1"    >> btstack_config.h
+echo "#define NVM_NUM_DEVICE_DB_ENTRIES 20"     >> btstack_config.h
 echo                                            >> btstack_config.h
 
 echo "// Daemon configuration" >> btstack_config.h
