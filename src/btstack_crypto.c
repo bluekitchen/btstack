@@ -136,6 +136,11 @@ static btstack_crypto_ecc_p256_key_generation_state_t btstack_crypto_ecc_p256_ke
 static uint8_t btstack_crypto_ecc_p256_d[32];
 #endif
 
+// Software ECDH implementation provided by mbedtls
+#ifdef USE_MBEDTLS_ECC_P256
+static mbedtls_ecp_group   mbedtls_ec_group;
+#endif
+
 #endif /* ENABLE_ECC_P256 */
 
 static void btstack_crypto_done(btstack_crypto_t * btstack_crypto){
@@ -865,9 +870,15 @@ static void btstack_crypto_event_handler(uint8_t packet_type, uint16_t cid, uint
 void btstack_crypto_init(void){
 	if (btstack_crypto_initialized) return;
 	btstack_crypto_initialized = 1;
+
 	// register with HCI
     hci_event_callback_registration.callback = &btstack_crypto_event_handler;
     hci_add_event_handler(&hci_event_callback_registration);
+
+#ifdef USE_MBEDTLS_ECC_P256
+	mbedtls_ecp_group_init(&mbedtls_ec_group);
+	mbedtls_ecp_group_load(&mbedtls_ec_group, MBEDTLS_ECP_DP_SECP256R1);
+#endif
 }
 
 void btstack_crypto_random_generate(btstack_crypto_random_t * request, uint8_t * buffer, uint16_t size, void (* callback)(void * arg), void * callback_arg){
