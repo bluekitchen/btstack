@@ -77,6 +77,7 @@
 #else
 #include "btstack_run_loop_posix.h"
 #endif
+
 #include "btstack_version.h"
 #include "classic/btstack_link_key_db.h"
 #include "classic/btstack_link_key_db_tlv.h"
@@ -1467,6 +1468,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                 case BTSTACK_EVENT_STATE:
                     if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
                     if (tlv_setup_done) break;
+
                     // setup TLV using local address as part of the name
                     gap_local_bd_addr(addr);
                     log_info("BTstack up and running at %s",  bd_addr_to_str(addr));
@@ -1474,11 +1476,9 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, string_buffer);
                     btstack_tlv_set_instance(tlv_impl, &tlv_context);
 
-                    // setup link key db as well, if not done already (a big ugly, but will be evaluated at compile time)
-                    if ((void *)&BTSTACK_LINK_KEY_DB_INSTANCE == (void *)&btstack_link_key_db_tlv_get_instance){
-                        hci_set_link_key_db(btstack_link_key_db_tlv_get_instance(tlv_impl, &tlv_context));
-                    }
-                    
+                    // setup link key db
+                    hci_set_link_key_db(btstack_link_key_db_tlv_get_instance(tlv_impl, &tlv_context));
+
                     // init le device db to use TLV
                     le_device_db_tlv_configure(tlv_impl, &tlv_context);
                     le_device_db_init();
@@ -1956,13 +1956,6 @@ int btstack_server_run(int tcp_flag){
     bluetooth_status_handler = platform_iphone_status_handler;
     platform_iphone_register_window_manager_restart(update_ui_status);
     platform_iphone_register_preferences_changed(preferences_changed_callback);
-#endif
-
-#ifdef BTSTACK_LINK_KEY_DB_INSTANCE
-    // setup link key db, if not done already (a big ugly, but will be evaluated at compile time)
-    if ((void *)&BTSTACK_LINK_KEY_DB_INSTANCE != (void *)&btstack_link_key_db_tlv_get_instance){
-        btstack_link_key_db = BTSTACK_LINK_KEY_DB_INSTANCE();
-    }
 #endif
 
 #ifdef BTSTACK_DEVICE_NAME_DB_INSTANCE

@@ -57,6 +57,7 @@ BTdaemon_SOURCES =      \
     btstack_memory_pool.c       \
     btstack_tlv.c               \
     btstack_tlv_posix.c         \
+    btstack_link_key_db_tlv.c   \
     daemon.c                    \
     gatt_client.c               \
     hci.c                       \
