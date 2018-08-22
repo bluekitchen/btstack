@@ -104,7 +104,7 @@ echo "BTstack configured for HCI $HCI_TRANSPORT Transport"
 CFLAGS="$CFLAGS -Werror -Wall -Wpointer-arith"
     
 # 64-bit compilation requires position independent code (PIC) for libraries
-BTSTACK_LIB_LDFLAGS+=" -fpic"
+CFLAGS+=" -fPIC"
 
 # summary
 
