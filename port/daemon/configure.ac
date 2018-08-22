@@ -33,7 +33,7 @@ fi
 
 case "$host_os" in
     darwin*)
-        btstack_run_loop_SOURCES="btstack_run_loop_posix.c btstack_run_loop_corefoundation.m"
+        btstack_run_loop_SOURCES="btstack_run_loop_posix.o btstack_run_loop_corefoundation.m"
         LDFLAGS+="-framework CoreFoundation -framework Foundation"
         BTSTACK_LIB_LDFLAGS="-dynamiclib -install_name \$(prefix)/lib/libBTstack.dylib"
         BTSTACK_LIB_EXTENSION="dylib"
@@ -45,21 +45,21 @@ case "$host_os" in
         ;;
     mingw*)
         echo "Building on mingw32"
-        btstack_run_loop_SOURCES="btstack_run_loop_windows.c"
+        btstack_run_loop_SOURCES="btstack_run_loop_windows.o"
         LDFLAGS+="-lws2_32"
         BTSTACK_LIB_LDFLAGS="-shared"
         BTSTACK_LIB_EXTENSION="dll"
-        REMOTE_DEVICE_DB_SOURCES="rfcomm_service_db_memory.c"
+        REMOTE_DEVICE_DB_SOURCES="rfcomm_service_db_memory.o"
         # BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_memory_instance"
         UNIX_SOCKETS=no
         HCI_USB_LIB=winusb
         UART_BLOCK=windows
         ;;
     *)
-        btstack_run_loop_SOURCES="btstack_run_loop_posix.c"
+        btstack_run_loop_SOURCES="btstack_run_loop_posix.o"
         BTSTACK_LIB_LDFLAGS="-shared -Wl,-rpath,\$(prefix)/lib"
         BTSTACK_LIB_EXTENSION="so"
-        REMOTE_DEVICE_DB_SOURCES="rfcomm_service_db_memory.c"
+        REMOTE_DEVICE_DB_SOURCES="rfcomm_service_db_memory.o"
         # BTSTACK_DEVICE_NAME_DB_INSTANCE="btstack_device_name_db_fs_instance"
         UNIX_SOCKETS=yes
         HCI_USB_LIB=libusb
@@ -175,7 +175,7 @@ if test "x$HCI_TRANSPORT" = xUSB; then
     echo "#define USB_PRODUCT_ID $USB_PRODUCT_ID" >> btstack_config.h
     echo "#define USB_VENDOR_ID $USB_VENDOR_ID" >> btstack_config.h
 else
-    UART_SOURCES=btstack_uart_block_$UART_BLOCK.c
+    UART_SOURCES=btstack_uart_block_$UART_BLOCK.o
     echo "#define HAVE_TRANSPORT_H4" >> btstack_config.h
     echo "#define UART_DEVICE \"$UART_DEVICE\"" >> btstack_config.h
     echo "#define UART_SPEED $UART_SPEED" >> btstack_config.h

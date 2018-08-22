@@ -30,16 +30,16 @@ usb_sources = @USB_SOURCES@
 uart_sources = @UART_SOURCES@
 
 libBTstack_SOURCES =    \
-    btstack.c           \
-    socket_connection.c \
-    hci_dump.c          \
-    hci_cmd.c          \
-    daemon_cmds.c       \
-    btstack_linked_list.c    \
-    btstack_run_loop.c  \
-    sdp_util.c          \
-    spp_server.c        \
-    btstack_util.c             \
+    btstack.o           \
+    socket_connection.o \
+    hci_dump.o          \
+    hci_cmd.o          \
+    daemon_cmds.o       \
+    btstack_linked_list.o    \
+    btstack_run_loop.o  \
+    sdp_util.o          \
+    spp_server.o        \
+    btstack_util.o             \
     $(btstack_run_loop_sources) \
 			  
 BTdaemon_SOURCES =      \
@@ -47,30 +47,30 @@ BTdaemon_SOURCES =      \
     $(usb_sources)              \
     $(uart_sources)             \
     $(remote_device_db_sources) \
-    ad_parser.c                 \
-    att_db.c                    \
-    att_dispatch.c              \
-    att_server.c                \
-    bnep.c                      \
-    btstack_crypto.c            \
-    btstack_memory.c            \
-    btstack_memory_pool.c       \
-    btstack_tlv.c               \
-    btstack_tlv_posix.c         \
-    btstack_link_key_db_tlv.c   \
-    daemon.c                    \
-    gatt_client.c               \
-    hci.c                       \
-    hci_dump.c                  \
-    hci_transport_h4.c          \
-    l2cap.c                     \
-    l2cap_signaling.c           \
-    le_device_db_tlv.c          \
-    rfcomm.c                    \
-    sdp_client.c                \
-    sdp_client_rfcomm.c         \
-    sdp_server.c                \
-    sm.c                        \
+    ad_parser.o                 \
+    att_db.o                    \
+    att_dispatch.o              \
+    att_server.o                \
+    bnep.o                      \
+    btstack_crypto.o            \
+    btstack_memory.o            \
+    btstack_memory_pool.o       \
+    btstack_tlv.o               \
+    btstack_tlv_posix.o         \
+    btstack_link_key_db_tlv.o   \
+    daemon.o                    \
+    gatt_client.o               \
+    hci.o                       \
+    hci_dump.o                  \
+    hci_transport_h4.o          \
+    l2cap.o                     \
+    l2cap_signaling.o           \
+    le_device_db_tlv.o          \
+    rfcomm.o                    \
+    sdp_client.o                \
+    sdp_client_rfcomm.o         \
+    sdp_server.o                \
+    sm.o                        \
 
 # use $(CC) for Objective-C files
 .m.o:
