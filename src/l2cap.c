@@ -2750,7 +2750,7 @@ static void l2cap_emit_connection_parameter_update_response(hci_con_handle_t con
 static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * command, uint8_t sig_id){
     hci_connection_t * connection;
     uint16_t result;
-    uint8_t  event[10];
+    uint8_t  event[12];
 
 #ifdef ENABLE_LE_DATA_CHANNELS
     btstack_linked_list_iterator_t it;    
@@ -2802,7 +2802,8 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 
             event[0] = L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST;
             event[1] = 8;
-            memcpy(&event[2], &command[4], 8);
+            little_endian_store_16(event, 2, handle);
+            memcpy(&event[4], &command[4], 8);
             hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
             (*l2cap_event_packet_handler)( HCI_EVENT_PACKET, 0, event, sizeof(event));
             break;

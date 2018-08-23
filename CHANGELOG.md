@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GATT Server: Allow enable Notifications/Indication with Write Command. Fixes issue with some Android devices.
 - SM: fix pairing for Secure Connections with Bonding if remote sends additional keys
 - SM: drop LTK flag from Pairing Response for Secure Connections
+- L2CAP: fix emitted L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST
 
 ## Changes June 2018
 
