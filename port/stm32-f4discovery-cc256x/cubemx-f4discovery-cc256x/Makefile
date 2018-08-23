@@ -42,15 +42,15 @@ VPATH += ${BTSTACK_ROOT}/3rd-party/segger-rtt
 VPATH += ${BTSTACK_ROOT}/chipset/cc256x
 VPATH += ${BTSTACK_ROOT}/example
 VPATH += ${BTSTACK_ROOT}/platform/embedded
-VPATH += ${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/eclipse-template/src
-VPATH += ${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/eclipse-template/system/src/cmsis
-VPATH += ${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/eclipse-template/system/src/stm32f4xx
-VPATH += ${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/src
-VPATH += ${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/src/bsp
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service
 VPATH += ${BTSTACK_ROOT}/src/classic
+VPATH += ../eclipse-template/src
+VPATH += ../eclipse-template/system/src/cmsis
+VPATH += ../eclipse-template/system/src/stm32f4xx
+VPATH += ../src
+VPATH += ../src/bsp
 
 ######################################
 # source
@@ -235,19 +235,19 @@ C_INCLUDES += -I${BTSTACK_ROOT}/src/ble/gatt-service
 C_INCLUDES += -I${BTSTACK_ROOT}/src/classic
 C_INCLUDES += -I${BTSTACK_ROOT}/src
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
-C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/bluedroid/descoder/include
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/hxcmod-player
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/segger-rtt
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/embedded
 C_INCLUDES += -I${BTSTACK_ROOT}/chipset/cc256x
-C_INCLUDES += -I${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/src
-C_INCLUDES += -I${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/src/bsp
-C_INCLUDES += -I${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/eclipse-template/include
-C_INCLUDES += -I${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/eclipse-template/system/include/stm32f4xx
-C_INCLUDES += -I${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/eclipse-template/system/include/cmsis
-C_INCLUDES += -I${BTSTACK_ROOT}/port/stm32-f4discovery-cc256x/eclipse-template/system/include/cmsis/device
+C_INCLUDES += -I../src
+C_INCLUDES += -I../src/bsp
+C_INCLUDES += -I../eclipse-template/include
+C_INCLUDES += -I../eclipse-template/system/include/stm32f4xx
+C_INCLUDES += -I../eclipse-template/system/include/cmsis
+C_INCLUDES += -I../eclipse-template/system/include/cmsis/device
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
