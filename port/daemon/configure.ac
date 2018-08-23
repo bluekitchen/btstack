@@ -154,6 +154,7 @@ echo "// BTstack features that can be enabled"  >> btstack_config.h
 echo "#define ENABLE_BLE"                       >> btstack_config.h
 # echo "#define ENABLE_LE_PERIPHERAL"             >> btstack_config.h
 echo "#define ENABLE_LE_CENTRAL"                >> btstack_config.h
+echo "#define ENABLE_LE_SECURE_CONNECTIONS"     >> btstack_config.h
 echo "#define ENABLE_GATT_CLIENT_PAIRING"       >> btstack_config.h
 echo "#define ENABLE_CLASSIC"                   >> btstack_config.h
 echo "#define ENABLE_LOG_ERROR"                 >> btstack_config.h
