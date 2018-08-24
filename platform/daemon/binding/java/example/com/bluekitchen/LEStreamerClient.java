@@ -153,8 +153,9 @@ public class LEStreamerClient implements PacketHandler {
 
 			case active:
 				if (packet instanceof GATTEventNotification){
+					GATTEventNotification event = (GATTEventNotification) packet;
 					System.out.println("Data:");
-					System.out.println(packet.toString());
+					Util.hexdump(event.getValue());
 				}
 				break;
 
