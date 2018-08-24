@@ -152,6 +152,7 @@ typedef struct {
     btstack_linked_list_t l2cap_psms;
     btstack_linked_list_t sdp_record_handles;
     btstack_linked_list_t gatt_con_handles;
+
     // power mode
     HCI_POWER_MODE power_mode;
     
@@ -175,11 +176,17 @@ typedef struct btstack_linked_list_gatt_client_helper{
     hci_con_handle_t con_handle;
     connection_t * active_connection;   // the one that started the current query
     btstack_linked_list_t  all_connections;     // list of all connections that ever used this helper
+    btstack_linked_list_t gatt_client_notifications;    // could be in client_state_t as well
     uint16_t characteristic_length;
     uint16_t characteristic_handle;
     uint8_t  characteristic_buffer[10 + ATT_MAX_LONG_ATTRIBUTE_SIZE];   // header for sending event right away
     uint8_t  long_query_type;
 } btstack_linked_list_gatt_client_helper_t;
+
+typedef struct {
+    btstack_linked_item_t       item;
+    gatt_client_notification_t  notification_listener;
+} btstack_linked_list_gatt_client_notification_t;
 
 // MARK: prototypes
 static void handle_sdp_rfcomm_service_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -466,6 +473,16 @@ static void daemon_remove_gatt_client_helper(uint32_t con_handle){
 
     if (!helper) return;
 
+    // stop listening
+    btstack_linked_list_iterator_init(&it, &helper->gatt_client_notifications);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        btstack_linked_list_gatt_client_notification_t * item = (btstack_linked_list_gatt_client_notification_t*) btstack_linked_list_iterator_next(&it);
+        log_info("Stop gatt notification listener %p", item);
+        gatt_client_stop_listening_for_characteristic_value_updates(&item->notification_listener);
+        btstack_linked_list_remove(&helper->gatt_client_notifications, (btstack_linked_item_t *) item);
+        free(item);
+    }
+
     // remove all connection from helper
     btstack_linked_list_iterator_init(&it, &helper->all_connections);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -628,6 +645,7 @@ static void daemon_gatt_client_close_connection(connection_t * connection){
     if (!client) return;
 
     btstack_linked_list_iterator_t it; 
+
     btstack_linked_list_iterator_init(&it, &client->gatt_con_handles);
     while (btstack_linked_list_iterator_has_next(&it)){
         btstack_linked_list_uint32_t * item = (btstack_linked_list_uint32_t*) btstack_linked_list_iterator_next(&it);
@@ -1258,7 +1276,19 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             status = gatt_client_write_client_characteristic_configuration(&handle_gatt_client_event, gatt_helper->con_handle, &characteristic, configuration);
             if (status){
                 send_gatt_query_complete(connection, gatt_helper->con_handle, status);
+                break;
             }
+            // ignore notification off
+            if (configuration == 0) break;
+
+            // TODO: we assume it works
+
+            // start listening
+            btstack_linked_list_gatt_client_notification_t * linked_notification = malloc(sizeof(btstack_linked_list_gatt_client_notification_t));
+            if (!linked_notification) break;
+            log_info("Start gatt notification listener %p", linked_notification);
+            gatt_client_listen_for_characteristic_value_updates(&linked_notification->notification_listener, &handle_gatt_client_event, gatt_helper->con_handle, &characteristic);
+            btstack_linked_list_add(&gatt_helper->gatt_client_notifications, (btstack_linked_item_t *) linked_notification);
             break;
         }
         case GATT_GET_MTU:
