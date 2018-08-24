@@ -817,7 +817,7 @@ static void btstack_crypto_event_handler(uint8_t packet_type, uint16_t cid, uint
 #ifndef USE_SOFTWARE_ECC_P256_IMPLEMENTATION
                 if (!ecdh_operations_supported){
                     // mbedTLS can also be used if already available (and malloc is supported)
-                    log_error("ECC-P256 support enabled, but HCI Controller doesn't support it. Please add USE_MICRO_ECC_P256 to btstack_config.h");
+                    log_error("ECC-P256 support enabled, but HCI Controller doesn't support it. Please add ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS to btstack_config.h");
                 }
 #endif
 #endif
