@@ -1255,14 +1255,17 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             if (!gatt_helper) break;
             data = gatt_helper->characteristic_buffer;
             gatt_client_deserialize_characteristic(packet, 5, &characteristic);
-            gatt_client_write_client_characteristic_configuration(&handle_gatt_client_event, gatt_helper->con_handle, &characteristic, configuration);
+            status = gatt_client_write_client_characteristic_configuration(&handle_gatt_client_event, gatt_helper->con_handle, &characteristic, configuration);
+            if (status){
+                send_gatt_query_complete(connection, gatt_helper->con_handle, status);
+            }
             break;
+        }
         case GATT_GET_MTU:
             handle = little_endian_read_16(packet, 3);
             gatt_client_get_mtu(handle, &mtu);
             send_gatt_mtu_event(connection, handle, mtu);
             break;
-        }
 #endif
 #ifdef ENABLE_BLE
         case SM_SET_AUTHENTICATION_REQUIREMENTS:
