@@ -69,6 +69,7 @@
 #include "btstack_linked_list.h"
 #include "btstack_run_loop.h"
 #include "btstack_tlv_posix.h"
+#include "btstack_util.h"
 
 #include "btstack_server.h"
 
@@ -1453,6 +1454,24 @@ static void daemon_emit_packet(void * connection, uint8_t packet_type, uint16_t 
     }
 }
 
+// copy from btstack_util, just using a '-'
+static char bd_addr_to_str_buffer[6*3];  // 12:45:78:01:34:67\0
+char * bd_addr_to_str_dashed(const bd_addr_t addr){
+    // orig code
+    // sprintf(bd_addr_to_str_buffer, "%02x:%02x:%02x:%02x:%02x:%02x", addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
+    // sprintf-free code
+    char * p = bd_addr_to_str_buffer;
+    int i;
+    for (i = 0; i < 6 ; i++) {
+        uint8_t byte = addr[i];
+        *p++ = char_for_nibble(byte >> 4);
+        *p++ = char_for_nibble(byte & 0x0f);
+        *p++ = '-';
+    }
+    *--p = 0;
+    return (char *) bd_addr_to_str_buffer;
+}
+
 static uint8_t remote_name_event[2+1+6+DEVICE_NAME_LEN+1]; // +1 for \0 in log_info
 static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     uint16_t cid;
@@ -1470,7 +1489,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     // setup TLV using local address as part of the name
                     gap_local_bd_addr(addr);
                     log_info("BTstack up and running at %s",  bd_addr_to_str(addr));
-                    snprintf(string_buffer, sizeof(string_buffer), "%s/btstack_%s.tlv", btstack_server_storage_path, bd_addr_to_str(addr));
+                    snprintf(string_buffer, sizeof(string_buffer), "%s/btstack_%s.tlv", btstack_server_storage_path, bd_addr_to_str_dashed(addr));
                     tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, string_buffer);
                     btstack_tlv_set_instance(tlv_impl, &tlv_context);
 
