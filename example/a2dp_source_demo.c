@@ -235,9 +235,6 @@ static void stdin_process(char cmd);
 #endif
 
 static int a2dp_source_and_avrcp_services_init(void){
-    // Register for HCI events.
-    hci_event_callback_registration.callback = &a2dp_source_packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
 
     l2cap_init();
     // Initialize  A2DP Source.
@@ -276,6 +273,10 @@ static int a2dp_source_and_avrcp_services_init(void){
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);
     
+    // Register for HCI events.
+    hci_event_callback_registration.callback = &a2dp_source_packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     hxcmod_initialized = hxcmod_init(&mod_context);
     if (hxcmod_initialized){
         hxcmod_setcfg(&mod_context, A2DP_SAMPLE_RATE, 16, 1, 1, 1);

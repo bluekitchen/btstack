@@ -132,18 +132,15 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
-
     (void)argc;
     (void)argv;
 
-    printf("Client HCI init done\r\n");
-        
+    // init L2CAP
+    l2cap_init();
+
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-
-    // init L2CAP
-    l2cap_init();
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

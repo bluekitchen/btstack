@@ -103,12 +103,7 @@ static uint8_t data_channel_buffer[TEST_PACKET_SIZE];
 
 static void le_data_channel_setup(void){
 
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     l2cap_init();
-    l2cap_register_packet_handler(&packet_handler);
 
     // setup le device db
     le_device_db_init();
@@ -118,6 +113,12 @@ static void le_data_channel_setup(void){
 
     // setup ATT server: iOS disconnects if ATT MTU Exchange fails
     att_server_init(profile_data, NULL, NULL);    
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    l2cap_register_packet_handler(&packet_handler);
 
     // le data channel setup
     l2cap_le_register_service(&packet_handler, TSPX_le_psm, LEVEL_0);

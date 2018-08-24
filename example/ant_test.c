@@ -231,10 +231,6 @@ static void  heartbeat_handler(struct btstack_timer_source *ts){
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     // init L2CAP
     l2cap_init();
     
@@ -247,17 +243,20 @@ int btstack_main(int argc, const char * argv[]){
     memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
     spp_create_sdp_record(spp_service_buffer, 0x10001, RFCOMM_SERVER_CHANNEL, "SPP Counter");
     sdp_register_service(spp_service_buffer);
-    printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
-    
+        
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    // set local name
+    gap_set_local_name("ANT Demo");
+    // make discoverable
+    gap_discoverable_control(1);
+
     // set one-shot timer
     heartbeat.process = &heartbeat_handler;
     btstack_run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
     btstack_run_loop_add_timer(&heartbeat);
-    
-    // set local name
-    gap_set_local_name("BlueMSP-Demo");
-    // make discoverable
-    gap_discoverable_control(1);
 
 	printf("Run...\n\r");
  	// turn on!

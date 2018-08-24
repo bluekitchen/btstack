@@ -95,10 +95,6 @@ static void network_send_packet_callback(const uint8_t * packet, uint16_t size);
 
 static void panu_setup(void){
 
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     // Initialize L2CAP 
     l2cap_init();
 
@@ -110,6 +106,10 @@ static void panu_setup(void){
 
     // Initialize network interface
     btstack_network_init(&network_send_packet_callback);
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 }
 /* LISTING_END */
 

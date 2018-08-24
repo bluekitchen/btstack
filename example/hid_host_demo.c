@@ -138,12 +138,12 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
 
 static void hid_host_setup(void){
 
+    // Initialize L2CAP 
+    l2cap_init();
+
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-
-    // Initialize L2CAP 
-    l2cap_init();
 
     // Disable stdout buffering
     setbuf(stdout, NULL);

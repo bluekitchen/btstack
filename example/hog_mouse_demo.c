@@ -116,9 +116,6 @@ const uint8_t adv_data_len = sizeof(adv_data);
 
 static void hog_mouse_setup(void){
 
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
 
     // setup l2cap and register for connection parameter updates
     l2cap_init();
@@ -129,8 +126,6 @@ static void hog_mouse_setup(void){
 
     // setup SM: Display only
     sm_init();
-    sm_event_callback_registration.callback = &packet_handler;
-    sm_add_event_handler(&sm_event_callback_registration);
     sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
     // sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION | SM_AUTHREQ_BONDING);
     sm_set_authentication_requirements(SM_AUTHREQ_BONDING);
@@ -146,7 +141,6 @@ static void hog_mouse_setup(void){
 
     // setup HID Device service
     hids_device_init(0, hid_descriptor_mouse_boot_mode, sizeof(hid_descriptor_mouse_boot_mode));
-    hids_device_register_packet_handler(packet_handler);
 
     // setup advertisements
     uint16_t adv_int_min = 0x0030;
@@ -157,6 +151,15 @@ static void hog_mouse_setup(void){
     gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
     gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
     gap_advertisements_enable(1);
+
+    // register for events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    sm_event_callback_registration.callback = &packet_handler;
+    sm_add_event_handler(&sm_event_callback_registration);
+
+    hids_device_register_packet_handler(packet_handler);
 }
 
 // HID Report sending

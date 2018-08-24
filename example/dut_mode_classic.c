@@ -110,9 +110,6 @@ int btstack_main(int argc, const char * argv[]) {
     (void)argc;
     (void)argv;
 
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     // make device connectable
     // @note: gap_connectable_control will be enabled when an L2CAP service 
     // (e.g. RFCOMM) is initialized). Therefore, it's not needed in regular applications
@@ -120,6 +117,9 @@ int btstack_main(int argc, const char * argv[]) {
 
     // make device discoverable
     gap_discoverable_control(1);
+
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

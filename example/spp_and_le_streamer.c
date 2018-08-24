@@ -370,11 +370,6 @@ int btstack_main(int argc, const char * argv[])
     UNUSED(argc);
     (void)argv;
 
-
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     l2cap_init();
 
     rfcomm_init();
@@ -403,6 +398,12 @@ int btstack_main(int argc, const char * argv[])
 
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);    
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    // register for ATT events
     att_server_register_packet_handler(packet_handler);
 
     // setup advertisements

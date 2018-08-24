@@ -229,13 +229,7 @@ int btstack_main(int argc, const char * argv[]){
 
     (void)argc;
     (void)argv;
-
-    sscanf_bd_addr(remote_addr_string, remote_addr);
         
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     // init L2CAP
     l2cap_init();
 
@@ -247,6 +241,12 @@ int btstack_main(int argc, const char * argv[]){
 
     // init PBAP Client
     pbap_client_init();
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    sscanf_bd_addr(remote_addr_string, remote_addr);
 
 #ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);

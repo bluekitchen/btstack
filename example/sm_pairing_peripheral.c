@@ -83,10 +83,6 @@ const uint8_t adv_data_len = sizeof(adv_data);
 
 static void sm_peripheral_setup(void){
 
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     l2cap_init();
 
     // setup le device db
@@ -94,8 +90,6 @@ static void sm_peripheral_setup(void){
 
     // setup SM: Display only
     sm_init();
-    sm_event_callback_registration.callback = &packet_handler;
-    sm_add_event_handler(&sm_event_callback_registration);
 
     /**
      * Choose ONE of the following configurations
@@ -103,7 +97,7 @@ static void sm_peripheral_setup(void){
 
     // LE Legacy Pairing, Just Works
     // sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
-    // sm_set_authentication_requirements(0);
+    // sm_set_authentication_requirements(SM_AUTHREQ_BONDING);
 
     // LE Legacy Pairing, Passkey entry initiator enter, responder (us) displays
     // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
@@ -116,8 +110,8 @@ static void sm_peripheral_setup(void){
     // sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION);
 
     // LE Secure Connections, Numeric Comparison
-    // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
-    // sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION|SM_AUTHREQ_MITM_PROTECTION);
+    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
+    sm_set_authentication_requirements(SM_AUTHREQ_SECURE_CONNECTION|SM_AUTHREQ_MITM_PROTECTION);
 
     // LE Legacy Pairing, Passkey entry initiator enter, responder (us) displays
     // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
@@ -127,7 +121,6 @@ static void sm_peripheral_setup(void){
 
     // setup ATT server
     att_server_init(profile_data, NULL, NULL);    
-    att_server_register_packet_handler(packet_handler);
 
     // setup advertisements
     uint16_t adv_int_min = 0x0030;
@@ -138,6 +131,17 @@ static void sm_peripheral_setup(void){
     gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
     gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
     gap_advertisements_enable(1);
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    // register for SM events
+    sm_event_callback_registration.callback = &packet_handler;
+    sm_add_event_handler(&sm_event_callback_registration);
+
+    // register for ATT 
+    att_server_register_packet_handler(packet_handler);
 }
 
 /* LISTING_END */
@@ -154,11 +158,22 @@ static void sm_peripheral_setup(void){
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-
+    hci_con_handle_t con_handle;
     bd_addr_t addr;
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
+                case HCI_EVENT_LE_META:
+                    switch (hci_event_le_meta_get_subevent_code(packet)) {
+                        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                            // setup new 
+                            con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                            sm_send_security_request(con_handle);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
                 case SM_EVENT_JUST_WORKS_REQUEST:
                     printf("Just Works requested\n");
                     sm_just_works_confirm(sm_event_just_works_request_get_handle(packet));

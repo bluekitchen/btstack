@@ -563,11 +563,6 @@ int btstack_main(int argc, const char * argv[]){
 
     sco_demo_init();
 
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-    hci_register_sco_packet_handler(&packet_handler);
-
     gap_set_local_name("HFP AG Demo 00:00:00:00:00:00");
     gap_discoverable_control(1);
 
@@ -596,8 +591,6 @@ int btstack_main(int argc, const char * argv[]){
     hfp_ag_init_hf_indicators(hf_indicators_nr, hf_indicators); 
     hfp_ag_init_call_hold_services(call_hold_services_nr, call_hold_services);
     hfp_ag_set_subcriber_number_information(&subscriber_number, 1);
-    hfp_ag_register_packet_handler(&packet_handler);
-    hci_register_sco_packet_handler(&packet_handler);
 
     // SDP Server
     sdp_init();
@@ -606,6 +599,14 @@ int btstack_main(int argc, const char * argv[]){
     printf("SDP service record size: %u\n", de_get_len( hfp_service_buffer));
     sdp_register_service(hfp_service_buffer);
     
+    // register for HCI events and SCO packets
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+    hci_register_sco_packet_handler(&packet_handler);
+
+    // register for HFP events
+    hfp_ag_register_packet_handler(&packet_handler);
+
     // parse humand readable Bluetooth address
     sscanf_bd_addr(device_addr_string, device_addr);
 

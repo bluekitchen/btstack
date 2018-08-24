@@ -102,10 +102,6 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
 static void gatt_client_setup(void){
 
-    // register for HCI events
-    hci_event_callback_registration.callback = &handle_hci_event;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     // Initialize L2CAP and register HCI event handler
     l2cap_init();
 
@@ -115,6 +111,10 @@ static void gatt_client_setup(void){
     // Optinoally, Setup security manager
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &handle_hci_event;
+    hci_add_event_handler(&hci_event_callback_registration);
 }
 /* LISTING_END */
 
@@ -297,11 +297,11 @@ int btstack_main(int argc, const char * argv[]){
     (void)argv;
 #endif
 
-    // setup ATT server - only needed if LE Peripheral does ATT queries on its own, e.g. Android phones
-    att_server_init(profile_data, NULL, NULL);    
-
     // setup GATT client
     gatt_client_setup();
+
+    // setup ATT server - only needed if LE Peripheral does ATT queries on its own, e.g. Android and iOS
+    att_server_init(profile_data, NULL, NULL);    
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

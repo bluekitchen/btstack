@@ -136,10 +136,6 @@ static void next_connection_index(void){
 
 static void le_streamer_setup(void){
 
-    // register for HCI events
-    hci_event_callback_registration.callback = &hci_packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     l2cap_init();
 
     // setup le device db
@@ -150,8 +146,14 @@ static void le_streamer_setup(void){
 
     // setup ATT server
     att_server_init(profile_data, NULL, att_write_callback);    
-    att_server_register_packet_handler(att_packet_handler);
     
+    // register for HCI events
+    hci_event_callback_registration.callback = &hci_packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    // register for ATT events
+    att_server_register_packet_handler(att_packet_handler);
+
     // setup advertisements
     uint16_t adv_int_min = 0x0030;
     uint16_t adv_int_max = 0x0030;

@@ -280,11 +280,6 @@ int btstack_main(int argc, const char * argv[]){
 
     sco_demo_init();
 
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-    hci_register_sco_packet_handler(&packet_handler);
-
     l2cap_init();
 
     sdp_init();
@@ -295,6 +290,13 @@ int btstack_main(int argc, const char * argv[]){
     rfcomm_init();
 
     hsp_hs_init(rfcomm_channel_nr);
+
+    // register for HCI events and SCO packets
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+    hci_register_sco_packet_handler(&packet_handler);
+
+    // register for HSP events
     hsp_hs_register_packet_handler(packet_handler);
 
 #ifdef HAVE_BTSTACK_STDIN

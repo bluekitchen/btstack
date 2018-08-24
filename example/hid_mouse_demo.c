@@ -284,11 +284,6 @@ int btstack_main(int argc, const char * argv[]){
     (void)argc;
     (void)argv;
 
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-    hci_register_sco_packet_handler(&packet_handler);
-
     gap_discoverable_control(1);
     gap_set_class_of_device(0x2540);
     gap_set_local_name("HID Mouse Demo 00:00:00:00:00:00");
@@ -306,6 +301,12 @@ int btstack_main(int argc, const char * argv[]){
 
     // HID Device
     hid_device_init();
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    // register for HID
     hid_device_register_packet_handler(&packet_handler);
 
 #ifdef HAVE_BTSTACK_STDIN
