@@ -5,6 +5,8 @@ prefix  = @prefix@
 CC      = @CC@
 LDFLAGS = @LDFLAGS@
 CFLAGS  = @CFLAGS@ \
+    -I ${BTSTACK_ROOT}/3rd-party/micro-ecc \
+    -I $(BTSTACK_ROOT)/platform/daemon/src \
     -I $(BTSTACK_ROOT)/platform/daemon/src \
     -I $(BTSTACK_ROOT)/platform/posix \
     -I $(BTSTACK_ROOT)/platform/windows \
@@ -15,6 +17,7 @@ BTSTACK_LIB_EXTENSION = @BTSTACK_LIB_EXTENSION@
 USB_CFLAGS            = @USB_CFLAGS@
 USB_LDFLAGS           = @USB_LDFLAGS@
 
+VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
 VPATH += ${BTSTACK_ROOT}/platform/daemon/src
 VPATH += ${BTSTACK_ROOT}/platform/corefoundation
 VPATH += ${BTSTACK_ROOT}/platform/libusb
@@ -71,6 +74,7 @@ BTdaemon_SOURCES =      \
     sdp_client_rfcomm.o         \
     sdp_server.o                \
     sm.o                        \
+    uECC.o                      \
 
 # use $(CC) for Objective-C files
 .m.o:

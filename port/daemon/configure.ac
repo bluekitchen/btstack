@@ -129,45 +129,46 @@ echo
 
 # create btstack_config.h
 rm -f btstack_config.h
-echo "//"                                       >> btstack_config.h
-echo "// btstack_config.h"                      >> btstack_config.h
-echo "// created by configure for BTstack "     >> btstack_config.h
-echo "//" `date`                                >> btstack_config.h
-echo "//"                                       >> btstack_config.h
-echo                                            >> btstack_config.h
-echo "#ifndef __BTSTACK_CONFIG"                 >> btstack_config.h
-echo "#define __BTSTACK_CONFIG"                 >> btstack_config.h
-echo                                            >> btstack_config.h
+echo "//"                                                  >> btstack_config.h
+echo "// btstack_config.h"                                 >> btstack_config.h
+echo "// created by configure for BTstack "                >> btstack_config.h
+echo "//" `date`                                           >> btstack_config.h
+echo "//"                                                  >> btstack_config.h
+echo                                                       >> btstack_config.h
+echo "#ifndef __BTSTACK_CONFIG"                            >> btstack_config.h
+echo "#define __BTSTACK_CONFIG"                            >> btstack_config.h
+echo                                                       >> btstack_config.h
 
-echo "// Port related features"                 >> btstack_config.h
-echo "#define HAVE_POSIX_FILE_IO"               >> btstack_config.h
-echo "#define HAVE_POSIX_TIME"                  >> btstack_config.h
-echo "#define HAVE_MALLOC"                      >> btstack_config.h
+echo "// Port related features"                            >> btstack_config.h
+echo "#define HAVE_POSIX_FILE_IO"                          >> btstack_config.h
+echo "#define HAVE_POSIX_TIME"                             >> btstack_config.h
+echo "#define HAVE_MALLOC"                                 >> btstack_config.h
 if test "x$UNIX_SOCKETS" == xyes; then
-    echo "#define HAVE_UNIX_SOCKETS"            >> btstack_config.h
+    echo "#define HAVE_UNIX_SOCKETS"                       >> btstack_config.h
 fi
-echo                                            >> btstack_config.h
+echo                                                       >> btstack_config.h
 
 # todo: HAVE -> ENABLE in features below
 
-echo "// BTstack features that can be enabled"  >> btstack_config.h
-echo "#define ENABLE_BLE"                       >> btstack_config.h
-# echo "#define ENABLE_LE_PERIPHERAL"             >> btstack_config.h
-echo "#define ENABLE_LE_CENTRAL"                >> btstack_config.h
-echo "#define ENABLE_LE_SECURE_CONNECTIONS"     >> btstack_config.h
-echo "#define ENABLE_GATT_CLIENT_PAIRING"       >> btstack_config.h
-echo "#define ENABLE_CLASSIC"                   >> btstack_config.h
-echo "#define ENABLE_LOG_ERROR"                 >> btstack_config.h
-echo "#define ENABLE_LOG_INFO "                 >> btstack_config.h
-echo "#define ENABLE_RFCOMM"                    >> btstack_config.h
-echo "#define ENABLE_SDP"                       >> btstack_config.h
-echo "#define ENABLE_SDP_DES_DUMP"              >> btstack_config.h
-echo                                            >> btstack_config.h
+# echo "#define ENABLE_LE_PERIPHERAL"                      >> btstack_config.h
+echo "// BTstack features that can be enabled"             >> btstack_config.h
+echo "#define ENABLE_BLE"                                  >> btstack_config.h
+echo "#define ENABLE_LE_CENTRAL"                           >> btstack_config.h
+echo "#define ENABLE_LE_SECURE_CONNECTIONS"                >> btstack_config.h
+echo "#define ENABLE_GATT_CLIENT_PAIRING"                  >> btstack_config.h
+echo "#define ENABLE_CLASSIC"                              >> btstack_config.h
+echo "#define ENABLE_LOG_ERROR"                            >> btstack_config.h
+echo "#define ENABLE_LOG_INFO "                            >> btstack_config.h
+echo "#define ENABLE_RFCOMM"                               >> btstack_config.h
+echo "#define ENABLE_SDP"                                  >> btstack_config.h
+echo "#define ENABLE_SDP_DES_DUMP"                         >> btstack_config.h
+echo "#define ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS"  >> btstack_config.h
+echo                                                       >> btstack_config.h
 
-echo "// BTstack configuration. buffers, sizes, .." >> btstack_config.h
-echo "#define HCI_ACL_PAYLOAD_SIZE 1021"        >> btstack_config.h
-echo "#define NVM_NUM_DEVICE_DB_ENTRIES 20"     >> btstack_config.h
-echo                                            >> btstack_config.h
+echo "// BTstack configuration. buffers, sizes, .."        >> btstack_config.h
+echo "#define HCI_ACL_PAYLOAD_SIZE 1021"                   >> btstack_config.h
+echo "#define NVM_NUM_DEVICE_DB_ENTRIES 20"                >> btstack_config.h
+echo                                                       >> btstack_config.h
 
 echo "// Daemon configuration" >> btstack_config.h
 if test "x$HCI_TRANSPORT" = xUSB; then

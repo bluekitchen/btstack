@@ -117,10 +117,6 @@ const btstack_device_name_db_t * btstack_device_name_db_fs_instance(void);
 const btstack_link_key_db_t * btstack_link_key_db_corefoundation_instance(void);
 const btstack_link_key_db_t * btstack_link_key_db_fs_instance(void);
 
-#ifndef BTSTACK_LOG_FILE
-#define BTSTACK_LOG_FILE "/tmp/hci_dump.pklg"
-#endif
-
 // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
 #ifndef BTSTACK_LOG_TYPE
 #define BTSTACK_LOG_TYPE HCI_DUMP_PACKETLOGGER 
@@ -1269,9 +1265,11 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
 #endif
 #ifdef ENABLE_BLE
         case SM_SET_AUTHENTICATION_REQUIREMENTS:
+            log_info("set auth %x", packet[3]);
             sm_set_authentication_requirements(packet[3]);
             break;
         case SM_SET_IO_CAPABILITIES:
+            log_info("set io %x", packet[3]);
             sm_set_io_capabilities(packet[3]);
             break;
         case SM_BONDING_DECLINE:
@@ -1902,7 +1900,11 @@ int btstack_server_run(int tcp_flag){
 
     // handle default init
     if (!btstack_server_storage_path){
+#ifdef _WIN32
+        btstack_server_storage_path = strdup("");
+#else
         btstack_server_storage_path = strdup("/tmp");
+#endif
     }
 
     // make stdout unbuffered
