@@ -1901,7 +1901,7 @@ int btstack_server_run(int tcp_flag){
     // handle default init
     if (!btstack_server_storage_path){
 #ifdef _WIN32
-        btstack_server_storage_path = strdup("");
+        btstack_server_storage_path = strdup(".");
 #else
         btstack_server_storage_path = strdup("/tmp");
 #endif
