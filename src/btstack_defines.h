@@ -932,7 +932,7 @@ typedef uint8_t sm_key_t[16];
  /**
   * @brief Emitted during pairing to inform app about address used as identity
   *
-  * @format H1B1B1
+  * @format H1B1B2
   * @param handle
   * @param addr_type
   * @param address
