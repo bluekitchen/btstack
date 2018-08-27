@@ -47,6 +47,11 @@
 #include "btstack_debug.h"
 #include "btstack_util.h"
 
+// check for ENABLE_ATT_DELAYED_READ_RESPONSE -> ENABLE_ATT_DELAYED_RESPONSE,
+#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+    #error "ENABLE_ATT_DELAYED_READ_RESPONSE was replaced by ENABLE_ATT_DELAYED_RESPONSE. Please update btstack_config.h"
+#endif
+
 typedef enum {
     ATT_READ,
     ATT_WRITE,
