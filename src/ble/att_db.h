@@ -59,6 +59,9 @@ extern "C" {
 // custom BTstack ATT Response Pending for att_read_callback
 #define ATT_READ_RESPONSE_PENDING                 0xffff
 
+// internally used to signal write response pending
+#define ATT_INTERNAL_WRITE_RESPONSE_PENDING       0xfffe
+
 typedef struct att_connection {
     hci_con_handle_t con_handle;
     uint16_t mtu;       // initialized to ATT_DEFAULT_MTU (23), negotiated during MTU exchange

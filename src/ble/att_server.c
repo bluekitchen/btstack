@@ -387,12 +387,14 @@ static int att_server_process_validated_request(att_server_t * att_server){
     uint16_t  att_response_size   = att_handle_request(&att_server->connection, att_server->request_buffer, att_server->request_size, att_response_buffer);
 
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
-    if (att_response_size == ATT_READ_RESPONSE_PENDING){
+    if (att_response_size == ATT_READ_RESPONSE_PENDING || att_response_size == ATT_INTERNAL_WRITE_RESPONSE_PENDING){
         // update state
         att_server->state = ATT_SERVER_RESPONSE_PENDING;
 
-        // callback with handle ATT_READ_RESPONSE_PENDING
-        att_server_client_read_callback(att_server->connection.con_handle, ATT_READ_RESPONSE_PENDING, 0, NULL, 0);
+        // callback with handle ATT_READ_RESPONSE_PENDING for reads
+        if (att_response_size == ATT_READ_RESPONSE_PENDING){
+            att_server_client_read_callback(att_server->connection.con_handle, ATT_READ_RESPONSE_PENDING, 0, NULL, 0);
+        }
 
         // free reserved buffer
         l2cap_release_packet_buffer();
