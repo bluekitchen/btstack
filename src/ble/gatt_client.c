@@ -442,9 +442,11 @@ static void send_gatt_cancel_prepared_write_request(gatt_client_t * peripheral){
     att_execute_write_request(ATT_EXECUTE_WRITE_REQUEST, peripheral->con_handle, 0);
 }
 
+#ifndef ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY
 static void send_gatt_read_client_characteristic_configuration_request(gatt_client_t * peripheral){
     att_read_by_type_or_group_request_for_uuid16(ATT_READ_BY_TYPE_REQUEST, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION, peripheral->con_handle, peripheral->start_group_handle, peripheral->end_group_handle);
 }
+#endif
 
 static void send_gatt_read_characteristic_descriptor_request(gatt_client_t * peripheral){
     att_read_request(ATT_READ_REQUEST, peripheral->con_handle, peripheral->attribute_handle);
@@ -963,9 +965,17 @@ static int gatt_client_run_for_peripheral( gatt_client_t * peripheral){
             send_gatt_cancel_prepared_write_request(peripheral);
             return 1;
 
+#ifdef ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY
+        case P_W2_SEND_FIND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY:    
+            // use Find Information
+            peripheral->gatt_client_state = P_W4_FIND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT;
+            send_gatt_characteristic_descriptor_request(peripheral);
+#else
         case P_W2_SEND_READ_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY:
+            // Use Read By Type
             peripheral->gatt_client_state = P_W4_READ_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT;
             send_gatt_read_client_characteristic_configuration_request(peripheral);
+#endif
             return 1;
 
         case P_W2_SEND_READ_CHARACTERISTIC_DESCRIPTOR_QUERY:
@@ -1218,10 +1228,12 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
                 }
+#ifndef ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY
                 case P_W4_READ_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT:
                     peripheral->client_characteristic_configuration_handle = little_endian_read_16(packet, 2);
                     peripheral->gatt_client_state = P_W2_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
                     break;
+#endif
                 case P_W4_READ_BY_TYPE_RESPONSE: {
                     uint16_t pair_size = packet[1];
                     uint16_t offset;
@@ -1287,6 +1299,34 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 pair_size = 18;
             }
             uint16_t last_descriptor_handle = little_endian_read_16(packet, size - pair_size);
+
+#ifdef ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY
+            log_info("ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY, state %x", peripheral->gatt_client_state);
+            if (peripheral->gatt_client_state == P_W4_FIND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT){
+                // iterate over descriptors looking for CCC
+                if (pair_size == 4){
+                    int offset = 2;
+                    while (offset < size){
+                        uint16_t uuid16 = little_endian_read_16(packet, offset + 2);
+                        if (uuid16 == GATT_CLIENT_CHARACTERISTICS_CONFIGURATION){
+                            peripheral->client_characteristic_configuration_handle = little_endian_read_16(packet, offset);
+                            peripheral->gatt_client_state = P_W2_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
+                            log_info("CCC found %x", peripheral->client_characteristic_configuration_handle);
+                            break;
+                        }
+                        offset += pair_size;
+                    }
+                }
+                if (is_query_done(peripheral, last_descriptor_handle)){
+
+                } else {
+                    // next
+                    peripheral->start_group_handle = last_descriptor_handle + 1;
+                    peripheral->gatt_client_state = P_W2_SEND_FIND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY;
+                }
+                break;
+            }
+#endif
             report_gatt_all_characteristic_descriptors(peripheral, &packet[2], size-2, pair_size);
             trigger_next_characteristic_descriptor_query(peripheral, last_descriptor_handle);
             // GATT_EVENT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
@@ -1900,7 +1940,11 @@ uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_han
     peripheral->end_group_handle = characteristic->end_handle;
     little_endian_store_16(peripheral->client_characteristic_configuration_value, 0, configuration);
     
+#ifdef ENABLE_GATT_FIND_INFORMATION_FOR_CCC_DISCOVERY
+    peripheral->gatt_client_state = P_W2_SEND_FIND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY;
+#else
     peripheral->gatt_client_state = P_W2_SEND_READ_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY;
+#endif
     gatt_client_run();
     return 0;
 }
