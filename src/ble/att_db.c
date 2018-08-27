@@ -529,7 +529,7 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
     uint8_t error_code = 0;
     uint16_t first_matching_but_unreadable_handle = 0;
 
-#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
     int read_request_pending = 0;
 #endif
 
@@ -557,7 +557,7 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
 
         att_update_value_len(&it, att_connection->con_handle);
         
-#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
         if (it.value_len == ATT_READ_RESPONSE_PENDING){
             read_request_pending = 1;
         }
@@ -593,7 +593,7 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
         offset += bytes_copied;
     }
     
-#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
     if (read_request_pending) return ATT_READ_RESPONSE_PENDING;
 #endif
 
@@ -655,7 +655,7 @@ static uint16_t handle_read_request2(att_connection_t * att_connection, uint8_t 
 
     att_update_value_len(&it, att_connection->con_handle);
 
-#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
     if (it.value_len == ATT_READ_RESPONSE_PENDING) return ATT_READ_RESPONSE_PENDING;
 #endif
 
@@ -705,7 +705,7 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
 
     att_update_value_len(&it, att_connection->con_handle);
 
-#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
     if (it.value_len == ATT_READ_RESPONSE_PENDING) return ATT_READ_RESPONSE_PENDING;
 #endif
 
@@ -751,7 +751,7 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
     uint8_t error_code = 0;
     uint16_t handle = 0;
 
-#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
     int read_request_pending = 0;
 #endif
 
@@ -781,7 +781,7 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
 
         att_update_value_len(&it, att_connection->con_handle);
         
-#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
         if (it.value_len == ATT_READ_RESPONSE_PENDING) {
             read_request_pending = 1;
         }
@@ -962,6 +962,10 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
     }
     att_persistent_ccc_cache(&it);
     error_code = (*att_write_callback)(att_connection->con_handle, handle, ATT_TRANSACTION_MODE_NONE, 0, request_buffer + 3, request_len - 3);
+
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
+#endif
+
     if (error_code) {
         return setup_error(response_buffer, request_type, handle, error_code);
     }
