@@ -54,8 +54,9 @@ extern "C" {
 // custom BTstack ATT error codes
 #define ATT_ERROR_DATA_MISMATCH                   0x7e
 #define ATT_ERROR_TIMEOUT                         0x7F
+#define ATT_ERROR_WRITE_RESPONSE_PENDING         0x100
 
-// custom BTstack ATT Response Pending 
+// custom BTstack ATT Response Pending for att_read_callback
 #define ATT_READ_RESPONSE_PENDING                 0xffff
 
 typedef struct att_connection {

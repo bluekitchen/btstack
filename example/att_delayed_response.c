@@ -35,14 +35,18 @@
  *
  */
 
-#define __BTSTACK_FILE__ "att_delayed_read_response.c"
+#define __BTSTACK_FILE__ "att_delayed_response.c"
 
 // *****************************************************************************
-/* EXAMPLE_START(att_delayed_read_response): LE Peripheral - Delayed Read Response
+/* EXAMPLE_START(att_delayed_response): LE Peripheral - Delayed Response
  *
- * @text If the value for a GATT Chararacteristic isn't available, the value
- * ATT_READ_RESPONSE_PENDING can be returned. When the value is available, 
- * att_server_read_response_ready is then called to complete the ATT request.
+ * @text If the value for a GATT Chararacteristic isn't availabl for read,
+ * the value ATT_READ_RESPONSE_PENDING can be returned. When the value is available, 
+ * att_server_response_ready is then called to complete the ATT request.
+ * 
+ * Similarly, the error code ATT_ERROR_WRITE_RESPONSE_PENING can be returned when
+ * it is unclear if a write can be performed or not. When the decision was made,
+ * att_server_response_ready is is then called to complete the ATT request.
  */
  // *****************************************************************************
 
@@ -51,7 +55,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "att_delayed_read_response.h"
+#include "att_delayed_response.h"
 #include "btstack.h"
 
 #define ATT_VALUE_DELAY_MS   3000
@@ -69,19 +73,20 @@
  */
  
 /* LISTING_START(MainConfiguration): Init L2CAP SM ATT Server */
-#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
 static btstack_timer_source_t att_timer;
 static hci_con_handle_t con_handle;
 static int value_ready;
 #endif
 
 static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
+static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
 
 const uint8_t adv_data[] = {
     // Flags general discoverable, BR/EDR not supported
     0x02, 0x01, 0x06, 
     // Name
-    0x0b, 0x09, 'L', 'E', ' ', 'C', 'o', 'u', 'n', 't', 'e', 'r', 
+    0x08, 0x09, 'D', 'e', 'l', 'a', 'y', 'e', 'd', 
 };
 const uint8_t adv_data_len = sizeof(adv_data);
 
@@ -98,7 +103,7 @@ static void example_setup(void){
     sm_init();
 
     // setup ATT server
-    att_server_init(profile_data, att_read_callback, NULL);
+    att_server_init(profile_data, att_read_callback, att_write_callback);
 
     // setup advertisements
     uint16_t adv_int_min = 0x0030;
@@ -117,7 +122,7 @@ static void example_setup(void){
  *
  * @text The att_invalidate_value handler 'invalidates' the value of the single Characteristic provided in this example
  */
-#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
 static void att_invalidate_value(struct btstack_timer_source *ts){
     UNUSED(ts);
     printf("Value got stale\n");
@@ -132,14 +137,13 @@ static void att_invalidate_value(struct btstack_timer_source *ts){
  */
 
  /* LISTING_START(att_read_delay): ATT Read Delay Handler */
-#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
 static void att_update_value(struct btstack_timer_source *ts){
     UNUSED(ts);
     value_ready = 1;
 
-
     // trigger ATT Server to try request again
-    int status = att_server_read_response_ready(con_handle);
+    int status = att_server_response_ready(con_handle);
 
     printf("Value updated -> complete ATT request - status %02x\n", status);
 
@@ -169,7 +173,7 @@ static void att_update_value(struct btstack_timer_source *ts){
 // @param offset defines start of attribute value
 static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
 
-#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
     switch (att_handle){
         case ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE:
             if (value_ready){
@@ -193,15 +197,50 @@ static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t a
     }
 #else
     UNUSED(connection_handle);
-    // useless code when ENABLE_ATT_DELAYED_READ_RESPONSE is not defined - but avoids built errors
+    // useless code when ENABLE_ATT_DELAYED_RESPONSE is not defined - but avoids built errors
     if (att_handle == ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE){
-        printf("ENABLE_ATT_DELAYED_READ_RESPONSE not defined in btstack_config.h, responding right away");
+        printf("ENABLE_ATT_DELAYED_RESPONSE not defined in btstack_config.h, responding right away");
         return att_read_callback_handle_blob((const uint8_t *)test_string, strlen(test_string), offset, buffer, buffer_size);
     }
 #endif
 
     return 0;
 }
+
+/*
+ * @section ATT Write
+ * */
+
+/* LISTING_START(attWrite): ATT Write */
+static int att_write_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+    UNUSED(transaction_mode);
+    UNUSED(offset);
+    UNUSED(buffer_size);
+    UNUSED(connection_handle);
+    
+    if (att_handle == ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE) {
+        printf("Write request, value: ");
+        printf_hexdump(buffer, buffer_size);
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
+        if (value_ready){
+            printf("Write callback, value ready\n");
+            return 0;                    
+        } else {
+            printf("Write callback for handle %02x, but not ready -> return response pending\n", att_handle);
+        }
+        // simulated delayed response for example
+        att_timer.process = &att_update_value;
+        btstack_run_loop_set_timer(&att_timer, ATT_VALUE_DELAY_MS);
+        btstack_run_loop_add_timer(&att_timer);
+        return ATT_ERROR_WRITE_RESPONSE_PENDING;
+#else
+        printf("ENABLE_ATT_DELAYED_RESPONSE not defined in btstack_config.h, responding right away");
+        return 0;
+#endif
+    }
+    return 0;
+}
+
 /* LISTING_END */
 
 int btstack_main(void);
