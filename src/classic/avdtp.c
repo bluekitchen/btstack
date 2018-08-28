@@ -1029,6 +1029,10 @@ uint8_t avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote
     return avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 
+void    avdtp_set_preferred_sampling_frequeny(avdtp_stream_endpoint_t * stream_endpoint, uint32_t sampling_frequency){
+    stream_endpoint->preferred_sampling_frequency = sampling_frequency;
+}
+
 uint8_t avdtp_choose_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_channel_mode_bitmap){
     uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
     uint8_t channel_mode_bitmap = (media_codec[0] & 0x0F) & remote_channel_mode_bitmap;
@@ -1098,16 +1102,27 @@ uint8_t avdtp_choose_sbc_block_length(avdtp_stream_endpoint_t * stream_endpoint,
 uint8_t avdtp_choose_sbc_sampling_frequency(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_sampling_frequency_bitmap){
     if (!stream_endpoint) return 0;
     uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
-    uint8_t sampling_frequency_bitmap = (media_codec[0] >> 4) & remote_sampling_frequency_bitmap;
+    uint8_t supported_sampling_frequency_bitmap = (media_codec[0] >> 4) & remote_sampling_frequency_bitmap;
+    uint8_t sampling_frequency = AVDTP_SBC_44100;   // some default
 
-    uint8_t sampling_frequency = AVDTP_SBC_44100;
-    if (sampling_frequency_bitmap & AVDTP_SBC_48000){
+    // use preferred sampling frequency if possible
+    if        ((stream_endpoint->preferred_sampling_frequency == 48000) && (supported_sampling_frequency_bitmap & AVDTP_SBC_48000)){
         sampling_frequency = AVDTP_SBC_48000;
-    } else if (sampling_frequency_bitmap & AVDTP_SBC_44100){
+    } else if ((stream_endpoint->preferred_sampling_frequency == 44100) && (supported_sampling_frequency_bitmap & AVDTP_SBC_44100)){
         sampling_frequency = AVDTP_SBC_44100;
-    } else if (sampling_frequency_bitmap & AVDTP_SBC_32000){
+    } else if ((stream_endpoint->preferred_sampling_frequency == 32000) && (supported_sampling_frequency_bitmap & AVDTP_SBC_32000)){
         sampling_frequency = AVDTP_SBC_32000;
-    } else if (sampling_frequency_bitmap & AVDTP_SBC_16000){
+    } else if ((stream_endpoint->preferred_sampling_frequency == 16000) && (supported_sampling_frequency_bitmap & AVDTP_SBC_16000)){
+        sampling_frequency = AVDTP_SBC_16000;
+    }
+    // otherwise, use highest available
+    else if (supported_sampling_frequency_bitmap & AVDTP_SBC_48000){
+        sampling_frequency = AVDTP_SBC_48000;
+    } else if (supported_sampling_frequency_bitmap & AVDTP_SBC_44100){
+        sampling_frequency = AVDTP_SBC_44100;
+    } else if (supported_sampling_frequency_bitmap & AVDTP_SBC_32000){
+        sampling_frequency = AVDTP_SBC_32000;
+    } else if (supported_sampling_frequency_bitmap & AVDTP_SBC_16000){
         sampling_frequency = AVDTP_SBC_16000;
     } 
     return sampling_frequency;
