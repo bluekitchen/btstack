@@ -459,6 +459,8 @@ static void daemon_remove_gatt_client_handle(connection_t * connection, uint32_t
 
 
 static void daemon_remove_gatt_client_helper(uint32_t con_handle){
+    log_info("daemon_remove_gatt_client_helper for con_handle 0x%04x", con_handle);
+
     btstack_linked_list_iterator_t it, cl;    
     // find helper with given handle
     btstack_linked_list_gatt_client_helper_t * helper = NULL;
@@ -766,20 +768,16 @@ static void sdp_emit_service_registered(void *connection, uint32_t handle, uint8
 btstack_linked_list_gatt_client_helper_t * daemon_get_gatt_client_helper(hci_con_handle_t con_handle) {
     btstack_linked_list_iterator_t it;  
     if (!gatt_client_helpers) return NULL;
-    log_info("daemon_get_gatt_client_helper for handle 0x%02x", con_handle);
+    log_debug("daemon_get_gatt_client_helper for handle 0x%02x", con_handle);
     
     btstack_linked_list_iterator_init(&it, &gatt_client_helpers);
     while (btstack_linked_list_iterator_has_next(&it)){
         btstack_linked_list_gatt_client_helper_t * item = (btstack_linked_list_gatt_client_helper_t*) btstack_linked_list_iterator_next(&it);
-        if (!item ) {
-            log_info("daemon_get_gatt_client_helper gatt_client_helpers null item");
-            break;
-        } 
         if (item->con_handle == con_handle){
             return item;
         }
     }
-    log_info("daemon_get_gatt_client_helper for handle 0x%02x is NULL.", con_handle);
+    log_info("no gatt_client_helper for handle 0x%02x yet", con_handle);
     return NULL;
 }
 
@@ -1629,9 +1627,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     break;
 #if defined(ENABLE_BLE) && defined(HAVE_MALLOC)
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    log_info("daemon : ignore HCI_EVENT_DISCONNECTION_COMPLETE ingnoring.");
-                    // note: moved to gatt_client_handler because it's received here prematurely
-                    // daemon_remove_gatt_client_helper(little_endian_read_16(packet, 3));
+                    daemon_remove_gatt_client_helper(little_endian_read_16(packet, 3));
                     break;
 #endif
                 default:
@@ -1831,15 +1827,6 @@ static void * btstack_run_loop_thread(void *context){
 #ifdef ENABLE_BLE
 
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
-
-    // hack: handle disconnection_complete_here instead of main hci event packet handler
-    // we receive a HCI event packet in disguise
-    if (hci_event_packet_get_type(packet) == HCI_EVENT_DISCONNECTION_COMPLETE){
-        log_info("daemon hack: handle disconnection_complete in handle_gatt_client_event instead of main hci event packet handler");
-        hci_con_handle_t con_handle = little_endian_read_16(packet, 3);
-        daemon_remove_gatt_client_helper(con_handle);
-        return;
-    }
 
     // only handle GATT Events
     switch(hci_event_packet_get_type(packet)){
