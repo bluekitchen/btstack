@@ -53,6 +53,7 @@
 #include "classic/obex_iterator.h"
 #include "classic/rfcomm.h"
 #include "classic/sdp_client_rfcomm.h"
+#include "l2cap.h"
 
 //------------------------------------------------------------------------------------------------------------
 // goep_client.c
@@ -207,8 +208,7 @@ static void goep_client_handle_query_rfcomm_event(uint8_t packet_type, uint16_t 
 
 static uint8_t * goep_client_get_outgoing_buffer(goep_client_t * context){
     if (context->bearer_l2cap){
-        // TODO: implement l2cap variant
-        return NULL;
+        return l2cap_get_outgoing_buffer();
     } else {
         return rfcomm_get_outgoing_buffer();
     }
@@ -227,7 +227,7 @@ static void goep_client_packet_init(uint16_t goep_cid, uint8_t opcode){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
     if (context->bearer_l2cap){
-        // TODO: implement l2cap variant
+        l2cap_reserve_packet_buffer();
     } else {
         rfcomm_reserve_packet_buffer();
     }
@@ -291,7 +291,7 @@ void goep_client_request_can_send_now(uint16_t goep_cid){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
     if (context->bearer_l2cap){
-        // TODO: implement l2cap variant
+        l2cap_request_can_send_now_event(context->bearer_cid);
     } else {
         rfcomm_request_can_send_now_event(context->bearer_cid);
     }
@@ -377,8 +377,7 @@ int goep_client_execute(uint16_t goep_cid){
     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
     uint16_t pos = big_endian_read_16(buffer, 1);
     if (context->bearer_l2cap){
-        // TODO: implement l2cap variant
-        return -1;
+        return l2cap_send_prepared(context->bearer_cid, pos);
     } else {
         return rfcomm_send_prepared(context->bearer_cid, pos);
     }
