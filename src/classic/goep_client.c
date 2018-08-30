@@ -52,7 +52,8 @@
 #include "classic/obex.h"
 #include "classic/obex_iterator.h"
 #include "classic/rfcomm.h"
-#include "classic/sdp_client_rfcomm.h"
+#include "classic/sdp_client.h"
+#include "classic/sdp_util.h"
 #include "l2cap.h"
 
 //------------------------------------------------------------------------------------------------------------
@@ -72,10 +73,11 @@ typedef struct {
     bd_addr_t        bd_addr;
     hci_con_handle_t con_handle;
     uint8_t          incoming;
-    uint8_t          bearer_l2cap;
-    uint16_t         bearer_port;   // l2cap: psm, rfcomm: channel nr
+    uint8_t          rfcomm_port;
+    uint16_t         l2cap_psm;
     uint16_t         bearer_cid;
     uint16_t         bearer_mtu;
+    uint32_t         pbap_supported_features;
 
     uint8_t          obex_opcode;
     uint32_t         obex_connection_id;
@@ -86,6 +88,9 @@ typedef struct {
 
 static goep_client_t _goep_client;
 static goep_client_t * goep_client = &_goep_client;
+
+static uint8_t            attribute_value[30];
+static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
 static inline void goep_client_emit_connected_event(goep_client_t * context, uint8_t status){
     uint8_t event[22];
@@ -149,13 +154,23 @@ static void goep_client_handle_connection_close(goep_client_t * context){
     goep_client_emit_connection_closed_event(context);
 }
 
-static void goep_client_packet_handler_rfcomm(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void goep_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
     goep_client_t * context = goep_client;
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
+                case L2CAP_EVENT_CHANNEL_OPENED:
+                    goep_client_handle_connection_opened(context, l2cap_event_channel_opened_get_status(packet),
+                        btstack_min(l2cap_event_channel_opened_get_remote_mtu(packet), l2cap_event_channel_opened_get_local_mtu(packet)));
+                    return;
+                case L2CAP_EVENT_CAN_SEND_NOW:
+                    goep_client_emit_can_send_now_event(context);
+                    break;
+                case L2CAP_EVENT_CHANNEL_CLOSED:
+                    goep_client_handle_connection_close(context);
+                    break;
                 case RFCOMM_EVENT_CHANNEL_OPENED:
                     goep_client_handle_connection_opened(context, rfcomm_event_channel_opened_get_status(packet), rfcomm_event_channel_opened_get_max_frame_size(packet));
                     return;
@@ -169,6 +184,7 @@ static void goep_client_packet_handler_rfcomm(uint8_t packet_type, uint16_t chan
                     break;
             }
             break;
+        case L2CAP_DATA_PACKET:
         case RFCOMM_DATA_PACKET:
             context->client_handler(GOEP_DATA_PACKET, context->cid, packet, size);
             break;
@@ -177,37 +193,113 @@ static void goep_client_packet_handler_rfcomm(uint8_t packet_type, uint16_t chan
     }
 }
 
-static void goep_client_handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    goep_client_t * context = goep_client;
+
     UNUSED(packet_type);
     UNUSED(channel);
     UNUSED(size);
-    goep_client_t * context = goep_client;
-    switch (packet[0]){
-        case SDP_EVENT_QUERY_RFCOMM_SERVICE:
-            context->bearer_port = sdp_event_query_rfcomm_service_get_rfcomm_channel(packet);
-            break;
-        case SDP_EVENT_QUERY_COMPLETE:
-            if (sdp_event_query_complete_get_status(packet)){
-                log_info("GOEP client, SDP query failed 0x%02x", sdp_event_query_complete_get_status(packet));
-                context->state = GOEP_INIT;
-                goep_client_emit_connected_event(goep_client, sdp_event_query_complete_get_status(packet));
+
+    des_iterator_t des_list_it;
+    des_iterator_t prot_it;
+    uint8_t status;
+
+
+    switch (hci_event_packet_get_type(packet)){
+        case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
+
+            // check if relevant attribute
+            switch(sdp_event_query_attribute_byte_get_attribute_id(packet)){
+                case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
+                case BLUETOOTH_ATTRIBUTE_PBAP_SUPPORTED_FEATURES:
+                case BLUETOOTH_ATTRIBUTE_GOEP_L2CAP_PSM:
+                    break;
+                default:
+                    return;
+            }
+
+            // warn if attribute too large to fit in our buffer
+            if (sdp_event_query_attribute_byte_get_attribute_length(packet) > attribute_value_buffer_size) {
+                log_error("SDP attribute value size exceeded for attribute %x: available %d, required %d", sdp_event_query_attribute_byte_get_attribute_id(packet), attribute_value_buffer_size, sdp_event_query_attribute_byte_get_attribute_length(packet));
                 break;
-            } 
-            
-            if (context->bearer_port == 0){
-                log_info("Remote GOEP RFCOMM Server Channel not found");
+            }
+
+            // store single byte
+            attribute_value[sdp_event_query_attribute_byte_get_data_offset(packet)] = sdp_event_query_attribute_byte_get_data(packet);
+
+            // wait until value fully received
+            if ((uint16_t)(sdp_event_query_attribute_byte_get_data_offset(packet)+1) != sdp_event_query_attribute_byte_get_attribute_length(packet)) break;
+
+            // process attributes
+            switch(sdp_event_query_attribute_byte_get_attribute_id(packet)) {
+                case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST:
+                    for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                        uint8_t       *des_element;
+                        uint8_t       *element;
+                        uint32_t       uuid;
+
+                        if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
+
+                        des_element = des_iterator_get_element(&des_list_it);
+                        des_iterator_init(&prot_it, des_element);
+                        element = des_iterator_get_element(&prot_it);
+
+                        if (de_get_element_type(element) != DE_UUID) continue;
+
+                        uuid = de_get_uuid32(element);
+                        switch (uuid){
+                            case BLUETOOTH_PROTOCOL_RFCOMM:
+                                if (!des_iterator_has_more(&prot_it)) continue;
+                                des_iterator_next(&prot_it);
+                                element = des_iterator_get_element(&prot_it);
+                                context->rfcomm_port = element[de_get_header_size(element)];
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    break;
+                case BLUETOOTH_ATTRIBUTE_GOEP_L2CAP_PSM:
+                    de_element_get_uint16(attribute_value, &context->l2cap_psm);
+                    break;
+                case BLUETOOTH_ATTRIBUTE_PBAP_SUPPORTED_FEATURES:
+                    if (de_get_element_type(attribute_value) != DE_UINT) break;
+                    if (de_get_size_type(attribute_value)    != DE_SIZE_32) break;
+                    context->pbap_supported_features  = big_endian_read_32(attribute_value, de_get_header_size(attribute_value));
+                    log_info("pbap_supported_features 0x%x", context->pbap_supported_features);
+                    break;
+                default:
+                    break;
+            }
+            break;
+
+        case SDP_EVENT_QUERY_COMPLETE:
+            status = sdp_event_query_complete_get_status(packet);
+            if (status != ERROR_CODE_SUCCESS){
+                log_info("GOEP client, SDP query failed 0x%02x", status);
+                context->state = GOEP_INIT;
+                goep_client_emit_connected_event(goep_client, status);
+                break;
+            }
+            if (context->rfcomm_port == 0 && context->l2cap_psm == 0){
+                log_info("No GOEP RFCOMM or L2CAP server found");
                 context->state = GOEP_INIT;
                 goep_client_emit_connected_event(goep_client, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE);
                 break;
             }
-            log_info("Remote GOEP RFCOMM Server Channel: %u", context->bearer_port);
-            rfcomm_create_channel(&goep_client_packet_handler_rfcomm, context->bd_addr, context->bearer_port, &context->bearer_cid);
+            if (context->l2cap_psm){
+                log_info("Remote GOEP L2CAP PSM: %u", context->l2cap_psm);
+                l2cap_create_channel(&goep_client_packet_handler, context->bd_addr, context->rfcomm_port, 0xffff, &context->bearer_cid);
+            } else {
+                log_info("Remote GOEP RFCOMM Server Channel: %u", context->rfcomm_port);
+                rfcomm_create_channel(&goep_client_packet_handler, context->bd_addr, context->rfcomm_port, &context->bearer_cid);
+            }
             break;
     }
 }
 
 static uint8_t * goep_client_get_outgoing_buffer(goep_client_t * context){
-    if (context->bearer_l2cap){
+    if (context->l2cap_psm){
         return l2cap_get_outgoing_buffer();
     } else {
         return rfcomm_get_outgoing_buffer();
@@ -226,7 +318,7 @@ static void goep_client_packet_append(const uint8_t * data, uint16_t len){
 static void goep_client_packet_init(uint16_t goep_cid, uint8_t opcode){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
-    if (context->bearer_l2cap){
+    if (context->l2cap_psm){
         l2cap_reserve_packet_buffer();
     } else {
         rfcomm_reserve_packet_buffer();
@@ -262,8 +354,13 @@ uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_
     if (context->state != GOEP_INIT) return BTSTACK_MEMORY_ALLOC_FAILED;
     context->client_handler = handler;
     context->state = GOEP_W4_SDP;
+    context->l2cap_psm   = 0;
+    context->rfcomm_port = 0;
+    // Backwards compatibility: If the PbapSupportedFeatures attribute is not present 0x00000003
+    // shall be assumed for a remote PSE.
+    context->pbap_supported_features = 0x03;
     memcpy(context->bd_addr, addr, 6);
-    sdp_client_query_rfcomm_channel_and_name_for_uuid(&goep_client_handle_query_rfcomm_event, context->bd_addr, uuid);
+    sdp_client_query_uuid16(&goep_client_handle_sdp_query_event, context->bd_addr, uuid);
     *out_cid = context->cid;
     return 0;
 }
@@ -290,7 +387,7 @@ uint8_t goep_client_get_request_opcode(uint16_t goep_cid){
 void goep_client_request_can_send_now(uint16_t goep_cid){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
-    if (context->bearer_l2cap){
+    if (context->l2cap_psm){
         l2cap_request_can_send_now_event(context->bearer_cid);
     } else {
         rfcomm_request_can_send_now_event(context->bearer_cid);
@@ -304,7 +401,7 @@ void goep_client_create_connect_request(uint16_t goep_cid, uint8_t obex_version_
     uint8_t fields[4];
     fields[0] = obex_version_number;
     fields[1] = flags;
-    // workaround: limit OBEX packet len to RFCOMM MTU to avoid handling of fragemented packets
+    // workaround: limit OBEX packet len to L2CAP/RFCOMM MTU to avoid handling of fragemented packets
     maximum_obex_packet_length = btstack_min(maximum_obex_packet_length, context->bearer_mtu);
     big_endian_store_16(fields, 2, maximum_obex_packet_length);
     goep_client_packet_append(&fields[0], sizeof(fields));
@@ -376,7 +473,7 @@ int goep_client_execute(uint16_t goep_cid){
     goep_client_t * context = goep_client;
     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
     uint16_t pos = big_endian_read_16(buffer, 1);
-    if (context->bearer_l2cap){
+    if (context->l2cap_psm){
         return l2cap_send_prepared(context->bearer_cid, pos);
     } else {
         return rfcomm_send_prepared(context->bearer_cid, pos);
