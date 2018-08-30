@@ -1213,6 +1213,8 @@ static int usb_close(void){
     }
 #endif
 
+    log_info("usb_close abort event and acl pipes");
+
     // stop transfers
     WinUsb_AbortPipe(usb_interface_0_handle, event_in_addr);
     WinUsb_AbortPipe(usb_interface_0_handle, acl_in_addr);
@@ -1224,10 +1226,13 @@ static int usb_close(void){
 
     // control transfer cannot be stopped, just wait for completion
     if (usb_command_out_active){
+        log_info("usb_close command out active, wait for complete");
         DWORD bytes_transferred;
         WinUsb_GetOverlappedResult(usb_interface_0_handle, &usb_overlapped_command_out, &bytes_transferred, TRUE);
         usb_command_out_active = 0;
     }
+
+    log_info("usb_close free resources");
 
     // free everything
     usb_free_resources();
