@@ -131,31 +131,37 @@ static inline void goep_client_emit_can_send_now_event(goep_client_t * context){
     context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
 }   
 
-static void goep_client_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void goep_client_handle_connection_opened(goep_client_t * context, uint8_t status, uint16_t mtu){
+    if (status) {
+        context->state = GOEP_INIT;
+        log_info("goep_client: open failed, status %u", status);
+    } else {
+        context->bearer_mtu = mtu;
+        context->state = GOEP_CONNECTED;
+        log_info("goep_client: connection opened. cid %u, max frame size %u", context->bearer_cid, context->bearer_mtu);
+    }
+    goep_client_emit_connected_event(context, status);
+}
+
+static void goep_client_handle_connection_close(goep_client_t * context){
+    context->state = GOEP_INIT;
+    goep_client_emit_connection_closed_event(context);
+}
+
+static void goep_client_packet_handler_rfcomm(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    uint8_t status;
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
                 case RFCOMM_EVENT_CHANNEL_OPENED:
-                    status = rfcomm_event_channel_opened_get_status(packet);
-                    if (status) {
-                        log_info("goep_client: RFCOMM channel open failed, status %u", rfcomm_event_channel_opened_get_status(packet));
-                        goep_client->state = GOEP_INIT;
-                    } else {
-                        goep_client->bearer_mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
-                        log_info("goep_client: RFCOMM channel open succeeded. cid %u, max frame size %u", goep_client->bearer_cid, goep_client->bearer_mtu);
-                        goep_client->state = GOEP_CONNECTED;
-                    }                    
-                    goep_client_emit_connected_event(goep_client, status);
+                    goep_client_handle_connection_opened(goep_client, rfcomm_event_channel_opened_get_status(packet), rfcomm_event_channel_opened_get_max_frame_size(packet));
                     return;
                 case RFCOMM_EVENT_CAN_SEND_NOW:
                     goep_client_emit_can_send_now_event(goep_client);
                     break;
                 case RFCOMM_EVENT_CHANNEL_CLOSED:
-                    goep_client->state = GOEP_INIT;
-                    goep_client_emit_connection_closed_event(goep_client);
+                    goep_client_handle_connection_close(goep_client);
                     break;
                 default:
                     break;
@@ -193,7 +199,7 @@ static void goep_client_handle_query_rfcomm_event(uint8_t packet_type, uint16_t 
                 break;
             }
             log_info("Remote GOEP RFCOMM Server Channel: %u", goep_client->bearer_port);
-            rfcomm_create_channel(&goep_client_packet_handler, goep_client->bd_addr, goep_client->bearer_port, &goep_client->bearer_cid);
+            rfcomm_create_channel(&goep_client_packet_handler_rfcomm, goep_client->bd_addr, goep_client->bearer_port, &goep_client->bearer_cid);
             break;
     }
 }
