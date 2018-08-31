@@ -92,8 +92,19 @@ static goep_client_t * goep_client = &_goep_client;
 static uint8_t            attribute_value[30];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
+static uint8_t ertm_buffer[1000];
+static l2cap_ertm_config_t ertm_config = {
+    1,  // ertm mandatory
+    2,  // max transmit, some tests require > 1
+    2000,
+    12000,
+    144,    // l2cap ertm mtu
+    4,
+    4,
+};
+
 static inline void goep_client_emit_connected_event(goep_client_t * context, uint8_t status){
-    uint8_t event[22];
+    uint8_t event[15];
     int pos = 0;
     event[pos++] = HCI_EVENT_GOEP_META;
     pos++;  // skip len
@@ -289,7 +300,8 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
             }
             if (context->l2cap_psm){
                 log_info("Remote GOEP L2CAP PSM: %u", context->l2cap_psm);
-                l2cap_create_channel(&goep_client_packet_handler, context->bd_addr, context->rfcomm_port, 0xffff, &context->bearer_cid);
+                l2cap_create_ertm_channel(&goep_client_packet_handler, context->bd_addr, context->l2cap_psm,
+                                          &ertm_config, ertm_buffer, sizeof(ertm_buffer), &context->bearer_cid);
             } else {
                 log_info("Remote GOEP RFCOMM Server Channel: %u", context->rfcomm_port);
                 rfcomm_create_channel(&goep_client_packet_handler, context->bd_addr, context->rfcomm_port, &context->bearer_cid);
@@ -473,6 +485,7 @@ int goep_client_execute(uint16_t goep_cid){
     goep_client_t * context = goep_client;
     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
     uint16_t pos = big_endian_read_16(buffer, 1);
+    printf_hexdump(buffer, pos);
     if (context->l2cap_psm){
         return l2cap_send_prepared(context->bearer_cid, pos);
     } else {
