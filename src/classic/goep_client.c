@@ -92,6 +92,8 @@ static goep_client_t * goep_client = &_goep_client;
 static uint8_t            attribute_value[30];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
+static uint8_t goep_packet_buffer[100];
+
 static uint8_t ertm_buffer[1000];
 static l2cap_ertm_config_t ertm_config = {
     1,  // ertm mandatory
@@ -312,7 +314,8 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
 
 static uint8_t * goep_client_get_outgoing_buffer(goep_client_t * context){
     if (context->l2cap_psm){
-        return l2cap_get_outgoing_buffer();
+        // return l2cap_get_outgoing_buffer();
+        return goep_packet_buffer;
     } else {
         return rfcomm_get_outgoing_buffer();
     }
@@ -331,7 +334,7 @@ static void goep_client_packet_init(uint16_t goep_cid, uint8_t opcode){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
     if (context->l2cap_psm){
-        l2cap_reserve_packet_buffer();
+        // l2cap_reserve_packet_buffer();
     } else {
         rfcomm_reserve_packet_buffer();
     }
@@ -487,7 +490,8 @@ int goep_client_execute(uint16_t goep_cid){
     uint16_t pos = big_endian_read_16(buffer, 1);
     printf_hexdump(buffer, pos);
     if (context->l2cap_psm){
-        return l2cap_send_prepared(context->bearer_cid, pos);
+        // return l2cap_send_prepared(context->bearer_cid, pos);
+        return l2cap_send(context->bearer_cid, buffer, pos);
     } else {
         return rfcomm_send_prepared(context->bearer_cid, pos);
     }
