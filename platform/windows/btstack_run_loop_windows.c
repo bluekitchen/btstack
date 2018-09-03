@@ -167,7 +167,7 @@ static void btstack_run_loop_windows_execute(void) {
         }
 
         // get next timeout
-        uint32_t timeout_ms = INFINITE;
+        int32_t timeout_ms = INFINITE;
         if (timers) {
             ts = (btstack_timer_source_t *) timers;
             uint32_t now_ms = btstack_run_loop_windows_get_time_ms();
