@@ -127,6 +127,7 @@ static l2cap_fixed_channel_t l2cap_fixed_channel_connectionless;
 #ifdef ENABLE_CLASSIC
 static btstack_linked_list_t l2cap_services;
 static uint8_t require_security_level2_for_outgoing_sdp;
+static bd_addr_t l2cap_outgoing_classic_addr;
 #endif
 
 #ifdef ENABLE_LE_DATA_CHANNELS
@@ -1410,7 +1411,8 @@ static void l2cap_run(void){
                 // send connection request - set state first
                 channel->state = L2CAP_STATE_WAIT_CONNECTION_COMPLETE;
                 // BD_ADDR, Packet_Type, Page_Scan_Repetition_Mode, Reserved, Clock_Offset, Allow_Role_Switch
-                hci_send_cmd(&hci_create_connection, channel->address, hci_usable_acl_packet_types(), 0, 0, 0, 1); 
+                memcpy(l2cap_outgoing_classic_addr, channel->address, 6);
+                hci_send_cmd(&hci_create_connection, channel->address, hci_usable_acl_packet_types(), 0, 0, 0, 1);
                 break;
                 
             case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE:
@@ -2044,6 +2046,19 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
             break;
 
         case HCI_EVENT_COMMAND_STATUS:
+#ifdef ENABLE_CLASSIC
+            // check command status for create connection for errors
+            if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_create_connection)){
+                // cache outgoing address and reset
+                memcpy(address, l2cap_outgoing_classic_addr, 6);
+                memset(l2cap_outgoing_classic_addr, 0, 6);
+                // error => outgoing connection failed
+                uint8_t status = hci_event_command_status_get_status(packet);
+                if (status){
+                    l2cap_handle_connection_failed_for_addr(address, status);
+                }
+            }
+#endif
             l2cap_run();    // try sending signaling packets first
             break;
 

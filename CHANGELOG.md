@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+
+## Changes September 2018
+
+### Fixed
+- L2CAP: Error creating outoing connection (e.g. Connection Limited Exceeded) now handled
+
 ### Added
 - PBAP: added pbap_get_phonebook_size() to get phonebook entry count
 
