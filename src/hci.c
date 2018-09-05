@@ -3673,14 +3673,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     hci_stack->num_cmd_packets--;
 
     hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, packet, size);
-    int err = hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, packet, size);
-
-    // release packet buffer for synchronous transport implementations    
-    if (hci_transport_synchronous() && (packet == hci_stack->hci_packet_buffer)){
-        hci_stack->hci_packet_buffer_reserved = 0;
-    }
-
-    return err;
+    return hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, packet, size);
 }
 
 // disconnect because of security block
@@ -3732,7 +3725,14 @@ int hci_send_cmd_va_arg(const hci_cmd_t *cmd, va_list argptr){
     hci_reserve_packet_buffer();
     uint8_t * packet = hci_stack->hci_packet_buffer;
     uint16_t size = hci_cmd_create_from_template(packet, cmd, argptr);
-    return hci_send_cmd_packet(packet, size);
+    int err = hci_send_cmd_packet(packet, size);
+
+    // release packet buffer for synchronous transport implementations
+    if (hci_transport_synchronous()){
+        hci_stack->hci_packet_buffer_reserved = 0;
+    }
+
+    return err;
 }
 
 /**
