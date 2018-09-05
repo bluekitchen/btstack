@@ -3582,8 +3582,8 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
                 hci_emit_connection_complete(addr, conn->con_handle, 0);
                 return -1; // packet not sent to controller
             case SEND_CREATE_CONNECTION:
-                // connection created by hci, e.g. dedicated bonding
-                return -1; // packet not sent to controller
+                // connection created by hci, e.g. dedicated bonding, but not executed yet, let's do it now
+                break;
             default:
                 // otherwise, just ignore as it is already in the open process
                 return -1; // packet not sent to controller
