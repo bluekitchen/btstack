@@ -705,6 +705,7 @@ int hci_send_acl_packet_buffer(int size){
     if (!hci_can_send_prepared_acl_packet_now(con_handle)) {
         log_error("hci_send_acl_packet_buffer called but no free ACL buffers on controller");
         hci_release_packet_buffer();
+        hci_emit_transport_packet_sent();
         return BTSTACK_ACL_BUFFERS_FULL;
     }
 
@@ -712,6 +713,7 @@ int hci_send_acl_packet_buffer(int size){
     if (!connection) {
         log_error("hci_send_acl_packet_buffer called but no connection for handle 0x%04x", con_handle);
         hci_release_packet_buffer();
+        hci_emit_transport_packet_sent();
         return 0;
     }
 
@@ -749,6 +751,7 @@ int hci_send_sco_packet_buffer(int size){
         if (!hci_can_send_prepared_sco_packet_now()) {
             log_error("hci_send_sco_packet_buffer called but no free ACL buffers on controller");
             hci_release_packet_buffer();
+            hci_emit_transport_packet_sent();
             return BTSTACK_ACL_BUFFERS_FULL;
         }
 
@@ -757,6 +760,7 @@ int hci_send_sco_packet_buffer(int size){
         if (!connection) {
             log_error("hci_send_sco_packet_buffer called but no connection for handle 0x%04x", con_handle);
             hci_release_packet_buffer();
+            hci_emit_transport_packet_sent();
             return 0;
         }
         connection->num_sco_packets_sent++;
@@ -3003,6 +3007,7 @@ static void hci_host_num_completed_packets(void){
     // release packet buffer for synchronous transport implementations    
     if (hci_transport_synchronous()){
         hci_release_packet_buffer();
+        hci_emit_transport_packet_sent();
     }
 }
 #endif
@@ -3727,6 +3732,7 @@ int hci_send_cmd_va_arg(const hci_cmd_t *cmd, va_list argptr){
     // release packet buffer for synchronous transport implementations
     if (hci_transport_synchronous()){
         hci_release_packet_buffer();
+        hci_emit_transport_packet_sent();
     }
 
     return err;
