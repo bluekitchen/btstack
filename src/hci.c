@@ -3002,7 +3002,7 @@ static void hci_host_num_completed_packets(void){
 
     // release packet buffer for synchronous transport implementations    
     if (hci_transport_synchronous()){
-        hci_stack->hci_packet_buffer_reserved = 0;
+        hci_release_packet_buffer();
     }
 }
 #endif
@@ -3726,7 +3726,7 @@ int hci_send_cmd_va_arg(const hci_cmd_t *cmd, va_list argptr){
 
     // release packet buffer for synchronous transport implementations
     if (hci_transport_synchronous()){
-        hci_stack->hci_packet_buffer_reserved = 0;
+        hci_release_packet_buffer();
     }
 
     return err;
