@@ -109,6 +109,12 @@ void    goep_client_set_connection_id(uint16_t goep_cid, uint32_t connection_id)
 void    goep_client_create_connect_request(uint16_t goep_cid, uint8_t obex_version_number, uint8_t flags, uint16_t maximum_obex_packet_length);
 
 /**
+ * @brief Start Disconnect request
+ * @param gope_cid
+ */
+void    goep_client_create_disconnect_request(uint16_t goep_cid);
+
+/**
  * @brief Start Get request
  * @param gope_cid
  */

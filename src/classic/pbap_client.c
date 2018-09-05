@@ -93,6 +93,9 @@ typedef enum {
     PBAP_CONNECT_RESPONSE_RECEIVED,
     PBAP_CONNECTED,
     //
+    PBAP_W2_SEND_DISCONNECT_REQUEST,
+    PBAP_W4_DISCONNECT_RESPONSE,
+    //
     PBAP_W2_PULL_PHONEBOOK,
     PBAP_W4_PHONEBOOK,
     PBAP_W2_SET_PATH_ROOT,
@@ -190,9 +193,12 @@ static void pbap_handle_can_send_now(void){
         case PBAP_W2_SEND_CONNECT_REQUEST:
             goep_client_create_connect_request(pbap_client->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
             goep_client_add_header_target(pbap_client->goep_cid, 16, pbap_uuid);
-            // state
             pbap_client->state = PBAP_W4_CONNECT_RESPONSE;
-            // send packet
+            goep_client_execute(pbap_client->goep_cid);
+            return;
+        case PBAP_W2_SEND_DISCONNECT_REQUEST:
+            goep_client_create_disconnect_request(pbap_client->goep_cid);
+            pbap_client->state = PBAP_W4_DISCONNECT_RESPONSE;
             goep_client_execute(pbap_client->goep_cid);
             return;
         case PBAP_W2_PULL_PHONEBOOK:
@@ -317,6 +323,9 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                         pbap_client_emit_connected_event(pbap_client, OBEX_CONNECT_FAILED);
                     }
                     break;
+                case PBAP_W4_DISCONNECT_RESPONSE:
+                        goep_client_disconnect(pbap_client->goep_cid);
+                        break;
                 case PBAP_W4_SET_PATH_ROOT_COMPLETE:
                 case PBAP_W4_SET_PATH_ELEMENT_COMPLETE:
                     if (packet[0] == OBEX_RESP_SUCCESS){
@@ -412,7 +421,8 @@ uint8_t pbap_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t 
 uint8_t pbap_disconnect(uint16_t pbap_cid){
     UNUSED(pbap_cid);
     if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
-    goep_client_disconnect(pbap_client->goep_cid);
+    pbap_client->state = PBAP_W2_SEND_DISCONNECT_REQUEST;
+    goep_client_request_can_send_now(pbap_client->goep_cid);
     return 0;
 }
 

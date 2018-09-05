@@ -429,6 +429,12 @@ void goep_client_create_connect_request(uint16_t goep_cid, uint8_t obex_version_
     goep_client_packet_append(&fields[0], sizeof(fields));
 }
 
+void goep_client_create_disconnect_request(uint16_t goep_cid){
+    UNUSED(goep_cid);
+    goep_client_packet_init(goep_cid, OBEX_OPCODE_DISCONNECT);
+    goep_client_packet_add_connection_id(goep_cid);
+}
+
 void goep_client_create_get_request(uint16_t goep_cid){
     UNUSED(goep_cid);
     goep_client_packet_init(goep_cid, OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK);
