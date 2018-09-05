@@ -143,6 +143,7 @@ static void gap_inquiry_explode(uint8_t * packet);
 static int  hci_power_control_on(void);
 static void hci_power_control_off(void);
 static void hci_state_reset(void);
+static void hci_emit_transport_packet_sent(void);
 static void hci_emit_disconnection_complete(hci_con_handle_t con_handle, uint8_t reason);
 static void hci_emit_nr_connections_changed(void);
 static void hci_emit_hci_open_failed(void);
@@ -681,9 +682,7 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
     // release buffer now for synchronous transport
     if (hci_transport_synchronous()){
         hci_release_packet_buffer();
-        // notify upper stack that it might be possible to send again
-        uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
-        hci_emit_event(&event[0], sizeof(event), 0);  // don't dump
+        hci_emit_transport_packet_sent();
     }
 
     return err;
@@ -768,9 +767,7 @@ int hci_send_sco_packet_buffer(int size){
 
     if (hci_transport_synchronous()){
         hci_release_packet_buffer();
-        // notify upper stack that it might be possible to send again
-        uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
-        hci_emit_event(&event[0], sizeof(event), 0);    // don't dump
+        hci_emit_transport_packet_sent();
     }
 
     return err;
@@ -3907,6 +3904,12 @@ static void hci_emit_le_connection_complete(uint8_t address_type, bd_addr_t addr
 }
 #endif
 #endif
+
+static void hci_emit_transport_packet_sent(void){
+    // notify upper stack that it might be possible to send again
+    uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
+    hci_emit_event(&event[0], sizeof(event), 0);  // don't dump
+}
 
 static void hci_emit_disconnection_complete(hci_con_handle_t con_handle, uint8_t reason){
     uint8_t event[6];
