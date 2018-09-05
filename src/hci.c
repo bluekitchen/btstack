@@ -3568,7 +3568,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
             if (!conn){
                 // notify client that alloc failed
                 hci_emit_connection_complete(addr, 0, BTSTACK_MEMORY_ALLOC_FAILED);
-                return 0; // don't sent packet to controller
+                return -1; // packet not sent to controller
             }
             conn->state = SEND_CREATE_CONNECTION;
         }
@@ -3576,15 +3576,15 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
         switch (conn->state){
             // if connection active exists
             case OPEN:
-                // and OPEN, emit connection complete command, don't send to controller
+                // and OPEN, emit connection complete command
                 hci_emit_connection_complete(addr, conn->con_handle, 0);
-                return 0;
+                return -1; // packet not sent to controller
             case SEND_CREATE_CONNECTION:
                 // connection created by hci, e.g. dedicated bonding
-                break;
+                return -1; // packet not sent to controller
             default:
                 // otherwise, just ignore as it is already in the open process
-                return 0;
+                return -1; // packet not sent to controller
         }
         conn->state = SENT_CREATE_CONNECTION;
     }
