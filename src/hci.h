@@ -855,6 +855,10 @@ typedef struct {
     uint8_t master_slave_policy;
 #endif
 
+    // address and address_type of active create connection command (ACL, SCO, LE)
+    bd_addr_t      outgoing_addr;
+    bd_addr_type_t outgoing_addr_type;
+
 } hci_stack_t;
 
 

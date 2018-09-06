@@ -1784,6 +1784,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 }
 
 static void hci_handle_connection_failed(hci_connection_t * conn, uint8_t status){
+    log_info("Outgoing connection to %s failed", bd_addr_to_str(conn->address));
     int notify_dedicated_bonding_failed = conn->bonding_flags & BONDING_DEDICATED;
     bd_addr_t bd_address;
     memcpy(&bd_address, conn->address, 6);
@@ -1945,6 +1946,24 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_COMMAND_STATUS:
             // get num cmd packets - limit to 1 to reduce complexity
             hci_stack->num_cmd_packets = packet[3] ? 1 : 0;
+
+            // check command status to detected failed outgoing connections
+            if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_create_connection) ||
+                HCI_EVENT_IS_COMMAND_STATUS(packet, hci_le_create_connection)) {
+
+                uint8_t status = hci_event_command_status_get_status(packet);
+                conn = hci_connection_for_bd_addr_and_type(hci_stack->outgoing_addr, hci_stack->outgoing_addr_type);
+                log_info("command status (create connection), status %x, connection %p, addr %s, type %x", status, conn, bd_addr_to_str(hci_stack->outgoing_addr), hci_stack->outgoing_addr_type);
+
+                // reset outgoing address info
+                memset(hci_stack->outgoing_addr, 0, 6);
+                hci_stack->outgoing_addr_type = BD_ADDR_TYPE_UNKNOWN;
+
+                // error => outgoing connection failed
+                if ((conn != NULL) && (status != 0)){
+                    hci_handle_connection_failed(conn, status);
+                }
+            }
             break;
             
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:{
@@ -3269,6 +3288,9 @@ static void hci_run(void){
                     default:
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_CENTRAL
+                        // track outgoing connection
+                        hci_stack->outgoing_addr_type = connection->address_type;
+                        memcpy(hci_stack->outgoing_addr, connection->address, 6);
                         log_info("sending hci_le_create_connection");
                         hci_send_cmd(&hci_le_create_connection,
                              hci_stack->le_connection_scan_interval,    // conn scan interval
@@ -3593,6 +3615,10 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
                 return -1; // packet not sent to controller
         }
         conn->state = SENT_CREATE_CONNECTION;
+
+        // track outgoing connection
+        hci_stack->outgoing_addr_type = BD_ADDR_TYPE_CLASSIC;
+        memcpy(hci_stack->outgoing_addr, addr, 6);
     }
 
     if (IS_COMMAND(packet, hci_link_key_request_reply)){
