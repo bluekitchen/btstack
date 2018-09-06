@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Changes September 2018
 
 ### Fixed
-- L2CAP: Error creating outoing connection (e.g. Connection Limited Exceeded) now handled
+- HCI/L2CAP: Error creating outgoing connection (e.g. Connection Limit Exceeded) now handled
 
 ### Added
 - PBAP: added pbap_get_phonebook_size() to get phonebook entry count
