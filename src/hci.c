@@ -1783,6 +1783,27 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
     hci_initializing_next_state();
 }
 
+static void hci_handle_connection_failed(hci_connection_t * conn, uint8_t status){
+    int notify_dedicated_bonding_failed = conn->bonding_flags & BONDING_DEDICATED;
+    bd_addr_t bd_address;
+    memcpy(&bd_address, conn->address, 6);
+
+    // connection failed, remove entry
+    btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
+    btstack_memory_hci_connection_free( conn );
+
+    // notify client if dedicated bonding
+    if (notify_dedicated_bonding_failed){
+        log_info("hci notify_dedicated_bonding_failed");
+        hci_emit_dedicated_bonding_result(bd_address, status);
+    }
+
+    // if authentication error, also delete link key
+    if (status == ERROR_CODE_AUTHENTICATION_FAILURE) {
+        gap_drop_link_key_for_bd_addr(bd_address);
+    }
+}
+
 static void event_handler(uint8_t *packet, int size){
 
     uint16_t event_length = packet[1];
@@ -2021,25 +2042,8 @@ static void event_handler(uint8_t *packet, int size){
                     
                     hci_emit_nr_connections_changed();
                 } else {
-                    int notify_dedicated_bonding_failed = conn->bonding_flags & BONDING_DEDICATED;
-                    uint8_t status = packet[2];
-                    bd_addr_t bd_address;
-                    memcpy(&bd_address, conn->address, 6);
-
-                    // connection failed, remove entry
-                    btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
-                    btstack_memory_hci_connection_free( conn );
-                    
-                    // notify client if dedicated bonding
-                    if (notify_dedicated_bonding_failed){
-                        log_info("hci notify_dedicated_bonding_failed");
-                        hci_emit_dedicated_bonding_result(bd_address, status);                        
-                    }
-
-                    // if authentication error, also delete link key
-                    if (packet[2] == 0x05) {
-                        gap_drop_link_key_for_bd_addr(addr);
-                    }
+                    // connection failed
+                    hci_handle_connection_failed(conn, packet[2]);
                 }
             }
             break;
