@@ -889,8 +889,11 @@ static void rfcomm_handle_can_send_now(uint16_t l2cap_cid){
         if (channel->multiplexer->l2cap_cid != l2cap_cid) continue;
         // client waiting for can send now
         if (!channel->waiting_for_can_send_now)    continue;
-        if (!channel->credits_outgoing)            continue;
         if ((channel->multiplexer->fcon & 1) == 0) continue;
+        if (!channel->credits_outgoing){
+            log_debug("rfcomm_handle_can_send_now waiting to send but no credits (ignore)");
+            continue;
+        }
 
         log_debug("rfcomm_handle_can_send_now enter: client token");
         token_consumed = 1;
@@ -1294,7 +1297,7 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
         // add them
         uint16_t new_credits = packet[3+length_offset];
         channel->credits_outgoing += new_credits;
-        log_info( "RFCOMM data UIH_PF, new credits: %u, now %u", new_credits, channel->credits_outgoing);
+        log_info( "RFCOMM data UIH_PF, new credits channel 0x%02x: %u, now %u", channel->rfcomm_cid, new_credits, channel->credits_outgoing);
 
         // notify channel statemachine 
         rfcomm_channel_event_t channel_event = { CH_EVT_RCVD_CREDITS, 0 };
