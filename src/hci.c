@@ -1785,14 +1785,19 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 
 static void hci_handle_connection_failed(hci_connection_t * conn, uint8_t status){
     log_info("Outgoing connection to %s failed", bd_addr_to_str(conn->address));
-    int notify_dedicated_bonding_failed = conn->bonding_flags & BONDING_DEDICATED;
     bd_addr_t bd_address;
     memcpy(&bd_address, conn->address, 6);
 
+#ifdef ENABLE_CLASSIC
+    // cache needed data
+    int notify_dedicated_bonding_failed = conn->bonding_flags & BONDING_DEDICATED;
+#endif
+    
     // connection failed, remove entry
     btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
     btstack_memory_hci_connection_free( conn );
 
+#ifdef ENABLE_CLASSIC
     // notify client if dedicated bonding
     if (notify_dedicated_bonding_failed){
         log_info("hci notify_dedicated_bonding_failed");
@@ -1803,6 +1808,7 @@ static void hci_handle_connection_failed(hci_connection_t * conn, uint8_t status
     if (status == ERROR_CODE_AUTHENTICATION_FAILURE) {
         gap_drop_link_key_for_bd_addr(bd_address);
     }
+#endif
 }
 
 static void event_handler(uint8_t *packet, int size){
