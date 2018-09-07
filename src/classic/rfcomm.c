@@ -1287,6 +1287,7 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
     const uint8_t length_offset = (packet[2] & 1) ^ 1;  // to be used for pos >= 3
     const uint8_t credit_offset = ((packet[1] & BT_RFCOMM_UIH_PF) == BT_RFCOMM_UIH_PF) ? 1 : 0;   // credits for uih_pf frames
     const uint8_t payload_offset = 3 + length_offset + credit_offset;
+    int request_can_send_now = 0;
 
     rfcomm_channel_t * channel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, frame_dlci);
     if (!channel) return;
@@ -1301,9 +1302,10 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
 
         // notify channel statemachine 
         rfcomm_channel_event_t channel_event = { CH_EVT_RCVD_CREDITS, 0 };
+        log_debug("rfcomm_channel_state_machine_with_channel, waiting_for_can_send_now %u", channel->waiting_for_can_send_now);
         rfcomm_channel_state_machine_with_channel(channel, &channel_event);
-        if (rfcomm_channel_ready_to_send(channel)){
-            l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
+        if (rfcomm_channel_ready_to_send(channel) || channel->waiting_for_can_send_now){
+            request_can_send_now = 1;
         }
     }
     
@@ -1325,8 +1327,12 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
     // automatically provide new credits to remote device, if no incoming flow control
     if (!channel->incoming_flow_control && channel->credits_incoming < 5){
         channel->new_credits_incoming = RFCOMM_CREDITS;
-        l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
+        request_can_send_now = 1;
     }    
+
+    if (request_can_send_now){
+        l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
+    }
 }
 
 static void rfcomm_channel_accept_pn(rfcomm_channel_t *channel, rfcomm_channel_event_pn_t *event){
