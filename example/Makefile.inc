@@ -240,6 +240,9 @@ spp_and_le_streamer: spp_and_le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_O
 spp_streamer: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} spp_streamer.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
+spp_flowcontrol: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} spp_flowcontrol.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
 spp_streamer_client: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} spp_streamer_client.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
