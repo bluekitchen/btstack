@@ -1092,8 +1092,9 @@ static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t chann
             con_handle = little_endian_read_16(packet,3);
             peripheral = get_gatt_client_context_for_handle(con_handle);
             if (!peripheral) break;
-            gatt_client_report_error_if_pending(peripheral, ATT_ERROR_HCI_DISCONNECT_RECEIVED);
             
+            gatt_client_report_error_if_pending(peripheral, ATT_ERROR_HCI_DISCONNECT_RECEIVED);
+            gatt_client_timeout_stop(peripheral);
             btstack_linked_list_remove(&gatt_client_connections, (btstack_linked_item_t *) peripheral);
             btstack_memory_gatt_client_free(peripheral);
             break;

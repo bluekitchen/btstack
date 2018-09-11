@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - HCI/L2CAP: Error creating outgoing connection (e.g. Connection Limit Exceeded) now handled
 - RFCOMM: Trigger l2cap request to send on rfcomm credits when client is waiting to sendtrigger l2cap request to send on rfcomm credits when client is waiting to send
-- L2CAP: Try to emit 'can send now' on HCI Disconnect, if all ACL buffers in Bluetooth Controller have been used for the closed connection
+- L2CAP: Evaluate 'can send now' on HCI Disconnect as ACL buffers in Bluetooth Controller have been used for the closed connection are freed implicitly
+- GATT Client: stop timer on disconnect - fixes use after free / crash
 
 ## Changes August 2018
 
