@@ -2041,6 +2041,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
         // Notify channel packet handler if they can send now
         case HCI_EVENT_TRANSPORT_PACKET_SENT:
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
+        case BTSTACK_EVENT_NR_CONNECTIONS_CHANGED:
             l2cap_run();    // try sending signaling packets first
             l2cap_notify_channel_can_send();
             break;
