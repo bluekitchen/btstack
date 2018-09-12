@@ -46,7 +46,7 @@ case "$host_os" in
     mingw*)
         echo "Building on mingw32"
         btstack_run_loop_SOURCES="btstack_run_loop_windows.o"
-        LDFLAGS+="-lws2_32"
+        LDFLAGS+="-lws2_32 -static-libgcc"
         BTSTACK_LIB_LDFLAGS="-shared"
         BTSTACK_LIB_EXTENSION="dll"
         REMOTE_DEVICE_DB_SOURCES="rfcomm_service_db_memory.o"
