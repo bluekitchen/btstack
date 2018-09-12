@@ -1705,7 +1705,7 @@ static void l2cap_run(void){
         switch (connection->le_con_parameter_update_state){
             case CON_PARAMETER_UPDATE_SEND_REQUEST:
                 connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
-                l2cap_send_le_signaling_packet(connection->con_handle, CONNECTION_PARAMETER_UPDATE_REQUEST, connection->le_con_param_update_identifier,
+                l2cap_send_le_signaling_packet(connection->con_handle, CONNECTION_PARAMETER_UPDATE_REQUEST, l2cap_next_sig_id(),
                                                connection->le_conn_interval_min, connection->le_conn_interval_max, connection->le_conn_latency, connection->le_supervision_timeout);
                 break;
             case CON_PARAMETER_UPDATE_SEND_RESPONSE:

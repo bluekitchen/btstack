@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - RFCOMM: Trigger l2cap request to send on rfcomm credits when client is waiting to sendtrigger l2cap request to send on rfcomm credits when client is waiting to send
 - L2CAP: Evaluate 'can send now' on HCI Disconnect as ACL buffers in Bluetooth Controller have been used for the closed connection are freed implicitly
 - GATT Client: stop timer on disconnect - fixes use after free / crash
+- L2CAP: Use valid signaling identifier for L2CAP Connection Parameter Update Request
 
 ## Changes August 2018
 
