@@ -2116,4 +2116,33 @@ typedef uint8_t sm_key_t[16];
 */
 #define HIDS_SUBEVENT_INPUT_REPORT_ENABLE                                   0x05
 
+/**
+ * @format 121
+ * @param subevent_code
+ * @param con_handle
+ * @param enable
+*/
+#define HIDS_SUBEVENT_OUTPUT_REPORT_ENABLE                                  0x06
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param con_handle
+ * @param enable
+*/
+#define HIDS_SUBEVENT_FEATURE_REPORT_ENABLE                                 0x07
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param con_handle
+*/
+#define HIDS_SUBEVENT_SUSPEND                                               0x08
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param con_handle
+*/
+#define HIDS_SUBEVENT_EXIT_SUSPEND                                          0x09
 #endif

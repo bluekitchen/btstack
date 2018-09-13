@@ -6658,6 +6658,64 @@ static inline uint8_t hids_subevent_input_report_enable_get_enable(const uint8_t
     return event[5];
 }
 
+/**
+ * @brief Get field con_handle from event HIDS_SUBEVENT_OUTPUT_REPORT_ENABLE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hids_subevent_output_report_enable_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field enable from event HIDS_SUBEVENT_OUTPUT_REPORT_ENABLE
+ * @param event packet
+ * @return enable
+ * @note: btstack_type 1
+ */
+static inline uint8_t hids_subevent_output_report_enable_get_enable(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event HIDS_SUBEVENT_FEATURE_REPORT_ENABLE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hids_subevent_feature_report_enable_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field enable from event HIDS_SUBEVENT_FEATURE_REPORT_ENABLE
+ * @param event packet
+ * @return enable
+ * @note: btstack_type 1
+ */
+static inline uint8_t hids_subevent_feature_report_enable_get_enable(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event HIDS_SUBEVENT_SUSPEND
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hids_subevent_suspend_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field con_handle from event HIDS_SUBEVENT_EXIT_SUSPEND
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hids_subevent_exit_suspend_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
 
 
 /* API_END */
