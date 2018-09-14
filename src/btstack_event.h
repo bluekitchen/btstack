@@ -5477,6 +5477,34 @@ static inline uint16_t a2dp_subevent_signaling_connection_released_get_a2dp_cid(
 }
 
 /**
+ * @brief Get field a2dp_cid from event A2DP_SUBEVENT_STREAM_RECONFIGURED
+ * @param event packet
+ * @return a2dp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t a2dp_subevent_stream_reconfigured_get_a2dp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field local_seid from event A2DP_SUBEVENT_STREAM_RECONFIGURED
+ * @param event packet
+ * @return local_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_stream_reconfigured_get_local_seid(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field status from event A2DP_SUBEVENT_STREAM_RECONFIGURED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_stream_reconfigured_get_status(const uint8_t * event){
+    return event[6];
+}
+
+/**
  * @brief Get field status from event AVRCP_SUBEVENT_CONNECTION_ESTABLISHED
  * @param event packet
  * @return status

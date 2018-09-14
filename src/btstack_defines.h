@@ -1694,6 +1694,14 @@ typedef uint8_t sm_key_t[16];
  */
 #define A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED                  0x0C
 
+/**
+ * @format 1211          Stream was reconfigured
+ * @param subevent_code
+ * @param a2dp_cid
+ * @param local_seid
+ * @param status
+ */
+#define A2DP_SUBEVENT_STREAM_RECONFIGURED                            0x0D
 
 /** AVRCP Subevent */
 
