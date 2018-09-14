@@ -150,7 +150,12 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                         log_error("AVDTP_SI_RECONFIGURE: stream endpoint is null");
                         break;
                     }
-// test commented
+                    // copy sbc media codec info
+                    stream_endpoint->remote_seid.configured_service_categories |= stream_endpoint->remote_configuration_bitmap;
+                    stream_endpoint->remote_seid.configuration = stream_endpoint->remote_configuration;
+                    memcpy(stream_endpoint->media_codec_sbc_info, stream_endpoint->remote_configuration.media_codec.media_codec_information, 4);
+                    stream_endpoint->remote_seid.configuration.media_codec.media_codec_information = stream_endpoint->media_codec_sbc_info;
+                    
 #if 0
                     sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, connection->signaling_packet.command+4, connection->signaling_packet.size-4);
                     // TODO check if configuration is supported
