@@ -477,6 +477,9 @@ typedef struct avdtp_stream_endpoint {
     avdtp_media_type_t media_type;
     uint8_t media_codec_sbc_info[4];
 
+    // temporary reconfigure SBC config used by A2DP
+    uint8_t              reconfigure_media_codec_sbc_info[4];
+
     // preferred sampling frequency
     uint32_t preferred_sampling_frequency; 
 
