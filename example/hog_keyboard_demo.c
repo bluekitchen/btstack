@@ -63,6 +63,8 @@ const uint8_t hid_descriptor_keyboard_boot_mode[] = {
     0x09, 0x06,                    // Usage (Keyboard)
     0xa1, 0x01,                    // Collection (Application)
 
+    0x85,  0x01,                   // Report ID 1
+
     // Modifier byte
 
     0x75, 0x01,                    //   Report Size (1)
