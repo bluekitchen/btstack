@@ -156,10 +156,11 @@ const uint8_t * obex_iterator_get_data(const obex_iterator_t * context){
 }
 
 void obex_dump_packet(uint8_t request_opcode, uint8_t * packet, uint16_t size){
-    // printf("RCV: '");
-    // printf_hexdump(packet, size);
     obex_iterator_t it;
-    printf("Opcode: 0x%02x\n", packet[0]);
+    printf("OBEX Opcode: 0x%02x\n", request_opcode);
+    int header_offset = request_opcode == OBEX_OPCODE_CONNECT ? 7 : 3;
+    printf("OBEX Header: ");
+    printf_hexdump(packet, header_offset);    
     for (obex_iterator_init_with_response_packet(&it, request_opcode, packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
         uint8_t hi = obex_iterator_get_hi(&it);
         printf("HI: %x - ", hi);

@@ -48,7 +48,9 @@
 
 #define OBEX_RESP_SUCCESS                  0xA0
 #define OBEX_RESP_CONTINUE                 0x90
-#define OBEX_RESP_CANCELED                 0xC1
+#define OBEX_RESP_BAD_REQUEST              0xC0
+#define OBEX_RESP_UNAUTHORIZED             0xC1
+#define OBEX_RESP_FORBIDDEN                0xC3
 #define OBEX_RESP_NOT_FOUND                0xC4
 #define OBEX_RESP_REFUSED                  0xC6
 
