@@ -46,6 +46,8 @@
 #define OBEX_OPCODE_SESSION                0x87
 #define OBEX_OPCODE_ABORT                  0xFF
 
+#define OBEX_OPCODE_FINAL_BIT_MASK         0x80
+
 #define OBEX_RESP_SUCCESS                  0xA0
 #define OBEX_RESP_CONTINUE                 0x90
 #define OBEX_RESP_BAD_REQUEST              0xC0
@@ -54,23 +56,24 @@
 #define OBEX_RESP_NOT_FOUND                0xC4
 #define OBEX_RESP_REFUSED                  0xC6
 
-#define OBEX_HEADER_BODY                   0x48
-#define OBEX_HEADER_END_OF_BODY            0x49
-#define OBEX_HEADER_COUNT                  0xC0
-#define OBEX_HEADER_NAME                   0x01
-#define OBEX_HEADER_TYPE                   0x42
-#define OBEX_HEADER_LENGTH                 0xC3
-#define OBEX_HEADER_TIME_ISO_8601          0x44
-#define OBEX_HEADER_TIME_4_BYTE            0xC4
-#define OBEX_HEADER_DESCRIPTION            0x05
-#define OBEX_HEADER_TARGET                 0x46
-#define OBEX_HEADER_HTTP                   0x47
-#define OBEX_HEADER_WHO                    0x4A
-#define OBEX_HEADER_OBJECT_CLASS           0x4F
-#define OBEX_HEADER_APPLICATION_PARAMETERS 0x4C
-#define OBEX_HEADER_CONNECTION_ID          0xCb
+#define OBEX_HEADER_BODY                     0x48
+#define OBEX_HEADER_END_OF_BODY              0x49
+#define OBEX_HEADER_COUNT                    0xC0
+#define OBEX_HEADER_NAME                     0x01
+#define OBEX_HEADER_TYPE                     0x42
+#define OBEX_HEADER_LENGTH                   0xC3
+#define OBEX_HEADER_TIME_ISO_8601            0x44
+#define OBEX_HEADER_TIME_4_BYTE              0xC4
+#define OBEX_HEADER_DESCRIPTION              0x05
+#define OBEX_HEADER_TARGET                   0x46
+#define OBEX_HEADER_HTTP                     0x47
+#define OBEX_HEADER_WHO                      0x4A
+#define OBEX_HEADER_OBJECT_CLASS             0x4F
+#define OBEX_HEADER_APPLICATION_PARAMETERS   0x4C
+#define OBEX_HEADER_CONNECTION_ID            0xCB
+#define OBEX_HEADER_AUTHENTICATION_CHALLENGE 0x4D
+#define OBEX_HEADER_AUTHENTICATION_RESPONSE  0x4E
 
-#define OBEX_OPCODE_FINAL_BIT_MASK         0x80
 
 #define OBEX_VERSION                       0x14
 
