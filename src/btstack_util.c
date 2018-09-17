@@ -334,8 +334,11 @@ int sscanf_bd_addr(const char * addr_string, bd_addr_t addr){
             result = 1;
             break;
         }
-        char separator = *addr_string++;
-        if (separator != ':' && separator != '-' && separator != ' ') break;
+        // skip supported separators
+        char next_char = *addr_string;
+        if (next_char == ':' || next_char == '-' || next_char == ' ') {
+            addr_string++;
+        }
     }
 
     if (result){
