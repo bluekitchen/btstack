@@ -468,6 +468,10 @@ void goep_client_add_header_application_parameters(uint16_t goep_cid, uint16_t l
     goep_client_add_header(goep_cid, OBEX_HEADER_APPLICATION_PARAMETERS, length,  data);
 }
 
+void goep_client_add_header_challenge_response(uint16_t goep_cid, uint16_t length, const uint8_t * data){
+    goep_client_add_header(goep_cid, OBEX_HEADER_AUTHENTICATION_RESPONSE, length,  data);
+}
+
 void goep_client_add_header_name(uint16_t goep_cid, const char * name){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
@@ -501,7 +505,6 @@ int goep_client_execute(uint16_t goep_cid){
     goep_client_t * context = goep_client;
     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
     uint16_t pos = big_endian_read_16(buffer, 1);
-    printf_hexdump(buffer, pos);
     if (context->l2cap_psm){
         // return l2cap_send_prepared(context->bearer_cid, pos);
         return l2cap_send(context->bearer_cid, buffer, pos);
