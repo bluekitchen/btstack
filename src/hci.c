@@ -1826,6 +1826,8 @@ static void event_handler(uint8_t *packet, int size){
     hci_con_handle_t handle;
     hci_connection_t * conn;
     int i;
+    int create_connection_cmd;
+
 #ifdef ENABLE_CLASSIC
     uint8_t link_type;
 #endif
@@ -1954,9 +1956,18 @@ static void event_handler(uint8_t *packet, int size){
             hci_stack->num_cmd_packets = packet[3] ? 1 : 0;
 
             // check command status to detected failed outgoing connections
-            if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_create_connection) ||
-                HCI_EVENT_IS_COMMAND_STATUS(packet, hci_le_create_connection)) {
-
+            create_connection_cmd = 0;
+#ifdef ENABLE_CLASSIC
+            if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_create_connection)){
+                create_connection_cmd = 1;
+            }
+#endif
+#ifdef ENABLE_LE_CENTRAL
+            if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_le_create_connection)){
+                create_connection_cmd = 1;
+            }
+#endif
+            if (create_connection_cmd) {
                 uint8_t status = hci_event_command_status_get_status(packet);
                 conn = hci_connection_for_bd_addr_and_type(hci_stack->outgoing_addr, hci_stack->outgoing_addr_type);
                 log_info("command status (create connection), status %x, connection %p, addr %s, type %x", status, conn, bd_addr_to_str(hci_stack->outgoing_addr), hci_stack->outgoing_addr_type);
