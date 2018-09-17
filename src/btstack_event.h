@@ -6535,6 +6535,34 @@ static inline uint16_t pbap_subevent_phonebook_size_get_phoneboook_size(const ui
 }
 
 /**
+ * @brief Get field goep_cid from event PBAP_SUBEVENT_AUTHENTICATION_REQUEST
+ * @param event packet
+ * @return goep_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t pbap_subevent_authentication_request_get_goep_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field user_id_required from event PBAP_SUBEVENT_AUTHENTICATION_REQUEST
+ * @param event packet
+ * @return user_id_required
+ * @note: btstack_type 1
+ */
+static inline uint8_t pbap_subevent_authentication_request_get_user_id_required(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field full_access from event PBAP_SUBEVENT_AUTHENTICATION_REQUEST
+ * @param event packet
+ * @return full_access
+ * @note: btstack_type 1
+ */
+static inline uint8_t pbap_subevent_authentication_request_get_full_access(const uint8_t * event){
+    return event[6];
+}
+
+/**
  * @brief Get field hid_cid from event HID_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return hid_cid

@@ -60,6 +60,13 @@ void pbap_client_init(void);
 */
 uint8_t pbap_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid);
 
+/**
+ * @brief Provide password for OBEX Authentication after receiving PBAP_SUBEVENT_AUTHENTICATION_REQUEST
+ * @param pbap_cid
+ * @param password (null terminated string) - not copied, needs to stay valid until connection completed
+*/
+uint8_t pbap_authentication_password(uint16_t pbap_cid, const char * password);
+
 /** 
  * @brief Disconnects PBAP connection with given identifier.
  * @param pbap_cid
