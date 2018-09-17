@@ -47,7 +47,7 @@
 #define __A2DP_SOURCE_H
 
 #include <stdint.h>
-#include "avdtp.h"
+#include "classic/avdtp.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -108,6 +108,13 @@ void a2dp_source_register_packet_handler(btstack_packet_handler_t callback);
  * @param out_a2dp_cid 		Assigned A2DP channel identifyer used for furhter A2DP commands. 
  */
 uint8_t a2dp_source_establish_stream(bd_addr_t remote, uint8_t local_seid, uint16_t * out_a2dp_cid);
+
+    /**
+     * @brief Reconfigure stream.
+     * @param local_seid	 	  ID assigned to a local stream endpoint
+     * @param sampling_frequency  New sampling frequency to use. Cannot be called while stream is active
+     */
+uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t a2dp_cid, uint32_t sampling_frequency);
 
 /**
  * @brief Start stream.

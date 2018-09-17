@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GATT Client: stop timer on disconnect - fixes use after free / crash
 - L2CAP: Use valid signaling identifier for L2CAP Connection Parameter Update Request
 
+### Added
+- A2DP Source: Support stream reconfiguration (a2dp_source_reconfigure_stream_sampling_frequency)
+
 ## Changes August 2018
 
 ### Added
