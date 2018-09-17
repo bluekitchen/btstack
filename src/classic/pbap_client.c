@@ -313,7 +313,7 @@ static void pbap_parse_authentication_challenge(pbap_client_t * context, const u
     // printf("Challenge:  ");
     // printf_hexdump(challenge_data, challenge_len);
     int i;
-    uint8_t charset_code = 0;
+    // uint8_t charset_code = 0;
     for (i=0 ; i<challenge_len ; ){
         int tag = challenge_data[i];
         int len = challenge_data[i + 1];
@@ -334,7 +334,7 @@ static void pbap_parse_authentication_challenge(pbap_client_t * context, const u
                 break;
             case 2:
                 // TODO: handle charset
-                charset_code = challenge_data[i];
+                // charset_code = challenge_data[i];
                 break;
         }
         i += len;
