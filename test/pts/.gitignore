@@ -15,6 +15,8 @@ gatt_profiles
 gatt_profiles.h
 hfp_ag_test
 hfp_hf_test
+hid_device_test
+hog_demo_test
 hrp_col_test
 hrp_server_test
 hrp_server_test.h

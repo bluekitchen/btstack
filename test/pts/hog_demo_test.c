@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hog_keyboard_demo.c"
+#define __BTSTACK_FILE__ "hog_demo_test.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(hog_keyboard_demo): HID-over-GATT Keyboard
@@ -48,7 +48,7 @@
 #include <string.h>
 #include <inttypes.h>
 
-#include "hog_keyboard_demo.h"
+#include "hog_demo_test.h"
 
 #include "btstack.h"
 

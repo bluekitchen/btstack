@@ -2,6 +2,8 @@ a2dp_sink_demo
 a2dp_source_demo
 ancs_client_demo
 ancs_client_demo.h
+att_delayed_read_response
+att_delayed_read_response.h
 BCM43430A1.hcd
 ble_central_test
 ble_peripheral
@@ -21,10 +23,12 @@ gap_dedicated_bonding
 gap_inquiry
 gap_inquiry_and_bond
 gap_le_advertisements
+gap_link_keys
 gatt_battery_query
 gatt_battery_query.h
 gatt_browser
 gatt_browser.h
+gatt_heart_rate_client
 hfp_ag_demo
 hfp_hf_demo
 hid_host_demo
@@ -46,6 +50,8 @@ le_data_channel_server
 le_data_channel_server.h
 le_streamer
 le_streamer.h
+le_streamer_and_counter_client
+le_streamer_and_counter_client.h
 le_streamer_client
 led_counter
 pbap_client_demo
