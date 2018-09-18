@@ -35,9 +35,16 @@
  *
  */
 
+#ifndef hid_device_h
+#define hid_device_h
+
 #include <stdint.h>
 #include "btstack_defines.h"
 #include "bluetooth.h"
+
+#if defined __cplusplus
+extern "C" {
+#endif
 
 /**
  * @brief Create HID Device SDP service record. 
@@ -65,6 +72,8 @@ void hid_create_sdp_record(
     const uint8_t * hid_descriptor,
     uint16_t 		hid_descriptor_size,
     const char *    device_name);
+
+/* API_START */
 
 /**
  * @brief Set up HID Device 
@@ -105,4 +114,10 @@ void hid_device_send_interrupt_message(uint16_t hid_cid, const uint8_t * message
  */
 void hid_device_send_contro_message(uint16_t hid_cid, const uint8_t * message, uint16_t message_len);
 
+/* API_END */
 
+#if defined __cplusplus
+}
+#endif
+
+#endif
