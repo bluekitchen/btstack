@@ -94,6 +94,11 @@ void    goep_client_request_can_send_now(uint16_t goep_cid);
 uint8_t goep_client_get_request_opcode(uint16_t goep_cid);
 
 /**
+ * brief Get PBAP Supported Features found in SDP record during conenct
+ */
+uint32_t goep_client_get_pbap_supported_features(uint16_t goep_cid); 
+
+/**
  * @brief Set Connection ID used for newly created requests
  * @param gope_cid
  */

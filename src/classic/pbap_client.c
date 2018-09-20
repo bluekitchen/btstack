@@ -223,6 +223,11 @@ static void pbap_handle_can_send_now(void){
         case PBAP_W2_SEND_CONNECT_REQUEST:
             goep_client_create_connect_request(pbap_client->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
             goep_client_add_header_target(pbap_client->goep_cid, 16, pbap_uuid);
+            // Add PbapSupportedFeatures
+            application_parameters[0] = PBAP_APPLICATION_PARAMETER_PBAP_SUPPORTED_FEATURES;
+            application_parameters[1] = 4;
+            big_endian_store_32(application_parameters, 2, goep_client_get_pbap_supported_features(pbap_client->goep_cid));
+            goep_client_add_header_application_parameters(pbap_client->goep_cid, 6, &application_parameters[0]);
             pbap_client->state = PBAP_W4_CONNECT_RESPONSE;
             goep_client_execute(pbap_client->goep_cid);
             break;

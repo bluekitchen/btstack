@@ -387,6 +387,12 @@ uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_
     return 0;
 }
 
+uint32_t goep_client_get_pbap_supported_features(uint16_t goep_cid){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+    return context->pbap_supported_features;
+}
+
 uint8_t goep_client_disconnect(uint16_t goep_cid){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
