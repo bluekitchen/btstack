@@ -531,7 +531,17 @@ static void usb_process_acl_in(btstack_data_source_t *ds, btstack_data_source_ca
             // IO_INCOMPLETE -> wait for completed
             btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
         } else {
-            log_error("usb_process_acl_in: error writing");
+            log_error("usb_process_acl_in: error reading");
+
+            // Reset Pipe
+            err = WinUsb_ResetPipe(usb_interface_0_handle, acl_in_addr);
+            log_info("WinUsb_ResetPipe: result %u", err);
+            if (err){
+                log_info("WinUsb_ResetPipe error %u", GetLastError());
+            }
+            
+            // re-submit transfer
+            usb_submit_acl_in_transfer();
         }
         return;
     }
