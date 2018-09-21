@@ -535,9 +535,9 @@ static void usb_process_acl_in(btstack_data_source_t *ds, btstack_data_source_ca
 
             // Reset Pipe
             err = WinUsb_ResetPipe(usb_interface_0_handle, acl_in_addr);
-            log_info("WinUsb_ResetPipe: result %u", err);
+            log_info("WinUsb_ResetPipe: result %u", (int) err);
             if (err){
-                log_info("WinUsb_ResetPipe error %u", GetLastError());
+                log_info("WinUsb_ResetPipe error %u", (int) GetLastError());
             }
             
             // re-submit transfer
