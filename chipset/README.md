@@ -64,7 +64,7 @@ Dialog DA14585       | LE        | H4, SPI        | No           | n.a.         
 Espressif ESP32      | Dual mode | VHCI           | Yes          | Not yet          | Yes    |        Yes           |                | SoC with Bluetooth and Wifi
 EM 9301              | LE        | SPI, H4        | No           | n.a.             | No     |         No           | em9301         | Custom HCI SPI implementation
 EM 9304              | LE        | SPI, H4        | Yes          | n.a.             | Yes    |        Yes           | em9301         | Custom HCI SPI implementation
-Intel Dual Wireless 8260, 8265 | Dual mode | USB  | Yes          | Probably         | Don't know | Don't know       | intel          |    
+Intel Dual Wireless 8260, 8265 | Dual mode | USB  | Yes          | Probably         | Don't know | Don't know       | intel          | Firmware size: 400 kB 
 Nordic nRF           | LE        | H4             | Fixed Random | n.a.             | Yes    |        Yes           |                | Requires HCI firmware
 STM STLC2500D        | Classic   | H4             | No           | No (didn't try)  | n.a    |         n.a.         | stlc2500d      | Custom deep sleep management not supported
 Toshiba TC35661      | Dual mode | H4             | No           | No               | No     |         No           | tc3566         | Only -007/009 models provide full HCI. See below
