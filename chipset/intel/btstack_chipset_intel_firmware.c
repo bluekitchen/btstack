@@ -71,6 +71,8 @@ static const hci_cmd_t hci_intel_fc9f = {
 
 // state
 
+const char * firmware_path = ".";
+
 const hci_transport_t * transport;
 
 static int state = 0;
@@ -181,10 +183,10 @@ static int waiting_for_command_complete;
 static void state_machine(uint8_t * packet){
     intel_version_t     * version;
     intel_boot_params_t * boot_params;
-    char fw_name[30];
     int res;
     uint16_t buffer_offset;
     bd_addr_t addr;
+    char    fw_path[300];
 
     if (packet){
         // firmware upload complete event?
@@ -240,15 +242,15 @@ static void state_machine(uint8_t * packet){
             if (boot_params->limited_cce != 0) break;
 
             // firmware file
-            snprintf(fw_name, sizeof(fw_name), "ibt-%u-%u.sfi", hw_variant, dev_revid);
-            log_info("Open firmware %s", fw_name);
-            printf("Firwmare %s\n", fw_name);
+            snprintf(fw_path, sizeof(fw_path), "%s/ibt-%u-%u.sfi", firmware_path, hw_variant, dev_revid);
+            log_info("Open firmware %s", fw_path);
+            printf("Firwmare %s\n", fw_path);
 
             // open firmware file
             fw_offset = 0;
-            fw_file = fopen(fw_name, "rb");
+            fw_file = fopen(fw_path, "rb");
             if (!fw_file){
-                log_error("can't open file %s", fw_name);
+                log_error("can't open file %s", fw_path);
                 (*done)(1);
                 return;
             }
@@ -341,14 +343,14 @@ static void state_machine(uint8_t * packet){
             dump_intel_version(version);
 
             // ddc config
-            snprintf(fw_name, sizeof(fw_name), "ibt-%u-%u.ddc", hw_variant, dev_revid);
-            log_info("Open DDC %s", fw_name);
+            snprintf(fw_path, sizeof(fw_path), "%s/ibt-%u-%u.ddc", firmware_path, hw_variant, dev_revid);
+            log_info("Open DDC %s", fw_path);
 
             // open ddc file
             fw_offset = 0;
-            fw_file = fopen(fw_name, "rb");
+            fw_file = fopen(fw_path, "rb");
             if (!fw_file){
-                log_error("can't open file %s", fw_name);
+                log_error("can't open file %s", fw_path);
 
                 (*done)(1);
                 return;
@@ -400,6 +402,10 @@ static void transport_packet_handler (uint8_t packet_type, uint8_t *packet, uint
         default:
             break;
     }
+}
+
+void btstack_chipset_intel_set_firmware_path(const char * path){
+    firmware_path = path;
 }
 
 void btstack_chipset_intel_download_firmware(const hci_transport_t * hci_transport, void (*callback)(int result)){

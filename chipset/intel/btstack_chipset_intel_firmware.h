@@ -51,12 +51,18 @@
 extern "C" {
 #endif
 
- /**
+/**
  * @brief Download firmware via hci_transport
  * @param transport
  * @param done callback. 0 = Success
  */
 void btstack_chipset_intel_download_firmware(const hci_transport_t * hci_transport, void (*done)(int result));
+
+/**
+ * @brief Set path to firmware files
+ * @param firmware_path defeaults to "."
+ */
+void btstack_chipset_intel_set_firmware_path(const char * firmware_path);
 
 #if defined __cplusplus
 }
