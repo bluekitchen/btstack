@@ -65,6 +65,7 @@ No build server | [posix-h5-bcm](https://github.com/bluekitchen/btstack/tree/dev
 No build server | [libusb-intel](https://github.com/bluekitchen/btstack/tree/develop/port/libusb-inttel) | Unix-based system with Intel Wireless 8260/8265 Controller
 No build server | [windows-h4](https://github.com/bluekitchen/btstack/tree/develop/port/windows-h4) | Win32-based system connected to Bluetooth module via serial port   
 No build server | [windows-winusb](https://github.com/bluekitchen/btstack/tree/develop/port/windows-winusb) | Win32-based system with dedicated USB Bluetooth dongle
+No build server | [windows-winusb-intel](https://github.com/bluekitchen/btstack/tree/develop/port/windows-winusb-intel) | Win32-based system with Intel Wireless 8260/8265 Controller
 No build server | [raspi](https://github.com/bluekitchen/btstack/tree/develop/port/raspi) | Raspberry Pi 3 or Raspberry Pi Zero W with built-in BCM4343 Bluetooth/Wifi Controller
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badges/port-daemon-develop.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-daemon-develop)     | [daemon](https://github.com/bluekitchen/btstack/tree/develop/port/daemon) | TCP and Unix domain named socket client-server architecture supporting multiple clients
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badges/java-develop.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/java-develop)                   | [java](https://github.com/bluekitchen/btstack/tree/develop/platform/daemon/binding/java) | Java wrapper for daemon
