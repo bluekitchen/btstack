@@ -1929,6 +1929,60 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
 static char hostname[30];
 
+static void btstack_server_configure_stack(btstack_control_t * control, void * config){
+    // init HCI
+    hci_init(transport, config);
+    if (btstack_link_key_db){
+        hci_set_link_key_db(btstack_link_key_db);
+    }
+    if (control){
+        hci_set_control(control);
+    }
+
+    // hostname for POSIX systems
+    gethostname(hostname, 30);
+    hostname[29] = '\0';
+    gap_set_local_name(hostname);
+
+#ifdef HAVE_PLATFORM_IPHONE_OS
+    // iPhone doesn't use SSP yet as there's no UI for it yet and auto accept is not an option
+    gap_ssp_set_enable(0);
+#endif
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &stack_packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    // init L2CAP
+    l2cap_init();
+    l2cap_register_packet_handler(&stack_packet_handler);
+    timeout.process = daemon_no_connections_timeout;
+
+#ifdef ENABLE_RFCOMM
+    log_info("config.h: ENABLE_RFCOMM\n");
+    rfcomm_init();
+#endif
+    
+#ifdef ENABLE_SDP
+    sdp_init();
+#endif
+
+#ifdef ENABLE_BLE
+    sm_init();
+    sm_event_callback_registration.callback = &stack_packet_handler;
+    sm_add_event_handler(&sm_event_callback_registration);
+    // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
+    // sm_set_authentication_requirements( SM_AUTHREQ_BONDING | SM_AUTHREQ_MITM_PROTECTION); 
+
+    // GATT Client
+    gatt_client_init();
+
+    // GATT Server - empty attribute database
+    att_server_init(NULL, NULL, NULL);    
+
+#endif
+}
+
 int btstack_server_run(int tcp_flag){
 
     if (tcp_flag){
@@ -2027,58 +2081,8 @@ int btstack_server_run(int tcp_flag){
     log_info("BTStack Server started\n");
     log_info("version %s, build %s", BTSTACK_VERSION, BTSTACK_DATE);
 
-    // init HCI
-    hci_init(transport, config);
-    if (btstack_link_key_db){
-        hci_set_link_key_db(btstack_link_key_db);
-    }
-    if (control){
-        hci_set_control(control);
-    }
+    btstack_server_configure_stack(control, config);
 
-    // hostname for POSIX systems
-    gethostname(hostname, 30);
-    hostname[29] = '\0';
-    gap_set_local_name(hostname);
-
-#ifdef HAVE_PLATFORM_IPHONE_OS
-    // iPhone doesn't use SSP yet as there's no UI for it yet and auto accept is not an option
-    gap_ssp_set_enable(0);
-#endif
-
-    // register for HCI events
-    hci_event_callback_registration.callback = &stack_packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
-    // init L2CAP
-    l2cap_init();
-    l2cap_register_packet_handler(&stack_packet_handler);
-    timeout.process = daemon_no_connections_timeout;
-
-#ifdef ENABLE_RFCOMM
-    log_info("config.h: ENABLE_RFCOMM\n");
-    rfcomm_init();
-#endif
-    
-#ifdef ENABLE_SDP
-    sdp_init();
-#endif
-
-#ifdef ENABLE_BLE
-    sm_init();
-    sm_event_callback_registration.callback = &stack_packet_handler;
-    sm_add_event_handler(&sm_event_callback_registration);
-    // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
-    // sm_set_authentication_requirements( SM_AUTHREQ_BONDING | SM_AUTHREQ_MITM_PROTECTION); 
-
-    // GATT Client
-    gatt_client_init();
-
-    // GATT Server - empty attribute database
-    att_server_init(NULL, NULL, NULL);    
-
-#endif
-    
 #ifdef USE_LAUNCHD
     socket_connection_create_launchd();
 #else
