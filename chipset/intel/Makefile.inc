@@ -16,11 +16,11 @@ INTEL_FILES = \
 all-intel: $(INTEL_FILES)
 
 %.sfi:
-	@echo "Downloading $@"
+	@echo Downloading $@
 	@curl -O -L $(LINUX_FIRMWARE_URL)/intel/$@
 
 %.ddc:
-	@echo "Downloading %$"
+	@echo Downloading $@
 	@curl -O -L $(LINUX_FIRMWARE_URL)/intel/$@
 
 clean-intel:
