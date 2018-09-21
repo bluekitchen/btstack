@@ -206,6 +206,13 @@ static void state_machine(uint8_t * packet){
             transport_send_cmd(&hci_reset);
             break;
         case 1:
+            // check if HCI Reset was supported
+            if (packet[0] == 0x0e && packet[1] == 0x04 && packet[3] == 0x03 && packet[4] == 0x0c && packet[5] == 0x00){
+                log_info("HCI Reset was successful, no need for firmware upload / or not an Intel chipset");
+                (*done)(0);
+                break;
+            }
+
             // Read Intel Version
             state++;
             transport_send_cmd(&hci_intel_read_version);
