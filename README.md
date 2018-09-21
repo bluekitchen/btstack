@@ -62,6 +62,7 @@ No build server | [posix-h4-da14585](https://github.com/bluekitchen/btstack/tree
 No build server | [posix-h5](https://github.com/bluekitchen/btstack/tree/develop/port/posix-h5) | Unix-based system connected to Bluetooth module via H5 over serial port   
 No build server | [posix-h5-bcm](https://github.com/bluekitchen/btstack/tree/develop/port/posix-h5) | Unix-based system connected to Broadcom/Cypress Bluetooth module via H5 over serial port   
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badges/port-libusb-develop.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-libusb-develop) | [libusb](https://github.com/bluekitchen/btstack/tree/develop/port/libusb) | Unix-based system with dedicated USB Bluetooth dongle
+No build server | [libusb-intel](https://github.com/bluekitchen/btstack/tree/develop/port/libusb-inttel) | Unix-based system with Intel Wireless 8260/8265 Controller
 No build server | [windows-h4](https://github.com/bluekitchen/btstack/tree/develop/port/windows-h4) | Win32-based system connected to Bluetooth module via serial port   
 No build server | [windows-winusb](https://github.com/bluekitchen/btstack/tree/develop/port/windows-winusb) | Win32-based system with dedicated USB Bluetooth dongle
 No build server | [raspi](https://github.com/bluekitchen/btstack/tree/develop/port/raspi) | Raspberry Pi 3 or Raspberry Pi Zero W with built-in BCM4343 Bluetooth/Wifi Controller
