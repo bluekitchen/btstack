@@ -94,6 +94,10 @@
 #include "rfcomm_service_db.h"
 #include "socket_connection.h"
 
+#ifdef HAVE_INTEL_USB
+#include "btstack_chipset_intel_firmware.h"
+#endif
+
 #ifdef ENABLE_BLE
 #include "ble/gatt_client.h"
 #include "ble/att_server.h"
@@ -204,7 +208,7 @@ static void stop_power_off_timer(void);
 static client_state_t * client_for_connection(connection_t *connection);
 static void hci_emit_system_bluetooth_enabled(uint8_t enabled);
 static void stack_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size);
-
+static void btstack_server_configure_stack(void);
 
 // MARK: globals
 
@@ -212,7 +216,15 @@ static void stack_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
 static hci_transport_config_uart_t hci_transport_config_uart;
 #endif
 
+// used for stack configuration
 static const hci_transport_t * transport;
+static void * config = NULL;
+static btstack_control_t * control;
+
+#ifdef HAVE_INTEL_USB
+static int intel_firmware_loaded;
+#endif
+
 static btstack_timer_source_t timeout;
 static uint8_t timeout_active = 0;
 static int power_management_sleep = 0;
@@ -862,6 +874,17 @@ void daemon_gatt_serialize_characteristic_descriptor(gatt_client_characteristic_
 
 #endif
 
+#ifdef HAVE_INTEL_USB
+static void btstack_server_intel_firmware_done(int result){
+    intel_firmware_loaded = 1;
+    transport->close();
+    // setup stack
+    btstack_server_configure_stack();
+    // start power up
+    hci_power_control(HCI_POWER_ON);
+}
+#endif
+
 static int btstack_command_handler(connection_t *connection, uint8_t *packet, uint16_t size){
     
     bd_addr_t addr;
@@ -912,7 +935,12 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
                 start_power_off_timer();
             } else if (!power_management_sleep) {
                 stop_power_off_timer();
+#ifdef HAVE_INTEL_USB
+                // before staring up the stack, load intel firmware
+                btstack_chipset_intel_download_firmware(transport, &btstack_server_intel_firmware_done);
+#else
                 hci_power_control(HCI_POWER_ON);
+#endif                
             }
             break;
         case BTSTACK_GET_VERSION:
@@ -1929,7 +1957,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
 
 static char hostname[30];
 
-static void btstack_server_configure_stack(btstack_control_t * control, void * config){
+static void btstack_server_configure_stack(void){
     // init HCI
     hci_init(transport, config);
     if (btstack_link_key_db){
@@ -2011,7 +2039,6 @@ int btstack_server_run(int tcp_flag){
     socket_connection_init();
 
     btstack_control_t * control = NULL;
-    void * config = NULL;
     const btstack_uart_block_t * uart_block_implementation = NULL;
     (void) uart_block_implementation;
     
@@ -2081,7 +2108,9 @@ int btstack_server_run(int tcp_flag){
     log_info("BTStack Server started\n");
     log_info("version %s, build %s", BTSTACK_VERSION, BTSTACK_DATE);
 
-    btstack_server_configure_stack(control, config);
+#ifndef HAVE_INTEL_USB
+    btstack_server_configure_stack();
+#endif    
 
 #ifdef USE_LAUNCHD
     socket_connection_create_launchd();

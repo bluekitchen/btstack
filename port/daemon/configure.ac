@@ -6,13 +6,14 @@ AC_INIT([BTstack], 0.1)
 AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE
 
-AC_ARG_WITH(hci-transport, [AS_HELP_STRING([--with-hci-transport=transportType], [Specify BT type to use: h4, usb])], HCI_TRANSPORT=$withval, HCI_TRANSPORT="h4")  
-AC_ARG_WITH(uart-device, [AS_HELP_STRING([--with-uart-device=uartDevice], [Specify BT UART device to use])], UART_DEVICE=$withval, UART_DEVICE="DEFAULT")  
-AC_ARG_WITH(uart-speed, [AS_HELP_STRING([--with-uart-speed=uartSpeed], [Specify BT UART speed to use])], UART_SPEED=$withval, UART_SPEED="115200")
-AC_ARG_ENABLE(launchd, [AS_HELP_STRING([--enable-launchd],[Compiles BTdaemon for use by launchd])], USE_LAUNCHD=$enableval, USE_LAUNCHD="no")
-AC_ARG_WITH(vendor-id, [AS_HELP_STRING([--with-vendor-id=vendorID], [Specify USB BT Dongle vendorID])], USB_VENDOR_ID=$withval, USB_VENDOR_ID="0")  
-AC_ARG_WITH(product-id, [AS_HELP_STRING([--with-product-id=productID], [Specify USB BT Dongle productID])], USB_PRODUCT_ID=$withval, USB_PRODUCT_ID="0")  
- 
+AC_ARG_WITH(hci-transport, [AS_HELP_STRING([--with-hci-transport=transportType], [Specify BT type to use: h4, usb])],      HCI_TRANSPORT=$withval,      HCI_TRANSPORT="h4")  
+AC_ARG_WITH(uart-device,   [AS_HELP_STRING([--with-uart-device=uartDevice],      [Specify BT UART device to use])],        UART_DEVICE=$withval,        UART_DEVICE="DEFAULT")  
+AC_ARG_WITH(uart-speed,    [AS_HELP_STRING([--with-uart-speed=uartSpeed],        [Specify BT UART speed to use])],         UART_SPEED=$withval,         UART_SPEED="115200")
+AC_ARG_WITH(vendor-id,     [AS_HELP_STRING([--with-vendor-id=vendorID],          [Specify USB BT Dongle vendorID])],       USB_VENDOR_ID=$withval,      USB_VENDOR_ID="0")  
+AC_ARG_WITH(product-id,    [AS_HELP_STRING([--with-product-id=productID],        [Specify USB BT Dongle productID])],      USB_PRODUCT_ID=$withval,     USB_PRODUCT_ID="0")  
+AC_ARG_ENABLE(launchd,     [AS_HELP_STRING([--enable-launchd],                   [Compiles BTdaemon for use by launchd])], USE_LAUNCHD=$enableval,      USE_LAUNCHD="no")
+AC_ARG_ENABLE(intel-usb,   [AS_HELP_STRING([--enable-intel-usb],                 [Enable Intel firmware support ])],       ENABLE_INTEL_USB=$enableval, ENABLE_INTEL_USB="no") 
+
 # BUILD/HOST/TARGET
 AC_CANONICAL_HOST
 
@@ -176,6 +177,12 @@ if test "x$HCI_TRANSPORT" = xUSB; then
     echo "#define HAVE_TRANSPORT_USB" >> btstack_config.h
     echo "#define USB_PRODUCT_ID $USB_PRODUCT_ID" >> btstack_config.h
     echo "#define USB_VENDOR_ID $USB_VENDOR_ID" >> btstack_config.h
+
+    if test "x$ENABLE_INTEL_USB" = xyes; then
+        echo "#define HAVE_INTEL_USB" >> btstack_config.h
+        FIRMWARE_FILES="\${INTEL_FILES}"
+        USB_SOURCES+=" btstack_chipset_intel_firmware.c"
+    fi
 else
     UART_SOURCES=btstack_uart_block_$UART_BLOCK.o
     echo "#define HAVE_TRANSPORT_H4" >> btstack_config.h
@@ -189,6 +196,7 @@ fi
 echo                        >> btstack_config.h
 echo "#endif"               >> btstack_config.h
 
+AC_SUBST(FIRMWARE_FILES)
 AC_SUBST(REMOTE_DEVICE_DB_SOURCES)
 AC_SUBST(USB_SOURCES)
 AC_SUBST(UART_SOURCES)
