@@ -62,8 +62,10 @@ No build server | [posix-h4-da14585](https://github.com/bluekitchen/btstack/tree
 No build server | [posix-h5](https://github.com/bluekitchen/btstack/tree/develop/port/posix-h5) | Unix-based system connected to Bluetooth module via H5 over serial port   
 No build server | [posix-h5-bcm](https://github.com/bluekitchen/btstack/tree/develop/port/posix-h5) | Unix-based system connected to Broadcom/Cypress Bluetooth module via H5 over serial port   
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badges/port-libusb-develop.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-libusb-develop) | [libusb](https://github.com/bluekitchen/btstack/tree/develop/port/libusb) | Unix-based system with dedicated USB Bluetooth dongle
+No build server | [libusb-intel](https://github.com/bluekitchen/btstack/tree/develop/port/libusb-inttel) | Unix-based system with Intel Wireless 8260/8265 Controller
 No build server | [windows-h4](https://github.com/bluekitchen/btstack/tree/develop/port/windows-h4) | Win32-based system connected to Bluetooth module via serial port   
 No build server | [windows-winusb](https://github.com/bluekitchen/btstack/tree/develop/port/windows-winusb) | Win32-based system with dedicated USB Bluetooth dongle
+No build server | [windows-winusb-intel](https://github.com/bluekitchen/btstack/tree/develop/port/windows-winusb-intel) | Win32-based system with Intel Wireless 8260/8265 Controller
 No build server | [raspi](https://github.com/bluekitchen/btstack/tree/develop/port/raspi) | Raspberry Pi 3 or Raspberry Pi Zero W with built-in BCM4343 Bluetooth/Wifi Controller
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badges/port-daemon-develop.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/port-daemon-develop)     | [daemon](https://github.com/bluekitchen/btstack/tree/develop/port/daemon) | TCP and Unix domain named socket client-server architecture supporting multiple clients
 [<img src="http://buildbot.bluekitchen-gmbh.com/btstack/badges/java-develop.svg">](https://buildbot.bluekitchen-gmbh.com/btstack/#/builders/java-develop)                   | [java](https://github.com/bluekitchen/btstack/tree/develop/platform/daemon/binding/java) | Java wrapper for daemon
@@ -84,6 +86,7 @@ Cypress CYW20704             | Dual mode | H4, H5, USB     | Probably         | 
 Dialog Semiconductor DA14581, DA14585 | LE        | H4, SPI         | n.a.             | da14581        | Official HCI firmware used
 Espressif ESP32              | Dual mode | VHCI            | Not yet          |                | SoC with Bluetooth and Wifi
 EM 9301, 9304                | LE        | SPI             | n.a.             | em9301         | Custom HCI SPI implementation
+Intel Dual Wireless 8260, 8265 | Dual mode | USB           | Probably         | intel          | Firmware size: 400 kB 
 Nordic nRF                   | LE        | H4              | n.a.             |                | Requires custom HCI firmware
 STM STLC2500D                | Classic   | H4              | No (didn't try)  | stlc2500d      | Custom deep sleep management not supported
 Toshiba TC35661              | Dual mode | H4              | No               | tc3566         |

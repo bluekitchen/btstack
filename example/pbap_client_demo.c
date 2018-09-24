@@ -70,7 +70,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 static bd_addr_t    remote_addr;
 // MBP2016 "F4-0F-24-3B-1B-E1"
 // Nexus 7 "30-85-A9-54-2E-78"
-static const char * remote_addr_string = "BC:EC:5D:E6:15:03";
+// iPhone SE "BC:EC:5D:E6:15:03"
+// PTS "001BDC080AA5"
+static  char * remote_addr_string = "001BDC080AA5";
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint16_t pbap_cid;
@@ -90,6 +92,7 @@ static void show_usage(void){
     printf("d - get phonebook size\n");
     printf("e - pull phonebook\n");
     printf("f - disconnnect\n");
+    printf("p - authenticate using password '0000'\n");
     printf("\n");
 }
 
@@ -115,6 +118,9 @@ static void stdin_process(char c){
             break;
         case 'f':
             pbap_disconnect(pbap_cid);
+            break;
+        case 'p':
+            pbap_authentication_password(pbap_cid, "0000");
             break;
         default:
             show_usage();
@@ -147,6 +153,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             break;
                         case PBAP_SUBEVENT_OPERATION_COMPLETED:
                             printf("[+] Operation complete\n");
+                            break;
+                        case PBAP_SUBEVENT_AUTHENTICATION_REQUEST:
+                            printf("[?] Authentication requested\n");
                             break;
                         case PBAP_SUBEVENT_PHONEBOOK_SIZE:
                             status = pbap_subevent_phonebook_size_get_status(packet);

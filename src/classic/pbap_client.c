@@ -74,6 +74,7 @@
 #include "bluetooth_sdp.h"
 #include "classic/sdp_client_rfcomm.h"
 #include "btstack_event.h"
+#include "md5.h"
 
 #include "classic/obex.h"
 #include "classic/obex_iterator.h"
@@ -90,6 +91,8 @@ typedef enum {
     PBAP_W4_GOEP_CONNECTION,
     PBAP_W2_SEND_CONNECT_REQUEST,
     PBAP_W4_CONNECT_RESPONSE,
+    PBAP_W4_USER_AUTHENTICATION,
+    PBAP_W2_SEND_AUTHENTICATED_CONNECT,
     PBAP_CONNECT_RESPONSE_RECEIVED,
     PBAP_CONNECTED,
     //
@@ -116,6 +119,9 @@ typedef struct pbap_client {
     btstack_packet_handler_t client_handler;
     const char * current_folder;
     uint16_t set_path_offset;
+    uint8_t  authentication_options;
+    uint16_t authentication_nonce[16];
+    const char * authentication_password;
 } pbap_client_t;
 
 static pbap_client_t _pbap_client;
@@ -183,19 +189,70 @@ static void pbap_client_emit_phonebook_size_event(pbap_client_t * context, uint8
     context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
 }
 
+static void pbap_client_emit_authentication_event(pbap_client_t * context, uint8_t options){
+    // split options
+    uint8_t user_id_required = options & 1 ? 1 : 0;
+    uint8_t full_access      = options & 2 ? 1 : 0;
+
+    uint8_t event[7];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_PBAP_META;
+    pos++;  // skip len
+    event[pos++] = PBAP_SUBEVENT_AUTHENTICATION_REQUEST;
+    little_endian_store_16(event,pos,context->cid);
+    pos+=2;
+    event[pos++] = user_id_required;
+    event[pos++] = full_access;
+    if (pos != sizeof(event)) log_error("pbap_client_emit_authentication_event size %u", pos);
+    context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
+}
+
+static const uint8_t collon = (uint8_t) ':';
+
 static void pbap_handle_can_send_now(void){
     uint8_t  path_element[20];
     uint16_t path_element_start;
     uint16_t path_element_len;
     uint8_t  application_parameters[20];
+    uint8_t  challenge_response[36];
+    int i;
+
+    MD5_CTX md5_ctx;
 
     switch (pbap_client->state){
         case PBAP_W2_SEND_CONNECT_REQUEST:
             goep_client_create_connect_request(pbap_client->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
             goep_client_add_header_target(pbap_client->goep_cid, 16, pbap_uuid);
+            // Add PbapSupportedFeatures
+            application_parameters[0] = PBAP_APPLICATION_PARAMETER_PBAP_SUPPORTED_FEATURES;
+            application_parameters[1] = 4;
+            big_endian_store_32(application_parameters, 2, goep_client_get_pbap_supported_features(pbap_client->goep_cid));
+            goep_client_add_header_application_parameters(pbap_client->goep_cid, 6, &application_parameters[0]);
             pbap_client->state = PBAP_W4_CONNECT_RESPONSE;
             goep_client_execute(pbap_client->goep_cid);
-            return;
+            break;
+        case PBAP_W2_SEND_AUTHENTICATED_CONNECT:
+            goep_client_create_connect_request(pbap_client->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
+            goep_client_add_header_target(pbap_client->goep_cid, 16, pbap_uuid);
+            // setup authentication challenge response
+            i = 0;
+            challenge_response[i++] = 0;  // Tag Digest
+            challenge_response[i++] = 16; // Len
+            // calculate md5
+            MD5_Init(&md5_ctx);
+            MD5_Update(&md5_ctx, pbap_client->authentication_nonce, 16);
+            MD5_Update(&md5_ctx, &collon, 1);
+            MD5_Update(&md5_ctx, pbap_client->authentication_password, strlen(pbap_client->authentication_password));
+            MD5_Final(&challenge_response[i], &md5_ctx);
+            i += 16;
+            challenge_response[i++] = 2;  // Tag Nonce
+            challenge_response[i++] = 16; // Len
+            memcpy(&challenge_response[i], pbap_client->authentication_nonce, 16);
+            i += 16;
+            goep_client_add_header_challenge_response(pbap_client->goep_cid, i, challenge_response);
+            pbap_client->state = PBAP_W4_CONNECT_RESPONSE;
+            goep_client_execute(pbap_client->goep_cid);
+            break;
         case PBAP_W2_SEND_DISCONNECT_REQUEST:
             goep_client_create_disconnect_request(pbap_client->goep_cid);
             pbap_client->state = PBAP_W4_DISCONNECT_RESPONSE;
@@ -257,6 +314,38 @@ static void pbap_handle_can_send_now(void){
     }
 }
 
+static void pbap_parse_authentication_challenge(pbap_client_t * context, const uint8_t * challenge_data, uint16_t challenge_len){
+    // printf("Challenge:  ");
+    // printf_hexdump(challenge_data, challenge_len);
+    int i;
+    // uint8_t charset_code = 0;
+    for (i=0 ; i<challenge_len ; ){
+        int tag = challenge_data[i];
+        int len = challenge_data[i + 1];
+        i += 2;
+        switch (tag) {
+            case 0:
+                if (len != 0x10) {
+                    log_error("Invalid OBEX digest len %u", len);
+                    return;
+                }
+                memcpy(context->authentication_nonce, &challenge_data[i], 16);
+                // printf("Nonce: ");
+                // printf_hexdump(context->authentication_nonce, 16);
+                break;
+            case 1:
+                context->authentication_options = challenge_data[i];
+                // printf("Options %u\n", context->authentication_options);
+                break;
+            case 2:
+                // TODO: handle charset
+                // charset_code = challenge_data[i];
+                break;
+        }
+        i += len;
+    }
+}
+
 static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     UNUSED(channel); // ok: there is no channel
@@ -303,24 +392,37 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
             break;
         case GOEP_DATA_PACKET:
             // TODO: handle chunked data
-#if 0
-            obex_dump_packet(goep_client_get_request_opcode(pbap_client->goep_cid), packet, size);
+#if 1
+            // obex_dump_packet(goep_client_get_request_opcode(pbap_client->goep_cid), packet, size);
 #endif
             switch (pbap_client->state){
                 case PBAP_W4_CONNECT_RESPONSE:
-                    for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(pbap_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
-                        uint8_t hi = obex_iterator_get_hi(&it);
-                        if (hi == OBEX_HEADER_CONNECTION_ID){
-                            goep_client_set_connection_id(pbap_client->goep_cid, obex_iterator_get_data_32(&it));
-                        }
-                    }
-                    if (packet[0] == OBEX_RESP_SUCCESS){
-                        pbap_client->state = PBAP_CONNECTED;
-                        pbap_client_emit_connected_event(pbap_client, 0);
-                    } else {
-                        log_info("pbap: obex connect failed, result 0x%02x", packet[0]);
-                        pbap_client->state = PBAP_INIT;
-                        pbap_client_emit_connected_event(pbap_client, OBEX_CONNECT_FAILED);
+                    switch (packet[0]){
+                        case OBEX_RESP_SUCCESS:
+                            for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(pbap_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
+                                uint8_t hi = obex_iterator_get_hi(&it);
+                                if (hi == OBEX_HEADER_CONNECTION_ID){
+                                    goep_client_set_connection_id(pbap_client->goep_cid, obex_iterator_get_data_32(&it));
+                                }
+                            }
+                            pbap_client->state = PBAP_CONNECTED;
+                            pbap_client_emit_connected_event(pbap_client, 0);
+                            break;
+                        case OBEX_RESP_UNAUTHORIZED:
+                            for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(pbap_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
+                                uint8_t hi = obex_iterator_get_hi(&it);
+                                if (hi == OBEX_HEADER_AUTHENTICATION_CHALLENGE){
+                                    pbap_parse_authentication_challenge(pbap_client, obex_iterator_get_data(&it), obex_iterator_get_data_len(&it));
+                                }
+                            }
+                            pbap_client->state = PBAP_W4_USER_AUTHENTICATION;
+                            pbap_client_emit_authentication_event(pbap_client, pbap_client->authentication_options);
+                            break;
+                        default:
+                            log_info("pbap: obex connect failed, result 0x%02x", packet[0]);
+                            pbap_client->state = PBAP_INIT;
+                            pbap_client_emit_connected_event(pbap_client, OBEX_CONNECT_FAILED);
+                            break;                            
                     }
                     break;
                 case PBAP_W4_DISCONNECT_RESPONSE:
@@ -448,6 +550,15 @@ uint8_t pbap_set_phonebook(uint16_t pbap_cid, const char * path){
     pbap_client->state = PBAP_W2_SET_PATH_ROOT;
     pbap_client->current_folder = path;
     pbap_client->set_path_offset = 0;
+    goep_client_request_can_send_now(pbap_client->goep_cid);
+    return 0;
+}
+
+uint8_t pbap_authentication_password(uint16_t pbap_cid, const char * password){
+    UNUSED(pbap_cid);
+    if (pbap_client->state != PBAP_W4_USER_AUTHENTICATION) return BTSTACK_BUSY;
+    pbap_client->state = PBAP_W2_SEND_AUTHENTICATED_CONNECT;
+    pbap_client->authentication_password = password;
     goep_client_request_can_send_now(pbap_client->goep_cid);
     return 0;
 }

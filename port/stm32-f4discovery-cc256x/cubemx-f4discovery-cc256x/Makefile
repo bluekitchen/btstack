@@ -38,6 +38,7 @@ VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce
 VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player
 VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods
+VPATH += ${BTSTACK_ROOT}/3rd-party/md5
 VPATH += ${BTSTACK_ROOT}/3rd-party/segger-rtt
 VPATH += ${BTSTACK_ROOT}/chipset/cc256x
 VPATH += ${BTSTACK_ROOT}/example
@@ -158,6 +159,7 @@ hfp_msbc.c \
 hsp_hs.c \
 hsp_ag.c \
 hid_device.c \
+md5.c \
 rfcomm.c \
 sco_demo_util.c \
 btstack_hid_parser.c \
@@ -235,10 +237,11 @@ C_INCLUDES += -I${BTSTACK_ROOT}/src/ble/gatt-service
 C_INCLUDES += -I${BTSTACK_ROOT}/src/classic
 C_INCLUDES += -I${BTSTACK_ROOT}/src
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
-C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/bluedroid/descoder/include
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/hxcmod-player
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods
+C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/md5
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/segger-rtt
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/embedded
 C_INCLUDES += -I${BTSTACK_ROOT}/chipset/cc256x

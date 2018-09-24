@@ -64,6 +64,7 @@ Dialog DA14585       | LE        | H4, SPI        | No           | n.a.         
 Espressif ESP32      | Dual mode | VHCI           | Yes          | Not yet          | Yes    |        Yes           |                | SoC with Bluetooth and Wifi
 EM 9301              | LE        | SPI, H4        | No           | n.a.             | No     |         No           | em9301         | Custom HCI SPI implementation
 EM 9304              | LE        | SPI, H4        | Yes          | n.a.             | Yes    |        Yes           | em9301         | Custom HCI SPI implementation
+Intel Dual Wireless 8260, 8265 | Dual mode | USB  | Yes          | Probably         | Don't know | Don't know       | intel          | Firmware size: 400 kB 
 Nordic nRF           | LE        | H4             | Fixed Random | n.a.             | Yes    |        Yes           |                | Requires HCI firmware
 STM STLC2500D        | Classic   | H4             | No           | No (didn't try)  | n.a    |         n.a.         | stlc2500d      | Custom deep sleep management not supported
 Toshiba TC35661      | Dual mode | H4             | No           | No               | No     |         No           | tc3566         | Only -007/009 models provide full HCI. See below
@@ -172,6 +173,10 @@ EM9304 is used by the 'stm32-l053r8-em9304' port in BTstack. The port.c file als
 **Init scripts** are not required although it is possible to upload small firmware patches to RAM or the OTP memory (EM9304 only).
 
 **BTstack integration**: The common code for the EM9304 is provided by *btstack_chipset_em9301.c*. During the setup, *btstack_chipset_em9301_instance* function is used to get a *btstack_chipset_t* instance and passed to *hci_init* function. It enables to set the BD Addr during start.
+
+## Intel Dual Wireless 8260, 8265
+
+Wifi/Bluetooth combo cards mainly used in mobile computers. The Bluetooth part requires the upload of a firmware file and a configuration file. SCO, DLE, Multiple roles not tested.
 
 ## Nordic nRF5 series
 

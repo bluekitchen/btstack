@@ -6,6 +6,7 @@ CC      = @CC@
 LDFLAGS = @LDFLAGS@
 CFLAGS  = @CFLAGS@ \
     -I ${BTSTACK_ROOT}/3rd-party/micro-ecc \
+    -I ${BTSTACK_ROOT}/chipset/intel \
     -I $(BTSTACK_ROOT)/platform/daemon/src \
     -I $(BTSTACK_ROOT)/platform/daemon/src \
     -I $(BTSTACK_ROOT)/platform/posix \
@@ -18,6 +19,7 @@ USB_CFLAGS            = @USB_CFLAGS@
 USB_LDFLAGS           = @USB_LDFLAGS@
 
 VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
+VPATH += ${BTSTACK_ROOT}/chipset/intel
 VPATH += ${BTSTACK_ROOT}/platform/daemon/src
 VPATH += ${BTSTACK_ROOT}/platform/corefoundation
 VPATH += ${BTSTACK_ROOT}/platform/libusb
@@ -80,8 +82,11 @@ BTdaemon_SOURCES =      \
 .m.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-# libBTstack.a
 all: libBTstack.$(BTSTACK_LIB_EXTENSION) BTdaemon libBTstackServer.$(BTSTACK_LIB_EXTENSION)
+
+# Intel Firmware files
+include ${BTSTACK_ROOT}/chipset/intel/Makefile.inc
+all: @FIRMWARE_FILES@ 
 
 libBTstack.$(BTSTACK_LIB_EXTENSION): $(libBTstack_SOURCES)
 		$(BTSTACK_ROOT)/tool/get_version.sh

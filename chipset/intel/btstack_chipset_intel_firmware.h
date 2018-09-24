@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 BlueKitchen GmbH
+ * Copyright (C) 2018 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,70 +35,37 @@
  *
  */
 
-#ifndef __GOEP_CLIENT_H
+/*
+ *  btstack_chipset_intel_firmware.c
+ *
+ *  Adapter to use Intel-based chipsets with BTstack
+ *  
+ */
+
+#ifndef __BTSTACK_CHIPSET_INTEL_FIRMWARE_H
+#define __BTSTACK_CHIPSET_INTEL_FIRMWARE_H
+
+#include "hci_transport.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
- 
-#include "btstack_config.h"
-#include <stdint.h>
-
-/* API_START */
 
 /**
- * Setup PhoneBook Access Client
+ * @brief Download firmware via hci_transport
+ * @param transport
+ * @param done callback. 0 = Success
  */
-void pbap_client_init(void);
+void btstack_chipset_intel_download_firmware(const hci_transport_t * hci_transport, void (*done)(int result));
 
 /**
- * @brief Create PBAP connection to a Phone Book Server (PSE) server on a remote deivce.
- * @param handler 
- * @param addr
- * @param out_cid to use for further commands
- * @result status
-*/
-uint8_t pbap_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid);
-
-/**
- * @brief Provide password for OBEX Authentication after receiving PBAP_SUBEVENT_AUTHENTICATION_REQUEST
- * @param pbap_cid
- * @param password (null terminated string) - not copied, needs to stay valid until connection completed
-*/
-uint8_t pbap_authentication_password(uint16_t pbap_cid, const char * password);
-
-/** 
- * @brief Disconnects PBAP connection with given identifier.
- * @param pbap_cid
- * @return status
+ * @brief Set path to firmware files
+ * @param firmware_path defeaults to "."
  */
-uint8_t pbap_disconnect(uint16_t pbap_cid);
-
-/** 
- * @brief Set current folder on PSE
- * @param pbap_cid
- * @param path - note: path is not copied
- * @return status
- */
-uint8_t pbap_set_phonebook(uint16_t pbap_cid, const char * path);
-
-/**
- * @brief Get size of phone book from PSE
- * @param pbap_cid
- * @return status
- */
-uint8_t pbap_get_phonebook_size(uint16_t pbap_cid);
-
-/**
- * @brief Pull phone book from PSE
- * @param pbap_cid
- * @return status
- */
- uint8_t pbap_pull_phonebook(uint16_t pbap_cid);
-
-/* API_END */
+void btstack_chipset_intel_set_firmware_path(const char * firmware_path);
 
 #if defined __cplusplus
 }
 #endif
+
 #endif

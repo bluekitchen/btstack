@@ -2056,6 +2056,16 @@ typedef uint8_t sm_key_t[16];
  */
 #define PBAP_SUBEVENT_PHONEBOOK_SIZE                                       0x04
 
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param goep_cid
+ * @param user_id_required
+ * @param full_access 
+ */
+#define PBAP_SUBEVENT_AUTHENTICATION_REQUEST                               0x05
+
+
 // HID Meta Event Group
 
 /**

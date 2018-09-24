@@ -227,6 +227,9 @@ static int sco_out_addr;
 static int usb_path_len;
 static uint8_t usb_path[USB_MAX_PATH_LEN];
 
+// transport interface state
+static int usb_transport_open;
+
 
 #ifdef ENABLE_SCO_OVER_HCI
 static void sco_ring_init(void){
@@ -921,6 +924,8 @@ static void usb_sco_stop(void){
 static int usb_open(void){
     int r;
 
+    if (usb_transport_open) return 0;
+
     handle_packet = NULL;
 
     // default endpoint addresses
@@ -1113,12 +1118,16 @@ static int usb_open(void){
         usb_timer_active = 1;
     }
 
+    usb_transport_open = 1;
+
     return 0;
 }
 
 static int usb_close(void){
     int c;
     int completed = 0;
+
+    if (!usb_transport_open) return 0;
 
     log_info("usb_close");
 
@@ -1252,6 +1261,7 @@ static int usb_close(void){
 
     libusb_state = LIB_USB_CLOSED;
     handle = NULL;
+    usb_transport_open = 0;
 
     return 0;
 }

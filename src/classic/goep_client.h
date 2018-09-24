@@ -94,6 +94,11 @@ void    goep_client_request_can_send_now(uint16_t goep_cid);
 uint8_t goep_client_get_request_opcode(uint16_t goep_cid);
 
 /**
+ * brief Get PBAP Supported Features found in SDP record during conenct
+ */
+uint32_t goep_client_get_pbap_supported_features(uint16_t goep_cid); 
+
+/**
  * @brief Set Connection ID used for newly created requests
  * @param gope_cid
  */
@@ -161,9 +166,17 @@ void    goep_client_add_header_count(uint16_t goep_cid, uint32_t count);
  * @brief Add application parameters header to current request
  * @param goep_cid
  * @param lenght of application parameters
- * @param daa 
+ * @param data 
  */
 void    goep_client_add_header_application_parameters(uint16_t goep_cid, uint16_t length, const uint8_t * data);
+
+/**
+ * @brief Add application parameters header to current request
+ * @param goep_cid
+ * @param lenght of challenge response
+ * @param data
+ */
+void    goep_client_add_header_challenge_response(uint16_t goep_cid, uint16_t length, const uint8_t * data);
 
 // int  goep_client_add_body_static(uint16_t goep_cid,  uint32_t length, uint8_t * data);
 // int  goep_client_add_body_dynamic(uint16_t goep_cid, uint32_t length, void (*data_callback)(uint32_t offset, uint8_t * buffer, uint32_t len));

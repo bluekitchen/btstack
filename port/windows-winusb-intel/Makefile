@@ -7,6 +7,7 @@ COMMON  += hci_transport_h2_winusb.c btstack_run_loop_windows.c le_device_db_fs.
 COMMON  += btstack_chipset_intel_firmware.c
 
 include ${BTSTACK_ROOT}/example/Makefile.inc
+include ${BTSTACK_ROOT}/chipset/intel/Makefile.inc
 
 # CC = gcc-fsf-4.9
 CFLAGS  += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wpedantic
@@ -33,10 +34,6 @@ VPATH += ${BTSTACK_ROOT}/chipset/intel
 
 LDFLAGS += -lsetupapi -lwinusb
 
-# csr_set_bd_addr
-EXAMPLES += csr_set_bd_addr
+clean: clean-intel
 
-csr_set_bd_addr: ${CORE_OBJ} ${COMMON_OBJ} btstack_chipset_csr.o csr_set_bd_addr.o
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
-
-all: ${EXAMPLES}
+all: all-intel ${EXAMPLES}
