@@ -251,6 +251,8 @@ static int usb_acl_out_active;
 static uint8_t hci_event_in_buffer[2 + 255];
 static uint8_t hci_acl_in_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + HCI_ACL_BUFFER_SIZE]; 
 
+// transport interface state
+static int usb_transport_open;
 
 #ifdef ENABLE_SCO_OVER_HCI
 
@@ -1078,6 +1080,8 @@ static BOOL usb_lookup_symbols(void){
 // returns 0 on success, -1 otherwise
 static int usb_open(void){
 
+    if (usb_transport_open) return 0;
+
     int r = -1;
 
 #ifdef ENABLE_SCO_OVER_HCI
@@ -1200,13 +1204,20 @@ static int usb_open(void){
 
 	SetupDiDestroyDeviceInfoList(hDevInfo);
 
-	log_info("usb_open: done");
+	log_info("usb_open: done, r = %x", r);
+
+    if (r == 0){
+        // opened
+        usb_transport_open = 1;
+    }
 
     return r;    
 }
 
 static int usb_close(void){
     
+    if (!usb_transport_open == 0) return 0;
+
     // remove data sources
     btstack_run_loop_remove_data_source(&usb_data_source_command_out);
     btstack_run_loop_remove_data_source(&usb_data_source_event_in);
@@ -1246,6 +1257,10 @@ static int usb_close(void){
 
     // free everything
     usb_free_resources();
+
+    // transport closed
+    usb_transport_open = 0;
+    
     return 0;    
 }
 
