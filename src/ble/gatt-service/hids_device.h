@@ -40,6 +40,14 @@
  * To use with your application, add '#import <hids.gatt>' to your .gatt file
  */
 
+#ifndef __HIDS_DEVICE_H
+#define __HIDS_DEVICE_H
+
+#if defined __cplusplus
+extern "C" {
+#endif
+
+
 #include <stdint.h>
 #include "btstack_defines.h"
 #include "bluetooth.h"
@@ -76,3 +84,9 @@ void hids_device_send_boot_mouse_input_report(hci_con_handle_t con_handle, const
  * @brief Send HID Boot Mouse Input Report
  */
 void hids_device_send_boot_keyboard_input_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len);
+
+#if defined __cplusplus
+}
+#endif
+
+#endif
