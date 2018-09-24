@@ -71,6 +71,8 @@ const uint8_t hid_descriptor_keyboard_boot_mode[] = {
     0x09, 0x06,                    // Usage (Keyboard)
     0xa1, 0x01,                    // Collection (Application)
 
+    0x85, 0x01,                   // Report ID 1
+
     // Modifier byte
 
     0x75, 0x01,                    //   Report Size (1)
@@ -185,6 +187,9 @@ static enum {
     APP_CONNECTED
 } app_state = APP_BOOTING;
 
+// static uint8_t modifier = 0;
+// static uint8_t keycode = 0;
+// static uint8_t report[] = { /* 0xa1, */ modifier, 0, 0, keycode, 0, 0, 0, 0, 0};
 
 // HID Keyboard lookup
 static int lookup_keycode(uint8_t character, const uint8_t * table, int size, uint8_t * keycode){
@@ -223,20 +228,76 @@ static void send_key(int modifier, int keycode){
 }
 
 static void send_report(int modifier, int keycode){
-    uint8_t report[] = { 0xa1, modifier, 0, 0, keycode, 0, 0, 0, 0, 0};
+    uint8_t report[] = { 0xa1, 0x01, modifier, 0, 0, keycode, 0, 0, 0, 0, 0};
     hid_device_send_interrupt_message(hid_cid, &report[0], sizeof(report));
 }
+
+static void hid_report_callback(uint16_t cid, hid_report_type_t report_type, uint16_t report_id, uint8_t report_max_size, int * out_report_size, uint8_t * out_report){
+    UNUSED(cid);
+    UNUSED(report_id);
+    UNUSED(report_max_size);
+    printf("hid_report_callback \n");
+    int modifier = 0x90; int keycode = 0;
+    uint8_t leds = 0x64;
+    uint8_t header = (HID_MESSAGE_TYPE_DATA << 4) | report_type;
+                    
+    // uint8_t report[] = { header, 0x01, modifier, 0, keycode, 0, 0, 0, 0, 0};
+    
+    uint8_t report[] = {header, 0x01, 0x00};
+    // HID Control: 0x05 bytes - UNDECODED [ A1 F0 90 00 64 ]
+
+    memcpy(out_report, report, sizeof(report));
+    *out_report_size = sizeof(report);
+}
+
+
+    // 0x95, 0x06,                    //   Report Count (6)
+    // 0x75, 0x08,                    //   Report Size (8)
+    // 0x15, 0x00,                    //   Logical Minimum (0)
+    // 0x25, 0xff,                    //   Logical Maximum (1)
+    // 0x05, 0x07,                    //   Usage Page (Key codes)
+    // 0x19, 0x00,                    //   Usage Minimum (Reserved (no event indicated))
+    // 0x29, 0xff,                    //   Usage Maxium (Reserved)
+    // 0x81, 0x00,                    //   Input (Data, Array)
 
 // Demo Application
 
 #ifdef HAVE_BTSTACK_STDIN
 
 // On systems with STDIN, we can directly type on the console
+static void show_usage(void){
+    bd_addr_t      iut_address;
+    gap_local_bd_addr(iut_address);
+    printf("\n--- Bluetooth HID Host Test Console %s ---\n", bd_addr_to_str(iut_address));
+    printf("l      - set limited discoverable mode\n");
+    printf("L      - restset limited discoverable mode\n");
+    printf("Ctrl-c - exit\n");
+    printf("---\n");
+}
+
 
 static void stdin_process(char character){
     uint8_t modifier;
     uint8_t keycode;
     int found;
+    switch (character){
+        case 'l':
+            printf("set limited discoverable mode\n");
+            gap_discoverable_control(1);
+            gap_set_class_of_device(0x2540);
+            return;
+        case 'L':
+            gap_discoverable_control(0);
+            gap_set_class_of_device(0x0540);
+            printf("reset limited discoverable mode\n");
+            return;
+        case '\n':
+        case '\r':
+            break;
+        default:
+            show_usage();
+            break;
+    }
 
     switch (app_state){
         case APP_BOOTING:
@@ -345,6 +406,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             app_state = APP_NOT_CONNECTED;
                             hid_cid = 0;
                             break;
+                    
                         case HID_SUBEVENT_CAN_SEND_NOW:
                             if (send_keycode){
                                 send_report(send_modifier, send_keycode);
@@ -367,6 +429,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
             break;
     }
 }
+
+
 
 /* @section Main Application Setup
  *
@@ -412,11 +476,10 @@ int btstack_main(int argc, const char * argv[]){
 
     // register for HID events
     hid_device_register_packet_handler(&packet_handler);
+    hid_device_register_report_request_callback(&hid_report_callback);
 
-#ifdef HAVE_BTSTACK_STDIN
     sscanf_bd_addr(device_addr_string, device_addr);
     btstack_stdin_setup(stdin_process);
-#endif  
     // turn on!
     hci_power_control(HCI_POWER_ON);
     return 0;
