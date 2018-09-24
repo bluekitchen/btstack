@@ -877,7 +877,6 @@ void daemon_gatt_serialize_characteristic_descriptor(gatt_client_characteristic_
 #ifdef HAVE_INTEL_USB
 static void btstack_server_intel_firmware_done(int result){
     intel_firmware_loaded = 1;
-    transport->close();
     // setup stack
     btstack_server_configure_stack();
     // start power up

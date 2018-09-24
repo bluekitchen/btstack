@@ -106,11 +106,6 @@ static void intel_firmware_done(int result){
 
     printf("Done %x\n", result);
 
-    // close
-    transport->close();
-
-    //
-
     // init HCI
     hci_init(transport, NULL);
 
