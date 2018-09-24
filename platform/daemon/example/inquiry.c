@@ -85,7 +85,7 @@ int getDeviceIndexForAddress( bd_addr_t addr){
 
 void start_scan(void){
 	printf("Starting inquiry scan..\n");
-	bt_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
+	bt_send_cmd(&hci_inquiry, GAP_IAC_GENERAL_INQUIRY, INQUIRY_INTERVAL, 0);
 }
 
 int has_more_remote_name_requests(void){
