@@ -292,36 +292,36 @@ hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid){
     return NULL;
 }
 
-hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr){
+hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr, hfp_role_t hfp_role){
     btstack_linked_list_iterator_t it;  
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (memcmp(hfp_connection->remote_addr, bd_addr, 6) == 0) {
+        if (memcmp(hfp_connection->remote_addr, bd_addr, 6) == 0 && hfp_connection->local_role == hfp_role) {
             return hfp_connection;
         }
     }
     return NULL;
 }
 
-hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle){
+hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle, hfp_role_t hfp_role){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (hfp_connection->sco_handle == handle){
+        if (hfp_connection->sco_handle == handle && hfp_connection->local_role == hfp_role){
             return hfp_connection;
         }
     }
     return NULL;
 }
 
-hfp_connection_t * get_hfp_connection_context_for_acl_handle(uint16_t handle){
+hfp_connection_t * get_hfp_connection_context_for_acl_handle(uint16_t handle, hfp_role_t hfp_role){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, hfp_get_connections());
     while (btstack_linked_list_iterator_has_next(&it)){
         hfp_connection_t * hfp_connection = (hfp_connection_t *)btstack_linked_list_iterator_next(&it);
-        if (hfp_connection->acl_handle == handle){
+        if (hfp_connection->acl_handle == handle && hfp_connection->local_role == hfp_role){
             return hfp_connection;
         }
     }
@@ -377,7 +377,7 @@ static void remove_hfp_connection_context(hfp_connection_t * hfp_connection){
 }
 
 static hfp_connection_t * provide_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr, hfp_role_t local_role){
-    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    hfp_connection_t * hfp_connection = get_hfp_connection_context_for_bd_addr(bd_addr, local_role);
     if (hfp_connection) return  hfp_connection;
     hfp_connection = create_hfp_connection_context();
     memcpy(hfp_connection->remote_addr, bd_addr, 6);
@@ -565,7 +565,7 @@ static void hfp_handle_failed_sco_connection(uint8_t status){
 }
 
 
-void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, hfp_role_t local_role){
     UNUSED(channel);    // ok: no channel
 
     bd_addr_t event_addr;
@@ -582,7 +582,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 case 0: //  SCO
                 case 2: // eSCO
                     hci_event_connection_request_get_bd_addr(packet, event_addr);
-                    hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr);
+                    hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr, local_role);
                     if (!hfp_connection) break;
                     log_info("hf accept sco\n");
                     hfp_connection->hf_accept_sco = 1;
@@ -605,7 +605,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
             hci_event_synchronous_connection_complete_get_bd_addr(packet, event_addr);
-            hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr);
+            hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr, local_role);
             if (!hfp_connection) {
                 log_error("HFP: connection does not exist for remote with addr %s.", bd_addr_to_str(event_addr));
                 return;
@@ -645,7 +645,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                  " rx_packet_length %u bytes, tx_packet_length %u bytes, air_mode 0x%2x (0x02 == CVSD)\n", sco_handle,
                  bd_addr_to_str(event_addr), transmission_interval, retransmission_interval, rx_packet_length, tx_packet_length, air_mode);
 
-            hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr);
+            hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr, local_role);
             
             if (!hfp_connection) {
                 log_error("SCO link created, hfp_connection for address %s not found.", bd_addr_to_str(event_addr));
@@ -666,7 +666,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             handle = little_endian_read_16(packet,3);
-            hfp_connection = get_hfp_connection_context_for_sco_handle(handle);
+            hfp_connection = get_hfp_connection_context_for_sco_handle(handle, local_role);
             
             if (!hfp_connection) break;
 
@@ -728,7 +728,7 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
             rfcomm_event_channel_opened_get_bd_addr(packet, event_addr); 
             status = rfcomm_event_channel_opened_get_status(packet);          
             
-            hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr);
+            hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr, local_role);
             if (!hfp_connection || hfp_connection->state != HFP_W4_RFCOMM_CONNECTED) return;
 
             if (status) {
