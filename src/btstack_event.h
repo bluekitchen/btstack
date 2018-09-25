@@ -6629,6 +6629,26 @@ static inline uint16_t hid_subevent_can_send_now_get_hid_cid(const uint8_t * eve
 }
 
 /**
+ * @brief Get field con_handle from event HID_SUBEVENT_SUSPEND
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hid_subevent_suspend_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field con_handle from event HID_SUBEVENT_EXIT_SUSPEND
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hid_subevent_exit_suspend_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
  * @brief Get field con_handle from event HIDS_SUBEVENT_CAN_SEND_NOW
  * @param event packet
  * @return con_handle

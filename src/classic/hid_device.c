@@ -103,8 +103,11 @@ static hid_device_t * hid_device_get_instance_for_cid(uint16_t cid){
     return NULL;
 }
 
-static hid_device_t * hid_device_create_instance_for_con_handle(uint16_t con_handle){
-    UNUSED(con_handle);
+static hid_device_t * hid_device_create_instance_for_bt_addr(bd_addr_t bd_addr){
+    memcpy(_hid_device.bd_addr, bd_addr, 6);
+    if (!_hid_device.cid){
+        _hid_device.cid = hid_device_get_next_cid();
+    }
     return &_hid_device;
 }
 
@@ -251,6 +254,10 @@ void hid_create_sdp_record(
     }
     de_pop_sequence(service, attribute);
 
+    uint8_t hid_remote_wake = 1;
+    de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_REMOTE_WAKE); 
+    de_add_number(service,  DE_BOOL, DE_SIZE_8,  hid_remote_wake);
+
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_HID_BOOT_DEVICE); 
     de_add_number(service,  DE_BOOL, DE_SIZE_8,  hid_boot_device);
 }
@@ -264,7 +271,7 @@ static inline void hid_device_emit_connected_event(hid_device_t * context, uint8
     little_endian_store_16(event,pos,context->cid);
     pos+=2;
     event[pos++] = status;
-    memcpy(&event[pos], context->bd_addr, 6);
+    reverse_bd_addr(context->bd_addr, &event[pos]);
     pos += 6;
     little_endian_store_16(event,pos,context->con_handle);
     pos += 2;
@@ -300,6 +307,19 @@ static inline void hid_device_emit_can_send_now_event(hid_device_t * context){
     hid_callback(HCI_EVENT_PACKET, context->cid, &event[0], pos);
 }
 
+static inline void hid_device_emit_event(hid_device_t * context, uint8_t subevent_type){
+    uint8_t event[4];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_HID_META;
+    pos++;  // skip len
+    event[pos++] = subevent_type;
+    little_endian_store_16(event,pos,context->cid);
+    pos+=2;
+    event[1] = pos - 2;
+    if (pos != sizeof(event)) log_error("hid_device_emit_event size %u", pos);
+    hid_callback(HCI_EVENT_PACKET, context->cid, &event[0], pos);
+}
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t packet_size){
     UNUSED(channel);
     UNUSED(packet_size);
@@ -309,6 +329,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
     hid_device_t * device = NULL;
     uint8_t report[20];
     int report_size;
+    uint8_t param;
+    bd_addr_t address;
 
     switch (packet_type){
         case L2CAP_DATA_PACKET:
@@ -326,8 +348,23 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         device->report_id = packet[1];
                     }
                     device->state = HID_DEVICE_W2_SEND_REPORT;
-                    printf(" answer get report type %d report_type\n", device->report_type);
+                    // printf(" answer get report type %d report_type\n", device->report_type);
                     l2cap_request_can_send_now_event(device->control_cid);
+                    break;
+                case HID_MESSAGE_TYPE_HID_CONTROL:
+                    param = packet[0] & 0x0F;
+                    switch (param){
+                        case HID_CONTROL_PARAM_SUSPEND:
+                            hid_device_emit_event(device, HID_SUBEVENT_SUSPEND);
+                            break;
+                        case HID_CONTROL_PARAM_EXIT_SUSPEND:
+                            hid_device_emit_event(device, HID_SUBEVENT_EXIT_SUSPEND);
+                            break;
+                        default:
+                            device->state = HID_DEVICE_W2_SEND_UNSUPPORTED_REQUEST;
+                            l2cap_request_can_send_now_event(device->control_cid);
+                            break;
+                    }
                     break;
                 default:
                     printf("L2CAP_DATA_PACKET %d  \n", message_type);
@@ -342,7 +379,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     switch (l2cap_event_incoming_connection_get_psm(packet)){
                         case PSM_HID_CONTROL:
                         case PSM_HID_INTERRUPT:
-                            device = hid_device_create_instance_for_con_handle(l2cap_event_incoming_connection_get_handle(packet));
+                            l2cap_event_incoming_connection_get_address(packet, address); 
+                            device = hid_device_create_instance_for_bt_addr(address);
                             if (!device) {
                                 log_error("L2CAP_EVENT_INCOMING_CONNECTION, no hid device for con handle 0x%02x", l2cap_event_incoming_connection_get_handle(packet));
                                 l2cap_decline_connection(channel);
@@ -351,6 +389,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             if (device->con_handle == 0 || l2cap_event_incoming_connection_get_handle(packet) == device->con_handle){
                                 device->con_handle = l2cap_event_incoming_connection_get_handle(packet);
                                 device->incoming = 1;
+                                l2cap_event_incoming_connection_get_address(packet, device->bd_addr);
                                 l2cap_accept_connection(channel);
                             } else {
                                 l2cap_decline_connection(channel);
@@ -390,6 +429,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         default:
                             break;
                     }
+                    
                     // connect HID Interrupt for outgoing
                     if (device->incoming == 0 && psm == PSM_HID_CONTROL){
                         log_info("Create outgoing HID Interrupt");
@@ -406,9 +446,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     device = hid_device_get_instance_for_cid(l2cap_event_channel_closed_get_local_cid(packet));
                     if (!device) return;
 
+                    // connected_before = device->connected;
                     device->incoming  = 0;
-                    device->connected = 0;
-                    connected_before = device->connected;
                     if (l2cap_event_channel_closed_get_local_cid(packet) == device->control_cid){
                         log_info("HID Control closed");
                         device->control_cid = 0;
@@ -417,8 +456,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         log_info("HID Interrupt closed");
                         device->interrupt_cid = 0;
                     }
-                    if (connected_before && !device->connected){
+                    if (!device->interrupt_cid && !device->control_cid){
+                        device->connected = 0;
                         device->con_handle = 0;
+                        device->cid = 0;
                         log_info("HID Disconnected");
                         hid_device_emit_connection_closed_event(device);
                     }
@@ -434,7 +475,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             break;
                         case HID_DEVICE_W2_SEND_UNSUPPORTED_REQUEST:
                             report[0] = (HID_MESSAGE_TYPE_HANDSHAKE << 4) | HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
-                            hid_device_send_control_message(device->cid, &report[0], report_size);
+                            hid_device_send_control_message(device->cid, &report[0], 1);
                             break;
                         default:
                             log_info("HID Can send now, emit event");
@@ -522,19 +563,38 @@ uint8_t hid_device_connect(bd_addr_t addr, uint16_t * hid_cid){
     }
     // assign hic_cid
     *hid_cid = hid_device_get_next_cid();
-
     // store address
     memcpy(hid_device->bd_addr, addr, 6);
 
     // reset state
+    hid_device->cid           = *hid_cid;
     hid_device->incoming      = 0;
     hid_device->connected     = 0;
     hid_device->control_cid   = 0;
     hid_device->interrupt_cid = 0;
-
     // create l2cap control using fixed HID L2CAP PSM
     log_info("Create outgoing HID Control");
     uint8_t status = l2cap_create_channel(packet_handler, hid_device->bd_addr, PSM_HID_CONTROL, 48, &hid_device->control_cid);
 
     return status;
+}
+
+/*
+ * @brief Disconnect from HID Host
+ * @param hid_cid
+ * @result status
+ */
+void hid_device_disconnect(uint16_t hid_cid){
+    hid_device_t * hid_device = hid_device_get_instance_for_cid(hid_cid);
+    if (!hid_device){
+        log_error("hid_device_disconnect: could not find hid device instace");
+        return;
+    }
+    log_info("Disconnect from HID Host");
+    if (hid_device->control_cid){
+        l2cap_disconnect(hid_device->control_cid, 0); // reason isn't used
+    }
+    if (hid_device->interrupt_cid){
+        l2cap_disconnect(hid_device->interrupt_cid, 0);  // reason isn't used
+    }
 }

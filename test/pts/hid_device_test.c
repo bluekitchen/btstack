@@ -237,8 +237,8 @@ static void hid_report_callback(uint16_t cid, hid_report_type_t report_type, uin
     UNUSED(report_id);
     UNUSED(report_max_size);
     printf("hid_report_callback \n");
-    int modifier = 0x90; int keycode = 0;
-    uint8_t leds = 0x64;
+    // int modifier = 0x90; int keycode = 0;
+    // uint8_t leds = 0x64;
     uint8_t header = (HID_MESSAGE_TYPE_DATA << 4) | report_type;
                     
     // uint8_t report[] = { header, 0x01, modifier, 0, keycode, 0, 0, 0, 0, 0};
@@ -265,37 +265,47 @@ static void hid_report_callback(uint16_t cid, hid_report_type_t report_type, uin
 #ifdef HAVE_BTSTACK_STDIN
 
 // On systems with STDIN, we can directly type on the console
+#if 0
 static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth HID Host Test Console %s ---\n", bd_addr_to_str(iut_address));
+    printf("c      - connect \n");
     printf("l      - set limited discoverable mode\n");
     printf("L      - restset limited discoverable mode\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
-
+#endif
 
 static void stdin_process(char character){
     uint8_t modifier;
     uint8_t keycode;
     int found;
     switch (character){
+        case 'C':
+            printf("Disconnect from %s...\n", bd_addr_to_str(device_addr));
+            hid_device_disconnect(hid_cid);
+            break;
+        case 'c':
+            printf("Connecting to %s...\n", bd_addr_to_str(device_addr));
+            hid_device_connect(device_addr, &hid_cid);
+            return;
         case 'l':
             printf("set limited discoverable mode\n");
             gap_discoverable_control(1);
-            gap_set_class_of_device(0x2540);
+            // TODO move into HCI init
+            hci_send_cmd(&hci_write_current_iac_lap_two_iacs, 2, GAP_IAC_GENERAL_INQUIRY, GAP_IAC_LIMITED_INQUIRY);
             return;
         case 'L':
             gap_discoverable_control(0);
-            gap_set_class_of_device(0x0540);
             printf("reset limited discoverable mode\n");
             return;
         case '\n':
         case '\r':
             break;
         default:
-            show_usage();
+            // show_usage();
             break;
     }
 
@@ -393,9 +403,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                                 return;
                             }
                             app_state = APP_CONNECTED;
+                            hid_subevent_connection_opened_get_bd_addr(packet, device_addr);
                             hid_cid = hid_subevent_connection_opened_get_hid_cid(packet);
 #ifdef HAVE_BTSTACK_STDIN                        
-                            printf("HID Connected, please start typing...\n");
+                            printf("HID Connected, please start typing... %s\n", bd_addr_to_str(device_addr));
 #else                        
                             printf("HID Connected, sending demo text...\n");
                             hid_embedded_start_typing();
@@ -406,7 +417,14 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             app_state = APP_NOT_CONNECTED;
                             hid_cid = 0;
                             break;
-                    
+                        
+                        case HID_SUBEVENT_SUSPEND:
+                            printf("HID Suspend\n");
+                            break;
+                        case HID_SUBEVENT_EXIT_SUSPEND:
+                            printf("HID Exit Suspend\n");
+                            break;
+                            
                         case HID_SUBEVENT_CAN_SEND_NOW:
                             if (send_keycode){
                                 send_report(send_modifier, send_keycode);
@@ -456,8 +474,14 @@ int btstack_main(int argc, const char * argv[]){
     // SDP Server
     sdp_init();
     memset(hid_service_buffer, 0, sizeof(hid_service_buffer));
+
+    uint8_t hid_reconnect_initiate = 1;
+    uint8_t hid_virtual_cable = 1;
     // hid sevice subclass 2540 Keyboard, hid counntry code 33 US, hid virtual cable off, hid reconnect initiate off, hid boot device off 
-    hid_create_sdp_record(hid_service_buffer, 0x10001, 0x2540, 33, 0, 0, 0, hid_descriptor_keyboard_boot_mode, sizeof(hid_descriptor_keyboard_boot_mode), hid_device_name);
+    hid_create_sdp_record(hid_service_buffer, 0x10001, 0x2540, 33, 
+        hid_virtual_cable, hid_reconnect_initiate, 0, 
+        hid_descriptor_keyboard_boot_mode, sizeof(hid_descriptor_keyboard_boot_mode), hid_device_name);
+
     printf("HID service record size: %u\n", de_get_len( hid_service_buffer));
     sdp_register_service(hid_service_buffer);
 

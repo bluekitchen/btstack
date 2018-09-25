@@ -2093,6 +2093,21 @@ typedef uint8_t sm_key_t[16];
 */
 #define HID_SUBEVENT_CAN_SEND_NOW                                          0x03
 
+/**
+ * @format 12
+ * @param subevent_code
+ * @param con_handle
+*/
+#define HID_SUBEVENT_SUSPEND                                               0x04
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param con_handle
+*/
+#define HID_SUBEVENT_EXIT_SUSPEND                                          0x05
+
+
 // HIDS Meta Event Group
 
 /**

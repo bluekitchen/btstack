@@ -73,12 +73,12 @@ typedef enum {
 } hid_handshake_param_type_t;
 
 typedef enum {
-    HID_CONTROL_NOP_DEPRECATED = 0,                    // Deprecated: No Operation.
-    HID_CONTROL_HARD_RESET_DEPRECATED,                 // Deprecated: Device performs Power On System Test (POST) then initializes all internal variables and initiates normal operations.
-    HID_CONTROL_SOFT_RESET_DEPRECATED,                 // Deprecated: Device initializes all internal variables and initiates normal operations.
-    HID_CONTROL_SUSPEND = 0x03,                        // Go to reduced power mode.
-    HID_CONTROL_EXIT_SUSPEND,                          // Exit reduced power mode.
-    HID_CONTROL_VIRTUAL_CABLE_UNPLUG
+    HID_CONTROL_PARAM_NOP_DEPRECATED = 0,              // Deprecated: No Operation.
+    HID_CONTROL_PARAM_HARD_RESET_DEPRECATED,           // Deprecated: Device performs Power On System Test (POST) then initializes all internal variables and initiates normal operations.
+    HID_CONTROL_PARAM_SOFT_RESET_DEPRECATED,           // Deprecated: Device initializes all internal variables and initiates normal operations.
+    HID_CONTROL_PARAM_SUSPEND = 0x03,                  // Go to reduced power mode.
+    HID_CONTROL_PARAM_EXIT_SUSPEND,                    // Exit reduced power mode.
+    HID_CONTROL_PARAM_VIRTUAL_CABLE_UNPLUG
 } hid_control_param_t;
 
 typedef enum {
@@ -141,6 +141,12 @@ void hid_device_register_report_request_callback(void (*callback) (uint16_t hid_
  * @result status
  */
 uint8_t hid_device_connect(bd_addr_t addr, uint16_t * hid_cid);
+
+/*
+ * @brief Disconnect from HID Host
+ * @param hid_cid
+ */
+void hid_device_disconnect(uint16_t hid_cid);
 
 /**
  * @brief Request can send now event to send HID Report
