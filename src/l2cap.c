@@ -1855,8 +1855,7 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
     return 0;
 }
 
-void 
-l2cap_disconnect(uint16_t local_cid, uint8_t reason){
+void l2cap_disconnect(uint16_t local_cid, uint8_t reason){
     log_info("L2CAP_DISCONNECT local_cid 0x%x reason 0x%x", local_cid, reason);
     // find channel for local_cid
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
