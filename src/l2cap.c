@@ -1371,8 +1371,8 @@ static void l2cap_run(void){
     while(btstack_linked_list_iterator_has_next(&it)){
         hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
         if (connection->l2cap_state.information_state == L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST){
+            if (!hci_can_send_acl_packet_now(connection->con_handle)) break;
             connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W4_EXTENDED_FEATURE_RESPONSE;
-            // send information request for extended features
             uint8_t sig_id = l2cap_next_sig_id();
             uint8_t info_type = L2CAP_INFO_TYPE_EXTENDED_FEATURES_SUPPORTED;
             l2cap_send_signaling_packet(connection->con_handle, INFORMATION_REQUEST, sig_id, info_type);
