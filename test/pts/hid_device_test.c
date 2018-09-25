@@ -66,7 +66,6 @@
 
 // from USB HID Specification 1.1, Appendix B.1
 const uint8_t hid_descriptor_keyboard_boot_mode[] = {
-
     0x05, 0x01,                    // Usage Page (Generic Desktop)
     0x09, 0x06,                    // Usage (Keyboard)
     0xa1, 0x01,                    // Collection (Application)
@@ -115,6 +114,7 @@ const uint8_t hid_descriptor_keyboard_boot_mode[] = {
     0x81, 0x00,                    //   Input (Data, Array)
 
     0xc0,                          // End collection  
+
 };
 
 // 
@@ -175,6 +175,8 @@ static const char hid_device_name[] = "BTstack HID Keyboard";
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint16_t hid_cid;
 static bd_addr_t device_addr;
+static int     report_data_ready = 1;
+static uint8_t report_data[20];
 
 #ifdef HAVE_BTSTACK_STDIN
 static const char * device_addr_string = "BC:EC:5D:E6:15:03";
@@ -232,22 +234,47 @@ static void send_report(int modifier, int keycode){
     hid_device_send_interrupt_message(hid_cid, &report[0], sizeof(report));
 }
 
-static void hid_report_callback(uint16_t cid, hid_report_type_t report_type, uint16_t report_id, uint8_t report_max_size, int * out_report_size, uint8_t * out_report){
+static hid_handshake_param_type_t hid_report_callback(uint16_t cid, hid_report_type_t report_type, uint16_t report_id, uint8_t report_max_size, int * out_report_size, uint8_t * out_report){
     UNUSED(cid);
     UNUSED(report_id);
     UNUSED(report_max_size);
-    printf("hid_report_callback \n");
-    // int modifier = 0x90; int keycode = 0;
-    // uint8_t leds = 0x64;
-    uint8_t header = (HID_MESSAGE_TYPE_DATA << 4) | report_type;
-                    
-    // uint8_t report[] = { header, 0x01, modifier, 0, keycode, 0, 0, 0, 0, 0};
     
-    uint8_t report[] = {header, 0x01, 0x00};
-    // HID Control: 0x05 bytes - UNDECODED [ A1 F0 90 00 64 ]
+    if (!report_data_ready){
+        return HID_HANDSHAKE_PARAM_TYPE_NOT_READY;
+    }
 
-    memcpy(out_report, report, sizeof(report));
-    *out_report_size = sizeof(report);
+    if (report_id > 1){
+        return HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_REPORT_ID;
+    } 
+    
+    int pos = 0;
+    if (report_id){
+        report_data[pos++] = report_id;
+    }
+    
+    switch (report_type){
+        case HID_REPORT_TYPE_INPUT:
+            report_data[pos++] = send_modifier;
+            report_data[pos++] = 0;
+            report_data[pos++] = send_keycode;
+            report_data[pos++] = 0;
+            report_data[pos++] = 0;
+            report_data[pos++] = 0;
+            report_data[pos++] = 0;
+            report_data[pos++] = 0;
+            break;
+        case HID_REPORT_TYPE_OUTPUT:
+            report_data[pos++] = 0x00;
+            break;
+        // case HID_REPORT_TYPE_FEATURE:
+        //     break;
+        default:
+            return HID_HANDSHAKE_PARAM_TYPE_ERR_UNSUPPORTED_REQUEST;
+    }
+
+    memcpy(out_report, report_data, pos); 
+    *out_report_size = pos;
+    return HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL;
 }
 
 
@@ -485,7 +512,7 @@ int btstack_main(int argc, const char * argv[]){
 
     uint8_t hid_reconnect_initiate = 1;
     uint8_t hid_virtual_cable = 1;
-    // hid sevice subclass 2540 Keyboard, hid counntry code 33 US, hid virtual cable off, hid reconnect initiate off, hid boot device off 
+    // hid sevice subclass 2540 Keyboard, hid counntry code 33 US, hid virtual cable on, hid reconnect initiate on, hid boot device off 
     hid_create_sdp_record(hid_service_buffer, 0x10001, 0x2540, 33, 
         hid_virtual_cable, hid_reconnect_initiate, 0, 
         hid_descriptor_keyboard_boot_mode, sizeof(hid_descriptor_keyboard_boot_mode), hid_device_name);

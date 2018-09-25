@@ -65,21 +65,24 @@ typedef struct hid_device {
     uint8_t   connected;
     hid_device_state_t state;
     hid_report_type_t report_type;
-    uint16_t          report_id;
+    uint16_t   report_id;
+    uint16_t   max_num_bytes_to_transfer;
+    uint8_t    report_id_is_valid;
 } hid_device_t;
 
 static hid_device_t _hid_device;
 
-static void dummy_write_report(uint16_t hid_cid, hid_report_type_t report_type, uint16_t report_id, uint8_t report_max_size, int * out_report_size, uint8_t * out_report){
+static hid_handshake_param_type_t dummy_write_report(uint16_t hid_cid, hid_report_type_t report_type, uint16_t report_id, uint8_t report_max_size, int * out_report_size, uint8_t * out_report){
     UNUSED(hid_cid);
     UNUSED(report_type);
     UNUSED(report_id);
     UNUSED(report_max_size);
     UNUSED(out_report_size);
     UNUSED(out_report);
+    return HID_HANDSHAKE_PARAM_TYPE_ERR_UNKNOWN;
 }
 
-static void (*hci_device_write_report) (uint16_t hid_cid, hid_report_type_t report_type, uint16_t report_id, uint8_t report_max_size, int * out_report_size, uint8_t * out_report) = dummy_write_report;
+static hid_handshake_param_type_t (*hci_device_write_report) (uint16_t hid_cid, hid_report_type_t report_type, uint16_t report_id, uint8_t report_max_size, int * out_report_size, uint8_t * out_report) = dummy_write_report;
 
 static btstack_packet_handler_t hid_callback;
 
@@ -330,6 +333,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
     int report_size;
     uint8_t param;
     bd_addr_t address;
+    hid_handshake_param_type_t report_status;
 
     switch (packet_type){
         case L2CAP_DATA_PACKET:
@@ -339,15 +343,21 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                 return;
             }
             hid_message_type_t message_type = packet[0] >> 4;
+            
             switch (message_type){
                 case HID_MESSAGE_TYPE_GET_REPORT:
-                    device->report_type = packet[0] & 0x0F;
+                    device->report_type = packet[0] & 0x03;
                     device->report_id = 0;
-                    if (packet_size == 2){
+                    if (packet_size > 1){
                         device->report_id = packet[1];
                     }
+                    if ((packet[0] & 0x08) && packet_size >= 4){
+                        device->max_num_bytes_to_transfer = little_endian_read_16(packet, 2);
+                    } else {
+                        device->max_num_bytes_to_transfer = l2cap_max_mtu();
+                    }
+
                     device->state = HID_DEVICE_W2_SEND_REPORT;
-                    // printf(" answer get report type %d report_type\n", device->report_type);
                     l2cap_request_can_send_now_event(device->control_cid);
                     break;
                 case HID_MESSAGE_TYPE_HID_CONTROL:
@@ -366,7 +376,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     }
                     break;
                 default:
-                    printf("L2CAP_DATA_PACKET %d  \n", message_type);
+                    // printf("L2CAP_DATA_PACKET %d  \n", message_type);
                     device->state = HID_DEVICE_W2_SEND_UNSUPPORTED_REQUEST;
                     l2cap_request_can_send_now_event(device->control_cid);
                     break;
@@ -450,12 +460,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     if (l2cap_event_channel_closed_get_local_cid(packet) == device->interrupt_cid){
                         log_info("HID Interrupt closed");
                         device->interrupt_cid = 0;
-                        printf("HID Interrupt closed \n");
                     }
                     if (l2cap_event_channel_closed_get_local_cid(packet) == device->control_cid){
                         log_info("HID Control closed");
                         device->control_cid = 0;
-                        printf("HID Control closed \n");
                     }
                     if (!device->interrupt_cid && !device->control_cid){
                         device->connected = 0;
@@ -471,19 +479,36 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     if (!device) return;
                     switch (device->state){
                         case HID_DEVICE_W2_SEND_REPORT:
-                            (*hci_device_write_report)(device->cid, device->report_type, device->report_id, (uint16_t) sizeof(report), &report_size, report );
-                            hid_device_send_control_message(device->cid, &report[0], report_size);
+                            report_status = (*hci_device_write_report)(device->cid, device->report_type, device->report_id, (uint16_t) sizeof(report) - 1, &report_size, &report[1]);
+                            report_size += 1;
+
+                            if (report_status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
+                                report[0] = (HID_MESSAGE_TYPE_HANDSHAKE << 4) | report_status;
+                                hid_device_send_control_message(device->cid, &report[0], 1);
+                                break;
+                            }
+
+                            if (report_size > l2cap_max_mtu()){
+                                report[0] = (HID_MESSAGE_TYPE_HANDSHAKE << 4) | HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
+                                hid_device_send_control_message(device->cid, &report[0], 1);
+                                break;
+                            }
+
+                            report[0] = (HID_MESSAGE_TYPE_DATA << 4) | device->report_type;
+                            hid_device_send_control_message(device->cid, &report[0], btstack_min(report_size, device->max_num_bytes_to_transfer));
+                            //     device->state = HID_DEVICE_IDLE;
                             break;
                         case HID_DEVICE_W2_SEND_UNSUPPORTED_REQUEST:
                             report[0] = (HID_MESSAGE_TYPE_HANDSHAKE << 4) | HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
                             hid_device_send_control_message(device->cid, &report[0], 1);
+                            device->state = HID_DEVICE_IDLE;
                             break;
                         default:
                             log_info("HID Can send now, emit event");
                             hid_device_emit_can_send_now_event(device);
+                            device->state = HID_DEVICE_IDLE;
                             break;
                     }
-                    device->state = HID_DEVICE_IDLE;
                     break;
                 default:
                     break;
@@ -512,7 +537,7 @@ void hid_device_register_packet_handler(btstack_packet_handler_t callback){
 
 
 
-void hid_device_register_report_request_callback(void (*callback) (uint16_t hid_cid, hid_report_type_t report_type, uint16_t report_id, uint8_t report_max_size, int * out_report_size, uint8_t * out_report)){
+void hid_device_register_report_request_callback(hid_handshake_param_type_t (*callback) (uint16_t hid_cid, hid_report_type_t report_type, uint16_t report_id, uint8_t report_max_size, int * out_report_size, uint8_t * out_report)){
     if (callback == NULL){
         callback = dummy_write_report;
     }
