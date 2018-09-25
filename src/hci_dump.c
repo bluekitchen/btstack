@@ -51,6 +51,9 @@
 
 #include "btstack_config.h"
 
+// enable POSIX functions (needed for -std=c99)
+#define _POSIX_C_SOURCE 200809
+
 #include "hci_dump.h"
 #include "hci.h"
 #include "hci_transport.h"
