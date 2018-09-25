@@ -2170,9 +2170,28 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
                         if (actual_level >= required_level){
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
                             // we need to know if ERTM is supported before sending a config response
+                            int inform_app = 0;
                             hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
-                            connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;        
-                            channel->state = L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES;
+                            switch (connection->l2cap_state.information_state){
+                                case L2CAP_INFORMATION_STATE_IDLE:
+                                    // trigger extended feature request
+                                    connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST;        
+                                    channel->state = L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES;
+                                    break;
+                                case L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST:
+                                    // extended feature request already registered, wait for response
+                                    channel->state = L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES;
+                                    break;
+                                case L2CAP_INFORMATION_STATE_W4_EXTENDED_FEATURE_RESPONSE:
+                                    // extended feature request already registered, wait for response
+                                    channel->state = L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES;
+                                    break;
+                                case L2CAP_INFORMATION_STATE_DONE:
+                                    // already done, inform app
+                                    inform_app = 1;
+                                    break;
+                            }
+                            if (!inform_app) break;
 #else
                             channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
                             l2cap_emit_incoming_connection(channel);
