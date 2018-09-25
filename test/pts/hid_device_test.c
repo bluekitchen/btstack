@@ -283,14 +283,22 @@ static void stdin_process(char character){
     uint8_t keycode;
     int found;
     switch (character){
-        case 'C':
+        case 'D':
             printf("Disconnect from %s...\n", bd_addr_to_str(device_addr));
             hid_device_disconnect(hid_cid);
             break;
         case 'c':
-            printf("Connecting to %s...\n", bd_addr_to_str(device_addr));
+            printf("Connecting %s...\n", bd_addr_to_str(device_addr));
             hid_device_connect(device_addr, &hid_cid);
             return;
+        case 'I':
+            printf("Disconnect from intrrupt channel %s...\n", bd_addr_to_str(device_addr));
+            hid_device_disconnect_interrupt_channel(hid_cid);
+            break;
+        case 'C':
+            printf("Disconnect from control channel %s...\n", bd_addr_to_str(device_addr));
+            hid_device_disconnect_control_channel(hid_cid);
+            break;
         case 'l':
             printf("set limited discoverable mode\n");
             gap_discoverable_control(1);

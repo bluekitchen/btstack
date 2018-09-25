@@ -63,7 +63,6 @@ typedef struct hid_device {
     uint16_t  interrupt_cid;
     uint8_t   incoming;
     uint8_t   connected;
-
     hid_device_state_t state;
     hid_report_type_t report_type;
     uint16_t          report_id;
@@ -448,13 +447,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
 
                     // connected_before = device->connected;
                     device->incoming  = 0;
-                    if (l2cap_event_channel_closed_get_local_cid(packet) == device->control_cid){
-                        log_info("HID Control closed");
-                        device->control_cid = 0;
-                    }
                     if (l2cap_event_channel_closed_get_local_cid(packet) == device->interrupt_cid){
                         log_info("HID Interrupt closed");
                         device->interrupt_cid = 0;
+                        printf("HID Interrupt closed \n");
+                    }
+                    if (l2cap_event_channel_closed_get_local_cid(packet) == device->control_cid){
+                        log_info("HID Control closed");
+                        device->control_cid = 0;
+                        printf("HID Control closed \n");
                     }
                     if (!device->interrupt_cid && !device->control_cid){
                         device->connected = 0;
@@ -464,8 +465,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         hid_device_emit_connection_closed_event(device);
                     }
                     break;
-                case L2CAP_EVENT_CAN_SEND_NOW:
 
+                case L2CAP_EVENT_CAN_SEND_NOW:
                     device = hid_device_get_instance_for_cid(l2cap_event_can_send_now_get_local_cid(packet));
                     if (!device) return;
                     switch (device->state){
@@ -575,7 +576,6 @@ uint8_t hid_device_connect(bd_addr_t addr, uint16_t * hid_cid){
     // create l2cap control using fixed HID L2CAP PSM
     log_info("Create outgoing HID Control");
     uint8_t status = l2cap_create_channel(packet_handler, hid_device->bd_addr, PSM_HID_CONTROL, 48, &hid_device->control_cid);
-
     return status;
 }
 
@@ -584,6 +584,30 @@ uint8_t hid_device_connect(bd_addr_t addr, uint16_t * hid_cid){
  * @param hid_cid
  * @result status
  */
+void hid_device_disconnect_interrupt_channel(uint16_t hid_cid){
+    hid_device_t * hid_device = hid_device_get_instance_for_cid(hid_cid);
+    if (!hid_device){
+        log_error("hid_device_disconnect_interrupt_channel: could not find hid device instace");
+        return;
+    }
+    log_info("Disconnect from interrupt channel HID Host");
+    if (hid_device->interrupt_cid){
+        l2cap_disconnect(hid_device->interrupt_cid, 0);  // reason isn't used
+    }
+}
+
+void hid_device_disconnect_control_channel(uint16_t hid_cid){
+    hid_device_t * hid_device = hid_device_get_instance_for_cid(hid_cid);
+    if (!hid_device){
+        log_error("hid_device_disconnect_control_channel: could not find hid device instace");
+        return;
+    }
+    log_info("Disconnect from control channel HID Host");
+    if (hid_device->control_cid){
+        l2cap_disconnect(hid_device->control_cid, 0);  // reason isn't used
+    }
+}
+
 void hid_device_disconnect(uint16_t hid_cid){
     hid_device_t * hid_device = hid_device_get_instance_for_cid(hid_cid);
     if (!hid_device){
@@ -591,10 +615,10 @@ void hid_device_disconnect(uint16_t hid_cid){
         return;
     }
     log_info("Disconnect from HID Host");
-    if (hid_device->control_cid){
-        l2cap_disconnect(hid_device->control_cid, 0); // reason isn't used
-    }
     if (hid_device->interrupt_cid){
         l2cap_disconnect(hid_device->interrupt_cid, 0);  // reason isn't used
+    }
+    if (hid_device->control_cid){
+        l2cap_disconnect(hid_device->control_cid, 0); // reason isn't used
     }
 }

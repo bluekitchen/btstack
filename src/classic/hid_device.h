@@ -170,6 +170,10 @@ void hid_device_send_control_message(uint16_t hid_cid, const uint8_t * message, 
 
 /* API_END */
 
+/* Only needed for PTS Testing */
+void hid_device_disconnect_interrupt_channel(uint16_t hid_cid);
+void hid_device_disconnect_control_channel(uint16_t hid_cid);
+
 #if defined __cplusplus
 }
 #endif
