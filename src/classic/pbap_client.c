@@ -542,7 +542,11 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                                 yxml_init(&pbap_client->xml_parser, pbap_client->xml_buffer, sizeof(pbap_client->xml_buffer));
                                 int card_found = 0;
                                 int name_found = 0;
+                                int handle_found = 0;
                                 char name[32];
+                                char handle[16];
+                                name[0] = 0;
+                                handle[0] = 0;
                                 while (data_len--){
                                     yxml_ret_t r = yxml_parse(&pbap_client->xml_parser, *data++);
                                     switch (r){
@@ -550,22 +554,40 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                                             card_found = strcmp("card", pbap_client->xml_parser.elem) == 0;
                                             break;
                                         case YXML_ELEMEND:
+                                            if (card_found){
+                                                printf("Name:   '%s'\n", name);
+                                                printf("Handle: '%s'\n", handle);
+                                            }
                                             card_found = 0;
                                             break;
                                         case YXML_ATTRSTART:
                                             if (!card_found) break;
-                                            name_found = strcmp("name", pbap_client->xml_parser.attr) == 0;
+                                            if (strcmp("name", pbap_client->xml_parser.attr) == 0){
+                                                name_found = 1;
+                                                break;
+                                            } 
+                                            if (strcmp("handle", pbap_client->xml_parser.attr) == 0){
+                                                handle_found = 1;
+                                                break;
+                                            } 
                                             break;
                                         case YXML_ATTRVAL:
-                                            if (!name_found) break;
-                                            // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
-                                            if (strlen(name) + 4 + 1 >= sizeof(name)) break;
-                                            strcat(name, pbap_client->xml_parser.data);
+                                            if (name_found) {
+                                                // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
+                                                if (strlen(name) + 4 + 1 >= sizeof(name)) break;
+                                                strcat(name, pbap_client->xml_parser.data);
+                                                break;
+                                            }
+                                            if (handle_found) {
+                                                // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
+                                                if (strlen(handle) + 4 + 1 >= sizeof(handle)) break;
+                                                strcat(handle, pbap_client->xml_parser.data);
+                                                break;
+                                            }
                                             break;
                                         case YXML_ATTREND:
-                                            if (!name_found) break;
-                                            printf("Name: '%s'\n", name);
                                             name_found = 0;
+                                            handle_found = 0;
                                             break;
                                         default:
                                             break;
