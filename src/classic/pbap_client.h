@@ -94,7 +94,15 @@ uint8_t pbap_get_phonebook_size(uint16_t pbap_cid);
  * @param pbap_cid
  * @return status
  */
- uint8_t pbap_pull_phonebook(uint16_t pbap_cid);
+uint8_t pbap_pull_phonebook(uint16_t pbap_cid);
+
+/**
+ * @brief Lookup contact(s) by phone number
+ * @param pbap_cid
+ * @param phone_number
+ * @return status
+ */
+uint8_t pbap_lookup_by_number(uint16_t pbap_cid, const char * phone_number);
 
 /* API_END */
 

@@ -75,16 +75,23 @@
 #include "classic/sdp_client_rfcomm.h"
 #include "btstack_event.h"
 #include "md5.h"
+#include "yxml.h"
 
 #include "classic/obex.h"
 #include "classic/obex_iterator.h"
 #include "classic/goep_client.h"
 #include "classic/pbap_client.h"
 
+#define PBAP_MAX_PHONE_NUMBER_LEN 30
+
 // 796135f0-f0c5-11d8-0966- 0800200c9a66
 uint8_t pbap_uuid[] = { 0x79, 0x61, 0x35, 0xf0, 0xf0, 0xc5, 0x11, 0xd8, 0x09, 0x66, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66};
-const char * pbap_type = "x-bt/phonebook";
-const char * pbap_name = "pb.vcf";
+
+const char * pbap_phonebook_type = "x-bt/phonebook";
+const char * pbap_phonebook_name = "pb.vcf";
+
+const char * pbap_vcard_listing_type = "x-bt/vcard-listing";
+const char * pbap_vcard_listing_name = "pb";
 
 typedef enum {
     PBAP_INIT = 0,
@@ -107,6 +114,10 @@ typedef enum {
     PBAP_W4_SET_PATH_ELEMENT_COMPLETE,
     PBAP_W2_GET_PHONEBOOK_SIZE,
     PBAP_W4_GET_PHONEBOOK_SIZE_COMPLETE,
+    //
+    PBAP_W2_GET_CARD_LIST,
+    PBAP_W4_GET_CARD_LIST_COMPLETE,
+
 } pbap_state_t;
 
 typedef struct pbap_client {
@@ -118,10 +129,13 @@ typedef struct pbap_client {
     uint16_t  goep_cid;
     btstack_packet_handler_t client_handler;
     const char * current_folder;
+    const char * phone_number;
     uint16_t set_path_offset;
     uint8_t  authentication_options;
     uint16_t authentication_nonce[16];
     const char * authentication_password;
+    yxml_t  xml_parser;
+    uint8_t xml_buffer[50];
 } pbap_client_t;
 
 static pbap_client_t _pbap_client;
@@ -213,9 +227,10 @@ static void pbap_handle_can_send_now(void){
     uint8_t  path_element[20];
     uint16_t path_element_start;
     uint16_t path_element_len;
-    uint8_t  application_parameters[20];
+    uint8_t  application_parameters[PBAP_MAX_PHONE_NUMBER_LEN + 10];
     uint8_t  challenge_response[36];
     int i;
+    uint16_t phone_number_len;
 
     MD5_CTX md5_ctx;
 
@@ -261,8 +276,8 @@ static void pbap_handle_can_send_now(void){
         case PBAP_W2_PULL_PHONEBOOK:
         case PBAP_W2_GET_PHONEBOOK_SIZE:
             goep_client_create_get_request(pbap_client->goep_cid);
-            goep_client_add_header_type(pbap_client->goep_cid, pbap_type);
-            goep_client_add_header_name(pbap_client->goep_cid, pbap_name);
+            goep_client_add_header_type(pbap_client->goep_cid, pbap_phonebook_type);
+            goep_client_add_header_name(pbap_client->goep_cid, pbap_phonebook_name);
             if (pbap_client->state == PBAP_W2_GET_PHONEBOOK_SIZE){
                 // Regular TLV wih 1-byte len
                 application_parameters[0] = PBAP_APPLICATION_PARAMETER_MAX_LIST_COUNT;
@@ -275,6 +290,25 @@ static void pbap_handle_can_send_now(void){
                 // state
                 pbap_client->state = PBAP_W4_PHONEBOOK;
             }
+            // send packet
+            goep_client_execute(pbap_client->goep_cid);
+            break;
+        case PBAP_W2_GET_CARD_LIST:
+            goep_client_create_get_request(pbap_client->goep_cid);
+            goep_client_add_header_type(pbap_client->goep_cid, pbap_vcard_listing_type);
+            goep_client_add_header_name(pbap_client->goep_cid, pbap_vcard_listing_name);
+            // Regular TLV wih 1-byte len
+            i = 0;
+            phone_number_len = btstack_min(PBAP_MAX_PHONE_NUMBER_LEN, strlen(pbap_client->phone_number));
+            application_parameters[i++] = PBAP_APPLICATION_PARAMETER_SEARCH_VALUE;
+            application_parameters[i++] = phone_number_len;
+            memcpy(&application_parameters[i], pbap_client->phone_number, phone_number_len);
+            i += phone_number_len;
+            application_parameters[i++] = PBAP_APPLICATION_PARAMETER_SEARCH_PROPERTY;
+            application_parameters[i++] = 1;
+            application_parameters[i++] = 0x01; // Number
+            goep_client_add_header_application_parameters(pbap_client->goep_cid, i, &application_parameters[0]);
+            pbap_client->state = PBAP_W4_GET_CARD_LIST_COMPLETE;
             // send packet
             goep_client_execute(pbap_client->goep_cid);
             break;
@@ -392,9 +426,7 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
             break;
         case GOEP_DATA_PACKET:
             // TODO: handle chunked data
-#if 1
             // obex_dump_packet(goep_client_get_request_opcode(pbap_client->goep_cid), packet, size);
-#endif
             switch (pbap_client->state){
                 case PBAP_W4_CONNECT_RESPONSE:
                     switch (packet[0]){
@@ -495,6 +527,59 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                     }
                     pbap_client_emit_phonebook_size_event(pbap_client, OBEX_UNKNOWN_ERROR, 0);
                     break;
+                case PBAP_W4_GET_CARD_LIST_COMPLETE:
+                    printf("PBAP_W4_GET_CARD_LIST_COMPLETE\n");
+                    if (packet[0] == OBEX_RESP_CONTINUE){
+                        pbap_client->state = PBAP_W2_GET_CARD_LIST;
+                        goep_client_request_can_send_now(pbap_client->goep_cid);                
+                    } else if (packet[0] == OBEX_RESP_SUCCESS){
+                        for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(pbap_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
+                            uint8_t hi = obex_iterator_get_hi(&it);
+                            if (hi == OBEX_HEADER_END_OF_BODY){
+                                uint16_t     data_len = obex_iterator_get_data_len(&it);
+                                const uint8_t  * data =  obex_iterator_get_data(&it);
+                                // now try parsing it
+                                yxml_init(&pbap_client->xml_parser, pbap_client->xml_buffer, sizeof(pbap_client->xml_buffer));
+                                int card_found = 0;
+                                int name_found = 0;
+                                char name[32];
+                                while (data_len--){
+                                    yxml_ret_t r = yxml_parse(&pbap_client->xml_parser, *data++);
+                                    switch (r){
+                                        case YXML_ELEMSTART:
+                                            card_found = strcmp("card", pbap_client->xml_parser.elem) == 0;
+                                            break;
+                                        case YXML_ELEMEND:
+                                            card_found = 0;
+                                            break;
+                                        case YXML_ATTRSTART:
+                                            if (!card_found) break;
+                                            name_found = strcmp("name", pbap_client->xml_parser.attr) == 0;
+                                            break;
+                                        case YXML_ATTRVAL:
+                                            if (!name_found) break;
+                                            // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
+                                            if (strlen(name) + 4 + 1 >= sizeof(name)) break;
+                                            strcat(name, pbap_client->xml_parser.data);
+                                            break;
+                                        case YXML_ATTREND:
+                                            if (!name_found) break;
+                                            printf("Name: '%s'\n", name);
+                                            name_found = 0;
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                }
+                                //
+                                pbap_client->state = PBAP_CONNECTED;
+                            }
+                        }
+
+                    } else {
+                        // ?
+                    }
+                    break;
                 default:
                     break;
             }
@@ -559,6 +644,15 @@ uint8_t pbap_authentication_password(uint16_t pbap_cid, const char * password){
     if (pbap_client->state != PBAP_W4_USER_AUTHENTICATION) return BTSTACK_BUSY;
     pbap_client->state = PBAP_W2_SEND_AUTHENTICATED_CONNECT;
     pbap_client->authentication_password = password;
+    goep_client_request_can_send_now(pbap_client->goep_cid);
+    return 0;
+}
+
+uint8_t pbap_lookup_by_number(uint16_t pbap_cid, const char * phone_number){
+    UNUSED(pbap_cid);
+    if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
+    pbap_client->state = PBAP_W2_GET_CARD_LIST;
+    pbap_client->phone_number = phone_number;
     goep_client_request_can_send_now(pbap_client->goep_cid);
     return 0;
 }

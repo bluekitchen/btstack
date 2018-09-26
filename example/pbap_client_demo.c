@@ -72,7 +72,9 @@ static bd_addr_t    remote_addr;
 // Nexus 7 "30-85-A9-54-2E-78"
 // iPhone SE "BC:EC:5D:E6:15:03"
 // PTS "001BDC080AA5"
-static  char * remote_addr_string = "001BDC080AA5";
+static  char * remote_addr_string = "BC:EC:5D:E6:15:03";
+
+static char * phone_number = "911";
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint16_t pbap_cid;
@@ -92,6 +94,7 @@ static void show_usage(void){
     printf("d - get phonebook size\n");
     printf("e - pull phonebook\n");
     printf("f - disconnnect\n");
+    printf("g - Lookup contact with number '%s'\n", phone_number);    
     printf("p - authenticate using password '0000'\n");
     printf("\n");
 }
@@ -118,6 +121,9 @@ static void stdin_process(char c){
             break;
         case 'f':
             pbap_disconnect(pbap_cid);
+            break;
+        case 'g':
+            pbap_lookup_by_number(pbap_cid, phone_number);
             break;
         case 'p':
             pbap_authentication_password(pbap_cid, "0000");
