@@ -6563,6 +6563,52 @@ static inline uint8_t pbap_subevent_authentication_request_get_full_access(const
 }
 
 /**
+ * @brief Get field goep_cid from event PBAP_SUBEVENT_CARD_RESULT
+ * @param event packet
+ * @return goep_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t pbap_subevent_card_result_get_goep_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field name_len from event PBAP_SUBEVENT_CARD_RESULT
+ * @param event packet
+ * @return name_len
+ * @note: btstack_type J
+ */
+static inline int pbap_subevent_card_result_get_name_len(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field name from event PBAP_SUBEVENT_CARD_RESULT
+ * @param event packet
+ * @return name
+ * @note: btstack_type V
+ */
+static inline const uint8_t * pbap_subevent_card_result_get_name(const uint8_t * event){
+    return &event[6];
+}
+/**
+ * @brief Get field handle_len from event PBAP_SUBEVENT_CARD_RESULT
+ * @param event packet
+ * @return handle_len
+ * @note: btstack_type J
+ */
+static inline int pbap_subevent_card_result_get_handle_len(const uint8_t * event){
+    return event[6 + event[5]];
+}
+/**
+ * @brief Get field handle from event PBAP_SUBEVENT_CARD_RESULT
+ * @param event packet
+ * @return handle
+ * @note: btstack_type V
+ */
+static inline const uint8_t * pbap_subevent_card_result_get_handle(const uint8_t * event){
+    return &event[6 + event[5] + 1];
+}
+
+/**
  * @brief Get field hid_cid from event HID_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return hid_cid
