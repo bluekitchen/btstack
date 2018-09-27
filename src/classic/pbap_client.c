@@ -82,8 +82,6 @@
 #include "classic/goep_client.h"
 #include "classic/pbap_client.h"
 
-#define PBAP_MAX_PHONE_NUMBER_LEN 30
-
 // 796135f0-f0c5-11d8-0966- 0800200c9a66
 uint8_t pbap_uuid[] = { 0x79, 0x61, 0x35, 0xf0, 0xf0, 0xc5, 0x11, 0xd8, 0x09, 0x66, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66};
 
@@ -218,6 +216,26 @@ static void pbap_client_emit_authentication_event(pbap_client_t * context, uint8
     event[pos++] = user_id_required;
     event[pos++] = full_access;
     if (pos != sizeof(event)) log_error("pbap_client_emit_authentication_event size %u", pos);
+    context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
+}
+
+static void pbap_client_emit_card_result_event(pbap_client_t * context, const char * name, const char * handle){
+    uint8_t event[5 + PBAP_MAX_NAME_LEN + PBAP_MAX_HANDLE_LEN];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_PBAP_META;
+    pos++;  // skip len
+    event[pos++] = PBAP_SUBEVENT_CARD_RESULT;
+    little_endian_store_16(event,pos,context->cid);
+    pos+=2;
+    int name_len = btstack_min(PBAP_MAX_NAME_LEN, strlen(name));
+    event[pos++] = name_len;
+    memcpy(&event[pos], name, name_len);
+    pos += name_len;
+    int handle_len = btstack_min(PBAP_MAX_HANDLE_LEN, strlen(handle));
+    event[pos++] = handle_len;
+    memcpy(&event[pos], handle, handle_len);
+    pos += handle_len;
+    event[1] = pos - 2;
     context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
 }
 
@@ -528,7 +546,6 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                     pbap_client_emit_phonebook_size_event(pbap_client, OBEX_UNKNOWN_ERROR, 0);
                     break;
                 case PBAP_W4_GET_CARD_LIST_COMPLETE:
-                    printf("PBAP_W4_GET_CARD_LIST_COMPLETE\n");
                     if (packet[0] == OBEX_RESP_CONTINUE){
                         pbap_client->state = PBAP_W2_GET_CARD_LIST;
                         goep_client_request_can_send_now(pbap_client->goep_cid);                
@@ -543,8 +560,8 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                                 int card_found = 0;
                                 int name_found = 0;
                                 int handle_found = 0;
-                                char name[32];
-                                char handle[16];
+                                char name[PBAP_MAX_NAME_LEN];
+                                char handle[PBAP_MAX_HANDLE_LEN];
                                 name[0] = 0;
                                 handle[0] = 0;
                                 while (data_len--){
@@ -555,8 +572,7 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                                             break;
                                         case YXML_ELEMEND:
                                             if (card_found){
-                                                printf("Name:   '%s'\n", name);
-                                                printf("Handle: '%s'\n", handle);
+                                                pbap_client_emit_card_result_event(pbap_client, name, handle);
                                             }
                                             card_found = 0;
                                             break;
@@ -595,6 +611,7 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                                 }
                                 //
                                 pbap_client->state = PBAP_CONNECTED;
+                                pbap_client_emit_operation_complete_event(pbap_client, 0);
                             }
                         }
 

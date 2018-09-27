@@ -140,6 +140,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(size);
     int i;
     uint8_t status;
+    char buffer[32];
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
@@ -152,7 +153,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 case HCI_EVENT_PBAP_META:
                     switch (hci_event_pbap_meta_get_subevent_code(packet)){
                         case PBAP_SUBEVENT_CONNECTION_OPENED:
-                            printf("[+] Connected\n");
+                            status = pbap_subevent_connection_opened_get_status(packet);
+                            if (status){
+                                printf("[!] Connection failed, status 0x%02x\n", status);
+                            } else {
+                                printf("[+] Connected\n");
+                            }
                             break;
                         case PBAP_SUBEVENT_CONNECTION_CLOSED:
                             printf("[+] Connection closed\n");
@@ -166,10 +172,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         case PBAP_SUBEVENT_PHONEBOOK_SIZE:
                             status = pbap_subevent_phonebook_size_get_status(packet);
                             if (status){
-                                printf("[+] Get Phonebook size error: 0x%x\n", status);
+                                printf("[!] Get Phonebook size error: 0x%x\n", status);
                             } else {
                                 printf("[+] Phonebook size: %u\n", pbap_subevent_phonebook_size_get_phoneboook_size(packet));
                             }
+                            break;
+                        case PBAP_SUBEVENT_CARD_RESULT:
+                            memcpy(buffer, pbap_subevent_card_result_get_name(packet), pbap_subevent_card_result_get_name_len(packet));
+                            buffer[pbap_subevent_card_result_get_name_len(packet)] = 0;
+                            printf("[-] Name:   '%s'\n", buffer);
+                            memcpy(buffer, pbap_subevent_card_result_get_handle(packet), pbap_subevent_card_result_get_handle_len(packet));
+                            buffer[pbap_subevent_card_result_get_handle_len(packet)] = 0;
+                            printf("[-] Handle: '%s'\n", buffer);
                             break;
                         default:
                             break;

@@ -44,6 +44,14 @@ extern "C" {
 #include "btstack_config.h"
 #include <stdint.h>
 
+// max len of phone number used for lookup in pbap_lookup_by_number
+#define PBAP_MAX_PHONE_NUMBER_LEN 32
+
+// max len of name reported in PBAP_SUBEVENT_CARD_RESULT
+#define PBAP_MAX_NAME_LEN   32
+// max len of vcard handle reported in PBAP_SUBEVENT_CARD_RESULT
+#define PBAP_MAX_HANDLE_LEN 16
+
 /* API_START */
 
 /**
