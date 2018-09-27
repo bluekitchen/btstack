@@ -504,15 +504,20 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                             pbap_client->client_handler(PBAP_DATA_PACKET, pbap_client->cid, (uint8_t *) data, data_len);
                         }
                     }
-                    if (packet[0] == OBEX_RESP_CONTINUE){
-                        pbap_client->state = PBAP_W2_PULL_PHONEBOOK;
-                        goep_client_request_can_send_now(pbap_client->goep_cid);                
-                    } else if (packet[0] == OBEX_RESP_SUCCESS){
-                        pbap_client->state = PBAP_CONNECTED;
-                        pbap_client_emit_operation_complete_event(pbap_client, 0);
-                    } else {
-                        pbap_client->state = PBAP_CONNECTED;
-                        pbap_client_emit_operation_complete_event(pbap_client, OBEX_UNKNOWN_ERROR);
+                    switch(packet[0]){
+                        case OBEX_RESP_CONTINUE:
+                            pbap_client->state = PBAP_W2_PULL_PHONEBOOK;
+                            goep_client_request_can_send_now(pbap_client->goep_cid);                
+                            break;
+                        case OBEX_RESP_SUCCESS:
+                            pbap_client->state = PBAP_CONNECTED;
+                            pbap_client_emit_operation_complete_event(pbap_client, 0);
+                            break;
+                        default:
+                            log_info("unexpected response 0x%02x", packet[0]);
+                            pbap_client->state = PBAP_CONNECTED;
+                            pbap_client_emit_operation_complete_event(pbap_client, OBEX_UNKNOWN_ERROR);
+                            break;                                                                                
                     }
                     break;
                 case PBAP_W4_GET_PHONEBOOK_SIZE_COMPLETE:
@@ -546,77 +551,86 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                     pbap_client_emit_phonebook_size_event(pbap_client, OBEX_UNKNOWN_ERROR, 0);
                     break;
                 case PBAP_W4_GET_CARD_LIST_COMPLETE:
-                    if (packet[0] == OBEX_RESP_CONTINUE){
-                        pbap_client->state = PBAP_W2_GET_CARD_LIST;
-                        goep_client_request_can_send_now(pbap_client->goep_cid);                
-                    } else if (packet[0] == OBEX_RESP_SUCCESS){
-                        for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(pbap_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
-                            uint8_t hi = obex_iterator_get_hi(&it);
-                            if (hi == OBEX_HEADER_END_OF_BODY){
-                                uint16_t     data_len = obex_iterator_get_data_len(&it);
-                                const uint8_t  * data =  obex_iterator_get_data(&it);
-                                // now try parsing it
-                                yxml_init(&pbap_client->xml_parser, pbap_client->xml_buffer, sizeof(pbap_client->xml_buffer));
-                                int card_found = 0;
-                                int name_found = 0;
-                                int handle_found = 0;
-                                char name[PBAP_MAX_NAME_LEN];
-                                char handle[PBAP_MAX_HANDLE_LEN];
-                                name[0] = 0;
-                                handle[0] = 0;
-                                while (data_len--){
-                                    yxml_ret_t r = yxml_parse(&pbap_client->xml_parser, *data++);
-                                    switch (r){
-                                        case YXML_ELEMSTART:
-                                            card_found = strcmp("card", pbap_client->xml_parser.elem) == 0;
-                                            break;
-                                        case YXML_ELEMEND:
-                                            if (card_found){
-                                                pbap_client_emit_card_result_event(pbap_client, name, handle);
-                                            }
-                                            card_found = 0;
-                                            break;
-                                        case YXML_ATTRSTART:
-                                            if (!card_found) break;
-                                            if (strcmp("name", pbap_client->xml_parser.attr) == 0){
-                                                name_found = 1;
+                    switch (packet[0]){
+                        case OBEX_RESP_CONTINUE:
+                            pbap_client->state = PBAP_W2_GET_CARD_LIST;
+                            goep_client_request_can_send_now(pbap_client->goep_cid);                
+                            break;
+                        case OBEX_RESP_SUCCESS:
+                            for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(pbap_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
+                                uint8_t hi = obex_iterator_get_hi(&it);
+                                if (hi == OBEX_HEADER_END_OF_BODY){
+                                    uint16_t     data_len = obex_iterator_get_data_len(&it);
+                                    const uint8_t  * data =  obex_iterator_get_data(&it);
+                                    // now try parsing it
+                                    yxml_init(&pbap_client->xml_parser, pbap_client->xml_buffer, sizeof(pbap_client->xml_buffer));
+                                    int card_found = 0;
+                                    int name_found = 0;
+                                    int handle_found = 0;
+                                    char name[PBAP_MAX_NAME_LEN];
+                                    char handle[PBAP_MAX_HANDLE_LEN];
+                                    name[0] = 0;
+                                    handle[0] = 0;
+                                    while (data_len--){
+                                        yxml_ret_t r = yxml_parse(&pbap_client->xml_parser, *data++);
+                                        switch (r){
+                                            case YXML_ELEMSTART:
+                                                card_found = strcmp("card", pbap_client->xml_parser.elem) == 0;
                                                 break;
-                                            } 
-                                            if (strcmp("handle", pbap_client->xml_parser.attr) == 0){
-                                                handle_found = 1;
+                                            case YXML_ELEMEND:
+                                                if (card_found){
+                                                    pbap_client_emit_card_result_event(pbap_client, name, handle);
+                                                }
+                                                card_found = 0;
                                                 break;
-                                            } 
-                                            break;
-                                        case YXML_ATTRVAL:
-                                            if (name_found) {
-                                                // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
-                                                if (strlen(name) + 4 + 1 >= sizeof(name)) break;
-                                                strcat(name, pbap_client->xml_parser.data);
+                                            case YXML_ATTRSTART:
+                                                if (!card_found) break;
+                                                if (strcmp("name", pbap_client->xml_parser.attr) == 0){
+                                                    name_found = 1;
+                                                    break;
+                                                } 
+                                                if (strcmp("handle", pbap_client->xml_parser.attr) == 0){
+                                                    handle_found = 1;
+                                                    break;
+                                                } 
                                                 break;
-                                            }
-                                            if (handle_found) {
-                                                // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
-                                                if (strlen(handle) + 4 + 1 >= sizeof(handle)) break;
-                                                strcat(handle, pbap_client->xml_parser.data);
+                                            case YXML_ATTRVAL:
+                                                if (name_found) {
+                                                    // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
+                                                    if (strlen(name) + 4 + 1 >= sizeof(name)) break;
+                                                    strcat(name, pbap_client->xml_parser.data);
+                                                    break;
+                                                }
+                                                if (handle_found) {
+                                                    // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
+                                                    if (strlen(handle) + 4 + 1 >= sizeof(handle)) break;
+                                                    strcat(handle, pbap_client->xml_parser.data);
+                                                    break;
+                                                }
                                                 break;
-                                            }
-                                            break;
-                                        case YXML_ATTREND:
-                                            name_found = 0;
-                                            handle_found = 0;
-                                            break;
-                                        default:
-                                            break;
+                                            case YXML_ATTREND:
+                                                name_found = 0;
+                                                handle_found = 0;
+                                                break;
+                                            default:
+                                                break;
+                                        }
                                     }
+                                    //
+                                    pbap_client->state = PBAP_CONNECTED;
+                                    pbap_client_emit_operation_complete_event(pbap_client, 0);
                                 }
-                                //
-                                pbap_client->state = PBAP_CONNECTED;
-                                pbap_client_emit_operation_complete_event(pbap_client, 0);
                             }
-                        }
-
-                    } else {
-                        // ?
+                            break;
+                        case OBEX_RESP_NOT_ACCEPTABLE:
+                            pbap_client->state = PBAP_CONNECTED;
+                            pbap_client_emit_operation_complete_event(pbap_client, OBEX_NOT_ACCEPTABLE);
+                            break;
+                        default:
+                            log_info("unexpected response 0x%02x", packet[0]);
+                            pbap_client->state = PBAP_CONNECTED;
+                            pbap_client_emit_operation_complete_event(pbap_client, OBEX_UNKNOWN_ERROR);
+                            break;
                     }
                     break;
                 default:

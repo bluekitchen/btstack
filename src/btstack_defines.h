@@ -184,6 +184,7 @@ typedef uint8_t sm_key_t[16];
 #define OBEX_CONNECT_FAILED                                0xB1
 #define OBEX_DISCONNECTED                                  0xB2
 #define OBEX_NOT_FOUND                                     0xB3
+#define OBEX_NOT_ACCEPTABLE                                0xB4
 
 #define AVDTP_SEID_DOES_NOT_EXIST                          0xC0
 #define AVDTP_CONNECTION_DOES_NOT_EXIST                    0xC1
