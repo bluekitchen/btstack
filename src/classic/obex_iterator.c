@@ -91,21 +91,21 @@ void obex_iterator_next(obex_iterator_t * context){
         case 0:
         case 1:
             // 16-bit length info prefixed
-            len = 2 + big_endian_read_16(data, 1);
+            len = big_endian_read_16(data, 1);
             break;
         case 2:
             // 8-bit value
-            len = 1;
+            len = 2;
             break;
         case 3:
             // 32-bit value
-            len = 4;
+            len = 5;
             break;
         // avoid compiler warning about unused cases (by unclever compilers)
         default:
             break;
     }
-    context->offset += 1 + len;
+    context->offset += len;
 }
 
 // OBEX packet header access functions
