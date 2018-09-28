@@ -56,6 +56,9 @@ extern "C" {
 
 /* API_START */
 
+// remote does not expose PBAP features in SDP record
+#define PBAP_FEATURES_NOT_PRESENT ((uint32_t) -1)
+
 /**
  * Setup GOEP Client
  */

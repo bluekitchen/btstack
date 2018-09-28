@@ -37,26 +37,6 @@
 
 #define __BTSTACK_FILE__ "pbap_client.c"
  
-// *****************************************************************************
-//
-#if 0
-    0x0000 = uint32(65542),
-    // BLUETOOTH_SERVICE_CLASS_PHONEBOOK_ACCESS_PSE
-    0x0001 = { uuid16(11 2f) }, 
-    // BLUETOOTH_PROTOCOL_L2CAP, BLUETOOTH_PROTOCOL_RFCOMM, BLUETOOTH_PROTOCOL_OBEX
-    0x0004 = { { uuid16(01 00) }, { uuid16(00 03), uint8(19) }, { uuid16(00 08) } }
-    0x0005 = { uuid16(10 02) },
-    // BLUETOOTH_SERVICE_CLASS_PHONEBOOK_ACCESS, v1.01 = 0x101
-    0x0009 = { { uuid16(11 30), uint16(257) } },
-    0x0100 = string(OBEX Phonebook Access Server
-    // BLUETOOTH_ATTRIBUTE_SUPPORTED_FEATURES -- should be 0x317 BLUETOOTH_ATTRIBUTE_PBAP_SUPPORTED_FEATURES?
-    0x0311 = uint8(3),
-    // BLUETOOTH_ATTRIBUTE_SUPPORTED_REPOSITORIES
-    0x0314 = uint8(1),
-#endif
-//
-// *****************************************************************************
-
 #include "btstack_config.h"
 
 #include <stdint.h>
@@ -83,13 +63,16 @@
 #include "classic/pbap_client.h"
 
 // 796135f0-f0c5-11d8-0966- 0800200c9a66
-uint8_t pbap_uuid[] = { 0x79, 0x61, 0x35, 0xf0, 0xf0, 0xc5, 0x11, 0xd8, 0x09, 0x66, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66};
+static const uint8_t pbap_uuid[] = { 0x79, 0x61, 0x35, 0xf0, 0xf0, 0xc5, 0x11, 0xd8, 0x09, 0x66, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66};
 
 const char * pbap_phonebook_type = "x-bt/phonebook";
 const char * pbap_phonebook_name = "pb.vcf";
 
 const char * pbap_vcard_listing_type = "x-bt/vcard-listing";
 const char * pbap_vcard_listing_name = "pb";
+
+// default
+static uint32_t pbap_supported_features = 0x0000;
 
 typedef enum {
     PBAP_INIT = 0,
@@ -256,11 +239,13 @@ static void pbap_handle_can_send_now(void){
         case PBAP_W2_SEND_CONNECT_REQUEST:
             goep_client_create_connect_request(pbap_client->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
             goep_client_add_header_target(pbap_client->goep_cid, 16, pbap_uuid);
-            // Add PbapSupportedFeatures
-            application_parameters[0] = PBAP_APPLICATION_PARAMETER_PBAP_SUPPORTED_FEATURES;
-            application_parameters[1] = 4;
-            big_endian_store_32(application_parameters, 2, goep_client_get_pbap_supported_features(pbap_client->goep_cid));
-            goep_client_add_header_application_parameters(pbap_client->goep_cid, 6, &application_parameters[0]);
+            // Mandatory if the PSE advertises a PbapSupportedFeatures attribute in its SDP record, else excluded.
+            if (goep_client_get_pbap_supported_features(pbap_client->goep_cid) != PBAP_FEATURES_NOT_PRESENT){
+                application_parameters[0] = PBAP_APPLICATION_PARAMETER_PBAP_SUPPORTED_FEATURES;
+                application_parameters[1] = 4;
+                big_endian_store_32(application_parameters, 2, pbap_supported_features);
+                goep_client_add_header_application_parameters(pbap_client->goep_cid, 6, &application_parameters[0]);
+            }
             pbap_client->state = PBAP_W4_CONNECT_RESPONSE;
             goep_client_execute(pbap_client->goep_cid);
             break;

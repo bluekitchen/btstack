@@ -378,9 +378,7 @@ uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_
     context->state = GOEP_W4_SDP;
     context->l2cap_psm   = 0;
     context->rfcomm_port = 0;
-    // Backwards compatibility: If the PbapSupportedFeatures attribute is not present 0x00000003
-    // shall be assumed for a remote PSE.
-    context->pbap_supported_features = 0x03;
+    context->pbap_supported_features = PBAP_FEATURES_NOT_PRESENT;
     memcpy(context->bd_addr, addr, 6);
     sdp_client_query_uuid16(&goep_client_handle_sdp_query_event, context->bd_addr, uuid);
     *out_cid = context->cid;
