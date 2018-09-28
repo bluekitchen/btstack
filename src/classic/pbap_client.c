@@ -339,6 +339,13 @@ static void pbap_handle_can_send_now(void){
             memcpy(path_element, &pbap_client->current_folder[path_element_start], path_element_len);
             path_element[path_element_len] = 0;
 
+            // detect end of path (after setting path_element)
+            if (pbap_client->current_folder[pbap_client->set_path_offset] == '\0'){
+                pbap_client->current_folder = NULL;   
+            }
+
+            log_info("Path element '%s', done %u", path_element, pbap_client->current_folder == NULL);
+
             goep_client_create_set_path_request(pbap_client->goep_cid, 1 << 1); // Don’t create directory
             goep_client_add_header_name(pbap_client->goep_cid, (const char *) path_element); // next element
             // state
@@ -465,6 +472,7 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                         break;
                 case PBAP_W4_SET_PATH_ROOT_COMPLETE:
                 case PBAP_W4_SET_PATH_ELEMENT_COMPLETE:
+                    log_info("set path root/path element complete, current folder %s, path offset %u", pbap_client->current_folder, pbap_client->set_path_offset);
                     if (packet[0] == OBEX_RESP_SUCCESS){
                         if (pbap_client->current_folder){
                             pbap_client->state = PBAP_W2_SET_PATH_ELEMENT;
