@@ -91,11 +91,13 @@ static void show_usage(void){
     printf("a - establish PBAP connection to %s\n", bd_addr_to_str(remote_addr));
     printf("b - set phonebook '/telecom/pb'\n");
     printf("c - set phonebook '/SIM1/telecom/pb'\n");
+    printf("r - set path to '/root/telecom'\n");
     printf("d - get phonebook size\n");
     printf("e - pull phonebook\n");
     printf("f - disconnnect\n");
     printf("g - Lookup contact with number '%s'\n", phone_number);    
     printf("p - authenticate using password '0000'\n");
+    printf("r - set path to 'telecom'\n");
     printf("\n");
 }
 
@@ -127,6 +129,10 @@ static void stdin_process(char c){
             break;
         case 'p':
             pbap_authentication_password(pbap_cid, "0000");
+            break;
+        case 'r':
+            printf("[+] Set path to 'telecom'\n");
+            pbap_set_phonebook(pbap_cid, "telecom");
             break;
         default:
             show_usage();
