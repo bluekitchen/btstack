@@ -1110,7 +1110,6 @@ static int call_setup_state_machine(hfp_connection_t * hfp_connection){
             hfp_connection->ag_ring = 1;
             hfp_connection->ag_send_clip = hfp_gsm_clip_type() && hfp_connection->clip_enabled;
             hfp_connection->call_state = HFP_CALL_RINGING;
-            hfp_connection->call_state = HFP_CALL_RINGING;
             hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_START_RINGINIG);
             break;        
         case HFP_CALL_W4_AUDIO_CONNECTION_FOR_ACTIVE:
@@ -2073,6 +2072,11 @@ static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
 
 static void hci_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     hfp_handle_hci_event(packet_type, channel, packet, size, HFP_ROLE_AG);
+
+    // allow for sco established -> ring transition
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE) return;
+    hfp_run();
 }
 
 void hfp_ag_init_codecs(int codecs_nr, uint8_t * codecs){
