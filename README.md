@@ -3,17 +3,16 @@
 BTstack is [BlueKitchen's](http://bluekitchen-gmbh.com) implementation of the official Bluetooth stack.
 It is well suited for small, resource-constraint devices
 such as 8 or 16 bit embedded systems as it is highly configurable and comes with an ultra small memory footprint.
-A minimal configuration for an SPP server on a MSP430 can run in 32 kB FLASH and only 4 kB of RAM.
 
 Targeting a variety of platforms is as simple as providing the necessary UART, CPU, and CLOCK implementations. BTstack is currently capable of connecting to Bluetooth-modules via: (H2) HCI USB, (H4) HCI UART + TI's eHCILL, and (H5) HCI Three-Wire UART.
 
 On smaller embedded systems, a minimal run loop implementation allows to use BTstack without a Real Time OS (RTOS).
 If a RTOS is already provided, BTstack can be integrated and run as a single thread.
 
-On larger systems, BTstack provides a daemon that connects to a Bluetooth module.
-Multiple applications can communicate with this daemon over different inter-process communication methods.
+On larger systems, BTstack provides a server that connects to a Bluetooth module.
+Multiple applications can communicate with this server over different inter-process communication methods. As sockets are used for client/server communication, it's easy to interact via higher-level level languages, e.g. there's already a Java binding for use in desktop environments.
 
-BTstack supports the Central and the Peripheral Role of Bluetooth 4.2 Low Energy specification incl. LE Secure Connections, LE Data Channels, and LE Data Lenght Extension. It can be configured to run as either single-mode stack or a dual-mode stack.
+BTstack supports the Central and the Peripheral Role of Bluetooth 4.2 Low Energy specification incl. LE Secure Connections, LE Data Channels, and LE Data Length Extension. It can be configured to run as either single-mode stack or a dual-mode stack.
 
 BTstack is free for non-commercial use. However, for commercial use, <a href="mailto:contact@bluekitchen-gmbh.com">tell us</a> a bit about your project to get a quote.
 
@@ -25,11 +24,11 @@ BTstack is free for non-commercial use. However, for commercial use, <a href="ma
 
 **Protocols:** L2CAP (incl. LE Data Channels), RFCOMM, SDP, BNEP, AVDTP, AVCTP, ATT, SM (incl. LE Secure Connections).
 
-**Profiles:** GAP, IOP, HFP, HSP, SPP, PAN, A2DP, AVRCP, GATT.
+**Profiles:** GAP, IOP, HFP, HSP, SPP, PAN, A2DP, AVRCP incl. Browsing, GATT.
 
-**Beta Stage:** HID, HOGP.
+**Beta Stage:** HID, HOGP, PBAP.
 
-**In Development:** BLE Mesh, AVRCP Browsing and more.
+**In Development:** BLE Mesh and more.
 
 It has been qualified with the Bluetooth SIG (QDID 110883) for GAP, IOP, HFP, HSP, SPP, PAN, A2DP, AVRCP profiles and
 GATT, SM of the Bluetooth 5 specification. For information on MFi/iAP2 support, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us</a>.
@@ -83,7 +82,7 @@ Broadcom USB Dongles         | Dual mode | USB             | Yes              | 
 CSR UART                     | Dual mode | H4, H5, BCSP    | No (didn't work) | csr            |
 CSR USB Dongles              | Dual mode | USB             | Yes              | csr            |
 Cypress CYW20704             | Dual mode | H4, H5, USB     | Probably         | bcm            |
-Dialog Semiconductor DA14581, DA14585 | LE        | H4, SPI         | n.a.             | da14581        | Official HCI firmware used
+Dialog Semiconductor DA14581, DA14585 | LE      | H4, SPI  | n.a.             | da14581        | Official HCI firmware used
 Espressif ESP32              | Dual mode | VHCI            | Not yet          |                | SoC with Bluetooth and Wifi
 EM 9301, 9304                | LE        | SPI             | n.a.             | em9301         | Custom HCI SPI implementation
 Intel Dual Wireless 8260, 8265 | Dual mode | USB           | Probably         | intel          | Firmware size: 400 kB 
