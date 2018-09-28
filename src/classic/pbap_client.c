@@ -478,6 +478,7 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                             pbap_client->state = PBAP_W2_SET_PATH_ELEMENT;
                             goep_client_request_can_send_now(pbap_client->goep_cid);
                         } else {
+                            pbap_client->state = PBAP_CONNECTED;
                             pbap_client_emit_operation_complete_event(pbap_client, 0);
                         }
                     } else if (packet[0] == OBEX_RESP_NOT_FOUND){
