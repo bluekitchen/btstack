@@ -60,6 +60,8 @@
 // goep_client.c
 //
 
+// #define ENABLE_GOEP_L2CAP
+
 typedef enum {
     GOEP_INIT,
     GOEP_W4_SDP,
@@ -264,26 +266,26 @@ static void goep_client_handle_sdp_query_event(uint8_t packet_type, uint16_t cha
 
                         des_element = des_iterator_get_element(&des_list_it);
                         des_iterator_init(&prot_it, des_element);
-                        element = des_iterator_get_element(&prot_it);
 
+                        // first element is UUID
+                        element = des_iterator_get_element(&prot_it);
                         if (de_get_element_type(element) != DE_UUID) continue;
 
                         uuid = de_get_uuid32(element);
+                        des_iterator_next(&prot_it);
+                        if (!des_iterator_has_more(&prot_it)) continue;
+
+                        // second element is RFCOMM server channel or L2CAP PSM
+                        element = des_iterator_get_element(&prot_it);
                         switch (uuid){
 #ifdef ENABLE_GOEP_L2CAP
                             case BLUETOOTH_PROTOCOL_L2CAP:
-                                if (!des_iterator_has_more(&prot_it)) continue;
-                                des_iterator_next(&prot_it);
-                                element = des_iterator_get_element(&prot_it);
                                 if (de_element_get_uint16(element, &l2cap_psm)){
                                     context->l2cap_psm = l2cap_psm;
                                 }
                                 break;
 #endif
                             case BLUETOOTH_PROTOCOL_RFCOMM:
-                                if (!des_iterator_has_more(&prot_it)) continue;
-                                des_iterator_next(&prot_it);
-                                element = des_iterator_get_element(&prot_it);
                                 context->rfcomm_port = element[de_get_header_size(element)];
                                 break;
                             default:
