@@ -88,6 +88,11 @@ typedef enum {
     HID_REPORT_TYPE_FEATURE
 } hid_report_type_t;
 
+typedef enum {
+    HID_PROTOCOL_MODE_BOOT = 0,
+    HID_PROTOCOL_MODE_REPORT
+} hid_protocol_mode_t;
+
 
 /**
  * @brief Create HID Device SDP service record. 
@@ -119,8 +124,9 @@ void hid_create_sdp_record(
 
 /**
  * @brief Set up HID Device 
+ * @param boot_protocol_mode_supported
  */
-void hid_device_init(void);
+void hid_device_init(uint8_t boot_protocol_mode_supported);
 
 /**
  * @brief Register callback for the HID Device client. 
@@ -129,10 +135,17 @@ void hid_device_init(void);
 void hid_device_register_packet_handler(btstack_packet_handler_t callback);
 
 /**
- * @brief Register callback for the HID Device client. 
+ * @brief Register get report callback for the HID Device client. 
  * @param callback
  */
 void hid_device_register_report_request_callback(hid_handshake_param_type_t (*callback) (uint16_t hid_cid, hid_report_type_t report_type, uint16_t report_id, uint8_t report_max_size, int * out_report_size, uint8_t * out_report));
+
+/**
+ * @brief Register set report callback for the HID Device client. 
+ * @param callback
+ */
+void hid_device_register_set_report_callback(hid_handshake_param_type_t (*callback) (uint16_t hid_cid, hid_report_type_t report_type, int report_size, uint8_t * report));
+
 
 /*
  * @brief Create HID connection to HID Host

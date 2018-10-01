@@ -61,6 +61,7 @@
 #include "btstack_stdin.h"
 #endif
 
+#define REPORT_ID_EXISTS 0
 // to enable demo text on POSIX systems
 // #undef HAVE_BTSTACK_STDIN
 
@@ -70,8 +71,9 @@ const uint8_t hid_descriptor_keyboard_boot_mode[] = {
     0x09, 0x06,                    // Usage (Keyboard)
     0xa1, 0x01,                    // Collection (Application)
 
+#ifdef REPORT_ID_EXISTS
     0x85, 0x01,                   // Report ID 1
-
+#endif
     // Modifier byte
 
     0x75, 0x01,                    //   Report Size (1)
@@ -234,9 +236,8 @@ static void send_report(int modifier, int keycode){
     hid_device_send_interrupt_message(hid_cid, &report[0], sizeof(report));
 }
 
-static hid_handshake_param_type_t hid_report_callback(uint16_t cid, hid_report_type_t report_type, uint16_t report_id, uint8_t report_max_size, int * out_report_size, uint8_t * out_report){
+static hid_handshake_param_type_t hid_get_report_callback(uint16_t cid, hid_report_type_t report_type, uint16_t report_id, uint8_t report_max_size, int * out_report_size, uint8_t * out_report){
     UNUSED(cid);
-    UNUSED(report_id);
     UNUSED(report_max_size);
     
     if (!report_data_ready){
@@ -277,17 +278,21 @@ static hid_handshake_param_type_t hid_report_callback(uint16_t cid, hid_report_t
     return HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL;
 }
 
-
-    // 0x95, 0x06,                    //   Report Count (6)
-    // 0x75, 0x08,                    //   Report Size (8)
-    // 0x15, 0x00,                    //   Logical Minimum (0)
-    // 0x25, 0xff,                    //   Logical Maximum (1)
-    // 0x05, 0x07,                    //   Usage Page (Key codes)
-    // 0x19, 0x00,                    //   Usage Minimum (Reserved (no event indicated))
-    // 0x29, 0xff,                    //   Usage Maxium (Reserved)
-    // 0x81, 0x00,                    //   Input (Data, Array)
-
-// Demo Application
+static hid_handshake_param_type_t hid_set_report_callback(uint16_t cid, hid_report_type_t report_type, int report_size, uint8_t * report){
+    UNUSED(cid);
+    UNUSED(report_type);
+    UNUSED(report_size);
+    UNUSED(report);
+    int pos = 0;
+#ifdef REPORT_ID_EXISTS
+    int report_id = report[pos++];
+    if (report_id != 1) {
+        return HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_REPORT_ID;
+    }
+#endif
+    
+    return HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL;
+}
 
 #ifdef HAVE_BTSTACK_STDIN
 
@@ -527,7 +532,7 @@ int btstack_main(int argc, const char * argv[]){
     sdp_register_service(device_id_sdp_service_buffer);
 
     // HID Device
-    hid_device_init();
+    hid_device_init(1);
 
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
@@ -535,7 +540,8 @@ int btstack_main(int argc, const char * argv[]){
 
     // register for HID events
     hid_device_register_packet_handler(&packet_handler);
-    hid_device_register_report_request_callback(&hid_report_callback);
+    hid_device_register_report_request_callback(&hid_get_report_callback);
+    hid_device_register_set_report_callback(&hid_set_report_callback);
 
     sscanf_bd_addr(device_addr_string, device_addr);
     btstack_stdin_setup(stdin_process);
