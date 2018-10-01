@@ -428,15 +428,14 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                                     if (de_get_element_type(element) != DE_UUID) continue;
                                     
                                     uuid = de_get_uuid32(element);
+                                    des_iterator_next(&prot_it);
                                     switch (uuid){
                                         case BLUETOOTH_PROTOCOL_L2CAP:
                                             if (!des_iterator_has_more(&prot_it)) continue;
-                                            des_iterator_next(&prot_it);
                                             de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_query_context->avdtp_l2cap_psm);
                                             break;
                                         case BLUETOOTH_PROTOCOL_AVDTP:
                                             if (!des_iterator_has_more(&prot_it)) continue;
-                                            des_iterator_next(&prot_it);
                                             de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_query_context->avdtp_version);
                                             break;
                                         default:

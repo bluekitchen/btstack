@@ -216,18 +216,18 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                                     des_iterator_init(&prot_it, des_element);
                                     element = des_iterator_get_element(&prot_it);
                                     
+                                    if (!element) continue;
                                     if (de_get_element_type(element) != DE_UUID) continue;
                                     
                                     uuid = de_get_uuid32(element);
+                                    des_iterator_next(&prot_it);
                                     switch (uuid){
                                         case BLUETOOTH_PROTOCOL_L2CAP:
                                             if (!des_iterator_has_more(&prot_it)) continue;
-                                            des_iterator_next(&prot_it);
                                             de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_bnep_l2cap_psm);
                                             break;
                                         case BLUETOOTH_PROTOCOL_BNEP:
                                             if (!des_iterator_has_more(&prot_it)) continue;
-                                            des_iterator_next(&prot_it);
                                             de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_bnep_version);
                                             break;
                                         default:

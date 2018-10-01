@@ -182,12 +182,13 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                                 des_element = des_iterator_get_element(&attribute_list_it);
                                 des_iterator_init(&prot_it, des_element);
                                 element = des_iterator_get_element(&prot_it);
+                                if (!element) continue;
                                 if (de_get_element_type(element) != DE_UUID) continue;
                                 uuid = de_get_uuid32(element);
+                                des_iterator_next(&prot_it);
                                 switch (uuid){
                                     case BLUETOOTH_PROTOCOL_L2CAP:
                                         if (!des_iterator_has_more(&prot_it)) continue;
-                                        des_iterator_next(&prot_it);
                                         de_element_get_uint16(des_iterator_get_element(&prot_it), &hid_control_psm);
                                         printf("HID Control PSM: 0x%04x\n", (int) hid_control_psm);
                                         break;
@@ -205,12 +206,13 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                                     des_element = des_iterator_get_element(&additional_des_it);
                                     des_iterator_init(&prot_it, des_element);
                                     element = des_iterator_get_element(&prot_it);
+                                    if (!element) continue;
                                     if (de_get_element_type(element) != DE_UUID) continue;
                                     uuid = de_get_uuid32(element);
+                                    des_iterator_next(&prot_it);
                                     switch (uuid){
                                         case BLUETOOTH_PROTOCOL_L2CAP:
                                             if (!des_iterator_has_more(&prot_it)) continue;
-                                            des_iterator_next(&prot_it);
                                             de_element_get_uint16(des_iterator_get_element(&prot_it), &hid_interrupt_psm);
                                             printf("HID Interrupt PSM: 0x%04x\n", (int) hid_interrupt_psm);
                                             break;
