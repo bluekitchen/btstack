@@ -71,9 +71,8 @@ typedef struct hid_device {
     hid_report_type_t report_type;
     uint16_t  report_id;
     uint16_t  num_received_bytes;
-    uint8_t   report_id_is_valid;
+    
     hid_handshake_param_type_t report_status;
-
     hid_protocol_mode_t protocol_mode;
 } hid_device_t;
 
@@ -410,6 +409,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     }
                     device->protocol_mode = param;
                     device->report_status = HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL;
+                    l2cap_request_can_send_now_event(device->control_cid);
                     break;
                 case HID_MESSAGE_TYPE_HID_CONTROL:
                     param = packet[0] & 0x0F;
