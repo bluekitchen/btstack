@@ -712,7 +712,8 @@ void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *pac
                 return;
             }
             if (hfp_connection->state != HFP_IDLE) {
-                log_error("hfp: incoming connection but state != HFP_IDLE");
+                log_error("hfp: incoming connection but not idle, reject");
+                rfcomm_decline_connection(rfcomm_event_incoming_connection_get_rfcomm_cid(packet));
                 return;
             }
 
