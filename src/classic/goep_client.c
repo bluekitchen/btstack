@@ -376,6 +376,7 @@ static void goep_client_add_variable_header(uint16_t goep_cid, uint8_t header_ty
     goep_client_packet_append(header_data, header_data_length);
 }
 
+#if 0
 static void goep_client_add_byte_header(uint16_t goep_cid, uint8_t header_type, uint8_t value){
     UNUSED(goep_cid);
     uint8_t header[2];
@@ -383,6 +384,7 @@ static void goep_client_add_byte_header(uint16_t goep_cid, uint8_t header_type, 
     header[1] = value;
     goep_client_packet_append(&header[0], sizeof(header));
 }
+#endif
 
 static void goep_client_add_word_header(uint16_t goep_cid, uint8_t header_type, uint32_t value){
     UNUSED(goep_cid);
