@@ -179,6 +179,7 @@ static uint16_t hid_cid;
 static bd_addr_t device_addr;
 static int     report_data_ready = 1;
 static uint8_t report_data[20];
+static uint8_t hid_boot_device = 1;
 
 #ifdef HAVE_BTSTACK_STDIN
 static const char * device_addr_string = "BC:EC:5D:E6:15:03";
@@ -519,7 +520,7 @@ int btstack_main(int argc, const char * argv[]){
     uint8_t hid_virtual_cable = 1;
     // hid sevice subclass 2540 Keyboard, hid counntry code 33 US, hid virtual cable on, hid reconnect initiate on, hid boot device off 
     hid_create_sdp_record(hid_service_buffer, 0x10001, 0x2540, 33, 
-        hid_virtual_cable, hid_reconnect_initiate, 0, 
+        hid_virtual_cable, hid_reconnect_initiate, hid_boot_device, 
         hid_descriptor_keyboard_boot_mode, sizeof(hid_descriptor_keyboard_boot_mode), hid_device_name);
 
     printf("HID service record size: %u\n", de_get_len( hid_service_buffer));
@@ -532,7 +533,7 @@ int btstack_main(int argc, const char * argv[]){
     sdp_register_service(device_id_sdp_service_buffer);
 
     // HID Device
-    hid_device_init(1);
+    hid_device_init(hid_boot_device);
 
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
