@@ -1524,6 +1524,28 @@ void hfp_set_hf_run_for_context(void (*callback)(hfp_connection_t * hfp_connecti
 void hfp_init(void){
 }
 
+void hfp_init_link_settings(hfp_connection_t * hfp_connection, uint8_t esco_s4_supported){
+    // determine highest possible link setting
+    hfp_connection->link_setting = HFP_LINK_SETTINGS_D1;
+    // anything else requires eSCO support on both sides
+    if (hci_extended_sco_link_supported() && hci_remote_esco_supported(hfp_connection->acl_handle)){
+        switch (hfp_connection->negotiated_codec){
+            case HFP_CODEC_CVSD:
+                hfp_connection->link_setting = HFP_LINK_SETTINGS_S3;
+                if (esco_s4_supported){
+                    hfp_connection->link_setting = HFP_LINK_SETTINGS_S4;
+                }
+                break;
+            case HFP_CODEC_MSBC:
+                hfp_connection->link_setting = HFP_LINK_SETTINGS_T2;
+                break;
+            default:
+                break;
+        }
+    }
+    log_info("hfp_init_link_settings: %u", hfp_connection->link_setting);
+}
+
 #define HFP_HF_RX_DEBUG_PRINT_LINE 80
 
 void hfp_log_rfcomm_message(const char * tag, uint8_t * packet, uint16_t size){
