@@ -1728,7 +1728,7 @@ static void l2cap_run(void){
 #ifdef ENABLE_CLASSIC
 static void l2cap_handle_connection_complete(hci_con_handle_t con_handle, l2cap_channel_t * channel){
     if (channel->state == L2CAP_STATE_WAIT_CONNECTION_COMPLETE || channel->state == L2CAP_STATE_WILL_SEND_CREATE_CONNECTION) {
-        log_info("l2cap_handle_connection_complete expected state");
+        log_info("connection complete con_handle %04x - for channel %p cid 0x%04x", (int) con_handle, channel, channel->local_cid);
         // success, start l2cap handshake
         channel->con_handle = con_handle;
         // check remote SSP feature first
@@ -1801,6 +1801,8 @@ static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t pac
     channel->remote_sig_id = L2CAP_SIG_ID_INVALID;
     channel->local_sig_id = L2CAP_SIG_ID_INVALID;
 
+    log_info("channel %p, local_cid 0x%04x", channel, channel->local_cid);
+
     return channel;
 }
 #endif
@@ -1842,7 +1844,7 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
     // check if hci connection is already usable
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(address, BD_ADDR_TYPE_CLASSIC);
     if (conn){
-        log_info("l2cap_create_channel, hci connection already exists");
+        log_info("l2cap_create_channel, hci connection 0x%04x already exists", conn->con_handle);
         l2cap_handle_connection_complete(conn->con_handle, channel);
         // check if remote supported fearures are already received
         if (conn->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) {
@@ -2145,6 +2147,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
                 if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
                 if (channel->con_handle != handle) continue;
+                log_info("remote supported features, channel %p, cid %04x - state %u", channel, channel->local_cid, channel->state);
                 l2cap_handle_remote_supported_features_received(channel);
                 break;
             }
@@ -2152,7 +2155,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
 
         case GAP_EVENT_SECURITY_LEVEL:
             handle = little_endian_read_16(packet, 2);
-            log_info("l2cap - security level update");
+            log_info("l2cap - security level update for handle 0x%04x", handle);
             btstack_linked_list_iterator_init(&it, &l2cap_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
@@ -2162,7 +2165,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
                 gap_security_level_t actual_level = (gap_security_level_t) packet[4];
                 gap_security_level_t required_level = channel->required_security_level;
 
-                log_info("channel state %u: actual %u >= required %u?", channel->state, actual_level, required_level);
+                log_info("channel %p, cid %04x - state %u: actual %u >= required %u?", channel, channel->local_cid, channel->state, actual_level, required_level);
 
                 switch (channel->state){
                     case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
