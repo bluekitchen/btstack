@@ -2149,7 +2149,6 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
                 if (channel->con_handle != handle) continue;
                 log_info("remote supported features, channel %p, cid %04x - state %u", channel, channel->local_cid, channel->state);
                 l2cap_handle_remote_supported_features_received(channel);
-                break;
             }
             break;           
 
