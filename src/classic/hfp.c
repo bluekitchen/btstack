@@ -520,20 +520,20 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
     }
 }
 
-static void hfp_handle_failed_sco_connection(uint8_t status){
-               
+// returns 0 if unexpected error or no other link options remained, otherwise 1
+static int hfp_handle_failed_sco_connection(uint8_t status){
+                   
     if (!sco_establishment_active){
         log_error("(e)SCO Connection failed but not started by us");
-        return;
+        return 0;
     }
-    log_error("(e)SCO Connection failed status 0x%02x", status);
-
+    log_info("(e)SCO Connection failed status 0x%02x", status);
     // invalid params / unspecified error
-    if (status != 0x11 && status != 0x1f) return;
+    if (status != 0x11 && status != 0x1f && status != 0x0D) return 0;
                 
-     switch (sco_establishment_active->link_setting){
+    switch (sco_establishment_active->link_setting){
         case HFP_LINK_SETTINGS_D0:
-            return; // no other option left
+            return 0; // no other option left
         case HFP_LINK_SETTINGS_D1:
             sco_establishment_active->link_setting = HFP_LINK_SETTINGS_D0;
             break;
@@ -560,8 +560,10 @@ static void hfp_handle_failed_sco_connection(uint8_t status){
             sco_establishment_active->link_setting = HFP_LINK_SETTINGS_T1;
             break;
     }
+    log_info("e)SCO Connection: try new link_setting %d", sco_establishment_active->link_setting);
     sco_establishment_active->establish_audio_connection = 1;
-    sco_establishment_active = 0;
+    sco_establishment_active = NULL;
+    return 1;
 }
 
 
@@ -597,9 +599,13 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
         case HCI_EVENT_COMMAND_STATUS:
             if (hci_event_command_status_get_command_opcode(packet) == hci_setup_synchronous_connection.opcode) {
                 status = hci_event_command_status_get_status(packet);
-                if (status) {
-                    hfp_handle_failed_sco_connection(hci_event_command_status_get_status(packet));
-               }
+                if (status == ERROR_CODE_SUCCESS) break;
+                
+                hfp_connection = sco_establishment_active;
+                if (hfp_handle_failed_sco_connection(status)) break;
+                hfp_connection->establish_audio_connection = 0;
+                hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+                hfp_emit_sco_event(hfp_connection, status, 0, hfp_connection->remote_addr, hfp_connection->negotiated_codec);
             }
             break;
 
@@ -612,9 +618,13 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             }
             
             status = hci_event_synchronous_connection_complete_get_status(packet);
-            if (status != 0){
+            if (status != ERROR_CODE_SUCCESS){
                 hfp_connection->hf_accept_sco = 0;
-                hfp_handle_failed_sco_connection(status);
+                if (hfp_handle_failed_sco_connection(status)) break;
+
+                hfp_connection->establish_audio_connection = 0;
+                hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+                hfp_emit_sco_event(hfp_connection, status, 0, event_addr, hfp_connection->negotiated_codec);
                 break;
             }
             
@@ -645,12 +655,12 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                  " rx_packet_length %u bytes, tx_packet_length %u bytes, air_mode 0x%2x (0x02 == CVSD)\n", sco_handle,
                  bd_addr_to_str(event_addr), transmission_interval, retransmission_interval, rx_packet_length, tx_packet_length, air_mode);
 
-            hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr, local_role);
+            // hfp_connection = get_hfp_connection_context_for_bd_addr(event_addr, local_role);
             
-            if (!hfp_connection) {
-                log_error("SCO link created, hfp_connection for address %s not found.", bd_addr_to_str(event_addr));
-                break;
-            }
+            // if (!hfp_connection) {
+            //     log_error("SCO link created, hfp_connection for address %s not found.", bd_addr_to_str(event_addr));
+            //     break;
+            // }
 
             if (hfp_connection->state == HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN){
                 log_info("SCO about to disconnect: HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN");
@@ -660,7 +670,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             hfp_connection->sco_handle = sco_handle;
             hfp_connection->establish_audio_connection = 0;
             hfp_connection->state = HFP_AUDIO_CONNECTION_ESTABLISHED;
-            hfp_emit_sco_event(hfp_connection, packet[2], sco_handle, event_addr, hfp_connection->negotiated_codec);
+            hfp_emit_sco_event(hfp_connection, status, sco_handle, event_addr, hfp_connection->negotiated_codec);
             break;                
         }
 

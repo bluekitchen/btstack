@@ -551,9 +551,18 @@ static int hfp_hf_run_for_audio_connection(hfp_connection_t * hfp_connection){
     // run codecs exchange
     int done = codecs_exchange_state_machine(hfp_connection);
     if (done) return 1;
-        
+    
+    if (hfp_connection->codecs_state != HFP_CODECS_EXCHANGED) return 0;
+    if (hfp_connection->establish_audio_connection){
+        hfp_connection->state = HFP_W4_SCO_CONNECTED;
+        hfp_connection->establish_audio_connection = 0;
+        hfp_setup_synchronous_connection(hfp_connection);
+        return 1;
+    }
+
     return 0;
 }
+
 
 static int call_setup_state_machine(hfp_connection_t * hfp_connection){
     if (hfp_connection->hf_answer_incoming_call){
@@ -1110,6 +1119,11 @@ static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
 
 static void hci_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     hfp_handle_hci_event(packet_type, channel, packet, size, HFP_ROLE_HF);
+    
+    // allow for sco established -> ring transition and sco retry
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE) return;
+    hfp_run();
 }
 
 void hfp_hf_init(uint16_t rfcomm_channel_nr){
@@ -1239,6 +1253,9 @@ void hfp_hf_disable_report_extended_audio_gateway_error_result_code(hci_con_hand
     hfp_hf_set_report_extended_audio_gateway_error_result_code(acl_handle, 0);
 }
 
+static uint8_t hfp_hf_esco_s4_supported(hfp_connection_t * hfp_connection){
+    return (hfp_connection->remote_supported_features & (1<<HFP_AGSF_ESCO_S4)) &&  (hfp_supported_features  & (1<<HFP_HFSF_ESCO_S4));
+}
 
 void hfp_hf_establish_audio_connection(hci_con_handle_t acl_handle){
     hfp_connection_t * hfp_connection = get_hfp_hf_connection_context_for_acl_handle(acl_handle);
@@ -1251,15 +1268,23 @@ void hfp_hf_establish_audio_connection(hci_con_handle_t acl_handle){
     if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return;
     if (hfp_connection->state >= HFP_W2_DISCONNECT_SCO) return;
 
+    hfp_connection->trigger_codec_exchange = 0;
+    hfp_connection->establish_audio_connection = 1;
     if (!has_codec_negotiation_feature(hfp_connection)){
         log_info("hfp_ag_establish_audio_connection - no codec negotiation feature, using defaults");
         hfp_connection->codecs_state = HFP_CODECS_EXCHANGED;
-        hfp_connection->establish_audio_connection = 1;
+        hfp_connection->suggested_codec = HFP_CODEC_CVSD;
+        hfp_connection->codec_confirmed = hfp_connection->suggested_codec;
+        hfp_connection->negotiated_codec = hfp_connection->suggested_codec;
+        hfp_init_link_settings(hfp_connection, hfp_hf_esco_s4_supported(hfp_connection));
+        hfp_connection->trigger_codec_exchange = 0;
+        hfp_connection->state = HFP_W4_SCO_CONNECTED;
     } else {
         switch (hfp_connection->codecs_state){
             case HFP_CODECS_W4_AG_COMMON_CODEC:
                 break;
             default:
+                hfp_connection->trigger_codec_exchange = 1;
                 hfp_connection->command = HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP;
                 break;
         } 
