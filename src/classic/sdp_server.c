@@ -56,6 +56,11 @@
 #include "hci.h"
 #include "l2cap.h"
 
+// max number of incoming l2cap connections that can be queued instead of getting rejected
+#ifndef SDP_WAITING_LIST_MAX_COUNT
+#define SDP_WAITING_LIST_MAX_COUNT 8
+#endif
+
 // max reserved ServiceRecordHandle
 #define maxReservedServiceRecordHandle 0xffff
 
@@ -76,10 +81,13 @@ static uint8_t sdp_response_buffer[SDP_RESPONSE_BUFFER_SIZE];
 
 static uint16_t l2cap_cid = 0;
 static uint16_t sdp_response_size = 0;
+static uint16_t l2cap_waiting_list_cids[SDP_WAITING_LIST_MAX_COUNT];
+static int      l2cap_waiting_list_count;
 
 void sdp_init(void){
     // register with l2cap psm sevices - max MTU
     l2cap_register_service(sdp_packet_handler, BLUETOOTH_PROTOCOL_SDP, 0xffff, LEVEL_0);
+    l2cap_waiting_list_count = 0;
 }
 
 uint32_t sdp_get_service_record_handle(const uint8_t * record){
@@ -484,6 +492,21 @@ static void sdp_respond(void){
     l2cap_send(l2cap_cid, sdp_response_buffer, size);
 }
 
+// @pre space in list
+static void sdp_waiting_list_add(uint16_t cid){
+    l2cap_waiting_list_cids[l2cap_waiting_list_count++] = cid;
+}
+
+// @pre at least one item in list
+static uint16_t sdp_waiting_list_get(void){
+    uint16_t cid = l2cap_waiting_list_cids[0];
+    l2cap_waiting_list_count--;
+    if (l2cap_waiting_list_count){
+        memmove(&l2cap_waiting_list_cids[0], &l2cap_waiting_list_cids[1], l2cap_waiting_list_count * sizeof(uint16_t));
+    }
+    return cid;
+}
+
 // we assume that we don't get two requests in a row
 static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	uint16_t transaction_id;
@@ -537,6 +560,13 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 
 				case L2CAP_EVENT_INCOMING_CONNECTION:
                     if (l2cap_cid) {
+                        // try to queue up
+                        if (l2cap_waiting_list_count < SDP_WAITING_LIST_MAX_COUNT){
+                            sdp_waiting_list_add(channel);
+                            log_info("busy, queing incoming cid 0x%04x, now %u waiting", channel, l2cap_waiting_list_count);
+                            break;
+                        }
+
                         // CONNECTION REJECTED DUE TO LIMITED RESOURCES 
                         l2cap_decline_connection(channel);
                         break;
@@ -544,7 +574,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     // accept
                     l2cap_cid = channel;
                     sdp_response_size = 0;
-                    l2cap_accept_connection(channel);
+                    l2cap_accept_connection(l2cap_cid);
 					break;
                     
                 case L2CAP_EVENT_CHANNEL_OPENED:
@@ -562,6 +592,18 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     if (channel == l2cap_cid){
                         // reset
                         l2cap_cid = 0;
+
+                        // other request queued?
+                        if (!l2cap_waiting_list_count) break;
+
+                        // get first item 
+                        l2cap_cid = sdp_waiting_list_get();
+
+                        log_info("disconnect, accept queued cid 0x%04x, now %u waiting", l2cap_cid, l2cap_waiting_list_count);
+
+                        // accept connection
+                        sdp_response_size = 0;
+                        l2cap_accept_connection(l2cap_cid);
                     }
                     break;
 					                    
