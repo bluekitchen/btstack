@@ -1731,7 +1731,7 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
     if (event->type == CH_EVT_RCVD_DM){
         log_info("Received DM message for #%u", channel->dlci);
         log_info("-> Closing channel locally for #%u", channel->dlci);
-        rfcomm_emit_channel_closed(channel);
+        rfcomm_channel_emit_final_event(channel, ERROR_CODE_CONNECTION_REJECTED_DUE_TO_LIMITED_RESOURCES);
         rfcomm_channel_finalize(channel);
         *out_channel_valid = 0;
         return;
