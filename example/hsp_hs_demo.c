@@ -279,6 +279,7 @@ int btstack_main(int argc, const char * argv[]){
     (void)argv;
 
     sco_demo_init();
+    sco_demo_set_codec(HFP_CODEC_CVSD);
 
     l2cap_init();
 
