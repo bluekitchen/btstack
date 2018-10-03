@@ -152,6 +152,9 @@ static void stdin_process(char buffer){
 
 // Audio Gateway routines 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(event_size);
     switch (event[2]) {
         case HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE:
             if (event[3] == 0){
@@ -187,6 +190,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+    UNUSED(argc);
+    (void) argv;
     
     l2cap_init();
     rfcomm_init();
