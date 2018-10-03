@@ -753,6 +753,24 @@ static void rfcomm_send_uih_credits(rfcomm_multiplexer_t *multiplexer, uint8_t d
     rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH_PF, credits, NULL, 0);
 }
 
+// depending on channel state emit channel opened with status or channel closed
+static void rfcomm_channel_emit_final_event(rfcomm_channel_t * channel, uint8_t status){
+    // emit appropriate events
+    switch(channel->state){
+        case RFCOMM_CHANNEL_OPEN:
+        case RFCOMM_CHANNEL_W4_UA_AFTER_DISC:
+            rfcomm_emit_channel_closed(channel);
+            break;
+        case RFCOMM_CHANNEL_SEND_UA_AFTER_DISC:
+            // remote didn't wait until we send the UA disc
+            // close event already emitted
+            break;
+        default:
+            rfcomm_emit_channel_opened(channel, status); 
+            break;
+    }
+}
+
 // MARK: RFCOMM MULTIPLEXER
 static void rfcomm_multiplexer_stop_timer(rfcomm_multiplexer_t * multiplexer){
     if (multiplexer->timer_active) {
@@ -774,19 +792,8 @@ static void rfcomm_multiplexer_finalize(rfcomm_multiplexer_t * multiplexer){
     while (it->next){
         rfcomm_channel_t * channel = (rfcomm_channel_t *) it->next;
         if (channel->multiplexer == multiplexer) {
-            // emit appropriate events
-            switch(channel->state){
-                case RFCOMM_CHANNEL_OPEN:
-                case RFCOMM_CHANNEL_W4_UA_AFTER_DISC:
-                    rfcomm_emit_channel_closed(channel);
-                    break;
-                case RFCOMM_CHANNEL_SEND_UA_AFTER_DISC:
-                    // remote didn't wait until we send the UA disc
-                    break;
-                default:
-                    rfcomm_emit_channel_opened(channel, RFCOMM_MULTIPLEXER_STOPPED); 
-                    break;
-            }
+            // emit open with status or closed
+            rfcomm_channel_emit_final_event(channel, RFCOMM_MULTIPLEXER_STOPPED);
             // remove from list
             it->next = it->next->next;
             // free channel struct
