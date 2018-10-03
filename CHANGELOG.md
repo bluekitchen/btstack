@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- SDP Server: queue incoming connections when already connected instead of rejecting them
+
 ### Fixed
 - L2CAP: fix issue with outgoing connection before read remote supported complete when other channels exist
 - HFP: decline incoming RFCOMM connection after outgoing connection was started
