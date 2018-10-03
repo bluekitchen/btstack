@@ -3200,26 +3200,11 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                         }
 
                         // get SDU
-                        const uint8_t * payload_data = &packet[COMPLETE_L2CAP_HEADER+2];
-                        uint16_t        payload_len  = size-(COMPLETE_L2CAP_HEADER+2+fcs_size);
+                        const uint8_t * sdu_data = &packet[COMPLETE_L2CAP_HEADER+2];
+                        uint16_t        sdu_len  = size-(COMPLETE_L2CAP_HEADER+2+fcs_size);
 
                         // assert SDU size is smaller or equal to our buffers
-                        uint16_t max_payload_size = 0;
-                        switch (sar){
-                            case L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU:
-                            case L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU:
-                                // SDU Length + MPS
-                                max_payload_size = l2cap_channel->local_mps + 2;
-                                break;
-                            case L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU:
-                            case L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU:
-                                max_payload_size = l2cap_channel->local_mps;
-                                break;
-                        }
-                        if (payload_len > max_payload_size){
-                            log_info("payload len %u > max payload %u -> drop packet", payload_len, max_payload_size);
-                            break;
-                        }
+                        if (sdu_len > l2cap_channel->local_mps) break;
 
                         // check ordering
                         if (l2cap_channel->expected_tx_seq == tx_seq){
@@ -3228,7 +3213,7 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                             l2cap_channel->req_seq         = l2cap_channel->expected_tx_seq;
  
                             // process SDU
-                            l2cap_ertm_handle_in_sequence_sdu(l2cap_channel, sar, payload_data, payload_len);
+                            l2cap_ertm_handle_in_sequence_sdu(l2cap_channel, sar, sdu_data, sdu_len);
 
                             // process stored segments
                             while (1){
@@ -3258,7 +3243,7 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                             int delta = (tx_seq - l2cap_channel->expected_tx_seq) & 0x3f;
                             if (delta < 2){
                                 // store segment
-                                l2cap_ertm_handle_out_of_sequence_sdu(l2cap_channel, sar, delta, payload_data, payload_len);
+                                l2cap_ertm_handle_out_of_sequence_sdu(l2cap_channel, sar, delta, sdu_data, sdu_len);
 
                                 log_info("Received unexpected frame TxSeq %u but expected %u -> send S-SREJ", tx_seq, l2cap_channel->expected_tx_seq);
                                 l2cap_channel->send_supervisor_frame_selective_reject = 1;

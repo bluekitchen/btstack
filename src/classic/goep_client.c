@@ -60,7 +60,7 @@
 // goep_client.c
 //
 
-#define ENABLE_GOEP_L2CAP
+// #define ENABLE_GOEP_L2CAP
 
 typedef enum {
     GOEP_INIT,
@@ -97,15 +97,15 @@ static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 static uint8_t goep_packet_buffer[100];
 
 #ifdef ENABLE_GOEP_L2CAP
-static uint8_t ertm_buffer[2000];
+static uint8_t ertm_buffer[1000];
 static l2cap_ertm_config_t ertm_config = {
     1,  // ertm mandatory
     2,  // max transmit, some tests require > 1
     2000,
     12000,
-    250,    // l2cap ertm mtu
-    2,
-    2,
+    144,    // l2cap ertm mtu
+    4,
+    4,
 };
 #endif
 
@@ -376,7 +376,7 @@ static void goep_client_add_variable_header(uint16_t goep_cid, uint8_t header_ty
     goep_client_packet_append(header_data, header_data_length);
 }
 
-#if 1
+#if 0
 static void goep_client_add_byte_header(uint16_t goep_cid, uint8_t header_type, uint8_t value){
     UNUSED(goep_cid);
     uint8_t header[2];
@@ -481,7 +481,7 @@ void goep_client_create_disconnect_request(uint16_t goep_cid){
 void goep_client_create_get_request(uint16_t goep_cid){
     goep_client_packet_init(goep_cid, OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK);
     goep_client_packet_add_connection_id(goep_cid);
-    goep_client_add_byte_header(goep_cid, OBEX_HEADER_SINGLE_RESPONSE_MODE, 0x01);
+    // goep_client_add_byte_header(goep_cid, OBEX_HEADER_SINGLE_RESPONSE_MODE, 0x01);
 }
 
 void goep_client_create_set_path_request(uint16_t goep_cid, uint8_t flags){

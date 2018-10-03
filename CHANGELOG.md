@@ -11,7 +11,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - L2CAP: fix issue with outgoing connection before read remote supported complete when other channels exist
-- L2CAP ERTM: allow SDU of szie MPS in first packet that contains L2CAP SDU Length
 - HFP: decline incoming RFCOMM connection after outgoing connection was started
 
 ## Changes September 2018

@@ -72,7 +72,7 @@ static bd_addr_t    remote_addr;
 // Nexus 7 "30-85-A9-54-2E-78"
 // iPhone SE "BC:EC:5D:E6:15:03"
 // PTS "001BDC080AA5"
-static  char * remote_addr_string = "001BDC080AA5";
+static  char * remote_addr_string = "BC:EC:5D:E6:15:03";
 
 static char * phone_number = "911";
 
