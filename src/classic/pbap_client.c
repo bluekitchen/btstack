@@ -279,8 +279,8 @@ static void pbap_handle_can_send_now(void){
         case PBAP_W2_PULL_PHONEBOOK:
         case PBAP_W2_GET_PHONEBOOK_SIZE:
             goep_client_create_get_request(pbap_client->goep_cid);
+            goep_client_add_header_name(pbap_client->goep_cid, "telecom/pb.vcf");
             goep_client_add_header_type(pbap_client->goep_cid, pbap_phonebook_type);
-            goep_client_add_header_name(pbap_client->goep_cid, pbap_phonebook_name);
             if (pbap_client->state == PBAP_W2_GET_PHONEBOOK_SIZE){
                 // Regular TLV wih 1-byte len
                 application_parameters[0] = PBAP_APPLICATION_PARAMETER_MAX_LIST_COUNT;
@@ -290,6 +290,13 @@ static void pbap_handle_can_send_now(void){
                 // state
                 pbap_client->state = PBAP_W4_GET_PHONEBOOK_SIZE_COMPLETE;
             } else {
+#if 1
+                // Regular TLV wih 1-byte len
+                application_parameters[0] = PBAP_APPLICATION_PARAMETER_MAX_LIST_COUNT;
+                application_parameters[1] = 2;
+                big_endian_store_16(application_parameters, 2, 0xffff);
+                goep_client_add_header_application_parameters(pbap_client->goep_cid, 4, &application_parameters[0]);
+#endif
                 // state
                 pbap_client->state = PBAP_W4_PHONEBOOK;
             }

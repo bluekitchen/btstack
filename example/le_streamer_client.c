@@ -221,7 +221,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                     // service query complete, look for characteristic
                     state = TC_W4_CHARACTERISTIC_RX_RESULT;
                     printf("Search for LE Streamer RX characteristic.\n");
-                    gatt_client_discover_characteristics_for_service_by_uuid128(handle_gatt_client_event, connection_handle, &le_streamer_service, le_streamer_characteristic_rx_uuid);
+                    gatt_client_discover_characteristics_for_service_by_uuid16(handle_gatt_client_event, connection_handle, &le_streamer_service, 0xff01);
                     break;
                 default:
                     break;
@@ -240,7 +240,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
                         break;  
                     } 
                     // rx characteristiic found, look for tx characteristic
-                    state = TC_W4_CHARACTERISTIC_TX_RESULT;
+                    state = TC_W4_CHARACTERISTIC_RX_RESULT;
                     printf("Search for LE Streamer TX characteristic.\n");
                     gatt_client_discover_characteristics_for_service_by_uuid128(handle_gatt_client_event, connection_handle, &le_streamer_service, le_streamer_characteristic_tx_uuid);
                     break;
@@ -362,7 +362,7 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
         case GAP_EVENT_ADVERTISING_REPORT:
             if (state != TC_W4_SCAN_RESULT) return;
             // check name in advertisement
-            if (!advertisement_report_contains_name("LE Streamer", packet)) return;
+            if (!advertisement_report_contains_name("ESP_GATTS_DEMO", packet)) return;
             // store address and type
             gap_event_advertising_report_get_address(packet, le_streamer_addr);
             le_streamer_addr_type = gap_event_advertising_report_get_address_type(packet);
@@ -385,7 +385,8 @@ static void hci_event_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
             // query primary services
             printf("Search for LE Streamer service.\n");
             state = TC_W4_SERVICE_RESULT;
-            gatt_client_discover_primary_services_by_uuid128(handle_gatt_client_event, connection_handle, le_streamer_service_uuid);
+            gatt_client_discover_primary_services_by_uuid16(handle_gatt_client_event, connection_handle, 0x00ff);
+            // gatt_client_discover_primary_services_by_uuid128(handle_gatt_client_event, connection_handle, le_streamer_service_uuid);
             break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             // unregister listener
