@@ -73,7 +73,7 @@
 #define OBEX_HEADER_CONNECTION_ID                  0xCB
 #define OBEX_HEADER_AUTHENTICATION_CHALLENGE       0x4D
 #define OBEX_HEADER_AUTHENTICATION_RESPONSE        0x4E
-#define OBEX_HEADER_SINGLE_RESPONSE_MODE     	   0x97
+#define OBEX_HEADER_SINGLE_RESPONSE_MODE           0x97
 #define OBEX_HEADER_SINGLE_RESPONSE_MODE_PARAMETER 0x98
 
 
@@ -85,6 +85,17 @@
 #define OBEX_MAX_PACKETLEN_DEFAULT         0xffff
 
 #define OBEX_CONNECTION_ID_INVALID         0xFFFFFFFF
+
+/* SRM header values */
+#define OBEX_SRM_DISABLE                            0x00
+#define OBEX_SRM_ENABLE                             0x01
+#define OBEX_SRM_INDICATE                           0x02
+
+/* SRMP header values */
+#define OBEX_SRMP_NEXT                              0x00
+#define OBEX_SRMP_WAIT                              0x01
+#define OBEX_SRMP_NEXT_WAIT                         0x02
+
 
 /**
  * PBAP
