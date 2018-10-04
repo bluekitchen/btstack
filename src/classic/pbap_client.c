@@ -109,6 +109,8 @@ typedef struct pbap_client {
     uint8_t   incoming;
     uint16_t  goep_cid;
     btstack_packet_handler_t client_handler;
+    int request_number;
+    int single_response_mode_active;
     const char * current_folder;
     const char * phone_number;
     uint16_t set_path_offset;
@@ -279,14 +281,21 @@ static void pbap_handle_can_send_now(void){
         case PBAP_W2_PULL_PHONEBOOK:
         case PBAP_W2_GET_PHONEBOOK_SIZE:
             goep_client_create_get_request(pbap_client->goep_cid);
-            goep_client_add_header_type(pbap_client->goep_cid, pbap_phonebook_type);
-            goep_client_add_header_name(pbap_client->goep_cid, pbap_phonebook_name);
+            if (pbap_client->request_number == 0){
+                goep_client_add_header_srm_enable(pbap_client->goep_cid);
+                goep_client_add_header_type(pbap_client->goep_cid, pbap_phonebook_type);
+                goep_client_add_header_name(pbap_client->goep_cid, pbap_phonebook_name);
+                if (pbap_client->state == PBAP_W2_GET_PHONEBOOK_SIZE){
+                    // Regular TLV wih 1-byte len
+                    application_parameters[0] = PBAP_APPLICATION_PARAMETER_MAX_LIST_COUNT;
+                    application_parameters[1] = 2;
+                    big_endian_store_16(application_parameters, 2, 0);
+                    goep_client_add_header_application_parameters(pbap_client->goep_cid, 4, &application_parameters[0]);
+                } else {
+                    //
+                }
+            }
             if (pbap_client->state == PBAP_W2_GET_PHONEBOOK_SIZE){
-                // Regular TLV wih 1-byte len
-                application_parameters[0] = PBAP_APPLICATION_PARAMETER_MAX_LIST_COUNT;
-                application_parameters[1] = 2;
-                big_endian_store_16(application_parameters, 2, 0);
-                goep_client_add_header_application_parameters(pbap_client->goep_cid, 4, &application_parameters[0]);
                 // state
                 pbap_client->state = PBAP_W4_GET_PHONEBOOK_SIZE_COMPLETE;
             } else {
@@ -294,6 +303,7 @@ static void pbap_handle_can_send_now(void){
                 pbap_client->state = PBAP_W4_PHONEBOOK;
             }
             // send packet
+            pbap_client->request_number++;
             goep_client_execute(pbap_client->goep_cid);
             break;
         case PBAP_W2_GET_CARD_LIST:
@@ -436,7 +446,7 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
             break;
         case GOEP_DATA_PACKET:
             // TODO: handle chunked data
-            // obex_dump_packet(goep_client_get_request_opcode(pbap_client->goep_cid), packet, size);
+            obex_dump_packet(goep_client_get_request_opcode(pbap_client->goep_cid), packet, size);
             switch (pbap_client->state){
                 case PBAP_W4_CONNECT_RESPONSE:
                     switch (packet[0]){
@@ -492,14 +502,27 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                 case PBAP_W4_PHONEBOOK:
                     for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(pbap_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
                         uint8_t hi = obex_iterator_get_hi(&it);
-                        if (hi == OBEX_HEADER_BODY || hi == OBEX_HEADER_END_OF_BODY){
-                            uint16_t     data_len = obex_iterator_get_data_len(&it);
-                            const uint8_t  * data =  obex_iterator_get_data(&it);
-                            pbap_client->client_handler(PBAP_DATA_PACKET, pbap_client->cid, (uint8_t *) data, data_len);
+                        uint16_t     data_len = obex_iterator_get_data_len(&it);
+                        const uint8_t  * data = data =  obex_iterator_get_data(&it);
+                        switch (hi){
+                            case OBEX_HEADER_BODY:
+                            case OBEX_HEADER_END_OF_BODY:
+                                pbap_client->client_handler(PBAP_DATA_PACKET, pbap_client->cid, (uint8_t *) data, data_len);
+                                break;
+                            case OBEX_HEADER_SINGLE_RESPONSE_MODE:
+                                if (data_len != 1) break;
+                                if (pbap_client->request_number) break;
+                                pbap_client->single_response_mode_active = *data;
+                                log_info("SRM active %u", pbap_client->single_response_mode_active);
+                                break;
+                            default:
+                                break;
                         }
                     }
                     switch(packet[0]){
                         case OBEX_RESP_CONTINUE:
+                            // With SRM, server sends complete response without additional GET requests
+                            if (pbap_client->single_response_mode_active) break;
                             pbap_client->state = PBAP_W2_PULL_PHONEBOOK;
                             goep_client_request_can_send_now(pbap_client->goep_cid);                
                             break;
@@ -664,6 +687,7 @@ uint8_t pbap_get_phonebook_size(uint16_t pbap_cid){
     UNUSED(pbap_cid);
     if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
     pbap_client->state = PBAP_W2_GET_PHONEBOOK_SIZE;
+    pbap_client->request_number = 0;
     goep_client_request_can_send_now(pbap_client->goep_cid);
     return 0;
 }
@@ -672,6 +696,8 @@ uint8_t pbap_pull_phonebook(uint16_t pbap_cid){
     UNUSED(pbap_cid);
     if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
     pbap_client->state = PBAP_W2_PULL_PHONEBOOK;
+    pbap_client->request_number = 0;
+    pbap_client->single_response_mode_active = 0;
     goep_client_request_can_send_now(pbap_client->goep_cid);
     return 0;
 }
