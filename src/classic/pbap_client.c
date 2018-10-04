@@ -101,6 +101,13 @@ typedef enum {
 
 } pbap_state_t;
 
+typedef enum {
+    SRM_DISABLED,
+    SRM_W4_CONFIRM,
+    SRM_ENABLED_BUT_WAITING,
+    SRM_ENABLED
+} srm_state_t;
+
 typedef struct pbap_client {
     pbap_state_t state;
     uint16_t  cid;
@@ -110,7 +117,8 @@ typedef struct pbap_client {
     uint16_t  goep_cid;
     btstack_packet_handler_t client_handler;
     int request_number;
-    int single_response_mode_active;
+    srm_state_t srm_state;
+    int single_response_mode_parameter;
     const char * current_folder;
     const char * phone_number;
     uint16_t set_path_offset;
@@ -283,6 +291,7 @@ static void pbap_handle_can_send_now(void){
             goep_client_create_get_request(pbap_client->goep_cid);
             if (pbap_client->request_number == 0){
                 goep_client_add_header_srm_enable(pbap_client->goep_cid);
+                pbap_client->srm_state = SRM_W4_CONFIRM;
                 goep_client_add_header_type(pbap_client->goep_cid, pbap_phonebook_type);
                 goep_client_add_header_name(pbap_client->goep_cid, pbap_phonebook_name);
                 if (pbap_client->state == PBAP_W2_GET_PHONEBOOK_SIZE){
@@ -407,6 +416,8 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
 
     obex_iterator_t it;
     uint8_t status;
+    int srm_value;
+    int srmp_value;
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
@@ -500,6 +511,8 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                     }
                     break;
                 case PBAP_W4_PHONEBOOK:
+                    srm_value = OBEX_SRM_DISABLE;
+                    srmp_value = OBEX_SRMP_NEXT;
                     for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(pbap_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
                         uint8_t hi = obex_iterator_get_hi(&it);
                         uint16_t     data_len = obex_iterator_get_data_len(&it);
@@ -511,9 +524,11 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                                 break;
                             case OBEX_HEADER_SINGLE_RESPONSE_MODE:
                                 if (data_len != 1) break;
-                                if (pbap_client->request_number) break;
-                                pbap_client->single_response_mode_active = *data;
-                                log_info("SRM active %u", pbap_client->single_response_mode_active);
+                                srm_value = *data;
+                                break;
+                            case OBEX_HEADER_SINGLE_RESPONSE_MODE_PARAMETER:
+                                if (data_len != 1) break;
+                                srmp_value = *data;
                                 break;
                             default:
                                 break;
@@ -521,8 +536,39 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                     }
                     switch(packet[0]){
                         case OBEX_RESP_CONTINUE:
-                            // With SRM, server sends complete response without additional GET requests
-                            if (pbap_client->single_response_mode_active) break;
+                            switch (pbap_client->srm_state){
+                                case SRM_W4_CONFIRM:
+                                    switch (srm_value){
+                                        case OBEX_SRM_ENABLE:
+                                            switch (srmp_value){
+                                                case OBEX_SRMP_WAIT:
+                                                    pbap_client->srm_state = SRM_ENABLED_BUT_WAITING;
+                                                    break;
+                                                default:
+                                                    pbap_client->srm_state = SRM_ENABLED;
+                                                    break;
+                                            }
+                                            break;
+                                        default:
+                                            pbap_client->srm_state = SRM_DISABLED;
+                                            break;
+                                    }
+                                    break;
+                                case SRM_ENABLED_BUT_WAITING:
+                                    switch (srmp_value){
+                                        case OBEX_SRMP_WAIT:
+                                            pbap_client->srm_state = SRM_ENABLED_BUT_WAITING;
+                                            break;
+                                        default:
+                                            pbap_client->srm_state = SRM_ENABLED;
+                                            break;
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                            log_info("SRM state %u", pbap_client->srm_state);
+                            if (pbap_client->srm_state ==  SRM_ENABLED) break;
                             pbap_client->state = PBAP_W2_PULL_PHONEBOOK;
                             goep_client_request_can_send_now(pbap_client->goep_cid);                
                             break;
@@ -697,7 +743,6 @@ uint8_t pbap_pull_phonebook(uint16_t pbap_cid){
     if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
     pbap_client->state = PBAP_W2_PULL_PHONEBOOK;
     pbap_client->request_number = 0;
-    pbap_client->single_response_mode_active = 0;
     goep_client_request_can_send_now(pbap_client->goep_cid);
     return 0;
 }
