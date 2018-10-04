@@ -317,20 +317,24 @@ static void pbap_handle_can_send_now(void){
             break;
         case PBAP_W2_GET_CARD_LIST:
             goep_client_create_get_request(pbap_client->goep_cid);
-            goep_client_add_header_type(pbap_client->goep_cid, pbap_vcard_listing_type);
-            goep_client_add_header_name(pbap_client->goep_cid, pbap_vcard_listing_name);
-            // Regular TLV wih 1-byte len
-            i = 0;
-            phone_number_len = btstack_min(PBAP_MAX_PHONE_NUMBER_LEN, strlen(pbap_client->phone_number));
-            application_parameters[i++] = PBAP_APPLICATION_PARAMETER_SEARCH_VALUE;
-            application_parameters[i++] = phone_number_len;
-            memcpy(&application_parameters[i], pbap_client->phone_number, phone_number_len);
-            i += phone_number_len;
-            application_parameters[i++] = PBAP_APPLICATION_PARAMETER_SEARCH_PROPERTY;
-            application_parameters[i++] = 1;
-            application_parameters[i++] = 0x01; // Number
-            goep_client_add_header_application_parameters(pbap_client->goep_cid, i, &application_parameters[0]);
-            pbap_client->state = PBAP_W4_GET_CARD_LIST_COMPLETE;
+            if (pbap_client->request_number == 0){
+                goep_client_add_header_srm_enable(pbap_client->goep_cid);
+                pbap_client->srm_state = SRM_W4_CONFIRM;
+                goep_client_add_header_type(pbap_client->goep_cid, pbap_vcard_listing_type);
+                goep_client_add_header_name(pbap_client->goep_cid, pbap_vcard_listing_name);
+                // Regular TLV wih 1-byte len
+                i = 0;
+                phone_number_len = btstack_min(PBAP_MAX_PHONE_NUMBER_LEN, strlen(pbap_client->phone_number));
+                application_parameters[i++] = PBAP_APPLICATION_PARAMETER_SEARCH_VALUE;
+                application_parameters[i++] = phone_number_len;
+                memcpy(&application_parameters[i], pbap_client->phone_number, phone_number_len);
+                i += phone_number_len;
+                application_parameters[i++] = PBAP_APPLICATION_PARAMETER_SEARCH_PROPERTY;
+                application_parameters[i++] = 1;
+                application_parameters[i++] = 0x01; // Number
+                goep_client_add_header_application_parameters(pbap_client->goep_cid, i, &application_parameters[0]);
+                pbap_client->state = PBAP_W4_GET_CARD_LIST_COMPLETE;
+            }
             // send packet
             goep_client_execute(pbap_client->goep_cid);
             break;
