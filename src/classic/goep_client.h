@@ -123,10 +123,16 @@ void    goep_client_create_connect_request(uint16_t goep_cid, uint8_t obex_versi
 void    goep_client_create_disconnect_request(uint16_t goep_cid);
 
 /**
- * @brief Start Get request
+ * @brief Create Get request
  * @param gope_cid
  */
 void    goep_client_create_get_request(uint16_t goep_cid);
+
+/**
+ * @brief Add SRM Enable
+ * @param gope_cid
+ */
+void    goep_client_add_header_srm_enable(uint16_t goep_cid);
 
 /**
  * @brief Start Set Path request

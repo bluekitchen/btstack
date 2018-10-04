@@ -103,9 +103,9 @@ static l2cap_ertm_config_t ertm_config = {
     2,  // max transmit, some tests require > 1
     2000,
     12000,
-    144,    // l2cap ertm mtu
-    4,
-    4,
+    512,    // l2cap ertm mtu
+    2,
+    2,
 };
 #endif
 
@@ -376,7 +376,6 @@ static void goep_client_add_variable_header(uint16_t goep_cid, uint8_t header_ty
     goep_client_packet_append(header_data, header_data_length);
 }
 
-#if 0
 static void goep_client_add_byte_header(uint16_t goep_cid, uint8_t header_type, uint8_t value){
     UNUSED(goep_cid);
     uint8_t header[2];
@@ -384,7 +383,6 @@ static void goep_client_add_byte_header(uint16_t goep_cid, uint8_t header_type, 
     header[1] = value;
     goep_client_packet_append(&header[0], sizeof(header));
 }
-#endif
 
 static void goep_client_add_word_header(uint16_t goep_cid, uint8_t header_type, uint32_t value){
     UNUSED(goep_cid);
@@ -481,7 +479,13 @@ void goep_client_create_disconnect_request(uint16_t goep_cid){
 void goep_client_create_get_request(uint16_t goep_cid){
     goep_client_packet_init(goep_cid, OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK);
     goep_client_packet_add_connection_id(goep_cid);
-    // goep_client_add_byte_header(goep_cid, OBEX_HEADER_SINGLE_RESPONSE_MODE, 0x01);
+}
+
+void goep_client_add_header_srm_enable(uint16_t goep_cid){
+    goep_client_t * context = goep_client;
+    if (!context->l2cap_psm) return;
+    // SRM was added in GOEP v2, which uses L2CAP
+    goep_client_add_byte_header(goep_cid, OBEX_HEADER_SINGLE_RESPONSE_MODE, 0x01);
 }
 
 void goep_client_create_set_path_request(uint16_t goep_cid, uint8_t flags){
@@ -540,7 +544,6 @@ int goep_client_execute(uint16_t goep_cid){
     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
     uint16_t pos = big_endian_read_16(buffer, 1);
     if (context->l2cap_psm){
-        // return l2cap_send_prepared(context->bearer_cid, pos);
         return l2cap_send(context->bearer_cid, buffer, pos);
     } else {
         return rfcomm_send_prepared(context->bearer_cid, pos);
