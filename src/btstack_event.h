@@ -166,6 +166,14 @@ static inline uint8_t hci_event_map_meta_get_subevent_code(const uint8_t * event
     return event[2];
 }
 /***
+ * @brief Get subevent code for mesh event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_mesh_meta_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/***
  * @brief Get subevent code for pbap event
  * @param event packet
  * @return subevent_code
@@ -3248,6 +3256,283 @@ static inline const uint8_t * gap_event_inquiry_result_get_name(const uint8_t * 
  */
 static inline uint8_t gap_event_inquiry_complete_get_status(const uint8_t * event){
     return event[2];
+}
+
+/**
+ * @brief Get field status from event MESH_PB_ADV_PDU_SENT_EVENT
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_pb_adv_pdu_sent_event_get_status(const uint8_t * event){
+    return event[3];
+}
+
+/**
+ * @brief Get field status from event MESH_PB_ADV_LINK_OPEN_EVENT
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_pb_adv_link_open_event_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field pb_adv_cid from event MESH_PB_ADV_LINK_OPEN_EVENT
+ * @param event packet
+ * @return pb_adv_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_pb_adv_link_open_event_get_pb_adv_cid(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+
+/**
+ * @brief Get field status from event MESH_PB_ADV_LINK_CLOSED_EVENT
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_pb_adv_link_closed_event_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field pb_adv_cid from event MESH_PB_ADV_LINK_CLOSED_EVENT
+ * @param event packet
+ * @return pb_adv_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_pb_adv_link_closed_event_get_pb_adv_cid(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+
+/**
+ * @brief Get field pb_adv_cid from event MESH_PB_PROV_ATTENTION_TIMER_EVENT
+ * @param event packet
+ * @return pb_adv_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_pb_prov_attention_timer_event_get_pb_adv_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field attention_time from event MESH_PB_PROV_ATTENTION_TIMER_EVENT
+ * @param event packet
+ * @return attention_time
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_pb_prov_attention_timer_event_get_attention_time(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field pb_adv_cid from event MESH_PB_PROV_START_EMIT_PUBLIC_KEY_OOB_EVENT
+ * @param event packet
+ * @return pb_adv_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_pb_prov_start_emit_public_key_oob_event_get_pb_adv_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field pb_adv_cid from event MESH_PB_PROV_STOP_EMIT_PUBLIC_KEY_OOB_EVENT
+ * @param event packet
+ * @return pb_adv_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_pb_prov_stop_emit_public_key_oob_event_get_pb_adv_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field pb_adv_cid from event MESH_PB_PROV_INPUT_OOB_REQUEST_EVENT
+ * @param event packet
+ * @return pb_adv_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_pb_prov_input_oob_request_event_get_pb_adv_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field pb_adv_cid from event MESH_PB_PROV_START_EMIT_OUTPUT_OOB_EVENT
+ * @param event packet
+ * @return pb_adv_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_pb_prov_start_emit_output_oob_event_get_pb_adv_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field output_oob from event MESH_PB_PROV_START_EMIT_OUTPUT_OOB_EVENT
+ * @param event packet
+ * @return output_oob
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_pb_prov_start_emit_output_oob_event_get_output_oob(const uint8_t * event){
+    return little_endian_read_32(event, 5);
+}
+
+/**
+ * @brief Get field pb_adv_cid from event MESH_PB_PROV_STOP_EMIT_OUTPUT_OOB_EVENT
+ * @param event packet
+ * @return pb_adv_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_pb_prov_stop_emit_output_oob_event_get_pb_adv_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field pb_adv_cid from event MESH_PB_PROV_START_RECEIVE_PUBLIC_KEY_OOB_EVENT
+ * @param event packet
+ * @return pb_adv_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_pb_prov_start_receive_public_key_oob_event_get_pb_adv_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field pb_adv_cid from event MESH_PB_PROV_STOP_RECEIVE_PUBLIC_KEY_OOB_EVENT
+ * @param event packet
+ * @return pb_adv_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_pb_prov_stop_receive_public_key_oob_event_get_pb_adv_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field pb_adv_cid from event MESH_PB_PROV_OUTPUT_OOB_REQUEST_EVENT
+ * @param event packet
+ * @return pb_adv_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_pb_prov_output_oob_request_event_get_pb_adv_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field pb_adv_cid from event MESH_PB_PROV_START_EMIT_INPUT_OOB_EVENT
+ * @param event packet
+ * @return pb_adv_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_pb_prov_start_emit_input_oob_event_get_pb_adv_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field output_oob from event MESH_PB_PROV_START_EMIT_INPUT_OOB_EVENT
+ * @param event packet
+ * @return output_oob
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_pb_prov_start_emit_input_oob_event_get_output_oob(const uint8_t * event){
+    return little_endian_read_32(event, 5);
+}
+
+/**
+ * @brief Get field pb_adv_cid from event MESH_PB_PROV_STOP_EMIT_INPUT_OOB_EVENT
+ * @param event packet
+ * @return pb_adv_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_pb_prov_stop_emit_input_oob_event_get_pb_adv_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field pb_adv_cid from event MESH_PB_PROV_CAPABILITIES_EVENT
+ * @param event packet
+ * @return pb_adv_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_pb_prov_capabilities_event_get_pb_adv_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field num_elements from event MESH_PB_PROV_CAPABILITIES_EVENT
+ * @param event packet
+ * @return num_elements
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_pb_prov_capabilities_event_get_num_elements(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field algorithms from event MESH_PB_PROV_CAPABILITIES_EVENT
+ * @param event packet
+ * @return algorithms
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_pb_prov_capabilities_event_get_algorithms(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field public_key from event MESH_PB_PROV_CAPABILITIES_EVENT
+ * @param event packet
+ * @return public_key
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_pb_prov_capabilities_event_get_public_key(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field static_oob_type from event MESH_PB_PROV_CAPABILITIES_EVENT
+ * @param event packet
+ * @return static_oob_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_pb_prov_capabilities_event_get_static_oob_type(const uint8_t * event){
+    return event[9];
+}
+/**
+ * @brief Get field output_oob_size from event MESH_PB_PROV_CAPABILITIES_EVENT
+ * @param event packet
+ * @return output_oob_size
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_pb_prov_capabilities_event_get_output_oob_size(const uint8_t * event){
+    return event[10];
+}
+/**
+ * @brief Get field output_oob_action from event MESH_PB_PROV_CAPABILITIES_EVENT
+ * @param event packet
+ * @return output_oob_action
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_pb_prov_capabilities_event_get_output_oob_action(const uint8_t * event){
+    return little_endian_read_16(event, 11);
+}
+/**
+ * @brief Get field input_oob_size from event MESH_PB_PROV_CAPABILITIES_EVENT
+ * @param event packet
+ * @return input_oob_size
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_pb_prov_capabilities_event_get_input_oob_size(const uint8_t * event){
+    return event[13];
+}
+/**
+ * @brief Get field input_oob_action from event MESH_PB_PROV_CAPABILITIES_EVENT
+ * @param event packet
+ * @return input_oob_action
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_pb_prov_capabilities_event_get_input_oob_action(const uint8_t * event){
+    return little_endian_read_16(event, 14);
+}
+
+/**
+ * @brief Get field pb_adv_cid from event MESH_PB_PROV_COMPLETE_EVENT
+ * @param event packet
+ * @return pb_adv_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_pb_prov_complete_event_get_pb_adv_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
 }
 
 /**
@@ -7208,6 +7493,7 @@ static inline const uint8_t * map_subevent_message_listing_item_get_handle(const
 static inline uint16_t map_subevent_parsing_done_get_map_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
+
 
 
 
