@@ -270,6 +270,9 @@ void btstack_crypto_ccm_encrypt_block(btstack_crypto_ccm_t * request, uint16_t l
  */
 void btstack_crypto_ccm_decrypt_block(btstack_crypto_ccm_t * request, uint16_t len, const uint8_t * ciphertext, uint8_t * plaintext, void (* callback)(void * arg), void * callback_arg);
 
+// PTS testing only - not possible when using Buetooth Controller for ECC operations
+void btstack_crypto_ecc_p256_set_key(const uint8_t * public_key, const uint8_t * private_key);
+
 #if defined __cplusplus
 }
 #endif

@@ -1205,3 +1205,11 @@ void btstack_crypto_ccm_decrypt_block(btstack_crypto_ccm_t * request, uint16_t b
     btstack_crypto_run();
 }
 
+// PTS only
+void btstack_crypto_ecc_p256_set_key(const uint8_t * public_key, const uint8_t * private_key){
+#ifdef USE_SOFTWARE_ECC_P256_IMPLEMENTATION
+    memcpy(btstack_crypto_ecc_p256_d, private_key, 32);
+    memcpy(btstack_crypto_ecc_p256_public_key, public_key, 64);
+    btstack_crypto_ecc_p256_key_generation_state = ECC_P256_KEY_GENERATION_DONE;
+#endif
+}
