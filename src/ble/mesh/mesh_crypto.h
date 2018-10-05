@@ -39,8 +39,8 @@
  *  provisioning.h
  */
 
-#ifndef __PROVISIONING_H
-#define __PROVISIONING_H
+#ifndef __MESH_CRYPTO_H
+#define __MESH_CRYPTO_H
 
 #include <stdint.h>
 #include "btstack_defines.h"
@@ -51,41 +51,16 @@ extern "C"
 {
 #endif
 
-#define PROVISIONING_PROTOCOL_TIMEOUT_MS 60000
+/**
+ * Calculate mesh k1 function
+ */
+void mesh_k1(btstack_crypto_aes128_cmac_t * request, const uint8_t * n, uint16_t n_len, const uint8_t * salt,
+    const uint8_t * p, const uint16_t p_len, uint8_t * result, void (* callback)(void * arg), void * callback_arg);
 
-// Provisioning Bearer Control
-
-#define MESH_PROV_INVITE            0x00
-#define MESH_PROV_CAPABILITIES      0x01
-#define MESH_PROV_START             0x02
-#define MESH_PROV_PUB_KEY           0x03
-#define MESH_PROV_INPUT_COMPLETE    0x04
-#define MESH_PROV_CONFIRM           0x05
-#define MESH_PROV_RANDOM            0x06
-#define MESH_PROV_DATA              0x07
-#define MESH_PROV_COMPLETE          0x08
-#define MESH_PROV_FAILED            0x09
-
-// Provisioning Output OOB Actions
-#define MESH_OUTPUT_OOB_BLINK       0x01
-#define MESH_OUTPUT_OOB_BEEP        0x02
-#define MESH_OUTPUT_OOB_VIBRATE     0x04
-#define MESH_OUTPUT_OOB_NUMBER      0x08
-#define MESH_OUTPUT_OOB_STRING      0x10
-
-// Provisioning Input OOB Actions
-#define MESH_INPUT_OOB_PUSH         0x01
-#define MESH_INPUT_OOB_TWIST        0x02
-#define MESH_INPUT_OOB_NUMBER       0x04
-#define MESH_INPUT_OOB_STRING       0x08
-
-
-typedef struct {
-	uint8_t  network_id[8];
-	uint8_t  beacon_key[16];
-	uint32_t iv_index;
-} mesh_provisioning_data;
-
+/**
+ * Calculate mesh k3 function
+ */
+void mesh_k3(btstack_crypto_aes128_cmac_t * request, const uint8_t * n, uint8_t * result, void (* callback)(void * arg), void * callback_arg);
 
 #ifdef __cplusplus
 } /* end of extern "C" */

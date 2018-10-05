@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ble/mesh/pb_adv.h"
+#include "ble/mesh/mesh_crypto.h"
 #include "classic/rfcomm.h" // for crc8
 #include "btstack.h"
 #include "provisioning.h"
