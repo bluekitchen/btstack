@@ -671,11 +671,13 @@ static void btstack_crypto_run(void){
             btstack_crypto_wait_for_hci_result = 1;
             hci_send_cmd(&hci_le_generate_dhkey, &btstack_crypto_ec_p192->public_key[0], &btstack_crypto_ec_p192->public_key[32]);
 #endif
-#endif
-            break;        
-		default:
-			break;
-	}
+            break;
+
+#endif /* ENABLE_ECC_P256 */
+
+        default:
+            break;
+    }
 }
 
 static void btstack_crypto_handle_random_data(const uint8_t * data, uint16_t len){

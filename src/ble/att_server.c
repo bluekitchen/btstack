@@ -548,9 +548,10 @@ static void att_server_handle_can_send_now(void){
     hci_con_handle_t request_con_handle   = HCI_CON_HANDLE_INVALID;
     hci_con_handle_t last_send_con_handle = HCI_CON_HANDLE_INVALID;
     int can_send_now = 1;
-    int phase;
+    int phase_index;
 
-    for (phase = ATT_SERVER_RUN_PHASE_1_REQUESTS; phase <= ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS; phase++){
+    for (phase_index = ATT_SERVER_RUN_PHASE_1_REQUESTS; phase_index <= ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS; phase_index++){
+        att_server_run_phase_t phase = (att_server_run_phase_t) phase_index;
         hci_con_handle_t skip_connections_until = att_server_last_can_send_now;
         while (1){
             btstack_linked_list_iterator_t it;

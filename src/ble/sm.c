@@ -3184,7 +3184,6 @@ static int sm_validate_stk_generation_method(void){
             return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_OOB) != 0;
         case NUMERIC_COMPARISON:
             return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_NUMERIC_COMPARISON) != 0;
-            return 1;
         default:
             return 0;
     }
