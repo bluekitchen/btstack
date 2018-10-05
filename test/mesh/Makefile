@@ -25,9 +25,9 @@ CFLAGS  += -g -DUNIT_TEST \
 	-I$(BTSTACK_ROOT)/platform/embedded \
 	-I$(BTSTACK_ROOT)/platform/posix \
 	-I$(BTSTACK_ROOT)/3rd-party/tinydir \
-	-I$(BTSTACK_ROOT)/3rd-party/rijndael \
+	-I$(BTSTACK_ROOT)/test/rijndael \
 
-VPATH += ${BTSTACK_ROOT}/3rd-party/rijndael
+VPATH += ${BTSTACK_ROOT}/test/rijndael
 VPATH += ${BTSTACK_ROOT}/src/ble/mesh
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/platform/posix
