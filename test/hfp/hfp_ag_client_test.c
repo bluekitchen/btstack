@@ -276,10 +276,10 @@ static void user_command(char cmd){
             printf("Join held call\n");
             hfp_ag_join_held_call();
             break;
-        case 'v':
-            printf("Starting inquiry scan..\n");
-            gap_inquiry_start(INQUIRY_INTERVAL);
-            break;
+        // case 'v':
+        //     printf("Starting inquiry scan..\n");
+        //     gap_inquiry_start(15);
+        //     break;
         case 'w':
             printf("AG: Put incoming call on hold (Response and Hold)\n");
             hfp_ag_hold_incoming_call();
@@ -293,6 +293,7 @@ static void user_command(char cmd){
             hfp_ag_reject_held_incoming_call();
             break;
         default:
+            printf("unknow cmd %c\n", cmd);
             break;
     }
 }
