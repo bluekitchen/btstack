@@ -180,6 +180,8 @@ static bd_addr_t device_addr;
 static int     report_data_ready = 1;
 static uint8_t report_data[20];
 static uint8_t hid_boot_device = 1;
+static int send_mouse_on_interrupt_channel = 0;
+static int send_keyboard_on_interrupt_channel = 0;
 
 #ifdef HAVE_BTSTACK_STDIN
 static const char * device_addr_string = "BC:EC:5D:E6:15:03";
@@ -233,12 +235,12 @@ static void send_key(int modifier, int keycode){
 }
 
 static void send_keyboard_report_on_interrupt_channel(int modifier, int keycode){
-    uint8_t report[] = {0xa1, 0x01, modifier, 0, 0, keycode, 0, 0, 0, 0, 0};
+    uint8_t report[] = {0xa1, 0x01, modifier, 0, 0, keycode, 0, 0, 0, 0};
     hid_device_send_interrupt_message(hid_cid, &report[0], sizeof(report));
 }
 
 static void send_mouse_report_on_interrupt_channel(uint8_t buttons, int8_t dx, int8_t dy){
-    uint8_t report[] = {0xa1, 0x02, buttons, dx, dy};
+    uint8_t report[] = {0xa1, 0x02, buttons, dx, dy, 0};
     hid_device_send_interrupt_message(hid_cid, &report[0], sizeof(report));
 }
 
@@ -331,7 +333,22 @@ static hid_handshake_param_type_t hid_set_report_callback(uint16_t cid, hid_repo
         return HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_REPORT_ID;
     }
 #endif
-    
+    printf("check report size %d\n", report_size);
+    switch (report_type){
+        case HID_REPORT_TYPE_INPUT:
+            if (report_size < 9) {
+                 return HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
+            }
+            break;
+        case HID_REPORT_TYPE_OUTPUT:
+            if (report_size < 2) {
+                 return HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
+            }
+            break;
+        default:
+             return HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
+    }
+
     return HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL;
 }
 
@@ -349,9 +366,15 @@ static void hid_report_data_callback(uint16_t cid, hid_report_type_t report_type
         return;
     }         
     
+    printf("received report data, type %d, size %d\n", report_type, report_size);
+    printf_hexdump(report, report_size);
+    printf("\n");
+
     if (hid_device_in_boot_protocol_mode(cid)){
         printf("Boot protocol mode\n");
-        if ((report_id == HID_BOOT_MODE_KEYBOARD_ID && report_size < 8) ||
+
+        if ( report_id < 2 ||
+            (report_id == HID_BOOT_MODE_KEYBOARD_ID && report_size < 8) ||
             (report_id == HID_BOOT_MODE_MOUSE_ID    && report_size < 1)) {
             printf("ignore data packet\n");
             return;
@@ -370,9 +393,7 @@ static void hid_report_data_callback(uint16_t cid, hid_report_type_t report_type
             return;
         }
     }
-    printf("received report data, type %d, size %d\n", report_type, report_size);
-    printf_hexdump(report, report_size);
-    printf("\n");
+    printf("do smth with report\n");
 }
 
 #ifdef HAVE_BTSTACK_STDIN
@@ -419,7 +440,12 @@ static void stdin_process(char character){
             hci_send_cmd(&hci_write_current_iac_lap_two_iacs, 2, GAP_IAC_GENERAL_INQUIRY, GAP_IAC_LIMITED_INQUIRY);
             return;
         case 'm':
-            send_mouse_report_on_interrupt_channel(0,0,0);
+            send_mouse_on_interrupt_channel = 1;
+            hid_device_request_can_send_now_event(hid_cid);
+            break;
+        case 'M':
+            send_keyboard_on_interrupt_channel = 1;
+            hid_device_request_can_send_now_event(hid_cid);
             break;
         case 'L':
             gap_discoverable_control(0);
@@ -440,7 +466,6 @@ static void stdin_process(char character){
             break;
 
         case APP_CONNECTED:
-            // send keyu
             found = keycode_and_modifer_us_for_character(character, &keycode, &modifier);
             if (found){
                 send_key(modifier, keycode);
@@ -550,6 +575,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             break;
                             
                         case HID_SUBEVENT_CAN_SEND_NOW:
+                            if (send_mouse_on_interrupt_channel){
+                                send_mouse_on_interrupt_channel = 0;
+                                printf("send mouse on interrupt channel\n");
+                                send_mouse_report_on_interrupt_channel(0,0,0);
+                                break;     
+                            }
+                            if (send_keyboard_on_interrupt_channel){
+                                send_keyboard_on_interrupt_channel = 0;
+                                send_keyboard_report_on_interrupt_channel(send_modifier, send_keycode);
+                                send_keycode = 0;
+                                send_modifier = 0;
+                            }
+                        
                             if (send_keycode){
                                 send_keyboard_report_on_interrupt_channel(send_modifier, send_keycode);
                                 send_keycode = 0;

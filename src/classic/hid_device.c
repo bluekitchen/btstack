@@ -122,7 +122,7 @@ static uint16_t hid_device_get_next_cid(void){
 
 // TODO: store hid device connection into list
 static hid_device_t * hid_device_get_instance_for_cid(uint16_t cid){
-    // printf("control_cid 0x%02x, interrupt_cid 0x%02x, query_cid 0x%02x \n", _hid_device.control_cid,  _hid_device.interrupt_cid, cid);
+    printf("control_cid 0x%02x, interrupt_cid 0x%02x, query_cid 0x%02x \n", _hid_device.control_cid,  _hid_device.interrupt_cid, cid);
     if (_hid_device.cid == cid || _hid_device.control_cid == cid || _hid_device.interrupt_cid == cid){
         return &_hid_device;
     }
@@ -370,7 +370,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                 return;
             }
             hid_message_type_t message_type = packet[0] >> 4;
-            printf("L2CAP_DATA_PACKET message_type %d  \n", message_type);
+            // printf("L2CAP_DATA_PACKET message_type %d, packet_size %d  \n", message_type, packet_size);
+            printf_hexdump(packet, packet_size);
 
             switch (message_type){
                 case HID_MESSAGE_TYPE_GET_REPORT:
@@ -380,6 +381,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
 
                     switch (device->protocol_mode){
                         case HID_PROTOCOL_MODE_BOOT: 
+                            // printf("HID_PROTOCOL_MODE_BOOT \n");
                             if (!hid_report_ids_declared || packet_size < 2){
                                 device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
                                 break;
@@ -387,6 +389,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             device->report_id = packet[1];
                             break;
                         case HID_PROTOCOL_MODE_REPORT:
+                            // printf("HID_PROTOCOL_MODE_REPORT,  hid_report_ids_declared %d\n", hid_report_ids_declared);
                             if (!hid_report_ids_declared) break;
 
                             if (packet_size < 2){
@@ -417,6 +420,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
 
                     switch (device->protocol_mode){
                         case HID_PROTOCOL_MODE_BOOT: 
+                            // printf("HID_PROTOCOL_MODE_BOOT \n");
                             if (packet_size < 3){
                                 device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
                                 break;
@@ -425,6 +429,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             device->report_status = (*hci_device_set_report)(device->cid, device->report_type, device->max_packet_size-1, &packet[1]);
                             break;
                         case HID_PROTOCOL_MODE_REPORT:
+                            // printf("HID_PROTOCOL_MODE_REPORT \n");
                             if (packet_size >= 2){
                                 device->report_status = (*hci_device_set_report)(device->cid, device->report_type, device->max_packet_size-1, &packet[1]);
                             } else {
@@ -438,14 +443,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     // l2cap_request_can_send_now_event(device->control_cid);
                     break;
                 case HID_MESSAGE_TYPE_GET_PROTOCOL:
+                    // printf(" HID_MESSAGE_TYPE_GET_PROTOCOL\n");
                     device->state = HID_DEVICE_W2_GET_PROTOCOL;  
                     if (packet_size != 1) {
                         device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
                         break;
                     }
                     device->report_status = HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL;
-                    hid_device_request_can_send_now_event(channel);
-                    // l2cap_request_can_send_now_event(device->control_cid);
+                    // hid_device_request_can_send_now_event(channel);
+                     // printf("HID_MESSAGE_TYPE_GET_PROTOCOL l2cap_request_can_send_now_event\n");
+                    l2cap_request_can_send_now_event(device->control_cid);
                     break;
 
                 case HID_MESSAGE_TYPE_SET_PROTOCOL:
@@ -462,10 +469,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     device->protocol_mode = param;
                     switch (device->protocol_mode){
                         case HID_PROTOCOL_MODE_BOOT: 
-                            printf("Set protocol mode to BOOT\n");
+                            // printf("Set protocol mode to BOOT\n");
                             break;
                         case HID_PROTOCOL_MODE_REPORT:
-                            printf("Set protocol mode to REPORT\n");
+                            // printf("Set protocol mode to REPORT\n");
                             break;
                     }
                     device->report_status = HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL;
@@ -498,7 +505,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     (*hci_device_report_data)(device->cid, device->report_type, device->report_id, packet_size - 2, &packet[2]);
                     break;
                 default:
-                    // printf("HID_DEVICE_W2_SEND_UNSUPPORTED_REQUEST %d  \n", message_type);
+                    printf("HID_DEVICE_W2_SEND_UNSUPPORTED_REQUEST %d  \n", message_type);
                     device->state = HID_DEVICE_W2_SEND_UNSUPPORTED_REQUEST;
                     // l2cap_request_can_send_now_event(device->control_cid);
                     hid_device_request_can_send_now_event(channel);
@@ -552,11 +559,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     switch (psm){
                         case PSM_HID_CONTROL:
                             device->control_cid = l2cap_event_channel_opened_get_local_cid(packet);
-                            printf("HID Control opened, cid 0x%02x\n", device->control_cid);
+                            // printf("HID Control opened, cid 0x%02x\n", device->control_cid);
                             break;
                         case PSM_HID_INTERRUPT:
                             device->interrupt_cid = l2cap_event_channel_opened_get_local_cid(packet);
-                            printf("HID Interrupt opened, cid 0x%02x\n", device->interrupt_cid);
+                            // printf("HID Interrupt opened, cid 0x%02x\n", device->interrupt_cid);
                             break;
                         default:
                             break;
@@ -564,13 +571,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     
                     // connect HID Interrupt for outgoing
                     if (device->incoming == 0 && psm == PSM_HID_CONTROL){
-                        printf("Create outgoing HID Interrupt\n");
+                        // printf("Create outgoing HID Interrupt\n");
                         status = l2cap_create_channel(packet_handler, device->bd_addr, PSM_HID_INTERRUPT, 48, &device->interrupt_cid);
                         break;
                     }
                     if (!connected_before && device->control_cid && device->interrupt_cid){
                         device->connected = 1;
-                        printf("HID Connected\n");
+                        // printf("HID Connected\n");
                         hid_device_emit_connected_event(device, 0);
                     }
                     break;
@@ -581,18 +588,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     // connected_before = device->connected;
                     device->incoming  = 0;
                     if (l2cap_event_channel_closed_get_local_cid(packet) == device->interrupt_cid){
-                        printf("HID Interrupt closed\n");
+                        // printf("HID Interrupt closed\n");
                         device->interrupt_cid = 0;
                     }
                     if (l2cap_event_channel_closed_get_local_cid(packet) == device->control_cid){
-                        printf("HID Control closed\n");
+                        // printf("HID Control closed\n");
                         device->control_cid = 0;
                     }
                     if (!device->interrupt_cid && !device->control_cid){
                         device->connected = 0;
                         device->con_handle = 0;
                         device->cid = 0;
-                        printf("HID Disconnected\n");
+                        // printf("HID Disconnected\n");
                         hid_device_emit_connection_closed_event(device);
                     }
                     break;
@@ -604,7 +611,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     if (!device) return;
                     switch (device->state){
                         case HID_DEVICE_W2_GET_REPORT:
-                            printf("HID_DEVICE_W2_GET_REPORT \n");
+                            // printf("HID_DEVICE_W2_GET_REPORT \n");
                             if (device->report_status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL) {
                                 report[0] = (HID_MESSAGE_TYPE_HANDSHAKE << 4) | device->report_status;
                                 hid_device_send_control_message(device->cid, &report[0], 1);
@@ -615,7 +622,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             // add header size
                             report_size += 1;
                             
-                            printf(" report size %d, status %d, max_packet_size %d\n", report_size, device->report_status, device->max_packet_size);
+                            // printf(" report size %d, status %d, max_packet_size %d\n", report_size, device->report_status, device->max_packet_size);
                             if (device->report_status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
                                 report[0] = (HID_MESSAGE_TYPE_HANDSHAKE << 4) | device->report_status;
                                 hid_device_send_control_message(device->cid, &report[0], 1);
@@ -628,7 +635,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                                 break;
                             }
 
-                            printf("report type %d, report_size %d, max_packet_size %d \n", device->report_type, report_size, device->max_packet_size);
+                            // printf("report type %d, report_size %d, max_packet_size %d \n", device->report_type, report_size, device->max_packet_size);
                             report[0] = (HID_MESSAGE_TYPE_DATA << 4) | device->report_type;
                             hid_device_send_control_message(device->cid, &report[0], btstack_min(report_size, device->max_packet_size));
                             //     device->state = HID_DEVICE_IDLE;
@@ -640,10 +647,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             break;
                         case HID_DEVICE_W2_GET_PROTOCOL:
                             if (device->report_status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
+                                // printf("send HID_MESSAGE_TYPE_HANDSHAKE, report_status %d \n", device->report_status);
                                 report[0] = (HID_MESSAGE_TYPE_HANDSHAKE << 4) | device->report_status;
                                 hid_device_send_control_message(device->cid, &report[0], 1);
                                 break;
                             }
+                            // printf("send HID_MESSAGE_TYPE_DATA, protocol_mode %d \n", device->protocol_mode);
                             report[0] = (HID_MESSAGE_TYPE_DATA << 4) | device->protocol_mode;
                             hid_device_send_control_message(device->cid, &report[0], 1);
                             break;
