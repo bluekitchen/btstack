@@ -2873,10 +2873,10 @@ static inline void sm_event_identity_created_get_identity_address(const uint8_t 
  * @brief Get field index from event SM_EVENT_IDENTITY_CREATED
  * @param event packet
  * @return index
- * @note: btstack_type 1
+ * @note: btstack_type 2
  */
-static inline uint8_t sm_event_identity_created_get_index(const uint8_t * event){
-    return event[18];
+static inline uint16_t sm_event_identity_created_get_index(const uint8_t * event){
+    return little_endian_read_16(event, 18);
 }
 #endif
 
@@ -5477,6 +5477,34 @@ static inline uint16_t a2dp_subevent_signaling_connection_released_get_a2dp_cid(
 }
 
 /**
+ * @brief Get field a2dp_cid from event A2DP_SUBEVENT_STREAM_RECONFIGURED
+ * @param event packet
+ * @return a2dp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t a2dp_subevent_stream_reconfigured_get_a2dp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field local_seid from event A2DP_SUBEVENT_STREAM_RECONFIGURED
+ * @param event packet
+ * @return local_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_stream_reconfigured_get_local_seid(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field status from event A2DP_SUBEVENT_STREAM_RECONFIGURED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_stream_reconfigured_get_status(const uint8_t * event){
+    return event[6];
+}
+
+/**
  * @brief Get field status from event AVRCP_SUBEVENT_CONNECTION_ESTABLISHED
  * @param event packet
  * @return status
@@ -6479,6 +6507,108 @@ static inline uint8_t pbap_subevent_operation_completed_get_status(const uint8_t
 }
 
 /**
+ * @brief Get field goep_cid from event PBAP_SUBEVENT_PHONEBOOK_SIZE
+ * @param event packet
+ * @return goep_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t pbap_subevent_phonebook_size_get_goep_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event PBAP_SUBEVENT_PHONEBOOK_SIZE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t pbap_subevent_phonebook_size_get_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field phoneboook_size from event PBAP_SUBEVENT_PHONEBOOK_SIZE
+ * @param event packet
+ * @return phoneboook_size
+ * @note: btstack_type 2
+ */
+static inline uint16_t pbap_subevent_phonebook_size_get_phoneboook_size(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+
+/**
+ * @brief Get field goep_cid from event PBAP_SUBEVENT_AUTHENTICATION_REQUEST
+ * @param event packet
+ * @return goep_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t pbap_subevent_authentication_request_get_goep_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field user_id_required from event PBAP_SUBEVENT_AUTHENTICATION_REQUEST
+ * @param event packet
+ * @return user_id_required
+ * @note: btstack_type 1
+ */
+static inline uint8_t pbap_subevent_authentication_request_get_user_id_required(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field full_access from event PBAP_SUBEVENT_AUTHENTICATION_REQUEST
+ * @param event packet
+ * @return full_access
+ * @note: btstack_type 1
+ */
+static inline uint8_t pbap_subevent_authentication_request_get_full_access(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field goep_cid from event PBAP_SUBEVENT_CARD_RESULT
+ * @param event packet
+ * @return goep_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t pbap_subevent_card_result_get_goep_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field name_len from event PBAP_SUBEVENT_CARD_RESULT
+ * @param event packet
+ * @return name_len
+ * @note: btstack_type J
+ */
+static inline int pbap_subevent_card_result_get_name_len(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field name from event PBAP_SUBEVENT_CARD_RESULT
+ * @param event packet
+ * @return name
+ * @note: btstack_type V
+ */
+static inline const uint8_t * pbap_subevent_card_result_get_name(const uint8_t * event){
+    return &event[6];
+}
+/**
+ * @brief Get field handle_len from event PBAP_SUBEVENT_CARD_RESULT
+ * @param event packet
+ * @return handle_len
+ * @note: btstack_type J
+ */
+static inline int pbap_subevent_card_result_get_handle_len(const uint8_t * event){
+    return event[6 + event[5]];
+}
+/**
+ * @brief Get field handle from event PBAP_SUBEVENT_CARD_RESULT
+ * @param event packet
+ * @return handle
+ * @note: btstack_type V
+ */
+static inline const uint8_t * pbap_subevent_card_result_get_handle(const uint8_t * event){
+    return &event[6 + event[5] + 1];
+}
+
+/**
  * @brief Get field hid_cid from event HID_SUBEVENT_CONNECTION_OPENED
  * @param event packet
  * @return hid_cid
@@ -6541,6 +6671,26 @@ static inline uint16_t hid_subevent_connection_closed_get_hid_cid(const uint8_t 
  * @note: btstack_type 2
  */
 static inline uint16_t hid_subevent_can_send_now_get_hid_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field con_handle from event HID_SUBEVENT_SUSPEND
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hid_subevent_suspend_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field con_handle from event HID_SUBEVENT_EXIT_SUSPEND
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hid_subevent_exit_suspend_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 
@@ -6628,6 +6778,64 @@ static inline uint16_t hids_subevent_input_report_enable_get_con_handle(const ui
  */
 static inline uint8_t hids_subevent_input_report_enable_get_enable(const uint8_t * event){
     return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event HIDS_SUBEVENT_OUTPUT_REPORT_ENABLE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hids_subevent_output_report_enable_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field enable from event HIDS_SUBEVENT_OUTPUT_REPORT_ENABLE
+ * @param event packet
+ * @return enable
+ * @note: btstack_type 1
+ */
+static inline uint8_t hids_subevent_output_report_enable_get_enable(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event HIDS_SUBEVENT_FEATURE_REPORT_ENABLE
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hids_subevent_feature_report_enable_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field enable from event HIDS_SUBEVENT_FEATURE_REPORT_ENABLE
+ * @param event packet
+ * @return enable
+ * @note: btstack_type 1
+ */
+static inline uint8_t hids_subevent_feature_report_enable_get_enable(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field con_handle from event HIDS_SUBEVENT_SUSPEND
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hids_subevent_suspend_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field con_handle from event HIDS_SUBEVENT_EXIT_SUSPEND
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hids_subevent_exit_suspend_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
 }
 
 

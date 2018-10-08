@@ -91,21 +91,21 @@ void obex_iterator_next(obex_iterator_t * context){
         case 0:
         case 1:
             // 16-bit length info prefixed
-            len = 2 + big_endian_read_16(data, 1);
+            len = big_endian_read_16(data, 1);
             break;
         case 2:
             // 8-bit value
-            len = 1;
+            len = 2;
             break;
         case 3:
             // 32-bit value
-            len = 4;
+            len = 5;
             break;
         // avoid compiler warning about unused cases (by unclever compilers)
         default:
             break;
     }
-    context->offset += 1 + len;
+    context->offset += len;
 }
 
 // OBEX packet header access functions
@@ -156,10 +156,11 @@ const uint8_t * obex_iterator_get_data(const obex_iterator_t * context){
 }
 
 void obex_dump_packet(uint8_t request_opcode, uint8_t * packet, uint16_t size){
-    // printf("RCV: '");
-    // printf_hexdump(packet, size);
     obex_iterator_t it;
-    printf("Opcode: 0x%02x\n", packet[0]);
+    printf("OBEX Opcode: 0x%02x\n", request_opcode);
+    int header_offset = request_opcode == OBEX_OPCODE_CONNECT ? 7 : 3;
+    printf("OBEX Header: ");
+    printf_hexdump(packet, header_offset);    
     for (obex_iterator_init_with_response_packet(&it, request_opcode, packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
         uint8_t hi = obex_iterator_get_hi(&it);
         printf("HI: %x - ", hi);

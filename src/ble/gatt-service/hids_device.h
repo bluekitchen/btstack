@@ -34,15 +34,21 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+#ifndef __HIDS_DEVICE_H
+#define __HIDS_DEVICE_H
+
+#include <stdint.h>
+#include "btstack_defines.h"
+#include "bluetooth.h"
+
+#if defined __cplusplus
+extern "C" {
+#endif
 
 /**
  * Implementation of the GATT HIDS Device
  * To use with your application, add '#import <hids.gatt>' to your .gatt file
  */
-
-#include <stdint.h>
-#include "btstack_defines.h"
-#include "bluetooth.h"
 
 /**
  * @brief Set up HIDS Device
@@ -68,6 +74,16 @@ void hids_device_request_can_send_now_event(hci_con_handle_t con_handle);
 void hids_device_send_input_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len);
 
 /**
+ * @brief Send HID Report: Output
+ */
+void hids_device_send_output_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len);
+
+/**
+ * @brief Send HID Report: Feature
+ */
+void hids_device_send_feature_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len);
+
+/**
  * @brief Send HID Boot Mouse Input Report
  */
 void hids_device_send_boot_mouse_input_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len);
@@ -76,3 +92,9 @@ void hids_device_send_boot_mouse_input_report(hci_con_handle_t con_handle, const
  * @brief Send HID Boot Mouse Input Report
  */
 void hids_device_send_boot_keyboard_input_report(hci_con_handle_t con_handle, const uint8_t * report, uint16_t report_len);
+
+#if defined __cplusplus
+}
+#endif
+
+#endif

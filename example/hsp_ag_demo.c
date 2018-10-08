@@ -282,6 +282,7 @@ int btstack_main(int argc, const char * argv[]){
     (void)argv;
 
     sco_demo_init();
+    sco_demo_set_codec(HFP_CODEC_CVSD);
 
     l2cap_init();
 
@@ -296,6 +297,8 @@ int btstack_main(int argc, const char * argv[]){
 
     hsp_ag_init(rfcomm_channel_nr);
     hsp_ag_register_packet_handler(&packet_handler);
+
+    // register for SCO packets
     hci_register_sco_packet_handler(&packet_handler);
 
     // parse human readable Bluetooth address

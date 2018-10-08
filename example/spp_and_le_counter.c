@@ -261,11 +261,6 @@ static void heartbeat_handler(struct btstack_timer_source *ts){
 int btstack_main(void);
 int btstack_main(void)
 {
-
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     l2cap_init();
 
     rfcomm_init();
@@ -290,12 +285,13 @@ int btstack_main(void)
 
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);    
-    att_server_register_packet_handler(packet_handler);
 
-    // set one-shot timer
-    heartbeat.process = &heartbeat_handler;
-    btstack_run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
-    btstack_run_loop_add_timer(&heartbeat);
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    // register for ATT events
+    att_server_register_packet_handler(packet_handler);
 
     // setup advertisements
     uint16_t adv_int_min = 0x0030;
@@ -306,6 +302,11 @@ int btstack_main(void)
     gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
     gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
     gap_advertisements_enable(1);
+
+    // set one-shot timer
+    heartbeat.process = &heartbeat_handler;
+    btstack_run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
+    btstack_run_loop_add_timer(&heartbeat);
 
     // beat once
     beat();

@@ -52,8 +52,13 @@
 #include <sys/stat.h>
 
 #include "btstack_client.h"
-#include "btstack_run_loop_posix.h"
 #include "classic/sdp_util.h"
+
+#ifdef _WIN32
+#include "btstack_run_loop_windows.h"
+#else
+#include "btstack_run_loop_posix.h"
+#endif
 
 // input from command line arguments
 bd_addr_t addr = { };
@@ -153,7 +158,11 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 
 int main (int argc, const char * argv[]){
 	
+#ifdef _WIN32
+	btstack_run_loop_init(btstack_run_loop_windows_get_instance());
+#else
 	btstack_run_loop_init(btstack_run_loop_posix_get_instance());
+#endif
 	int err = bt_open();
 	if (err) {
 		fprintf(stderr,"Failed to open connection to BTdaemon, err %d\n",err);

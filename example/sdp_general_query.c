@@ -75,13 +75,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void sdp_client_init(void){
+    // init L2CAP
+    l2cap_init();
 
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-
-    // init L2CAP
-    l2cap_init();
 }
 /* LISTING_END */
 

@@ -516,27 +516,8 @@ static uint8_t hfp_ag_suggest_codec(hfp_connection_t *hfp_connection){
     return HFP_CODEC_CVSD;
 }
 
-static void hfp_init_link_settings(hfp_connection_t * hfp_connection){
-    // determine highest possible link setting
-    hfp_connection->link_setting = HFP_LINK_SETTINGS_D1;
-    // anything else requires eSCO support on both sides
-    if (hci_extended_sco_link_supported() && hci_remote_esco_supported(hfp_connection->acl_handle)){
-        switch (hfp_connection->negotiated_codec){
-            case HFP_CODEC_CVSD:
-                hfp_connection->link_setting = HFP_LINK_SETTINGS_S3;
-                if ((hfp_connection->remote_supported_features & (1<<HFP_HFSF_ESCO_S4))
-                &&  (hfp_supported_features                    & (1<<HFP_AGSF_ESCO_S4))){
-                    hfp_connection->link_setting = HFP_LINK_SETTINGS_S4;
-                }
-                break;
-            case HFP_CODEC_MSBC:
-                hfp_connection->link_setting = HFP_LINK_SETTINGS_T2;
-                break;
-            default:
-                break;
-        }
-    }
-    log_info("hfp_init_link_settings: %u", hfp_connection->link_setting);
+static uint8_t hfp_ag_esco_s4_supported(hfp_connection_t * hfp_connection){
+    return (hfp_connection->remote_supported_features & (1<<HFP_HFSF_ESCO_S4)) &&  (hfp_supported_features  & (1<<HFP_AGSF_ESCO_S4));
 }
 
 static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
@@ -602,7 +583,8 @@ static int codecs_exchange_state_machine(hfp_connection_t * hfp_connection){
             log_info("hfp: codec confirmed: %s", hfp_connection->negotiated_codec == HFP_CODEC_MSBC ? "mSBC" : "CVSD");
             hfp_ag_send_ok(hfp_connection->rfcomm_cid);           
             // now, pick link settings
-            hfp_init_link_settings(hfp_connection);
+
+            hfp_init_link_settings(hfp_connection, hfp_ag_esco_s4_supported(hfp_connection));
             return 1; 
         default:
             break;
@@ -1109,7 +1091,6 @@ static int call_setup_state_machine(hfp_connection_t * hfp_connection){
             hfp_timeout_start(hfp_connection);
             hfp_connection->ag_ring = 1;
             hfp_connection->ag_send_clip = hfp_gsm_clip_type() && hfp_connection->clip_enabled;
-            hfp_connection->call_state = HFP_CALL_RINGING;
             hfp_connection->call_state = HFP_CALL_RINGING;
             hfp_emit_simple_event(hfp_connection, HFP_SUBEVENT_START_RINGINIG);
             break;        
@@ -2071,6 +2052,15 @@ static void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t
     hfp_run();
 }
 
+static void hci_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    hfp_handle_hci_event(packet_type, channel, packet, size, HFP_ROLE_AG);
+
+    // allow for sco established -> ring transition
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE) return;
+    hfp_run();
+}
+
 void hfp_ag_init_codecs(int codecs_nr, uint8_t * codecs){
     if (codecs_nr > HFP_MAX_NUM_CODECS){
         log_error("hfp_init: codecs_nr (%d) > HFP_MAX_NUM_CODECS (%d)", codecs_nr, HFP_MAX_NUM_CODECS);
@@ -2108,7 +2098,7 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr){
 
     hfp_init();
 
-    hci_event_callback_registration.callback = &hfp_handle_hci_event;
+    hci_event_callback_registration.callback = &hci_event_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     rfcomm_register_service(&rfcomm_packet_handler, rfcomm_channel_nr, 0xffff);  
@@ -2162,7 +2152,7 @@ static void hfp_ag_setup_audio_connection(hfp_connection_t * hfp_connection){
         hfp_connection->negotiated_codec = HFP_CODEC_CVSD;
         hfp_connection->codecs_state = HFP_CODECS_EXCHANGED;
         // now, pick link settings
-        hfp_init_link_settings(hfp_connection);
+        hfp_init_link_settings(hfp_connection, hfp_ag_esco_s4_supported(hfp_connection));
         return;
     } 
     

@@ -79,9 +79,6 @@ static btstack_packet_callback_registration_t sm_event_callback_registration;
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void sm_pairing_central_setup(void){
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     l2cap_init();
 
     // setup le device db
@@ -89,16 +86,22 @@ static void sm_pairing_central_setup(void){
 
     // setup SM: Display only
     sm_init();
-    sm_event_callback_registration.callback = &packet_handler;
-    sm_add_event_handler(&sm_event_callback_registration);
 
     // setup ATT server
-    att_server_init(profile_data, NULL, NULL);    
-    att_server_register_packet_handler(packet_handler);
+    att_server_init(profile_data, NULL, NULL);
 
     /**
      * Choose ONE of the following configurations
      */
+
+    // register handler
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    sm_event_callback_registration.callback = &packet_handler;
+    sm_add_event_handler(&sm_event_callback_registration);
+
+    att_server_register_packet_handler(packet_handler);
 
     // LE Legacy Pairing, Just Works
     sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);

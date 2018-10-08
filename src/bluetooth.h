@@ -298,7 +298,8 @@ typedef enum {
 /**
  * Default INQ Mode
  */
-#define HCI_INQUIRY_LAP 0x9E8B33L  // 0x9E8B33: General/Unlimited Inquiry Access Code (GIAC)
+#define GAP_IAC_GENERAL_INQUIRY 0x9E8B33L // General/Unlimited Inquiry Access Code (GIAC)
+#define GAP_IAC_LIMITED_INQUIRY 0x9E8B00L // Limited Dedicated Inquiry Access Code (LIAC)
 
 /**
  * SSP IO Capabilities

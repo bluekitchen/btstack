@@ -278,7 +278,7 @@ static void user_command(char cmd){
             break;
         case 'v':
             printf("Starting inquiry scan..\n");
-            // hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
+            gap_inquiry_start(INQUIRY_INTERVAL);
             break;
         case 'w':
             printf("AG: Put incoming call on hold (Response and Hold)\n");

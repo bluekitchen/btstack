@@ -251,6 +251,8 @@ static int usb_acl_out_active;
 static uint8_t hci_event_in_buffer[2 + 255];
 static uint8_t hci_acl_in_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + HCI_ACL_BUFFER_SIZE]; 
 
+// transport interface state
+static int usb_transport_open;
 
 #ifdef ENABLE_SCO_OVER_HCI
 
@@ -531,7 +533,17 @@ static void usb_process_acl_in(btstack_data_source_t *ds, btstack_data_source_ca
             // IO_INCOMPLETE -> wait for completed
             btstack_run_loop_enable_data_source_callbacks(ds, DATA_SOURCE_CALLBACK_READ);
         } else {
-            log_error("usb_process_acl_in: error writing");
+            log_error("usb_process_acl_in: error reading");
+
+            // Reset Pipe
+            err = WinUsb_ResetPipe(usb_interface_0_handle, acl_in_addr);
+            log_info("WinUsb_ResetPipe: result %u", (int) err);
+            if (err){
+                log_info("WinUsb_ResetPipe error %u", (int) GetLastError());
+            }
+            
+            // re-submit transfer
+            usb_submit_acl_in_transfer();
         }
         return;
     }
@@ -992,7 +1004,7 @@ static int usb_try_open_device(const char * device_path){
 		usb_overlapped_sco_in[i].hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 		// log_info_hexdump(&usb_overlapped_sco_in[i], sizeof(OVERLAPPED));
         // log_info("data source SCO in %u, handle %p", i, usb_overlapped_sco_in[i].hEvent);
-		usb_data_source_sco_in[i].handle = usb_overlapped_sco_in[i].hEvent;
+		usb_data_source_sco_in[i].source.handle = usb_overlapped_sco_in[i].hEvent;
 	    btstack_run_loop_set_data_source_handler(&usb_data_source_sco_in[i], &usb_process_sco_in);
         btstack_run_loop_add_data_source(&usb_data_source_sco_in[i]);
 	}
@@ -1001,7 +1013,7 @@ static int usb_try_open_device(const char * device_path){
     for (i=0;i<SCO_RING_BUFFER_COUNT;i++){
         usb_overlapped_sco_out[i].hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
         // log_info("data source SCO out %u, handle %p", i, usb_overlapped_sco_out[i].hEvent);
-        usb_data_source_sco_out[i].handle = usb_overlapped_sco_out[i].hEvent;
+        usb_data_source_sco_out[i].source.handle = usb_overlapped_sco_out[i].hEvent;
         btstack_run_loop_set_data_source_handler(&usb_data_source_sco_out[i], &usb_process_sco_out);
         btstack_run_loop_add_data_source(&usb_data_source_sco_out[i]);
     }
@@ -1018,19 +1030,19 @@ static int usb_try_open_device(const char * device_path){
     usb_overlapped_acl_out.hEvent     = CreateEvent(NULL, TRUE, FALSE, NULL);
 
 	// setup btstack data soures
-    usb_data_source_event_in.handle = usb_overlapped_event_in.hEvent;
+    usb_data_source_event_in.source.handle = usb_overlapped_event_in.hEvent;
     btstack_run_loop_set_data_source_handler(&usb_data_source_event_in, &usb_process_event_in);
     btstack_run_loop_add_data_source(&usb_data_source_event_in);
 
-    usb_data_source_command_out.handle = usb_overlapped_command_out.hEvent;
+    usb_data_source_command_out.source.handle = usb_overlapped_command_out.hEvent;
     btstack_run_loop_set_data_source_handler(&usb_data_source_command_out, &usb_process_command_out);
     btstack_run_loop_add_data_source(&usb_data_source_command_out);
 
-    usb_data_source_acl_in.handle = usb_overlapped_acl_in.hEvent;
+    usb_data_source_acl_in.source.handle = usb_overlapped_acl_in.hEvent;
     btstack_run_loop_set_data_source_handler(&usb_data_source_acl_in, &usb_process_acl_in);
     btstack_run_loop_add_data_source(&usb_data_source_acl_in);
 
-    usb_data_source_acl_out.handle = usb_overlapped_acl_out.hEvent;
+    usb_data_source_acl_out.source.handle = usb_overlapped_acl_out.hEvent;
     btstack_run_loop_set_data_source_handler(&usb_data_source_acl_out, &usb_process_acl_out);
     btstack_run_loop_add_data_source(&usb_data_source_acl_out);
 
@@ -1067,6 +1079,8 @@ static BOOL usb_lookup_symbols(void){
 
 // returns 0 on success, -1 otherwise
 static int usb_open(void){
+
+    if (usb_transport_open) return 0;
 
     int r = -1;
 
@@ -1190,13 +1204,20 @@ static int usb_open(void){
 
 	SetupDiDestroyDeviceInfoList(hDevInfo);
 
-	log_info("usb_open: done");
+	log_info("usb_open: done, r = %x", r);
+
+    if (r == 0){
+        // opened
+        usb_transport_open = 1;
+    }
 
     return r;    
 }
 
 static int usb_close(void){
     
+    if (!usb_transport_open == 0) return 0;
+
     // remove data sources
     btstack_run_loop_remove_data_source(&usb_data_source_command_out);
     btstack_run_loop_remove_data_source(&usb_data_source_event_in);
@@ -1213,6 +1234,8 @@ static int usb_close(void){
     }
 #endif
 
+    log_info("usb_close abort event and acl pipes");
+
     // stop transfers
     WinUsb_AbortPipe(usb_interface_0_handle, event_in_addr);
     WinUsb_AbortPipe(usb_interface_0_handle, acl_in_addr);
@@ -1224,13 +1247,20 @@ static int usb_close(void){
 
     // control transfer cannot be stopped, just wait for completion
     if (usb_command_out_active){
+        log_info("usb_close command out active, wait for complete");
         DWORD bytes_transferred;
         WinUsb_GetOverlappedResult(usb_interface_0_handle, &usb_overlapped_command_out, &bytes_transferred, TRUE);
         usb_command_out_active = 0;
     }
 
+    log_info("usb_close free resources");
+
     // free everything
     usb_free_resources();
+
+    // transport closed
+    usb_transport_open = 0;
+    
     return 0;    
 }
 

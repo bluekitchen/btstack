@@ -474,3 +474,52 @@ const hci_cmd_t gatt_write_client_characteristic_configuration_cmd = {
 const hci_cmd_t gatt_get_mtu = {
     OPCODE(OGF_BTSTACK, GATT_GET_MTU), "H"
 };
+
+/**
+ * @brief Sets the requested authentication requirements, bonding yes/no, MITM yes/no, SC yes/no, keypress yes/no
+ * @param auth_req OR combination of SM_AUTHREQ_ flags
+ */
+const hci_cmd_t sm_set_authentication_requirements_cmd = {
+    OPCODE(OGF_BTSTACK, SM_SET_AUTHENTICATION_REQUIREMENTS), "1"
+};
+
+/**
+ * @brief Sets the available IO Capabilities
+ * @param io_capabilities
+ */
+const hci_cmd_t sm_set_io_capabilities_cmd = {
+    OPCODE(OGF_BTSTACK, SM_SET_IO_CAPABILITIES), "1"
+};
+
+/**
+ * @brief Decline bonding triggered by event before
+ * @param con_handle
+ */
+const hci_cmd_t sm_bonding_decline_cmd = {
+    OPCODE(OGF_BTSTACK, SM_BONDING_DECLINE), "H"
+};
+
+/**
+ * @brief Confirm Just Works bonding 
+ * @param con_handle
+ */
+const hci_cmd_t sm_just_works_confirm_cmd = {
+    OPCODE(OGF_BTSTACK, SM_JUST_WORKS_CONFIRM), "H"
+};
+
+/**
+ * @brief Confirm value from SM_EVENT_NUMERIC_COMPARISON_REQUEST for Numeric Comparison bonding 
+ * @param con_handle
+ */
+const hci_cmd_t sm_numeric_comparison_confirm_cmd = {
+    OPCODE(OGF_BTSTACK, SM_NUMERIC_COMPARISON_CONFIRM), "H"
+};
+
+/**
+ * @brief Reports passkey input by user
+ * @param con_handle
+ * @param passkey in [0..999999]
+ */
+const hci_cmd_t sm_passkey_input_cmd = {
+    OPCODE(OGF_BTSTACK, SM_PASSKEY_INPUT), "H4"
+};

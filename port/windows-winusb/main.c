@@ -61,10 +61,14 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "btstack_stdin.h"
+#include "btstack_chipset_intel_firmware.h"
 
 int btstack_main(int argc, const char * argv[]);
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+static int main_argc;
+static const char ** main_argv;
+static const hci_transport_t * transport;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -98,11 +102,38 @@ void hal_led_toggle(void){
 }
 
 
+static void intel_firmware_done(int result){
+
+    printf("Done %x\n", result);
+
+    // close
+    transport->close();
+
+    //
+
+    // init HCI
+    hci_init(transport, NULL);
+
+#ifdef ENABLE_CLASSIC
+    hci_set_link_key_db(btstack_link_key_db_fs_instance());
+#endif    
+
+    // inform about BTstack state
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    // setup app
+    btstack_main(main_argc, main_argv);
+}
+
 #define USB_MAX_PATH_LEN 7
 int main(int argc, const char * argv[]){
 
     // Prevent stdout buffering
     setvbuf(stdout, NULL, _IONBF, 0);
+
+    main_argc = argc;
+    main_argv = argv;
 
     printf("BTstack/windows-winusb booting up\n");
 
@@ -153,22 +184,12 @@ int main(int argc, const char * argv[]){
     hci_dump_open(NULL, HCI_DUMP_STDOUT);
 #endif
 
-    // init HCI
-	hci_init(hci_transport_usb_instance(), NULL);
-
-#ifdef ENABLE_CLASSIC
-    hci_set_link_key_db(btstack_link_key_db_fs_instance());
-#endif    
-
-    // inform about BTstack state
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     // handle CTRL-c
     signal(SIGINT, sigint_handler);
 
-    // setup app
-    btstack_main(argc, argv);
+    // setup USB Transport
+    transport = hci_transport_usb_instance();
+    btstack_chipset_intel_download_firmware(hci_transport_usb_instance(), &intel_firmware_done);
 
     // go
     btstack_run_loop_execute();    

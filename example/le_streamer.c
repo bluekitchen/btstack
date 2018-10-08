@@ -66,7 +66,8 @@
 #define REPORT_INTERVAL_MS 3000
 #define MAX_NR_CONNECTIONS 3 
 
-static void  packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void  hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void  att_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static int   att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
 static void  streamer(void);
 
@@ -135,10 +136,6 @@ static void next_connection_index(void){
 
 static void le_streamer_setup(void){
 
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     l2cap_init();
 
     // setup le device db
@@ -149,8 +146,14 @@ static void le_streamer_setup(void){
 
     // setup ATT server
     att_server_init(profile_data, NULL, att_write_callback);    
-    att_server_register_packet_handler(packet_handler);
     
+    // register for HCI events
+    hci_event_callback_registration.callback = &hci_packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    // register for ATT events
+    att_server_register_packet_handler(att_packet_handler);
+
     // setup advertisements
     uint16_t adv_int_min = 0x0030;
     uint16_t adv_int_max = 0x0030;
@@ -197,30 +200,29 @@ static void test_track_sent(le_streamer_connection_t * context, int bytes_sent){
 /* LISTING_END(tracking): Tracking throughput */
 
 /* 
- * @section Packet Handler
+ * @section HCI Packet Handler
  *
- * @text The packet handler is used to stop the notifications and reset the MTU on connect
- * It would also be a good place to request the connection parameter update as indicated 
+ * @text The packet handler is used track incoming connections and to stop notifications on disconnect
+ * It is also a good place to request the connection parameter update as indicated 
  * in the commented code block.
  */
 
-/* LISTING_START(packetHandler): Packet Handler */
-static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+/* LISTING_START(hciPacketHandler): Packet Handler */
+static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
     
-    int mtu;
     uint16_t conn_interval;
     le_streamer_connection_t * context;
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
                 case BTSTACK_EVENT_STATE:
-                // BTstack activated, get started
-                if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING) {
-                    printf("To start the streaming, please run the le_streamer_client example on other device, or use some GATT Explorer, e.g. LightBlue, BLExplr.\n");
-                } 
-                break;
+                    // BTstack activated, get started
+                    if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING) {
+                        printf("To start the streaming, please run the le_streamer_client example on other device, or use some GATT Explorer, e.g. LightBlue, BLExplr.\n");
+                    } 
+                    break;
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     context = connection_for_conn_handle(hci_event_disconnection_complete_get_connection_handle(packet));
                     if (!context) break;
@@ -240,14 +242,48 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             context->connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
                             // print connection parameters (without using float operations)
                             conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
-                            printf("%c: Connection Interval: %u.%02u ms\n", context->name, conn_interval * 125 / 100, 25 * (conn_interval & 3));
-                            printf("%c: Connection Latency: %u\n", context->name, hci_subevent_le_connection_complete_get_conn_latency(packet));
-                            // min con interval 20 ms 
-                            // gap_request_connection_parameter_update(context->connection_handle, 0x10, 0x10, 0, 0x0048);
-                            // printf("Connected, requesting conn param update for handle 0x%04x\n", context->connection_handle);
+                            printf("%c: Connection Interval: %u.%02u ms, latency %u\n", context->name, conn_interval * 125 / 100,
+                                25 * (conn_interval & 3), hci_subevent_le_connection_update_complete_get_conn_latency(packet));
+
+                            // request min con interval 15 ms for iOS 11+ 
+                            // gap_request_connection_parameter_update(context->connection_handle, 12, 12, 0, 0x0048);
+                            break;
+                        case HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE:
+                            // print connection parameters (without using float operations)
+                            context = connection_for_conn_handle(hci_subevent_le_connection_update_complete_get_connection_handle(packet));
+                            if (!context) break;
+                            conn_interval = hci_subevent_le_connection_update_complete_get_conn_interval(packet);
+                            printf("%c: Connection Interval: %u.%02u ms, latency %u\n", context->name, conn_interval * 125 / 100,
+                                25 * (conn_interval & 3), hci_subevent_le_connection_update_complete_get_conn_latency(packet));
+                            break;
+                        default:
                             break;
                     }
-                    break;  
+                    break;
+                default:
+                    break;
+            }
+    }
+}
+
+/* LISTING_END */
+
+/* 
+ * @section ATT Packet Handler
+ *
+ * @text The packet handler is used to track the ATT MTU Exchange and trigger ATT send
+ */
+
+/* LISTING_START(attPacketHandler): Packet Handler */
+static void att_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    int mtu;
+    le_streamer_connection_t * context;
+    switch (packet_type) {
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)) {
                 case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
                     mtu = att_event_mtu_exchange_complete_get_MTU(packet) - 3;
                     context = connection_for_conn_handle(att_event_mtu_exchange_complete_get_handle(packet));
@@ -258,11 +294,16 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case ATT_EVENT_CAN_SEND_NOW:
                     streamer();
                     break;
+                default:
+                    break;
             }
+            break;
+        default:
+            break;
     }
 }
-
 /* LISTING_END */
+
 /*
  * @section Streamer
  *

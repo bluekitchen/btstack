@@ -137,7 +137,7 @@ static gap_security_level_t rfcomm_security_level;
 static int  rfcomm_channel_can_send(rfcomm_channel_t * channel);
 static int  rfcomm_channel_ready_for_open(rfcomm_channel_t *channel);
 static int rfcomm_channel_ready_to_send(rfcomm_channel_t * channel);
-static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel, const rfcomm_channel_event_t *event);
+static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel, const rfcomm_channel_event_t *event, int * out_channel_valid);
 static void rfcomm_channel_state_machine_with_dlci(rfcomm_multiplexer_t * multiplexer, uint8_t dlci, const rfcomm_channel_event_t *event);
 static void rfcomm_emit_can_send_now(rfcomm_channel_t *channel);
 static int rfcomm_multiplexer_ready_to_send(rfcomm_multiplexer_t * multiplexer);
@@ -753,6 +753,24 @@ static void rfcomm_send_uih_credits(rfcomm_multiplexer_t *multiplexer, uint8_t d
     rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH_PF, credits, NULL, 0);
 }
 
+// depending on channel state emit channel opened with status or channel closed
+static void rfcomm_channel_emit_final_event(rfcomm_channel_t * channel, uint8_t status){
+    // emit appropriate events
+    switch(channel->state){
+        case RFCOMM_CHANNEL_OPEN:
+        case RFCOMM_CHANNEL_W4_UA_AFTER_DISC:
+            rfcomm_emit_channel_closed(channel);
+            break;
+        case RFCOMM_CHANNEL_SEND_UA_AFTER_DISC:
+            // remote didn't wait until we send the UA disc
+            // close event already emitted
+            break;
+        default:
+            rfcomm_emit_channel_opened(channel, status); 
+            break;
+    }
+}
+
 // MARK: RFCOMM MULTIPLEXER
 static void rfcomm_multiplexer_stop_timer(rfcomm_multiplexer_t * multiplexer){
     if (multiplexer->timer_active) {
@@ -774,19 +792,8 @@ static void rfcomm_multiplexer_finalize(rfcomm_multiplexer_t * multiplexer){
     while (it->next){
         rfcomm_channel_t * channel = (rfcomm_channel_t *) it->next;
         if (channel->multiplexer == multiplexer) {
-            // emit appropriate events
-            switch(channel->state){
-                case RFCOMM_CHANNEL_OPEN:
-                case RFCOMM_CHANNEL_W4_UA_AFTER_DISC:
-                    rfcomm_emit_channel_closed(channel);
-                    break;
-                case RFCOMM_CHANNEL_SEND_UA_AFTER_DISC:
-                    // remote didn't wait until we send the UA disc
-                    break;
-                default:
-                    rfcomm_emit_channel_opened(channel, RFCOMM_MULTIPLEXER_STOPPED); 
-                    break;
-            }
+            // emit open with status or closed
+            rfcomm_channel_emit_final_event(channel, RFCOMM_MULTIPLEXER_STOPPED);
             // remove from list
             it->next = it->next->next;
             // free channel struct
@@ -836,8 +843,9 @@ static void rfcomm_multiplexer_opened(rfcomm_multiplexer_t *multiplexer){
     for (it = (btstack_linked_item_t *) rfcomm_channels; it ; it = it->next){
         rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
         if (channel->multiplexer != multiplexer) continue;
-        rfcomm_channel_state_machine_with_channel(channel, &event);
-        if (rfcomm_channel_ready_to_send(channel)){
+        int rfcomm_channel_valid = 1;
+        rfcomm_channel_state_machine_with_channel(channel, &event, &rfcomm_channel_valid);
+        if (rfcomm_channel_valid && rfcomm_channel_ready_to_send(channel)){
             l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
         }
     }        
@@ -878,7 +886,8 @@ static void rfcomm_handle_can_send_now(uint16_t l2cap_cid){
             log_debug("rfcomm_handle_can_send_now enter: channel token");
             token_consumed = 1;
             const rfcomm_channel_event_t event = { CH_EVT_READY_TO_SEND, 0 };
-            rfcomm_channel_state_machine_with_channel(channel, &event);
+            int rfcomm_channel_valid = 1;
+            rfcomm_channel_state_machine_with_channel(channel, &event, &rfcomm_channel_valid);
         }
     }
 
@@ -889,8 +898,11 @@ static void rfcomm_handle_can_send_now(uint16_t l2cap_cid){
         if (channel->multiplexer->l2cap_cid != l2cap_cid) continue;
         // client waiting for can send now
         if (!channel->waiting_for_can_send_now)    continue;
-        if (!channel->credits_outgoing)            continue;
         if ((channel->multiplexer->fcon & 1) == 0) continue;
+        if (!channel->credits_outgoing){
+            log_debug("rfcomm_handle_can_send_now waiting to send but no credits (ignore)");
+            continue;
+        }
 
         log_debug("rfcomm_handle_can_send_now enter: client token");
         token_consumed = 1;
@@ -1220,11 +1232,6 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
             rfcomm_multiplexer_opened(multiplexer);
             break;
         case RFCOMM_MULTIPLEXER_SEND_UA_0_AND_DISC:
-            // try to detect authentication errors: drop link key if multiplexer closed before first channel got opened
-            if (!multiplexer->at_least_one_connection){
-                log_info("TODO: no connections established - delete link key prophylactically");
-                // hci_send_cmd(&hci_delete_stored_link_key, multiplexer->remote_addr);
-            }
             log_info("Sending UA #0");
             log_info("Closing down multiplexer");
             multiplexer->state = RFCOMM_MULTIPLEXER_CLOSED;
@@ -1289,6 +1296,7 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
     const uint8_t length_offset = (packet[2] & 1) ^ 1;  // to be used for pos >= 3
     const uint8_t credit_offset = ((packet[1] & BT_RFCOMM_UIH_PF) == BT_RFCOMM_UIH_PF) ? 1 : 0;   // credits for uih_pf frames
     const uint8_t payload_offset = 3 + length_offset + credit_offset;
+    int request_can_send_now = 0;
 
     rfcomm_channel_t * channel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, frame_dlci);
     if (!channel) return;
@@ -1299,14 +1307,18 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
         // add them
         uint16_t new_credits = packet[3+length_offset];
         channel->credits_outgoing += new_credits;
-        log_info( "RFCOMM data UIH_PF, new credits: %u, now %u", new_credits, channel->credits_outgoing);
+        log_info( "RFCOMM data UIH_PF, new credits channel 0x%02x: %u, now %u", channel->rfcomm_cid, new_credits, channel->credits_outgoing);
 
         // notify channel statemachine 
         rfcomm_channel_event_t channel_event = { CH_EVT_RCVD_CREDITS, 0 };
-        rfcomm_channel_state_machine_with_channel(channel, &channel_event);
-        if (rfcomm_channel_ready_to_send(channel)){
-            l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
-        }
+        log_debug("rfcomm_channel_state_machine_with_channel, waiting_for_can_send_now %u", channel->waiting_for_can_send_now);
+        int rfcomm_channel_valid = 1;
+        rfcomm_channel_state_machine_with_channel(channel, &channel_event, &rfcomm_channel_valid);
+        if (rfcomm_channel_valid){
+            if (rfcomm_channel_ready_to_send(channel) || channel->waiting_for_can_send_now){
+                request_can_send_now = 1;
+            }
+        }        
     }
     
     // contains payload?
@@ -1327,8 +1339,12 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
     // automatically provide new credits to remote device, if no incoming flow control
     if (!channel->incoming_flow_control && channel->credits_incoming < 5){
         channel->new_credits_incoming = RFCOMM_CREDITS;
-        l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
+        request_can_send_now = 1;
     }    
+
+    if (request_can_send_now){
+        l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
+    }
 }
 
 static void rfcomm_channel_accept_pn(rfcomm_channel_t *channel, rfcomm_channel_event_pn_t *event){
@@ -1373,8 +1389,9 @@ static void rfcomm_channel_state_machine_with_dlci(rfcomm_multiplexer_t * multip
     // log_info("rfcomm_channel_state_machine_with_dlci lookup dlci #%u = 0x%08x - event %u", dlci, (int) channel, event->type);
 
     if (channel) {
-        rfcomm_channel_state_machine_with_channel(channel, event);
-        if (rfcomm_channel_ready_to_send(channel)){
+        int rfcomm_channel_valid = 1;
+        rfcomm_channel_state_machine_with_channel(channel, event, &rfcomm_channel_valid);
+        if (rfcomm_channel_valid && rfcomm_channel_ready_to_send(channel)){
             l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
         }
         return;
@@ -1415,8 +1432,9 @@ static void rfcomm_channel_state_machine_with_dlci(rfcomm_multiplexer_t * multip
         return;
     }
 
-    rfcomm_channel_state_machine_with_channel(channel, event);
-    if (rfcomm_channel_ready_to_send(channel)){
+    int rfcomm_channel_valid = 1;
+    rfcomm_channel_state_machine_with_channel(channel, event, &rfcomm_channel_valid);
+    if (rfcomm_channel_valid && rfcomm_channel_ready_to_send(channel)){
         l2cap_request_can_send_now_event(multiplexer->l2cap_cid);
     }
 }
@@ -1693,10 +1711,13 @@ static int rfcomm_channel_ready_to_send(rfcomm_channel_t * channel){
 }
 
 
-static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel, const rfcomm_channel_event_t *event){
+static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel, const rfcomm_channel_event_t *event, int * out_channel_valid){
     
     // log_info("rfcomm_channel_state_machine_with_channel: state %u, state_var %04x, event %u", channel->state, channel->state_var ,event->type);
-    
+
+    // channel != NULL -> channel valid
+    *out_channel_valid = 1;
+
     rfcomm_multiplexer_t *multiplexer = channel->multiplexer;
     
     // TODO: integrate in common switch
@@ -1710,8 +1731,9 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
     if (event->type == CH_EVT_RCVD_DM){
         log_info("Received DM message for #%u", channel->dlci);
         log_info("-> Closing channel locally for #%u", channel->dlci);
-        rfcomm_emit_channel_closed(channel);
+        rfcomm_channel_emit_final_event(channel, ERROR_CODE_CONNECTION_REJECTED_DUE_TO_LIMITED_RESOURCES);
         rfcomm_channel_finalize(channel);
+        *out_channel_valid = 0;
         return;
     }
     
@@ -1981,6 +2003,7 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
                     channel->state = RFCOMM_CHANNEL_CLOSED;
                     rfcomm_send_dm_pf(multiplexer, channel->dlci);
                     rfcomm_channel_finalize(channel);
+                    *out_channel_valid = 0;
                     break;
                 default:
                     break;
@@ -2004,6 +2027,7 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
                     channel->state = RFCOMM_CHANNEL_CLOSED;
                     rfcomm_emit_channel_closed(channel);
                     rfcomm_channel_finalize(channel);
+                    *out_channel_valid = 0;
                     break;
                 default:
                     break;
@@ -2017,6 +2041,7 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
                     channel->state = RFCOMM_CHANNEL_CLOSED;
                     rfcomm_send_ua(multiplexer, channel->dlci);
                     rfcomm_channel_finalize(channel);
+                    *out_channel_valid = 0;
                     break;
                 default:
                     break;

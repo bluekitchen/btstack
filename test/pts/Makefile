@@ -81,12 +81,10 @@ include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
 
 CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-variable -Wunused-parameter
-# -Werror 
-CFLAGS += -D ENABLE_LE_DATA_CHANNELS
-CFLAGS += -D ENABLE_LE_SECURE_CONNECTIONS
-CFLAGS += -D ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
 CFLAGS += -D ENABLE_TESTING_SUPPORT
-CFLAGS += -I..
+CFLAGS += -D ENABLE_LE_SIGNED_WRITE
+
+# CFLAGS += -I..
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/src/classic
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include -D OI_DEBUG
@@ -129,9 +127,19 @@ AVDTP_OBJ  = $(AVDTP:.c=.o)
 HXCMOD_PLAYER_OBJ = ${HXCMOD_PLAYER:.c=.o}
 
 EXAMPLES  = iopt ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback le_data_channel
-EXAMPLES += avdtp_source_test avdtp_sink_test le_data_channel avrcp_controller_test sm_test avrcp_target_test gatt_profiles hrp_col_test hrp_server_test
+EXAMPLES += avdtp_source_test avdtp_sink_test avrcp_controller_test sm_test avrcp_target_test gatt_profiles hrp_col_test hrp_server_test
+EXAMPLES += hog_demo_test hid_device_test hid_host_test
 
 all: ${EXAMPLES}
+
+hid_host_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_hid_parser.o hid_host_test.o
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+hid_device_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_ring_buffer.o hid_device.o hid_device_test.o
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+hog_demo_test: hog_demo_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} battery_service_server.o device_information_service_server.o hids_device.o btstack_ring_buffer.o hog_demo_test.c
+	${CC} $(filter-out hog_demo_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 hrp_server_test.h: hrp_server_test.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
@@ -203,6 +211,6 @@ gatt_profiles: gatt_profiles.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVE
 	${CC} $(filter-out gatt_profiles.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 myclean:
-	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc ${BTSTACK_ROOT}/port/libusb/*.o ${BTSTACK_ROOT}/src/*.o ${BTSTACK_ROOT}/src/classic/*.o ${BTSTACK_ROOT}/src/ble/*.o
+	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc ${BTSTACK_ROOT}/port/libusb/*.o ${BTSTACK_ROOT}/src/*.o ${BTSTACK_ROOT}/src/classic/*.o ${BTSTACK_ROOT}/src/ble/*.o hog_demo_test.h
 
 clean: myclean

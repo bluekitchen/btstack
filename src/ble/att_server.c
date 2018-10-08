@@ -386,13 +386,15 @@ static int att_server_process_validated_request(att_server_t * att_server){
     uint8_t * att_response_buffer = l2cap_get_outgoing_buffer();
     uint16_t  att_response_size   = att_handle_request(&att_server->connection, att_server->request_buffer, att_server->request_size, att_response_buffer);
 
-#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
-    if (att_response_size == ATT_READ_RESPONSE_PENDING){
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
+    if (att_response_size == ATT_READ_RESPONSE_PENDING || att_response_size == ATT_INTERNAL_WRITE_RESPONSE_PENDING){
         // update state
-        att_server->state = ATT_SERVER_READ_RESPONSE_PENDING;
+        att_server->state = ATT_SERVER_RESPONSE_PENDING;
 
-        // callback with handle ATT_READ_RESPONSE_PENDING
-        att_server_client_read_callback(att_server->connection.con_handle, ATT_READ_RESPONSE_PENDING, 0, NULL, 0);
+        // callback with handle ATT_READ_RESPONSE_PENDING for reads
+        if (att_response_size == ATT_READ_RESPONSE_PENDING){
+            att_server_client_read_callback(att_server->connection.con_handle, ATT_READ_RESPONSE_PENDING, 0, NULL, 0);
+        }
 
         // free reserved buffer
         l2cap_release_packet_buffer();
@@ -434,11 +436,11 @@ static int att_server_process_validated_request(att_server_t * att_server){
     return 1;
 }
 
-#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
-int att_server_read_response_ready(hci_con_handle_t con_handle){
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
+int att_server_response_ready(hci_con_handle_t con_handle){
     att_server_t * att_server = att_server_for_handle(con_handle);
-    if (!att_server)                                             return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-    if (att_server->state != ATT_SERVER_READ_RESPONSE_PENDING)   return ERROR_CODE_COMMAND_DISALLOWED;
+    if (!att_server)                                        return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    if (att_server->state != ATT_SERVER_RESPONSE_PENDING)   return ERROR_CODE_COMMAND_DISALLOWED;
 
     att_server->state = ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED;
     att_dispatch_server_request_can_send_now_event(con_handle);
@@ -546,9 +548,10 @@ static void att_server_handle_can_send_now(void){
     hci_con_handle_t request_con_handle   = HCI_CON_HANDLE_INVALID;
     hci_con_handle_t last_send_con_handle = HCI_CON_HANDLE_INVALID;
     int can_send_now = 1;
-    int phase;
+    int phase_index;
 
-    for (phase = ATT_SERVER_RUN_PHASE_1_REQUESTS; phase <= ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS; phase++){
+    for (phase_index = ATT_SERVER_RUN_PHASE_1_REQUESTS; phase_index <= ATT_SERVER_RUN_PHASE_3_NOTIFICATIONS; phase_index++){
+        att_server_run_phase_t phase = (att_server_run_phase_t) phase_index;
         hci_con_handle_t skip_connections_until = att_server_last_can_send_now;
         while (1){
             btstack_linked_list_iterator_t it;

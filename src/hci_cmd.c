@@ -559,6 +559,7 @@ const hci_cmd_t hci_write_default_link_policy_setup = {
  *  Controller & Baseband Commands 
  */
 
+
 /**
  * @param event_mask_lover_octets
  * @param event_mask_higher_octets
@@ -670,6 +671,7 @@ const hci_cmd_t hci_host_buffer_size = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x33), "2122"
 };
 
+
 #if 0
 //
 // command sent manually sent by hci_host_num_completed_packets
@@ -700,6 +702,15 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x36), "H"
  */
 const hci_cmd_t hci_write_link_supervision_timeout = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x37), "H2"
+};
+
+/**
+ * @param num_current_iac must be 2
+ * @param iac_lap1
+ * @param iac_lap2
+ */
+const hci_cmd_t hci_write_current_iac_lap_two_iacs = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x3A), "133"
 };
 
 /**

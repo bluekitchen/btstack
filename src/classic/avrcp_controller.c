@@ -848,6 +848,11 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
         default:
             break;
     }
+
+    // trigger pending notification reqistrations
+    if (connection->state == AVCTP_CONNECTION_OPENED && connection->notifications_to_register){
+        avrcp_request_can_send_now(connection, connection->l2cap_signaling_cid);
+    }
 }
 
 static void avrcp_controller_handle_can_send_now(avrcp_connection_t * connection){

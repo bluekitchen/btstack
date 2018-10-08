@@ -219,6 +219,7 @@ LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BU
 
 LE_EXAMPLES = \
 	gap_le_advertisements \
+	gatt_heart_rate_client \
 	le_counter \
 	le_streamer \
 	le_streamer_client \

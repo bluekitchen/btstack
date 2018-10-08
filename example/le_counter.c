@@ -95,10 +95,6 @@ const uint8_t adv_data_len = sizeof(adv_data);
 
 static void le_counter_setup(void){
 
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     l2cap_init();
 
     // setup le device db
@@ -109,7 +105,6 @@ static void le_counter_setup(void){
 
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);    
-    att_server_register_packet_handler(packet_handler);
 
     // setup battery service
     battery_service_server_init(battery);
@@ -123,6 +118,13 @@ static void le_counter_setup(void){
     gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
     gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
     gap_advertisements_enable(1);
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    // register for ATT event
+    att_server_register_packet_handler(packet_handler);
 
     // set one-shot timer
     heartbeat.process = &heartbeat_handler;

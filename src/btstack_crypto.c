@@ -136,6 +136,11 @@ static btstack_crypto_ecc_p256_key_generation_state_t btstack_crypto_ecc_p256_ke
 static uint8_t btstack_crypto_ecc_p256_d[32];
 #endif
 
+// Software ECDH implementation provided by mbedtls
+#ifdef USE_MBEDTLS_ECC_P256
+static mbedtls_ecp_group   mbedtls_ec_group;
+#endif
+
 #endif /* ENABLE_ECC_P256 */
 
 static void btstack_crypto_done(btstack_crypto_t * btstack_crypto){
@@ -666,11 +671,13 @@ static void btstack_crypto_run(void){
             btstack_crypto_wait_for_hci_result = 1;
             hci_send_cmd(&hci_le_generate_dhkey, &btstack_crypto_ec_p192->public_key[0], &btstack_crypto_ec_p192->public_key[32]);
 #endif
-#endif
-            break;        
-		default:
-			break;
-	}
+            break;
+
+#endif /* ENABLE_ECC_P256 */
+
+        default:
+            break;
+    }
 }
 
 static void btstack_crypto_handle_random_data(const uint8_t * data, uint16_t len){
@@ -812,7 +819,7 @@ static void btstack_crypto_event_handler(uint8_t packet_type, uint16_t cid, uint
 #ifndef USE_SOFTWARE_ECC_P256_IMPLEMENTATION
                 if (!ecdh_operations_supported){
                     // mbedTLS can also be used if already available (and malloc is supported)
-                    log_error("ECC-P256 support enabled, but HCI Controller doesn't support it. Please add USE_MICRO_ECC_P256 to btstack_config.h");
+                    log_error("ECC-P256 support enabled, but HCI Controller doesn't support it. Please add ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS to btstack_config.h");
                 }
 #endif
 #endif
@@ -865,9 +872,15 @@ static void btstack_crypto_event_handler(uint8_t packet_type, uint16_t cid, uint
 void btstack_crypto_init(void){
 	if (btstack_crypto_initialized) return;
 	btstack_crypto_initialized = 1;
+
 	// register with HCI
     hci_event_callback_registration.callback = &btstack_crypto_event_handler;
     hci_add_event_handler(&hci_event_callback_registration);
+
+#ifdef USE_MBEDTLS_ECC_P256
+	mbedtls_ecp_group_init(&mbedtls_ec_group);
+	mbedtls_ecp_group_load(&mbedtls_ec_group, MBEDTLS_ECP_DP_SECP256R1);
+#endif
 }
 
 void btstack_crypto_random_generate(btstack_crypto_random_t * request, uint8_t * buffer, uint16_t size, void (* callback)(void * arg), void * callback_arg){

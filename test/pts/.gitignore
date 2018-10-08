@@ -11,10 +11,15 @@ ble_peripheral_test
 ble_peripheral_test.h
 bnep_test
 classic_test
+csc_server_test.h
+cycling_power_server_test.h
 gatt_profiles
 gatt_profiles.h
 hfp_ag_test
 hfp_hf_test
+hid_device_test
+hid_host_test
+hog_demo_test
 hrp_col_test
 hrp_server_test
 hrp_server_test.h

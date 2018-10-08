@@ -251,10 +251,6 @@ int btstack_main(int argc, const char * argv[])
     (void)argc;
     (void)argv;
 
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     l2cap_init();
 
     rfcomm_init();
@@ -266,6 +262,10 @@ int btstack_main(int argc, const char * argv[])
     spp_create_sdp_record(spp_service_buffer, 0x10001, RFCOMM_SERVER_CHANNEL, "SPP Streamer");
     sdp_register_service(spp_service_buffer);
     // printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     // short-cut to find other SPP Streamer
     gap_set_class_of_device(TEST_COD);

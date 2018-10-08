@@ -658,8 +658,9 @@ static void stdin_process(char c){
 }
 
 /*************** PANU client routines *********************/
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
-{
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+
     uint8_t   event;
     bd_addr_t event_addr;
     bd_addr_t src_addr;
@@ -810,7 +811,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
-    
+    UNUSED(argc);
+    (void)argv;
     /* Register for HCI events */
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);

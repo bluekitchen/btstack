@@ -184,6 +184,7 @@ typedef uint8_t sm_key_t[16];
 #define OBEX_CONNECT_FAILED                                0xB1
 #define OBEX_DISCONNECTED                                  0xB2
 #define OBEX_NOT_FOUND                                     0xB3
+#define OBEX_NOT_ACCEPTABLE                                0xB4
 
 #define AVDTP_SEID_DOES_NOT_EXIST                          0xC0
 #define AVDTP_CONNECTION_DOES_NOT_EXIST                    0xC1
@@ -297,6 +298,14 @@ typedef uint8_t sm_key_t[16];
 #define GATT_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR                0X80
 #define GATT_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION           0X81
 #define GATT_GET_MTU                                             0x82
+
+// SM 0x90
+#define SM_SET_AUTHENTICATION_REQUIREMENTS 0x90
+#define SM_SET_IO_CAPABILITIES             0x92
+#define SM_BONDING_DECLINE                 0x93
+#define SM_JUST_WORKS_CONFIRM              0x94
+#define SM_NUMERIC_COMPARISON_CONFIRM      0x95
+#define SM_PASSKEY_INPUT                   0x96
 
 // ATT
 
@@ -924,7 +933,7 @@ typedef uint8_t sm_key_t[16];
  /**
   * @brief Emitted during pairing to inform app about address used as identity
   *
-  * @format H1B1B1
+  * @format H1B1B2
   * @param handle
   * @param addr_type
   * @param address
@@ -1686,6 +1695,14 @@ typedef uint8_t sm_key_t[16];
  */
 #define A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED                  0x0C
 
+/**
+ * @format 1211          Stream was reconfigured
+ * @param subevent_code
+ * @param a2dp_cid
+ * @param local_seid
+ * @param status
+ */
+#define A2DP_SUBEVENT_STREAM_RECONFIGURED                            0x0D
 
 /** AVRCP Subevent */
 
@@ -2031,6 +2048,36 @@ typedef uint8_t sm_key_t[16];
  */
 #define PBAP_SUBEVENT_OPERATION_COMPLETED                                  0x03
 
+/**
+ * @format 1212
+ * @param subevent_code
+ * @param goep_cid
+ * @param status
+ * @param phoneboook_size
+ */
+#define PBAP_SUBEVENT_PHONEBOOK_SIZE                                       0x04
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param goep_cid
+ * @param user_id_required
+ * @param full_access 
+ */
+#define PBAP_SUBEVENT_AUTHENTICATION_REQUEST                               0x05
+
+/**
+ * @format 12JVJV
+ * @param subevent_code
+ * @param goep_cid
+ * @param name_len
+ * @param name 
+ * @param handle_len
+ * @param handle 
+ */
+#define PBAP_SUBEVENT_CARD_RESULT                                          0x06
+
+
 // HID Meta Event Group
 
 /**
@@ -2057,6 +2104,21 @@ typedef uint8_t sm_key_t[16];
  * @param hid_cid
 */
 #define HID_SUBEVENT_CAN_SEND_NOW                                          0x03
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param con_handle
+*/
+#define HID_SUBEVENT_SUSPEND                                               0x04
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param con_handle
+*/
+#define HID_SUBEVENT_EXIT_SUSPEND                                          0x05
+
 
 // HIDS Meta Event Group
 
@@ -2099,4 +2161,33 @@ typedef uint8_t sm_key_t[16];
 */
 #define HIDS_SUBEVENT_INPUT_REPORT_ENABLE                                   0x05
 
+/**
+ * @format 121
+ * @param subevent_code
+ * @param con_handle
+ * @param enable
+*/
+#define HIDS_SUBEVENT_OUTPUT_REPORT_ENABLE                                  0x06
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param con_handle
+ * @param enable
+*/
+#define HIDS_SUBEVENT_FEATURE_REPORT_ENABLE                                 0x07
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param con_handle
+*/
+#define HIDS_SUBEVENT_SUSPEND                                               0x08
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param con_handle
+*/
+#define HIDS_SUBEVENT_EXIT_SUSPEND                                          0x09
 #endif

@@ -410,7 +410,7 @@ typedef enum {
     ATT_SERVER_REQUEST_RECEIVED,
     ATT_SERVER_W4_SIGNED_WRITE_VALIDATION,
     ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED,
-    ATT_SERVER_READ_RESPONSE_PENDING,
+    ATT_SERVER_RESPONSE_PENDING,
 } att_server_state_t;
 
 typedef struct {
@@ -855,6 +855,10 @@ typedef struct {
     uint8_t master_slave_policy;
 #endif
 
+    // address and address_type of active create connection command (ACL, SCO, LE)
+    bd_addr_t      outgoing_addr;
+    bd_addr_type_t outgoing_addr_type;
+
 } hci_stack_t;
 
 
@@ -1015,7 +1019,7 @@ void hci_set_master_slave_policy(uint8_t policy);
 
 
 /**
- * va_list version of hci_send_cmd
+ * va_list version of hci_send_cmd, call hci_send_cmd_packet
  */
 int hci_send_cmd_va_arg(const hci_cmd_t *cmd, va_list argtr);
 
@@ -1111,7 +1115,8 @@ int hci_remote_esco_supported(hci_con_handle_t con_handle);
 void hci_emit_state(void);
 
 /** 
- * Send complete CMD packet. Called by daemon
+ * Send complete CMD packet. Called by daemon and hci_send_cmd_va_arg
+ * @returns 0 if command was successfully sent to HCI Transport layer
  */
 int hci_send_cmd_packet(uint8_t *packet, int size);
 

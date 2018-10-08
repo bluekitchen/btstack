@@ -652,7 +652,7 @@ void hfp_set_hf_run_for_context(void (*callbcack)(hfp_connection_t * hfp_connect
 void hfp_init(void);
 
 void hfp_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t service_uuid, int rfcomm_channel_nr, const char * name);
-void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, hfp_role_t local_role);
 void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, hfp_role_t local_role);
 void hfp_emit_event(hfp_connection_t * hfp_connection, uint8_t event_subtype, uint8_t value);
 void hfp_emit_simple_event(hfp_connection_t * hfp_connection, uint8_t event_subtype);
@@ -660,9 +660,9 @@ void hfp_emit_string_event(hfp_connection_t * hfp_connection, uint8_t event_subt
 void hfp_emit_slc_connection_event(hfp_connection_t * hfp_connection, uint8_t status, hci_con_handle_t con_handle, bd_addr_t addr);
 
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
-hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr);
-hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle);
-hfp_connection_t * get_hfp_connection_context_for_acl_handle(uint16_t handle);
+hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr, hfp_role_t hfp_role);
+hfp_connection_t * get_hfp_connection_context_for_sco_handle(uint16_t handle, hfp_role_t hfp_role);
+hfp_connection_t * get_hfp_connection_context_for_acl_handle(uint16_t handle, hfp_role_t hfp_role);
 
 btstack_linked_list_t * hfp_get_connections(void);
 void hfp_parse(hfp_connection_t * connection, uint8_t byte, int isHandsFree);
@@ -676,6 +676,7 @@ void hfp_release_audio_connection(hfp_connection_t * connection);
 void hfp_setup_synchronous_connection(hfp_connection_t * connection);
 int hfp_supports_codec(uint8_t codec, int codecs_nr, uint8_t * codecs);
 void hfp_hf_drop_mSBC_if_eSCO_not_supported(uint8_t * codecs, uint8_t * codecs_nr);
+void hfp_init_link_settings(hfp_connection_t * hfp_connection, uint8_t esco_s4_supported);
 
 const char * hfp_hf_feature(int index);
 const char * hfp_ag_feature(int index);

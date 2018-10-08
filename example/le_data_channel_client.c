@@ -339,13 +339,13 @@ int btstack_main(int argc, const char * argv[]){
     (void)argv;
 #endif
 
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     l2cap_init();
 
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

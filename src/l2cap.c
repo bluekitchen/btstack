@@ -127,6 +127,7 @@ static l2cap_fixed_channel_t l2cap_fixed_channel_connectionless;
 #ifdef ENABLE_CLASSIC
 static btstack_linked_list_t l2cap_services;
 static uint8_t require_security_level2_for_outgoing_sdp;
+static bd_addr_t l2cap_outgoing_classic_addr;
 #endif
 
 #ifdef ENABLE_LE_DATA_CHANNELS
@@ -294,7 +295,7 @@ static int l2cap_ertm_send_information_frame(l2cap_channel_t * channel, int inde
     uint16_t control = l2cap_encanced_control_field_for_information_frame(tx_state->tx_seq, final, channel->req_seq, tx_state->sar);
     log_info("I-Frame: control 0x%04x", control);
     little_endian_store_16(acl_buffer, 8, control);
-    memcpy(&acl_buffer[8+2], &channel->tx_packets_data[index * channel->local_mtu], tx_state->len);
+    memcpy(&acl_buffer[8+2], &channel->tx_packets_data[index * channel->local_mps], tx_state->len);
     // (re-)start retransmission timer on 
     l2cap_ertm_start_retransmission_timer(channel);
     // send
@@ -311,7 +312,8 @@ static void l2cap_ertm_store_fragment(l2cap_channel_t * channel, l2cap_segmentat
     tx_state->sar = sar;
     tx_state->retry_count = 0;
 
-    uint8_t * tx_packet = &channel->tx_packets_data[index * channel->local_mtu];
+    uint8_t * tx_packet = &channel->tx_packets_data[index * channel->local_mps];
+    log_info("index %u, mtu %u, packet tx %p", index, channel->local_mtu, tx_packet);
     int pos = 0;
     if (sar == L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU){
         little_endian_store_16(tx_packet, 0, sdu_length);
@@ -1370,8 +1372,8 @@ static void l2cap_run(void){
     while(btstack_linked_list_iterator_has_next(&it)){
         hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
         if (connection->l2cap_state.information_state == L2CAP_INFORMATION_STATE_W2_SEND_EXTENDED_FEATURE_REQUEST){
+            if (!hci_can_send_acl_packet_now(connection->con_handle)) break;
             connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_W4_EXTENDED_FEATURE_RESPONSE;
-            // send information request for extended features
             uint8_t sig_id = l2cap_next_sig_id();
             uint8_t info_type = L2CAP_INFO_TYPE_EXTENDED_FEATURES_SUPPORTED;
             l2cap_send_signaling_packet(connection->con_handle, INFORMATION_REQUEST, sig_id, info_type);
@@ -1410,7 +1412,8 @@ static void l2cap_run(void){
                 // send connection request - set state first
                 channel->state = L2CAP_STATE_WAIT_CONNECTION_COMPLETE;
                 // BD_ADDR, Packet_Type, Page_Scan_Repetition_Mode, Reserved, Clock_Offset, Allow_Role_Switch
-                hci_send_cmd(&hci_create_connection, channel->address, hci_usable_acl_packet_types(), 0, 0, 0, 1); 
+                memcpy(l2cap_outgoing_classic_addr, channel->address, 6);
+                hci_send_cmd(&hci_create_connection, channel->address, hci_usable_acl_packet_types(), 0, 0, 0, 1);
                 break;
                 
             case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE:
@@ -1703,7 +1706,7 @@ static void l2cap_run(void){
         switch (connection->le_con_parameter_update_state){
             case CON_PARAMETER_UPDATE_SEND_REQUEST:
                 connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
-                l2cap_send_le_signaling_packet(connection->con_handle, CONNECTION_PARAMETER_UPDATE_REQUEST, connection->le_con_param_update_identifier,
+                l2cap_send_le_signaling_packet(connection->con_handle, CONNECTION_PARAMETER_UPDATE_REQUEST, l2cap_next_sig_id(),
                                                connection->le_conn_interval_min, connection->le_conn_interval_max, connection->le_conn_latency, connection->le_supervision_timeout);
                 break;
             case CON_PARAMETER_UPDATE_SEND_RESPONSE:
@@ -1726,7 +1729,7 @@ static void l2cap_run(void){
 #ifdef ENABLE_CLASSIC
 static void l2cap_handle_connection_complete(hci_con_handle_t con_handle, l2cap_channel_t * channel){
     if (channel->state == L2CAP_STATE_WAIT_CONNECTION_COMPLETE || channel->state == L2CAP_STATE_WILL_SEND_CREATE_CONNECTION) {
-        log_info("l2cap_handle_connection_complete expected state");
+        log_info("connection complete con_handle %04x - for channel %p cid 0x%04x", (int) con_handle, channel, channel->local_cid);
         // success, start l2cap handshake
         channel->con_handle = con_handle;
         // check remote SSP feature first
@@ -1799,6 +1802,8 @@ static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t pac
     channel->remote_sig_id = L2CAP_SIG_ID_INVALID;
     channel->local_sig_id = L2CAP_SIG_ID_INVALID;
 
+    log_info("channel %p, local_cid 0x%04x", channel, channel->local_cid);
+
     return channel;
 }
 #endif
@@ -1840,7 +1845,7 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
     // check if hci connection is already usable
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(address, BD_ADDR_TYPE_CLASSIC);
     if (conn){
-        log_info("l2cap_create_channel, hci connection already exists");
+        log_info("l2cap_create_channel, hci connection 0x%04x already exists", conn->con_handle);
         l2cap_handle_connection_complete(conn->con_handle, channel);
         // check if remote supported fearures are already received
         if (conn->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) {
@@ -1853,8 +1858,7 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
     return 0;
 }
 
-void 
-l2cap_disconnect(uint16_t local_cid, uint8_t reason){
+void l2cap_disconnect(uint16_t local_cid, uint8_t reason){
     log_info("L2CAP_DISCONNECT local_cid 0x%x reason 0x%x", local_cid, reason);
     // find channel for local_cid
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
@@ -2039,11 +2043,25 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
         // Notify channel packet handler if they can send now
         case HCI_EVENT_TRANSPORT_PACKET_SENT:
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
+        case BTSTACK_EVENT_NR_CONNECTIONS_CHANGED:
             l2cap_run();    // try sending signaling packets first
             l2cap_notify_channel_can_send();
             break;
 
         case HCI_EVENT_COMMAND_STATUS:
+#ifdef ENABLE_CLASSIC
+            // check command status for create connection for errors
+            if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_create_connection)){
+                // cache outgoing address and reset
+                memcpy(address, l2cap_outgoing_classic_addr, 6);
+                memset(l2cap_outgoing_classic_addr, 0, 6);
+                // error => outgoing connection failed
+                uint8_t status = hci_event_command_status_get_status(packet);
+                if (status){
+                    l2cap_handle_connection_failed_for_addr(address, status);
+                }
+            }
+#endif
             l2cap_run();    // try sending signaling packets first
             break;
 
@@ -2130,14 +2148,14 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
                 if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
                 if (channel->con_handle != handle) continue;
+                log_info("remote supported features, channel %p, cid %04x - state %u", channel, channel->local_cid, channel->state);
                 l2cap_handle_remote_supported_features_received(channel);
-                break;
             }
             break;           
 
         case GAP_EVENT_SECURITY_LEVEL:
             handle = little_endian_read_16(packet, 2);
-            log_info("l2cap - security level update");
+            log_info("l2cap - security level update for handle 0x%04x", handle);
             btstack_linked_list_iterator_init(&it, &l2cap_channels);
             while (btstack_linked_list_iterator_has_next(&it)){
                 l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
@@ -2147,7 +2165,7 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
                 gap_security_level_t actual_level = (gap_security_level_t) packet[4];
                 gap_security_level_t required_level = channel->required_security_level;
 
-                log_info("channel state %u: actual %u >= required %u?", channel->state, actual_level, required_level);
+                log_info("channel %p, cid %04x - state %u: actual %u >= required %u?", channel, channel->local_cid, channel->state, actual_level, required_level);
 
                 switch (channel->state){
                     case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
@@ -2750,7 +2768,7 @@ static void l2cap_emit_connection_parameter_update_response(hci_con_handle_t con
 static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * command, uint8_t sig_id){
     hci_connection_t * connection;
     uint16_t result;
-    uint8_t  event[10];
+    uint8_t  event[12];
 
 #ifdef ENABLE_LE_DATA_CHANNELS
     btstack_linked_list_iterator_t it;    
@@ -2803,7 +2821,8 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
 
             event[0] = L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST;
             event[1] = 8;
-            memcpy(&event[2], &command[4], 8);
+            little_endian_store_16(event, 2, handle);
+            memcpy(&event[4], &command[4], 8);
             hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
             (*l2cap_event_packet_handler)( HCI_EVENT_PACKET, 0, event, sizeof(event));
             break;
@@ -3183,11 +3202,26 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                         }
 
                         // get SDU
-                        const uint8_t * sdu_data = &packet[COMPLETE_L2CAP_HEADER+2];
-                        uint16_t        sdu_len  = size-(COMPLETE_L2CAP_HEADER+2+fcs_size);
+                        const uint8_t * payload_data = &packet[COMPLETE_L2CAP_HEADER+2];
+                        uint16_t        payload_len  = size-(COMPLETE_L2CAP_HEADER+2+fcs_size);
 
                         // assert SDU size is smaller or equal to our buffers
-                        if (sdu_len > l2cap_channel->local_mps) break;
+                        uint16_t max_payload_size = 0;
+                        switch (sar){
+                            case L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU:
+                            case L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU:
+                                // SDU Length + MPS
+                                max_payload_size = l2cap_channel->local_mps + 2;
+                                break;
+                            case L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU:
+                            case L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU:
+                                max_payload_size = l2cap_channel->local_mps;
+                                break;
+                        }
+                        if (payload_len > max_payload_size){
+                            log_info("payload len %u > max payload %u -> drop packet", payload_len, max_payload_size);
+                            break;
+                        }
 
                         // check ordering
                         if (l2cap_channel->expected_tx_seq == tx_seq){
@@ -3196,7 +3230,7 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                             l2cap_channel->req_seq         = l2cap_channel->expected_tx_seq;
  
                             // process SDU
-                            l2cap_ertm_handle_in_sequence_sdu(l2cap_channel, sar, sdu_data, sdu_len);
+                            l2cap_ertm_handle_in_sequence_sdu(l2cap_channel, sar, payload_data, payload_len);
 
                             // process stored segments
                             while (1){
@@ -3226,7 +3260,7 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                             int delta = (tx_seq - l2cap_channel->expected_tx_seq) & 0x3f;
                             if (delta < 2){
                                 // store segment
-                                l2cap_ertm_handle_out_of_sequence_sdu(l2cap_channel, sar, delta, sdu_data, sdu_len);
+                                l2cap_ertm_handle_out_of_sequence_sdu(l2cap_channel, sar, delta, payload_data, payload_len);
 
                                 log_info("Received unexpected frame TxSeq %u but expected %u -> send S-SREJ", tx_seq, l2cap_channel->expected_tx_seq);
                                 l2cap_channel->send_supervisor_frame_selective_reject = 1;

@@ -39,7 +39,6 @@
 #define __BTSTACK_FILE__ "a2dp_source.c"
 
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -197,6 +196,20 @@ static void a2dp_signaling_emit_control_command(btstack_packet_handler_t callbac
     little_endian_store_16(event, pos, cid);
     pos += 2;
     event[pos++] = local_seid;
+    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void a2dp_signaling_emit_reconfigured(btstack_packet_handler_t callback, uint16_t cid, uint8_t local_seid, uint8_t status){
+    if (!callback) return;
+    uint8_t event[7];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_A2DP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = A2DP_SUBEVENT_STREAM_RECONFIGURED;
+    little_endian_store_16(event, pos, cid);
+    pos += 2;
+    event[pos++] = local_seid;
+    event[pos++] = status;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -365,6 +378,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     avdtp_source_set_configuration(cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), sc.active_remote_sep->seid, sc.local_stream_endpoint->remote_configuration_bitmap, sc.local_stream_endpoint->remote_configuration);
                     break;
                 }
+                case A2DP_W2_RECONFIGURE_WITH_SEID:
+                    log_info("A2DP reconfigured");
+                    a2dp_signaling_emit_reconfigured(a2dp_source_context.a2dp_callback, cid, avdtp_stream_endpoint_seid(sc.local_stream_endpoint), 0);
+                    app_state = A2DP_STREAMING_OPENED;
+                    break;
                 case A2DP_W2_OPEN_STREAM_WITH_SEID:{
                     log_info("A2DP open stream ");
                     app_state = A2DP_W4_OPEN_STREAM_WITH_SEID;
@@ -472,6 +490,51 @@ uint8_t a2dp_source_establish_stream(bd_addr_t remote_addr, uint8_t loc_seid, ui
 
 uint8_t a2dp_source_disconnect(uint16_t a2dp_cid){
     return avdtp_disconnect(a2dp_cid, &a2dp_source_context);
+}
+
+uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t a2dp_cid, uint32_t sampling_frequency){
+    // UNUSED(sampling_frequency);
+
+    log_info("a2dp_source_reconfigure_stream");
+
+    memcpy(sc.local_stream_endpoint->reconfigure_media_codec_sbc_info, sc.local_stream_endpoint->remote_sep.configuration.media_codec.media_codec_information, 4);
+
+    // update sampling frequency
+    uint8_t config = sc.local_stream_endpoint->reconfigure_media_codec_sbc_info[0] & 0x0f;
+    switch (sampling_frequency){
+        case 48000:
+            config |= (AVDTP_SBC_48000 << 4);
+            break;
+        case 44100:
+            config |= (AVDTP_SBC_44100 << 4);
+            break;
+        case 32000:
+            config |= (AVDTP_SBC_32000 << 4);
+            break;
+        case 16000:
+            config |= (AVDTP_SBC_16000 << 4);
+            break;
+        default:
+            log_error("Unsupported sampling frequency %u", sampling_frequency);
+            return ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE;
+    }
+    sc.local_stream_endpoint->reconfigure_media_codec_sbc_info[0] = config;
+
+    avdtp_capabilities_t new_configuration;
+    new_configuration.media_codec.media_type = AVDTP_AUDIO;
+    new_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
+    new_configuration.media_codec.media_codec_information_len = 4;
+    new_configuration.media_codec.media_codec_information = sc.local_stream_endpoint->reconfigure_media_codec_sbc_info;
+
+    // sttart reconfigure
+    app_state = A2DP_W2_RECONFIGURE_WITH_SEID;
+    return avdtp_source_reconfigure(
+        a2dp_cid,
+        avdtp_stream_endpoint_seid(sc.local_stream_endpoint),
+        sc.active_remote_sep->seid,
+        1 << AVDTP_MEDIA_CODEC,
+        new_configuration
+        );
 }
 
 uint8_t a2dp_source_start_stream(uint16_t a2dp_cid, uint8_t local_seid){

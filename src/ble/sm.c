@@ -694,11 +694,11 @@ static void sm_notify_client_index(uint8_t type, hci_con_handle_t con_handle, ui
     int identity_address_type;
     le_device_db_info(index, &identity_address_type, identity_address, NULL);
 
-    uint8_t event[19];
+    uint8_t event[20];
     sm_setup_event_base(event, sizeof(event), type, con_handle, addr_type, address);
     event[11] = identity_address_type;
     reverse_bd_addr(identity_address, &event[12]);
-    event[18] = index;
+    little_endian_store_32(event, 18, index);
     sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -964,7 +964,7 @@ static int sm_key_distribution_all_received(sm_connection_t * sm_conn){
 #endif
 
     log_debug("sm_key_distribution_all_received: received 0x%02x, expecting 0x%02x", setup->sm_key_distribution_received_set, recv_flags);
-    return recv_flags == setup->sm_key_distribution_received_set;
+    return (setup->sm_key_distribution_received_set & recv_flags) == recv_flags;
 }
 
 static void sm_done_for_handle(hci_con_handle_t con_handle){
@@ -2358,20 +2358,29 @@ static void sm_run(void){
 
 #ifdef ENABLE_LE_PERIPHERAL
             case SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE:
-                // echo initiator for now
                 sm_pairing_packet_set_code(setup->sm_s_pres,SM_CODE_PAIRING_RESPONSE);
+
+                // start with initiator key dist flags
                 key_distribution_flags = sm_key_distribution_flags_for_auth_req();
+
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+                // LTK (= encyrption information & master identification) only exchanged for LE Legacy Connection
+                if (setup->sm_use_secure_connections){
+                    key_distribution_flags &= ~SM_KEYDIST_ENC_KEY;
+                }
+#endif
+                // setup in response 
+                sm_pairing_packet_set_initiator_key_distribution(setup->sm_s_pres, sm_pairing_packet_get_initiator_key_distribution(setup->sm_m_preq) & key_distribution_flags);
+                sm_pairing_packet_set_responder_key_distribution(setup->sm_s_pres, sm_pairing_packet_get_responder_key_distribution(setup->sm_m_preq) & key_distribution_flags);
+
+                // update key distribution after ENC was dropped
+                sm_setup_key_distribution(sm_pairing_packet_get_responder_key_distribution(setup->sm_s_pres));
 
                 if (setup->sm_use_secure_connections){
                     connection->sm_engine_state = SM_SC_W4_PUBLIC_KEY_COMMAND;
                 } else {
                     connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_CONFIRM;
                 }
-
-                sm_pairing_packet_set_initiator_key_distribution(setup->sm_s_pres, sm_pairing_packet_get_initiator_key_distribution(setup->sm_m_preq) & key_distribution_flags);
-                sm_pairing_packet_set_responder_key_distribution(setup->sm_s_pres, sm_pairing_packet_get_responder_key_distribution(setup->sm_m_preq) & key_distribution_flags);
-                // update key distribution after ENC was dropped
-                sm_setup_key_distribution(sm_pairing_packet_get_responder_key_distribution(setup->sm_s_pres));
 
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
                 sm_timeout_reset(connection);
@@ -3175,7 +3184,6 @@ static int sm_validate_stk_generation_method(void){
             return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_OOB) != 0;
         case NUMERIC_COMPARISON:
             return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_NUMERIC_COMPARISON) != 0;
-            return 1;
         default:
             return 0;
     }

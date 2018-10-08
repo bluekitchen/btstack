@@ -54,10 +54,11 @@
 #include "btstack.h"
 
 #define HEARTBEAT_PERIOD_MS 500
+#define TEST_COD 0x1234
+#define RFCOMM_SERVER_CHANNEL 1
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-static uint8_t  rfcomm_channel_nr = 1;
 static uint16_t rfcomm_channel_id;
 static uint8_t  rfcomm_send_credit = 0;
 static uint8_t  spp_service_buffer[150];
@@ -85,7 +86,7 @@ static void spp_service_setup(void){
     // init RFCOMM
     rfcomm_init();
     // reserved channel, mtu limited by l2cap, 1 credit
-    rfcomm_register_service_with_initial_credits(&packet_handler, rfcomm_channel_nr, 0xffff, 1);  
+    rfcomm_register_service_with_initial_credits(&packet_handler, RFCOMM_SERVER_CHANNEL, 0xffff, 1);  
 
     // init SDP, create record for SPP and register with SDP
     sdp_init();
@@ -131,6 +132,8 @@ static void one_shot_timer_setup(void){
 // Bluetooth logic
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 /* LISTING_PAUSE */
+    UNUSED(channel);
+
     bd_addr_t event_addr;
     uint8_t   rfcomm_channel_nr;
     uint16_t  mtu;
@@ -204,12 +207,18 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     
+    (void)argc;
+    (void)argv;
+
     spp_service_setup();
     one_shot_timer_setup();
     
     puts("SPP FlowControl Demo: simulates processing on received data...\n\r");
     gap_set_local_name("SPP Flowcontrol 00:00:00:00:00:00");
     gap_discoverable_control(1);
+
+    // short-cut to find other SPP Streamer
+    gap_set_class_of_device(TEST_COD);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

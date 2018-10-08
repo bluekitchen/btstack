@@ -56,6 +56,9 @@ extern "C" {
 
 /* API_START */
 
+// remote does not expose PBAP features in SDP record
+#define PBAP_FEATURES_NOT_PRESENT ((uint32_t) -1)
+
 /**
  * Setup GOEP Client
  */
@@ -94,6 +97,11 @@ void    goep_client_request_can_send_now(uint16_t goep_cid);
 uint8_t goep_client_get_request_opcode(uint16_t goep_cid);
 
 /**
+ * brief Get PBAP Supported Features found in SDP record during conenct
+ */
+uint32_t goep_client_get_pbap_supported_features(uint16_t goep_cid); 
+
+/**
  * @brief Set Connection ID used for newly created requests
  * @param gope_cid
  */
@@ -109,10 +117,22 @@ void    goep_client_set_connection_id(uint16_t goep_cid, uint32_t connection_id)
 void    goep_client_create_connect_request(uint16_t goep_cid, uint8_t obex_version_number, uint8_t flags, uint16_t maximum_obex_packet_length);
 
 /**
- * @brief Start Get request
+ * @brief Start Disconnect request
+ * @param gope_cid
+ */
+void    goep_client_create_disconnect_request(uint16_t goep_cid);
+
+/**
+ * @brief Create Get request
  * @param gope_cid
  */
 void    goep_client_create_get_request(uint16_t goep_cid);
+
+/**
+ * @brief Add SRM Enable
+ * @param gope_cid
+ */
+void    goep_client_add_header_srm_enable(uint16_t goep_cid);
 
 /**
  * @brief Start Set Path request
@@ -155,9 +175,17 @@ void    goep_client_add_header_count(uint16_t goep_cid, uint32_t count);
  * @brief Add application parameters header to current request
  * @param goep_cid
  * @param lenght of application parameters
- * @param daa 
+ * @param data 
  */
-void    goep_client_add_header_application_parameters(uint16_t goep_cid, uint16_t length, uint8_t * data);
+void    goep_client_add_header_application_parameters(uint16_t goep_cid, uint16_t length, const uint8_t * data);
+
+/**
+ * @brief Add application parameters header to current request
+ * @param goep_cid
+ * @param lenght of challenge response
+ * @param data
+ */
+void    goep_client_add_header_challenge_response(uint16_t goep_cid, uint16_t length, const uint8_t * data);
 
 // int  goep_client_add_body_static(uint16_t goep_cid,  uint32_t length, uint8_t * data);
 // int  goep_client_add_body_dynamic(uint16_t goep_cid, uint32_t length, void (*data_callback)(uint32_t offset, uint8_t * buffer, uint32_t len));

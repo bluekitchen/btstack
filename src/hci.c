@@ -143,6 +143,7 @@ static void gap_inquiry_explode(uint8_t * packet);
 static int  hci_power_control_on(void);
 static void hci_power_control_off(void);
 static void hci_state_reset(void);
+static void hci_emit_transport_packet_sent(void);
 static void hci_emit_disconnection_complete(hci_con_handle_t con_handle, uint8_t reason);
 static void hci_emit_nr_connections_changed(void);
 static void hci_emit_hci_open_failed(void);
@@ -681,9 +682,7 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
     // release buffer now for synchronous transport
     if (hci_transport_synchronous()){
         hci_release_packet_buffer();
-        // notify upper stack that it might be possible to send again
-        uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
-        hci_emit_event(&event[0], sizeof(event), 0);  // don't dump
+        hci_emit_transport_packet_sent();
     }
 
     return err;
@@ -706,6 +705,7 @@ int hci_send_acl_packet_buffer(int size){
     if (!hci_can_send_prepared_acl_packet_now(con_handle)) {
         log_error("hci_send_acl_packet_buffer called but no free ACL buffers on controller");
         hci_release_packet_buffer();
+        hci_emit_transport_packet_sent();
         return BTSTACK_ACL_BUFFERS_FULL;
     }
 
@@ -713,6 +713,7 @@ int hci_send_acl_packet_buffer(int size){
     if (!connection) {
         log_error("hci_send_acl_packet_buffer called but no connection for handle 0x%04x", con_handle);
         hci_release_packet_buffer();
+        hci_emit_transport_packet_sent();
         return 0;
     }
 
@@ -750,6 +751,7 @@ int hci_send_sco_packet_buffer(int size){
         if (!hci_can_send_prepared_sco_packet_now()) {
             log_error("hci_send_sco_packet_buffer called but no free ACL buffers on controller");
             hci_release_packet_buffer();
+            hci_emit_transport_packet_sent();
             return BTSTACK_ACL_BUFFERS_FULL;
         }
 
@@ -758,6 +760,7 @@ int hci_send_sco_packet_buffer(int size){
         if (!connection) {
             log_error("hci_send_sco_packet_buffer called but no connection for handle 0x%04x", con_handle);
             hci_release_packet_buffer();
+            hci_emit_transport_packet_sent();
             return 0;
         }
         connection->num_sco_packets_sent++;
@@ -768,9 +771,7 @@ int hci_send_sco_packet_buffer(int size){
 
     if (hci_transport_synchronous()){
         hci_release_packet_buffer();
-        // notify upper stack that it might be possible to send again
-        uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
-        hci_emit_event(&event[0], sizeof(event), 0);    // don't dump
+        hci_emit_transport_packet_sent();
     }
 
     return err;
@@ -1782,6 +1783,34 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
     hci_initializing_next_state();
 }
 
+static void hci_handle_connection_failed(hci_connection_t * conn, uint8_t status){
+    log_info("Outgoing connection to %s failed", bd_addr_to_str(conn->address));
+    bd_addr_t bd_address;
+    memcpy(&bd_address, conn->address, 6);
+
+#ifdef ENABLE_CLASSIC
+    // cache needed data
+    int notify_dedicated_bonding_failed = conn->bonding_flags & BONDING_DEDICATED;
+#endif
+    
+    // connection failed, remove entry
+    btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
+    btstack_memory_hci_connection_free( conn );
+
+#ifdef ENABLE_CLASSIC
+    // notify client if dedicated bonding
+    if (notify_dedicated_bonding_failed){
+        log_info("hci notify_dedicated_bonding_failed");
+        hci_emit_dedicated_bonding_result(bd_address, status);
+    }
+
+    // if authentication error, also delete link key
+    if (status == ERROR_CODE_AUTHENTICATION_FAILURE) {
+        gap_drop_link_key_for_bd_addr(bd_address);
+    }
+#endif
+}
+
 static void event_handler(uint8_t *packet, int size){
 
     uint16_t event_length = packet[1];
@@ -1797,6 +1826,8 @@ static void event_handler(uint8_t *packet, int size){
     hci_con_handle_t handle;
     hci_connection_t * conn;
     int i;
+    int create_connection_cmd;
+
 #ifdef ENABLE_CLASSIC
     uint8_t link_type;
 #endif
@@ -1923,6 +1954,33 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_COMMAND_STATUS:
             // get num cmd packets - limit to 1 to reduce complexity
             hci_stack->num_cmd_packets = packet[3] ? 1 : 0;
+
+            // check command status to detected failed outgoing connections
+            create_connection_cmd = 0;
+#ifdef ENABLE_CLASSIC
+            if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_create_connection)){
+                create_connection_cmd = 1;
+            }
+#endif
+#ifdef ENABLE_LE_CENTRAL
+            if (HCI_EVENT_IS_COMMAND_STATUS(packet, hci_le_create_connection)){
+                create_connection_cmd = 1;
+            }
+#endif
+            if (create_connection_cmd) {
+                uint8_t status = hci_event_command_status_get_status(packet);
+                conn = hci_connection_for_bd_addr_and_type(hci_stack->outgoing_addr, hci_stack->outgoing_addr_type);
+                log_info("command status (create connection), status %x, connection %p, addr %s, type %x", status, conn, bd_addr_to_str(hci_stack->outgoing_addr), hci_stack->outgoing_addr_type);
+
+                // reset outgoing address info
+                memset(hci_stack->outgoing_addr, 0, 6);
+                hci_stack->outgoing_addr_type = BD_ADDR_TYPE_UNKNOWN;
+
+                // error => outgoing connection failed
+                if ((conn != NULL) && (status != 0)){
+                    hci_handle_connection_failed(conn, status);
+                }
+            }
             break;
             
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:{
@@ -2020,25 +2078,8 @@ static void event_handler(uint8_t *packet, int size){
                     
                     hci_emit_nr_connections_changed();
                 } else {
-                    int notify_dedicated_bonding_failed = conn->bonding_flags & BONDING_DEDICATED;
-                    uint8_t status = packet[2];
-                    bd_addr_t bd_address;
-                    memcpy(&bd_address, conn->address, 6);
-
-                    // connection failed, remove entry
-                    btstack_linked_list_remove(&hci_stack->connections, (btstack_linked_item_t *) conn);
-                    btstack_memory_hci_connection_free( conn );
-                    
-                    // notify client if dedicated bonding
-                    if (notify_dedicated_bonding_failed){
-                        log_info("hci notify_dedicated_bonding_failed");
-                        hci_emit_dedicated_bonding_result(bd_address, status);                        
-                    }
-
-                    // if authentication error, also delete link key
-                    if (packet[2] == 0x05) {
-                        gap_drop_link_key_for_bd_addr(addr);
-                    }
+                    // connection failed
+                    hci_handle_connection_failed(conn, packet[2]);
                 }
             }
             break;
@@ -3005,7 +3046,8 @@ static void hci_host_num_completed_packets(void){
 
     // release packet buffer for synchronous transport implementations    
     if (hci_transport_synchronous()){
-        hci_stack->hci_packet_buffer_reserved = 0;
+        hci_release_packet_buffer();
+        hci_emit_transport_packet_sent();
     }
 }
 #endif
@@ -3063,7 +3105,7 @@ static void hci_run(void){
     if (hci_stack->inquiry_state >= GAP_INQUIRY_DURATION_MIN && hci_stack->inquiry_state <= GAP_INQUIRY_DURATION_MAX){
         uint8_t duration = hci_stack->inquiry_state;
         hci_stack->inquiry_state = GAP_INQUIRY_STATE_ACTIVE;
-        hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, duration, 0);
+        hci_send_cmd(&hci_inquiry, GAP_IAC_GENERAL_INQUIRY, duration, 0);
         return;
     }
     if (hci_stack->inquiry_state == GAP_INQUIRY_STATE_W2_CANCEL){
@@ -3263,6 +3305,9 @@ static void hci_run(void){
                     default:
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_CENTRAL
+                        // track outgoing connection
+                        hci_stack->outgoing_addr_type = connection->address_type;
+                        memcpy(hci_stack->outgoing_addr, connection->address, 6);
                         log_info("sending hci_le_create_connection");
                         hci_send_cmd(&hci_le_create_connection,
                              hci_stack->le_connection_scan_interval,    // conn scan interval
@@ -3568,7 +3613,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
             if (!conn){
                 // notify client that alloc failed
                 hci_emit_connection_complete(addr, 0, BTSTACK_MEMORY_ALLOC_FAILED);
-                return 0; // don't sent packet to controller
+                return -1; // packet not sent to controller
             }
             conn->state = SEND_CREATE_CONNECTION;
         }
@@ -3576,17 +3621,21 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
         switch (conn->state){
             // if connection active exists
             case OPEN:
-                // and OPEN, emit connection complete command, don't send to controller
+                // and OPEN, emit connection complete command
                 hci_emit_connection_complete(addr, conn->con_handle, 0);
-                return 0;
+                return -1; // packet not sent to controller
             case SEND_CREATE_CONNECTION:
-                // connection created by hci, e.g. dedicated bonding
+                // connection created by hci, e.g. dedicated bonding, but not executed yet, let's do it now
                 break;
             default:
                 // otherwise, just ignore as it is already in the open process
-                return 0;
+                return -1; // packet not sent to controller
         }
         conn->state = SENT_CREATE_CONNECTION;
+
+        // track outgoing connection
+        hci_stack->outgoing_addr_type = BD_ADDR_TYPE_CLASSIC;
+        memcpy(hci_stack->outgoing_addr, addr, 6);
     }
 
     if (IS_COMMAND(packet, hci_link_key_request_reply)){
@@ -3673,14 +3722,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     hci_stack->num_cmd_packets--;
 
     hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, packet, size);
-    int err = hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, packet, size);
-
-    // release packet buffer for synchronous transport implementations    
-    if (hci_transport_synchronous() && (packet == hci_stack->hci_packet_buffer)){
-        hci_stack->hci_packet_buffer_reserved = 0;
-    }
-
-    return err;
+    return hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, packet, size);
 }
 
 // disconnect because of security block
@@ -3732,7 +3774,15 @@ int hci_send_cmd_va_arg(const hci_cmd_t *cmd, va_list argptr){
     hci_reserve_packet_buffer();
     uint8_t * packet = hci_stack->hci_packet_buffer;
     uint16_t size = hci_cmd_create_from_template(packet, cmd, argptr);
-    return hci_send_cmd_packet(packet, size);
+    int err = hci_send_cmd_packet(packet, size);
+
+    // release packet buffer for synchronous transport implementations
+    if (hci_transport_synchronous()){
+        hci_release_packet_buffer();
+        hci_emit_transport_packet_sent();
+    }
+
+    return err;
 }
 
 /**
@@ -3907,6 +3957,12 @@ static void hci_emit_le_connection_complete(uint8_t address_type, bd_addr_t addr
 }
 #endif
 #endif
+
+static void hci_emit_transport_packet_sent(void){
+    // notify upper stack that it might be possible to send again
+    uint8_t event[] = { HCI_EVENT_TRANSPORT_PACKET_SENT, 0};
+    hci_emit_event(&event[0], sizeof(event), 0);  // don't dump
+}
 
 static void hci_emit_disconnection_complete(hci_con_handle_t con_handle, uint8_t reason){
     uint8_t event[6];

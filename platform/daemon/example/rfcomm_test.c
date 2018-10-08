@@ -52,8 +52,13 @@
 #include <sys/stat.h>
 
 #include "btstack_client.h"
-#include "btstack_run_loop_posix.h"
 #include "classic/sdp_util.h"
+
+#ifdef _WIN32
+#include "btstack_run_loop_windows.h"
+#else
+#include "btstack_run_loop_posix.h"
+#endif
 
 #define NUM_ROWS 25
 #define NUM_COLS 80
@@ -177,7 +182,11 @@ int main (int argc, const char * argv[]){
     create_test_data();
     printf("created test data: \n%s\n", test_data);
     
+#ifdef _WIN32
+	btstack_run_loop_init(btstack_run_loop_windows_get_instance());
+#else
 	btstack_run_loop_init(btstack_run_loop_posix_get_instance());
+#endif
 	int err = bt_open();
 	if (err) {
 		fprintf(stderr,"Failed to open connection to BTdaemon, err %d\n",err);

@@ -168,19 +168,13 @@ int btstack_main(int argc, const char * argv[]){
     (void)argc;
     (void)argv;
 
-    // Register for HCI events.
-    hci_event_callback_registration.callback = &avrcp_browsing_controller_packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     // Initialize L2CAP.
     l2cap_init();
     
     // Initialize AVRCP Controller.
     avrcp_controller_init();
-    // Register AVRCP for HCI events.
-    avrcp_controller_register_packet_handler(&avrcp_browsing_controller_packet_handler);
-    
-    // Initialize AVRCP Browsing Controller, HCI events will be sent to the AVRCP Controller callback. 
+
+        // Initialize AVRCP Browsing Controller, HCI events will be sent to the AVRCP Controller callback. 
     avrcp_browsing_controller_init();
     // // Register AVRCP for HCI events.
     // avrcp_browsing_controller_register_packet_handler(&avrcp_browsing_controller_packet_handler);
@@ -200,6 +194,14 @@ int btstack_main(int argc, const char * argv[]){
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);
     
+    // Register for HCI events.
+    hci_event_callback_registration.callback = &avrcp_browsing_controller_packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    // Register for AVRCP events.
+    avrcp_controller_register_packet_handler(&avrcp_browsing_controller_packet_handler);
+
+
 #ifdef HAVE_BTSTACK_STDIN
     // Parse human readable Bluetooth address.
     sscanf_bd_addr(device_addr_string, device_addr);

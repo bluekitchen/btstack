@@ -84,13 +84,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void sdp_client_init(void){
+    // init L2CAP
+    l2cap_init();
 
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-
-    // init L2CAP
-    l2cap_init();
 }
 /* LISTING_END */
 
@@ -232,15 +231,14 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                                 
                                 if (de_get_element_type(element) != DE_UUID) continue;
                                 uint32_t uuid = de_get_uuid32(element);
+                                des_iterator_next(&prot_it);
                                 switch (uuid){
                                     case BLUETOOTH_PROTOCOL_L2CAP:
                                         if (!des_iterator_has_more(&prot_it)) continue;
-                                        des_iterator_next(&prot_it);
                                         de_element_get_uint16(des_iterator_get_element(&prot_it), &l2cap_psm);
                                         break;
                                     case BLUETOOTH_PROTOCOL_BNEP:
                                         if (!des_iterator_has_more(&prot_it)) continue;
-                                        des_iterator_next(&prot_it);
                                         de_element_get_uint16(des_iterator_get_element(&prot_it), &bnep_version);
                                         break;
                                     default:

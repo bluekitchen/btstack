@@ -113,6 +113,7 @@ static void send_report(uint8_t buttons, int8_t dx, int8_t dy){
 static int dx;
 static int dy;
 static uint8_t buttons;
+static int hid_boot_device = 0;
 
 static void mousing_can_send_now(void){
     send_report(buttons, dx, dy);
@@ -284,11 +285,6 @@ int btstack_main(int argc, const char * argv[]){
     (void)argc;
     (void)argv;
 
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-    hci_register_sco_packet_handler(&packet_handler);
-
     gap_discoverable_control(1);
     gap_set_class_of_device(0x2540);
     gap_set_local_name("HID Mouse Demo 00:00:00:00:00:00");
@@ -300,12 +296,18 @@ int btstack_main(int argc, const char * argv[]){
     sdp_init();
     memset(hid_service_buffer, 0, sizeof(hid_service_buffer));
     // hid sevice subclass 2540 Keyboard, hid counntry code 33 US, hid virtual cable off, hid reconnect initiate off, hid boot device off
-    hid_create_sdp_record(hid_service_buffer, 0x10001, 0x2540, 33, 0, 0, 0, hid_descriptor_mouse_boot_mode, sizeof(hid_descriptor_mouse_boot_mode), hid_device_name);
+    hid_create_sdp_record(hid_service_buffer, 0x10001, 0x2540, 33, 0, 0, hid_boot_device, hid_descriptor_mouse_boot_mode, sizeof(hid_descriptor_mouse_boot_mode), hid_device_name);
     printf("SDP service record size: %u\n", de_get_len( hid_service_buffer));
     sdp_register_service(hid_service_buffer);
 
     // HID Device
-    hid_device_init();
+    hid_device_init(hid_boot_device);
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    // register for HID
     hid_device_register_packet_handler(&packet_handler);
 
 #ifdef HAVE_BTSTACK_STDIN

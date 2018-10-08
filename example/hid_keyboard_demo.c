@@ -173,6 +173,7 @@ static const char hid_device_name[] = "BTstack HID Keyboard";
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint16_t hid_cid;
 static bd_addr_t device_addr;
+static uint8_t hid_boot_device = 0;
 
 #ifdef HAVE_BTSTACK_STDIN
 static const char * device_addr_string = "BC:EC:5D:E6:15:03";
@@ -382,11 +383,6 @@ int btstack_main(int argc, const char * argv[]){
     (void)argc;
     (void)argv;
 
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-    hci_register_sco_packet_handler(&packet_handler);
-
     gap_discoverable_control(1);
     gap_set_class_of_device(0x2540);
     gap_set_local_name("HID Keyboard Demo 00:00:00:00:00:00");
@@ -398,7 +394,7 @@ int btstack_main(int argc, const char * argv[]){
     sdp_init();
     memset(hid_service_buffer, 0, sizeof(hid_service_buffer));
     // hid sevice subclass 2540 Keyboard, hid counntry code 33 US, hid virtual cable off, hid reconnect initiate off, hid boot device off 
-    hid_create_sdp_record(hid_service_buffer, 0x10001, 0x2540, 33, 0, 0, 0, hid_descriptor_keyboard_boot_mode, sizeof(hid_descriptor_keyboard_boot_mode), hid_device_name);
+    hid_create_sdp_record(hid_service_buffer, 0x10001, 0x2540, 33, 0, 0, hid_boot_device, hid_descriptor_keyboard_boot_mode, sizeof(hid_descriptor_keyboard_boot_mode), hid_device_name);
     printf("HID service record size: %u\n", de_get_len( hid_service_buffer));
     sdp_register_service(hid_service_buffer);
 
@@ -408,9 +404,14 @@ int btstack_main(int argc, const char * argv[]){
     printf("Device ID SDP service record size: %u\n", de_get_len((uint8_t*)device_id_sdp_service_buffer));
     sdp_register_service(device_id_sdp_service_buffer);
 
-    
     // HID Device
-    hid_device_init();
+    hid_device_init(hid_boot_device);
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    // register for HID events
     hid_device_register_packet_handler(&packet_handler);
 
 #ifdef HAVE_BTSTACK_STDIN

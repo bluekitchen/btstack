@@ -47,6 +47,11 @@
 #include "btstack_debug.h"
 #include "btstack_util.h"
 
+// check for ENABLE_ATT_DELAYED_READ_RESPONSE -> ENABLE_ATT_DELAYED_RESPONSE,
+#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+    #error "ENABLE_ATT_DELAYED_READ_RESPONSE was replaced by ENABLE_ATT_DELAYED_RESPONSE. Please update btstack_config.h"
+#endif
+
 typedef enum {
     ATT_READ,
     ATT_WRITE,
@@ -89,7 +94,7 @@ static void att_persistent_ccc_cache(att_iterator_t * it);
 static uint8_t const * att_db = NULL;
 static att_read_callback_t  att_read_callback  = NULL;
 static att_write_callback_t att_write_callback = NULL;
-static uint8_t  att_prepare_write_error_code   = 0;
+static int      att_prepare_write_error_code   = 0;
 static uint16_t att_prepare_write_error_handle = 0x0000;
 
 // single cache for att_is_persistent_ccc - stores flags before write callback
@@ -311,7 +316,7 @@ static uint8_t att_validate_security(att_connection_t * att_connection, att_oper
     int required_encryption_size = it->flags >> 12;
     if (required_encryption_size) required_encryption_size++;   // store -1 to fit into 4 bit
 
-    log_info("att_validate_security. flags 0x%04x (=> security level %u, key size %u) authorized %u, authenticated %u, encryption_key_size %u",
+    log_debug("att_validate_security. flags 0x%04x (=> security level %u, key size %u) authorized %u, authenticated %u, encryption_key_size %u",
         it->flags, required_security_level, required_encryption_size, att_connection->authorized, att_connection->authenticated, att_connection->encryption_key_size);
 
     if ((required_security_level >= ATT_SECURITY_AUTHORIZED) && (att_connection->authorized == 0)) {
@@ -529,7 +534,7 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
     uint8_t error_code = 0;
     uint16_t first_matching_but_unreadable_handle = 0;
 
-#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
     int read_request_pending = 0;
 #endif
 
@@ -557,7 +562,7 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
 
         att_update_value_len(&it, att_connection->con_handle);
         
-#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
         if (it.value_len == ATT_READ_RESPONSE_PENDING){
             read_request_pending = 1;
         }
@@ -593,7 +598,7 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
         offset += bytes_copied;
     }
     
-#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
     if (read_request_pending) return ATT_READ_RESPONSE_PENDING;
 #endif
 
@@ -655,7 +660,7 @@ static uint16_t handle_read_request2(att_connection_t * att_connection, uint8_t 
 
     att_update_value_len(&it, att_connection->con_handle);
 
-#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
     if (it.value_len == ATT_READ_RESPONSE_PENDING) return ATT_READ_RESPONSE_PENDING;
 #endif
 
@@ -705,7 +710,7 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
 
     att_update_value_len(&it, att_connection->con_handle);
 
-#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
     if (it.value_len == ATT_READ_RESPONSE_PENDING) return ATT_READ_RESPONSE_PENDING;
 #endif
 
@@ -751,7 +756,7 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
     uint8_t error_code = 0;
     uint16_t handle = 0;
 
-#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
     int read_request_pending = 0;
 #endif
 
@@ -781,7 +786,7 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
 
         att_update_value_len(&it, att_connection->con_handle);
         
-#ifdef ENABLE_ATT_DELAYED_READ_RESPONSE
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
         if (it.value_len == ATT_READ_RESPONSE_PENDING) {
             read_request_pending = 1;
         }
@@ -956,12 +961,17 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
         return setup_error_write_not_permitted(response_buffer, request_type, handle);
     }
     // check security requirements
-    uint8_t error_code = att_validate_security(att_connection, ATT_WRITE, &it);
+    int error_code = att_validate_security(att_connection, ATT_WRITE, &it);
     if (error_code) {
         return setup_error(response_buffer, request_type, handle, error_code);
     }
     att_persistent_ccc_cache(&it);
     error_code = (*att_write_callback)(att_connection->con_handle, handle, ATT_TRANSACTION_MODE_NONE, 0, request_buffer + 3, request_len - 3);
+
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
+    if (error_code == ATT_ERROR_WRITE_RESPONSE_PENDING) return ATT_INTERNAL_WRITE_RESPONSE_PENDING;
+#endif
+
     if (error_code) {
         return setup_error(response_buffer, request_type, handle, error_code);
     }
@@ -995,7 +1005,7 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
         return setup_error_write_not_permitted(response_buffer, request_type, handle);
     }
     // check security requirements
-    uint8_t error_code = att_validate_security(att_connection, ATT_WRITE, &it);
+    int error_code = att_validate_security(att_connection, ATT_WRITE, &it);
     if (error_code) {
         return setup_error(response_buffer, request_type, handle, error_code);
     }
@@ -1009,6 +1019,10 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
             // postpone to execute write request
             att_prepare_write_update_errors(error_code, handle);
             break;
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
+        case ATT_ERROR_WRITE_RESPONSE_PENDING:
+            return ATT_INTERNAL_WRITE_RESPONSE_PENDING;
+#endif
         default:
             return setup_error(response_buffer, request_type, handle, error_code);
     }
@@ -1040,6 +1054,9 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
         if (att_prepare_write_error_code == 0){
             att_prepare_write_error_code = (*att_write_callback)(att_connection->con_handle, 0, ATT_TRANSACTION_MODE_VALIDATE, 0, NULL, 0);
         }
+#ifdef ENABLE_ATT_DELAYED_RESPONSE
+        if (att_prepare_write_error_code == ATT_ERROR_WRITE_RESPONSE_PENDING) return ATT_INTERNAL_WRITE_RESPONSE_PENDING;
+#endif
         // deliver queued errors
         if (att_prepare_write_error_code){
             att_clear_transaction_queue(att_connection);

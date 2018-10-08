@@ -211,10 +211,6 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
 
 static int a2dp_and_avrcp_setup(void){
 
-    /* Register for HCI events */
-    hci_event_callback_registration.callback = &hci_packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     l2cap_init();
     // Initialize AVDTP Sink
     a2dp_sink_init();
@@ -245,6 +241,10 @@ static int a2dp_and_avrcp_setup(void){
     gap_set_local_name("A2DP Sink Demo 00:00:00:00:00:00");
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);
+
+    /* Register for HCI events */
+    hci_event_callback_registration.callback = &hci_packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     return 0;
 }

@@ -5,6 +5,7 @@ LDFLAGS  = @LDFLAGS@ -lBTstack -L../src
 CFLAGS = @CFLAGS@ \
 	-I$(BTSTACK_ROOT)/platform/daemon/src \
 	-I$(BTSTACK_ROOT)/platform/posix \
+	-I$(BTSTACK_ROOT)/platform/windows \
 	-I$(BTSTACK_ROOT)/src \
 	-I..
 prefix = @prefix@

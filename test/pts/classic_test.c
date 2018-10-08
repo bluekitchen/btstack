@@ -137,7 +137,7 @@ static int getDeviceIndexForAddress( bd_addr_t addr){
 
 static void start_scan(void){
     printf("Starting inquiry scan..\n");
-    hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
+    gap_inquiry_start(INQUIRY_INTERVAL);
 }
 
 static int has_more_remote_name_requests(void){
