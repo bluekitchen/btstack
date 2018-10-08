@@ -246,18 +246,18 @@ static int bad_frame(SAMPLE_FORMAT * frame, uint16_t size){
 }
 
 void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * state, SAMPLE_FORMAT * in, uint16_t size, SAMPLE_FORMAT * out){
-    if (size != 24){
+    if (size != CVSD_FS){
         log_error("btstack_cvsd_plc_process_data: audio frame size is incorrect. Expected %d, got %d", CVSD_FS, size);
         return;
     }
     state->frame_count++;
     if (bad_frame(in,size)){
-        memcpy(out, in, size);
+        memcpy(out, in, size * 2);
         if (state->good_frames_nr > CVSD_LHIST/CVSD_FS){
             btstack_cvsd_plc_bad_frame(state, out);
             state->bad_frames_nr++;
         } else {
-            memset(out, 0, CVSD_FS);
+            memset(out, 0, size * 2);
         }
     } else {
         btstack_cvsd_plc_good_frame(state, in, out);
