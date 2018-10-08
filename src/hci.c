@@ -4584,6 +4584,7 @@ void gap_set_extended_inquiry_response(const uint8_t * data){
  * @events: GAP_EVENT_INQUIRY_RESULT, GAP_EVENT_INQUIRY_COMPLETE
  */
 int gap_inquiry_start(uint8_t duration_in_1280ms_units){
+    if (hci_stack->state != HCI_STATE_WORKING) return ERROR_CODE_COMMAND_DISALLOWED;
     if (hci_stack->inquiry_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
     if (duration_in_1280ms_units < GAP_INQUIRY_DURATION_MIN || duration_in_1280ms_units > GAP_INQUIRY_DURATION_MAX){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
