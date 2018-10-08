@@ -405,7 +405,7 @@ int btstack_main(int argc, const char * argv[]){
     sdp_register_service(device_id_sdp_service_buffer);
 
     // HID Device
-    hid_device_init(hid_boot_device);
+    hid_device_init(hid_boot_device, 0);
 
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
