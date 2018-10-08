@@ -4,11 +4,14 @@ ancs_client_demo
 ancs_client_demo.h
 att_delayed_read_response
 att_delayed_read_response.h
+att_delayed_response
+att_delayed_response.h
 BCM43430A1.hcd
 ble_central_test
 ble_peripheral
 ble_peripheral_sm_minimal
 ble_peripheral_test
+bluetooth_init_cc256*
 bluetooth_init_cc2560_2.44.c
 bluetooth_init_cc2560a_2.14.c
 bluetooth_init_cc2560B_1.2_BT_Spec_4.0.c
@@ -54,6 +57,7 @@ le_streamer_and_counter_client
 le_streamer_and_counter_client.h
 le_streamer_client
 led_counter
+mod_player
 pbap_client_demo
 profile.h
 sco_input.wav
