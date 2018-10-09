@@ -100,6 +100,7 @@ static void show_usage(void){
     printf("g - Lookup contact with number '%s'\n", phone_number);    
     printf("p - authenticate using password '0000'\n");
     printf("r - set path to 'telecom'\n");
+    printf("x - abort operation\n");
     printf("\n");
 }
 
@@ -135,6 +136,10 @@ static void stdin_process(char c){
         case 'r':
             printf("[+] Set path to 'telecom'\n");
             pbap_set_phonebook(pbap_cid, "telecom");
+            break;
+        case 'x':
+            printf("[+] Abort'\n");
+            pbap_abort(pbap_cid);
             break;
         default:
             show_usage();
