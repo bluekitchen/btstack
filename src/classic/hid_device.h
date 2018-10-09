@@ -96,6 +96,11 @@ typedef enum {
     HID_PROTOCOL_MODE_REPORT
 } hid_protocol_mode_t;
 
+typedef enum {
+    HID_REPORT_ID_UNDECLARED,
+    HID_REPORT_ID_VALID,
+    HID_REPORT_ID_INVALID
+} hid_report_id_status_t;
 
 /**
  * @brief Create HID Device SDP service record. 

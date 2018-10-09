@@ -122,7 +122,7 @@ static uint16_t hid_device_get_next_cid(void){
 
 // TODO: store hid device connection into list
 static hid_device_t * hid_device_get_instance_for_cid(uint16_t cid){
-    printf("control_cid 0x%02x, interrupt_cid 0x%02x, query_cid 0x%02x \n", _hid_device.control_cid,  _hid_device.interrupt_cid, cid);
+    // printf("control_cid 0x%02x, interrupt_cid 0x%02x, query_cid 0x%02x \n", _hid_device.control_cid,  _hid_device.interrupt_cid, cid);
     if (_hid_device.cid == cid || _hid_device.control_cid == cid || _hid_device.interrupt_cid == cid){
         return &_hid_device;
     }
@@ -371,8 +371,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
             }
             hid_message_type_t message_type = packet[0] >> 4;
             // printf("L2CAP_DATA_PACKET message_type %d, packet_size %d  \n", message_type, packet_size);
-            printf_hexdump(packet, packet_size);
-
             switch (message_type){
                 case HID_MESSAGE_TYPE_GET_REPORT:
                     device->report_type = packet[0] & 0x03;
@@ -413,6 +411,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                 case HID_MESSAGE_TYPE_SET_REPORT:
                     device->state = HID_DEVICE_W2_SET_REPORT;  
                     device->max_packet_size = l2cap_max_mtu();
+                    device->report_type = packet[0] & 0x03;
                     if (packet_size < 1){
                         device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
                         break;
@@ -426,15 +425,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                                 break;
                             }
                             device->report_id = packet[1];
-                            device->report_status = (*hci_device_set_report)(device->cid, device->report_type, device->max_packet_size-1, &packet[1]);
+                            device->report_status = (*hci_device_set_report)(device->cid, device->report_type, packet_size-1, &packet[1]);
                             break;
                         case HID_PROTOCOL_MODE_REPORT:
                             // printf("HID_PROTOCOL_MODE_REPORT \n");
                             if (packet_size >= 2){
-                                device->report_status = (*hci_device_set_report)(device->cid, device->report_type, device->max_packet_size-1, &packet[1]);
+                                device->report_status = (*hci_device_set_report)(device->cid, device->report_type, packet_size-1, &packet[1]);
                             } else {
                                 uint8_t payload[] = {0};
-                                device->report_status = (*hci_device_set_report)(device->cid, device->report_type, device->max_packet_size-1, payload);
+                                device->report_status = (*hci_device_set_report)(device->cid, device->report_type, 1, payload);
                             } 
                             break;
                     }
