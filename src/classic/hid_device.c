@@ -91,13 +91,14 @@ static hid_handshake_param_type_t dummy_write_report(uint16_t hid_cid, hid_repor
     UNUSED(out_report);
     return HID_HANDSHAKE_PARAM_TYPE_ERR_UNKNOWN;
 }
-static hid_handshake_param_type_t dummy_set_report(uint16_t hid_cid, hid_report_type_t report_type, int report_size, uint8_t * report){
+
+static void dummy_set_report(uint16_t hid_cid, hid_report_type_t report_type, int report_size, uint8_t * report){
     UNUSED(hid_cid);
     UNUSED(report_type);
     UNUSED(report_size);
     UNUSED(report);
-    return HID_HANDSHAKE_PARAM_TYPE_ERR_UNKNOWN;
 }
+
 static void dummy_report_data(uint16_t hid_cid, hid_report_type_t report_type, uint16_t report_id, int report_size, uint8_t * report){
     UNUSED(hid_cid);
     UNUSED(report_type);
@@ -107,7 +108,7 @@ static void dummy_report_data(uint16_t hid_cid, hid_report_type_t report_type, u
 }
 
 static hid_handshake_param_type_t (*hci_device_write_report) (uint16_t hid_cid, hid_report_type_t report_type, uint16_t report_id, uint8_t report_max_size, int * out_report_size, uint8_t * out_report) = dummy_write_report;
-static hid_handshake_param_type_t (*hci_device_set_report)   (uint16_t hid_cid, hid_report_type_t report_type, int report_size, uint8_t * report) = dummy_set_report;
+static void                       (*hci_device_set_report)   (uint16_t hid_cid, hid_report_type_t report_type, int report_size, uint8_t * report) = dummy_set_report;
 static void                       (*hci_device_report_data)  (uint16_t hid_cid, hid_report_type_t report_type, uint16_t report_id, int report_size, uint8_t * report) = dummy_report_data;
 
 static btstack_packet_handler_t hid_callback;
@@ -350,6 +351,29 @@ static inline void hid_device_emit_event(hid_device_t * context, uint8_t subeven
     hid_callback(HCI_EVENT_PACKET, context->cid, &event[0], pos);
 }
 
+static hid_handshake_param_type_t hid_device_set_report_cmd_is_valid(uint16_t cid, hid_report_type_t report_type, int report_size, uint8_t * report){
+    int pos = 0;
+    int report_id = report[0];
+    hid_report_id_status_t report_id_status = hid_report_id_status(cid, report_id);
+    switch (report_id_status){
+        case HID_REPORT_ID_VALID:
+            pos++;
+            break;
+        case HID_REPORT_ID_INVALID:
+            printf("invalid id\n");
+            return HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_REPORT_ID;
+        default:
+            report_id = 0;
+            break;
+    }
+
+    if (!hid_report_size_valid(cid, report_id, report_type, report_size-pos)){
+        printf("invalid report size\n");
+        return HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
+    }
+    return HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL;
+}
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t packet_size){
     UNUSED(channel);
     UNUSED(packet_size);
@@ -427,15 +451,20 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                                 break;
                             }
                             device->report_id = packet[1];
-                            device->report_status = (*hci_device_set_report)(device->cid, device->report_type, packet_size-1, &packet[1]);
+                            device->report_status = hid_device_set_report_cmd_is_valid(device->cid, device->report_type, packet_size - 1, &packet[1]);
+                            if (device->report_status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL) break;
+                            (*hci_device_set_report)(device->cid, device->report_type, packet_size-1, &packet[1]);
                             break;
                         case HID_PROTOCOL_MODE_REPORT:
                             // printf("HID_PROTOCOL_MODE_REPORT \n");
+                            device->report_status = hid_device_set_report_cmd_is_valid(device->cid, device->report_type, packet_size - 1, &packet[1]);
+                            if (device->report_status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL) break;
+                            
                             if (packet_size >= 2){
-                                device->report_status = (*hci_device_set_report)(device->cid, device->report_type, packet_size-1, &packet[1]);
+                                (*hci_device_set_report)(device->cid, device->report_type, packet_size-1, &packet[1]);
                             } else {
                                 uint8_t payload[] = {0};
-                                device->report_status = (*hci_device_set_report)(device->cid, device->report_type, 1, payload);
+                                (*hci_device_set_report)(device->cid, device->report_type, 1, payload);
                             } 
                             break;
                     }
@@ -709,14 +738,14 @@ void hid_device_register_packet_handler(btstack_packet_handler_t callback){
 
 
 
-void hid_device_register_report_request_callback(hid_handshake_param_type_t (*callback) (uint16_t hid_cid, hid_report_type_t report_type, uint16_t report_id, uint8_t report_max_size, int * out_report_size, uint8_t * out_report)){
+void hid_device_register_report_request_callback(hid_handshake_param_type_t (*callback)(uint16_t hid_cid, hid_report_type_t report_type, uint16_t report_id, uint8_t report_max_size, int * out_report_size, uint8_t * out_report)){
     if (callback == NULL){
         callback = dummy_write_report;
     }
     hci_device_write_report = callback;
 }
 
-void hid_device_register_set_report_callback(hid_handshake_param_type_t (*callback) (uint16_t hid_cid, hid_report_type_t report_type, int report_size, uint8_t * report)){
+void hid_device_register_set_report_callback(void (*callback)(uint16_t hid_cid, hid_report_type_t report_type, int report_size, uint8_t * report)){
     if (callback == NULL){
         callback = dummy_set_report;
     }
