@@ -54,50 +54,6 @@
  *  btstack_hid_parser.c
  */
 
-
-typedef enum {
-    Main=0,
-    Global,
-    Local,
-    Reserved
-} TagType;
-
-typedef enum {
-    Input=8,
-    Output,
-    Coll,
-    Feature,
-    EndColl
-} MainItemTag;
-
-typedef enum {
-    UsagePage,
-    LogicalMinimum,
-    LogicalMaximum,
-    PhysicalMinimum,
-    PhysicalMaximum,
-    UnitExponent,
-    Unit,
-    ReportSize,
-    ReportID,
-    ReportCount,
-    Push,
-    Pop
-} GlobalItemTag;
-
-typedef enum {
-    Usage,
-    UsageMinimum,
-    UsageMaximum,
-    DesignatorIndex,
-    DesignatorMinimum,
-    DesignatorMaximum,
-    StringIndex,
-    StringMinimum,
-    StringMaximum,
-    Delimiter 
-} LocalItemTag;
-
 const int hid_item_sizes[] = { 0, 1, 2, 4 };
 
 #ifdef HID_PARSER_PRETTY_PRINT
@@ -193,7 +149,7 @@ static void hid_pretty_print_item(btstack_hid_parser_t * parser, hid_descriptor_
 }
 
 // parse descriptor item and read up to 32-bit bit value
-static void btstack_hid_parse_descriptor_item(hid_descriptor_item_t * item, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len){
+void btstack_hid_parse_descriptor_item(hid_descriptor_item_t * item, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len){
     // parse item header
     if (hid_descriptor_len < 1) return;
     uint16_t pos = 0;
@@ -450,4 +406,66 @@ void btstack_hid_parser_get_field(btstack_hid_parser_t * parser, uint16_t * usag
             parser->state = BTSTACK_HID_PARSER_COMPLETE;
         }
     }
+}
+
+int btstack_hid_get_report_size_for_id(int report_id, btstack_hid_report_type_t report_type, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor){
+    int total_report_size = 0;
+    int report_size = 0;
+    int report_count = 0;
+    int current_report_id = 0;
+    
+    while (hid_descriptor_len){
+        int valid_report_type = 0;
+        hid_descriptor_item_t item;
+        // printf("item: 0x%02x (%p)\n", *hid_descriptor, hid_descriptor);
+        btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
+        switch (item.item_type){
+            case Global:
+                switch ((GlobalItemTag)item.item_tag){
+                    case ReportID:
+                        current_report_id = item.item_value;
+                        break;
+                    case ReportCount:
+                        if (current_report_id != report_id) break;
+                        report_count = item.item_value;
+                        break;
+                    case ReportSize:
+                        if (current_report_id != report_id) break;
+                        report_size = item.item_value;
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case Main:  
+                if (current_report_id != report_id) break;
+                // printf("tag %d, report_type %d\n", item.item_tag, report_type);
+                switch ((MainItemTag)item.item_tag){
+                    case Input:
+                        if (report_type != BTSTACK_HID_REPORT_TYPE_INPUT) break;
+                        valid_report_type = 1;
+                        break;
+                    case Output:
+                        if (report_type != BTSTACK_HID_REPORT_TYPE_OUTPUT) break;
+                        valid_report_type = 1;
+                        break;
+                    case Feature:
+                        if (report_type != BTSTACK_HID_REPORT_TYPE_FEATURE) break;
+                        valid_report_type = 1;
+                        break;
+                    default:
+                        break;
+                }
+                if (!valid_report_type) break;
+                total_report_size += report_count * report_size;
+                report_size = 0;
+                report_count = 0;
+                break;
+            default:
+                break;
+        }
+        hid_descriptor_len -= item.item_size;
+        hid_descriptor += item.item_size;
+    }
+    return (total_report_size + 7)/8;
 }

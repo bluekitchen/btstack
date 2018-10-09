@@ -50,6 +50,49 @@
 extern "C" {
 #endif
 
+typedef enum {
+    Main=0,
+    Global,
+    Local,
+    Reserved
+} TagType;
+
+typedef enum {
+    Input=8,
+    Output,
+    Coll,
+    Feature,
+    EndColl
+} MainItemTag;
+
+typedef enum {
+    UsagePage,
+    LogicalMinimum,
+    LogicalMaximum,
+    PhysicalMinimum,
+    PhysicalMaximum,
+    UnitExponent,
+    Unit,
+    ReportSize,
+    ReportID,
+    ReportCount,
+    Push,
+    Pop
+} GlobalItemTag;
+
+typedef enum {
+    Usage,
+    UsageMinimum,
+    UsageMaximum,
+    DesignatorIndex,
+    DesignatorMinimum,
+    DesignatorMaximum,
+    StringIndex,
+    StringMinimum,
+    StringMaximum,
+    Delimiter 
+} LocalItemTag;
+
 typedef struct  {
     int32_t  item_value;    
     uint16_t item_size; 
@@ -140,6 +183,22 @@ int  btstack_hid_parser_has_more(btstack_hid_parser_t * parser);
  */
 void btstack_hid_parser_get_field(btstack_hid_parser_t * parser, uint16_t * usage_page, uint16_t * usage, int32_t * value);
 
+/**
+ * @brief Parses descriptor item
+ * @param item
+ * @param hid_descriptor
+ * @param hid_descriptor_len
+ */
+void btstack_hid_parse_descriptor_item(hid_descriptor_item_t * item, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len);
+
+/**
+ * @brief Parses descriptor and returns report size for given report ID and report type
+ * @param report_id
+ * @param report_type
+ * @param hid_descriptor_len
+ * @param hid_descriptor
+ */
+int btstack_hid_get_report_size_for_id(int report_id, btstack_hid_report_type_t report_type, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor);
 /* API_END */
 
 #if defined __cplusplus
