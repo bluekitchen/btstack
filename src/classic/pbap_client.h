@@ -114,6 +114,20 @@ uint8_t pbap_pull_phonebook(uint16_t pbap_cid, const char * path);
  */
 uint8_t pbap_lookup_by_number(uint16_t pbap_cid, const char * phone_number);
 
+/**
+ * @brief Set flow control mode - default is off
+ * @note When enabled, pbap_next_packet needs to be called after a packet was processed to receive the next one
+ */
+void pbap_set_flow_control_mode(int enable);
+    
+/**
+ * @brief Prigger next packet from PSE when Flow Control Mode is enabled
+ * @param pbap_cid
+ * @return status
+ */
+uint8_t pbap_next_packet(uint16_t pbap_cid);
+
+
 /* API_END */
 
 #if defined __cplusplus

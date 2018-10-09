@@ -73,6 +73,8 @@ const char * pbap_vcard_listing_name = "pb";
 // default
 static uint32_t pbap_supported_features = 0x0000;
 
+static int pbap_flow_control_enabled = 0;
+
 typedef enum {
     PBAP_INIT = 0,
     PBAP_W4_GOEP_CONNECTION,
@@ -131,6 +133,8 @@ typedef struct pbap_client {
 
 static pbap_client_t _pbap_client;
 static pbap_client_t * pbap_client = &_pbap_client;
+
+static int pbap_client_next_triggered;
 
 static void pbap_client_emit_connected_event(pbap_client_t * context, uint8_t status){
     uint8_t event[15];
@@ -290,8 +294,10 @@ static void pbap_handle_can_send_now(void){
         case PBAP_W2_GET_PHONEBOOK_SIZE:
             goep_client_create_get_request(pbap_client->goep_cid);
             if (pbap_client->request_number == 0){
-                goep_client_add_header_srm_enable(pbap_client->goep_cid);
-                pbap_client->srm_state = SRM_W4_CONFIRM;
+                if (!pbap_flow_control_enabled){
+                    goep_client_add_header_srm_enable(pbap_client->goep_cid);
+                    pbap_client->srm_state = SRM_W4_CONFIRM;
+                }
                 goep_client_add_header_type(pbap_client->goep_cid, pbap_phonebook_type);
                 goep_client_add_header_name(pbap_client->goep_cid, pbap_client->phonebook_path);
                 if (pbap_client->state == PBAP_W2_GET_PHONEBOOK_SIZE){
@@ -318,8 +324,10 @@ static void pbap_handle_can_send_now(void){
         case PBAP_W2_GET_CARD_LIST:
             goep_client_create_get_request(pbap_client->goep_cid);
             if (pbap_client->request_number == 0){
-                goep_client_add_header_srm_enable(pbap_client->goep_cid);
-                pbap_client->srm_state = SRM_W4_CONFIRM;
+                if (!pbap_flow_control_enabled){
+                    goep_client_add_header_srm_enable(pbap_client->goep_cid);
+                    pbap_client->srm_state = SRM_W4_CONFIRM;
+                }
                 goep_client_add_header_type(pbap_client->goep_cid, pbap_vcard_listing_type);
                 goep_client_add_header_name(pbap_client->goep_cid, pbap_vcard_listing_name);
                 // Regular TLV wih 1-byte len
@@ -422,6 +430,7 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
     uint8_t status;
     int srm_value;
     int srmp_value;
+    int wait_for_user = 0;
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
@@ -515,6 +524,8 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                     }
                     break;
                 case PBAP_W4_PHONEBOOK:
+                    pbap_client_next_triggered = 0;
+                    wait_for_user = 0;
                     srm_value = OBEX_SRM_DISABLE;
                     srmp_value = OBEX_SRMP_NEXT;
                     for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(pbap_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
@@ -525,6 +536,10 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                             case OBEX_HEADER_BODY:
                             case OBEX_HEADER_END_OF_BODY:
                                 pbap_client->client_handler(PBAP_DATA_PACKET, pbap_client->cid, (uint8_t *) data, data_len);
+                                wait_for_user++;
+                                if (wait_for_user > 1){
+                                    log_error("wait_for_user %u", wait_for_user);
+                                }
                                 break;
                             case OBEX_HEADER_SINGLE_RESPONSE_MODE:
                                 if (data_len != 1) break;
@@ -574,7 +589,9 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                             log_info("SRM state %u", pbap_client->srm_state);
                             if (pbap_client->srm_state ==  SRM_ENABLED) break;
                             pbap_client->state = PBAP_W2_PULL_PHONEBOOK;
-                            goep_client_request_can_send_now(pbap_client->goep_cid);                
+                            if (!wait_for_user || pbap_client_next_triggered) {
+                                goep_client_request_can_send_now(pbap_client->goep_cid);                
+                            }
                             break;
                         case OBEX_RESP_SUCCESS:
                             pbap_client->state = PBAP_CONNECTED;
@@ -779,4 +796,26 @@ uint8_t pbap_lookup_by_number(uint16_t pbap_cid, const char * phone_number){
     pbap_client->phone_number = phone_number;
     goep_client_request_can_send_now(pbap_client->goep_cid);
     return 0;
+}
+
+uint8_t pbap_next_packet(uint16_t pbap_cid){
+    if (!pbap_flow_control_enabled) return 0;
+
+    // log_info("pbap_next_packet, state %x", pbap_client->state);
+    UNUSED(pbap_cid);
+    switch (pbap_client->state){
+        case PBAP_W2_PULL_PHONEBOOK:
+            goep_client_request_can_send_now(pbap_client->goep_cid);
+            break;
+        case PBAP_W4_PHONEBOOK:
+            pbap_client_next_triggered = 1;
+            break;
+        default:
+            break;
+    }
+    return 0;
+}
+
+void pbap_set_flow_control_mode(int enable){
+    pbap_flow_control_enabled = enable;
 }
