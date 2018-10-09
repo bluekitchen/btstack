@@ -439,7 +439,6 @@ int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_t
                 break;
             case Main:  
                 if (current_report_id != report_id) break;
-                // printf("tag %d, report_type %d\n", item.item_tag, report_type);
                 switch ((MainItemTag)item.item_tag){
                     case Input:
                         if (report_type != HID_REPORT_TYPE_INPUT) break;
@@ -468,4 +467,53 @@ int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_t
         hid_descriptor += item.item_size;
     }
     return (total_report_size + 7)/8;
+}
+
+hid_report_id_status_t btstack_hid_id_valid(int report_id, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor){
+    int current_report_id = 0;
+    while (hid_descriptor_len){
+        hid_descriptor_item_t item;
+        btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
+        switch (item.item_type){
+            case Global:
+                switch ((GlobalItemTag)item.item_tag){
+                    case ReportID:
+                        current_report_id = item.item_value;
+                        // printf("current ID %d, searched ID %d\n", current_report_id, report_id);
+                        if (current_report_id != report_id) break;
+                        return HID_REPORT_ID_VALID;
+                    default:
+                        break;
+                }
+                break;
+            default:
+                break;
+        }
+        hid_descriptor_len -= item.item_size;
+        hid_descriptor += item.item_size;
+    }
+    if (current_report_id != 0) return HID_REPORT_ID_INVALID;
+    return HID_REPORT_ID_UNDECLARED;
+}
+
+int btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t * hid_descriptor){
+    while (hid_descriptor_len){
+        hid_descriptor_item_t item;
+        btstack_hid_parse_descriptor_item(&item, hid_descriptor, hid_descriptor_len);
+        switch (item.item_type){
+            case Global:
+                switch ((GlobalItemTag)item.item_tag){
+                    case ReportID:
+                        return 1;
+                    default:
+                        break;
+                }
+                break;
+            default:
+                break;
+        }
+        hid_descriptor_len -= item.item_size;
+        hid_descriptor += item.item_size;
+    }
+    return 0;
 }

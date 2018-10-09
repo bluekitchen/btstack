@@ -114,6 +114,12 @@ typedef enum {
     HID_REPORT_TYPE_FEATURE
 } hid_report_type_t;
 
+typedef enum {
+    HID_REPORT_ID_UNDECLARED,
+    HID_REPORT_ID_VALID,
+    HID_REPORT_ID_INVALID
+} hid_report_id_status_t;
+
 typedef struct {
 
     // Descriptor
@@ -199,6 +205,21 @@ void btstack_hid_parse_descriptor_item(hid_descriptor_item_t * item, const uint8
  * @param hid_descriptor
  */
 int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_type, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor);
+
+/**
+ * @brief Parses descriptor and returns report size for given report ID and report type
+ * @param report_id
+ * @param hid_descriptor_len
+ * @param hid_descriptor
+ */
+hid_report_id_status_t btstack_hid_id_valid(int report_id, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor);
+
+/**
+ * @brief Parses descriptor and returns 1 if report ID found
+ * @param hid_descriptor_len
+ * @param hid_descriptor
+ */
+int btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t * hid_descriptor);
 /* API_END */
 
 #if defined __cplusplus

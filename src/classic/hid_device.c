@@ -79,7 +79,6 @@ typedef struct hid_device {
 
 static hid_device_t _hid_device;
 static uint8_t hid_boot_protocol_mode_supported;
-static uint8_t hid_report_ids_declared;
 static const uint8_t * hid_descriptor;
 static uint16_t hid_descriptor_len;
 
@@ -383,7 +382,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     switch (device->protocol_mode){
                         case HID_PROTOCOL_MODE_BOOT: 
                             // printf("HID_PROTOCOL_MODE_BOOT \n");
-                            if (!hid_report_ids_declared || packet_size < 2){
+                            if (!btstack_hid_report_id_declared(hid_descriptor_len, hid_descriptor) || packet_size < 2){
                                 device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
                                 break;
                             }
@@ -391,7 +390,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             break;
                         case HID_PROTOCOL_MODE_REPORT:
                             // printf("HID_PROTOCOL_MODE_REPORT,  hid_report_ids_declared %d\n", hid_report_ids_declared);
-                            if (!hid_report_ids_declared) break;
+                            if (!btstack_hid_report_id_declared(hid_descriptor_len, hid_descriptor)) break;
 
                             if (packet_size < 2){
                                 device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
@@ -410,7 +409,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     // l2cap_request_can_send_now_event(device->control_cid);
                     hid_device_request_can_send_now_event(channel);
                     break;
-                
+
                 case HID_MESSAGE_TYPE_SET_REPORT:
                     device->state = HID_DEVICE_W2_SET_REPORT;  
                     device->max_packet_size = l2cap_max_mtu();
@@ -861,4 +860,19 @@ int hid_report_size_valid(uint16_t cid, int report_id, hid_report_type_t report_
         if (size == 0 || size != report_size) return 0;
     }
     return 1;
+}
+
+
+hid_report_id_status_t hid_report_id_status(uint16_t cid, uint16_t report_id){
+    if (hid_device_in_boot_protocol_mode(cid)){
+        switch (report_id){
+            case HID_BOOT_MODE_KEYBOARD_ID:
+            case HID_BOOT_MODE_MOUSE_ID:
+                return HID_REPORT_ID_VALID;
+            default:
+                return HID_REPORT_ID_INVALID;
+        }
+    } else {
+        return btstack_hid_id_valid(report_id, hid_descriptor_len, hid_descriptor);
+    }
 }

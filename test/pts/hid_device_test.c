@@ -281,24 +281,6 @@ static int prepare_keyboard_report(hid_report_type_t report_type, int modifier, 
     return pos;
 }
 
-static hid_report_id_status_t hid_report_id_status(uint16_t cid, uint16_t report_id){
-    if (hid_device_in_boot_protocol_mode(cid)){
-        switch (report_id){
-            case HID_BOOT_MODE_KEYBOARD_ID:
-            case HID_BOOT_MODE_MOUSE_ID:
-                return HID_REPORT_ID_VALID;
-            default:
-                return HID_REPORT_ID_INVALID;
-        }
-    } else {
-#ifdef REPORT_ID_DECLARED        
-        if (report_id != 1) return HID_REPORT_ID_INVALID;
-        return HID_REPORT_ID_VALID;
-#endif
-        return HID_REPORT_ID_UNDECLARED;
-    }
-}
-
 static hid_handshake_param_type_t hid_get_report_callback(uint16_t cid, hid_report_type_t report_type, uint16_t report_id, uint8_t report_max_size, int * out_report_size, uint8_t * out_report){
     UNUSED(cid);
     UNUSED(report_max_size);
@@ -347,10 +329,6 @@ static hid_handshake_param_type_t hid_set_report_callback(uint16_t cid, hid_repo
     UNUSED(cid);
     UNUSED(report);
     int pos = 0;
-
-    printf("set report, size %d\n", report_size);
-    printf_hexdump(report, report_size);
-    printf("\n");
     
     int report_id = report[0];
     hid_report_id_status_t report_id_status = hid_report_id_status(cid, report_id);
@@ -365,7 +343,6 @@ static hid_handshake_param_type_t hid_set_report_callback(uint16_t cid, hid_repo
             report_id = 0;
             break;
     }
-    printf(" report_id %d \n", report_id);
 
     if (!hid_report_size_valid(cid, report_id, report_type, report_size-pos)){
         printf("invalid report size\n");

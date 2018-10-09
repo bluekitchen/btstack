@@ -90,12 +90,6 @@ typedef enum {
     HID_PROTOCOL_MODE_REPORT
 } hid_protocol_mode_t;
 
-typedef enum {
-    HID_REPORT_ID_UNDECLARED,
-    HID_REPORT_ID_VALID,
-    HID_REPORT_ID_INVALID
-} hid_report_id_status_t;
-
 /**
  * @brief Create HID Device SDP service record. 
  * @param service Empty buffer in which a new service record will be stored.
@@ -197,6 +191,7 @@ int hid_device_in_boot_protocol_mode(uint16_t hid_cid);
 
 
 int hid_report_size_valid(uint16_t cid, int report_id, hid_report_type_t report_type, int report_size);
+hid_report_id_status_t hid_report_id_status(uint16_t cid, uint16_t report_id);
 /* API_END */
 
 /* Only needed for PTS Testing */
