@@ -73,8 +73,6 @@ const char * pbap_vcard_listing_name = "pb";
 // default
 static uint32_t pbap_supported_features = 0x0000;
 
-static int pbap_flow_control_enabled = 0;
-
 typedef enum {
     PBAP_INIT = 0,
     PBAP_W4_GOEP_CONNECTION,
@@ -124,17 +122,20 @@ typedef struct pbap_client {
     const char * phone_number;
     const char * phonebook_path;
     uint16_t set_path_offset;
+    /* authentication */
     uint8_t  authentication_options;
     uint16_t authentication_nonce[16];
     const char * authentication_password;
+    /* xml parser */
     yxml_t  xml_parser;
     uint8_t xml_buffer[50];
+    /* flow control mode */
+    uint8_t flow_control_enabled;
+    uint8_t flow_next_triggered;
 } pbap_client_t;
 
 static pbap_client_t _pbap_client;
 static pbap_client_t * pbap_client = &_pbap_client;
-
-static int pbap_client_next_triggered;
 
 static void pbap_client_emit_connected_event(pbap_client_t * context, uint8_t status){
     uint8_t event[15];
@@ -294,7 +295,7 @@ static void pbap_handle_can_send_now(void){
         case PBAP_W2_GET_PHONEBOOK_SIZE:
             goep_client_create_get_request(pbap_client->goep_cid);
             if (pbap_client->request_number == 0){
-                if (!pbap_flow_control_enabled){
+                if (!pbap_client->flow_control_enabled){
                     goep_client_add_header_srm_enable(pbap_client->goep_cid);
                     pbap_client->srm_state = SRM_W4_CONFIRM;
                 }
@@ -324,7 +325,7 @@ static void pbap_handle_can_send_now(void){
         case PBAP_W2_GET_CARD_LIST:
             goep_client_create_get_request(pbap_client->goep_cid);
             if (pbap_client->request_number == 0){
-                if (!pbap_flow_control_enabled){
+                if (!pbap_client->flow_control_enabled){
                     goep_client_add_header_srm_enable(pbap_client->goep_cid);
                     pbap_client->srm_state = SRM_W4_CONFIRM;
                 }
@@ -524,7 +525,7 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                     }
                     break;
                 case PBAP_W4_PHONEBOOK:
-                    pbap_client_next_triggered = 0;
+                    pbap_client->flow_next_triggered = 0;
                     wait_for_user = 0;
                     srm_value = OBEX_SRM_DISABLE;
                     srmp_value = OBEX_SRMP_NEXT;
@@ -589,7 +590,7 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                             log_info("SRM state %u", pbap_client->srm_state);
                             if (pbap_client->srm_state ==  SRM_ENABLED) break;
                             pbap_client->state = PBAP_W2_PULL_PHONEBOOK;
-                            if (!wait_for_user || pbap_client_next_triggered) {
+                            if (!wait_for_user || pbap_client->flow_next_triggered) {
                                 goep_client_request_can_send_now(pbap_client->goep_cid);                
                             }
                             break;
@@ -799,16 +800,15 @@ uint8_t pbap_lookup_by_number(uint16_t pbap_cid, const char * phone_number){
 }
 
 uint8_t pbap_next_packet(uint16_t pbap_cid){
-    if (!pbap_flow_control_enabled) return 0;
-
     // log_info("pbap_next_packet, state %x", pbap_client->state);
     UNUSED(pbap_cid);
+    if (!pbap_client->flow_control_enabled) return 0;
     switch (pbap_client->state){
         case PBAP_W2_PULL_PHONEBOOK:
             goep_client_request_can_send_now(pbap_client->goep_cid);
             break;
         case PBAP_W4_PHONEBOOK:
-            pbap_client_next_triggered = 1;
+            pbap_client->flow_next_triggered = 1;
             break;
         default:
             break;
@@ -816,6 +816,9 @@ uint8_t pbap_next_packet(uint16_t pbap_cid){
     return 0;
 }
 
-void pbap_set_flow_control_mode(int enable){
-    pbap_flow_control_enabled = enable;
+uint8_t pbap_set_flow_control_mode(uint16_t pbap_cid, int enable){
+    UNUSED(pbap_cid);
+    if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
+    pbap_client->flow_control_enabled = enable;
+    return 0;
 }

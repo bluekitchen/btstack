@@ -117,8 +117,10 @@ uint8_t pbap_lookup_by_number(uint16_t pbap_cid, const char * phone_number);
 /**
  * @brief Set flow control mode - default is off
  * @note When enabled, pbap_next_packet needs to be called after a packet was processed to receive the next one
+ * @param pbap_cid
+ * @return status
  */
-void pbap_set_flow_control_mode(int enable);
+uint8_t pbap_set_flow_control_mode(uint16_t pbap_cid, int enable);
     
 /**
  * @brief Prigger next packet from PSE when Flow Control Mode is enabled
