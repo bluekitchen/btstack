@@ -72,9 +72,11 @@ static bd_addr_t    remote_addr;
 // Nexus 7 "30-85-A9-54-2E-78"
 // iPhone SE "BC:EC:5D:E6:15:03"
 // PTS "001BDC080AA5"
-static  char * remote_addr_string = "BC:EC:5D:E6:15:03";
+static  char * remote_addr_string = "001BDC080AA5";
 
 static char * phone_number = "911";
+
+static const char * phonebook_path = "telecom/pb.vcf";
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint16_t pbap_cid;
@@ -89,11 +91,11 @@ static void show_usage(void){
     printf("\n--- Bluetooth PBAP Client (HF) Test Console %s ---\n", bd_addr_to_str(iut_address));
     printf("\n");
     printf("a - establish PBAP connection to %s\n", bd_addr_to_str(remote_addr));
-    printf("b - set phonebook '/telecom/pb'\n");
-    printf("c - set phonebook '/SIM1/telecom/pb'\n");
-    printf("r - set path to '/root/telecom'\n");
-    printf("d - get phonebook size\n");
-    printf("e - pull phonebook\n");
+    printf("b - set phonebook  '/telecom/pb'\n");
+    printf("c - set phonebook  '/SIM1/telecom/pb'\n");
+    printf("r - set path to    '/root/telecom'\n");
+    printf("d - get size of    '%s'\n", phonebook_path);
+    printf("e - pull phonebook '%s'\n", phonebook_path);
     printf("f - disconnnect\n");
     printf("g - Lookup contact with number '%s'\n", phone_number);    
     printf("p - authenticate using password '0000'\n");
@@ -116,10 +118,10 @@ static void stdin_process(char c){
             pbap_set_phonebook(pbap_cid, "SIM1/telecom/pb");
             break;
         case 'd':
-            pbap_get_phonebook_size(pbap_cid);
+            pbap_get_phonebook_size(pbap_cid, phonebook_path);
             break;
         case 'e':
-            pbap_pull_phonebook(pbap_cid);
+            pbap_pull_phonebook(pbap_cid, phonebook_path);
             break;
         case 'f':
             pbap_disconnect(pbap_cid);

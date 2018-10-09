@@ -93,16 +93,18 @@ uint8_t pbap_set_phonebook(uint16_t pbap_cid, const char * path);
 /**
  * @brief Get size of phone book from PSE
  * @param pbap_cid
+ * @param path - note: path is not copied, common path 'telecom/pb.vcf'
  * @return status
  */
-uint8_t pbap_get_phonebook_size(uint16_t pbap_cid);
+uint8_t pbap_get_phonebook_size(uint16_t pbap_cid, const char * path);
 
 /**
  * @brief Pull phone book from PSE
  * @param pbap_cid
+ * @param path - note: path is not copied, common path 'telecom/pb.vcf'
  * @return status
  */
-uint8_t pbap_pull_phonebook(uint16_t pbap_cid);
+uint8_t pbap_pull_phonebook(uint16_t pbap_cid, const char * path);
 
 /**
  * @brief Lookup contact(s) by phone number

@@ -66,7 +66,6 @@
 static const uint8_t pbap_uuid[] = { 0x79, 0x61, 0x35, 0xf0, 0xf0, 0xc5, 0x11, 0xd8, 0x09, 0x66, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66};
 
 const char * pbap_phonebook_type = "x-bt/phonebook";
-const char * pbap_phonebook_name = "pb.vcf";
 
 const char * pbap_vcard_listing_type = "x-bt/vcard-listing";
 const char * pbap_vcard_listing_name = "pb";
@@ -121,6 +120,7 @@ typedef struct pbap_client {
     int single_response_mode_parameter;
     const char * current_folder;
     const char * phone_number;
+    const char * phonebook_path;
     uint16_t set_path_offset;
     uint8_t  authentication_options;
     uint16_t authentication_nonce[16];
@@ -293,7 +293,7 @@ static void pbap_handle_can_send_now(void){
                 goep_client_add_header_srm_enable(pbap_client->goep_cid);
                 pbap_client->srm_state = SRM_W4_CONFIRM;
                 goep_client_add_header_type(pbap_client->goep_cid, pbap_phonebook_type);
-                goep_client_add_header_name(pbap_client->goep_cid, pbap_phonebook_name);
+                goep_client_add_header_name(pbap_client->goep_cid, pbap_client->phonebook_path);
                 if (pbap_client->state == PBAP_W2_GET_PHONEBOOK_SIZE){
                     // Regular TLV wih 1-byte len
                     application_parameters[0] = PBAP_APPLICATION_PARAMETER_MAX_LIST_COUNT;
@@ -733,19 +733,21 @@ uint8_t pbap_disconnect(uint16_t pbap_cid){
     return 0;
 }
 
-uint8_t pbap_get_phonebook_size(uint16_t pbap_cid){
+uint8_t pbap_get_phonebook_size(uint16_t pbap_cid, const char * path){
     UNUSED(pbap_cid);
     if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
     pbap_client->state = PBAP_W2_GET_PHONEBOOK_SIZE;
+    pbap_client->phonebook_path = path;
     pbap_client->request_number = 0;
     goep_client_request_can_send_now(pbap_client->goep_cid);
     return 0;
 }
 
-uint8_t pbap_pull_phonebook(uint16_t pbap_cid){
+uint8_t pbap_pull_phonebook(uint16_t pbap_cid, const char * path){
     UNUSED(pbap_cid);
     if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
     pbap_client->state = PBAP_W2_PULL_PHONEBOOK;
+    pbap_client->phonebook_path = path;
     pbap_client->request_number = 0;
     goep_client_request_can_send_now(pbap_client->goep_cid);
     return 0;
