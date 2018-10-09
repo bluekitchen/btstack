@@ -129,6 +129,12 @@ void    goep_client_create_disconnect_request(uint16_t goep_cid);
 void    goep_client_create_get_request(uint16_t goep_cid);
 
 /**
+ * @brief Create Abort request
+ * @param gope_cid
+ */
+void    goep_client_create_abort_request(uint16_t goep_cid);
+
+/**
  * @brief Add SRM Enable
  * @param gope_cid
  */

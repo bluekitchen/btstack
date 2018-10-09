@@ -60,7 +60,7 @@
 // goep_client.c
 //
 
-// #define ENABLE_GOEP_L2CAP
+#define ENABLE_GOEP_L2CAP
 
 typedef enum {
     GOEP_INIT,
@@ -478,6 +478,11 @@ void goep_client_create_disconnect_request(uint16_t goep_cid){
 
 void goep_client_create_get_request(uint16_t goep_cid){
     goep_client_packet_init(goep_cid, OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK);
+    goep_client_packet_add_connection_id(goep_cid);
+}
+
+void goep_client_create_abort_request(uint16_t goep_cid){
+    goep_client_packet_init(goep_cid, OBEX_OPCODE_ABORT);
     goep_client_packet_add_connection_id(goep_cid);
 }
 
