@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - L2CAP ERTM: allow SDU of szie MPS in first packet that contains L2CAP SDU Length
 - L2CAP ERTM: fix memory corruption triggered if local_mtu > mps 
 - HFP: decline incoming RFCOMM connection after outgoing connection was started
+- AVRCP: fix crash on disconnect of connection established by remote
 
 ## Changes September 2018
 
