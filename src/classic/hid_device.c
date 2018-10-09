@@ -450,7 +450,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     }
                     device->report_status = HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL;
                     // hid_device_request_can_send_now_event(channel);
-                     // printf("HID_MESSAGE_TYPE_GET_PROTOCOL l2cap_request_can_send_now_event\n");
+                    // printf("HID_MESSAGE_TYPE_GET_PROTOCOL l2cap_request_can_send_now_event\n");
                     l2cap_request_can_send_now_event(device->control_cid);
                     break;
 
@@ -504,7 +504,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     (*hci_device_report_data)(device->cid, device->report_type, device->report_id, packet_size - 2, &packet[2]);
                     break;
                 default:
-                    printf("HID_DEVICE_W2_SEND_UNSUPPORTED_REQUEST %d  \n", message_type);
+                    // printf("HID_DEVICE_W2_SEND_UNSUPPORTED_REQUEST %d  \n", message_type);
                     device->state = HID_DEVICE_W2_SEND_UNSUPPORTED_REQUEST;
                     // l2cap_request_can_send_now_event(device->control_cid);
                     hid_device_request_can_send_now_event(channel);
@@ -651,9 +651,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                                 hid_device_send_control_message(device->cid, &report[0], 1);
                                 break;
                             }
+
                             // printf("send HID_MESSAGE_TYPE_DATA, protocol_mode %d \n", device->protocol_mode);
-                            report[0] = (HID_MESSAGE_TYPE_DATA << 4) | device->protocol_mode;
-                            hid_device_send_control_message(device->cid, &report[0], 1);
+                            report[0] = (HID_MESSAGE_TYPE_DATA << 4);
+                            report[1] =  device->protocol_mode;
+                            hid_device_send_control_message(device->cid, &report[0], 2);
                             break;
                             
 

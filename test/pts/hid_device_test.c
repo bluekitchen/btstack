@@ -434,48 +434,48 @@ static void stdin_process(char character){
     uint8_t modifier;
     uint8_t keycode;
     int found;
-    switch (character){
-        case 'D':
-            printf("Disconnect from %s...\n", bd_addr_to_str(device_addr));
-            hid_device_disconnect(hid_cid);
-            break;
-        case 'c':
-            printf("Connecting %s...\n", bd_addr_to_str(device_addr));
-            hid_device_connect(device_addr, &hid_cid);
-            return;
-        case 'I':
-            printf("Disconnect from intrrupt channel %s...\n", bd_addr_to_str(device_addr));
-            hid_device_disconnect_interrupt_channel(hid_cid);
-            break;
-        case 'C':
-            printf("Disconnect from control channel %s...\n", bd_addr_to_str(device_addr));
-            hid_device_disconnect_control_channel(hid_cid);
-            break;
-        case 'l':
-            printf("set limited discoverable mode\n");
-            gap_discoverable_control(1);
-            // TODO move into HCI init
-            hci_send_cmd(&hci_write_current_iac_lap_two_iacs, 2, GAP_IAC_GENERAL_INQUIRY, GAP_IAC_LIMITED_INQUIRY);
-            return;
-        case 'm':
-            send_mouse_on_interrupt_channel = 1;
-            hid_device_request_can_send_now_event(hid_cid);
-            break;
-        case 'M':
-            send_keyboard_on_interrupt_channel = 1;
-            hid_device_request_can_send_now_event(hid_cid);
-            break;
-        case 'L':
-            gap_discoverable_control(0);
-            printf("reset limited discoverable mode\n");
-            return;
-        case '\n':
-        case '\r':
-            break;
-        default:
-            // show_usage();
-            break;
-    }
+    // switch (character){
+    //     case 'D':
+    //         printf("Disconnect from %s...\n", bd_addr_to_str(device_addr));
+    //         hid_device_disconnect(hid_cid);
+    //         break;
+    //     case 'c':
+    //         printf("Connecting %s...\n", bd_addr_to_str(device_addr));
+    //         hid_device_connect(device_addr, &hid_cid);
+    //         return;
+    //     case 'I':
+    //         printf("Disconnect from intrrupt channel %s...\n", bd_addr_to_str(device_addr));
+    //         hid_device_disconnect_interrupt_channel(hid_cid);
+    //         break;
+    //     case 'C':
+    //         printf("Disconnect from control channel %s...\n", bd_addr_to_str(device_addr));
+    //         hid_device_disconnect_control_channel(hid_cid);
+    //         break;
+    //     case 'l':
+    //         printf("set limited discoverable mode\n");
+    //         gap_discoverable_control(1);
+    //         // TODO move into HCI init
+    //         hci_send_cmd(&hci_write_current_iac_lap_two_iacs, 2, GAP_IAC_GENERAL_INQUIRY, GAP_IAC_LIMITED_INQUIRY);
+    //         return;
+    //     case 'm':
+    //         send_mouse_on_interrupt_channel = 1;
+    //         hid_device_request_can_send_now_event(hid_cid);
+    //         break;
+    //     case 'M':
+    //         send_keyboard_on_interrupt_channel = 1;
+    //         hid_device_request_can_send_now_event(hid_cid);
+    //         break;
+    //     case 'L':
+    //         gap_discoverable_control(0);
+    //         printf("reset limited discoverable mode\n");
+    //         return;
+    //     case '\n':
+    //     case '\r':
+    //         break;
+    //     default:
+    //         // show_usage();
+    //         break;
+    // }
 
     switch (app_state){
         case APP_BOOTING:
@@ -593,18 +593,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             break;
                             
                         case HID_SUBEVENT_CAN_SEND_NOW:
-                            if (send_mouse_on_interrupt_channel){
-                                send_mouse_on_interrupt_channel = 0;
-                                printf("send mouse on interrupt channel\n");
-                                send_mouse_report_on_interrupt_channel(0,0,0);
-                                break;     
-                            }
-                            if (send_keyboard_on_interrupt_channel){
-                                send_keyboard_on_interrupt_channel = 0;
-                                send_keyboard_report_on_interrupt_channel(send_modifier, send_keycode);
-                                send_keycode = 0;
-                                send_modifier = 0;
-                            }
+                            // if (send_mouse_on_interrupt_channel){
+                            //     send_mouse_on_interrupt_channel = 0;
+                            //     printf("send mouse on interrupt channel\n");
+                            //     send_mouse_report_on_interrupt_channel(0,0,0);
+                            //     break;     
+                            // }
+                            // if (send_keyboard_on_interrupt_channel){
+                            //     send_keyboard_on_interrupt_channel = 0;
+                            //     send_keyboard_report_on_interrupt_channel(send_modifier, send_keycode);
+                            //     send_keycode = 0;
+                            //     send_modifier = 0;
+                            // }
                         
                             if (send_keycode){
                                 send_keyboard_report_on_interrupt_channel(send_modifier, send_keycode);
