@@ -503,6 +503,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     }
                     device->report_type = packet[0] & 0x03;
                     device->report_id = packet[1];
+
+                    if (hid_report_id_status(device->cid, device->report_id) == HID_REPORT_ID_INVALID || 
+                        !hid_report_size_valid(device->cid, device->report_id, device->report_type, packet_size - 2)){
+                        log_info("Ignore report data packet\n");
+                        return;
+                    }
                     (*hci_device_report_data)(device->cid, device->report_type, device->report_id, packet_size - 2, &packet[2]);
                     break;
                 default:

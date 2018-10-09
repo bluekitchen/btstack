@@ -353,12 +353,6 @@ static hid_handshake_param_type_t hid_set_report_callback(uint16_t cid, hid_repo
 
 static void hid_report_data_callback(uint16_t cid, hid_report_type_t report_type, uint16_t report_id, int report_size, uint8_t * report){
     UNUSED(report);
-
-    if ( hid_report_id_status(cid, report_id) == HID_REPORT_ID_INVALID || 
-        !hid_report_size_valid(cid, report_id, report_type, report_size)){
-        printf("ignore data packet\n");
-        return;
-    }
     printf("do smth with report\n");
 }
 
