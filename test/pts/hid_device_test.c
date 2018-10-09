@@ -281,35 +281,6 @@ static int prepare_keyboard_report(hid_report_type_t report_type, int modifier, 
     return pos;
 }
 
-static int hid_report_size_valid(uint16_t cid, int report_id, hid_report_type_t report_type, int report_size){
-    printf("report size %d, report type %d, report id %d\n", report_size, report_type, report_id);
-    if (!report_size) return 0;
-    if (hid_device_in_boot_protocol_mode(cid)){
-        switch (report_id){
-            case HID_BOOT_MODE_KEYBOARD_ID:
-                if (report_size < 8) return 0;
-                break;
-            case HID_BOOT_MODE_MOUSE_ID:
-                if (report_size < 1) return 0;
-                break;
-            default:
-                return 0;
-        }
-    } else {
-        switch (report_type){
-            case HID_REPORT_TYPE_INPUT:
-                if (report_size < 8) return 0;
-                break;
-            case HID_REPORT_TYPE_OUTPUT:
-                if (report_size < 1) return 0;
-                break;
-            default:
-                return 0;
-        }
-    }
-    return 1;
-}
-
 static hid_report_id_status_t hid_report_id_status(uint16_t cid, uint16_t report_id){
     if (hid_device_in_boot_protocol_mode(cid)){
         switch (report_id){
@@ -671,12 +642,7 @@ int btstack_main(int argc, const char * argv[]){
     printf("Device ID SDP service record size: %u\n", de_get_len((uint8_t*)device_id_sdp_service_buffer));
     sdp_register_service(device_id_sdp_service_buffer);
 
-#ifdef REPORT_ID_DECLARED
-    // HID Device
-    hid_device_init(hid_boot_device, 1);
-#else
-    hid_device_init(hid_boot_device, 0);
-#endif
+    hid_device_init(hid_boot_device, sizeof(hid_descriptor_keyboard_boot_mode), hid_descriptor_keyboard_boot_mode);
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);

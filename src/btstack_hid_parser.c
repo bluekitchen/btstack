@@ -258,13 +258,13 @@ static void hid_process_item(btstack_hid_parser_t * parser, hid_descriptor_item_
         case Main:
             switch (item->item_tag){
                 case Input:
-                    valid_field = parser->report_type == BTSTACK_HID_REPORT_TYPE_INPUT;
+                    valid_field = parser->report_type == HID_REPORT_TYPE_INPUT;
                     break;
                 case Output:
-                    valid_field = parser->report_type == BTSTACK_HID_REPORT_TYPE_OUTPUT;
+                    valid_field = parser->report_type == HID_REPORT_TYPE_OUTPUT;
                     break;
                 case Feature:
-                    valid_field = parser->report_type == BTSTACK_HID_REPORT_TYPE_FEATURE;
+                    valid_field = parser->report_type == HID_REPORT_TYPE_FEATURE;
                     break;
                 default:
                     break;
@@ -335,7 +335,7 @@ static void btstack_hid_parser_find_next_usage(btstack_hid_parser_t * parser){
 
 // PUBLIC API
 
-void btstack_hid_parser_init(btstack_hid_parser_t * parser, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len, btstack_hid_report_type_t hid_report_type, const uint8_t * hid_report, uint16_t hid_report_len){
+void btstack_hid_parser_init(btstack_hid_parser_t * parser, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len, hid_report_type_t hid_report_type, const uint8_t * hid_report, uint16_t hid_report_len){
 
     memset(parser, 0, sizeof(btstack_hid_parser_t));
 
@@ -408,7 +408,7 @@ void btstack_hid_parser_get_field(btstack_hid_parser_t * parser, uint16_t * usag
     }
 }
 
-int btstack_hid_get_report_size_for_id(int report_id, btstack_hid_report_type_t report_type, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor){
+int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_type, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor){
     int total_report_size = 0;
     int report_size = 0;
     int report_count = 0;
@@ -442,15 +442,15 @@ int btstack_hid_get_report_size_for_id(int report_id, btstack_hid_report_type_t 
                 // printf("tag %d, report_type %d\n", item.item_tag, report_type);
                 switch ((MainItemTag)item.item_tag){
                     case Input:
-                        if (report_type != BTSTACK_HID_REPORT_TYPE_INPUT) break;
+                        if (report_type != HID_REPORT_TYPE_INPUT) break;
                         valid_report_type = 1;
                         break;
                     case Output:
-                        if (report_type != BTSTACK_HID_REPORT_TYPE_OUTPUT) break;
+                        if (report_type != HID_REPORT_TYPE_OUTPUT) break;
                         valid_report_type = 1;
                         break;
                     case Feature:
-                        if (report_type != BTSTACK_HID_REPORT_TYPE_FEATURE) break;
+                        if (report_type != HID_REPORT_TYPE_FEATURE) break;
                         valid_report_type = 1;
                         break;
                     default:

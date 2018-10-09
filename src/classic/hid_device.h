@@ -41,6 +41,7 @@
 #include <stdint.h>
 #include "btstack_defines.h"
 #include "bluetooth.h"
+#include "btstack_hid_parser.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -85,13 +86,6 @@ typedef enum {
 } hid_control_param_t;
 
 typedef enum {
-    HID_REPORT_TYPE_RESERVED = 0,
-    HID_REPORT_TYPE_INPUT,
-    HID_REPORT_TYPE_OUTPUT,
-    HID_REPORT_TYPE_FEATURE
-} hid_report_type_t;
-
-typedef enum {
     HID_PROTOCOL_MODE_BOOT = 0,
     HID_PROTOCOL_MODE_REPORT
 } hid_protocol_mode_t;
@@ -133,8 +127,10 @@ void hid_create_sdp_record(
 /**
  * @brief Set up HID Device 
  * @param boot_protocol_mode_supported
+ * @param hid_descriptor_len
+ * @param hid_descriptor
  */
-void hid_device_init(uint8_t boot_protocol_mode_supported, uint8_t report_ids_declared);
+void hid_device_init(uint8_t boot_protocol_mode_supported, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor);
 
 /**
  * @brief Register callback for the HID Device client. 
@@ -199,6 +195,8 @@ void hid_device_send_control_message(uint16_t hid_cid, const uint8_t * message, 
  */
 int hid_device_in_boot_protocol_mode(uint16_t hid_cid);
 
+
+int hid_report_size_valid(uint16_t cid, int report_id, hid_report_type_t report_type, int report_size);
 /* API_END */
 
 /* Only needed for PTS Testing */

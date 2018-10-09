@@ -332,8 +332,8 @@ TEST(HID, GetReportSize){
     int report_size = 0;
     const uint8_t * hid_descriptor =  combo_descriptor_with_report_ids;
     uint16_t hid_descriptor_len = sizeof(combo_descriptor_with_report_ids);
-    // report_size = btstack_hid_get_report_size_for_id(1, BTSTACK_HID_REPORT_TYPE_INPUT, hid_descriptor_len, hid_descriptor);
-    // CHECK_EQUAL(3, report_size);
+    report_size = btstack_hid_get_report_size_for_id(1, BTSTACK_HID_REPORT_TYPE_INPUT, hid_descriptor_len, hid_descriptor);
+    CHECK_EQUAL(3, report_size);
 
     hid_descriptor = hid_descriptor_keyboard_boot_mode;
     hid_descriptor_len = sizeof(hid_descriptor_keyboard_boot_mode);

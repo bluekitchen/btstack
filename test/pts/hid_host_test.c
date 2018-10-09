@@ -290,7 +290,7 @@ static void hid_host_handle_interrupt_report(const uint8_t * report, uint16_t re
     report++;
     report_len--;
     btstack_hid_parser_t parser;
-    btstack_hid_parser_init(&parser, hid_descriptor, hid_descriptor_len, BTSTACK_HID_REPORT_TYPE_INPUT, report, report_len);
+    btstack_hid_parser_init(&parser, hid_descriptor, hid_descriptor_len, HID_REPORT_TYPE_INPUT, report, report_len);
     int shift = 0;
     uint8_t new_keys[NUM_KEYS];
     memset(new_keys, 0, sizeof(new_keys));

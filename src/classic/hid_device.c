@@ -46,6 +46,7 @@
 #include "l2cap.h"
 #include "btstack_event.h"
 #include "btstack_debug.h"
+#include "btstack_hid_parser.h"
 
 typedef enum {
     HID_DEVICE_IDLE,
@@ -79,6 +80,8 @@ typedef struct hid_device {
 static hid_device_t _hid_device;
 static uint8_t hid_boot_protocol_mode_supported;
 static uint8_t hid_report_ids_declared;
+static const uint8_t * hid_descriptor;
+static uint16_t hid_descriptor_len;
 
 static hid_handshake_param_type_t dummy_write_report(uint16_t hid_cid, hid_report_type_t report_type, uint16_t report_id, uint8_t report_max_size, int * out_report_size, uint8_t * out_report){
     UNUSED(hid_cid);
@@ -156,7 +159,7 @@ void hid_create_sdp_record(
     uint8_t  hid_virtual_cable,
     uint8_t  hid_reconnect_initiate,
     uint8_t  hid_boot_device,
-    const uint8_t * hid_descriptor, uint16_t hid_descriptor_size,
+    const uint8_t * descriptor, uint16_t descriptor_size,
     const char *device_name){
     
     uint8_t * attribute;
@@ -263,7 +266,7 @@ void hid_create_sdp_record(
         uint8_t* hidDescriptor = de_push_sequence(attribute);
         {
             de_add_number(hidDescriptor,  DE_UINT, DE_SIZE_8, 0x22);    // Report Descriptor
-            de_add_data(hidDescriptor,  DE_STRING, hid_descriptor_size, (uint8_t *) hid_descriptor);
+            de_add_data(hidDescriptor,  DE_STRING, descriptor_size, (uint8_t *) descriptor);
         }
         de_pop_sequence(attribute, hidDescriptor);
     }        
@@ -683,9 +686,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
 /**
  * @brief Set up HID Device 
  */
-void hid_device_init(uint8_t boot_protocol_mode_supported, uint8_t report_ids_declared){
+void hid_device_init(uint8_t boot_protocol_mode_supported, uint16_t descriptor_len, const uint8_t * descriptor){
     hid_boot_protocol_mode_supported = boot_protocol_mode_supported;
-    hid_report_ids_declared = report_ids_declared;
+    hid_descriptor =  descriptor;
+    hid_descriptor_len = descriptor_len;
     l2cap_register_service(packet_handler, PSM_HID_INTERRUPT, 100, LEVEL_2);
     l2cap_register_service(packet_handler, PSM_HID_CONTROL,   100, LEVEL_2);                                      
 }
@@ -835,4 +839,26 @@ int hid_device_in_boot_protocol_mode(uint16_t hid_cid){
         return 0;
     }
     return hid_device->protocol_mode == HID_PROTOCOL_MODE_BOOT;
+}
+
+
+int hid_report_size_valid(uint16_t cid, int report_id, hid_report_type_t report_type, int report_size){
+    // printf("report size %d, report type %d, report id %d\n", report_size, report_type, report_id);
+    if (!report_size) return 0;
+    if (hid_device_in_boot_protocol_mode(cid)){
+        switch (report_id){
+            case HID_BOOT_MODE_KEYBOARD_ID:
+                if (report_size < 8) return 0;
+                break;
+            case HID_BOOT_MODE_MOUSE_ID:
+                if (report_size < 1) return 0;
+                break;
+            default:
+                return 0;
+        }
+    } else {
+        int size =  btstack_hid_get_report_size_for_id(report_id, report_type, hid_descriptor_len, hid_descriptor);
+        if (size == 0 || size != report_size) return 0;
+    }
+    return 1;
 }
