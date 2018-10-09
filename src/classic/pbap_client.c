@@ -122,6 +122,8 @@ typedef struct pbap_client {
     const char * phone_number;
     const char * phonebook_path;
     uint16_t set_path_offset;
+    /* abort */
+    uint8_t  abort_operation;
     /* authentication */
     uint8_t  authentication_options;
     uint16_t authentication_nonce[16];
@@ -249,6 +251,14 @@ static void pbap_handle_can_send_now(void){
     uint16_t phone_number_len;
 
     MD5_CTX md5_ctx;
+
+    if (pbap_client->abort_operation){
+        pbap_client->abort_operation = 0;
+        pbap_client->state = PBAP_CONNECTED;
+        goep_client_create_abort_request(pbap_client->goep_cid);
+        goep_client_execute(pbap_client->goep_cid);
+        return;
+    }
 
     switch (pbap_client->state){
         case PBAP_W2_SEND_CONNECT_REQUEST:
@@ -813,6 +823,14 @@ uint8_t pbap_lookup_by_number(uint16_t pbap_cid, const char * phone_number){
     if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
     pbap_client->state = PBAP_W2_GET_CARD_LIST;
     pbap_client->phone_number = phone_number;
+    goep_client_request_can_send_now(pbap_client->goep_cid);
+    return 0;
+}
+
+uint8_t pbap_abort(uint16_t pbap_cid){
+    UNUSED(pbap_cid);
+    log_info("abort current operation, state 0x%02x", pbap_client->state);
+    pbap_client->abort_operation = 1;
     goep_client_request_can_send_now(pbap_client->goep_cid);
     return 0;
 }

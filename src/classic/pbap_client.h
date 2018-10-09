@@ -115,6 +115,14 @@ uint8_t pbap_pull_phonebook(uint16_t pbap_cid, const char * path);
 uint8_t pbap_lookup_by_number(uint16_t pbap_cid, const char * phone_number);
 
 /**
+ * @brief Abort current operation
+ * @param pbap_cid
+ * @return status
+ */
+uint8_t pbap_abort(uint16_t pbap_cid);
+
+
+/**
  * @brief Set flow control mode - default is off
  * @note When enabled, pbap_next_packet needs to be called after a packet was processed to receive the next one
  * @param pbap_cid
