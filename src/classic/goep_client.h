@@ -150,6 +150,30 @@ void    goep_client_create_set_path_request(uint16_t goep_cid, uint8_t flags);
 // void  goep_client_create_put(uint16_t goep_cid);
 
 /**
+ * @brief Add header with single byte value (8 bit)
+ * @param gope_cid
+ * @param header_type
+ * @param value
+ */
+void goep_client_add_byte_header(uint16_t goep_cid, uint8_t header_type, uint8_t value);
+
+/**
+ * @brief Add header with word value (32 bit)
+ * @param gope_cid
+ * @param header_type
+ * @param value
+ */
+void goep_client_add_word_header(uint16_t goep_cid, uint8_t header_type, uint32_t value);
+
+/**
+ * @brief Add header with variable size
+ * @param gope_cid
+ * @param header_type
+ * @param value
+ */
+void goep_client_add_variable_header(uint16_t goep_cid, uint8_t header_type, uint16_t header_data_length, const uint8_t * header_data);
+
+/**
  * @brief Add name header to current request
  * @param goep_cid
  * @param name
