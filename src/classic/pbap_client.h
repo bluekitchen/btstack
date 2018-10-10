@@ -142,6 +142,22 @@ uint8_t pbap_disconnect(uint16_t pbap_cid);
 uint8_t pbap_set_phonebook(uint16_t pbap_cid, const char * path);
 
 /**
+ * @brief Set vCard Selector for get/pull phonebook
+ * @param pbap_cid
+ * @param vcard_selector - combination of PBAP_PROPERTY_MASK_* properties
+ * @return status
+ */
+uint8_t pbap_set_vcard_selector(uint16_t pbap_cid, uint32_t vcard_selector);
+
+/**
+ * @brief Set vCard Selector for get/pull phonebook
+ * @param pbap_cid
+ * @param vcard_selector_operator - PBAP_VCARD_SELECTOR_OPERATOR_OR (default) or PBAP_VCARD_SELECTOR_OPERATOR_AND
+ * @return status
+ */
+uint8_t pbap_set_vcard_selector_operator(uint16_t pbap_cid, int vcard_selector_operator);
+
+/**
  * @brief Get size of phone book from PSE
  * @param pbap_cid
  * @param path - note: path is not copied, common path 'telecom/pb.vcf'

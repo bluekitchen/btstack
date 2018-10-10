@@ -122,11 +122,14 @@ typedef struct pbap_client {
     btstack_packet_handler_t client_handler;
     int request_number;
     srm_state_t srm_state;
-    int single_response_mode_parameter;
     const char * current_folder;
     const char * phone_number;
     const char * phonebook_path;
     uint16_t set_path_offset;
+    /* vcard selector / operator */
+    uint32_t vcard_selector;
+    uint8_t  vcard_selector_operator;
+    uint8_t  vcard_selector_supported;
     /* abort */
     uint8_t  abort_operation;
     /* authentication */
@@ -316,14 +319,33 @@ static void pbap_handle_can_send_now(void){
                 }
                 goep_client_add_header_type(pbap_client->goep_cid, pbap_phonebook_type);
                 goep_client_add_header_name(pbap_client->goep_cid, pbap_client->phonebook_path);
+                i = 0;
+                if (pbap_client->vcard_selector_supported){
+                    // vCard Selector
+                    if (pbap_client->vcard_selector){
+                        application_parameters[i++] = PBAP_APPLICATION_PARAMETER_VCARD_SELECTOR;
+                        application_parameters[i++] = 8;
+                        memset(&application_parameters[i], 0, 4);
+                        i += 4;
+                        big_endian_store_32(application_parameters, i, pbap_client->vcard_selector);
+                        i += 4;
+                    }
+                    // vCard Selector Operator
+                    if (pbap_client->vcard_selector_operator != PBAP_VCARD_SELECTOR_OPERATOR_OR){
+                        application_parameters[i++] = PBAP_APPLICATION_PARAMETER_VCARD_SELECTOR_OPERATOR;
+                        application_parameters[i++] = 1;
+                        application_parameters[i++] = pbap_client->vcard_selector_operator;
+                    }
+                }
                 if (pbap_client->state == PBAP_W2_GET_PHONEBOOK_SIZE){
                     // Regular TLV wih 1-byte len
-                    application_parameters[0] = PBAP_APPLICATION_PARAMETER_MAX_LIST_COUNT;
-                    application_parameters[1] = 2;
+                    application_parameters[i++] = PBAP_APPLICATION_PARAMETER_MAX_LIST_COUNT;
+                    application_parameters[i++] = 2;
                     big_endian_store_16(application_parameters, 2, 0);
-                    goep_client_add_header_application_parameters(pbap_client->goep_cid, 4, &application_parameters[0]);
-                } else {
-                    //
+                    i += 2;
+                }
+                if (i){
+                    goep_client_add_header_application_parameters(pbap_client->goep_cid, i, application_parameters);
                 }
             }
             if (pbap_client->state == PBAP_W2_GET_PHONEBOOK_SIZE){
@@ -557,6 +579,7 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                                 }
                             }
                             pbap_client->state = PBAP_CONNECTED;
+                            pbap_client->vcard_selector_supported = pbap_supported_features & goep_client_get_pbap_supported_features(pbap_client->goep_cid) & PBAP_SUPPORTED_FEATURES_VCARD_SELECTING;
                             pbap_client_emit_connected_event(pbap_client, 0);
                             break;
                         case OBEX_RESP_UNAUTHORIZED:
@@ -768,8 +791,12 @@ void pbap_client_init(void){
 
 uint8_t pbap_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid){
     if (pbap_client->state != PBAP_INIT) return BTSTACK_MEMORY_ALLOC_FAILED;
+
     pbap_client->state = PBAP_W4_GOEP_CONNECTION;
     pbap_client->client_handler = handler;
+    pbap_client->vcard_selector = 0;
+    pbap_client->vcard_selector_operator = PBAP_VCARD_SELECTOR_OPERATOR_OR;
+
     uint8_t err = goep_client_create_connection(&pbap_packet_handler, addr, BLUETOOTH_SERVICE_CLASS_PHONEBOOK_ACCESS_PSE, &pbap_client->goep_cid);
     *out_cid = pbap_client->cid;
     if (err) return err;
@@ -861,5 +888,17 @@ uint8_t pbap_set_flow_control_mode(uint16_t pbap_cid, int enable){
     UNUSED(pbap_cid);
     if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
     pbap_client->flow_control_enabled = enable;
+    return 0;
+}
+
+uint8_t pbap_set_vcard_selector(uint16_t pbap_cid, uint32_t vcard_selector){
+    UNUSED(pbap_cid);
+    pbap_client->vcard_selector = vcard_selector;
+    return 0;
+}
+
+uint8_t pbap_set_vcard_selector_operator(uint16_t pbap_cid, int vcard_selector_operator){
+    UNUSED(pbap_cid);
+    pbap_client->vcard_selector_operator = vcard_selector_operator;
     return 0;
 }
