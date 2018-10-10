@@ -61,7 +61,7 @@
 #include "btstack_stdin.h"
 #endif
 
-#define REPORT_ID_DECLARED 
+// #define REPORT_ID_DECLARED 
 // to enable demo text on POSIX systems
 // #undef HAVE_BTSTACK_STDIN
 
@@ -281,48 +281,28 @@ static int prepare_keyboard_report(hid_report_type_t report_type, int modifier, 
     return pos;
 }
 
-static hid_handshake_param_type_t hid_get_report_callback(uint16_t cid, hid_report_type_t report_type, uint16_t report_id, uint8_t report_max_size, int * out_report_size, uint8_t * out_report){
-    UNUSED(cid);
-    UNUSED(report_max_size);
-    
+static int hid_get_report_callback(uint16_t cid, hid_report_type_t report_type, uint16_t report_id, int * out_report_size, uint8_t * out_report){
     if (!report_data_ready){
         printf("report_data_ready not ready\n");
-        return HID_HANDSHAKE_PARAM_TYPE_NOT_READY;
+        return 0;
     }
-
     int report_size = 0;
-    int pos = 0;
-
-    hid_report_id_status_t report_id_status = hid_report_id_status(cid, report_id);
-    switch (report_id_status){
-        case HID_REPORT_ID_VALID:
-            report_data[pos++] = report_id;
-            break;
-        case HID_REPORT_ID_INVALID:
-            return HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_REPORT_ID;
-        default:
-            break;
-    }
-
     if (hid_device_in_boot_protocol_mode(cid)){
         switch (report_id){
             case HID_BOOT_MODE_KEYBOARD_ID:
-                report_size = prepare_keyboard_report(report_type, send_modifier, send_keycode, &report_data[pos], sizeof(report_data) - pos);
+                report_size = prepare_keyboard_report(report_type, send_modifier, send_keycode, &report_data[0], sizeof(report_data));
                 break;
             case HID_BOOT_MODE_MOUSE_ID:
-                report_size = prepare_mouse_report(report_type, 0, 0, 0, &report_data[pos], sizeof(report_data) - pos);
+                report_size = prepare_mouse_report(report_type, 0, 0, 0, &report_data[0], sizeof(report_data));
             default:
                 break;
         }
     } else {
-        report_size = prepare_keyboard_report(report_type, send_modifier, send_keycode, &report_data[pos], sizeof(report_data) - pos);
+        report_size = prepare_keyboard_report(report_type, send_modifier, send_keycode, &report_data[0], sizeof(report_data));
     } 
-    if (!report_size) return HID_HANDSHAKE_PARAM_TYPE_ERR_UNSUPPORTED_REQUEST;
-    
-    pos += report_size;
-    memcpy(out_report, report_data, pos); 
-    *out_report_size = pos;
-    return HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL;
+    memcpy(out_report, report_data, report_size); 
+    *out_report_size = report_size;
+    return 1;
 }
 
 static void hid_set_report_callback(uint16_t cid, hid_report_type_t report_type, int report_size, uint8_t * report){
