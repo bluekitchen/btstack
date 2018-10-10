@@ -70,8 +70,13 @@ const char * pbap_phonebook_type = "x-bt/phonebook";
 const char * pbap_vcard_listing_type = "x-bt/vcard-listing";
 const char * pbap_vcard_listing_name = "pb";
 
-// default
-static uint32_t pbap_supported_features = 0x0000;
+static uint32_t pbap_supported_features = \
+    PBAP_SUPPORTED_FEATURES_DOWNLOAD |
+    PBAP_SUPPORTED_FEATURES_BROWSING |
+    PBAP_SUPPORTED_FEATURES_DATABASE_IDENTIFIER |
+    PBAP_SUPPORTED_FEATURES_FOLDER_VERSION_COUNTERS |
+    PBAP_SUPPORTED_FEATURES_VCARD_SELECTING |
+    PBAP_SUPPORTED_FEATURES_ENHANCED_MISSED_CALLS; 
 
 typedef enum {
     PBAP_INIT = 0,
