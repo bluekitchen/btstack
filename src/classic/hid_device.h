@@ -189,9 +189,6 @@ void hid_device_send_control_message(uint16_t hid_cid, const uint8_t * message, 
  */
 int hid_device_in_boot_protocol_mode(uint16_t hid_cid);
 
-
-int hid_report_size_valid(uint16_t cid, int report_id, hid_report_type_t report_type, int report_size);
-hid_report_id_status_t hid_report_id_status(uint16_t cid, uint16_t report_id);
 /* API_END */
 
 /* Only needed for PTS Testing */

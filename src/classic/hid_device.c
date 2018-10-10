@@ -351,24 +351,74 @@ static inline void hid_device_emit_event(hid_device_t * context, uint8_t subeven
     hid_callback(HCI_EVENT_PACKET, context->cid, &event[0], pos);
 }
 
+static int hid_report_size_valid(uint16_t cid, int report_id, hid_report_type_t report_type, int report_size){
+    if (!report_size) return 0;
+    if (hid_device_in_boot_protocol_mode(cid)){
+        switch (report_id){
+            case HID_BOOT_MODE_KEYBOARD_ID:
+                if (report_size < 8) return 0;
+                break;
+            case HID_BOOT_MODE_MOUSE_ID:
+                if (report_size < 1) return 0;
+                break;
+            default:
+                return 0;
+        }
+    } else {
+        int size =  btstack_hid_get_report_size_for_id(report_id, report_type, hid_descriptor_len, hid_descriptor);
+        if (size == 0 || size != report_size) return 0;
+    }
+    return 1;
+}
+
+static int hid_get_report_size_for_id(uint16_t cid, int report_id, hid_report_type_t report_type, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor){
+    if (hid_device_in_boot_protocol_mode(cid)){
+        switch (report_id){
+            case HID_BOOT_MODE_KEYBOARD_ID:
+                return 8;
+            case HID_BOOT_MODE_MOUSE_ID:
+                return 3;
+            default:
+                return 0;
+        }
+    } else {
+        return btstack_hid_get_report_size_for_id(report_id, report_type, hid_descriptor_len, hid_descriptor);
+    }
+}
+
+static hid_report_id_status_t hid_report_id_status(uint16_t cid, uint16_t report_id){
+    if (hid_device_in_boot_protocol_mode(cid)){
+        switch (report_id){
+            case HID_BOOT_MODE_KEYBOARD_ID:
+            case HID_BOOT_MODE_MOUSE_ID:
+                return HID_REPORT_ID_VALID;
+            default:
+                return HID_REPORT_ID_INVALID;
+        }
+    } else {
+        return btstack_hid_id_valid(report_id, hid_descriptor_len, hid_descriptor);
+    }
+}
+
 static hid_handshake_param_type_t hid_device_set_report_cmd_is_valid(uint16_t cid, hid_report_type_t report_type, int report_size, uint8_t * report){
     int pos = 0;
-    int report_id = report[0];
-    hid_report_id_status_t report_id_status = hid_report_id_status(cid, report_id);
-    switch (report_id_status){
-        case HID_REPORT_ID_VALID:
-            pos++;
-            break;
-        case HID_REPORT_ID_INVALID:
-            printf("invalid id\n");
-            return HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_REPORT_ID;
-        default:
-            report_id = 0;
-            break;
-    }
+    int report_id = 0;
 
+    if (btstack_hid_report_id_declared(hid_descriptor_len, hid_descriptor)){
+        report_id = report[pos++];
+        hid_report_id_status_t report_id_status = hid_report_id_status(cid, report_id);
+        switch (report_id_status){
+            case HID_REPORT_ID_INVALID:
+                return HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_REPORT_ID;
+            default:
+                break;
+        }
+        // printf("hid_device_set_report_cmd_is_valid: report_id %d, status %d \n", report_id, report_id_status);
+    }
+    
     if (!hid_report_size_valid(cid, report_id, report_type, report_size-pos)){
-        printf("invalid report size\n");
+        // printf("invalid report size\n");
+        // TODO clarify DCT/BI-03c
         return HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
     }
     return HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL;
@@ -404,10 +454,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     device->report_id = 0;
                     device->report_status = HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL;
                     device->state = HID_DEVICE_W2_GET_REPORT;
-                    
+
                     switch (device->protocol_mode){
                         case HID_PROTOCOL_MODE_BOOT: 
-                            if (!btstack_hid_report_id_declared(hid_descriptor_len, hid_descriptor) || packet_size < 2){
+                            if (packet_size < 2){
                                 device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
                                 break;
                             }
@@ -415,7 +465,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             break;
                         case HID_PROTOCOL_MODE_REPORT:
                             if (!btstack_hid_report_id_declared(hid_descriptor_len, hid_descriptor)) {
-                                printf("id are not in report\n");
+                                if (packet_size < 2) break;
+                                if (packet[0] & 0x08){ 
+                                    if (packet_size > 2) {
+                                        device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_REPORT_ID;
+                                    }
+                                } else {
+                                    if (packet_size > 1) {
+                                        device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_REPORT_ID;
+                                    }
+                                }
                                 break;
                             }
                             if (packet_size < 2){
@@ -423,29 +482,29 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                                 break;
                             }
                             device->report_id = packet[pos++];
-
-                            hid_report_id_status_t report_id_status = hid_report_id_status(device->cid, device->report_id);
-                            switch (report_id_status){
-                                case HID_REPORT_ID_INVALID:
-                                    printf("id %d invalid\n", device->report_id);
-                                    device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_REPORT_ID;
-                                    break;
-                                default:
-                                    printf("id %d, status %d\n", device->report_id,report_id_status);
-                                    break;
-                            }
                             break;
                     }
-                    device->expected_report_size = btstack_hid_get_report_size_for_id(device->report_id, device->report_type, hid_descriptor_len, hid_descriptor); 
+                    if (device->report_status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
+                        hid_device_request_can_send_now_event(channel);
+                        break;
+                    } 
+                    hid_report_id_status_t report_id_status = hid_report_id_status(device->cid, device->report_id);
+                    switch (report_id_status){
+                        case HID_REPORT_ID_INVALID:
+                            device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_REPORT_ID;
+                            break;
+                        default:
+                            break;
+                    }
+                    
+                    device->expected_report_size = hid_get_report_size_for_id(device->cid, device->report_id, device->report_type, hid_descriptor_len, hid_descriptor); 
                     report_size =  device->expected_report_size + pos; // add 1 for header size and report id
                     
-                    printf("report size with header and id %d\n", report_size);
                     if ((packet[0] & 0x08) && packet_size >= pos + 1){
                         device->report_size = btstack_min(btstack_min(little_endian_read_16(packet, pos), report_size), sizeof(report));
                     } else {
                         device->report_size = btstack_min(btstack_min(l2cap_max_mtu(), report_size), sizeof(report));
                     }
-                    printf("report size with header and id, after %d\n", device->report_size);
                     
                     hid_device_request_can_send_now_event(channel);
                     break;
@@ -679,7 +738,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             
                             report_size = 0;
                             status = (*hci_device_get_report)(device->cid, device->report_type, device->report_id, &report_size, &report[pos]);
-                            printf(" report size %d, status after callback %d, expected report_size %d\n", report_size + pos, status, device->report_size);
+                            printf(" report size %d, status after callback %d, expected report_size %d\n", report_size + pos, status, device->report_size + pos);
 
                             switch (status){
                                 case 0:
@@ -918,41 +977,4 @@ int hid_device_in_boot_protocol_mode(uint16_t hid_cid){
         return 0;
     }
     return hid_device->protocol_mode == HID_PROTOCOL_MODE_BOOT;
-}
-
-
-int hid_report_size_valid(uint16_t cid, int report_id, hid_report_type_t report_type, int report_size){
-    // printf("report size %d, report type %d, report id %d\n", report_size, report_type, report_id);
-    if (!report_size) return 0;
-    if (hid_device_in_boot_protocol_mode(cid)){
-        switch (report_id){
-            case HID_BOOT_MODE_KEYBOARD_ID:
-                if (report_size < 8) return 0;
-                break;
-            case HID_BOOT_MODE_MOUSE_ID:
-                if (report_size < 1) return 0;
-                break;
-            default:
-                return 0;
-        }
-    } else {
-        int size =  btstack_hid_get_report_size_for_id(report_id, report_type, hid_descriptor_len, hid_descriptor);
-        if (size == 0 || size != report_size) return 0;
-    }
-    return 1;
-}
-
-
-hid_report_id_status_t hid_report_id_status(uint16_t cid, uint16_t report_id){
-    if (hid_device_in_boot_protocol_mode(cid)){
-        switch (report_id){
-            case HID_BOOT_MODE_KEYBOARD_ID:
-            case HID_BOOT_MODE_MOUSE_ID:
-                return HID_REPORT_ID_VALID;
-            default:
-                return HID_REPORT_ID_INVALID;
-        }
-    } else {
-        return btstack_hid_id_valid(report_id, hid_descriptor_len, hid_descriptor);
-    }
 }
