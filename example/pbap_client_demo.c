@@ -76,7 +76,19 @@ static  char * remote_addr_string = "001BDC080AA5";
 
 static char * phone_number = "911";
 
-static const char * phonebook_path = "telecom/pb.vcf";
+static const char * t_pb_path   = "telecom/pb.vcf";
+static const char * t_fav_path  = "telecom/fav.vcf";
+static const char * t_ich_path  = "telecom/ich.vcf";
+static const char * t_och_path  = "telecom/och.vcf";
+static const char * t_mch_path  = "telecom/mch.vcf";
+static const char * t_cch_path  = "telecom/cch.vcf";
+static const char * t_spd_path  = "telecom/spd.vcf";
+
+static const char * st_pb_path  = "SIM1/telecom/pb.vcf";
+static const char * st_ich_path = "SIM1/telecom/ich.vcf";
+static const char * st_och_path = "SIM1/telecom/och.vcf";
+static const char * st_mch_path = "SIM1/telecom/mch.vcf";
+static const char * st_cch_path = "SIM1/telecom/cch.vcf";
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint16_t pbap_cid;
@@ -92,11 +104,27 @@ static void show_usage(void){
     printf("\n");
     printf("a - establish PBAP connection to %s\n", bd_addr_to_str(remote_addr));
     printf("b - set phonebook  '/telecom/pb'\n");
-    printf("c - set phonebook  '/SIM1/telecom/pb'\n");
+    // printf("c - set phonebook  '/SIM1/telecom/pb'\n");
     printf("r - set path to    '/root/telecom'\n");
-    printf("d - get size of    '%s'\n", phonebook_path);
-    printf("e - pull phonebook '%s'\n", phonebook_path);
-    printf("f - disconnnect\n");
+    printf("v - set vCardSelector to FN\n");
+    printf("V - set vCardSelectorOperator to AND\n");
+    printf("d - get size of    '%s'\n", t_pb_path);
+
+    printf("e - pull phonebook '%s'\n", t_pb_path);
+    printf("f - pull phonebook '%s'\n", t_fav_path);
+    printf("i - pull phonebook '%s'\n", t_ich_path);
+    printf("o - pull phonebook '%s'\n", t_och_path);
+    printf("m - pull phonebook '%s'\n", t_mch_path);
+    printf("c - pull phonebook '%s'\n", t_cch_path);
+    printf("s - pull phonebook '%s'\n", t_spd_path);
+
+    printf("E - pull phonebook '%s'\n", st_pb_path);
+    printf("I - pull phonebook '%s'\n", st_ich_path);
+    printf("O - pull phonebook '%s'\n", st_och_path);
+    printf("M - pull phonebook '%s'\n", st_mch_path);
+    printf("C - pull phonebook '%s'\n", st_cch_path);
+
+    printf("t - disconnnect\n");
     printf("g - Lookup contact with number '%s'\n", phone_number);    
     printf("p - authenticate using password '0000'\n");
     printf("r - set path to 'telecom'\n");
@@ -111,27 +139,81 @@ static void stdin_process(char c){
             pbap_connect(&packet_handler, remote_addr, &pbap_cid);
             break;
         case 'b':
-            printf("[+] Set Phonebook 'telecom/pb'\n");
+            printf("[+] Set phonebook 'telecom/pb'\n");
             pbap_set_phonebook(pbap_cid, "telecom/pb");
             break;
-        case 'c':
-            printf("[+] Set Phonebook 'SIM1/telecom/pb'\n");
-            pbap_set_phonebook(pbap_cid, "SIM1/telecom/pb");
-            break;
+        // case 'c':
+        //     printf("[+] Set phonebook 'SIM1/telecom/pb'\n");
+        //     pbap_set_phonebook(pbap_cid, "SIM1/telecom/pb");
+        //     break;
         case 'd':
-            pbap_get_phonebook_size(pbap_cid, phonebook_path);
-            break;
-        case 'e':
-            pbap_pull_phonebook(pbap_cid, phonebook_path);
-            break;
-        case 'f':
-            pbap_disconnect(pbap_cid);
+            printf("[+] Get size of phonebook '%s'\n", t_pb_path);
+            pbap_get_phonebook_size(pbap_cid, t_pb_path);
             break;
         case 'g':
             pbap_lookup_by_number(pbap_cid, phone_number);
             break;
+
+        case 'c':
+            printf("[+] Get phonebook '%s'\n", t_cch_path);
+            pbap_pull_phonebook(pbap_cid, t_cch_path);
+            break;
+        case 'e':
+            printf("[+] Get phonebook '%s'\n", t_pb_path);
+            pbap_pull_phonebook(pbap_cid, t_pb_path);
+            break;
+        case 'f':
+            printf("[+] Get phonebook '%s'\n", t_fav_path);
+            pbap_pull_phonebook(pbap_cid, t_fav_path);
+            break;
+        case 'i':
+            printf("[+] Get phonebook '%s'\n", t_ich_path);
+            pbap_pull_phonebook(pbap_cid, t_ich_path);
+            break;
+        case 'm':
+            printf("[+] Get phonebook '%s'\n", t_mch_path);
+            pbap_pull_phonebook(pbap_cid, t_mch_path);
+            break;
+        case 'o':
+            printf("[+] Get phonebook '%s'\n", t_och_path);
+            pbap_pull_phonebook(pbap_cid, t_och_path);
+            break;
+        case 's':
+            printf("[+] Get phonebook '%s'\n", t_spd_path);
+            pbap_pull_phonebook(pbap_cid, t_spd_path);
+            break;
+
+        case 'C':
+            printf("[+] Get phonebook '%s'\n", st_cch_path);
+            pbap_pull_phonebook(pbap_cid, st_cch_path);
+            break;
+        case 'E':
+            printf("[+] Get phonebook '%s'\n", st_pb_path);
+            pbap_pull_phonebook(pbap_cid, st_pb_path);
+            break;
+        case 'I':
+            printf("[+] Get phonebook '%s'\n", st_ich_path);
+            pbap_pull_phonebook(pbap_cid, st_ich_path);
+            break;
+        case 'M':
+            printf("[+] Get phonebook '%s'\n", st_mch_path);
+            pbap_pull_phonebook(pbap_cid, st_mch_path);
+            break;
+        case 'O':
+            printf("[+] Get phonebook '%s'\n", st_och_path);
+            pbap_pull_phonebook(pbap_cid, st_och_path);
+            break;
+
         case 'p':
             pbap_authentication_password(pbap_cid, "0000");
+            break;
+        case 'v':
+            printf("[+] Set vCardSelector 'FN'\n");
+            pbap_set_vcard_selector(pbap_cid, PBAP_PROPERTY_MASK_FN);
+            break;
+        case 'V':
+            printf("[+] Set vCardSelectorOperator 'AND'\n");
+            pbap_set_vcard_selector_operator(pbap_cid, PBAP_VCARD_SELECTOR_OPERATOR_AND);
             break;
         case 'r':
             printf("[+] Set path to 'telecom'\n");
@@ -140,6 +222,9 @@ static void stdin_process(char c){
         case 'x':
             printf("[+] Abort'\n");
             pbap_abort(pbap_cid);
+            break;
+        case 't':
+            pbap_disconnect(pbap_cid);
             break;
         default:
             show_usage();
