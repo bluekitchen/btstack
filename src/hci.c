@@ -4599,7 +4599,7 @@ int gap_inquiry_start(uint8_t duration_in_1280ms_units){
  * @returns 0 if ok
  */
 int gap_inquiry_stop(void){
-    if (hci_stack->inquiry_state >= GAP_INQUIRY_DURATION_MIN || hci_stack->inquiry_state <= GAP_INQUIRY_DURATION_MAX) {
+    if (hci_stack->inquiry_state >= GAP_INQUIRY_DURATION_MIN && hci_stack->inquiry_state <= GAP_INQUIRY_DURATION_MAX) {
         // emit inquiry complete event, before it even started
         uint8_t event[] = { GAP_EVENT_INQUIRY_COMPLETE, 1, 0};
         hci_emit_event(event, sizeof(event), 1);
