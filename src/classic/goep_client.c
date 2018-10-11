@@ -503,9 +503,6 @@ void goep_client_add_word_header(uint16_t goep_cid, uint8_t header_type, uint32_
 }
 
 void goep_client_add_header_srm_enable(uint16_t goep_cid){
-    goep_client_t * context = goep_client;
-    if (!context->l2cap_psm) return;
-    // SRM was added in GOEP v2, which uses L2CAP
     goep_client_add_byte_header(goep_cid, OBEX_HEADER_SINGLE_RESPONSE_MODE, OBEX_SRM_ENABLE);
 }
 
