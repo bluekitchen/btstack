@@ -323,7 +323,6 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
 }
 
 static int media_processing_init(avdtp_media_codec_configuration_sbc_t configuration){
-    printf("media_processing_init initialized %u\n", media_initialized);
     if (media_initialized) return 0;
 
     btstack_sbc_decoder_init(&state, mode, handle_pcm_data, NULL);
@@ -351,7 +350,6 @@ static int media_processing_init(avdtp_media_codec_configuration_sbc_t configura
 }
 
 static void media_processing_close(void){
-    printf("media_processing_close initialized %u\n", media_initialized);
 
     if (!media_initialized) return;
     media_initialized = 0;
