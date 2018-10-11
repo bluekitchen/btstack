@@ -174,6 +174,14 @@ uint8_t pbap_get_phonebook_size(uint16_t pbap_cid, const char * path);
 uint8_t pbap_pull_phonebook(uint16_t pbap_cid, const char * path);
 
 /**
+ * @brief Pull vCard listing
+ * @param pbap_cid
+ * @param path
+ * @return status
+ */
+uint8_t pbap_pull_vcard_listing(uint16_t pbap_cid, const char * path);
+
+/**
  * @brief Lookup contact(s) by phone number
  * @param pbap_cid
  * @param phone_number

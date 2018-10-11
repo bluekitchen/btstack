@@ -367,18 +367,39 @@ static void pbap_handle_can_send_now(void){
                     pbap_client->srm_state = SRM_W4_CONFIRM;
                 }
                 goep_client_add_header_type(pbap_client->goep_cid, pbap_vcard_listing_type);
-                goep_client_add_header_name(pbap_client->goep_cid, pbap_vcard_listing_name);
-                // Regular TLV wih 1-byte len
+                goep_client_add_header_name(pbap_client->goep_cid, pbap_client->phonebook_path);
                 i = 0;
-                phone_number_len = btstack_min(PBAP_MAX_PHONE_NUMBER_LEN, strlen(pbap_client->phone_number));
-                application_parameters[i++] = PBAP_APPLICATION_PARAMETER_SEARCH_VALUE;
-                application_parameters[i++] = phone_number_len;
-                memcpy(&application_parameters[i], pbap_client->phone_number, phone_number_len);
-                i += phone_number_len;
-                application_parameters[i++] = PBAP_APPLICATION_PARAMETER_SEARCH_PROPERTY;
-                application_parameters[i++] = 1;
-                application_parameters[i++] = 0x01; // Number
-                goep_client_add_header_application_parameters(pbap_client->goep_cid, i, &application_parameters[0]);
+                if (pbap_client->vcard_selector_supported){
+                    // vCard Selector
+                    if (pbap_client->vcard_selector){
+                        application_parameters[i++] = PBAP_APPLICATION_PARAMETER_VCARD_SELECTOR;
+                        application_parameters[i++] = 8;
+                        memset(&application_parameters[i], 0, 4);
+                        i += 4;
+                        big_endian_store_32(application_parameters, i, pbap_client->vcard_selector);
+                        i += 4;
+                    }
+                    // vCard Selector Operator
+                    if (pbap_client->vcard_selector_operator != PBAP_VCARD_SELECTOR_OPERATOR_OR){
+                        application_parameters[i++] = PBAP_APPLICATION_PARAMETER_VCARD_SELECTOR_OPERATOR;
+                        application_parameters[i++] = 1;
+                        application_parameters[i++] = pbap_client->vcard_selector_operator;
+                    }
+                }
+                if (pbap_client->phone_number){
+                    // Search by phpone number
+                    phone_number_len = btstack_min(PBAP_MAX_PHONE_NUMBER_LEN, strlen(pbap_client->phone_number));
+                    application_parameters[i++] = PBAP_APPLICATION_PARAMETER_SEARCH_VALUE;
+                    application_parameters[i++] = phone_number_len;
+                    memcpy(&application_parameters[i], pbap_client->phone_number, phone_number_len);
+                    i += phone_number_len;
+                    application_parameters[i++] = PBAP_APPLICATION_PARAMETER_SEARCH_PROPERTY;
+                    application_parameters[i++] = 1;
+                    application_parameters[i++] = 0x01; // Number
+                }
+                if (i){
+                    goep_client_add_header_application_parameters(pbap_client->goep_cid, i, &application_parameters[0]);
+                }
                 pbap_client->state = PBAP_W4_GET_CARD_LIST_COMPLETE;
             }
             // send packet
@@ -400,13 +421,14 @@ static void pbap_handle_can_send_now(void){
                 pbap_client->current_folder[pbap_client->set_path_offset] != '/'){
                 pbap_client->set_path_offset++;              
             }
+            path_element_len = pbap_client->set_path_offset-path_element_start;
+            memcpy(path_element, &pbap_client->current_folder[path_element_start], path_element_len);
+            path_element[path_element_len] = 0;
+
             // skip /
             if (pbap_client->current_folder[pbap_client->set_path_offset] == '/'){
                 pbap_client->set_path_offset++;  
             }
-            path_element_len = pbap_client->set_path_offset-path_element_start;
-            memcpy(path_element, &pbap_client->current_folder[path_element_start], path_element_len);
-            path_element[path_element_len] = 0;
 
             // detect end of path (after setting path_element)
             if (pbap_client->current_folder[pbap_client->set_path_offset] == '\0'){
@@ -850,11 +872,23 @@ uint8_t pbap_authentication_password(uint16_t pbap_cid, const char * password){
     return 0;
 }
 
+uint8_t pbap_pull_vcard_listing(uint16_t pbap_cid, const char * path){
+    UNUSED(pbap_cid);
+    if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
+    pbap_client->state = PBAP_W2_GET_CARD_LIST;
+    pbap_client->phonebook_path = path;
+    pbap_client->phone_number = NULL;
+    pbap_client->request_number = 0;
+    goep_client_request_can_send_now(pbap_client->goep_cid);
+    return 0;
+}
+
 uint8_t pbap_lookup_by_number(uint16_t pbap_cid, const char * phone_number){
     UNUSED(pbap_cid);
     if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
     pbap_client->state = PBAP_W2_GET_CARD_LIST;
-    pbap_client->phone_number = phone_number;
+    pbap_client->phonebook_path = pbap_vcard_listing_name;
+    pbap_client->phone_number   = phone_number;
     pbap_client->request_number = 0;
     goep_client_request_can_send_now(pbap_client->goep_cid);
     return 0;
