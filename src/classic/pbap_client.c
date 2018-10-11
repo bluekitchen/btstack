@@ -855,6 +855,7 @@ uint8_t pbap_lookup_by_number(uint16_t pbap_cid, const char * phone_number){
     if (pbap_client->state != PBAP_CONNECTED) return BTSTACK_BUSY;
     pbap_client->state = PBAP_W2_GET_CARD_LIST;
     pbap_client->phone_number = phone_number;
+    pbap_client->request_number = 0;
     goep_client_request_can_send_now(pbap_client->goep_cid);
     return 0;
 }
