@@ -403,6 +403,7 @@ static void pbap_handle_can_send_now(void){
                 pbap_client->state = PBAP_W4_GET_CARD_LIST_COMPLETE;
             }
             // send packet
+            pbap_client->request_number++;
             goep_client_execute(pbap_client->goep_cid);
             break;
         case PBAP_W2_SET_PATH_ROOT:
