@@ -13,7 +13,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HCI: fix bug in gap_inquiry_stop that triggered additional GAP_EVENT_INQUIRY_COMPLETE instead of stopping the inquiry
 - L2CAP: fix issue with outgoing connection before read remote supported complete when other channels exist
 - L2CAP ERTM: allow SDU of szie MPS in first packet that contains L2CAP SDU Length
-- L2CAP ERTM: fix memory corruption triggered if local_mtu > mps 
+- L2CAP ERTM: fix memory corruption triggered if local_mtu > mps
+- L2CAP ERTM: fix outgoing fragment management
 - HFP: decline incoming RFCOMM connection after outgoing connection was started
 - AVRCP: fix crash on disconnect of connection established by remote
 
