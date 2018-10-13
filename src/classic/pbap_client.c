@@ -317,8 +317,8 @@ static void pbap_handle_can_send_now(void){
                     goep_client_add_header_srm_enable(pbap_client->goep_cid);
                     pbap_client->srm_state = SRM_W4_CONFIRM;
                 }
-                goep_client_add_header_type(pbap_client->goep_cid, pbap_phonebook_type);
                 goep_client_add_header_name(pbap_client->goep_cid, pbap_client->phonebook_path);
+                goep_client_add_header_type(pbap_client->goep_cid, pbap_phonebook_type);
                 i = 0;
                 if (pbap_client->vcard_selector_supported){
                     // vCard Selector
@@ -366,8 +366,8 @@ static void pbap_handle_can_send_now(void){
                     goep_client_add_header_srm_enable(pbap_client->goep_cid);
                     pbap_client->srm_state = SRM_W4_CONFIRM;
                 }
-                goep_client_add_header_type(pbap_client->goep_cid, pbap_vcard_listing_type);
                 goep_client_add_header_name(pbap_client->goep_cid, pbap_client->phonebook_path);
+                goep_client_add_header_type(pbap_client->goep_cid, pbap_vcard_listing_type);
                 i = 0;
                 if (pbap_client->vcard_selector_supported){
                     // vCard Selector
@@ -717,8 +717,12 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                 case PBAP_W4_GET_CARD_LIST_COMPLETE:
                     switch (packet[0]){
                         case OBEX_RESP_CONTINUE:
+                            pbap_process_srm_headers(pbap_client, packet, size);
+                            if (pbap_client->srm_state ==  SRM_ENABLED) break;
                             pbap_client->state = PBAP_W2_GET_CARD_LIST;
-                            goep_client_request_can_send_now(pbap_client->goep_cid);                
+                            if (!wait_for_user || pbap_client->flow_next_triggered) {
+                                goep_client_request_can_send_now(pbap_client->goep_cid);                
+                            }
                             break;
                         case OBEX_RESP_SUCCESS:
                             for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(pbap_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
