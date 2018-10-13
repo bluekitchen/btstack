@@ -84,7 +84,8 @@ static const char * mch_name  = "mch";
 static const char * cch_name  = "cch";
 static const char * spd_name  = "spd";
 
-static const char * phonebook_folder;
+static const char * phonebook_name;
+static char phonebook_folder[30];
 static char phonebook_path[30];
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -93,6 +94,15 @@ static uint16_t pbap_cid;
 static int sim1_selected;
 
 #ifdef HAVE_BTSTACK_STDIN
+
+static void select_phonebook(const char * phonebook){
+    phonebook_name = phonebook;
+    sprintf(phonebook_path, "%s%s.vcf", sim1_selected ? "SIM1/telecom/" : "telecom/", phonebook);
+    sprintf(phonebook_folder, "%s%s",   sim1_selected ? "SIM1/telecom/" : "telecom/", phonebook);
+    printf("[-] Phonebook name   '%s'\n", phonebook_name);
+    printf("[-] Phonebook folder '%s'\n", phonebook_folder);
+    printf("[-] Phonebook path   '%s'\n", phonebook_path);
+}
 
 // Testig User Interface 
 static void show_usage(void){
@@ -108,6 +118,7 @@ static void show_usage(void){
     printf("b - select SIM1\n");
     printf("r - set path to '/telecom'\n");
     printf("R - set path to '/SIM1/telecom'\n");
+    printf("u - set path to '%s'\n", phonebook_folder);
     printf("v - set vCardSelector to N and TEL\n");
     printf("V - set vCardSelectorOperator to AND\n");
 
@@ -129,13 +140,6 @@ static void show_usage(void){
     printf("r - set path to 'telecom'\n");
     printf("x - abort operation\n");
     printf("\n");
-}
-
-static void select_phonebook(const char * phonebook){
-    phonebook_folder = phonebook;
-    sprintf(phonebook_path, "%s%s.vcf", sim1_selected ? "SIM1/telecom/" : "telecom/", phonebook);
-    printf("[-] Phonebook folder '%s'\n", phonebook_folder);
-    printf("[-] Phonebook path   '%s'\n", phonebook_path);
 }
 
 static void stdin_process(char c){
@@ -164,7 +168,7 @@ static void stdin_process(char c){
             break;
         case 'l':
             printf("[+] Pull vCard list for '%s'\n", phonebook_folder);
-            pbap_pull_vcard_listing(pbap_cid, phonebook_folder);
+            pbap_pull_vcard_listing(pbap_cid, "");
             break;
 
         case 'c':
@@ -214,6 +218,10 @@ static void stdin_process(char c){
         case 'R':
             printf("[+] Set path to '/SIM1/telecom'\n");
             pbap_set_phonebook(pbap_cid, "SIM1/telecom");
+            break;
+        case 'u':
+            printf("[+] Set path to '%s'\n", phonebook_folder);
+            pbap_set_phonebook(pbap_cid, phonebook_folder);
             break;
         case 'x':
             printf("[+] Abort'\n");
