@@ -521,15 +521,19 @@ void goep_client_add_header_challenge_response(uint16_t goep_cid, uint16_t lengt
 void goep_client_add_header_name(uint16_t goep_cid, const char * name){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
-    int len_incl_zero = strlen(name) + 1;
+    int len = strlen(name); 
+    if (len) {
+        // empty string does not have trailing \0
+        len++;
+    }
     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
     uint16_t pos = big_endian_read_16(buffer, 1);
     buffer[pos++] = OBEX_HEADER_NAME;
-    big_endian_store_16(buffer, pos, 1 + 2 + len_incl_zero*2);
+    big_endian_store_16(buffer, pos, 1 + 2 + len*2);
     pos += 2;
     int i;
     // @note name[len] == 0 
-    for (i = 0 ; i < len_incl_zero ; i++){
+    for (i = 0 ; i < len ; i++){
         buffer[pos++] = 0;
         buffer[pos++] = *name++;
     }
