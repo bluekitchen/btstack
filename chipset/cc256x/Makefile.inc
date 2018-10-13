@@ -234,7 +234,9 @@ all-scripts: \
 	bluetooth_init_cc2560B_1.5_BT_Spec_4.1.c \
 	bluetooth_init_cc2564B_1.5_BT_Spec_4.1.c \
 	bluetooth_init_cc2560C_1.0.c \
+	bluetooth_init_cc2560C_1.1.c \
 	bluetooth_init_cc2564C_1.0.c \
+	bluetooth_init_cc2564C_1.1.c \
 	TIInit_11.8.32.c \
 	TIInit_12.10.28.c \
 	TIInit_12.8.32.c \
