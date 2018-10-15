@@ -694,7 +694,7 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                             pbap_process_srm_headers(pbap_client, packet, size);
                             if (pbap_client->srm_state ==  SRM_ENABLED) break;
                             pbap_client->state = PBAP_W2_PULL_PHONEBOOK;
-                            if (!wait_for_user || pbap_client->flow_next_triggered) {
+                            if (!pbap_client->flow_control_enabled || !wait_for_user || pbap_client->flow_next_triggered) {
                                 goep_client_request_can_send_now(pbap_client->goep_cid);                
                             }
                             break;
@@ -745,7 +745,7 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                             pbap_process_srm_headers(pbap_client, packet, size);
                             if (pbap_client->srm_state ==  SRM_ENABLED) break;
                             pbap_client->state = PBAP_W2_GET_CARD_LIST;
-                            if (!wait_for_user || pbap_client->flow_next_triggered) {
+                            if (!pbap_client->flow_control_enabled || !wait_for_user || pbap_client->flow_next_triggered) {
                                 goep_client_request_can_send_now(pbap_client->goep_cid);                
                             }
                             break;
@@ -832,7 +832,7 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                             pbap_process_srm_headers(pbap_client, packet, size);
                             if (pbap_client->srm_state ==  SRM_ENABLED) break;
                             pbap_client->state = PBAP_W2_GET_CARD_ENTRY;
-                            if (!wait_for_user || pbap_client->flow_next_triggered) {
+                            if (!pbap_client->flow_control_enabled || !wait_for_user || pbap_client->flow_next_triggered) {
                                 goep_client_request_can_send_now(pbap_client->goep_cid);                
                             }
                             break;
