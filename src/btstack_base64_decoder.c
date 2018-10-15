@@ -68,7 +68,7 @@ static const uint8_t table[256] = {
  * @param context
  */
 void btstack_base64_decoder_init(btstack_base64_decoder_t * context){
-	memset(context, 0, sizeof(btstack_base64_decoder_t));
+    memset(context, 0, sizeof(btstack_base64_decoder_t));
 }
 
 /**
@@ -78,70 +78,70 @@ void btstack_base64_decoder_init(btstack_base64_decoder_t * context){
  */
 int  btstack_base64_decoder_process_byte(btstack_base64_decoder_t * context, uint8_t c){
 
-	// handle '='
-	if (c == '='){
-		if (context->pos == 2 || context->pos == 3){
-			context->pos++;
-			return BTSTACK_BASE64_DECODER_MORE;
-		}
-	}	
+    // handle '='
+    if (c == '='){
+        if (context->pos == 2 || context->pos == 3){
+            context->pos++;
+            return BTSTACK_BASE64_DECODER_MORE;
+        }
+    }   
 
-	// lookup
-	uint8_t value = table[c];
+    // lookup
+    uint8_t value = table[c];
 
-	// invalid character
-	if (value == 99) {
-		context->pos = 99;
-	}
+    // invalid character
+    if (value == 99) {
+        context->pos = 99;
+    }
 
-	int result = 0;
-	switch (context->pos){
-		case 0:
-			context->value = value;	// 6 bit
-			context->pos++; 
-			result = BTSTACK_BASE64_DECODER_MORE;
-			break;
-		case 1:
-			result = (context->value << 2) | (value >> 4);
-			context->value = value;	// 4 bit
-			context->pos++; 
-			break;
-		case 2:
-			result = (context->value << 4) | (value >> 2);
-			context->value = value; // 2 bit
-			context->pos++; 
-			break;
-		case 3:
-			result = (context->value << 6) | value;
-			context->pos = 0;		// done
-			break;
-		case 99:
-			result = BTSTACK_BASE64_DECODER_INVALID;
-			break;
-	}
-	return result;
+    int result = 0;
+    switch (context->pos){
+        case 0:
+            context->value = value; // 6 bit
+            context->pos++; 
+            result = BTSTACK_BASE64_DECODER_MORE;
+            break;
+        case 1:
+            result = (context->value << 2) | (value >> 4);
+            context->value = value; // 4 bit
+            context->pos++; 
+            break;
+        case 2:
+            result = (context->value << 4) | (value >> 2);
+            context->value = value; // 2 bit
+            context->pos++; 
+            break;
+        case 3:
+            result = (context->value << 6) | value;
+            context->pos = 0;       // done
+            break;
+        case 99:
+            result = BTSTACK_BASE64_DECODER_INVALID;
+            break;
+    }
+    return result;
 }
 
 int btstack_base64_decoder_process_block(const uint8_t * input_data, uint32_t input_size, uint8_t * output_buffer, uint32_t output_max_size){
-	btstack_base64_decoder_t context;
-	btstack_base64_decoder_init(&context);
-	uint32_t size = 0;
-	while (input_size){
-		uint8_t data = *input_data++;
-		int result = btstack_base64_decoder_process_byte(&context, data);
-		input_size--;
-		switch (result){
-			case BTSTACK_BASE64_DECODER_MORE:
-				break;
-			case BTSTACK_BASE64_DECODER_INVALID:
-				return BTSTACK_BASE64_DECODER_INVALID;
-			default:
-				if (size >= output_max_size){
-					return BTSTACK_BASE64_DECODER_FULL;
-				}
-				output_buffer[size++] = result;
-				break;
-		}
-	}
-	return size;	
+    btstack_base64_decoder_t context;
+    btstack_base64_decoder_init(&context);
+    uint32_t size = 0;
+    while (input_size){
+        uint8_t data = *input_data++;
+        int result = btstack_base64_decoder_process_byte(&context, data);
+        input_size--;
+        switch (result){
+            case BTSTACK_BASE64_DECODER_MORE:
+                break;
+            case BTSTACK_BASE64_DECODER_INVALID:
+                return BTSTACK_BASE64_DECODER_INVALID;
+            default:
+                if (size >= output_max_size){
+                    return BTSTACK_BASE64_DECODER_FULL;
+                }
+                output_buffer[size++] = result;
+                break;
+        }
+    }
+    return size;    
 }

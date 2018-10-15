@@ -45,8 +45,8 @@
 #include <stdint.h>
 
 typedef struct {
-	uint8_t pos;
-	uint8_t value;
+    uint8_t pos;
+    uint8_t value;
 } btstack_base64_decoder_t;
 
 #define BTSTACK_BASE64_DECODER_MORE     -1
