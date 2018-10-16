@@ -134,7 +134,7 @@ static void show_usage(void){
     printf("g - pull phonebook '%s'\n",             phonebook_path);
     printf("h - Lookup contact with number '%s'\n", phone_number);    
     printf("l - pull vCard listing '%s'\n",         phonebook_folder);
-    printf("L - get vCard 0.vcf\n");
+    printf("L - get vCard 1.vcf\n");
     printf("t - disconnnect\n");
     printf("p - authenticate using password '0000'\n");
     printf("r - set path to 'telecom'\n");
@@ -171,8 +171,8 @@ static void stdin_process(char c){
             pbap_pull_vcard_listing(pbap_cid, "");
             break;
         case 'L':
-            printf("[+] Pull vCard '0.vcf'\n");
-            pbap_pull_vcard_entry(pbap_cid, "0.vcf");
+            printf("[+] Pull vCard '1.vcf'\n");
+            pbap_pull_vcard_entry(pbap_cid, "1.vcf");
             break;
 
         case 'c':
