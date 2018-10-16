@@ -110,7 +110,7 @@ Src/stm32l0xx_it.c \
 	le_device_db_memory.c \
 	sm.c \
 	uECC.c \
-	0000000_META_hci_patches_v5_iram.c \
+	0000000_META_hci_patches_v7.c \
 SEGGER_RTT.c \
 SEGGER_RTT_Syscalls_GCC.c \
 
