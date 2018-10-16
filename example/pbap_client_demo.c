@@ -132,9 +132,10 @@ static void show_usage(void){
 
     printf("d - get size of    '%s'\n",             phonebook_path);
     printf("g - pull phonebook '%s'\n",             phonebook_path);
-    printf("h - Lookup contact with number '%s'\n", phone_number);    
-    printf("l - pull vCard listing '%s'\n",         phonebook_folder);
-    printf("L - get vCard 1.vcf\n");
+    printf("h - pull vCard listing '%s'\n",         phonebook_folder);
+    printf("l - get vCard 0.vcf\n");
+    printf("L - get vCard X-BT-UID::1234567890ABCDEF1234567890000001\n");
+    printf("j - Lookup contact with number '%s'\n", phone_number);
     printf("t - disconnnect\n");
     printf("p - authenticate using password '0000'\n");
     printf("r - set path to 'telecom'\n");
@@ -163,16 +164,20 @@ static void stdin_process(char c){
             pbap_pull_phonebook(pbap_cid, phonebook_path);
             break;
         case 'h':
-            printf("[+] Pull vCard '%s'\n", phone_number);
-            pbap_lookup_by_number(pbap_cid, phone_number);
-            break;
-        case 'l':
             printf("[+] Pull vCard list for '%s'\n", phonebook_folder);
             pbap_pull_vcard_listing(pbap_cid, "");
             break;
-        case 'L':
+        case 'j':
+            printf("[+] Lookup name for number '%s'\n", phone_number);
+            pbap_lookup_by_number(pbap_cid, phone_number);
+            break;
+        case 'l':
             printf("[+] Pull vCard '1.vcf'\n");
             pbap_pull_vcard_entry(pbap_cid, "1.vcf");
+            break;
+        case 'L':
+            printf("[+] Pull vCard 'X-BT-UID:1234567890ABCDEF1234567890000001'\n");
+            pbap_pull_vcard_entry(pbap_cid, "X-BT-UID:1234567890ABCDEF1234567890000001");
             break;
 
         case 'c':
