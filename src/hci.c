@@ -3358,6 +3358,9 @@ static void hci_run(void){
                 break;
         }
         
+        // no further commands if connection is about to get shut down
+        if (connection->state == SENT_DISCONNECT) continue;
+
 #ifdef ENABLE_CLASSIC
         if (connection->authentication_flags & HANDLE_LINK_KEY_REQUEST){
             log_info("responding to link key request");
