@@ -1,14 +1,13 @@
 cmake_minimum_required (VERSION 3.5)
 project(BTstack)
-# add libusb - does not work with xcode
-# find_path(LIBUSB_INCLUDE_DIR NAMES libusb.h PATH_SUFFIXES "include" "libusb" "libusb-1.0")
-# find_library(LIBUSB_LIBRARY NAMES usb-1.0 PATH_SUFFIXES "lib" "lib32" "lib64" "dylib")
-# include_directories( ${LIBUSB_INCLUDE_DIR} )
 
-# add libusb - hard-coded, but works with Xcode, too 
-include_directories( /usr/local/include/libusb-1.0/ )
-link_libraries( usb-1.0)
-link_directories(/usr/local/lib)
+# add libusb
+find_path(LIBUSB_INCLUDE_DIR NAMES libusb.h PATH_SUFFIXES "include" "libusb" "libusb-1.0")
+find_library(LIBUSB_LIBRARY NAMES usb-1.0 PATH_SUFFIXES "lib" "lib32" "lib64" "dylib")
+get_filename_component(LIBUSB_LIBRARY_PATH ${LIBUSB_LIBRARY} DIRECTORY)
+include_directories( ${LIBUSB_INCLUDE_DIR} )
+link_directories( ${LIBUSB_LIBRARY_PATH} )
+link_libraries( usb-1.0 )
 
 include_directories(../../3rd-party/micro-ecc)
 include_directories(../../3rd-party/bluedroid/decoder/include)
