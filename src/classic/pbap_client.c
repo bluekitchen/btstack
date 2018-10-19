@@ -586,8 +586,6 @@ static void pbap_client_process_vcard_listing(uint8_t *packet, uint16_t size){
             int handle_found = 0;
             char name[PBAP_MAX_NAME_LEN];
             char handle[PBAP_MAX_HANDLE_LEN];
-            name[0] = 0;
-            handle[0] = 0;
             while (data_len--){
                 yxml_ret_t r = yxml_parse(&pbap_client->xml_parser, *data++);
                 switch (r){
@@ -604,10 +602,12 @@ static void pbap_client_process_vcard_listing(uint8_t *packet, uint16_t size){
                         if (!card_found) break;
                         if (strcmp("name", pbap_client->xml_parser.attr) == 0){
                             name_found = 1;
+                            name[0]    = 0;
                             break;
                         }
                         if (strcmp("handle", pbap_client->xml_parser.attr) == 0){
                             handle_found = 1;
+                            handle[0]    = 0;
                             break;
                         }
                         break;
