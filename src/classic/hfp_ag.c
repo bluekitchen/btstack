@@ -1369,7 +1369,7 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                     hfp_gsm_handle_event(HFP_AG_CALL_DROPPED);
                     hfp_ag_set_callsetup_indicator();
                     hfp_ag_transfer_callsetup_state();
-                    hfp_ag_trigger_terminate_call();a
+                    hfp_ag_trigger_terminate_call();
                     break;
                 case HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT:
                     if (hfp_ag_response_and_hold_active) {
