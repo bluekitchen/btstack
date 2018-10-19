@@ -550,7 +550,7 @@ OPCODE(OGF_LINK_POLICY, 0x0d), "H2"
 /**
  * @param policy
  */
-const hci_cmd_t hci_write_default_link_policy_setup = {
+const hci_cmd_t hci_write_default_link_policy_setting = {
     OPCODE(OGF_LINK_POLICY, 0x0F), "2"
 };
 
