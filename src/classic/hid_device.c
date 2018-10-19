@@ -212,11 +212,11 @@ void hid_create_sdp_record(
             }
             de_pop_sequence(additionalDescriptorAttribute, l2cpProtocol);
 
-            uint8_t * hidProtocol = de_push_sequence(attribute);
+            uint8_t * hidProtocol = de_push_sequence(additionalDescriptorAttribute);
             {
                 de_add_number(hidProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_HIDP); 
             }
-            de_pop_sequence(attribute, hidProtocol);
+            de_pop_sequence(additionalDescriptorAttribute, hidProtocol);
         }
         de_pop_sequence(attribute, additionalDescriptorAttribute);
     }
