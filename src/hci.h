@@ -582,6 +582,8 @@ typedef enum hci_init_state{
     HCI_INIT_W4_WRITE_SIMPLE_PAIRING_MODE,
     HCI_INIT_WRITE_PAGE_TIMEOUT,
     HCI_INIT_W4_WRITE_PAGE_TIMEOUT,
+    HCI_INIT_WRITE_DEFAULT_LINK_POLICY_SETTING,
+    HCI_INIT_W4_WRITE_DEFAULT_LINK_POLICY_SETTING,
     HCI_INIT_WRITE_CLASS_OF_DEVICE,
     HCI_INIT_W4_WRITE_CLASS_OF_DEVICE,
     HCI_INIT_WRITE_LOCAL_NAME,
@@ -695,6 +697,7 @@ typedef struct {
     const uint8_t *    eir_data;
     uint32_t           class_of_device;
     bd_addr_t          local_bd_addr;
+    uint8_t            default_link_policy_settings;
     uint8_t            ssp_enable;
     uint8_t            ssp_io_capability;
     uint8_t            ssp_authentication_requirement;

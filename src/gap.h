@@ -157,6 +157,14 @@ void gap_set_extended_inquiry_response(const uint8_t * data);
 void gap_set_class_of_device(uint32_t class_of_device);
 
 /**
+ * @brief Set default link policy settings for all classic ACL links
+ * @param default_link_policy_settings - see LM_LINK_POLICY_* in bluetooth.h
+ * @note common value: LM_LINK_POLICY_ENABLE_ROLE_SWITCH | LM_LINK_POLICY_ENABLE_SNIFF_MODE to enable role switch and sniff mode
+ * @note has to be done before stack starts up
+ */
+void gap_set_default_link_policy_settings(uint16_t default_link_policy_settings);
+
+/**
  * @brief Enable/disable bonding. Default is enabled.
  * @param enabled
  */

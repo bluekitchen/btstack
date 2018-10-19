@@ -295,6 +295,12 @@ typedef enum {
 
 #define LE_ADVERTISING_DATA_SIZE    31
 
+// Link Policy Settings
+#define LM_LINK_POLICY_DISABLE_ALL_LM_MODES  0
+#define LM_LINK_POLICY_ENABLE_ROLE_SWITCH    1
+#define LM_LINK_POLICY_ENABLE_HOLD_MODE      2
+#define LM_LINK_POLICY_ENABLE_SNIFF_MODE     3
+
 /**
  * Default INQ Mode
  */

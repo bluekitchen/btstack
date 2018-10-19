@@ -1350,6 +1350,10 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_WRITE_PAGE_TIMEOUT;
             hci_send_cmd(&hci_write_page_timeout, 0x6000);  // ca. 15 sec
             break;
+        case HCI_INIT_WRITE_DEFAULT_LINK_POLICY_SETTING:
+            hci_stack->substate = HCI_INIT_W4_WRITE_DEFAULT_LINK_POLICY_SETTING;
+            hci_send_cmd(&hci_write_default_link_policy_setting, hci_stack->default_link_policy_settings);
+            break;
         case HCI_INIT_WRITE_CLASS_OF_DEVICE:
             hci_stack->substate = HCI_INIT_W4_WRITE_CLASS_OF_DEVICE;
             hci_send_cmd(&hci_write_class_of_device, hci_stack->class_of_device);
@@ -2705,6 +2709,10 @@ void hci_close(void){
 #ifdef ENABLE_CLASSIC
 void gap_set_class_of_device(uint32_t class_of_device){
     hci_stack->class_of_device = class_of_device;
+}
+
+void gap_set_default_link_policy_settings(uint16_t default_link_policy_settings){
+    hci_stack->default_link_policy_settings = default_link_policy_settings;
 }
 
 void hci_disable_l2cap_timeout_check(void){
