@@ -97,6 +97,7 @@ extern const hci_cmd_t hci_disconnect;
 extern const hci_cmd_t hci_enable_device_under_test_mode;
 extern const hci_cmd_t hci_enhanced_accept_synchronous_connection;
 extern const hci_cmd_t hci_enhanced_setup_synchronous_connection;
+extern const hci_cmd_t hci_exit_sniff_mode;
 extern const hci_cmd_t hci_flush;
 extern const hci_cmd_t hci_host_buffer_size;
 extern const hci_cmd_t hci_inquiry;

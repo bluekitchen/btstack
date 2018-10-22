@@ -506,6 +506,13 @@ OPCODE(OGF_LINK_POLICY, 0x03), "H2222"
 
 /**
  * @param handle
+ */
+const hci_cmd_t hci_exit_sniff_mode = {
+OPCODE(OGF_LINK_POLICY, 0x04), "H"
+};
+
+/**
+ * @param handle
  * @param flags
  * @param service_type
  * @param token_rate (bytes/s)
