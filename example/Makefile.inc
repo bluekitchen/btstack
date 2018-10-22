@@ -112,10 +112,11 @@ HXCMOD_PLAYER = \
 	${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c 	\
 
 EXAMPLES = 					\
-	att_delayed_response \
 	a2dp_sink_demo			\
 	a2dp_source_demo        \
 	ancs_client_demo		\
+	att_delayed_response    \
+	avrcp_browsing_client   \
 	dut_mode_classic        \
 	gap_dedicated_bonding	\
 	gap_inquiry 			\
@@ -292,10 +293,10 @@ hfp_hf_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODE
 hid_host_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_hid_parser.o hid_host_demo.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-hid_keyboard_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_ring_buffer.o hid_device.o hid_keyboard_demo.o
+hid_keyboard_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_ring_buffer.o hid_device.o btstack_hid_parser.o hid_keyboard_demo.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-hid_mouse_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_ring_buffer.o hid_device.o hid_mouse_demo.o
+hid_mouse_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_ring_buffer.o hid_device.o btstack_hid_parser.o hid_mouse_demo.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 a2dp_source_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_ENCODER_OBJ} ${AVDTP_OBJ} ${HXCMOD_PLAYER_OBJ} avrcp.o avrcp_target.o a2dp_source_demo.c

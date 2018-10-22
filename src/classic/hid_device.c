@@ -371,7 +371,7 @@ static int hid_report_size_valid(uint16_t cid, int report_id, hid_report_type_t 
     return 1;
 }
 
-static int hid_get_report_size_for_id(uint16_t cid, int report_id, hid_report_type_t report_type, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor){
+static int hid_get_report_size_for_id(uint16_t cid, int report_id, hid_report_type_t report_type, uint16_t descriptor_len, const uint8_t * descriptor){
     if (hid_device_in_boot_protocol_mode(cid)){
         switch (report_id){
             case HID_BOOT_MODE_KEYBOARD_ID:
@@ -382,7 +382,7 @@ static int hid_get_report_size_for_id(uint16_t cid, int report_id, hid_report_ty
                 return 0;
         }
     } else {
-        return btstack_hid_get_report_size_for_id(report_id, report_type, hid_descriptor_len, hid_descriptor);
+        return btstack_hid_get_report_size_for_id(report_id, report_type, descriptor_len, descriptor);
     }
 }
 
