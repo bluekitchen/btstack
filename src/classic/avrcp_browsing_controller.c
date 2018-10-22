@@ -162,7 +162,7 @@ static uint8_t avrcp_browsing_connect(bd_addr_t remote_addr, avrcp_context_t * c
     connection->ertm_buffer = ertm_buffer;
     connection->ertm_buffer_size = size;
     avrcp_connection->browsing_connection = connection;
-
+    avrcp_connection->browsing_connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
     memcpy(&connection->ertm_config, ertm_config, sizeof(l2cap_ertm_config_t));
 
     return l2cap_create_ertm_channel(avrcp_browsing_controller_packet_handler, remote_addr, avrcp_connection->browsing_l2cap_psm, 
@@ -222,8 +222,6 @@ static void avrcp_browser_packet_handler(uint8_t packet_type, uint16_t channel, 
                 avrcp_connection->browsing_connection = NULL;
                 break;
             }
-            if (browsing_connection->state != AVCTP_CONNECTION_W4_L2CAP_CONNECTED) break;
-            
             browsing_connection->l2cap_browsing_cid = local_cid;
 
             log_info("L2CAP_EVENT_CHANNEL_OPENED browsing cid 0x%02x, l2cap cid 0x%02x", avrcp_connection->avrcp_browsing_cid, browsing_connection->l2cap_browsing_cid);
@@ -586,7 +584,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
     avrcp_browsing_connection_t * browsing_connection;
             
     switch (packet_type) {
-        case L2CAP_DATA_PACKET:{
+        case L2CAP_DATA_PACKET:{                            
             browsing_connection = get_avrcp_browsing_connection_for_l2cap_cid(channel, &avrcp_controller_context);
             if (!browsing_connection) break;
             // printf("received \n");
@@ -641,6 +639,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     break;
                 }
                 case AVRCP_PDU_ID_SET_BROWSED_PLAYER:{
+                    // printf("AVRCP_PDU_ID_SET_BROWSED_PLAYER \n");
                     browsing_connection->uid_counter =  big_endian_read_16(packet, pos);
                     pos += 2;
                     // uint32_t num_items = big_endian_read_32(packet, pos);
@@ -659,8 +658,8 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     }
                     break;
                 }
-
                 case AVRCP_PDU_ID_GET_FOLDER_ITEMS:{
+                    // printf("AVRCP_PDU_ID_GET_FOLDER_ITEMS \n");
                     switch (avctp_packet_type){
                         case AVRCP_SINGLE_PACKET:
                         case AVRCP_START_PACKET:
@@ -682,8 +681,7 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                             break;
                     }
                     break;
-                }            
-                    
+                }                
                 case AVRCP_PDU_ID_SEARCH:{
                     browsing_connection->uid_counter =  big_endian_read_16(packet, pos);
                     pos += 2;
@@ -695,7 +693,6 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
                     packet[pos-1] = AVRCP_BROWSING_MEDIA_ELEMENT_ITEM_ATTRIBUTE;
                     (*avrcp_controller_context.browsing_avrcp_callback)(AVRCP_BROWSING_DATA_PACKET, channel, packet+pos-1, size - pos + 1);
                     break;
-                
                 default:
                     log_info(" not parsed pdu ID 0x%02x", browsing_connection->pdu_id);
                     break;
