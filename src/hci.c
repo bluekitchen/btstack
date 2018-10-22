@@ -3463,6 +3463,21 @@ static void hci_run(void){
             return;
         }
 
+        uint16_t sniff_min_interval;
+        switch (connection->sniff_min_interval){
+            case 0:
+                break;
+            case 0xffff:
+                connection->sniff_min_interval = 0;
+                hci_send_cmd(&hci_exit_sniff_mode, connection->con_handle);
+                return;
+            default:
+                sniff_min_interval = connection->sniff_min_interval;
+                connection->sniff_min_interval = 0;
+                hci_send_cmd(&hci_sniff_mode, connection->con_handle, connection->sniff_max_interval, sniff_min_interval, connection->sniff_attempt, connection->sniff_timeout);
+                break;
+        }
+
 #ifdef ENABLE_BLE
         switch (connection->le_con_parameter_update_state){
             // response to L2CAP CON PARAMETER UPDATE REQUEST
@@ -4834,5 +4849,31 @@ authorization_state_t gap_authorization_state(hci_con_handle_t con_handle){
     if (!sm_conn->sm_connection_encrypted)               return AUTHORIZATION_UNKNOWN; // unencrypted connection cannot be authorized
     if (!sm_conn->sm_connection_authenticated)           return AUTHORIZATION_UNKNOWN; // unauthenticatd connection cannot be authorized
     return sm_conn->sm_connection_authorization_state;
+}
+#endif
+
+#ifdef ENABLE_CLASSIC
+uint8_t gap_sniff_mode_enter(hci_con_handle_t con_handle, uint16_t sniff_min_interval, uint16_t sniff_max_interval, uint16_t sniff_attempt, uint16_t sniff_timeout){
+    hci_connection_t * conn = hci_connection_for_handle(con_handle);
+    if (!conn) return GAP_CONNECTION_INVALID;
+    conn->sniff_min_interval = sniff_min_interval;
+    conn->sniff_max_interval = sniff_max_interval;
+    conn->sniff_attempt = sniff_attempt;
+    conn->sniff_timeout = sniff_timeout;
+    hci_run();
+    return 0;
+}
+
+/**
+ * @brief Exit Sniff mode
+ * @param con_handle
+ @ @return 0 if ok
+ */
+uint8_t gap_sniff_mode_exit(hci_con_handle_t con_handle){
+    hci_connection_t * conn = hci_connection_for_handle(con_handle);
+    if (!conn) return GAP_CONNECTION_INVALID;
+    conn->sniff_min_interval = 0xffff;
+    hci_run();
+    return 0;
 }
 #endif

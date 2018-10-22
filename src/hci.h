@@ -475,6 +475,7 @@ typedef struct {
     // bonding
     uint16_t bonding_flags;
     uint8_t  bonding_status;
+
     // requested security level
     gap_security_level_t requested_security_level;
 
@@ -484,8 +485,16 @@ typedef struct {
     // remote supported features
     uint8_t remote_supported_feature_eSCO;
 
-    // conenction mode, default ACL_CONNECTION_MODE_ACTIVE
+#ifdef ENABLE_CLASSIC
+    // connection mode, default ACL_CONNECTION_MODE_ACTIVE
     uint8_t connection_mode;
+
+    // enter/exit sniff mode requests
+    uint16_t sniff_min_interval;    // 0: idle, 0xffff exit sniff, else enter sniff
+    uint16_t sniff_max_interval;
+    uint16_t sniff_attempt;
+    uint16_t sniff_timeout;
+#endif
 
     // errands
     uint32_t authentication_flags;

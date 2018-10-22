@@ -553,7 +553,23 @@ int gap_ssp_confirmation_response(bd_addr_t addr);
  */
 int gap_ssp_confirmation_negative(bd_addr_t addr);
 
+/**
+ * @brief Enter Sniff mode
+ * @param con_handle
+ * @param sniff_min_interval range: 0x0002 to 0xFFFE; only even values are valid, Time = N * 0.625 ms
+ * @param sniff_max_interval range: 0x0002 to 0xFFFE; only even values are valid, Time = N * 0.625 ms
+ * @param sniff_attempt Number of Baseband receive slots for sniff attempt.
+ * @param sniff_timeout Number of Baseband receive slots for sniff timeout.
+ @ @return 0 if ok
+ */
+uint8_t gap_sniff_mode_enter(hci_con_handle_t con_handle, uint16_t sniff_min_interval, uint16_t sniff_max_interval, uint16_t sniff_attempt, uint16_t sniff_timeout);
 
+/**
+ * @brief Exit Sniff mode
+ * @param con_handle
+ @ @return 0 if ok
+ */
+uint8_t gap_sniff_mode_exit(hci_con_handle_t con_handle);
 
 // LE
 
