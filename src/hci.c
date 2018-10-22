@@ -3463,6 +3463,7 @@ static void hci_run(void){
             return;
         }
 
+#ifdef ENABLE_CLASSIC
         uint16_t sniff_min_interval;
         switch (connection->sniff_min_interval){
             case 0:
@@ -3477,6 +3478,7 @@ static void hci_run(void){
                 hci_send_cmd(&hci_sniff_mode, connection->con_handle, connection->sniff_max_interval, sniff_min_interval, connection->sniff_attempt, connection->sniff_timeout);
                 break;
         }
+#endif
 
 #ifdef ENABLE_BLE
         switch (connection->le_con_parameter_update_state){
