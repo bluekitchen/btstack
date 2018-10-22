@@ -334,21 +334,21 @@ static inline uint8_t hci_event_disconnection_complete_get_reason(const uint8_t 
 }
 
 /**
- * @brief Get field status from event HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT
+ * @brief Get field status from event HCI_EVENT_AUTHENTICATION_COMPLETE
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t hci_event_authentication_complete_event_get_status(const uint8_t * event){
+static inline uint8_t hci_event_authentication_complete_get_status(const uint8_t * event){
     return event[2];
 }
 /**
- * @brief Get field connection_handle from event HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT
+ * @brief Get field connection_handle from event HCI_EVENT_AUTHENTICATION_COMPLETE
  * @param event packet
  * @return connection_handle
  * @note: btstack_type 2
  */
-static inline uint16_t hci_event_authentication_complete_event_get_connection_handle(const uint8_t * event){
+static inline uint16_t hci_event_authentication_complete_get_connection_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 
@@ -550,39 +550,39 @@ static inline uint8_t hci_event_role_change_get_role(const uint8_t * event){
 }
 
 /**
- * @brief Get field status from event HCI_EVENT_MODE_CHANGE_EVENT
+ * @brief Get field status from event HCI_EVENT_MODE_CHANGE
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t hci_event_mode_change_event_get_status(const uint8_t * event){
+static inline uint8_t hci_event_mode_change_get_status(const uint8_t * event){
     return event[2];
 }
 /**
- * @brief Get field handle from event HCI_EVENT_MODE_CHANGE_EVENT
+ * @brief Get field handle from event HCI_EVENT_MODE_CHANGE
  * @param event packet
  * @return handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hci_event_mode_change_event_get_handle(const uint8_t * event){
+static inline hci_con_handle_t hci_event_mode_change_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field mode from event HCI_EVENT_MODE_CHANGE_EVENT
+ * @brief Get field mode from event HCI_EVENT_MODE_CHANGE
  * @param event packet
  * @return mode
  * @note: btstack_type 1
  */
-static inline uint8_t hci_event_mode_change_event_get_mode(const uint8_t * event){
+static inline uint8_t hci_event_mode_change_get_mode(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field interval from event HCI_EVENT_MODE_CHANGE_EVENT
+ * @brief Get field interval from event HCI_EVENT_MODE_CHANGE
  * @param event packet
  * @return interval
  * @note: btstack_type 2
  */
-static inline uint16_t hci_event_mode_change_event_get_interval(const uint8_t * event){
+static inline uint16_t hci_event_mode_change_get_interval(const uint8_t * event){
     return little_endian_read_16(event, 6);
 }
 

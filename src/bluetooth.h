@@ -301,6 +301,11 @@ typedef enum {
 #define LM_LINK_POLICY_ENABLE_HOLD_MODE      2
 #define LM_LINK_POLICY_ENABLE_SNIFF_MODE     3
 
+// ACL Connection Modes
+#define ACL_CONNECTION_MODE_ACTIVE 0
+#define ACL_CONNECTION_MODE_HOLD   1
+#define ACL_CONNECTION_MODE_SNIFF  2
+
 /**
  * Default INQ Mode
  */
@@ -399,7 +404,11 @@ typedef enum {
  * @param status
  * @param connection_handle
  */
-#define HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT            0x06
+#define HCI_EVENT_AUTHENTICATION_COMPLETE                 0x06
+
+// HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT is deprecated, use HCI_EVENT_AUTHENTICATION_COMPLETE instead
+#define HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT HCI_EVENT_AUTHENTICATION_COMPLETE
+
 /**
  * @format 1BN
  * @param status
@@ -475,7 +484,7 @@ typedef enum {
  * @param mode
  * @param interval
  */
-#define HCI_EVENT_MODE_CHANGE_EVENT                        0x14
+#define HCI_EVENT_MODE_CHANGE                              0x14
 
 // TODO: num_keys, bd_addr[B*i], link_key[16 octets * i]
 #define HCI_EVENT_RETURN_LINK_KEYS                         0x15
