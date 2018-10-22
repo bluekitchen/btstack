@@ -58,6 +58,12 @@ void mesh_k1(btstack_crypto_aes128_cmac_t * request, const uint8_t * n, uint16_t
     const uint8_t * p, const uint16_t p_len, uint8_t * result, void (* callback)(void * arg), void * callback_arg);
 
 /**
+ * Calculate mesh k2 function
+ * @param result 33 bytes (7 bit NID + 16 byte Encryption Key + 16 byte Privacy Key)
+ */
+void mesh_k2(btstack_crypto_aes128_cmac_t * request, const uint8_t * n, uint8_t * result, void (* callback)(void * arg), void * callback_arg);
+
+/**
  * Calculate mesh k3 function
  */
 void mesh_k3(btstack_crypto_aes128_cmac_t * request, const uint8_t * n, uint8_t * result, void (* callback)(void * arg), void * callback_arg);

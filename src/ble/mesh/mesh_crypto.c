@@ -39,6 +39,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include "btstack_debug.h"
 #include "mesh_crypto.h"
 
 // mesh k1 - might get moved to btstack_crypto and all vars go into btstack_crypto_mesh_k1_t struct
@@ -63,6 +64,64 @@ void mesh_k1(btstack_crypto_aes128_cmac_t * request, const uint8_t * n, uint16_t
     mesh_k1_result   = result;
     btstack_crypto_aes128_cmac_message(request, salt, n_len, n, mesh_k1_temp, mesh_k1_temp_calculated, request);
 }
+
+// mesh k2 - might get moved to btstack_crypto and all vars go into btstack_crypto_mesh_k2_t struct
+static void (*         mesh_k2_callback)(void * arg);
+static void *          mesh_k2_arg;
+static uint8_t       * mesh_k2_result;
+static uint8_t         mesh_k2_t[16];
+static uint8_t         mesh_k2_t1[18];
+static uint8_t         mesh_k2_t2[16];
+
+static const uint8_t mesh_salt_smk2[] = { 0x4f, 0x90, 0x48, 0x0c, 0x18, 0x71, 0xbf, 0xbf, 0xfd, 0x16, 0x97, 0x1f, 0x4d, 0x8d, 0x10, 0xb1 };
+
+static void mesh_k2_callback_d(void * arg){
+    btstack_crypto_aes128_cmac_t * request = (btstack_crypto_aes128_cmac_t*) arg;
+    log_info("PrivacyKey: ");
+    log_info_hexdump(mesh_k2_t, 16);
+    // collect result
+    memcpy(&mesh_k2_result[17], mesh_k2_t2, 16);
+    //
+    (*mesh_k2_callback)(mesh_k2_arg);        
+}
+static void mesh_k2_callback_c(void * arg){
+    btstack_crypto_aes128_cmac_t * request = (btstack_crypto_aes128_cmac_t*) arg;
+    log_info("EncryptionKey: ");
+    log_info_hexdump(mesh_k2_t, 16);
+    // collect result
+    memcpy(&mesh_k2_result[1], mesh_k2_t2, 16);
+    //
+    memcpy(mesh_k2_t1, mesh_k2_t2, 16);
+    mesh_k2_t1[16] = 0; // p
+    mesh_k2_t1[17] = 0x03;
+    btstack_crypto_aes128_cmac_message(request, mesh_k2_t, 18, mesh_k2_t1, mesh_k2_t2, mesh_k2_callback_d, request);
+}
+static void mesh_k2_callback_b(void * arg){
+    btstack_crypto_aes128_cmac_t * request = (btstack_crypto_aes128_cmac_t*) arg;
+    log_info("NID: 0x%02x\n", mesh_k2_t2[15] & 0x7f);
+    // collect result
+    mesh_k2_result[0] = mesh_k2_t2[15] & 0x7f;
+    //
+    memcpy(mesh_k2_t1, mesh_k2_t2, 16);
+    mesh_k2_t1[16] = 0; // p
+    mesh_k2_t1[17] = 0x02;
+    btstack_crypto_aes128_cmac_message(request, mesh_k2_t, 18, mesh_k2_t1, mesh_k2_t2, mesh_k2_callback_c, request);
+}
+static void mesh_k2_callback_a(void * arg){
+    btstack_crypto_aes128_cmac_t * request = (btstack_crypto_aes128_cmac_t*) arg;
+    log_info("T:");
+    log_info_hexdump(mesh_k2_t, 16);
+    mesh_k2_t1[0] = 0; // p
+    mesh_k2_t1[1] = 0x01;
+    btstack_crypto_aes128_cmac_message(request, mesh_k2_t, 2, mesh_k2_t1, mesh_k2_t2, mesh_k2_callback_b, request);
+}
+void mesh_k2(btstack_crypto_aes128_cmac_t * request, const uint8_t * n, uint8_t * result, void (* callback)(void * arg), void * callback_arg){
+    mesh_k2_callback = callback;
+    mesh_k2_arg      = callback_arg;
+    mesh_k2_result   = result;
+    btstack_crypto_aes128_cmac_message(request, mesh_salt_smk2, 16, n, mesh_k2_t, mesh_k2_callback_a, request);
+}
+
 
 // mesh k3 - might get moved to btstack_crypto and all vars go into btstack_crypto_mesh_k3_t struct
 static const uint8_t   mesh_k3_tag[5] = { 'i', 'd', '6', '4', 0x01}; 
