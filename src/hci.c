@@ -1821,7 +1821,7 @@ static void event_handler(uint8_t *packet, int size){
 
     // assert packet is complete
     if (size != event_length + 2){
-        log_error("hci.c: event_handler called with event packet of wrong size %d, expected %u => dropping packet", size, event_length + 2);
+        log_error("event_handler called with packet of wrong size %d, expected %u => dropping packet", size, event_length + 2);
         return;
     }
 
@@ -2187,6 +2187,13 @@ static void event_handler(uint8_t *packet, int size){
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SSP_PAIRING_ACTIVE);
             if (!hci_stack->ssp_auto_accept) break;
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_USER_PASSKEY_REPLY);
+            break;
+        case HCI_EVENT_MODE_CHANGE:
+            handle = hci_event_mode_change_get_handle(packet);
+            conn = hci_connection_for_handle(handle);
+            if (!conn) break;
+            conn->connection_mode = hci_event_mode_change_get_mode(packet);
+            log_info("HCI_EVENT_MODE_CHANGE, handle 0x%04x, mode %u", handle, conn->connection_mode);
             break;
 #endif
 

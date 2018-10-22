@@ -484,6 +484,9 @@ typedef struct {
     // remote supported features
     uint8_t remote_supported_feature_eSCO;
 
+    // conenction mode, default ACL_CONNECTION_MODE_ACTIVE
+    uint8_t connection_mode;
+
     // errands
     uint32_t authentication_flags;
 
