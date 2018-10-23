@@ -417,7 +417,6 @@ static hid_handshake_param_type_t hid_device_set_report_cmd_is_valid(uint16_t ci
     }
     
     if (!hid_report_size_valid(cid, report_id, report_type, report_size-pos)){
-        // printf("invalid report size\n");
         // TODO clarify DCT/BI-03c
         return HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
     }
@@ -449,6 +448,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
             // printf("L2CAP_DATA_PACKET message_type %d, packet_size %d  \n", message_type, packet_size);
             switch (message_type){
                 case HID_MESSAGE_TYPE_GET_REPORT:
+
                     pos = 0;
                     device->report_type = packet[pos++] & 0x03;
                     device->report_id = 0;
@@ -605,15 +605,22 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     if (packet_size < 2) {
                         break;
                     }
-                    device->report_type = packet[0] & 0x03;
-                    device->report_id = packet[1];
-
-                    if (hid_report_id_status(device->cid, device->report_id) == HID_REPORT_ID_INVALID || 
-                        !hid_report_size_valid(device->cid, device->report_id, device->report_type, packet_size - 2)){
-                        log_info("Ignore report data packet\n");
-                        return;
+                    pos = 0;
+                    device->report_type = packet[pos++] & 0x03;
+                    device->report_id = 0;
+                    if (btstack_hid_report_id_declared(hid_descriptor_len, hid_descriptor)){
+                        device->report_id = packet[pos++];
                     }
-                    (*hci_device_report_data)(device->cid, device->report_type, device->report_id, packet_size - 2, &packet[2]);
+                    
+                    if (hid_report_id_status(device->cid, device->report_id) == HID_REPORT_ID_INVALID){
+                        log_info("Ignore invalid report data packet");
+                        break;
+                    }
+                    if (!hid_report_size_valid(device->cid, device->report_id, device->report_type, packet_size - pos)){
+                        log_info("Ignore invalid report data packet, invalid size");
+                        break;
+                    }
+                    (*hci_device_report_data)(device->cid, device->report_type, device->report_id, packet_size - pos, &packet[pos]);
                     break;
                 default:
                     // printf("HID_DEVICE_W2_SEND_UNSUPPORTED_REQUEST %d  \n", message_type);
