@@ -109,6 +109,9 @@ void provisioning_device_input_oob_complete_alphanumeric(uint16_t pb_adv_cid, co
 
 // Query provisioning data
 uint8_t provisioning_device_data_get_flags(void);
+uint8_t provisioning_device_data_get_nid(void);
+const uint8_t * provisioning_device_data_get_encryption_key(void);
+const uint8_t * provisioning_device_data_get_privacy_key(void);
 const uint8_t * provisioning_device_data_get_network_id(void);
 uint32_t provisioning_device_data_get_iv_index(void);
 const uint8_t * provisioning_device_data_get_beacon_key(void);

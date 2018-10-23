@@ -115,12 +115,15 @@ static uint8_t enc_provisioning_data[25];
 // ProvisioningData
 static uint8_t provisioning_data[25];
 
+
 // DeviceKey
 static uint8_t device_key[16];
 // NetKey
 static uint8_t  net_key[16];
 // NetKeyIndex
 static uint16_t net_key_index;
+// k2: NID (7), EncryptionKey (128), PrivacyKey (128) 
+static uint8_t k2_result[33];
 
 static uint8_t  flags;
 
@@ -644,10 +647,15 @@ static void provisioning_handle_random(uint8_t *packet, uint16_t size){
     btstack_crypto_aes128_cmac_zero(&prov_cmac_request, 48, prov_confirmation_inputs, provisioning_salt, &provisioning_handle_random_s1_calculated, NULL);
 }
 
-static void provisioning_handle_beacon_key_calculated(void *arg){
-    printf("BeaconKey: ");
-    printf_hexdump(beacon_key, 16);
+static void provisioning_handle_data_k2_calculated(void * arg){
+    // Dump
+    printf("NID: %02x\n", k2_result[0]);
+    printf("EncryptionKey: ");
+    printf_hexdump(&k2_result[1], 16);
+    printf("PrivacyKey: ");
+    printf_hexdump(&k2_result[17], 16);
 
+    // 
     provisioning_timer_stop();
 
     // notify client
@@ -655,6 +663,14 @@ static void provisioning_handle_beacon_key_calculated(void *arg){
 
     device_state = DEVICE_SEND_COMPLETE;
     provisioning_run();
+}
+
+static void provisioning_handle_beacon_key_calculated(void *arg){
+    printf("BeaconKey: ");
+    printf_hexdump(beacon_key, 16);
+
+    // calc k2
+    mesh_k2(&prov_cmac_request, net_key, k2_result, &provisioning_handle_data_k2_calculated, NULL);
 }
 
 // PROV_DATA
@@ -875,4 +891,13 @@ uint32_t provisioning_device_data_get_iv_index(void){
 }
 const uint8_t * provisioning_device_data_get_beacon_key(void){
     return beacon_key;
+}
+uint8_t provisioning_device_data_get_nid(void){
+    return k2_result[0];
+}
+const uint8_t * provisioning_device_data_get_encryption_key(void){
+    return &k2_result[1];
+}
+const uint8_t * provisioning_device_data_get_privacy_key(void){
+    return  &k2_result[17];
 }
