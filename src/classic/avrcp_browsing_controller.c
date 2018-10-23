@@ -266,6 +266,8 @@ static int avrcp_browsing_controller_send_get_folder_items_cmd(uint16_t cid, avr
     command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
     command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
     command[pos++] = AVRCP_PDU_ID_GET_FOLDER_ITEMS;
+    printf_hexdump(command, pos);
+    printf("\n");
 
     uint32_t attribute_count = 0;
     uint32_t attributes_to_copy = 0;
@@ -278,13 +280,13 @@ static int avrcp_browsing_controller_send_get_folder_items_cmd(uint16_t cid, avr
             attribute_count = AVRCP_MEDIA_ATTR_ALL;  // 0
             break;
         default:
-            attribute_count = count_set_bits_uint32(connection->attr_bitmap & 0xff);
+            attribute_count    = count_set_bits_uint32(connection->attr_bitmap & 0xff);
             attributes_to_copy = attribute_count;
             break;
     }
-    
-    big_endian_store_16(command, pos, 9 + attribute_count*4);
+    big_endian_store_16(command, pos, 9 + 1 + attribute_count*4);
     pos += 2;
+    
     command[pos++] = connection->scope;
     big_endian_store_32(command, pos, connection->start_item);
     pos += 4;
@@ -301,8 +303,6 @@ static int avrcp_browsing_controller_send_get_folder_items_cmd(uint16_t cid, avr
         }
         bit_position++;
     }
-    
-    
     return l2cap_send(cid, command, pos);
 }
 
@@ -318,15 +318,13 @@ static int avrcp_browsing_controller_send_get_item_attributes_cmd(uint16_t cid, 
     command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
     command[pos++] = AVRCP_PDU_ID_GET_ITEM_ATTRIBUTES;
 
-    uint32_t attribute_count = 0;
+    uint32_t attribute_count;
     uint32_t attributes_to_copy = 0;
 
     switch (connection->attr_bitmap){
         case AVRCP_MEDIA_ATTR_NONE:
-            attribute_count = AVRCP_MEDIA_ATTR_NONE; // 0xFFFFFFFF
-            break;
         case AVRCP_MEDIA_ATTR_ALL:
-            attribute_count = AVRCP_MEDIA_ATTR_ALL;  // 0
+            attribute_count = 0;
             break;
         default:
             attribute_count = count_set_bits_uint32(connection->attr_bitmap & 0xff);
