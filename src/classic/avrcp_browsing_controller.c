@@ -266,8 +266,6 @@ static int avrcp_browsing_controller_send_get_folder_items_cmd(uint16_t cid, avr
     command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL >> 8;
     command[pos++] = BLUETOOTH_SERVICE_CLASS_AV_REMOTE_CONTROL & 0x00FF;
     command[pos++] = AVRCP_PDU_ID_GET_FOLDER_ITEMS;
-    printf_hexdump(command, pos);
-    printf("\n");
 
     uint32_t attribute_count = 0;
     uint32_t attributes_to_copy = 0;
