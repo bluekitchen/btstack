@@ -211,6 +211,12 @@ static int l2cap_ertm_can_store_packet_now(l2cap_channel_t * channel){
     return num_tx_buffers_for_max_remote_mtu <= num_free_tx_buffers;
 }
 
+static void l2cap_ertm_retransmit_unacknowleded_frames(l2cap_channel_t * l2cap_channel){
+    log_info("Retransmit unacknowleged frames");
+    l2cap_channel->unacked_frames = 0;;
+    l2cap_channel->tx_send_index  = l2cap_channel->tx_read_index;
+}
+
 static void l2cap_ertm_next_tx_write_index(l2cap_channel_t * channel){
     channel->tx_write_index++;
     if (channel->tx_write_index < channel->num_tx_buffers) return;
@@ -258,6 +264,10 @@ static void l2cap_ertm_monitor_timeout_callback(btstack_timer_source_t * ts){
         // increment retry count
         tx_state->retry_count++;
 
+        // start retransmit
+        l2cap_ertm_retransmit_unacknowleded_frames(l2cap_channel);
+
+        // start monitor timer
         l2cap_ertm_start_monitor_timer(l2cap_channel);
 
         // send RR/P=1
@@ -279,6 +289,9 @@ static void l2cap_ertm_retransmission_timeout_callback(btstack_timer_source_t * 
 
     // set retry count = 1
     tx_state->retry_count = 1;
+
+    // start retransmit
+    l2cap_ertm_retransmit_unacknowleded_frames(l2cap_channel);
 
     // start monitor timer
     l2cap_ertm_start_monitor_timer(l2cap_channel);
@@ -3125,7 +3138,7 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                             log_info("Packet FCS 0x%04x verified", fcs_packet);
                         } else {
                             log_error("FCS mismatch! Packet 0x%04x, calculated 0x%04x", fcs_packet, fcs_calculated);
-                            // TODO: trigger retransmission or something like that
+                            // ERTM State Machine in Bluetooth Spec does not handle 'I-Frame with invalid FCS'
                             break;
                         }
                     }
@@ -3176,17 +3189,15 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                                     if (l2cap_channel->unacked_frames){
                                         l2cap_ertm_start_retransmission_timer(l2cap_channel);
                                     }
-
                                     // final bit set <- response to RR with poll bit set. All not acknowledged packets need to be retransmitted
-                                    l2cap_channel->tx_send_index = l2cap_channel->tx_read_index;
+                                    l2cap_ertm_retransmit_unacknowleded_frames(l2cap_channel);
                                 }                       
                                 break;
                             case L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT:
                                 log_info("L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT");
                                 l2cap_ertm_process_req_seq(l2cap_channel, req_seq);
                                 // restart transmittion from last unacknowledted packet (earlier packets already freed in l2cap_ertm_process_req_seq)
-                                l2cap_channel->unacked_frames = 0;
-                                l2cap_channel->tx_send_index = l2cap_channel->tx_read_index;
+                                l2cap_ertm_retransmit_unacknowleded_frames(l2cap_channel);
                                 break;
                             case L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY:
                                 log_error("L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY");
@@ -3220,7 +3231,7 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                         l2cap_ertm_process_req_seq(l2cap_channel, req_seq);
                         if (final){
                             // final bit set <- response to RR with poll bit set. All not acknowledged packets need to be retransmitted
-                            l2cap_channel->tx_send_index = l2cap_channel->tx_read_index;
+                            l2cap_ertm_retransmit_unacknowleded_frames(l2cap_channel);
                         }
 
                         // get SDU
