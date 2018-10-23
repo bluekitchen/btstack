@@ -81,10 +81,19 @@ extern "C"
 
 
 typedef struct {
-	uint8_t  network_id[8];
-	uint8_t  beacon_key[16];
-	uint32_t iv_index;
-} mesh_provisioning_data;
+    // uint8_t network_key[16]  // not used yet
+    uint32_t iv_index;
+
+    // k1
+    // uint8_t identity_key[16] // not used yet
+    uint8_t  beacon_key[16];
+    // k2
+    uint8_t  nid;
+    uint8_t  encryption_key[16];
+    uint8_t  privacy_key[16];
+    // k3
+    uint8_t  network_id[8];
+} mesh_provisioning_data_t;
 
 
 #ifdef __cplusplus

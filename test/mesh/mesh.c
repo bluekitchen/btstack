@@ -59,7 +59,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
 static int counter = 'a';
 
-static mesh_provisioning_data provisioning_data;
+static mesh_provisioning_data_t provisioning_data;
 static uint8_t mesh_flags;
 
 // pin entry
@@ -95,7 +95,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     // get tlv
                     btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
                     // load provisioning data
-                    prov_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data));
+                    prov_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
                     printf("Provisioning data available: %u\n", prov_len ? 1 : 0);
                     // setup scanning
                     gap_set_scan_parameters(0, 0x300, 0x300);
@@ -109,12 +109,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-// test values
-static uint16_t network_pdu_src = 0x1111;
-static uint16_t network_pdu_dst = 0x2222;
-static uint32_t network_pdu_seq = 0x1234;
-static uint8_t  network_pdu_ttl = 1;
-static uint8_t  network_pdu_ctl = 0;   // 0 = Access Layer Message with 32-bit MIC, 1 = Control Message with 64-bit MIC
+static uint16_t network_pdu_src;
+static uint16_t network_pdu_dst;
+static uint32_t network_pdu_seq;
+static uint8_t  network_pdu_ttl;
+static uint8_t  network_pdu_ctl;
 
 // transport pdu
 static uint8_t transport_pdu_data[16];
@@ -130,15 +129,6 @@ static uint8_t network_pdu_len;
 
 
 static uint8_t network_nonce[13];
-
-static void generate_transport_pdu(void){
-    transport_pdu_len = sizeof(transport_pdu_data);
-    memset(transport_pdu_data, counter, transport_pdu_len);
-    counter++;
-    if (counter >= 'z') {
-        counter = 'a';
-    }
-}
 
 static void mesh_network_create_nonce(uint8_t * nonce, uint8_t ctl_ttl, uint32_t seq, uint16_t src, uint32_t iv_index){
     unsigned int pos = 0;
@@ -184,8 +174,8 @@ static void create_network_pdu_b(void *arg){
     network_pdu_len = 0;
     
     // Plainn: NID / IVI
-    uint32_t iv_index = provisioning_device_data_get_iv_index();
-    uint8_t  nid      = provisioning_device_data_get_nid();
+    uint32_t iv_index = provisioning_data.iv_index;
+    uint8_t  nid      = provisioning_data.nid;
     network_pdu_data[network_pdu_len++] = (iv_index << 7) |  nid;
     
     // Obfuscated:
@@ -203,7 +193,7 @@ static void create_network_pdu_b(void *arg){
     memset(encryption_block, 0, 5);
     big_endian_store_32(encryption_block, 5, iv_index);
     memcpy(&encryption_block[9], &network_pdu_data[7], 7);
-    btstack_crypto_aes128_encrypt(&mesh_aes128_request, provisioning_device_data_get_privacy_key(), encryption_block, obfuscation_block, &create_network_pdu_c, NULL);
+    btstack_crypto_aes128_encrypt(&mesh_aes128_request, provisioning_data.privacy_key, encryption_block, obfuscation_block, &create_network_pdu_c, NULL);
 }
 
 static void create_network_pdu_a(void *arg){
@@ -213,7 +203,7 @@ static void create_network_pdu_a(void *arg){
 static void create_network_pdu(void){
 
     // get network nonce
-    uint32_t iv_index = provisioning_device_data_get_iv_index();
+    uint32_t iv_index = provisioning_data.iv_index;
     uint8_t ctl_ttl = (network_pdu_ctl << 7) | (network_pdu_ttl & 0x7f);
     mesh_network_create_nonce(network_nonce, ctl_ttl, network_pdu_seq, network_pdu_src, iv_index); 
 
@@ -223,7 +213,7 @@ static void create_network_pdu(void){
 
     // start ccm
     uint8_t cypher_len = 2 + transport_pdu_len;
-    btstack_crypo_ccm_init(&mesh_ccm_request, provisioning_device_data_get_encryption_key(), network_nonce, cypher_len);
+    btstack_crypo_ccm_init(&mesh_ccm_request, provisioning_data.encryption_key, network_nonce, cypher_len);
     if (cypher_len > 16){
         btstack_crypto_ccm_encrypt_block(&mesh_ccm_request, 16, encryption_block, &network_pdu_data[7], &create_network_pdu_a, NULL);
     } else {
@@ -255,10 +245,13 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
                     printf("Provisioning complete\n");
                     memcpy(provisioning_data.network_id, provisioning_device_data_get_network_id(), 8);
                     memcpy(provisioning_data.beacon_key, provisioning_device_data_get_beacon_key(), 16);
+                    memcpy(provisioning_data.encryption_key, provisioning_device_data_get_encryption_key(), 16);
+                    memcpy(provisioning_data.privacy_key, provisioning_device_data_get_privacy_key(), 16);
                     provisioning_data.iv_index = provisioning_device_data_get_iv_index();
+                    provisioning_data.nid = provisioning_device_data_get_nid();
                     mesh_flags = provisioning_device_data_get_flags();
                     // store in TLV
-                    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data));
+                    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
                     break;
                 default:
                     break;
@@ -349,6 +342,25 @@ static btstack_crypto_aes128_cmac_t mesh_cmac_request;
 static uint8_t mesh_secure_network_beacon[22];
 static uint8_t mesh_secure_network_beacon_auth_value[16];
 
+static void generate_transport_pdu(void){
+
+    // test values - message #1
+    network_pdu_src = 0x1201;
+    network_pdu_dst = 0xfffd;
+    network_pdu_seq = 0x0001;
+    network_pdu_ttl = 0;
+    network_pdu_ctl = 1;
+
+    const char * message_1_transport_pdu = "034b50057e400000010000";
+    transport_pdu_len = strlen(message_1_transport_pdu) / 2;
+    btstack_parse_hex(message_1_transport_pdu, transport_pdu_len, transport_pdu_data);
+
+    provisioning_data.nid = 0x68;
+    provisioning_data.iv_index = 0x12345678;
+    btstack_parse_hex("0953fa93e7caac9638f58820220a398e", 16, provisioning_data.encryption_key);
+    btstack_parse_hex("8b84eedec100067d670971dd2aa700cf", 16, provisioning_data.privacy_key);
+}
+
 static void mesh_secure_network_beacon_auth_value_calculated(void * arg){
     UNUSED(arg);
     memcpy(&mesh_secure_network_beacon[14], mesh_secure_network_beacon_auth_value, 8);
@@ -375,7 +387,6 @@ static void stdin_process(char cmd){
         case '1':
             generate_transport_pdu();
             create_network_pdu();
-            adv_bearer_request_can_send_now_for_mesh_message();
             break;
         case '2':
             printf("Creating link to device uuid: ");
