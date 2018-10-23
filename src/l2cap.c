@@ -644,8 +644,8 @@ static void l2cap_ertm_process_req_seq(l2cap_channel_t * l2cap_channel, uint8_t 
     }
     if (num_buffers_acked){
         log_info("num_buffers_acked %u", num_buffers_acked);
-        l2cap_ertm_notify_channel_can_send(l2cap_channel);
-    }
+    l2cap_ertm_notify_channel_can_send(l2cap_channel);
+}     
 }     
 
 static l2cap_ertm_tx_packet_state_t * l2cap_ertm_get_tx_state(l2cap_channel_t * l2cap_channel, uint8_t tx_seq){
@@ -1512,19 +1512,17 @@ static void l2cap_run(void){
         if (channel->con_handle == HCI_CON_HANDLE_INVALID) continue;
         if (!hci_can_send_acl_packet_now(channel->con_handle)) continue;
 
-        if (channel->tx_send_index != channel->tx_write_index){
-            // check remote tx window
-            log_info("unacknowledged_packets %u, remote tx window size %u", channel->unacked_frames, channel->remote_tx_window_size);
-            if (channel->unacked_frames < channel->remote_tx_window_size){
-                channel->unacked_frames++;
-                int index = channel->tx_send_index;
-                channel->tx_send_index++;
-                if (channel->tx_send_index >= channel->num_tx_buffers){
-                    channel->tx_send_index = 0;          
-                }
-                l2cap_ertm_send_information_frame(channel, index, 0);   // final = 0
-                continue;
+        // send if we have more data and remote windows isn't full yet
+        log_info("unacked_frames %u < min( stored frames %u, remote tx window size %u)?", channel->unacked_frames, channel->num_stored_tx_frames, channel->remote_tx_window_size);
+        if (channel->unacked_frames < btstack_min(channel->num_stored_tx_frames, channel->remote_tx_window_size)){
+            channel->unacked_frames++;
+            int index = channel->tx_send_index;
+            channel->tx_send_index++;
+            if (channel->tx_send_index >= channel->num_tx_buffers){
+                channel->tx_send_index = 0;          
             }
+            l2cap_ertm_send_information_frame(channel, index, 0);   // final = 0
+            continue;
         }
 
         if (channel->send_supervisor_frame_receiver_ready){
