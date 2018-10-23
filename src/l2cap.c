@@ -150,6 +150,9 @@ static uint16_t l2cap_le_custom_max_mtu;
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
 
+// enable for testing
+// #define L2CAP_ERTM_SIMULATE_FCS_ERROR_INTERVAL 16
+
 /*
  * CRC lookup table for generator polynom D^16 + D^15 + D^2 + 1
  */
@@ -3107,6 +3110,17 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                         // verify FCS (required if one side requested it)
                         uint16_t fcs_calculated = crc16_calc(&packet[4], size - (4+2));
                         uint16_t fcs_packet     = little_endian_read_16(packet, size-2);
+
+#ifdef L2CAP_ERTM_SIMULATE_FCS_ERROR_INTERVAL
+                        // simulate fcs error
+                        static int counter = 0;
+                        if (++counter == L2CAP_ERTM_SIMULATE_FCS_ERROR_INTERVAL) {
+                            log_info("Simulate fcs error");
+                            fcs_calculated++;
+                            counter = 0;
+                        }
+#endif
+
                         if (fcs_calculated == fcs_packet){
                             log_info("Packet FCS 0x%04x verified", fcs_packet);
                         } else {
