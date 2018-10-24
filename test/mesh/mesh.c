@@ -236,6 +236,135 @@ static void create_network_pdu(void){
     }
 }
 
+// provisioning data iterator
+
+typedef struct {
+    uint8_t nid;
+    uint8_t first;
+} provisioning_data_iterator_t;
+
+static void provisioning_data_iterator_init(provisioning_data_iterator_t * it, uint8_t nid){
+    it->nid = nid;
+    it->first = 1;
+}
+
+static int provisioning_data_has_more(provisioning_data_iterator_t * it){
+    return it->first && it->nid == provisioning_data.nid;
+}
+
+static const mesh_provisioning_data_t * provisioning_data_get_next(provisioning_data_iterator_t * it){
+    return &provisioning_data;
+}
+
+//
+
+static provisioning_data_iterator_t     process_network_pdu_provisioning_data_it;
+static const mesh_provisioning_data_t * process_network_pdu_prov_data;
+static uint8_t                          process_network_pdu_decode_block;
+
+static void process_network_pdu_done(void){
+
+}
+
+static void process_network_pdu_validate_d(void * arg){
+
+    uint8_t ctl_ttl  = network_pdu_data[1];
+    uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
+    uint8_t cypher_len  = network_pdu_len - 9 - net_mic_len;
+
+    printf("Transport PDU: "); 
+    printf_hexdump(network_pdu_data, network_pdu_len);
+
+    // store NetMIC
+    uint8_t net_mic[8];
+    btstack_crypo_ccm_get_authentication_value(&mesh_ccm_request, net_mic);
+    printf("NetMIC: "); 
+    printf_hexdump(net_mic, net_mic_len);
+
+    printf("Decrypted: ");
+    printf_hexdump(transport_pdu_data, 2 + cypher_len);
+}
+
+static void process_network_pdu_validate_c(void * arg){
+    uint8_t ctl_ttl  = network_pdu_data[1];
+    uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
+    uint8_t cypher_len  = network_pdu_len - 9 - net_mic_len;
+    btstack_crypto_ccm_decrypt_block(&mesh_ccm_request, cypher_len - 16, &network_pdu_data[7+16], &transport_pdu_data[16], &process_network_pdu_validate_d, NULL);
+}
+
+static void process_network_pdu_validate_b(void * arg){
+
+    //
+    printf("PECB: ");
+    printf_hexdump(obfuscation_block, 6);
+
+    // de-obfuscate
+    unsigned int i;
+    for (i=0;i<6;i++){
+        network_pdu_data[1+i] ^= obfuscation_block[i];
+    }
+
+    //
+    printf_hexdump(network_pdu_data, network_pdu_len);
+
+    // parse header
+    uint32_t iv_index = process_network_pdu_prov_data->iv_index;
+    uint8_t  ctl_ttl  = network_pdu_data[1];
+    uint32_t seq      = big_endian_read_24(network_pdu_data, 2);
+    uint16_t src      = big_endian_read_16(network_pdu_data, 5);
+
+    // get network nonce
+    mesh_network_create_nonce(network_nonce, ctl_ttl, seq, src, iv_index); 
+    printf("Network Nonce: ");
+    printf_hexdump(network_nonce, 13);
+
+    // 
+    uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
+    uint8_t cypher_len  = network_pdu_len - 9 - net_mic_len;
+
+    printf("Cyper len %u, mic len %u\n", cypher_len, net_mic_len);
+
+    printf("Encryption Key: ");
+    printf_hexdump(process_network_pdu_prov_data->encryption_key, 16);
+
+    // 034b50057e400000010000
+
+    btstack_crypo_ccm_init(&mesh_ccm_request, process_network_pdu_prov_data->encryption_key, network_nonce, cypher_len);
+    if (cypher_len > 16){
+        btstack_crypto_ccm_decrypt_block(&mesh_ccm_request, 16, &network_pdu_data[7], transport_pdu_data, &process_network_pdu_validate_c, NULL);
+    } else {
+        btstack_crypto_ccm_decrypt_block(&mesh_ccm_request, cypher_len, &network_pdu_data[7], transport_pdu_data, &process_network_pdu_validate_d, NULL);
+    }
+
+}
+
+static void process_network_pdu_validate(void){
+    if (!provisioning_data_has_more(&process_network_pdu_provisioning_data_it)){
+        process_network_pdu_done();
+        return;
+    }
+
+    process_network_pdu_prov_data = provisioning_data_get_next(&process_network_pdu_provisioning_data_it);
+
+    // calc PECB
+    memset(encryption_block, 0, 5);
+    big_endian_store_32(encryption_block, 5, process_network_pdu_prov_data->iv_index);
+    memcpy(&encryption_block[9], &network_pdu_data[7], 7);
+    btstack_crypto_aes128_encrypt(&mesh_aes128_request, process_network_pdu_prov_data->privacy_key, encryption_block, obfuscation_block, &process_network_pdu_validate_b, NULL);
+}
+
+static void process_network_pdu(void){
+    //
+    printf_hexdump(network_pdu_data, network_pdu_len);
+
+    //
+    uint8_t nid = network_pdu_data[0] & 0x7f;
+    // uint8_t iv_index = network_pdu_data[0] >> 7;
+    provisioning_data_iterator_init(&process_network_pdu_provisioning_data_it, nid);
+
+    process_network_pdu_validate();
+}
+
 static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     switch(packet[0]){
@@ -359,9 +488,18 @@ static btstack_crypto_aes128_cmac_t mesh_cmac_request;
 static uint8_t mesh_secure_network_beacon[22];
 static uint8_t mesh_secure_network_beacon_auth_value[16];
 
+#define TEST_MESSAGE_1
+
+static void load_provisioning_data_test_message_1(void){
+    provisioning_data.nid = 0x68;
+    provisioning_data.iv_index = 0x12345678;
+    btstack_parse_hex("0953fa93e7caac9638f58820220a398e", 16, provisioning_data.encryption_key);
+    btstack_parse_hex("8b84eedec100067d670971dd2aa700cf", 16, provisioning_data.privacy_key);
+}
+
 static void generate_transport_pdu(void){
 
-#if 0
+#ifdef TEST_MESSAGE_1
     // test values - message #1
     network_pdu_src = 0x1201;
     network_pdu_dst = 0xfffd;
@@ -373,10 +511,7 @@ static void generate_transport_pdu(void){
     transport_pdu_len = strlen(message_1_transport_pdu) / 2;
     btstack_parse_hex(message_1_transport_pdu, transport_pdu_len, transport_pdu_data);
 
-    provisioning_data.nid = 0x68;
-    provisioning_data.iv_index = 0x12345678;
-    btstack_parse_hex("0953fa93e7caac9638f58820220a398e", 16, provisioning_data.encryption_key);
-    btstack_parse_hex("8b84eedec100067d670971dd2aa700cf", 16, provisioning_data.privacy_key);
+    load_provisioning_data_test_message_1();
 #else
     network_pdu_src = 0x0025;
     network_pdu_dst = 0x0001;
@@ -385,6 +520,16 @@ static void generate_transport_pdu(void){
     network_pdu_ctl = 0;
     memset(transport_pdu_data, 0x55, 16);
     transport_pdu_len = 16;
+#endif
+}
+
+static void generate_network_pdu(void){
+#ifdef TEST_MESSAGE_1
+    load_provisioning_data_test_message_1();
+
+    const char * message_1_network_pdu = "68eca487516765b5e5bfdacbaf6cb7fb6bff871f035444ce83a670df";
+    network_pdu_len = strlen(message_1_network_pdu) / 2;
+    btstack_parse_hex(message_1_network_pdu, network_pdu_len, network_pdu_data);
 #endif
 }
 
@@ -414,6 +559,10 @@ static void stdin_process(char cmd){
         case '1':
             generate_transport_pdu();
             create_network_pdu();
+            break;
+        case '9':
+            generate_network_pdu();
+            process_network_pdu();
             break;
         case '2':
             printf("Creating link to device uuid: ");
