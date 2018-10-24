@@ -320,7 +320,7 @@ static void process_network_pdu_validate_b(void * arg){
 
     // 
     uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
-    uint8_t cypher_len  = network_pdu_len - 9 - net_mic_len;
+    uint8_t cypher_len  = network_pdu_len - 7 - net_mic_len;
 
     printf("Cyper len %u, mic len %u\n", cypher_len, net_mic_len);
 
