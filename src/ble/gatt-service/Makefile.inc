@@ -5,4 +5,5 @@ SRC_BLE_GATT-SERVICE_FILES = \
     device_information_service_server.c \
 	heart_rate_service_server.c \
     hids_device.c \
+    nordic_spp_service_server.c \
 

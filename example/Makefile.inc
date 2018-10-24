@@ -155,19 +155,21 @@ EXAMPLES = 					\
 
 EXAMPLES_USING_LE =			\
 	ancs_client_demo		\
+	gap_le_advertisements   \
 	gatt_battery_query      \
 	gatt_browser			\
+	hog_keyboard_demo       \
+	hog_mouse_demo          \
 	le_counter              \
 	le_data_channel_client  \
 	le_data_channel_server  \
 	le_streamer				\
 	le_streamer_client      \
-	spp_and_le_counter	    \
-	gap_le_advertisements   \
-	sm_pairing_peripheral   \
+	nordic_spp_le_counter   \
+	nordic_spp_le_streamer  \
 	sm_pairing_central      \
-	hog_keyboard_demo       \
-	hog_mouse_demo          \
+	sm_pairing_peripheral   \
+	spp_and_le_counter	    \
 
 # .o for .c
 CORE_OBJ    = $(CORE:.c=.o)
@@ -319,6 +321,12 @@ le_data_channel_server: le_data_channel_server.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT
 
 mod_player: ${CORE_OBJ} ${COMMON_OBJ} ${HXCMOD_PLAYER_OBJ} btstack_audio.o mod_player.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+nordic_spp_le_counter: nordic_spp_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} nordic_spp_service_server.o nordic_spp_le_counter.c
+	${CC} $(filter-out nordic_spp_le_counter.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+nordic_spp_le_streamer: nordic_spp_le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} nordic_spp_service_server.o nordic_spp_le_streamer.c
+	${CC} $(filter-out nordic_spp_le_streamer.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:
 	rm -f ${EXAMPLES} *_demo
