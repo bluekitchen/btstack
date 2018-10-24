@@ -53,7 +53,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-static mesh_provisioning_data provisioning_data;
+static mesh_provisioning_data_t provisioning_data;
 
 // pin entry
 static int ui_chars_for_pin; 
@@ -133,7 +133,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     // get tlv
                     btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
                     // load provisioning data
-                    prov_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data));
+                    prov_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
                     printf("Provisioning data available: %u\n", prov_len ? 1 : 0);
                     // setup scanning
                     gap_set_scan_parameters(0, 0x300, 0x300);
