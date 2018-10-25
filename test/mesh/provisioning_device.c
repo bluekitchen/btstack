@@ -510,7 +510,12 @@ static void provisioning_handle_public_key_dhkey(void * arg){
 
 static void provisioning_handle_public_key(uint8_t *packet, uint16_t size){
 
-    if (size != sizeof(remote_ec_q)) return;
+    // validate public key
+    if (size != sizeof(remote_ec_q) || btstack_crypto_ecc_p256_validate_public_key(packet) != 0){
+        printf("Public Key invalid, abort provisioning");
+        provisioning_handle_provisioning_error(0x07);   // Unexpected Error
+        return;
+    }
 
     // stop emit public OOK if specified and send to crypto module
     if (prov_public_key_oob_available && prov_public_key_oob_used){
