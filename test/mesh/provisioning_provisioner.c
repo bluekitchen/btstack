@@ -493,7 +493,15 @@ static void provisioning_public_key_ready(void){
 
 static void provisioning_handle_public_key(uint16_t pb_adv_cid, const uint8_t *packet_data, uint16_t packet_len){
 
-    if (packet_len != sizeof(remote_ec_q)) return;
+    // validate public key
+    if (packet_len != sizeof(remote_ec_q) || btstack_crypto_ecc_p256_validate_public_key(packet_data) != 0){
+        printf("Public Key invalid, abort provisioning\n");
+        
+        // disconnect provisioning link 
+        pb_adv_close_link(pb_adv_cid, 0x02);    // reason: fail
+        provisioning_timer_stop();
+        return;
+    }
 
 #if 0
     // stop emit public OOK if specified and send to crypto module
