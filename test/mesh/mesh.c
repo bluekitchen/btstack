@@ -303,7 +303,7 @@ static void process_network_pdu_validate_d(void * arg){
 static void process_network_pdu_validate_c(void * arg){
     uint8_t ctl_ttl  = network_pdu_data[1];
     uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
-    uint8_t cypher_len  = network_pdu_len - 9 - net_mic_len;
+    uint8_t cypher_len  = network_pdu_len - 7 - net_mic_len;
     btstack_crypto_ccm_decrypt_block(&mesh_ccm_request, cypher_len - 16, &network_pdu_data[7+16], &transport_pdu_data[16], &process_network_pdu_validate_d, NULL);
 }
 
@@ -346,7 +346,7 @@ static void process_network_pdu_validate_b(void * arg){
 
     btstack_crypo_ccm_init(&mesh_ccm_request, process_network_pdu_prov_data->encryption_key, network_nonce, cypher_len);
     if (cypher_len > 16){
-        btstack_crypto_ccm_decrypt_block(&mesh_ccm_request, 16, &network_pdu_data[7], transport_pdu_data, &process_network_pdu_validate_c, NULL);
+        btstack_crypto_ccm_decrypt_block(&mesh_ccm_request, 16,         &network_pdu_data[7], transport_pdu_data, &process_network_pdu_validate_c, NULL);
     } else {
         btstack_crypto_ccm_decrypt_block(&mesh_ccm_request, cypher_len, &network_pdu_data[7], transport_pdu_data, &process_network_pdu_validate_d, NULL);
     }
@@ -555,6 +555,8 @@ static void generate_transport_pdu(void){
     network_pdu_ctl = 0;
     memset(transport_pdu_data, 0x55, 16);
     transport_pdu_len = 16;
+
+    load_provisioning_data_test_message_1();
 #endif
 }
 
@@ -565,6 +567,11 @@ static void generate_network_pdu(void){
     const char * message_1_network_pdu = "68eca487516765b5e5bfdacbaf6cb7fb6bff871f035444ce83a670df";
     network_pdu_len = strlen(message_1_network_pdu) / 2;
     btstack_parse_hex(message_1_network_pdu, network_pdu_len, network_pdu_data);
+#else
+    const char * message_1_network_pdu = "6873F928228C0D4FBF888D73AAC1C3C417F3F85A76010893D1AB78CEAE";
+    network_pdu_len = strlen(message_1_network_pdu) / 2;
+    btstack_parse_hex(message_1_network_pdu, network_pdu_len, network_pdu_data);
+    load_provisioning_data_test_message_1();
 #endif
 }
 
