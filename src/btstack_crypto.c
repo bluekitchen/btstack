@@ -942,6 +942,11 @@ void btstack_crypto_aes128_cmac_zero(btstack_crypto_aes128_cmac_t * request, uin
 
 #ifdef ENABLE_ECC_P256
 void btstack_crypto_ecc_p256_generate_key(btstack_crypto_ecc_p256_t * request, uint8_t * public_key, void (* callback)(void * arg), void * callback_arg){
+    // reset key generation
+    if (btstack_crypto_ecc_p256_key_generation_state == ECC_P256_KEY_GENERATION_DONE){
+        btstack_crypto_ecc_p256_random_len = 0;
+        btstack_crypto_ecc_p256_key_generation_state = ECC_P256_KEY_GENERATION_IDLE;
+    }
     request->btstack_crypto.context_callback.callback  = callback;
     request->btstack_crypto.context_callback.context   = callback_arg;
     request->btstack_crypto.operation                  = BTSTACK_CRYPTO_ECC_P256_GENERATE_KEY;
