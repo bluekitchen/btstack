@@ -262,8 +262,10 @@ static provisioning_data_iterator_t     process_network_pdu_provisioning_data_it
 static const mesh_provisioning_data_t * process_network_pdu_prov_data;
 static uint8_t                          process_network_pdu_decode_block;
 
-static void process_network_pdu_done(void){
+static void process_network_pdu_validate(void);
 
+static void process_network_pdu_done(void){
+    printf("process_network_pdu_done\n");
 }
 
 static void process_network_pdu_validate_d(void * arg){
@@ -283,6 +285,18 @@ static void process_network_pdu_validate_d(void * arg){
 
     printf("Decrypted: ");
     printf_hexdump(transport_pdu_data, 2 + cypher_len);
+
+    // compare nic to nic in data
+    if (memcmp(net_mic, &network_pdu_data[network_pdu_len-net_mic_len], net_mic_len) == 0){
+        // match
+        printf("NetMIC matches\n");
+        process_network_pdu_done();
+    } else {
+        // fail
+        printf("NetMIC maismatch, try next key\n");
+        process_network_pdu_validate();
+    }
+
 }
 
 static void process_network_pdu_validate_c(void * arg){
