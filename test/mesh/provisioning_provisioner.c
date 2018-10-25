@@ -712,9 +712,6 @@ static void prov_key_generated(void * arg){
 void provisioning_provisioner_init(void){
     pb_adv_init(NULL);
     pb_adv_register_packet_handler(&provisioning_handle_pdu);
-
-    // generate public key
-    btstack_crypto_ecc_p256_generate_key(&prov_ecc_p256_request, prov_ec_q, &prov_key_generated, NULL);
 }
 
 void provisioning_provisioner_register_packet_handler(btstack_packet_handler_t packet_handler){
@@ -722,6 +719,9 @@ void provisioning_provisioner_register_packet_handler(btstack_packet_handler_t p
 }
 
 uint16_t provisioning_provisioner_start_provisioning(const uint8_t * device_uuid){
+    // generate new public key
+    btstack_crypto_ecc_p256_generate_key(&prov_ecc_p256_request, prov_ec_q, &prov_key_generated, NULL);
+
     if (pb_adv_cid == 0) {
         pb_adv_cid = pb_adv_create_link(device_uuid);
     }
