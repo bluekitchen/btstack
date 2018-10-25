@@ -253,6 +253,7 @@ static int provisioning_data_has_more(provisioning_data_iterator_t * it){
 }
 
 static const mesh_provisioning_data_t * provisioning_data_get_next(provisioning_data_iterator_t * it){
+    it->first = 0;
     return &provisioning_data;
 }
 
@@ -381,6 +382,10 @@ static void process_network_pdu(void){
 
 static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
+    const uint8_t * adv_data;
+    const uint8_t * pdu_data;
+    uint8_t pdu_len;
+    uint8_t adv_len;
     switch(packet[0]){
         case HCI_EVENT_MESH_META:
             switch(packet[2]){
@@ -418,7 +423,23 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
             }
             break;
         case GAP_EVENT_ADVERTISING_REPORT:
-            printf("received mesh message\n");
+            adv_len  = gap_event_advertising_report_get_data_length(packet);
+            adv_data = gap_event_advertising_report_get_data(packet);
+            // validate data item len
+            pdu_len = adv_data[0] - 1;
+            printf("adv len %u  pdu len %u\n", adv_len,  pdu_len);
+
+            if ((pdu_len + 2) > adv_len) break;
+            if (pdu_len < 13)            break;    // transport PDU len = 0, 32 bit NetMIC
+            // get transport pdu
+            pdu_data = &adv_data[2];
+            printf("received mesh message: ");
+            printf_hexdump(pdu_data, pdu_len);
+            // temp.. 
+            memcpy(network_pdu_data, pdu_data, pdu_len);
+            network_pdu_len = pdu_len;
+            // process
+            process_network_pdu();
             break;
         default:
             break;
