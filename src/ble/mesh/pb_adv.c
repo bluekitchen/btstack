@@ -237,7 +237,7 @@ static void pb_adv_handle_transaction_start(uint8_t transaction_nr, const uint8_
 
     // resend ack if packet from previous transaction received
     if (transaction_nr != 0xff && transaction_nr == pb_adv_msg_in_transaction_nr_prev){
-        printf("PB_ADV: %02x transaction complete, resending resending ack \n", transaction_nr);
+        printf("PB_ADV: %02x transaction complete, resending ack \n", transaction_nr);
         pb_adv_msg_in_send_ack = 1;
         return;
     }
