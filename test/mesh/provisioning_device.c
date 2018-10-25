@@ -48,6 +48,7 @@
 #include "provisioning.h"
 
 static void provisioning_attention_timer_set(void);
+static void prov_key_generated(void * arg);
 
 // remote ecc
 static uint8_t remote_ec_q[64];
@@ -320,6 +321,10 @@ static void provisioning_done(void){
         provisioning_emit_attention_timer_event(1, 0);        
     }
     device_state = DEVICE_W4_INVITE;
+
+    // generate new public key
+    printf("Generate new public key\n");
+    btstack_crypto_ecc_p256_generate_key(&prov_ecc_p256_request, prov_ec_q, &prov_key_generated, NULL);
 }
 
 static void provisioning_handle_auth_value_output_oob(void * arg){
@@ -512,7 +517,7 @@ static void provisioning_handle_public_key(uint8_t *packet, uint16_t size){
 
     // validate public key
     if (size != sizeof(remote_ec_q) || btstack_crypto_ecc_p256_validate_public_key(packet) != 0){
-        printf("Public Key invalid, abort provisioning");
+        printf("Public Key invalid, abort provisioning\n");
         provisioning_handle_provisioning_error(0x07);   // Unexpected Error
         return;
     }
