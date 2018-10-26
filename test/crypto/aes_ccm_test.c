@@ -4,6 +4,9 @@
 #include "aes_cmac.h"
 #include <errno.h>
 
+// degbugging
+// #define LOG_XN
+
 typedef uint8_t key_t[16];
 
 #define LOG_KEY(NAME) { printf("%16s: ", #NAME); printf_hexdump(NAME, 16); }
@@ -58,10 +61,21 @@ static int bt_mesh_ccm_decrypt(const u8_t key[16], u8_t nonce[13],
 	memcpy(pmsg + 1, nonce, 13);
 	sys_put_be16(0x0000, pmsg + 14);
 
+#ifdef LOG_XN
+	printf("%16s: ", "A0");
+	printf_hexdump(pmsg, 16);
+#endif
+
 	err = bt_encrypt_be(key, pmsg, cmic);
 	if (err) {
 		return err;
 	}
+
+#ifdef LOG_XN
+	printf("%16s: ", "S0");
+	printf_hexdump(cmic, 16);
+#endif
+
 
 	/* X_0 = e(AppKey, 0x09 || nonce || length) */
 	if (mic_size == sizeof(u64_t)) {
@@ -73,10 +87,20 @@ static int bt_mesh_ccm_decrypt(const u8_t key[16], u8_t nonce[13],
 	memcpy(pmsg + 1, nonce, 13);
 	sys_put_be16(msg_len, pmsg + 14);
 
+#ifdef LOG_XN
+	printf("%16s: ", "B0");
+	printf_hexdump(pmsg, 16);
+#endif
+
 	err = bt_encrypt_be(key, pmsg, Xn);
 	if (err) {
 		return err;
 	}
+
+#ifdef LOG_XN
+	printf("%16s: ", "X1");
+	printf_hexdump(Xn, 16);
+#endif
 
 	/* If AAD is being used to authenticate, include it here */
 	if (aad_len) {
@@ -151,25 +175,51 @@ static int bt_mesh_ccm_decrypt(const u8_t key[16], u8_t nonce[13],
 				pmsg[i] = Xn[i] ^ 0x00;
 			}
 
+#ifdef LOG_XN
+	printf("%16s: ", "Xn XOR bn");
+	printf_hexdump(pmsg, 16);
+#endif
+
 			err = bt_encrypt_be(key, pmsg, Xn);
 			if (err) {
 				return err;
 			}
 
+#ifdef LOG_XN
+	printf("%16s: ", "Xn XOR bn");
+	printf_hexdump(pmsg, 16);
+#endif
+
 			/* MIC = C_mic ^ X_1 */
 			for (i = 0; i < sizeof(mic); i++) {
 				mic[i] = cmic[i] ^ Xn[i];
 			}
+
+#ifdef LOG_XN
+	printf("%16s: ", "mic");
+	printf_hexdump(mic, 16);
+#endif
+
 		} else {
 			/* C_1 = e(AppKey, 0x01 || nonce || 0x0001) */
 			pmsg[0] = 0x01;
 			memcpy(pmsg + 1, nonce, 13);
 			sys_put_be16(j + 1, pmsg + 14);
 
+#ifdef LOG_XN
+	printf("%16s: ", "Ai");
+	printf_hexdump(mic, 16);
+#endif
+
 			err = bt_encrypt_be(key, pmsg, cmsg);
 			if (err) {
 				return err;
 			}
+
+#ifdef LOG_XN
+	printf("%16s: ", "Si");
+	printf_hexdump(mic, 16);
+#endif
 
 			/* Encrypted = Payload[0-15] ^ C_1 */
 			for (i = 0; i < 16; i++) {
@@ -177,6 +227,11 @@ static int bt_mesh_ccm_decrypt(const u8_t key[16], u8_t nonce[13],
 			}
 
 			memcpy(out_msg + (j * 16), msg, 16);
+
+#ifdef LOG_XN
+	printf("%16s: ", "bn");
+	printf_hexdump(msg, 16);
+#endif
 
 			/* X_1 = e(AppKey, X_0 ^ Payload[0-15]) */
 			for (i = 0; i < 16; i++) {
@@ -187,6 +242,13 @@ static int bt_mesh_ccm_decrypt(const u8_t key[16], u8_t nonce[13],
 			if (err) {
 				return err;
 			}
+
+#ifdef LOG_XN
+	printf("%16s: ", "Xn");
+	printf_hexdump(mic, 16);
+#endif
+
+
 		}
 	}
 
@@ -221,10 +283,20 @@ static int bt_mesh_ccm_encrypt(const u8_t key[16], u8_t nonce[13],
 	memcpy(pmsg + 1, nonce, 13);
 	sys_put_be16(0x0000, pmsg + 14);
 
+#ifdef LOG_XN
+	printf("%16s: ", "A0");
+	printf_hexdump(pmsg, 16);
+#endif
+
 	err = bt_encrypt_be(key, pmsg, cmic);
 	if (err) {
 		return err;
 	}
+
+#ifdef LOG_XN
+	printf("%16s: ", "S0");
+	printf_hexdump(cmic, 16);
+#endif
 
 	/* X_0 = e(AppKey, 0x09 || nonce || length) */
 	if (mic_size == sizeof(u64_t)) {
@@ -236,10 +308,20 @@ static int bt_mesh_ccm_encrypt(const u8_t key[16], u8_t nonce[13],
 	memcpy(pmsg + 1, nonce, 13);
 	sys_put_be16(msg_len, pmsg + 14);
 
+#ifdef LOG_XN
+	printf("%16s: ", "B0");
+	printf_hexdump(pmsg, 16);
+#endif
+
 	err = bt_encrypt_be(key, pmsg, Xn);
 	if (err) {
 		return err;
 	}
+
+#ifdef LOG_XN
+	printf("%16s: ", "X1");
+	printf_hexdump(Xn, 16);
+#endif
 
 	/* If AAD is being used to authenticate, include it here */
 	if (aad_len) {
@@ -296,15 +378,30 @@ static int bt_mesh_ccm_encrypt(const u8_t key[16], u8_t nonce[13],
 				pmsg[i] = Xn[i] ^ 0x00;
 			}
 
+#ifdef LOG_XN
+	printf("%16s: ", "Xn XOR Bn");
+	printf_hexdump(pmsg, 16);
+#endif
+
 			err = bt_encrypt_be(key, pmsg, Xn);
 			if (err) {
 				return err;
 			}
 
+#ifdef LOG_XN
+	printf("%16s: ", "Xn+1");
+	printf_hexdump(Xn, 16);
+#endif
+
 			/* MIC = C_mic ^ X_1 */
 			for (i = 0; i < sizeof(mic); i++) {
 				mic[i] = cmic[i] ^ Xn[i];
 			}
+
+#ifdef LOG_XN
+	printf("%16s: ", "mic");
+	printf_hexdump(mic, 16);
+#endif
 
 			/* C_1 = e(AppKey, 0x01 || nonce || 0x0001) */
 			pmsg[0] = 0x01;
@@ -322,15 +419,31 @@ static int bt_mesh_ccm_encrypt(const u8_t key[16], u8_t nonce[13],
 					msg[(j * 16) + i] ^ cmsg[i];
 			}
 		} else {
+
+#ifdef LOG_XN
+	printf("%16s: ", "bn");
+	printf_hexdump(msg, 16);
+#endif
+
 			/* X_1 = e(AppKey, X_0 ^ Payload[0-15]) */
 			for (i = 0; i < 16; i++) {
 				pmsg[i] = Xn[i] ^ msg[(j * 16) + i];
 			}
 
+#ifdef LOG_XN
+	printf("%16s: ", "Xn XOR Bn");
+	printf_hexdump(pmsg, 16);
+#endif
+
 			err = bt_encrypt_be(key, pmsg, Xn);
 			if (err) {
 				return err;
 			}
+
+#ifdef LOG_XN
+	printf("%16s: ", "Xn+1");
+	printf_hexdump(Xn, 16);
+#endif
 
 			/* C_1 = e(AppKey, 0x01 || nonce || 0x0001) */
 			pmsg[0] = 0x01;
