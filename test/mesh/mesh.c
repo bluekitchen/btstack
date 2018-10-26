@@ -285,7 +285,7 @@ static void process_network_pdu_validate_d(void * arg){
     printf_hexdump(net_mic, net_mic_len);
 
     printf("Decrypted: ");
-    printf_hexdump(transport_pdu_data, 2 + cypher_len);
+    printf_hexdump(encryption_block, 2 + cypher_len);
 
     // compare nic to nic in data
     if (memcmp(net_mic, &network_pdu_data[network_pdu_len-net_mic_len], net_mic_len) == 0){
@@ -304,7 +304,7 @@ static void process_network_pdu_validate_c(void * arg){
     uint8_t ctl_ttl  = network_pdu_data[1];
     uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
     uint8_t cypher_len  = network_pdu_len - 7 - net_mic_len;
-    btstack_crypto_ccm_decrypt_block(&mesh_ccm_request, cypher_len - 16, &network_pdu_data[7+16], &transport_pdu_data[16], &process_network_pdu_validate_d, NULL);
+    btstack_crypto_ccm_decrypt_block(&mesh_ccm_request, cypher_len - 16, &network_pdu_data[7+16], &encryption_block[16], &process_network_pdu_validate_d, NULL);
 }
 
 static void process_network_pdu_validate_b(void * arg){
@@ -346,9 +346,9 @@ static void process_network_pdu_validate_b(void * arg){
 
     btstack_crypo_ccm_init(&mesh_ccm_request, process_network_pdu_prov_data->encryption_key, network_nonce, cypher_len);
     if (cypher_len > 16){
-        btstack_crypto_ccm_decrypt_block(&mesh_ccm_request, 16,         &network_pdu_data[7], transport_pdu_data, &process_network_pdu_validate_c, NULL);
+        btstack_crypto_ccm_decrypt_block(&mesh_ccm_request, 16,         &network_pdu_data[7], encryption_block, &process_network_pdu_validate_c, NULL);
     } else {
-        btstack_crypto_ccm_decrypt_block(&mesh_ccm_request, cypher_len, &network_pdu_data[7], transport_pdu_data, &process_network_pdu_validate_d, NULL);
+        btstack_crypto_ccm_decrypt_block(&mesh_ccm_request, cypher_len, &network_pdu_data[7], encryption_block, &process_network_pdu_validate_d, NULL);
     }
 
 }
@@ -523,9 +523,10 @@ static btstack_crypto_aes128_cmac_t mesh_cmac_request;
 static uint8_t mesh_secure_network_beacon[22];
 static uint8_t mesh_secure_network_beacon_auth_value[16];
 
-#define TEST_MESSAGE_1
+// #define TEST_MESSAGE_1
+#define TEST_MESSAGE_24
 
-static void load_provisioning_data_test_message_1(void){
+static void load_provisioning_data_test_message(void){
     provisioning_data.nid = 0x68;
     provisioning_data.iv_index = 0x12345678;
     btstack_parse_hex("0953fa93e7caac9638f58820220a398e", 16, provisioning_data.encryption_key);
@@ -533,6 +534,8 @@ static void load_provisioning_data_test_message_1(void){
 }
 
 static void generate_transport_pdu(void){
+
+    load_provisioning_data_test_message();
 
 #ifdef TEST_MESSAGE_1
     // test values - message #1
@@ -545,33 +548,53 @@ static void generate_transport_pdu(void){
     const char * message_1_transport_pdu = "034b50057e400000010000";
     transport_pdu_len = strlen(message_1_transport_pdu) / 2;
     btstack_parse_hex(message_1_transport_pdu, transport_pdu_len, transport_pdu_data);
+#endif
 
-    load_provisioning_data_test_message_1();
-#else
+#ifdef TEST_MESSAGE_24
+    // test values - message #24
+    provisioning_data.iv_index = 0x12345677;
+
+    network_pdu_src = 0x1234;
+    network_pdu_dst = 0x9736;
+    network_pdu_seq = 0x07080d;
+    network_pdu_ttl = 3;
+    network_pdu_ctl = 0;
+
+    const char * message_24_transport_pdu = "e6a03401de1547118463123e5f6a17b9";
+    transport_pdu_len = strlen(message_24_transport_pdu) / 2;
+    btstack_parse_hex(message_24_transport_pdu, transport_pdu_len, transport_pdu_data);
+#endif
+
+#ifdef TEST_MESSAGE_X
     network_pdu_src = 0x0025;
     network_pdu_dst = 0x0001;
-    network_pdu_seq = 0x1234;
-    network_pdu_ttl = 0;
+    network_pdu_seq = 0x;
+    network_pdu_ttl = 3;
     network_pdu_ctl = 0;
     memset(transport_pdu_data, 0x55, 16);
     transport_pdu_len = 16;
-
-    load_provisioning_data_test_message_1();
 #endif
 }
 
 static void generate_network_pdu(void){
+    load_provisioning_data_test_message();
 #ifdef TEST_MESSAGE_1
-    load_provisioning_data_test_message_1();
-
     const char * message_1_network_pdu = "68eca487516765b5e5bfdacbaf6cb7fb6bff871f035444ce83a670df";
     network_pdu_len = strlen(message_1_network_pdu) / 2;
     btstack_parse_hex(message_1_network_pdu, network_pdu_len, network_pdu_data);
-#else
-    const char * message_1_network_pdu = "6873F928228C0D4FBF888D73AAC1C3C417F3F85A76010893D1AB78CEAE";
+#endif
+#ifdef TEST_MESSAGE_24
+    // test values - message #24
+    provisioning_data.iv_index = 0x12345677;
+    const char * message_1_network_pdu = "E834586BABDEF394E998B4081F5A7308CE3EDBB3B06CDECD023C734EC9";
     network_pdu_len = strlen(message_1_network_pdu) / 2;
     btstack_parse_hex(message_1_network_pdu, network_pdu_len, network_pdu_data);
-    load_provisioning_data_test_message_1();
+#endif
+#ifdef TEST_MESSAGE_X
+    const char * message_1_network_pdu = "6873F928228C0D4FBF888D73AAC1C3C417F3F85A76010893D1B6396B74";
+    network_pdu_len = strlen(message_1_network_pdu) / 2;
+    btstack_parse_hex(message_1_network_pdu, network_pdu_len, network_pdu_data);
+    load_provisioning_data_test_message();
 #endif
 }
 
