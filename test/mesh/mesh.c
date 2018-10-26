@@ -228,7 +228,8 @@ static void create_network_pdu(void){
 
     // start ccm
     uint8_t cypher_len = 2 + transport_pdu_len;
-    btstack_crypo_ccm_init(&mesh_ccm_request, provisioning_data.encryption_key, network_nonce, cypher_len);
+    uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
+    btstack_crypo_ccm_init(&mesh_ccm_request, provisioning_data.encryption_key, network_nonce, cypher_len, 0, net_mic_len);
     if (cypher_len > 16){
         btstack_crypto_ccm_encrypt_block(&mesh_ccm_request, 16, encryption_block, &network_pdu_data[7], &create_network_pdu_a, NULL);
     } else {
@@ -344,7 +345,7 @@ static void process_network_pdu_validate_b(void * arg){
 
     // 034b50057e400000010000
 
-    btstack_crypo_ccm_init(&mesh_ccm_request, process_network_pdu_prov_data->encryption_key, network_nonce, cypher_len);
+    btstack_crypo_ccm_init(&mesh_ccm_request, process_network_pdu_prov_data->encryption_key, network_nonce, cypher_len, 0, net_mic_len);
     if (cypher_len > 16){
         btstack_crypto_ccm_decrypt_block(&mesh_ccm_request, 16,         &network_pdu_data[7], encryption_block, &process_network_pdu_validate_c, NULL);
     } else {
@@ -586,7 +587,7 @@ static void generate_network_pdu(void){
 #ifdef TEST_MESSAGE_24
     // test values - message #24
     provisioning_data.iv_index = 0x12345677;
-    const char * message_1_network_pdu = "E834586BABDEF394E998B4081F5A7308CE3EDBB3B06CDECD023C734EC9";
+    const char * message_1_network_pdu = "e834586babdef394e998b4081f5a7308ce3edbb3b06cdecd028e307f1c";
     network_pdu_len = strlen(message_1_network_pdu) / 2;
     btstack_parse_hex(message_1_network_pdu, network_pdu_len, network_pdu_data);
 #endif

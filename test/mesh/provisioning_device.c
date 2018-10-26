@@ -737,7 +737,7 @@ static void provisioning_handle_data(uint8_t *packet, uint16_t size){
     memcpy(enc_provisioning_data, packet, 25);
 
     // decode response
-    btstack_crypo_ccm_init(&prov_ccm_request, session_key, session_nonce, 25);
+    btstack_crypo_ccm_init(&prov_ccm_request, session_key, session_nonce, 25, 0, 8);
     btstack_crypto_ccm_decrypt_block(&prov_ccm_request, 25, enc_provisioning_data, provisioning_data, &provisioning_handle_data_ccm, NULL);
 }
 

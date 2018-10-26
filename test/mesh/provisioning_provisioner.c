@@ -581,7 +581,7 @@ static void provisioning_handle_session_nonce_calculated(void * arg){
     big_endian_store_32(provisioning_data, 19, iv_index);
     big_endian_store_16(provisioning_data, 23, unicast_address);
 
-    btstack_crypo_ccm_init(&prov_ccm_request, session_key, session_nonce, 25);
+    btstack_crypo_ccm_init(&prov_ccm_request, session_key, session_nonce, 25, 0, 8);
     btstack_crypto_ccm_encrypt_block(&prov_ccm_request, 25, provisioning_data, enc_provisioning_data, &provisioning_handle_data_encrypted, NULL);
 }
 
