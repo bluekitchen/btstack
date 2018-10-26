@@ -43,8 +43,9 @@ MBEDTLS = \
 MICROECC = \
 	uECC.c
 
-all: aestest ecc_micro_ecc aes_cmac_test
+all: aes_ccm_test aestest ecc_micro_ecc aes_cmac_test
 
+aes_ccm_test: aes_ccm_test.o btstack_util.o hci_dump.o aes_cmac.o rijndael.o
 
 aestest: aestest.o rijndael.o
 	${CC} ${CFLAGS} $^ -o $@
