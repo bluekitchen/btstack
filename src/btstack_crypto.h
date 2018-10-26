@@ -121,6 +121,7 @@ typedef struct {
 	uint16_t        message_len;
 	uint16_t        block_len;
 	uint16_t        counter;
+	uint8_t         auth_len;
 } btstack_crypto_ccm_t;
 
 /** 
@@ -219,8 +220,9 @@ int btstack_crypto_ecc_p256_validate_public_key(const uint8_t * public_key);
  * @param nonce
  * @param key
  * @param message_len
+ * @param auth_len
  */
-void btstack_crypo_ccm_init(btstack_crypto_ccm_t * request, const uint8_t * key, const uint8_t * nonce, uint16_t message_len);
+void btstack_crypo_ccm_init(btstack_crypto_ccm_t * request, const uint8_t * key, const uint8_t * nonce, uint16_t message_len, uint8_t auth_len);
 
 /** 
  * Get authentication value (M=8) after encrypt or decrypt operation

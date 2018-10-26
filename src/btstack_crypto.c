@@ -364,7 +364,8 @@ static void btstack_crypto_ccm_setup_a_i(btstack_crypto_ccm_t * btstack_crypto_c
  */
 
 static void btstack_crypto_ccm_setup_b_0(btstack_crypto_ccm_t * btstack_crypto_ccm, uint8_t * b0){
-    b0[0] = (3 << 3) | 1 ;  // Adata = 0, M' = (M-2)/2, L' = L - 1
+    uint8_t m_prime = (btstack_crypto_ccm->auth_len - 2) / 2;
+    b0[0] = (m_prime << 3) | 1 ;  // Adata = 0, M', L' = L - 1
     memcpy(&b0[1], btstack_crypto_ccm->nonce, 13);
     big_endian_store_16(b0, 14, btstack_crypto_ccm->message_len);
 }
@@ -997,10 +998,11 @@ int btstack_crypto_ecc_p256_validate_public_key(const uint8_t * public_key){
 }
 #endif
 
-void btstack_crypo_ccm_init(btstack_crypto_ccm_t * request, const uint8_t * key, const uint8_t * nonce, uint16_t message_len){
+void btstack_crypo_ccm_init(btstack_crypto_ccm_t * request, const uint8_t * key, const uint8_t * nonce, uint16_t message_len, uint8_t auth_len){
     request->key         = key;
     request->nonce       = nonce;
     request->message_len = message_len;
+    request->auth_len    = auth_len;
     request->counter     = 1;
 }
 
