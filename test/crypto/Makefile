@@ -43,16 +43,29 @@ MBEDTLS = \
 MICROECC = \
 	uECC.c
 
-all: security_manager
+all: aestest ecc_micro_ecc aes_cmac_test
 
-security_manager: ${CORE_OBJ} ${COMMON_OBJ} security_manager.c
-	${CC} ${CORE_OBJ} ${COMMON_OBJ} security_manager.c ${CFLAGS} ${CPPFLAGS} ${LDFLAGS} -o $@
+
+aestest: aestest.o rijndael.o
+	${CC} ${CFLAGS} $^ -o $@
+
+ecc_micro_ecc: ecc_micro_ecc.o ${MICROECC}
+	gcc ${CFLAGS} $^ -o $@ 
+
+aes_cmac_test: aes_cmac_test.o aes_cmac.o rijndael.o
+	gcc ${CFLAGS} $^ -o $@ 
+
+sm_mbedtls_allocator_test: sm_mbedtls_allocator.o hci_dump.o btstack_util.o sm_mbedtls_allocator_test.c
+	${CC} sm_mbedtls_allocator.o btstack_util.o hci_dump.o sm_mbedtls_allocator_test.c ${CFLAGS} ${CPPFLAGS}  ${LDFLAGS} -o $@ 
 
 test: all
-	./security_manager
+	./aes_cmac_test
+	./aestest
+	./ecc_micro_ecc
+	./aes_cmac_test
 	
 clean:
-	rm -f  security_manager
+	rm -f  aestest ecc_micro_ecc aes_cmac_test
 	rm -f  *.o
 	rm -rf *.dSYM
 	
