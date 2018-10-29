@@ -567,9 +567,6 @@ static void btstack_crypto_ccm_handle_sn(btstack_crypto_ccm_t * btstack_crypto_c
 }
 
 static void btstack_crypto_ccm_next_block(btstack_crypto_ccm_t * btstack_crypto_ccm, btstack_crypto_ccm_state_t state_when_done){
-#ifdef DEBUG_CCM
-    printf("btstack_crypto_ccm_next_block\n");
-#endif
     uint16_t bytes_to_process = btstack_min(btstack_crypto_ccm->block_len, 16);
     // next block
     btstack_crypto_ccm->counter++;
@@ -577,11 +574,16 @@ static void btstack_crypto_ccm_next_block(btstack_crypto_ccm_t * btstack_crypto_
     btstack_crypto_ccm->output      += bytes_to_process;
     btstack_crypto_ccm->block_len   -= bytes_to_process;
     btstack_crypto_ccm->message_len -= bytes_to_process;
+#ifdef DEBUG_CCM
+    printf("btstack_crypto_ccm_next_block (message len %u, blockk_len %u)\n", btstack_crypto_ccm->message_len, btstack_crypto_ccm->block_len);
+#endif
     if (btstack_crypto_ccm->message_len == 0){
         btstack_crypto_ccm->state = CCM_CALCULATE_S0;
     } else {
         btstack_crypto_ccm->state = state_when_done;
-        btstack_crypto_done(&btstack_crypto_ccm->btstack_crypto);
+        if (btstack_crypto_ccm->block_len == 0){
+            btstack_crypto_done(&btstack_crypto_ccm->btstack_crypto);
+        }
     }
 }
 
