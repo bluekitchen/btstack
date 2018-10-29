@@ -211,10 +211,6 @@ static void create_network_pdu_b(void *arg){
     btstack_crypto_aes128_encrypt(&mesh_aes128_request, provisioning_data.privacy_key, encryption_block, obfuscation_block, &create_network_pdu_c, NULL);
 }
 
-static void create_network_pdu_a(void *arg){
-    btstack_crypto_ccm_encrypt_block(&mesh_ccm_request, 2 + transport_pdu_len - 16, &encryption_block[16], &network_pdu_data[7+16], &create_network_pdu_b, NULL);
-}
-
 static void create_network_pdu(void){
 
     // get network nonce
@@ -230,11 +226,7 @@ static void create_network_pdu(void){
     uint8_t cypher_len = 2 + transport_pdu_len;
     uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
     btstack_crypo_ccm_init(&mesh_ccm_request, provisioning_data.encryption_key, network_nonce, cypher_len, 0, net_mic_len);
-    if (cypher_len > 16){
-        btstack_crypto_ccm_encrypt_block(&mesh_ccm_request, 16, encryption_block, &network_pdu_data[7], &create_network_pdu_a, NULL);
-    } else {
-        btstack_crypto_ccm_encrypt_block(&mesh_ccm_request, cypher_len, encryption_block, &network_pdu_data[7], &create_network_pdu_b, NULL);
-    }
+    btstack_crypto_ccm_encrypt_block(&mesh_ccm_request, cypher_len, encryption_block, &network_pdu_data[7], &create_network_pdu_b, NULL);
 }
 
 // provisioning data iterator
@@ -301,13 +293,6 @@ static void process_network_pdu_validate_d(void * arg){
 
 }
 
-static void process_network_pdu_validate_c(void * arg){
-    uint8_t ctl_ttl  = network_pdu_data[1];
-    uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
-    uint8_t cypher_len  = network_pdu_len - 7 - net_mic_len;
-    btstack_crypto_ccm_decrypt_block(&mesh_ccm_request, cypher_len - 16, &network_pdu_data[7+16], &encryption_block[16], &process_network_pdu_validate_d, NULL);
-}
-
 static void process_network_pdu_validate_b(void * arg){
 
     //
@@ -346,12 +331,7 @@ static void process_network_pdu_validate_b(void * arg){
     // 034b50057e400000010000
 
     btstack_crypo_ccm_init(&mesh_ccm_request, process_network_pdu_prov_data->encryption_key, network_nonce, cypher_len, 0, net_mic_len);
-    if (cypher_len > 16){
-        btstack_crypto_ccm_decrypt_block(&mesh_ccm_request, 16,         &network_pdu_data[7], encryption_block, &process_network_pdu_validate_c, NULL);
-    } else {
-        btstack_crypto_ccm_decrypt_block(&mesh_ccm_request, cypher_len, &network_pdu_data[7], encryption_block, &process_network_pdu_validate_d, NULL);
-    }
-
+    btstack_crypto_ccm_decrypt_block(&mesh_ccm_request, cypher_len, &network_pdu_data[7], encryption_block, &process_network_pdu_validate_d, NULL);
 }
 
 static void process_network_pdu_validate(void){
