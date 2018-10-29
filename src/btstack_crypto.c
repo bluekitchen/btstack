@@ -1068,7 +1068,7 @@ void btstack_crypo_ccm_init(btstack_crypto_ccm_t * request, const uint8_t * key,
 }
 
 void btstack_crypo_ccm_get_authentication_value(btstack_crypto_ccm_t * request, uint8_t * authentication_value){
-    memcpy(authentication_value, request->x_i, 8);
+    memcpy(authentication_value, request->x_i, request->auth_len);
 }
 
 void btstack_crypto_ccm_encrypt_block(btstack_crypto_ccm_t * request, uint16_t block_len, const uint8_t * plaintext, uint8_t * ciphertext, void (* callback)(void * arg), void * callback_arg){

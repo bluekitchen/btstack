@@ -215,7 +215,7 @@ void btstack_crypto_ecc_p256_calculate_dhkey(btstack_crypto_ecc_p256_t * request
 int btstack_crypto_ecc_p256_validate_public_key(const uint8_t * public_key);
 
 /** 
- * Initialize Counter with CBC-MAC for Bluetooth Mesh (L=2,M=8)
+ * Initialize Counter with CBC-MAC for Bluetooth Mesh (L=2)
  * @param request
  * @param nonce
  * @param key
@@ -225,7 +225,7 @@ int btstack_crypto_ecc_p256_validate_public_key(const uint8_t * public_key);
 void btstack_crypo_ccm_init(btstack_crypto_ccm_t * request, const uint8_t * key, const uint8_t * nonce, uint16_t message_len, uint8_t auth_len);
 
 /** 
- * Get authentication value (M=8) after encrypt or decrypt operation
+ * Get authentication value after encrypt or decrypt operation
  * @param request
  * @param authentication_value
  */
