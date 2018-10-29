@@ -145,6 +145,7 @@ EXAMPLES = 					\
 	sdp_bnep_query 			\
 	sdp_general_query		\
 	sdp_rfcomm_query		\
+	sine_player             \
 	sm_pairing_central      \
 	sm_pairing_peripheral   \
 	spp_and_le_counter 		\
@@ -320,6 +321,9 @@ le_data_channel_server: le_data_channel_server.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT
 	${CC} $(filter-out le_data_channel_server.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 mod_player: ${CORE_OBJ} ${COMMON_OBJ} ${HXCMOD_PLAYER_OBJ} btstack_audio.o mod_player.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+sine_player: ${CORE_OBJ} ${COMMON_OBJ} btstack_audio.o sine_player.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 nordic_spp_le_counter: nordic_spp_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} nordic_spp_service_server.o nordic_spp_le_counter.c
