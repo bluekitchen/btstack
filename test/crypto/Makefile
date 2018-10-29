@@ -18,23 +18,6 @@ VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
 VPATH += ${BTSTACK_ROOT}/test/rijndael
 
-COMMON = \
-    btstack_crypto.c    		\
-    btstack_linked_list.c		\
-    btstack_memory.c			\
-    btstack_memory_pool.c		\
-    btstack_run_loop.c			\
-    btstack_run_loop_posix.c    \
-    hci_cmd.c					\
-    hci_dump.c					\
-    le_device_db_memory.c       \
-    mock.c 				        \
-    rijndael.c 					\
-    sm.c     					\
-    btstack_util.c			            \
-	
-COMMON_OBJ = $(COMMON:.c=.o)
-
 MBEDTLS = \
 	ecp.c \
 	ecp_curves.c \
@@ -45,7 +28,7 @@ MICROECC = \
 
 all: aes_ccm_test aestest ecc_micro_ecc aes_cmac_test
 
-aes_ccm_test: aes_ccm.o aes_ccm_test.o btstack_util.o hci_dump.o aes_cmac.o rijndael.o
+aes_ccm_test: aes_ccm.o aes_ccm_test.o btstack_crypto.o btstack_linked_list.o hci_cmd.o btstack_util.o hci_dump.o aes_cmac.o rijndael.o mock.o
 
 aestest: aestest.o rijndael.o
 	${CC} ${CFLAGS} $^ -o $@
