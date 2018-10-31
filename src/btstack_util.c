@@ -190,8 +190,9 @@ void printf_hexdump(const void *data, int size){
     char buffer[4];
     buffer[2] = ' ';
     buffer[3] =  0;
+    const uint8_t * ptr = (const uint8_t *) data;
     while (size > 0){
-        uint8_t byte = *((uint8_t *)data++);
+        uint8_t byte = *ptr++;
         buffer[0] = char_for_high_nibble(byte);
         buffer[1] = char_for_low_nibble(byte);
         printf("%s", buffer);
