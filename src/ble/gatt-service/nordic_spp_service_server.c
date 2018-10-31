@@ -44,11 +44,17 @@
  * and call all functions below. All strings and blobs need to stay valid after calling the functions.
  */
 
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "btstack_defines.h"
 #include "ble/att_db.h"
 #include "ble/att_server.h"
 #include "btstack_util.h"
 #include "bluetooth_gatt.h"
+#include "btstack_debug.h"
 
 #include "ble/gatt-service/nordic_spp_service_server.h"
 
@@ -60,18 +66,19 @@ static const uint8_t nordic_spp_tx_uuid128[] 	  = { 0x6E, 0x40, 0x00, 0x03, 0xB5
 static att_service_handler_t  nordic_spp_service;
 static void (*client_callback)(hci_con_handle_t con_handle, const uint8_t * data, uint16_t size);
 
-static uint16_t nordic_spp_tx_value_handle;
 static uint16_t nordic_spp_rx_value_handle;
-static uint16_t nordic_spp_rx_client_configuration_handle;
-static uint16_t nordic_spp_rx_client_configuration_value;
+static uint16_t nordic_spp_tx_value_handle;
+static uint16_t nordic_spp_tx_client_configuration_handle;
+static uint16_t nordic_spp_tx_client_configuration_value;
 
 static uint16_t nordic_spp_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
 	UNUSED(con_handle);
 	UNUSED(offset);
 	UNUSED(buffer_size);
-	if (attribute_handle == nordic_spp_rx_client_configuration_handle){
+	
+	if (attribute_handle == nordic_spp_tx_client_configuration_handle){
 		if (buffer){
-			little_endian_store_16(buffer, 0, nordic_spp_rx_client_configuration_value);
+			little_endian_store_16(buffer, 0, nordic_spp_tx_client_configuration_value);
 		}
 		return 2;
 	}
@@ -82,16 +89,18 @@ static int nordic_spp_service_write_callback(hci_con_handle_t con_handle, uint16
 	UNUSED(transaction_mode);
 	UNUSED(offset);
 	UNUSED(buffer_size);
-
-	if (attribute_handle == nordic_spp_tx_value_handle){
+	
+	if (attribute_handle == nordic_spp_rx_value_handle){
+		printf_hexdump(buffer, buffer_size);
 		client_callback(con_handle, &buffer[0], buffer_size);
 	}
-	if (attribute_handle == nordic_spp_rx_client_configuration_handle){
-		nordic_spp_rx_client_configuration_value = little_endian_read_16(buffer, 0);
-		if (nordic_spp_rx_client_configuration_value){
+	if (attribute_handle == nordic_spp_tx_client_configuration_handle){
+		nordic_spp_tx_client_configuration_value = little_endian_read_16(buffer, 0);
+		if (nordic_spp_tx_client_configuration_value){
 			client_callback(con_handle, NULL, 0);
 		}
 	}
+
 	return 0;
 }
 
@@ -104,15 +113,19 @@ void nordic_spp_service_server_init(void (*callback)(hci_con_handle_t con_handle
 
 	// get service handle range
 	uint16_t start_handle = 0;
-	uint16_t end_handle   = 0xfff;
+	uint16_t end_handle   = 0xffff;
 	int service_found = gatt_server_get_get_handle_range_for_service_with_uuid128(nordic_spp_profile_uuid128, &start_handle, &end_handle);
 	if (!service_found) return;
 
 	// get characteristic value handle and client configuration handle
-	nordic_spp_tx_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid128(start_handle, end_handle, nordic_spp_tx_uuid128);
 	nordic_spp_rx_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid128(start_handle, end_handle, nordic_spp_rx_uuid128);
-	nordic_spp_rx_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid128(start_handle, end_handle, nordic_spp_rx_uuid128);
+	nordic_spp_tx_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid128(start_handle, end_handle, nordic_spp_tx_uuid128);
+	nordic_spp_tx_client_configuration_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid128(start_handle, end_handle, nordic_spp_tx_uuid128);
 
+	log_info("nordic_spp_rx_value_handle 					0x%02x", nordic_spp_rx_value_handle);
+	log_info("nordic_spp_tx_value_handle 					0x%02x", nordic_spp_tx_value_handle);
+	log_info("nordic_spp_tx_client_configuration_handle 	0x%02x", nordic_spp_tx_client_configuration_handle);
+	
 	// register service with ATT Server
 	nordic_spp_service.start_handle   = start_handle;
 	nordic_spp_service.end_handle     = end_handle;
@@ -137,6 +150,6 @@ void nordic_spp_service_server_request_can_send_now(btstack_context_callback_reg
  * @param size
  */
 int nordic_spp_service_server_send(hci_con_handle_t con_handle, const uint8_t * data, uint16_t size){
-	return att_server_notify(con_handle, nordic_spp_rx_value_handle, &data[0], size);
+	return att_server_notify(con_handle, nordic_spp_tx_value_handle, (uint8_t *)&data[0], size);
 }
 

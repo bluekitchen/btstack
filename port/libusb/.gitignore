@@ -77,3 +77,7 @@ spp_counter
 spp_streamer
 spp_streamer_client
 build*
+nordic_spp_le_counter
+nordic_spp_le_counter.h
+nordic_spp_le_streamer
+nordic_spp_le_streamer.h

@@ -48,7 +48,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "nordic_le_counter.h"
+#include "nordic_spp_le_counter.h"
 #include "btstack.h"
 #include "ble/gatt-service/nordic_spp_service_server.h"
 
@@ -76,7 +76,7 @@ const uint8_t adv_data[] = {
     // Flags general discoverable, BR/EDR not supported
     2, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
     // Name
-    6, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'A', 'M', 'B', 'E', 'R', 
+    8, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'n', 'R', 'F',' ', 'S', 'P', 'P',
     // UUID ...
     17, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_128_BIT_SERVICE_CLASS_UUIDS, 0x6e, 0x40, 0x0, 0x1, 0xc3, 0x52, 0x11, 0xe5, 0x95, 0x3d, 0x0, 0x2, 0xa5, 0xd5, 0xc5, 0x1b,
 };

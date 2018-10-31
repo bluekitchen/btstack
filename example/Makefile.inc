@@ -338,6 +338,9 @@ clean:
 	rm -f  ancs_client_demo.h profile.h spp_and_le_counter.h le_counter.h le_streamer.h hog_keyboard_demo.h hog_mouse_demo.h
 	rm -f  gatt_battery_query.h gatt_browser.h sm_pairing_peripheral.h spp_and_le_streamer.h 
 	rm -f  le_data_channel_server.h sm_pairing_central.h
+	rm -f  nordic_spp_le_counter.h nordic_spp_le_streamer.h nordic_spp_le_counter nordic_spp_le_streamer
+	rm -f  le_streamer_and_counter_client.h le_streamer_and_counter_client
+	rm -f  sco_output.msbc sco_input.msbc
 	rm -rf *.dSYM
 	rm -rf ${BTSTACK_ROOT}/src/*.o
 	rm -rf ${BTSTACK_ROOT}/src/ble/*.o
