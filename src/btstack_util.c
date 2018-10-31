@@ -160,11 +160,14 @@ uint32_t btstack_max(uint32_t a, uint32_t b){
     return a > b ? a : b;
 }
 
+static const char * char_to_nibble = "0123456789ABCDEF";
+
 char char_for_nibble(int nibble){
-    if (nibble < 10) return (char)('0' + nibble);
-    nibble -= 10;
-    if (nibble < 6) return (char)('A' + nibble);
-    return '?';
+    if (nibble < 16){
+        return char_to_nibble[nibble];
+    } else {
+        return '?';
+    }
 }
 
 static inline char char_for_high_nibble(int value){
@@ -175,6 +178,7 @@ static inline char char_for_low_nibble(int value){
     return char_for_nibble(value & 0x0f);
 }
 
+
 int nibble_for_char(char c){
     if (c >= '0' && c <= '9') return c - '0';
     if (c >= 'a' && c <= 'f') return c - 'a' + 10;
@@ -183,10 +187,15 @@ int nibble_for_char(char c){
 }
 
 void printf_hexdump(const void *data, int size){
-    if (size <= 0) return;
-    int i;
-    for (i=0; i<size;i++){
-        printf("%02X ", ((uint8_t *)data)[i]);
+    char buffer[4];
+    buffer[2] = ' ';
+    buffer[3] =  0;
+    while (size > 0){
+        uint8_t byte = *((uint8_t *)data++);
+        buffer[0] = char_for_high_nibble(byte);
+        buffer[1] = char_for_low_nibble(byte);
+        printf("%s", buffer);
+        size--;
     }
     printf("\n");
 }
