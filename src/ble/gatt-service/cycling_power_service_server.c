@@ -946,11 +946,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(channel);
     UNUSED(size);
     cycling_power_t * instance = &cycling_power;
-    uint8_t event = hci_event_packet_get_type(packet);
+    uint8_t event_type = hci_event_packet_get_type(packet);
     uint16_t con_handle;
 
     if (packet_type != HCI_EVENT_PACKET) return;
-    switch (event){
+    switch (event_type){
         case HCI_EVENT_LE_META:
             switch (hci_event_le_meta_get_subevent_code(packet)){
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
