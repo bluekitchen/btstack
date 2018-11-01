@@ -52,15 +52,9 @@
 
 #include "ble/gatt-service/cycling_power_service_server.h"
 
-// error codes from cps spec
-#define CYCLING_POWER_ERROR_CODE_INAPPROPRIATE_CONNECTION_PARAMETERS    0x80
-#define CYCLING_POWER_MAX_BROACAST_MSG_SIZE                             31
-
-#define CSC_ERROR_CODE_PROCEDURE_ALREADY_IN_PROGRESS                    0xFE
-#define CSC_ERROR_CODE_CCC_DESCRIPTOR_IMPROPERLY_CONFIGURED             0xFD
-
-#define CONTROL_POINT_PROCEDURE_TIMEOUT_MS                  30
-#define CYCLING_POWER_MEASUREMENT_FLAGS_CLEARED                         0xFFFF
+#define CYCLING_POWER_MAX_BROACAST_MSG_SIZE         31
+#define CONTROL_POINT_PROCEDURE_TIMEOUT_MS          30
+#define CYCLING_POWER_MEASUREMENT_FLAGS_CLEARED     0xFFFF
 
 typedef enum {
     CP_MASK_BIT_PEDAL_POWER_BALANCE = 0,
@@ -743,7 +737,7 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
 #ifdef ENABLE_ATT_DELAYED_RESPONSE          
         switch (instance->con_interval_status){
             case CP_CONNECTION_INTERVAL_STATUS_REJECTED:
-                return ATT_ERROR_INAPPROPRIATE_CONNECTION_PARAMETERS;
+                return CYCLING_POWER_ERROR_CODE_INAPPROPRIATE_CONNECTION_PARAMETERS;
         
             case CP_CONNECTION_INTERVAL_STATUS_ACCEPTED:
             case CP_CONNECTION_INTERVAL_STATUS_RECEIVED:
@@ -783,10 +777,10 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
     }
 
     if (attribute_handle == instance->control_point_value_handle){
-        if (instance->control_point_client_configuration_descriptor_indicate == 0) return CSC_ERROR_CODE_CCC_DESCRIPTOR_IMPROPERLY_CONFIGURED;
+        if (instance->control_point_client_configuration_descriptor_indicate == 0) return CYCLING_POWER_ERROR_CODE_CCC_DESCRIPTOR_IMPROPERLY_CONFIGURED;
         if (instance->w4_indication_complete != 0){
             printf("w4_indication_complete not 0 \n");
-            return CSC_ERROR_CODE_PROCEDURE_ALREADY_IN_PROGRESS;
+            return CYCLING_POWER_ERROR_CODE_PROCEDURE_ALREADY_IN_PROGRESS;
         } 
         printf(" \n");
         printf("cycling_power_service_write_callback: w4_indication_complete %d \n", instance->w4_indication_complete);
