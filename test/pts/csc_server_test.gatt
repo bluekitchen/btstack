@@ -1,0 +1,5 @@
+PRIMARY_SERVICE, GAP_SERVICE
+CHARACTERISTIC, GAP_DEVICE_NAME, READ, "CSC Server"
+
+// add Cycling Speed and Cadence Service
+#import <cycling_speed_and_cadence_service.gatt>

@@ -6838,6 +6838,60 @@ static inline uint16_t hids_subevent_exit_suspend_get_con_handle(const uint8_t *
     return little_endian_read_16(event, 3);
 }
 
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field con_handle from event GATT_SERVICE_SUBEVENT_CYCLING_POWER_START_CALIBRATION
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_service_subevent_cycling_power_start_calibration_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field measurement_type from event GATT_SERVICE_SUBEVENT_CYCLING_POWER_START_CALIBRATION
+ * @param event packet
+ * @return measurement_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t gatt_service_subevent_cycling_power_start_calibration_get_measurement_type(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field is_enhanced from event GATT_SERVICE_SUBEVENT_CYCLING_POWER_START_CALIBRATION
+ * @param event packet
+ * @return is_enhanced
+ * @note: btstack_type 1
+ */
+static inline uint8_t gatt_service_subevent_cycling_power_start_calibration_get_is_enhanced(const uint8_t * event){
+    return event[6];
+}
+#endif
+
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field con_handle from event GATT_SERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_START
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_service_subevent_cycling_power_broadcast_start_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+#endif
+
+#ifdef ENABLE_BLE
+/**
+ * @brief Get field con_handle from event GATT_SERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_STOP
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gatt_service_subevent_cycling_power_broadcast_stop_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+#endif
+
 
 
 /* API_END */
