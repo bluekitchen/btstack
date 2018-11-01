@@ -244,8 +244,8 @@ static int cycling_speed_and_cadence_service_write_callback(hci_con_handle_t con
 	}
 
 	if (attribute_handle == instance->control_point_value_handle){
-		if (instance->control_point_client_configuration_descriptor_indicate == 0) return CSC_ERROR_CODE_CCC_DESCRIPTOR_IMPROPERLY_CONFIGURED;
-		if (instance->request_opcode != CSC_OPCODE_IDLE) return CSCS_ERROR_CODE_PROCEDURE_ALREADY_IN_PROGRESS;
+		if (instance->control_point_client_configuration_descriptor_indicate == 0) return CYCLING_SPEED_AND_CADENCE_ERROR_CODE_CCC_DESCRIPTOR_IMPROPERLY_CONFIGURED;
+		if (instance->request_opcode != CSC_OPCODE_IDLE) return CYCLING_SPEED_AND_CADENCE_ERROR_CODE_PROCEDURE_ALREADY_IN_PROGRESS;
 
 		instance->request_opcode = buffer[0];
 		instance->response_value = CSC_RESPONSE_VALUE_SUCCESS;
