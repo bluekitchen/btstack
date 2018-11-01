@@ -121,16 +121,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-static uint16_t network_pdu_src;
-static uint16_t network_pdu_dst;
-static uint32_t network_pdu_seq;
-static uint8_t  network_pdu_ttl;
-static uint8_t  network_pdu_ctl;
-
-// transport pdu
-static uint8_t transport_pdu_data[16];
-static uint8_t transport_pdu_len;
-
 // also used for PECB calculation 
 static uint8_t encryption_block[18];
 static uint8_t obfuscation_block[16];
@@ -157,7 +147,8 @@ static void mesh_network_create_nonce(uint8_t * nonce, uint8_t ctl_ttl, uint32_t
 
 // NID/IVI | obfuscated (CTL/TTL, SEQ (24), SRC (16) ), encrypted ( DST(16), TransportPDU), MIC(32 or 64)
 
-static void create_network_pdu_c(void *arg){
+// new
+static void mesh_network_send_c(void *arg){
     UNUSED(arg);
 
     // obfuscate
@@ -173,60 +164,58 @@ static void create_network_pdu_c(void *arg){
     adv_bearer_request_can_send_now_for_mesh_message();
 }
 
-// 
-static void create_network_pdu_b(void *arg){
+static void mesh_network_send_b(void *arg){
     UNUSED(arg);
+
+    uint32_t iv_index = provisioning_data.iv_index;
 
     // store NetMIC
     uint8_t net_mic[8];
     btstack_crypo_ccm_get_authentication_value(&mesh_ccm_request, net_mic);
 
     // store MIC
-    uint8_t net_mic_len = network_pdu_ctl ? 8 : 4;
-    memcpy(&network_pdu_data[9+transport_pdu_len], net_mic, net_mic_len);
-
-    // setup packet
-    network_pdu_len = 0;
-    
-    // Plainn: NID / IVI
-    uint32_t iv_index = provisioning_data.iv_index;
-    uint8_t  nid      = provisioning_data.nid;
-    network_pdu_data[network_pdu_len++] = (iv_index << 7) |  nid;
-    
-    // Obfuscated:
-    uint8_t ctl_ttl = (network_pdu_ctl << 7) | (network_pdu_ttl & 0x7f);
-    network_pdu_data[network_pdu_len++] = ctl_ttl;
-    big_endian_store_24(network_pdu_data, network_pdu_len, network_pdu_seq);
-    network_pdu_len += 3;
-    big_endian_store_16(network_pdu_data, network_pdu_len, network_pdu_src);
-    network_pdu_len += 2;
-
-    // already encrypted
-    network_pdu_len += 2 + transport_pdu_len + net_mic_len;
+    uint8_t net_mic_len = network_pdu_data[1] & 0x80 ? 8 : 4;
+    memcpy(&network_pdu_data[network_pdu_len], net_mic, net_mic_len);
+    network_pdu_len += net_mic_len;
 
     // calc PECB
     memset(encryption_block, 0, 5);
     big_endian_store_32(encryption_block, 5, iv_index);
     memcpy(&encryption_block[9], &network_pdu_data[7], 7);
-    btstack_crypto_aes128_encrypt(&mesh_aes128_request, provisioning_data.privacy_key, encryption_block, obfuscation_block, &create_network_pdu_c, NULL);
+    btstack_crypto_aes128_encrypt(&mesh_aes128_request, provisioning_data.privacy_key, encryption_block, obfuscation_block, &mesh_network_send_c, NULL);
 }
 
-static void create_network_pdu(void){
+static void mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len){
+    // TODO: check transport_pdu_len depending on ctl
+    // TODO: lookup network by netkey_index
+    UNUSED(netkey_index);
+    uint32_t iv_index = provisioning_data.iv_index;
+    uint8_t  nid      = provisioning_data.nid;
+
+    // TODO: allocate network_pdu
+
+    // setup header
+    int pos = 0;
+    network_pdu_data[network_pdu_len++] = (iv_index << 7) |  nid;
+    uint8_t ctl_ttl = (ctl << 7) | (ttl & 0x7f);
+    network_pdu_data[network_pdu_len++] = ctl_ttl;
+    big_endian_store_24(network_pdu_data, 2, seq);
+    network_pdu_len += 3;
+    big_endian_store_16(network_pdu_data, network_pdu_len, src);
+    network_pdu_len += 2;
+    big_endian_store_16(network_pdu_data, network_pdu_len, dest);
+    network_pdu_len += 2;
+    memcpy(&network_pdu_data[network_pdu_len], transport_pdu_data, transport_pdu_len);
+    network_pdu_len += transport_pdu_len;
 
     // get network nonce
-    uint32_t iv_index = provisioning_data.iv_index;
-    uint8_t ctl_ttl = (network_pdu_ctl << 7) | (network_pdu_ttl & 0x7f);
-    mesh_network_create_nonce(network_nonce, ctl_ttl, network_pdu_seq, network_pdu_src, iv_index); 
-
-    // prepare 'DST | TransportPDU' for CCM
-    big_endian_store_16(encryption_block, 0, network_pdu_dst);
-    memcpy(&encryption_block[2], transport_pdu_data, transport_pdu_len);
+    mesh_network_create_nonce(network_nonce, ctl_ttl, seq, src, iv_index); 
 
     // start ccm
     uint8_t cypher_len = 2 + transport_pdu_len;
-    uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
+    uint8_t net_mic_len = ctl ? 8 : 4;
     btstack_crypo_ccm_init(&mesh_ccm_request, provisioning_data.encryption_key, network_nonce, cypher_len, 0, net_mic_len);
-    btstack_crypto_ccm_encrypt_block(&mesh_ccm_request, cypher_len, encryption_block, &network_pdu_data[7], &create_network_pdu_b, NULL);
+    btstack_crypto_ccm_encrypt_block(&mesh_ccm_request, cypher_len,  &network_pdu_data[7], &network_pdu_data[7], &mesh_network_send_b, NULL);
 }
 
 // provisioning data iterator
@@ -514,49 +503,6 @@ static void load_provisioning_data_test_message(void){
     btstack_parse_hex("8b84eedec100067d670971dd2aa700cf", 16, provisioning_data.privacy_key);
 }
 
-static void generate_transport_pdu(void){
-
-    load_provisioning_data_test_message();
-
-#ifdef TEST_MESSAGE_1
-    // test values - message #1
-    network_pdu_src = 0x1201;
-    network_pdu_dst = 0xfffd;
-    network_pdu_seq = 0x0001;
-    network_pdu_ttl = 0;
-    network_pdu_ctl = 1;
-
-    const char * message_1_transport_pdu = "034b50057e400000010000";
-    transport_pdu_len = strlen(message_1_transport_pdu) / 2;
-    btstack_parse_hex(message_1_transport_pdu, transport_pdu_len, transport_pdu_data);
-#endif
-
-#ifdef TEST_MESSAGE_24
-    // test values - message #24
-    provisioning_data.iv_index = 0x12345677;
-
-    network_pdu_src = 0x1234;
-    network_pdu_dst = 0x9736;
-    network_pdu_seq = 0x07080d;
-    network_pdu_ttl = 3;
-    network_pdu_ctl = 0;
-
-    const char * message_24_transport_pdu = "e6a03401de1547118463123e5f6a17b9";
-    transport_pdu_len = strlen(message_24_transport_pdu) / 2;
-    btstack_parse_hex(message_24_transport_pdu, transport_pdu_len, transport_pdu_data);
-#endif
-
-#ifdef TEST_MESSAGE_X
-    network_pdu_src = 0x0025;
-    network_pdu_dst = 0x0001;
-    network_pdu_seq = 0x;
-    network_pdu_ttl = 3;
-    network_pdu_ctl = 0;
-    memset(transport_pdu_data, 0x55, 16);
-    transport_pdu_len = 16;
-#endif
-}
-
 static void generate_network_pdu(void){
     load_provisioning_data_test_message();
 #ifdef TEST_MESSAGE_1
@@ -576,6 +522,46 @@ static void generate_network_pdu(void){
     network_pdu_len = strlen(message_1_network_pdu) / 2;
     btstack_parse_hex(message_1_network_pdu, network_pdu_len, network_pdu_data);
     load_provisioning_data_test_message();
+#endif
+}
+
+static void send_test_message(void){
+    load_provisioning_data_test_message();
+    uint8_t transport_pdu_data[16];
+#ifdef TEST_MESSAGE_1
+    // test values - message #1
+    uint16_t src = 0x1201;
+    uint16_t dst = 0xfffd;
+    uint32_t seq = 0x0001;
+    uint8_t  ttl = 0;
+    uint8_t  ctl = 1;
+    const char * message_1_transport_pdu = "034b50057e400000010000";
+    uint8_t transport_pdu_len = strlen(message_1_transport_pdu) / 2;
+    btstack_parse_hex(message_1_transport_pdu, transport_pdu_len, transport_pdu_data);
+    mesh_network_send(0, ctl, ttl, seq, src, dst, transport_pdu_data, transport_pdu_len);
+#endif
+#ifdef TEST_MESSAGE_24
+    // test values - message #24
+    provisioning_data.iv_index = 0x12345677;
+    uint16_t src               = 0x1234;
+    uint16_t dst               = 0x9736;
+    uint32_t seq               = 0x07080d;
+    uint8_t  ttl               = 3;
+    uint8_t  ctl               = 0;
+    const char * message_24_transport_pdu = "e6a03401de1547118463123e5f6a17b9";
+    uint8_t transport_pdu_len = strlen(message_24_transport_pdu) / 2;
+    btstack_parse_hex(message_24_transport_pdu, transport_pdu_len, transport_pdu_data);
+    mesh_network_send(0, ctl, ttl, seq, src, dst, transport_pdu_data, transport_pdu_len);
+#endif
+#ifdef TEST_MESSAGE_X
+    uint16_t src = 0x0025;
+    uint16_t dst = 0x0001;
+    uint32_t seq = 0x;
+    uint8_t ttl = 3;
+    uint8_t ctl = 0;
+    memset(test_message_data, 0x55, 16);
+    transport_pdu_len = 16;
+    mesh_network_send(0, ctl, ttl, seq, src, dst, test_message_data, transport_pdu_len);
 #endif
 }
 
@@ -603,8 +589,9 @@ static void stdin_process(char cmd){
     }
     switch (cmd){
         case '1':
-            generate_transport_pdu();
-            create_network_pdu();
+            // generate_transport_pdu();
+            // create_network_pdu();
+            send_test_message();
             break;
         case '9':
             generate_network_pdu();
