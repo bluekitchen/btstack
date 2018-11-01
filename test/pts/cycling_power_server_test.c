@@ -43,6 +43,7 @@
 #include <string.h>
 
 #include "cycling_power_server_test.h"
+#include "btstack_config.h"
 #include "btstack.h"
 
 // https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.characteristic.gap.appearance.xml
