@@ -1237,8 +1237,7 @@ uint16_t gatt_server_get_value_handle_for_characteristic_with_uuid16(uint16_t st
     return 0;
 }
 
-// returns 0 if not found
-uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16){
+uint16_t gatt_server_get_descriptor_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t characteristic_uuid16, uint16_t descriptor_uuid16){
     att_iterator_t it;
     att_iterator_init(&it);
     int characteristic_found = 0;
@@ -1247,7 +1246,7 @@ uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uui
         if (it.handle && it.handle < start_handle) continue;
         if (it.handle > end_handle) break;  // (1)
         if (it.handle == 0) break;
-        if (att_iterator_match_uuid16(&it, uuid16)){
+        if (att_iterator_match_uuid16(&it, characteristic_uuid16)){
             characteristic_found = 1;
             continue;
         }
@@ -1257,11 +1256,21 @@ uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uui
             if (characteristic_found) break;
             continue;
         }
-        if (characteristic_found && att_iterator_match_uuid16(&it, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION)){
+        if (characteristic_found && att_iterator_match_uuid16(&it, descriptor_uuid16)){
             return it.handle;
         }
     }
     return 0;
+}
+
+// returns 0 if not found
+uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t characteristic_uuid16){
+    return gatt_server_get_descriptor_handle_for_characteristic_with_uuid16(start_handle, end_handle, characteristic_uuid16, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION);
+}
+// returns 0 if not found
+
+uint16_t gatt_server_get_server_configuration_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t characteristic_uuid16){
+    return gatt_server_get_descriptor_handle_for_characteristic_with_uuid16(start_handle, end_handle, characteristic_uuid16, GATT_SERVER_CHARACTERISTICS_CONFIGURATION);
 }
 
 // returns 1 if service found. only primary service.
