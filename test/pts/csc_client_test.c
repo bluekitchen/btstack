@@ -45,6 +45,8 @@
 
 #include "btstack.h"
 
+#include "btstack_config.h"
+
 // prototypes
 static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 

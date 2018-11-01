@@ -45,6 +45,8 @@
 #include "csc_server_test.h"
 #include "btstack.h"
 
+#include "btstack_config.h"
+
 #define WHEEL_REVOLUTION_DATA_SUPPORTED 1
 #define CRANK_REVOLUTION_DATA_SUPPORTED 1
 #define MULTIPLE_SENSOR_LOCATIONS_SUPPORTED 1
