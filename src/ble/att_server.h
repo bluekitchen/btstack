@@ -40,6 +40,7 @@
 #include <stdint.h>
 #include "ble/att_db.h"
 #include "btstack_defines.h"
+#include "btstack_config.h"
 
 #if defined __cplusplus
 extern "C" {

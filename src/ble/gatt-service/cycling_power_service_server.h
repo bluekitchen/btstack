@@ -216,8 +216,6 @@ uint16_t cycling_power_service_measurement_flags(void);
 uint8_t  cycling_power_service_vector_flags(void);
 /* API_END */
 
-extern int att_server_response_ready(hci_con_handle_t con_handle);
-
 #if defined __cplusplus
 }
 #endif
