@@ -128,8 +128,6 @@ static uint8_t encryption_block[16];
 static uint8_t obfuscation_block[16];
 
 // network pdu decoding buffer
-static uint8_t network_pdu_data[29];
-
 static uint8_t network_nonce[13];
 
 // processing
@@ -327,6 +325,8 @@ static void process_network_pdu_validate_d(void * arg){
     if (memcmp(net_mic, &network_pdu_in_validation->data[network_pdu->len-net_mic_len], net_mic_len) == 0){
         // match
         printf("NetMIC matches\n");
+
+        printf("TTL: 0x02x\n", network_pdu->data[1] & 0x7f);
 
         // validate packet
         uint16_t src = big_endian_read_16(network_pdu->data, 5);
