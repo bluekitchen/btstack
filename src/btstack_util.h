@@ -108,6 +108,7 @@ uint32_t little_endian_read_32(const uint8_t * buffer, int position);
  * @param value
  */
 void little_endian_store_16(uint8_t *buffer, uint16_t position, uint16_t value);
+void little_endian_store_24(uint8_t *buffer, uint16_t position, uint32_t value);
 void little_endian_store_32(uint8_t *buffer, uint16_t position, uint32_t value);
 
 /** 

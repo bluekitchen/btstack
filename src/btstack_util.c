@@ -86,6 +86,12 @@ void little_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
     buffer[pos++] = (uint8_t)(value >> 8);
 }
 
+void little_endian_store_24(uint8_t *buffer, uint16_t pos, uint32_t value){
+    buffer[pos++] = (uint8_t)(value);
+    buffer[pos++] = (uint8_t)(value >> 8);
+    buffer[pos++] = (uint8_t)(value >> 16);
+}
+
 void little_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value){
     buffer[pos++] = (uint8_t)(value);
     buffer[pos++] = (uint8_t)(value >> 8);
