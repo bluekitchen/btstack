@@ -327,8 +327,11 @@ def create_event(event_name, format, args):
 
 def event_supported(event_name):
     parts = event_name.split('_')
+    if parts[0] == 'GATT' and parts[1] == "SERVICE":
+        return False
     if parts[0] in ['ATT', 'BTSTACK', 'DAEMON', 'L2CAP', 'RFCOMM', 'SDP', 'GATT', 'GAP', 'HCI', 'SM', 'BNEP']:
         return True
+    return
 
 def class_name_for_event(event_name):
     return parser.camel_case(event_name.replace('SUBEVENT','EVENT'))
