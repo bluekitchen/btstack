@@ -72,6 +72,7 @@ extern "C" {
 #ifdef ENABLE_BLE
 #include "ble/gatt_client.h"
 #include "ble/sm.h"
+#include "ble/mesh/mesh_network.h"
 #endif
 
 /* API_START */
@@ -143,6 +144,9 @@ whitelist_entry_t * btstack_memory_whitelist_entry_get(void);
 void   btstack_memory_whitelist_entry_free(whitelist_entry_t *whitelist_entry);
 sm_lookup_entry_t * btstack_memory_sm_lookup_entry_get(void);
 void   btstack_memory_sm_lookup_entry_free(sm_lookup_entry_t *sm_lookup_entry);
+// mesh_network_pdu
+mesh_network_pdu_t * btstack_memory_mesh_network_pdu_get(void);
+void   btstack_memory_mesh_network_pdu_free(mesh_network_pdu_t *mesh_network_pdu);
 #endif
 
 #if defined __cplusplus

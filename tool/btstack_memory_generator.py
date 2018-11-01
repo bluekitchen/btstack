@@ -78,6 +78,7 @@ extern "C" {
 #ifdef ENABLE_BLE
 #include "ble/gatt_client.h"
 #include "ble/sm.h"
+#include "ble/mesh/mesh_network.h"
 #endif
 
 /* API_START */
@@ -194,10 +195,12 @@ list_of_structs = [
     ["avdtp_stream_endpoint"],
     ["avdtp_connection"],
     ["avrcp_connection"],
-    ["avrcp_browsing_connection"]    
+    ["avrcp_browsing_connection"],   
 ]
-
-list_of_le_structs = [["gatt_client", "whitelist_entry", "sm_lookup_entry"]]
+list_of_le_structs = [
+    ["gatt_client", "whitelist_entry", "sm_lookup_entry"],
+    ['mesh_network_pdu'] 
+]
 
 """
 """

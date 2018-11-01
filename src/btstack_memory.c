@@ -895,6 +895,45 @@ void btstack_memory_sm_lookup_entry_free(sm_lookup_entry_t *sm_lookup_entry){
 #endif
 
 
+
+// MARK: mesh_network_pdu_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_MESH_NETWORK_PDUS)
+    #if defined(MAX_NO_MESH_NETWORK_PDUS)
+        #error "Deprecated MAX_NO_MESH_NETWORK_PDUS defined instead of MAX_NR_MESH_NETWORK_PDUS. Please update your btstack_config.h to use MAX_NR_MESH_NETWORK_PDUS."
+    #else
+        #define MAX_NR_MESH_NETWORK_PDUS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_MESH_NETWORK_PDUS
+#if MAX_NR_MESH_NETWORK_PDUS > 0
+static mesh_network_pdu_t mesh_network_pdu_storage[MAX_NR_MESH_NETWORK_PDUS];
+static btstack_memory_pool_t mesh_network_pdu_pool;
+mesh_network_pdu_t * btstack_memory_mesh_network_pdu_get(void){
+    return (mesh_network_pdu_t *) btstack_memory_pool_get(&mesh_network_pdu_pool);
+}
+void btstack_memory_mesh_network_pdu_free(mesh_network_pdu_t *mesh_network_pdu){
+    btstack_memory_pool_free(&mesh_network_pdu_pool, mesh_network_pdu);
+}
+#else
+mesh_network_pdu_t * btstack_memory_mesh_network_pdu_get(void){
+    return NULL;
+}
+void btstack_memory_mesh_network_pdu_free(mesh_network_pdu_t *mesh_network_pdu){
+    // silence compiler warning about unused parameter in a portable way
+    (void) mesh_network_pdu;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+mesh_network_pdu_t * btstack_memory_mesh_network_pdu_get(void){
+    return (mesh_network_pdu_t*) malloc(sizeof(mesh_network_pdu_t));
+}
+void btstack_memory_mesh_network_pdu_free(mesh_network_pdu_t *mesh_network_pdu){
+    free(mesh_network_pdu);
+}
+#endif
+
+
 #endif
 // init
 void btstack_memory_init(void){
@@ -952,6 +991,9 @@ void btstack_memory_init(void){
 #endif
 #if MAX_NR_SM_LOOKUP_ENTRIES > 0
     btstack_memory_pool_create(&sm_lookup_entry_pool, sm_lookup_entry_storage, MAX_NR_SM_LOOKUP_ENTRIES, sizeof(sm_lookup_entry_t));
+#endif
+#if MAX_NR_MESH_NETWORK_PDUS > 0
+    btstack_memory_pool_create(&mesh_network_pdu_pool, mesh_network_pdu_storage, MAX_NR_MESH_NETWORK_PDUS, sizeof(mesh_network_pdu_t));
 #endif
 #endif
 }
