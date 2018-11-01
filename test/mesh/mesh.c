@@ -261,6 +261,38 @@ static provisioning_data_iterator_t     process_network_pdu_provisioning_data_it
 static const mesh_provisioning_data_t * process_network_pdu_prov_data;
 static uint8_t                          process_network_pdu_decode_block;
 
+static int network_addresses_valid(uint8_t ctl, uint16_t src, uint16_t dst){
+    printf("CTL: %u\n", ctl);
+    printf("SRC: %04x\n", src);
+    printf("DST: %04x\n", dst);
+    if (src == 0){
+        printf("SRC Unassigned Addr -> ignore\n");
+        return 0;
+    }
+    if ((src & 0xC000) == 0x8000){
+        printf("SRC Virtual Addr -> ignore\n");
+        return 0;
+    }
+    if ((src & 0xC000) == 0xC000){
+        printf("SRC Group Addr -> ignore\n");
+        return 0;
+    }
+    if (dst == 0){
+        printf("DST Unassigned Addr -> ignore\n");
+        return 0;
+    }
+    if ( ((dst & 0xC000) == 0x8000) && (ctl == 1)){
+        printf("DST Virtual Addr in CONTROL -> ignore\n");
+        return 0;
+    }
+    if ( (0xFF00 <= dst) && (dst <= 0xfffb) && (ctl == 0) ){
+        printf("DST RFU Group Addr in MESSAGE -> ignore\n");
+        return 0;
+    }
+    printf("SRC + DST Addr valid\n");
+    return 1;
+}
+
 static void process_network_pdu_validate(mesh_network_pdu_t * network_pdu);
 
 static void process_network_pdu_done(void){
@@ -272,7 +304,8 @@ static void process_network_pdu_done(void){
 static void process_network_pdu_validate_d(void * arg){
     mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
 
-    uint8_t ctl_ttl  = network_pdu->data[1];
+    uint8_t ctl_ttl     = network_pdu->data[1];
+    uint8_t ctl         = ctl_ttl >> 7;
     uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
     uint8_t cypher_len  = network_pdu->len - 9 - net_mic_len;
 
@@ -294,11 +327,20 @@ static void process_network_pdu_validate_d(void * arg){
     if (memcmp(net_mic, &network_pdu_in_validation->data[network_pdu->len-net_mic_len], net_mic_len) == 0){
         // match
         printf("NetMIC matches\n");
+
+        // validate packet
+        uint16_t src = big_endian_read_16(network_pdu->data, 5);
+        uint16_t dst = big_endian_read_16(network_pdu->data, 7);
+        int valid = network_addresses_valid(ctl, src, dst);
+        if (!valid){
+            btstack_memory_mesh_network_pdu_free(network_pdu);
+        } else {
 #if 0
-        btstack_linked_list_add_tail(&network_incoming, (btstack_linked_item_t *) network_pdu);
+            btstack_linked_list_add_tail(&network_incoming, (btstack_linked_item_t *) network_pdu);
 #else
-        btstack_memory_mesh_network_pdu_free(network_pdu);
+            btstack_memory_mesh_network_pdu_free(network_pdu);
 #endif
+        }
         process_network_pdu_done();
     } else {
         // fail
