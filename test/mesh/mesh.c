@@ -129,8 +129,9 @@ static uint8_t obfuscation_block[16];
 static uint8_t network_pdu_data[31];  // get correct value
 static uint8_t network_pdu_len;
 
-
 static uint8_t network_nonce[13];
+
+static btstack_linked_list_t network_outgoing;
 
 static void mesh_network_create_nonce(uint8_t * nonce, uint8_t ctl_ttl, uint32_t seq, uint16_t src, uint32_t iv_index){
     unsigned int pos = 0;
@@ -149,23 +150,26 @@ static void mesh_network_create_nonce(uint8_t * nonce, uint8_t ctl_ttl, uint32_t
 
 // new
 static void mesh_network_send_c(void *arg){
-    UNUSED(arg);
+    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
 
     // obfuscate
     unsigned int i;
     for (i=0;i<6;i++){
-        network_pdu_data[1+i] ^= obfuscation_block[i];
+        network_pdu->data[1+i] ^= obfuscation_block[i];
     }
 
     printf("NetworkPDU: ");
-    printf_hexdump(network_pdu_data, network_pdu_len);
+    printf_hexdump(network_pdu->data, network_pdu->len);
+
+    // add to queue
+    btstack_linked_list_add_tail(&network_outgoing, (btstack_linked_item_t *) network_pdu);
 
     // request to send
     adv_bearer_request_can_send_now_for_mesh_message();
 }
 
 static void mesh_network_send_b(void *arg){
-    UNUSED(arg);
+    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
 
     uint32_t iv_index = provisioning_data.iv_index;
 
@@ -174,39 +178,43 @@ static void mesh_network_send_b(void *arg){
     btstack_crypo_ccm_get_authentication_value(&mesh_ccm_request, net_mic);
 
     // store MIC
-    uint8_t net_mic_len = network_pdu_data[1] & 0x80 ? 8 : 4;
-    memcpy(&network_pdu_data[network_pdu_len], net_mic, net_mic_len);
-    network_pdu_len += net_mic_len;
+    uint8_t net_mic_len = network_pdu->data[1] & 0x80 ? 8 : 4;
+    memcpy(&network_pdu->data[network_pdu->len], net_mic, net_mic_len);
+    network_pdu->len += net_mic_len;
 
     // calc PECB
     memset(encryption_block, 0, 5);
     big_endian_store_32(encryption_block, 5, iv_index);
-    memcpy(&encryption_block[9], &network_pdu_data[7], 7);
-    btstack_crypto_aes128_encrypt(&mesh_aes128_request, provisioning_data.privacy_key, encryption_block, obfuscation_block, &mesh_network_send_c, NULL);
+    memcpy(&encryption_block[9], &network_pdu->data[7], 7);
+    btstack_crypto_aes128_encrypt(&mesh_aes128_request, provisioning_data.privacy_key, encryption_block, obfuscation_block, &mesh_network_send_c, network_pdu);
 }
 
 static void mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len){
+
     // TODO: check transport_pdu_len depending on ctl
+
     // TODO: lookup network by netkey_index
     UNUSED(netkey_index);
     uint32_t iv_index = provisioning_data.iv_index;
     uint8_t  nid      = provisioning_data.nid;
 
-    // TODO: allocate network_pdu
+    // allocate network_pdu
+    mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
+    if (!network_pdu) return;
+    memset(network_pdu, 0, sizeof(mesh_network_pdu_t));
 
     // setup header
-    int pos = 0;
-    network_pdu_data[network_pdu_len++] = (iv_index << 7) |  nid;
+    network_pdu->data[network_pdu->len++] = (iv_index << 7) |  nid;
     uint8_t ctl_ttl = (ctl << 7) | (ttl & 0x7f);
-    network_pdu_data[network_pdu_len++] = ctl_ttl;
-    big_endian_store_24(network_pdu_data, 2, seq);
-    network_pdu_len += 3;
-    big_endian_store_16(network_pdu_data, network_pdu_len, src);
-    network_pdu_len += 2;
-    big_endian_store_16(network_pdu_data, network_pdu_len, dest);
-    network_pdu_len += 2;
-    memcpy(&network_pdu_data[network_pdu_len], transport_pdu_data, transport_pdu_len);
-    network_pdu_len += transport_pdu_len;
+    network_pdu->data[network_pdu->len++] = ctl_ttl;
+    big_endian_store_24(network_pdu->data, 2, seq);
+    network_pdu->len += 3;
+    big_endian_store_16(network_pdu->data, network_pdu->len, src);
+    network_pdu->len += 2;
+    big_endian_store_16(network_pdu->data, network_pdu->len, dest);
+    network_pdu->len += 2;
+    memcpy(&network_pdu->data[network_pdu->len], transport_pdu_data, transport_pdu_len);
+    network_pdu->len += transport_pdu_len;
 
     // get network nonce
     mesh_network_create_nonce(network_nonce, ctl_ttl, seq, src, iv_index); 
@@ -215,7 +223,7 @@ static void mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl, u
     uint8_t cypher_len = 2 + transport_pdu_len;
     uint8_t net_mic_len = ctl ? 8 : 4;
     btstack_crypo_ccm_init(&mesh_ccm_request, provisioning_data.encryption_key, network_nonce, cypher_len, 0, net_mic_len);
-    btstack_crypto_ccm_encrypt_block(&mesh_ccm_request, cypher_len,  &network_pdu_data[7], &network_pdu_data[7], &mesh_network_send_b, NULL);
+    btstack_crypto_ccm_encrypt_block(&mesh_ccm_request, cypher_len,  &network_pdu->data[7], &network_pdu->data[7], &mesh_network_send_b, network_pdu);
 }
 
 // provisioning data iterator
@@ -356,11 +364,15 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
     const uint8_t * pdu_data;
     uint8_t pdu_len;
     uint8_t adv_len;
+    mesh_network_pdu_t * network_pdu;
     switch(packet[0]){
         case HCI_EVENT_MESH_META:
             switch(packet[2]){
                 case MESH_SUBEVENT_CAN_SEND_NOW:
-                    adv_bearer_send_mesh_message(&network_pdu_data[0], network_pdu_len);
+                    if (btstack_linked_list_empty(&network_outgoing)) break;
+                    network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_outgoing);
+                    adv_bearer_send_mesh_message(network_pdu->data, network_pdu->len);
+                    btstack_memory_mesh_network_pdu_free(network_pdu);
                     break;
                 case MESH_PB_ADV_LINK_OPEN:
                     printf("Provisioner link opened");
