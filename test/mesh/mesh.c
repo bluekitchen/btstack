@@ -326,7 +326,7 @@ static void process_network_pdu_validate_d(void * arg){
         // match
         printf("NetMIC matches\n");
 
-        printf("TTL: 0x02x\n", network_pdu->data[1] & 0x7f);
+        printf("TTL: 0x%02x\n", network_pdu->data[1] & 0x7f);
 
         // validate packet
         uint16_t src = big_endian_read_16(network_pdu->data, 5);
@@ -390,6 +390,7 @@ static void process_network_pdu_validate_b(void * arg){
 
 static void process_network_pdu_validate(mesh_network_pdu_t * network_pdu){
     if (!provisioning_data_has_more(&process_network_pdu_provisioning_data_it)){
+        printf("No valid network key found\n");
         btstack_memory_mesh_network_pdu_free(network_pdu);
         process_network_pdu_done();
         return;
