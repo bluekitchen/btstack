@@ -1166,7 +1166,18 @@ typedef enum {
 #define GAP_RECONNECTION_ADDRESS_UUID  0x2a03
 #define GAP_PERIPHERAL_PREFERRED_CONNECTION_PARAMETERS_UUID 0x2a04
 #define GAP_SERVICE_CHANGED            0x2a05
- 
+
+// Bluetooth GATT types
+
+typedef struct {
+    uint16_t year;      // 0 - year  is not known; or [1582,9999]
+    uint8_t  month;     // 0 - month is not known; or [1,12]
+    uint8_t  day;       // 0 - day   is not known; or [1,31]
+    uint8_t  hours;     // [0,23]
+    uint8_t  minutes;   // [0,59]
+    uint8_t  seconds;   // [0,59]
+} gatt_date_time_t;
+
 /**
  * SM - LE Security Manager 
  */
