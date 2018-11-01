@@ -724,7 +724,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
 
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     local_cid = l2cap_event_can_send_now_get_local_cid(packet);
-                    device = hid_device_get_instance_for_cid(l2cap_event_can_send_now_get_local_cid(packet));
+                    device = hid_device_get_instance_for_cid(local_cid);
                     
                     if (!device) return;
                     switch (device->state){
