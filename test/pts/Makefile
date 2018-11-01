@@ -224,6 +224,15 @@ gatt_profiles: gatt_profiles.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVE
 	${CC} $(filter-out gatt_profiles.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 myclean:
-	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc ${BTSTACK_ROOT}/port/libusb/*.o ${BTSTACK_ROOT}/src/*.o ${BTSTACK_ROOT}/src/classic/*.o ${BTSTACK_ROOT}/src/ble/*.o hog_demo_test.h
-
+	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc ${BTSTACK_ROOT}/port/libusb/*.o ${BTSTACK_ROOT}/src/*.o ${BTSTACK_ROOT}/src/classic/*.o ${BTSTACK_ROOT}/src/ble/*.o 
+	rm -rf hog_demo_test.h
+	rm -rf ble_central_test.h
+	rm -rf ble_peripheral_test.h
+	rm -rf csc_server_test.h
+	rm -rf cycling_power_server_test.h
+	rm -rf gatt_profiles.h
+	rm -rf hrp_server_test.h
+	rm -rf sm_test.h
+	
+	
 clean: myclean
