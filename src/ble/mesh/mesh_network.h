@@ -46,7 +46,8 @@ extern "C" {
 
 typedef struct {
 	btstack_linked_item_t item;
-	uint8_t 			  pdu[29];
+	uint8_t               len;
+	uint8_t 			  data[29];
 } mesh_network_pdu_t;
 
 #if defined __cplusplus

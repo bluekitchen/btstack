@@ -49,6 +49,8 @@
 #include "btstack.h"
 #include "btstack_tlv.h"
 
+static void mesh_network_run(void);
+
 #define BEACON_TYPE_SECURE_NETWORK 1
 
 const static uint8_t device_uuid[] = { 0x00, 0x1B, 0xDC, 0x08, 0x10, 0x21, 0x0B, 0x0E, 0x0A, 0x0C, 0x00, 0x0B, 0x0E, 0x0A, 0x0C, 0x00 };
@@ -122,13 +124,19 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 
 // also used for PECB calculation 
-static uint8_t encryption_block[18];
+static uint8_t encryption_block[16];
 static uint8_t obfuscation_block[16];
 
 // network pdu decoding buffer
 static uint8_t network_pdu_data[29];
 
 static uint8_t network_nonce[13];
+
+// processing
+static mesh_network_pdu_t * network_pdu_in_validation;
+
+// unprocessed network pdu
+static btstack_linked_list_t network_received;
 
 static btstack_linked_list_t network_outgoing;
 static btstack_linked_list_t network_incoming;
@@ -256,6 +264,9 @@ static uint8_t                          process_network_pdu_decode_block;
 static void process_network_pdu_validate(mesh_network_pdu_t * network_pdu);
 
 static void process_network_pdu_done(void){
+    btstack_memory_mesh_network_pdu_free(network_pdu_in_validation);
+    network_pdu_in_validation = NULL;
+    mesh_network_run();
 }
 
 static void process_network_pdu_validate_d(void * arg){
@@ -280,7 +291,7 @@ static void process_network_pdu_validate_d(void * arg){
     printf_hexdump(network_pdu->data, network_pdu->len);
 
     // compare nic to nic in data
-    if (memcmp(net_mic, &network_pdu_data[network_pdu->len-net_mic_len], net_mic_len) == 0){
+    if (memcmp(net_mic, &network_pdu_in_validation->data[network_pdu->len-net_mic_len], net_mic_len) == 0){
         // match
         printf("NetMIC matches\n");
 #if 0
@@ -306,7 +317,7 @@ static void process_network_pdu_validate_b(void * arg){
     // de-obfuscate
     unsigned int i;
     for (i=0;i<6;i++){
-        network_pdu->data[1+i] = network_pdu_data[1+i] ^ obfuscation_block[i];
+        network_pdu->data[1+i] = network_pdu_in_validation->data[1+i] ^ obfuscation_block[i];
     }
 
     // parse header
@@ -332,7 +343,7 @@ static void process_network_pdu_validate_b(void * arg){
     // 034b50057e400000010000
 
     btstack_crypo_ccm_init(&mesh_ccm_request, process_network_pdu_prov_data->encryption_key, network_nonce, cypher_len, 0, net_mic_len);
-    btstack_crypto_ccm_decrypt_block(&mesh_ccm_request, cypher_len, &network_pdu_data[7], &network_pdu->data[7], &process_network_pdu_validate_d, network_pdu);
+    btstack_crypto_ccm_decrypt_block(&mesh_ccm_request, cypher_len, &network_pdu_in_validation->data[7], &network_pdu->data[7], &process_network_pdu_validate_d, network_pdu);
 }
 
 static void process_network_pdu_validate(mesh_network_pdu_t * network_pdu){
@@ -347,26 +358,18 @@ static void process_network_pdu_validate(mesh_network_pdu_t * network_pdu){
     // calc PECB
     memset(encryption_block, 0, 5);
     big_endian_store_32(encryption_block, 5, process_network_pdu_prov_data->iv_index);
-    memcpy(&encryption_block[9], &network_pdu_data[7], 7);
+    memcpy(&encryption_block[9], &network_pdu_in_validation->data[7], 7);
     btstack_crypto_aes128_encrypt(&mesh_aes128_request, process_network_pdu_prov_data->privacy_key, encryption_block, obfuscation_block, &process_network_pdu_validate_b, network_pdu);
 }
 
-static void process_network_pdu(const uint8_t * pdu_data, uint8_t pdu_len){
 
-    // allocate network_pdu
-    mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
-    if (!network_pdu) return;
-    memset(network_pdu, 0, sizeof(mesh_network_pdu_t));
-
-    // store network pdu
-    memcpy(network_pdu_data, pdu_data, pdu_len);
-
-
-    uint8_t nid_ivi = network_pdu_data[0];
+static void process_network_pdu(mesh_network_pdu_t * network_pdu){
+    //
+    uint8_t nid_ivi = network_pdu_in_validation->data[0];
 
     // setup pdu object
     network_pdu->data[0] = nid_ivi;
-    network_pdu->len     = pdu_len;
+    network_pdu->len     = network_pdu_in_validation->len;
 
     // init provisioning data iterator
     uint8_t nid = nid_ivi & 0x7f;
@@ -374,6 +377,34 @@ static void process_network_pdu(const uint8_t * pdu_data, uint8_t pdu_len){
     provisioning_data_iterator_init(&process_network_pdu_provisioning_data_it, nid);
 
     process_network_pdu_validate(network_pdu);
+}
+
+static void mesh_network_run(void){
+    if (network_pdu_in_validation) return;
+    if (btstack_linked_list_empty(&network_received)) return;
+    mesh_network_pdu_t * decoded_pdu = btstack_memory_mesh_network_pdu_get();
+    if (!decoded_pdu) return; 
+    // get encoded network pdu and start processing
+    network_pdu_in_validation = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_received);
+    process_network_pdu(decoded_pdu);
+}
+
+static void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len){
+    // verify len
+    if (pdu_len > 29) return;
+
+    // allocate network_pdu
+    mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
+    if (!network_pdu) return;
+    memset(network_pdu, 0, sizeof(mesh_network_pdu_t));
+
+    // store data
+    memcpy(network_pdu->data, pdu_data, pdu_len);
+    network_pdu->len = pdu_len;
+    btstack_linked_list_add_tail(&network_received, (btstack_linked_item_t *) network_pdu);
+
+    // go
+    mesh_network_run();
 }
 
 static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -436,7 +467,7 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
             pdu_data = &adv_data[2];
             printf("received mesh message: ");
             printf_hexdump(pdu_data, pdu_len);
-            process_network_pdu(pdu_data, pdu_len);
+            mesh_network_received_message(pdu_data, pdu_len);
             break;
         default:
             break;
@@ -550,7 +581,7 @@ static void receive_test_message(void){
     uint8_t test_network_pdu_len = strlen(message_1_network_pdu) / 2;
     btstack_parse_hex(message_1_network_pdu, test_network_pdu_len, test_network_pdu_data);
 #endif
-    process_network_pdu(test_network_pdu_data, test_network_pdu_len);
+    mesh_network_received_message(test_network_pdu_data, test_network_pdu_len);
 }
 
 static void send_test_message(void){
