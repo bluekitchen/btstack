@@ -1088,7 +1088,7 @@ typedef enum {
 #define ATT_ERROR_INVALID_HANDLE                   0x01
 #define ATT_ERROR_READ_NOT_PERMITTED               0x02
 #define ATT_ERROR_WRITE_NOT_PERMITTED              0x03
-#define ATT_ERROR_INVALID_PDU                      0x04  
+#define ATT_ERROR_INVALID_PDU                      0x04
 #define ATT_ERROR_INSUFFICIENT_AUTHENTICATION      0x05
 #define ATT_ERROR_REQUEST_NOT_SUPPORTED            0x06
 #define ATT_ERROR_INVALID_OFFSET                   0x07
@@ -1102,6 +1102,16 @@ typedef enum {
 #define ATT_ERROR_INSUFFICIENT_ENCRYPTION          0x0f
 #define ATT_ERROR_UNSUPPORTED_GROUP_TYPE           0x10
 #define ATT_ERROR_INSUFFICIENT_RESOURCES           0x11
+
+// MARK: ATT Error Codes from Cycling Power Service spec
+#define CYCLING_POWER_ERROR_CODE_INAPPROPRIATE_CONNECTION_PARAMETERS                          0x80
+#define CYCLING_POWER_ERROR_CODE_PROCEDURE_ALREADY_IN_PROGRESS                                0xFE
+#define CYCLING_POWER_ERROR_CODE_CCC_DESCRIPTOR_IMPROPERLY_CONFIGURED                         0xFD
+
+// MARK: ATT Error Codes from Cycling Speed and Cadence Service spec
+#define CYCLING_SPEED_AND_CADENCE_ERROR_CODE_PROCEDURE_ALREADY_IN_PROGRESS                    0x80
+#define CYCLING_SPEED_AND_CADENCE_ERROR_CODE_CCC_DESCRIPTOR_IMPROPERLY_CONFIGURED             0x81
+
 
 // MARK: Attribute Property Flags
 #define ATT_PROPERTY_BROADCAST           0x01
