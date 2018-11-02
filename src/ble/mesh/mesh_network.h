@@ -112,6 +112,9 @@ int mesh_network_addresses_valid(uint8_t ctl, uint16_t src, uint16_t dst);
 // Testing only
 void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len);
 
+void     mesh_set_iv_index(uint32_t iv_index);
+uint32_t mesh_get_iv_index(void);
+
 #if defined __cplusplus
 }
 #endif

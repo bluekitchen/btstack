@@ -106,16 +106,6 @@ void mesh_network_key_list_add_from_provisioning_data(const mesh_provisioning_da
     mesh_network_key_t * network_key = &mesh_network_primary_key;
     memset(network_key, 0, sizeof(mesh_network_key_t));
 
-    // k1
-    // uint8_t identity_key[16] // not used yet
-    uint8_t  beacon_key[16];
-    // k2
-    uint8_t  nid;
-    uint8_t  encryption_key[16];
-    uint8_t  privacy_key[16];
-    // k3
-    uint8_t  network_id[8];
-
     // NetKey
     // memcpy(network_key->net_key, provisioning_data, net_key);
 
@@ -187,14 +177,11 @@ int mesh_network_addresses_valid(uint8_t ctl, uint16_t src, uint16_t dst){
     return 1;
 }
 
-static void mesh_network_create_nonce(uint8_t * nonce, uint8_t ctl_ttl, uint32_t seq, uint16_t src, uint32_t iv_index){
+static void mesh_network_create_nonce(uint8_t * nonce, const mesh_network_pdu_t * pdu, uint32_t iv_index){
     unsigned int pos = 0;
     nonce[pos++] = 0x0;      // Network Nonce
-    nonce[pos++] = ctl_ttl;
-    big_endian_store_24(nonce, pos, seq);
-    pos += 3;
-    big_endian_store_16(nonce, pos, src);
-    pos += 2;
+    memcpy(&nonce[pos], &pdu->data[1], 6);
+    pos += 6;
     big_endian_store_16(nonce, pos, 0);
     pos += 2;
     big_endian_store_32(nonce, pos, iv_index);
@@ -312,18 +299,13 @@ static void process_network_pdu_validate_b(void * arg){
         network_pdu->data[1+i] = network_pdu_in_validation->data[1+i] ^ obfuscation_block[i];
     }
 
-    // parse header
-    uint32_t iv_index = global_iv_index;
-    uint8_t  ctl_ttl  = network_pdu->data[1];
-    uint32_t seq      = big_endian_read_24(network_pdu->data, 2);
-    uint16_t src      = big_endian_read_16(network_pdu->data, 5);
-
-    // get network nonce
-    mesh_network_create_nonce(network_nonce, ctl_ttl, seq, src, iv_index); 
+    // create network nonce
+    mesh_network_create_nonce(network_nonce, network_pdu, global_iv_index);
     printf("Network Nonce: ");
     printf_hexdump(network_nonce, 13);
 
     // 
+    uint8_t ctl_ttl     = network_pdu->data[1];
     uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
     uint8_t cypher_len  = network_pdu->len - 7 - net_mic_len;
 
@@ -454,8 +436,7 @@ uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl, uint3
     current_network_key = mesh_network_key_list_get(netkey_index);
     if (!current_network_key) return 0;
 
-    uint32_t iv_index = global_iv_index;
-    uint8_t  nid      = current_network_key->nid;
+    uint8_t nid = current_network_key->nid;
 
     // allocate network_pdu
     mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
@@ -463,7 +444,7 @@ uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl, uint3
     memset(network_pdu, 0, sizeof(mesh_network_pdu_t));
 
     // setup header
-    network_pdu->data[network_pdu->len++] = (iv_index << 7) |  nid;
+    network_pdu->data[network_pdu->len++] = (global_iv_index << 7) |  nid;
     uint8_t ctl_ttl = (ctl << 7) | (ttl & 0x7f);
     network_pdu->data[network_pdu->len++] = ctl_ttl;
     big_endian_store_24(network_pdu->data, 2, seq);
@@ -475,14 +456,27 @@ uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl, uint3
     memcpy(&network_pdu->data[network_pdu->len], transport_pdu_data, transport_pdu_len);
     network_pdu->len += transport_pdu_len;
 
+    printf("Raw: ");
+    printf_hexdump(network_pdu->data, network_pdu->len);
+
     // get network nonce
-    mesh_network_create_nonce(network_nonce, ctl_ttl, seq, src, iv_index); 
+    mesh_network_create_nonce(network_nonce, network_pdu, global_iv_index); 
+    printf("Nonce: ");
+    printf_hexdump(network_nonce, 13);
 
     // start ccm
     uint8_t cypher_len = 2 + transport_pdu_len;
     uint8_t net_mic_len = ctl ? 8 : 4;
     btstack_crypo_ccm_init(&mesh_ccm_request, current_network_key->encryption_key, network_nonce, cypher_len, 0, net_mic_len);
-    btstack_crypto_ccm_encrypt_block(&mesh_ccm_request, cypher_len,  &network_pdu->data[7], &network_pdu->data[7], &mesh_network_send_b, network_pdu);
+    btstack_crypto_ccm_encrypt_block(&mesh_ccm_request, cypher_len, &network_pdu->data[7], &network_pdu->data[7], &mesh_network_send_b, network_pdu);
 
     return 0;
+}
+
+void     mesh_set_iv_index(uint32_t iv_index){
+    global_iv_index = iv_index;
+}
+
+uint32_t mesh_get_iv_index(void){
+    return  global_iv_index;
 }
