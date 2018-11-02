@@ -9,31 +9,32 @@ import os
 import btstack_parser as parser
 
 meta_events = [
+    'A2DP',
     'ANCS',
     'AVDTP',
-    'A2DP',
     'AVRCP',
+    'GATTSERVICE',
     'GOEP',
     'HFP',
-    'HSP',
-    'PBAP',
-    'LE',
     'HID',
     'HIDS',
+    'HSP',
+    'LE',
+    'PBAP'
 ]
 
 supported_event_groups = meta_events + [
+    'ATT',
+    'BNEP',
     'BTSTACK',
     'GAP',
+    'GATT',
     'HCI',
-    'SDP',
-    'SM',
+    'HID',
     'L2CAP',
     'RFCOMM',
-    'GATT',
-    'BNEP',
-    'ATT',
-    'HID',
+    'SDP',
+    'SM'
 ]
 
 program_info = '''

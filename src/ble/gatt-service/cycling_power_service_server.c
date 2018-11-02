@@ -712,14 +712,14 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
         instance->con_handle = con_handle;
         uint8_t event[5];
         int index = 0;
-        event[index++] = HCI_EVENT_GATT_SERVICE_META;
+        event[index++] = HCI_EVENT_GATTSERVICE_META;
         event[index++] = sizeof(event) - 2;
         
         if (instance->measurement_server_configuration_descriptor_broadcast){
-            event[index++] = GATT_SERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_START;
+            event[index++] = GATTSERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_START;
             log_info("cycling power: start broadcast");
         } else {
-            event[index++] = GATT_SERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_STOP;
+            event[index++] = GATTSERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_STOP;
             log_info("cycling power: stop broadcast");
         }
         little_endian_store_16(event, index, con_handle);
@@ -877,9 +877,9 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
                     printf("start offset compensation procedure, enhanced %d\n", (instance->request_opcode == CP_OPCODE_START_ENHANCED_OFFSET_COMPENSATION));
                     uint8_t event[7];
                     int index = 0;
-                    event[index++] = HCI_EVENT_GATT_SERVICE_META;
+                    event[index++] = HCI_EVENT_GATTSERVICE_META;
                     event[index++] = sizeof(event) - 2;
-                    event[index++] = GATT_SERVICE_SUBEVENT_CYCLING_POWER_START_CALIBRATION;
+                    event[index++] = GATTSERVICE_SUBEVENT_CYCLING_POWER_START_CALIBRATION;
                     little_endian_store_16(event, index, con_handle);
                     index += 2;
                     event[index++] = has_feature(CP_FEATURE_FLAG_SENSOR_MEASUREMENT_CONTEXT) == CP_SENSOR_MEASUREMENT_CONTEXT_TORQUE;
@@ -1002,10 +1002,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         
             uint8_t event[5];
             int index = 0;
-            event[index++] = HCI_EVENT_GATT_SERVICE_META;
+            event[index++] = HCI_EVENT_GATTSERVICE_META;
             event[index++] = sizeof(event) - 2;
             
-            event[index++] = GATT_SERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_STOP;
+            event[index++] = GATTSERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_STOP;
             little_endian_store_16(event, index, con_handle);
             index += 2;
             (*instance->calibration_callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));

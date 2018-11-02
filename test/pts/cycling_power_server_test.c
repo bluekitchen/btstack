@@ -368,14 +368,14 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             }
             break;
 
-        case HCI_EVENT_GATT_SERVICE_META:
+        case HCI_EVENT_GATTSERVICE_META:
             switch (packet[2]){
-                case GATT_SERVICE_SUBEVENT_CYCLING_POWER_START_CALIBRATION:
-                    measurement_type = gatt_service_subevent_cycling_power_start_calibration_get_measurement_type(packet);
-                    enhanced_calibration =  gatt_service_subevent_cycling_power_start_calibration_get_is_enhanced(packet);
+                case GATTSERVICE_SUBEVENT_CYCLING_POWER_START_CALIBRATION:
+                    measurement_type = gattservice_subevent_cycling_power_start_calibration_get_measurement_type(packet);
+                    enhanced_calibration =  gattservice_subevent_cycling_power_start_calibration_get_is_enhanced(packet);
                     break;
 
-                case GATT_SERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_START:
+                case GATTSERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_START:
                     printf("start broadcast\n");
                     // set ADV_NONCONN_IND
                     pos = cycling_power_get_measurement_adv(adv_int_max, &broadcast_adv[0], sizeof(broadcast_adv));
@@ -384,7 +384,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     gap_advertisements_set_data(pos, (uint8_t*) broadcast_adv);
                     gap_advertisements_enable(1);
                     break;
-                case GATT_SERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_STOP:
+                case GATTSERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_STOP:
                     printf("stop broadcast\n");
                     gap_advertisements_enable(0);
                     break;
