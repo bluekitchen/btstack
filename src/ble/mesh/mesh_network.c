@@ -48,6 +48,8 @@
 #include "provisioning_device.h"
 #include "btstack.h"
 
+#define MESH_NETWORK_CACHE_SIZE 100
+
 // structs
 
 typedef struct {
@@ -98,10 +100,43 @@ static btstack_linked_list_t network_pdus_outgoing;
 // mesh network key list
 static mesh_network_key_t mesh_network_primary_key;
 
+// mesh network cache - we use 32-bit 'hashes'
+static uint32_t mesh_network_cache[MESH_NETWORK_CACHE_SIZE];
+static int      mesh_network_cache_index;
+
 // prototypes
 
 static void mesh_network_run(void);
 static void process_network_pdu_validate(mesh_network_pdu_t * network_pdu);
+
+// network caching
+static uint32_t mesh_network_cache_hash(mesh_network_pdu_t * network_pdu){
+    // - The SEQ field is a 24-bit integer that when combined with the IV Index, 
+    // shall be a unique value for each new Network PDU originated by this node (=> SRC)
+    // - IV updates only rarely
+    // => 16 bit SRC, 1 bit IVI, 15 bit SEQ
+    uint8_t  ivi = network_pdu->data[0] >> 7;
+    uint16_t seq = big_endian_read_16(network_pdu->data, 3);
+    uint16_t src = big_endian_read_16(network_pdu->data, 5);
+    return (src << 16) | (ivi << 15) | (seq & 0x7fff);
+}
+
+static int mesh_network_cache_find(uint32_t hash){
+    int i;
+    for (i = 0; i < MESH_NETWORK_CACHE_SIZE; i++) {
+        if (mesh_network_cache[i] == hash) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static void mesh_network_cache_add(uint32_t hash){
+    mesh_network_cache[mesh_network_cache_index++] = hash;
+    if (mesh_network_cache_index >= MESH_NETWORK_CACHE_SIZE){
+        mesh_network_cache_index = 0;
+    }
+}
 
 // network key list
 
@@ -303,6 +338,9 @@ static void process_network_pdu_validate_d(void * arg){
         if (!valid){
             btstack_memory_mesh_network_pdu_free(network_pdu);
         } else {
+            // store in network cache
+            uint32_t hash = mesh_network_cache_hash(network_pdu);
+            mesh_network_cache_add(hash);
 #if 0
             // TODO: forward to lower transport layer
 #else
@@ -328,6 +366,17 @@ static void process_network_pdu_validate_b(void * arg){
     unsigned int i;
     for (i=0;i<6;i++){
         network_pdu->data[1+i] = network_pdu_in_validation->data[1+i] ^ obfuscation_block[i];
+    }
+
+    // check cache
+    uint32_t hash = mesh_network_cache_hash(network_pdu);
+    printf("Hash: %08x\n", hash);
+    if (mesh_network_cache_find(hash)){
+        // found in cache, drop
+        printf("Found in cache -> drop packet\n");
+        mesh_crypto_active = 0;
+        btstack_memory_mesh_network_pdu_free(network_pdu);
+        return;
     }
 
     // create network nonce
@@ -465,9 +514,9 @@ void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len){
     // store data
     memcpy(network_pdu->data, pdu_data, pdu_len);
     network_pdu->len = pdu_len;
-    btstack_linked_list_add_tail(&network_pdus_received, (btstack_linked_item_t *) network_pdu);
 
-    // go
+    // add to list and go
+    btstack_linked_list_add_tail(&network_pdus_received, (btstack_linked_item_t *) network_pdu);
     mesh_network_run();
 }
 
