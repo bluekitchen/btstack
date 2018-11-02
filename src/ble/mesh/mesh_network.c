@@ -282,6 +282,15 @@ static void mesh_network_send_b(void *arg){
 }
 
 static void mesh_network_send_0(mesh_network_pdu_t * network_pdu){
+    // lookup network by netkey_index
+    current_network_key = mesh_network_key_list_get(network_pdu->netkey_index);
+    if (!current_network_key) {
+        btstack_memory_mesh_network_pdu_free(network_pdu);
+        mesh_crypto_active = 0;
+        mesh_network_run();
+        return;
+    }
+
     // get network nonce
     mesh_network_create_nonce(network_nonce, network_pdu, global_iv_index); 
     printf("Nonce: ");
@@ -524,18 +533,20 @@ uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl, uint3
 
     // TODO: check transport_pdu_len depending on ctl
 
-    // TODO: lookup network by netkey_index
-    current_network_key = mesh_network_key_list_get(netkey_index);
-    if (!current_network_key) return 0;
-
-    uint8_t nid = current_network_key->nid;
+    // lookup network by netkey_index
+    const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
+    if (!network_key) return 0;
 
     // allocate network_pdu
     mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
     if (!network_pdu) return 0;
     memset(network_pdu, 0, sizeof(mesh_network_pdu_t));
 
+    // set netkey_index
+    network_pdu->netkey_index = netkey_index;
+
     // setup header
+    uint8_t nid = network_key->nid;
     network_pdu->data[network_pdu->len++] = (global_iv_index << 7) |  nid;
     uint8_t ctl_ttl = (ctl << 7) | (ttl & 0x7f);
     network_pdu->data[network_pdu->len++] = ctl_ttl;
