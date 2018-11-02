@@ -60,9 +60,15 @@ typedef struct {
 static uint32_t global_iv_index;
 
 // shared send/receive crypto
-static btstack_crypto_ccm_t         mesh_ccm_request;
-static btstack_crypto_aes128_t      mesh_aes128_request;
-static const mesh_network_key_t *   current_network_key;
+static int mesh_crypto_active;
+
+// crypto requests
+static union {
+    btstack_crypto_ccm_t         ccm;
+    btstack_crypto_aes128_t      aes128;
+} mesh_network_crypto_request;
+
+static const mesh_network_key_t *  current_network_key;
 
 // PECB calculation 
 static uint8_t encryption_block[16];
@@ -81,6 +87,9 @@ static mesh_network_pdu_t *         network_pdu_in_validation;
 static mesh_network_key_iterator_t  validation_network_key_it;
 
 // OUTGOING //
+
+// Network PDUs queued by mesh_network_send
+static btstack_linked_list_t network_pdus_queued;
 
 // Network PDUs ready to send via adv bearer
 static btstack_linked_list_t network_pdus_outgoing;
@@ -202,11 +211,18 @@ static void mesh_network_send_c(void *arg){
     printf("NetworkPDU: ");
     printf_hexdump(network_pdu->data, network_pdu->len);
 
+    // crypto done
+    mesh_crypto_active = 0;
+
+
     // add to queue
     btstack_linked_list_add_tail(&network_pdus_outgoing, (btstack_linked_item_t *) network_pdu);
 
     // request to send
     adv_bearer_request_can_send_now_for_mesh_message();
+
+    // go
+    mesh_network_run();
 }
 
 static void mesh_network_send_b(void *arg){
@@ -216,7 +232,7 @@ static void mesh_network_send_b(void *arg){
 
     // store NetMIC
     uint8_t net_mic[8];
-    btstack_crypo_ccm_get_authentication_value(&mesh_ccm_request, net_mic);
+    btstack_crypo_ccm_get_authentication_value(&mesh_network_crypto_request.ccm, net_mic);
 
     // store MIC
     uint8_t net_mic_len = network_pdu->data[1] & 0x80 ? 8 : 4;
@@ -227,12 +243,27 @@ static void mesh_network_send_b(void *arg){
     memset(encryption_block, 0, 5);
     big_endian_store_32(encryption_block, 5, iv_index);
     memcpy(&encryption_block[9], &network_pdu->data[7], 7);
-    btstack_crypto_aes128_encrypt(&mesh_aes128_request, current_network_key->privacy_key, encryption_block, obfuscation_block, &mesh_network_send_c, network_pdu);
+    btstack_crypto_aes128_encrypt(&mesh_network_crypto_request.aes128, current_network_key->privacy_key, encryption_block, obfuscation_block, &mesh_network_send_c, network_pdu);
+}
+
+static void mesh_network_send_0(mesh_network_pdu_t * network_pdu){
+    // get network nonce
+    mesh_network_create_nonce(network_nonce, network_pdu, global_iv_index); 
+    printf("Nonce: ");
+    printf_hexdump(network_nonce, 13);
+
+    // start ccm
+    uint8_t cypher_len  = network_pdu->len - 7;
+    uint8_t net_mic_len = network_pdu->data[1] & 0x80 ? 8 : 4;
+    btstack_crypo_ccm_init(&mesh_network_crypto_request.ccm, current_network_key->encryption_key, network_nonce, cypher_len, 0, net_mic_len);
+    btstack_crypto_ccm_encrypt_block(&mesh_network_crypto_request.ccm, cypher_len, &network_pdu->data[7], &network_pdu->data[7], &mesh_network_send_b, network_pdu);
 }
 
 static void process_network_pdu_done(void){
     btstack_memory_mesh_network_pdu_free(network_pdu_in_validation);
     network_pdu_in_validation = NULL;
+    mesh_crypto_active = 0;
+
     mesh_network_run();
 }
 
@@ -246,7 +277,7 @@ static void process_network_pdu_validate_d(void * arg){
 
     // store NetMIC
     uint8_t net_mic[8];
-    btstack_crypo_ccm_get_authentication_value(&mesh_ccm_request, net_mic);
+    btstack_crypo_ccm_get_authentication_value(&mesh_network_crypto_request.ccm, net_mic);
     printf("NetMIC: "); 
     printf_hexdump(net_mic, net_mic_len);
     // store in pdu
@@ -316,8 +347,8 @@ static void process_network_pdu_validate_b(void * arg){
 
     // 034b50057e400000010000
 
-    btstack_crypo_ccm_init(&mesh_ccm_request, current_network_key->encryption_key, network_nonce, cypher_len, 0, net_mic_len);
-    btstack_crypto_ccm_decrypt_block(&mesh_ccm_request, cypher_len, &network_pdu_in_validation->data[7], &network_pdu->data[7], &process_network_pdu_validate_d, network_pdu);
+    btstack_crypo_ccm_init(&mesh_network_crypto_request.ccm, current_network_key->encryption_key, network_nonce, cypher_len, 0, net_mic_len);
+    btstack_crypto_ccm_decrypt_block(&mesh_network_crypto_request.ccm, cypher_len, &network_pdu_in_validation->data[7], &network_pdu->data[7], &process_network_pdu_validate_d, network_pdu);
 }
 
 static void process_network_pdu_validate(mesh_network_pdu_t * network_pdu){
@@ -334,7 +365,7 @@ static void process_network_pdu_validate(mesh_network_pdu_t * network_pdu){
     memset(encryption_block, 0, 5);
     big_endian_store_32(encryption_block, 5, global_iv_index);
     memcpy(&encryption_block[9], &network_pdu_in_validation->data[7], 7);
-    btstack_crypto_aes128_encrypt(&mesh_aes128_request, current_network_key->privacy_key, encryption_block, obfuscation_block, &process_network_pdu_validate_b, network_pdu);
+    btstack_crypto_aes128_encrypt(&mesh_network_crypto_request.aes128, current_network_key->privacy_key, encryption_block, obfuscation_block, &process_network_pdu_validate_b, network_pdu);
 }
 
 
@@ -355,13 +386,25 @@ static void process_network_pdu(mesh_network_pdu_t * network_pdu){
 }
 
 static void mesh_network_run(void){
-    if (network_pdu_in_validation) return;
-    if (btstack_linked_list_empty(&network_pdus_received)) return;
-    mesh_network_pdu_t * decoded_pdu = btstack_memory_mesh_network_pdu_get();
-    if (!decoded_pdu) return; 
-    // get encoded network pdu and start processing
-    network_pdu_in_validation = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_received);
-    process_network_pdu(decoded_pdu);
+    if (mesh_crypto_active) return;
+
+    if (!btstack_linked_list_empty(&network_pdus_received)){
+        mesh_network_pdu_t * decode_pdu = btstack_memory_mesh_network_pdu_get();
+        if (!decode_pdu) return; 
+        // get encoded network pdu and start processing
+        mesh_crypto_active = 1;
+        network_pdu_in_validation = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_received);
+        process_network_pdu(decode_pdu);
+        return;
+    }
+
+    if (!btstack_linked_list_empty(&network_pdus_queued)){
+        // get queued network pdu and start processing
+        mesh_crypto_active = 1;
+        mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_queued);
+        mesh_network_send_0(network_pdu);
+        return;
+    }
 }
 
 static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -458,22 +501,17 @@ uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl, uint3
 
     printf("Raw: ");
     printf_hexdump(network_pdu->data, network_pdu->len);
+ 
+    // queue up
+    btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);
 
-    // get network nonce
-    mesh_network_create_nonce(network_nonce, network_pdu, global_iv_index); 
-    printf("Nonce: ");
-    printf_hexdump(network_nonce, 13);
-
-    // start ccm
-    uint8_t cypher_len = 2 + transport_pdu_len;
-    uint8_t net_mic_len = ctl ? 8 : 4;
-    btstack_crypo_ccm_init(&mesh_ccm_request, current_network_key->encryption_key, network_nonce, cypher_len, 0, net_mic_len);
-    btstack_crypto_ccm_encrypt_block(&mesh_ccm_request, cypher_len, &network_pdu->data[7], &network_pdu->data[7], &mesh_network_send_b, network_pdu);
+    // go
+    mesh_network_run();
 
     return 0;
 }
 
-void     mesh_set_iv_index(uint32_t iv_index){
+void mesh_set_iv_index(uint32_t iv_index){
     global_iv_index = iv_index;
 }
 
