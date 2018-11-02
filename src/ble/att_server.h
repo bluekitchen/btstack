@@ -124,7 +124,7 @@ int att_server_request_to_send_indication(btstack_context_callback_registration_
  * @param value_len
  * @return 0 if ok, error otherwise
  */
-int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t *value, uint16_t value_len);
+int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len);
 
 /*
  * @brief indicate value change to client. client is supposed to reply with an indication_response
@@ -134,7 +134,7 @@ int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, ui
  * @param value_len
  * @return 0 if ok, error otherwise
  */
-int att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t *value, uint16_t value_len);
+int att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len);
 
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
 /*

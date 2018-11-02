@@ -158,7 +158,7 @@ uint16_t att_handle_request(att_connection_t * att_connection,
  */
 uint16_t att_prepare_handle_value_notification(att_connection_t * att_connection,
                                                uint16_t attribute_handle,
-                                               uint8_t *value,
+                                               const uint8_t *value,
                                                uint16_t value_len, 
                                                uint8_t * response_buffer);
 
@@ -172,7 +172,7 @@ uint16_t att_prepare_handle_value_notification(att_connection_t * att_connection
  */
 uint16_t att_prepare_handle_value_indication(att_connection_t * att_connection,
                                              uint16_t attribute_handle,
-                                             uint8_t *value,
+                                             const uint8_t *value,
                                              uint16_t value_len, 
                                              uint8_t * response_buffer);
 
