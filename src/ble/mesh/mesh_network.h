@@ -45,10 +45,36 @@ extern "C" {
 #endif
 
 typedef struct {
-	btstack_linked_item_t item;
-	uint8_t               len;
-	uint8_t 			  data[29];
+    btstack_linked_item_t item;
+    uint8_t               len;
+    uint8_t               data[29];
 } mesh_network_pdu_t;
+
+typedef struct {
+    btstack_linked_item_t item;
+
+    // index into shared global key list
+    uint16_t netkey_index;
+
+    // random net_key
+    uint8_t net_key[16];
+
+    // derivative data
+
+    // k1
+    uint8_t identity_key[16];
+    uint8_t beacon_key[16];
+
+    // k2
+    uint8_t nid;
+    uint8_t encryption_key[16];
+    uint8_t privacy_key[16];
+
+    // k3
+    uint8_t network_id[8];
+
+} mesh_network_key_t;
+
 
 #if defined __cplusplus
 }
