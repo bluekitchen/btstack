@@ -41,7 +41,7 @@ CC_UNIT = g++
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 
-mesh: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} mesh_crypto.o provisioning_device.o mesh.o
+mesh: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} mesh_crypto.o provisioning_device.o mesh_network.o mesh.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 provisioner: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} mesh_crypto.o provisioning_provisioner.o provisioner.o

@@ -39,6 +39,7 @@
 #define __MESH_NETWORK
 
 #include "btstack_linked_list.h"
+#include "provisioning.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -75,6 +76,41 @@ typedef struct {
 
 } mesh_network_key_t;
 
+/**
+ * @brief Init Mesh Network Layer
+ */
+void mesh_network_init(void);
+
+/**
+ * @brief Initialize network key list from provisioning data
+ * @param provisioning_data
+ */
+void mesh_network_key_list_add_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data);
+
+/**
+ * @brief Send TransportPDU after encryption
+ * @param netkey_index
+ * @param ctl
+ * @param ttl
+ * @param seq
+ * @param dest
+ * @param transport_pdu_data
+ * @param transport_pdu_len
+ */
+uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest,
+                          const uint8_t * transport_pdu_data, uint8_t transport_pdu_len);
+
+/**
+ * @brief Validate network addresses
+ * @param ctl
+ * @param src
+ * @param dst
+ * @returns 1 if valid, 
+ */
+int mesh_network_addresses_valid(uint8_t ctl, uint16_t src, uint16_t dst);
+
+// Testing only
+void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len);
 
 #if defined __cplusplus
 }
