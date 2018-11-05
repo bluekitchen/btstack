@@ -564,6 +564,9 @@ void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len){
 
 uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len){
 
+    // "The output filter of the interface connected to advertising or GATT bearers shall drop all messages with TTL value set to 1."
+    if (ttl <= 1) return;
+
     // TODO: check transport_pdu_len depending on ctl
 
     // lookup network by netkey_index
