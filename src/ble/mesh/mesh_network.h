@@ -82,6 +82,11 @@ typedef struct {
 void mesh_network_init(void);
 
 /**
+ * @brief Configure address filter
+ */
+void mesh_network_set_primary_element_address(uint16_t addr);
+
+/**
  * @brief Initialize network key list from provisioning data
  * @param provisioning_data
  */

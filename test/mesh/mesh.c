@@ -502,6 +502,9 @@ int btstack_main(void)
     // Network layer
     mesh_network_init();
 
+    // hack
+    mesh_network_set_primary_element_address(0x28);
+
     //
     btstack_parse_hex(pts_device_uuid_string, 16, pts_device_uuid);
     btstack_print_hex(pts_device_uuid, 16, 0);

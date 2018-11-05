@@ -49,7 +49,7 @@
 #include "btstack.h"
 
 // configuration
-#define MESH_NETWORK_CACHE_SIZE 100
+#define MESH_NETWORK_CACHE_SIZE 2
 #define ENABLE_MESH_RELAY
 
 // structs
@@ -62,6 +62,8 @@ typedef struct {
 // globals
 
 static uint32_t global_iv_index;
+static uint16_t mesh_network_primary_address;
+static uint16_t mesh_network_num_elements;
 
 // shared send/receive crypto
 static int mesh_crypto_active;
@@ -337,6 +339,9 @@ static void process_network_pdu_validate_d(void * arg){
 
     // compare nic to nic in data
     if (memcmp(net_mic, &network_pdu_in_validation->data[network_pdu->len-net_mic_len], net_mic_len) == 0){
+    
+        int free_pdu = 1;
+
         // match
         printf("NetMIC matches\n");
 
@@ -346,19 +351,38 @@ static void process_network_pdu_validate_d(void * arg){
         uint16_t src = big_endian_read_16(network_pdu->data, 5);
         uint16_t dst = big_endian_read_16(network_pdu->data, 7);
         int valid = mesh_network_addresses_valid(ctl, src, dst);
-        if (!valid){
-            btstack_memory_mesh_network_pdu_free(network_pdu);
-        } else {
+        if (valid){
             // set netkey_index
-            network_pdu->netkey_index = current_network_key->netkey_index
+            network_pdu->netkey_index = current_network_key->netkey_index;
             // store in network cache
             uint32_t hash = mesh_network_cache_hash(network_pdu);
             mesh_network_cache_add(hash);
+
 #if 0
             // TODO: forward to lower transport layer
-#else
-            btstack_memory_mesh_network_pdu_free(network_pdu);
 #endif
+
+#ifdef ENABLE_MESH_RELAY
+            uint8_t ttl = ctl_ttl & 0x7f;
+
+            // check if address matches elements on our node and TTL >= 2
+            if (((src < mesh_network_primary_address) || (src > (mesh_network_primary_address + mesh_network_num_elements))) && (ttl >= 2)){
+                // prepare pdu for resending
+                network_pdu->len    -= net_mic_len;
+                network_pdu->data[1] = (ctl << 7) | (ttl - 1);
+
+                // queue up
+                btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);
+
+                // go
+                mesh_network_run();
+
+                free_pdu = 0;
+            }
+#endif
+        }
+        if (free_pdu){
+            btstack_memory_mesh_network_pdu_free(network_pdu);
         }
         process_network_pdu_done();
     } else {
@@ -387,8 +411,8 @@ static void process_network_pdu_validate_b(void * arg){
     if (mesh_network_cache_find(hash)){
         // found in cache, drop
         printf("Found in cache -> drop packet\n");
-        mesh_crypto_active = 0;
         btstack_memory_mesh_network_pdu_free(network_pdu);
+        process_network_pdu_done();
         return;
     }
 
@@ -515,6 +539,11 @@ void mesh_network_init(void){
     adv_bearer_register_for_mesh_message(&mesh_message_handler);
 }
 
+void mesh_network_set_primary_element_address(uint16_t addr){
+    mesh_network_primary_address = addr;
+    mesh_network_num_elements = 1;
+}
+
 void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len){
     // verify len
     if (pdu_len > 29) return;
@@ -563,9 +592,6 @@ uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl, uint3
     memcpy(&network_pdu->data[network_pdu->len], transport_pdu_data, transport_pdu_len);
     network_pdu->len += transport_pdu_len;
 
-    printf("Raw: ");
-    printf_hexdump(network_pdu->data, network_pdu->len);
- 
     // queue up
     btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);
 
