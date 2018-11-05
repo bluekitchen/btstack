@@ -48,7 +48,9 @@
 #include "provisioning_device.h"
 #include "btstack.h"
 
+// configuration
 #define MESH_NETWORK_CACHE_SIZE 100
+#define ENABLE_MESH_RELAY
 
 // structs
 
@@ -347,6 +349,8 @@ static void process_network_pdu_validate_d(void * arg){
         if (!valid){
             btstack_memory_mesh_network_pdu_free(network_pdu);
         } else {
+            // set netkey_index
+            network_pdu->netkey_index = current_network_key->netkey_index
             // store in network cache
             uint32_t hash = mesh_network_cache_hash(network_pdu);
             mesh_network_cache_add(hash);
