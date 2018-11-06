@@ -398,6 +398,19 @@ static void mesh_secure_network_beacon_auth_value_calculated(void * arg){
     adv_bearer_send_mesh_beacon(mesh_secure_network_beacon, sizeof(mesh_secure_network_beacon));
 }
 
+// stub lower transport
+static void transport_received_message(mesh_network_pdu_t * network_pdu){
+    uint8_t ctl_ttl     = network_pdu->data[1];
+    uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
+
+    // 
+    printf("Lower Transport network_pdu: ");
+    printf_hexdump(&network_pdu->data[9], network_pdu->len - 9 - net_mic_len);
+
+    // done
+    mesh_network_message_processed_by_higher_layer(network_pdu);
+}
+
 static int pts_type;
 
 static void stdin_process(char cmd){
@@ -508,6 +521,7 @@ int btstack_main(void)
 
     // Network layer
     mesh_network_init();
+    mesh_network_set_higher_layer_handler(&transport_received_message);
 
     //
     btstack_parse_hex(pts_device_uuid_string, 16, pts_device_uuid);

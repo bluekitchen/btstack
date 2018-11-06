@@ -64,6 +64,7 @@ typedef struct {
 static uint32_t global_iv_index;
 static uint16_t mesh_network_primary_address;
 static uint16_t mesh_network_num_elements;
+static void (*mesh_network_higher_layer_handler)(mesh_network_pdu_t * network_pdu);
 
 // shared send/receive crypto
 static int mesh_crypto_active;
@@ -112,7 +113,6 @@ static int      mesh_network_cache_index;
 
 static void mesh_network_run(void);
 static void process_network_pdu_validate(mesh_network_pdu_t * network_pdu);
-static void mesh_network_message_processed_by_upper_layer(mesh_network_pdu_t * network_pdu);
 
 // network caching
 static uint32_t mesh_network_cache_hash(mesh_network_pdu_t * network_pdu){
@@ -192,21 +192,7 @@ static const mesh_network_key_t * mesh_network_key_iterator_get_next(mesh_networ
     return &mesh_network_primary_key;
 }
 
-// stub lower transport
-static void transport_received_message(mesh_network_pdu_t * network_pdu){
-    uint8_t ctl_ttl     = network_pdu->data[1];
-    uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
-
-    // 
-    printf("Lower Transport network_pdu: ");
-    printf_hexdump(&network_pdu->data[9], network_pdu->len - 9 - net_mic_len);
-
-    // done
-    mesh_network_message_processed_by_upper_layer(network_pdu);
-}
-
 // common helper
-
 int mesh_network_addresses_valid(uint8_t ctl, uint16_t src, uint16_t dst){
     printf("CTL: %u\n", ctl);
     printf("SRC: %04x\n", src);
@@ -371,7 +357,7 @@ static void process_network_pdu_validate_d(void * arg){
             mesh_network_cache_add(hash);
 
             // forward to lower transport layer. message is freed by call to mesh_network_message_processed_by_upper_layer
-            transport_received_message(network_pdu);
+            (*mesh_network_higher_layer_handler)(network_pdu);
 
         } else {
 
@@ -386,7 +372,7 @@ static void process_network_pdu_validate_d(void * arg){
     }
 }
 
-static void mesh_network_message_processed_by_upper_layer(mesh_network_pdu_t * network_pdu){
+void mesh_network_message_processed_by_higher_layer(mesh_network_pdu_t * network_pdu){
 #ifdef ENABLE_MESH_RELAY
     uint8_t ctl_ttl = network_pdu->data[1];
     uint8_t ctl     = ctl_ttl >> 7;
@@ -558,6 +544,11 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
 void mesh_network_init(void){
     adv_bearer_register_for_mesh_message(&mesh_message_handler);
 }
+
+void mesh_network_set_higher_layer_handler(void (*packet_handler)(mesh_network_pdu_t * network_pdu)){
+    mesh_network_higher_layer_handler = packet_handler;
+}
+
 
 void mesh_network_set_primary_element_address(uint16_t addr){
     mesh_network_primary_address = addr;

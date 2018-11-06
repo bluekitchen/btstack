@@ -81,6 +81,18 @@ typedef struct {
  */
 void mesh_network_init(void);
 
+/** 
+ * @brief Set higher layer Network PDU handler
+ * @param packet_handler
+ */
+void mesh_network_set_higher_layer_handler(void (*packet_handler)(mesh_network_pdu_t * network_pdu));
+
+/**
+ * @brief Mark packet as processed
+ * @param newtork_pdu received via call packet_handler
+ */
+void mesh_network_message_processed_by_higher_layer(mesh_network_pdu_t * network_pdu);
+
 /**
  * @brief Configure address filter
  */
