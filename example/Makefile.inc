@@ -122,7 +122,7 @@ EXAMPLES = 					\
 	gap_inquiry 			\
 	gap_le_advertisements   \
 	gap_link_keys           \
-	gatt_battery_query		\
+	gatt_battery_query      \
 	gatt_browser            \
 	gatt_heart_rate_client	\
 	hfp_ag_demo             \
@@ -141,6 +141,8 @@ EXAMPLES = 					\
 	le_streamer_client      \
 	led_counter				\
 	mod_player	            \
+	nordic_spp_le_counter   \
+	nordic_spp_le_streamer  \
 	pbap_client_demo		\
 	sdp_bnep_query 			\
 	sdp_general_query		\
@@ -153,6 +155,7 @@ EXAMPLES = 					\
 	spp_counter 			\
 	spp_streamer			\
 	spp_streamer_client     \
+	ublox_spp_le_counter    \
 
 EXAMPLES_USING_LE =			\
 	ancs_client_demo		\
@@ -171,6 +174,7 @@ EXAMPLES_USING_LE =			\
 	sm_pairing_central      \
 	sm_pairing_peripheral   \
 	spp_and_le_counter	    \
+	ublox_spp_le_counter    \
 
 # .o for .c
 CORE_OBJ    = $(CORE:.c=.o)
@@ -332,6 +336,9 @@ nordic_spp_le_counter: nordic_spp_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_O
 nordic_spp_le_streamer: nordic_spp_le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} nordic_spp_service_server.o nordic_spp_le_streamer.c
 	${CC} $(filter-out nordic_spp_le_streamer.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
+ublox_spp_le_counter: ublox_spp_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ublox_spp_service_server.o ublox_spp_le_counter.c
+	${CC} $(filter-out ublox_spp_le_counter.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
 clean:
 	rm -f ${EXAMPLES} *_demo
 	rm -f  *.o *.out *.hex *.exe *.wav *.sbc
@@ -339,6 +346,7 @@ clean:
 	rm -f  gatt_battery_query.h gatt_browser.h sm_pairing_peripheral.h spp_and_le_streamer.h 
 	rm -f  le_data_channel_server.h sm_pairing_central.h
 	rm -f  nordic_spp_le_counter.h nordic_spp_le_streamer.h nordic_spp_le_counter nordic_spp_le_streamer
+	rm -f  ublox_spp_le_counter.h ublox_spp_le_counter 
 	rm -f  le_streamer_and_counter_client.h le_streamer_and_counter_client
 	rm -f  sco_output.msbc sco_input.msbc
 	rm -rf *.dSYM
