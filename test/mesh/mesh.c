@@ -263,8 +263,106 @@ static btstack_crypto_aes128_cmac_t mesh_cmac_request;
 static uint8_t mesh_secure_network_beacon[22];
 static uint8_t mesh_secure_network_beacon_auth_value[16];
 
+// stub lower transport
+static uint8_t application_key[16];
+static uint8_t application_nonce[13];
+static btstack_crypto_ccm_t ccm;
+
+static void transport_setup_application_nonce(uint8_t * nonce, const mesh_network_pdu_t * network_pdu){
+    nonce[0] = 0x01;
+    nonce[1] = (network_pdu->data[1] ^ 0x80) & network_pdu->data[9] & 0x80; // !CTL & SEG
+    memcpy(&nonce[2], &network_pdu->data[2], 7);
+    big_endian_store_32(nonce, 9, mesh_get_iv_index());
+    printf("AppNonce: ");
+    printf_hexdump(nonce, 13);
+
+}
+static void transport_received_message_b(void * arg){
+    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
+
+    uint8_t ctl_ttl     = network_pdu->data[1];
+    uint8_t ctl         = ctl_ttl >> 7;
+
+    // TODO: transmic hard coded to 4, could be 8
+    uint8_t trans_mic_len = 4;
+
+    // store TransMIC
+    uint8_t trans_mic[8];
+    btstack_crypo_ccm_get_authentication_value(&ccm, trans_mic);
+    printf("TransMIC: "); 
+    printf_hexdump(trans_mic, trans_mic_len);
+
+    uint8_t net_mic_len = ctl ? 8 : 4;
+
+    uint8_t * transport_pdu     = &network_pdu->data[9];
+    uint8_t   transport_pdu_len = network_pdu->len - 9 - net_mic_len;
+    printf("Decryted Transport network_pdu: ");
+    printf_hexdump(&network_pdu->data[9], transport_pdu_len - trans_mic_len);
+
+    if (memcmp(trans_mic, &transport_pdu[transport_pdu_len - trans_mic_len], trans_mic_len) == 0){
+        printf("TransMIC matches\n");
+    } else {
+        printf("TransMIC does not match\n");
+    }
+    printf("\n");
+
+    // done
+    mesh_network_message_processed_by_higher_layer(network_pdu);
+}
+
+static void transport_received_message(mesh_network_pdu_t * network_pdu){
+    uint8_t ctl_ttl     = network_pdu->data[1];
+    uint8_t ctl         = ctl_ttl >> 7;
+
+    uint8_t net_mic_len = ctl ? 8 : 4;
+
+    // 
+    uint8_t * lower_transport_pdu     = &network_pdu->data[9];
+    uint8_t   lower_transport_pdu_len = network_pdu->len - 9 - net_mic_len;
+    printf("Lower Transport network_pdu: ");
+    printf_hexdump(&network_pdu->data[9], lower_transport_pdu_len);
+
+    // check type
+    if (ctl){
+        // Control Message
+
+    } else {
+        // uint8_t aid = (lower_transport_pdu[0]&0x3f);
+        int seg = lower_transport_pdu[0] >> 7;
+        printf("SEG: %u\n", seg);
+
+        if (seg){
+            // segmented access message
+        } else {
+            // unsegmented access message
+
+            // TODO: transmic hard coded to 4, could be 8
+            uint8_t   trans_mic_len = 4;
+            uint8_t * upper_transport_pdu     = &lower_transport_pdu[1];
+            uint8_t   upper_transport_pdu_len = lower_transport_pdu_len - 1 - trans_mic_len;
+
+            // application key nonce
+
+            // TODO: copy message before overwriting it
+
+            // TODO: lookup device or applicaton key
+            transport_setup_application_nonce(application_nonce, network_pdu);
+            btstack_crypo_ccm_init(&ccm, application_key, application_nonce, upper_transport_pdu_len, 4);
+            btstack_crypto_ccm_decrypt_block(&ccm, upper_transport_pdu_len, upper_transport_pdu, upper_transport_pdu, &transport_received_message_b, network_pdu);
+
+            return;
+        }
+    }
+
+    // done
+    mesh_network_message_processed_by_higher_layer(network_pdu);
+}
+
+
 // #define TEST_MESSAGE_1
-#define TEST_MESSAGE_24
+// #define TEST_MESSAGE_24
+// #define TEST_MESSAGE_23
+#define TEST_MESSAGE_18
 
 static void load_provisioning_data_test_message(void){
     mesh_provisioning_data_t provisioning_data;
@@ -273,27 +371,41 @@ static void load_provisioning_data_test_message(void){
     btstack_parse_hex("0953fa93e7caac9638f58820220a398e", 16, provisioning_data.encryption_key);
     btstack_parse_hex("8b84eedec100067d670971dd2aa700cf", 16, provisioning_data.privacy_key);
     mesh_network_key_list_add_from_provisioning_data(&provisioning_data);
+    btstack_parse_hex("63964771734fbd76e3b40519d1d94a48", 16, application_key);
 }
 
 static void receive_test_message(void){
     load_provisioning_data_test_message();
     uint8_t test_network_pdu_data[29];
 #ifdef TEST_MESSAGE_1
-    const char * message_1_network_pdu = "68eca487516765b5e5bfdacbaf6cb7fb6bff871f035444ce83a670df";
-    uint8_t test_network_pdu_len = strlen(message_1_network_pdu) / 2;
-    btstack_parse_hex(message_1_network_pdu, test_network_pdu_len, test_network_pdu_data);
+    const char * test_network_pdu_string = "68eca487516765b5e5bfdacbaf6cb7fb6bff871f035444ce83a670df";
+    uint8_t test_network_pdu_len = strlen(test_network_pdu_string) / 2;
+    btstack_parse_hex(test_network_pdu_string, test_network_pdu_len, test_network_pdu_data);
+#endif
+#ifdef TEST_MESSAGE_18
+    // test values - message #23
+    const char * test_network_pdu_string = "6848cba437860e5673728a627fb938535508e21a6baf57";
+    uint8_t test_network_pdu_len = strlen(test_network_pdu_string) / 2;
+    btstack_parse_hex(test_network_pdu_string, test_network_pdu_len, test_network_pdu_data);
+#endif
+#ifdef TEST_MESSAGE_23
+    // test values - message #23
+    mesh_set_iv_index(0x12345677);
+    const char * test_network_pdu_string = "e877a48dd5fe2d7a9d696d3dd16a75489696f0b70c711b881385";
+    uint8_t test_network_pdu_len = strlen(test_network_pdu_string) / 2;
+    btstack_parse_hex(test_network_pdu_string, test_network_pdu_len, test_network_pdu_data);
 #endif
 #ifdef TEST_MESSAGE_24
     // test values - message #24
     mesh_set_iv_index(0x12345677);
-    const char * message_1_network_pdu = "e834586babdef394e998b4081f5a7308ce3edbb3b06cdecd028e307f1c";
-    uint8_t test_network_pdu_len = strlen(message_1_network_pdu) / 2;
-    btstack_parse_hex(message_1_network_pdu, test_network_pdu_len, test_network_pdu_data);
+    const char * test_network_pdu_string = "e834586babdef394e998b4081f5a7308ce3edbb3b06cdecd028e307f1c";
+    uint8_t test_network_pdu_len = strlen(test_network_pdu_string) / 2;
+    btstack_parse_hex(test_network_pdu_string, test_network_pdu_len, test_network_pdu_data);
 #endif
 #ifdef TEST_MESSAGE_X
-    const char * message_1_network_pdu = "6873F928228C0D4FBF888D73AAC1C3C417F3F85A76010893D1B6396B74";
-    uint8_t test_network_pdu_len = strlen(message_1_network_pdu) / 2;
-    btstack_parse_hex(message_1_network_pdu, test_network_pdu_len, test_network_pdu_data);
+    const char * test_network_pdu_string = "6873F928228C0D4FBF888D73AAC1C3C417F3F85A76010893D1B6396B74";
+    uint8_t test_network_pdu_len = strlen(test_network_pdu_string) / 2;
+    btstack_parse_hex(test_network_pdu_string, test_network_pdu_len, test_network_pdu_data);
 #endif
     mesh_network_received_message(test_network_pdu_data, test_network_pdu_len);
 }
@@ -396,19 +508,6 @@ static void mesh_secure_network_beacon_auth_value_calculated(void * arg){
     printf("- ");
     printf_hexdump(mesh_secure_network_beacon, sizeof(mesh_secure_network_beacon));
     adv_bearer_send_mesh_beacon(mesh_secure_network_beacon, sizeof(mesh_secure_network_beacon));
-}
-
-// stub lower transport
-static void transport_received_message(mesh_network_pdu_t * network_pdu){
-    uint8_t ctl_ttl     = network_pdu->data[1];
-    uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
-
-    // 
-    printf("Lower Transport network_pdu: ");
-    printf_hexdump(&network_pdu->data[9], network_pdu->len - 9 - net_mic_len);
-
-    // done
-    mesh_network_message_processed_by_higher_layer(network_pdu);
 }
 
 static int pts_type;
@@ -522,6 +621,12 @@ int btstack_main(void)
     // Network layer
     mesh_network_init();
     mesh_network_set_higher_layer_handler(&transport_received_message);
+
+    // PTS app key
+    const char * application_key_string = "3216D1509884B533248541792B877F98";
+    btstack_parse_hex(application_key_string, 16, application_key);
+    printf("Application Key: ");
+    printf_hexdump(application_key, 16);
 
     //
     btstack_parse_hex(pts_device_uuid_string, 16, pts_device_uuid);
