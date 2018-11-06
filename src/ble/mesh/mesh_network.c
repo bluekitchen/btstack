@@ -112,6 +112,7 @@ static int      mesh_network_cache_index;
 
 static void mesh_network_run(void);
 static void process_network_pdu_validate(mesh_network_pdu_t * network_pdu);
+static void mesh_network_message_processed_by_upper_layer(mesh_network_pdu_t * network_pdu);
 
 // network caching
 static uint32_t mesh_network_cache_hash(mesh_network_pdu_t * network_pdu){
@@ -189,6 +190,19 @@ static int mesh_network_key_iterator_has_more(mesh_network_key_iterator_t * it){
 static const mesh_network_key_t * mesh_network_key_iterator_get_next(mesh_network_key_iterator_t * it){
     it->first = 0;
     return &mesh_network_primary_key;
+}
+
+// stub lower transport
+static void transport_received_message(mesh_network_pdu_t * network_pdu){
+    uint8_t ctl_ttl     = network_pdu->data[1];
+    uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
+
+    // 
+    printf("Lower Transport network_pdu: ");
+    printf_hexdump(&network_pdu->data[9], network_pdu->len - 9 - net_mic_len);
+
+    // done
+    mesh_network_message_processed_by_upper_layer(network_pdu);
 }
 
 // common helper
@@ -340,8 +354,6 @@ static void process_network_pdu_validate_d(void * arg){
     // compare nic to nic in data
     if (memcmp(net_mic, &network_pdu_in_validation->data[network_pdu->len-net_mic_len], net_mic_len) == 0){
     
-        int free_pdu = 1;
-
         // match
         printf("NetMIC matches\n");
 
@@ -358,31 +370,13 @@ static void process_network_pdu_validate_d(void * arg){
             uint32_t hash = mesh_network_cache_hash(network_pdu);
             mesh_network_cache_add(hash);
 
-#if 0
-            // TODO: forward to lower transport layer
-#endif
+            // forward to lower transport layer. message is freed by call to mesh_network_message_processed_by_upper_layer
+            transport_received_message(network_pdu);
 
-#ifdef ENABLE_MESH_RELAY
-            uint8_t ttl = ctl_ttl & 0x7f;
+        } else {
 
-            // check if address matches elements on our node and TTL >= 2
-            if (((src < mesh_network_primary_address) || (src > (mesh_network_primary_address + mesh_network_num_elements))) && (ttl >= 2)){
-                // prepare pdu for resending
-                network_pdu->len    -= net_mic_len;
-                network_pdu->data[1] = (ctl << 7) | (ttl - 1);
-
-                // queue up
-                btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);
-
-                // go
-                mesh_network_run();
-
-                free_pdu = 0;
-            }
-#endif
-        }
-        if (free_pdu){
             btstack_memory_mesh_network_pdu_free(network_pdu);
+
         }
         process_network_pdu_done();
     } else {
@@ -390,6 +384,32 @@ static void process_network_pdu_validate_d(void * arg){
         printf("NetMIC maismatch, try next key\n");
         process_network_pdu_validate(network_pdu);
     }
+}
+
+static void mesh_network_message_processed_by_upper_layer(mesh_network_pdu_t * network_pdu){
+#ifdef ENABLE_MESH_RELAY
+    uint8_t ctl_ttl = network_pdu->data[1];
+    uint8_t ctl     = ctl_ttl >> 7;
+    uint8_t ttl     = ctl_ttl & 0x7f;
+    uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
+    uint16_t src    = big_endian_read_16(network_pdu->data, 5);
+
+    // check if address matches elements on our node and TTL >= 2
+    if (((src < mesh_network_primary_address) || (src > (mesh_network_primary_address + mesh_network_num_elements))) && (ttl >= 2)){
+        // prepare pdu for resending
+        network_pdu->len    -= net_mic_len;
+        network_pdu->data[1] = (ctl << 7) | (ttl - 1);
+
+        // queue up
+        btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);
+
+        // go
+        mesh_network_run();
+
+        return;
+    }
+#endif
+    btstack_memory_mesh_network_pdu_free(network_pdu);
 }
 
 static void process_network_pdu_validate_b(void * arg){
