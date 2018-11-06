@@ -74,7 +74,7 @@ static void *                btstack_tlv_singleton_context;
 static uint8_t beacon_key[16];
 static uint8_t network_id[8];
 
-static void mesh_provisioning_dump( mesh_provisioning_data_t * data){
+static void mesh_provisioning_dump(const mesh_provisioning_data_t * data){
     printf("UnicastAddr:   0x%02x\n", data->unicast_address);
     printf("NID:           0x%02x\n", data->nid);
     printf("IV Index:      0x%08x\n", data->iv_index);
@@ -82,6 +82,22 @@ static void mesh_provisioning_dump( mesh_provisioning_data_t * data){
     printf("BeaconKey:     "); printf_hexdump(data->beacon_key, 16);
     printf("EncryptionKey: "); printf_hexdump(data->encryption_key, 16);
     printf("PrivacyKey:    "); printf_hexdump(data->privacy_key, 16);
+}
+
+static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
+    // add to network key list
+    mesh_network_key_list_add_from_provisioning_data(provisioning_data);
+    // set unicast address
+    mesh_network_set_primary_element_address(provisioning_data->unicast_address);
+    // set iv_index
+    mesh_set_iv_index(provisioning_data->iv_index);
+    // copy beacon key and network id
+    memcpy(beacon_key, provisioning_data->beacon_key, 16);
+    memcpy(network_id, provisioning_data->network_id, 8);
+    // for secure beacon
+    mesh_flags = provisioning_data->flags;
+    // dump data
+    mesh_provisioning_dump(provisioning_data);
 }
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -110,17 +126,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     prov_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
                     printf("Provisioning data available: %u\n", prov_len ? 1 : 0);
                     if (prov_len){
-                        // add to network key list
-                        mesh_network_key_list_add_from_provisioning_data(&provisioning_data);
-                        // set unicast address
-                        mesh_network_set_primary_element_address(provisioning_data.unicast_address);
-                        // set iv_index
-                        mesh_set_iv_index(provisioning_data.iv_index);
-                        // copy beacon key and network id
-                        memcpy(beacon_key, provisioning_data.beacon_key, 16);
-                        memcpy(network_id, provisioning_data.network_id, 8);
-                        // dump data
-                        mesh_provisioning_dump(&provisioning_data);
+                        mesh_setup_from_provisioning_data(&provisioning_data);
                     }
                     // setup scanning
                     gap_set_scan_parameters(0, 0x300, 0x300);
@@ -163,20 +169,13 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
                     memcpy(provisioning_data.beacon_key, provisioning_device_data_get_beacon_key(), 16);
                     memcpy(provisioning_data.encryption_key, provisioning_device_data_get_encryption_key(), 16);
                     memcpy(provisioning_data.privacy_key, provisioning_device_data_get_privacy_key(), 16);
-                    mesh_set_iv_index(provisioning_device_data_get_iv_index());
+                    provisioning_data.iv_index = provisioning_device_data_get_iv_index();
                     provisioning_data.nid = provisioning_device_data_get_nid();
                     provisioning_data.flags = provisioning_device_data_get_flags();
                     provisioning_data.unicast_address = provisioning_device_data_get_unicast_address();
                     // store in TLV
                     btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
-                    // add to network key list
-                    mesh_network_key_list_add_from_provisioning_data(&provisioning_data);
-                    // set unicast address
-                    mesh_network_set_primary_element_address(provisioning_data.unicast_address);
-                    // for secure beacon
-                    mesh_flags = provisioning_device_data_get_flags();
-                    // dump
-                    mesh_provisioning_dump(&provisioning_data);
+                    mesh_setup_from_provisioning_data(&provisioning_data);
                     break;
                 default:
                     break;
