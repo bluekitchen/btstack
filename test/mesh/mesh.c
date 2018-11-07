@@ -774,7 +774,7 @@ int btstack_main(void)
     uint8_t application_key[16];
     const char * application_key_string = "3216D1509884B533248541792B877F98";
     btstack_parse_hex(application_key_string, 16, application_key);
-    mesh_application_key_set(0x26, application_key);    // TODO: figure out correct AID
+    mesh_application_key_set(0x38, application_key); 
 
     printf("Application Key: ");
     printf_hexdump(application_key, 16);
