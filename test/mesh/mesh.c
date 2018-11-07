@@ -314,12 +314,14 @@ static const uint8_t * mesh_application_key_iterator_get_next(mesh_application_k
 // stub lower transport
 
 static void mesh_lower_transport_run(void);
+static void mesh_upper_transport_validate_message(mesh_network_pdu_t * network_pdu);
 
 static uint8_t application_nonce[13];
 static btstack_crypto_ccm_t ccm;
 static btstack_linked_list_t lower_transport_incoming;
 static int mesh_transport_crypto_active;
 static mesh_network_pdu_t * network_pdu_in_validation;
+static mesh_application_key_iterator_t mesh_app_key_it;
 
 static void transport_setup_application_nonce(uint8_t * nonce, const mesh_network_pdu_t * network_pdu){
     nonce[0] = 0x01;
@@ -336,7 +338,7 @@ static void mesh_lower_transport_process_message_done(mesh_network_pdu_t * netwo
     mesh_lower_transport_run();
 }
 
-static void transport_received_message_b(void * arg){
+static void mesh_upper_transport_validate_message_ccm(void * arg){
     mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
 
     uint8_t ctl_ttl     = network_pdu->data[1];
@@ -360,19 +362,63 @@ static void transport_received_message_b(void * arg){
 
     if (memcmp(trans_mic, &upper_transport_pdu[upper_transport_pdu_len - trans_mic_len], trans_mic_len) == 0){
         printf("TransMIC matches\n");
+        printf("\n");
+
+        // pass to upper layer
+        btstack_memory_mesh_network_pdu_free(network_pdu);
+        
+        // done
+        mesh_lower_transport_process_message_done(network_pdu);
     } else {
-        printf("TransMIC does not match\n");
+        printf("TransMIC does not match, try next key\n");
+        mesh_upper_transport_validate_message(network_pdu);
     }
-    printf("\n");
-
-    // pass to upper layer
-    btstack_memory_mesh_network_pdu_free(network_pdu);
-
-    // done
-    mesh_lower_transport_process_message_done(network_pdu);
 }
 
-static void transport_received_message(mesh_network_pdu_t * network_pdu){
+static void mesh_upper_transport_validate_message(mesh_network_pdu_t * network_pdu){
+
+    if (!mesh_application_key_iterator_has_more(&mesh_app_key_it)){
+        printf("No valid application key found\n");
+        mesh_lower_transport_process_message_done(network_pdu);
+        return;
+    }
+
+    const uint8_t * application_key = mesh_application_key_iterator_get_next(&mesh_app_key_it);
+
+    uint8_t ctl_ttl     = network_pdu_in_validation->data[1];
+    uint8_t ctl         = ctl_ttl >> 7;
+    uint8_t net_mic_len = ctl ? 8 : 4;
+    uint8_t * lower_transport_pdu     = &network_pdu->data[9];
+    uint8_t   lower_transport_pdu_len = network_pdu->len - 9 - net_mic_len;
+    int seg = lower_transport_pdu[0] >> 7;
+
+    if (seg){
+        // segmented access message
+    } else {
+        // unsegmented access message
+
+        // TODO: transmic hard coded to 4, could be 8
+        uint8_t   trans_mic_len = 4;
+        uint8_t * upper_transport_pdu_data = &network_pdu->data[10];
+        uint8_t   upper_transport_pdu_len  = lower_transport_pdu_len - 1 - trans_mic_len;
+
+        // application key nonce
+
+        // TODO: copy message before overwriting it
+
+        // TODO: lookup device or applicaton key
+
+        mesh_transport_crypto_active = 1;
+
+        transport_setup_application_nonce(application_nonce, network_pdu);
+        btstack_crypo_ccm_init(&ccm, application_key, application_nonce, upper_transport_pdu_len, 4);
+        btstack_crypto_ccm_decrypt_block(&ccm, upper_transport_pdu_len, upper_transport_pdu_data, upper_transport_pdu_data, &mesh_upper_transport_validate_message_ccm, network_pdu);
+
+        return;
+    }
+}
+
+static void mesh_lower_transport_process_message(mesh_network_pdu_t * network_pdu){
     uint8_t ctl_ttl     = network_pdu_in_validation->data[1];
     uint8_t ctl         = ctl_ttl >> 7;
 
@@ -396,33 +442,14 @@ static void transport_received_message(mesh_network_pdu_t * network_pdu){
         uint8_t aid = (lower_transport_pdu[0]&0x3f);
         int seg = lower_transport_pdu[0] >> 7;
         printf("SEG: %u\n", seg);
+        printf("AID: %02x\n", aid);
 
-        if (seg){
-            // segmented access message
-        } else {
-            // unsegmented access message
+        // init application key iterator
+        mesh_application_key_iterator_init(&mesh_app_key_it, aid);
 
-            // TODO: transmic hard coded to 4, could be 8
-            uint8_t   trans_mic_len = 4;
-            uint8_t * upper_transport_pdu_data = &network_pdu->data[10];
-            uint8_t   upper_transport_pdu_len  = lower_transport_pdu_len - 1 - trans_mic_len;
+        mesh_upper_transport_validate_message(network_pdu);
 
-            // application key nonce
-
-            // TODO: copy message before overwriting it
-
-            // TODO: lookup device or applicaton key
-
-            mesh_transport_crypto_active = 1;
-
-            const uint8_t * application_key = mesh_application_key_list_get(aid);
-
-            transport_setup_application_nonce(application_nonce, network_pdu);
-            btstack_crypo_ccm_init(&ccm, application_key, application_nonce, upper_transport_pdu_len, 4);
-            btstack_crypto_ccm_decrypt_block(&ccm, upper_transport_pdu_len, upper_transport_pdu_data, upper_transport_pdu_data, &transport_received_message_b, network_pdu);
-
-            return;
-        }
+        return;
     }
 
     // done
@@ -438,7 +465,7 @@ static void mesh_lower_transport_run(void){
         // get encoded network pdu and start processing
         network_pdu_in_validation = (mesh_network_pdu_t *) btstack_linked_list_pop(&lower_transport_incoming);
         printf("mesh_lower_transport_run: process %p\n", network_pdu_in_validation);
-        transport_received_message(decode_pdu);
+        mesh_lower_transport_process_message(decode_pdu);
         return;
     }
 }
