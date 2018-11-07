@@ -19,6 +19,8 @@
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO 
 #define ENABLE_MICRO_ECC_P256
+
+#define ENABLE_MESH
 #define ENABLE_MESH_PROVISIONER
 
 // BTstack configuration. buffers, sizes, ...

@@ -72,6 +72,9 @@ extern "C" {
 #ifdef ENABLE_BLE
 #include "ble/gatt_client.h"
 #include "ble/sm.h"
+#endif
+
+#ifdef ENABLE_MESH
 #include "ble/mesh/mesh_network.h"
 #endif
 
@@ -94,6 +97,7 @@ void   btstack_memory_l2cap_service_free(l2cap_service_t *l2cap_service);
 l2cap_channel_t * btstack_memory_l2cap_channel_get(void);
 void   btstack_memory_l2cap_channel_free(l2cap_channel_t *l2cap_channel);
 
+#ifdef ENABLE_CLASSIC
 // rfcomm_multiplexer, rfcomm_service, rfcomm_channel
 rfcomm_multiplexer_t * btstack_memory_rfcomm_multiplexer_get(void);
 void   btstack_memory_rfcomm_multiplexer_free(rfcomm_multiplexer_t *rfcomm_multiplexer);
@@ -136,6 +140,7 @@ void   btstack_memory_avrcp_connection_free(avrcp_connection_t *avrcp_connection
 avrcp_browsing_connection_t * btstack_memory_avrcp_browsing_connection_get(void);
 void   btstack_memory_avrcp_browsing_connection_free(avrcp_browsing_connection_t *avrcp_browsing_connection);
 
+#endif
 #ifdef ENABLE_BLE
 // gatt_client, whitelist_entry, sm_lookup_entry
 gatt_client_t * btstack_memory_gatt_client_get(void);
@@ -144,6 +149,8 @@ whitelist_entry_t * btstack_memory_whitelist_entry_get(void);
 void   btstack_memory_whitelist_entry_free(whitelist_entry_t *whitelist_entry);
 sm_lookup_entry_t * btstack_memory_sm_lookup_entry_get(void);
 void   btstack_memory_sm_lookup_entry_free(sm_lookup_entry_t *sm_lookup_entry);
+#endif
+#ifdef ENABLE_MESH
 // mesh_network_pdu, mesh_network_key
 mesh_network_pdu_t * btstack_memory_mesh_network_pdu_get(void);
 void   btstack_memory_mesh_network_pdu_free(mesh_network_pdu_t *mesh_network_pdu);
