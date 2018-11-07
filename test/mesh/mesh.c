@@ -368,11 +368,13 @@ static void mesh_upper_transport_validate_message_ccm(void * arg){
 
     if (memcmp(trans_mic, &upper_transport_pdu[upper_transport_pdu_len - trans_mic_len], trans_mic_len) == 0){
         printf("TransMIC matches\n");
-        printf("\n");
 
         // pass to upper layer
+        printf("Pass unsegmented access message to upper transport\n");
         btstack_memory_mesh_network_pdu_free(network_pdu);
         
+        printf("\n");
+
         // done
         mesh_lower_transport_process_message_done(network_pdu);
     } else {
@@ -445,7 +447,16 @@ static void mesh_lower_transport_process_message(mesh_network_pdu_t * network_pd
 
     // check type
     if (ctl){
-        // Control Message
+        // Control Message is not authenticated by uppper transport
+
+        // pass to upper layer
+        printf("Pass control message to upper transport\n");
+        btstack_memory_mesh_network_pdu_free(network_pdu);
+        
+        printf("\n");
+
+        // done
+        mesh_lower_transport_process_message_done(network_pdu);
 
     } else {
         uint8_t aid = lower_transport_pdu[0] & 0x3f;
