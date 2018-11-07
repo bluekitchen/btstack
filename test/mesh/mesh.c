@@ -328,8 +328,14 @@ static void transport_setup_application_nonce(uint8_t * nonce, const mesh_networ
     big_endian_store_32(nonce, 9, mesh_get_iv_index());
     printf("AppNonce: ");
     printf_hexdump(nonce, 13);
-
 }
+
+static void mesh_lower_transport_process_message_done(mesh_network_pdu_t * network_pdu){
+    mesh_transport_crypto_active = 0;
+    mesh_network_message_processed_by_higher_layer(network_pdu_in_validation);
+    mesh_lower_transport_run();
+}
+
 static void transport_received_message_b(void * arg){
     mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
 
@@ -347,12 +353,12 @@ static void transport_received_message_b(void * arg){
 
     uint8_t net_mic_len = ctl ? 8 : 4;
 
-    uint8_t * transport_pdu     = &network_pdu_in_validation->data[9];
-    uint8_t   transport_pdu_len = network_pdu_in_validation->len - 9 - net_mic_len;
+    uint8_t * upper_transport_pdu     = &network_pdu->data[10];
+    uint8_t   upper_transport_pdu_len = network_pdu->len - 10 - net_mic_len;
     printf("Decryted Transport network_pdu: ");
-    printf_hexdump(&network_pdu->data[9], transport_pdu_len - trans_mic_len);
+    printf_hexdump(upper_transport_pdu, upper_transport_pdu_len - trans_mic_len);
 
-    if (memcmp(trans_mic, &transport_pdu[transport_pdu_len - trans_mic_len], trans_mic_len) == 0){
+    if (memcmp(trans_mic, &upper_transport_pdu[upper_transport_pdu_len - trans_mic_len], trans_mic_len) == 0){
         printf("TransMIC matches\n");
     } else {
         printf("TransMIC does not match\n");
@@ -363,9 +369,7 @@ static void transport_received_message_b(void * arg){
     btstack_memory_mesh_network_pdu_free(network_pdu);
 
     // done
-    mesh_transport_crypto_active = 0;
-    mesh_network_message_processed_by_higher_layer(network_pdu_in_validation);
-    mesh_lower_transport_run();
+    mesh_lower_transport_process_message_done(network_pdu);
 }
 
 static void transport_received_message(mesh_network_pdu_t * network_pdu){
@@ -374,13 +378,15 @@ static void transport_received_message(mesh_network_pdu_t * network_pdu){
 
     uint8_t net_mic_len = ctl ? 8 : 4;
 
+    // copy original pdu
     network_pdu->len = network_pdu_in_validation->len;
+    memcpy(network_pdu->data, network_pdu_in_validation->data, network_pdu->len);
 
     // 
-    uint8_t * lower_transport_pdu     = &network_pdu_in_validation->data[9];
-    uint8_t   lower_transport_pdu_len = network_pdu_in_validation->len - 9 - net_mic_len;
+    uint8_t * lower_transport_pdu     = &network_pdu->data[9];
+    uint8_t   lower_transport_pdu_len = network_pdu->len - 9 - net_mic_len;
     printf("Lower Transport network_pdu: ");
-    printf_hexdump(&network_pdu_in_validation->data[9], lower_transport_pdu_len);
+    printf_hexdump(&network_pdu->data[9], lower_transport_pdu_len);
 
     // check type
     if (ctl){
@@ -398,8 +404,7 @@ static void transport_received_message(mesh_network_pdu_t * network_pdu){
 
             // TODO: transmic hard coded to 4, could be 8
             uint8_t   trans_mic_len = 4;
-            uint8_t * upper_transport_pdu_orig = &network_pdu_in_validation->data[10];
-            uint8_t * upper_transport_pdu_dest = &network_pdu->data[10];
+            uint8_t * upper_transport_pdu_data = &network_pdu->data[10];
             uint8_t   upper_transport_pdu_len  = lower_transport_pdu_len - 1 - trans_mic_len;
 
             // application key nonce
@@ -412,16 +417,16 @@ static void transport_received_message(mesh_network_pdu_t * network_pdu){
 
             const uint8_t * application_key = mesh_application_key_list_get(aid);
 
-            transport_setup_application_nonce(application_nonce, network_pdu_in_validation);
+            transport_setup_application_nonce(application_nonce, network_pdu);
             btstack_crypo_ccm_init(&ccm, application_key, application_nonce, upper_transport_pdu_len, 4);
-            btstack_crypto_ccm_decrypt_block(&ccm, upper_transport_pdu_len, upper_transport_pdu_orig, upper_transport_pdu_dest, &transport_received_message_b, network_pdu);
+            btstack_crypto_ccm_decrypt_block(&ccm, upper_transport_pdu_len, upper_transport_pdu_data, upper_transport_pdu_data, &transport_received_message_b, network_pdu);
 
             return;
         }
     }
 
     // done
-    mesh_network_message_processed_by_higher_layer(network_pdu);
+    mesh_lower_transport_process_message_done(network_pdu);
 }
 
 static void mesh_lower_transport_run(void){
