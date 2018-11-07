@@ -896,6 +896,9 @@ uint8_t provisioning_device_data_get_flags(void){
 uint16_t provisioning_device_data_get_unicast_address(void){
     return unicast_address;
 }
+const uint8_t * provisioning_device_data_get_device_key(void){
+    return network_id;
+}
 const uint8_t * provisioning_device_data_get_network_id(void){
     return network_id;
 }

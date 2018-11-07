@@ -82,10 +82,11 @@ extern "C"
 
 typedef struct {
     uint8_t  network_key[16];
+    uint8_t  device_key[16];
     uint8_t  flags;
     uint32_t iv_index;
     uint16_t unicast_address;
-
+    
     // k1
     uint8_t identity_key[16];
     uint8_t  beacon_key[16];
