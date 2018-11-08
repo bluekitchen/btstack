@@ -698,7 +698,7 @@ static void sm_notify_client_index(uint8_t type, hci_con_handle_t con_handle, ui
     sm_setup_event_base(event, sizeof(event), type, con_handle, addr_type, address);
     event[11] = identity_address_type;
     reverse_bd_addr(identity_address, &event[12]);
-    little_endian_store_32(event, 18, index);
+    little_endian_store_16(event, 18, index);
     sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
