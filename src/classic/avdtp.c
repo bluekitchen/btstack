@@ -564,6 +564,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
                     // connection exists, check states
                     log_info("Connection state %d", connection->state);
+                    accept_signaling_connection = 0;
                     switch (connection->state){
                         case AVDTP_SIGNALING_CONNECTION_IDLE:
                             // regular incoming connection
@@ -579,7 +580,6 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                             return;
                         case AVDTP_SIGNALING_CONNECTION_OPENED:
                             // handled below
-                            accept_signaling_connection = 0;
                             break;
                         case AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED:
                             log_info("Reject incoming connection during disconnect");
