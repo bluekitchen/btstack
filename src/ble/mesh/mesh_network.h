@@ -72,7 +72,7 @@ typedef struct {
     // pdu
     uint16_t              len;
     uint8_t               data[MESH_ACCESS_PAYLOAD_MAX];
-} mesh_access_pdu_t;
+} mesh_transport_pdu_t;
 
 //
 typedef struct {
