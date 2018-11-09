@@ -357,8 +357,13 @@ static void mesh_upper_transport_validate_message_ccm(void * arg){
     uint8_t ctl_ttl     = network_pdu->data[1];
     uint8_t ctl         = ctl_ttl >> 7;
 
-    // TODO: transmic hard coded to 4, could be 8
+    uint8_t * lower_transport_pdu     = &network_pdu->data[9];
+    int seg = lower_transport_pdu[0] >> 7;
     uint8_t trans_mic_len = 4;
+    if (seg) {
+        uint8_t szmic = lower_transport_pdu[1] >> 7;
+        trans_mic_len = szmic ? 8 : 4;
+    }
 
     // store TransMIC
     uint8_t trans_mic[8];
@@ -398,45 +403,45 @@ static void mesh_upper_transport_validate_message(mesh_network_pdu_t * network_p
     uint8_t   lower_transport_pdu_len = network_pdu->len - 9 - net_mic_len;
     int seg = lower_transport_pdu[0] >> 7;
 
-    if (seg){
-        // segmented access message
-    } else {
-        // unsegmented access message
+    const mesh_application_key_t * message_key;
 
-        const mesh_application_key_t * message_key;
-
-        uint8_t afk = lower_transport_pdu[0] & 0x40;
-        if (afk){
-            // application key
-            if (mesh_application_key_iterator_has_more(&mesh_app_key_it)){
-                message_key = mesh_application_key_iterator_get_next(&mesh_app_key_it);
-            } else {
-                printf("No valid application key found\n");
-                mesh_lower_transport_process_message_done(network_pdu);
-                return;
-            }
+    uint8_t afk = lower_transport_pdu[0] & 0x40;
+    if (afk){
+        // application key
+        if (mesh_application_key_iterator_has_more(&mesh_app_key_it)){
+            message_key = mesh_application_key_iterator_get_next(&mesh_app_key_it);
         } else {
-            // device key
-            message_key = &mesh_transport_device_key;
+            printf("No valid application key found\n");
+            mesh_lower_transport_process_message_done(network_pdu);
+            return;
         }
-
-        // store application / device key index
-        network_pdu->appkey_index = message_key->index; 
-
-        // TODO: transmic hard coded to 4, could be 8
-        uint8_t   trans_mic_len = 4;
-        uint8_t * upper_transport_pdu_data = &network_pdu->data[10];
-        uint8_t   upper_transport_pdu_len  = lower_transport_pdu_len - 1 - trans_mic_len;
-
-        mesh_transport_crypto_active = 1;
-
-        // application key nonce
-        transport_setup_application_nonce(application_nonce, network_pdu);
-        btstack_crypo_ccm_init(&ccm, message_key->key, application_nonce, upper_transport_pdu_len, 4);
-        btstack_crypto_ccm_decrypt_block(&ccm, upper_transport_pdu_len, upper_transport_pdu_data, upper_transport_pdu_data, &mesh_upper_transport_validate_message_ccm, network_pdu);
-
-        return;
+    } else {
+        // device key
+        message_key = &mesh_transport_device_key;
     }
+
+    // store application / device key index
+    network_pdu->appkey_index = message_key->index; 
+
+    // unsegmented message have TransMIC of 32 bit
+    // segmenteed messages have SZMIC flag tthat indicates 64 bit TransMIC
+    uint8_t trans_mic_len = 4;
+    if (seg) {
+        uint8_t szmic = lower_transport_pdu[1] >> 7;
+        trans_mic_len = szmic ? 8 : 4;
+    }
+
+    printf("%s Access message with TransMIC len %u\n", seg ? "Segmented" : "Unsegmented", trans_mic_len);
+
+    uint8_t * upper_transport_pdu_data = &network_pdu->data[10];
+    uint8_t   upper_transport_pdu_len  = lower_transport_pdu_len - 1 - trans_mic_len;
+
+    mesh_transport_crypto_active = 1;
+
+    // application key nonce
+    transport_setup_application_nonce(application_nonce, network_pdu);
+    btstack_crypo_ccm_init(&ccm, message_key->key, application_nonce, upper_transport_pdu_len, trans_mic_len);
+    btstack_crypto_ccm_decrypt_block(&ccm, upper_transport_pdu_len, upper_transport_pdu_data, upper_transport_pdu_data, &mesh_upper_transport_validate_message_ccm, network_pdu);
 }
 
 static void mesh_lower_transport_process_message(mesh_network_pdu_t * network_pdu){
@@ -512,8 +517,9 @@ static void mesh_transport_received_mesage(mesh_network_pdu_t * network_pdu){
 
 // #define TEST_MESSAGE_1
 // #define TEST_MESSAGE_24
+#define TEST_MESSAGE_20
 // #define TEST_MESSAGE_23
-#define TEST_MESSAGE_18
+// #define TEST_MESSAGE_18
 
 static void load_provisioning_data_test_message(void){
     mesh_provisioning_data_t provisioning_data;
@@ -539,6 +545,14 @@ static void receive_test_message(void){
 #ifdef TEST_MESSAGE_18
     // test values - message #23
     const char * test_network_pdu_string = "6848cba437860e5673728a627fb938535508e21a6baf57";
+    uint8_t test_network_pdu_len = strlen(test_network_pdu_string) / 2;
+    btstack_parse_hex(test_network_pdu_string, test_network_pdu_len, test_network_pdu_data);
+#endif
+#ifdef TEST_MESSAGE_20
+    // test values - message #20
+    // correctly decoded incl transmic. it's an unsegmented access message (header 0x66)
+    mesh_set_iv_index(0x12345677);
+    const char * test_network_pdu_string = "e85cca51e2e8998c3dc87344a16c787f6b08cc897c941a5368";
     uint8_t test_network_pdu_len = strlen(test_network_pdu_string) / 2;
     btstack_parse_hex(test_network_pdu_string, test_network_pdu_len, test_network_pdu_data);
 #endif
