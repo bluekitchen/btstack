@@ -157,6 +157,7 @@ static int ublox_spp_service_write_callback(hci_con_handle_t con_handle, uint16_
             return ATT_ERROR_INVALID_OFFSET;
         }
         instance->fifo_client_configuration_descriptor_value = little_endian_read_16(buffer, 0);
+        log_info("ublox spp service FIFO control: %d", instance->fifo_client_configuration_descriptor_value);
         instance->client_data_callback(con_handle, NULL, 0);
     }
 
@@ -165,6 +166,11 @@ static int ublox_spp_service_write_callback(hci_con_handle_t con_handle, uint16_
         int8_t credits = (int8_t)buffer[0];
         if (credits <= 0) return 0;
         instance->outgoing_credits += credits;
+        log_info("received outgoing credits, total %d", instance->outgoing_credits);
+        // Provide credits
+        att_server_request_to_send_notification(&instance->credits_callback, instance->con_handle);
+        
+        // handle user request
         if (instance->request){
             btstack_context_callback_registration_t * request = instance->request;
             instance->request = NULL;
@@ -177,11 +183,8 @@ static int ublox_spp_service_write_callback(hci_con_handle_t con_handle, uint16_
             return ATT_ERROR_INVALID_OFFSET;
         }
         instance->credits_client_configuration_descriptor_value = little_endian_read_16(buffer, 0);
-
+        log_info("ublox spp service Credits control: %d", instance->credits_client_configuration_descriptor_value);
         ublox_spp_service_init_credits(instance);
-        if (instance->credits_client_configuration_descriptor_value){
-            att_server_request_to_send_notification(&instance->credits_callback, instance->con_handle);
-        }
     }
     
     return 0;

@@ -76,7 +76,7 @@ const uint8_t adv_data[] = {
     // Flags general discoverable, BR/EDR not supported
     2, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
     // Name
-    9, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'u', 'B', 'l','o', 'x', 'S', 'P', 'P',
+    5, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, '6', '-','5', '6', 
     // UUID ...
     17, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_128_BIT_SERVICE_CLASS_UUIDS, 0x1, 0xd7, 0xe9, 0x1, 0x4f, 0xf3, 0x44, 0xe7, 0x83, 0x8f, 0xe2, 0x26, 0xb9, 0xe1, 0x56, 0x24,
 };
