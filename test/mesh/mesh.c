@@ -279,26 +279,34 @@ typedef struct {
     btstack_linked_item_t item;
 
     // index into shared global key list
-    uint16_t appkey_index;
+    uint16_t index;
 
-    // random net_key
-    uint8_t application_key[16];
+    // app_key
+    uint8_t key[16];
 
     uint8_t aid;
 } mesh_application_key_t;
 
-static uint8_t  test_application_key[16];
-static uint16_t test_application_key_index;
+static mesh_application_key_t test_application_key;
+static mesh_application_key_t mesh_transport_device_key;
 
-static const uint8_t * mesh_application_key_list_get(uint16_t appkey_index){
-    if (appkey_index != test_application_key_index) return NULL;
-    return test_application_key;
+void mesh_application_key_set(uint16_t appkey_index, uint8_t aid, const uint8_t * application_key){
+    test_application_key.index = appkey_index;
+    test_application_key.aid   = aid;
+    memcpy(test_application_key.key, application_key, 16);
 }
 
-void mesh_application_key_set(uint16_t appkey_index, const uint8_t * application_key){
-    test_application_key_index = appkey_index;
-    memcpy(test_application_key, application_key, 16);
+static void mesh_transport_set_device_key(const uint8_t * device_key){
+    mesh_transport_device_key.index = MESH_DEVICE_KEY_INDEX;
+    mesh_transport_device_key.aid   = 0;
+    memcpy(mesh_transport_device_key.key, device_key, 16);
 }
+
+static const mesh_application_key_t * mesh_application_key_list_get(uint16_t appkey_index){
+    if (appkey_index != test_application_key.index) return NULL;
+    return &test_application_key;
+}
+
 
 // mesh network key iterator
 static void mesh_application_key_iterator_init(mesh_application_key_iterator_t * it, uint8_t aid){
@@ -307,12 +315,12 @@ static void mesh_application_key_iterator_init(mesh_application_key_iterator_t *
 }
 
 static int mesh_application_key_iterator_has_more(mesh_application_key_iterator_t * it){
-    return it->first && it->aid == test_application_key_index;
+    return it->first && it->aid == test_application_key.aid;
 }
 
-static const uint8_t * mesh_application_key_iterator_get_next(mesh_application_key_iterator_t * it){
+static const mesh_application_key_t * mesh_application_key_iterator_get_next(mesh_application_key_iterator_t * it){
     it->first = 0;
-    return test_application_key;
+    return &test_application_key;
 }
 
 
@@ -322,7 +330,6 @@ static void mesh_lower_transport_run(void);
 static void mesh_upper_transport_validate_message(mesh_network_pdu_t * network_pdu);
 
 static uint8_t application_nonce[13];
-static uint8_t mesh_transport_device_key[16];
 static btstack_crypto_ccm_t ccm;
 static btstack_linked_list_t lower_transport_incoming;
 static int mesh_transport_crypto_active;
@@ -396,7 +403,7 @@ static void mesh_upper_transport_validate_message(mesh_network_pdu_t * network_p
     } else {
         // unsegmented access message
 
-        const uint8_t * message_key;
+        const mesh_application_key_t * message_key;
 
         uint8_t afk = lower_transport_pdu[0] & 0x40;
         if (afk){
@@ -410,8 +417,11 @@ static void mesh_upper_transport_validate_message(mesh_network_pdu_t * network_p
             }
         } else {
             // device key
-            message_key = mesh_transport_device_key;
+            message_key = &mesh_transport_device_key;
         }
+
+        // store application / device key index
+        network_pdu->appkey_index = message_key->index; 
 
         // TODO: transmic hard coded to 4, could be 8
         uint8_t   trans_mic_len = 4;
@@ -422,7 +432,7 @@ static void mesh_upper_transport_validate_message(mesh_network_pdu_t * network_p
 
         // application key nonce
         transport_setup_application_nonce(application_nonce, network_pdu);
-        btstack_crypo_ccm_init(&ccm, message_key, application_nonce, upper_transport_pdu_len, 4);
+        btstack_crypo_ccm_init(&ccm, message_key->key, application_nonce, upper_transport_pdu_len, 4);
         btstack_crypto_ccm_decrypt_block(&ccm, upper_transport_pdu_len, upper_transport_pdu_data, upper_transport_pdu_data, &mesh_upper_transport_validate_message_ccm, network_pdu);
 
         return;
@@ -499,10 +509,6 @@ static void mesh_transport_received_mesage(mesh_network_pdu_t * network_pdu){
     mesh_lower_transport_run();
 }
 
-static void mesh_transport_set_device_key(const uint8_t * device_key){
-    memcpy(mesh_transport_device_key, device_key, 16);
-}
-
 
 // #define TEST_MESSAGE_1
 // #define TEST_MESSAGE_24
@@ -519,7 +525,7 @@ static void load_provisioning_data_test_message(void){
 
     uint8_t application_key[16];
     btstack_parse_hex("63964771734fbd76e3b40519d1d94a48", 16, application_key);
-    mesh_application_key_set( 0x26, application_key);
+    mesh_application_key_set( 0, 0x26, application_key);
 }
 
 static void receive_test_message(void){
@@ -774,7 +780,7 @@ int btstack_main(void)
     uint8_t application_key[16];
     const char * application_key_string = "3216D1509884B533248541792B877F98";
     btstack_parse_hex(application_key_string, 16, application_key);
-    mesh_application_key_set(0x38, application_key); 
+    mesh_application_key_set(0, 0x38, application_key); 
 
     printf("Application Key: ");
     printf_hexdump(application_key, 16);
