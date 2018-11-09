@@ -45,13 +45,36 @@
 extern "C" {
 #endif
 
+#define MESH_DEVICE_KEY_INDEX 0xffff
+#define MESH_NETWORK_PAYLOAD_MAX    29
+#define MESH_ACCESS_PAYLOAD_MAX 384
+
+// both mesh_network_du and mesh_access_pdu_t the same basic struct
 typedef struct {
+    // allow for linked lists
     btstack_linked_item_t item;
+    // meta data network layer
     uint16_t              netkey_index;
-    uint8_t               len;
-    uint8_t               data[29];
+    // meta data transport layer
+    uint16_t              appkey_index;
+    // pdu
+    uint16_t              len;
+    uint8_t               data[MESH_NETWORK_PAYLOAD_MAX];
 } mesh_network_pdu_t;
 
+typedef struct {
+    // allow for linked lists
+    btstack_linked_item_t item;
+    // meta data network layer
+    uint16_t              netkey_index;
+    // meta data transport layer
+    uint16_t              appkey_index;
+    // pdu
+    uint16_t              len;
+    uint8_t               data[MESH_ACCESS_PAYLOAD_MAX];
+} mesh_access_pdu_t;
+
+//
 typedef struct {
     btstack_linked_item_t item;
 

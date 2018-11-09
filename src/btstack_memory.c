@@ -938,6 +938,44 @@ void btstack_memory_mesh_network_pdu_free(mesh_network_pdu_t *mesh_network_pdu){
 #endif
 
 
+// MARK: mesh_access_pdu_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_MESH_ACCESS_PDUS)
+    #if defined(MAX_NO_MESH_ACCESS_PDUS)
+        #error "Deprecated MAX_NO_MESH_ACCESS_PDUS defined instead of MAX_NR_MESH_ACCESS_PDUS. Please update your btstack_config.h to use MAX_NR_MESH_ACCESS_PDUS."
+    #else
+        #define MAX_NR_MESH_ACCESS_PDUS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_MESH_ACCESS_PDUS
+#if MAX_NR_MESH_ACCESS_PDUS > 0
+static mesh_access_pdu_t mesh_access_pdu_storage[MAX_NR_MESH_ACCESS_PDUS];
+static btstack_memory_pool_t mesh_access_pdu_pool;
+mesh_access_pdu_t * btstack_memory_mesh_access_pdu_get(void){
+    return (mesh_access_pdu_t *) btstack_memory_pool_get(&mesh_access_pdu_pool);
+}
+void btstack_memory_mesh_access_pdu_free(mesh_access_pdu_t *mesh_access_pdu){
+    btstack_memory_pool_free(&mesh_access_pdu_pool, mesh_access_pdu);
+}
+#else
+mesh_access_pdu_t * btstack_memory_mesh_access_pdu_get(void){
+    return NULL;
+}
+void btstack_memory_mesh_access_pdu_free(mesh_access_pdu_t *mesh_access_pdu){
+    // silence compiler warning about unused parameter in a portable way
+    (void) mesh_access_pdu;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+mesh_access_pdu_t * btstack_memory_mesh_access_pdu_get(void){
+    return (mesh_access_pdu_t*) malloc(sizeof(mesh_access_pdu_t));
+}
+void btstack_memory_mesh_access_pdu_free(mesh_access_pdu_t *mesh_access_pdu){
+    free(mesh_access_pdu);
+}
+#endif
+
+
 // MARK: mesh_network_key_t
 #if !defined(HAVE_MALLOC) && !defined(MAX_NR_MESH_NETWORK_KEYS)
     #if defined(MAX_NO_MESH_NETWORK_KEYS)
