@@ -1,7 +1,6 @@
-#!/usr/bin/env python3
-
 import socket
 import struct
+import btstack.command_builder
 
 BTSTACK_SERVER_HOST = "localhost"
 BTSTACK_SERVER_TCP_PORT = 13333
@@ -14,15 +13,7 @@ BTSTACK_SET_POWER_MODE = 0x02
 def print_hex(data):
     print(" ".join("{:02x}".format(c) for c in data))
 
-def opcode(ogf, ocf):
-    return ocf | (ogf << 10)
-
-# CommandBuilder - will be auto-generated later
-class CommandBuilder(object):
-    def __init__(self):
-        pass
-
-class BTstackClient(CommandBuilder):
+class BTstackClient(btstack.command_builder.CommandBuilder):
 
     #
     btstack_server_socket = None
@@ -52,11 +43,6 @@ class BTstackClient(CommandBuilder):
         length = len(command)
         header = struct.pack("<HHH", packet_type, channel, length)
         self.btstack_server_socket.sendall(header + command)
-
-    def btstack_set_power_mode(self, on):
-        # - send: BTstackPowerUp
-        cmd = struct.pack("<HBB", opcode(OGF_BTSTACK, BTSTACK_SET_POWER_MODE) ,1, 1);
-        self.send_hci_command(cmd)
 
     def run(self):
         print("[+] Run")

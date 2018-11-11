@@ -19,28 +19,31 @@ command_builder_header = \
 
 import struct
 
+def opcode(ogf, ocf):
+    return ocf | (ogf << 10)
+
+def pack24(value):
+    return struct.pack("B", value & 0xff) + struct.pack("<H", value >> 8)
+
+def name248(str):
+    arg = str.encode('utf-8')
+    return arg[:248] + bytes(248-len(arg))
+
 # Command Builder
 
 class CommandBuilder(object):
     def __init__(self):
         pass
 
-    def pack24(value):
-        return struct.pack("B", value & 0xff) + struct.pack("<H", value >> 8)
-
-    def name248(str):
-        arg = str.encode('utf-8')
-        return arg[:248] + bytes(248-len(arg))
-
     def send_command(command):
         return FALSE
 
 '''
 command_builder_command = '''
-    def {name}({args}):
+    def {name}(self, {args}):
         cmd_args = bytes()
 {args_builder}
-        cmd = struct.pack("<HB", opcode({ogf}, {ocf}), len(cmd_args)) + cmd_args
+        cmd = struct.pack("<HB", opcode(self.{ogf}, self.{ocf}), len(cmd_args)) + cmd_args
         return self.send_hci_command(cmd)
 '''
 
@@ -170,9 +173,9 @@ def create_command_python(fout, name, ogf, ocf, format, params):
      '2' : 'cmd_args += struct.pack("<H", %s)',
      'H' : 'cmd_args += struct.pack("<H", %s)',
      'L' : 'cmd_args += struct.pack("<H", %s)',
-     '3' : 'cmd_args += self.pack24(%s)',
+     '3' : 'cmd_args += pack24(%s)',
      '4' : 'cmd_args += struct.pack("<H", %s)',
-     'N' : 'cmd_args += self.name248(%s)',
+     'N' : 'cmd_args += name248(%s)',
      'B' : 'cmd_args += %s.get_bytes()',
      'U' : 'cmd_args += %s.get_bytes()', 
      'X' : 'cmd_args += %s.get_bytes()', 
@@ -235,15 +238,15 @@ def mark_define_as_used(term):
         return
     defines_used.add(term)
 
-def java_define_string(key):
+def python_define_string(key):
     global defines
     if key in defines:
-        return '    public static final int %s = %s;\n' % (key, defines[key])
+        return '    %s = %s\n' % (key, defines[key])
     else:
-        return '    // defines[%s] not set\n' % key
+        return '    # defines[%s] not set\n' % key
 
 def java_defines_string(keys):
-    return '\n'.join( map(java_define_string, sorted(keys)))
+    return '\n'.join( map(python_define_string, sorted(keys)))
 
 def create_command_builder(commands):
     global gen_path
@@ -261,9 +264,9 @@ def create_command_builder(commands):
                 mark_define_as_used(ogf)
                 mark_define_as_used(ocf)
 
-        # fout.write('\n    # defines used\n\n')
-        # for key in sorted(defines_used):
-        #     fout.write(java_define_string(key))
+        fout.write('\n    # defines used\n\n')
+        for key in sorted(defines_used):
+            fout.write(python_define_string(key))
 
 def create_event(event_name, format, args):
     global gen_path

@@ -21,5 +21,6 @@ btstack_client = btstack_client.BTstackClient()
 # connect to slient, register for HCI packets and power up
 btstack_client.connect()
 btstack_client.register_packet_handler(packet_handler)
-btstack_client.btstack_set_power_mode(1)
+btstack_client.BTstackSetPowerMode(1)
+btstack_client.GAPLEScanStart()
 btstack_client.run()
