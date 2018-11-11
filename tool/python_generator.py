@@ -245,7 +245,7 @@ def python_define_string(key):
     else:
         return '    # defines[%s] not set\n' % key
 
-def java_defines_string(keys):
+def python_defines_string(keys):
     return '\n'.join( map(python_define_string, sorted(keys)))
 
 def create_command_builder(commands):
@@ -268,7 +268,7 @@ def create_command_builder(commands):
         for key in sorted(defines_used):
             fout.write(python_define_string(key))
 
-def create_event(event_name, format, args):
+def create_event(fout, event_name, format, args):
     global gen_path
     global package
     global java_event_template
@@ -295,37 +295,34 @@ def create_event(event_name, format, args):
      # 'S' : 'Util.storeBytes(data, %u);'
      }
 
-    gen_event_path = '%s/event' % gen_path
-    outfile = '%s/%s.java' % (gen_event_path, event_name)
-    with open(outfile, 'wt') as fout:
-        offset = 2
-        getters = ''
-        length_name = ''
-        for f, arg in zip(format, args):
-            # just remember name
-            if f in ['L','J']:
-                length_name = parser.camel_case(arg)
-            if f == 'R':    
-                # remaining data
-                access = java_event_getter_remaining_data.format(offset)
-                size = 0
-            elif f == 'V':
-                access = java_event_getter_data.format(length_name, offset)
-                size = 0
-            elif f in ['D', 'Q']:
-                size = size_for_type(f)
-                access = java_event_getter_data_fixed.format(size, offset)
-            else: 
-                access = param_read[f] % offset
-                size = size_for_type(f)
-            getters += java_event_getter.format(java_type_for_btstack_type(f), parser.camel_case(arg), access)
-            offset += size
-        to_string_args = ''
-        for arg in args:
-            to_string_args += '        t.append(", %s = ");\n' % arg
-            to_string_args += '        t.append(get%s());\n' % parser.camel_case(arg)
-        to_string_method = java_event_to_string.format(event_name, to_string_args)
-        fout.write(java_event_template.format(package, event_name, getters, to_string_method))
+    offset = 2
+    getters = ''
+    length_name = ''
+    for f, arg in zip(format, args):
+        # just remember name
+        if f in ['L','J']:
+            length_name = parser.camel_case(arg)
+        if f == 'R':    
+            # remaining data
+            access = java_event_getter_remaining_data.format(offset)
+            size = 0
+        elif f == 'V':
+            access = java_event_getter_data.format(length_name, offset)
+            size = 0
+        elif f in ['D', 'Q']:
+            size = size_for_type(f)
+            access = java_event_getter_data_fixed.format(size, offset)
+        else: 
+            access = param_read[f] % offset
+            size = size_for_type(f)
+        getters += java_event_getter.format(java_type_for_btstack_type(f), parser.camel_case(arg), access)
+        offset += size
+    to_string_args = ''
+    for arg in args:
+        to_string_args += '        t.append(", %s = ");\n' % arg
+        to_string_args += '        t.append(get%s());\n' % parser.camel_case(arg)
+    to_string_method = java_event_to_string.format(event_name, to_string_args)
+    fout.write(java_event_template.format(package, event_name, getters, to_string_method))
 
 def event_supported(event_name):
     parts = event_name.split('_')
@@ -334,7 +331,7 @@ def event_supported(event_name):
 def class_name_for_event(event_name):
     return parser.camel_case(event_name.replace('SUBEVENT','EVENT'))
 
-def create_events(events):
+def create_events(fout, events):
     global gen_path
     gen_path_events = gen_path + '/event'
     parser.assert_dir(gen_path_events)
@@ -343,7 +340,7 @@ def create_events(events):
         if not event_supported(event_name):
             continue
         class_name = class_name_for_event(event_name)
-        create_event(class_name, format, args)
+        create_event(fout, class_name, format, args)
 
 
 def create_event_factory(events, subevents, defines):
@@ -352,7 +349,7 @@ def create_event_factory(events, subevents, defines):
     global java_event_factory_event
     global java_event_factory_template
 
-    outfile = '%s/EventFactory.java' % gen_path
+    outfile = '%s/event_factory.py' % gen_path
 
     cases = ''
     for event_type, event_name, format, args in events:
@@ -367,7 +364,11 @@ def create_event_factory(events, subevents, defines):
         subcases += java_event_factory_subevent.format(event_type, class_name)
 
     with open(outfile, 'wt') as fout:
-        defines_text = java_defines_string(defines)
+        # event classes
+        create_events(fout, events)
+        create_events(fout, subevents)
+        # 
+        defines_text = python_defines_string(defines)
         fout.write(java_event_factory_template.format(package, defines_text, cases, subcases))
 
 # find root
@@ -382,12 +383,10 @@ defines = parser.parse_defines()
 commands = parser.parse_commands()
 
 # parse bluetooth.h to get used events
-# (events, le_events, event_types) = parser.parse_events()
+(events, le_events, event_types) = parser.parse_events()
 
 # create events, le meta events, event factory, and 
-# create_events(events)
-# create_events(le_events)
-# create_event_factory(events, le_events, event_types)
+create_event_factory(events, le_events, event_types)
 create_command_builder(commands)
 
 # done
