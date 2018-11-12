@@ -370,7 +370,7 @@ void hids_device_send_input_report(hci_con_handle_t con_handle, const uint8_t * 
         log_error("no instance for handle 0x%02x", con_handle);
         return;
     }
-    att_server_notify(con_handle, instance->hid_report_input_value_handle, (uint8_t*) report, report_len);
+    att_server_notify(con_handle, instance->hid_report_input_value_handle, report, report_len);
 }
 
 /**
@@ -382,7 +382,7 @@ void hids_device_send_output_report(hci_con_handle_t con_handle, const uint8_t *
         log_error("no instance for handle 0x%02x", con_handle);
         return;
     }
-    att_server_notify(con_handle, instance->hid_report_output_value_handle, (uint8_t*) report, report_len);
+    att_server_notify(con_handle, instance->hid_report_output_value_handle, report, report_len);
 }
 
 /**
@@ -394,7 +394,7 @@ void hids_device_send_feature_report(hci_con_handle_t con_handle, const uint8_t 
         log_error("no instance for handle 0x%02x", con_handle);
         return;
     }
-    att_server_notify(con_handle, instance->hid_report_feature_value_handle, (uint8_t*) report, report_len);
+    att_server_notify(con_handle, instance->hid_report_feature_value_handle, report, report_len);
 }
 
 /**
@@ -406,7 +406,7 @@ void hids_device_send_boot_mouse_input_report(hci_con_handle_t con_handle, const
         log_error("no instance for handle 0x%02x", con_handle);
         return;
     }
-    att_server_notify(con_handle, instance->hid_boot_mouse_input_value_handle, (uint8_t*) report, report_len);
+    att_server_notify(con_handle, instance->hid_boot_mouse_input_value_handle, report, report_len);
 }
 
 /**
@@ -418,5 +418,5 @@ void hids_device_send_boot_keyboard_input_report(hci_con_handle_t con_handle, co
         log_error("no instance for handle 0x%02x", con_handle);
         return;
     }
-    att_server_notify(con_handle, instance->hid_boot_keyboard_input_value_handle, (uint8_t*) report, report_len);
+    att_server_notify(con_handle, instance->hid_boot_keyboard_input_value_handle, report, report_len);
 }

@@ -150,6 +150,6 @@ void nordic_spp_service_server_request_can_send_now(btstack_context_callback_reg
  * @param size
  */
 int nordic_spp_service_server_send(hci_con_handle_t con_handle, const uint8_t * data, uint16_t size){
-	return att_server_notify(con_handle, nordic_spp_tx_value_handle, (uint8_t *)&data[0], size);
+	return att_server_notify(con_handle, nordic_spp_tx_value_handle, data, size);
 }
 
