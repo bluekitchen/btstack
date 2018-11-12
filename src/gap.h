@@ -397,6 +397,12 @@ int gap_auto_connection_stop(bd_addr_type_t address_typ, bd_addr_t address);
 void gap_auto_connection_stop_all(void);
 
 /**
+ * @brief Get connection interval
+ * @return connection interval, otherwise 0 if error 
+ */
+uint16_t gap_le_connection_interval(hci_con_handle_t connection_handle);
+
+/**
  *
  * @brief Get encryption key size.
  * @param con_handle

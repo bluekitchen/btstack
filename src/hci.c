@@ -2384,8 +2384,9 @@ static void event_handler(uint8_t *packet, int size){
                     
                     conn->state = OPEN;
                     conn->role  = packet[6];
-                    conn->con_handle = little_endian_read_16(packet, 4);
-                    
+                    conn->con_handle             = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                    conn->le_connection_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
+
 #ifdef ENABLE_LE_PERIPHERAL
                     if (packet[6] == HCI_ROLE_SLAVE){
                         hci_reenable_advertisements_if_needed();
@@ -2403,8 +2404,14 @@ static void event_handler(uint8_t *packet, int size){
                     hci_emit_nr_connections_changed();
                     break;
 
-            // log_info("LE buffer size: %u, count %u", little_endian_read_16(packet,6), packet[8]);
-                 
+                // log_info("LE buffer size: %u, count %u", little_endian_read_16(packet,6), packet[8]);
+                case HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE:
+                    handle = hci_subevent_le_connection_update_complete_get_connection_handle(packet);
+                    conn = hci_connection_for_handle(handle);
+                    if (!conn) break;
+                    conn->le_connection_interval = hci_subevent_le_connection_update_complete_get_conn_interval(packet);
+                    break;
+
                 case HCI_SUBEVENT_LE_REMOTE_CONNECTION_PARAMETER_REQUEST:
                     // connection
                     handle = hci_subevent_le_remote_connection_parameter_request_get_connection_handle(packet);
@@ -4598,6 +4605,12 @@ void gap_auto_connection_stop_all(void){
         btstack_memory_whitelist_entry_free(entry);
     }
     hci_run();
+}
+
+uint16_t gap_le_connection_interval(hci_con_handle_t connection_handle){
+    hci_connection_t * conn = hci_connection_for_handle(connection_handle);
+    if (!conn) return 0;
+    return conn->le_connection_interval;
 }
 #endif
 #endif

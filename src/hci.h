@@ -526,6 +526,7 @@ typedef struct {
     uint16_t le_supervision_timeout;
 
 #ifdef ENABLE_BLE
+    uint16_t le_connection_interval;
     // LE Security Manager
     sm_connection_t sm_connection;
 
