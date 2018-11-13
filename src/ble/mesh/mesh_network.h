@@ -65,6 +65,10 @@ typedef struct {
 typedef struct {
     // allow for linked lists
     btstack_linked_item_t item;
+    // rx/tx: acknowledgement timer / segment transmission timer
+    btstack_timer_source_t acknowledgement_timer;
+    // rx: inactivity timer / tx: resend timer
+    btstack_timer_source_t inactivity_timer;
     // block access
     uint32_t              block_ack;
     // meta data network layer
@@ -77,6 +81,10 @@ typedef struct {
     uint8_t               akf_aid;
     // network pdu header
     uint8_t               network_header[9];
+    // acknowledgement timer active
+    uint8_t               acknowledgement_timer_active;
+    // inactivity timer active
+    uint8_t               inactivity_timer_active;
     // pdu
     uint16_t              len;
     uint8_t               data[MESH_ACCESS_PAYLOAD_MAX];

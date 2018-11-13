@@ -74,6 +74,7 @@ static void *                btstack_tlv_singleton_context;
 
 static uint8_t beacon_key[16];
 static uint8_t network_id[8];
+static uint16_t primary_element_address;
 
 static void mesh_provisioning_dump(const mesh_provisioning_data_t * data){
     printf("UnicastAddr:   0x%02x\n", data->unicast_address);
@@ -91,6 +92,7 @@ static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * p
     mesh_network_key_list_add_from_provisioning_data(provisioning_data);
     // set unicast address
     mesh_network_set_primary_element_address(provisioning_data->unicast_address);
+    primary_element_address = provisioning_data->unicast_address;
     // set iv_index
     mesh_set_iv_index(provisioning_data->iv_index);
     // set device_key
@@ -387,17 +389,36 @@ static void transport_segmented_setup_device_nonce(uint8_t * nonce, const mesh_t
     printf_hexdump(nonce, 13);
 }
 
-static int mesh_transport_segmented(mesh_network_pdu_t * network_pdu){
+// Network PDU Getter
+static uint16_t mesh_network_control(mesh_network_pdu_t * network_pdu){
+    return network_pdu->data[1] & 0x80;
+}
+static uint8_t mesh_network_ttl(mesh_network_pdu_t * network_pdu){
+    return network_pdu->data[1] & 0x7f;
+}
+static uint16_t mesh_network_src(mesh_network_pdu_t * network_pdu){
+    return big_endian_read_16(network_pdu->data, 5);
+}
+static int mesh_network_segmented(mesh_network_pdu_t * network_pdu){
     return network_pdu->data[9] & 0x80;
 }
 
-static int mesh_transport_src(mesh_network_pdu_t * network_pdu){
-    return big_endian_read_16(network_pdu->data, 5);
+// Transport PDU Getter
+static uint16_t mesh_transport_ctl(mesh_transport_pdu_t * transport_pdu){
+    return transport_pdu->network_header[1] >> 7;
+}
+static uint16_t mesh_transport_ttl(mesh_transport_pdu_t * transport_pdu){
+    return transport_pdu->network_header[1] & 0x7f;
+}
+static uint32_t mesh_transport_seq(mesh_transport_pdu_t * transport_pdu){
+    return big_endian_read_16(transport_pdu->network_header, 2);
+}
+static uint16_t mesh_transport_src(mesh_transport_pdu_t * transport_pdu){
+    return big_endian_read_16(transport_pdu->network_header, 5);
 }
 
-static int mesh_transport_control(mesh_network_pdu_t * network_pdu){
-    return network_pdu->data[1] & 0x80;
-}
+//
+
 
 static void mesh_transport_process_unsegmented_transport_message(mesh_network_pdu_t * network_pdu){
     printf("Unsegmented transport message\n");
@@ -655,15 +676,59 @@ static void mesh_upper_transport_process_message(mesh_transport_pdu_t * transpor
     mesh_upper_transport_validate_segmented_message(transport_pdu);
 }
 
+static void mesh_lower_transport_setup_segemnted_acknowledge_message(uint8_t * data, uint8_t obo, uint16_t seq_zero, uint32_t block_ack){
+    data[0] = 0;    // SEG = 0, Opcode = 0
+    big_endian_store_16( data, 1, (obo << 15) | (seq_zero << 2) | 0);    // OBO, SeqZero, RFU
+    big_endian_store_32( data, 3, block_ack);
+} 
+
+static void mesh_transport_send_ack(mesh_transport_pdu_t * transport_pdu){
+    uint8_t ack_msg[7];
+    uint16_t seq = mesh_transport_seq(transport_pdu);
+
+    mesh_lower_transport_setup_segemnted_acknowledge_message(ack_msg, 0, seq & 0x1fff, transport_pdu->block_ack);
+
+    printf("mesh_transport_send_ack: ");
+    printf_hexdump(ack_msg, sizeof(ack_msg));
+    mesh_network_send(transport_pdu->netkey_index, mesh_transport_ctl(transport_pdu), mesh_transport_ttl(transport_pdu),
+                      mesh_transport_seq(transport_pdu), primary_element_address, mesh_transport_src(transport_pdu), 
+                      ack_msg, sizeof(ack_msg));
+}
+
+static void mesh_transport_rx_ack_timeout(btstack_timer_source_t * ts){
+    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) btstack_run_loop_get_timer_context(ts);
+    transport_pdu->acknowledgement_timer_active = 0;
+    mesh_transport_send_ack(transport_pdu);
+}
+
+static void mesh_network_segmented_message_complete(mesh_transport_pdu_t * transport_pdu){
+    // stop timers
+    transport_pdu->acknowledgement_timer_active = 0;
+    transport_pdu->inactivity_timer_active = 0;
+    btstack_run_loop_remove_timer(&transport_pdu->acknowledgement_timer);
+    btstack_run_loop_remove_timer(&transport_pdu->inactivity_timer);
+    // send ack
+    mesh_transport_send_ack(transport_pdu);
+}
+
+static void mesh_transport_start_acknowledgment_timer(mesh_transport_pdu_t * transport_pdu, uint32_t timeout, void (*callback)(btstack_timer_source_t * ts)){
+    btstack_run_loop_set_timer(&transport_pdu->acknowledgement_timer, timeout);
+    btstack_run_loop_set_timer_handler(&transport_pdu->acknowledgement_timer, callback);
+    btstack_run_loop_set_timer_context(&transport_pdu->acknowledgement_timer, transport_pdu);
+    btstack_run_loop_add_timer(&transport_pdu->acknowledgement_timer);
+    transport_pdu->acknowledgement_timer_active = 1;
+}
+
 static mesh_transport_pdu_t * test_transport_pdu;
 static mesh_transport_pdu_t * mesh_transport_pdu_for_segmented_message(mesh_network_pdu_t * network_pdu){
-     // uint16_t src = mesh_transport_src(next_pdu);
+     // uint16_t src = mesh_network_src(next_pdu);
      if (test_transport_pdu == NULL){
         test_transport_pdu = btstack_memory_mesh_transport_pdu_get();
         // copy meta data
         memcpy(test_transport_pdu->network_header, network_pdu->data, 9);
         test_transport_pdu->netkey_index = network_pdu->netkey_index;
         test_transport_pdu->block_ack = 0;
+        test_transport_pdu->acknowledgement_timer_active = 0;
     }
     // TODO validate SeqZero, reset buffer if needed
     return test_transport_pdu;
@@ -713,6 +778,9 @@ static void mesh_lower_transport_process_segment( mesh_transport_pdu_t * transpo
     printf_hexdump(transport_pdu->data, transport_pdu->len);
 
     // mark as done 
+    mesh_network_segmented_message_complete(test_transport_pdu);
+
+    // free
     test_transport_pdu = NULL;
 
     // forward to upper transport
@@ -736,15 +804,21 @@ static void mesh_lower_transport_run(void){
             // peek at next message
             mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&lower_transport_incoming);
             // segmented?
-            if (mesh_transport_segmented(network_pdu)){
+            if (mesh_network_segmented(network_pdu)){
                 mesh_transport_pdu_t * transport_pdu = mesh_transport_pdu_for_segmented_message(network_pdu);
                 if (!transport_pdu) return;
                 (void) btstack_linked_list_pop(&lower_transport_incoming);
+                // start acknowledgment timer if inactive
+                if (transport_pdu->acknowledgement_timer_active == 0){
+                    // - "The acknowledgment timer shall be set to a minimum of 150 + 50 * TTL milliseconds"
+                    uint32_t timeout = 150 + 50 * mesh_network_ttl(network_pdu);
+                    mesh_transport_start_acknowledgment_timer(transport_pdu, timeout, &mesh_transport_rx_ack_timeout);
+                }
                 mesh_lower_transport_process_segment(transport_pdu, network_pdu);
                 mesh_network_message_processed_by_higher_layer(network_pdu);
             } else {
                 // control?
-                if (mesh_transport_control(network_pdu)){
+                if (mesh_network_control(network_pdu)){
                     // unsegmented transport message (not encrypted)
                     (void) btstack_linked_list_pop(&lower_transport_incoming);
                     mesh_transport_process_unsegmented_transport_message(network_pdu);
