@@ -20,6 +20,7 @@ CORE += \
 
 # examples
 include ${BTSTACK_ROOT}/example/Makefile.inc
+include ${BTSTACK_ROOT}/src/ble/gatt-service/Makefile.inc
 
 CFLAGS  += -g -DUNIT_TEST \
 	-I$(BTSTACK_ROOT)/platform/embedded \
@@ -33,6 +34,7 @@ VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/embedded
 VPATH += ${BTSTACK_ROOT}/platform/libusb
+VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service
 
 # cpputest
 CC_UNIT = g++
@@ -56,7 +58,19 @@ provisioning_device_test: provisioning_device_test.cpp uECC.o mesh_crypto.o prov
 provisioning_provisioner_test: provisioning_provisioner_test.cpp uECC.o mesh_crypto.o provisioning_provisioner.o btstack_crypto.o btstack_util.o btstack_linked_list.o mock.o rijndael.o hci_cmd.o hci_dump.o
 	${CC_UNIT} ${CFLAGS} ${LDFLAGS} $^ -lCppUTest -lCppUTestExt -o $@	
 
-EXAMPLES = mesh provisioner sniffer provisioning_device_test provisioning_provisioner_test
+mesh_provisioning_device.h: mesh_provisioning_device.gatt
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+	
+mesh_provisioning_device: mesh_provisioning_device.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} mesh_provisioning_service_server.o mesh_provisioning_device.o
+	${CC} $(filter-out mesh_provisioning_device.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+EXAMPLES = mesh provisioner sniffer provisioning_device_test provisioning_provisioner_test mesh_provisioning_device
 
 all: ${EXAMPLES}
 
+clean:
+	rm -f  *.o *.out *.exe
+	rm -rf *.dSYM
+	rm -f ${EXAMPLES}
+	rm -f  mesh_provisioning_device.h
+	
