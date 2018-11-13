@@ -180,10 +180,11 @@ int btstack_main(void)
 
     // setup ATT server
     att_server_init(profile_data, NULL, NULL);    
-
+    // setup device information service
+    device_information_service_server_init();
     // setup Nordic SPP service
     ublox_spp_service_server_init(&ublox_data, &ublox_flow_control);
-
+    
     // setup advertisements
     uint16_t adv_int_min = 0x0030;
     uint16_t adv_int_max = 0x0030;
