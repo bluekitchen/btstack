@@ -37,7 +37,6 @@
 
 #define __BTSTACK_FILE__ "sm.c"
 
-#include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
 

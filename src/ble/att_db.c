@@ -37,8 +37,6 @@
 
 #define __BTSTACK_FILE__ "att_db.c"
 
-
-#include <stdio.h>
 #include <string.h>
 
 #include "ble/att_db.h"

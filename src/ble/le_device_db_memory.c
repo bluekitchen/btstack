@@ -41,7 +41,6 @@
 
 #include "ble/core.h"
 
-#include <stdio.h>
 #include <string.h>
 #include "btstack_debug.h"
 
