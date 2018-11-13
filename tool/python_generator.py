@@ -197,14 +197,12 @@ def create_command_python(fout, name, ogf, ocf, format, params):
         arg = (param_type, arg_size, arg_name)
         args.append(arg)
         arg_counter += 1
-    print(args)
 
     # method argument declaration 
     args2 = []
     for arg in args:
         args2.append(arg[2])
     args_string = ', '.join(args2)
-    print(args_string)
 
     # command size (opcode, len)
     size_fixed = 3
@@ -216,7 +214,6 @@ def create_command_python(fout, name, ogf, ocf, format, params):
         else:
             size_var += ' + %s.length' % arg[2]
     size_string = '%u%s' % (size_fixed, size_var)
-    print(size_string)
 
     store_params = ''
 
@@ -360,7 +357,6 @@ def create_event_factory(events, subevents, defines):
         if not event_supported(event_name):
             continue
         class_name = class_name_for_event(event_name)
-        print class_name
         subcases += java_event_factory_subevent.format(event_type, class_name)
 
     with open(outfile, 'wt') as fout:
@@ -380,7 +376,7 @@ gen_path = btstack_root + '/platform/daemon/binding/python/btstack/'
 defines = parser.parse_defines()
 
 # parse commands
-commands = parser.parse_commands()
+commands = parser.parse_commands(camel_case=False)
 
 # parse bluetooth.h to get used events
 (events, le_events, event_types) = parser.parse_events()
