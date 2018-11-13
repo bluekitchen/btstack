@@ -56,7 +56,7 @@ static uint8_t dhkey[32];
 
 static btstack_packet_handler_t prov_packet_handler;
 
-static uint8_t  prov_buffer_out[100];   // TODO: how large are prov messages?
+static uint8_t  prov_buffer_out[MESH_PROV_MAX_PROXY_PDU];
 // ConfirmationInputs = ProvisioningInvitePDUValue || ProvisioningCapabilitiesPDUValue || ProvisioningStartPDUValue || PublicKeyProvisioner || PublicKeyDevice
 static uint8_t  prov_confirmation_inputs[1 + 11 + 5 + 64 + 64];
 static uint8_t  prov_authentication_method;
