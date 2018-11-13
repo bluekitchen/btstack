@@ -50,6 +50,7 @@
 
 #include "ublox_spp_le_counter.h"
 #include "btstack.h"
+#include "ble/gatt-service/device_information_service_server.h"
 #include "ble/gatt-service/ublox_spp_service_server.h"
 
 #define HEARTBEAT_PERIOD_MS 1000
@@ -184,7 +185,7 @@ int btstack_main(void)
     device_information_service_server_init();
     // setup Nordic SPP service
     ublox_spp_service_server_init(&ublox_data, &ublox_flow_control);
-    
+
     // setup advertisements
     uint16_t adv_int_min = 0x0030;
     uint16_t adv_int_max = 0x0030;
