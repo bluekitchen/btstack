@@ -67,10 +67,18 @@ typedef enum {
 	MESH_OOB_INFORMATION_INDEX_INSIDE_MANUAL,
 	MESH_OOB_INFORMATION_INDEX_ON_DEVICE
 } mesh_oob_information_index_t;
+
 /**
  * @brief Init Mesh Provisioning Service Server with ATT DB
  */
 void mesh_provisioning_service_server_init(void);
+
+/**
+ * @brief Send a Proxy PDU message containing Provisioning PDU from a Provisioning Server to a Provisioning Client.
+ * @param proxy_pdu 
+ * @param proxy_pdu_size max lenght MESH_PROV_MAX_PROXY_PDU
+ */
+void mesh_provisioning_service_server_send_proxy_pdu(const uint8_t * proxy_pdu, uint16_t proxy_pdu_size);
 
 /* API_END */
 

@@ -48,9 +48,23 @@
 #include "l2cap.h"
 
 #include "ble/gatt-service/mesh_provisioning_service_server.h"
+#include "provisioning.h"
 
 typedef struct {
     hci_con_handle_t con_handle;
+
+    uint16_t data_in_client_value_handle;
+    uint8_t  data_in_proxy_pdu[MESH_PROV_MAX_PROXY_PDU];
+    
+    // Mesh Provisioning Data Out
+    uint16_t data_out_client_value_handle;
+    uint8_t  data_out_proxy_pdu[MESH_PROV_MAX_PROXY_PDU];
+    uint16_t data_out_proxy_pdu_size;
+
+    // Mesh Provisioning Data Out Notification
+    uint16_t data_out_client_configuration_descriptor_handle;
+    uint16_t data_out_client_configuration_descriptor_value;
+    btstack_context_callback_registration_t data_out_notify_callback;
 } mesh_provisioning_t;
 
 static att_service_handler_t mesh_provisioning_service;
@@ -71,33 +85,52 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
     UNUSED(offset);
     UNUSED(buffer_size);
     
-    printf("mesh_provisioning_service_write_callback, not handeled write on handle 0x%02x\n", attribute_handle);
+    mesh_provisioning_t * instance = &mesh_provisioning;
+    if (!instance){
+        log_error("mesh_provisioning_service_server_data_out_can_send_now: instance is null");
+        return 0;
+    }
+
+    if (attribute_handle == instance->data_in_client_value_handle){
+        printf("mesh_provisioning_service_write_callback, handle write on 0x%02x\n", attribute_handle);
+        return 0;
+    }
+
+    if (attribute_handle == instance->data_out_client_configuration_descriptor_handle){
+        if (buffer_size < 2){
+            return ATT_ERROR_INVALID_OFFSET;
+        }
+        instance->data_out_client_configuration_descriptor_value = little_endian_read_16(buffer, 0);
+        printf("mesh_provisioning_service_write_callback: data out notify enabled %d\n", instance->data_out_client_configuration_descriptor_value);
+        return 0;
+    }
+    printf("mesh_provisioning_service_write_callback, not handeled write on handle 0x%02x, buffer size %d\n", attribute_handle, buffer_size);
     return 0;
 }
 
 
 void mesh_provisioning_service_server_init(void){
     mesh_provisioning_t * instance = &mesh_provisioning;
+    if (!instance){
+        log_error("mesh_provisioning_service_server_data_out_can_send_now: instance is null");
+        return;
+    }
+
 
     // get service handle range
     uint16_t start_handle = 0;
     uint16_t end_handle   = 0xffff;
     int service_found = gatt_server_get_get_handle_range_for_service_with_uuid16(ORG_BLUETOOTH_SERVICE_MESH_PROVISIONING, &start_handle, &end_handle);
+
     if (!service_found) return;
 
-    // // get Heart Rate Mesurement characteristic value handle and client configuration handle
-    // instance->measurement_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_mesh_provisioning_MEASUREMENT);
-    // instance->measurement_client_configuration_descriptor_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_mesh_provisioning_MEASUREMENT);
-    // // get Body Sensor Location characteristic value handle and client configuration handle
-    // instance->sensor_location_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_BODY_SENSOR_LOCATION);
-    // // get Hear Rate Control Point characteristic value handle and client configuration handle
-    // instance->control_point_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_mesh_provisioning_CONTROL_POINT);
+    instance->data_in_client_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROVISIONING_DATA_IN);
+    instance->data_out_client_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROVISIONING_DATA_OUT);
+    instance->data_out_client_configuration_descriptor_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROVISIONING_DATA_OUT);
     
-    // // printf("Measurement     value handle 0x%02x\n", instance->measurement_value_handle);
-    // // printf("Client Config   value handle 0x%02x\n", instance->measurement_client_configuration_descriptor_handle);
-    // // printf("Sensor location value handle 0x%02x\n", instance->sensor_location_value_handle);
-    // // printf("Control Point   value handle 0x%02x\n", instance->control_point_value_handle);
-    // // register service with ATT Server
+    printf("DataIn     value handle 0x%02x\n", instance->data_in_client_value_handle);
+    printf("DataOut    value handle 0x%02x\n", instance->data_out_client_value_handle);
+    printf("DataOut CC value handle 0x%02x\n", instance->data_out_client_configuration_descriptor_handle);
     
     mesh_provisioning_service.start_handle   = start_handle;
     mesh_provisioning_service.end_handle     = end_handle;
@@ -105,4 +138,26 @@ void mesh_provisioning_service_server_init(void){
     mesh_provisioning_service.write_callback = &mesh_provisioning_service_write_callback;
     
     att_server_register_service_handler(&mesh_provisioning_service);
+}
+
+static void mesh_provisioning_service_server_data_out_can_send_now(void * context){
+    mesh_provisioning_t * instance = &mesh_provisioning;
+    if (!instance){
+        log_error("mesh_provisioning_service_server_data_out_can_send_now: instance is null");
+        return;
+    }
+    att_server_notify(instance->con_handle, instance->data_out_client_value_handle, &instance->data_out_proxy_pdu[0], instance->data_out_proxy_pdu_size); 
+}
+
+void mesh_provisioning_service_server_send_proxy_pdu(const uint8_t * proxy_pdu, uint16_t proxy_pdu_size){
+    mesh_provisioning_t * instance = &mesh_provisioning;
+    if (proxy_pdu_size && proxy_pdu_size > MESH_PROV_MAX_PROXY_PDU) return;
+
+    if (instance->data_out_client_configuration_descriptor_value){
+        memcpy(instance->data_out_proxy_pdu, proxy_pdu, proxy_pdu_size);
+        instance->data_out_proxy_pdu_size = proxy_pdu_size;
+        instance->data_out_notify_callback.callback = &mesh_provisioning_service_server_data_out_can_send_now;
+        instance->data_out_notify_callback.context  = (void*) instance;
+        att_server_register_can_send_now_callback(&instance->data_out_notify_callback, instance->con_handle);
+    }
 }
