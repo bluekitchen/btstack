@@ -70,12 +70,24 @@ typedef struct {
 static att_service_handler_t mesh_provisioning_service;
 static mesh_provisioning_t mesh_provisioning;
 
+static mesh_provisioning_t * mesh_provisioning_service_get_instance_for_con_handle(hci_con_handle_t con_handle){
+    mesh_provisioning_t * instance = &mesh_provisioning;
+    if (con_handle == HCI_CON_HANDLE_INVALID) return NULL;
+    instance->con_handle = con_handle;
+    return instance;
+}
+
 static uint16_t mesh_provisioning_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     UNUSED(con_handle);
     UNUSED(attribute_handle);
     UNUSED(offset);
     UNUSED(buffer_size);
     
+    mesh_provisioning_t * instance = mesh_provisioning_service_get_instance_for_con_handle(con_handle);
+    if (!instance){
+        log_error("mesh_provisioning_service_read_callback: instance is null");
+        return 0;
+    }
     printf("mesh_provisioning_service_read_callback, not handeled read on handle 0x%02x\n", attribute_handle);
     return 0;
 }
@@ -85,9 +97,9 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
     UNUSED(offset);
     UNUSED(buffer_size);
     
-    mesh_provisioning_t * instance = &mesh_provisioning;
+    mesh_provisioning_t * instance = mesh_provisioning_service_get_instance_for_con_handle(con_handle);
     if (!instance){
-        log_error("mesh_provisioning_service_server_data_out_can_send_now: instance is null");
+        log_error("mesh_provisioning_service_write_callback: instance is null");
         return 0;
     }
 
@@ -108,14 +120,12 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
     return 0;
 }
 
-
 void mesh_provisioning_service_server_init(void){
     mesh_provisioning_t * instance = &mesh_provisioning;
     if (!instance){
-        log_error("mesh_provisioning_service_server_data_out_can_send_now: instance is null");
+        log_error("mesh_provisioning_service_server_init: instance is null");
         return;
     }
-
 
     // get service handle range
     uint16_t start_handle = 0;
@@ -141,7 +151,7 @@ void mesh_provisioning_service_server_init(void){
 }
 
 static void mesh_provisioning_service_server_data_out_can_send_now(void * context){
-    mesh_provisioning_t * instance = &mesh_provisioning;
+    mesh_provisioning_t * instance = (mesh_provisioning_t *) instance->data_out_notify_callback.context;
     if (!instance){
         log_error("mesh_provisioning_service_server_data_out_can_send_now: instance is null");
         return;
@@ -149,8 +159,12 @@ static void mesh_provisioning_service_server_data_out_can_send_now(void * contex
     att_server_notify(instance->con_handle, instance->data_out_client_value_handle, &instance->data_out_proxy_pdu[0], instance->data_out_proxy_pdu_size); 
 }
 
-void mesh_provisioning_service_server_send_proxy_pdu(const uint8_t * proxy_pdu, uint16_t proxy_pdu_size){
-    mesh_provisioning_t * instance = &mesh_provisioning;
+void mesh_provisioning_service_server_send_proxy_pdu(uint16_t con_handle, const uint8_t * proxy_pdu, uint16_t proxy_pdu_size){
+    mesh_provisioning_t * instance = mesh_provisioning_service_get_instance_for_con_handle(con_handle);
+    if (!instance){
+        log_error("mesh_provisioning_service_server_send_proxy_pdu: instance is null");
+        return;
+    }
     if (proxy_pdu_size && proxy_pdu_size > MESH_PROV_MAX_PROXY_PDU) return;
 
     if (instance->data_out_client_configuration_descriptor_value){
