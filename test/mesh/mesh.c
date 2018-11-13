@@ -676,6 +676,11 @@ static void mesh_upper_transport_process_message(mesh_transport_pdu_t * transpor
     mesh_upper_transport_validate_segmented_message(transport_pdu);
 }
 
+// ack / incomplete message
+
+static mesh_transport_pdu_t * test_transport_pdu;
+
+
 static void mesh_lower_transport_setup_segemnted_acknowledge_message(uint8_t * data, uint8_t obo, uint16_t seq_zero, uint32_t block_ack){
     data[0] = 0;    // SEG = 0, Opcode = 0
     big_endian_store_16( data, 1, (obo << 15) | (seq_zero << 2) | 0);    // OBO, SeqZero, RFU
@@ -701,12 +706,24 @@ static void mesh_transport_rx_ack_timeout(btstack_timer_source_t * ts){
     mesh_transport_send_ack(transport_pdu);
 }
 
+static void mesh_transport_rx_incomplete_timeout(btstack_timer_source_t * ts){
+    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) btstack_run_loop_get_timer_context(ts);
+    printf("mesh_transport_rx_incomplete_timeout - give up\n");
+    // also stop ack timer
+    btstack_run_loop_remove_timer(&transport_pdu->acknowledgement_timer);
+
+    // free message
+    btstack_memory_mesh_transport_pdu_free(transport_pdu);
+    // 
+    test_transport_pdu = NULL;
+}
+
 static void mesh_network_segmented_message_complete(mesh_transport_pdu_t * transport_pdu){
     // stop timers
     transport_pdu->acknowledgement_timer_active = 0;
-    transport_pdu->inactivity_timer_active = 0;
+    transport_pdu->incomplete_timer_active = 0;
     btstack_run_loop_remove_timer(&transport_pdu->acknowledgement_timer);
-    btstack_run_loop_remove_timer(&transport_pdu->inactivity_timer);
+    btstack_run_loop_remove_timer(&transport_pdu->incomplete_timer);
     // send ack
     mesh_transport_send_ack(transport_pdu);
 }
@@ -719,7 +736,16 @@ static void mesh_transport_start_acknowledgment_timer(mesh_transport_pdu_t * tra
     transport_pdu->acknowledgement_timer_active = 1;
 }
 
-static mesh_transport_pdu_t * test_transport_pdu;
+static void mesh_transport_restart_incomplete_timer(mesh_transport_pdu_t * transport_pdu, uint32_t timeout, void (*callback)(btstack_timer_source_t * ts)){
+    if (transport_pdu->incomplete_timer_active){
+        btstack_run_loop_remove_timer(&transport_pdu->incomplete_timer);
+    }
+    btstack_run_loop_set_timer(&transport_pdu->incomplete_timer, timeout);
+    btstack_run_loop_set_timer_handler(&transport_pdu->incomplete_timer, callback);
+    btstack_run_loop_set_timer_context(&transport_pdu->incomplete_timer, transport_pdu);
+    btstack_run_loop_add_timer(&transport_pdu->incomplete_timer);
+}
+
 static mesh_transport_pdu_t * mesh_transport_pdu_for_segmented_message(mesh_network_pdu_t * network_pdu){
      // uint16_t src = mesh_network_src(next_pdu);
      if (test_transport_pdu == NULL){
@@ -814,6 +840,8 @@ static void mesh_lower_transport_run(void){
                     uint32_t timeout = 150 + 50 * mesh_network_ttl(network_pdu);
                     mesh_transport_start_acknowledgment_timer(transport_pdu, timeout, &mesh_transport_rx_ack_timeout);
                 }
+                // restart incomplete timer
+                mesh_transport_restart_incomplete_timer(transport_pdu, 10000, &mesh_transport_rx_incomplete_timeout);
                 mesh_lower_transport_process_segment(transport_pdu, network_pdu);
                 mesh_network_message_processed_by_higher_layer(network_pdu);
             } else {
