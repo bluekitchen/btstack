@@ -103,7 +103,7 @@ def parse_events():
 
     return (events, subvents, event_types)
 
-def my_parse_commands(infile):
+def my_parse_commands(infile, camel_case):
     commands = []
     with open (infile, 'rt') as fin:
 
@@ -113,14 +113,23 @@ def my_parse_commands(infile):
             parts = re.match('.*@param\s*(\w*)\s*', line)
             if parts and len(parts.groups()) == 1:
                 param = parts.groups()[0]
-                params.append(camel_case_var(param))
+                if camel_case:
+                    param = camel_case_var(param)
+                else:
+                    param = param.lower()
+                params.append(param)
                 continue
 
             declaration = re.match('const\s+hci_cmd_t\s+(\w+)[\s=]+', line)
             if declaration:
-                command_name = camel_case(declaration.groups()[0])
-                if command_name.endswith('Cmd'):
-                    command_name = command_name[:-len('Cmd')]
+                command_name = declaration.groups()[0]
+                # drop _cmd suffix for daemon commands
+                if command_name.endswith('_cmd'):
+                    command_name = command_name[:-len('_cmd')]
+                if camel_case:
+                    command_name = camel_case(command_name)
+                else:
+                    command_name = command_name.lower()
                 continue
 
             definition = re.match('\s*OPCODE\\(\s*(\w+)\s*,\s+(\w+)\s*\\)\s*,\s\\"(\w*)\\".*', line)
@@ -138,9 +147,9 @@ def my_parse_commands(infile):
                 continue
     return commands
 
-def parse_commands():
+def parse_commands(camel_case=True):
     global btstack_root
     commands = []
-    commands = commands = my_parse_commands(btstack_root + '/' + hci_cmds_c_path)
-    commands = commands = my_parse_commands(btstack_root + '/' + daemon_cmds_c_path)
+    commands = commands = my_parse_commands(btstack_root + '/' + hci_cmds_c_path, camel_case)
+    commands = commands = my_parse_commands(btstack_root + '/' + daemon_cmds_c_path, camel_case)
     return commands
