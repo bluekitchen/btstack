@@ -49,29 +49,26 @@ command_builder_command = '''
 
 # com.bluekitchen.btstack.EventFactory template
 java_event_factory_template = \
-'''package {0};
+'''
 
-import {0}.event.*;
+class EventFactory(object:
 
-public class EventFactory {{
+    # @brief event codes
 
-    /** @brief event codes */
+{0}
+    def event_for_packet(packet):
+        event_type = packet.get_payload()[0]
+        # switch (eventType){{
+{1}        
+        # case 0x3e:  // LE_META_EVENT
+        # int subEventType = Util.readByte(packet.getBuffer(), 2);
+        # switch (subEventType){{
+{2}            
+        # default:
+        # return new Event(packet);
 
-{1}
-    public static Event eventForPacket(Packet packet){{
-        int eventType = Util.readByte(packet.getBuffer(), 0);
-        switch (eventType){{
-{2}        
-        case 0x3e:  // LE_META_EVENT
-            int subEventType = Util.readByte(packet.getBuffer(), 2);
-            switch (subEventType){{
-{3}            
-            default:
-                return new Event(packet);
-            }}
-
-        default:
-            return new Event(packet);
+        # default:
+        # return new Event(packet);
         }}
     }}
 }}
@@ -87,58 +84,54 @@ java_event_factory_subevent = '''
 
 # com.bluekitchen.btstack.events.* template
 java_event_template = \
-'''package {0}.event;
+'''
 
-import {0}.*;
+class {0}(Event):
 
-public class {1} extends Event {{
-
-    public {1}(Packet packet) {{
-        super(packet);
-    }}
+    def __init__(self, packet):
+        # super(packet);
+    {1}
     {2}
-    {3}
-}}
 '''
 
 java_event_getter = \
 '''
-    /**
-     * @return {1} as {0}
-     */
-    public {0} get{1}(){{
+    # @return {1} as {0}
+    def get_{1}(self):
         {2}
-    }}
 '''
 
 java_event_getter_data = \
-'''int len = get{0}();
-        byte[] result = new byte[len];
-        System.arraycopy(data, {1}, result, 0, len);
-        return result;'''
+'''# java_event_getter_data
+        # int len = get{length_name}();
+        # byte[] result = new byte[len];
+        # System.arraycopy(data, {offset}, result, 0, len);
+        # return result;'''
 
 java_event_getter_data_fixed = \
-'''int len = {0};
-        byte[] result = new byte[len];
-        System.arraycopy(data, {1}, result, 0, len);
-        return result;'''
+'''# java_event_getter_data_fixed
+        # int len = {size};
+        # byte[] result = new byte[len];
+        # System.arraycopy(data, {offset}, result, 0, len);
+        # return result;'''
 
 java_event_getter_remaining_data = \
-'''int len = getPayloadLen() - {0};
-        byte[] result = new byte[len];
-        System.arraycopy(data, {0}, result, 0, len);
-        return result;'''
+'''# java_event_getter_remaining_data
+        # int len = getPayloadLen() - {offset};
+        # byte[] result = new byte[len];
+        # System.arraycopy(data, {offset}, result, 0, len);
+        # return result;'''
 
 java_event_to_string = \
-'''
-    public String toString(){{
-        StringBuffer t = new StringBuffer();
-        t.append("{0} < type = ");
-        t.append(String.format("0x%02x, ", getEventType()));
-        t.append(getEventType());
-{1}        t.append(" >");
-        return t.toString();
-    }}
+'''# java_event_to_string
+    def __str__(self):
+        # StringBuffer t = new StringBuffer();
+        # t.append("{0} < type = ");
+        # t.append(String.format("0x%02x, ", getEventType()));
+        # t.append(getEventType());
+{1}     
+        # t.append(" >");
+        # return t.toString();
 '''
 
 
@@ -267,25 +260,24 @@ def create_command_builder(commands):
 
 def create_event(fout, event_name, format, args):
     global gen_path
-    global package
     global java_event_template
 
     param_read = {
-     '1' : 'return Util.readByte(data, %u);',
-     'J' : 'return Util.readByte(data, %u);',
-     '2' : 'return Util.readBt16(data, %u);',
-     'H' : 'return Util.readBt16(data, %u);',
-     'L' : 'return Util.readBt16(data, %u);',
-     '3' : 'return Util.readBt24(data, %u);',
-     '4' : 'return Util.readBt32(data, %u);',
-     'B' : 'return Util.readBdAddr(data, %u);',
-     'X' : 'return Util.readGattService(data, %u);',
-     'Y' : 'return Util.readGattCharacteristic(data, %u);',
-     'Z' : 'return Util.readGattCharacteristicDescriptor(data, %u);',
-     'T' : 'int offset = %u; \n        return Util.getText(data, offset, getPayloadLen()-offset);',
-     'N' : 'return Util.getText(data, %u, 248);',
-     'D' : 'Util.storeBytes(data, %u, 8);',
-     'Q' : 'Util.storeBytes(data, %u, 32);',
+     '1' : 'return self.payload[{offset}]',
+     'J' : 'return self.payload[{offset}]',
+     '2' : 'return struct.unpack("<H", self.payload[{offset}, {offset}+2])',
+     'H' : 'return struct.unpack("<H", self.payload[{offset}, {offset}+2])',
+     'L' : 'return struct.unpack("<H", self.payload[{offset}, {offset}+2])',
+     '3' : 'return btstack.btstack_types.unpack24(self.payload[{offset}:3])',
+     '4' : 'return struct.unpack("<I", self.payload[{offset}, {offset}+4])',
+     'B' : 'return btstack.btstack_types.BD_ADDR(self.payload[{offset}:6])',
+     'X' : 'return btstack.btstack_types.GATTService(self.payload[{offset}:20])',
+     'Y' : 'return btstack.btstack_types.GATTCharacteristic(self.payload[{offset}:24])',
+     'Z' : 'return btstack.btstack_types.GATTCharacteristicDescriptor(self.payload[{offset}:18])',
+     'T' : '# TODO - convert remaining bytes from {offset} into string object',
+     'N' : '# TODO - convert 248 bytes from {offset} into string object',
+     # 'D' : 'Util.storeBytes(self.payload, %u, 8);',
+     # 'Q' : 'Util.storeBytes(self.payload, %u, 32);',
      # 'E' : 'Util.storeBytes(data, %u, 240);',
      # 'P' : 'Util.storeBytes(data, %u, 16);',
      # 'A' : 'Util.storeBytes(data, %u, 31);',
@@ -298,28 +290,28 @@ def create_event(fout, event_name, format, args):
     for f, arg in zip(format, args):
         # just remember name
         if f in ['L','J']:
-            length_name = parser.camel_case(arg)
+            length_name = arg.lower()
         if f == 'R':    
             # remaining data
-            access = java_event_getter_remaining_data.format(offset)
+            access = java_event_getter_remaining_data.format(offset=offset)
             size = 0
         elif f == 'V':
-            access = java_event_getter_data.format(length_name, offset)
+            access = java_event_getter_data.format(length_name=length_name, offset=offset)
             size = 0
         elif f in ['D', 'Q']:
             size = size_for_type(f)
-            access = java_event_getter_data_fixed.format(size, offset)
+            access = java_event_getter_data_fixed.format(size=size, offset=offset)
         else: 
-            access = param_read[f] % offset
+            access = param_read[f].format(offset=offset)
             size = size_for_type(f)
-        getters += java_event_getter.format(java_type_for_btstack_type(f), parser.camel_case(arg), access)
+        getters += java_event_getter.format(java_type_for_btstack_type(f), arg.lower(), access)
         offset += size
     to_string_args = ''
     for arg in args:
-        to_string_args += '        t.append(", %s = ");\n' % arg
-        to_string_args += '        t.append(get%s());\n' % parser.camel_case(arg)
+        to_string_args += '        # t.append(", %s = ");\n' % arg
+        to_string_args += '        # t.append(get%s());\n' % parser.camel_case(arg)
     to_string_method = java_event_to_string.format(event_name, to_string_args)
-    fout.write(java_event_template.format(package, event_name, getters, to_string_method))
+    fout.write(java_event_template.format(event_name, getters, to_string_method))
 
 def event_supported(event_name):
     parts = event_name.split('_')
@@ -342,7 +334,6 @@ def create_events(fout, events):
 
 def create_event_factory(events, subevents, defines):
     global gen_path
-    global package
     global java_event_factory_event
     global java_event_factory_template
 
@@ -365,7 +356,7 @@ def create_event_factory(events, subevents, defines):
         create_events(fout, subevents)
         # 
         defines_text = python_defines_string(defines)
-        fout.write(java_event_factory_template.format(package, defines_text, cases, subcases))
+        fout.write(java_event_factory_template.format(defines_text, cases, subcases))
 
 # find root
 btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')

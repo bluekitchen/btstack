@@ -2,6 +2,13 @@ import struct
 
 BLUETOOTH_BASE_UUID = bytes ([ 0x00, 0x00, 0x00, 0x00,   0x00, 0x00,  0x10, 0x00,   0x80, 0x00,  0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB ]);
 
+def hex_string(bytes):
+    return " ".join([('%02x' % a) for a in bytes])
+
+def unpack24(data):
+    (upper, ) = struct.unpack("<H", data[1:])
+    return data[0] | (upper << 8)
+
 class BD_ADDR(object):
     # addr stored in big endian
     def __init__(self, addr):
@@ -158,3 +165,59 @@ class GATTService(object):
 
     def __repr__(self):
         return self.__str__()
+
+class Packet(object):
+
+    HCI_COMMAND_PACKET = 1;
+    HCI_EVENT_PACKET   = 4;
+    L2CAP_DATA_PACKET  = 6;
+    RFCOMM_DATA_PACKET = 7;
+
+    def __init__(self, packet_type, channel, payload):
+        self.packet_type = packet_type
+        self.channel = channel
+        self.payload = payload
+        
+    def get_packet_type(self):
+        return self.packet_type
+
+    def get_channel(self):
+        return self.channel
+
+    def get_payload(self):
+        return self.payload
+
+    def __str__(self):
+        return "Packet type {packet_type}, channel {channel}, payload {payload}".format(packet_type={self.get_packet_type()},
+            channel={self.get_channel()}, payload=hex_string(self.get_payload()))
+
+    def __repr__(self):
+        return self.__str__()
+
+class Event(Packet):
+
+    def __init__(self, payload):
+        self.packet_type = Packet.HCI_COMMAND_PACKET
+        self.channel = 0
+        self.payload = payload
+
+    def get_event_type(self):
+        return self.payload[0]
+
+    def __str__(self):
+        return "Event type {event_type}, payload {payload}".format(event_type={self.get_event_type()},
+         payload=hex_string(self.get_payload()))
+
+    def __repr__(self):
+        return self.__str__()
+
+class BTstackEventState(Packet):
+
+    def __init__(self, payload):
+        self.packet_type = Packet.HCI_COMMAND_PACKET
+        self.channel = 0
+        self.payload = payload
+
+    def get_state(self):
+        return self.payload[2]
+
