@@ -46,6 +46,9 @@
 #include "mesh_provisioning_device.h"
 #include "btstack_config.h"
 #include "btstack.h"
+#include "provisioning.h"
+#include "provisioning_device.h"
+#include "ble/mesh/pb_adv.h"
 
 // https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.characteristic.gap.appearance.xml
 // cycling / cycling power sensor
@@ -57,7 +60,7 @@ static uint16_t adv_int_max = 0x0030;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-const uint8_t adv_data[] = {
+static uint8_t adv_data[] = {
     // Flags general discoverable, BR/EDR not supported
     0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
     // 16-bit Service UUIDs
@@ -114,17 +117,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
             }
             break;
-
-        case HCI_EVENT_GATTSERVICE_META:
-            switch (packet[2]){
-                default:
-                    break;
-            }
-            break;
         default:
             break;
     }
 }
+
+const static uint8_t device_uuid[] = { 0x00, 0x1B, 0xDC, 0x08, 0x10, 0x21, 0x0B, 0x0E, 0x0A, 0x0C, 0x00, 0x0B, 0x0E, 0x0A, 0x0C, 0x00 };
 
 int btstack_main(void);
 int btstack_main(void){
@@ -142,8 +140,15 @@ int btstack_main(void){
     // setup ATT server
     att_server_init(profile_data, NULL, NULL);    
 
-    // setup mesh provisioning service
-    mesh_provisioning_service_server_init();    
+    // Provisioning in device role
+    provisioning_device_init(device_uuid);
+    provisioning_device_register_packet_handler(&packet_handler);
+
+    // dynamically store device uuid into adv data - probably offset 7 - (see btstack_util to flip)
+    uint8_t uuid_flipped[16];
+    reverse_128(device_uuid, uuid_flipped);
+    memcpy(&adv_data[11], uuid_flipped, 16);
+    
     // setup advertisements
     uint8_t adv_type = 0;   // AFV_IND
     bd_addr_t null_addr;

@@ -13,7 +13,6 @@ CORE += \
 	btstack_tlv_posix.c \
 	le_device_db_fs.c \
 	l2cap.c \
-	pb_adv.c \
 	uECC.c \
 	rijndael.c \
 	main.c \
@@ -43,10 +42,10 @@ CC_UNIT = g++
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 
-mesh: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} mesh_crypto.o provisioning_device.o mesh_network.o mesh.o
+mesh: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} pb_adv.o mesh_crypto.o provisioning_device.o mesh_network.o mesh.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-provisioner: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} mesh_crypto.o provisioning_provisioner.o provisioner.o
+provisioner: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} pb_adv.o mesh_crypto.o provisioning_provisioner.o provisioner.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 sniffer: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} sniffer.c 
@@ -61,7 +60,7 @@ provisioning_provisioner_test: provisioning_provisioner_test.cpp uECC.o mesh_cry
 mesh_provisioning_device.h: mesh_provisioning_device.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 	
-mesh_provisioning_device: mesh_provisioning_device.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} mesh_provisioning_service_server.o mesh_provisioning_device.o
+mesh_provisioning_device: mesh_provisioning_device.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} mesh_crypto.o provisioning_device.o mesh_provisioning_service_server.o mesh_provisioning_device.o
 	${CC} $(filter-out mesh_provisioning_device.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 EXAMPLES = mesh provisioner sniffer provisioning_device_test provisioning_provisioner_test mesh_provisioning_device

@@ -38,6 +38,7 @@
 #define __MESH_PROVISIONING_SERVICE_SERVER_H
 
 #include <stdint.h>
+#include "hci.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -81,6 +82,18 @@ void mesh_provisioning_service_server_init(void);
  */
 void mesh_provisioning_service_server_send_proxy_pdu(uint16_t con_handle, const uint8_t * proxy_pdu, uint16_t proxy_pdu_size);
 
+/**
+ * @brief Register callback for the PB-GATT.
+ * @param callback
+ */
+void mesh_provisioning_service_server_register_packet_handler(btstack_packet_handler_t callback);
+
+/**
+ * @brief Request can send now event to send PDU
+ * Generates an MESH_SUBEVENT_CAN_SEND_NOW subevent
+ * @param con_handle
+ */
+void mesh_provisioning_service_server_request_can_send_now_event(hci_con_handle_t con_handle);
 /* API_END */
 
 #if defined __cplusplus
