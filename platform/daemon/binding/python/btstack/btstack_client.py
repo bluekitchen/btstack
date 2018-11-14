@@ -47,10 +47,10 @@ class BTstackClient(btstack.command_builder.CommandBuilder):
             # receive packet header: packet type, channel, len
             header = self.btstack_server_socket.recv(6)
             (packet_type, channel, length) = struct.unpack("<HHH", header)
-            # print_hex(header)
             payload = self.btstack_server_socket.recv(length)
-            # print_hex(payload)
-            if packet_type == 1:
+            # print_hex(header+payload)
+            if packet_type == btstack.btstack_types.Packet.HCI_EVENT_PACKET:
                 event = btstack.event_factory.event_for_payload(payload)
-                # self.packet_handler(event)
-                print(event)
+                # print(event)
+                if not self.packet_handler == None:
+                    self.packet_handler(event)

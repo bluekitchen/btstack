@@ -70,9 +70,9 @@ def event_for_payload(payload):
     # LE Subevent
     if event_type == 0x3e:
         subevent_type = payload[2]
-        event_class = le_event_class_for_type[subevent_type]
+        event_class = le_event_class_for_type.get(subevent_type, event_class)
     else:
-        event_class = event_class_for_type[event_type]
+        event_class = event_class_for_type.get(event_type, event_class)
     return event_class(payload)
 '''
 event_factory_event =  \
@@ -83,7 +83,12 @@ event_factory_subevent = \
 '''
 
 event_header = '''
+import struct
 import btstack.btstack_types
+
+def hex_string(bytes):
+    return " ".join([('%02x' % a) for a in bytes])
+
 '''
 
 event_template = \
@@ -103,13 +108,11 @@ event_getter = \
         {1}
 '''
 
-event_getter_data = \
-'''# len = self.get_{length_name}()
-        return self.payload[{offset},{offset}+len]
+event_getter_data = '''return self.payload[{offset}:{offset}+self.get_{length_name}()]
 '''
 
 event_getter_data_fixed = \
-'''return self.payload[{offset},{offset}+{size}]
+'''return self.payload[{offset}:{offset}+{size}]
 '''
 
 event_to_string = \
@@ -242,11 +245,11 @@ def create_event(fout, event_name, format, args):
     param_read = {
      '1' : 'return self.payload[{offset}]',
      'J' : 'return self.payload[{offset}]',
-     '2' : 'return struct.unpack("<H", self.payload[{offset}, {offset}+2])',
-     'H' : 'return struct.unpack("<H", self.payload[{offset}, {offset}+2])',
-     'L' : 'return struct.unpack("<H", self.payload[{offset}, {offset}+2])',
+     '2' : 'return struct.unpack("<H", self.payload[{offset} : {offset}+2])',
+     'H' : 'return struct.unpack("<H", self.payload[{offset} : {offset}+2])',
+     'L' : 'return struct.unpack("<H", self.payload[{offset} : {offset}+2])',
      '3' : 'return btstack.btstack_types.unpack24(self.payload[{offset}:3])',
-     '4' : 'return struct.unpack("<I", self.payload[{offset}, {offset}+4])',
+     '4' : 'return struct.unpack("<I", self.payload[{offset} : {offset}+4])',
      'B' : 'return btstack.btstack_types.BD_ADDR(self.payload[{offset}:6])',
      'X' : 'return btstack.btstack_types.GATTService(self.payload[{offset}:20])',
      'Y' : 'return btstack.btstack_types.GATTCharacteristic(self.payload[{offset}:24])',
