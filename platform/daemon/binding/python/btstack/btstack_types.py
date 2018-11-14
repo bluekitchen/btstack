@@ -26,11 +26,8 @@ class BD_ADDR(object):
         data.reverse()
         return data
 
-    def __str__(self):
-        return ":".join([('%02x' % a) for a in self.addr])
-
     def __repr__(self):
-        return self.__str__()
+        return ":".join([('%02x' % a) for a in self.addr])
 
 class BT_UUID(object):
     # uuid stored in big endian
@@ -60,13 +57,11 @@ class BT_UUID(object):
         data.reverse()
         return data
 
-    def __str__(self):
+    def __repr__(self):
         return "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x" % (
                 self.uuid[0], self.uuid[1], self.uuid[2], self.uuid[3],   self.uuid[4],  self.uuid[5],  self.uuid[6],  self.uuid[7],
                 self.uuid[8], self.uuid[9], self.uuid[10], self.uuid[11], self.uuid[12], self.uuid[13], self.uuid[14], self.uuid[15]);
 
-    def __repr__(self):
-        return self.__str__()
 
 class GATTCharacteristic(object):
 
@@ -101,12 +96,9 @@ class GATTCharacteristic(object):
     def get_uuid(self):
         return BT_UUID(self.data[8:])
 
-    def __str__(self):
+    def __repr__(self):
         return "GATTCharacteristic [start_handle={start_handle}, value_handle={value_handle}, end_handle={end_handle}, get_uuid={uuid}]".format(
             start_handle=self.get_start_handle(), value_handle=self.get_value_handle(), end_handle=self.get_end_handle(), uuid=self.get_uuid())
-
-    def __repr__(self):
-        return self.__str__()
 
 
 
@@ -128,12 +120,9 @@ class GATTCharacteristicDescriptor(object):
     def get_uuid(self):
         return BT_UUID(self.data[2:])
 
-    def __str__(self):
+    def __repr__(self):
         return "GATTCharacteristicDescriptor [handle={handle}, get_uuid={uuid}]".format(
             handle=self.get_handle(), uuid=self.get_uuid())
-
-    def __repr__(self):
-        return self.__str__()
 
 
 class GATTService(object):
@@ -159,12 +148,10 @@ class GATTService(object):
     def get_uuid(self):
         return BT_UUID(self.data[4:])
 
-    def __str__(self):
+    def __repr__(self):
         return "GattService [start_group_handle={start_group_handle}, [end_group_handle={end_group_handle}, get_uuid={uuid}]".format(
             start_group_handle=self.get_start_group_handle(), end_group_handle=self.get_end_group_handle(), uuid=self.get_uuid())
 
-    def __repr__(self):
-        return self.__str__()
 
 class Packet(object):
 
@@ -187,12 +174,10 @@ class Packet(object):
     def get_payload(self):
         return self.payload
 
-    def __str__(self):
+    def __repr__(self):
         return "Packet type {packet_type}, channel {channel}, payload {payload}".format(packet_type={self.get_packet_type()},
             channel={self.get_channel()}, payload=hex_string(self.get_payload()))
 
-    def __repr__(self):
-        return self.__str__()
 
 class Event(Packet):
 
@@ -204,12 +189,10 @@ class Event(Packet):
     def get_event_type(self):
         return self.payload[0]
 
-    def __str__(self):
+    def __repr__(self):
         return "Event type {event_type}, payload {payload}".format(event_type={self.get_event_type()},
          payload=hex_string(self.get_payload()))
 
-    def __repr__(self):
-        return self.__str__()
 
 class BTstackEventState(Packet):
 
