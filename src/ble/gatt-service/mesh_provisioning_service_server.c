@@ -108,7 +108,7 @@ static uint16_t mesh_provisioning_service_read_callback(hci_con_handle_t con_han
         log_error("mesh_provisioning_service_read_callback: instance is null");
         return 0;
     }
-    printf("mesh_provisioning_service_read_callback, not handeled read on handle 0x%02x\n", attribute_handle);
+    printf("mesh_provisioning_service_read_callback: not handeled read on handle 0x%02x\n", attribute_handle);
     return 0;
 }
 
@@ -124,7 +124,7 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
     }
 
     if (attribute_handle == instance->data_in_client_value_handle){
-        printf("mesh_provisioning_service_write_callback, handle write on 0x%02x, len %u\n", attribute_handle, buffer_size);
+        printf("mesh_provisioning_service_write_callback: handle write on 0x%02x, len %u\n", attribute_handle, buffer_size);
         if (!mesh_provisioning_service_packet_handler) return 0;
         (*mesh_provisioning_service_packet_handler)(PROVISIONING_DATA_PACKET, 0, buffer, buffer_size);
         return 0;
@@ -143,7 +143,7 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
         }
         return 0;
     }
-    printf("mesh_provisioning_service_write_callback, not handeled write on handle 0x%02x, buffer size %d\n", attribute_handle, buffer_size);
+    printf("mesh_provisioning_service_write_callback: not handeled write on handle 0x%02x, buffer size %d\n", attribute_handle, buffer_size);
     return 0;
 }
 
@@ -205,8 +205,7 @@ static void mesh_provisioning_service_can_send_now(void * context){
 }
 
 void mesh_provisioning_service_server_request_can_send_now(hci_con_handle_t con_handle){
-    printf("mesh_provisioning_service_server_request_can_send_now, con handle 0x%02x\n", con_handle);
-
+    // printf("mesh_provisioning_service_server_request_can_send_now, con handle 0x%02x\n", con_handle);
     mesh_provisioning_t * instance = mesh_provisioning_service_get_instance_for_con_handle(con_handle);
     if (!instance){
         printf("mesh_provisioning_service_server_request_can_send_now: instance is null, 0x%2x\n", con_handle);
@@ -238,12 +237,14 @@ typedef enum {
 } mesh_msg_type_t;
 
 static const uint8_t * pb_adv_own_device_uuid;
-static btstack_packet_handler_t pb_adv_packet_handler;
 static const uint8_t * proxy_pdu;
-static uint16_t  proxy_pdu_size;
+static uint16_t proxy_pdu_size;
 static uint16_t con_handle;
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static uint8_t  sar_buffer[MESH_PROV_MAX_PROXY_PDU];
+static uint16_t sar_offset;
 
+static btstack_packet_handler_t pb_adv_packet_handler;
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 /**
  * Initialize Provisioning Bearer using Advertisement Bearer
  * @param DeviceUUID
@@ -275,7 +276,6 @@ static uint8_t buffer[100];
 void pb_adv_send_pdu(const uint8_t * pdu, uint16_t size){
     if (!pdu || size <= 0) return; 
     // store pdu, request to send
-    printf("pb_adv_send_pdu: ");
     printf_hexdump(pdu, size);
     proxy_pdu = pdu;
     proxy_pdu_size = size;
@@ -287,23 +287,48 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(size);
     mesh_msg_sar_field_t msg_sar_field;
     mesh_msg_type_t msg_type;
+    int pdu_segment_len;
+    int pos;
 
     switch (packet_type) {
         case PROVISIONING_DATA_PACKET:
-            printf("PROVISIONING_DATA_PACKET, len %u\n", size);
-
+            pos = 0;
             // on provisioning PDU call packet handler with PROVISIONG_DATA type
-            msg_sar_field = packet[0] >> 6;
-            msg_type = packet[0] & 0x3F;
-            printf("received PROVISIONING_DATA_PACKET, segmentation %d, type %d\n", msg_sar_field, msg_type);
-            if (msg_sar_field != MESH_MSG_SAR_FIELD_COMPLETE_MSG) {
-                printf("segmntation not yet implemented\n");
-                return;
-            }
+            msg_sar_field = packet[pos] >> 6;
+            msg_type = packet[pos] & 0x3F;
+            pos++;
             if (msg_type != MESH_MSG_TYPE_PROVISIONING_PDU) return;
             if (!pb_adv_packet_handler) return;
-            // send to provisioning device
-            pb_adv_packet_handler(PROVISIONING_DATA_PACKET, 0, packet+1, size-1); 
+            
+            pdu_segment_len = size - pos;
+
+            if (sizeof(sar_buffer) - sar_offset < pdu_segment_len) {
+                printf("sar buffer too small left %d, new to store %d\n", MESH_PROV_MAX_PROXY_PDU - sar_offset, pdu_segment_len);
+                break;
+            }
+            
+            switch (msg_sar_field){
+                case MESH_MSG_SAR_FIELD_FIRST_SEGMENT:
+                    memset(sar_buffer, 0, sizeof(sar_buffer));
+                    memcpy(sar_buffer, packet+pos, pdu_segment_len);
+                    sar_offset = pdu_segment_len;
+                    return;
+                case MESH_MSG_SAR_FIELD_CONTINUE:
+                    memcpy(sar_buffer + sar_offset, packet+pos, pdu_segment_len);
+                    sar_offset += pdu_segment_len;
+                    return;
+                case MESH_MSG_SAR_FIELD_LAST_SEGMENT:
+                    memcpy(sar_buffer + sar_offset, packet+pos, pdu_segment_len);
+                    sar_offset += pdu_segment_len;
+                    // send to provisioning device
+                    pb_adv_packet_handler(PROVISIONING_DATA_PACKET, 0, sar_buffer, sar_offset); 
+                    sar_offset = 0;
+                    break; 
+                case MESH_MSG_SAR_FIELD_COMPLETE_MSG:
+                    // send to provisioning device
+                    pb_adv_packet_handler(PROVISIONING_DATA_PACKET, 0, packet+pos, pdu_segment_len); 
+                    break;
+            }
             break;
 
         case HCI_EVENT_PACKET:
@@ -312,7 +337,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     switch (hci_event_mesh_meta_get_subevent_code(packet)){
                         case MESH_PB_ADV_LINK_OPEN:
                         case MESH_PB_ADV_LINK_CLOSED:
-                            printf("Forward link open/close\n");
+                            // Forward link open/close
                             pb_adv_packet_handler(HCI_EVENT_PACKET, 0, packet, size);
                             break; 
                         case MESH_SUBEVENT_CAN_SEND_NOW:
