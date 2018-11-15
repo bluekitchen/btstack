@@ -370,35 +370,43 @@ static void provisioning_public_key_exchange_complete(void){
 }
 
 static void provisioning_run(void){
+    printf("provisioning_run: state %x, wait for outgoing complete %u\n", device_state, prov_waiting_for_outgoing_complete);
     if (prov_waiting_for_outgoing_complete) return;
     int start_timer = 1;
     switch (device_state){
         case DEVICE_SEND_ERROR:
             start_timer = 0;    // game over
+            prov_waiting_for_outgoing_complete = 1;
             provisioning_send_provisioning_error();
             provisioning_done();
             break;
         case DEVICE_SEND_CAPABILITIES:
-            provisioning_send_capabilites();
             device_state = DEVICE_W4_START;
+            prov_waiting_for_outgoing_complete = 1;
+            provisioning_send_capabilites();
             break;
         case DEVICE_SEND_INPUT_COMPLETE:
-            provisioning_send_input_complete();
             device_state = DEVICE_W4_CONFIRM;
+            prov_waiting_for_outgoing_complete = 1;
+            provisioning_send_input_complete();
             break;
         case DEVICE_SEND_PUB_KEY:
+            prov_waiting_for_outgoing_complete = 1;
             provisioning_send_public_key();
             provisioning_public_key_exchange_complete();
             break;
         case DEVICE_SEND_CONFIRM:
-            provisioning_send_confirm();
             device_state = DEVICE_W4_RANDOM;
+            prov_waiting_for_outgoing_complete = 1;
+            provisioning_send_confirm();
             break;
         case DEVICE_SEND_RANDOM:
-            provisioning_send_random();
             device_state = DEVICE_W4_DATA;
+            prov_waiting_for_outgoing_complete = 1;
+            provisioning_send_random();
             break;
         case DEVICE_SEND_COMPLETE:
+            prov_waiting_for_outgoing_complete = 1;
             provisioning_send_complete();
             provisioning_done();
             break;
@@ -408,7 +416,6 @@ static void provisioning_run(void){
     if (start_timer){
         provisioning_timer_start();
     }
-    prov_waiting_for_outgoing_complete = 1;
 }
 
 static void provisioning_handle_provisioning_error(uint8_t error_code){
@@ -509,8 +516,10 @@ static void provisioning_handle_public_key_dhkey(void * arg){
         provisioning_public_key_exchange_complete();
     } else {
         // queue public key pdu
+        printf("DEVICE_SEND_PUB_KEY\n");
         device_state = DEVICE_SEND_PUB_KEY;
     }
+    provisioning_run();
 }
 
 static void provisioning_handle_public_key(uint8_t *packet, uint16_t size){

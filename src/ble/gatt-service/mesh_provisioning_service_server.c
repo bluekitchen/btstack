@@ -345,8 +345,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             if (con_handle == HCI_CON_HANDLE_INVALID) return;
                             buffer[0] = (MESH_MSG_SAR_FIELD_COMPLETE_MSG << 6) | MESH_MSG_TYPE_PROVISIONING_PDU;
                             memcpy(&buffer[1], proxy_pdu, proxy_pdu_size);
+                            printf("sending packet, size %d, MTU %d: ", proxy_pdu_size, att_server_get_mtu(con_handle));
+                            printf_hexdump(proxy_pdu, proxy_pdu_size);
+                            printf("\n");
+                            // TODO: check MTU and segment msg if needed
                             mesh_provisioning_service_server_send_proxy_pdu(con_handle, buffer, proxy_pdu_size+1);
-                            // TODO: emit MESH_PBV_ADV_SEND_COMPLETE 
+                            pb_adv_emit_pdu_sent(0);
                             break;
                         default:
                             break;

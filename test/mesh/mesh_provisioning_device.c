@@ -129,6 +129,10 @@ int btstack_main(void){
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
+    // crypto
+    btstack_crypto_init();
+
+    // l2cap
     l2cap_init();
 
     // setup le device db
