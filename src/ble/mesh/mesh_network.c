@@ -247,7 +247,7 @@ static void mesh_network_send_c(void *arg){
         network_pdu->data[1+i] ^= obfuscation_block[i];
     }
 
-    printf("NetworkPDU: ");
+    printf("TX-NetworkPDU: ");
     printf_hexdump(network_pdu->data, network_pdu->len);
 
     // crypto done
@@ -297,7 +297,7 @@ static void mesh_network_send_0(mesh_network_pdu_t * network_pdu){
 
     // get network nonce
     mesh_network_create_nonce(network_nonce, network_pdu, global_iv_index); 
-    printf("Nonce: ");
+    printf("TX-NetworkNonce: ");
     printf_hexdump(network_nonce, 13);
 
     // start ccm
@@ -605,6 +605,10 @@ uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl, uint3
     network_pdu->len += 2;
     memcpy(&network_pdu->data[network_pdu->len], transport_pdu_data, transport_pdu_len);
     network_pdu->len += transport_pdu_len;
+
+
+    printf("NetworkPDU(unencrypted): ");
+    printf_hexdump(network_pdu->data, network_pdu->len);
 
     // queue up
     btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);

@@ -417,7 +417,7 @@ static uint16_t mesh_transport_ttl(mesh_transport_pdu_t * transport_pdu){
     return transport_pdu->network_header[1] & 0x7f;
 }
 static uint32_t mesh_transport_seq(mesh_transport_pdu_t * transport_pdu){
-    return big_endian_read_16(transport_pdu->network_header, 2);
+    return big_endian_read_24(transport_pdu->network_header, 2);
 }
 static uint16_t mesh_transport_src(mesh_transport_pdu_t * transport_pdu){
     return big_endian_read_16(transport_pdu->network_header, 5);
@@ -699,7 +699,7 @@ static void mesh_transport_send_ack(mesh_transport_pdu_t * transport_pdu){
 
     mesh_lower_transport_setup_segemnted_acknowledge_message(ack_msg, 0, seq & 0x1fff, transport_pdu->block_ack);
 
-    printf("mesh_transport_send_ack: ");
+    printf("mesh_transport_send_ack with netkey_index %x: ", transport_pdu->netkey_index);
     printf_hexdump(ack_msg, sizeof(ack_msg));
     mesh_network_send(transport_pdu->netkey_index, mesh_transport_ctl(transport_pdu), mesh_transport_ttl(transport_pdu),
                       mesh_transport_seq(transport_pdu), primary_element_address, mesh_transport_src(transport_pdu), 
@@ -707,6 +707,7 @@ static void mesh_transport_send_ack(mesh_transport_pdu_t * transport_pdu){
 }
 
 static void mesh_transport_rx_ack_timeout(btstack_timer_source_t * ts){
+    printf("ACK: acknowledgement timer fired, send ACK\n");
     mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) btstack_run_loop_get_timer_context(ts);
     transport_pdu->acknowledgement_timer_active = 0;
     mesh_transport_send_ack(transport_pdu);
@@ -735,6 +736,7 @@ static void mesh_network_segmented_message_complete(mesh_transport_pdu_t * trans
 }
 
 static void mesh_transport_start_acknowledgment_timer(mesh_transport_pdu_t * transport_pdu, uint32_t timeout, void (*callback)(btstack_timer_source_t * ts)){
+    printf("ACK: start ack timer, timeout %u ms\n", (int) timeout);
     btstack_run_loop_set_timer(&transport_pdu->acknowledgement_timer, timeout);
     btstack_run_loop_set_timer_handler(&transport_pdu->acknowledgement_timer, callback);
     btstack_run_loop_set_timer_context(&transport_pdu->acknowledgement_timer, transport_pdu);
