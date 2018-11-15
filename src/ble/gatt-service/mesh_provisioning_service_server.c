@@ -271,7 +271,10 @@ void pb_adv_register_packet_handler(btstack_packet_handler_t _packet_handler){
 /** 
  * Send Provisioning PDU
  */
-static uint8_t buffer[100];
+static uint8_t  buffer[100];
+static uint16_t buffer_offset;
+static mesh_msg_sar_field_t buffer_state;
+static uint16_t pb_gatt_mtu;
 
 void pb_adv_send_pdu(const uint8_t * pdu, uint16_t size){
     if (!pdu || size <= 0) return; 
@@ -279,6 +282,15 @@ void pb_adv_send_pdu(const uint8_t * pdu, uint16_t size){
     printf_hexdump(pdu, size);
     proxy_pdu = pdu;
     proxy_pdu_size = size;
+    buffer_offset = 0;
+
+
+    // check if segmentation is necessary
+    if (proxy_pdu_size > (pb_gatt_mtu - 1)){
+        buffer_state = MESH_MSG_SAR_FIELD_FIRST_SEGMENT;
+    } else {
+        buffer_state = MESH_MSG_SAR_FIELD_COMPLETE_MSG;
+    }
     mesh_provisioning_service_server_request_can_send_now(get_con_handle());
 }
 
@@ -305,6 +317,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             if (sizeof(sar_buffer) - sar_offset < pdu_segment_len) {
                 printf("sar buffer too small left %d, new to store %d\n", MESH_PROV_MAX_PROXY_PDU - sar_offset, pdu_segment_len);
                 break;
+            }
+
+            // update mtu if incoming packet is larger than default
+            if (size > (ATT_DEFAULT_MTU - 1)){
+                log_info("Remote uses larger MTU, enable long PDUs");
+                pb_gatt_mtu = att_server_get_mtu(con_handle);
             }
             
             switch (msg_sar_field){
@@ -338,19 +356,41 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         case MESH_PB_ADV_LINK_OPEN:
                         case MESH_PB_ADV_LINK_CLOSED:
                             // Forward link open/close
+                            pb_gatt_mtu = ATT_DEFAULT_MTU;
                             pb_adv_packet_handler(HCI_EVENT_PACKET, 0, packet, size);
                             break; 
                         case MESH_SUBEVENT_CAN_SEND_NOW:
                             con_handle = little_endian_read_16(packet, 3); 
                             if (con_handle == HCI_CON_HANDLE_INVALID) return;
-                            buffer[0] = (MESH_MSG_SAR_FIELD_COMPLETE_MSG << 6) | MESH_MSG_TYPE_PROVISIONING_PDU;
-                            memcpy(&buffer[1], proxy_pdu, proxy_pdu_size);
-                            printf("sending packet, size %d, MTU %d: ", proxy_pdu_size, att_server_get_mtu(con_handle));
-                            printf_hexdump(proxy_pdu, proxy_pdu_size);
-                            printf("\n");
-                            // TODO: check MTU and segment msg if needed
-                            mesh_provisioning_service_server_send_proxy_pdu(con_handle, buffer, proxy_pdu_size+1);
-                            pb_adv_emit_pdu_sent(0);
+
+                            buffer[0] = (buffer_state << 6) | MESH_MSG_TYPE_PROVISIONING_PDU;
+                            pdu_segment_len = btstack_min(proxy_pdu_size - buffer_offset, pb_gatt_mtu - 1);
+                            memcpy(&buffer[1], &proxy_pdu[buffer_offset], pdu_segment_len);
+                            buffer_offset += pdu_segment_len;
+
+                            mesh_provisioning_service_server_send_proxy_pdu(con_handle, buffer, pdu_segment_len + 1);
+                            
+                            switch (buffer_state){
+                                case MESH_MSG_SAR_FIELD_COMPLETE_MSG:
+                                case MESH_MSG_SAR_FIELD_LAST_SEGMENT:
+                                    pb_adv_emit_pdu_sent(0);
+                                    break;
+                                case MESH_MSG_SAR_FIELD_CONTINUE:
+                                case MESH_MSG_SAR_FIELD_FIRST_SEGMENT:
+                                    if ((proxy_pdu_size - buffer_offset) > (pb_gatt_mtu - 1)){
+                                        buffer_state = MESH_MSG_SAR_FIELD_CONTINUE;
+                                    } else {
+                                        buffer_state = MESH_MSG_SAR_FIELD_LAST_SEGMENT;
+                                    }
+                                    mesh_provisioning_service_server_request_can_send_now(con_handle);
+                                    break;
+                            }
+
+                            // printf("sending packet, size %d, MTU %d: ", proxy_pdu_size, pb_gatt_mtu);
+                            // printf_hexdump(proxy_pdu, proxy_pdu_size);
+                            // printf("\n");
+                            // mesh_provisioning_service_server_request_can_send_now(con_handle);
+
                             break;
                         default:
                             break;
