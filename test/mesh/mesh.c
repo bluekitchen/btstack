@@ -49,7 +49,6 @@
 #include "btstack.h"
 #include "btstack_tlv.h"
 
-static void mesh_network_run(void);
 static void mesh_transport_set_device_key(const uint8_t * device_key);
 
 #define BEACON_TYPE_SECURE_NETWORK 1
@@ -59,8 +58,6 @@ const static uint8_t device_uuid[] = { 0x00, 0x1B, 0xDC, 0x08, 0x10, 0x21, 0x0B,
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-
-static int counter = 'a';
 
 static uint8_t mesh_flags;
 
@@ -150,11 +147,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
 static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
-    const uint8_t * adv_data;
-    const uint8_t * pdu_data;
-    uint8_t pdu_len;
-    uint8_t adv_len;
-    mesh_network_pdu_t * network_pdu;
     mesh_provisioning_data_t provisioning_data;
     switch(packet[0]){
         case HCI_EVENT_MESH_META:
@@ -352,7 +344,7 @@ static btstack_linked_list_t upper_transport_access;
 // upper transport segmented control messages (to process)
 static btstack_linked_list_t upper_transport_control;
 // access segmented access messages (to process)
-static btstack_linked_list_t access_incoming;
+// static btstack_linked_list_t access_incoming;
 
 
 static void transport_unsegmented_setup_nonce(uint8_t * nonce, const mesh_network_pdu_t * network_pdu){
@@ -699,9 +691,10 @@ static void mesh_transport_send_ack(mesh_transport_pdu_t * transport_pdu){
 
     mesh_lower_transport_setup_segemnted_acknowledge_message(ack_msg, 0, seq & 0x1fff, transport_pdu->block_ack);
 
-    printf("mesh_transport_send_ack with netkey_index %x: ", transport_pdu->netkey_index);
+    printf("mesh_transport_send_ack with netkey_index %x, CTL=1, ttl = %u, seq = %x, src = %x, dst = %x:", transport_pdu->netkey_index, mesh_transport_ttl(transport_pdu),
+        mesh_transport_seq(transport_pdu), primary_element_address, mesh_transport_src(transport_pdu));
     printf_hexdump(ack_msg, sizeof(ack_msg));
-    mesh_network_send(transport_pdu->netkey_index, mesh_transport_ctl(transport_pdu), mesh_transport_ttl(transport_pdu),
+    mesh_network_send(transport_pdu->netkey_index, 1, mesh_transport_ttl(transport_pdu),
                       mesh_transport_seq(transport_pdu), primary_element_address, mesh_transport_src(transport_pdu), 
                       ack_msg, sizeof(ack_msg));
 }
