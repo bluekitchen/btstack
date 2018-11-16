@@ -86,14 +86,14 @@ static hci_con_handle_t get_con_handle(void){
 }
 
 static void pb_adv_emit_link_open(hci_con_handle_t con_handle, uint8_t status){
-    uint8_t event[6] = { HCI_EVENT_MESH_META, 6, MESH_PB_TRANSPORT_LINK_OPEN, status, PB_TYPE_GATT};
+    uint8_t event[7] = { HCI_EVENT_MESH_META, 5, MESH_PB_TRANSPORT_LINK_OPEN, status};
     little_endian_store_16(event, 4, con_handle);
-    event[5] = PB_TYPE_GATT;
+    event[6] = PB_TYPE_GATT;
     mesh_provisioning_service_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void pb_adv_emit_link_close(hci_con_handle_t con_handle, uint8_t reason){
-    uint8_t event[5] = { HCI_EVENT_MESH_META, 6, MESH_PB_TRANSPORT_LINK_CLOSED};
+    uint8_t event[5] = { HCI_EVENT_MESH_META, 3, MESH_PB_TRANSPORT_LINK_CLOSED};
     little_endian_store_16(event, 4, con_handle);
     mesh_provisioning_service_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -136,11 +136,12 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
             return ATT_ERROR_INVALID_OFFSET;
         }
         instance->data_out_client_configuration_descriptor_value = little_endian_read_16(buffer, 0);
-        printf("mesh_provisioning_service_write_callback: data out notify enabled %d\n", instance->data_out_client_configuration_descriptor_value);
+        printf("mesh_provisioning_service_write_callback: data out notify enabled %d, con handle 0x%02x\n", instance->data_out_client_configuration_descriptor_value, con_handle);
         if (instance->data_out_client_configuration_descriptor_value){
-            pb_adv_emit_link_close(con_handle, 0);
-        } else {
+            printf("mesh_provisioning_service_write_callback: emit pb_adv_emit_link_open 0x%02x\n", con_handle);
             pb_adv_emit_link_open(con_handle, 0);
+        } else {
+            pb_adv_emit_link_close(con_handle, 0);
         }
         return 0;
     }
@@ -285,6 +286,7 @@ void pb_adv_send_pdu(uint16_t pb_adv_cid, const uint8_t * pdu, uint16_t size){
     proxy_pdu_size = size;
     buffer_offset = 0;
 
+    printf("pb_gatt_send_pdu received 0x%02x, used 0x%02x\n", pb_adv_cid, get_con_handle());
 
     // check if segmentation is necessary
     if (proxy_pdu_size > (pb_gatt_mtu - 1)){

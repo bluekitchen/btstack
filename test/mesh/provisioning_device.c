@@ -159,6 +159,7 @@ static uint16_t pb_transport_cid;
 // derived
 static uint8_t network_id[8];
 static uint8_t beacon_key[16];
+static pb_type_t pb_type;
 
 static void provisioning_emit_event(uint16_t pb_adv_cid, uint8_t mesh_subevent){
     if (!prov_packet_handler) return;
@@ -220,11 +221,22 @@ static void provisioning_attention_timer_set(void){
 
 // Outgoing Provisioning PDUs
 
+static void pb_send_pdu(uint16_t transport_cid, const uint8_t * buffer, uint16_t buffer_size){
+    switch (pb_type){
+        case PB_TYPE_ADV:
+            pb_adv_send_pdu(transport_cid, buffer, buffer_size);    
+            break;
+        case PB_TYPE_GATT:
+            pb_adv_send_pdu(transport_cid, buffer, buffer_size);    
+            break;
+    }
+}
+
 static void provisioning_send_provisioning_error(void){
     // setup response 
     prov_buffer_out[0] = MESH_PROV_FAILED;
     prov_buffer_out[1] = prov_error_code;
-    pb_adv_send_pdu(pb_transport_cid, prov_buffer_out, 2);
+    pb_send_pdu(pb_transport_cid, prov_buffer_out, 2);
 }
 
 static void provisioning_send_capabilites(void){
@@ -260,16 +272,8 @@ static void provisioning_send_capabilites(void){
 
     // send
 
-    pb_adv_send_pdu(pb_transport_cid, prov_buffer_out, 12);    
+    pb_send_pdu(pb_transport_cid, prov_buffer_out, 12);    
 }
-
-// void pb_send_pdu(prov_buffer_out, 12){
-//     if (pb_use_gatt){
-//         pb_gatt_send_pdu(prov_buffer_out, 12);    
-//     } else {
-//         pb_adv_send_pdu(pb_transport_cid, prov_buffer_out, 12);    
-//     }
-// }
 
 static void provisioning_send_public_key(void){
     // setup response 
@@ -280,7 +284,7 @@ static void provisioning_send_public_key(void){
     memcpy(&prov_confirmation_inputs[81], &prov_buffer_out[1], 64);
 
     // send
-    pb_adv_send_pdu(pb_transport_cid, prov_buffer_out, 65);
+    pb_send_pdu(pb_transport_cid, prov_buffer_out, 65);
 }
 
 static void provisioning_send_input_complete(void){
@@ -288,7 +292,7 @@ static void provisioning_send_input_complete(void){
     prov_buffer_out[0] = MESH_PROV_INPUT_COMPLETE;
 
     // send
-    pb_adv_send_pdu(pb_transport_cid, prov_buffer_out, 17);
+    pb_send_pdu(pb_transport_cid, prov_buffer_out, 17);
 }
 static void provisioning_send_confirm(void){
     // setup response 
@@ -296,7 +300,7 @@ static void provisioning_send_confirm(void){
     memcpy(&prov_buffer_out[1], confirmation_device, 16);
 
     // send
-    pb_adv_send_pdu(pb_transport_cid, prov_buffer_out, 17);
+    pb_send_pdu(pb_transport_cid, prov_buffer_out, 17);
 }
 
 static void provisioning_send_random(void){
@@ -305,7 +309,7 @@ static void provisioning_send_random(void){
     memcpy(&prov_buffer_out[1],  random_device, 16);
 
     // send pdu
-    pb_adv_send_pdu(pb_transport_cid, prov_buffer_out, 17);
+    pb_send_pdu(pb_transport_cid, prov_buffer_out, 17);
 }
 
 static void provisioning_send_complete(void){
@@ -313,7 +317,7 @@ static void provisioning_send_complete(void){
     prov_buffer_out[0] = MESH_PROV_COMPLETE;
 
     // send pdu
-    pb_adv_send_pdu(pb_transport_cid, prov_buffer_out, 1);
+    pb_send_pdu(pb_transport_cid, prov_buffer_out, 1);
 }
 
 static void provisioning_done(void){
@@ -773,8 +777,9 @@ static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8
             if (packet[0] != HCI_EVENT_MESH_META)  break;
             switch (packet[2]){
                 case MESH_PB_TRANSPORT_LINK_OPEN:
-                    printf("Link opened, reset state\n");
                     pb_transport_cid = mesh_pb_transport_link_open_event_get_pb_transport_cid(packet);
+                    pb_type = mesh_pb_transport_link_open_event_get_pb_type(packet);
+                    printf("Link opened, reset state, transport cid 0x%02x, PB type %d\n", pb_transport_cid, pb_type);
                     provisioning_done();
                     break;
                 case MESH_PB_TRANSPORT_PDU_SENT:
