@@ -885,6 +885,64 @@ static void mesh_transport_received_mesage(mesh_network_pdu_t * network_pdu){
     mesh_lower_transport_run();
 }
 
+// UPPER TRANSPORT
+
+static uint32_t mesh_access_transport_seq;
+static uint8_t  mesh_access_transport_pdu_data[20];
+static uint16_t mesh_access_transport_pdu_len;
+static uint16_t mesh_access_transport_src;
+static uint16_t mesh_access_transport_dest;
+static uint8_t  mesh_access_transport_ttl;
+static uint16_t mesh_access_transport_netkey_index;
+
+static void mesh_access_send_unsegmented_ccm(void * arg){
+    UNUSED(arg);
+    // store TransMIC
+    btstack_crypo_ccm_get_authentication_value(&ccm, &mesh_access_transport_pdu_data[mesh_access_transport_pdu_len]);
+    mesh_access_transport_pdu_len += 4;
+    // dump
+    printf("TX-TransportPDU: ");
+    printf_hexdump(mesh_access_transport_pdu_data, mesh_access_transport_pdu_len);
+    // send network pdu
+    mesh_network_send(mesh_access_transport_netkey_index, 0, mesh_access_transport_ttl, mesh_access_transport_seq,
+        mesh_access_transport_src, mesh_access_transport_dest, mesh_access_transport_pdu_data, mesh_access_transport_pdu_len);
+}
+
+static uint8_t mesh_access_send(uint16_t netkey_index, uint16_t appkey_index, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest,
+                          const uint8_t * access_pdu_data, uint8_t access_pdu_len){
+    printf("mesh_access_send\n");
+    if (access_pdu_len <= 15){
+        // unsegmented access message
+        // TODO: support device key, via special appkey_index
+        uint8_t akf = 1;
+        const mesh_application_key_t * appkey = mesh_application_key_list_get(appkey_index);
+        if (appkey == NULL){
+            printf("appkey_index %x unknown\n", appkey_index);
+            return 1;
+        }
+        mesh_access_transport_pdu_data[0] = (akf << 6) | appkey->aid;
+        memcpy(&mesh_access_transport_pdu_data[1], access_pdu_data, access_pdu_len);
+        mesh_access_transport_pdu_len = access_pdu_len + 1;
+
+        // TODO: queue up, etc
+        mesh_access_transport_seq = seq;
+        mesh_access_transport_ttl = ttl;
+        mesh_access_transport_src = src;
+        mesh_access_transport_dest = dest;
+        mesh_access_transport_netkey_index = netkey_index;
+
+        // decrypt ccm
+        mesh_transport_crypto_active = 1;
+        btstack_crypo_ccm_init(&ccm, appkey->key, application_nonce, mesh_access_transport_pdu_len, 4);
+        btstack_crypto_ccm_decrypt_block(&ccm, mesh_access_transport_pdu_len, mesh_access_transport_pdu_data, mesh_access_transport_pdu_data, &mesh_access_send_unsegmented_ccm, NULL);
+    } else {
+        // segmented acccess message
+        printf("mesh_access_send not implemented for segemnted messages, len %u\n", access_pdu_len);
+    }
+    return 0;
+}
+
+// TEST APPLICATION
 
 // #define TEST_MESSAGE_1
 #define TEST_MESSAGE_6
@@ -1013,8 +1071,8 @@ static void send_test_message(void){
 #endif
 }
 
-static void send_pts_messsage(int type){
-    uint8_t transport_pdu_data[16];
+static void send_pts_network_messsage(int type){
+    uint8_t lower_transport_pdu_data[16];
 
     uint16_t src = 0x0028;
     uint16_t dst = 0x0001;
@@ -1059,9 +1117,59 @@ static void send_pts_messsage(int type){
         default:
             return;
     }
-    int transport_pdu_len = 16;
-    memset(transport_pdu_data, 0x55, transport_pdu_len);
-    mesh_network_send(0, ctl, ttl, seq, src, dst, transport_pdu_data, transport_pdu_len);
+    int lower_transport_pdu_len = 16;
+    memset(lower_transport_pdu_data, 0x55, lower_transport_pdu_len);
+    mesh_network_send(0, ctl, ttl, seq, src, dst, lower_transport_pdu_data, lower_transport_pdu_len);
+}
+
+static void send_pts_access_messsage(int type){
+    uint8_t access_pdu_data[16];
+
+    uint16_t src = primary_element_address;
+    uint16_t dst = 0x0001;
+    uint32_t seq = 0x00;
+    uint8_t  ttl = 0;
+
+    switch (type){
+        case 0:
+            ttl = 10;
+            dst = 0x001;
+            printf("unicast ttl=10\n");
+            break;
+        case 1:
+            dst = 0x001;
+            ttl = 10;
+            printf("unicast ttl=10\n");
+            break;
+        case 2:
+            dst = 0x001;
+            ttl = 0x7f;
+            printf("unicast ttl=0x7f\n");
+            break;
+        case 3:
+            printf("virtual\n");
+            break;
+        case 4:
+            printf("group\n");
+            break;
+        case 5:
+            printf("all-proxies\n");
+            break;
+        case 6:
+            printf("all-friends\n");
+            break;
+        case 7:
+            printf("all-relays\n");
+            break;
+        case 8:
+            printf("all-nodes\n");
+            break;
+        default:
+            return;
+    }
+    int access_pdu_len = 1;
+    memset(access_pdu_data, 0x55, access_pdu_len);
+    mesh_access_send(0, test_application_key.index, ttl, seq, src, dst, access_pdu_data, access_pdu_len);
 }
 
 static void mesh_secure_network_beacon_auth_value_calculated(void * arg){
@@ -1090,9 +1198,12 @@ static void stdin_process(char cmd){
     }
     switch (cmd){
         case '0':
-            send_pts_messsage(pts_type++);
+            send_pts_network_messsage(pts_type++);
             break;
         case '1':
+            send_pts_access_messsage(pts_type++);
+            break;
+        case '8':
             send_test_message();
             break;
         case '9':
