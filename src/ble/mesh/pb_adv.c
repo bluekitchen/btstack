@@ -43,6 +43,7 @@
 #include <string.h>
 #include "ble/mesh/adv_bearer.h"
 #include "ble/mesh/beacon.h"
+#include "provisioning.h"
 #include "btstack_util.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
@@ -133,18 +134,19 @@ static uint32_t pb_adv_random(void){
 }
 
 static void pb_adv_emit_pdu_sent(uint8_t status){
-    uint8_t event[] = { HCI_EVENT_MESH_META, 2, MESH_PB_ADV_PDU_SENT, status};
+    uint8_t event[] = { HCI_EVENT_MESH_META, 2, MESH_PB_TRANSPORT_PDU_SENT, status};
     pb_adv_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void pb_adv_emit_link_open(uint8_t status, uint16_t pb_adv_cid){
-    uint8_t event[6] = { HCI_EVENT_MESH_META, 6, MESH_PB_ADV_LINK_OPEN, status};
+    uint8_t event[6] = { HCI_EVENT_MESH_META, 6, MESH_PB_TRANSPORT_LINK_OPEN, status};
     little_endian_store_16(event, 4, pb_adv_cid);
+    event[5] = PB_TYPE_ADV;
     pb_adv_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void pb_adv_emit_link_close(uint16_t pb_adv_cid, uint8_t reason){
-    uint8_t event[5] = { HCI_EVENT_MESH_META, 6, MESH_PB_ADV_LINK_CLOSED};
+    uint8_t event[5] = { HCI_EVENT_MESH_META, 6, MESH_PB_TRANSPORT_LINK_CLOSED};
     little_endian_store_16(event, 4, pb_adv_cid);
     pb_adv_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }

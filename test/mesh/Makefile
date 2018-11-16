@@ -21,7 +21,7 @@ CORE += \
 include ${BTSTACK_ROOT}/example/Makefile.inc
 include ${BTSTACK_ROOT}/src/ble/gatt-service/Makefile.inc
 
-CFLAGS  += -g -DUNIT_TEST \
+CFLAGS  += -g -DUNIT_TEST -Wall \
 	-I$(BTSTACK_ROOT)/platform/embedded \
 	-I$(BTSTACK_ROOT)/platform/posix \
 	-I$(BTSTACK_ROOT)/3rd-party/tinydir \

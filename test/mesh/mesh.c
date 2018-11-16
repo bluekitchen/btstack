@@ -159,11 +159,11 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
     switch(packet[0]){
         case HCI_EVENT_MESH_META:
             switch(packet[2]){
-                case MESH_PB_ADV_LINK_OPEN:
+                case MESH_PB_TRANSPORT_LINK_OPEN:
                     printf("Provisioner link opened");
-                    pb_transport_cid = mesh_pb_adv_link_open_event_get_pb_adv_cid(packet);
+                    pb_transport_cid = mesh_pb_transport_link_open_event_get_pb_transport_cid(packet);
                     break;
-                case MESH_PB_ADV_LINK_CLOSED:
+                case MESH_PB_TRANSPORT_LINK_CLOSED:
                     pb_transport_cid = MESH_PB_TRANSPORT_INVALID_CID;
                     break;
                 case MESH_PB_PROV_ATTENTION_TIMER:
@@ -1189,7 +1189,7 @@ int btstack_main(void)
     // Network layer
     mesh_network_init();
     mesh_network_set_higher_layer_handler(&mesh_transport_received_mesage);
-    
+
     // PTS app key
     uint8_t application_key[16];
     const char * application_key_string = "3216D1509884B533248541792B877F98";

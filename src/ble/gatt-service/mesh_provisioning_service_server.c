@@ -85,15 +85,16 @@ static hci_con_handle_t get_con_handle(void){
     return mesh_provisioning.con_handle;
 }
 
-static void pb_adv_emit_link_open(uint8_t status, uint16_t pb_adv_cid){
-    uint8_t event[6] = { HCI_EVENT_MESH_META, 6, MESH_PB_ADV_LINK_OPEN, status};
-    little_endian_store_16(event, 4, pb_adv_cid);
+static void pb_adv_emit_link_open(hci_con_handle_t con_handle, uint8_t status){
+    uint8_t event[6] = { HCI_EVENT_MESH_META, 6, MESH_PB_TRANSPORT_LINK_OPEN, status, PB_TYPE_GATT};
+    little_endian_store_16(event, 4, con_handle);
+    event[5] = PB_TYPE_GATT;
     mesh_provisioning_service_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void pb_adv_emit_link_close(uint16_t pb_adv_cid, uint8_t reason){
-    uint8_t event[5] = { HCI_EVENT_MESH_META, 6, MESH_PB_ADV_LINK_CLOSED};
-    little_endian_store_16(event, 4, pb_adv_cid);
+static void pb_adv_emit_link_close(hci_con_handle_t con_handle, uint8_t reason){
+    uint8_t event[5] = { HCI_EVENT_MESH_META, 6, MESH_PB_TRANSPORT_LINK_CLOSED};
+    little_endian_store_16(event, 4, con_handle);
     mesh_provisioning_service_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -139,7 +140,7 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
         if (instance->data_out_client_configuration_descriptor_value){
             pb_adv_emit_link_close(con_handle, 0);
         } else {
-            pb_adv_emit_link_open(0, con_handle);
+            pb_adv_emit_link_open(con_handle, 0);
         }
         return 0;
     }
@@ -257,7 +258,7 @@ void pb_adv_init(const uint8_t * device_uuid){
 }
 
 static void pb_adv_emit_pdu_sent(uint8_t status){
-    uint8_t event[] = {HCI_EVENT_MESH_META, 2, MESH_PB_ADV_PDU_SENT, status};
+    uint8_t event[] = {HCI_EVENT_MESH_META, 2, MESH_PB_TRANSPORT_PDU_SENT, status};
     pb_adv_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -353,8 +354,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             switch (hci_event_packet_get_type(packet)) {
                 case HCI_EVENT_MESH_META:
                     switch (hci_event_mesh_meta_get_subevent_code(packet)){
-                        case MESH_PB_ADV_LINK_OPEN:
-                        case MESH_PB_ADV_LINK_CLOSED:
+                        case MESH_PB_TRANSPORT_LINK_OPEN:
+                        case MESH_PB_TRANSPORT_LINK_CLOSED:
                             // Forward link open/close
                             pb_gatt_mtu = ATT_DEFAULT_MTU;
                             pb_adv_packet_handler(HCI_EVENT_PACKET, 0, packet, size);

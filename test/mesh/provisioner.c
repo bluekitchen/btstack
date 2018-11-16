@@ -161,7 +161,7 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
     switch(packet[0]){
         case HCI_EVENT_MESH_META:
             switch(packet[2]){
-                case MESH_PB_ADV_LINK_OPEN:
+                case MESH_PB_TRANSPORT_LINK_OPEN:
                     printf("Provisioner link opened");
                     break;
                 case MESH_PB_PROV_CAPABILITIES:

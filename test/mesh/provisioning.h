@@ -81,6 +81,10 @@ extern "C"
 #define MESH_INPUT_OOB_NUMBER       0x04
 #define MESH_INPUT_OOB_STRING       0x08
 
+typedef enum {
+    PB_TYPE_ADV = 0,
+    PB_TYPE_GATT
+} pb_type_t;
 
 typedef struct {
     uint8_t  network_key[16];

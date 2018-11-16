@@ -633,15 +633,15 @@ static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8
         case HCI_EVENT_PACKET:
             if (packet[0] != HCI_EVENT_MESH_META)  break;
             switch (packet[2]){
-                case MESH_PB_ADV_LINK_OPEN:
+                case MESH_PB_TRANSPORT_LINK_OPEN:
                     printf("Link opened, sending Invite\n");
                     provisioning_handle_link_opened(pb_adv_cid);
                     break;
-                case MESH_PB_ADV_PDU_SENT:
+                case MESH_PB_TRANSPORT_PDU_SENT:
                     printf("Outgoing packet acked\n");
                     prov_waiting_for_outgoing_complete = 0;
                     break;                    
-                case MESH_PB_ADV_LINK_CLOSED:
+                case MESH_PB_TRANSPORT_LINK_CLOSED:
                     printf("Link close, reset state\n");
                     provisioning_done();
                     break;

@@ -140,7 +140,7 @@ static void send_prov_pdu(const uint8_t * packet, uint16_t size){
 }
 
 static void pb_adv_emit_pdu_sent(uint8_t status){
-    uint8_t event[] = { HCI_EVENT_MESH_META, 2, MESH_PB_ADV_PDU_SENT, status};
+    uint8_t event[] = { HCI_EVENT_MESH_META, 2, MESH_PB_TRANSPORT_PDU_SENT, status};
     pb_adv_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
