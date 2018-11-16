@@ -75,6 +75,14 @@ static uint8_t beacon_key[16];
 static uint8_t network_id[8];
 static uint16_t primary_element_address;
 
+static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len){
+    printf("%-20s ", name);
+    printf_hexdump(data, len);
+}
+// static void mesh_print_x(const char * name, uint32_t value){
+//     printf("%20s: 0x%x", name, (int) value);
+// }
+
 static void mesh_provisioning_dump(const mesh_provisioning_data_t * data){
     printf("UnicastAddr:   0x%02x\n", data->unicast_address);
     printf("NID:           0x%02x\n", data->nid);
@@ -362,29 +370,25 @@ static void transport_segmented_setup_nonce(uint8_t * nonce, const mesh_transpor
 static void transport_unsegmented_setup_application_nonce(uint8_t * nonce, const mesh_network_pdu_t * network_pdu){
     nonce[0] = 0x01;
     transport_unsegmented_setup_nonce(nonce, network_pdu);
-    printf("AppNonce: ");
-    printf_hexdump(nonce, 13);
+    mesh_print_hex("AppNonce", nonce, 13);
 }
 
 static void transport_unsegmented_setup_device_nonce(uint8_t * nonce, const mesh_network_pdu_t * network_pdu){
     nonce[0] = 0x02;
     transport_unsegmented_setup_nonce(nonce, network_pdu);
-    printf("DeviceNonce: ");
-    printf_hexdump(nonce, 13);
+    mesh_print_hex("DeviceNonce", nonce, 13);
 }
 
 static void transport_segmented_setup_application_nonce(uint8_t * nonce, const mesh_transport_pdu_t * transport_pdu){
     nonce[0] = 0x01;
     transport_segmented_setup_nonce(nonce, transport_pdu);
-    printf("AppNonce: ");
-    printf_hexdump(nonce, 13);
+    mesh_print_hex("AppNonce", nonce, 13);
 }
 
 static void transport_segmented_setup_device_nonce(uint8_t * nonce, const mesh_transport_pdu_t * transport_pdu){
     nonce[0] = 0x02;
     transport_segmented_setup_nonce(nonce, transport_pdu);
-    printf("DeviceNonce: ");
-    printf_hexdump(nonce, 13);
+    mesh_print_hex("DeviceNonce", nonce, 13);
 }
 
 // Network PDU Getter
@@ -452,15 +456,13 @@ static void mesh_upper_transport_validate_unsegmented_message_ccm(void * arg){
     // store TransMIC
     uint8_t trans_mic[8];
     btstack_crypo_ccm_get_authentication_value(&ccm, trans_mic);
-    printf("TransMIC: "); 
-    printf_hexdump(trans_mic, trans_mic_len);
+    mesh_print_hex("TransMIC", trans_mic, trans_mic_len);
 
     uint8_t net_mic_len = ctl ? 8 : 4;
 
     uint8_t * upper_transport_pdu     = &network_pdu->data[10];
     uint8_t   upper_transport_pdu_len = network_pdu->len - 10 - net_mic_len;
-    printf("Decryted Transport network_pdu: ");
-    printf_hexdump(upper_transport_pdu, upper_transport_pdu_len - trans_mic_len);
+    mesh_print_hex("Decryted PDU", upper_transport_pdu, upper_transport_pdu_len - trans_mic_len);
 
     if (memcmp(trans_mic, &upper_transport_pdu[upper_transport_pdu_len - trans_mic_len], trans_mic_len) == 0){
         printf("TransMIC matches\n");
@@ -492,14 +494,12 @@ static void mesh_upper_transport_validate_segmented_message_ccm(void * arg){
     uint8_t * upper_transport_pdu     =  transport_pdu->data;
     uint8_t   upper_transport_pdu_len =  transport_pdu->len - transport_pdu->transmic_len;
  
-    printf("Decryted Transport network_pdu: ");
-    printf_hexdump(upper_transport_pdu, upper_transport_pdu_len);
+    mesh_print_hex("Decrypted PDU", upper_transport_pdu, upper_transport_pdu_len);
 
     // store TransMIC
     uint8_t trans_mic[8];
     btstack_crypo_ccm_get_authentication_value(&ccm, trans_mic);
-    printf("TransMIC: "); 
-    printf_hexdump(trans_mic, transport_pdu->transmic_len);
+    mesh_print_hex("TransMIC", trans_mic, transport_pdu->transmic_len);
 
     if (memcmp(trans_mic, &upper_transport_pdu[upper_transport_pdu_len], transport_pdu->transmic_len) == 0){
         printf("TransMIC matches\n");
@@ -550,8 +550,7 @@ static void mesh_upper_transport_validate_unsegmented_message(mesh_network_pdu_t
     }
 
     // store application / device key index
-    printf("AppOrDevKey: ");
-    printf_hexdump(message_key->key, 16);
+    mesh_print_hex("AppOrDevKey", message_key->key, 16);
     network_pdu->appkey_index = message_key->index; 
 
     // unsegmented message have TransMIC of 32 bit
@@ -573,8 +572,7 @@ static void mesh_upper_transport_validate_unsegmented_message(mesh_network_pdu_t
         upper_transport_pdu_len  -= 3;
     }
 
-    printf("EncAccessPayload: ");
-    printf_hexdump(upper_transport_pdu_data, upper_transport_pdu_len);
+    mesh_print_hex("EncAccessPayload", upper_transport_pdu_data, upper_transport_pdu_len);
 
     // decrypt ccm
     mesh_transport_crypto_active = 1;
@@ -606,12 +604,10 @@ static void mesh_upper_transport_validate_segmented_message(mesh_transport_pdu_t
     }
 
     // store application / device key index
-    printf("AppOrDevKey: ");
-    printf_hexdump(message_key->key, 16);
+    mesh_print_hex("AppOrDevKey", message_key->key, 16);
     transport_pdu->appkey_index = message_key->index; 
 
-    printf("EncAccessPayload: ");
-    printf_hexdump(upper_transport_pdu_data, upper_transport_pdu_len);
+    mesh_print_hex("EncAccessPayload", upper_transport_pdu_data, upper_transport_pdu_len);
 
     // decrypt ccm
     mesh_transport_crypto_active = 1;
@@ -633,8 +629,8 @@ static void mesh_lower_transport_process_message(mesh_network_pdu_t * network_pd
     // 
     uint8_t * lower_transport_pdu     = &network_pdu_in_validation->data[9];
     uint8_t   lower_transport_pdu_len = network_pdu_in_validation->len - 9 - net_mic_len;
-    printf("Lower Transport network pdu: ");
-    printf_hexdump(&network_pdu_in_validation->data[9], lower_transport_pdu_len);
+
+    mesh_print_hex("Lower Transport network pdu", &network_pdu_in_validation->data[9], lower_transport_pdu_len);
 
     uint8_t aid = lower_transport_pdu[0] & 0x3f;
     uint8_t afk = lower_transport_pdu[0] & 0x40;
@@ -658,8 +654,7 @@ static void mesh_upper_transport_process_message(mesh_transport_pdu_t * transpor
     // 
     uint8_t * upper_transport_pdu     =  transport_pdu->data;
     uint8_t   upper_transport_pdu_len =  transport_pdu->len - transport_pdu->transmic_len;
-    printf("Upper Transport pdu: ");
-    printf_hexdump(upper_transport_pdu, upper_transport_pdu_len);
+    mesh_print_hex("Upper Transport pdu", upper_transport_pdu, upper_transport_pdu_len);
 
     uint8_t aid = upper_transport_pdu[0] & 0x3f;
     uint8_t afk = upper_transport_pdu[0] & 0x40;
@@ -691,9 +686,9 @@ static void mesh_transport_send_ack(mesh_transport_pdu_t * transport_pdu){
 
     mesh_lower_transport_setup_segemnted_acknowledge_message(ack_msg, 0, seq & 0x1fff, transport_pdu->block_ack);
 
-    printf("mesh_transport_send_ack with netkey_index %x, CTL=1, ttl = %u, seq = %x, src = %x, dst = %x:", transport_pdu->netkey_index, mesh_transport_ttl(transport_pdu),
+    printf("mesh_transport_send_ack with netkey_index %x, CTL=1, ttl = %u, seq = %x, src = %x, dst = %x\n", transport_pdu->netkey_index, mesh_transport_ttl(transport_pdu),
         mesh_transport_seq(transport_pdu), primary_element_address, mesh_transport_src(transport_pdu));
-    printf_hexdump(ack_msg, sizeof(ack_msg));
+
     mesh_network_send(transport_pdu->netkey_index, 1, mesh_transport_ttl(transport_pdu),
                       mesh_transport_seq(transport_pdu), primary_element_address, mesh_transport_src(transport_pdu), 
                       ack_msg, sizeof(ack_msg));
@@ -783,8 +778,7 @@ static void mesh_lower_transport_process_segment( mesh_transport_pdu_t * transpo
     uint8_t * segment_data = &lower_transport_pdu[4];
 
     printf("mesh_lower_transport_process_segment: seg zero %04x, seg_o %02x, seg_n %02x, transmic len: %u\n", seg_zero, seg_o, seg_n, transport_pdu->transmic_len * 8);
-    printf("segment: ");
-    printf_hexdump(segment_data, segment_len);
+    mesh_print_hex("Segment", segment_data, segment_len);
 
     // store segment
     memcpy(&transport_pdu->data[seg_o * 12], segment_data, 12);
@@ -801,8 +795,7 @@ static void mesh_lower_transport_process_segment( mesh_transport_pdu_t * transpo
         if ( (transport_pdu->block_ack & (1<<i)) == 0) return;
     }
 
-    printf("Assembled payload: ");
-    printf_hexdump(transport_pdu->data, transport_pdu->len);
+    mesh_print_hex("Assembled payload", transport_pdu->data, transport_pdu->len);
 
     // mark as done 
     mesh_network_segmented_message_complete(test_transport_pdu);
