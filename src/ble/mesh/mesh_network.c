@@ -145,7 +145,7 @@ static void mesh_network_cache_add(uint32_t hash){
 
 // network key list
 
-static const mesh_network_key_t * mesh_network_key_list_get(uint16_t netkey_index){
+const mesh_network_key_t * mesh_network_key_list_get(uint16_t netkey_index){
     if (netkey_index) return NULL;
     return &mesh_network_primary_key;
 }

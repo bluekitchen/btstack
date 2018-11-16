@@ -144,6 +144,13 @@ void mesh_network_set_primary_element_address(uint16_t addr);
 void mesh_network_key_list_add_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data);
 
 /**
+ * @brief Get network_key for netkey_index
+ * @param netkey_index
+ * @returns mesh_network_key_t or NULL
+ */
+const mesh_network_key_t * mesh_network_key_list_get(uint16_t netkey_index);
+
+/**
  * @brief Send TransportPDU after encryption
  * @param nid
  * @param ctl

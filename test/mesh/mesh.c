@@ -887,25 +887,13 @@ static void mesh_transport_received_mesage(mesh_network_pdu_t * network_pdu){
 
 // UPPER TRANSPORT
 
-static uint32_t mesh_access_transport_seq;
-static uint8_t  mesh_access_transport_pdu_data[20];
-static uint16_t mesh_access_transport_pdu_len;
-static uint16_t mesh_access_transport_src;
-static uint16_t mesh_access_transport_dest;
-static uint8_t  mesh_access_transport_ttl;
-static uint16_t mesh_access_transport_netkey_index;
-
 static void mesh_access_send_unsegmented_ccm(void * arg){
-    UNUSED(arg);
+    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
     // store TransMIC
-    btstack_crypo_ccm_get_authentication_value(&ccm, &mesh_access_transport_pdu_data[mesh_access_transport_pdu_len]);
-    mesh_access_transport_pdu_len += 4;
-    // dump
-    printf("TX-TransportPDU: ");
-    printf_hexdump(mesh_access_transport_pdu_data, mesh_access_transport_pdu_len);
+    btstack_crypo_ccm_get_authentication_value(&ccm, &network_pdu->data[network_pdu->len]);
+    network_pdu->len += 4;
     // send network pdu
-    mesh_network_send(mesh_access_transport_netkey_index, 0, mesh_access_transport_ttl, mesh_access_transport_seq,
-        mesh_access_transport_src, mesh_access_transport_dest, mesh_access_transport_pdu_data, mesh_access_transport_pdu_len);
+    mesh_network_send_pdu(network_pdu);
 }
 
 static uint8_t mesh_access_send(uint16_t netkey_index, uint16_t appkey_index, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest,
@@ -913,6 +901,7 @@ static uint8_t mesh_access_send(uint16_t netkey_index, uint16_t appkey_index, ui
     printf("mesh_access_send\n");
     if (access_pdu_len <= 15){
         // unsegmented access message
+
         // TODO: support device key, via special appkey_index
         uint8_t akf = 1;
         const mesh_application_key_t * appkey = mesh_application_key_list_get(appkey_index);
@@ -920,21 +909,29 @@ static uint8_t mesh_access_send(uint16_t netkey_index, uint16_t appkey_index, ui
             printf("appkey_index %x unknown\n", appkey_index);
             return 1;
         }
-        mesh_access_transport_pdu_data[0] = (akf << 6) | appkey->aid;
-        memcpy(&mesh_access_transport_pdu_data[1], access_pdu_data, access_pdu_len);
-        mesh_access_transport_pdu_len = access_pdu_len + 1;
 
-        // TODO: queue up, etc
-        mesh_access_transport_seq = seq;
-        mesh_access_transport_ttl = ttl;
-        mesh_access_transport_src = src;
-        mesh_access_transport_dest = dest;
-        mesh_access_transport_netkey_index = netkey_index;
+        // lookup network by netkey_index
+        const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
+        if (!network_key) return 0;
 
-        // decrypt ccm
+        // allocate network_pdu
+        mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
+        if (!network_pdu) return 0;
+
+        // setup access pdu
+        uint8_t transport_pdu_data[16];
+        transport_pdu_data[0] = (akf << 6) | appkey->aid;
+        memcpy(&transport_pdu_data[1], transport_pdu_data, access_pdu_len);
+
+        // setup network_pdu
+        mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, 0, ttl, seq, src, dest, transport_pdu_data, access_pdu_len+1);
+
+        // encrypt ccm
         mesh_transport_crypto_active = 1;
-        btstack_crypo_ccm_init(&ccm, appkey->key, application_nonce, mesh_access_transport_pdu_len, 4);
-        btstack_crypto_ccm_decrypt_block(&ccm, mesh_access_transport_pdu_len, mesh_access_transport_pdu_data, mesh_access_transport_pdu_data, &mesh_access_send_unsegmented_ccm, NULL);
+        const int trans_mic_len = 4;
+        transport_unsegmented_setup_application_nonce(application_nonce, network_pdu);
+        btstack_crypo_ccm_init(&ccm, appkey->key, application_nonce, access_pdu_len+1, trans_mic_len);
+        btstack_crypto_ccm_decrypt_block(&ccm, access_pdu_len+1, &network_pdu->data[10], &network_pdu->data[10], &mesh_access_send_unsegmented_ccm, network_pdu);
     } else {
         // segmented acccess message
         printf("mesh_access_send not implemented for segemnted messages, len %u\n", access_pdu_len);
