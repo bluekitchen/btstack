@@ -297,8 +297,10 @@ static void mesh_network_send_0(mesh_network_pdu_t * network_pdu){
 
     // get network nonce
     mesh_network_create_nonce(network_nonce, network_pdu, global_iv_index); 
-    printf("TX-NetworkNonce: ");
+    printf("TX-NetworkNonce:  ");
     printf_hexdump(network_nonce, 13);
+    printf("TX-EncryptionKey: ");
+    printf_hexdump(current_network_key->encryption_key, 16);
 
     // start ccm
     uint8_t cypher_len  = network_pdu->len - 7;
@@ -575,8 +577,8 @@ void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len){
 
 uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len){
 
-    // "The output filter of the interface connected to advertising or GATT bearers shall drop all messages with TTL value set to 1."
-    if (ttl <= 1) return 0;
+    // "3.4.5.2: The output filter of the interface connected to advertising or GATT bearers shall drop all messages with TTL value set to 1."
+    // if (ttl <= 1) return 0;
 
     // TODO: check transport_pdu_len depending on ctl
 
