@@ -60,8 +60,11 @@ void pb_adv_register_packet_handler(btstack_packet_handler_t packet_handler);
 
 /** 
  * Send Provisioning PDU
+ * @param pb_adv_cid
+ * @param pdu
+ * @param pb_adv_cid
  */
-void pb_adv_send_pdu(const uint8_t * pdu, uint16_t size);
+void pb_adv_send_pdu(uint16_t pb_adv_cid, const uint8_t * pdu, uint16_t pdu_size);
  
 /**
  * Close Link

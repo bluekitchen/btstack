@@ -51,8 +51,10 @@ extern "C"
 {
 #endif
 
-#define PROVISIONING_PROTOCOL_TIMEOUT_MS 60000
-#define MESH_PROV_MAX_PROXY_PDU             66 
+#define PROVISIONING_PROTOCOL_TIMEOUT_MS  60000
+#define MESH_PROV_MAX_PROXY_PDU              66 
+#define MESH_PB_TRANSPORT_INVALID_CID    0xFFFF
+
 // Provisioning Bearer Control
 
 #define MESH_PROV_INVITE            0x00

@@ -64,6 +64,8 @@ static int counter = 'a';
 
 static uint8_t mesh_flags;
 
+static uint16_t pb_transport_cid = MESH_PB_TRANSPORT_INVALID_CID;
+
 // pin entry
 static int ui_chars_for_pin; 
 static uint8_t ui_pin[17];
@@ -159,6 +161,10 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
             switch(packet[2]){
                 case MESH_PB_ADV_LINK_OPEN:
                     printf("Provisioner link opened");
+                    pb_transport_cid = mesh_pb_adv_link_open_event_get_pb_adv_cid(packet);
+                    break;
+                case MESH_PB_ADV_LINK_CLOSED:
+                    pb_transport_cid = MESH_PB_TRANSPORT_INVALID_CID;
                     break;
                 case MESH_PB_PROV_ATTENTION_TIMER:
                     printf("Attention Timer: %u\n", packet[3]);
@@ -1108,17 +1114,17 @@ static void stdin_process(char cmd){
             break;
         case '4':
             printf("Send invite with attention timer = 0\n");
-            pb_adv_send_pdu(adv_prov_invite_pdu, sizeof(adv_prov_invite_pdu));
+            pb_adv_send_pdu(pb_transport_cid, adv_prov_invite_pdu, sizeof(adv_prov_invite_pdu));
             break;
         case '5':
             printf("Send Start\n");
-            pb_adv_send_pdu(adv_prov_start_pdu, sizeof(adv_prov_start_pdu));
+            pb_adv_send_pdu(pb_transport_cid, adv_prov_start_pdu, sizeof(adv_prov_start_pdu));
             break;
         case '6':
             printf("Send Public key\n");
             adv_prov_public_key_pdu[0] = 0x03;
             memset(&adv_prov_public_key_pdu[1], 0x5a, 64);
-            pb_adv_send_pdu(adv_prov_public_key_pdu, sizeof(adv_prov_public_key_pdu));
+            pb_adv_send_pdu(pb_transport_cid, adv_prov_public_key_pdu, sizeof(adv_prov_public_key_pdu));
             break;
         case 'p':
             printf("+ Public Key OOB Enabled\n");
@@ -1183,7 +1189,7 @@ int btstack_main(void)
     // Network layer
     mesh_network_init();
     mesh_network_set_higher_layer_handler(&mesh_transport_received_mesage);
-
+    
     // PTS app key
     uint8_t application_key[16];
     const char * application_key_string = "3216D1509884B533248541792B877F98";

@@ -559,7 +559,8 @@ void pb_adv_register_packet_handler(btstack_packet_handler_t packet_handler){
     pb_adv_packet_handler = packet_handler;
 }
 
-void pb_adv_send_pdu(const uint8_t * pdu, uint16_t size){
+void pb_adv_send_pdu(uint16_t pb_adv_cid, const uint8_t * pdu, uint16_t size){
+    UNUSED(pb_adv_cid);
     printf("PB-ADV: Send packet ");
     printf_hexdump(pdu, size);
     pb_adv_msg_out_buffer = pdu;

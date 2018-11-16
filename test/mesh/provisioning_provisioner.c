@@ -180,7 +180,7 @@ static void provisioning_timer_stop(void){
 static void provisioning_send_invite(uint16_t pb_adv_cid){
     prov_buffer_out[0] = MESH_PROV_INVITE;
     prov_buffer_out[1] = prov_attention_timer;
-    pb_adv_send_pdu(prov_buffer_out, 2);
+    pb_adv_send_pdu(pb_adv_cid, prov_buffer_out, 2);
     // collect confirmation_inputs
     memcpy(&prov_confirmation_inputs[0], &prov_buffer_out[1], 1);
 }
@@ -192,7 +192,7 @@ static void provisioning_send_start(uint16_t pb_adv_cid){
     prov_buffer_out[3] = prov_start_authentication_method;
     prov_buffer_out[4] = prov_start_authentication_action;
     prov_buffer_out[5] = prov_start_authentication_size;
-    pb_adv_send_pdu(prov_buffer_out, 6);
+    pb_adv_send_pdu(pb_adv_cid, prov_buffer_out, 6);
     // store for confirmation inputs: len 5
     memcpy(&prov_confirmation_inputs[12], &prov_buffer_out[1], 5);
 }
@@ -200,13 +200,13 @@ static void provisioning_send_start(uint16_t pb_adv_cid){
 static void provisioning_send_provisioning_error(void){
     prov_buffer_out[0] = MESH_PROV_FAILED;
     prov_buffer_out[1] = prov_error_code;
-    pb_adv_send_pdu(prov_buffer_out, 2);
+    pb_adv_send_pdu(pb_adv_cid, prov_buffer_out, 2);
 }
 
 static void provisioning_send_public_key(void){
     prov_buffer_out[0] = MESH_PROV_PUB_KEY;
     memcpy(&prov_buffer_out[1], prov_ec_q, 64);
-    pb_adv_send_pdu(prov_buffer_out, 65);
+    pb_adv_send_pdu(pb_adv_cid, prov_buffer_out, 65);
     // store for confirmation inputs: len 64
     memcpy(&prov_confirmation_inputs[17], &prov_buffer_out[1], 64);
 }
@@ -214,20 +214,20 @@ static void provisioning_send_public_key(void){
 static void provisioning_send_confirm(void){
     prov_buffer_out[0] = MESH_PROV_CONFIRM;
     memcpy(&prov_buffer_out[1], confirmation_provisioner, 16);
-    pb_adv_send_pdu(prov_buffer_out, 17);
+    pb_adv_send_pdu(pb_adv_cid, prov_buffer_out, 17);
 }
 
 static void provisioning_send_random(void){
     prov_buffer_out[0] = MESH_PROV_RANDOM;
     memcpy(&prov_buffer_out[1], random_provisioner, 16);
-    pb_adv_send_pdu(prov_buffer_out, 17);
+    pb_adv_send_pdu(pb_adv_cid, prov_buffer_out, 17);
 }
 
 static void provisioning_send_data(void){
     prov_buffer_out[0] = MESH_PROV_DATA;
     memcpy(&prov_buffer_out[1], enc_provisioning_data, 25);
     memcpy(&prov_buffer_out[26], provisioning_data_mic, 8);
-    pb_adv_send_pdu(prov_buffer_out, 34);
+    pb_adv_send_pdu(pb_adv_cid, prov_buffer_out, 34);
 }
 
 typedef enum {
@@ -710,6 +710,7 @@ static void prov_key_generated(void * arg){
 }
 
 void provisioning_provisioner_init(void){
+    pb_adv_cid = MESH_PB_TRANSPORT_INVALID_CID;
     pb_adv_init(NULL);
     pb_adv_register_packet_handler(&provisioning_handle_pdu);
 }
@@ -722,7 +723,7 @@ uint16_t provisioning_provisioner_start_provisioning(const uint8_t * device_uuid
     // generate new public key
     btstack_crypto_ecc_p256_generate_key(&prov_ecc_p256_request, prov_ec_q, &prov_key_generated, NULL);
 
-    if (pb_adv_cid == 0) {
+    if (pb_adv_cid == MESH_PB_TRANSPORT_INVALID_CID) {
         pb_adv_cid = pb_adv_create_link(device_uuid);
     }
     return pb_adv_cid;

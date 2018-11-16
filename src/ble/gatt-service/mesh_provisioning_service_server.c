@@ -276,7 +276,7 @@ static uint16_t buffer_offset;
 static mesh_msg_sar_field_t buffer_state;
 static uint16_t pb_gatt_mtu;
 
-void pb_adv_send_pdu(const uint8_t * pdu, uint16_t size){
+void pb_adv_send_pdu(uint16_t pb_adv_cid, const uint8_t * pdu, uint16_t size){
     if (!pdu || size <= 0) return; 
     // store pdu, request to send
     printf_hexdump(pdu, size);
