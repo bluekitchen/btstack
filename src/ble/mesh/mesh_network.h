@@ -145,7 +145,7 @@ void mesh_network_key_list_add_from_provisioning_data(const mesh_provisioning_da
 
 /**
  * @brief Send TransportPDU after encryption
- * @param netkey_index
+ * @param nid
  * @param ctl
  * @param ttl
  * @param seq
@@ -155,6 +155,25 @@ void mesh_network_key_list_add_from_provisioning_data(const mesh_provisioning_da
  */
 uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest,
                           const uint8_t * transport_pdu_data, uint8_t transport_pdu_len);
+
+/**
+ * @brief Send network_pdu after encryption
+ * @param network_pdu
+ */
+void mesh_network_send_pdu(mesh_network_pdu_t * network_pdu);
+
+/*
+ * @brief Setup network pdu header
+ * @param netkey_index
+ * @param nid
+ * @param ctl
+ * @param ttl
+ * @param seq
+ * @param dest
+ * @param transport_pdu_data
+ * @param transport_pdu_len
+ */
+void mesh_network_setup_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint8_t nid, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len);
 
 /**
  * @brief Validate network addresses

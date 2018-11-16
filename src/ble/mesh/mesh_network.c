@@ -573,6 +573,44 @@ void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len){
     // add to list and go
     btstack_linked_list_add_tail(&network_pdus_received, (btstack_linked_item_t *) network_pdu);
     mesh_network_run();
+
+}
+
+void mesh_network_send_pdu(mesh_network_pdu_t * network_pdu){
+    printf("NetworkPDU(unencrypted): ");
+    printf_hexdump(network_pdu->data, network_pdu->len);
+
+    // queue up
+    btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);
+
+    // go
+    mesh_network_run();
+}
+
+/*
+ * @brief Setup network pdu header
+ * @param netkey_index
+ * @param ctl
+ * @param ttl
+ * @param seq
+ * @param dest
+ */
+void mesh_network_setup_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint8_t nid, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len){
+    memset(network_pdu, 0, sizeof(mesh_network_pdu_t));
+    // set netkey_index
+    network_pdu->netkey_index = netkey_index;
+    // setup header
+    network_pdu->data[network_pdu->len++] = (global_iv_index << 7) |  nid;
+    uint8_t ctl_ttl = (ctl << 7) | (ttl & 0x7f);
+    network_pdu->data[network_pdu->len++] = ctl_ttl;
+    big_endian_store_24(network_pdu->data, 2, seq);
+    network_pdu->len += 3;
+    big_endian_store_16(network_pdu->data, network_pdu->len, src);
+    network_pdu->len += 2;
+    big_endian_store_16(network_pdu->data, network_pdu->len, dest);
+    network_pdu->len += 2;
+    memcpy(&network_pdu->data[network_pdu->len], transport_pdu_data, transport_pdu_len);
+    network_pdu->len += transport_pdu_len;
 }
 
 uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len){
@@ -589,35 +627,12 @@ uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl, uint3
     // allocate network_pdu
     mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
     if (!network_pdu) return 0;
-    memset(network_pdu, 0, sizeof(mesh_network_pdu_t));
 
-    // set netkey_index
-    network_pdu->netkey_index = netkey_index;
+    // setup network_pdu
+    mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, ctl, ttl, seq, src, dest, transport_pdu_data, transport_pdu_len);
 
-    // setup header
-    uint8_t nid = network_key->nid;
-    network_pdu->data[network_pdu->len++] = (global_iv_index << 7) |  nid;
-    uint8_t ctl_ttl = (ctl << 7) | (ttl & 0x7f);
-    network_pdu->data[network_pdu->len++] = ctl_ttl;
-    big_endian_store_24(network_pdu->data, 2, seq);
-    network_pdu->len += 3;
-    big_endian_store_16(network_pdu->data, network_pdu->len, src);
-    network_pdu->len += 2;
-    big_endian_store_16(network_pdu->data, network_pdu->len, dest);
-    network_pdu->len += 2;
-    memcpy(&network_pdu->data[network_pdu->len], transport_pdu_data, transport_pdu_len);
-    network_pdu->len += transport_pdu_len;
-
-
-    printf("NetworkPDU(unencrypted): ");
-    printf_hexdump(network_pdu->data, network_pdu->len);
-
-    // queue up
-    btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);
-
-    // go
-    mesh_network_run();
-
+    // send network_pdu
+    mesh_network_send_pdu(network_pdu);
     return 0;
 }
 
