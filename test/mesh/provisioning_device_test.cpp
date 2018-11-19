@@ -59,7 +59,7 @@ static void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
     }
 }
 
-static void dump_data(uint8_t * buffer, uint16_t size){
+void dump_data(uint8_t * buffer, uint16_t size){
     static int data_counter = 1;
     char var_name[80];
     sprintf(var_name, "test_data_%02u", data_counter);
@@ -72,7 +72,7 @@ static void dump_data(uint8_t * buffer, uint16_t size){
     data_counter++;
 }
 
-static int parse_hex(uint8_t * buffer, const char * hex_string){
+int parse_hex(uint8_t * buffer, const char * hex_string){
     int len = 0;
     while (*hex_string){
         if (*hex_string == ' '){
