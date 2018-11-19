@@ -225,33 +225,19 @@ void mesh_provisioning_service_server_register_packet_handler(btstack_packet_han
 }
 
 /************** PB GATT Mesh Provisioning ********************/
-typedef enum {
-    MESH_MSG_SAR_FIELD_COMPLETE_MSG = 0,
-    MESH_MSG_SAR_FIELD_FIRST_SEGMENT,
-    MESH_MSG_SAR_FIELD_CONTINUE,
-    MESH_MSG_SAR_FIELD_LAST_SEGMENT
-} mesh_msg_sar_field_t; // Message segmentation and reassembly information
-
-typedef enum {
-    MESH_MSG_TYPE_NETWORK_PDU = 0,
-    MESH_MSG_TYPE_BEACON,
-    MESH_MSG_TYPE_PROXY_CONFIGURATION,
-    MESH_MSG_TYPE_PROVISIONING_PDU
-} mesh_msg_type_t;
-
 static const uint8_t * pb_gatt_own_device_uuid;
 static const uint8_t * proxy_pdu;
 static uint16_t proxy_pdu_size;
 static uint16_t con_handle;
-static uint8_t  sar_buffer[MESH_PROV_MAX_PROXY_PDU];
-static uint16_t sar_offset;
+static uint8_t  reassembly_buffer[MESH_PROV_MAX_PROXY_PDU];
+static uint16_t reassembly_offset;
 
 /** 
  * Send Provisioning PDU
  */
-static uint8_t  buffer[100];
-static uint16_t buffer_offset;
-static mesh_msg_sar_field_t buffer_state;
+static uint8_t  segmentation_buffer[MESH_PROV_MAX_PROXY_PDU];
+static uint16_t segmentation_offset;
+static mesh_msg_sar_field_t segmentation_state;
 static uint16_t pb_gatt_mtu;
 
 
@@ -283,8 +269,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             
             pdu_segment_len = size - pos;
 
-            if (sizeof(sar_buffer) - sar_offset < pdu_segment_len) {
-                printf("sar buffer too small left %d, new to store %d\n", MESH_PROV_MAX_PROXY_PDU - sar_offset, pdu_segment_len);
+            if (sizeof(reassembly_buffer) - reassembly_offset < pdu_segment_len) {
+                printf("sar buffer too small left %d, new to store %d\n", MESH_PROV_MAX_PROXY_PDU - reassembly_offset, pdu_segment_len);
                 break;
             }
 
@@ -296,20 +282,20 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             
             switch (msg_sar_field){
                 case MESH_MSG_SAR_FIELD_FIRST_SEGMENT:
-                    memset(sar_buffer, 0, sizeof(sar_buffer));
-                    memcpy(sar_buffer, packet+pos, pdu_segment_len);
-                    sar_offset = pdu_segment_len;
+                    memset(reassembly_buffer, 0, sizeof(reassembly_buffer));
+                    memcpy(reassembly_buffer, packet+pos, pdu_segment_len);
+                    reassembly_offset = pdu_segment_len;
                     return;
                 case MESH_MSG_SAR_FIELD_CONTINUE:
-                    memcpy(sar_buffer + sar_offset, packet+pos, pdu_segment_len);
-                    sar_offset += pdu_segment_len;
+                    memcpy(reassembly_buffer + reassembly_offset, packet+pos, pdu_segment_len);
+                    reassembly_offset += pdu_segment_len;
                     return;
                 case MESH_MSG_SAR_FIELD_LAST_SEGMENT:
-                    memcpy(sar_buffer + sar_offset, packet+pos, pdu_segment_len);
-                    sar_offset += pdu_segment_len;
+                    memcpy(reassembly_buffer + reassembly_offset, packet+pos, pdu_segment_len);
+                    reassembly_offset += pdu_segment_len;
                     // send to provisioning device
-                    pb_gatt_packet_handler(PROVISIONING_DATA_PACKET, 0, sar_buffer, sar_offset); 
-                    sar_offset = 0;
+                    pb_gatt_packet_handler(PROVISIONING_DATA_PACKET, 0, reassembly_buffer, reassembly_offset); 
+                    reassembly_offset = 0;
                     break; 
                 case MESH_MSG_SAR_FIELD_COMPLETE_MSG:
                     // send to provisioning device
@@ -332,24 +318,24 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             con_handle = little_endian_read_16(packet, 3); 
                             if (con_handle == HCI_CON_HANDLE_INVALID) return;
 
-                            buffer[0] = (buffer_state << 6) | MESH_MSG_TYPE_PROVISIONING_PDU;
-                            pdu_segment_len = btstack_min(proxy_pdu_size - buffer_offset, pb_gatt_mtu - 1);
-                            memcpy(&buffer[1], &proxy_pdu[buffer_offset], pdu_segment_len);
-                            buffer_offset += pdu_segment_len;
+                            segmentation_buffer[0] = (segmentation_state << 6) | MESH_MSG_TYPE_PROVISIONING_PDU;
+                            pdu_segment_len = btstack_min(proxy_pdu_size - segmentation_offset, pb_gatt_mtu - 1);
+                            memcpy(&segmentation_buffer[1], &proxy_pdu[segmentation_offset], pdu_segment_len);
+                            segmentation_offset += pdu_segment_len;
 
-                            mesh_provisioning_service_server_send_proxy_pdu(con_handle, buffer, pdu_segment_len + 1);
+                            mesh_provisioning_service_server_send_proxy_pdu(con_handle, segmentation_buffer, pdu_segment_len + 1);
                             
-                            switch (buffer_state){
+                            switch (segmentation_state){
                                 case MESH_MSG_SAR_FIELD_COMPLETE_MSG:
                                 case MESH_MSG_SAR_FIELD_LAST_SEGMENT:
                                     pb_gatt_emit_pdu_sent(0);
                                     break;
                                 case MESH_MSG_SAR_FIELD_CONTINUE:
                                 case MESH_MSG_SAR_FIELD_FIRST_SEGMENT:
-                                    if ((proxy_pdu_size - buffer_offset) > (pb_gatt_mtu - 1)){
-                                        buffer_state = MESH_MSG_SAR_FIELD_CONTINUE;
+                                    if ((proxy_pdu_size - segmentation_offset) > (pb_gatt_mtu - 1)){
+                                        segmentation_state = MESH_MSG_SAR_FIELD_CONTINUE;
                                     } else {
-                                        buffer_state = MESH_MSG_SAR_FIELD_LAST_SEGMENT;
+                                        segmentation_state = MESH_MSG_SAR_FIELD_LAST_SEGMENT;
                                     }
                                     mesh_provisioning_service_server_request_can_send_now(con_handle);
                                     break;
@@ -402,15 +388,15 @@ void pb_gatt_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t size){
     printf_hexdump(pdu, size);
     proxy_pdu = pdu;
     proxy_pdu_size = size;
-    buffer_offset = 0;
+    segmentation_offset = 0;
 
     printf("pb_gatt_send_pdu received 0x%02x, used 0x%02x\n", con_handle, get_con_handle());
 
     // check if segmentation is necessary
     if (proxy_pdu_size > (pb_gatt_mtu - 1)){
-        buffer_state = MESH_MSG_SAR_FIELD_FIRST_SEGMENT;
+        segmentation_state = MESH_MSG_SAR_FIELD_FIRST_SEGMENT;
     } else {
-        buffer_state = MESH_MSG_SAR_FIELD_COMPLETE_MSG;
+        segmentation_state = MESH_MSG_SAR_FIELD_COMPLETE_MSG;
     }
     mesh_provisioning_service_server_request_can_send_now(get_con_handle());
 }

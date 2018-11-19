@@ -102,9 +102,21 @@ typedef struct {
     uint8_t  privacy_key[16];
     // k3
     uint8_t  network_id[8];
-
 } mesh_provisioning_data_t;
 
+typedef enum {
+    MESH_MSG_SAR_FIELD_COMPLETE_MSG = 0,
+    MESH_MSG_SAR_FIELD_FIRST_SEGMENT,
+    MESH_MSG_SAR_FIELD_CONTINUE,
+    MESH_MSG_SAR_FIELD_LAST_SEGMENT
+} mesh_msg_sar_field_t; // Message segmentation and reassembly information
+
+typedef enum {
+    MESH_MSG_TYPE_NETWORK_PDU = 0,
+    MESH_MSG_TYPE_BEACON,
+    MESH_MSG_TYPE_PROXY_CONFIGURATION,
+    MESH_MSG_TYPE_PROVISIONING_PDU
+} mesh_msg_type_t;
 
 #ifdef __cplusplus
 } /* end of extern "C" */
