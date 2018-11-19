@@ -42,13 +42,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "ble/mesh/pb_adv.h"
 #include "ble/gatt-service/mesh_provisioning_service_server.h"
 #include "mesh_provisioning_device.h"
 #include "btstack_config.h"
 #include "btstack.h"
 #include "provisioning.h"
 #include "provisioning_device.h"
-#include "ble/mesh/pb_adv.h"
 
 // https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.characteristic.gap.appearance.xml
 // cycling / cycling power sensor
@@ -100,7 +100,7 @@ static void stdin_process(char cmd){
     }
 }
 
-static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
     bd_addr_t null_addr;

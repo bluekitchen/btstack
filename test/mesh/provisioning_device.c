@@ -41,7 +41,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "ble/mesh/pb_adv.h"
+#include "ble/gatt-service/mesh_provisioning_service_server.h"
+
 #include "ble/mesh/mesh_crypto.h"
 #include "classic/rfcomm.h" // for crc8
 #include "btstack.h"
@@ -161,6 +164,28 @@ static uint8_t network_id[8];
 static uint8_t beacon_key[16];
 static pb_type_t pb_type;
 
+static void pb_send_pdu(uint16_t transport_cid, const uint8_t * buffer, uint16_t buffer_size){
+    switch (pb_type){
+        case PB_TYPE_ADV:
+            pb_adv_send_pdu(transport_cid, buffer, buffer_size);    
+            break;
+        case PB_TYPE_GATT:
+            pb_gatt_send_pdu(transport_cid, buffer, buffer_size);    
+            break;
+    }
+}
+
+static void pb_close_link(uint16_t transport_cid, uint8_t reason){
+    switch (pb_type){
+        case PB_TYPE_ADV:
+            pb_adv_close_link(transport_cid, reason);    
+            break;
+        case PB_TYPE_GATT:
+            pb_gatt_close_link(transport_cid, reason);    
+            break;
+    }
+}
+
 static void provisioning_emit_event(uint16_t pb_adv_cid, uint8_t mesh_subevent){
     if (!prov_packet_handler) return;
     uint8_t event[5] = { HCI_EVENT_MESH_META, 3, mesh_subevent};
@@ -186,8 +211,7 @@ static void provisioning_emit_attention_timer_event(uint16_t pb_adv_cid, uint8_t
 static void provisiong_timer_handler(btstack_timer_source_t * ts){
     UNUSED(ts);
     printf("Provisioning Protocol Timeout -> Close Link!\n");
-    // TODO: use actual pb_adv_cid
-    pb_adv_close_link(1, 1);
+    pb_close_link(1, 1);
 }
 
 // The provisioning protocol shall have a minimum timeout of 60 seconds that is reset
@@ -220,18 +244,6 @@ static void provisioning_attention_timer_set(void){
 }
 
 // Outgoing Provisioning PDUs
-
-static void pb_send_pdu(uint16_t transport_cid, const uint8_t * buffer, uint16_t buffer_size){
-    switch (pb_type){
-        case PB_TYPE_ADV:
-            pb_adv_send_pdu(transport_cid, buffer, buffer_size);    
-            break;
-        case PB_TYPE_GATT:
-            pb_adv_send_pdu(transport_cid, buffer, buffer_size);    
-            break;
-    }
-}
-
 static void provisioning_send_provisioning_error(void){
     // setup response 
     prov_buffer_out[0] = MESH_PROV_FAILED;
@@ -855,8 +867,13 @@ static void prov_key_generated(void * arg){
 }
 
 void provisioning_device_init(const uint8_t * device_uuid){
+    // setup PB ADV
     pb_adv_init(device_uuid);
     pb_adv_register_packet_handler(&provisioning_handle_pdu);
+    // setup PB GATT
+    pb_gatt_init(device_uuid);
+    pb_gatt_register_packet_handler(&provisioning_handle_pdu);
+
     pb_transport_cid = MESH_PB_TRANSPORT_INVALID_CID;
     
     // init provisioning state

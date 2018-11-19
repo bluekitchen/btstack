@@ -40,6 +40,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ble/mesh/pb_adv.h"
+#include "ble/gatt-service/mesh_provisioning_service_server.h"
 #include "provisioning_device.h"
 #include "btstack.h"
 
@@ -102,12 +103,17 @@ static uint16_t  pdu_size;
  * Initialize Provisioning Bearer using Advertisement Bearer
  * @param DeviceUUID
  */
-void pb_adv_init(const uint8_t * device_uuid){
-    printf("pb_adv_init\n");
-}
+void pb_adv_init(const uint8_t * device_uuid){}
+void pb_gatt_init(const uint8_t * device_uuid){}
 
-void pb_adv_close_link(uint16_t pb_adv_cid, uint8_t reason){
-}
+/**
+ * Close Link
+ * @param con_handle
+ * @param reason 0 = success, 1 = timeout, 2 = fail
+ */
+void pb_gatt_close_link(hci_con_handle_t con_handle, uint8_t reason){}
+void pb_adv_close_link(hci_con_handle_t con_handle, uint8_t reason){}
+
 
 /**
  * Register listener for Provisioning PDUs and MESH_PBV_ADV_SEND_COMPLETE
@@ -116,6 +122,9 @@ void pb_adv_register_packet_handler(btstack_packet_handler_t packet_handler){
     pb_adv_packet_handler = packet_handler;
 }
 
+void pb_gatt_register_packet_handler(btstack_packet_handler_t packet_handler){
+    UNUSED(packet_handler);
+}
 /** 
  * Send Provisioning PDU
  */
@@ -126,6 +135,7 @@ void pb_adv_send_pdu(uint16_t pb_transport_cid, const uint8_t * pdu, uint16_t si
     // dump_data((uint8_t*)pdu,size);
     // printf_hexdump(pdu, size);
 }
+void pb_gatt_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t pdu_size){}
  
 static void perform_crypto_operations(void){
     int more = 1;
@@ -171,6 +181,9 @@ static int btstack_parse_hex(const char * string, uint16_t len, uint8_t * buffer
     }
     return 1;
 }
+
+// void pb_gatt_close_link(hci_con_handle_t con_handle, uint8_t reason){
+// }
 
 static uint8_t      prov_static_oob_data[16];
 static const char * prov_static_oob_string = "00000000000000000102030405060708";

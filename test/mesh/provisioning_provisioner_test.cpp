@@ -108,15 +108,17 @@ static void pb_adv_emit_pdu_sent(uint8_t status){
     pb_adv_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void pb_adv_init(const uint8_t * device_uuid){
-    printf("pb_adv_init\n");
-}
+void pb_adv_init(const uint8_t * device_uuid){}
+void pb_gatt_init(const uint8_t * device_uuid){}
 
-void pb_adv_close_link(uint16_t pb_adv_cid, uint8_t reason){
-}
+void pb_adv_close_link(uint16_t pb_adv_cid, uint8_t reason){}
 
 void pb_adv_register_packet_handler(btstack_packet_handler_t packet_handler){
     pb_adv_packet_handler = packet_handler;
+}
+
+void pb_gatt_register_packet_handler(btstack_packet_handler_t packet_handler){
+    UNUSED(packet_handler);
 }
 
 void pb_adv_send_pdu(uint16_t pb_transport_cid, const uint8_t * pdu, uint16_t size){
@@ -126,6 +128,7 @@ void pb_adv_send_pdu(uint16_t pb_transport_cid, const uint8_t * pdu, uint16_t si
     // dump_data((uint8_t*)pdu,size);
     // printf_hexdump(pdu, size);
 }
+void pb_gatt_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t pdu_size){}
 
 uint16_t pb_adv_create_link(const uint8_t * device_uuid){
     // just simluate opened

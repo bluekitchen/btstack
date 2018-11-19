@@ -74,6 +74,20 @@ static btstack_packet_handler_t mesh_provisioning_service_packet_handler;
 static att_service_handler_t mesh_provisioning_service;
 static mesh_provisioning_t mesh_provisioning;
 
+
+static void mesh_provisioning_service_emit_link_open(hci_con_handle_t con_handle, uint8_t status){
+    uint8_t event[7] = { HCI_EVENT_MESH_META, 5, MESH_PB_TRANSPORT_LINK_OPEN, status};
+    little_endian_store_16(event, 4, con_handle);
+    event[6] = PB_TYPE_GATT;
+    mesh_provisioning_service_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void mesh_provisioning_service_emit_link_close(hci_con_handle_t con_handle, uint8_t reason){
+    uint8_t event[5] = { HCI_EVENT_MESH_META, 3, MESH_PB_TRANSPORT_LINK_CLOSED};
+    little_endian_store_16(event, 4, con_handle);
+    mesh_provisioning_service_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static mesh_provisioning_t * mesh_provisioning_service_get_instance_for_con_handle(hci_con_handle_t con_handle){
     mesh_provisioning_t * instance = &mesh_provisioning;
     if (con_handle == HCI_CON_HANDLE_INVALID) return NULL;
@@ -85,31 +99,18 @@ static hci_con_handle_t get_con_handle(void){
     return mesh_provisioning.con_handle;
 }
 
-static void pb_adv_emit_link_open(hci_con_handle_t con_handle, uint8_t status){
-    uint8_t event[7] = { HCI_EVENT_MESH_META, 5, MESH_PB_TRANSPORT_LINK_OPEN, status};
-    little_endian_store_16(event, 4, con_handle);
-    event[6] = PB_TYPE_GATT;
-    mesh_provisioning_service_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
-static void pb_adv_emit_link_close(hci_con_handle_t con_handle, uint8_t reason){
-    uint8_t event[5] = { HCI_EVENT_MESH_META, 3, MESH_PB_TRANSPORT_LINK_CLOSED};
-    little_endian_store_16(event, 4, con_handle);
-    mesh_provisioning_service_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
 static uint16_t mesh_provisioning_service_read_callback(hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     UNUSED(con_handle);
     UNUSED(attribute_handle);
     UNUSED(offset);
     UNUSED(buffer_size);
     
+    printf("mesh_provisioning_service_read_callback: not handeled read on handle 0x%02x\n", attribute_handle);
     mesh_provisioning_t * instance = mesh_provisioning_service_get_instance_for_con_handle(con_handle);
     if (!instance){
         log_error("mesh_provisioning_service_read_callback: instance is null");
         return 0;
     }
-    printf("mesh_provisioning_service_read_callback: not handeled read on handle 0x%02x\n", attribute_handle);
     return 0;
 }
 
@@ -117,6 +118,7 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
     UNUSED(transaction_mode);
     UNUSED(offset);
     UNUSED(buffer_size);
+    printf("mesh_provisioning_service_write_callback: not handeled write on handle 0x%02x, buffer size %d\n", attribute_handle, buffer_size);
     
     mesh_provisioning_t * instance = mesh_provisioning_service_get_instance_for_con_handle(con_handle);
     if (!instance){
@@ -138,14 +140,13 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
         instance->data_out_client_configuration_descriptor_value = little_endian_read_16(buffer, 0);
         printf("mesh_provisioning_service_write_callback: data out notify enabled %d, con handle 0x%02x\n", instance->data_out_client_configuration_descriptor_value, con_handle);
         if (instance->data_out_client_configuration_descriptor_value){
-            printf("mesh_provisioning_service_write_callback: emit pb_adv_emit_link_open 0x%02x\n", con_handle);
-            pb_adv_emit_link_open(con_handle, 0);
+            printf("mesh_provisioning_service_write_callback: emit pb_gatt_emit_link_open 0x%02x\n", con_handle);
+            mesh_provisioning_service_emit_link_open(con_handle, 0);
         } else {
-            pb_adv_emit_link_close(con_handle, 0);
+            mesh_provisioning_service_emit_link_close(con_handle, 0);
         }
         return 0;
     }
-    printf("mesh_provisioning_service_write_callback: not handeled write on handle 0x%02x, buffer size %d\n", attribute_handle, buffer_size);
     return 0;
 }
 
@@ -223,7 +224,7 @@ void mesh_provisioning_service_server_register_packet_handler(btstack_packet_han
     mesh_provisioning_service_packet_handler = callback;
 }
 
-/************** PB ADV Impl for GATT Mesh Provisioning ********************/
+/************** PB GATT Mesh Provisioning ********************/
 typedef enum {
     MESH_MSG_SAR_FIELD_COMPLETE_MSG = 0,
     MESH_MSG_SAR_FIELD_FIRST_SEGMENT,
@@ -238,37 +239,12 @@ typedef enum {
     MESH_MSG_TYPE_PROVISIONING_PDU
 } mesh_msg_type_t;
 
-static const uint8_t * pb_adv_own_device_uuid;
+static const uint8_t * pb_gatt_own_device_uuid;
 static const uint8_t * proxy_pdu;
 static uint16_t proxy_pdu_size;
 static uint16_t con_handle;
 static uint8_t  sar_buffer[MESH_PROV_MAX_PROXY_PDU];
 static uint16_t sar_offset;
-
-static btstack_packet_handler_t pb_adv_packet_handler;
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-/**
- * Initialize Provisioning Bearer using Advertisement Bearer
- * @param DeviceUUID
- */
-void pb_adv_init(const uint8_t * device_uuid){
-    pb_adv_own_device_uuid = device_uuid;
-    // setup mesh provisioning service
-    mesh_provisioning_service_server_init();
-    mesh_provisioning_service_server_register_packet_handler(packet_handler);
-}
-
-static void pb_adv_emit_pdu_sent(uint8_t status){
-    uint8_t event[] = {HCI_EVENT_MESH_META, 2, MESH_PB_TRANSPORT_PDU_SENT, status};
-    pb_adv_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
-/**
- * Register listener for Provisioning PDUs and MESH_PBV_ADV_SEND_COMPLETE
- */
-void pb_adv_register_packet_handler(btstack_packet_handler_t _packet_handler){
-    pb_adv_packet_handler = _packet_handler;
-}
 
 /** 
  * Send Provisioning PDU
@@ -278,23 +254,13 @@ static uint16_t buffer_offset;
 static mesh_msg_sar_field_t buffer_state;
 static uint16_t pb_gatt_mtu;
 
-void pb_adv_send_pdu(uint16_t pb_adv_cid, const uint8_t * pdu, uint16_t size){
-    if (!pdu || size <= 0) return; 
-    // store pdu, request to send
-    printf_hexdump(pdu, size);
-    proxy_pdu = pdu;
-    proxy_pdu_size = size;
-    buffer_offset = 0;
 
-    printf("pb_gatt_send_pdu received 0x%02x, used 0x%02x\n", pb_adv_cid, get_con_handle());
+static btstack_packet_handler_t pb_gatt_packet_handler;
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-    // check if segmentation is necessary
-    if (proxy_pdu_size > (pb_gatt_mtu - 1)){
-        buffer_state = MESH_MSG_SAR_FIELD_FIRST_SEGMENT;
-    } else {
-        buffer_state = MESH_MSG_SAR_FIELD_COMPLETE_MSG;
-    }
-    mesh_provisioning_service_server_request_can_send_now(get_con_handle());
+static void pb_gatt_emit_pdu_sent(uint8_t status){
+    uint8_t event[] = {HCI_EVENT_MESH_META, 2, MESH_PB_TRANSPORT_PDU_SENT, status};
+    pb_gatt_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -313,7 +279,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             msg_type = packet[pos] & 0x3F;
             pos++;
             if (msg_type != MESH_MSG_TYPE_PROVISIONING_PDU) return;
-            if (!pb_adv_packet_handler) return;
+            if (!pb_gatt_packet_handler) return;
             
             pdu_segment_len = size - pos;
 
@@ -342,12 +308,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     memcpy(sar_buffer + sar_offset, packet+pos, pdu_segment_len);
                     sar_offset += pdu_segment_len;
                     // send to provisioning device
-                    pb_adv_packet_handler(PROVISIONING_DATA_PACKET, 0, sar_buffer, sar_offset); 
+                    pb_gatt_packet_handler(PROVISIONING_DATA_PACKET, 0, sar_buffer, sar_offset); 
                     sar_offset = 0;
                     break; 
                 case MESH_MSG_SAR_FIELD_COMPLETE_MSG:
                     // send to provisioning device
-                    pb_adv_packet_handler(PROVISIONING_DATA_PACKET, 0, packet+pos, pdu_segment_len); 
+                    pb_gatt_packet_handler(PROVISIONING_DATA_PACKET, 0, packet+pos, pdu_segment_len); 
                     break;
             }
             break;
@@ -360,7 +326,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         case MESH_PB_TRANSPORT_LINK_CLOSED:
                             // Forward link open/close
                             pb_gatt_mtu = ATT_DEFAULT_MTU;
-                            pb_adv_packet_handler(HCI_EVENT_PACKET, 0, packet, size);
+                            pb_gatt_packet_handler(HCI_EVENT_PACKET, 0, packet, size);
                             break; 
                         case MESH_SUBEVENT_CAN_SEND_NOW:
                             con_handle = little_endian_read_16(packet, 3); 
@@ -376,7 +342,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             switch (buffer_state){
                                 case MESH_MSG_SAR_FIELD_COMPLETE_MSG:
                                 case MESH_MSG_SAR_FIELD_LAST_SEGMENT:
-                                    pb_adv_emit_pdu_sent(0);
+                                    pb_gatt_emit_pdu_sent(0);
                                     break;
                                 case MESH_MSG_SAR_FIELD_CONTINUE:
                                 case MESH_MSG_SAR_FIELD_FIRST_SEGMENT:
@@ -406,20 +372,61 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     }
 }
 
+/**
+ * Setup mesh provisioning service
+ * @param device_uuid
+ */
+void pb_gatt_init(const uint8_t * device_uuid){
+    pb_gatt_own_device_uuid = device_uuid;
+    // setup mesh provisioning service
+    mesh_provisioning_service_server_init();
+    mesh_provisioning_service_server_register_packet_handler(packet_handler);
+}
+
+/**
+ * Register listener for Provisioning PDUs 
+ */
+void pb_gatt_register_packet_handler(btstack_packet_handler_t _packet_handler){
+    pb_gatt_packet_handler = _packet_handler;
+}
 
 /**
  * Close Link
- * @param pb_adv_cid
+ * @param con_handle
+ * @param pdu
+ * @param pdu_size
+ */
+void pb_gatt_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t size){
+    if (!pdu || size <= 0) return; 
+    // store pdu, request to send
+    printf_hexdump(pdu, size);
+    proxy_pdu = pdu;
+    proxy_pdu_size = size;
+    buffer_offset = 0;
+
+    printf("pb_gatt_send_pdu received 0x%02x, used 0x%02x\n", con_handle, get_con_handle());
+
+    // check if segmentation is necessary
+    if (proxy_pdu_size > (pb_gatt_mtu - 1)){
+        buffer_state = MESH_MSG_SAR_FIELD_FIRST_SEGMENT;
+    } else {
+        buffer_state = MESH_MSG_SAR_FIELD_COMPLETE_MSG;
+    }
+    mesh_provisioning_service_server_request_can_send_now(get_con_handle());
+}
+/**
+ * Close Link
+ * @param con_handle
  * @param reason 0 = success, 1 = timeout, 2 = fail
  */
-void pb_adv_close_link(uint16_t pb_adv_cid, uint8_t reason){
+void pb_gatt_close_link(hci_con_handle_t con_handle, uint8_t reason){
 }
 
 /**
  * Setup Link with unprovisioned device
- * @param DeviceUUID
- * @returns pb_adv_cid or 0
+ * @param device_uuid
+ * @returns con_handle or HCI_CON_HANDLE_INVALID
  */
-uint16_t pb_adv_create_link(const uint8_t * device_uuid){
-    return 0;
+uint16_t pb_gatt_create_link(const uint8_t * device_uuid){
+    return HCI_CON_HANDLE_INVALID;
 }
