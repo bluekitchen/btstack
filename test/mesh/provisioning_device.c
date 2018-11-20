@@ -43,7 +43,7 @@
 #include <string.h>
 
 #include "ble/mesh/pb_adv.h"
-#include "ble/gatt-service/mesh_provisioning_service_server.h"
+#include "ble/mesh/pb_gatt.h"
 
 #include "ble/mesh/mesh_crypto.h"
 #include "classic/rfcomm.h" // for crc8

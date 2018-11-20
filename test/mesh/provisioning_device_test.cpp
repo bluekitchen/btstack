@@ -40,7 +40,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ble/mesh/pb_adv.h"
+#include "ble/mesh/pb_gatt.h"
 #include "ble/gatt-service/mesh_provisioning_service_server.h"
+#include "provisioning.h"
 #include "provisioning_device.h"
 #include "btstack.h"
 

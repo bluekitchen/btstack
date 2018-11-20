@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 BlueKitchen GmbH
+ * Copyright (C) 2017 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -34,10 +34,14 @@
  * contact@bluekitchen-gmbh.com
  *
  */
-#ifndef __MESH_PROVISIONING_SERVICE_SERVER_H
-#define __MESH_PROVISIONING_SERVICE_SERVER_H
+
+
+#ifndef __PB_GATT_H
+#define __PB_GATT_H
 
 #include <stdint.h>
+#include "btstack_defines.h"
+#include "btstack_config.h"
 #include "hci.h"
 
 #if defined __cplusplus
@@ -45,60 +49,42 @@ extern "C" {
 #endif
 
 /**
- * Implementation of the Mesh Provisioning Service Server 
+ * Setup mesh provisioning service
+ * @param device_uuid
  */
-
-/* API_START */
-
-typedef enum {
-	MESH_OOB_INFORMATION_INDEX_OTHER = 0,
-	MESH_OOB_INFORMATION_INDEX_ELECTRONIC_OR_URI,
-	MESH_OOB_INFORMATION_INDEX_2D_MACHINE_READABLE_CODE,
-	MESH_OOB_INFORMATION_INDEX_BAR_CODE,
-	MESH_OOB_INFORMATION_INDEX_NEAR_FIELD_COMMUNICATION,
-	MESH_OOB_INFORMATION_INDEX_NUMBER,
-	MESH_OOB_INFORMATION_INDEX_STRING,
-	MESH_OOB_INFORMATION_INDEX_RESERVED_7,
-	MESH_OOB_INFORMATION_INDEX_RESERVED_8,
-	MESH_OOB_INFORMATION_INDEX_RESERVED_9,
-	MESH_OOB_INFORMATION_INDEX_RESERVED_10,
-	MESH_OOB_INFORMATION_INDEX_ON_BOX,
-	MESH_OOB_INFORMATION_INDEX_INSIDE_BOX,
-	MESH_OOB_INFORMATION_INDEX_ON_PIECE_OF_PAPER,
-	MESH_OOB_INFORMATION_INDEX_INSIDE_MANUAL,
-	MESH_OOB_INFORMATION_INDEX_ON_DEVICE
-} mesh_oob_information_index_t;
+void pb_gatt_init(const uint8_t * device_uuid);
 
 /**
- * @brief Init Mesh Provisioning Service Server with ATT DB
+ * Register listener for Provisioning PDUs and events: MESH_PB_TRANSPORT_LINK_OPEN, MESH_PB_TRANSPORT_LINK_CLOSED, MESH_SUBEVENT_CAN_SEND_NOW
+ * @param packet_handler
  */
-void mesh_provisioning_service_server_init(void);
+void pb_gatt_register_packet_handler(btstack_packet_handler_t packet_handler);
 
 /**
- * @brief Send a Proxy PDU message containing Provisioning PDU from a Provisioning Server to a Provisioning Client.
- * @param con_handle 
- * @param proxy_pdu 
- * @param proxy_pdu_size max lenght MESH_PROV_MAX_PROXY_PDU
- */
-void mesh_provisioning_service_server_send_proxy_pdu(uint16_t con_handle, const uint8_t * proxy_pdu, uint16_t proxy_pdu_size);
-
-/**
- * @brief Register callback for the PB-GATT.
- * @param callback
- */
-void mesh_provisioning_service_server_register_packet_handler(btstack_packet_handler_t callback);
-
-/**
- * @brief Request can send now event to send PDU
- * Generates an MESH_SUBEVENT_CAN_SEND_NOW subevent
+ * Send PDU
  * @param con_handle
+ * @param pdu
+ * @param pdu_size
  */
-void mesh_provisioning_service_server_request_can_send_now(hci_con_handle_t con_handle);
-/* API_END */
+void pb_gatt_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t pdu_size);
+
+/**
+ * Setup Link with unprovisioned device
+ * @param   device_uuid
+ * @return  con_handle or HCI_CON_HANDLE_INVALID
+ */
+hci_con_handle_t pb_gatt_create_link(const uint8_t * device_uuid);
+
+/**
+ * Close Link
+ * @param con_handle
+ * @param reason 0 = success, 1 = timeout, 2 = fail
+ */
+void pb_gatt_close_link(hci_con_handle_t con_handle, uint8_t reason);
+
 
 #if defined __cplusplus
 }
 #endif
 
-#endif
-
+#endif // __PB_GATT_H

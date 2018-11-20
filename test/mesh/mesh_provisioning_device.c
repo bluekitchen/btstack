@@ -43,6 +43,7 @@
 #include <string.h>
 
 #include "ble/mesh/pb_adv.h"
+#include "ble/mesh/pb_gatt.h"
 #include "ble/gatt-service/mesh_provisioning_service_server.h"
 #include "mesh_provisioning_device.h"
 #include "btstack_config.h"
