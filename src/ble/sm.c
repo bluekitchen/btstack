@@ -4027,9 +4027,13 @@ int sm_le_device_index(hci_con_handle_t con_handle ){
 }
 
 static int gap_random_address_type_requires_updates(void){
-    if (gap_random_adress_type == GAP_RANDOM_ADDRESS_TYPE_OFF) return 0;
-    if (gap_random_adress_type == GAP_RANDOM_ADDRESS_TYPE_OFF) return 0;
-    return 1;
+    switch (gap_random_adress_type){
+        case GAP_RANDOM_ADDRESS_TYPE_OFF:
+        case GAP_RANDOM_ADDRESS_TYPE_STATIC:
+            return 0;
+        default:
+            return 1;
+    }
 }
 
 static uint8_t own_address_type(void){
