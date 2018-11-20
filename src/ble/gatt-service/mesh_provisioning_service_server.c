@@ -101,12 +101,12 @@ static uint16_t mesh_provisioning_service_read_callback(hci_con_handle_t con_han
     UNUSED(offset);
     UNUSED(buffer_size);
     
-    printf("mesh_provisioning_service_read_callback: not handeled read on handle 0x%02x\n", attribute_handle);
     mesh_provisioning_t * instance = mesh_provisioning_service_get_instance_for_con_handle(con_handle);
     if (!instance){
         log_error("mesh_provisioning_service_read_callback: instance is null");
         return 0;
     }
+    // log_info("mesh_provisioning_service_read_callback: not handled read on handle 0x%02x", attribute_handle);
     return 0;
 }
 
@@ -114,7 +114,6 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
     UNUSED(transaction_mode);
     UNUSED(offset);
     UNUSED(buffer_size);
-    printf("mesh_provisioning_service_write_callback: not handeled write on handle 0x%02x, buffer size %d\n", attribute_handle, buffer_size);
     
     mesh_provisioning_t * instance = mesh_provisioning_service_get_instance_for_con_handle(con_handle);
     if (!instance){
@@ -123,7 +122,6 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
     }
 
     if (attribute_handle == instance->data_in_client_value_handle){
-        printf("mesh_provisioning_service_write_callback: handle write on 0x%02x, len %u\n", attribute_handle, buffer_size);
         if (!mesh_provisioning_service_packet_handler) return 0;
         (*mesh_provisioning_service_packet_handler)(PROVISIONING_DATA_PACKET, con_handle, buffer, buffer_size);
         return 0;
@@ -134,15 +132,15 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
             return ATT_ERROR_INVALID_OFFSET;
         }
         instance->data_out_client_configuration_descriptor_value = little_endian_read_16(buffer, 0);
-        printf("mesh_provisioning_service_write_callback: data out notify enabled %d, con handle 0x%02x\n", instance->data_out_client_configuration_descriptor_value, con_handle);
+        log_info("mesh_provisioning_service_write_callback: data out notify enabled %d, con handle 0x%02x", instance->data_out_client_configuration_descriptor_value, con_handle);
         if (instance->data_out_client_configuration_descriptor_value){
-            printf("mesh_provisioning_service_write_callback: emit pb_gatt_emit_link_open 0x%02x\n", con_handle);
             mesh_provisioning_service_emit_link_open(con_handle, 0);
         } else {
             mesh_provisioning_service_emit_link_close(con_handle, 0);
         }
         return 0;
     }
+    // log_info("mesh_provisioning_service_write_callback: not handled write on handle 0x%02x, buffer size %d", attribute_handle, buffer_size);
     return 0;
 }
 
@@ -164,9 +162,9 @@ void mesh_provisioning_service_server_init(void){
     instance->data_out_client_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROVISIONING_DATA_OUT);
     instance->data_out_client_configuration_descriptor_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROVISIONING_DATA_OUT);
     
-    printf("DataIn     value handle 0x%02x\n", instance->data_in_client_value_handle);
-    printf("DataOut    value handle 0x%02x\n", instance->data_out_client_value_handle);
-    printf("DataOut CC value handle 0x%02x\n", instance->data_out_client_configuration_descriptor_handle);
+    log_info("DataIn     value handle 0x%02x", instance->data_in_client_value_handle);
+    log_info("DataOut    value handle 0x%02x", instance->data_out_client_value_handle);
+    log_info("DataOut CC value handle 0x%02x", instance->data_out_client_configuration_descriptor_handle);
     
     mesh_provisioning_service.start_handle   = start_handle;
     mesh_provisioning_service.end_handle     = end_handle;
@@ -204,13 +202,11 @@ static void mesh_provisioning_service_can_send_now(void * context){
 }
 
 void mesh_provisioning_service_server_request_can_send_now(hci_con_handle_t con_handle){
-    // printf("mesh_provisioning_service_server_request_can_send_now, con handle 0x%02x\n", con_handle);
     mesh_provisioning_t * instance = mesh_provisioning_service_get_instance_for_con_handle(con_handle);
     if (!instance){
-        printf("mesh_provisioning_service_server_request_can_send_now: instance is null, 0x%2x\n", con_handle);
+        log_error("mesh_provisioning_service_server_request_can_send_now: instance is null, 0x%2x", con_handle);
         return;
     }
-
     instance->pdu_response_callback.callback = &mesh_provisioning_service_can_send_now;
     instance->pdu_response_callback.context  = (void*) (uintptr_t) con_handle;
     att_server_register_can_send_now_callback(&instance->pdu_response_callback, con_handle);

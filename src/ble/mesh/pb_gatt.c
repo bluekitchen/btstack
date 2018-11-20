@@ -37,8 +37,6 @@
 
 #define __BTSTACK_FILE__ "pb_gatt.c"
 
-#include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "btstack_util.h"
