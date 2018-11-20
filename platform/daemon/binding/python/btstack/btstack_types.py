@@ -18,8 +18,13 @@ class BD_ADDR(object):
                 return
             # list comprehension
             self.addr = bytes([int(a,16) for a in parts])
-        if isinstance(addr, bytes):
+        elif isinstance(addr, bytes):
             self.addr = addr
+        elif isinstance(addr, bytearray):
+            self.addr = addr
+        else:
+            print('cannot use for bdaddr, len %u' % len(addr))
+            print(addr)
 
     def get_bytes(self):
         data = bytearray(self.addr)

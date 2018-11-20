@@ -250,7 +250,7 @@ def create_event(fout, event_name, format, args):
      'L' : 'return struct.unpack("<H", self.payload[{offset} : {offset}+2])',
      '3' : 'return btstack.btstack_types.unpack24(self.payload[{offset}:3])',
      '4' : 'return struct.unpack("<I", self.payload[{offset} : {offset}+4])',
-     'B' : 'return btstack.btstack_types.BD_ADDR(self.payload[{offset}:6])',
+     'B' : 'data = bytearray(self.payload[{offset}:{offset}+6]); data.reverse(); return btstack.btstack_types.BD_ADDR(data)',
      'X' : 'return btstack.btstack_types.GATTService(self.payload[{offset}:20])',
      'Y' : 'return btstack.btstack_types.GATTCharacteristic(self.payload[{offset}:24])',
      'Z' : 'return btstack.btstack_types.GATTCharacteristicDescriptor(self.payload[{offset}:18])',
@@ -288,10 +288,16 @@ def create_event(fout, event_name, format, args):
         getters += event_getter.format(arg.lower(), access)
         offset += size
     to_string_args = ''
-    for arg in args:
+    for f, arg in zip(format, args):
         to_string_args += '        repr += ", %s = "\n' % arg
-        to_string_args += '        repr += str(self.get_%s())\n' % arg.lower()
+        if f in ['1','2','3','4','H']:
+            to_string_args += '        repr += hex(self.get_%s())\n' % arg.lower()
+        elif f in ['R', 'V', 'D', 'Q']:
+            to_string_args += '        repr += hex_string(self.get_%s())\n' % arg.lower()
+        else:
+            to_string_args += '        repr += str(self.get_%s())\n' % arg.lower()
     to_string_method = event_to_string.format(event_name, to_string_args)
+    fout.write('# %s - %s' % (event_name, format))
     fout.write(event_template.format(event_name, getters, to_string_method))
 
 def event_supported(event_name):
