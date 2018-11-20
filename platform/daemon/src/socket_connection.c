@@ -184,7 +184,7 @@ static connection_t * socket_connection_register_new_connection(int fd){
     // create connection objec 
     connection_t * conn = malloc( sizeof(connection_t));
     if (conn == NULL) return NULL;
-
+    memset(conn, 0, sizeof(connection_t));
     // store reference from linked item to base object
     conn->linked_connection.connection = conn;
 
