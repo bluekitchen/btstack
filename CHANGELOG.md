@@ -7,11 +7,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
+- GAP: gap_le_connection_interval provides connection interval for conn handle
+- Nordic SPP Service Server: GATT service that emulates a serial port over BLE based on Nordic Semiconductor documentation.
+- uBlox  SPP Service Server: GATT service that emulates a serial port over BLE based on uBlox documentation.
+
+### Fixed
+- SM: prevent random address updates if gap_random_address_set was used
+- SM: fix internal buffer overrun that can cause storing of bonding information to fail
+
+## Changes October 2018
+
+### Added
 - SDP Server: queue incoming connections when already connected instead of rejecting them
 - GAP: Support enter/exit sniff mode via gap_sniff_mode_enter/exit. gap_set_default_link_policy_settings is needed to enable sniff mode in general.
 - HIDS Device: GATT service that exposes HID reports intended for HID Devices, like keyboard and mouse.
-- Nordic SPP Service Server: GATT service that emulates a serial port over BLE based on Nordic Semiconductor documentation.
-- uBlox  SPP Service Server: GATT service that emulates a serial port over BLE based on uBlox documentation.
 
 ### Fixed
 - HCI: fix bug in gap_inquiry_stop that triggered additional GAP_EVENT_INQUIRY_COMPLETE instead of stopping the inquiry
