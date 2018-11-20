@@ -2,6 +2,7 @@ import socket
 import struct
 import btstack.command_builder
 import btstack.event_factory
+import time
 
 BTSTACK_SERVER_HOST = "localhost"
 BTSTACK_SERVER_TCP_PORT = 13333
@@ -27,8 +28,16 @@ class BTstackClient(btstack.command_builder.CommandBuilder):
 
         print("[+] Connect to server on port %u" % BTSTACK_SERVER_TCP_PORT)
         self.btstack_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.btstack_server_socket.connect((BTSTACK_SERVER_HOST, BTSTACK_SERVER_TCP_PORT))
-        # TODO: handle connection failure - e.g. retry for max 5 seconds every seconde 
+        timeout = time.time() + 3
+        while True:
+            try:
+                self.btstack_server_socket.connect((BTSTACK_SERVER_HOST, BTSTACK_SERVER_TCP_PORT))
+                return True
+
+            except socket.error as e:
+                if  time.time() > timeout:
+                    print ("[!] Connection error: %s" % e)
+                    return False
 
     def register_packet_handler(self, callback):
         print("[+] Register packet handler")

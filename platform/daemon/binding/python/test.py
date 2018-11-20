@@ -20,12 +20,12 @@ btstack_server.load()
 # btstack_server.set_storage_path("/tmp")
 btstack_server.run_tcp()
 
-
 # Client for BTstack Server
 btstack_client = btstack_client.BTstackClient()
 
 # connect to slient, register for HCI packets and power up
-btstack_client.connect()
-btstack_client.register_packet_handler(packet_handler)
-btstack_client.btstack_set_power_mode(1)
-btstack_client.run()
+ok = btstack_client.connect()
+if ok:
+	btstack_client.register_packet_handler(packet_handler)
+	btstack_client.btstack_set_power_mode(1)
+	btstack_client.run()
