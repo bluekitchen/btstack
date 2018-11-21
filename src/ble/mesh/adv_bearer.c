@@ -128,11 +128,13 @@ static void adv_bearer_packet_handler (uint8_t packet_type, uint16_t channel, ui
                     if (client_callbacks[type_id]){
                         switch (type_id){
                             case PB_ADV_ID:
-                            case MESH_BEACON_ID:
                                 (*client_callbacks[type_id])(packet_type, channel, packet, size);
                                 break;
                             case MESH_MESSAGE_ID:
                                 (*client_callbacks[type_id])(MESH_NETWORK_PACKET, 0, (uint8_t*) &data[2], data_len-2);
+                                break;
+                            case MESH_BEACON_ID:
+                                (*client_callbacks[type_id])(MESH_BEACON_PACKET, 0, (uint8_t*) &data[2], data_len-2);
                                 break;
                             default:
                                 break;

@@ -202,22 +202,14 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
 }
 
 static void mesh_unprovisioned_beacon_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    if (packet_type != HCI_EVENT_PACKET) return;
-    uint8_t device_uuid[16];
+    if (packet_type != MESH_BEACON_PACKET) return;
+    uint8_t  device_uuid[16];
     uint16_t oob;
-    const uint8_t * data;
-    switch(packet[0]){
-        case GAP_EVENT_ADVERTISING_REPORT:
-            data = gap_event_advertising_report_get_data(packet);
-            memcpy(device_uuid, &packet[15], 16);
-            oob = big_endian_read_16(data, 31);
-            printf("received unprovisioned device beacon, oob data %x, device uuid: ", oob);
-            printf_hexdump(device_uuid, 16);
-            pb_adv_create_link(device_uuid);
-            break;
-        default:
-            break;
-    }
+    memcpy(device_uuid, &packet[1], 16);
+    oob = big_endian_read_16(packet, 17);
+    printf("received unprovisioned device beacon, oob data %x, device uuid: ", oob);
+    printf_hexdump(device_uuid, 16);
+    pb_adv_create_link(device_uuid);
 }
 
 uint8_t      pts_device_uuid[16];

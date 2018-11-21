@@ -62,30 +62,30 @@ static btstack_packet_handler_t unprovisioned_device_beacon_handler;
 static btstack_packet_handler_t secure_network_beacon_handler;
 
 static void beacon_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-
-    const uint8_t * data;
     uint8_t beacon[23];
-
-    if (packet_type != HCI_EVENT_PACKET) return;
-    switch(packet[0]){
-        case HCI_EVENT_MESH_META:
-            switch(packet[2]){
-                case MESH_SUBEVENT_CAN_SEND_NOW:
-                    beacon[0] = BEACON_TYPE_UNPROVISIONED_DEVICE;
-                    memcpy(&beacon[1], beacon_device_uuid, 16);
-                    big_endian_store_16(beacon, 17, beacon_oob_information);
-                    big_endian_store_32(beacon, 19, beacon_uri_hash);
-                    adv_bearer_send_mesh_beacon(beacon, sizeof(beacon));
+    switch (packet_type){
+        case HCI_EVENT_PACKET:
+            switch(packet[0]){
+                case HCI_EVENT_MESH_META:
+                    switch(packet[2]){
+                        case MESH_SUBEVENT_CAN_SEND_NOW:
+                            beacon[0] = BEACON_TYPE_UNPROVISIONED_DEVICE;
+                            memcpy(&beacon[1], beacon_device_uuid, 16);
+                            big_endian_store_16(beacon, 17, beacon_oob_information);
+                            big_endian_store_32(beacon, 19, beacon_uri_hash);
+                            adv_bearer_send_mesh_beacon(beacon, sizeof(beacon));
+                            break;
+                        default:
+                            break;
+                    }
                     break;
                 default:
                     break;
             }
             break;
-        case GAP_EVENT_ADVERTISING_REPORT:
-            // check type
-            data = gap_event_advertising_report_get_data(packet);
-            log_info("beacon type %u", data[2]);
-            switch (data[2]){
+        case MESH_BEACON_PACKET:
+            log_info("beacon type %u", packet[0]);
+            switch (packet[0]){
                 case BEACON_TYPE_UNPROVISIONED_DEVICE:
                     if (unprovisioned_device_beacon_handler){
                         (*unprovisioned_device_beacon_handler)(packet_type, channel, packet, size);

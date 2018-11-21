@@ -240,42 +240,17 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
 static uint8_t device_uuid[16];
 
 static void mesh_unprovisioned_beacon_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    if (packet_type != HCI_EVENT_PACKET) return;
+    if (packet_type != MESH_BEACON_PACKET) return;
     uint16_t oob;
-    const uint8_t * data;
-    switch(packet[0]){
-        case GAP_EVENT_ADVERTISING_REPORT:
-            data = gap_event_advertising_report_get_data(packet);
-            memcpy(device_uuid, &packet[15], 16);
-            oob = big_endian_read_16(data, 31);
-            printf("received unprovisioned device beacon, oob data %x, device uuid: ", oob);
-            printf_hexdump(device_uuid, 16);
-            pb_adv_cid = pb_adv_create_link(device_uuid);
-            break;
-        default:
-            break;
-    }
+    memcpy(device_uuid, &packet[1], 16);
+    oob = big_endian_read_16(packet, 17);
+    printf("received unprovisioned device beacon, oob data %x, device uuid: ", oob);
+    printf_hexdump(device_uuid, 16);
+    pb_adv_create_link(device_uuid);
 }
 
 uint8_t      pts_device_uuid[16];
 const char * pts_device_uuid_string = "001BDC0810210B0E0A0C000B0E0A0C00";
-
-static uint8_t adv_prov_invite_pdu[] = { 0x00, 0x00 };
-static uint8_t adv_prov_start_pdu[] = { 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}; 
-static uint8_t adv_prov_public_key_pdu[65];
-
-static btstack_crypto_aes128_cmac_t mesh_cmac_request;
-static uint8_t mesh_secure_network_beacon[22];
-static uint8_t mesh_secure_network_beacon_auth_value[16];
-
-static void mesh_secure_network_beacon_auth_value_calculated(void * arg){
-    UNUSED(arg);
-    memcpy(&mesh_secure_network_beacon[14], mesh_secure_network_beacon_auth_value, 8);
-    printf("Secure Network Beacon\n");
-    printf("- ");
-    printf_hexdump(mesh_secure_network_beacon, sizeof(mesh_secure_network_beacon));
-    adv_bearer_send_mesh_beacon(mesh_secure_network_beacon, sizeof(mesh_secure_network_beacon));
-}
 
 static void stdin_process(char cmd){
     if (ui_chars_for_pin){
