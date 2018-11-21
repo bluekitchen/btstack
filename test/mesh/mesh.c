@@ -920,6 +920,8 @@ static void mesh_transport_received_mesage(mesh_network_callback_type_t callback
             mesh_lower_transport_run();
             break;
         case MESH_NETWORK_PDU_SENT:
+            // free pdu
+            btstack_memory_mesh_network_pdu_free(network_pdu);
             break;
         default:
             break;

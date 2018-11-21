@@ -285,12 +285,14 @@ static void mesh_network_send_b(void *arg){
     btstack_crypto_aes128_encrypt(&mesh_network_crypto_request.aes128, current_network_key->privacy_key, encryption_block, obfuscation_block, &mesh_network_send_c, network_pdu);
 }
 
-static void mesh_network_send_0(mesh_network_pdu_t * network_pdu){
+static void mesh_network_send_a(mesh_network_pdu_t * network_pdu){
     // lookup network by netkey_index
     current_network_key = mesh_network_key_list_get(network_pdu->netkey_index);
     if (!current_network_key) {
-        btstack_memory_mesh_network_pdu_free(network_pdu);
         mesh_crypto_active = 0;
+        // notify upper layer
+        (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_SENT, network_pdu);
+        // run again
         mesh_network_run();
         return;
     }
@@ -496,7 +498,7 @@ static void mesh_network_run(void){
         // get queued network pdu and start processing
         mesh_crypto_active = 1;
         mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_queued);
-        mesh_network_send_0(network_pdu);
+        mesh_network_send_a(network_pdu);
         return;
     }
 }
@@ -523,7 +525,8 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
                             if (btstack_linked_list_empty(&network_pdus_outgoing)) break;
                             network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing);
                             adv_bearer_send_mesh_message(network_pdu->data, network_pdu->len);
-                            btstack_memory_mesh_network_pdu_free(network_pdu);
+                            // notify upper layer
+                            (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_SENT, network_pdu);
                             break;
                         default:
                             break;
