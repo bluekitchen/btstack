@@ -502,43 +502,36 @@ static void mesh_network_run(void){
 }
 
 static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    if (packet_type != HCI_EVENT_PACKET) return;
-    const uint8_t * adv_data;
-    const uint8_t * pdu_data;
-    uint8_t pdu_len;
-    uint8_t adv_len;
+
     mesh_network_pdu_t * network_pdu;
-    mesh_provisioning_data_t provisioning_data;
-    switch(packet[0]){
-        case HCI_EVENT_MESH_META:
-            switch(packet[2]){
-                case MESH_SUBEVENT_CAN_SEND_NOW:
-                    if (btstack_linked_list_empty(&network_pdus_outgoing)) break;
-                    network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing);
-                    adv_bearer_send_mesh_message(network_pdu->data, network_pdu->len);
-                    btstack_memory_mesh_network_pdu_free(network_pdu);
+
+    switch (packet_type){
+        case MESH_NETWORK_PACKET:
+            // check len. minimal transport PDU len = 1, 32 bit NetMIC -> 13 bytes
+            if (size < 13) break;
+
+            printf("received mesh message (len %u): ", size);
+            printf_hexdump(packet, size);
+            mesh_network_received_message(packet, size);
+            break;
+
+        case HCI_EVENT_PACKET:
+            switch(packet[0]){
+                case HCI_EVENT_MESH_META:
+                    switch(packet[2]){
+                        case MESH_SUBEVENT_CAN_SEND_NOW:
+                            if (btstack_linked_list_empty(&network_pdus_outgoing)) break;
+                            network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing);
+                            adv_bearer_send_mesh_message(network_pdu->data, network_pdu->len);
+                            btstack_memory_mesh_network_pdu_free(network_pdu);
+                            break;
+                        default:
+                            break;
+                    }
                     break;
                 default:
                     break;
             }
-            break;
-        case GAP_EVENT_ADVERTISING_REPORT:
-            adv_len  = gap_event_advertising_report_get_data_length(packet);
-            adv_data = gap_event_advertising_report_get_data(packet);
-            // validate data item len
-            pdu_len = adv_data[0] - 1;
-            printf("adv len %u  pdu len %u\n", adv_len,  pdu_len);
-
-            if ((pdu_len + 2) > adv_len) break;
-            if (pdu_len < 13)            break;    // transport PDU len = 0, 32 bit NetMIC
-
-            // get transport pdu
-            pdu_data = &adv_data[2];
-            printf("received mesh message: ");
-            printf_hexdump(pdu_data, pdu_len);
-            mesh_network_received_message(pdu_data, pdu_len);
-            break;
-        default:
             break;
     }
 }
