@@ -120,6 +120,12 @@ typedef uint8_t sm_key_t[16];
 // Mesh Provisioning PDU
 #define PROVISIONING_DATA_PACKET 0x11
 
+// Mesh Network PDU
+#define MESH_NETWORK_PACKET      0x11
+
+// Mesh Network PDU
+#define MESH_BEACON_PACKET       0x12
+
 // debug log messages
 #define LOG_MESSAGE_PACKET      0xfc
 
