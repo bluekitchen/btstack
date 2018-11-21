@@ -324,6 +324,30 @@ static const mesh_application_key_t * mesh_application_key_iterator_get_next(mes
     return &test_application_key;
 }
 
+// helper network layer, temp
+static uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len){
+
+    // "3.4.5.2: The output filter of the interface connected to advertising or GATT bearers shall drop all messages with TTL value set to 1."
+    // if (ttl <= 1) return 0;
+
+    // TODO: check transport_pdu_len depending on ctl
+
+    // lookup network by netkey_index
+    const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
+    if (!network_key) return 0;
+
+    // allocate network_pdu
+    mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
+    if (!network_pdu) return 0;
+
+    // setup network_pdu
+    mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, ctl, ttl, seq, src, dest, transport_pdu_data, transport_pdu_len);
+
+    // send network_pdu
+    mesh_network_send_pdu(network_pdu);
+    return 0;
+}
+
 
 // stub lower transport
 
