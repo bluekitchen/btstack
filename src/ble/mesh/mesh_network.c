@@ -64,7 +64,7 @@ typedef struct {
 static uint32_t global_iv_index;
 static uint16_t mesh_network_primary_address;
 static uint16_t mesh_network_num_elements;
-static void (*mesh_network_higher_layer_handler)(mesh_network_pdu_t * network_pdu);
+static void (*mesh_network_higher_layer_handler)(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu);
 
 // shared send/receive crypto
 static int mesh_crypto_active;
@@ -359,7 +359,7 @@ static void process_network_pdu_validate_d(void * arg){
             mesh_network_cache_add(hash);
 
             // forward to lower transport layer. message is freed by call to mesh_network_message_processed_by_upper_layer
-            (*mesh_network_higher_layer_handler)(network_pdu);
+            (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_RECEIVED, network_pdu);
 
         } else {
 
@@ -540,7 +540,7 @@ void mesh_network_init(void){
     adv_bearer_register_for_mesh_message(&mesh_message_handler);
 }
 
-void mesh_network_set_higher_layer_handler(void (*packet_handler)(mesh_network_pdu_t * network_pdu)){
+void mesh_network_set_higher_layer_handler(void (*packet_handler)(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu)){
     mesh_network_higher_layer_handler = packet_handler;
 }
 

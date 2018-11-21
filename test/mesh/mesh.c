@@ -888,10 +888,18 @@ static void mesh_lower_transport_run(void){
     }
 }
 
-static void mesh_transport_received_mesage(mesh_network_pdu_t * network_pdu){
-    // add to list and go
-    btstack_linked_list_add_tail(&lower_transport_incoming, (btstack_linked_item_t *) network_pdu);
-    mesh_lower_transport_run();
+static void mesh_transport_received_mesage(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu){
+    switch (callback_type){
+        case MESH_NETWORK_PDU_RECEIVED:
+            // add to list and go
+            btstack_linked_list_add_tail(&lower_transport_incoming, (btstack_linked_item_t *) network_pdu);
+            mesh_lower_transport_run();
+            break;
+        case MESH_NETWORK_PDU_SENT:
+            break;
+        default:
+            break;
+    }
 }
 
 // UPPER TRANSPORT

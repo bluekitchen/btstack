@@ -50,6 +50,11 @@ extern "C" {
 #define MESH_NETWORK_PAYLOAD_MAX      29
 #define MESH_ACCESS_PAYLOAD_MAX      384
 
+typedef enum {
+    MESH_NETWORK_PDU_RECEIVED,
+    MESH_NETWORK_PDU_SENT,
+} mesh_network_callback_type_t;
+
 typedef struct {
     // allow for linked lists
     btstack_linked_item_t item;
@@ -124,7 +129,7 @@ void mesh_network_init(void);
  * @brief Set higher layer Network PDU handler
  * @param packet_handler
  */
-void mesh_network_set_higher_layer_handler(void (*packet_handler)(mesh_network_pdu_t * network_pdu));
+void mesh_network_set_higher_layer_handler(void (*packet_handler)(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu));
 
 /**
  * @brief Mark packet as processed
