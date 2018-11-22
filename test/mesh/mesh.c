@@ -372,6 +372,12 @@ static btstack_linked_list_t upper_transport_control;
 // access segmented access messages (to process)
 // static btstack_linked_list_t access_incoming;
 
+static mesh_transport_pdu_t * upper_transport_outgoing_pdu;
+static mesh_network_pdu_t   * upper_transport_outgoing_segment;
+static uint16_t               upper_transport_outgoing_seg_o;
+
+static uint32_t               upper_transport_seq;
+
 
 static void transport_unsegmented_setup_nonce(uint8_t * nonce, const mesh_network_pdu_t * network_pdu){
     nonce[1] = 0x00;    // SZMIC if a Segmented Access message or 0 for all other message formats
@@ -461,8 +467,43 @@ static void mesh_transport_set_dest(mesh_transport_pdu_t * transport_pdu, uint16
 //
 
 
-static void mesh_transport_process_unsegmented_transport_message(mesh_network_pdu_t * network_pdu){
-    printf("Unsegmented transport message\n");
+static void mesh_transport_process_unsegmented_control_message(mesh_network_pdu_t * network_pdu){
+    printf("Unsegmented Control message\n");
+    uint8_t * lower_transport_pdu     = &network_pdu->data[9];
+    uint8_t  opcode = lower_transport_pdu[0];
+    uint16_t seq_zero_pdu;
+    uint16_t seq_zero_out;
+    uint32_t block_ack;
+    switch (opcode){
+        case 0:
+            seq_zero_pdu = big_endian_read_16(lower_transport_pdu, 1) >> 2;
+            seq_zero_out = mesh_transport_seq(upper_transport_outgoing_pdu) & 0x1fff;
+            block_ack = big_endian_read_32(lower_transport_pdu, 3); 
+            printf("[+] Segment Acknowledgment message with seq_zero %06x, block_ack %08x - outgoing seq %06x, block_ack %08x",
+                seq_zero_pdu, block_ack, seq_zero_out, upper_transport_outgoing_pdu->block_ack);
+            if (seq_zero_pdu == seq_zero_out){
+                upper_transport_outgoing_pdu->block_ack &= ~block_ack;
+                printf("[+] Updated block_ack %08x", upper_transport_outgoing_pdu->block_ack);
+                if (upper_transport_outgoing_pdu->block_ack == 0){
+                    printf("[+] Sent complete\n");
+
+                    btstack_memory_mesh_transport_pdu_free(upper_transport_outgoing_pdu);        
+                    upper_transport_outgoing_pdu     = NULL;
+                    btstack_memory_mesh_network_pdu_free(upper_transport_outgoing_segment);        
+                    upper_transport_outgoing_segment = NULL;
+                }
+            } else {
+                printf("[!] Seq Zero doesn't match\n");
+            }
+            break;
+        default:
+            printf("[!] Unhandled Control message with opcode %02x\n", opcode);
+            break;
+    }    
+}
+
+static void mesh_transport_process_unsegmented_access_message(mesh_network_pdu_t * network_pdu){
+    printf("Unsegmented Access message\n");
 }
 
 static void mesh_lower_transport_process_unsegmented_message_done(mesh_network_pdu_t * network_pdu){
@@ -507,7 +548,7 @@ static void mesh_upper_transport_validate_unsegmented_message_ccm(void * arg){
         printf("TransMIC matches\n");
 
         // pass to upper layer
-        printf("Pass unsegmented access message to upper transport\n");
+        mesh_transport_process_unsegmented_access_message(network_pdu);
         btstack_memory_mesh_network_pdu_free(network_pdu);
         
         printf("\n");
@@ -655,7 +696,7 @@ static void mesh_upper_transport_validate_segmented_message(mesh_transport_pdu_t
 }
 
 
-static void mesh_lower_transport_process_message(mesh_network_pdu_t * network_pdu){
+static void mesh_lower_transport_process_unsegmented_access_message(mesh_network_pdu_t * network_pdu){
     uint8_t ctl_ttl     = network_pdu_in_validation->data[1];
     uint8_t ctl         = ctl_ttl >> 7;
 
@@ -881,18 +922,18 @@ static void mesh_lower_transport_run(void){
             } else {
                 // control?
                 if (mesh_network_control(network_pdu)){
-                    // unsegmented transport message (not encrypted)
+                    // unsegmented control message (not encrypted)
                     (void) btstack_linked_list_pop(&lower_transport_incoming);
-                    mesh_transport_process_unsegmented_transport_message(network_pdu);
+                    mesh_transport_process_unsegmented_control_message(network_pdu);
                     mesh_network_message_processed_by_higher_layer(network_pdu);
                 } else {
-                    // unsegmented access message
+                    // unsegmented access message (encrypted)
                     mesh_network_pdu_t * decode_pdu = btstack_memory_mesh_network_pdu_get();
                     if (!decode_pdu) return; 
                     // get encoded network pdu and start processing
                     network_pdu_in_validation = network_pdu;
                     (void) btstack_linked_list_pop(&lower_transport_incoming);
-                    mesh_lower_transport_process_message(decode_pdu);
+                    mesh_lower_transport_process_unsegmented_access_message(decode_pdu);
                 }
             }
         }
@@ -932,12 +973,6 @@ static void mesh_lower_transport_received_mesage(mesh_network_callback_type_t ca
 // UPPER TRANSPORT
 
 static void mesh_transport_tx_ack_timeout(btstack_timer_source_t * ts);
-
-static mesh_transport_pdu_t * upper_transport_outgoing_pdu;
-static mesh_network_pdu_t   * upper_transport_outgoing_segment;
-static uint16_t               upper_transport_outgoing_seg_o;
-
-static uint32_t               upper_transport_seq;
 
 static uint32_t mesh_upper_transport_next_seq(void){
     return upper_transport_seq++;
@@ -986,10 +1021,6 @@ static void mesh_upper_transport_send_next_segment(void){
 
     if (upper_transport_outgoing_seg_o > seg_n){
         printf("[+] Upper transport, send segmented pdu complete\n");
-        // btstack_memory_mesh_transport_pdu_free(upper_transport_outgoing_pdu);        
-        // upper_transport_outgoing_pdu     = NULL;
-        // btstack_memory_mesh_network_pdu_free(upper_transport_outgoing_segment);        
-        // upper_transport_outgoing_segment = NULL;
         return;
     }
 
