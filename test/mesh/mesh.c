@@ -930,26 +930,10 @@ static void mesh_lower_transport_received_mesage(mesh_network_callback_type_t ca
 
 // UPPER TRANSPORT
 
-static void mesh_upper_transport_send_unsegmented_access_pdu_ccm(void * arg){
-    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
-    mesh_print_hex("EncAccessPayload", &network_pdu->data[10], network_pdu->len-10);
-    // store TransMIC
-    btstack_crypo_ccm_get_authentication_value(&ccm, &network_pdu->data[network_pdu->len]);
-    mesh_print_hex("TransMIC", &network_pdu->data[network_pdu->len], 4);
-    network_pdu->len += 4;
-    // send network pdu
-    mesh_network_send_pdu(network_pdu);
-}
-
-static void mesh_upper_transport_send_segmented_access_pdu_ccm(void * arg){
-    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) arg;
-    mesh_print_hex("EncAccessPayload", transport_pdu->data, transport_pdu->len);
-    // store TransMIC
-    btstack_crypo_ccm_get_authentication_value(&ccm, &transport_pdu->data[transport_pdu->len]);
-    mesh_print_hex("TransMIC", &transport_pdu->data[transport_pdu->len], transport_pdu->transmic_len);
-    transport_pdu->len += transport_pdu->transmic_len;
+static void mesh_upper_transport_send_segmented_pdu(mesh_transport_pdu_t * transport_pdu){
     // chop into chunks
 
+    printf("[+] Upper transport, send segmented pdu\n");
     uint8_t * upper_transport_pdu_data = transport_pdu->data;
     uint16_t  upper_transport_pdu_len  = transport_pdu->len;
 
@@ -980,7 +964,7 @@ static void mesh_upper_transport_send_segmented_access_pdu_ccm(void * arg){
         memcpy(&lower_transport_pdu_data[4], upper_transport_pdu_data, segment_len);
         uint16_t lower_transport_pdu_len = 4 + segment_len;
 
-        printf("seq %0x, seq zero %x. seg_o %x, seg_n %x\n", seq, seq_zero, seg_o, seg_n);
+        printf("[+] Lower transport, send segmented pdu: seq %0x, seq zero %x. seg_o %x, seg_n %x\n", seq, seq_zero, seg_o, seg_n);
         mesh_print_hex("LowerTransportPDU", lower_transport_pdu_data, lower_transport_pdu_len);
         // setup network_pdu
         mesh_network_setup_pdu(network_pdu, transport_pdu->netkey_index, nid, 0, ttl, seq, src, dest, lower_transport_pdu_data, lower_transport_pdu_len);
@@ -993,6 +977,27 @@ static void mesh_upper_transport_send_segmented_access_pdu_ccm(void * arg){
         upper_transport_pdu_data += segment_len;
         upper_transport_pdu_len  -= segment_len;
     }
+}
+
+static void mesh_upper_transport_send_unsegmented_access_pdu_ccm(void * arg){
+    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
+    mesh_print_hex("EncAccessPayload", &network_pdu->data[10], network_pdu->len-10);
+    // store TransMIC
+    btstack_crypo_ccm_get_authentication_value(&ccm, &network_pdu->data[network_pdu->len]);
+    mesh_print_hex("TransMIC", &network_pdu->data[network_pdu->len], 4);
+    network_pdu->len += 4;
+    // send network pdu
+    mesh_network_send_pdu(network_pdu);
+}
+
+static void mesh_upper_transport_send_segmented_access_pdu_ccm(void * arg){
+    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) arg;
+    mesh_print_hex("EncAccessPayload", transport_pdu->data, transport_pdu->len);
+    // store TransMIC
+    btstack_crypo_ccm_get_authentication_value(&ccm, &transport_pdu->data[transport_pdu->len]);
+    mesh_print_hex("TransMIC", &transport_pdu->data[transport_pdu->len], transport_pdu->transmic_len);
+    transport_pdu->len += transport_pdu->transmic_len;
+    mesh_upper_transport_send_segmented_pdu(transport_pdu);
 }
 
 static uint8_t mesh_upper_transport_access_send(uint16_t netkey_index, uint16_t appkey_index, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest,
