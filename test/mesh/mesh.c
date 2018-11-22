@@ -980,7 +980,7 @@ static void mesh_upper_transport_send_next_segment(void){
     uint8_t  seg_n = (upper_transport_outgoing_pdu->len - 1) / max_segment_len;
 
     // find next unacknowledged segement
-    while ((upper_transport_outgoing_seg_o <= seg_n) && (upper_transport_outgoing_pdu->block_ack & (1 << upper_transport_outgoing_seg_o))){
+    while ((upper_transport_outgoing_seg_o <= seg_n) && ((upper_transport_outgoing_pdu->block_ack & (1 << upper_transport_outgoing_seg_o)) == 0)){
         upper_transport_outgoing_seg_o++;
     }
 
@@ -1035,7 +1035,15 @@ static void mesh_upper_transport_send_segmented_pdu(mesh_transport_pdu_t * trans
     upper_transport_outgoing_segment = network_pdu;
     upper_transport_outgoing_seg_o   = 0;
 
-    transport_pdu->block_ack = 0;
+    // setup block ack - set bit for segment to send, clear on ack
+    int      ctl = mesh_transport_ctl(upper_transport_outgoing_pdu);
+    uint16_t max_segment_len = ctl ? 8 : 12;    // control 8 bytes (64 bit NetMic), access 12 bytes (32 bit NetMIC)
+    uint8_t  seg_n = (upper_transport_outgoing_pdu->len - 1) / max_segment_len;
+    if (seg_n == 31){
+        transport_pdu->block_ack = -1;
+    } else {
+        transport_pdu->block_ack = (1 << (seg_n+1)) - 1;
+    }
 
     // start sending
     mesh_upper_transport_send_next_segment();
