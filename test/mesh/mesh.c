@@ -912,6 +912,8 @@ static void mesh_lower_transport_run(void){
     }
 }
 
+static void mesh_upper_transport_network_pdu_sent(mesh_network_pdu_t * network_pdu);
+
 static void mesh_lower_transport_received_mesage(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu){
     switch (callback_type){
         case MESH_NETWORK_PDU_RECEIVED:
@@ -920,8 +922,7 @@ static void mesh_lower_transport_received_mesage(mesh_network_callback_type_t ca
             mesh_lower_transport_run();
             break;
         case MESH_NETWORK_PDU_SENT:
-            // free pdu
-            btstack_memory_mesh_network_pdu_free(network_pdu);
+            mesh_upper_transport_network_pdu_sent(network_pdu);
             break;
         default:
             break;
@@ -929,6 +930,11 @@ static void mesh_lower_transport_received_mesage(mesh_network_callback_type_t ca
 }
 
 // UPPER TRANSPORT
+
+static mesh_transport_pdu_t * upper_transport_outgoing_pdu;
+static mesh_network_pdu_t   * upper_transport_outgoing_segment;
+static uint16_t               upper_transport_outgoing_seg_o;
+
 
 static void mesh_upper_transport_setup_segment(mesh_transport_pdu_t * transport_pdu, uint8_t seg_o, mesh_network_pdu_t * network_pdu){
 
@@ -958,32 +964,55 @@ static void mesh_upper_transport_setup_segment(mesh_transport_pdu_t * transport_
     mesh_network_setup_pdu(network_pdu, transport_pdu->netkey_index, nid, 0, ttl, seq, src, dest, lower_transport_pdu_data, lower_transport_pdu_len);
 }
 
+static void mesh_upper_transport_send_next_segment(void){
+    int ctl = mesh_transport_ctl(upper_transport_outgoing_pdu);
+    uint16_t max_segment_len = ctl ? 8 : 12;    // control 8 bytes (64 bit NetMic), access 12 bytes (32 bit NetMIC)
+    uint8_t  seg_n = (upper_transport_outgoing_pdu->len - 1) / max_segment_len;
+
+    if (upper_transport_outgoing_seg_o > seg_n){
+        printf("[+] Upper transport, send segmented pdu complete\n");
+        btstack_memory_mesh_transport_pdu_free(upper_transport_outgoing_pdu);        
+        upper_transport_outgoing_pdu     = NULL;
+        btstack_memory_mesh_network_pdu_free(upper_transport_outgoing_segment);        
+        upper_transport_outgoing_segment = NULL;
+        return;
+    }
+
+    mesh_upper_transport_setup_segment(upper_transport_outgoing_pdu, upper_transport_outgoing_seg_o, upper_transport_outgoing_segment);
+
+    printf("[+] Upper transport, send segmented pdu: seg_o %x, seg_n %x\n", upper_transport_outgoing_seg_o, seg_n);
+    mesh_print_hex("LowerTransportPDU", upper_transport_outgoing_segment->data, upper_transport_outgoing_segment->len);
+
+    // next segment
+    upper_transport_outgoing_seg_o++;
+
+    // send network pdu
+    mesh_network_send_pdu(upper_transport_outgoing_segment);
+}
+
+static void mesh_upper_transport_network_pdu_sent(mesh_network_pdu_t * network_pdu){
+    if (upper_transport_outgoing_segment == network_pdu){
+        mesh_upper_transport_send_next_segment();
+    } else {
+         btstack_memory_mesh_network_pdu_free(network_pdu);        
+    }
+}
+
 static void mesh_upper_transport_send_segmented_pdu(mesh_transport_pdu_t * transport_pdu){
     // chop into chunks
     printf("[+] Upper transport, send segmented pdu\n");
 
-    int ctl = mesh_transport_ctl(transport_pdu);
-    uint16_t max_segment_len = ctl ? 8 : 12;    // control 8 bytes (64 bit NetMic), access 12 bytes (32 bit NetMIC)
-    uint8_t  seg_o    = 0;
-    uint8_t  seg_n    = (transport_pdu->len - 1) / max_segment_len;
+    // allocate network_pdu
+    mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
+    if (!network_pdu) return;
 
-    while (seg_o <= seg_n){
+    // setup
+    upper_transport_outgoing_pdu     = transport_pdu;
+    upper_transport_outgoing_segment = network_pdu;
+    upper_transport_outgoing_seg_o   = 0;
 
-        // allocate network_pdu
-        mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
-        if (!network_pdu) return;
-
-        mesh_upper_transport_setup_segment(transport_pdu, seg_o, network_pdu);
-
-        printf("[+] Lower transport, send segmented pdu: seg_o %x, seg_n %x\n", seg_o, seg_n);
-        mesh_print_hex("LowerTransportPDU", network_pdu->data, network_pdu->len);
-
-        // send network pdu
-        mesh_network_send_pdu(network_pdu);
-
-        // next segment
-        seg_o++;
-    }
+    // start sending
+    mesh_upper_transport_send_next_segment();
 }
 
 static void mesh_upper_transport_send_unsegmented_access_pdu_ccm(void * arg){
