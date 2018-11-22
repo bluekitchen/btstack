@@ -873,7 +873,7 @@ void provisioning_device_init(const uint8_t * device_uuid){
     // setup PB GATT
     pb_gatt_init(device_uuid);
     pb_gatt_register_packet_handler(&provisioning_handle_pdu);
-
+    
     pb_transport_cid = MESH_PB_TRANSPORT_INVALID_CID;
     
     // init provisioning state
