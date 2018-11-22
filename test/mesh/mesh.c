@@ -937,19 +937,19 @@ static void mesh_upper_transport_send_segmented_pdu(mesh_transport_pdu_t * trans
     uint8_t * upper_transport_pdu_data = transport_pdu->data;
     uint16_t  upper_transport_pdu_len  = transport_pdu->len;
 
-    // segmented acccess message
+    int ctl = mesh_transport_ctl(transport_pdu);
+    uint16_t max_segment_len = ctl ? 8 : 12;    // control 8 bytes (64 bit NetMic), access 12 bytes (32 bit NetMIC)
+
     uint32_t seq      = mesh_transport_seq(transport_pdu);
     uint8_t  seg_o    = 0;
-    uint8_t  seg_n    = (upper_transport_pdu_len - 1) >> 4;
+    uint8_t  seg_n    = (upper_transport_pdu_len - 1) / max_segment_len;
     uint16_t seq_zero = seq & 0x01fff;
-    uint8_t  szmic    = transport_pdu->transmic_len == 8 ? 1 : 0;
+    uint8_t  szmic    = ((!ctl) && (transport_pdu->transmic_len == 8)) ? 1 : 0; // only 1 for access messages with 64 bit TransMIC
     uint8_t  nid      = mesh_transport_nid(transport_pdu);
     uint8_t  ttl      = mesh_transport_ttl(transport_pdu);
     uint16_t src      = mesh_transport_src(transport_pdu);
     uint16_t dest     = mesh_transport_dest(transport_pdu);
 
-    // 8026ac01ee9dddfd2169326d23f3afdf
-    // 80 06 AC 02 80 06 AC 02 01 00 00 00 58 D4 D3 0F
     while (upper_transport_pdu_len){
 
         // allocate network_pdu
@@ -959,8 +959,8 @@ static void mesh_upper_transport_send_segmented_pdu(mesh_transport_pdu_t * trans
         // setup access pdu
         uint8_t lower_transport_pdu_data[16];
         lower_transport_pdu_data[0] = 0x80 |  transport_pdu->akf_aid;
-        big_endian_store_24(lower_transport_pdu_data, 1, (szmic << 23) | (((int)seq_zero << 10)) | (seg_o << 5) | seg_n);
-        uint16_t segment_len = btstack_min(upper_transport_pdu_len, 12);
+        big_endian_store_24(lower_transport_pdu_data, 1, (szmic << 23) | (seq_zero << 10) | (seg_o << 5) | seg_n);
+        uint16_t segment_len = btstack_min(upper_transport_pdu_len, max_segment_len);
         memcpy(&lower_transport_pdu_data[4], upper_transport_pdu_data, segment_len);
         uint16_t lower_transport_pdu_len = 4 + segment_len;
 
@@ -1002,6 +1002,9 @@ static void mesh_upper_transport_send_segmented_access_pdu_ccm(void * arg){
 
 static uint8_t mesh_upper_transport_access_send(uint16_t netkey_index, uint16_t appkey_index, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest,
                           const uint8_t * access_pdu_data, uint8_t access_pdu_len, uint8_t szmic){
+
+    printf("[+] Upper transport, send Access PDU: \n");
+    printf_hexdump(access_pdu_data, access_pdu_len);
 
     // get app or device key
     uint8_t akf;
@@ -1089,7 +1092,10 @@ static uint8_t mesh_upper_transport_access_send(uint16_t netkey_index, uint16_t 
 }
 
 static uint8_t mesh_upper_transport_send_control_pdu(uint16_t netkey_index, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest, uint8_t opcode,
-                          const uint8_t * control_pdu_data, uint16_t control_pdu_len, uint8_t szmic){
+                          const uint8_t * control_pdu_data, uint16_t control_pdu_len){
+
+    printf("[+] Upper transport, send Control PDU (opcode %02x): \n", opcode);
+    printf_hexdump(control_pdu_data, control_pdu_len);
 
     // lookup network by netkey_index
     const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
@@ -1117,37 +1123,23 @@ static uint8_t mesh_upper_transport_send_control_pdu(uint16_t netkey_index, uint
         return 0;
     }
     if (control_pdu_len <= 256) {
-        // segmented acccess message
-        uint8_t  seg_o    = 0;
-        uint8_t  seg_n    = (control_pdu_len + 7) >> 3;
-        uint16_t seq_zero = seq & 0x01ff;
 
-        while (control_pdu_len){
+        // store in transport pdu
+        mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
+        if (!transport_pdu) return 0;
+        memcpy(transport_pdu->data, control_pdu_data, control_pdu_len);
+        transport_pdu->len = control_pdu_len;
+        transport_pdu->netkey_index = netkey_index;
+        transport_pdu->akf_aid = opcode;
+        transport_pdu->transmic_len = 0;    // no TransMIC for control
+        mesh_transport_set_nid_ivi(transport_pdu, network_key->nid);
+        mesh_transport_set_seq(transport_pdu, seq);
+        mesh_transport_set_src(transport_pdu, src);
+        mesh_transport_set_dest(transport_pdu, dest);
+        mesh_transport_set_ctl_ttl(transport_pdu, 0x80 | ttl);
 
-            // allocate network_pdu
-            mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
-            if (!network_pdu) return 0;
-
-            // setup access pdu
-            uint8_t transport_pdu_data[12];
-            transport_pdu_data[0] = 0x80 | opcode;
-            big_endian_store_24(transport_pdu_data, 1, (seq_zero << 10) | (seg_o << 5) | seg_n);
-            uint16_t segment_len = btstack_min(control_pdu_len, 8);
-            memcpy(&transport_pdu_data[4], control_pdu_data, segment_len);
-            uint16_t transport_pdu_len = segment_len + 1;
-
-            mesh_print_hex("LowerTransportPDU", transport_pdu_data, transport_pdu_len);
-            // setup network_pdu
-            mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, 1, ttl, seq, src, dest, transport_pdu_data, transport_pdu_len);
-            // send network pdu
-            mesh_network_send_pdu(network_pdu);
-
-            // next segment
-            seq++;
-            seg_o++;
-            control_pdu_data += segment_len;
-            control_pdu_len  -= segment_len;
-        }
+        //
+        mesh_upper_transport_send_segmented_pdu(transport_pdu);
     }
     // Message too long
     return 0;
