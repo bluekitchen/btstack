@@ -1511,6 +1511,7 @@ static void l2cap_run(void){
                 l2cap_send_signaling_packet( channel->con_handle, DISCONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid);   
                 // we don't start an RTX timer for a disconnect - there's no point in closing the channel if the other side doesn't respond :)
                 l2cap_finialize_channel_close(channel);  // -- remove from list
+                channel = NULL;
                 break;
                 
             case L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST:
@@ -1524,7 +1525,9 @@ static void l2cap_run(void){
         }
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-        // send s-frame to acknowledge received packets
+
+        // check if we can still send
+        if (!channel) continue;
         if (channel->con_handle == HCI_CON_HANDLE_INVALID) continue;
         if (!hci_can_send_acl_packet_now(channel->con_handle)) continue;
 
