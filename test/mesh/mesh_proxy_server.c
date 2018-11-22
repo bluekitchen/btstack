@@ -50,11 +50,7 @@
 #include "provisioning.h"
 #include "provisioning_device.h"
 
-// https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.characteristic.gap.appearance.xml
-// cycling / cycling power sensor
-static const uint16_t appearance = (18 << 6) | 4;
 static uint16_t con_handle;
-static uint8_t broadcast_adv[31];
 static uint16_t adv_int_min = 0x0030;
 static uint16_t adv_int_max = 0x0030;
 
@@ -103,7 +99,6 @@ static void stdin_process(char cmd){
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    bd_addr_t null_addr;
     
     if (packet_type != HCI_EVENT_PACKET) return;
  
