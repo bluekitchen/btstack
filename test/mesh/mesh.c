@@ -979,14 +979,10 @@ static void mesh_upper_transport_send_next_segment(void){
     uint16_t max_segment_len = ctl ? 8 : 12;    // control 8 bytes (64 bit NetMic), access 12 bytes (32 bit NetMIC)
     uint8_t  seg_n = (upper_transport_outgoing_pdu->len - 1) / max_segment_len;
 
-    // resstart acknowledgment timer
-    // - "This timer shall be set to a minimum of 200 + 50 * TTL milliseconds."
-    if (upper_transport_outgoing_pdu->acknowledgement_timer_active){
-        btstack_run_loop_remove_timer(&upper_transport_outgoing_pdu->incomplete_timer);
-        upper_transport_outgoing_pdu->acknowledgement_timer_active = 0;
+    // find next unacknowledged segement
+    while ((upper_transport_outgoing_seg_o <= seg_n) && (upper_transport_outgoing_pdu->block_ack & (1 << upper_transport_outgoing_seg_o))){
+        upper_transport_outgoing_seg_o++;
     }
-    uint32_t timeout = 200 + 50 * mesh_transport_ttl(upper_transport_outgoing_pdu);
-    mesh_transport_start_acknowledgment_timer(upper_transport_outgoing_pdu, timeout, &mesh_transport_tx_ack_timeout);
 
     if (upper_transport_outgoing_seg_o > seg_n){
         printf("[+] Upper transport, send segmented pdu complete\n");
@@ -996,6 +992,15 @@ static void mesh_upper_transport_send_next_segment(void){
         // upper_transport_outgoing_segment = NULL;
         return;
     }
+
+    // restart acknowledgment timer
+    // - "This timer shall be set to a minimum of 200 + 50 * TTL milliseconds."
+    if (upper_transport_outgoing_pdu->acknowledgement_timer_active){
+        btstack_run_loop_remove_timer(&upper_transport_outgoing_pdu->incomplete_timer);
+        upper_transport_outgoing_pdu->acknowledgement_timer_active = 0;
+    }
+    uint32_t timeout = 200 + 50 * mesh_transport_ttl(upper_transport_outgoing_pdu);
+    mesh_transport_start_acknowledgment_timer(upper_transport_outgoing_pdu, timeout, &mesh_transport_tx_ack_timeout);
 
     mesh_upper_transport_setup_segment(upper_transport_outgoing_pdu, upper_transport_outgoing_seg_o, upper_transport_outgoing_segment);
 
@@ -1029,6 +1034,8 @@ static void mesh_upper_transport_send_segmented_pdu(mesh_transport_pdu_t * trans
     upper_transport_outgoing_pdu     = transport_pdu;
     upper_transport_outgoing_segment = network_pdu;
     upper_transport_outgoing_seg_o   = 0;
+
+    transport_pdu->block_ack = 0;
 
     // start sending
     mesh_upper_transport_send_next_segment();
