@@ -194,7 +194,7 @@ void pb_gatt_register_packet_handler(btstack_packet_handler_t _packet_handler){
 }
 
 /**
- * Close Link
+ * Send pdu
  * @param con_handle
  * @param pdu
  * @param pdu_size
