@@ -53,7 +53,7 @@
 #define ADV_TIMER_EXTRA_MS 10
 
 typedef enum {
-    MESH_MESSAGE_ID,
+    MESH_NETWORK_ID,
     MESH_BEACON_ID,
     PB_ADV_ID,
     INVALID_ID,
@@ -114,7 +114,7 @@ static void adv_bearer_packet_handler (uint8_t packet_type, uint16_t channel, ui
                     // log_info_hexdump(data, data_len);
                     switch(data[1]){
                         case BLUETOOTH_DATA_TYPE_MESH_MESSAGE:
-                            type_id = MESH_MESSAGE_ID;
+                            type_id = MESH_NETWORK_ID;
                             break;
                         case BLUETOOTH_DATA_TYPE_MESH_BEACON:
                             type_id = MESH_BEACON_ID;
@@ -130,7 +130,7 @@ static void adv_bearer_packet_handler (uint8_t packet_type, uint16_t channel, ui
                             case PB_ADV_ID:
                                 (*client_callbacks[type_id])(packet_type, channel, packet, size);
                                 break;
-                            case MESH_MESSAGE_ID:
+                            case MESH_NETWORK_ID:
                                 (*client_callbacks[type_id])(MESH_NETWORK_PACKET, 0, (uint8_t*) &data[2], data_len-2);
                                 break;
                             case MESH_BEACON_ID:
@@ -217,7 +217,7 @@ void adv_bearer_init(void){
 //
 
 void adv_bearer_register_for_mesh_message(btstack_packet_handler_t packet_handler){
-    client_callbacks[MESH_MESSAGE_ID] = packet_handler;
+    client_callbacks[MESH_NETWORK_ID] = packet_handler;
 }
 void adv_bearer_register_for_mesh_beacon(btstack_packet_handler_t packet_handler){
     client_callbacks[MESH_BEACON_ID] = packet_handler;
@@ -228,7 +228,7 @@ void adv_bearer_register_for_pb_adv(btstack_packet_handler_t packet_handler){
 
 //
 void adv_bearer_request_can_send_now_for_mesh_message(void){
-    adv_bearer_request(MESH_MESSAGE_ID);
+    adv_bearer_request(MESH_NETWORK_ID);
 }
 void adv_bearer_request_can_send_now_for_mesh_beacon(void){
     adv_bearer_request(MESH_BEACON_ID);
