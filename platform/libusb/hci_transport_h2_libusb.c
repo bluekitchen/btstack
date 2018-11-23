@@ -1100,6 +1100,7 @@ static int usb_open(void){
             usb_close();
             return 1;            
         }
+        memset(pollfd_data_sources, 0, sizeof(btstack_data_source_t) * num_pollfds);
         for (r = 0 ; r < num_pollfds ; r++) {
             btstack_data_source_t *ds = &pollfd_data_sources[r];
             btstack_run_loop_set_data_source_fd(ds, pollfd[r]->fd);
