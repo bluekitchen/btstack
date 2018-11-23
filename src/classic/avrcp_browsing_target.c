@@ -198,7 +198,6 @@ static void avrcp_emit_browsing_connection_closed(btstack_packet_handler_t callb
 
 static avrcp_browsing_connection_t * avrcp_browsing_create_connection(avrcp_connection_t * avrcp_connection){
     avrcp_browsing_connection_t * connection = btstack_memory_avrcp_browsing_connection_get();
-    memset(connection, 0, sizeof(avrcp_browsing_connection_t));
     connection->state = AVCTP_CONNECTION_IDLE;
     connection->transaction_label = 0xFF;
     avrcp_connection->avrcp_browsing_cid = avrcp_get_next_cid();

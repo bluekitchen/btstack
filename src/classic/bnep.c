@@ -703,9 +703,6 @@ static bnep_channel_t * bnep_channel_create_for_addr(bd_addr_t addr)
         return NULL;
     }
 
-    /* Initialize the channel struct */
-    memset(channel, 0, sizeof(bnep_channel_t));
-
     channel->state = BNEP_CHANNEL_STATE_CLOSED;
     channel->max_frame_size = bnep_max_frame_size_for_l2cap_mtu(l2cap_max_mtu());
     bd_addr_copy(channel->remote_addr, addr);
@@ -1600,7 +1597,6 @@ uint8_t bnep_register_service(btstack_packet_handler_t packet_handler, uint16_t 
     if (!service) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
-    memset(service, 0, sizeof(bnep_service_t));
 
     /* register with l2cap if not registered before, max MTU */
     l2cap_register_service(bnep_packet_handler, BLUETOOTH_PROTOCOL_BNEP, 0xffff, bnep_security_level);

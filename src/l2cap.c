@@ -1799,9 +1799,6 @@ static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t pac
     if (!channel) {
         return NULL;
     }
-
-     // Init memory (make valgrind happy)
-    memset(channel, 0, sizeof(l2cap_channel_t));
         
     // fill in 
     channel->packet_handler = packet_handler;

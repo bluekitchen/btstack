@@ -371,7 +371,6 @@ static avrcp_connection_t * avrcp_create_connection(bd_addr_t remote_addr, avrcp
         log_error("avrcp: not enough memory to create connection");
         return NULL;
     }
-    memset(connection, 0, sizeof(avrcp_connection_t));
     connection->state = AVCTP_CONNECTION_IDLE;
     connection->transaction_label = 0xFF;
     connection->max_num_fragments = 0xFF;

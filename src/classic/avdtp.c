@@ -316,7 +316,6 @@ avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, avdtp_contex
         log_error("Not enough memory to create connection");
         return NULL;
     }
-    memset(connection, 0, sizeof(avdtp_connection_t));
     connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
     connection->initiator_transaction_label = avdtp_get_next_initiator_transaction_label(context);
     connection->avdtp_cid = avdtp_get_next_avdtp_cid();
@@ -332,7 +331,6 @@ avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type
         log_error("Not enough memory to create stream endpoint");
         return NULL;
     }
-    memset(stream_endpoint, 0, sizeof(avdtp_stream_endpoint_t));
     stream_endpoint->sep.seid = avdtp_get_next_local_seid(context);
     stream_endpoint->sep.media_type = media_type;
     stream_endpoint->sep.type = sep_type;

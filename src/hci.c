@@ -186,7 +186,6 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
     log_info("create_connection_for_addr %s, type %x", bd_addr_to_str(addr), addr_type);
     hci_connection_t * conn = btstack_memory_hci_connection_get();
     if (!conn) return NULL;
-    memset(conn, 0, sizeof(hci_connection_t));
     bd_addr_copy(conn->address, addr);
     conn->address_type = addr_type;
     conn->con_handle = 0xffff;
