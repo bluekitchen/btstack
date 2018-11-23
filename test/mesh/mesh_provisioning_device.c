@@ -50,10 +50,15 @@
 #include "btstack.h"
 #include "provisioning.h"
 #include "provisioning_device.h"
+#include "btstack_tlv.h"
 
+const static uint8_t device_uuid[] = {0x00, 0x1B, 0xDC, 0x08, 0x10, 0x21, 0x0B, 0x0E, 0x0A, 0x0C, 0x00, 0x0B, 0x0E, 0x0A, 0x0C, 0x00};
 static uint16_t con_handle;
 static uint16_t adv_int_min = 0x0030;
 static uint16_t adv_int_max = 0x0030;
+
+static const btstack_tlv_t * btstack_tlv_singleton_impl;
+static void *                btstack_tlv_singleton_context;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -104,6 +109,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     if (packet_type != HCI_EVENT_PACKET) return;
  
     switch (hci_event_packet_get_type(packet)){
+        case BTSTACK_EVENT_STATE:
+            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
+            // get tlv
+            btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
+            break;
         case HCI_EVENT_LE_META:
             switch (hci_event_le_meta_get_subevent_code(packet)){
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
@@ -118,7 +128,34 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     }
 }
 
-const static uint8_t device_uuid[] = { 0x00, 0x1B, 0xDC, 0x08, 0x10, 0x21, 0x0B, 0x0E, 0x0A, 0x0C, 0x00, 0x0B, 0x0E, 0x0A, 0x0C, 0x00 };
+static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    if (packet_type != HCI_EVENT_PACKET) return;
+    mesh_provisioning_data_t provisioning_data;
+    switch(packet[0]){
+        case HCI_EVENT_MESH_META:
+            switch(packet[2]){
+                case MESH_PB_PROV_COMPLETE:
+                    printf("Provisioning complete\n");
+                    memcpy(provisioning_data.network_id, provisioning_device_data_get_network_id(), 8);
+                    memcpy(provisioning_data.beacon_key, provisioning_device_data_get_beacon_key(), 16);
+                    memcpy(provisioning_data.encryption_key, provisioning_device_data_get_encryption_key(), 16);
+                    memcpy(provisioning_data.privacy_key, provisioning_device_data_get_privacy_key(), 16);
+                    memcpy(provisioning_data.device_key, provisioning_device_data_get_device_key(), 16);
+                    provisioning_data.iv_index = provisioning_device_data_get_iv_index();
+                    provisioning_data.nid = provisioning_device_data_get_nid();
+                    provisioning_data.flags = provisioning_device_data_get_flags();
+                    provisioning_data.unicast_address = provisioning_device_data_get_unicast_address();
+                    // store in TLV
+                    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+}
 
 int btstack_main(void);
 int btstack_main(void){
@@ -142,12 +179,12 @@ int btstack_main(void){
 
     // Provisioning in device role
     provisioning_device_init(device_uuid);
-    provisioning_device_register_packet_handler(&packet_handler);
+    provisioning_device_register_packet_handler(&mesh_message_handler);
 
-    // dynamically store device uuid into adv data - probably offset 7 - (see btstack_util to flip)
+    // dynamically store device uuid into adv data
     uint8_t uuid_flipped[16];
     reverse_128(device_uuid, uuid_flipped);
-    memcpy(&adv_data[11], uuid_flipped, 16);
+    memcpy(&adv_data[11], uuid_flipped, sizeof(uuid_flipped));
     
     // setup advertisements
     uint8_t adv_type = 0;   // AFV_IND

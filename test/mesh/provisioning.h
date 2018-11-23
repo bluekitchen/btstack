@@ -105,6 +105,25 @@ typedef enum {
     MESH_OOB_INFORMATION_INDEX_ON_DEVICE
 } mesh_oob_information_index_t;
 
+typedef enum {
+    MESH_MSG_SAR_FIELD_COMPLETE_MSG = 0,
+    MESH_MSG_SAR_FIELD_FIRST_SEGMENT,
+    MESH_MSG_SAR_FIELD_CONTINUE,
+    MESH_MSG_SAR_FIELD_LAST_SEGMENT
+} mesh_msg_sar_field_t; // Message segmentation and reassembly information
+
+typedef enum {
+    MESH_MSG_TYPE_NETWORK_PDU = 0,
+    MESH_MSG_TYPE_BEACON,
+    MESH_MSG_TYPE_PROXY_CONFIGURATION,
+    MESH_MSG_TYPE_PROVISIONING_PDU
+} mesh_msg_type_t;
+
+typedef enum {
+    MESH_IDENTIFICATION_NETWORK_ID_TYPE = 0,
+    MESH_IDENTIFICATION_NODE_IDENTIFY_TYPE 
+} mesh_identification_type_t;
+
 typedef struct {
     uint8_t  network_key[16];
     uint8_t  device_key[16];
@@ -122,20 +141,6 @@ typedef struct {
     // k3
     uint8_t  network_id[8];
 } mesh_provisioning_data_t;
-
-typedef enum {
-    MESH_MSG_SAR_FIELD_COMPLETE_MSG = 0,
-    MESH_MSG_SAR_FIELD_FIRST_SEGMENT,
-    MESH_MSG_SAR_FIELD_CONTINUE,
-    MESH_MSG_SAR_FIELD_LAST_SEGMENT
-} mesh_msg_sar_field_t; // Message segmentation and reassembly information
-
-typedef enum {
-    MESH_MSG_TYPE_NETWORK_PDU = 0,
-    MESH_MSG_TYPE_BEACON,
-    MESH_MSG_TYPE_PROXY_CONFIGURATION,
-    MESH_MSG_TYPE_PROVISIONING_PDU
-} mesh_msg_type_t;
 
 #ifdef __cplusplus
 } /* end of extern "C" */

@@ -49,7 +49,11 @@
 #include "btstack.h"
 #include "provisioning.h"
 #include "provisioning_device.h"
+#include "btstack_tlv.h"
 
+static mesh_provisioning_data_t provisioning_data;
+static const btstack_tlv_t * btstack_tlv_singleton_impl;
+static void *                btstack_tlv_singleton_context;
 static uint16_t con_handle;
 static uint16_t adv_int_min = 0x0030;
 static uint16_t adv_int_max = 0x0030;
@@ -62,11 +66,11 @@ static uint8_t adv_data[] = {
     // 16-bit Service UUIDs
     0x03, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, ORG_BLUETOOTH_SERVICE_MESH_PROXY & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROXY >> 8,
     // Service Data (22)
-    0x15, BLUETOOTH_DATA_TYPE_SERVICE_DATA, ORG_BLUETOOTH_SERVICE_MESH_PROXY & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROXY >> 8, 
-          // UUID
-          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-          // OOB information
-          0x00, 0x00
+    0x0C, BLUETOOTH_DATA_TYPE_SERVICE_DATA, ORG_BLUETOOTH_SERVICE_MESH_PROXY & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROXY >> 8, 
+          // MESH_IDENTIFICATION_NETWORK_ID_TYPE
+          0x00, 
+          // Network ID
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
 const uint8_t adv_data_len = sizeof(adv_data);
@@ -99,10 +103,33 @@ static void stdin_process(char cmd){
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
-    
+    int prov_len;
     if (packet_type != HCI_EVENT_PACKET) return;
  
     switch (hci_event_packet_get_type(packet)){
+        case BTSTACK_EVENT_STATE:{
+                    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
+                    // get tlv
+                    btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
+                    // load provisioning data
+                    prov_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
+                    printf("Provisioning data available: %u\n", prov_len ? 1 : 0);
+                    
+                    if (!prov_len) break;
+
+                    // dynamically store network ID into adv data 
+                    uint8_t netid_flipped[8];
+                    reverse_64(provisioning_data.network_id, netid_flipped);
+                    memcpy(&adv_data[12], netid_flipped, sizeof(netid_flipped));
+                    // setup advertisements
+                    bd_addr_t null_addr;
+                    memset(null_addr, 0, 6);
+                    uint8_t adv_type = 0;   // AFV_IND
+                    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
+                    gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
+                    gap_advertisements_enable(1);
+                    break;
+        }
         case HCI_EVENT_LE_META:
             switch (hci_event_le_meta_get_subevent_code(packet)){
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
@@ -116,8 +143,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
     }
 }
-
-const static uint8_t device_uuid[] = { 0x00, 0x1B, 0xDC, 0x08, 0x10, 0x21, 0x0B, 0x0E, 0x0A, 0x0C, 0x00, 0x0B, 0x0E, 0x0A, 0x0C, 0x00 };
 
 int btstack_main(void);
 int btstack_main(void){
@@ -141,20 +166,6 @@ int btstack_main(void){
 
     // Setup GATT bearere
     gatt_bearer_init();
-
-    // dynamically store device uuid into adv data - probably offset 7 - (see btstack_util to flip)
-    uint8_t uuid_flipped[16];
-    reverse_128(device_uuid, uuid_flipped);
-    memcpy(&adv_data[11], uuid_flipped, 16);
-    
-    // setup advertisements
-    uint8_t adv_type = 0;   // AFV_IND
-    bd_addr_t null_addr;
-    memset(null_addr, 0, 6);
-    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
-    gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
-    gap_advertisements_enable(1);
-
 #ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
 #endif
