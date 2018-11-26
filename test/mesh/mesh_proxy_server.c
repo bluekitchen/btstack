@@ -65,7 +65,7 @@ static uint8_t adv_data[] = {
     0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
     // 16-bit Service UUIDs
     0x03, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, ORG_BLUETOOTH_SERVICE_MESH_PROXY & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROXY >> 8,
-    // Service Data (22)
+    // Service Data
     0x0C, BLUETOOTH_DATA_TYPE_SERVICE_DATA, ORG_BLUETOOTH_SERVICE_MESH_PROXY & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROXY >> 8, 
           // MESH_IDENTIFICATION_NETWORK_ID_TYPE
           0x00, 
@@ -108,32 +108,36 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
  
     switch (hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:{
-                    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
-                    // get tlv
-                    btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
-                    // load provisioning data
-                    prov_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
-                    printf("Provisioning data available: %u\n", prov_len ? 1 : 0);
-                    
-                    if (!prov_len) break;
+            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
+            // get tlv
+            btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
+            // load provisioning data
+            prov_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
+            printf("Provisioning data available: %u\n", prov_len ? 1 : 0);
+            
+            if (!prov_len) break;
 
-                    // dynamically store network ID into adv data 
-                    uint8_t netid_flipped[8];
-                    reverse_64(provisioning_data.network_id, netid_flipped);
-                    memcpy(&adv_data[12], netid_flipped, sizeof(netid_flipped));
-                    // setup advertisements
-                    bd_addr_t null_addr;
-                    memset(null_addr, 0, 6);
-                    uint8_t adv_type = 0;   // AFV_IND
-                    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
-                    gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
-                    gap_advertisements_enable(1);
-                    break;
+            // dynamically store network ID into adv data 
+            // uint8_t netid_flipped[8];
+            // reverse_64(provisioning_data.network_id, netid_flipped);
+            // memcpy(&adv_data[12], netid_flipped, sizeof(netid_flipped));
+            memcpy(&adv_data[12], provisioning_data.network_id, sizeof(provisioning_data.network_id));
+            // printf("network id flipped: ");
+            // printf_hexdump(netid_flipped, 8);
+            // setup advertisements
+            bd_addr_t null_addr;
+            memset(null_addr, 0, 6);
+            uint8_t adv_type = 0;   // AFV_IND
+            gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
+            gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
+            gap_advertisements_enable(1);
+            break;
         }
         case HCI_EVENT_LE_META:
             switch (hci_event_le_meta_get_subevent_code(packet)){
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                     con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                    printf("connected handle 0x%02x\n", con_handle);
                     break;
                 default:
                     break;
