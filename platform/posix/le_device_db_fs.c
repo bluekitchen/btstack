@@ -212,8 +212,12 @@ static void le_device_db_read(void){
     }
     // read entries
     int i;
-    for (i=0;i<LE_DEVICE_MEMORY_SIZE && !feof(wFile);i++){
+    for (i=0 ; i<LE_DEVICE_MEMORY_SIZE ; i++){
         le_devices[i].addr_type = read_value(wFile, 1);
+        if (feof(wFile)){
+            le_devices[i].addr_type = INVALID_ENTRY_ADDR_TYPE;
+            break;
+        }
         read_hex(wFile,   le_devices[i].addr, 6);
         read_hex(wFile,   le_devices[i].irk, 16);
         read_hex(wFile,   le_devices[i].ltk, 16);
