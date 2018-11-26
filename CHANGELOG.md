@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - SM: prevent random address updates if gap_random_address_set was used
 - SM: fix internal buffer overrun that can cause storing of bonding information to fail
+- SM: ignore Slave Security Request after sending own Pairing Request
 - L2CAP: fix use after free on disconnect if ERTM is enabled
 - Memory Pools: clear all buffers before use
 

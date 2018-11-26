@@ -3277,6 +3277,15 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             break;
 
         case SM_INITIATOR_PH1_W4_PAIRING_RESPONSE:
+            // Core 5, Vol 3, Part H, 2.4.6:
+            // "The master shall ignore the slave’s Security Request if the master has sent a Pairing Request
+            //  without receiving a Pairing Response from the slave or if the master has initiated encryption mode setup."
+            if (sm_pdu_code == SM_CODE_SECURITY_REQUEST){
+                log_info("Ignoring Security Request");
+                break;
+            }
+
+            // all other pdus are incorrect
             if (sm_pdu_code != SM_CODE_PAIRING_RESPONSE){
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
