@@ -78,6 +78,8 @@ const uint8_t adv_data[] = {
     0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
     // Name
     0x0b, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'S', 'M', ' ', 'P', 'a', 'i', 'r', 'i', 'n', 'g', 
+    // Incomplete List of 16-bit Service Class UUIDs -- 1111 - only valid for testing!
+    0x03, BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, 0x11, 0x11,
 };
 const uint8_t adv_data_len = sizeof(adv_data);
 
@@ -93,6 +95,7 @@ static void sm_peripheral_setup(void){
 
     /**
      * Choose ONE of the following configurations
+     * Bonding is disabled to allow for repeated testing. It can be enabled with SM_AUTHREQ_BONDING 
      */
 
     // LE Legacy Pairing, Just Works
