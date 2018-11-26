@@ -60,7 +60,7 @@ static uint16_t adv_int_max = 0x0030;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-static uint8_t adv_data[] = {
+static uint8_t adv_data_with_network_id[] = {
     // Flags general discoverable, BR/EDR not supported
     0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
     // 16-bit Service UUIDs
@@ -68,12 +68,28 @@ static uint8_t adv_data[] = {
     // Service Data
     0x0C, BLUETOOTH_DATA_TYPE_SERVICE_DATA, ORG_BLUETOOTH_SERVICE_MESH_PROXY & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROXY >> 8, 
           // MESH_IDENTIFICATION_NETWORK_ID_TYPE
-          0x00, 
+          MESH_IDENTIFICATION_NETWORK_ID_TYPE, 
           // Network ID
           0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-const uint8_t adv_data_len = sizeof(adv_data);
+static uint8_t adv_data_with_node_identity[] = {
+    // Flags general discoverable, BR/EDR not supported
+    0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
+    // 16-bit Service UUIDs
+    0x03, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, ORG_BLUETOOTH_SERVICE_MESH_PROXY & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROXY >> 8,
+    // Service Data
+    0x14, BLUETOOTH_DATA_TYPE_SERVICE_DATA, ORG_BLUETOOTH_SERVICE_MESH_PROXY & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROXY >> 8, 
+          // MESH_IDENTIFICATION_NODE_IDENTIFY_TYPE
+          MESH_IDENTIFICATION_NODE_IDENTIFY_TYPE, 
+          // Hash
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+          // Random
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+const uint8_t adv_data_with_network_id_len = sizeof(adv_data_with_network_id);
+const uint8_t adv_data_with_node_identity_len = sizeof(adv_data_with_node_identity);
 
 
 static void show_usage(void){
@@ -100,6 +116,24 @@ static void stdin_process(char cmd){
     }
 }
 
+static void setup_advertising_with_network_id(uint8_t * network_id, uint16_t network_id_size){
+    // dynamically store network ID into adv data 
+    // skip flipping for now ... (check if provisioner or BlueNRG-MESH has a bug)
+    // uint8_t netid_flipped[8];
+    // reverse_64(provisioning_data.network_id, netid_flipped);
+    // memcpy(&adv_data_with_network_id[12], netid_flipped, sizeof(netid_flipped));
+    memcpy(&adv_data_with_network_id[12], network_id, network_id_size);
+}
+
+static void setup_advertising_with_node_identity(uint16_t unicast_address){
+    // Hash = e(IdentityKey, Padding | Random | Address) mod 2^64
+    uint8_t hash[8];
+    uint8_t random[8];
+    
+    memcpy(&adv_data_with_node_identity[12], hash, 8);
+    memcpy(&adv_data_with_node_identity[20], random, 8);
+}   
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -116,20 +150,14 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             printf("Provisioning data available: %u\n", prov_len ? 1 : 0);
             
             if (!prov_len) break;
+            setup_advertising_with_network_id(provisioning_data.network_id, sizeof(provisioning_data.network_id));
 
-            // dynamically store network ID into adv data 
-            // uint8_t netid_flipped[8];
-            // reverse_64(provisioning_data.network_id, netid_flipped);
-            // memcpy(&adv_data[12], netid_flipped, sizeof(netid_flipped));
-            memcpy(&adv_data[12], provisioning_data.network_id, sizeof(provisioning_data.network_id));
-            // printf("network id flipped: ");
-            // printf_hexdump(netid_flipped, 8);
             // setup advertisements
             bd_addr_t null_addr;
             memset(null_addr, 0, 6);
             uint8_t adv_type = 0;   // AFV_IND
             gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
-            gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
+            gap_advertisements_set_data(adv_data_with_network_id_len, (uint8_t*) adv_data_with_network_id);
             gap_advertisements_enable(1);
             break;
         }
