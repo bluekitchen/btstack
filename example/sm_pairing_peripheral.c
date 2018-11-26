@@ -61,15 +61,13 @@
  * It initializes L2CAP, the Security Manager and configures the ATT Server with the pre-compiled
  * ATT Database generated from $sm_pairing_peripheral.gatt$. Finally, it configures the advertisements 
  * and boots the Bluetooth stack. 
- * In this example, the Advertisement contains the Flags attribute and the device name.
+ * In this example, the Advertisement contains the Flags attribute, the device name, and a 16-bit (test) service 0x1111
  * The flag 0x06 indicates: LE General Discoverable Mode and BR/EDR not supported.
  * Various examples for IO Capabilites and Authentication Requirements are given below.
  */
  
-/* LISTING_START(MainConfiguration): Init L2CAP SM ATT Server and start heartbeat timer */
-static btstack_packet_callback_registration_t hci_event_callback_registration;
+/* LISTING_START(MainConfiguration): Setup stack to advertise */
 static btstack_packet_callback_registration_t sm_event_callback_registration;
-// static hci_con_handle_t con_handle;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -135,10 +133,6 @@ static void sm_peripheral_setup(void){
     gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
     gap_advertisements_enable(1);
 
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     // register for SM events
     sm_event_callback_registration.callback = &packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
@@ -153,8 +147,8 @@ static void sm_peripheral_setup(void){
  * @section Packet Handler
  *
  * @text The packet handler is used to:
- *        - stop the counter after a disconnect
- *        - send a notification when the requested ATT_EVENT_CAN_SEND_NOW is received
+ *        - report connect/disconnect
+ *        - handle Security Manager events
  */
 
 /* LISTING_START(packetHandler): Packet Handler */
@@ -170,6 +164,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     switch (hci_event_le_meta_get_subevent_code(packet)) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                             // setup new 
+                        printf("Connection complete\n");
                             con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
                             sm_send_security_request(con_handle);
                             break;
