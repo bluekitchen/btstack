@@ -180,6 +180,7 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
                 case MESH_PB_PROV_COMPLETE:
                     printf("Provisioning complete\n");
                     memcpy(provisioning_data.network_id, provisioning_device_data_get_network_id(), 8);
+                    memcpy(provisioning_data.identity_key, provisioning_device_data_get_identity_key(), 16);
                     memcpy(provisioning_data.beacon_key, provisioning_device_data_get_beacon_key(), 16);
                     memcpy(provisioning_data.encryption_key, provisioning_device_data_get_encryption_key(), 16);
                     memcpy(provisioning_data.privacy_key, provisioning_device_data_get_privacy_key(), 16);

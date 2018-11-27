@@ -58,6 +58,12 @@ static uint16_t con_handle;
 static uint16_t adv_int_min = 0x0030;
 static uint16_t adv_int_max = 0x0030;
 
+static btstack_crypto_random_t crypto_request_random;
+static btstack_crypto_aes128_t crypto_request_aes128;
+static uint8_t plaintext[16];
+static uint8_t hash[8];
+static uint8_t random_value[8];
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static uint8_t adv_data_with_network_id[] = {
@@ -116,23 +122,64 @@ static void stdin_process(char cmd){
     }
 }
 
-static void setup_advertising_with_network_id(uint8_t * network_id, uint16_t network_id_size){
+static void setup_advertising_with_network_id(mesh_provisioning_data_t * prov_data){
     // dynamically store network ID into adv data 
     // skip flipping for now ... (check if provisioner or BlueNRG-MESH has a bug)
     // uint8_t netid_flipped[8];
     // reverse_64(provisioning_data.network_id, netid_flipped);
     // memcpy(&adv_data_with_network_id[12], netid_flipped, sizeof(netid_flipped));
-    memcpy(&adv_data_with_network_id[12], network_id, network_id_size);
+    memcpy(&adv_data_with_network_id[12], prov_data->network_id, sizeof(prov_data->network_id));
+     // setup advertisements
+    bd_addr_t null_addr;
+    memset(null_addr, 0, 6);
+    uint8_t adv_type = 0;   // AFV_IND
+    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
+    gap_advertisements_set_data(adv_data_with_network_id_len, (uint8_t*) adv_data_with_network_id);
+    gap_advertisements_enable(1);
 }
 
-static void setup_advertising_with_node_identity(uint16_t unicast_address){
-    // Hash = e(IdentityKey, Padding | Random | Address) mod 2^64
-    uint8_t hash[8];
-    uint8_t random[8];
-    
+static void mesh_proxy_handle_get_aes128(void * arg){
+    UNUSED(arg);
     memcpy(&adv_data_with_node_identity[12], hash, 8);
-    memcpy(&adv_data_with_node_identity[20], random, 8);
-}   
+    memcpy(&adv_data_with_node_identity[20], random_value, 8);
+    printf("Calculated Hash\n");
+    printf_hexdump(hash, sizeof(hash));
+
+    printf("\nAdv\n");
+    printf_hexdump(adv_data_with_node_identity, sizeof(adv_data_with_node_identity));
+     // setup advertisements
+    bd_addr_t null_addr;
+    memset(null_addr, 0, 6);
+    uint8_t adv_type = 0;   // AFV_IND
+    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
+    gap_advertisements_set_data(adv_data_with_network_id_len, (uint8_t*) adv_data_with_network_id);
+    gap_advertisements_enable(1);
+}
+ 
+static void setup_advertising_with_node_identity(mesh_provisioning_data_t * prov_data){
+    // Hash = e(IdentityKey, Padding | Random | Address) mod 2^64
+    memset(plaintext, 0, sizeof(plaintext));
+    memcpy(&plaintext[6] , random_value, 8);
+    big_endian_store_16(plaintext, 14, prov_data->unicast_address);
+    btstack_crypto_aes128_encrypt(&crypto_request_aes128, prov_data->identity_key, plaintext, hash, mesh_proxy_handle_get_aes128, NULL);
+}  
+
+static void mesh_proxy_handle_get_random(void * arg){
+    UNUSED(arg);
+    printf("Received random value\n");
+    printf_hexdump(random_value, sizeof(random_value));
+    setup_advertising_with_node_identity(&provisioning_data);
+}
+
+static uint8_t mesh_salt_nhbk[16];
+static btstack_crypto_aes128_cmac_t crypto_aes128_cmac_request;
+static const char salt[] = {'n','k','i','k'};
+
+static void mesh_proxy_handle_get_salt_nhbk(void * arg){
+    UNUSED(arg);
+    printf("Received salt_nhbk\n");
+    printf_hexdump(mesh_salt_nhbk, sizeof(mesh_salt_nhbk));
+}
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
@@ -150,15 +197,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             printf("Provisioning data available: %u\n", prov_len ? 1 : 0);
             
             if (!prov_len) break;
-            setup_advertising_with_network_id(provisioning_data.network_id, sizeof(provisioning_data.network_id));
-
-            // setup advertisements
-            bd_addr_t null_addr;
-            memset(null_addr, 0, 6);
-            uint8_t adv_type = 0;   // AFV_IND
-            gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
-            gap_advertisements_set_data(adv_data_with_network_id_len, (uint8_t*) adv_data_with_network_id);
-            gap_advertisements_enable(1);
+            // setup_advertising_with_network_id(&provisioning_data);
+            btstack_crypto_random_generate(&crypto_request_random, random_value, sizeof(random_value), mesh_proxy_handle_get_random, NULL);
+            // btstack_crypto_aes128_cmac_zero(&crypto_aes128_cmac_request, 4, (const uint8_t *)salt,  mesh_salt_nhbk, mesh_proxy_handle_get_salt_nhbk, NULL);
             break;
         }
         case HCI_EVENT_LE_META:

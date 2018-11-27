@@ -140,6 +140,11 @@ static const uint8_t id128_tag[] = { 'i', 'd', '1', '2', '8', 0x01};
 static const uint8_t mesh_salt_nhbk[] = {
     0x2c, 0x24, 0x61, 0x9a, 0xb7, 0x93, 0xc1, 0x23, 0x3f, 0x6e, 0x22, 0x67, 0x38, 0x39, 0x3d, 0xec, };
 
+// AES-CMAC_ZERO('nkik')
+static const uint8_t mesh_salt_nkik[] = {
+    0xF8, 0x79, 0x5A, 0x1A, 0xAB, 0xF1, 0x82, 0xE4, 0xF1, 0x63, 0xD8, 0x6E, 0x24, 0x5E, 0x19, 0xF4};
+
+
 typedef enum {
     DEVICE_W4_INVITE,
     DEVICE_SEND_CAPABILITIES,
@@ -162,6 +167,7 @@ static uint16_t pb_transport_cid;
 // derived
 static uint8_t network_id[8];
 static uint8_t beacon_key[16];
+static uint8_t identity_key[16];
 static pb_type_t pb_type;
 
 static void pb_send_pdu(uint16_t transport_cid, const uint8_t * buffer, uint16_t buffer_size){
@@ -691,6 +697,7 @@ static void provisioning_handle_random(uint8_t *packet, uint16_t size){
     btstack_crypto_aes128_cmac_zero(&prov_cmac_request, 48, prov_confirmation_inputs, provisioning_salt, &provisioning_handle_random_s1_calculated, NULL);
 }
 
+// PROV_DATA
 static void provisioning_handle_data_k2_calculated(void * arg){
     // Dump
     printf("NID: %02x\n", k2_result[0]);
@@ -710,20 +717,28 @@ static void provisioning_handle_data_k2_calculated(void * arg){
 }
 
 static void provisioning_handle_beacon_key_calculated(void *arg){
-    printf("BeaconKey: ");
-    printf_hexdump(beacon_key, 16);
+    printf("IdentityKey: ");
+    printf_hexdump(identity_key, 16);
 
     // calc k2
     mesh_k2(&prov_cmac_request, net_key, k2_result, &provisioning_handle_data_k2_calculated, NULL);
 }
 
-// PROV_DATA
+
+static void provisioning_handle_identity_key_calculated(void *arg){
+    printf("BeaconKey: ");
+    printf_hexdump(beacon_key, 16);
+
+    // calc identity key
+    mesh_k1(&prov_cmac_request, net_key, 16, mesh_salt_nkik, id128_tag, sizeof(id128_tag), identity_key, &provisioning_handle_beacon_key_calculated, NULL);
+}
+
 static void provisioning_handle_data_network_id_calculated(void * arg){
     // dump
     printf("Network ID: ");
     printf_hexdump(network_id, 8);
     // calc k1 using 
-    mesh_k1(&prov_cmac_request, net_key, 16, mesh_salt_nhbk, id128_tag, sizeof(id128_tag), beacon_key, &provisioning_handle_beacon_key_calculated, NULL);
+    mesh_k1(&prov_cmac_request, net_key, 16, mesh_salt_nhbk, id128_tag, sizeof(id128_tag), beacon_key, &provisioning_handle_identity_key_calculated, NULL);
 }
 
 static void provisioning_handle_data_device_key(void * arg){
@@ -950,6 +965,9 @@ uint32_t provisioning_device_data_get_iv_index(void){
 }
 const uint8_t * provisioning_device_data_get_beacon_key(void){
     return beacon_key;
+}
+const uint8_t * provisioning_device_data_get_identity_key(void){
+    return identity_key;
 }
 uint8_t provisioning_device_data_get_nid(void){
     return k2_result[0];

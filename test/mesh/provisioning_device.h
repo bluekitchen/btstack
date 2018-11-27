@@ -117,6 +117,7 @@ const uint8_t * provisioning_device_data_get_privacy_key(void);
 const uint8_t * provisioning_device_data_get_network_id(void);
 uint32_t provisioning_device_data_get_iv_index(void);
 const uint8_t * provisioning_device_data_get_beacon_key(void);
+const uint8_t * provisioning_device_data_get_identity_key(void);
 
 #ifdef __cplusplus
 } /* end of extern "C" */
