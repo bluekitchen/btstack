@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: gap_le_connection_interval provides connection interval for conn handle
 - Nordic SPP Service Server: GATT service that emulates a serial port over BLE based on Nordic Semiconductor documentation.
 - uBlox  SPP Service Server: GATT service that emulates a serial port over BLE based on uBlox documentation.
+- SM: ENABLE_LE_CENTRAL_AUTO_ENCRYPTION triggers automatic encryption on connect to bonded devices
 
 ### Fixed
 - SM: prevent random address updates if gap_random_address_set was used
