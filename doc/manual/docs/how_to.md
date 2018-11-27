@@ -80,6 +80,7 @@ ENABLE_HFP_WIDE_BAND_SPEECH      | Enable support for mSBC codec used in HFP pro
 ENBALE_LE_PERIPHERAL             | Enable support for LE Peripheral Role in HCI and Security Manager
 ENBALE_LE_CENTRAL                | Enable support for LE Central Role in HCI and Security Manager
 ENABLE_LE_SECURE_CONNECTIONS     | Enable LE Secure Connections
+ENABLE_LE_CENTRAL_AUTO_ENCRYPTION | Enable automatic encryption for bonded devices on re-connect
 ENABLE_GATT_CLIENT_PAIRING       | Enable GATT Client to start pairing and retry operation on security error
 ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS | Use [micro-ecc library](https://github.com/kmackay/micro-ecc) for ECC operations
 ENABLE_LE_DATA_CHANNELS          | Enable LE Data Channels in credit-based flow control mode
@@ -91,7 +92,7 @@ ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL | Enable HCI Controller to Host Flow 
 ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND | Enable workaround for bug in CC256x Flow Control during baud rate change, see chipset docs.
 
 Notes:
-- ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS: Only some Bluetooth 4.2+ controllers (e.g., EM9304, ESP32) support the necessary HCI commands. Others reasons to enable the ECC software implementations are if the Host is much faster or if the micro-ecc library is already provided (e.g., ESP32, WICED)
+- ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS: Only some Bluetooth 4.2+ controllers (e.g., EM9304, ESP32) support the necessary HCI commands for ECC. Other reason to enable the ECC software implementations are if the Host is much faster or if the micro-ecc library is already provided (e.g., ESP32, WICED, or if the ECC HCI Commands are unreliable.
 
 ### HCI Controller to Host Flow Control
 In general, BTstack relies on flow control of the HCI transport, either via Hardware CTS/RTS flow control for UART or regular USB flow control. If this is not possible, e.g on an SoC, BTstack can use HCI Controller to Host Flow Control by defining ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL. If enabled, the HCI Transport implementation must be able to buffer the specified packets. In addition, it also need to be able to buffer a few HCI Events. Using a low number of host buffers might result in less throughput.

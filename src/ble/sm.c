@@ -1151,10 +1151,18 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                     // reset requests
                     sm_connection->sm_security_request_received = 0;
                     sm_connection->sm_pairing_requested = 0;
+
                     // have ltk -> start encryption
+                    // Core 5, Vol 3, Part C, 10.3.2 Initiating a Service Request
+                    // "When a bond has been created between two devices, any reconnection should result in the local device
+                    //  enabling or requesting encryption with the remote device before initiating any service request."
                     if (have_ltk){
+#ifdef ENABLE_LE_CENTRAL_AUTO_ENCRYPTION
                         sm_connection->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
                         break;
+#else
+                        log_info("central: defer enabling encryption for bonded device");
+#endif
                     }
                     // pairint_request -> send pairing request
                     if (pairing_need){
@@ -3021,6 +3029,15 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     // encryption change event concludes re-encryption for bonded devices (even if it fails)
                     if (sm_conn->sm_engine_state == SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED){
                         sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
+                        // notify client, if pairing was requested before
+                        if (sm_conn->sm_pairing_requested){
+                            sm_conn->sm_pairing_requested = 0;
+                            if (sm_conn->sm_connection_encrypted){
+                                sm_notify_client_status_reason(sm_conn, ERROR_CODE_SUCCESS, 0);
+                            } else {
+                                sm_notify_client_status_reason(sm_conn, ERROR_CODE_AUTHENTICATION_FAILURE, 0);
+                            }
+                        }
                         sm_done_for_handle(sm_conn->sm_handle);
                         break;
                     }
@@ -3849,8 +3866,20 @@ void sm_request_pairing(hci_con_handle_t con_handle){
     } else {
         // used as a trigger to start central/master/initiator security procedures
         if (sm_conn->sm_engine_state == SM_INITIATOR_CONNECTED){
+            uint8_t ltk[16];
             switch (sm_conn->sm_irk_lookup_state){
                 case IRK_LOOKUP_SUCCEEDED:
+#ifndef ENABLE_LE_CENTRAL_AUTO_ENCRYPTION
+                    le_device_db_encryption_get(sm_conn->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL);
+                    int have_ltk = !sm_is_null_key(ltk);
+                    log_info("have ltk %u", have_ltk);
+                    // trigger 'pairing complete' event on encryption change
+                    sm_conn->sm_pairing_requested = 1;
+                    sm_conn->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
+                    break;
+#endif
+                     /* explicit fall-through */
+
                 case IRK_LOOKUP_FAILED:
                     sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
                     break;
