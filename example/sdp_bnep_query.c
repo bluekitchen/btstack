@@ -208,7 +208,6 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                     case 0x0101:
                         get_string_from_data_element(attribute_value, sizeof(str), str);
                         printf(" ** Attribute 0x%04x: %s\n", sdp_event_query_attribute_byte_get_attribute_id(packet), str);
-                        free(str);
                         break;
                     
                     /* LISTING_RESUME */
