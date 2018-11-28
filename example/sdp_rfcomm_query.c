@@ -56,14 +56,20 @@
 
 #include "btstack.h"
 
+#define NUM_SERVICES 10
+
 static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 // static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
 static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};
 
+static struct {
+    uint8_t channel_nr;
+    char    service_name[SDP_SERVICE_NAME_LEN+1];
+} services[NUM_SERVICES];
+
 static uint8_t  service_index = 0;
-static uint8_t  channel_nr[10];
-static char*    service_name[10];
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 
@@ -88,11 +94,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 static void store_found_service(const char * name, uint8_t port){
     printf("APP: Service name: '%s', RFCOMM port %u\n", name, port);
-    channel_nr[service_index] = port;
-    service_name[service_index] = (char*) malloc(SDP_SERVICE_NAME_LEN+1);
-    strncpy(service_name[service_index], (char*) name, SDP_SERVICE_NAME_LEN);
-    service_name[service_index][SDP_SERVICE_NAME_LEN] = 0;
-    service_index++;
+    if (service_index < NUM_SERVICES){
+        services[service_index].channel_nr = port;
+        strncpy(services[service_index].service_name, (char*) name, SDP_SERVICE_NAME_LEN);
+        services[service_index].service_name[SDP_SERVICE_NAME_LEN] = 0;
+        service_index++;
+    } else {
+        printf("APP: list full - ignore\n");
+        return;
+    }
 }
 
 static void report_found_services(void){
@@ -104,7 +114,7 @@ static void report_found_services(void){
     }
     int i;
     for (i=0; i<service_index; i++){
-        printf("     Service name %s, RFCOMM port %u\n", service_name[i], channel_nr[i]);
+        printf("     Service name %s, RFCOMM port %u\n", services[i].service_name, services[i].channel_nr);
     }    
     printf(" ***\n\n");
 }
