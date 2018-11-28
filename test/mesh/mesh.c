@@ -550,7 +550,6 @@ static void mesh_upper_transport_validate_unsegmented_message_ccm(void * arg){
 
         // pass to upper layer
         mesh_transport_process_unsegmented_access_message(network_pdu);
-        btstack_memory_mesh_network_pdu_free(network_pdu);
         
         printf("\n");
 
