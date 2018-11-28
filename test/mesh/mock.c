@@ -160,4 +160,10 @@ void btstack_run_loop_set_timer(btstack_timer_source_t * ts, uint32_t timeout){
 }
 void btstack_run_loop_set_timer_handler(btstack_timer_source_t * ts, void (*fn)(btstack_timer_source_t * ts)){
 }
-
+static void * timer_context;
+void btstack_run_loop_set_timer_context(btstack_timer_source_t * ts, void * context){
+	timer_context = context;
+}
+void * btstack_run_loop_get_timer_context(btstack_timer_source_t * ts){
+	return timer_context;
+}

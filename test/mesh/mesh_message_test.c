@@ -5,6 +5,7 @@
 
 #include "ble/mesh/adv_bearer.h"
 #include "ble/mesh/mesh_network.h"
+#include "mesh_transport.h"
 #include "btstack_util.h"
 #include "provisioning.h"
 #include "btstack_memory.h"
@@ -74,6 +75,7 @@ static void load_provisioning_data_test_message(void){
 
 static mesh_network_pdu_t * received_network_pdu;
 
+#if 0
 static void mesh_lower_transport_received_mesage(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu){
     printf("mesh_lower_transport_received_mesage, type %u\n", callback_type);
     switch (callback_type){
@@ -86,6 +88,7 @@ static void mesh_lower_transport_received_mesage(mesh_network_callback_type_t ca
             break;
     }
 }
+#endif
 
 TEST_GROUP(MessageTest){
     void setup(void){
