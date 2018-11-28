@@ -40,6 +40,7 @@
 
 #include "btstack_linked_list.h"
 #include "provisioning.h"
+#include "btstack_run_loop.h"
 
 #if defined __cplusplus
 extern "C" {
