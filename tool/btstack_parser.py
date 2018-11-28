@@ -103,7 +103,7 @@ def parse_events():
 
     return (events, subvents, event_types)
 
-def my_parse_commands(infile, camel_case):
+def my_parse_commands(infile, convert_to_camel_case):
     commands = []
     with open (infile, 'rt') as fin:
 
@@ -113,7 +113,7 @@ def my_parse_commands(infile, camel_case):
             parts = re.match('.*@param\s*(\w*)\s*', line)
             if parts and len(parts.groups()) == 1:
                 param = parts.groups()[0]
-                if camel_case:
+                if convert_to_camel_case:
                     param = camel_case_var(param)
                 else:
                     param = param.lower()
@@ -126,7 +126,7 @@ def my_parse_commands(infile, camel_case):
                 # drop _cmd suffix for daemon commands
                 if command_name.endswith('_cmd'):
                     command_name = command_name[:-len('_cmd')]
-                if camel_case:
+                if convert_to_camel_case:
                     command_name = camel_case(command_name)
                 else:
                     command_name = command_name.lower()
