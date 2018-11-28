@@ -416,20 +416,6 @@ static void transport_segmented_setup_device_nonce(uint8_t * nonce, const mesh_t
     mesh_print_hex("DeviceNonce", nonce, 13);
 }
 
-// Network PDU Getter
-static uint16_t mesh_network_control(mesh_network_pdu_t * network_pdu){
-    return network_pdu->data[1] & 0x80;
-}
-static uint8_t mesh_network_ttl(mesh_network_pdu_t * network_pdu){
-    return network_pdu->data[1] & 0x7f;
-}
-static uint16_t mesh_network_src(mesh_network_pdu_t * network_pdu){
-    return big_endian_read_16(network_pdu->data, 5);
-}
-static int mesh_network_segmented(mesh_network_pdu_t * network_pdu){
-    return network_pdu->data[9] & 0x80;
-}
-
 // Transport PDU Getter
 static uint16_t mesh_transport_nid(mesh_transport_pdu_t * transport_pdu){
     return transport_pdu->network_header[0] & 0x7f;

@@ -616,3 +616,17 @@ void mesh_set_iv_index(uint32_t iv_index){
 uint32_t mesh_get_iv_index(void){
     return  global_iv_index;
 }
+
+// Network PDU Getter
+uint16_t mesh_network_control(mesh_network_pdu_t * network_pdu){
+    return network_pdu->data[1] & 0x80;
+}
+uint8_t mesh_network_ttl(mesh_network_pdu_t * network_pdu){
+    return network_pdu->data[1] & 0x7f;
+}
+uint16_t mesh_network_src(mesh_network_pdu_t * network_pdu){
+    return big_endian_read_16(network_pdu->data, 5);
+}
+int mesh_network_segmented(mesh_network_pdu_t * network_pdu){
+    return network_pdu->data[9] & 0x80;
+}
