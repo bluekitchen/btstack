@@ -975,6 +975,8 @@ static void mesh_lower_transport_received_mesage(mesh_network_callback_type_t ca
 
 static void mesh_transport_tx_ack_timeout(btstack_timer_source_t * ts);
 
+static mesh_upper_transport_retry_count;
+
 static uint32_t mesh_upper_transport_next_seq(void){
     return upper_transport_seq++;
 }
@@ -1054,9 +1056,16 @@ static void mesh_upper_transport_network_pdu_sent(mesh_network_pdu_t * network_p
     }
 }
 
-static void mesh_upper_transport_send_segmented_pdu(mesh_transport_pdu_t * transport_pdu){
+static void mesh_upper_transport_send_segmented_pdu_once(mesh_transport_pdu_t * transport_pdu){
+
+    if (mesh_upper_transport_retry_count == 0){
+        printf("[!] Upper transport, send segmented pdu failed, retries exhausted\n");
+        return;
+    }
+
     // chop into chunks
-    printf("[+] Upper transport, send segmented pdu\n");
+    printf("[+] Upper transport, send segmented pdu (retry count %u)\n", mesh_upper_transport_retry_count);
+    mesh_upper_transport_retry_count--;
 
     // allocate network_pdu
     mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
@@ -1081,11 +1090,16 @@ static void mesh_upper_transport_send_segmented_pdu(mesh_transport_pdu_t * trans
     mesh_upper_transport_send_next_segment();
 }
 
+static void mesh_upper_transport_send_segmented_pdu(mesh_transport_pdu_t * transport_pdu){
+    mesh_upper_transport_retry_count = 2;
+    mesh_upper_transport_send_segmented_pdu_once(transport_pdu);
+}
+
 static void mesh_transport_tx_ack_timeout(btstack_timer_source_t * ts){
     printf("[+] Upper transport, acknowledgement timer fired\n");
     mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) btstack_run_loop_get_timer_context(ts);
     transport_pdu->acknowledgement_timer_active = 0;
-    mesh_upper_transport_send_segmented_pdu(transport_pdu);
+    mesh_upper_transport_send_segmented_pdu_once(transport_pdu);
 }
 
 static void mesh_upper_transport_send_unsegmented_access_pdu_ccm(void * arg){
