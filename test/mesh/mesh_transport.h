@@ -35,6 +35,16 @@
  *
  */
 
+#ifndef __MESH_TRANSPORT_H
+#define __MESH_TRANSPORT_H
+
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 
 #include <stdint.h>
 #include "ble/mesh/mesh_network.h"
@@ -51,3 +61,9 @@ uint8_t mesh_upper_transport_send_control_pdu(uint16_t netkey_index, uint8_t ttl
 void mesh_upper_transport_set_seq(uint32_t seq);
 
 void mesh_lower_transport_received_mesage(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu);
+
+#ifdef __cplusplus
+} /* end of extern "C" */
+#endif
+
+#endif
