@@ -712,13 +712,12 @@ static void mesh_lower_transport_process_unsegmented_access_message(mesh_network
 
     mesh_print_hex("Lower Transport network pdu", &network_pdu_in_validation->data[9], lower_transport_pdu_len);
 
-    uint8_t aid = lower_transport_pdu[0] & 0x3f;
-    uint8_t afk = lower_transport_pdu[0] & 0x40;
-    int seg = lower_transport_pdu[0] >> 7;
-    printf("SEG: %u\n", seg);
+    uint8_t aid =  lower_transport_pdu[0] & 0x3f;
+    uint8_t akf = (lower_transport_pdu[0] & 0x40) >> 6;
+    printf("AKF: %u\n",   akf);
     printf("AID: %02x\n", aid);
 
-    if (afk){
+    if (akf){
         // init application key iterator if used
         mesh_application_key_iterator_init(&mesh_app_key_it, aid);
     }
@@ -736,13 +735,13 @@ static void mesh_upper_transport_process_message(mesh_transport_pdu_t * transpor
     uint8_t   upper_transport_pdu_len =  transport_pdu->len - transport_pdu->transmic_len;
     mesh_print_hex("Upper Transport pdu", upper_transport_pdu, upper_transport_pdu_len);
 
-    uint8_t aid = upper_transport_pdu[0] & 0x3f;
-    uint8_t afk = upper_transport_pdu[0] & 0x40;
-    int seg = upper_transport_pdu[0] >> 7;
-    printf("SEG: %u\n", seg);
+    uint8_t aid =  transport_pdu->akf_aid & 0x3f;
+    uint8_t akf = (transport_pdu->akf_aid & 0x40) >> 6;
+
+    printf("AKF: %u\n",   akf);
     printf("AID: %02x\n", aid);
 
-    if (afk){
+    if (akf){
         // init application key iterator if used
         mesh_application_key_iterator_init(&mesh_app_key_it, aid);
     }
