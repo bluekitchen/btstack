@@ -344,6 +344,9 @@ static void process_network_pdu_validate_d(void * arg){
     // compare nic to nic in data
     if (memcmp(net_mic, &network_pdu_in_validation->data[network_pdu->len-net_mic_len], net_mic_len) == 0){
     
+        // remove NetMIC from payload
+        network_pdu->len -= net_mic_len;
+
         // match
         printf("NetMIC matches\n");
 

@@ -297,9 +297,6 @@ static void mesh_lower_transport_process_segmented_message_done(mesh_transport_p
 static void mesh_upper_transport_validate_unsegmented_message_ccm(void * arg){
     mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
 
-    uint8_t ctl_ttl     = network_pdu->data[1];
-    uint8_t ctl         = ctl_ttl >> 7;
-
     uint8_t * lower_transport_pdu     = &network_pdu->data[9];
     int seg = lower_transport_pdu[0] >> 7;
     uint8_t trans_mic_len = 4;
@@ -313,10 +310,8 @@ static void mesh_upper_transport_validate_unsegmented_message_ccm(void * arg){
     btstack_crypo_ccm_get_authentication_value(&ccm, trans_mic);
     mesh_print_hex("TransMIC", trans_mic, trans_mic_len);
 
-    uint8_t net_mic_len = ctl ? 8 : 4;
-
     uint8_t * upper_transport_pdu     = &network_pdu->data[10];
-    uint8_t   upper_transport_pdu_len = network_pdu->len - 10 - net_mic_len;
+    uint8_t   upper_transport_pdu_len = network_pdu->len - 10;
     mesh_print_hex("Decryted PDU", upper_transport_pdu, upper_transport_pdu_len - trans_mic_len);
 
     if (memcmp(trans_mic, &upper_transport_pdu[upper_transport_pdu_len - trans_mic_len], trans_mic_len) == 0){
@@ -378,11 +373,8 @@ static void mesh_upper_transport_validate_segmented_message_ccm(void * arg){
     }
 }
 static void mesh_upper_transport_validate_unsegmented_message(mesh_network_pdu_t * network_pdu){
-    uint8_t ctl_ttl     = network_pdu_in_validation->data[1];
-    uint8_t ctl         = ctl_ttl >> 7;
-    uint8_t net_mic_len = ctl ? 8 : 4;
     uint8_t * lower_transport_pdu     = &network_pdu_in_validation->data[9];
-    uint8_t   lower_transport_pdu_len = network_pdu_in_validation->len - 9 - net_mic_len;
+    uint8_t   lower_transport_pdu_len = network_pdu_in_validation->len - 9;
     int seg = lower_transport_pdu[0] >> 7;
 
     const mesh_application_key_t * message_key;
@@ -471,18 +463,13 @@ static void mesh_upper_transport_validate_segmented_message(mesh_transport_pdu_t
 
 
 static void mesh_lower_transport_process_unsegmented_access_message(mesh_network_pdu_t * network_pdu){
-    uint8_t ctl_ttl     = network_pdu_in_validation->data[1];
-    uint8_t ctl         = ctl_ttl >> 7;
-
-    uint8_t net_mic_len = ctl ? 8 : 4;
-
     // copy original pdu
     network_pdu->len = network_pdu_in_validation->len;
     memcpy(network_pdu->data, network_pdu_in_validation->data, network_pdu->len);
 
     // 
     uint8_t * lower_transport_pdu     = &network_pdu_in_validation->data[9];
-    uint8_t   lower_transport_pdu_len = network_pdu_in_validation->len - 9 - net_mic_len;
+    uint8_t   lower_transport_pdu_len = network_pdu_in_validation->len - 9;
 
     mesh_print_hex("Lower Transport network pdu", &network_pdu_in_validation->data[9], lower_transport_pdu_len);
 
@@ -615,10 +602,9 @@ static void mesh_lower_transport_process_segment( mesh_transport_pdu_t * transpo
     // get 
     uint8_t ctl_ttl     = network_pdu->data[1];
     uint8_t ctl         = ctl_ttl >> 7;
-    uint8_t net_mic_len = ctl ? 8 : 4;
 
     uint8_t * lower_transport_pdu =    &network_pdu->data[9];
-    uint8_t   lower_transport_pdu_len = network_pdu->len - 9 - net_mic_len;
+    uint8_t   lower_transport_pdu_len = network_pdu->len - 9;
 
     // get akf_aid & transmic
     transport_pdu->akf_aid      = lower_transport_pdu[0];
