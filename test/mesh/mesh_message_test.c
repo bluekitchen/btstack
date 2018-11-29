@@ -85,17 +85,27 @@ static void load_provisioning_data_test_message(void){
 }
 
 static mesh_network_pdu_t * received_network_pdu;
+static mesh_network_pdu_t * received_unsegmented_transport_pdu;
+static mesh_transport_pdu_t * received_segmented_transport_pdu;
 
 static void test_lower_transport_callback_handler(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu){
     switch (callback_type){
         case MESH_NETWORK_PDU_RECEIVED:
-            received_network_pdu = network_pdu; 
+            received_network_pdu = network_pdu;
             break;
         case MESH_NETWORK_PDU_SENT:
             break;
         default:
             break;
     }
+}
+
+static void test_upper_transport_unsegmented_callback_handler(mesh_network_pdu_t * network_pdu){
+    received_unsegmented_transport_pdu = network_pdu;
+}
+
+static void test_upper_transport_segmented_callback_handler(mesh_transport_pdu_t * transport_pdu){
+    received_segmented_transport_pdu = transport_pdu;
 }
 
 TEST_GROUP(MessageTest){
@@ -105,7 +115,11 @@ TEST_GROUP(MessageTest){
         load_provisioning_data_test_message();
         mesh_network_init();
         mesh_network_set_higher_layer_handler(&test_lower_transport_callback_handler);
+        mesh_upper_transport_register_unsegemented_message_handler(&test_upper_transport_unsegmented_callback_handler);
+        mesh_upper_transport_register_segemented_message_handler(&test_upper_transport_segmented_callback_handler);
         received_network_pdu = NULL;
+        received_segmented_transport_pdu = NULL;
+        received_unsegmented_transport_pdu = NULL;
     }
 };
 
@@ -124,6 +138,7 @@ char * message1_network_pdus[] = {
 char * message1_lower_transport_pdus[] = {
     (char *) "034b50057e400000010000",
 };
+char * message1_upper_transport_pdu = (char *) "034b50057e400000010000";
 
 char * message6_network_pdus[] = {
     (char *) "68cab5c5348a230afba8c63d4e686364979deaf4fd40961145939cda0e",
@@ -133,8 +148,9 @@ char * message6_lower_transport_pdus[] = {
     (char *) "8026ac01ee9dddfd2169326d23f3afdf",
     (char *) "8026ac21cfdc18c52fdef772e0e17308",
 };
+char * message6_upper_transport_pdu = (char *) "0056341263964771734fbd76e3b40519d1d94a48";
 
-void inject_network_pdus(int count, char ** network_pdus, char ** lower_transport_pdus){
+void inject_network_pdus(int count, char ** network_pdus, char ** lower_transport_pdus, char * access_pdu){
     int i;
     for (i=0;i<count;i++){
         test_network_pdu_len = strlen(network_pdus[i]) / 2;
@@ -157,17 +173,41 @@ void inject_network_pdus(int count, char ** network_pdus, char ** lower_transpor
         CHECK_EQUAL( transport_pdu_len, lower_transport_pdu_len);
         CHECK_EQUAL_ARRAY(transport_pdu_data, lower_transport_pdu, transport_pdu_len);
 
-        mesh_network_message_processed_by_higher_layer(received_network_pdu);
+        // forward to mesh_transport
+        mesh_lower_transport_received_mesage(MESH_NETWORK_PDU_RECEIVED, received_network_pdu);
+
+        // done
         received_network_pdu = NULL;
     }
+
+    while (received_unsegmented_transport_pdu == NULL && received_segmented_transport_pdu == NULL) {
+        mock_process_hci_cmd();
+    }
+
+    transport_pdu_len = strlen(access_pdu) / 2;
+    btstack_parse_hex(access_pdu, transport_pdu_len, transport_pdu_data);
+
+    uint8_t * upper_transport_pdu = NULL;
+    uint8_t   upper_transport_pdu_len = 0;
+    if (received_unsegmented_transport_pdu){
+        upper_transport_pdu     = mesh_network_pdu_data(received_unsegmented_transport_pdu);
+        upper_transport_pdu_len = mesh_network_pdu_len(received_unsegmented_transport_pdu);
+    }
+    if (received_segmented_transport_pdu){
+        upper_transport_pdu     = received_segmented_transport_pdu->data;
+        upper_transport_pdu_len = received_segmented_transport_pdu->len;
+    }
+    printf_hexdump(upper_transport_pdu, upper_transport_pdu_len);
+    CHECK_EQUAL( transport_pdu_len, upper_transport_pdu_len);
+    CHECK_EQUAL_ARRAY(transport_pdu_data, upper_transport_pdu, transport_pdu_len);
 }
 
 TEST(MessageTest, Message1Receive){
-    inject_network_pdus(1, message1_network_pdus, message1_lower_transport_pdus);
+    inject_network_pdus(1, message1_network_pdus, message1_lower_transport_pdus, message1_upper_transport_pdu);
 }
 
 TEST(MessageTest, Message6Receive){
-    inject_network_pdus(2, message6_network_pdus, message6_lower_transport_pdus);
+    inject_network_pdus(2, message6_network_pdus, message6_lower_transport_pdus, message6_upper_transport_pdu);
 }
 
 TEST(MessageTest, Test3){
