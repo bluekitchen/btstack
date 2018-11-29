@@ -49,16 +49,16 @@
 extern "C" {
 #endif
 
-#define CVSD_FS 24           /* CVSD Frame Size */
+#define CVSD_FS_MAX 60       /* CVSD Frame Size */
 #define CVSD_N 128           /* 16ms - Window Length for pattern matching */ 
 #define CVSD_M 10            /* Template for matching */
-#define CVSD_LHIST (CVSD_N+CVSD_FS-1)  /* Length of history buffer required */ 
-#define CVSD_RT 5        /*  Reconvergence Time (samples) */
+#define CVSD_LHIST (CVSD_N+CVSD_FS_MAX-1)  /* Length of history buffer required */ 
+#define CVSD_RT 5            /*  Reconvergence Time (samples) */
 #define CVSD_OLAL 16         /* OverLap-Add Length (samples) */
 
 /* PLC State Information */
 typedef struct cvsd_plc_state {
-    int16_t hist[CVSD_LHIST+CVSD_FS+CVSD_RT+CVSD_OLAL];
+    int16_t hist[CVSD_LHIST+CVSD_FS_MAX+CVSD_RT+CVSD_OLAL];
     int16_t bestlag;
     int     nbf;
 
@@ -66,6 +66,7 @@ typedef struct cvsd_plc_state {
     int good_frames_nr;
     int bad_frames_nr;
     int frame_count;
+    uint16_t cvsd_fs;
 } btstack_cvsd_plc_state_t;
 
 // All int16 audio samples are in host endiness

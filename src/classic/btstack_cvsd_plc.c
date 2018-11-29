@@ -113,14 +113,14 @@ static int PatternMatch(SAMPLE_FORMAT *y){
     return bestmatch;
 }
 
-static float AmplitudeMatch(SAMPLE_FORMAT *y, SAMPLE_FORMAT bestmatch) {
+static float AmplitudeMatch(btstack_cvsd_plc_state_t *plc_state, SAMPLE_FORMAT *y, SAMPLE_FORMAT bestmatch) {
     int   i;
     float sumx = 0;
     float sumy = 0.000001f;
     float sf;
     
-    for (i=0;i<CVSD_FS;i++){
-        sumx += absolute(y[CVSD_LHIST-CVSD_FS+i]);
+    for (i=0;i<plc_state->cvsd_fs;i++){
+        sumx += absolute(y[CVSD_LHIST-plc_state->cvsd_fs+i]);
         sumy += absolute(y[bestmatch+i]);
     }
     sf = sumx/sumy;
@@ -154,39 +154,39 @@ void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, SAMPLE_FORM
         plc_state->bestlag += CVSD_M; 
         
         // Compute Scale Factor to Match Amplitude of Substitution Packet to that of Preceding Packet
-        sf = AmplitudeMatch(plc_state->hist, plc_state->bestlag);
+        sf = AmplitudeMatch(plc_state, plc_state->hist, plc_state->bestlag);
         for (i=0;i<CVSD_OLAL;i++){
             val = sf*plc_state->hist[plc_state->bestlag+i];
             plc_state->hist[CVSD_LHIST+i] = crop_sample(val);
         }
         
-        for (;i<CVSD_FS;i++){
+        for (;i<plc_state->cvsd_fs;i++){
             val = sf*plc_state->hist[plc_state->bestlag+i]; 
             plc_state->hist[CVSD_LHIST+i] = crop_sample(val);
         }
         
-        for (;i<CVSD_FS+CVSD_OLAL;i++){
+        for (;i<plc_state->cvsd_fs+CVSD_OLAL;i++){
             float left  = sf*plc_state->hist[plc_state->bestlag+i];
             float right = plc_state->hist[plc_state->bestlag+i];
-            val = left*rcos[i-CVSD_FS] + right*rcos[CVSD_OLAL-1-i+CVSD_FS];
+            val = left*rcos[i-plc_state->cvsd_fs] + right*rcos[CVSD_OLAL-1-i+plc_state->cvsd_fs];
             plc_state->hist[CVSD_LHIST+i] = crop_sample(val);
         }
 
-        for (;i<CVSD_FS+CVSD_RT+CVSD_OLAL;i++){
+        for (;i<plc_state->cvsd_fs+CVSD_RT+CVSD_OLAL;i++){
             plc_state->hist[CVSD_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
         }
     } else {
-        for (;i<CVSD_FS+CVSD_RT+CVSD_OLAL;i++){
+        for (;i<plc_state->cvsd_fs+CVSD_RT+CVSD_OLAL;i++){
             plc_state->hist[CVSD_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
         }
     }
-    for (i=0;i<CVSD_FS;i++){
+    for (i=0;i<plc_state->cvsd_fs;i++){
         out[i] = plc_state->hist[CVSD_LHIST+i];
     }
    
    // shift the history buffer 
    for (i=0;i<CVSD_LHIST+CVSD_RT+CVSD_OLAL;i++){
-        plc_state->hist[i] = plc_state->hist[i+CVSD_FS];
+        plc_state->hist[i] = plc_state->hist[i+plc_state->cvsd_fs];
     }
 }
 
@@ -206,16 +206,16 @@ void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, SAMPLE_FOR
         }
     }
 
-    for (;i<CVSD_FS;i++){
+    for (;i<plc_state->cvsd_fs;i++){
         out[i] = in[i];
     }
     // Copy the output to the history buffer
-    for (i=0;i<CVSD_FS;i++){
+    for (i=0;i<plc_state->cvsd_fs;i++){
         plc_state->hist[CVSD_LHIST+i] = out[i];
     }
     // shift the history buffer
     for (i=0;i<CVSD_LHIST;i++){
-        plc_state->hist[i] = plc_state->hist[i+CVSD_FS];
+        plc_state->hist[i] = plc_state->hist[i+plc_state->cvsd_fs];
     }
     plc_state->nbf=0;
 }
@@ -240,30 +240,38 @@ static int count_equal_samples(SAMPLE_FORMAT * packet, uint16_t size){
     return count;
 }
 
-// @assumption frame len 24 samples
-static int bad_frame(SAMPLE_FORMAT * frame, uint16_t size){
-    return count_equal_samples(frame, size) > 20;
+static int bad_frame(btstack_cvsd_plc_state_t *plc_state, SAMPLE_FORMAT * frame, uint16_t size){
+    return count_equal_samples(frame, size) > plc_state->cvsd_fs - 4;
 }
 
-void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * state, SAMPLE_FORMAT * in, uint16_t size, SAMPLE_FORMAT * out){
-    if (size != CVSD_FS){
-        log_error("btstack_cvsd_plc_process_data: audio frame size is incorrect. Expected %d, got %d", CVSD_FS, size);
-        return;
+void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * plc_state, SAMPLE_FORMAT * in, uint16_t size, SAMPLE_FORMAT * out){
+    if (plc_state->cvsd_fs == 0){
+        if (size > CVSD_FS_MAX){
+            log_error("btstack_cvsd_plc_process_data: audio frame size is too large.");
+            return;
+        }
+        plc_state->cvsd_fs = size;
+    } else {
+        if (plc_state->cvsd_fs != size){
+            log_error("btstack_cvsd_plc_process_data: audio frame size differs from initial.");
+            return;    
+        }
     }
-    state->frame_count++;
-    if (bad_frame(in,size)){
+
+    plc_state->frame_count++;
+    if (bad_frame(plc_state, in, size)){
         memcpy(out, in, size * 2);
-        if (state->good_frames_nr > CVSD_LHIST/CVSD_FS){
-            btstack_cvsd_plc_bad_frame(state, out);
-            state->bad_frames_nr++;
+        if (plc_state->good_frames_nr > CVSD_LHIST/plc_state->cvsd_fs){
+            btstack_cvsd_plc_bad_frame(plc_state, out);
+            plc_state->bad_frames_nr++;
         } else {
             memset(out, 0, size * 2);
         }
     } else {
-        btstack_cvsd_plc_good_frame(state, in, out);
-        state->good_frames_nr++;
-        if (state->good_frames_nr == 1){
-            log_info("First good frame at index %d\n", state->frame_count-1);
+        btstack_cvsd_plc_good_frame(plc_state, in, out);
+        plc_state->good_frames_nr++;
+        if (plc_state->good_frames_nr == 1){
+            log_info("First good frame at index %d\n", plc_state->frame_count-1);
         }        
     }
 }

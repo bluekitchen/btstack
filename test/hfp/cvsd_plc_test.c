@@ -64,14 +64,14 @@ static int bad_frame(int16_t * frame, uint16_t size){
 
 static void btstack_cvsd_plc_mark_bad_frame(btstack_cvsd_plc_state_t * state, int16_t * in, uint16_t size, int16_t * out){
     if (size != 24){
-        printf("btstack_cvsd_plc_mark_bad_frame: audio frame size is incorrect. Expected %d, got %d\n", CVSD_FS, size);
+        printf("btstack_cvsd_plc_mark_bad_frame: audio frame size is incorrect. Expected %d, got %d\n", audio_samples_per_frame, size);
         return;
     }
     state->frame_count++;
     
     if (bad_frame(in,size)){
         memcpy(out, in, size * 2);
-        if (state->good_frames_nr > CVSD_LHIST/CVSD_FS){
+        if (state->good_frames_nr > CVSD_LHIST/audio_samples_per_frame){
             memset(out, 0x33, size * 2);
             state->bad_frames_nr++;
         } 
