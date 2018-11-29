@@ -152,6 +152,10 @@ static btstack_crypto_ccm_t ccm;
 static mesh_application_key_iterator_t mesh_app_key_it;
 static uint32_t mesh_transport_outgoing_seq = 0;
 
+// upper transport callbacks - in access layer
+static void (*mesh_access_unsegmented_handler)(mesh_network_pdu_t * network_pdu);
+static void (*mesh_access_segmented_handler)(mesh_transport_pdu_t * transport_pdu);
+
 // lower transport incoming
 static btstack_linked_list_t lower_transport_incoming;
 // upper transport segmented access messages (to validate)
@@ -272,13 +276,13 @@ static void mesh_transport_process_unsegmented_control_message(mesh_network_pdu_
             }
             break;
         default:
-            printf("[!] Unhandled Control message with opcode %02x\n", opcode);
+            if (mesh_access_unsegmented_handler){
+                mesh_access_unsegmented_handler(network_pdu);
+            } else {
+                printf("[!] Unhandled Control message with opcode %02x\n", opcode);
+            }
             break;
     }    
-}
-
-static void mesh_transport_process_unsegmented_access_message(mesh_network_pdu_t * network_pdu){
-    printf("Unsegmented Access message\n");
 }
 
 static void mesh_lower_transport_process_unsegmented_message_done(mesh_network_pdu_t * network_pdu){
@@ -318,8 +322,15 @@ static void mesh_upper_transport_validate_unsegmented_message_ccm(void * arg){
     if (memcmp(trans_mic, &upper_transport_pdu[upper_transport_pdu_len - trans_mic_len], trans_mic_len) == 0){
         printf("TransMIC matches\n");
 
+        // remove TransMIC from payload
+        network_pdu->len -= trans_mic_len;
+
         // pass to upper layer
-        mesh_transport_process_unsegmented_access_message(network_pdu);
+        if (mesh_access_unsegmented_handler){
+            mesh_access_unsegmented_handler(network_pdu);
+        } else {
+            printf("[!] Unhandled Unsegmented Access message\n");
+        }
         
         printf("\n");
 
@@ -354,8 +365,15 @@ static void mesh_upper_transport_validate_segmented_message_ccm(void * arg){
     if (memcmp(trans_mic, &upper_transport_pdu[upper_transport_pdu_len], transport_pdu->transmic_len) == 0){
         printf("TransMIC matches\n");
 
+        // remove TransMIC from payload
+        transport_pdu->len -= transport_pdu->transmic_len;
+
         // pass to upper layer
-        printf("Pass segmented access message to upper transport\n");
+        if (mesh_access_segmented_handler){
+            mesh_access_segmented_handler(transport_pdu);
+        } else {
+            printf("[!] Unhandled Segmented Access/Control message\n");
+        }
         
         printf("\n");
 
@@ -1033,4 +1051,11 @@ uint8_t mesh_upper_transport_send_control_pdu(uint16_t netkey_index, uint8_t ttl
 
 void mesh_upper_transport_set_seq(uint32_t seq){
     upper_transport_seq = seq;
+}
+
+void mesh_upper_transport_register_unsegemented_message_handler(void (*callback)(mesh_network_pdu_t * network_pdu)){
+    mesh_access_unsegmented_handler = callback;
+}
+void mesh_upper_transport_register_segemented_message_handler(void (*callback)(mesh_transport_pdu_t * transport_pdu)){
+    mesh_access_segmented_handler = callback;
 }
