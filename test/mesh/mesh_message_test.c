@@ -117,33 +117,57 @@ static     uint8_t test_network_pdu_len;
 static uint8_t test_network_pdu_data[29];
 static const char * test_network_pdu_string;
 
-TEST(MessageTest, Test1){
 
-    // Network PDU 1
-    test_network_pdu_string = "68eca487516765b5e5bfdacbaf6cb7fb6bff871f035444ce83a670df";
-    test_network_pdu_len = strlen(test_network_pdu_string) / 2;
-    btstack_parse_hex(test_network_pdu_string, test_network_pdu_len, test_network_pdu_data);
+char * message1_network_pdus[] = {
+    (char *) "68eca487516765b5e5bfdacbaf6cb7fb6bff871f035444ce83a670df"
+};
+char * message1_lower_transport_pdus[] = {
+    (char *) "034b50057e400000010000",
+};
 
-    mesh_network_received_message(test_network_pdu_data, test_network_pdu_len);
+char * message6_network_pdus[] = {
+    (char *) "68cab5c5348a230afba8c63d4e686364979deaf4fd40961145939cda0e",
+    (char *) "681615b5dd4a846cae0c032bf0746f44f1b8cc8ce5edc57e55beed49c0"
+};
+char * message6_lower_transport_pdus[] = {
+    (char *) "8026ac01ee9dddfd2169326d23f3afdf",
+    (char *) "8026ac21cfdc18c52fdef772e0e17308",
+};
 
-    // Expected Lower Transport PDU
-    transport_pdu_string = "034b50057e400000010000";
-    transport_pdu_len = strlen(transport_pdu_string) / 2;
-    btstack_parse_hex(transport_pdu_string, transport_pdu_len, transport_pdu_data);
+void inject_network_pdus(int count, char ** network_pdus, char ** lower_transport_pdus){
+    int i;
+    for (i=0;i<count;i++){
+        test_network_pdu_len = strlen(network_pdus[i]) / 2;
+        btstack_parse_hex(network_pdus[i], test_network_pdu_len, test_network_pdu_data);
+    
+        mesh_network_received_message(test_network_pdu_data, test_network_pdu_len);
 
-    //
-    while (received_network_pdu == NULL) {
-        mock_process_hci_cmd();
+        while (received_network_pdu == NULL) {
+            mock_process_hci_cmd();
+        }
+
+        transport_pdu_len = strlen(lower_transport_pdus[i]) / 2;
+        btstack_parse_hex(lower_transport_pdus[i], transport_pdu_len, transport_pdu_data);
+
+        uint8_t * lower_transport_pdu     = mesh_network_pdu_data(received_network_pdu);
+        uint8_t   lower_transport_pdu_len = mesh_network_pdu_len(received_network_pdu);
+
+        // printf_hexdump(lower_transport_pdu, lower_transport_pdu_len);
+
+        CHECK_EQUAL( transport_pdu_len, lower_transport_pdu_len);
+        CHECK_EQUAL_ARRAY(transport_pdu_data, lower_transport_pdu, transport_pdu_len);
+
+        mesh_network_message_processed_by_higher_layer(received_network_pdu);
+        received_network_pdu = NULL;
     }
-
-    uint8_t * lower_transport_pdu     = mesh_network_pdu_data(received_network_pdu);
-    uint8_t   lower_transport_pdu_len = mesh_network_pdu_len(received_network_pdu);
-
-    CHECK_EQUAL( transport_pdu_len, lower_transport_pdu_len);
-    CHECK_EQUAL_ARRAY(transport_pdu_data, lower_transport_pdu, transport_pdu_len);
 }
 
-TEST(MessageTest, Test2){
+TEST(MessageTest, Message1Receive){
+    inject_network_pdus(1, message1_network_pdus, message1_lower_transport_pdus);
+}
+
+TEST(MessageTest, Message6Receive){
+    inject_network_pdus(2, message6_network_pdus, message6_lower_transport_pdus);
 }
 
 TEST(MessageTest, Test3){
