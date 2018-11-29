@@ -244,7 +244,7 @@ static void mesh_transport_set_dest(mesh_transport_pdu_t * transport_pdu, uint16
 
 static void mesh_transport_process_unsegmented_control_message(mesh_network_pdu_t * network_pdu){
     printf("Unsegmented Control message\n");
-    uint8_t * lower_transport_pdu     = &network_pdu->data[9];
+    uint8_t * lower_transport_pdu     = mesh_network_pdu_data(network_pdu);
     uint8_t  opcode = lower_transport_pdu[0];
     uint16_t seq_zero_pdu;
     uint16_t seq_zero_out;
@@ -297,7 +297,7 @@ static void mesh_lower_transport_process_segmented_message_done(mesh_transport_p
 static void mesh_upper_transport_validate_unsegmented_message_ccm(void * arg){
     mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
 
-    uint8_t * lower_transport_pdu     = &network_pdu->data[9];
+    uint8_t * lower_transport_pdu     = mesh_network_pdu_data(network_pdu);
     int seg = lower_transport_pdu[0] >> 7;
     uint8_t trans_mic_len = 4;
     if (seg) {
@@ -310,8 +310,9 @@ static void mesh_upper_transport_validate_unsegmented_message_ccm(void * arg){
     btstack_crypo_ccm_get_authentication_value(&ccm, trans_mic);
     mesh_print_hex("TransMIC", trans_mic, trans_mic_len);
 
-    uint8_t * upper_transport_pdu     = &network_pdu->data[10];
-    uint8_t   upper_transport_pdu_len = network_pdu->len - 10;
+    uint8_t * upper_transport_pdu     = mesh_network_pdu_data(network_pdu) + 1;
+    uint8_t   upper_transport_pdu_len = mesh_network_pdu_len(network_pdu)  - 1;
+
     mesh_print_hex("Decryted PDU", upper_transport_pdu, upper_transport_pdu_len - trans_mic_len);
 
     if (memcmp(trans_mic, &upper_transport_pdu[upper_transport_pdu_len - trans_mic_len], trans_mic_len) == 0){
@@ -599,12 +600,8 @@ static mesh_transport_pdu_t * mesh_transport_pdu_for_segmented_message(mesh_netw
 
 static void mesh_lower_transport_process_segment( mesh_transport_pdu_t * transport_pdu, mesh_network_pdu_t * network_pdu){
 
-    // get 
-    uint8_t ctl_ttl     = network_pdu->data[1];
-    uint8_t ctl         = ctl_ttl >> 7;
-
-    uint8_t * lower_transport_pdu =    &network_pdu->data[9];
-    uint8_t   lower_transport_pdu_len = network_pdu->len - 9;
+    uint8_t * lower_transport_pdu     = mesh_network_pdu_data(network_pdu);
+    uint8_t   lower_transport_pdu_len = mesh_network_pdu_len(network_pdu);
 
     // get akf_aid & transmic
     transport_pdu->akf_aid      = lower_transport_pdu[0];
@@ -644,6 +641,7 @@ static void mesh_lower_transport_process_segment( mesh_transport_pdu_t * transpo
     test_transport_pdu = NULL;
 
     // forward to upper transport
+    uint8_t ctl = mesh_network_control(network_pdu);
     if (ctl){
         printf("Store Reassembled Control Message for processing\n");
         btstack_linked_list_add_tail(&upper_transport_control, (btstack_linked_item_t*) transport_pdu);
@@ -862,10 +860,12 @@ static void mesh_transport_tx_ack_timeout(btstack_timer_source_t * ts){
 
 static void mesh_upper_transport_send_unsegmented_access_pdu_ccm(void * arg){
     mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
-    mesh_print_hex("EncAccessPayload", &network_pdu->data[10], network_pdu->len-10);
+    uint8_t * upper_transport_pdu     = mesh_network_pdu_data(network_pdu) + 1;
+    uint8_t   upper_transport_pdu_len = mesh_network_pdu_len(network_pdu)  - 1;
+    mesh_print_hex("EncAccessPayload", upper_transport_pdu, upper_transport_pdu_len);
     // store TransMIC
-    btstack_crypo_ccm_get_authentication_value(&ccm, &network_pdu->data[network_pdu->len]);
-    mesh_print_hex("TransMIC", &network_pdu->data[network_pdu->len], 4);
+    btstack_crypo_ccm_get_authentication_value(&ccm, &upper_transport_pdu[upper_transport_pdu_len]);
+    mesh_print_hex("TransMIC", &upper_transport_pdu[upper_transport_pdu_len], 4);
     network_pdu->len += 4;
     // send network pdu
     mesh_network_send_pdu(network_pdu);
@@ -938,8 +938,9 @@ uint8_t mesh_upper_transport_access_send(uint16_t netkey_index, uint16_t appkey_
         // encrypt ccm
         mesh_transport_crypto_active = 1;
         const uint8_t trans_mic_len = 4;
+        uint8_t * upper_transport_pdu     = mesh_network_pdu_data(network_pdu) + 1;
         btstack_crypo_ccm_init(&ccm, appkey->key, application_nonce, access_pdu_len, 0, trans_mic_len);
-        btstack_crypto_ccm_encrypt_block(&ccm, access_pdu_len, &network_pdu->data[10], &network_pdu->data[10], &mesh_upper_transport_send_unsegmented_access_pdu_ccm, network_pdu);
+        btstack_crypto_ccm_encrypt_block(&ccm, access_pdu_len, upper_transport_pdu, upper_transport_pdu, &mesh_upper_transport_send_unsegmented_access_pdu_ccm, network_pdu);
         return 0;
     }
     const uint8_t trans_mic_len = szmic ? 8 : 4;

@@ -185,10 +185,12 @@ void mesh_network_setup_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_in
 int mesh_network_addresses_valid(uint8_t ctl, uint16_t src, uint16_t dst);
 
 // Mesh Network PDU Getter
-uint16_t mesh_network_control(mesh_network_pdu_t * network_pdu);
-uint8_t mesh_network_ttl(mesh_network_pdu_t * network_pdu);
-uint16_t mesh_network_src(mesh_network_pdu_t * network_pdu);
-int mesh_network_segmented(mesh_network_pdu_t * network_pdu);
+uint16_t  mesh_network_control(mesh_network_pdu_t * network_pdu);
+uint8_t   mesh_network_ttl(mesh_network_pdu_t * network_pdu);
+uint16_t  mesh_network_src(mesh_network_pdu_t * network_pdu);
+int       mesh_network_segmented(mesh_network_pdu_t * network_pdu);
+uint8_t * mesh_network_pdu_data(mesh_network_pdu_t * network_pdu);
+uint8_t   mesh_network_pdu_len(mesh_network_pdu_t * network_pdu);
 
 // Testing only
 void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len);
