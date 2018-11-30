@@ -321,67 +321,6 @@ static void load_provisioning_data_test_message(void){
     mesh_transport_set_device_key(device_key);
 }
 
-static void receive_test_message(void){
-    load_provisioning_data_test_message();
-    uint8_t test_network_pdu_data[29];
-    const char * test_network_pdu_string;
-    uint8_t test_network_pdu_len;
-#ifdef TEST_MESSAGE_1
-    test_network_pdu_string = "68eca487516765b5e5bfdacbaf6cb7fb6bff871f035444ce83a670df";
-    test_network_pdu_len = strlen(test_network_pdu_string) / 2;
-    btstack_parse_hex(test_network_pdu_string, test_network_pdu_len, test_network_pdu_data);
-    mesh_network_received_message(test_network_pdu_data, test_network_pdu_len);
-#endif
-#ifdef TEST_MESSAGE_6
-    test_network_pdu_string = "68cab5c5348a230afba8c63d4e686364979deaf4fd40961145939cda0e";
-    test_network_pdu_len = strlen(test_network_pdu_string) / 2;
-    btstack_parse_hex(test_network_pdu_string, test_network_pdu_len, test_network_pdu_data);
-    mesh_network_received_message(test_network_pdu_data, test_network_pdu_len);
-    test_network_pdu_string = "681615b5dd4a846cae0c032bf0746f44f1b8cc8ce5edc57e55beed49c0";
-    test_network_pdu_len = strlen(test_network_pdu_string) / 2;
-    btstack_parse_hex(test_network_pdu_string, test_network_pdu_len, test_network_pdu_data);
-    mesh_network_received_message(test_network_pdu_data, test_network_pdu_len);
-#endif
-#ifdef TEST_MESSAGE_18
-    // test values - message #23
-    test_network_pdu_string = "6848cba437860e5673728a627fb938535508e21a6baf57";
-    test_network_pdu_len = strlen(test_network_pdu_string) / 2;
-    btstack_parse_hex(test_network_pdu_string, test_network_pdu_len, test_network_pdu_data);
-    mesh_network_received_message(test_network_pdu_data, test_network_pdu_len);
-#endif
-#ifdef TEST_MESSAGE_20
-    // test values - message #20
-    // correctly decoded incl transmic. it's an unsegmented access message (header 0x66)
-    mesh_set_iv_index(0x12345677);
-    test_network_pdu_string = "e85cca51e2e8998c3dc87344a16c787f6b08cc897c941a5368";
-    test_network_pdu_len = strlen(test_network_pdu_string) / 2;
-    btstack_parse_hex(test_network_pdu_string, test_network_pdu_len, test_network_pdu_data);
-    mesh_network_received_message(test_network_pdu_data, test_network_pdu_len);
-#endif
-#ifdef TEST_MESSAGE_23
-    // test values - message #23
-    mesh_set_iv_index(0x12345677);
-    test_network_pdu_string = "e877a48dd5fe2d7a9d696d3dd16a75489696f0b70c711b881385";
-    test_network_pdu_len = strlen(test_network_pdu_string) / 2;
-    btstack_parse_hex(test_network_pdu_string, test_network_pdu_len, test_network_pdu_data);
-    mesh_network_received_message(test_network_pdu_data, test_network_pdu_len);
-#endif
-#ifdef TEST_MESSAGE_24
-    // test values - message #24
-    mesh_set_iv_index(0x12345677);
-    test_network_pdu_string = "e834586babdef394e998b4081f5a7308ce3edbb3b06cdecd028e307f1c";
-    test_network_pdu_len = strlen(test_network_pdu_string) / 2;
-    btstack_parse_hex(test_network_pdu_string, test_network_pdu_len, test_network_pdu_data);
-    mesh_network_received_message(test_network_pdu_data, test_network_pdu_len);
-#endif
-#ifdef TEST_MESSAGE_X
-    test_network_pdu_string = "6873F928228C0D4FBF888D73AAC1C3C417F3F85A76010893D1B6396B74";
-    test_network_pdu_len = strlen(test_network_pdu_string) / 2;
-    btstack_parse_hex(test_network_pdu_string, test_network_pdu_len, test_network_pdu_data);
-    mesh_network_received_message(test_network_pdu_data, test_network_pdu_len);
-#endif
-}
-
 static void send_test_message(void){
     load_provisioning_data_test_message();
     uint8_t transport_pdu_data[32];
@@ -618,9 +557,6 @@ static void stdin_process(char cmd){
             break;
         case '8':
             send_test_message();
-            break;
-        case '9':
-            receive_test_message();
             break;
         case '2':
             printf("Creating link to device uuid: ");

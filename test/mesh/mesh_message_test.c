@@ -13,11 +13,12 @@
 extern "C" int mock_process_hci_cmd(void);
 
 static mesh_network_pdu_t * received_network_pdu;
-static mesh_network_pdu_t * received_unsegmented_transport_pdu;
-static mesh_transport_pdu_t * received_segmented_transport_pdu;
 
 static uint8_t sent_network_pdu_data[29];
 static uint8_t sent_network_pdu_len;
+
+static uint8_t  recv_upper_transport_pdu_data[100];
+static uint16_t recv_upper_transport_pdu_len;
 
 static btstack_packet_handler_t mesh_packet_handler;
 void adv_bearer_register_for_mesh_message(btstack_packet_handler_t packet_handler){
@@ -124,11 +125,18 @@ static void test_lower_transport_callback_handler(mesh_network_callback_type_t c
 }
 
 static void test_upper_transport_unsegmented_callback_handler(mesh_network_pdu_t * network_pdu){
-    received_unsegmented_transport_pdu = network_pdu;
+    if (mesh_network_control(network_pdu)){
+        recv_upper_transport_pdu_len = mesh_network_pdu_len(network_pdu);
+        memcpy(recv_upper_transport_pdu_data, mesh_network_pdu_data(network_pdu), recv_upper_transport_pdu_len);
+    } else {
+        recv_upper_transport_pdu_len = mesh_network_pdu_len(network_pdu)  - 1;
+        memcpy(recv_upper_transport_pdu_data, mesh_network_pdu_data(network_pdu) + 1, recv_upper_transport_pdu_len);
+    }
 }
 
 static void test_upper_transport_segmented_callback_handler(mesh_transport_pdu_t * transport_pdu){
-    received_segmented_transport_pdu = transport_pdu;
+    recv_upper_transport_pdu_len = transport_pdu->len;
+    memcpy(recv_upper_transport_pdu_data, transport_pdu->data, recv_upper_transport_pdu_len);
 }
 
 TEST_GROUP(MessageTest){
@@ -141,8 +149,7 @@ TEST_GROUP(MessageTest){
         mesh_upper_transport_register_unsegemented_message_handler(&test_upper_transport_unsegmented_callback_handler);
         mesh_upper_transport_register_segemented_message_handler(&test_upper_transport_segmented_callback_handler);
         received_network_pdu = NULL;
-        received_segmented_transport_pdu = NULL;
-        received_unsegmented_transport_pdu = NULL;
+        recv_upper_transport_pdu_len =0;
         sent_network_pdu_len = 0;
     }
     void teardown(void){
@@ -162,25 +169,6 @@ static uint16_t transport_pdu_len;
 
 static     uint8_t test_network_pdu_len;
 static uint8_t test_network_pdu_data[29];
-
-
-char * message1_network_pdus[] = {
-    (char *) "68eca487516765b5e5bfdacbaf6cb7fb6bff871f035444ce83a670df"
-};
-char * message1_lower_transport_pdus[] = {
-    (char *) "034b50057e400000010000",
-};
-char * message1_upper_transport_pdu = (char *) "034b50057e400000010000";
-
-char * message6_network_pdus[] = {
-    (char *) "68cab5c5348a230afba8c63d4e686364979deaf4fd40961145939cda0e",
-    (char *) "681615b5dd4a846cae0c032bf0746f44f1b8cc8ce5edc57e55beed49c0"
-};
-char * message6_lower_transport_pdus[] = {
-    (char *) "8026ac01ee9dddfd2169326d23f3afdf",
-    (char *) "8026ac21cfdc18c52fdef772e0e17308",
-};
-char * message6_upper_transport_pdu = (char *) "0056341263964771734fbd76e3b40519d1d94a48";
 
 void test_receive_network_puds(int count, char ** network_pdus, char ** lower_transport_pdus, char * access_pdu){
     int i;
@@ -213,26 +201,17 @@ void test_receive_network_puds(int count, char ** network_pdus, char ** lower_tr
     }
 
     // wait for tranport pdu
-    while (received_unsegmented_transport_pdu == NULL && received_segmented_transport_pdu == NULL) {
+    while (recv_upper_transport_pdu_len == 0) {
         mock_process_hci_cmd();
     }
 
     transport_pdu_len = strlen(access_pdu) / 2;
     btstack_parse_hex(access_pdu, transport_pdu_len, transport_pdu_data);
 
-    uint8_t * upper_transport_pdu = NULL;
-    uint8_t   upper_transport_pdu_len = 0;
-    if (received_unsegmented_transport_pdu){
-        upper_transport_pdu     = mesh_network_pdu_data(received_unsegmented_transport_pdu);
-        upper_transport_pdu_len = mesh_network_pdu_len(received_unsegmented_transport_pdu);
-    }
-    if (received_segmented_transport_pdu){
-        upper_transport_pdu     = received_segmented_transport_pdu->data;
-        upper_transport_pdu_len = received_segmented_transport_pdu->len;
-    }
-    printf_hexdump(upper_transport_pdu, upper_transport_pdu_len);
-    CHECK_EQUAL( transport_pdu_len, upper_transport_pdu_len);
-    CHECK_EQUAL_ARRAY(transport_pdu_data, upper_transport_pdu, transport_pdu_len);
+    printf("UpperTransportPDU: ");
+    printf_hexdump(recv_upper_transport_pdu_data, recv_upper_transport_pdu_len);
+    CHECK_EQUAL( transport_pdu_len, recv_upper_transport_pdu_len);
+    CHECK_EQUAL_ARRAY(transport_pdu_data, recv_upper_transport_pdu_data, transport_pdu_len);
 }
 
 void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uint8_t ttl, uint16_t src, uint16_t dest, uint8_t szmic, char * control_pdu, int count, char ** lower_transport_pdus, char ** network_pdus){
@@ -290,8 +269,62 @@ void test_send_control_message(uint16_t netkey_index, uint8_t ttl, uint16_t src,
         sent_network_pdu_len = 0;
     }
 }
+// Message 1
+char * message1_network_pdus[] = {
+    (char *) "68eca487516765b5e5bfdacbaf6cb7fb6bff871f035444ce83a670df"
+};
+char * message1_lower_transport_pdus[] = {
+    (char *) "034b50057e400000010000",
+};
+char * message1_upper_transport_pdu = (char *) "034b50057e400000010000";
+// Message 6
+char * message6_network_pdus[] = {
+    (char *) "68cab5c5348a230afba8c63d4e686364979deaf4fd40961145939cda0e",
+    (char *) "681615b5dd4a846cae0c032bf0746f44f1b8cc8ce5edc57e55beed49c0"
+};
+char * message6_lower_transport_pdus[] = {
+    (char *) "8026ac01ee9dddfd2169326d23f3afdf",
+    (char *) "8026ac21cfdc18c52fdef772e0e17308",
+};
+char * message6_upper_transport_pdu = (char *) "0056341263964771734fbd76e3b40519d1d94a48";
+// Message 18
+char * message18_network_pdus[] = {
+    (char *) "6848cba437860e5673728a627fb938535508e21a6baf57",
+};
+char * message18_lower_transport_pdus[] = {
+    (char *) "665a8bde6d9106ea078a",
+};
+char * message18_upper_transport_pdu = (char *) "0400000000";
+// Message 20
+char * message20_network_pdus[] = {
+    (char *) "e85cca51e2e8998c3dc87344a16c787f6b08cc897c941a5368",
+};
+char * message20_lower_transport_pdus[] = {
+    (char *) "669c9803e110fea929e9542d",
+};
+char * message20_upper_transport_pdu = (char *) "04000000010703";
+// Message 23
+char * message23_network_pdus[] = {
+    (char *) "e877a48dd5fe2d7a9d696d3dd16a75489696f0b70c711b881385",
+};
+char * message23_lower_transport_pdus[] = {
+    (char *) "662456db5e3100eef65daa7a38",
+};
+char * message23_upper_transport_pdu = (char *) "d50a0048656c6c6f";
+// Message 24
+char * message24_network_pdus[] = {
+    (char *) "e834586babdef394e998b4081f5a7308ce3edbb3b06cdecd028e307f1c",
+    (char *) "e85115af73dcfddc2f4dd6fb4d328701291be4aafe",
+};
+char * message24_lower_transport_pdus[] = {
+    (char *) "e6a03401de1547118463123e5f6a17b9",
+    (char *) "e6a034219dbca387",
+};
+char * message24_upper_transport_pdu = (char *) "ea0a00576f726c64";
+
 
 TEST(MessageTest, Message1Receive){
+    mesh_set_iv_index(0x12345678);
     test_receive_network_puds(1, message1_network_pdus, message1_lower_transport_pdus, message1_upper_transport_pdu);
 }
 
@@ -302,11 +335,13 @@ TEST(MessageTest, Message1Send){
     uint16_t dest         = 0xfffd;
     uint32_t seq          = 1;
 
+    mesh_set_iv_index(0x12345678);
     mesh_upper_transport_set_seq(seq);
     test_send_control_message(netkey_index, ttl, src, dest, message1_upper_transport_pdu, 1, message1_lower_transport_pdus, message1_network_pdus);
 }
 
 TEST(MessageTest, Message6Receive){
+    mesh_set_iv_index(0x12345678);
     test_receive_network_puds(2, message6_network_pdus, message6_lower_transport_pdus, message6_upper_transport_pdu);
 }
 
@@ -319,9 +354,44 @@ TEST(MessageTest, Message6Send){
     uint32_t seq          = 0x3129ab;
     uint8_t  szmic        = 0;
 
+    mesh_set_iv_index(0x12345678);
     mesh_upper_transport_set_seq(seq);
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message6_upper_transport_pdu, 1, message6_lower_transport_pdus, message6_network_pdus);
 }
+
+TEST(MessageTest, Message18Receive){
+    mesh_set_iv_index(0x12345678);
+    test_receive_network_puds(1, message18_network_pdus, message18_lower_transport_pdus, message18_upper_transport_pdu);
+}
+
+// TEST(MessageTest, Message18Send){
+//     uint16_t netkey_index = 0;
+//     uint16_t appkey_index = 0;
+//     uint8_t  ttl          = 3;
+//     uint16_t src          = 0x1201;
+//     uint16_t dest         = 0xffff;
+//     uint32_t seq          = 0x00007;
+//     uint8_t  szmic        = 0;
+
+//     mesh_set_iv_index(0x12345678);
+//     mesh_upper_transport_set_seq(seq);
+//     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message18_upper_transport_pdu, 1, message18_lower_transport_pdus, message18_network_pdus);
+// }
+
+// TEST(MessageTest, Message20Receive){
+//     mesh_set_iv_index(0x12345677);
+//     test_receive_network_puds(1, message20_network_pdus, message20_lower_transport_pdus, message20_upper_transport_pdu);
+// }
+
+// TEST(MessageTest, Message23Receive){
+//     mesh_set_iv_index(0x12345677);
+//     test_receive_network_puds(1, message23_network_pdus, message23_lower_transport_pdus, message23_upper_transport_pdu);
+// }
+
+// TEST(MessageTest, Message24Receive){
+//     mesh_set_iv_index(0x12345677);
+//     test_receive_network_puds(2, message24_network_pdus, message24_lower_transport_pdus, message24_upper_transport_pdu);
+// }
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
