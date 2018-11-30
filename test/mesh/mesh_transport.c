@@ -442,7 +442,7 @@ static void mesh_upper_transport_validate_unsegmented_message(mesh_network_pdu_t
     // decrypt ccm
     mesh_transport_crypto_active = 1;
     btstack_crypo_ccm_init(&ccm, message_key->key, application_nonce, upper_transport_pdu_len, 0, trans_mic_len);
-    btstack_crypto_ccm_decrypt_block(&ccm, upper_transport_pdu_len, upper_transport_pdu_data, upper_transport_pdu_data, &mesh_upper_transport_validate_unsegmented_message_ccm, network_pdu);
+    btstack_crypto_ccm_decrypt_block(&ccm, upper_transport_pdu_len, upper_transport_pdu_data, upper_transport_pdu_data, &mesh_upper_transport_validate_unsegmented_message_ccm, network_pdu_in_validation);
 }
 
 static void mesh_upper_transport_validate_segmented_message(mesh_transport_pdu_t * transport_pdu){
