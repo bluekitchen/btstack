@@ -145,6 +145,16 @@ TEST_GROUP(MessageTest){
         received_unsegmented_transport_pdu = NULL;
         sent_network_pdu_len = 0;
     }
+    void teardown(void){
+        while (!btstack_crypto_idle()){
+            mock_process_hci_cmd();
+        }
+        // mesh_network_reset();
+        // mesh_transport_reset();
+        // mesh_network_dump();
+        // mesh_transport_dump();
+        printf("-- teardown complete --\n\n");
+    }
 };
 
 static uint8_t transport_pdu_data[64];
@@ -274,16 +284,16 @@ void test_send_control_message(uint16_t netkey_index, uint8_t ttl, uint16_t src,
         if (sent_network_pdu_len != test_network_pdu_len){
             printf("Network PDU: "); printf_hexdump(sent_network_pdu_data, sent_network_pdu_len);
         }
-        // CHECK_EQUAL( sent_network_pdu_len, test_network_pdu_len);
-        // CHECK_EQUAL_ARRAY(test_network_pdu_data, sent_network_pdu_data, test_network_pdu_len);
+        CHECK_EQUAL( sent_network_pdu_len, test_network_pdu_len);
+        CHECK_EQUAL_ARRAY(test_network_pdu_data, sent_network_pdu_data, test_network_pdu_len);
 
         sent_network_pdu_len = 0;
     }
 }
 
-// TEST(MessageTest, Message1Receive){
-//     test_receive_network_puds(1, message1_network_pdus, message1_lower_transport_pdus, message1_upper_transport_pdu);
-// }
+TEST(MessageTest, Message1Receive){
+    test_receive_network_puds(1, message1_network_pdus, message1_lower_transport_pdus, message1_upper_transport_pdu);
+}
 
 TEST(MessageTest, Message1Send){
     uint16_t netkey_index = 0;
@@ -296,15 +306,11 @@ TEST(MessageTest, Message1Send){
     test_send_control_message(netkey_index, ttl, src, dest, message1_upper_transport_pdu, 1, message1_lower_transport_pdus, message1_network_pdus);
 }
 
-// TEST(MessageTest, Message6Receive){
-//     test_receive_network_puds(2, message6_network_pdus, message6_lower_transport_pdus, message6_upper_transport_pdu);
-// }
+TEST(MessageTest, Message6Receive){
+    test_receive_network_puds(2, message6_network_pdus, message6_lower_transport_pdus, message6_upper_transport_pdu);
+}
 
 TEST(MessageTest, Message6Send){
-    // TTL :00
-    // SEQ : 000001
-    // SRC : 1201
-    // DST : fffd
     uint16_t netkey_index = 0;
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
     uint8_t  ttl          = 4;
