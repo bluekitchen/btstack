@@ -295,7 +295,7 @@ static uint8_t mesh_secure_network_beacon_auth_value[16];
 // #define TEST_MESSAGE_1
 // #define TEST_MESSAGE_2
 // #define TEST_MESSAGE_3
-#define TEST_MESSAGE_6
+// #define TEST_MESSAGE_6
 // #define TEST_MESSAGE_7
 // #define TEST_MESSAGE_16
 // #define TEST_MESSAGE_24
@@ -319,109 +319,6 @@ static void load_provisioning_data_test_message(void){
     uint8_t device_key[16];
     btstack_parse_hex("9d6dd0e96eb25dc19a40ed9914f8f03f", 16, device_key);
     mesh_transport_set_device_key(device_key);
-}
-
-static void send_test_message(void){
-    load_provisioning_data_test_message();
-    uint8_t transport_pdu_data[32];
-    uint16_t transport_pdu_len;
-#ifdef TEST_MESSAGE_1
-    printf("TEST_MESSAGE_1\n");
-    // test values - message #1
-    uint16_t src = 0x1201;
-    uint16_t dst = 0xfffd;
-    mesh_upper_transport_set_seq(0x0001);
-    uint8_t  ttl = 0;
-    uint8_t  opcode = 3;
-    const char * message_transport_pdu = "4b50057e400000010000";
-    transport_pdu_len = strlen(message_transport_pdu) / 2;
-    btstack_parse_hex(message_transport_pdu, transport_pdu_len, transport_pdu_data);
-    mesh_upper_transport_send_control_pdu(0, ttl, src, dst, opcode, transport_pdu_data, transport_pdu_len);
-#endif
-#ifdef TEST_MESSAGE_2
-    printf("TEST_MESSAGE_2\n");
-    // test values - message #2
-    uint16_t src = 0x2345;
-    uint16_t dst = 0x1201;
-    mesh_upper_transport_set_seq(0x014820);
-    uint8_t  ttl = 0;
-    uint8_t  opcode = 4;
-    const char * message_transport_pdu = "320308ba072f";
-    transport_pdu_len = strlen(message_transport_pdu) / 2;
-    btstack_parse_hex(message_transport_pdu, transport_pdu_len, transport_pdu_data);
-    mesh_upper_transport_send_control_pdu(0, ttl, src, dst, opcode, transport_pdu_data, transport_pdu_len);
-#endif
-#ifdef TEST_MESSAGE_3
-    printf("TEST_MESSAGE_3\n");
-    uint8_t  ttl = 0;
-    mesh_upper_transport_set_seq(0x2b3832);
-    uint16_t src = 0x2fe3;
-    uint16_t dst = 0x1201;
-    uint8_t  opcode = 4;
-    const char * message_transport_pdu = "fa0205a6000a";
-    transport_pdu_len = strlen(message_transport_pdu) / 2;
-    btstack_parse_hex(message_transport_pdu, transport_pdu_len, transport_pdu_data);
-    mesh_upper_transport_send_control_pdu(0, ttl, src, dst, opcode, transport_pdu_data, transport_pdu_len);
-#endif
-#ifdef TEST_MESSAGE_6
-    printf("TEST_MESSAGE_6\n");
-    uint8_t  ttl = 0x04;
-    mesh_upper_transport_set_seq(0x3129ab);
-    uint16_t src = 0x0003;
-    uint16_t dst = 0x1201;
-    // uint16_t appkey_index = 0;  // 0x456 in sample data
-    uint16_t netkey_index = 0;  // 0x123 in sample data;
-    const char * message_transport_pdu = "0056341263964771734fbd76e3b40519d1d94a48";
-    transport_pdu_len = strlen(message_transport_pdu) / 2;
-    btstack_parse_hex(message_transport_pdu, transport_pdu_len, transport_pdu_data);
-    mesh_upper_transport_access_send(netkey_index, MESH_DEVICE_KEY_INDEX, ttl, src, dst, transport_pdu_data, transport_pdu_len, 0);
-#endif
-#ifdef TEST_MESSAGE_7
-    printf("TEST_MESSAGE_7\n");
-    uint8_t  ttl = 0x0b;
-    mesh_upper_transport_set_seq(0x014835);
-    uint16_t src = 0x2345;
-    uint16_t dst = 0x0003;
-    uint8_t  opcode = 0;
-    const char * message_transport_pdu = "a6ac00000002";
-    transport_pdu_len = strlen(message_transport_pdu) / 2;
-    btstack_parse_hex(message_transport_pdu, transport_pdu_len, transport_pdu_data);
-    mesh_upper_transport_send_control_pdu(0, ttl, src, dst, opcode, transport_pdu_data, transport_pdu_len);
-#endif
-#ifdef TEST_MESSAGE_16
-    printf("TEST_MESSAGE_16\n");
-    uint8_t  ttl = 0x0b;
-    mesh_upper_transport_set_seq(0x000006);
-    uint16_t src = 0x1201;
-    uint16_t dst = 0x0003;
-    const char * message_transport_pdu = "800300563412";
-    transport_pdu_len = strlen(message_transport_pdu) / 2;
-    btstack_parse_hex(message_transport_pdu, transport_pdu_len, transport_pdu_data);
-    mesh_upper_transport_access_send(0, MESH_DEVICE_KEY_INDEX, ttl, src, dst, transport_pdu_data, transport_pdu_len, 0);
-#endif
-#ifdef TEST_MESSAGE_24
-    // test values - message #24
-    mesh_set_iv_index(0x12345677);
-    uint16_t src = 0x1234;
-    uint16_t dst = 0x9736;
-    mesh_upper_transport_set_seq(0x07080d);
-    uint8_t  ttl = 3;
-    uint8_t  ctl = 0;
-    const char * message_24_transport_pdu = "e6a03401de1547118463123e5f6a17b9";
-    transport_pdu_len = strlen(message_24_transport_pdu) / 2;
-    btstack_parse_hex(message_24_transport_pdu, transport_pdu_len, transport_pdu_data);
-    mesh_network_send(0, ctl, ttl, src, dst, transport_pdu_data, transport_pdu_len);
-#endif
-#ifdef TEST_MESSAGE_X
-    uint16_t src = 0x0025;
-    uint16_t dst = 0x0001;
-    mesh_upper_transport_set_seq(0x1234);
-    uint8_t  ttl = 3;
-    uint8_t  opcode = 4;
-    memset(transport_pdu_data, 0x55, sizeof(transport_pdu_data));
-    transport_pdu_len = 16;
-    mesh_upper_transport_send_control_pdu(0, ttl, src, dst, opcode, transport_pdu_data, transport_pdu_len);
-#endif
 }
 
 static void send_pts_network_messsage(int type){
@@ -554,9 +451,6 @@ static void stdin_process(char cmd){
             break;
         case '1':
             send_pts_access_messsage(pts_type++);
-            break;
-        case '8':
-            send_test_message();
             break;
         case '2':
             printf("Creating link to device uuid: ");
