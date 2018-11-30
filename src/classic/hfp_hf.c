@@ -983,6 +983,10 @@ static void hfp_hf_switch_on_ok(hfp_connection_t *hfp_connection){
     hfp_connection->command = HFP_CMD_NONE;
 }
 
+static int hfp_parser_is_end_of_line(uint8_t byte){
+    return byte == '\n' || byte == '\r';
+}
+
 static void hfp_hf_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);    // ok: only called with RFCOMM_DATA_PACKET
 
@@ -998,6 +1002,9 @@ static void hfp_hf_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, ui
     int pos;
     for (pos = 0; pos < size ; pos++){
         hfp_parse(hfp_connection, packet[pos], 1);
+
+        // parse until end of line
+        if (!hfp_parser_is_end_of_line(packet[pos])) continue;
 
         int value;
         int i;

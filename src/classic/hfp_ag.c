@@ -1826,6 +1826,10 @@ static hfp_generic_status_indicator_t *get_hf_indicator_by_number(int number){
     return NULL;
 }
 
+static int hfp_parser_is_end_of_line(uint8_t byte){
+    return byte == '\n' || byte == '\r';
+}
+
 static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);    // ok: only called with RFCOMM_DATA_PACKET
 
@@ -1841,6 +1845,9 @@ static void hfp_ag_handle_rfcomm_data(uint8_t packet_type, uint16_t channel, uin
     int pos;
     for (pos = 0; pos < size ; pos++){
         hfp_parse(hfp_connection, packet[pos], 0);
+
+        // parse until end of line
+        if (!hfp_parser_is_end_of_line(packet[pos])) continue;
 
         int value;
         hfp_generic_status_indicator_t * indicator;
