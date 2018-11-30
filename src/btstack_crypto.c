@@ -1213,3 +1213,7 @@ void btstack_crypto_ecc_p256_set_key(const uint8_t * public_key, const uint8_t *
     btstack_crypto_ecc_p256_key_generation_state = ECC_P256_KEY_GENERATION_DONE;
 #endif
 }
+// Unit testing
+int btstack_crypto_idle(void){
+    return btstack_linked_list_empty(&btstack_crypto_operations);
+}
