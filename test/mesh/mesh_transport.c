@@ -904,7 +904,7 @@ uint8_t mesh_upper_transport_access_send(uint16_t netkey_index, uint16_t appkey_
 
     uint32_t seq = mesh_upper_transport_peek_seq();
 
-    printf("[+] Upper transport, send Access PDU (seq %06x): ", seq);
+    printf("[+] Upper transport, send Access PDU (seq %06x, szmic %u): ", seq, szmic);
     printf_hexdump(access_pdu_data, access_pdu_len);
 
 
@@ -928,7 +928,9 @@ uint8_t mesh_upper_transport_access_send(uint16_t netkey_index, uint16_t appkey_
     const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
     if (!network_key) return 0;
 
-    if (access_pdu_len <= 15){
+    const uint8_t trans_mic_len = szmic ? 8 : 4;
+
+    if (access_pdu_len + trans_mic_len <= 15){
         // unsegmented access message
 
         // allocate network_pdu
@@ -961,7 +963,6 @@ uint8_t mesh_upper_transport_access_send(uint16_t netkey_index, uint16_t appkey_
         btstack_crypto_ccm_encrypt_block(&ccm, access_pdu_len, upper_transport_pdu, upper_transport_pdu, &mesh_upper_transport_send_unsegmented_access_pdu_ccm, network_pdu);
         return 0;
     }
-    const uint8_t trans_mic_len = szmic ? 8 : 4;
     if (access_pdu_len + trans_mic_len <= 384){
         // temp store in transport pdu
         mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
