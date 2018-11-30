@@ -247,7 +247,7 @@ static void mesh_network_send_c(void *arg){
         network_pdu->data[1+i] ^= obfuscation_block[i];
     }
 
-    printf("TX-NetworkPDU: ");
+    printf("TX-C-NetworkPDU: ");
     printf_hexdump(network_pdu->data, network_pdu->len);
 
     // crypto done
@@ -277,6 +277,9 @@ static void mesh_network_send_b(void *arg){
     uint8_t net_mic_len = network_pdu->data[1] & 0x80 ? 8 : 4;
     memcpy(&network_pdu->data[network_pdu->len], net_mic, net_mic_len);
     network_pdu->len += net_mic_len;
+
+    printf("TX-B-NetworkPDU: ");
+    printf_hexdump(network_pdu->data, network_pdu->len);
 
     // calc PECB
     memset(encryption_block, 0, 5);
@@ -638,4 +641,37 @@ uint8_t * mesh_network_pdu_data(mesh_network_pdu_t * network_pdu){
 }
 uint8_t   mesh_network_pdu_len(mesh_network_pdu_t * network_pdu){
     return network_pdu->len - 9;
+}
+
+static void mesh_network_dump_network_pdu(mesh_network_pdu_t * network_pdu){
+    if (network_pdu){
+        printf("- %p: ", network_pdu); printf_hexdump(network_pdu->data, network_pdu->len);
+    }
+}
+static void mesh_network_dump_network_pdus(const char * name, btstack_linked_list_t * list){
+    printf("List: %s:\n", name);
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, list);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t*) btstack_linked_list_iterator_next(&it);
+        mesh_network_dump_network_pdu(network_pdu);
+    }
+}
+static void mesh_network_reset_network_pdus(btstack_linked_list_t * list){
+    while (!btstack_linked_list_empty(list)){
+        mesh_network_pdu_t * pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(list);
+        btstack_memory_mesh_network_pdu_free(pdu);
+    }
+}
+void mesh_network_dump(void){
+    mesh_network_dump_network_pdus("network_pdus_received", &network_pdus_received);
+    mesh_network_dump_network_pdus("network_pdus_queued", &network_pdus_queued);
+    mesh_network_dump_network_pdus("network_pdus_outgoing", &network_pdus_outgoing);
+    printf("network_pdu_in_validation: \n");
+    mesh_network_dump_network_pdu(network_pdu_in_validation);
+}
+void mesh_network_reset(void){
+    mesh_network_reset_network_pdus(&network_pdus_received);
+    mesh_network_reset_network_pdus(&network_pdus_queued);
+    mesh_network_reset_network_pdus(&network_pdus_outgoing);
 }

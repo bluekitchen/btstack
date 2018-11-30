@@ -1059,3 +1059,29 @@ void mesh_upper_transport_register_unsegemented_message_handler(void (*callback)
 void mesh_upper_transport_register_segemented_message_handler(void (*callback)(mesh_transport_pdu_t * transport_pdu)){
     mesh_access_segmented_handler = callback;
 }
+
+static void mesh_transport_dump_network_pdus(const char * name, btstack_linked_list_t * list){
+    printf("List: %s:\n", name);
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, list);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t*) btstack_linked_list_iterator_next(&it);
+        printf("- %p: ", network_pdu); printf_hexdump(network_pdu->data, network_pdu->len);
+    }
+}
+static void mesh_transport_reset_network_pdus(btstack_linked_list_t * list){
+    while (!btstack_linked_list_empty(list)){
+        mesh_network_pdu_t * pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(list);
+        btstack_memory_mesh_network_pdu_free(pdu);
+    }
+}
+void mesh_transport_dump(void){
+    // static btstack_linked_list_t upper_transport_control; 
+    // static btstack_linked_list_t upper_transport_access;
+    mesh_transport_dump_network_pdus("lower_transport_incoming", &lower_transport_incoming);
+}
+void mesh_transport_reset(void){
+    // static btstack_linked_list_t upper_transport_control; 
+    // static btstack_linked_list_t upper_transport_access;
+    mesh_transport_reset_network_pdus(&lower_transport_incoming);
+}

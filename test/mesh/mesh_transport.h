@@ -65,6 +65,10 @@ void mesh_lower_transport_received_mesage(mesh_network_callback_type_t callback_
 void mesh_upper_transport_register_unsegemented_message_handler(void (*callback)(mesh_network_pdu_t * network_pdu));
 void mesh_upper_transport_register_segemented_message_handler(void (*callback)(mesh_transport_pdu_t * transport_pdu));
 
+// test
+void mesh_transport_dump(void);
+void mesh_transport_reset(void);
+
 #ifdef __cplusplus
 } /* end of extern "C" */
 #endif

@@ -192,11 +192,14 @@ int       mesh_network_segmented(mesh_network_pdu_t * network_pdu);
 uint8_t * mesh_network_pdu_data(mesh_network_pdu_t * network_pdu);
 uint8_t   mesh_network_pdu_len(mesh_network_pdu_t * network_pdu);
 
-// Testing only
-void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len);
-
 void     mesh_set_iv_index(uint32_t iv_index);
 uint32_t mesh_get_iv_index(void);
+
+// Testing only
+void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len);
+void mesh_network_dump(void);
+void mesh_network_reset(void);
+
 
 #if defined __cplusplus
 }
