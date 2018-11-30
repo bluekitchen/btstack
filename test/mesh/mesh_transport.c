@@ -255,6 +255,7 @@ static void mesh_transport_process_unsegmented_control_message(mesh_network_pdu_
     uint32_t block_ack;
     switch (opcode){
         case 0:
+            if (upper_transport_outgoing_pdu == NULL) break;
             seq_zero_pdu = big_endian_read_16(lower_transport_pdu, 1) >> 2;
             seq_zero_out = mesh_transport_seq(upper_transport_outgoing_pdu) & 0x1fff;
             block_ack = big_endian_read_32(lower_transport_pdu, 3); 
