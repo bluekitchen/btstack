@@ -414,7 +414,7 @@ static void mesh_upper_transport_validate_unsegmented_message(mesh_network_pdu_t
 
     // unsegmented message have TransMIC of 32 bit
     uint8_t trans_mic_len = 4;
-    printf("Unsegmented Access message with TransMIC len 4");
+    printf("Unsegmented Access message with TransMIC len 4\n");
 
     uint8_t * upper_transport_pdu_data = &network_pdu_in_validation->data[10];
     uint8_t   upper_transport_pdu_len  = lower_transport_pdu_len - 1 - trans_mic_len;

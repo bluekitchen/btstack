@@ -98,14 +98,24 @@ static void btstack_print_hex(const uint8_t * data, uint16_t len, char separator
     printf("\n");
 }
 
-static void load_provisioning_data_test_message(void){
+static void load_network_key_nid_68(void){
     mesh_provisioning_data_t provisioning_data;
     provisioning_data.nid = 0x68;
-    mesh_set_iv_index(0x12345678);
     btstack_parse_hex("0953fa93e7caac9638f58820220a398e", 16, provisioning_data.encryption_key);
     btstack_parse_hex("8b84eedec100067d670971dd2aa700cf", 16, provisioning_data.privacy_key);
     mesh_network_key_list_add_from_provisioning_data(&provisioning_data);
+}
 
+static void load_network_key_nid_5e(void){
+    mesh_provisioning_data_t provisioning_data;
+    provisioning_data.nid = 0x5e;
+    btstack_parse_hex("be635105434859f484fc798e043ce40e", 16, provisioning_data.encryption_key);
+    btstack_parse_hex("5d396d4b54d3cbafe943e051fe9a4eb8", 16, provisioning_data.privacy_key);
+    mesh_network_key_list_add_from_provisioning_data(&provisioning_data);
+}
+
+static void load_provisioning_data_test_message(void){
+    load_network_key_nid_68();
     uint8_t application_key[16];
     btstack_parse_hex("63964771734fbd76e3b40519d1d94a48", 16, application_key);
     mesh_application_key_set( 0, 0x26, application_key);
@@ -283,6 +293,7 @@ void test_send_control_message(uint16_t netkey_index, uint8_t ttl, uint16_t src,
         adv_bearer_emit_sent();
     }
 }
+
 // Message 1
 char * message1_network_pdus[] = {
     (char *) "68eca487516765b5e5bfdacbaf6cb7fb6bff871f035444ce83a670df"
@@ -291,6 +302,21 @@ char * message1_lower_transport_pdus[] = {
     (char *) "034b50057e400000010000",
 };
 char * message1_upper_transport_pdu = (char *) "034b50057e400000010000";
+TEST(MessageTest, Message1Receive){
+    mesh_set_iv_index(0x12345678);
+    test_receive_network_pdus(1, message1_network_pdus, message1_lower_transport_pdus, message1_upper_transport_pdu);
+}
+TEST(MessageTest, Message1Send){
+    uint16_t netkey_index = 0;
+    uint8_t  ttl          = 0;
+    uint16_t src          = 0x1201;
+    uint16_t dest         = 0xfffd;
+    uint32_t seq          = 1;
+    mesh_set_iv_index(0x12345678);
+    mesh_upper_transport_set_seq(seq);
+    test_send_control_message(netkey_index, ttl, src, dest, message1_upper_transport_pdu, 1, message1_lower_transport_pdus, message1_network_pdus);
+}
+
 // Message 2
 char * message2_network_pdus[] = {
     (char *) "68d4c826296d7979d7dbc0c9b4d43eebec129d20a620d01e"
@@ -299,6 +325,21 @@ char * message2_lower_transport_pdus[] = {
     (char *) "04320308ba072f",
 };
 char * message2_upper_transport_pdu = (char *) "04320308ba072f";
+TEST(MessageTest, Message2Receive){
+    mesh_set_iv_index(0x12345678);
+    test_receive_network_pdus(1, message2_network_pdus, message2_lower_transport_pdus, message2_upper_transport_pdu);
+}
+TEST(MessageTest, Message2Send){
+    uint16_t netkey_index = 0;
+    uint8_t  ttl          = 0;
+    uint16_t src          = 0x2345;
+    uint16_t dest         = 0x1201;
+    uint32_t seq          = 0x014820;
+    mesh_set_iv_index(0x12345678);
+    mesh_upper_transport_set_seq(seq);
+    test_send_control_message(netkey_index, ttl, src, dest, message2_upper_transport_pdu, 1, message2_lower_transport_pdus, message2_network_pdus);
+}
+
 // Message 3
 char * message3_network_pdus[] = {
     (char *) "68da062bc96df253273086b8c5ee00bdd9cfcc62a2ddf572"
@@ -307,6 +348,21 @@ char * message3_lower_transport_pdus[] = {
     (char *) "04fa0205a6000a",
 };
 char * message3_upper_transport_pdu = (char *) "04fa0205a6000a";
+TEST(MessageTest, Message3Receive){
+    mesh_set_iv_index(0x12345678);
+    test_receive_network_pdus(1, message3_network_pdus, message3_lower_transport_pdus, message3_upper_transport_pdu);
+}
+TEST(MessageTest, Message3Send){
+    uint16_t netkey_index = 0;
+    uint8_t  ttl          = 0;
+    uint16_t src          = 0x2fe3;
+    uint16_t dest         = 0x1201;
+    uint32_t seq          = 0x2b3832;
+    mesh_set_iv_index(0x12345678);
+    mesh_upper_transport_set_seq(seq);
+    test_send_control_message(netkey_index, ttl, src, dest, message3_upper_transport_pdu, 1, message3_lower_transport_pdus, message3_network_pdus);
+}
+
 // Message 4
 char * message4_network_pdus[] = {
     (char *) "5e84eba092380fb0e5d0ad970d579a4e88051c"
@@ -315,6 +371,48 @@ char * message4_lower_transport_pdus[] = {
     (char *) "0100",
 };
 char * message4_upper_transport_pdu = (char *) "0100";
+TEST(MessageTest, Message4Receive){
+    load_network_key_nid_5e();
+    mesh_set_iv_index(0x12345678);
+    test_receive_network_pdus(1, message4_network_pdus, message4_lower_transport_pdus, message4_upper_transport_pdu);
+}
+TEST(MessageTest, Message4Send){
+    uint16_t netkey_index = 0;
+    uint8_t  ttl          = 0;
+    uint16_t src          = 0x1201;
+    uint16_t dest         = 0x2345;
+    uint32_t seq          = 0x000002;
+    load_network_key_nid_5e();
+    mesh_set_iv_index(0x12345678);
+    mesh_upper_transport_set_seq(seq);
+    test_send_control_message(netkey_index, ttl, src, dest, message4_upper_transport_pdu, 1, message4_lower_transport_pdus, message4_network_pdus);
+}
+
+// Message 5
+char * message5_network_pdus[] = {
+    (char *) "5eafd6f53c43db5c39da1792b1fee9ec74b786c56d3a9dee",
+};
+char * message5_lower_transport_pdus[] = {
+    (char *) "02001234567800",
+};
+char * message5_upper_transport_pdu = (char *) "02001234567800";
+TEST(MessageTest, Message5Receive){
+    load_network_key_nid_5e();
+    mesh_set_iv_index(0x12345678);
+    test_receive_network_pdus(1, message5_network_pdus, message5_lower_transport_pdus, message5_upper_transport_pdu);
+}
+TEST(MessageTest, Message5Send){
+    uint16_t netkey_index = 0;
+    uint8_t  ttl          = 0;
+    uint16_t src          = 0x2345;
+    uint16_t dest         = 0x1201;
+    uint32_t seq          = 0x014834;
+    load_network_key_nid_5e();
+    mesh_set_iv_index(0x12345678);
+    mesh_upper_transport_set_seq(seq);
+    test_send_control_message(netkey_index, ttl, src, dest, message5_upper_transport_pdu, 1, message5_lower_transport_pdus, message5_network_pdus);
+}
+
 // Message 6
 char * message6_network_pdus[] = {
     (char *) "68cab5c5348a230afba8c63d4e686364979deaf4fd40961145939cda0e",
@@ -325,7 +423,25 @@ char * message6_lower_transport_pdus[] = {
     (char *) "8026ac21cfdc18c52fdef772e0e17308",
 };
 char * message6_upper_transport_pdu = (char *) "0056341263964771734fbd76e3b40519d1d94a48";
-// Message 7
+TEST(MessageTest, Message6Receive){
+    mesh_set_iv_index(0x12345678);
+    test_receive_network_pdus(2, message6_network_pdus, message6_lower_transport_pdus, message6_upper_transport_pdu);
+}
+TEST(MessageTest, Message6Send){
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
+    uint8_t  ttl          = 4;
+    uint16_t src          = 0x0003;
+    uint16_t dest         = 0x1201;
+    uint32_t seq          = 0x3129ab;
+    uint8_t  szmic        = 0;
+
+    mesh_set_iv_index(0x12345678);
+    mesh_upper_transport_set_seq(seq);
+    test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message6_upper_transport_pdu, 2, message6_lower_transport_pdus, message6_network_pdus);
+}
+
+// Message 7 - ACK
 char * message7_network_pdus[] = {
     (char *) "68e476b5579c980d0d730f94d7f3509df987bb417eb7c05f",
 };
@@ -333,6 +449,146 @@ char * message7_lower_transport_pdus[] = {
     (char *) "00a6ac00000002",
 };
 char * message7_upper_transport_pdu = (char *) "00a6ac00000002";
+TEST(MessageTest, Message7Send){
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
+    uint8_t  ttl          = 0x0b;
+    uint16_t src          = 0x2345;
+    uint16_t dest         = 0x0003;
+    uint32_t seq          = 0x014835;
+    uint8_t  szmic        = 0;
+
+    mesh_set_iv_index(0x12345678);
+    mesh_upper_transport_set_seq(seq);
+    test_send_control_message(netkey_index, ttl, src, dest, message7_upper_transport_pdu, 1, message7_lower_transport_pdus, message7_network_pdus);
+}
+// ACK message, handled in mesh_transport - can be checked with test_control_receive_network_pdu
+// TEST(MessageTest, Message7Receive){
+//     mesh_set_iv_index(0x12345678);
+//     test_receive_network_pdus(1, message7_network_pdus, message7_lower_transport_pdus, message7_upper_transport_pdu);
+// }
+
+// Message 8 - ACK
+char * message8_network_pdus[] = {
+    (char *) "684daa6267c2cf0e2f91add6f06e66006844cec97f973105ae2534f958",
+};
+char * message8_lower_transport_pdus[] = {
+    (char *) "8026ac01ee9dddfd2169326d23f3afdf",
+};
+char * message8_upper_transport_pdu = (char *) "8026ac01ee9dddfd2169326d23f3afdf";
+// ACK message, handled in mesh_transport - can be checked with test_control_receive_network_pdu
+// TEST(MessageTest, Message8Receive){
+//     mesh_set_iv_index(0x12345678);
+//     test_receive_network_pdus(1, message8_network_pdus, message8_lower_transport_pdus, message8_upper_transport_pdu);
+// }
+
+// Message 9 - ACK
+
+// Message 10
+char * message10_network_pdus[] = {
+    (char *) "5e7b786568759f7777ed355afaf66d899c1e3d",
+};
+char * message10_lower_transport_pdus[] = {
+    (char *) "0101",
+};
+char * message10_upper_transport_pdu = (char *) "0101";
+TEST(MessageTest, Message10Receive){
+    load_network_key_nid_5e();
+    mesh_set_iv_index(0x12345678);
+    test_receive_network_pdus(1, message10_network_pdus, message10_lower_transport_pdus, message10_upper_transport_pdu);
+}
+TEST(MessageTest, Message10Send){
+    uint16_t netkey_index = 0;
+    uint8_t  ttl          = 0;
+    uint16_t src          = 0x1201;
+    uint16_t dest         = 0x2345;
+    uint32_t seq          = 0x000003;
+    uint8_t  szmic        = 0;
+
+    load_network_key_nid_5e();
+    mesh_set_iv_index(0x12345678);
+    mesh_upper_transport_set_seq(seq);
+    test_send_control_message(netkey_index, ttl, src, dest, message10_upper_transport_pdu, 1, message10_lower_transport_pdus, message10_network_pdus);
+}
+
+// Message 11
+// The Friend node responds to this poll with the first segment of the stored message. It also indicates that it has more data.
+
+// Message 12
+char * message12_network_pdus[] = {
+    (char *) "5e8a18fc6e4d05ae21466087599c2426ce9a35",
+};
+char * message12_lower_transport_pdus[] = {
+    (char *) "0101",
+};
+char * message12_upper_transport_pdu = (char *) "0101";
+TEST(MessageTest, Message12Receive){
+    load_network_key_nid_5e();
+    mesh_set_iv_index(0x12345678);
+    test_receive_network_pdus(1, message12_network_pdus, message12_lower_transport_pdus, message12_upper_transport_pdu);
+}
+TEST(MessageTest, Message12Send){
+    uint16_t netkey_index = 0;
+    uint8_t  ttl          = 0;
+    uint16_t src          = 0x1201;
+    uint16_t dest         = 0x2345;
+    uint32_t seq          = 0x000004;
+    uint8_t  szmic        = 0;
+
+    load_network_key_nid_5e();
+    mesh_set_iv_index(0x12345678);
+    mesh_upper_transport_set_seq(seq);
+    test_send_control_message(netkey_index, ttl, src, dest, message12_upper_transport_pdu, 1, message12_lower_transport_pdus, message12_network_pdus);
+}
+
+// Message 13
+// The Friend node responds with the same message as last time.
+// Message 14
+// The Low Power node received the retransmitted stored message. As that message has the MD bit set
+// it sends another Friend Poll to obtain the next message.
+char * message14_network_pdus[] = {
+    (char *) "5e0bbaf92b5c8f7d3ae62a3c75dff683dce24e",
+};
+char * message14_lower_transport_pdus[] = {
+    (char *) "0100",
+};
+char * message14_upper_transport_pdu = (char *) "0100";
+TEST(MessageTest, Message14Receive){
+    load_network_key_nid_5e();
+    mesh_set_iv_index(0x12345678);
+    test_receive_network_pdus(1, message14_network_pdus, message14_lower_transport_pdus, message14_upper_transport_pdu);
+}
+TEST(MessageTest, Messagee14Send){
+    uint16_t netkey_index = 0;
+    uint8_t  ttl          = 0;
+    uint16_t src          = 0x1201;
+    uint16_t dest         = 0x2345;
+    uint32_t seq          = 0x000005;
+    uint8_t  szmic        = 0;
+
+    load_network_key_nid_5e();
+    mesh_set_iv_index(0x12345678);
+    mesh_upper_transport_set_seq(seq);
+    test_send_control_message(netkey_index, ttl, src, dest, message14_upper_transport_pdu, 1, message14_lower_transport_pdus, message14_network_pdus);
+}
+
+// Message 15
+// The Friend node responds, with the next message in the friend queue. The Friend node has no more data, so it sets the MD to 0.
+char * message15_network_pdus[] = {
+    (char *) "5ea8dab50e7ee7f1d29805664d235eacd707217dedfe78497fefec7391",
+};
+char * message15_lower_transport_pdus[] = {
+    (char *) "8026ac21cfdc18c52fdef772e0e17308",
+};
+char * message15_upper_transport_pdu = (char *) "0100";
+// ACK message, handled in mesh_transport - can be checked with test_control_receive_network_pdu
+// not sure - no upper access message
+// TEST(MessageTest, Message15Receive){
+//     load_network_key_nid_5e();
+//     mesh_set_iv_index(0x12345678);
+//     test_receive_network_pdus(1, message15_network_pdus, message15_lower_transport_pdus, message15_upper_transport_pdu);
+// }
+
 // Message 16
 char * message16_network_pdus[] = {
     (char *) "68e80e5da5af0e6b9be7f5a642f2f98680e61c3a8b47f228",
@@ -341,6 +597,26 @@ char * message16_lower_transport_pdus[] = {
     (char *) "0089511bf1d1a81c11dcef",
 };
 char * message16_upper_transport_pdu = (char *) "800300563412";
+TEST(MessageTest, Message16Receive){
+    mesh_set_iv_index(0x12345678);
+    test_receive_network_pdus(1, message16_network_pdus, message16_lower_transport_pdus, message16_upper_transport_pdu);
+}
+TEST(MessageTest, Message16Send){
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
+    uint8_t  ttl          = 0x0b;
+    uint16_t src          = 0x1201;
+    uint16_t dest         = 0x0003;
+    uint32_t seq          = 0x000006;
+    uint8_t  szmic        = 0;
+
+    mesh_set_iv_index(0x12345678);
+    mesh_upper_transport_set_seq(seq);
+    test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message16_upper_transport_pdu, 1, message16_lower_transport_pdus, message16_network_pdus);
+}
+
+// Message 17
+// A Relay node receives the message from the Low Power node and relays it, decrementing the TTL value.
 // Message 18
 char * message18_network_pdus[] = {
     (char *) "6848cba437860e5673728a627fb938535508e21a6baf57",
@@ -349,6 +625,52 @@ char * message18_lower_transport_pdus[] = {
     (char *) "665a8bde6d9106ea078a",
 };
 char * message18_upper_transport_pdu = (char *) "0400000000";
+TEST(MessageTest, Message18Receive){
+    mesh_set_iv_index(0x12345678);
+    test_receive_network_pdus(1, message18_network_pdus, message18_lower_transport_pdus, message18_upper_transport_pdu);
+}
+TEST(MessageTest, Message18Send){
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = 0;
+    uint8_t  ttl          = 3;
+    uint16_t src          = 0x1201;
+    uint16_t dest         = 0xffff;
+    uint32_t seq          = 0x00007;
+    uint8_t  szmic        = 0;
+
+    mesh_set_iv_index(0x12345678);
+    mesh_upper_transport_set_seq(seq);
+    test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message18_upper_transport_pdu, 1, message18_lower_transport_pdus, message18_network_pdus);
+}
+
+// Message 19
+// The Low Power node sends another Health Current Status message indicating that there are three faults:
+// Battery Low Warning, Power Supply Interrupted Warning, and Supply Voltage Too Low Warning.
+char * message19_network_pdus[] = {
+    (char *) "68110edeecd83c3010a05e1b23a926023da75d25ba91793736",
+};
+char * message19_lower_transport_pdus[] = {
+    (char *) "66ca6cd88e698d1265f43fc5",
+};
+char * message19_upper_transport_pdu = (char *) "04000000010703";
+TEST(MessageTest, Message19Receive){
+    mesh_set_iv_index(0x12345678);
+    test_receive_network_pdus(1, message19_network_pdus, message19_lower_transport_pdus, message19_upper_transport_pdu);
+}
+TEST(MessageTest, Message19Send){
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = 0;
+    uint8_t  ttl          = 3;
+    uint16_t src          = 0x1201;
+    uint16_t dest         = 0xffff;
+    uint32_t seq          = 0x00009;
+    uint8_t  szmic        = 0;
+
+    mesh_set_iv_index(0x12345678);
+    mesh_upper_transport_set_seq(seq);
+    test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message19_upper_transport_pdu, 1, message19_lower_transport_pdus, message19_network_pdus);
+}
+
 // Message 20
 char * message20_network_pdus[] = {
     (char *) "e85cca51e2e8998c3dc87344a16c787f6b08cc897c941a5368",
@@ -357,6 +679,25 @@ char * message20_lower_transport_pdus[] = {
     (char *) "669c9803e110fea929e9542d",
 };
 char * message20_upper_transport_pdu = (char *) "04000000010703";
+TEST(MessageTest, Message20Receive){
+    mesh_set_iv_index(0x12345677);
+    test_receive_network_pdus(1, message20_network_pdus, message20_lower_transport_pdus, message20_upper_transport_pdu);
+}
+TEST(MessageTest, Message20Send){
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = 0;
+    uint8_t  ttl          = 3;
+    uint16_t src          = 0x1234;
+    uint16_t dest         = 0xffff;
+    uint32_t seq          = 0x070809;
+    uint8_t  szmic        = 0;
+
+    mesh_set_iv_index(0x12345677);
+    mesh_upper_transport_set_seq(seq);
+    test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message20_upper_transport_pdu, 1, message20_lower_transport_pdus, message20_network_pdus);
+}
+
+#if 0
 // Message 23
 char * message23_network_pdus[] = {
     (char *) "e877a48dd5fe2d7a9d696d3dd16a75489696f0b70c711b881385",
@@ -365,18 +706,6 @@ char * message23_lower_transport_pdus[] = {
     (char *) "662456db5e3100eef65daa7a38",
 };
 char * message23_upper_transport_pdu = (char *) "d50a0048656c6c6f";
-// Message 24
-char * message24_network_pdus[] = {
-    (char *) "e834586babdef394e998b4081f5a7308ce3edbb3b06cdecd028e307f1c",
-    (char *) "e85115af73dcfddc2f4dd6fb4d328701291be4aafe",
-};
-char * message24_lower_transport_pdus[] = {
-    (char *) "e6a03401de1547118463123e5f6a17b9",
-    (char *) "e6a034219dbca387",
-};
-char * message24_upper_transport_pdu = (char *) "ea0a00576f726c64";
-
-#if 0
 // buggy?
 // AppNonce             01 00 07 08 0C 12 34 97 36 12 34 56 77
 // AppOrDevKey          63 96 47 71 73 4F BD 76 E3 B4 05 19 D1 D9 4A 48
@@ -391,10 +720,20 @@ TEST(MessageTest, Message23Receive){
 #endif
 
 #if 0
+// Message 24
 // buggy?
 // ApplicationNonce (spec): 010007080d1234973612345677
 // ApplicationNonce (test): 018007080D1234973612345677
 // ApplicationNonce[1] = (SZMIC << 7)  - SZMIC if a Segmented Access message or 0 for all other message formats
+char * message24_network_pdus[] = {
+    (char *) "e834586babdef394e998b4081f5a7308ce3edbb3b06cdecd028e307f1c",
+    (char *) "e85115af73dcfddc2f4dd6fb4d328701291be4aafe",
+};
+char * message24_lower_transport_pdus[] = {
+    (char *) "e6a03401de1547118463123e5f6a17b9",
+    (char *) "e6a034219dbca387",
+};
+char * message24_upper_transport_pdu = (char *) "ea0a00576f726c64";
 TEST(MessageTest, Message24Receive){
     mesh_set_iv_index(0x12345677);
     test_receive_network_pdus(2, message24_network_pdus, message24_lower_transport_pdus, message24_upper_transport_pdu);
@@ -413,144 +752,6 @@ TEST(MessageTest, Message24Send){
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message24_upper_transport_pdu, 2, message24_lower_transport_pdus, message24_network_pdus);
 }
 #endif
-
-// other
-
-// ACK message, handled in mesh_transport - can be checked with test_control_receive_network_pdu
-// TEST(MessageTest, Message7Receive){
-//     mesh_set_iv_index(0x12345678);
-//     test_receive_network_pdus(1, message7_network_pdus, message7_lower_transport_pdus, message7_upper_transport_pdu);
-// }
-
-// Receive NetworkPDUs
-
-TEST(MessageTest, Message1Receive){
-    mesh_set_iv_index(0x12345678);
-    test_receive_network_pdus(1, message1_network_pdus, message1_lower_transport_pdus, message1_upper_transport_pdu);
-}
-
-TEST(MessageTest, Message2Receive){
-    mesh_set_iv_index(0x12345678);
-    test_receive_network_pdus(1, message2_network_pdus, message2_lower_transport_pdus, message2_upper_transport_pdu);
-}
-
-TEST(MessageTest, Message3Receive){
-    mesh_set_iv_index(0x12345678);
-    test_receive_network_pdus(1, message3_network_pdus, message3_lower_transport_pdus, message3_upper_transport_pdu);
-}
-
-TEST(MessageTest, Message6Receive){
-    mesh_set_iv_index(0x12345678);
-    test_receive_network_pdus(2, message6_network_pdus, message6_lower_transport_pdus, message6_upper_transport_pdu);
-}
-
-TEST(MessageTest, Message16Receive){
-    mesh_set_iv_index(0x12345678);
-    test_receive_network_pdus(1, message16_network_pdus, message16_lower_transport_pdus, message16_upper_transport_pdu);
-}
-
-TEST(MessageTest, Message18Receive){
-    mesh_set_iv_index(0x12345678);
-    test_receive_network_pdus(1, message18_network_pdus, message18_lower_transport_pdus, message18_upper_transport_pdu);
-}
-
-TEST(MessageTest, Message20Receive){
-    mesh_set_iv_index(0x12345677);
-    test_receive_network_pdus(1, message20_network_pdus, message20_lower_transport_pdus, message20_upper_transport_pdu);
-}
-
-
-// Send Access Message + Control Messages
-
-TEST(MessageTest, Message1Send){
-    uint16_t netkey_index = 0;
-    uint8_t  ttl          = 0;
-    uint16_t src          = 0x1201;
-    uint16_t dest         = 0xfffd;
-    uint32_t seq          = 1;
-    mesh_set_iv_index(0x12345678);
-    mesh_upper_transport_set_seq(seq);
-    test_send_control_message(netkey_index, ttl, src, dest, message1_upper_transport_pdu, 1, message1_lower_transport_pdus, message1_network_pdus);
-}
-
-TEST(MessageTest, Message2Send){
-    uint16_t netkey_index = 0;
-    uint8_t  ttl          = 0;
-    uint16_t src          = 0x2345;
-    uint16_t dest         = 0x1201;
-    uint32_t seq          = 0x014820;
-    mesh_set_iv_index(0x12345678);
-    mesh_upper_transport_set_seq(seq);
-    test_send_control_message(netkey_index, ttl, src, dest, message2_upper_transport_pdu, 1, message2_lower_transport_pdus, message2_network_pdus);
-}
-
-TEST(MessageTest, Message3Send){
-    uint16_t netkey_index = 0;
-    uint8_t  ttl          = 0;
-    uint16_t src          = 0x2fe3;
-    uint16_t dest         = 0x1201;
-    uint32_t seq          = 0x2b3832;
-    mesh_set_iv_index(0x12345678);
-    mesh_upper_transport_set_seq(seq);
-    test_send_control_message(netkey_index, ttl, src, dest, message3_upper_transport_pdu, 1, message3_lower_transport_pdus, message3_network_pdus);
-}
-
-TEST(MessageTest, Message6Send){
-    uint16_t netkey_index = 0;
-    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
-    uint8_t  ttl          = 4;
-    uint16_t src          = 0x0003;
-    uint16_t dest         = 0x1201;
-    uint32_t seq          = 0x3129ab;
-    uint8_t  szmic        = 0;
-
-    mesh_set_iv_index(0x12345678);
-    mesh_upper_transport_set_seq(seq);
-    test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message6_upper_transport_pdu, 2, message6_lower_transport_pdus, message6_network_pdus);
-}
-
-TEST(MessageTest, Message7Send){
-    uint16_t netkey_index = 0;
-    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
-    uint8_t  ttl          = 0x0b;
-    uint16_t src          = 0x2345;
-    uint16_t dest         = 0x0003;
-    uint32_t seq          = 0x014835;
-    uint8_t  szmic        = 0;
-
-    mesh_set_iv_index(0x12345678);
-    mesh_upper_transport_set_seq(seq);
-    test_send_control_message(netkey_index, ttl, src, dest, message7_upper_transport_pdu, 1, message7_lower_transport_pdus, message7_network_pdus);
-}
-
-TEST(MessageTest, Message16Send){
-    uint16_t netkey_index = 0;
-    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
-    uint8_t  ttl          = 0x0b;
-    uint16_t src          = 0x1201;
-    uint16_t dest         = 0x0003;
-    uint32_t seq          = 0x000006;
-    uint8_t  szmic        = 0;
-
-    mesh_set_iv_index(0x12345678);
-    mesh_upper_transport_set_seq(seq);
-    test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message16_upper_transport_pdu, 1, message16_lower_transport_pdus, message16_network_pdus);
-}
-
-TEST(MessageTest, Message18Send){
-    uint16_t netkey_index = 0;
-    uint16_t appkey_index = 0;
-    uint8_t  ttl          = 3;
-    uint16_t src          = 0x1201;
-    uint16_t dest         = 0xffff;
-    uint32_t seq          = 0x00007;
-    uint8_t  szmic        = 0;
-
-    mesh_set_iv_index(0x12345678);
-    mesh_upper_transport_set_seq(seq);
-    test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message18_upper_transport_pdu, 1, message18_lower_transport_pdus, message18_network_pdus);
-}
-
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
