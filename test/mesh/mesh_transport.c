@@ -293,9 +293,8 @@ static void mesh_lower_transport_process_unsegmented_message_done(mesh_network_p
 }
 
 static void mesh_lower_transport_process_segmented_message_done(mesh_transport_pdu_t * transport_pdu){
-    printf("mesh_lower_transport_process_segmented_message_done\n");
-    btstack_memory_mesh_transport_pdu_free(transport_pdu);
     mesh_transport_crypto_active = 0;
+    btstack_memory_mesh_transport_pdu_free(transport_pdu);
     mesh_lower_transport_run();
 }
 
@@ -860,6 +859,8 @@ static void mesh_transport_tx_ack_timeout(btstack_timer_source_t * ts){
 }
 
 static void mesh_upper_transport_send_unsegmented_access_pdu_ccm(void * arg){
+    mesh_transport_crypto_active = 0;
+
     mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
     uint8_t * upper_transport_pdu     = mesh_network_pdu_data(network_pdu) + 1;
     uint8_t   upper_transport_pdu_len = mesh_network_pdu_len(network_pdu)  - 1;
@@ -873,6 +874,8 @@ static void mesh_upper_transport_send_unsegmented_access_pdu_ccm(void * arg){
 }
 
 static void mesh_upper_transport_send_segmented_access_pdu_ccm(void * arg){
+    mesh_transport_crypto_active = 0;
+
     mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) arg;
     mesh_print_hex("EncAccessPayload", transport_pdu->data, transport_pdu->len);
     // store TransMIC
