@@ -34,7 +34,8 @@ void adv_bearer_request_can_send_now_for_mesh_message(void){
     (*mesh_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 void adv_bearer_send_mesh_message(const uint8_t * network_pdu, uint16_t size){
-    printf("adv_bearer_send_mesh_message\n");
+    printf("adv_bearer_send_mesh_message: \n");
+    printf_hexdump(network_pdu, size);
     memcpy(sent_network_pdu_data, network_pdu, size);
     sent_network_pdu_len = size;
 }
@@ -249,6 +250,10 @@ void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uin
             mock_process_hci_cmd();
         }
 
+        if (sent_network_pdu_len != test_network_pdu_len){
+            printf("Test Network PDU (%u): ", sent_network_pdu_len); printf_hexdump(sent_network_pdu_data, sent_network_pdu_len);
+            printf("Expected     PDU (%u): ", test_network_pdu_len); printf_hexdump(test_network_pdu_data, test_network_pdu_len);
+        }
         CHECK_EQUAL( sent_network_pdu_len, test_network_pdu_len);
         CHECK_EQUAL_ARRAY(test_network_pdu_data, sent_network_pdu_data, test_network_pdu_len);
 
@@ -697,6 +702,71 @@ TEST(MessageTest, Message20Send){
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message20_upper_transport_pdu, 1, message20_lower_transport_pdus, message20_network_pdus);
 }
 
+// Message 21
+char * message21_network_pdus[] = {
+    (char *) "e8b1051f5e945ae4d611358eaf17796a6c98977f69e5872c4620",
+};
+char * message21_lower_transport_pdus[] = {
+    (char *) "662fa730fd98f6e4bd120ea9d6",
+};
+char * message21_upper_transport_pdu = (char *) "d50a0048656c6c6f";
+TEST(MessageTest, Message21Receive){
+    mesh_set_iv_index(0x12345677);
+    test_receive_network_pdus(1, message21_network_pdus, message21_lower_transport_pdus, message21_upper_transport_pdu);
+}
+TEST(MessageTest, Message21Send){
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = 0;
+    uint8_t  ttl          = 3;
+    uint16_t src          = 0x1234;
+    uint16_t dest         = 0x8105;
+    uint32_t seq          = 0x07080a;
+    uint8_t  szmic        = 0;
+
+    mesh_set_iv_index(0x12345677);
+    mesh_upper_transport_set_seq(seq);
+    test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message21_upper_transport_pdu, 1, message21_lower_transport_pdus, message21_network_pdus);
+}
+
+#if 0
+// Message 22
+// char * message22_network_pdus[] = {
+//     (char *) "e8d85caecef1e3ed31f3fdcf88a411135fea55df730b6b28e255",
+// };
+// char * message22_lower_transport_pdus[] = {
+//     (char *) "663871b904d431526316ca48a0",
+// };
+// char * message22_upper_transport_pdu = (char *) "d50a0048656c6c6f";
+// TEST(MessageTest, Message22Receive){
+//     mesh_set_iv_index(0x12345677);
+//     test_receive_network_pdus(1, message22_network_pdus, message22_lower_transport_pdus, message22_upper_transport_pdu);
+// }
+
+// buggy?
+
+// Access Payload       D5 0A 00 48 65 6C 6C 6F
+// AppOrDevKey          63 96 47 71 73 4F BD 76 E3 B4 05 19 D1 D9 4A 48
+// AppNonce             01 00 07 08 0B 12 34 B5 29 12 34 56 77
+// EncAccessPayload     38 71 B9 04 D4 31 52 63
+// TransMIC             03 55 18 C4
+
+// SPEC: TransMIC       16ca48a0
+
+TEST(MessageTest, Message22Send){
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = 0;
+    uint8_t  ttl          = 3;
+    uint16_t src          = 0x1234;
+    uint16_t dest         = 0xb529;
+    uint32_t seq          = 0x07080b;
+    uint8_t  szmic        = 0;
+
+    mesh_set_iv_index(0x12345677);
+    mesh_upper_transport_set_seq(seq);
+    test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message22_upper_transport_pdu, 1, message22_lower_transport_pdus, message22_network_pdus);
+}
+#endif
+
 #if 0
 // Message 23
 char * message23_network_pdus[] = {
@@ -707,15 +777,31 @@ char * message23_lower_transport_pdus[] = {
 };
 char * message23_upper_transport_pdu = (char *) "d50a0048656c6c6f";
 // buggy?
-// AppNonce             01 00 07 08 0C 12 34 97 36 12 34 56 77
+
+// Access Payload       D5 0A 00 48 65 6C 6C 6F
 // AppOrDevKey          63 96 47 71 73 4F BD 76 E3 B4 05 19 D1 D9 4A 48
+// AppNonce             01 00 07 08 0C 12 34 97 36 12 34 56 77
 // EncAccessPayload     24 56 DB 5E 31 00 EE F6
 // TransMIC             26 04 3E 26
-// Decryted PDU         D5 0A 00 48 65 6C 6C 6F
+
 // SPEC: TransMIC       5daa7a38
+
 TEST(MessageTest, Message23Receive){
     mesh_set_iv_index(0x12345677);
     test_receive_network_pdus(1, message23_network_pdus, message23_lower_transport_pdus, message23_upper_transport_pdu);
+}
+TEST(MessageTest, Message23Send){
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = 0;
+    uint8_t  ttl          = 3;
+    uint16_t src          = 0x1234;
+    uint16_t dest         = 0x9736;
+    uint32_t seq          = 0x07080c;
+    uint8_t  szmic        = 0;
+
+    mesh_set_iv_index(0x12345677);
+    mesh_upper_transport_set_seq(seq);
+    test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message23_upper_transport_pdu, 1, message23_lower_transport_pdus, message23_network_pdus);
 }
 #endif
 
