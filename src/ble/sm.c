@@ -93,8 +93,8 @@ typedef enum {
 } derived_key_generation_t;
 
 typedef enum {
-    RAU_W4_WORKING,
     RAU_IDLE,
+    RAU_GET_RANDOM,
     RAU_W4_RANDOM,
     RAU_GET_ENC,
     RAU_W4_ENC,
@@ -547,8 +547,8 @@ static uint32_t gap_random_adress_update_period;
 static void gap_random_address_trigger(void){
     log_info("gap_random_address_trigger");
     if (rau_state != RAU_IDLE) return;
-    rau_state = RAU_W4_RANDOM;
-    btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_address, 8, &sm_handle_random_result_rau, NULL);
+    rau_state = RAU_GET_RANDOM;
+    sm_run();
 }
 
 static void gap_random_address_update_handler(btstack_timer_source_t * timer){
@@ -1818,6 +1818,10 @@ static void sm_run(void){
 
     // random address updates
     switch (rau_state){
+        case RAU_GET_RANDOM:
+            rau_state = RAU_W4_RANDOM;
+            btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_address, 8, &sm_handle_random_result_rau, NULL);
+            return;
         case RAU_GET_ENC:
             // already busy?
             if (sm_aes128_state == SM_AES128_IDLE) {
@@ -2893,22 +2897,8 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 					if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                         log_info("HCI Working!");
 
+                        // update dpk calculation state for pts testing
                         dkg_state = sm_persistent_irk_ready ? DKG_CALC_DHK : DKG_CALC_IRK;
-
-                        // trigger Random Address generation if requested before
-                        switch (gap_random_adress_type){
-                            case GAP_RANDOM_ADDRESS_TYPE_OFF:
-                                rau_state = RAU_IDLE;
-                                break;
-                            case GAP_RANDOM_ADDRESS_TYPE_STATIC:
-                                rau_state = RAU_SET_ADDRESS;
-                                break;
-                            default:
-                                rau_state = RAU_W4_RANDOM;
-                                btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_address, 8, &sm_handle_random_result_rau, NULL);
-                                break;
-                        }
-                        sm_run();
 					}
 					break;
 
@@ -3793,7 +3783,7 @@ void sm_init(void){
     sm_cmac_active  = 0;
 #endif
     dkg_state = DKG_W4_WORKING;
-    rau_state = RAU_W4_WORKING;
+    rau_state = RAU_IDLE;
     sm_aes128_state = SM_AES128_IDLE;
     sm_address_resolution_test = -1;    // no private address to resolve yet
     sm_address_resolution_ah_calculation_active = 0;
@@ -4107,7 +4097,6 @@ void gap_random_address_set_update_period(int period_ms){
 void gap_random_address_set(bd_addr_t addr){
     gap_random_address_set_mode(GAP_RANDOM_ADDRESS_TYPE_STATIC);
     memcpy(sm_random_address, addr, 6);
-    if (rau_state == RAU_W4_WORKING) return;
     rau_state = RAU_SET_ADDRESS;
     sm_run();
 }
