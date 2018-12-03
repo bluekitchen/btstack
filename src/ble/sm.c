@@ -1819,7 +1819,7 @@ static void sm_run(void){
     switch (rau_state){
         case RAU_GET_RANDOM:
             rau_state = RAU_W4_RANDOM;
-            btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_address, 8, &sm_handle_random_result_rau, NULL);
+            btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_address, 6, &sm_handle_random_result_rau, NULL);
             return;
         case RAU_GET_ENC:
             // already busy?
