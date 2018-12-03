@@ -200,7 +200,6 @@ static sm_key_t sm_persistent_ir;
 // derived from sm_persistent_ir
 static sm_key_t sm_persistent_dhk;
 static sm_key_t sm_persistent_irk;
-static uint8_t  sm_persistent_irk_ready = 0;    // used for testing
 static derived_key_generation_t dkg_state;
 
 // derived from sm_persistent_er
@@ -2896,9 +2895,6 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 					// bt stack activated, get started
 					if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                         log_info("HCI Working!");
-
-                        // update dpk calculation state for pts testing
-                        dkg_state = sm_persistent_irk_ready ? DKG_CALC_DHK : DKG_CALC_IRK;
 					}
 					break;
 
@@ -3729,7 +3725,7 @@ void sm_set_ir(sm_key_t ir){
 // Testing support only
 void sm_test_set_irk(sm_key_t irk){
     memcpy(sm_persistent_irk, irk, 16);
-    sm_persistent_irk_ready = 1;
+    dkg_state = DKG_CALC_DHK;
 }
 
 void sm_test_use_fixed_local_csrk(void){
@@ -3782,7 +3778,7 @@ void sm_init(void){
 #ifdef USE_CMAC_ENGINE
     sm_cmac_active  = 0;
 #endif
-    dkg_state = DKG_W4_WORKING;
+    dkg_state = DKG_CALC_IRK;
     rau_state = RAU_IDLE;
     sm_aes128_state = SM_AES128_IDLE;
     sm_address_resolution_test = -1;    // no private address to resolve yet
