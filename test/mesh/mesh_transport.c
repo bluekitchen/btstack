@@ -1072,3 +1072,7 @@ void mesh_transport_reset(void){
     // static btstack_linked_list_t upper_transport_access;
     mesh_transport_reset_network_pdus(&lower_transport_incoming);
 }
+
+void mesh_transport_init(){
+    mesh_network_set_higher_layer_handler(&mesh_lower_transport_received_mesage);
+}

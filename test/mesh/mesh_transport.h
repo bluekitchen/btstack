@@ -49,6 +49,10 @@ extern "C"
 #include <stdint.h>
 #include "ble/mesh/mesh_network.h"
 
+void mesh_transport_init();
+
+void mesh_upper_transport_set_seq(uint32_t seq);
+
 void mesh_transport_set_device_key(const uint8_t * device_key);
 
 void mesh_application_key_set(uint16_t appkey_index, uint8_t aid, const uint8_t * application_key);
@@ -58,7 +62,7 @@ uint8_t mesh_upper_transport_access_send(uint16_t netkey_index, uint16_t appkey_
 
 uint8_t mesh_upper_transport_send_control_pdu(uint16_t netkey_index, uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode,
                           const uint8_t * control_pdu_data, uint16_t control_pdu_len);
-void mesh_upper_transport_set_seq(uint32_t seq);
+
 
 void mesh_lower_transport_received_mesage(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu);
 

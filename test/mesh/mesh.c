@@ -523,7 +523,9 @@ int btstack_main(void)
 
     // Network layer
     mesh_network_init();
-    mesh_network_set_higher_layer_handler(&mesh_lower_transport_received_mesage);
+
+    // Transport layers (lower + upper))
+    mesh_transport_init();
 
     // PTS app key
     uint8_t application_key[16];
