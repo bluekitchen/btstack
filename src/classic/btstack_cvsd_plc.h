@@ -49,6 +49,7 @@
 extern "C" {
 #endif
 
+#define BTSTACK_CVSD_PLC_SAMPLE_FORMAT int16_t
 
 #define CVSD_FS_MAX 60       /* CVSD Frame Size */
 #define CVSD_N 256           /* Window Length for pattern matching */ 
@@ -76,6 +77,12 @@ void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, int16_t *ou
 void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, int16_t *in, int16_t *out);
 void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * state, int16_t * in, uint16_t size, int16_t * out);
 void btstack_cvsd_dump_statistics(btstack_cvsd_plc_state_t * state);
+
+// testing only
+int   btstack_cvsd_plc_pattern_match(BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y);
+float btstack_cvsd_plc_amplitude_match(btstack_cvsd_plc_state_t *plc_state, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y, BTSTACK_CVSD_PLC_SAMPLE_FORMAT bestmatch);
+BTSTACK_CVSD_PLC_SAMPLE_FORMAT btstack_cvsd_plc_crop_sample(float val);
+float btstack_cvsd_plc_rcos(int index);
 
 #if defined __cplusplus
 }
