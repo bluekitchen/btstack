@@ -272,7 +272,18 @@ void test_send_control_message(uint16_t netkey_index, uint8_t ttl, uint16_t src,
     btstack_parse_hex(control_pdu, transport_pdu_len, transport_pdu_data);
 
     uint8_t opcode = transport_pdu_data[0];
-    mesh_upper_transport_send_control_pdu(netkey_index, ttl, src, dest, opcode, &transport_pdu_data[1], transport_pdu_len - 1);
+
+    if (transport_pdu_len < 12){
+        // send as unsegmented control pdu
+        mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
+        mesh_upper_transport_setup_unsegmented_control_pdu(network_pdu, netkey_index, ttl, src, dest, opcode, transport_pdu_data+1, transport_pdu_len-1);
+        mesh_upper_transport_send_unsegmented_control_pdu(network_pdu);
+    } else {
+        // send as segmented control pdu
+        mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
+        mesh_upper_transport_setup_segmented_control_pdu(transport_pdu, netkey_index, ttl, src, dest, opcode, transport_pdu_data+1, transport_pdu_len-1);
+        mesh_upper_transport_send_segmented_control_pdu(transport_pdu);
+    }
 
     // check for all network pdus
     int i;
