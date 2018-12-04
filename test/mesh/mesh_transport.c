@@ -885,101 +885,6 @@ static void mesh_upper_transport_send_segmented_access_pdu_ccm(void * arg){
     mesh_upper_transport_send_segmented_pdu(transport_pdu);
 }
 
-uint8_t mesh_upper_transport_access_send(uint16_t netkey_index, uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest,
-                          const uint8_t * access_pdu_data, uint8_t access_pdu_len, uint8_t szmic){
-
-    uint32_t seq = mesh_upper_transport_peek_seq();
-
-    printf("[+] Upper transport, send Access PDU (seq %06x, szmic %u): ", seq, szmic);
-    printf_hexdump(access_pdu_data, access_pdu_len);
-
-
-    // get app or device key
-    uint8_t akf;
-    const mesh_application_key_t * appkey;
-    if (appkey_index == MESH_DEVICE_KEY_INDEX){
-        appkey = mesh_device_key_get();
-        akf = 0;
-    } else {
-        appkey = mesh_application_key_list_get(appkey_index);
-        if (appkey == NULL){
-            printf("appkey_index %x unknown\n", appkey_index);
-            return 1;
-        }
-        akf = 1;
-    }
-    uint8_t akf_aid = (akf << 6) | appkey->aid;
-
-    // lookup network by netkey_index
-    const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
-    if (!network_key) return 0;
-
-    const uint8_t trans_mic_len = szmic ? 8 : 4;
-
-    if (access_pdu_len + trans_mic_len <= 15){
-        // unsegmented access message
-
-        // allocate network_pdu
-        mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
-        if (!network_pdu) return 0;
-
-        // setup access pdu
-        uint8_t transport_pdu_data[16];
-        transport_pdu_data[0] = akf_aid;
-        memcpy(&transport_pdu_data[1], access_pdu_data, access_pdu_len);
-        uint16_t transport_pdu_len = access_pdu_len + 1;
-        mesh_print_hex("Access Payload", access_pdu_data, access_pdu_len);
-
-        // setup network_pdu
-        mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, 0, ttl, mesh_upper_transport_next_seq(), src, dest, transport_pdu_data, transport_pdu_len);
-
-        // setup nonce
-        mesh_print_hex("AppOrDevKey", appkey->key, 16);
-        if (akf){
-            transport_unsegmented_setup_application_nonce(application_nonce, network_pdu);
-        } else {
-            transport_unsegmented_setup_device_nonce(application_nonce, network_pdu);
-        }
-
-        // encrypt ccm
-        mesh_transport_crypto_active = 1;
-        const uint8_t trans_mic_len = 4;
-        uint8_t * upper_transport_pdu     = mesh_network_pdu_data(network_pdu) + 1;
-        btstack_crypo_ccm_init(&ccm, appkey->key, application_nonce, access_pdu_len, 0, trans_mic_len);
-        btstack_crypto_ccm_encrypt_block(&ccm, access_pdu_len, upper_transport_pdu, upper_transport_pdu, &mesh_upper_transport_send_unsegmented_access_pdu_ccm, network_pdu);
-        return 0;
-    }
-    if (access_pdu_len + trans_mic_len <= 384){
-        // temp store in transport pdu
-        mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
-        if (!transport_pdu) return 0;
-        memcpy(transport_pdu->data, access_pdu_data, access_pdu_len);
-        transport_pdu->len = access_pdu_len;
-        transport_pdu->transmic_len = trans_mic_len;
-        transport_pdu->netkey_index = netkey_index;
-        transport_pdu->appkey_index = appkey_index;
-        transport_pdu->akf_aid      = akf_aid;
-        mesh_transport_set_nid_ivi(transport_pdu, network_key->nid);
-        mesh_transport_set_seq(transport_pdu, seq);
-        mesh_transport_set_src(transport_pdu, src);
-        mesh_transport_set_dest(transport_pdu, dest);
-        mesh_transport_set_ctl_ttl(transport_pdu, ttl);
-
-        // setup nonce
-        mesh_print_hex("AppOrDevKey", appkey->key, 16);
-        if (akf){
-            transport_segmented_setup_application_nonce(application_nonce, transport_pdu);
-        } else {
-            transport_segmented_setup_device_nonce(application_nonce, transport_pdu);
-        }
-
-        // encrypt ccm
-        btstack_crypo_ccm_init(&ccm, appkey->key, application_nonce, access_pdu_len, 0, trans_mic_len);
-        btstack_crypto_ccm_encrypt_block(&ccm, access_pdu_len, transport_pdu->data, transport_pdu->data, &mesh_upper_transport_send_segmented_access_pdu_ccm, transport_pdu);
-    }
-    return 0;
-}
-
 uint8_t mesh_upper_transport_setup_unsegmented_control_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode,
                           const uint8_t * control_pdu_data, uint16_t control_pdu_len){
 
@@ -1030,12 +935,164 @@ uint8_t mesh_upper_transport_setup_segmented_control_pdu(mesh_transport_pdu_t * 
     return 0;
 }
 
+uint8_t mesh_upper_transport_setup_unsegmented_access_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest,
+                          const uint8_t * access_pdu_data, uint8_t access_pdu_len){
+
+    uint32_t seq = mesh_upper_transport_peek_seq();
+
+    printf("[+] Upper transport, setup unsegmented Access PDU (seq %06x): ", seq);
+    printf_hexdump(access_pdu_data, access_pdu_len);
+
+    // get app or device key
+    uint8_t akf;
+    const mesh_application_key_t * appkey;
+    if (appkey_index == MESH_DEVICE_KEY_INDEX){
+        appkey = mesh_device_key_get();
+        akf = 0;
+    } else {
+        appkey = mesh_application_key_list_get(appkey_index);
+        if (appkey == NULL){
+            printf("appkey_index %x unknown\n", appkey_index);
+            return 1;
+        }
+        akf = 1;
+    }
+    uint8_t akf_aid = (akf << 6) | appkey->aid;
+
+    // lookup network by netkey_index
+    const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
+    if (!network_key) return 1;
+
+    uint8_t transport_pdu_data[16];
+    transport_pdu_data[0] = akf_aid;
+    memcpy(&transport_pdu_data[1], access_pdu_data, access_pdu_len);
+    uint16_t transport_pdu_len = access_pdu_len + 1;
+    mesh_print_hex("Access Payload", access_pdu_data, access_pdu_len);
+
+    // setup network_pdu
+    mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, 0, ttl, mesh_upper_transport_next_seq(), src, dest, transport_pdu_data, transport_pdu_len);
+    network_pdu->appkey_index = appkey_index;
+    return 0;
+}
+
+uint8_t mesh_upper_transport_setup_segmented_access_pdu(mesh_transport_pdu_t * transport_pdu, uint16_t netkey_index, uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest,
+                          uint8_t szmic, const uint8_t * access_pdu_data, uint8_t access_pdu_len){
+
+    uint32_t seq = mesh_upper_transport_peek_seq();
+
+    printf("[+] Upper transport, setup segmented Access PDU (seq %06x, szmic %u): ", seq, szmic);
+    printf_hexdump(access_pdu_data, access_pdu_len);
+
+    // get app or device key
+    uint8_t akf;
+    const mesh_application_key_t * appkey;
+    if (appkey_index == MESH_DEVICE_KEY_INDEX){
+        appkey = mesh_device_key_get();
+        akf = 0;
+    } else {
+        appkey = mesh_application_key_list_get(appkey_index);
+        if (appkey == NULL){
+            printf("appkey_index %x unknown\n", appkey_index);
+            return 1;
+        }
+        akf = 1;
+    }
+    uint8_t akf_aid = (akf << 6) | appkey->aid;
+
+    // lookup network by netkey_index
+    const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
+    if (!network_key) return 1;
+
+    const uint8_t trans_mic_len = szmic ? 8 : 4;
+
+
+    // store in transport pdu
+    memcpy(transport_pdu->data, access_pdu_data, access_pdu_len);
+    transport_pdu->len = access_pdu_len;
+    transport_pdu->transmic_len = trans_mic_len;
+    transport_pdu->netkey_index = netkey_index;
+    transport_pdu->appkey_index = appkey_index;
+    transport_pdu->akf_aid      = akf_aid;
+    mesh_transport_set_nid_ivi(transport_pdu, network_key->nid);
+    mesh_transport_set_seq(transport_pdu, seq);
+    mesh_transport_set_src(transport_pdu, src);
+    mesh_transport_set_dest(transport_pdu, dest);
+    mesh_transport_set_ctl_ttl(transport_pdu, ttl);
+
+    return 0;
+}
+
 void mesh_upper_transport_send_unsegmented_control_pdu(mesh_network_pdu_t * network_pdu){
     mesh_network_send_pdu(network_pdu);
 }
 
 void mesh_upper_transport_send_segmented_control_pdu(mesh_transport_pdu_t * transport_pdu){
     mesh_upper_transport_send_segmented_pdu(transport_pdu);
+}
+
+void mesh_upper_transport_send_unsegmented_access_pdu(mesh_network_pdu_t * network_pdu){
+
+    uint16_t appkey_index = network_pdu->appkey_index;
+
+    // setup nonce
+    if (appkey_index == MESH_DEVICE_KEY_INDEX){
+        transport_unsegmented_setup_device_nonce(application_nonce, network_pdu);
+    } else {
+        transport_unsegmented_setup_application_nonce(application_nonce, network_pdu);
+    }
+
+    uint8_t   trans_mic_len = 4;
+    uint8_t * access_pdu_data = mesh_network_pdu_data(network_pdu) + 1;
+    uint16_t  access_pdu_len  = mesh_network_pdu_len(network_pdu)  - 1;
+
+    // --
+
+    // get app or device key
+    const mesh_application_key_t * appkey;
+    if (network_pdu->appkey_index == MESH_DEVICE_KEY_INDEX){
+        appkey = mesh_device_key_get();
+    } else {
+        appkey = mesh_application_key_list_get(appkey_index);
+    }
+    mesh_print_hex("AppOrDevKey", appkey->key, 16);
+
+    // encrypt ccm
+    mesh_transport_crypto_active = 1;
+
+    btstack_crypo_ccm_init(&ccm, appkey->key, application_nonce, access_pdu_len, 0, trans_mic_len);
+    btstack_crypto_ccm_encrypt_block(&ccm, access_pdu_len, access_pdu_data, access_pdu_data, &mesh_upper_transport_send_unsegmented_access_pdu_ccm, network_pdu);
+}
+
+void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t * transport_pdu){
+
+    uint16_t appkey_index = transport_pdu->appkey_index;
+
+    // setup nonce
+    if (appkey_index == MESH_DEVICE_KEY_INDEX){
+        transport_segmented_setup_device_nonce(application_nonce, transport_pdu);
+    } else {
+        transport_segmented_setup_application_nonce(application_nonce, transport_pdu);
+    }
+
+    uint8_t   transmic_len    = transport_pdu->transmic_len;
+    uint8_t * access_pdu_data = transport_pdu->data;
+    uint16_t  access_pdu_len  = transport_pdu->len;
+
+    // get app or device key
+    const mesh_application_key_t * appkey;
+    if (transport_pdu->appkey_index == MESH_DEVICE_KEY_INDEX){
+        appkey = mesh_device_key_get();
+    } else {
+        appkey = mesh_application_key_list_get(appkey_index);
+    }
+    mesh_print_hex("AppOrDevKey", appkey->key, 16);
+
+    // encrypt ccm
+    mesh_transport_crypto_active = 1;
+
+    // encrypt ccm
+    btstack_crypo_ccm_init(&ccm, appkey->key, application_nonce, access_pdu_len, 0, transmic_len);
+    btstack_crypto_ccm_encrypt_block(&ccm, access_pdu_len,access_pdu_data, access_pdu_data, &mesh_upper_transport_send_segmented_access_pdu_ccm, transport_pdu);
 }
 
 void mesh_upper_transport_set_seq(uint32_t seq){

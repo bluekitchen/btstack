@@ -376,22 +376,22 @@ static void send_pts_access_messsage(int type){
     uint8_t access_pdu_data[16];
 
     uint16_t src = primary_element_address;
-    uint16_t dst = 0x0001;
+    uint16_t dest = 0x0001;
     uint8_t  ttl = 0;
 
     switch (type){
         case 0:
             ttl = 10;
-            dst = 0x001;
+            dest = 0x001;
             printf("unicast ttl=10\n");
             break;
         case 1:
-            dst = 0x001;
+            dest = 0x001;
             ttl = 10;
             printf("unicast ttl=10\n");
             break;
         case 2:
-            dst = 0x001;
+            dest = 0x001;
             ttl = 0x7f;
             printf("unicast ttl=0x7f\n");
             break;
@@ -418,7 +418,14 @@ static void send_pts_access_messsage(int type){
     }
     int access_pdu_len = 1;
     memset(access_pdu_data, 0x55, access_pdu_len);
-    mesh_upper_transport_access_send(0, 0x26, ttl, src, dst, access_pdu_data, access_pdu_len, 0);
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = 0x26;
+
+
+    // send as unsegmented access pdu
+    mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
+    mesh_upper_transport_setup_unsegmented_access_pdu(network_pdu, netkey_index, appkey_index, ttl, src, dest, access_pdu_data, access_pdu_len);
+    mesh_upper_transport_send_unsegmented_access_pdu(network_pdu);
 }
 
 static void mesh_secure_network_beacon_auth_value_calculated(void * arg){

@@ -237,7 +237,17 @@ void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uin
     transport_pdu_len = strlen(control_pdu) / 2;
     btstack_parse_hex(control_pdu, transport_pdu_len, transport_pdu_data);
 
-    mesh_upper_transport_access_send(netkey_index, appkey_index, ttl, src, dest, transport_pdu_data, transport_pdu_len, szmic);
+    if (count == 1 ){
+        // send as unsegmented access pdu
+        mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
+        mesh_upper_transport_setup_unsegmented_access_pdu(network_pdu, netkey_index, appkey_index, ttl, src, dest, transport_pdu_data, transport_pdu_len);
+        mesh_upper_transport_send_unsegmented_access_pdu(network_pdu);
+    } else {
+        // send as segmented access pdu
+        mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
+        mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, szmic, transport_pdu_data, transport_pdu_len);
+        mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
+    } 
 
     // check for all network pdus
     int i;
@@ -467,12 +477,10 @@ char * message7_lower_transport_pdus[] = {
 char * message7_upper_transport_pdu = (char *) "00a6ac00000002";
 TEST(MessageTest, Message7Send){
     uint16_t netkey_index = 0;
-    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
     uint8_t  ttl          = 0x0b;
     uint16_t src          = 0x2345;
     uint16_t dest         = 0x0003;
     uint32_t seq          = 0x014835;
-    uint8_t  szmic        = 0;
 
     mesh_set_iv_index(0x12345678);
     mesh_upper_transport_set_seq(seq);
@@ -519,7 +527,6 @@ TEST(MessageTest, Message10Send){
     uint16_t src          = 0x1201;
     uint16_t dest         = 0x2345;
     uint32_t seq          = 0x000003;
-    uint8_t  szmic        = 0;
 
     load_network_key_nid_5e();
     mesh_set_iv_index(0x12345678);
@@ -549,7 +556,6 @@ TEST(MessageTest, Message12Send){
     uint16_t src          = 0x1201;
     uint16_t dest         = 0x2345;
     uint32_t seq          = 0x000004;
-    uint8_t  szmic        = 0;
 
     load_network_key_nid_5e();
     mesh_set_iv_index(0x12345678);
@@ -580,7 +586,6 @@ TEST(MessageTest, Messagee14Send){
     uint16_t src          = 0x1201;
     uint16_t dest         = 0x2345;
     uint32_t seq          = 0x000005;
-    uint8_t  szmic        = 0;
 
     load_network_key_nid_5e();
     mesh_set_iv_index(0x12345678);

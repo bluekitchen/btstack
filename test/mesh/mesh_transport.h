@@ -61,27 +61,34 @@ void mesh_upper_transport_register_unsegemented_message_handler(void (*callback)
 
 void mesh_upper_transport_register_segemented_message_handler(void (*callback)(mesh_transport_pdu_t * transport_pdu));
 
-//
+// Control PDUs
 
-void mesh_upper_transport_send_unsegmented_control_pdu(mesh_network_pdu_t * network_pdu);
-
-void mesh_upper_transport_send_segmented_control_pdu(mesh_transport_pdu_t * transport_pdu);
-
-//
 uint8_t mesh_upper_transport_setup_segmented_control_pdu(mesh_transport_pdu_t * transport_pdu, uint16_t netkey_index, 
 	uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode, const uint8_t * control_pdu_data, uint16_t control_pdu_len);
 
 uint8_t mesh_upper_transport_setup_unsegmented_control_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, 
 	uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode, const uint8_t * control_pdu_data, uint16_t control_pdu_len);
 
+void mesh_upper_transport_send_unsegmented_control_pdu(mesh_network_pdu_t * network_pdu);
 
-uint8_t mesh_upper_transport_access_send(uint16_t netkey_index, uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest,
-                          const uint8_t * access_pdu_data, uint8_t access_pdu_len, uint8_t szmic);
+void mesh_upper_transport_send_segmented_control_pdu(mesh_transport_pdu_t * transport_pdu);
 
-void mesh_lower_transport_received_mesage(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu);
+
+// Access PDUs
+
+uint8_t mesh_upper_transport_setup_unsegmented_access_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint16_t appkey_index,
+	 uint8_t ttl, uint16_t src, uint16_t dest, const uint8_t * access_pdu_data, uint8_t access_pdu_len);
+
+uint8_t mesh_upper_transport_setup_segmented_access_pdu(mesh_transport_pdu_t * transport_pdu, uint16_t netkey_index, uint16_t appkey_index,
+	uint8_t ttl, uint16_t src, uint16_t dest, uint8_t szmic, const uint8_t * access_pdu_data, uint8_t access_pdu_len);
+
+void mesh_upper_transport_send_unsegmented_access_pdu(mesh_network_pdu_t * network_pdu);
+
+void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t * transport_pdu);
 
 
 // test
+void mesh_lower_transport_received_mesage(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu);
 void mesh_transport_dump(void);
 void mesh_transport_reset(void);
 
