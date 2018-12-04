@@ -126,7 +126,7 @@ static float AmplitudeMatch(btstack_cvsd_plc_state_t *plc_state, SAMPLE_FORMAT *
     sf = sumx/sumy;
     // This is not in the paper, but limit the scaling factor to something reasonable to avoid creating artifacts 
     if (sf<0.75f) sf=0.75f;
-    if (sf>1.2f) sf=1.2f;
+    if (sf>1.0) sf=1.0f;
     return sf;
 }
 
@@ -146,7 +146,7 @@ void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, SAMPLE_FORM
     int   i = 0;
     float sf = 1;
     plc_state->nbf++;
-    
+    // plc_state->cvsd_fs = CVSD_FS_MAX;
     if (plc_state->nbf==1){
         // Perform pattern matching to find where to replicate
         plc_state->bestlag = PatternMatch(plc_state->hist);
@@ -180,12 +180,13 @@ void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, SAMPLE_FORM
             plc_state->hist[CVSD_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
         }
     }
+
     for (i=0;i<plc_state->cvsd_fs;i++){
         out[i] = plc_state->hist[CVSD_LHIST+i];
     }
-   
-   // shift the history buffer 
-   for (i=0;i<CVSD_LHIST+CVSD_RT+CVSD_OLAL;i++){
+    
+    // shift the history buffer 
+    for (i=0;i<CVSD_LHIST+CVSD_RT+CVSD_OLAL;i++){
         plc_state->hist[i] = plc_state->hist[i+plc_state->cvsd_fs];
     }
 }
