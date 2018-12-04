@@ -593,6 +593,11 @@ static mesh_transport_pdu_t * mesh_transport_pdu_for_segmented_message(mesh_netw
         test_transport_pdu->netkey_index = network_pdu->netkey_index;
         test_transport_pdu->block_ack = 0;
         test_transport_pdu->acknowledgement_timer_active = 0;
+
+        uint8_t * lower_transport_pdu = mesh_network_pdu_data(network_pdu);
+        uint16_t seg_zero = ( big_endian_read_16(lower_transport_pdu, 1) >> 2) & 0x1fff;
+        // TODO: reconstruct full seq auth
+        mesh_transport_set_seq(test_transport_pdu, seg_zero);
         printf("mesh_transport_pdu_for_segmented_message: setup transport pdu %p for src %x\n", test_transport_pdu, mesh_transport_src(test_transport_pdu));
     } else {
         printf("mesh_transport_pdu_for_segmented_message: transport pdu %p already set up for src %x\n", test_transport_pdu, mesh_transport_src(test_transport_pdu));
@@ -640,9 +645,6 @@ static void mesh_lower_transport_process_segment( mesh_transport_pdu_t * transpo
 
     // mark as done 
     mesh_network_segmented_message_complete(test_transport_pdu);
-
-    // free
-    test_transport_pdu = NULL;
 
     // forward to upper transport
     uint8_t ctl = mesh_network_control(network_pdu);
