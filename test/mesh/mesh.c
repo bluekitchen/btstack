@@ -100,6 +100,7 @@ static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * p
     mesh_network_key_list_add_from_provisioning_data(provisioning_data);
     // set unicast address
     mesh_network_set_primary_element_address(provisioning_data->unicast_address);
+    mesh_upper_transport_set_primary_element_address(provisioning_data->unicast_address);
     primary_element_address = provisioning_data->unicast_address;
     // set iv_index
     mesh_set_iv_index(provisioning_data->iv_index);

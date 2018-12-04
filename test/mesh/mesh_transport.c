@@ -528,7 +528,7 @@ static void mesh_transport_send_ack(mesh_transport_pdu_t * transport_pdu){
     uint16_t seq = mesh_transport_seq(transport_pdu);
     mesh_lower_transport_setup_segemented_acknowledge_message(ack_msg, 0, seq & 0x1fff, transport_pdu->block_ack);
 
-    printf("mesh_transport_send_ack with netkey_index %x, CTL=1, ttl = %u, seq = %x, src = %x, dst = %x\n", transport_pdu->netkey_index, mesh_transport_ttl(transport_pdu),
+    printf("mesh_transport_send_ack for pdu %p with netkey_index %x, CTL=1, ttl = %u, seq = %x, src = %x, dst = %x\n", transport_pdu, transport_pdu->netkey_index, mesh_transport_ttl(transport_pdu),
         mesh_transport_seq(transport_pdu), primary_element_address, mesh_transport_src(transport_pdu));
 
     mesh_network_send(transport_pdu->netkey_index, 1, mesh_transport_ttl(transport_pdu),
@@ -593,6 +593,9 @@ static mesh_transport_pdu_t * mesh_transport_pdu_for_segmented_message(mesh_netw
         test_transport_pdu->netkey_index = network_pdu->netkey_index;
         test_transport_pdu->block_ack = 0;
         test_transport_pdu->acknowledgement_timer_active = 0;
+        printf("mesh_transport_pdu_for_segmented_message: setup transport pdu %p for src %x\n", test_transport_pdu, mesh_transport_src(test_transport_pdu));
+    } else {
+        printf("mesh_transport_pdu_for_segmented_message: transport pdu %p already set up for src %x\n", test_transport_pdu, mesh_transport_src(test_transport_pdu));
     }
     // TODO validate SeqZero, reset buffer if needed
     return test_transport_pdu;
@@ -626,6 +629,7 @@ static void mesh_lower_transport_process_segment( mesh_transport_pdu_t * transpo
         transport_pdu->len = (seg_n * 12) + segment_len;
         printf("Assembled payload len %u\n", transport_pdu->len);
     }
+
     // check for complete
     int i;
     for (i=0;i<=seg_n;i++){
@@ -1093,6 +1097,10 @@ void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t * trans
     // encrypt ccm
     btstack_crypo_ccm_init(&ccm, appkey->key, application_nonce, access_pdu_len, 0, transmic_len);
     btstack_crypto_ccm_encrypt_block(&ccm, access_pdu_len,access_pdu_data, access_pdu_data, &mesh_upper_transport_send_segmented_access_pdu_ccm, transport_pdu);
+}
+
+void mesh_upper_transport_set_primary_element_address(uint16_t unicast_address){
+    primary_element_address = unicast_address;
 }
 
 void mesh_upper_transport_set_seq(uint32_t seq){
