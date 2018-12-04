@@ -61,13 +61,15 @@ typedef struct {
 void sm_init(void);
 
 /**
- * @brief Set secret ER key for key generation as described in Core V4.0, Vol 3, Part G, 5.2.2 
+ * @brief Set secret ER key for key generation as described in Core V4.0, Vol 3, Part G, 5.2.2
+ * @note If not set and btstack_tlv is configured, ER key is generated and stored in TLV by SM
  * @param er
  */
 void sm_set_er(sm_key_t er);
 
 /**
- * @brief Set secret IR key for key generation as described in Core V4.0, Vol 3, Part G, 5.2.2 
+ * @brief Set secret IR key for key generation as described in Core V4.0, Vol 3, Part G, 5.2.2
+ * @note If not set and btstack_tlv is configured, IR key is generated and stored in TLV by SM
  */
 void sm_set_ir(sm_key_t ir);
 

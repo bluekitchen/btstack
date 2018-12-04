@@ -49,6 +49,7 @@
 #include "btstack_event.h"
 #include "btstack_linked_list.h"
 #include "btstack_memory.h"
+#include "btstack_tlv.h"
 #include "gap.h"
 #include "hci.h"
 #include "hci_dump.h"
@@ -80,6 +81,8 @@
 #if defined(ENABLE_LE_SIGNED_WRITE) || defined(ENABLE_LE_SECURE_CONNECTIONS)
 #define USE_CMAC_ENGINE
 #endif
+
+#define BTSTACK_TAG32(A,B,C,D) ((A << 24) | (B << 16) | (C << 8) | D)
 
 //
 // SM internal types and globals
@@ -192,6 +195,11 @@ static uint8_t sm_sc_oob_random[16];
 static void (*sm_sc_oob_callback)(const uint8_t * confirm_value, const uint8_t * random_value);
 static sm_sc_oob_state_t sm_sc_oob_state;
 #endif
+
+
+static uint8_t               sm_persistent_keys_random_active;
+static const btstack_tlv_t * sm_tlv_impl;
+static void *                sm_tlv_context;
 
 // Security Manager Master Keys, please use sm_set_er(er) and sm_set_ir(ir) with your own 128 bit random values
 static sm_key_t sm_persistent_er;
@@ -499,6 +507,31 @@ static void sm_truncate_key(sm_key_t key, int max_encryption_size){
     }
 }
 
+// ER / IR checks
+static int sm_er_ir_set_default(void){
+    int i;
+    for (i=0;i<16;i++){
+        sm_persistent_er[i] = 0x30 + i;
+        sm_persistent_ir[i] = 0x90 + i;
+    }
+}
+
+static int sm_er_is_default(void){
+    int i;
+    for (i=0;i<16;i++){
+        if (sm_persistent_er[i] != (0x30+i)) return 0;
+    }
+    return 1;
+}
+
+static int sm_ir_is_default(void){
+    int i;
+    for (i=0;i<16;i++){
+        if (sm_persistent_ir[i] != (0x90+i)) return 0;
+    }
+    return 1;
+}
+
 // SMP Timeout implementation
 
 // Upon transmission of the Pairing Request command or reception of the Pairing Request command,
@@ -544,7 +577,7 @@ static btstack_timer_source_t gap_random_address_update_timer;
 static uint32_t gap_random_adress_update_period;
 
 static void gap_random_address_trigger(void){
-    log_info("gap_random_address_trigger");
+    log_info("gap_random_address_trigger, state %u", rau_state);
     if (rau_state != RAU_IDLE) return;
     rau_state = RAU_GET_RANDOM;
     sm_run();
@@ -1783,6 +1816,9 @@ static void sm_run(void){
     // assert that we can send at least commands
     if (!hci_can_send_command_packet_now()) return;
 
+    // pause until IR/ER are ready
+    if (sm_persistent_keys_random_active) return;
+
     //
     // non-connection related behaviour
     //
@@ -2766,7 +2802,6 @@ static void sm_handle_encryption_result_dkg_dhk(void *arg){
     sm_aes128_state = SM_AES128_IDLE;
     log_info_key("dhk", sm_persistent_dhk);
     dkg_state = DKG_READY;
-    // DKG calculation complete => SM Init Finished
     sm_run();
 }
 
@@ -2877,6 +2912,52 @@ static void sm_handle_random_result_ph3_random(void * arg){
     setup->sm_local_rand[7] = (setup->sm_local_rand[7] & 0xef) + (connection->sm_connection_authenticated << 4);
     btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 2, &sm_handle_random_result_ph3_div, connection);
 }
+static void sm_validate_er_ir(void){
+    // warn about default ER/IR
+    int warning = 0;
+    if (sm_ir_is_default()){
+        warning = 1;
+        log_error("Persistent IR not set with sm_set_ir. Use of private addresses will cause pairing issues");
+    }
+    if (sm_er_is_default()){
+        warning = 1;
+        log_error("Persistent ER not set with sm_set_er. Legacy Pairing LTK is not secure");
+    }
+    log_error("Please configure btstack_tlv to let BTstack setup ER and IR keys");
+}
+
+static void sm_handle_random_result_ir(void *arg){
+    sm_persistent_keys_random_active = 0;
+    if (arg){
+        // key generated, store in tlv
+        int status = sm_tlv_impl->store_tag(sm_tlv_context, BTSTACK_TAG32('S','M','I','R'), sm_persistent_ir, 16);
+        log_info("Generated IR key. Store in TLV status: %d", status);
+    }
+    log_info_key("IR", sm_persistent_ir);
+    sm_run();
+}
+
+static void sm_handle_random_result_er(void *arg){
+    sm_persistent_keys_random_active = 0;
+    if (arg){
+        // key generated, store in tlv
+        int status = sm_tlv_impl->store_tag(sm_tlv_context, BTSTACK_TAG32('S','M','E','R'), sm_persistent_er, 16);
+        log_info("Generated ER key. Store in TLV status: %d", status);
+    }
+    log_info_key("ER", sm_persistent_er);
+
+    // try load ir
+    int key_size = sm_tlv_impl->get_tag(sm_tlv_context, BTSTACK_TAG32('S','M','I','R'), sm_persistent_ir, 16);
+    if (key_size == 16){
+        // ok, let's continue
+        log_info("IR from TLV");
+        sm_handle_random_result_ir( NULL );
+    } else {
+        // invalid, generate new random one
+        sm_persistent_keys_random_active = 1;
+        btstack_crypto_random_generate(&sm_crypto_random_request, sm_persistent_ir, 16, &sm_handle_random_result_ir, &sm_persistent_ir);
+    }
+}
 
 static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
@@ -2895,6 +2976,23 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 					// bt stack activated, get started
 					if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                         log_info("HCI Working!");
+
+                        // setup IR/ER with TLV
+                        btstack_tlv_get_instance(&sm_tlv_impl, &sm_tlv_context);
+                        if (sm_tlv_impl){
+                            int key_size = sm_tlv_impl->get_tag(sm_tlv_context, BTSTACK_TAG32('S','M','E','R'), sm_persistent_er, 16);
+                            if (key_size == 16){
+                                // ok, let's continue
+                                log_info("ER from TLV");
+                                sm_handle_random_result_er( NULL );
+                            } else {
+                                // invalid, generate random one
+                                sm_persistent_keys_random_active = 1;
+                                btstack_crypto_random_generate(&sm_crypto_random_request, sm_persistent_er, 16, &sm_handle_random_result_er, &sm_persistent_er);
+                            }
+                        } else {
+                            sm_validate_er_ir();
+                        }
 					}
 					break;
 
@@ -3753,16 +3851,9 @@ void sm_test_set_pairing_failure(int reason){
 #endif
 
 void sm_init(void){
-    // set some (BTstack default) ER and IR
-    int i;
-    sm_key_t er;
-    sm_key_t ir;
-    for (i=0;i<16;i++){
-        er[i] = 0x30 + i;
-        ir[i] = 0x90 + i;
-    }
-    sm_set_er(er);
-    sm_set_ir(ir);
+    // set default ER and IR values (should be unique - set by app or sm later using TLV)
+    sm_er_ir_set_default();
+
     // defaults
     sm_accepted_stk_generation_methods = SM_STK_GENERATION_METHOD_JUST_WORKS
                                        | SM_STK_GENERATION_METHOD_OOB
