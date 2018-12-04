@@ -508,7 +508,7 @@ static void sm_truncate_key(sm_key_t key, int max_encryption_size){
 }
 
 // ER / IR checks
-static int sm_er_ir_set_default(void){
+static void sm_er_ir_set_default(void){
     int i;
     for (i=0;i<16;i++){
         sm_persistent_er[i] = 0x30 + i;
@@ -2923,7 +2923,9 @@ static void sm_validate_er_ir(void){
         warning = 1;
         log_error("Persistent ER not set with sm_set_er. Legacy Pairing LTK is not secure");
     }
-    log_error("Please configure btstack_tlv to let BTstack setup ER and IR keys");
+    if (warning) {
+        log_error("Please configure btstack_tlv to let BTstack setup ER and IR keys");
+    }
 }
 
 static void sm_handle_random_result_ir(void *arg){
