@@ -967,7 +967,11 @@ static int usb_open(void){
     }
 
     dev = libusb_get_device(aHandle);
-    scan_for_bt_endpoints(dev);
+    r = scan_for_bt_endpoints(dev);
+    if (r < 0){
+        usb_close();
+        return -1;
+    }
 
 #else
     // Scan system for an appropriate devices
@@ -993,9 +997,18 @@ static int usb_open(void){
                 if (!handle) continue;
 
                 r = prepare_device(handle);
-                if (r < 0) continue;
+                if (r < 0) {
+                    handle = NULL;
+                    continue;
+                }
 
                 dev = devs[i];
+                r = scan_for_bt_endpoints(dev);
+                if (r < 0) {
+                    handle = NULL;
+                    continue;
+                }
+
                 libusb_state = LIB_USB_INTERFACE_CLAIMED;
                 break;
             };
@@ -1019,9 +1032,18 @@ static int usb_open(void){
             if (!handle) continue;
 
             r = prepare_device(handle);
-            if (r < 0) continue;
+            if (r < 0) {
+                handle = NULL;
+                continue;
+            }
 
             dev = devs[deviceIndex];
+            r = scan_for_bt_endpoints(dev);
+            if (r < 0) {
+                handle = NULL;
+                continue;
+            }
+
             libusb_state = LIB_USB_INTERFACE_CLAIMED;
             break;
         }
@@ -1033,8 +1055,6 @@ static int usb_open(void){
         log_error("No USB Bluetooth device found");
         return -1;
     }
-
-    scan_for_bt_endpoints(dev);
 
 #endif
     
