@@ -182,13 +182,11 @@ int btstack_main(void){
     provisioning_device_init(device_uuid);
     provisioning_device_register_packet_handler(&mesh_message_handler);
 
-    // dynamically store device uuid into adv data
-    uint8_t uuid_flipped[16];
-    reverse_128(device_uuid, uuid_flipped);
-    memcpy(&adv_data[11], uuid_flipped, sizeof(uuid_flipped));
+    // dynamically store device uuid into adv data 
+    memcpy(&adv_data[11], device_uuid, sizeof(device_uuid));
     
     // setup advertisements
-    uint8_t adv_type = 0;   // AFV_IND
+    uint8_t adv_type = 0;   // ADV_IND
     bd_addr_t null_addr;
     memset(null_addr, 0, 6);
     gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
