@@ -106,7 +106,14 @@ static uint16_t mesh_provisioning_service_read_callback(hci_con_handle_t con_han
         log_error("mesh_provisioning_service_read_callback: instance is null");
         return 0;
     }
-    // log_info("mesh_provisioning_service_read_callback: not handled read on handle 0x%02x", attribute_handle);
+    if (attribute_handle == instance->data_out_client_configuration_descriptor_handle){
+        if (buffer && buffer_size >= 2){
+            little_endian_store_16(buffer, 0, instance->data_out_client_configuration_descriptor_value);
+        }
+        return 2;
+    }
+    printf("mesh_provisioning_service_read_callback: not handled read on handle 0x%02x\n", attribute_handle);
+    log_info("mesh_provisioning_service_read_callback: not handled read on handle 0x%02x", attribute_handle);
     return 0;
 }
 
@@ -120,10 +127,23 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
         log_error("mesh_provisioning_service_write_callback: instance is null");
         return 0;
     }
+    printf("mesh_provisioning_service_write_callback: handle 0x%02x, buffer size %d", attribute_handle, buffer_size);
+    printf_hexdump(buffer, buffer_size);
 
     if (attribute_handle == instance->data_in_client_value_handle){
         if (!mesh_provisioning_service_packet_handler) return 0;
-        (*mesh_provisioning_service_packet_handler)(PROVISIONING_DATA_PACKET, con_handle, buffer, buffer_size);
+        mesh_msg_type_t msg_type = buffer[0] & 0xC0;
+        switch (msg_type){
+            case MESH_MSG_TYPE_PROXY_CONFIGURATION:
+                log_info("data_in_client_value_handle not handled, msg_type %d", msg_type);
+                break;
+            case MESH_MSG_TYPE_PROVISIONING_PDU:
+                (*mesh_provisioning_service_packet_handler)(PROVISIONING_DATA_PACKET, con_handle, buffer, buffer_size);
+                break;
+            default:
+                log_info("data_in_client_value_handle not written, wrong msg_type %d", msg_type);
+                return ATT_ERROR_REQUEST_NOT_SUPPORTED; 
+        }  
         return 0;
     }
 
@@ -131,16 +151,20 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
         if (buffer_size < 2){
             return ATT_ERROR_INVALID_OFFSET;
         }
-        instance->data_out_client_configuration_descriptor_value = little_endian_read_16(buffer, 0);
-        log_info("mesh_provisioning_service_write_callback: data out notify enabled %d, con handle 0x%02x", instance->data_out_client_configuration_descriptor_value, con_handle);
-        if (instance->data_out_client_configuration_descriptor_value){
+        uint16_t enable_data_out_notify = little_endian_read_16(buffer, 0);
+        if (enable_data_out_notify){
+            if (instance->data_out_client_configuration_descriptor_value) return 0;
+            instance->data_out_client_configuration_descriptor_value = enable_data_out_notify;
             mesh_provisioning_service_emit_link_open(con_handle, 0);
         } else {
-            mesh_provisioning_service_emit_link_close(con_handle, 0);
+            if (!instance->data_out_client_configuration_descriptor_value) return 0;
+            instance->data_out_client_configuration_descriptor_value = enable_data_out_notify;
+            mesh_provisioning_service_emit_link_open(con_handle, 0);
         }
+        log_info("mesh_provisioning_service_write_callback: enable_data_out_notify %d, con handle 0x%02x", enable_data_out_notify, con_handle);
         return 0;
     }
-    // log_info("mesh_provisioning_service_write_callback: not handled write on handle 0x%02x, buffer size %d", attribute_handle, buffer_size);
+    log_info("mesh_provisioning_service_write_callback: not handled write on handle 0x%02x, buffer size %d", attribute_handle, buffer_size);
     return 0;
 }
 
