@@ -40,6 +40,7 @@
 #include <stdint.h>
 #include "ble/att_db.h"
 #include "btstack_defines.h"
+#include "btstack_config.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -69,23 +70,6 @@ void att_server_register_packet_handler(btstack_packet_handler_t handler);
  */
 void att_server_register_service_handler(att_service_handler_t * handler);
 
-// the following functions will be removed soon
-
-/*
- * @brief tests if a notification or indication can be send right now
- * @param con_handle
- * @return 1, if packet can be sent
- */
-int  att_server_can_send_packet_now(hci_con_handle_t con_handle);
-
-/**
- * @brief Request emission of ATT_EVENT_CAN_SEND_NOW as soon as possible
- * @note ATT_EVENT_CAN_SEND_NOW might be emitted during call to this function
- *       so packet handler should be ready to handle it
- * @param con_handle
- */
-void att_server_request_can_send_now_event(hci_con_handle_t con_handle);
-
 /**
  * @brief Request callback when sending is possible
  * @note callback might happend during call to this function
@@ -95,7 +79,12 @@ void att_server_request_can_send_now_event(hci_con_handle_t con_handle);
  */
 int att_server_register_can_send_now_callback(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle);
 
-// end of deprecated functions
+/**
+ * @brief Return ATT MTU
+ * @param con_handle
+ * @return mtu if ok, 0 otherwise
+ */
+uint16_t att_server_get_mtu(hci_con_handle_t con_handle);
 
 /**
  * @brief Request callback when sending notifcation is possible
@@ -123,7 +112,7 @@ int att_server_request_to_send_indication(btstack_context_callback_registration_
  * @param value_len
  * @return 0 if ok, error otherwise
  */
-int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t *value, uint16_t value_len);
+int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len);
 
 /*
  * @brief indicate value change to client. client is supposed to reply with an indication_response
@@ -133,7 +122,7 @@ int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, ui
  * @param value_len
  * @return 0 if ok, error otherwise
  */
-int att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t *value, uint16_t value_len);
+int att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len);
 
 #ifdef ENABLE_ATT_DELAYED_RESPONSE
 /*
@@ -145,6 +134,24 @@ int att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, 
  */
 int att_server_response_ready(hci_con_handle_t con_handle);
 #endif
+
+// the following functions will be removed soon
+
+/*
+ * @brief tests if a notification or indication can be send right now
+ * @param con_handle
+ * @return 1, if packet can be sent
+ */
+int  att_server_can_send_packet_now(hci_con_handle_t con_handle);
+
+/**
+ * @brief Request emission of ATT_EVENT_CAN_SEND_NOW as soon as possible
+ * @note ATT_EVENT_CAN_SEND_NOW might be emitted during call to this function
+ *       so packet handler should be ready to handle it
+ * @param con_handle
+ */
+void att_server_request_can_send_now_event(hci_con_handle_t con_handle);
+// end of deprecated functions
 
 /* API_END */
 

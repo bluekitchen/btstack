@@ -129,6 +129,12 @@ void    goep_client_create_disconnect_request(uint16_t goep_cid);
 void    goep_client_create_get_request(uint16_t goep_cid);
 
 /**
+ * @brief Create Abort request
+ * @param gope_cid
+ */
+void    goep_client_create_abort_request(uint16_t goep_cid);
+
+/**
  * @brief Add SRM Enable
  * @param gope_cid
  */
@@ -142,6 +148,30 @@ void    goep_client_create_set_path_request(uint16_t goep_cid, uint8_t flags);
 
 // not implemented yet
 // void  goep_client_create_put(uint16_t goep_cid);
+
+/**
+ * @brief Add header with single byte value (8 bit)
+ * @param gope_cid
+ * @param header_type
+ * @param value
+ */
+void goep_client_add_byte_header(uint16_t goep_cid, uint8_t header_type, uint8_t value);
+
+/**
+ * @brief Add header with word value (32 bit)
+ * @param gope_cid
+ * @param header_type
+ * @param value
+ */
+void goep_client_add_word_header(uint16_t goep_cid, uint8_t header_type, uint32_t value);
+
+/**
+ * @brief Add header with variable size
+ * @param gope_cid
+ * @param header_type
+ * @param value
+ */
+void goep_client_add_variable_header(uint16_t goep_cid, uint8_t header_type, uint16_t header_data_length, const uint8_t * header_data);
 
 /**
  * @brief Add name header to current request

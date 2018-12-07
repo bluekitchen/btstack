@@ -186,7 +186,6 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
     log_info("create_connection_for_addr %s, type %x", bd_addr_to_str(addr), addr_type);
     hci_connection_t * conn = btstack_memory_hci_connection_get();
     if (!conn) return NULL;
-    memset(conn, 0, sizeof(hci_connection_t));
     bd_addr_copy(conn->address, addr);
     conn->address_type = addr_type;
     conn->con_handle = 0xffff;
@@ -1350,6 +1349,10 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_WRITE_PAGE_TIMEOUT;
             hci_send_cmd(&hci_write_page_timeout, 0x6000);  // ca. 15 sec
             break;
+        case HCI_INIT_WRITE_DEFAULT_LINK_POLICY_SETTING:
+            hci_stack->substate = HCI_INIT_W4_WRITE_DEFAULT_LINK_POLICY_SETTING;
+            hci_send_cmd(&hci_write_default_link_policy_setting, hci_stack->default_link_policy_settings);
+            break;
         case HCI_INIT_WRITE_CLASS_OF_DEVICE:
             hci_stack->substate = HCI_INIT_W4_WRITE_CLASS_OF_DEVICE;
             hci_send_cmd(&hci_write_class_of_device, hci_stack->class_of_device);
@@ -1817,7 +1820,7 @@ static void event_handler(uint8_t *packet, int size){
 
     // assert packet is complete
     if (size != event_length + 2){
-        log_error("hci.c: event_handler called with event packet of wrong size %d, expected %u => dropping packet", size, event_length + 2);
+        log_error("event_handler called with packet of wrong size %d, expected %u => dropping packet", size, event_length + 2);
         return;
     }
 
@@ -2184,6 +2187,13 @@ static void event_handler(uint8_t *packet, int size){
             if (!hci_stack->ssp_auto_accept) break;
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_USER_PASSKEY_REPLY);
             break;
+        case HCI_EVENT_MODE_CHANGE:
+            handle = hci_event_mode_change_get_handle(packet);
+            conn = hci_connection_for_handle(handle);
+            if (!conn) break;
+            conn->connection_mode = hci_event_mode_change_get_mode(packet);
+            log_info("HCI_EVENT_MODE_CHANGE, handle 0x%04x, mode %u", handle, conn->connection_mode);
+            break;
 #endif
 
         case HCI_EVENT_ENCRYPTION_CHANGE:
@@ -2373,8 +2383,9 @@ static void event_handler(uint8_t *packet, int size){
                     
                     conn->state = OPEN;
                     conn->role  = packet[6];
-                    conn->con_handle = little_endian_read_16(packet, 4);
-                    
+                    conn->con_handle             = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                    conn->le_connection_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
+
 #ifdef ENABLE_LE_PERIPHERAL
                     if (packet[6] == HCI_ROLE_SLAVE){
                         hci_reenable_advertisements_if_needed();
@@ -2392,8 +2403,14 @@ static void event_handler(uint8_t *packet, int size){
                     hci_emit_nr_connections_changed();
                     break;
 
-            // log_info("LE buffer size: %u, count %u", little_endian_read_16(packet,6), packet[8]);
-                 
+                // log_info("LE buffer size: %u, count %u", little_endian_read_16(packet,6), packet[8]);
+                case HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE:
+                    handle = hci_subevent_le_connection_update_complete_get_connection_handle(packet);
+                    conn = hci_connection_for_handle(handle);
+                    if (!conn) break;
+                    conn->le_connection_interval = hci_subevent_le_connection_update_complete_get_conn_interval(packet);
+                    break;
+
                 case HCI_SUBEVENT_LE_REMOTE_CONNECTION_PARAMETER_REQUEST:
                     // connection
                     handle = hci_subevent_le_remote_connection_parameter_request_get_connection_handle(packet);
@@ -2705,6 +2722,10 @@ void hci_close(void){
 #ifdef ENABLE_CLASSIC
 void gap_set_class_of_device(uint32_t class_of_device){
     hci_stack->class_of_device = class_of_device;
+}
+
+void gap_set_default_link_policy_settings(uint16_t default_link_policy_settings){
+    hci_stack->default_link_policy_settings = default_link_policy_settings;
 }
 
 void hci_disable_l2cap_timeout_check(void){
@@ -3358,6 +3379,9 @@ static void hci_run(void){
                 break;
         }
         
+        // no further commands if connection is about to get shut down
+        if (connection->state == SENT_DISCONNECT) continue;
+
 #ifdef ENABLE_CLASSIC
         if (connection->authentication_flags & HANDLE_LINK_KEY_REQUEST){
             log_info("responding to link key request");
@@ -3444,6 +3468,23 @@ static void hci_run(void){
             hci_send_cmd(&hci_disconnect, connection->con_handle, 0x0005);  // authentication failure
             return;
         }
+
+#ifdef ENABLE_CLASSIC
+        uint16_t sniff_min_interval;
+        switch (connection->sniff_min_interval){
+            case 0:
+                break;
+            case 0xffff:
+                connection->sniff_min_interval = 0;
+                hci_send_cmd(&hci_exit_sniff_mode, connection->con_handle);
+                return;
+            default:
+                sniff_min_interval = connection->sniff_min_interval;
+                connection->sniff_min_interval = 0;
+                hci_send_cmd(&hci_sniff_mode, connection->con_handle, connection->sniff_max_interval, sniff_min_interval, connection->sniff_attempt, connection->sniff_timeout);
+                break;
+        }
+#endif
 
 #ifdef ENABLE_BLE
         switch (connection->le_con_parameter_update_state){
@@ -4564,6 +4605,12 @@ void gap_auto_connection_stop_all(void){
     }
     hci_run();
 }
+
+uint16_t gap_le_connection_interval(hci_con_handle_t connection_handle){
+    hci_connection_t * conn = hci_connection_for_handle(connection_handle);
+    if (!conn) return 0;
+    return conn->le_connection_interval;
+}
 #endif
 #endif
 
@@ -4584,6 +4631,7 @@ void gap_set_extended_inquiry_response(const uint8_t * data){
  * @events: GAP_EVENT_INQUIRY_RESULT, GAP_EVENT_INQUIRY_COMPLETE
  */
 int gap_inquiry_start(uint8_t duration_in_1280ms_units){
+    if (hci_stack->state != HCI_STATE_WORKING) return ERROR_CODE_COMMAND_DISALLOWED;
     if (hci_stack->inquiry_state != GAP_INQUIRY_STATE_IDLE) return ERROR_CODE_COMMAND_DISALLOWED;
     if (duration_in_1280ms_units < GAP_INQUIRY_DURATION_MIN || duration_in_1280ms_units > GAP_INQUIRY_DURATION_MAX){
         return ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS;
@@ -4598,7 +4646,7 @@ int gap_inquiry_start(uint8_t duration_in_1280ms_units){
  * @returns 0 if ok
  */
 int gap_inquiry_stop(void){
-    if (hci_stack->inquiry_state >= GAP_INQUIRY_DURATION_MIN || hci_stack->inquiry_state <= GAP_INQUIRY_DURATION_MAX) {
+    if (hci_stack->inquiry_state >= GAP_INQUIRY_DURATION_MIN && hci_stack->inquiry_state <= GAP_INQUIRY_DURATION_MAX) {
         // emit inquiry complete event, before it even started
         uint8_t event[] = { GAP_EVENT_INQUIRY_COMPLETE, 1, 0};
         hci_emit_event(event, sizeof(event), 1);
@@ -4815,5 +4863,31 @@ authorization_state_t gap_authorization_state(hci_con_handle_t con_handle){
     if (!sm_conn->sm_connection_encrypted)               return AUTHORIZATION_UNKNOWN; // unencrypted connection cannot be authorized
     if (!sm_conn->sm_connection_authenticated)           return AUTHORIZATION_UNKNOWN; // unauthenticatd connection cannot be authorized
     return sm_conn->sm_connection_authorization_state;
+}
+#endif
+
+#ifdef ENABLE_CLASSIC
+uint8_t gap_sniff_mode_enter(hci_con_handle_t con_handle, uint16_t sniff_min_interval, uint16_t sniff_max_interval, uint16_t sniff_attempt, uint16_t sniff_timeout){
+    hci_connection_t * conn = hci_connection_for_handle(con_handle);
+    if (!conn) return GAP_CONNECTION_INVALID;
+    conn->sniff_min_interval = sniff_min_interval;
+    conn->sniff_max_interval = sniff_max_interval;
+    conn->sniff_attempt = sniff_attempt;
+    conn->sniff_timeout = sniff_timeout;
+    hci_run();
+    return 0;
+}
+
+/**
+ * @brief Exit Sniff mode
+ * @param con_handle
+ @ @return 0 if ok
+ */
+uint8_t gap_sniff_mode_exit(hci_con_handle_t con_handle){
+    hci_connection_t * conn = hci_connection_for_handle(con_handle);
+    if (!conn) return GAP_CONNECTION_INVALID;
+    conn->sniff_min_interval = 0xffff;
+    hci_run();
+    return 0;
 }
 #endif

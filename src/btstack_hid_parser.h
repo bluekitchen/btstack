@@ -50,6 +50,49 @@
 extern "C" {
 #endif
 
+typedef enum {
+    Main=0,
+    Global,
+    Local,
+    Reserved
+} TagType;
+
+typedef enum {
+    Input=8,
+    Output,
+    Coll,
+    Feature,
+    EndColl
+} MainItemTag;
+
+typedef enum {
+    UsagePage,
+    LogicalMinimum,
+    LogicalMaximum,
+    PhysicalMinimum,
+    PhysicalMaximum,
+    UnitExponent,
+    Unit,
+    ReportSize,
+    ReportID,
+    ReportCount,
+    Push,
+    Pop
+} GlobalItemTag;
+
+typedef enum {
+    Usage,
+    UsageMinimum,
+    UsageMaximum,
+    DesignatorIndex,
+    DesignatorMinimum,
+    DesignatorMaximum,
+    StringIndex,
+    StringMinimum,
+    StringMaximum,
+    Delimiter 
+} LocalItemTag;
+
 typedef struct  {
     int32_t  item_value;    
     uint16_t item_size; 
@@ -59,17 +102,23 @@ typedef struct  {
 } hid_descriptor_item_t;
 
 typedef enum {
-    BTSTACK_HID_REPORT_TYPE_OTHER  = 0x0,
-    BTSTACK_HID_REPORT_TYPE_INPUT,
-    BTSTACK_HID_REPORT_TYPE_OUTPUT,
-    BTSTACK_HID_REPORT_TYPE_FEATURE,
-} btstack_hid_report_type_t;
-
-typedef enum {
     BTSTACK_HID_PARSER_SCAN_FOR_REPORT_ITEM,
     BTSTACK_HID_PARSER_USAGES_AVAILABLE,
     BTSTACK_HID_PARSER_COMPLETE,
 } btstack_hid_parser_state_t;
+
+typedef enum {
+    HID_REPORT_TYPE_RESERVED = 0,
+    HID_REPORT_TYPE_INPUT,
+    HID_REPORT_TYPE_OUTPUT,
+    HID_REPORT_TYPE_FEATURE
+} hid_report_type_t;
+
+typedef enum {
+    HID_REPORT_ID_UNDECLARED,
+    HID_REPORT_ID_VALID,
+    HID_REPORT_ID_INVALID
+} hid_report_id_status_t;
 
 typedef struct {
 
@@ -78,7 +127,7 @@ typedef struct {
     uint16_t        descriptor_len;
 
     // Report
-    btstack_hid_report_type_t report_type;
+    hid_report_type_t report_type;
     const uint8_t * report;
     uint16_t        report_len;
 
@@ -123,7 +172,7 @@ typedef struct {
  * @param hid_report
  * @param hid_report_len
  */
-void btstack_hid_parser_init(btstack_hid_parser_t * parser, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len, btstack_hid_report_type_t hid_report_type, const uint8_t * hid_report, uint16_t hid_report_len);
+void btstack_hid_parser_init(btstack_hid_parser_t * parser, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len, hid_report_type_t hid_report_type, const uint8_t * hid_report, uint16_t hid_report_len);
 
 /**
  * @brief Checks if more fields are available
@@ -140,6 +189,37 @@ int  btstack_hid_parser_has_more(btstack_hid_parser_t * parser);
  */
 void btstack_hid_parser_get_field(btstack_hid_parser_t * parser, uint16_t * usage_page, uint16_t * usage, int32_t * value);
 
+/**
+ * @brief Parses descriptor item
+ * @param item
+ * @param hid_descriptor
+ * @param hid_descriptor_len
+ */
+void btstack_hid_parse_descriptor_item(hid_descriptor_item_t * item, const uint8_t * hid_descriptor, uint16_t hid_descriptor_len);
+
+/**
+ * @brief Parses descriptor and returns report size for given report ID and report type
+ * @param report_id
+ * @param report_type
+ * @param hid_descriptor_len
+ * @param hid_descriptor
+ */
+int btstack_hid_get_report_size_for_id(int report_id, hid_report_type_t report_type, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor);
+
+/**
+ * @brief Parses descriptor and returns report size for given report ID and report type
+ * @param report_id
+ * @param hid_descriptor_len
+ * @param hid_descriptor
+ */
+hid_report_id_status_t btstack_hid_id_valid(int report_id, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor);
+
+/**
+ * @brief Parses descriptor and returns 1 if report ID found
+ * @param hid_descriptor_len
+ * @param hid_descriptor
+ */
+int btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t * hid_descriptor);
 /* API_END */
 
 #if defined __cplusplus

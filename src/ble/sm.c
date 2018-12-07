@@ -37,7 +37,6 @@
 
 #define __BTSTACK_FILE__ "sm.c"
 
-#include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
 
@@ -50,6 +49,7 @@
 #include "btstack_event.h"
 #include "btstack_linked_list.h"
 #include "btstack_memory.h"
+#include "btstack_tlv.h"
 #include "gap.h"
 #include "hci.h"
 #include "hci_dump.h"
@@ -82,6 +82,8 @@
 #define USE_CMAC_ENGINE
 #endif
 
+#define BTSTACK_TAG32(A,B,C,D) ((A << 24) | (B << 16) | (C << 8) | D)
+
 //
 // SM internal types and globals
 //
@@ -94,8 +96,8 @@ typedef enum {
 } derived_key_generation_t;
 
 typedef enum {
-    RAU_W4_WORKING,
     RAU_IDLE,
+    RAU_GET_RANDOM,
     RAU_W4_RANDOM,
     RAU_GET_ENC,
     RAU_W4_ENC,
@@ -194,6 +196,11 @@ static void (*sm_sc_oob_callback)(const uint8_t * confirm_value, const uint8_t *
 static sm_sc_oob_state_t sm_sc_oob_state;
 #endif
 
+
+static uint8_t               sm_persistent_keys_random_active;
+static const btstack_tlv_t * sm_tlv_impl;
+static void *                sm_tlv_context;
+
 // Security Manager Master Keys, please use sm_set_er(er) and sm_set_ir(ir) with your own 128 bit random values
 static sm_key_t sm_persistent_er;
 static sm_key_t sm_persistent_ir;
@@ -201,7 +208,6 @@ static sm_key_t sm_persistent_ir;
 // derived from sm_persistent_ir
 static sm_key_t sm_persistent_dhk;
 static sm_key_t sm_persistent_irk;
-static uint8_t  sm_persistent_irk_ready = 0;    // used for testing
 static derived_key_generation_t dkg_state;
 
 // derived from sm_persistent_er
@@ -501,6 +507,31 @@ static void sm_truncate_key(sm_key_t key, int max_encryption_size){
     }
 }
 
+// ER / IR checks
+static void sm_er_ir_set_default(void){
+    int i;
+    for (i=0;i<16;i++){
+        sm_persistent_er[i] = 0x30 + i;
+        sm_persistent_ir[i] = 0x90 + i;
+    }
+}
+
+static int sm_er_is_default(void){
+    int i;
+    for (i=0;i<16;i++){
+        if (sm_persistent_er[i] != (0x30+i)) return 0;
+    }
+    return 1;
+}
+
+static int sm_ir_is_default(void){
+    int i;
+    for (i=0;i<16;i++){
+        if (sm_persistent_ir[i] != (0x90+i)) return 0;
+    }
+    return 1;
+}
+
 // SMP Timeout implementation
 
 // Upon transmission of the Pairing Request command or reception of the Pairing Request command,
@@ -546,10 +577,10 @@ static btstack_timer_source_t gap_random_address_update_timer;
 static uint32_t gap_random_adress_update_period;
 
 static void gap_random_address_trigger(void){
-    log_info("gap_random_address_trigger");
+    log_info("gap_random_address_trigger, state %u", rau_state);
     if (rau_state != RAU_IDLE) return;
-    rau_state = RAU_W4_RANDOM;
-    btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_address, 8, &sm_handle_random_result_rau, NULL);
+    rau_state = RAU_GET_RANDOM;
+    sm_run();
 }
 
 static void gap_random_address_update_handler(btstack_timer_source_t * timer){
@@ -698,7 +729,7 @@ static void sm_notify_client_index(uint8_t type, hci_con_handle_t con_handle, ui
     sm_setup_event_base(event, sizeof(event), type, con_handle, addr_type, address);
     event[11] = identity_address_type;
     reverse_bd_addr(identity_address, &event[12]);
-    little_endian_store_32(event, 18, index);
+    little_endian_store_16(event, 18, index);
     sm_dispatch_event(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -1152,10 +1183,18 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                     // reset requests
                     sm_connection->sm_security_request_received = 0;
                     sm_connection->sm_pairing_requested = 0;
+
                     // have ltk -> start encryption
+                    // Core 5, Vol 3, Part C, 10.3.2 Initiating a Service Request
+                    // "When a bond has been created between two devices, any reconnection should result in the local device
+                    //  enabling or requesting encryption with the remote device before initiating any service request."
                     if (have_ltk){
+#ifdef ENABLE_LE_CENTRAL_AUTO_ENCRYPTION
                         sm_connection->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
                         break;
+#else
+                        log_info("central: defer enabling encryption for bonded device");
+#endif
                     }
                     // pairint_request -> send pairing request
                     if (pairing_need){
@@ -1777,6 +1816,9 @@ static void sm_run(void){
     // assert that we can send at least commands
     if (!hci_can_send_command_packet_now()) return;
 
+    // pause until IR/ER are ready
+    if (sm_persistent_keys_random_active) return;
+
     //
     // non-connection related behaviour
     //
@@ -1811,6 +1853,10 @@ static void sm_run(void){
 
     // random address updates
     switch (rau_state){
+        case RAU_GET_RANDOM:
+            rau_state = RAU_W4_RANDOM;
+            btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_address, 6, &sm_handle_random_result_rau, NULL);
+            return;
         case RAU_GET_ENC:
             // already busy?
             if (sm_aes128_state == SM_AES128_IDLE) {
@@ -2756,7 +2802,6 @@ static void sm_handle_encryption_result_dkg_dhk(void *arg){
     sm_aes128_state = SM_AES128_IDLE;
     log_info_key("dhk", sm_persistent_dhk);
     dkg_state = DKG_READY;
-    // DKG calculation complete => SM Init Finished
     sm_run();
 }
 
@@ -2867,6 +2912,54 @@ static void sm_handle_random_result_ph3_random(void * arg){
     setup->sm_local_rand[7] = (setup->sm_local_rand[7] & 0xef) + (connection->sm_connection_authenticated << 4);
     btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 2, &sm_handle_random_result_ph3_div, connection);
 }
+static void sm_validate_er_ir(void){
+    // warn about default ER/IR
+    int warning = 0;
+    if (sm_ir_is_default()){
+        warning = 1;
+        log_error("Persistent IR not set with sm_set_ir. Use of private addresses will cause pairing issues");
+    }
+    if (sm_er_is_default()){
+        warning = 1;
+        log_error("Persistent ER not set with sm_set_er. Legacy Pairing LTK is not secure");
+    }
+    if (warning) {
+        log_error("Please configure btstack_tlv to let BTstack setup ER and IR keys");
+    }
+}
+
+static void sm_handle_random_result_ir(void *arg){
+    sm_persistent_keys_random_active = 0;
+    if (arg){
+        // key generated, store in tlv
+        int status = sm_tlv_impl->store_tag(sm_tlv_context, BTSTACK_TAG32('S','M','I','R'), sm_persistent_ir, 16);
+        log_info("Generated IR key. Store in TLV status: %d", status);
+    }
+    log_info_key("IR", sm_persistent_ir);
+    sm_run();
+}
+
+static void sm_handle_random_result_er(void *arg){
+    sm_persistent_keys_random_active = 0;
+    if (arg){
+        // key generated, store in tlv
+        int status = sm_tlv_impl->store_tag(sm_tlv_context, BTSTACK_TAG32('S','M','E','R'), sm_persistent_er, 16);
+        log_info("Generated ER key. Store in TLV status: %d", status);
+    }
+    log_info_key("ER", sm_persistent_er);
+
+    // try load ir
+    int key_size = sm_tlv_impl->get_tag(sm_tlv_context, BTSTACK_TAG32('S','M','I','R'), sm_persistent_ir, 16);
+    if (key_size == 16){
+        // ok, let's continue
+        log_info("IR from TLV");
+        sm_handle_random_result_ir( NULL );
+    } else {
+        // invalid, generate new random one
+        sm_persistent_keys_random_active = 1;
+        btstack_crypto_random_generate(&sm_crypto_random_request, sm_persistent_ir, 16, &sm_handle_random_result_ir, &sm_persistent_ir);
+    }
+}
 
 static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
@@ -2886,22 +2979,22 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 					if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
                         log_info("HCI Working!");
 
-                        dkg_state = sm_persistent_irk_ready ? DKG_CALC_DHK : DKG_CALC_IRK;
-
-                        // trigger Random Address generation if requested before
-                        switch (gap_random_adress_type){
-                            case GAP_RANDOM_ADDRESS_TYPE_OFF:
-                                rau_state = RAU_IDLE;
-                                break;
-                            case GAP_RANDOM_ADDRESS_TYPE_STATIC:
-                                rau_state = RAU_SET_ADDRESS;
-                                break;
-                            default:
-                                rau_state = RAU_W4_RANDOM;
-                                btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_address, 8, &sm_handle_random_result_rau, NULL);
-                                break;
+                        // setup IR/ER with TLV
+                        btstack_tlv_get_instance(&sm_tlv_impl, &sm_tlv_context);
+                        if (sm_tlv_impl){
+                            int key_size = sm_tlv_impl->get_tag(sm_tlv_context, BTSTACK_TAG32('S','M','E','R'), sm_persistent_er, 16);
+                            if (key_size == 16){
+                                // ok, let's continue
+                                log_info("ER from TLV");
+                                sm_handle_random_result_er( NULL );
+                            } else {
+                                // invalid, generate random one
+                                sm_persistent_keys_random_active = 1;
+                                btstack_crypto_random_generate(&sm_crypto_random_request, sm_persistent_er, 16, &sm_handle_random_result_er, &sm_persistent_er);
+                            }
+                        } else {
+                            sm_validate_er_ir();
                         }
-                        sm_run();
 					}
 					break;
 
@@ -3022,6 +3115,15 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     // encryption change event concludes re-encryption for bonded devices (even if it fails)
                     if (sm_conn->sm_engine_state == SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED){
                         sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
+                        // notify client, if pairing was requested before
+                        if (sm_conn->sm_pairing_requested){
+                            sm_conn->sm_pairing_requested = 0;
+                            if (sm_conn->sm_connection_encrypted){
+                                sm_notify_client_status_reason(sm_conn, ERROR_CODE_SUCCESS, 0);
+                            } else {
+                                sm_notify_client_status_reason(sm_conn, ERROR_CODE_AUTHENTICATION_FAILURE, 0);
+                            }
+                        }
                         sm_done_for_handle(sm_conn->sm_handle);
                         break;
                     }
@@ -3278,6 +3380,15 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             break;
 
         case SM_INITIATOR_PH1_W4_PAIRING_RESPONSE:
+            // Core 5, Vol 3, Part H, 2.4.6:
+            // "The master shall ignore the slave’s Security Request if the master has sent a Pairing Request
+            //  without receiving a Pairing Response from the slave or if the master has initiated encryption mode setup."
+            if (sm_pdu_code == SM_CODE_SECURITY_REQUEST){
+                log_info("Ignoring Security Request");
+                break;
+            }
+
+            // all other pdus are incorrect
             if (sm_pdu_code != SM_CODE_PAIRING_RESPONSE){
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
@@ -3714,7 +3825,7 @@ void sm_set_ir(sm_key_t ir){
 // Testing support only
 void sm_test_set_irk(sm_key_t irk){
     memcpy(sm_persistent_irk, irk, 16);
-    sm_persistent_irk_ready = 1;
+    dkg_state = DKG_CALC_DHK;
 }
 
 void sm_test_use_fixed_local_csrk(void){
@@ -3742,16 +3853,9 @@ void sm_test_set_pairing_failure(int reason){
 #endif
 
 void sm_init(void){
-    // set some (BTstack default) ER and IR
-    int i;
-    sm_key_t er;
-    sm_key_t ir;
-    for (i=0;i<16;i++){
-        er[i] = 0x30 + i;
-        ir[i] = 0x90 + i;
-    }
-    sm_set_er(er);
-    sm_set_ir(ir);
+    // set default ER and IR values (should be unique - set by app or sm later using TLV)
+    sm_er_ir_set_default();
+
     // defaults
     sm_accepted_stk_generation_methods = SM_STK_GENERATION_METHOD_JUST_WORKS
                                        | SM_STK_GENERATION_METHOD_OOB
@@ -3767,8 +3871,8 @@ void sm_init(void){
 #ifdef USE_CMAC_ENGINE
     sm_cmac_active  = 0;
 #endif
-    dkg_state = DKG_W4_WORKING;
-    rau_state = RAU_W4_WORKING;
+    dkg_state = DKG_CALC_IRK;
+    rau_state = RAU_IDLE;
     sm_aes128_state = SM_AES128_IDLE;
     sm_address_resolution_test = -1;    // no private address to resolve yet
     sm_address_resolution_ah_calculation_active = 0;
@@ -3841,8 +3945,20 @@ void sm_request_pairing(hci_con_handle_t con_handle){
     } else {
         // used as a trigger to start central/master/initiator security procedures
         if (sm_conn->sm_engine_state == SM_INITIATOR_CONNECTED){
+            uint8_t ltk[16];
             switch (sm_conn->sm_irk_lookup_state){
                 case IRK_LOOKUP_SUCCEEDED:
+#ifndef ENABLE_LE_CENTRAL_AUTO_ENCRYPTION
+                    le_device_db_encryption_get(sm_conn->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL);
+                    int have_ltk = !sm_is_null_key(ltk);
+                    log_info("have ltk %u", have_ltk);
+                    // trigger 'pairing complete' event on encryption change
+                    sm_conn->sm_pairing_requested = 1;
+                    sm_conn->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
+                    break;
+#endif
+                     /* explicit fall-through */
+
                 case IRK_LOOKUP_FAILED:
                     sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
                     break;
@@ -4028,9 +4144,13 @@ int sm_le_device_index(hci_con_handle_t con_handle ){
 }
 
 static int gap_random_address_type_requires_updates(void){
-    if (gap_random_adress_type == GAP_RANDOM_ADDRESS_TYPE_OFF) return 0;
-    if (gap_random_adress_type == GAP_RANDOM_ADDRESS_TYPE_OFF) return 0;
-    return 1;
+    switch (gap_random_adress_type){
+        case GAP_RANDOM_ADDRESS_TYPE_OFF:
+        case GAP_RANDOM_ADDRESS_TYPE_STATIC:
+            return 0;
+        default:
+            return 1;
+    }
 }
 
 static uint8_t own_address_type(void){
@@ -4066,7 +4186,6 @@ void gap_random_address_set_update_period(int period_ms){
 void gap_random_address_set(bd_addr_t addr){
     gap_random_address_set_mode(GAP_RANDOM_ADDRESS_TYPE_STATIC);
     memcpy(sm_random_address, addr, 6);
-    if (rau_state == RAU_W4_WORKING) return;
     rau_state = RAU_SET_ADDRESS;
     sm_run();
 }

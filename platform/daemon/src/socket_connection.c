@@ -184,7 +184,7 @@ static connection_t * socket_connection_register_new_connection(int fd){
     // create connection objec 
     connection_t * conn = malloc( sizeof(connection_t));
     if (conn == NULL) return NULL;
-
+    memset(conn, 0, sizeof(connection_t));
     // store reference from linked item to base object
     conn->linked_connection.connection = conn;
 
@@ -563,14 +563,17 @@ void socket_connection_send_packet(connection_t *conn, uint16_t type, uint16_t c
     little_endian_store_16(header, 0, type);
     little_endian_store_16(header, 2, channel);
     little_endian_store_16(header, 4, size);
+    // avoid -Wunused-result
+    int res;
 #ifdef _WIN32
     int flags = 0;
-    send(conn->socket_fd, (const char *) header, 6, flags);
-    send(conn->socket_fd, (const char *) packet, size, flags);
+    res = send(conn->socket_fd, (const char *) header, 6, flags);
+    res = send(conn->socket_fd, (const char *) packet, size, flags);
 #else
-    write(conn->socket_fd, header, 6);
-    write(conn->socket_fd, packet, size);
+    res = write(conn->socket_fd, header, 6);
+    res = write(conn->socket_fd, packet, size);
 #endif
+    UNUSED(res);
 }
 
 /**

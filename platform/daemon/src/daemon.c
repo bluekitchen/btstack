@@ -282,6 +282,7 @@ static void add_uint32_to_list(btstack_linked_list_t *list, uint32_t value){
 
     btstack_linked_list_uint32_t * item = malloc(sizeof(btstack_linked_list_uint32_t));
     if (!item) return; 
+    memset(item, 0, sizeof(btstack_linked_list_uint32_t));
     item->value = value;
     btstack_linked_list_add(list, (btstack_linked_item_t *) item);
 }
@@ -1311,6 +1312,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             // start listening
             btstack_linked_list_gatt_client_notification_t * linked_notification = malloc(sizeof(btstack_linked_list_gatt_client_notification_t));
             if (!linked_notification) break;
+            memset(linked_notification, 0, sizeof(btstack_linked_list_gatt_client_notification_t));
             log_info("Start gatt notification listener %p", linked_notification);
             gatt_client_listen_for_characteristic_value_updates(&linked_notification->notification_listener, &handle_gatt_client_event, gatt_helper->con_handle, &characteristic);
             btstack_linked_list_add(&gatt_helper->gatt_client_notifications, (btstack_linked_item_t *) linked_notification);

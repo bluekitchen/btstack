@@ -316,7 +316,6 @@ avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, avdtp_contex
         log_error("Not enough memory to create connection");
         return NULL;
     }
-    memset(connection, 0, sizeof(avdtp_connection_t));
     connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
     connection->initiator_transaction_label = avdtp_get_next_initiator_transaction_label(context);
     connection->avdtp_cid = avdtp_get_next_avdtp_cid();
@@ -332,7 +331,6 @@ avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type
         log_error("Not enough memory to create stream endpoint");
         return NULL;
     }
-    memset(stream_endpoint, 0, sizeof(avdtp_stream_endpoint_t));
     stream_endpoint->sep.seid = avdtp_get_next_local_seid(context);
     stream_endpoint->sep.media_type = media_type;
     stream_endpoint->sep.type = sep_type;
@@ -454,6 +452,10 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
             break;
             
         case SDP_EVENT_QUERY_COMPLETE:
+            if (connection->state != AVDTP_SIGNALING_W4_SDP_QUERY_COMPLETE){
+                // bail out, we must have had an incoming connection in the meantime;
+                break;
+            }
             status = sdp_event_query_complete_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 avdtp_signaling_emit_connection_established(sdp_query_context->avdtp_callback, sdp_query_context->avdtp_cid, connection->remote_addr, status);
@@ -488,6 +490,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
     uint16_t psm;
     uint16_t local_cid;
     uint8_t  status;
+    int accept_signaling_connection;
     avdtp_stream_endpoint_t * stream_endpoint = NULL;
     avdtp_connection_t * connection = NULL;
     btstack_linked_list_t * avdtp_connections = &context->connections;
@@ -546,22 +549,56 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     local_cid = l2cap_event_incoming_connection_get_local_cid(packet);
                     connection = avdtp_connection_for_bd_addr(event_addr, context);
                     log_info("L2CAP_EVENT_INCOMING_CONNECTION, local cid 0x%02x ", local_cid);
-                    if (connection){
-                        log_info("Connection state %d", connection->state);
-                    }
-                    if (!connection || connection->state == AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED){
+                    if (!connection){
+                        // create connection struct for regular inconming connection request
                         connection = avdtp_create_connection(event_addr, context);
+                        if (!connection){
+                            log_error("Could not create connection, reject");
+                            l2cap_decline_connection(local_cid);
+                            break;                            
+                        }
+                        connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
+                    }
+
+                    // connection exists, check states
+                    log_info("Connection state %d", connection->state);
+                    accept_signaling_connection = 0;
+                    switch (connection->state){
+                        case AVDTP_SIGNALING_CONNECTION_IDLE:
+                            // regular incoming connection
+                            accept_signaling_connection = 1;
+                            break;
+                        case AVDTP_SIGNALING_W4_SDP_QUERY_COMPLETE:
+                            // incoming connection during sdp query, just accept it
+                            accept_signaling_connection = 1;
+                            break;
+                        case AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED:
+                            log_info("Reject incoming connection after creating outgoing");
+                            l2cap_decline_connection(local_cid);
+                            return;
+                        case AVDTP_SIGNALING_CONNECTION_OPENED:
+                            // handled below
+                            break;
+                        case AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED:
+                            log_info("Reject incoming connection during disconnect");
+                            l2cap_decline_connection(local_cid);
+                            return;
+                    }
+
+                    if (accept_signaling_connection){
                         connection->is_initiator = 0;
-                        log_info("L2CAP_EVENT_INCOMING_CONNECTION: role is_initiator %d", connection->is_initiator);
                         connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
+                        log_info("L2CAP_EVENT_INCOMING_CONNECTION: role is_initiator %d", connection->is_initiator);
                         log_info("L2CAP_EVENT_INCOMING_CONNECTION, connection %p, state connection %d, avdtp cid 0x%02x", connection, connection->state, connection->avdtp_cid);
                         l2cap_accept_connection(local_cid);
                         break;
                     }
-                    
+
+                    // now, we're only dealing with media connections
                     stream_endpoint = avdtp_stream_endpoint_for_seid(connection->local_seid, context);
                     if (!stream_endpoint) {
                         log_info("L2CAP_EVENT_INCOMING_CONNECTION no streamendpoint found for seid %d", connection->local_seid);
+                        l2cap_decline_connection(local_cid);
                         break;
                     }
 

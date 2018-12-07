@@ -11,15 +11,15 @@
 #include "btstack_cvsd_plc.h"
 #include "wav_util.h"
 
-const  int    audio_samples_per_frame = 24;
+const  int     audio_samples_per_frame = 60;
 static int16_t audio_frame_in[audio_samples_per_frame];
 
-static int16_t test_data[][audio_samples_per_frame] = {
-    { 0x05, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff },
-    { 0xff, 0xff, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x05 },
-    { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05 },
-    { 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
-};
+// static int16_t test_data[][audio_samples_per_frame] = {
+//     { 0x05, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff },
+//     { 0xff, 0xff, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x05 },
+//     { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05 },
+//     { 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+// };
 
 static btstack_cvsd_plc_state_t plc_state;
 
@@ -59,19 +59,14 @@ static int count_equal_samples(int16_t * packet, uint16_t size){
 
 // @assumption frame len 24 samples
 static int bad_frame(int16_t * frame, uint16_t size){
-    return count_equal_samples(frame, size) > 20;
+    return count_equal_samples(frame, size) > audio_samples_per_frame - 4;
 }
 
 static void btstack_cvsd_plc_mark_bad_frame(btstack_cvsd_plc_state_t * state, int16_t * in, uint16_t size, int16_t * out){
-    if (size != 24){
-        printf("btstack_cvsd_plc_mark_bad_frame: audio frame size is incorrect. Expected %d, got %d\n", CVSD_FS, size);
-        return;
-    }
     state->frame_count++;
-    
     if (bad_frame(in,size)){
         memcpy(out, in, size * 2);
-        if (state->good_frames_nr > CVSD_LHIST/CVSD_FS){
+        if (state->good_frames_nr > CVSD_LHIST/audio_samples_per_frame){
             memset(out, 0x33, size * 2);
             state->bad_frames_nr++;
         } 
@@ -85,10 +80,10 @@ static void btstack_cvsd_plc_mark_bad_frame(btstack_cvsd_plc_state_t * state, in
 }
 
 static int phase = 0;
-static void create_sine_wave_int16_data(int num_samples, int16_t * data){
+void create_sine_wave_int16_data(int num_samples, int16_t * data){
     int i;
     for (i=0; i < num_samples; i++){
-        data[i] = sine_int16[phase++];
+        data[i] = sine_int16[phase++] * 90/100;
         phase++;
         if (phase >= (sizeof(sine_int16) / sizeof(int16_t))){
             phase = 0;
@@ -96,25 +91,25 @@ static void create_sine_wave_int16_data(int num_samples, int16_t * data){
     }
 }
     
-static int count_equal_bytes(int16_t * packet, uint16_t size){
-    int count = 0;
-    int temp_count = 1;
-    int i;
-    for (i = 0; i < size-1; i++){
-        if (packet[i] == packet[i+1]){
-            temp_count++;
-            continue;
-        }
-        if (count < temp_count){
-            count = temp_count;
-        }
-        temp_count = 1;
-    }
-    if (temp_count > count + 1){
-        count = temp_count;
-    }
-    return count;
-}
+// static int count_equal_bytes(int16_t * packet, uint16_t size){
+//     int count = 0;
+//     int temp_count = 1;
+//     int i;
+//     for (i = 0; i < size-1; i++){
+//         if (packet[i] == packet[i+1]){
+//             temp_count++;
+//             continue;
+//         }
+//         if (count < temp_count){
+//             count = temp_count;
+//         }
+//         temp_count = 1;
+//     }
+//     if (temp_count > count + 1){
+//         count = temp_count;
+//     }
+//     return count;
+// }
 
 void create_sine_wav(const char * out_filename){
     btstack_cvsd_plc_init(&plc_state);
@@ -181,12 +176,155 @@ TEST_GROUP(CVSD_PLC){
  
 };
 
-TEST(CVSD_PLC, CountEqBytes){
-    CHECK_EQUAL(23, count_equal_bytes(test_data[0],24));
-    CHECK_EQUAL(11, count_equal_bytes(test_data[1],24));
-    CHECK_EQUAL(12, count_equal_bytes(test_data[2],24));
-    CHECK_EQUAL(23, count_equal_bytes(test_data[3],24));   
+static void fprintf_array_int16(FILE * oct_file, char * name, int data_len, int16_t * data){
+    fprintf(oct_file, "%s = [", name);
+    int i;
+    for (i = 0; i < data_len - 1; i++){
+        fprintf(oct_file, "%d, ", data[i]);
+    }
+    fprintf(oct_file, "%d", data[i]);
+    fprintf(oct_file, "%s", "];\n");
 }
+
+static void fprintf_plot_history(FILE * oct_file, char * name, int data_len, int16_t * data){
+    fprintf_array_int16(oct_file, name, CVSD_LHIST, plc_state.hist);
+
+    fprintf(oct_file, "y = [min(%s):1000:max(%s)];\n", name, name);
+    fprintf(oct_file, "x = zeros(1, size(y,2));\n");
+    fprintf(oct_file, "b = [0:500];\n");
+    
+    int pos = CVSD_FS_MAX;
+    fprintf(oct_file, "shift_x = x + %d;\n", pos);
+
+    pos = CVSD_LHIST - 1;
+    fprintf(oct_file, "lhist_x = x + %d;\n", pos);
+    pos += CVSD_OLAL;
+    fprintf(oct_file, "lhist_olal1_x = x + %d;\n", pos);
+    pos += CVSD_FS_MAX - CVSD_OLAL;
+    fprintf(oct_file, "lhist_fs_x = x + %d;\n", pos);
+    pos += CVSD_OLAL;
+    fprintf(oct_file, "lhist_olal2_x = x + %d;\n", pos);
+    pos += CVSD_RT;
+    fprintf(oct_file, "lhist_rt_x = x + %d;\n", pos);
+
+    fprintf(oct_file, "pattern_window_x = x + %d;\n", CVSD_LHIST - CVSD_M);
+    
+    fprintf(oct_file, "hold on;\n");
+    fprintf(oct_file, "plot(%s); \n", name);
+    
+    fprintf(oct_file, "plot(shift_x, y, 'k--'); \n"); 
+    fprintf(oct_file, "plot(lhist_x, y, 'k'); \n"); 
+    fprintf(oct_file, "plot(lhist_olal1_x, y, 'k'); \n");
+    fprintf(oct_file, "plot(lhist_fs_x, y, 'k'); \n");
+    fprintf(oct_file, "plot(lhist_olal2_x, y, 'k'); \n");
+    fprintf(oct_file, "plot(lhist_rt_x, y, 'k');\n");
+
+    int x0 = plc_state.bestlag;
+    int x1 = plc_state.bestlag + CVSD_M - 1;
+    fprintf(oct_file, "plot(b(%d:%d), %s(%d:%d), 'rd'); \n", x0, x1, name, x0, x1);
+    
+    x0 = plc_state.bestlag + CVSD_M ;
+    x1 = plc_state.bestlag + CVSD_M + audio_samples_per_frame - 1;
+    fprintf(oct_file, "plot(b(%d:%d), %s(%d:%d), 'kd'); \n", x0, x1, name, x0, x1);
+    
+    x0 = CVSD_LHIST - CVSD_M;
+    x1 = CVSD_LHIST - 1;
+    fprintf(oct_file, "plot(b(%d:%d), %s(%d:%d), 'rd'); \n", x0, x1, name, x0, x1);
+    fprintf(oct_file, "plot(pattern_window_x, y, 'g'); \n");
+}
+
+TEST(CVSD_PLC, CountEqBytes){
+    // init cvsd_fs in plc_state
+    plc_state.cvsd_fs = audio_samples_per_frame;
+
+    float val, sf;
+    int i, x0, x1;
+
+    char * name;
+    BTSTACK_CVSD_PLC_SAMPLE_FORMAT out[CVSD_FS_MAX];
+    BTSTACK_CVSD_PLC_SAMPLE_FORMAT hist[CVSD_LHIST+CVSD_FS_MAX+CVSD_RT+CVSD_OLAL];
+    FILE * oct_file = fopen("/Users/mringwal/octave/plc.m", "wb");
+    if (!oct_file) return;
+    fprintf(oct_file, "%s", "1;\n\n");
+
+    int hist_len = sizeof(plc_state.hist)/2;
+    create_sine_wave_int16_data(CVSD_LHIST, hist);
+    memset(plc_state.hist, hist[CVSD_LHIST-1], sizeof(plc_state.hist));
+    memcpy(plc_state.hist, hist, CVSD_LHIST*2);
+
+    // Perform pattern matching to find where to replicate
+    plc_state.bestlag = btstack_cvsd_plc_pattern_match(plc_state.hist);
+    name = (char *) "hist0";
+    fprintf_plot_history(oct_file, name, hist_len, plc_state.hist);
+    
+    plc_state.bestlag += CVSD_M;
+    sf = btstack_cvsd_plc_amplitude_match(&plc_state, plc_state.hist, plc_state.bestlag);
+    
+    for (i=0;i<CVSD_OLAL;i++){
+        val = sf*plc_state.hist[plc_state.bestlag+i];
+        plc_state.hist[CVSD_LHIST+i] = btstack_cvsd_plc_crop_sample(val);
+    }
+    name = (char *) "olal1";
+    x0 = CVSD_LHIST;
+    x1 = x0 + CVSD_OLAL - 1;
+    fprintf_array_int16(oct_file, name, CVSD_OLAL, plc_state.hist+x0);
+    fprintf(oct_file, "plot(b(%d:%d), %s, 'b.'); \n", x0, x1, name);
+
+    for (;i<CVSD_FS_MAX;i++){
+        val = sf*plc_state.hist[plc_state.bestlag+i]; 
+        plc_state.hist[CVSD_LHIST+i] = btstack_cvsd_plc_crop_sample(val);
+    }
+    name = (char *)"fs_minus_olal";
+    x0  = x1 + 1;
+    x1  = x0 + CVSD_FS_MAX - CVSD_OLAL - 1;
+    fprintf_array_int16(oct_file, name, CVSD_FS_MAX - CVSD_OLAL, plc_state.hist+x0);
+    fprintf(oct_file, "plot(b(%d:%d), %s, 'b.'); \n", x0, x1, name);
+    
+
+    for (;i<CVSD_FS_MAX+CVSD_OLAL;i++){
+        float left  = sf*plc_state.hist[plc_state.bestlag+i];
+        float right = plc_state.hist[plc_state.bestlag+i];
+        val = left*btstack_cvsd_plc_rcos(i-CVSD_FS_MAX) + right*btstack_cvsd_plc_rcos(CVSD_OLAL-1-i+CVSD_FS_MAX);
+        plc_state.hist[CVSD_LHIST+i]  = btstack_cvsd_plc_crop_sample(val);
+    }
+    name = (char *)"olal2";
+    x0  = x1 + 1;
+    x1  = x0 + CVSD_OLAL - 1;
+    fprintf_array_int16(oct_file, name, CVSD_OLAL, plc_state.hist+x0);
+    fprintf(oct_file, "plot(b(%d:%d), %s, 'b.'); \n", x0, x1, name);
+    
+    for (;i<CVSD_FS_MAX+CVSD_RT+CVSD_OLAL;i++){
+        plc_state.hist[CVSD_LHIST+i] = plc_state.hist[plc_state.bestlag+i];
+    }
+    name = (char *)"rt";
+    x0  = x1 + 1;
+    x1  = x0 + CVSD_RT - 1;
+    fprintf_array_int16(oct_file, name, CVSD_RT, plc_state.hist+x0);
+    fprintf(oct_file, "plot(b(%d:%d), %s, 'b.'); \n", x0, x1, name);
+    
+    for (i=0;i<CVSD_FS_MAX;i++){
+        out[i] = plc_state.hist[CVSD_LHIST+i];
+    }
+    name = (char *)"out";
+    x0  = CVSD_LHIST;
+    x1  = x0 + CVSD_FS_MAX - 1;
+    fprintf_array_int16(oct_file, name, CVSD_FS_MAX, plc_state.hist+x0);
+    fprintf(oct_file, "plot(b(%d:%d), %s, 'cd'); \n", x0, x1, name);
+    
+    // shift the history buffer 
+    for (i=0;i<CVSD_LHIST+CVSD_RT+CVSD_OLAL;i++){
+        plc_state.hist[i] = plc_state.hist[i+CVSD_FS_MAX];
+    }
+    fclose(oct_file);
+}
+
+
+// TEST(CVSD_PLC, CountEqBytes){
+//     CHECK_EQUAL(23, count_equal_bytes(test_data[0],24));
+//     CHECK_EQUAL(11, count_equal_bytes(test_data[1],24));
+//     CHECK_EQUAL(12, count_equal_bytes(test_data[2],24));
+//     CHECK_EQUAL(23, count_equal_bytes(test_data[3],24));   
+// }
 
 TEST(CVSD_PLC, TestLiveWavFile){
     int corruption_step = 10;
@@ -209,7 +347,7 @@ TEST(CVSD_PLC, TestFanfareFile){
 }
 
 TEST(CVSD_PLC, TestSineWave){
-    int corruption_step = 10;
+    int corruption_step = 25;
     create_sine_wav("results/sine_test.wav");
     introduce_bad_frames_to_wav_file("results/sine_test.wav", "results/sine_test_with_bad_frames.wav", corruption_step);
     

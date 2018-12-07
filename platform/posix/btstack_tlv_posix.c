@@ -146,8 +146,10 @@ static int btstack_tlv_posix_store_tag(void * context, uint32_t tag, const uint8
 	}
 
 	// create new entry
-	tlv_entry_t * new_entry = (tlv_entry_t *) malloc(sizeof(tlv_entry_t) - DUMMY_SIZE + data_size);
+	uint32_t entry_size = sizeof(tlv_entry_t) - DUMMY_SIZE + data_size;
+	tlv_entry_t * new_entry = (tlv_entry_t *) malloc(entry_size);
 	if (!new_entry) return 0;
+	memset(new_entry, 0, entry_size);
 	new_entry->tag = tag;
 	new_entry->len = data_size;
 	memcpy(&new_entry->value[0], data, data_size);

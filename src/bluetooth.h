@@ -295,6 +295,17 @@ typedef enum {
 
 #define LE_ADVERTISING_DATA_SIZE    31
 
+// Link Policy Settings
+#define LM_LINK_POLICY_DISABLE_ALL_LM_MODES  0
+#define LM_LINK_POLICY_ENABLE_ROLE_SWITCH    1
+#define LM_LINK_POLICY_ENABLE_HOLD_MODE      2
+#define LM_LINK_POLICY_ENABLE_SNIFF_MODE     3
+
+// ACL Connection Modes
+#define ACL_CONNECTION_MODE_ACTIVE 0
+#define ACL_CONNECTION_MODE_HOLD   1
+#define ACL_CONNECTION_MODE_SNIFF  2
+
 /**
  * Default INQ Mode
  */
@@ -393,7 +404,11 @@ typedef enum {
  * @param status
  * @param connection_handle
  */
-#define HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT            0x06
+#define HCI_EVENT_AUTHENTICATION_COMPLETE                 0x06
+
+// HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT is deprecated, use HCI_EVENT_AUTHENTICATION_COMPLETE instead
+#define HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT HCI_EVENT_AUTHENTICATION_COMPLETE
+
 /**
  * @format 1BN
  * @param status
@@ -469,7 +484,7 @@ typedef enum {
  * @param mode
  * @param interval
  */
-#define HCI_EVENT_MODE_CHANGE_EVENT                        0x14
+#define HCI_EVENT_MODE_CHANGE                              0x14
 
 // TODO: num_keys, bd_addr[B*i], link_key[16 octets * i]
 #define HCI_EVENT_RETURN_LINK_KEYS                         0x15
@@ -1073,7 +1088,7 @@ typedef enum {
 #define ATT_ERROR_INVALID_HANDLE                   0x01
 #define ATT_ERROR_READ_NOT_PERMITTED               0x02
 #define ATT_ERROR_WRITE_NOT_PERMITTED              0x03
-#define ATT_ERROR_INVALID_PDU                      0x04  
+#define ATT_ERROR_INVALID_PDU                      0x04
 #define ATT_ERROR_INSUFFICIENT_AUTHENTICATION      0x05
 #define ATT_ERROR_REQUEST_NOT_SUPPORTED            0x06
 #define ATT_ERROR_INVALID_OFFSET                   0x07
@@ -1087,6 +1102,16 @@ typedef enum {
 #define ATT_ERROR_INSUFFICIENT_ENCRYPTION          0x0f
 #define ATT_ERROR_UNSUPPORTED_GROUP_TYPE           0x10
 #define ATT_ERROR_INSUFFICIENT_RESOURCES           0x11
+
+// MARK: ATT Error Codes from Cycling Power Service spec
+#define CYCLING_POWER_ERROR_CODE_INAPPROPRIATE_CONNECTION_PARAMETERS                          0x80
+#define CYCLING_POWER_ERROR_CODE_PROCEDURE_ALREADY_IN_PROGRESS                                0xFE
+#define CYCLING_POWER_ERROR_CODE_CCC_DESCRIPTOR_IMPROPERLY_CONFIGURED                         0xFD
+
+// MARK: ATT Error Codes from Cycling Speed and Cadence Service spec
+#define CYCLING_SPEED_AND_CADENCE_ERROR_CODE_PROCEDURE_ALREADY_IN_PROGRESS                    0x80
+#define CYCLING_SPEED_AND_CADENCE_ERROR_CODE_CCC_DESCRIPTOR_IMPROPERLY_CONFIGURED             0x81
+
 
 // MARK: Attribute Property Flags
 #define ATT_PROPERTY_BROADCAST           0x01
@@ -1151,7 +1176,18 @@ typedef enum {
 #define GAP_RECONNECTION_ADDRESS_UUID  0x2a03
 #define GAP_PERIPHERAL_PREFERRED_CONNECTION_PARAMETERS_UUID 0x2a04
 #define GAP_SERVICE_CHANGED            0x2a05
- 
+
+// Bluetooth GATT types
+
+typedef struct {
+    uint16_t year;      // 0 - year  is not known; or [1582,9999]
+    uint8_t  month;     // 0 - month is not known; or [1,12]
+    uint8_t  day;       // 0 - day   is not known; or [1,31]
+    uint8_t  hours;     // [0,23]
+    uint8_t  minutes;   // [0,59]
+    uint8_t  seconds;   // [0,59]
+} gatt_date_time_t;
+
 /**
  * SM - LE Security Manager 
  */

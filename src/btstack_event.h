@@ -70,6 +70,14 @@ static inline uint8_t hci_event_packet_get_type(const uint8_t * event){
 }
 
 /***
+ * @brief Get subevent code for a2dp event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_a2dp_meta_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/***
  * @brief Get subevent code for ancs event
  * @param event packet
  * @return subevent_code
@@ -86,19 +94,19 @@ static inline uint8_t hci_event_avdtp_meta_get_subevent_code(const uint8_t * eve
     return event[2];
 }
 /***
- * @brief Get subevent code for a2dp event
- * @param event packet
- * @return subevent_code
- */
-static inline uint8_t hci_event_a2dp_meta_get_subevent_code(const uint8_t * event){
-    return event[2];
-}
-/***
  * @brief Get subevent code for avrcp event
  * @param event packet
  * @return subevent_code
  */
 static inline uint8_t hci_event_avrcp_meta_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/***
+ * @brief Get subevent code for gattservice event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_gattservice_meta_get_subevent_code(const uint8_t * event){
     return event[2];
 }
 /***
@@ -118,30 +126,6 @@ static inline uint8_t hci_event_hfp_meta_get_subevent_code(const uint8_t * event
     return event[2];
 }
 /***
- * @brief Get subevent code for hsp event
- * @param event packet
- * @return subevent_code
- */
-static inline uint8_t hci_event_hsp_meta_get_subevent_code(const uint8_t * event){
-    return event[2];
-}
-/***
- * @brief Get subevent code for pbap event
- * @param event packet
- * @return subevent_code
- */
-static inline uint8_t hci_event_pbap_meta_get_subevent_code(const uint8_t * event){
-    return event[2];
-}
-/***
- * @brief Get subevent code for le event
- * @param event packet
- * @return subevent_code
- */
-static inline uint8_t hci_event_le_meta_get_subevent_code(const uint8_t * event){
-    return event[2];
-}
-/***
  * @brief Get subevent code for hid event
  * @param event packet
  * @return subevent_code
@@ -155,6 +139,30 @@ static inline uint8_t hci_event_hid_meta_get_subevent_code(const uint8_t * event
  * @return subevent_code
  */
 static inline uint8_t hci_event_hids_meta_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/***
+ * @brief Get subevent code for hsp event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_hsp_meta_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/***
+ * @brief Get subevent code for le event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_le_meta_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/***
+ * @brief Get subevent code for pbap event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_pbap_meta_get_subevent_code(const uint8_t * event){
     return event[2];
 }
 /**
@@ -334,21 +342,21 @@ static inline uint8_t hci_event_disconnection_complete_get_reason(const uint8_t 
 }
 
 /**
- * @brief Get field status from event HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT
+ * @brief Get field status from event HCI_EVENT_AUTHENTICATION_COMPLETE
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t hci_event_authentication_complete_event_get_status(const uint8_t * event){
+static inline uint8_t hci_event_authentication_complete_get_status(const uint8_t * event){
     return event[2];
 }
 /**
- * @brief Get field connection_handle from event HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT
+ * @brief Get field connection_handle from event HCI_EVENT_AUTHENTICATION_COMPLETE
  * @param event packet
  * @return connection_handle
  * @note: btstack_type 2
  */
-static inline uint16_t hci_event_authentication_complete_event_get_connection_handle(const uint8_t * event){
+static inline uint16_t hci_event_authentication_complete_get_connection_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 
@@ -550,39 +558,39 @@ static inline uint8_t hci_event_role_change_get_role(const uint8_t * event){
 }
 
 /**
- * @brief Get field status from event HCI_EVENT_MODE_CHANGE_EVENT
+ * @brief Get field status from event HCI_EVENT_MODE_CHANGE
  * @param event packet
  * @return status
  * @note: btstack_type 1
  */
-static inline uint8_t hci_event_mode_change_event_get_status(const uint8_t * event){
+static inline uint8_t hci_event_mode_change_get_status(const uint8_t * event){
     return event[2];
 }
 /**
- * @brief Get field handle from event HCI_EVENT_MODE_CHANGE_EVENT
+ * @brief Get field handle from event HCI_EVENT_MODE_CHANGE
  * @param event packet
  * @return handle
  * @note: btstack_type H
  */
-static inline hci_con_handle_t hci_event_mode_change_event_get_handle(const uint8_t * event){
+static inline hci_con_handle_t hci_event_mode_change_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field mode from event HCI_EVENT_MODE_CHANGE_EVENT
+ * @brief Get field mode from event HCI_EVENT_MODE_CHANGE
  * @param event packet
  * @return mode
  * @note: btstack_type 1
  */
-static inline uint8_t hci_event_mode_change_event_get_mode(const uint8_t * event){
+static inline uint8_t hci_event_mode_change_get_mode(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field interval from event HCI_EVENT_MODE_CHANGE_EVENT
+ * @brief Get field interval from event HCI_EVENT_MODE_CHANGE
  * @param event packet
  * @return interval
  * @note: btstack_type 2
  */
-static inline uint16_t hci_event_mode_change_event_get_interval(const uint8_t * event){
+static inline uint16_t hci_event_mode_change_get_interval(const uint8_t * event){
     return little_endian_read_16(event, 6);
 }
 
@@ -6835,6 +6843,54 @@ static inline uint16_t hids_subevent_suspend_get_con_handle(const uint8_t * even
  * @note: btstack_type 2
  */
 static inline uint16_t hids_subevent_exit_suspend_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CYCLING_POWER_START_CALIBRATION
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_cycling_power_start_calibration_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field measurement_type from event GATTSERVICE_SUBEVENT_CYCLING_POWER_START_CALIBRATION
+ * @param event packet
+ * @return measurement_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_cycling_power_start_calibration_get_measurement_type(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field is_enhanced from event GATTSERVICE_SUBEVENT_CYCLING_POWER_START_CALIBRATION
+ * @param event packet
+ * @return is_enhanced
+ * @note: btstack_type 1
+ */
+static inline uint8_t gattservice_subevent_cycling_power_start_calibration_get_is_enhanced(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_START
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_cycling_power_broadcast_start_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field con_handle from event GATTSERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_STOP
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t gattservice_subevent_cycling_power_broadcast_stop_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 

@@ -43,8 +43,6 @@
 //
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
 
@@ -614,11 +612,9 @@ static void att_server_handle_can_send_now(void){
 }
 
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
-
     att_server_t * att_server;
 
     switch (packet_type){
-
         case HCI_EVENT_PACKET:
             switch (packet[0]){
                 case L2CAP_EVENT_CAN_SEND_NOW:
@@ -988,7 +984,7 @@ int att_server_request_to_send_indication(btstack_context_callback_registration_
     return ERROR_CODE_SUCCESS;
 }
 
-int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t *value, uint16_t value_len){
+int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len){
     att_server_t * att_server = att_server_for_handle(con_handle);
     if (!att_server) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 
@@ -1000,7 +996,7 @@ int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, ui
 	return l2cap_send_prepared_connectionless(att_server->connection.con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
 }
 
-int att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, uint8_t *value, uint16_t value_len){
+int att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len){
     att_server_t * att_server = att_server_for_handle(con_handle);
     if (!att_server) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 
@@ -1018,4 +1014,10 @@ int att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, 
     uint16_t size = att_prepare_handle_value_indication(&att_server->connection, attribute_handle, value, value_len, packet_buffer);
 	l2cap_send_prepared_connectionless(att_server->connection.con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
     return 0;
+}
+
+uint16_t att_server_get_mtu(hci_con_handle_t con_handle){
+    att_server_t * att_server = att_server_for_handle(con_handle);
+    if (!att_server) return 0;
+    return att_server->connection.mtu;
 }

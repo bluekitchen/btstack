@@ -62,6 +62,12 @@
 
 // #define ENABLE_GOEP_L2CAP
 
+#ifdef ENABLE_GOEP_L2CAP
+#ifndef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+#error "ENABLE_GOEP_L2CAP requires ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE. Please enable ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE or disable ENABLE_GOEP_L2CAP"
+#endif
+#endif
+
 typedef enum {
     GOEP_INIT,
     GOEP_W4_SDP,
@@ -367,31 +373,6 @@ static void goep_client_packet_init(uint16_t goep_cid, uint8_t opcode){
     context->obex_opcode = opcode;
 }
 
-static void goep_client_add_variable_header(uint16_t goep_cid, uint8_t header_type, uint16_t header_data_length, const uint8_t * header_data){
-    UNUSED(goep_cid);
-    uint8_t header[3];
-    header[0] = header_type;
-    big_endian_store_16(header, 1, sizeof(header) + header_data_length);
-    goep_client_packet_append(&header[0], sizeof(header));
-    goep_client_packet_append(header_data, header_data_length);
-}
-
-static void goep_client_add_byte_header(uint16_t goep_cid, uint8_t header_type, uint8_t value){
-    UNUSED(goep_cid);
-    uint8_t header[2];
-    header[0] = header_type;
-    header[1] = value;
-    goep_client_packet_append(&header[0], sizeof(header));
-}
-
-static void goep_client_add_word_header(uint16_t goep_cid, uint8_t header_type, uint32_t value){
-    UNUSED(goep_cid);
-    uint8_t header[5];
-    header[0] = header_type;
-    big_endian_store_32(header, 1, value);
-    goep_client_packet_append(&header[0], sizeof(header));
-}
-
 static void goep_client_packet_add_connection_id(uint16_t goep_cid){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
@@ -470,22 +451,9 @@ void goep_client_create_connect_request(uint16_t goep_cid, uint8_t obex_version_
     goep_client_packet_append(&fields[0], sizeof(fields));
 }
 
-void goep_client_create_disconnect_request(uint16_t goep_cid){
-    UNUSED(goep_cid);
-    goep_client_packet_init(goep_cid, OBEX_OPCODE_DISCONNECT);
-    goep_client_packet_add_connection_id(goep_cid);
-}
-
 void goep_client_create_get_request(uint16_t goep_cid){
     goep_client_packet_init(goep_cid, OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK);
     goep_client_packet_add_connection_id(goep_cid);
-}
-
-void goep_client_add_header_srm_enable(uint16_t goep_cid){
-    goep_client_t * context = goep_client;
-    if (!context->l2cap_psm) return;
-    // SRM was added in GOEP v2, which uses L2CAP
-    goep_client_add_byte_header(goep_cid, OBEX_HEADER_SINGLE_RESPONSE_MODE, OBEX_SRM_ENABLE);
 }
 
 void goep_client_create_set_path_request(uint16_t goep_cid, uint8_t flags){
@@ -496,6 +464,46 @@ void goep_client_create_set_path_request(uint16_t goep_cid, uint8_t flags){
     fields[1] = 0;  // reserved
     goep_client_packet_append(&fields[0], sizeof(fields));
     goep_client_packet_add_connection_id(goep_cid);
+}
+
+void goep_client_create_abort_request(uint16_t goep_cid){
+    goep_client_packet_init(goep_cid, OBEX_OPCODE_ABORT);
+    goep_client_packet_add_connection_id(goep_cid);
+}
+
+void goep_client_create_disconnect_request(uint16_t goep_cid){
+    UNUSED(goep_cid);
+    goep_client_packet_init(goep_cid, OBEX_OPCODE_DISCONNECT);
+    goep_client_packet_add_connection_id(goep_cid);
+}
+
+void goep_client_add_variable_header(uint16_t goep_cid, uint8_t header_type, uint16_t header_data_length, const uint8_t * header_data){
+    UNUSED(goep_cid);
+    uint8_t header[3];
+    header[0] = header_type;
+    big_endian_store_16(header, 1, sizeof(header) + header_data_length);
+    goep_client_packet_append(&header[0], sizeof(header));
+    goep_client_packet_append(header_data, header_data_length);
+}
+
+void goep_client_add_byte_header(uint16_t goep_cid, uint8_t header_type, uint8_t value){
+    UNUSED(goep_cid);
+    uint8_t header[2];
+    header[0] = header_type;
+    header[1] = value;
+    goep_client_packet_append(&header[0], sizeof(header));
+}
+
+void goep_client_add_word_header(uint16_t goep_cid, uint8_t header_type, uint32_t value){
+    UNUSED(goep_cid);
+    uint8_t header[5];
+    header[0] = header_type;
+    big_endian_store_32(header, 1, value);
+    goep_client_packet_append(&header[0], sizeof(header));
+}
+
+void goep_client_add_header_srm_enable(uint16_t goep_cid){
+    goep_client_add_byte_header(goep_cid, OBEX_HEADER_SINGLE_RESPONSE_MODE, OBEX_SRM_ENABLE);
 }
 
 void goep_client_add_header_target(uint16_t goep_cid, uint16_t length, const uint8_t * target){
@@ -513,15 +521,19 @@ void goep_client_add_header_challenge_response(uint16_t goep_cid, uint16_t lengt
 void goep_client_add_header_name(uint16_t goep_cid, const char * name){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
-    int len_incl_zero = strlen(name) + 1;
+    int len = strlen(name); 
+    if (len) {
+        // empty string does not have trailing \0
+        len++;
+    }
     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
     uint16_t pos = big_endian_read_16(buffer, 1);
     buffer[pos++] = OBEX_HEADER_NAME;
-    big_endian_store_16(buffer, pos, 1 + 2 + len_incl_zero*2);
+    big_endian_store_16(buffer, pos, 1 + 2 + len*2);
     pos += 2;
     int i;
     // @note name[len] == 0 
-    for (i = 0 ; i < len_incl_zero ; i++){
+    for (i = 0 ; i < len ; i++){
         buffer[pos++] = 0;
         buffer[pos++] = *name++;
     }

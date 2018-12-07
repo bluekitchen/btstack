@@ -475,6 +475,7 @@ typedef struct {
     // bonding
     uint16_t bonding_flags;
     uint8_t  bonding_status;
+
     // requested security level
     gap_security_level_t requested_security_level;
 
@@ -483,6 +484,17 @@ typedef struct {
 
     // remote supported features
     uint8_t remote_supported_feature_eSCO;
+
+#ifdef ENABLE_CLASSIC
+    // connection mode, default ACL_CONNECTION_MODE_ACTIVE
+    uint8_t connection_mode;
+
+    // enter/exit sniff mode requests
+    uint16_t sniff_min_interval;    // 0: idle, 0xffff exit sniff, else enter sniff
+    uint16_t sniff_max_interval;
+    uint16_t sniff_attempt;
+    uint16_t sniff_timeout;
+#endif
 
     // errands
     uint32_t authentication_flags;
@@ -514,6 +526,7 @@ typedef struct {
     uint16_t le_supervision_timeout;
 
 #ifdef ENABLE_BLE
+    uint16_t le_connection_interval;
     // LE Security Manager
     sm_connection_t sm_connection;
 
@@ -582,6 +595,8 @@ typedef enum hci_init_state{
     HCI_INIT_W4_WRITE_SIMPLE_PAIRING_MODE,
     HCI_INIT_WRITE_PAGE_TIMEOUT,
     HCI_INIT_W4_WRITE_PAGE_TIMEOUT,
+    HCI_INIT_WRITE_DEFAULT_LINK_POLICY_SETTING,
+    HCI_INIT_W4_WRITE_DEFAULT_LINK_POLICY_SETTING,
     HCI_INIT_WRITE_CLASS_OF_DEVICE,
     HCI_INIT_W4_WRITE_CLASS_OF_DEVICE,
     HCI_INIT_WRITE_LOCAL_NAME,
@@ -695,6 +710,7 @@ typedef struct {
     const uint8_t *    eir_data;
     uint32_t           class_of_device;
     bd_addr_t          local_bd_addr;
+    uint8_t            default_link_policy_settings;
     uint8_t            ssp_enable;
     uint8_t            ssp_io_capability;
     uint8_t            ssp_authentication_requirement;

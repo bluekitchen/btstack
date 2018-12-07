@@ -16,6 +16,7 @@ ble_peripheral_test
 bnep_test
 btstack_link_key_db_fs_a.c
 btstack_link_key_db_fs_b.c
+build*
 classic_test
 csr_set_bd_addr
 dut_mode_classic
@@ -57,6 +58,10 @@ le_streamer_and_counter_client.h
 le_streamer_client
 led_counter
 mod_player
+nordic_spp_le_counter
+nordic_spp_le_counter.h
+nordic_spp_le_streamer
+nordic_spp_le_streamer.h
 panu_demo
 pbap_client_demo
 profile.h
@@ -65,6 +70,7 @@ sco_output*
 sdp_bnep_query
 sdp_general_query
 sdp_rfcomm_query
+sine_player
 sm_pairing_central
 sm_pairing_central.h
 sm_pairing_peripheral
@@ -76,3 +82,5 @@ spp_and_le_streamer.h
 spp_counter
 spp_streamer
 spp_streamer_client
+ublox_spp_le_counter
+ublox_spp_le_counter.h

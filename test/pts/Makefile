@@ -42,8 +42,6 @@ ATT	+= \
 GATT_SERVER += \
 	att_db.c 				 	    \
 	att_server.c        	    \
-	battery_service_server.c     \
-	device_information_service_server.c  \
 
 GATT_CLIENT += \
 	gatt_client.c        	    \
@@ -79,6 +77,7 @@ HXCMOD_PLAYER = \
 include ${BTSTACK_ROOT}/example/Makefile.inc
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
+include ${BTSTACK_ROOT}/src/ble/gatt-service/Makefile.inc
 
 CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-variable -Wunused-parameter
 CFLAGS += -D ENABLE_TESTING_SUPPORT
@@ -98,7 +97,7 @@ CFLAGS += -I${BTSTACK_ROOT}/3rd-party/tinydir
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble
-VPATH += ${BTSTACK_ROOT}/src/gatt-service
+VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service
 VPATH += ${BTSTACK_ROOT}/src/ble/mesh
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/platform/posix
@@ -125,20 +124,37 @@ SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o)
 SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 AVDTP_OBJ  = $(AVDTP:.c=.o)
 HXCMOD_PLAYER_OBJ = ${HXCMOD_PLAYER:.c=.o}
+SRC_BLE_GATT_SERVICE_FILES_OBJ =  ${SRC_BLE_GATT_SERVICE_FILES:.c=.o}
 
 EXAMPLES  = iopt ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test sco_loopback le_data_channel
 EXAMPLES += avdtp_source_test avdtp_sink_test avrcp_controller_test sm_test avrcp_target_test gatt_profiles hrp_col_test hrp_server_test
-EXAMPLES += hog_demo_test hid_device_test hid_host_test
+# EXAMPLES += hog_demo_test hid_device_test hid_host_test 
+EXAMPLES += csc_server_test csc_client_test cycling_power_server_test
 
 all: ${EXAMPLES}
+
+cycling_power_server_test.h: cycling_power_server_test.gatt
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+
+cycling_power_server_test: cycling_power_server_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} cycling_power_server_test.c
+	${CC} $(filter-out cycling_power_server_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+csc_server_test.h: csc_server_test.gatt
+	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
+
+csc_server_test: csc_server_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} csc_server_test.c
+	${CC} $(filter-out csc_server_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+csc_client_test: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ} csc_client_test.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hid_host_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_hid_parser.o hid_host_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-hid_device_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_ring_buffer.o hid_device.o hid_device_test.o
+hid_device_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} btstack_hid_parser.o btstack_ring_buffer.o hid_device.o hid_device_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-hog_demo_test: hog_demo_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} battery_service_server.o device_information_service_server.o hids_device.o btstack_ring_buffer.o hog_demo_test.c
+hog_demo_test: hog_demo_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} btstack_ring_buffer.o hog_demo_test.c
 	${CC} $(filter-out hog_demo_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 hrp_server_test.h: hrp_server_test.gatt
@@ -174,9 +190,6 @@ ble_peripheral_test: ble_peripheral_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} 
 ble_central_test: ble_central_test.h ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ad_parser.o ble_central_test.c
 	${CC} $(filter-out ble_central_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-gatt_profiles.h: gatt_profiles.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
-
 le_data_channel: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} ${ATT_OBJ} ad_parser.o le_data_channel.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
@@ -207,10 +220,19 @@ sm_test: sm_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GAT
 gatt_profiles.h: gatt_profiles.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
-gatt_profiles: gatt_profiles.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} gatt_profiles.o
+gatt_profiles: gatt_profiles.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} ${SRC_BLE_GATT_SERVICE_FILES_OBJ} gatt_profiles.o
 	${CC} $(filter-out gatt_profiles.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 myclean:
-	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc ${BTSTACK_ROOT}/port/libusb/*.o ${BTSTACK_ROOT}/src/*.o ${BTSTACK_ROOT}/src/classic/*.o ${BTSTACK_ROOT}/src/ble/*.o hog_demo_test.h
-
+	rm -rf *.pyc *.o $(AVDTP_TESTS) *.dSYM *_test *.wav *.sbc ${BTSTACK_ROOT}/port/libusb/*.o ${BTSTACK_ROOT}/src/*.o ${BTSTACK_ROOT}/src/classic/*.o ${BTSTACK_ROOT}/src/ble/*.o 
+	rm -rf hog_demo_test.h
+	rm -rf ble_central_test.h
+	rm -rf ble_peripheral_test.h
+	rm -rf csc_server_test.h
+	rm -rf cycling_power_server_test.h
+	rm -rf gatt_profiles.h
+	rm -rf hrp_server_test.h
+	rm -rf sm_test.h
+	
+	
 clean: myclean

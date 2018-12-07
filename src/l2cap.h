@@ -292,6 +292,9 @@ typedef struct {
     // sender: max num of stored outgoing frames
     uint8_t num_tx_buffers;
 
+    // sender: num stored outgoing frames
+    uint8_t num_stored_tx_frames;
+
     // sender: number of unacknowledeged I-Frames - frames have been sent, but not acknowledged yet
     uint8_t unacked_frames;
 

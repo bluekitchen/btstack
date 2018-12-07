@@ -12,7 +12,7 @@ If a RTOS is already provided, BTstack can be integrated and run as a single thr
 On larger systems, BTstack provides a server that connects to a Bluetooth module.
 Multiple applications can communicate with this server over different inter-process communication methods. As sockets are used for client/server communication, it's easy to interact via higher-level level languages, e.g. there's already a Java binding for use in desktop environments.
 
-BTstack supports the Central and the Peripheral Role of Bluetooth 4.2 Low Energy specification incl. LE Secure Connections, LE Data Channels, and LE Data Length Extension. It can be configured to run as either single-mode stack or a dual-mode stack.
+BTstack supports the Central and the Peripheral Role of Bluetooth 5 Low Energy specification incl. LE Secure Connections, LE Data Channels, and LE Data Length Extension. It can be configured to run as either single-mode stack or a dual-mode stack.
 
 BTstack is free for non-commercial use. However, for commercial use, <a href="mailto:contact@bluekitchen-gmbh.com">tell us</a> a bit about your project to get a quote.
 

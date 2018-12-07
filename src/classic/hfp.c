@@ -355,8 +355,6 @@ void hfp_reset_context_flags(hfp_connection_t * hfp_connection){
 static hfp_connection_t * create_hfp_connection_context(void){
     hfp_connection_t * hfp_connection = btstack_memory_hfp_connection_get();
     if (!hfp_connection) return NULL;
-    // init state
-    memset(hfp_connection,0, sizeof(hfp_connection_t));
 
     hfp_connection->state = HFP_IDLE;
     hfp_connection->call_state = HFP_CALL_IDLE;

@@ -38,8 +38,6 @@
 #define __BTSTACK_FILE__ "gatt_client.c"
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "btstack_config.h"
@@ -164,7 +162,6 @@ static gatt_client_t * provide_context_for_conn_handle(hci_con_handle_t con_hand
     context = btstack_memory_gatt_client_get();
     if (!context) return NULL;
     // init state
-    memset(context, 0, sizeof(gatt_client_t));
     context->con_handle = con_handle;
     context->mtu = ATT_DEFAULT_MTU;
     if (mtu_exchange_enabled){

@@ -41,12 +41,16 @@
 #include <stdint.h>
 #include "btstack_defines.h"
 #include "bluetooth.h"
+#include "btstack_hid_parser.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
 /* API_START */
+
+#define HID_BOOT_MODE_KEYBOARD_ID 1
+#define HID_BOOT_MODE_MOUSE_ID    2
 
 typedef enum {
     HID_MESSAGE_TYPE_HANDSHAKE = 0,
@@ -82,17 +86,9 @@ typedef enum {
 } hid_control_param_t;
 
 typedef enum {
-    HID_REPORT_TYPE_RESERVED = 0,
-    HID_REPORT_TYPE_INPUT,
-    HID_REPORT_TYPE_OUTPUT,
-    HID_REPORT_TYPE_FEATURE
-} hid_report_type_t;
-
-typedef enum {
     HID_PROTOCOL_MODE_BOOT = 0,
     HID_PROTOCOL_MODE_REPORT
 } hid_protocol_mode_t;
-
 
 /**
  * @brief Create HID Device SDP service record. 
@@ -125,8 +121,10 @@ void hid_create_sdp_record(
 /**
  * @brief Set up HID Device 
  * @param boot_protocol_mode_supported
+ * @param hid_descriptor_len
+ * @param hid_descriptor
  */
-void hid_device_init(uint8_t boot_protocol_mode_supported);
+void hid_device_init(uint8_t boot_protocol_mode_supported, uint16_t hid_descriptor_len, const uint8_t * hid_descriptor);
 
 /**
  * @brief Register callback for the HID Device client. 
@@ -138,14 +136,19 @@ void hid_device_register_packet_handler(btstack_packet_handler_t callback);
  * @brief Register get report callback for the HID Device client. 
  * @param callback
  */
-void hid_device_register_report_request_callback(hid_handshake_param_type_t (*callback) (uint16_t hid_cid, hid_report_type_t report_type, uint16_t report_id, uint8_t report_max_size, int * out_report_size, uint8_t * out_report));
+void hid_device_register_report_request_callback(int (*callback)(uint16_t hid_cid, hid_report_type_t report_type, uint16_t report_id, int * out_report_size, uint8_t * out_report));
 
 /**
  * @brief Register set report callback for the HID Device client. 
  * @param callback
  */
-void hid_device_register_set_report_callback(hid_handshake_param_type_t (*callback) (uint16_t hid_cid, hid_report_type_t report_type, int report_size, uint8_t * report));
+void hid_device_register_set_report_callback(void (*callback)(uint16_t hid_cid, hid_report_type_t report_type, int report_size, uint8_t * report));
 
+/**
+ * @brief Register callback to receive report data for the HID Device client. 
+ * @param callback
+ */
+void hid_device_register_report_data_callback(void (*callback)(uint16_t cid, hid_report_type_t report_type, uint16_t report_id, int report_size, uint8_t * report));
 
 /*
  * @brief Create HID connection to HID Host
@@ -180,6 +183,11 @@ void hid_device_send_interrupt_message(uint16_t hid_cid, const uint8_t * message
  */
 void hid_device_send_control_message(uint16_t hid_cid, const uint8_t * message, uint16_t message_len);
 
+/**
+ * @brief Retutn 1 if boot protocol mode active
+ * @param hid_cid
+ */
+int hid_device_in_boot_protocol_mode(uint16_t hid_cid);
 
 /* API_END */
 

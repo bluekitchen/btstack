@@ -37,8 +37,6 @@
 
 #define __BTSTACK_FILE__ "att_db.c"
 
-
-#include <stdio.h>
 #include <string.h>
 
 #include "ble/att_db.h"
@@ -1098,7 +1096,7 @@ static void handle_write_command(att_connection_t * att_connection, uint8_t * re
 // MARK: helper for ATT_HANDLE_VALUE_NOTIFICATION and ATT_HANDLE_VALUE_INDICATION
 static uint16_t prepare_handle_value(att_connection_t * att_connection,
                                      uint16_t handle,
-                                     uint8_t *value,
+                                     const uint8_t *value,
                                      uint16_t value_len, 
                                      uint8_t * response_buffer){
     little_endian_store_16(response_buffer, 1, handle);
@@ -1112,7 +1110,7 @@ static uint16_t prepare_handle_value(att_connection_t * att_connection,
 // MARK: ATT_HANDLE_VALUE_NOTIFICATION 0x1b
 uint16_t att_prepare_handle_value_notification(att_connection_t * att_connection,
                                                uint16_t handle,
-                                               uint8_t *value,
+                                               const uint8_t *value,
                                                uint16_t value_len, 
                                                uint8_t * response_buffer){
 
@@ -1123,7 +1121,7 @@ uint16_t att_prepare_handle_value_notification(att_connection_t * att_connection
 // MARK: ATT_HANDLE_VALUE_INDICATION 0x1d
 uint16_t att_prepare_handle_value_indication(att_connection_t * att_connection,
                                              uint16_t handle,
-                                             uint8_t *value,
+                                             const uint8_t *value,
                                              uint16_t value_len, 
                                              uint8_t * response_buffer){
 
@@ -1237,8 +1235,7 @@ uint16_t gatt_server_get_value_handle_for_characteristic_with_uuid16(uint16_t st
     return 0;
 }
 
-// returns 0 if not found
-uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16){
+uint16_t gatt_server_get_descriptor_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t characteristic_uuid16, uint16_t descriptor_uuid16){
     att_iterator_t it;
     att_iterator_init(&it);
     int characteristic_found = 0;
@@ -1247,7 +1244,7 @@ uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uui
         if (it.handle && it.handle < start_handle) continue;
         if (it.handle > end_handle) break;  // (1)
         if (it.handle == 0) break;
-        if (att_iterator_match_uuid16(&it, uuid16)){
+        if (att_iterator_match_uuid16(&it, characteristic_uuid16)){
             characteristic_found = 1;
             continue;
         }
@@ -1257,11 +1254,21 @@ uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uui
             if (characteristic_found) break;
             continue;
         }
-        if (characteristic_found && att_iterator_match_uuid16(&it, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION)){
+        if (characteristic_found && att_iterator_match_uuid16(&it, descriptor_uuid16)){
             return it.handle;
         }
     }
     return 0;
+}
+
+// returns 0 if not found
+uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t characteristic_uuid16){
+    return gatt_server_get_descriptor_handle_for_characteristic_with_uuid16(start_handle, end_handle, characteristic_uuid16, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION);
+}
+// returns 0 if not found
+
+uint16_t gatt_server_get_server_configuration_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t characteristic_uuid16){
+    return gatt_server_get_descriptor_handle_for_characteristic_with_uuid16(start_handle, end_handle, characteristic_uuid16, GATT_SERVER_CHARACTERISTICS_CONFIGURATION);
 }
 
 // returns 1 if service found. only primary service.

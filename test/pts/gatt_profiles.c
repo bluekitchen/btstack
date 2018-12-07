@@ -54,8 +54,6 @@
 
 #include "gatt_profiles.h"
 #include "btstack.h"
-#include "ble/gatt-service/battery_service_server.h"
-#include "ble/gatt-service/device_information_service_server.h"
 
 #define HEARTBEAT_PERIOD_MS 1000
 

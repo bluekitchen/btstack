@@ -84,9 +84,7 @@ typedef struct{
     uint16_t        hid_report_feature_client_configuration_value;
 
     uint16_t        hid_control_point_value_handle;
-    // uint16_t        hid_control_point_client_configuration_descriptor_handle;
     uint8_t         hid_control_point_suspend;
-    // btstack_context_callback_registration_t control_point_callback;
 
     btstack_context_callback_registration_t  battery_callback;
 } hids_device_t;
@@ -106,9 +104,6 @@ static hids_device_t * hids_device_create_instance(void){
     return &hids_device;
 }
 
-// static int hids_device_delete_instance(void){
-//     return 0;
-// }
 
 static void hids_device_emit_event_with_uint8(uint8_t event, hci_con_handle_t con_handle, uint8_t value){
     hids_device_t * instance = hids_device_get_instance_for_con_handle(con_handle);
@@ -171,37 +166,36 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_hand
         return HIDS_DEVICE_ERROR_CODE_INAPPROPRIATE_CONNECTION_PARAMETERS;
     }
 
-    printf("att_read_callback att handle 0x%02x\n", att_handle);
-
     if (att_handle == instance->hid_protocol_mode_value_handle){
         log_info("Read protocol mode");
         return att_read_callback_handle_byte(instance->hid_protocol_mode, offset, buffer, buffer_size);
     }
+    
     if (att_handle == instance->hid_report_map_handle){
         log_info("Read report map");
         return att_read_callback_handle_blob(instance->hid_descriptor, instance->hid_descriptor_size, offset, buffer, buffer_size);
     }
-    // if (att_handle == hid_boot_mouse_input_value_handle){
-    // }
+
     if (att_handle == instance->hid_boot_mouse_input_client_configuration_handle){
         return att_read_callback_handle_little_endian_16(instance->hid_boot_mouse_input_client_configuration_value, offset, buffer, buffer_size);
     }
-    // if (att_handle == hid_boot_keyboard_input_value_handle){
-    // }
+
     if (att_handle == instance->hid_boot_keyboard_input_client_configuration_handle){
         return att_read_callback_handle_little_endian_16(instance->hid_boot_keyboard_input_client_configuration_value, offset, buffer, buffer_size);
     }
-    // if (att_handle == hid_report_input_value_handle){
-    // }
+
     if (att_handle == instance->hid_report_input_client_configuration_handle){
         return att_read_callback_handle_little_endian_16(instance->hid_report_input_client_configuration_value, offset, buffer, buffer_size);
     }
+    
     if (att_handle == instance->hid_report_input_client_configuration_handle){
         return att_read_callback_handle_little_endian_16(instance->hid_report_output_client_configuration_value, offset, buffer, buffer_size);
     }
+    
     if (att_handle == instance->hid_report_input_client_configuration_handle){
         return att_read_callback_handle_little_endian_16(instance->hid_report_feature_client_configuration_value, offset, buffer, buffer_size);
     }
+    
     if (att_handle == instance->hid_control_point_value_handle){
         if (buffer && buffer_size >= 1){
             buffer[0] = instance->hid_control_point_suspend;
@@ -221,37 +215,31 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
         log_error("no instance for handle 0x%02x", con_handle);
         return HIDS_DEVICE_ERROR_CODE_INAPPROPRIATE_CONNECTION_PARAMETERS;
     }
-    printf("att_write_callback att handle 0x%02x\n", att_handle);
 
     if (att_handle == instance->hid_boot_mouse_input_client_configuration_handle){
         uint16_t new_value = little_endian_read_16(buffer, 0);
-        // if (new_value == hid_boot_mouse_input_client_configuration_value) return 0;
         instance->hid_boot_mouse_input_client_configuration_value = new_value;
         hids_device_emit_event_with_uint8(HIDS_SUBEVENT_BOOT_MOUSE_INPUT_REPORT_ENABLE, con_handle, new_value);
     }
     if (att_handle == instance->hid_boot_keyboard_input_client_configuration_handle){
         uint16_t new_value = little_endian_read_16(buffer, 0);
-        // if (new_value == hid_boot_keyboard_input_client_configuration_value) return 0;
         instance->hid_boot_keyboard_input_client_configuration_value = new_value;
         hids_device_emit_event_with_uint8(HIDS_SUBEVENT_BOOT_KEYBOARD_INPUT_REPORT_ENABLE, con_handle, new_value);
     }
     if (att_handle == instance->hid_report_input_client_configuration_handle){
         uint16_t new_value = little_endian_read_16(buffer, 0);
-        // if (new_value == hid_report_input_client_configuration_value) return 0;
         instance->hid_report_input_client_configuration_value = new_value;
         log_info("Enable Report Input notifications: %x", new_value);
         hids_device_emit_event_with_uint8(HIDS_SUBEVENT_INPUT_REPORT_ENABLE, con_handle, new_value);
     }
     if (att_handle == instance->hid_report_output_client_configuration_handle){
         uint16_t new_value = little_endian_read_16(buffer, 0);
-        // if (new_value == hid_report_output_client_configuration_value) return 0;
         instance->hid_report_output_client_configuration_value = new_value;
         log_info("Enable Report Output notifications: %x", new_value);
         hids_device_emit_event_with_uint8(HIDS_SUBEVENT_OUTPUT_REPORT_ENABLE, con_handle, new_value);
     }
     if (att_handle == instance->hid_report_feature_client_configuration_handle){
         uint16_t new_value = little_endian_read_16(buffer, 0);
-        // if (new_value == hid_report_feature_client_configuration_value) return 0;
         instance->hid_report_feature_client_configuration_value = new_value;
         log_info("Enable Report Feature notifications: %x", new_value);
         hids_device_emit_event_with_uint8(HIDS_SUBEVENT_FEATURE_REPORT_ENABLE, con_handle, new_value);
@@ -275,11 +263,7 @@ static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, 
         } else if (instance->hid_control_point_suspend == 1){ 
             hids_device_emit_event(HIDS_SUBEVENT_EXIT_SUSPEND, con_handle);
         }
-        // } else {
-        //     return ATT_ERROR_INAPPROPRIATE_CONNECTION_PARAMETERS;
-        // }
     }
-
     return 0;
 }
 
@@ -330,24 +314,19 @@ void hids_device_init(uint8_t country_code, const uint8_t * descriptor, uint16_t
 
     instance->hid_control_point_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_HID_CONTROL_POINT);
     
-    printf("hid_report_map_handle                               0x%02x\n", instance->hid_report_map_handle);
-    printf("hid_protocol_mode_value_handle                      0x%02x\n", instance->hid_protocol_mode_value_handle);
-    printf("hid_boot_mouse_input_value_handle                   0x%02x\n", instance->hid_boot_mouse_input_value_handle);
-    printf("hid_boot_mouse_input_client_configuration_handle    0x%02x\n", instance->hid_boot_mouse_input_client_configuration_handle);
-    printf("\n");
-    printf("hid_boot_keyboard_input_value_handle                0x%02x\n", instance->hid_boot_keyboard_input_value_handle);
-    printf("hid_boot_keyboard_input_client_configuration_handle 0x%02x\n", instance->hid_boot_keyboard_input_client_configuration_handle);
-    printf("\n");
-    printf("hid_report_input_value_handle                       0x%02x\n", instance->hid_report_input_value_handle);
-    printf("hid_report_input_client_configuration_handle        0x%02x\n", instance->hid_report_input_client_configuration_handle);
-    printf("\n");
-    printf("hid_report_output_value_handle                      0x%02x\n", instance->hid_report_output_value_handle);
-    printf("hid_report_output_client_configuration_handle       0x%02x\n", instance->hid_report_output_client_configuration_handle);
-    printf("\n");
-    printf("hid_report_feature_value_handle                     0x%02x\n", instance->hid_report_feature_value_handle);
-    printf("hid_report_feature_client_configuration_handle      0x%02x\n", instance->hid_report_feature_client_configuration_handle);
-
-    printf("hid_control_point_value_handle                      0x%02x\n", instance->hid_control_point_value_handle);
+    log_info("hid_report_map_handle                               0x%02x", instance->hid_report_map_handle);
+    log_info("hid_protocol_mode_value_handle                      0x%02x", instance->hid_protocol_mode_value_handle);
+    log_info("hid_boot_mouse_input_value_handle                   0x%02x", instance->hid_boot_mouse_input_value_handle);
+    log_info("hid_boot_mouse_input_client_configuration_handle    0x%02x", instance->hid_boot_mouse_input_client_configuration_handle);
+    log_info("hid_boot_keyboard_input_value_handle                0x%02x", instance->hid_boot_keyboard_input_value_handle);
+    log_info("hid_boot_keyboard_input_client_configuration_handle 0x%02x", instance->hid_boot_keyboard_input_client_configuration_handle);
+    log_info("hid_report_input_value_handle                       0x%02x", instance->hid_report_input_value_handle);
+    log_info("hid_report_input_client_configuration_handle        0x%02x", instance->hid_report_input_client_configuration_handle);
+    log_info("hid_report_output_value_handle                      0x%02x", instance->hid_report_output_value_handle);
+    log_info("hid_report_output_client_configuration_handle       0x%02x", instance->hid_report_output_client_configuration_handle);
+    log_info("hid_report_feature_value_handle                     0x%02x", instance->hid_report_feature_value_handle);
+    log_info("hid_report_feature_client_configuration_handle      0x%02x", instance->hid_report_feature_client_configuration_handle);
+    log_info("hid_control_point_value_handle                      0x%02x", instance->hid_control_point_value_handle);
 
     // register service with ATT Server
     hid_service.start_handle   = start_handle;
@@ -391,7 +370,7 @@ void hids_device_send_input_report(hci_con_handle_t con_handle, const uint8_t * 
         log_error("no instance for handle 0x%02x", con_handle);
         return;
     }
-    att_server_notify(con_handle, instance->hid_report_input_value_handle, (uint8_t*) report, report_len);
+    att_server_notify(con_handle, instance->hid_report_input_value_handle, report, report_len);
 }
 
 /**
@@ -403,7 +382,7 @@ void hids_device_send_output_report(hci_con_handle_t con_handle, const uint8_t *
         log_error("no instance for handle 0x%02x", con_handle);
         return;
     }
-    att_server_notify(con_handle, instance->hid_report_output_value_handle, (uint8_t*) report, report_len);
+    att_server_notify(con_handle, instance->hid_report_output_value_handle, report, report_len);
 }
 
 /**
@@ -415,7 +394,7 @@ void hids_device_send_feature_report(hci_con_handle_t con_handle, const uint8_t 
         log_error("no instance for handle 0x%02x", con_handle);
         return;
     }
-    att_server_notify(con_handle, instance->hid_report_feature_value_handle, (uint8_t*) report, report_len);
+    att_server_notify(con_handle, instance->hid_report_feature_value_handle, report, report_len);
 }
 
 /**
@@ -427,7 +406,7 @@ void hids_device_send_boot_mouse_input_report(hci_con_handle_t con_handle, const
         log_error("no instance for handle 0x%02x", con_handle);
         return;
     }
-    att_server_notify(con_handle, instance->hid_boot_mouse_input_value_handle, (uint8_t*) report, report_len);
+    att_server_notify(con_handle, instance->hid_boot_mouse_input_value_handle, report, report_len);
 }
 
 /**
@@ -439,5 +418,5 @@ void hids_device_send_boot_keyboard_input_report(hci_con_handle_t con_handle, co
         log_error("no instance for handle 0x%02x", con_handle);
         return;
     }
-    att_server_notify(con_handle, instance->hid_boot_keyboard_input_value_handle, (uint8_t*) report, report_len);
+    att_server_notify(con_handle, instance->hid_boot_keyboard_input_value_handle, report, report_len);
 }

@@ -114,7 +114,7 @@ static void panu_setup(void){
 /* LISTING_END */
 
 // PANU client routines 
-static char * get_string_from_data_element(uint8_t * element){
+static void get_string_from_data_element(uint8_t * element, uint16_t buffer_size, char * buffer_data){
     de_size_t de_size = de_get_size_type(element);
     int pos     = de_get_header_size(element);
     int len = 0;
@@ -128,10 +128,9 @@ static char * get_string_from_data_element(uint8_t * element){
         default:
             break;
     }
-    char * str = (char*)malloc(len+1);
-    memcpy(str, &element[pos], len);
-    str[len] ='\0';
-    return str; 
+    uint16_t bytes_to_copy = btstack_min(buffer_size-1,len);
+    memcpy(buffer_data, &element[pos], bytes_to_copy);
+    buffer_data[bytes_to_copy] ='\0';
 }
 
 
@@ -160,7 +159,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
 
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
-    char *str;
+    char str[20];
 
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
@@ -198,9 +197,8 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                             break;
                         case 0x0100:
                         case 0x0101:
-                            str = get_string_from_data_element(attribute_value);
+                            get_string_from_data_element(attribute_value, sizeof(str), str);
                             printf("SDP Attribute: 0x%04x: %s\n", sdp_event_query_attribute_byte_get_attribute_id(packet), str);
-                            free(str);
                             break;
                         case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST: {
                                 printf("SDP Attribute: 0x%04x\n", sdp_event_query_attribute_byte_get_attribute_id(packet));

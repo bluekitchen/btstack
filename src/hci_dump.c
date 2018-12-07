@@ -206,7 +206,9 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
     if (dump_format != HCI_DUMP_STDOUT && max_nr_packets > 0){
         if (nr_packets >= max_nr_packets){
             lseek(dump_file, 0, SEEK_SET);
-            ftruncate(dump_file, 0);
+            // avoid -Wunused-result
+            int res = ftruncate(dump_file, 0);
+            UNUSED(res);
             nr_packets = 0;
         }
         nr_packets++;
@@ -216,6 +218,8 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
     struct timeval curr_time;
     gettimeofday(&curr_time, NULL);
 
+    // avoid -Wunused-result
+    int res = 0;
     switch (dump_format){
         case HCI_DUMP_STDOUT: {
             printf_timestamp();
@@ -230,8 +234,8 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
             little_endian_store_32( header_bluez, 4, (uint32_t) curr_time.tv_sec);
             little_endian_store_32( header_bluez, 8,            curr_time.tv_usec);
             header_bluez[12] = packet_type;
-            write (dump_file, header_bluez, HCIDUMP_HDR_SIZE);
-            write (dump_file, packet, len );
+            res = write (dump_file, header_bluez, HCIDUMP_HDR_SIZE);
+            res = write (dump_file, packet, len );
             break;
             
         case HCI_DUMP_PACKETLOGGER:
@@ -265,13 +269,14 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
                 default:
                     return;
             }
-            write (dump_file, &header_packetlogger, PKTLOG_HDR_SIZE);
-            write (dump_file, packet, len );
+            res = write (dump_file, &header_packetlogger, PKTLOG_HDR_SIZE);
+            res = write (dump_file, packet, len );
             break;
             
         default:
             break;
     }
+    UNUSED(res);
 #else
 
     printf_timestamp();

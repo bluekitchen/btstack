@@ -284,9 +284,6 @@ static uint16_t rfcomm_max_frame_size_for_l2cap_mtu(uint16_t l2cap_mtu){
 }
 
 static void rfcomm_multiplexer_initialize(rfcomm_multiplexer_t *multiplexer){
-
-    memset(multiplexer, 0, sizeof(rfcomm_multiplexer_t));
-
     multiplexer->state = RFCOMM_MULTIPLEXER_CLOSED;
     multiplexer->fcon = 1;
     multiplexer->send_dm_for_dlci = 0;
@@ -363,10 +360,7 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
     
     // don't use 0 as channel id
     if (rfcomm_client_cid_generator == 0) ++rfcomm_client_cid_generator;
-    
-    // setup channel
-    memset(channel, 0, sizeof(rfcomm_channel_t));
-    
+        
     // set defaults for port configuration (even for services)
     rfcomm_rpn_data_set_defaults(&channel->rpn_data);
 

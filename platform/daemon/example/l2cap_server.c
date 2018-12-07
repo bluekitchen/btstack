@@ -136,7 +136,9 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 				case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
 					printf("Please enter PIN here: ");
-					fgets(pin, 20, stdin);
+					// avoid -Wunused-result
+					char* res = fgets(pin, 20, stdin);
+					UNUSED(res);
 					i = strlen(pin)-1;
 					if( pin[i] == '\n') { 
 						pin[i] = '\0';

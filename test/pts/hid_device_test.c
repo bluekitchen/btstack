@@ -61,7 +61,7 @@
 #include "btstack_stdin.h"
 #endif
 
-#define REPORT_ID_EXISTS 0
+// #define REPORT_ID_DECLARED 
 // to enable demo text on POSIX systems
 // #undef HAVE_BTSTACK_STDIN
 
@@ -71,7 +71,7 @@ const uint8_t hid_descriptor_keyboard_boot_mode[] = {
     0x09, 0x06,                    // Usage (Keyboard)
     0xa1, 0x01,                    // Collection (Application)
 
-#ifdef REPORT_ID_EXISTS
+#ifdef REPORT_ID_DECLARED
     0x85, 0x01,                   // Report ID 1
 #endif
     // Modifier byte
@@ -118,6 +118,7 @@ const uint8_t hid_descriptor_keyboard_boot_mode[] = {
     0xc0,                          // End collection  
 
 };
+
 
 // 
 #define CHAR_ILLEGAL     0xff
@@ -180,6 +181,8 @@ static bd_addr_t device_addr;
 static int     report_data_ready = 1;
 static uint8_t report_data[20];
 static uint8_t hid_boot_device = 1;
+static int send_mouse_on_interrupt_channel = 0;
+static int send_keyboard_on_interrupt_channel = 0;
 
 #ifdef HAVE_BTSTACK_STDIN
 static const char * device_addr_string = "BC:EC:5D:E6:15:03";
@@ -232,67 +235,98 @@ static void send_key(int modifier, int keycode){
     hid_device_request_can_send_now_event(hid_cid);
 }
 
-static void send_report(int modifier, int keycode){
-    uint8_t report[] = { 0xa1, 0x01, modifier, 0, 0, keycode, 0, 0, 0, 0, 0};
+static void send_keyboard_report_on_interrupt_channel(int modifier, int keycode){
+    uint8_t report[] = {0xa1, 
+        0x01, 
+        modifier, 0, 0, keycode, 0, 0, 0, 0};
     hid_device_send_interrupt_message(hid_cid, &report[0], sizeof(report));
 }
 
-static hid_handshake_param_type_t hid_get_report_callback(uint16_t cid, hid_report_type_t report_type, uint16_t report_id, uint8_t report_max_size, int * out_report_size, uint8_t * out_report){
-    UNUSED(cid);
-    UNUSED(report_max_size);
-    
-    if (!report_data_ready){
-        return HID_HANDSHAKE_PARAM_TYPE_NOT_READY;
-    }
+static void send_mouse_report_on_interrupt_channel(uint8_t buttons, int8_t dx, int8_t dy){
+    uint8_t report[] = {0xa1, 
+        0x02, 
+        buttons, dx, dy, 0};
+    hid_device_send_interrupt_message(hid_cid, &report[0], sizeof(report));
+}
 
-    if (report_id > 1){
-        return HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_REPORT_ID;
-    } 
-    
+// HID Report sending
+static int prepare_mouse_report(hid_report_type_t report_type, uint8_t buttons, int8_t dx, int8_t dy, uint8_t * buffer, int buffer_size){
+    UNUSED(report_type);
+    if (buffer_size < 3) return 0;
     int pos = 0;
-    if (report_id){
-        report_data[pos++] = report_id;
-    }
+    buffer[pos++] = buttons;
+    buffer[pos++] = (uint8_t) dx;
+    buffer[pos++] = (uint8_t) dy;
+    // buffer[pos++] = 0;
+    
+    return pos;
+}
+
+static int prepare_keyboard_report(hid_report_type_t report_type, int modifier, int keycode, uint8_t * buffer, int buffer_size){
+    if (buffer_size < 8) return 0;
+    int pos = 0;
     
     switch (report_type){
         case HID_REPORT_TYPE_INPUT:
-            report_data[pos++] = send_modifier;
-            report_data[pos++] = 0;
-            report_data[pos++] = send_keycode;
-            report_data[pos++] = 0;
-            report_data[pos++] = 0;
-            report_data[pos++] = 0;
-            report_data[pos++] = 0;
-            report_data[pos++] = 0;
+            buffer[pos++] = (uint8_t) modifier;
+            buffer[pos++] = 0;
+            buffer[pos++] = (uint8_t) keycode;
+            buffer[pos++] = 0;
+            buffer[pos++] = 0;
+            buffer[pos++] = 0;
+            buffer[pos++] = 0;
+            buffer[pos++] = 0;
             break;
         case HID_REPORT_TYPE_OUTPUT:
-            report_data[pos++] = 0x00;
+            printf("report type OUTPUT \n");
+            buffer[pos++] = 0x00;
             break;
-        // case HID_REPORT_TYPE_FEATURE:
-        //     break;
         default:
-            return HID_HANDSHAKE_PARAM_TYPE_ERR_UNSUPPORTED_REQUEST;
+            break;
     }
-
-    memcpy(out_report, report_data, pos); 
-    *out_report_size = pos;
-    return HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL;
+    return pos;
 }
 
-static hid_handshake_param_type_t hid_set_report_callback(uint16_t cid, hid_report_type_t report_type, int report_size, uint8_t * report){
+static int hid_get_report_callback(uint16_t cid, hid_report_type_t report_type, uint16_t report_id, int * out_report_size, uint8_t * out_report){
+    UNUSED(report_id);
+    if (!report_data_ready){
+        printf("report_data_ready not ready\n");
+        return 0;
+    }
+    int report_size = 0;
+    if (hid_device_in_boot_protocol_mode(cid)){
+        switch (report_id){
+            case HID_BOOT_MODE_KEYBOARD_ID:
+                report_size = prepare_keyboard_report(report_type, send_modifier, send_keycode, &report_data[0], sizeof(report_data));
+                break;
+            case HID_BOOT_MODE_MOUSE_ID:
+                report_size = prepare_mouse_report(report_type, 0, 0, 0, &report_data[0], sizeof(report_data));
+            default:
+                break;
+        }
+    } else {
+        report_size = prepare_keyboard_report(report_type, send_modifier, send_keycode, &report_data[0], sizeof(report_data));
+    } 
+    memcpy(out_report, report_data, report_size); 
+    *out_report_size = report_size;
+    return 1;
+}
+
+static void hid_set_report_callback(uint16_t cid, hid_report_type_t report_type, int report_size, uint8_t * report){
     UNUSED(cid);
     UNUSED(report_type);
     UNUSED(report_size);
     UNUSED(report);
-    int pos = 0;
-#ifdef REPORT_ID_EXISTS
-    int report_id = report[pos++];
-    if (report_id != 1) {
-        return HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_REPORT_ID;
-    }
-#endif
-    
-    return HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL;
+    printf("set report\n");
+}
+
+static void hid_report_data_callback(uint16_t cid, hid_report_type_t report_type, uint16_t report_id, int report_size, uint8_t * report){
+    UNUSED(cid);
+    UNUSED(report_type);
+    UNUSED(report_id);
+    UNUSED(report_size);
+    UNUSED(report);
+    printf("do smth with report\n");
 }
 
 #ifdef HAVE_BTSTACK_STDIN
@@ -338,6 +372,14 @@ static void stdin_process(char character){
             // TODO move into HCI init
             hci_send_cmd(&hci_write_current_iac_lap_two_iacs, 2, GAP_IAC_GENERAL_INQUIRY, GAP_IAC_LIMITED_INQUIRY);
             return;
+        case 'm':
+            send_mouse_on_interrupt_channel = 1;
+            hid_device_request_can_send_now_event(hid_cid);
+            break;
+        case 'M':
+            send_keyboard_on_interrupt_channel = 1;
+            hid_device_request_can_send_now_event(hid_cid);
+            break;
         case 'L':
             gap_discoverable_control(0);
             printf("reset limited discoverable mode\n");
@@ -357,7 +399,6 @@ static void stdin_process(char character){
             break;
 
         case APP_CONNECTED:
-            // send keyu
             found = keycode_and_modifer_us_for_character(character, &keycode, &modifier);
             if (found){
                 send_key(modifier, keycode);
@@ -467,13 +508,26 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             break;
                             
                         case HID_SUBEVENT_CAN_SEND_NOW:
+                            if (send_mouse_on_interrupt_channel){
+                                send_mouse_on_interrupt_channel = 0;
+                                printf("send mouse on interrupt channel\n");
+                                send_mouse_report_on_interrupt_channel(0,0,0);
+                                break;     
+                            }
+                            if (send_keyboard_on_interrupt_channel){
+                                send_keyboard_on_interrupt_channel = 0;
+                                send_keyboard_report_on_interrupt_channel(send_modifier, send_keycode);
+                                send_keycode = 0;
+                                send_modifier = 0;
+                            }
+                        
                             if (send_keycode){
-                                send_report(send_modifier, send_keycode);
+                                send_keyboard_report_on_interrupt_channel(send_modifier, send_keycode);
                                 send_keycode = 0;
                                 send_modifier = 0;
                                 hid_device_request_can_send_now_event(hid_cid);
                             } else {
-                                send_report(0, 0);
+                                send_keyboard_report_on_interrupt_channel(0, 0);
                             }
                             break;
                         default:
@@ -532,9 +586,7 @@ int btstack_main(int argc, const char * argv[]){
     printf("Device ID SDP service record size: %u\n", de_get_len((uint8_t*)device_id_sdp_service_buffer));
     sdp_register_service(device_id_sdp_service_buffer);
 
-    // HID Device
-    hid_device_init(hid_boot_device);
-
+    hid_device_init(hid_boot_device, sizeof(hid_descriptor_keyboard_boot_mode), hid_descriptor_keyboard_boot_mode);
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
@@ -543,6 +595,7 @@ int btstack_main(int argc, const char * argv[]){
     hid_device_register_packet_handler(&packet_handler);
     hid_device_register_report_request_callback(&hid_get_report_callback);
     hid_device_register_set_report_callback(&hid_set_report_callback);
+    hid_device_register_report_data_callback(&hid_report_data_callback);
 
     sscanf_bd_addr(device_addr_string, device_addr);
     btstack_stdin_setup(stdin_process);

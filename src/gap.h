@@ -157,6 +157,14 @@ void gap_set_extended_inquiry_response(const uint8_t * data);
 void gap_set_class_of_device(uint32_t class_of_device);
 
 /**
+ * @brief Set default link policy settings for all classic ACL links
+ * @param default_link_policy_settings - see LM_LINK_POLICY_* in bluetooth.h
+ * @note common value: LM_LINK_POLICY_ENABLE_ROLE_SWITCH | LM_LINK_POLICY_ENABLE_SNIFF_MODE to enable role switch and sniff mode
+ * @note has to be done before stack starts up
+ */
+void gap_set_default_link_policy_settings(uint16_t default_link_policy_settings);
+
+/**
  * @brief Enable/disable bonding. Default is enabled.
  * @param enabled
  */
@@ -389,6 +397,12 @@ int gap_auto_connection_stop(bd_addr_type_t address_typ, bd_addr_t address);
 void gap_auto_connection_stop_all(void);
 
 /**
+ * @brief Get connection interval
+ * @return connection interval, otherwise 0 if error 
+ */
+uint16_t gap_le_connection_interval(hci_con_handle_t connection_handle);
+
+/**
  *
  * @brief Get encryption key size.
  * @param con_handle
@@ -545,7 +559,23 @@ int gap_ssp_confirmation_response(bd_addr_t addr);
  */
 int gap_ssp_confirmation_negative(bd_addr_t addr);
 
+/**
+ * @brief Enter Sniff mode
+ * @param con_handle
+ * @param sniff_min_interval range: 0x0002 to 0xFFFE; only even values are valid, Time = N * 0.625 ms
+ * @param sniff_max_interval range: 0x0002 to 0xFFFE; only even values are valid, Time = N * 0.625 ms
+ * @param sniff_attempt Number of Baseband receive slots for sniff attempt.
+ * @param sniff_timeout Number of Baseband receive slots for sniff timeout.
+ @ @return 0 if ok
+ */
+uint8_t gap_sniff_mode_enter(hci_con_handle_t con_handle, uint16_t sniff_min_interval, uint16_t sniff_max_interval, uint16_t sniff_attempt, uint16_t sniff_timeout);
 
+/**
+ * @brief Exit Sniff mode
+ * @param con_handle
+ @ @return 0 if ok
+ */
+uint8_t gap_sniff_mode_exit(hci_con_handle_t con_handle);
 
 // LE
 

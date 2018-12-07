@@ -350,6 +350,7 @@ static int media_processing_init(avdtp_media_codec_configuration_sbc_t configura
 }
 
 static void media_processing_close(void){
+
     if (!media_initialized) return;
     media_initialized = 0;
     audio_stream_started = 0;
@@ -394,6 +395,14 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     avdtp_sbc_codec_header_t sbc_header;
     if (!read_sbc_header(packet, size, &pos, &sbc_header)) return;
 
+    const btstack_audio_t * audio = btstack_audio_get_instance();
+
+    // process data right away if there's no audio implementation active, e.g. on posix systems to store as .wav
+    if (!audio){
+        btstack_sbc_decoder_process_data(&state, 0, packet+pos, size-pos);
+        return;
+    }
+
     // store sbc frame size for buffer management
     sbc_frame_size = (size-pos)/ sbc_header.num_frames;
         
@@ -421,7 +430,6 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     if (!audio_stream_started && sbc_frames_in_buffer >= (OPTIMAL_FRAMES_MAX+OPTIMAL_FRAMES_MIN)/2){
         audio_stream_started = 1;
         // setup audio playback
-        const btstack_audio_t * audio = btstack_audio_get_instance();
         if (audio){
             audio->start_stream();
         }
@@ -727,23 +735,15 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
             break;
         
         case A2DP_SUBEVENT_STREAM_RELEASED:
-            cid = a2dp_subevent_stream_released_get_a2dp_cid(packet);
-            if (cid != a2dp_cid) {
-                printf("A2DP Sink demo: unexpected cid 0x%02x instead of 0x%02x\n", cid, a2dp_cid);
-                break;
-            }
             local_seid = a2dp_subevent_stream_released_get_local_seid(packet);
             printf("A2DP Sink demo: stream released, a2dp cid 0x%02X, local_seid %d\n", a2dp_cid, local_seid);
             media_processing_close();
             break;
         case A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
             cid = a2dp_subevent_signaling_connection_released_get_a2dp_cid(packet);
-            if (cid != a2dp_cid) {
-                printf("A2DP Sink demo: unexpected cid 0x%02x instead of 0x%02x\n", cid, a2dp_cid);
-                break;
-            }
             a2dp_sink_connected = 0;
             printf("A2DP Sink demo: signaling connection released\n");
+            media_processing_close();
             break;
         default:
             printf("A2DP Sink demo: not parsed 0x%02x\n", packet[2]);

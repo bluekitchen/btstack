@@ -1019,6 +1019,7 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_HID_META                                 0xEF
 #define HCI_EVENT_A2DP_META                                0xF0
 #define HCI_EVENT_HIDS_META                                0xF1
+#define HCI_EVENT_GATTSERVICE_META                         0xF2
 
 // Potential other meta groups
 // #define HCI_EVENT_BNEP_META                                0xxx
@@ -2190,4 +2191,27 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
 */
 #define HIDS_SUBEVENT_EXIT_SUSPEND                                          0x09
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param con_handle
+ * @param measurement_type  // 0 - force magnitude, 1 - torque magnitude, see cycling_power_sensor_measurement_context_t
+ * @param is_enhanced
+*/
+#define GATTSERVICE_SUBEVENT_CYCLING_POWER_START_CALIBRATION               0x01
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param con_handle
+*/
+#define GATTSERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_START                 0x02
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param con_handle
+*/
+#define GATTSERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_STOP                  0x03
 #endif

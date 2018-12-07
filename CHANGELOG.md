@@ -7,13 +7,43 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
-- SDP Server: queue incoming connections when already connected instead of rejecting them
+- SM: generate and store ER / IR keys in TLV, unless manually set by application
 
 ### Fixed
+- SM: fix internal buffer overrun during random address generation
+
+## Changes November 2018
+
+### Added
+- GAP: gap_le_connection_interval provides connection interval for conn handle
+- Nordic SPP Service Server: GATT service that emulates a serial port over BLE based on Nordic Semiconductor documentation.
+- uBlox  SPP Service Server: GATT service that emulates a serial port over BLE based on uBlox documentation.
+- SM: ENABLE_LE_CENTRAL_AUTO_ENCRYPTION triggers automatic encryption on connect to bonded devices
+- SM: generate and store ER / IR keys in TLV, unless manually set by application
+
+### Fixed
+- SM: prevent random address updates if gap_random_address_set was used
+- SM: fix internal buffer overrun that can cause storing of bonding information to fail
+- SM: ignore Slave Security Request after sending own Pairing Request
+- L2CAP: fix use after free on disconnect if ERTM is enabled
+- HFP: Handle multiple commands/responses in single RFCOMM packet
+- Memory Pools: clear all buffers before use
+
+## Changes October 2018
+
+### Added
+- SDP Server: queue incoming connections when already connected instead of rejecting them
+- GAP: Support enter/exit sniff mode via gap_sniff_mode_enter/exit. gap_set_default_link_policy_settings is needed to enable sniff mode in general.
+- HIDS Device: GATT service that exposes HID reports intended for HID Devices, like keyboard and mouse.
+
+### Fixed
+- HCI: fix bug in gap_inquiry_stop that triggered additional GAP_EVENT_INQUIRY_COMPLETE instead of stopping the inquiry
 - L2CAP: fix issue with outgoing connection before read remote supported complete when other channels exist
 - L2CAP ERTM: allow SDU of szie MPS in first packet that contains L2CAP SDU Length
-- L2CAP ERTM: fix memory corruption triggered if local_mtu > mps 
+- L2CAP ERTM: fix memory corruption triggered if local_mtu > mps
+- L2CAP ERTM: fix outgoing fragment management
 - HFP: decline incoming RFCOMM connection after outgoing connection was started
+- AVRCP: fix crash on disconnect of connection established by remote
 
 ## Changes September 2018
 

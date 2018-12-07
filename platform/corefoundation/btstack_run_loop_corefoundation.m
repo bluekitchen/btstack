@@ -133,6 +133,7 @@ static void btstack_run_loop_corefoundation_add_data_source(btstack_data_source_
 	CFRunLoopSourceRef socket_run_loop = CFSocketCreateRunLoopSource ( kCFAllocatorDefault, socket, 0);
     
     // store CFSocketRef and CFRunLoopSource in struct on heap
+    memset(references, 0, sizeof(btstack_corefoundation_data_source_helper_t));
     references->socket = socket;
     references->socket_run_loop = socket_run_loop;
 

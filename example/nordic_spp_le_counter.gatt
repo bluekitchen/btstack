@@ -1,0 +1,4 @@
+PRIMARY_SERVICE, GAP_SERVICE
+CHARACTERISTIC, GAP_DEVICE_NAME, READ, "Nordic SPP Counter"
+
+#import <nordic_spp_service.gatt>

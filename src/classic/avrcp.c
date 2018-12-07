@@ -371,7 +371,6 @@ static avrcp_connection_t * avrcp_create_connection(bd_addr_t remote_addr, avrcp
         log_error("avrcp: not enough memory to create connection");
         return NULL;
     }
-    memset(connection, 0, sizeof(avrcp_connection_t));
     connection->state = AVCTP_CONNECTION_IDLE;
     connection->transaction_label = 0xFF;
     connection->max_num_fragments = 0xFF;
@@ -381,8 +380,8 @@ static avrcp_connection_t * avrcp_create_connection(bd_addr_t remote_addr, avrcp
     return connection;
 }
 
-static void avrcp_finalize_connection(avrcp_connection_t * connection){
-    btstack_linked_list_remove(&sdp_query_context->connections, (btstack_linked_item_t*) connection);
+static void avrcp_finalize_connection(avrcp_connection_t * connection, avrcp_context_t * context){
+    btstack_linked_list_remove(&context->connections, (btstack_linked_item_t*) connection);
     btstack_memory_avrcp_connection_free(connection);
 }
 
@@ -555,7 +554,7 @@ void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel,
             if (status != ERROR_CODE_SUCCESS){
                 log_info("AVRCP: SDP query failed with status 0x%02x.", status);
                 avrcp_emit_connection_established(sdp_query_context->avrcp_callback, connection->avrcp_cid, connection->remote_addr, status);
-                avrcp_finalize_connection(connection);
+                avrcp_finalize_connection(connection, sdp_query_context);
                 break;
             }
 
@@ -563,7 +562,7 @@ void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel,
                 connection->state = AVCTP_CONNECTION_IDLE;
                 log_info("AVRCP: no suitable service found");
                 avrcp_emit_connection_established(sdp_query_context->avrcp_callback, connection->avrcp_cid, connection->remote_addr, SDP_SERVICE_NOT_FOUND);
-                avrcp_finalize_connection(connection);
+                avrcp_finalize_connection(connection, sdp_query_context);
                 break;                
             } 
             connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
@@ -627,7 +626,7 @@ void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
             if (status != ERROR_CODE_SUCCESS){
                 log_info("L2CAP connection to connection %s failed. status code 0x%02x", bd_addr_to_str(event_addr), status);
                 avrcp_emit_connection_established(context->avrcp_callback, connection->avrcp_cid, event_addr, status);
-                avrcp_finalize_connection(connection);
+                avrcp_finalize_connection(connection, context);
                 break;
             }
 
@@ -651,7 +650,7 @@ void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
             connection = get_avrcp_connection_for_l2cap_signaling_cid(local_cid, context);
             if (connection){
                 avrcp_emit_connection_closed(context->avrcp_callback, connection->avrcp_cid);
-                avrcp_finalize_connection(connection);
+                avrcp_finalize_connection(connection, context);
                 break;
             }
             break;
@@ -688,7 +687,7 @@ uint8_t avrcp_connect(bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * a
     // free connection struct in case of SDP connection error
     if (status){
         log_info("AVRCP: SDP query failed with status 0x%02x.", status);
-        avrcp_finalize_connection(connection);
+        avrcp_finalize_connection(connection, context);
     }
 
     return status;
