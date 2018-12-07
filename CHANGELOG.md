@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
+- SM: generate and store ER / IR keys in TLV, unless manually set by application
+
+### Fixed
+- SM: fix internal buffer overrun during random address generation
+
+## Changes November 2018
+
+### Added
 - GAP: gap_le_connection_interval provides connection interval for conn handle
 - Nordic SPP Service Server: GATT service that emulates a serial port over BLE based on Nordic Semiconductor documentation.
 - uBlox  SPP Service Server: GATT service that emulates a serial port over BLE based on uBlox documentation.
@@ -15,10 +23,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - SM: prevent random address updates if gap_random_address_set was used
-- SM: fix internal buffer overrun during random address generation
 - SM: fix internal buffer overrun that can cause storing of bonding information to fail
 - SM: ignore Slave Security Request after sending own Pairing Request
 - L2CAP: fix use after free on disconnect if ERTM is enabled
+- HFP: Handle multiple commands/responses in single RFCOMM packet
 - Memory Pools: clear all buffers before use
 
 ## Changes October 2018
