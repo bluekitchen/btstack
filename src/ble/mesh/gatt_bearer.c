@@ -94,7 +94,6 @@ static void gatt_bearer_emit_can_send_now(void){
         if (request_can_send_now[last_sender]){
             request_can_send_now[last_sender] = 0;
             // emit can send now
-            log_info("can send now");
             uint8_t event[3];
             event[0] = HCI_EVENT_MESH_META;
             event[1] = 1;
@@ -106,7 +105,6 @@ static void gatt_bearer_emit_can_send_now(void){
 }
 
 static void gatt_bearer_request(message_type_id_t type_id){
-    log_info("request to send message type %u", (int) type_id);
     request_can_send_now[type_id] = 1;
     mesh_proxy_service_server_request_can_send_now(gatt_bearer_con_handle);
 }
@@ -162,7 +160,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     if (!client_callbacks[msg_type]) return;
                     break;
                 default:
-                    printf("gatt bearer: message type %d not supported yet\n", msg_type);
+                    log_info("gatt bearer: message type %d not supported yet", msg_type);
                     return;
             }
             pdu_segment_len = size - pos;
@@ -207,7 +205,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         gatt_bearer_send_mesh_beacon(sar_buffer.reassembly_buffer, reassembly_offset);
                         break;
                     default:
-                        printf("gatt bearer: message type %d not supported yet\n", msg_type);
+                        log_info("gatt bearer: message type %d not supported yet", msg_type);
                         return;
                 }
             }
@@ -219,10 +217,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     switch (hci_event_mesh_meta_get_subevent_code(packet)){
                         case MESH_PB_TRANSPORT_LINK_OPEN:
                         case MESH_PB_TRANSPORT_LINK_CLOSED:
-                            // Forward link open/close
                             gatt_bearer_mtu = ATT_DEFAULT_MTU;
                             gatt_bearer_con_handle  = mesh_pb_transport_link_open_event_get_pb_transport_cid(packet);
-                            // gatt_bearer_packet_handler(HCI_EVENT_PACKET, 0, packet, size);
+                            if ((*client_callbacks[MESH_MESSAGE_ID])){
+                                (*client_callbacks[MESH_MESSAGE_ID])(HCI_EVENT_PACKET, 0, packet, size);
+                            }
                             break; 
                         case MESH_SUBEVENT_CAN_SEND_NOW:
                             con_handle = little_endian_read_16(packet, 3); 
@@ -282,23 +281,11 @@ static void gatt_bearer_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint1
 }
 
 void gatt_bearer_send_mesh_message(const uint8_t * data, uint16_t data_len){
+    msg_type = MESH_MSG_TYPE_NETWORK_PDU;
     gatt_bearer_send_pdu(gatt_bearer_con_handle, data, data_len);
 }
+
 void gatt_bearer_send_mesh_beacon(const uint8_t * data, uint16_t data_len){
+    msg_type = MESH_MSG_TYPE_BEACON;
     gatt_bearer_send_pdu(gatt_bearer_con_handle, data, data_len);
 }
-
-#if 0
-void gatt_bearer_register_for_pb_adv(btstack_packet_handler_t packet_handler){
-    client_callbacks[PB_ADV_ID] = packet_handler;
-}
-
-void gatt_bearer_request_can_send_now_for_pb_adv(void){
-    gatt_bearer_request(PB_ADV_ID);
-}
-
-void gatt_bearer_send_pb_adv(const uint8_t * data, uint16_t data_len){
-    // gatt_bearer_start_advertising(data, data_len, BLUETOOTH_DATA_TYPE_PB_ADV);
-}
-#endif
-

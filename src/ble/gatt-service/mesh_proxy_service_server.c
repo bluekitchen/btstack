@@ -106,7 +106,13 @@ static uint16_t mesh_proxy_service_read_callback(hci_con_handle_t con_handle, ui
         log_error("mesh_proxy_service_read_callback: instance is null");
         return 0;
     }
-    // log_info("mesh_proxy_service_read_callback: not handled read on handle 0x%02x", attribute_handle);
+    if (attribute_handle == instance->data_out_client_configuration_descriptor_handle){
+        if (buffer && buffer_size >= 2){
+            little_endian_store_16(buffer, 0, instance->data_out_client_configuration_descriptor_value);
+        }
+        return 2;
+    }
+    log_info("mesh_proxy_service_read_callback: not handled read on handle 0x%02x", attribute_handle);
     return 0;
 }
 
@@ -140,7 +146,7 @@ static int mesh_proxy_service_write_callback(hci_con_handle_t con_handle, uint16
         }
         return 0;
     }
-    // log_info("mesh_proxy_service_write_callback: not handled write on handle 0x%02x, buffer size %d", attribute_handle, buffer_size);
+    log_info("mesh_proxy_service_write_callback: not handled write on handle 0x%02x, buffer size %d", attribute_handle, buffer_size);
     return 0;
 }
 
