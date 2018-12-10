@@ -137,6 +137,27 @@ static uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl
     return 0;
 }
 
+// mesh seq auth validation
+// TODO: support multiple devices
+#define MESH_ADDRESS_UNSASSIGNED 0xfffb
+static uint16_t mesh_seq_auth_single_src = 0xfffb;
+static uint32_t mesh_seq_auth_single_seq;
+
+static int mesh_seq_auth_validate(uint16_t src, uint32_t seq){
+    if (mesh_seq_auth_single_src == MESH_ADDRESS_UNSASSIGNED){
+        mesh_seq_auth_single_src = src;
+        mesh_seq_auth_single_src = seq;
+        return 0;
+    }
+    if (mesh_seq_auth_single_src != src){
+        return 1;
+    }
+    if (mesh_seq_auth_single_seq >= seq){
+        return 2;
+    }
+    mesh_seq_auth_single_seq = seq;
+    return 0;
+}
 
 // stub lower transport
 
@@ -613,14 +634,16 @@ static void mesh_lower_transport_process_segment( mesh_transport_pdu_t * transpo
     transport_pdu->akf_aid      = lower_transport_pdu[0];
     transport_pdu->transmic_len = lower_transport_pdu[1] & 0x80 ? 8 : 4;
 
+    // get seq_zero
+    uint16_t seq_zero =  ( big_endian_read_16(lower_transport_pdu, 1) >> 2) & 0x1fff;
+
     // get seg fields
-    uint16_t seg_zero = ( big_endian_read_16(lower_transport_pdu, 1) >> 2) & 0x1fff;
     uint8_t  seg_o    =  ( big_endian_read_16(lower_transport_pdu, 2) >> 5) & 0x001f;
     uint8_t  seg_n    =  lower_transport_pdu[3] & 0x1f;
     uint8_t   segment_len  =  lower_transport_pdu_len - 4;
     uint8_t * segment_data = &lower_transport_pdu[4];
 
-    printf("mesh_lower_transport_process_segment: seg zero %04x, seg_o %02x, seg_n %02x, transmic len: %u\n", seg_zero, seg_o, seg_n, transport_pdu->transmic_len * 8);
+    printf("mesh_lower_transport_process_segment: seq zero %04x, seg_o %02x, seg_n %02x, transmic len: %u\n", seq_zero, seg_o, seg_n, transport_pdu->transmic_len * 8);
     mesh_print_hex("Segment", segment_data, segment_len);
 
     // store segment
@@ -719,6 +742,11 @@ static void mesh_upper_transport_network_pdu_sent(mesh_network_pdu_t * network_p
 void mesh_lower_transport_received_mesage(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu){
     switch (callback_type){
         case MESH_NETWORK_PDU_RECEIVED:
+            // validate seq
+            if (mesh_seq_auth_validate(mesh_network_src(network_pdu), mesh_network_seq(network_pdu))) {
+                mesh_network_message_processed_by_higher_layer(network_pdu);
+                break;
+            }
             // add to list and go
             btstack_linked_list_add_tail(&lower_transport_incoming, (btstack_linked_item_t *) network_pdu);
             mesh_lower_transport_run();
