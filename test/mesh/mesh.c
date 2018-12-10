@@ -373,7 +373,7 @@ static void send_pts_network_messsage(int type){
     mesh_network_send(0, ctl, ttl, seq, src, dst, lower_transport_pdu_data, lower_transport_pdu_len);
 }
 
-static void send_pts_access_messsage(int type){
+static void send_pts_unsegmented_access_messsage(int type){
     uint8_t access_pdu_data[16];
 
     uint16_t src = primary_element_address;
@@ -383,8 +383,8 @@ static void send_pts_access_messsage(int type){
     switch (type){
         case 0:
             ttl = 10;
-            dest = 0x001;
-            printf("unicast ttl=10\n");
+            dest = 0xD000;
+            printf("group/virutal, dest 0xd000, ttl=10\n");
             break;
         case 1:
             dest = 0x001;
@@ -420,14 +420,72 @@ static void send_pts_access_messsage(int type){
     int access_pdu_len = 1;
     memset(access_pdu_data, 0x55, access_pdu_len);
     uint16_t netkey_index = 0;
-    uint16_t appkey_index = 0x26;
+    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
 
 
     // send as unsegmented access pdu
     mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
-    mesh_upper_transport_setup_unsegmented_access_pdu(network_pdu, netkey_index, appkey_index, ttl, src, dest, access_pdu_data, access_pdu_len);
+    int status = mesh_upper_transport_setup_unsegmented_access_pdu(network_pdu, netkey_index, appkey_index, ttl, src, dest, access_pdu_data, access_pdu_len);
+    if (status) return;
     mesh_upper_transport_send_unsegmented_access_pdu(network_pdu);
 }
+
+static void send_pts_segmented_access_messsage(int type){
+    uint8_t access_pdu_data[20];
+
+    uint16_t src = primary_element_address;
+    uint16_t dest = 0x0001;
+    uint8_t  ttl = 0;
+
+    switch (type){
+        case 0:
+            ttl = 10;
+            dest = 0xD000;
+            printf("group/virtual, dest 0xd000, ttl=10\n");
+            break;
+        case 1:
+            dest = 0x9779;
+            ttl = 10;
+            printf("group/virtual, dest 0x9779, ttl=10\n");
+            break;
+        case 2:
+            dest = 0x001;
+            ttl = 0x7f;
+            printf("unicast ttl=0x7f\n");
+            break;
+        case 3:
+            printf("virtual\n");
+            break;
+        case 4:
+            printf("group\n");
+            break;
+        case 5:
+            printf("all-proxies\n");
+            break;
+        case 6:
+            printf("all-friends\n");
+            break;
+        case 7:
+            printf("all-relays\n");
+            break;
+        case 8:
+            printf("all-nodes\n");
+            break;
+        default:
+            return;
+    }
+    int access_pdu_len = 20;
+    memset(access_pdu_data, 0x55, access_pdu_len);
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = 0; // MESH_DEVICE_KEY_INDEX;
+
+    // send as segmented access pdu
+    mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
+    int status = mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
+    if (status) return;
+    mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
+}
+
 
 static void mesh_secure_network_beacon_auth_value_calculated(void * arg){
     UNUSED(arg);
@@ -458,14 +516,17 @@ static void stdin_process(char cmd){
             send_pts_network_messsage(pts_type++);
             break;
         case '1':
-            send_pts_access_messsage(pts_type++);
+            send_pts_unsegmented_access_messsage(pts_type++);
             break;
         case '2':
+            send_pts_segmented_access_messsage(pts_type++);
+            break;
+        case '8':
             printf("Creating link to device uuid: ");
             printf_hexdump(pts_device_uuid, 16);
             pb_adv_create_link(pts_device_uuid);
             break;
-        case '3':
+        case '9':
             printf("Close link\n");
             pb_adv_close_link(1, 0);
             break;
