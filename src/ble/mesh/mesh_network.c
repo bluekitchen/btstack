@@ -630,6 +630,9 @@ uint16_t mesh_network_control(mesh_network_pdu_t * network_pdu){
 uint8_t mesh_network_ttl(mesh_network_pdu_t * network_pdu){
     return network_pdu->data[1] & 0x7f;
 }
+uint32_t mesh_network_seq(mesh_network_pdu_t * network_pdu){
+    return big_endian_read_24(network_pdu->data, 2);
+}
 uint16_t mesh_network_src(mesh_network_pdu_t * network_pdu){
     return big_endian_read_16(network_pdu->data, 5);
 }

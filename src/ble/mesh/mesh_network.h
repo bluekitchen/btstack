@@ -187,6 +187,7 @@ int mesh_network_addresses_valid(uint8_t ctl, uint16_t src, uint16_t dst);
 // Mesh Network PDU Getter
 uint16_t  mesh_network_control(mesh_network_pdu_t * network_pdu);
 uint8_t   mesh_network_ttl(mesh_network_pdu_t * network_pdu);
+uint32_t  mesh_network_seq(mesh_network_pdu_t * network_pdu);
 uint16_t  mesh_network_src(mesh_network_pdu_t * network_pdu);
 int       mesh_network_segmented(mesh_network_pdu_t * network_pdu);
 uint8_t * mesh_network_pdu_data(mesh_network_pdu_t * network_pdu);
