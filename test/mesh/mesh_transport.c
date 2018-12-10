@@ -773,6 +773,8 @@ static void mesh_upper_transport_setup_segment(mesh_transport_pdu_t * transport_
 }
 
 static void mesh_upper_transport_send_next_segment(void){
+    if (!upper_transport_outgoing_pdu) return;
+
     int ctl = mesh_transport_ctl(upper_transport_outgoing_pdu);
     uint16_t max_segment_len = ctl ? 8 : 12;    // control 8 bytes (64 bit NetMic), access 12 bytes (32 bit NetMIC)
     uint8_t  seg_n = (upper_transport_outgoing_pdu->len - 1) / max_segment_len;
