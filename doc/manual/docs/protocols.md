@@ -303,6 +303,9 @@ as soon as possible. It might happen that the event is received via
 packet handler before the *l2cap_request_can_send_now_event* function returns.
 The L2CAP_EVENT_CAN_SEND_NOW indicates a channel ID on which sending is possible.
 
+Please note that the guarantee that a packet can be sent is only valid when the event is received.
+After returning from the packet handler, BTstack might need to send itself.
+
 ### LE Data Channels
 
 The full title for LE Data Channels is actually LE Connection-Oriented Channels with LE Credit-Based Flow-Control Mode. In this mode, data is sent as Service Data Units (SDUs) that can be larger than an individual HCI LE ACL packet.
@@ -558,6 +561,9 @@ the RFCOMM send rate.
 When there is a need to send a packet, call *rcomm_request_can_send_now* 
 and wait for the reception of the RFCOMM_EVENT_CAN_SEND_NOW event 
 to send the packet, as shown in Listing [below](#lst:rfcommRequestCanSendNow).
+
+Please note that the guarantee that a packet can be sent is only valid when the event is received.
+After returning from the packet handler, BTstack might need to send itself.
 
 ~~~~ {#lst:rfcommRequestCanSendNow .c caption="{Preparing and sending data.}"}    
     void prepare_data(uint16_t rfcomm_channel_id){
