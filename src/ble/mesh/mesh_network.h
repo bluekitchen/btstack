@@ -63,6 +63,9 @@ typedef struct {
     uint16_t              netkey_index;
     // meta data transport layer
     uint16_t              appkey_index;
+    // flags: bit 0 indicates Proxy PDU
+    uint16_t              flags;
+
     // pdu
     uint16_t              len;
     uint8_t               data[MESH_NETWORK_PAYLOAD_MAX];
@@ -132,6 +135,12 @@ void mesh_network_init(void);
  */
 void mesh_network_set_higher_layer_handler(void (*packet_handler)(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu));
 
+/** 
+ * @brief Set higher layer Proxy PDU handler
+ * @param packet_handler
+ */
+void mesh_network_set_proxy_message_handler(void (*packet_handler)(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu));
+
 /**
  * @brief Mark packet as processed
  * @param newtork_pdu received via call packet_handler
@@ -198,6 +207,7 @@ uint32_t mesh_get_iv_index(void);
 
 // Testing only
 void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len);
+void mesh_network_process_proxy_message(const uint8_t * pdu_data, uint8_t pdu_len);
 void mesh_network_dump(void);
 void mesh_network_reset(void);
 
