@@ -13,6 +13,7 @@
 extern "C" int mock_process_hci_cmd(void);
 
 static mesh_network_pdu_t * received_network_pdu;
+static mesh_network_pdu_t * received_proxy_pdu;
 
 static uint8_t sent_network_pdu_data[29];
 static uint8_t sent_network_pdu_len;
@@ -115,6 +116,14 @@ static void load_network_key_nid_5e(void){
     mesh_network_key_list_add_from_provisioning_data(&provisioning_data);
 }
 
+static void load_network_key_nid_10(void){
+    mesh_provisioning_data_t provisioning_data;
+    provisioning_data.nid = 0x10;
+    btstack_parse_hex("3a4fe84a6cc2c6a766ea93f1084d4039", 16, provisioning_data.encryption_key);
+    btstack_parse_hex("f695fcce709ccface4d8b7a1e6e39d25", 16, provisioning_data.privacy_key);
+    mesh_network_key_list_add_from_provisioning_data(&provisioning_data);
+}
+
 static void load_provisioning_data_test_message(void){
     load_network_key_nid_68();
     uint8_t application_key[16];
@@ -135,6 +144,21 @@ static void test_lower_transport_callback_handler(mesh_network_callback_type_t c
         case MESH_NETWORK_PDU_SENT:
             printf("test MESH_NETWORK_PDU_SENT\n");
             mesh_lower_transport_received_mesage(MESH_NETWORK_PDU_SENT, network_pdu);
+            break;
+        default:
+            break;
+    }
+}
+
+static void test_proxy_server_callback_handler(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu){
+    switch (callback_type){
+        case MESH_NETWORK_PDU_RECEIVED:
+        printf("test MESH_PROXY_PDU_RECEIVED\n");
+            received_proxy_pdu = network_pdu;
+            break;
+        case MESH_NETWORK_PDU_SENT:
+            // printf("test MESH_PROXY_PDU_SENT\n");
+            // mesh_lower_transport_received_mesage(MESH_NETWORK_PDU_SENT, network_pdu);
             break;
         default:
             break;
@@ -163,6 +187,7 @@ TEST_GROUP(MessageTest){
         load_provisioning_data_test_message();
         mesh_network_init();
         mesh_network_set_higher_layer_handler(&test_lower_transport_callback_handler);
+        mesh_network_set_proxy_message_handler(&test_proxy_server_callback_handler);
         mesh_upper_transport_register_unsegemented_message_handler(&test_upper_transport_unsegmented_callback_handler);
         mesh_upper_transport_register_segemented_message_handler(&test_upper_transport_segmented_callback_handler);
         received_network_pdu = NULL;
@@ -664,6 +689,7 @@ TEST(MessageTest, Message18Send){
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message18_upper_transport_pdu, 1, message18_lower_transport_pdus, message18_network_pdus);
 }
 
+
 // Message 19
 // The Low Power node sends another Health Current Status message indicating that there are three faults:
 // Battery Low Warning, Power Supply Interrupted Warning, and Supply Voltage Too Low Warning.
@@ -691,6 +717,8 @@ TEST(MessageTest, Message19Send){
     mesh_upper_transport_set_seq(seq);
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message19_upper_transport_pdu, 1, message19_lower_transport_pdus, message19_network_pdus);
 }
+
+??
 
 // Message 20
 char * message20_network_pdus[] = {
@@ -850,6 +878,58 @@ TEST(MessageTest, Message24Send){
     uint8_t  szmic        = 1;
 
     mesh_set_iv_index(0x12345677);
+    mesh_upper_transport_set_seq(seq);
+    test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message24_upper_transport_pdu, 2, message24_lower_transport_pdus, message24_network_pdus);
+}
+#endif
+
+// Proxy Configuration Test
+char * proxy_config_pdus[] = {
+    (char *) "0210386bd60efbbb8b8c28512e792d3711f4b526",
+};
+char * proxy_config_lower_transport_pdus[] = {
+    (char *) "0000",
+};
+char * proxy_config_upper_transport_pdu = (char *) "ea0a00576f726c64";
+TEST(MessageTest, ProxyConfigReceive){
+    mesh_set_iv_index(0x12345678);
+    load_network_key_nid_10();
+    int i = 0;
+    char ** network_pdus = proxy_config_pdus;
+    test_network_pdu_len = strlen(network_pdus[i]) / 2;
+    btstack_parse_hex(network_pdus[i], test_network_pdu_len, test_network_pdu_data);
+    mesh_network_process_proxy_message(&test_network_pdu_data[1], test_network_pdu_len-1);
+    while (received_proxy_pdu == NULL) {
+        mock_process_hci_cmd();
+    }
+    char ** lower_transport_pdus = proxy_config_lower_transport_pdus;
+    transport_pdu_len = strlen(lower_transport_pdus[i]) / 2;
+    btstack_parse_hex(lower_transport_pdus[i], transport_pdu_len, transport_pdu_data);
+
+    uint8_t * lower_transport_pdu     = mesh_network_pdu_data(received_proxy_pdu);
+    uint8_t   lower_transport_pdu_len = mesh_network_pdu_len(received_proxy_pdu);
+
+    // printf_hexdump(lower_transport_pdu, lower_transport_pdu_len);
+
+    CHECK_EQUAL( transport_pdu_len, lower_transport_pdu_len);
+    CHECK_EQUAL_ARRAY(transport_pdu_data, lower_transport_pdu, transport_pdu_len);
+
+    // done
+    mesh_network_message_processed_by_higher_layer(received_proxy_pdu);
+    received_proxy_pdu = NULL;
+}
+
+#if 0
+TEST(MessageTest, ProxyConfigSend){
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = 0;
+    uint8_t  ttl          = 3;
+    uint16_t src          = 0x1234;
+    uint16_t dest         = 0x9736;
+    uint32_t seq          = 0x07080d;
+    uint8_t  szmic        = 1;
+
+    mesh_set_iv_index(0x12345678);
     mesh_upper_transport_set_seq(seq);
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message24_upper_transport_pdu, 2, message24_lower_transport_pdus, message24_network_pdus);
 }
