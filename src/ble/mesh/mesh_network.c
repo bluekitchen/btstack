@@ -314,6 +314,32 @@ static void mesh_network_send_a(mesh_network_pdu_t * network_pdu){
     btstack_crypto_ccm_encrypt_block(&mesh_network_crypto_request.ccm, cypher_len, &network_pdu->data[7], &network_pdu->data[7], &mesh_network_send_b, network_pdu);
 }
 
+void mesh_network_message_processed_by_higher_layer(mesh_network_pdu_t * network_pdu){
+#ifdef ENABLE_MESH_RELAY
+    uint8_t ctl_ttl = network_pdu->data[1];
+    uint8_t ctl     = ctl_ttl >> 7;
+    uint8_t ttl     = ctl_ttl & 0x7f;
+    uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
+    uint16_t src    = big_endian_read_16(network_pdu->data, 5);
+
+    // check if address matches elements on our node and TTL >= 2
+    if (((src < mesh_network_primary_address) || (src > (mesh_network_primary_address + mesh_network_num_elements))) && (ttl >= 2)){
+        // prepare pdu for resending
+        network_pdu->len    -= net_mic_len;
+        network_pdu->data[1] = (ctl << 7) | (ttl - 1);
+
+        // queue up
+        btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);
+
+        // go
+        mesh_network_run();
+
+        return;
+    }
+#endif
+    btstack_memory_mesh_network_pdu_free(network_pdu);
+}
+
 static void process_network_pdu_done(void){
     btstack_memory_mesh_network_pdu_free(network_pdu_in_validation);
     network_pdu_in_validation = NULL;
@@ -360,10 +386,22 @@ static void process_network_pdu_validate_d(void * arg){
         uint16_t dst = big_endian_read_16(network_pdu->data, 7);
         int valid = mesh_network_addresses_valid(ctl, src, dst);
         if (valid){
+
+            // check cache
+            uint32_t hash = mesh_network_cache_hash(network_pdu);
+            printf("Hash: %08x\n", hash);
+            if (mesh_network_cache_find(hash)){
+                // found in cache, drop
+                printf("Found in cache -> drop packet\n");
+                btstack_memory_mesh_network_pdu_free(network_pdu);
+                process_network_pdu_done();
+                return;
+            }
+
             // set netkey_index
             network_pdu->netkey_index = current_network_key->netkey_index;
+
             // store in network cache
-            uint32_t hash = mesh_network_cache_hash(network_pdu);
             mesh_network_cache_add(hash);
 
             // forward to lower transport layer. message is freed by call to mesh_network_message_processed_by_upper_layer
@@ -382,32 +420,6 @@ static void process_network_pdu_validate_d(void * arg){
     }
 }
 
-void mesh_network_message_processed_by_higher_layer(mesh_network_pdu_t * network_pdu){
-#ifdef ENABLE_MESH_RELAY
-    uint8_t ctl_ttl = network_pdu->data[1];
-    uint8_t ctl     = ctl_ttl >> 7;
-    uint8_t ttl     = ctl_ttl & 0x7f;
-    uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
-    uint16_t src    = big_endian_read_16(network_pdu->data, 5);
-
-    // check if address matches elements on our node and TTL >= 2
-    if (((src < mesh_network_primary_address) || (src > (mesh_network_primary_address + mesh_network_num_elements))) && (ttl >= 2)){
-        // prepare pdu for resending
-        network_pdu->len    -= net_mic_len;
-        network_pdu->data[1] = (ctl << 7) | (ttl - 1);
-
-        // queue up
-        btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);
-
-        // go
-        mesh_network_run();
-
-        return;
-    }
-#endif
-    btstack_memory_mesh_network_pdu_free(network_pdu);
-}
-
 static void process_network_pdu_validate_b(void * arg){
     mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
 
@@ -421,16 +433,6 @@ static void process_network_pdu_validate_b(void * arg){
         network_pdu->data[1+i] = network_pdu_in_validation->data[1+i] ^ obfuscation_block[i];
     }
 
-    // check cache
-    uint32_t hash = mesh_network_cache_hash(network_pdu);
-    printf("Hash: %08x\n", hash);
-    if (mesh_network_cache_find(hash)){
-        // found in cache, drop
-        printf("Found in cache -> drop packet\n");
-        btstack_memory_mesh_network_pdu_free(network_pdu);
-        process_network_pdu_done();
-        return;
-    }
 
     // create network nonce
     mesh_network_create_nonce(network_nonce, network_pdu, global_iv_index);
