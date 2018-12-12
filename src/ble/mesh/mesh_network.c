@@ -370,54 +370,56 @@ static void process_network_pdu_validate_d(void * arg){
     printf("Decrypted: ");
     printf_hexdump(network_pdu->data, network_pdu->len);
 
-    // compare nic to nic in data
-    if (memcmp(net_mic, &network_pdu_in_validation->data[network_pdu->len-net_mic_len], net_mic_len) == 0){
-    
-        // remove NetMIC from payload
-        network_pdu->len -= net_mic_len;
-
-        // match
-        printf("NetMIC matches\n");
-
-        printf("TTL: 0x%02x\n", network_pdu->data[1] & 0x7f);
-
-        // validate packet
-        uint16_t src = big_endian_read_16(network_pdu->data, 5);
-        uint16_t dst = big_endian_read_16(network_pdu->data, 7);
-        int valid = mesh_network_addresses_valid(ctl, src, dst);
-        if (valid){
-
-            // check cache
-            uint32_t hash = mesh_network_cache_hash(network_pdu);
-            printf("Hash: %08x\n", hash);
-            if (mesh_network_cache_find(hash)){
-                // found in cache, drop
-                printf("Found in cache -> drop packet\n");
-                btstack_memory_mesh_network_pdu_free(network_pdu);
-                process_network_pdu_done();
-                return;
-            }
-
-            // set netkey_index
-            network_pdu->netkey_index = current_network_key->netkey_index;
-
-            // store in network cache
-            mesh_network_cache_add(hash);
-
-            // forward to lower transport layer. message is freed by call to mesh_network_message_processed_by_upper_layer
-            (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_RECEIVED, network_pdu);
-
-        } else {
-
-            btstack_memory_mesh_network_pdu_free(network_pdu);
-
-        }
-        process_network_pdu_done();
-    } else {
+    // compare calcualted nic to nic in data
+    if (memcmp(net_mic, &network_pdu_in_validation->data[network_pdu->len-net_mic_len], net_mic_len) != 0){
         // fail
-        printf("NetMIC maismatch, try next key\n");
+        printf("NetMIC mismatch, try next key\n");
         process_network_pdu_validate(network_pdu);
+        return;
+    }    
+
+    // remove NetMIC from payload
+    network_pdu->len -= net_mic_len;
+
+    // match
+    printf("NetMIC matches\n");
+
+    printf("TTL: 0x%02x\n", network_pdu->data[1] & 0x7f);
+
+    // validate src/dest addresses
+    uint16_t src = big_endian_read_16(network_pdu->data, 5);
+    uint16_t dst = big_endian_read_16(network_pdu->data, 7);
+    int valid = mesh_network_addresses_valid(ctl, src, dst);
+    if (!valid){
+        printf("Address invalid\n");
+        btstack_memory_mesh_network_pdu_free(network_pdu);
+        process_network_pdu_done();
+        return;
     }
+
+    // check cache
+    uint32_t hash = mesh_network_cache_hash(network_pdu);
+    printf("Hash: %08x\n", hash);
+    if (mesh_network_cache_find(hash)){
+        // found in cache, drop
+        printf("Found in cache -> drop packet\n");
+        btstack_memory_mesh_network_pdu_free(network_pdu);
+        process_network_pdu_done();
+        return;
+    }
+
+    // set netkey_index
+    network_pdu->netkey_index = current_network_key->netkey_index;
+
+    // store in network cache
+    mesh_network_cache_add(hash);
+
+    // forward to lower transport layer. message is freed by call to mesh_network_message_processed_by_upper_layer
+    (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_RECEIVED, network_pdu);
+
+
+    // done
+    process_network_pdu_done();
 }
 
 static void process_network_pdu_validate_b(void * arg){
@@ -432,7 +434,6 @@ static void process_network_pdu_validate_b(void * arg){
     for (i=0;i<6;i++){
         network_pdu->data[1+i] = network_pdu_in_validation->data[1+i] ^ obfuscation_block[i];
     }
-
 
     // create network nonce
     mesh_network_create_nonce(network_nonce, network_pdu, global_iv_index);
