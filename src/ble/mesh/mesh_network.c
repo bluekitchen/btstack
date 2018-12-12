@@ -249,6 +249,18 @@ static void mesh_proxy_create_nonce(uint8_t * nonce, const mesh_network_pdu_t * 
 
 // NID/IVI | obfuscated (CTL/TTL, SEQ (24), SRC (16) ), encrypted ( DST(16), TransportPDU), MIC(32 or 64)
 
+static void mesh_network_send_d(mesh_network_pdu_t * network_pdu){
+
+    // add to queue
+    btstack_linked_list_add_tail(&network_pdus_outgoing, (btstack_linked_item_t *) network_pdu);
+
+    // request to send
+    adv_bearer_request_can_send_now_for_mesh_message();
+
+    // go
+    mesh_network_run();
+}
+
 // new
 static void mesh_network_send_c(void *arg){
     mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
@@ -265,15 +277,8 @@ static void mesh_network_send_c(void *arg){
     // crypto done
     mesh_crypto_active = 0;
 
-
-    // add to queue
-    btstack_linked_list_add_tail(&network_pdus_outgoing, (btstack_linked_item_t *) network_pdu);
-
-    // request to send
-    adv_bearer_request_can_send_now_for_mesh_message();
-
-    // go
-    mesh_network_run();
+    // done
+    (network_pdu->callback)(network_pdu);
 }
 
 static void mesh_network_send_b(void *arg){
@@ -301,6 +306,9 @@ static void mesh_network_send_b(void *arg){
 }
 
 static void mesh_network_send_a(mesh_network_pdu_t * network_pdu){
+
+    mesh_crypto_active = 1;
+
     // lookup network by netkey_index
     current_network_key = mesh_network_key_list_get(network_pdu->netkey_index);
     if (!current_network_key) {
@@ -313,9 +321,16 @@ static void mesh_network_send_a(mesh_network_pdu_t * network_pdu){
     }
 
     // get network nonce
-    mesh_network_create_nonce(network_nonce, network_pdu, global_iv_index); 
-    printf("TX-NetworkNonce:  ");
-    printf_hexdump(network_nonce, 13);
+    if (network_pdu->flags & 1){
+        mesh_proxy_create_nonce(network_nonce, network_pdu, global_iv_index); 
+        printf("TX-ProxyNonce:  ");
+        printf_hexdump(network_nonce, 13);
+    } else {
+        mesh_network_create_nonce(network_nonce, network_pdu, global_iv_index); 
+        printf("TX-NetworkNonce:  ");
+        printf_hexdump(network_nonce, 13);
+    }
+
     printf("TX-EncryptionKey: ");
     printf_hexdump(current_network_key->encryption_key, 16);
 
@@ -341,6 +356,7 @@ void mesh_network_message_processed_by_higher_layer(mesh_network_pdu_t * network
         network_pdu->data[1] = (ctl << 7) | (ttl - 1);
 
         // queue up
+        network_pdu->callback = &mesh_network_send_d;
         btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);
 
         // go
@@ -517,6 +533,10 @@ static void process_network_pdu(mesh_network_pdu_t * network_pdu){
     process_network_pdu_validate(network_pdu);
 }
 
+// static void mesh_network_encrypt_and_obfuscate(mesh_network_pdu_t * network_pdu, void (*callback)(mesh_network_pdu_t * network_pdu)){
+//     network_pdu->callback = callback;
+// }
+
 static void mesh_network_run(void){
     if (mesh_crypto_active) return;
 
@@ -532,7 +552,6 @@ static void mesh_network_run(void){
 
     if (!btstack_linked_list_empty(&network_pdus_queued)){
         // get queued network pdu and start processing
-        mesh_crypto_active = 1;
         mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_queued);
         mesh_network_send_a(network_pdu);
         return;
@@ -634,6 +653,25 @@ void mesh_network_process_proxy_message(const uint8_t * pdu_data, uint8_t pdu_le
 void mesh_network_send_pdu(mesh_network_pdu_t * network_pdu){
     printf("NetworkPDU(unencrypted): ");
     printf_hexdump(network_pdu->data, network_pdu->len);
+
+    // setup callback
+    network_pdu->callback = &mesh_network_send_d;
+    network_pdu->flags    = 0;
+
+    // queue up
+    btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);
+
+    // go
+    mesh_network_run();
+}
+
+void mesh_network_encrypt_proxy_message(mesh_network_pdu_t * network_pdu, void (* callback)(mesh_network_pdu_t * callback)){
+    printf("ProxyPDU(unencrypted): ");
+    printf_hexdump(network_pdu->data, network_pdu->len);
+
+    // setup callback
+    network_pdu->callback = callback;
+    network_pdu->flags    = 1;
 
     // queue up
     btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);

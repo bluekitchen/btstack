@@ -718,8 +718,6 @@ TEST(MessageTest, Message19Send){
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message19_upper_transport_pdu, 1, message19_lower_transport_pdus, message19_network_pdus);
 }
 
-??
-
 // Message 20
 char * message20_network_pdus[] = {
     (char *) "e85cca51e2e8998c3dc87344a16c787f6b08cc897c941a5368",
@@ -771,6 +769,7 @@ TEST(MessageTest, Message21Send){
     mesh_upper_transport_set_seq(seq);
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message21_upper_transport_pdu, 1, message21_lower_transport_pdus, message21_network_pdus);
 }
+#endif
 
 #if 0
 // Message 22
@@ -809,7 +808,6 @@ TEST(MessageTest, Message22Send){
     mesh_upper_transport_set_seq(seq);
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message22_upper_transport_pdu, 1, message22_lower_transport_pdus, message22_network_pdus);
 }
-#endif
 
 #if 0
 // Message 23
@@ -919,21 +917,40 @@ TEST(MessageTest, ProxyConfigReceive){
     received_proxy_pdu = NULL;
 }
 
-#if 0
+static void test_proxy_callback_handler(mesh_network_pdu_t * network_pdu){
+    received_proxy_pdu = network_pdu;
+}
+
 TEST(MessageTest, ProxyConfigSend){
     uint16_t netkey_index = 0;
-    uint16_t appkey_index = 0;
-    uint8_t  ttl          = 3;
-    uint16_t src          = 0x1234;
-    uint16_t dest         = 0x9736;
-    uint32_t seq          = 0x07080d;
-    uint8_t  szmic        = 1;
-
+    uint8_t  ctl          = 1;
+    uint8_t  ttl          = 0;
+    uint16_t src          = 1;
+    uint16_t dest         = 0;
+    uint32_t seq          = 1;
+    uint8_t  nid          = 0x10;
     mesh_set_iv_index(0x12345678);
-    mesh_upper_transport_set_seq(seq);
-    test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message24_upper_transport_pdu, 2, message24_lower_transport_pdus, message24_network_pdus);
+    load_network_key_nid_10();
+    mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
+    uint8_t data[] = { 0 , 0 };
+    mesh_network_setup_pdu(network_pdu, netkey_index, nid, ctl, ttl, seq, src, dest, data, sizeof(data));
+    mesh_network_encrypt_proxy_message(network_pdu, &test_proxy_callback_handler);
+    while (received_proxy_pdu == NULL) {
+        mock_process_hci_cmd();
+    }
+    uint8_t * proxy_pdu_data  = received_proxy_pdu->data;
+    uint8_t   proxy_pdu_len   = received_proxy_pdu->len;
+
+    int i = 0;
+    char ** network_pdus = proxy_config_pdus;
+    transport_pdu_len = strlen(network_pdus[i]) / 2;
+    btstack_parse_hex(network_pdus[i], transport_pdu_len, transport_pdu_data);
+
+    CHECK_EQUAL( transport_pdu_len-1, proxy_pdu_len);
+    CHECK_EQUAL_ARRAY(transport_pdu_data+1, proxy_pdu_data, transport_pdu_len-1);
+
+    received_proxy_pdu = NULL;
 }
-#endif
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
