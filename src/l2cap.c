@@ -1524,82 +1524,89 @@ static void l2cap_run(void){
                 break;
         }
 
+ 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
 
-        // check if we can still send
+        // handle channel finalize on L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE
         if (!channel) continue;
-        if (channel->con_handle == HCI_CON_HANDLE_INVALID) continue;
-        if (!hci_can_send_acl_packet_now(channel->con_handle)) continue;
 
-        // send if we have more data and remote windows isn't full yet
-        log_info("unacked_frames %u < min( stored frames %u, remote tx window size %u)?", channel->unacked_frames, channel->num_stored_tx_frames, channel->remote_tx_window_size);
-        if (channel->unacked_frames < btstack_min(channel->num_stored_tx_frames, channel->remote_tx_window_size)){
-            channel->unacked_frames++;
-            int index = channel->tx_send_index;
-            channel->tx_send_index++;
-            if (channel->tx_send_index >= channel->num_tx_buffers){
-                channel->tx_send_index = 0;          
-            }
-            l2cap_ertm_send_information_frame(channel, index, 0);   // final = 0
-            continue;
-        }
+        // ERTM mode
+        if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
 
-        if (channel->send_supervisor_frame_receiver_ready){
-            channel->send_supervisor_frame_receiver_ready = 0;
-            log_info("Send S-Frame: RR %u, final %u", channel->req_seq, channel->set_final_bit_after_packet_with_poll_bit_set);
-            uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY, 0,  channel->set_final_bit_after_packet_with_poll_bit_set, channel->req_seq);
-            channel->set_final_bit_after_packet_with_poll_bit_set = 0;
-            l2cap_ertm_send_supervisor_frame(channel, control);
-            continue;
-        }
-        if (channel->send_supervisor_frame_receiver_ready_poll){
-            channel->send_supervisor_frame_receiver_ready_poll = 0;
-            log_info("Send S-Frame: RR %u with poll=1 ", channel->req_seq);
-            uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY, 1, 0, channel->req_seq);
-            l2cap_ertm_send_supervisor_frame(channel, control);
-            continue;
-        }
-        if (channel->send_supervisor_frame_receiver_not_ready){
-            channel->send_supervisor_frame_receiver_not_ready = 0;
-            log_info("Send S-Frame: RNR %u", channel->req_seq);
-            uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY, 0, 0, channel->req_seq);
-            l2cap_ertm_send_supervisor_frame(channel, control);
-            continue;
-        }
-        if (channel->send_supervisor_frame_reject){
-            channel->send_supervisor_frame_reject = 0;
-            log_info("Send S-Frame: REJ %u", channel->req_seq);
-            uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT, 0, 0, channel->req_seq);
-            l2cap_ertm_send_supervisor_frame(channel, control);
-            continue;
-        }
-        if (channel->send_supervisor_frame_selective_reject){
-            channel->send_supervisor_frame_selective_reject = 0;
-            log_info("Send S-Frame: SREJ %u", channel->expected_tx_seq);
-            uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_SREJ_SELECTIVE_REJECT, 0, channel->set_final_bit_after_packet_with_poll_bit_set, channel->expected_tx_seq);
-            channel->set_final_bit_after_packet_with_poll_bit_set = 0;
-            l2cap_ertm_send_supervisor_frame(channel, control);
-            continue;
-        }
+            // check if we can still send
+            if (channel->con_handle == HCI_CON_HANDLE_INVALID) continue;
+            if (!hci_can_send_acl_packet_now(channel->con_handle)) continue;
 
-        if (channel->srej_active){
-            int i;
-            for (i=0;i<channel->num_tx_buffers;i++){
-                l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[i];
-                if (tx_state->retransmission_requested) {
-                    tx_state->retransmission_requested = 0;
-                    uint8_t final = channel->set_final_bit_after_packet_with_poll_bit_set;
-                    channel->set_final_bit_after_packet_with_poll_bit_set = 0;
-                    l2cap_ertm_send_information_frame(channel, i, final);
-                    break;
+            // send if we have more data and remote windows isn't full yet
+            log_debug("unacked_frames %u < min( stored frames %u, remote tx window size %u)?", channel->unacked_frames, channel->num_stored_tx_frames, channel->remote_tx_window_size);
+            if (channel->unacked_frames < btstack_min(channel->num_stored_tx_frames, channel->remote_tx_window_size)){
+                channel->unacked_frames++;
+                int index = channel->tx_send_index;
+                channel->tx_send_index++;
+                if (channel->tx_send_index >= channel->num_tx_buffers){
+                    channel->tx_send_index = 0;
                 }
-            }
-            if (i == channel->num_tx_buffers){
-                // no retransmission request found
-                channel->srej_active = 0;
-            } else {
-                // packet was sent
+                l2cap_ertm_send_information_frame(channel, index, 0);   // final = 0
                 continue;
+            }
+
+            if (channel->send_supervisor_frame_receiver_ready){
+                channel->send_supervisor_frame_receiver_ready = 0;
+                log_info("Send S-Frame: RR %u, final %u", channel->req_seq, channel->set_final_bit_after_packet_with_poll_bit_set);
+                uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY, 0,  channel->set_final_bit_after_packet_with_poll_bit_set, channel->req_seq);
+                channel->set_final_bit_after_packet_with_poll_bit_set = 0;
+                l2cap_ertm_send_supervisor_frame(channel, control);
+                continue;
+            }
+            if (channel->send_supervisor_frame_receiver_ready_poll){
+                channel->send_supervisor_frame_receiver_ready_poll = 0;
+                log_info("Send S-Frame: RR %u with poll=1 ", channel->req_seq);
+                uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY, 1, 0, channel->req_seq);
+                l2cap_ertm_send_supervisor_frame(channel, control);
+                continue;
+            }
+            if (channel->send_supervisor_frame_receiver_not_ready){
+                channel->send_supervisor_frame_receiver_not_ready = 0;
+                log_info("Send S-Frame: RNR %u", channel->req_seq);
+                uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY, 0, 0, channel->req_seq);
+                l2cap_ertm_send_supervisor_frame(channel, control);
+                continue;
+            }
+            if (channel->send_supervisor_frame_reject){
+                channel->send_supervisor_frame_reject = 0;
+                log_info("Send S-Frame: REJ %u", channel->req_seq);
+                uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT, 0, 0, channel->req_seq);
+                l2cap_ertm_send_supervisor_frame(channel, control);
+                continue;
+            }
+            if (channel->send_supervisor_frame_selective_reject){
+                channel->send_supervisor_frame_selective_reject = 0;
+                log_info("Send S-Frame: SREJ %u", channel->expected_tx_seq);
+                uint16_t control = l2cap_encanced_control_field_for_supevisor_frame( L2CAP_SUPERVISORY_FUNCTION_SREJ_SELECTIVE_REJECT, 0, channel->set_final_bit_after_packet_with_poll_bit_set, channel->expected_tx_seq);
+                channel->set_final_bit_after_packet_with_poll_bit_set = 0;
+                l2cap_ertm_send_supervisor_frame(channel, control);
+                continue;
+            }
+
+            if (channel->srej_active){
+                int i;
+                for (i=0;i<channel->num_tx_buffers;i++){
+                    l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[i];
+                    if (tx_state->retransmission_requested) {
+                        tx_state->retransmission_requested = 0;
+                        uint8_t final = channel->set_final_bit_after_packet_with_poll_bit_set;
+                        channel->set_final_bit_after_packet_with_poll_bit_set = 0;
+                        l2cap_ertm_send_information_frame(channel, i, final);
+                        break;
+                    }
+                }
+                if (i == channel->num_tx_buffers){
+                    // no retransmission request found
+                    channel->srej_active = 0;
+                } else {
+                    // packet was sent
+                    continue;
+                }
             }
         }
 #endif
