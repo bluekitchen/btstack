@@ -266,6 +266,7 @@ static void pbap_handle_can_send_now(void){
     uint8_t  challenge_response[36];
     int i;
     uint16_t phone_number_len;
+    int done;
 
     MD5_CTX md5_ctx;
 
@@ -461,7 +462,7 @@ static void pbap_handle_can_send_now(void){
             }
 
             // done?
-            int done = pbap_client->current_folder[pbap_client->set_path_offset] == '\0';
+            done = pbap_client->current_folder[pbap_client->set_path_offset] == '\0';
 
             // status
             log_info("Path element '%s', done %u", path_element, done);
@@ -521,7 +522,7 @@ static void pbap_process_srm_headers(pbap_client_t * context, uint8_t *packet, u
     for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(context->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
         uint8_t hi = obex_iterator_get_hi(&it);
         uint16_t     data_len = obex_iterator_get_data_len(&it);
-        const uint8_t  * data = data =  obex_iterator_get_data(&it);
+        const uint8_t  * data = obex_iterator_get_data(&it);
         switch (hi){
             case OBEX_HEADER_SINGLE_RESPONSE_MODE:
                 if (data_len != 1) break;
@@ -745,7 +746,7 @@ static void pbap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *
                     for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(pbap_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
                         uint8_t hi = obex_iterator_get_hi(&it);
                         uint16_t     data_len = obex_iterator_get_data_len(&it);
-                        const uint8_t  * data = data =  obex_iterator_get_data(&it);
+                        const uint8_t  * data = obex_iterator_get_data(&it);
                         switch (hi){
                             case OBEX_HEADER_BODY:
                             case OBEX_HEADER_END_OF_BODY:
