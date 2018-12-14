@@ -962,7 +962,7 @@ static hfp_command_t parse_command(const char * line_buffer, int isHandsFree){
             return HFP_CMD_HF_CONFIRMED_CODEC;
         }
     } 
-    
+
     if (strncmp(line_buffer+offset, "AT+", 3) == 0){
         log_info("process unknown HF command %s \n", line_buffer);
         return HFP_CMD_UNKNOWN;
@@ -1006,7 +1006,6 @@ static int hfp_parser_found_separator(hfp_connection_t * hfp_connection, uint8_t
                             byte == '-' || byte == '"' ||  byte == '?'|| byte == '=';
     return found_separator;
 }
-
 static void hfp_parser_next_state(hfp_connection_t * hfp_connection, uint8_t byte){
     hfp_connection->line_size = 0;
     if (hfp_parser_is_end_of_line(byte)){
@@ -1187,7 +1186,7 @@ void hfp_parse(hfp_connection_t * hfp_connection, uint8_t byte, int isHandsFree)
                 case HFP_CMD_RETRIEVE_AG_INDICATORS:
                     hfp_connection->ag_indicators[hfp_connection->parser_item_index].max_range = btstack_atoi((char *)hfp_connection->line_buffer);
                     hfp_connection->parser_item_index++;
-                    hfp_connection->ag_indicators_nr = hfp_connection->parser_item_index;
+                    hfp_connection->ag_indicators_nr++;
                     log_info("%s)\n", hfp_connection->line_buffer);
                     break;
                 default:

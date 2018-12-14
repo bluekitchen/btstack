@@ -67,7 +67,7 @@ const uint8_t   rfcomm_channel_nr = 1;
 const char hfp_hf_service_name[] = "HFP HF Demo";
 
 #ifdef HAVE_BTSTACK_STDIN
-static const char * device_addr_string = "00:1B:DC:08:0A:A5";
+static const char * device_addr_string = "6C:72:E7:10:22:EE";
 #endif
 
 static bd_addr_t device_addr;
@@ -507,7 +507,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             }
                             break;
                         case HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED:
-                            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator '%s' (index: %d) to: %d\n", (const char*) &event[5], event[3], event[4]);
+                            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator (index: %d) to: %d of range [%d, %d], name '%s'\n", 
+                                hfp_subevent_ag_indicator_status_changed_get_indicator_index(event), 
+                                hfp_subevent_ag_indicator_status_changed_get_indicator_status(event),
+                                hfp_subevent_ag_indicator_status_changed_get_indicator_min_range(event),
+                                hfp_subevent_ag_indicator_status_changed_get_indicator_max_range(event),
+                                (const char*) hfp_subevent_ag_indicator_status_changed_get_indicator_name(event));
                             break;
                         case HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED:
                             printf("NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", event[3], event[4], (char *) &event[5]);

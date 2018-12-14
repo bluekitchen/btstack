@@ -360,14 +360,21 @@ static int hfp_hf_send_clcc(uint16_t cid){
 
 static void hfp_emit_ag_indicator_event(btstack_packet_handler_t callback, hfp_ag_indicator_t indicator){
     if (!callback) return;
-    uint8_t event[5+HFP_MAX_INDICATOR_DESC_SIZE+1];
-    event[0] = HCI_EVENT_HFP_META;
-    event[1] = sizeof(event) - 2;
-    event[2] = HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED;
-    event[3] = indicator.index; 
-    event[4] = indicator.status;
-    strncpy((char*)&event[5], indicator.name, HFP_MAX_INDICATOR_DESC_SIZE);
-    event[5+HFP_MAX_INDICATOR_DESC_SIZE] = 0;
+    uint8_t event[10+HFP_MAX_INDICATOR_DESC_SIZE+1];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_HFP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED;
+    event[pos++] = indicator.index; 
+    event[pos++] = indicator.status;
+    event[pos++] = indicator.min_range;
+    event[pos++] = indicator.max_range;
+    event[pos++] = indicator.mandatory;
+    event[pos++] = indicator.enabled;
+    event[pos++] = indicator.status_changed;
+    strncpy((char*)&event[pos], indicator.name, HFP_MAX_INDICATOR_DESC_SIZE);
+    pos += HFP_MAX_INDICATOR_DESC_SIZE;
+    event[pos] = 0;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -989,7 +996,6 @@ static int hfp_parser_is_end_of_line(uint8_t byte){
 
 static void hfp_hf_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);    // ok: only called with RFCOMM_DATA_PACKET
-
     // assertion: size >= 1 as rfcomm.c does not deliver empty packets
     if (size < 1) return;
 
@@ -1000,12 +1006,12 @@ static void hfp_hf_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, ui
 
     // process messages byte-wise
     int pos;
-    for (pos = 0; pos < size ; pos++){
+    for (pos = 0; pos < size; pos++){
         hfp_parse(hfp_connection, packet[pos], 1);
 
-        // parse until end of line
+        // parse until end of line "\r\n"
         if (!hfp_parser_is_end_of_line(packet[pos])) continue;
-
+        
         int value;
         int i;
         switch (hfp_connection->command){
@@ -1083,6 +1089,13 @@ static void hfp_hf_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, ui
                     }
                 }
                 break;
+            case HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS:
+            case HFP_CMD_RETRIEVE_AG_INDICATORS:
+                for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
+                    hfp_emit_ag_indicator_event(hfp_hf_callback, hfp_connection->ag_indicators[i]);
+                }
+                hfp_connection->command = HFP_CMD_NONE;
+                break; 
             default:
                 break;
         }

@@ -1140,10 +1140,15 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_COMPLETE                              0x05
 
 /**
- * @format 111T
+ * @format 11111111T
  * @param subevent_code
  * @param indicator_index
  * @param indicator_status
+ * @param indicator_min_range
+ * @param indicator_max_range
+ * @param indicator_mandatory
+ * @param indicator_enabled
+ * @param indicator_status_changed
  * @param indicator_name
  */
 #define HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED           0x06

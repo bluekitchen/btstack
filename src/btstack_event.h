@@ -3748,13 +3748,58 @@ static inline uint8_t hfp_subevent_ag_indicator_status_changed_get_indicator_sta
     return event[4];
 }
 /**
+ * @brief Get field indicator_min_range from event HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED
+ * @param event packet
+ * @return indicator_min_range
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_ag_indicator_status_changed_get_indicator_min_range(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field indicator_max_range from event HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED
+ * @param event packet
+ * @return indicator_max_range
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_ag_indicator_status_changed_get_indicator_max_range(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field indicator_mandatory from event HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED
+ * @param event packet
+ * @return indicator_mandatory
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_ag_indicator_status_changed_get_indicator_mandatory(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field indicator_enabled from event HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED
+ * @param event packet
+ * @return indicator_enabled
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_ag_indicator_status_changed_get_indicator_enabled(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field indicator_status_changed from event HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED
+ * @param event packet
+ * @return indicator_status_changed
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_ag_indicator_status_changed_get_indicator_status_changed(const uint8_t * event){
+    return event[9];
+}
+/**
  * @brief Get field indicator_name from event HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED
  * @param event packet
  * @return indicator_name
  * @note: btstack_type T
  */
 static inline const char * hfp_subevent_ag_indicator_status_changed_get_indicator_name(const uint8_t * event){
-    return (const char *) &event[5];
+    return (const char *) &event[10];
 }
 
 /**
