@@ -1090,7 +1090,6 @@ static void hfp_hf_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, ui
                 }
                 break;
             case HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS:
-            case HFP_CMD_RETRIEVE_AG_INDICATORS:
                 for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
                     hfp_emit_ag_indicator_event(hfp_hf_callback, hfp_connection->ag_indicators[i]);
                 }
