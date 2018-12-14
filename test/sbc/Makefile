@@ -37,7 +37,8 @@ COMMON += \
 
 COMMON_OBJ  = $(COMMON:.c=.o) 
 
-SBC_TESTS = sbc_decoder_test msbc_encoder_test 
+SBC_TESTS = sbc_decoder_test msbc_encoder_test pklg_msbc_test
+# sco_cvsd_test
 #sbc_decoder_sine
 
 all: ${SBC_TESTS}
@@ -46,6 +47,9 @@ sbc_decoder_test: ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${COMMON_OBJ} sbc_decode
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 msbc_encoder_test: ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${COMMON_OBJ} msbc_encoder_test.o  
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+pklg_msbc_test: ${SBC_DECODER_OBJ} ${COMMON_OBJ} pklg_msbc_test.o  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 data_sine_stereo_sbc.h: data/sine-stereo.sbc
@@ -85,5 +89,12 @@ pytest:
 	./sbc_encoder_test.py data/fanfare-stereo.wav 16 4 31 2 data/fanfare-4sb-stereo.sbc
 	./sbc_encoder_test.py data/fanfare-stereo.wav 16 8 64 2 data/fanfare-8sb-stereo.sbc
 
+pklg-test: pklg_msbc_test
+	./pklg_msbc_test pklg/test1
+	./pklg_msbc_test pklg/test2
+	./pklg_msbc_test pklg/test3
+	./pklg_msbc_test pklg/test4
+	./pklg_msbc_test pklg/test5
+
 clean:
-	rm -f *.pyc *.wav *.sbc data/*-decoded.wav data/*-encoded.sbc *.o $(SBC_TESTS) *.dSYM *_test data_*.h
+	rm -f *.pyc *.wav *.sbc data/*-decoded.wav data/*-encoded.sbc *.o $(SBC_TESTS) *.dSYM *_test data_*.h pklg/*.wav
