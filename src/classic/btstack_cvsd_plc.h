@@ -70,6 +70,7 @@ typedef struct cvsd_plc_state {
     // summary of processed good and bad frames
     int good_frames_nr;
     int bad_frames_nr;
+    int zero_frames_nr;
     int frame_count;
 } btstack_cvsd_plc_state_t;
 

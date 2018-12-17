@@ -157,4 +157,6 @@ int main (int argc, const char * argv[]){
 
     wav_writer_close();
     close(fd);
+
+    btstack_cvsd_dump_statistics(&plc_state);
 }
