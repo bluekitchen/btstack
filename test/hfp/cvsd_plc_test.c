@@ -235,8 +235,6 @@ static void fprintf_plot_history(FILE * oct_file, char * name, int data_len, int
 
 TEST(CVSD_PLC, CountEqBytes){
     // init cvsd_fs in plc_state
-    plc_state.cvsd_fs = audio_samples_per_frame;
-
     float val, sf;
     int i, x0, x1;
 
@@ -258,7 +256,7 @@ TEST(CVSD_PLC, CountEqBytes){
     fprintf_plot_history(oct_file, name, hist_len, plc_state.hist);
     
     plc_state.bestlag += CVSD_M;
-    sf = btstack_cvsd_plc_amplitude_match(&plc_state, plc_state.hist, plc_state.bestlag);
+    sf = btstack_cvsd_plc_amplitude_match(&plc_state, audio_samples_per_frame, plc_state.hist, plc_state.bestlag);
     
     for (i=0;i<CVSD_OLAL;i++){
         val = sf*plc_state.hist[plc_state.bestlag+i];

@@ -64,23 +64,25 @@ typedef struct cvsd_plc_state {
     int16_t bestlag;
     int     nbf;
 
+    // number processed samples
+    uint32_t good_samples;
+
     // summary of processed good and bad frames
     int good_frames_nr;
     int bad_frames_nr;
     int frame_count;
-    uint16_t cvsd_fs;
 } btstack_cvsd_plc_state_t;
 
 // All int16 audio samples are in host endiness
 void btstack_cvsd_plc_init(btstack_cvsd_plc_state_t *plc_state);
-void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, int16_t *out); 
-void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, int16_t *in, int16_t *out);
-void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * state, int16_t * in, uint16_t size, int16_t * out);
+void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, int16_t *out); 
+void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, int16_t *in, int16_t *out);
+void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * state, int16_t * in, uint16_t num_samples, int16_t * out);
 void btstack_cvsd_dump_statistics(btstack_cvsd_plc_state_t * state);
 
 // testing only
 int   btstack_cvsd_plc_pattern_match(BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y);
-float btstack_cvsd_plc_amplitude_match(btstack_cvsd_plc_state_t *plc_state, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y, BTSTACK_CVSD_PLC_SAMPLE_FORMAT bestmatch);
+float btstack_cvsd_plc_amplitude_match(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y, BTSTACK_CVSD_PLC_SAMPLE_FORMAT bestmatch);
 BTSTACK_CVSD_PLC_SAMPLE_FORMAT btstack_cvsd_plc_crop_sample(float val);
 float btstack_cvsd_plc_rcos(int index);
 

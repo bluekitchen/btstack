@@ -114,14 +114,14 @@ int btstack_cvsd_plc_pattern_match(BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y){
     return bestmatch;
 }
 
-float btstack_cvsd_plc_amplitude_match(btstack_cvsd_plc_state_t *plc_state, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y, BTSTACK_CVSD_PLC_SAMPLE_FORMAT bestmatch){
+float btstack_cvsd_plc_amplitude_match(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y, BTSTACK_CVSD_PLC_SAMPLE_FORMAT bestmatch){
     int   i;
     float sumx = 0;
     float sumy = 0.000001f;
     float sf;
     
-    for (i=0;i<plc_state->cvsd_fs;i++){
-        sumx += btstack_cvsd_plc_absolute(y[CVSD_LHIST-plc_state->cvsd_fs+i]);
+    for (i=0;i<num_samples;i++){
+        sumx += btstack_cvsd_plc_absolute(y[CVSD_LHIST-num_samples+i]);
         sumy += btstack_cvsd_plc_absolute(y[bestmatch+i]);
     }
     sf = sumx/sumy;
@@ -142,7 +142,7 @@ void btstack_cvsd_plc_init(btstack_cvsd_plc_state_t *plc_state){
     memset(plc_state, 0, sizeof(btstack_cvsd_plc_state_t));
 }
 
-void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *out){
+void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *out){
     float val;
     int   i = 0;
     float sf = 1;
@@ -155,44 +155,44 @@ void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, BTSTACK_CVS
         plc_state->bestlag += CVSD_M; 
         
         // Compute Scale Factor to Match Amplitude of Substitution Packet to that of Preceding Packet
-        sf = btstack_cvsd_plc_amplitude_match(plc_state, plc_state->hist, plc_state->bestlag);
+        sf = btstack_cvsd_plc_amplitude_match(plc_state, num_samples, plc_state->hist, plc_state->bestlag);
         for (i=0;i<CVSD_OLAL;i++){
             val = sf*plc_state->hist[plc_state->bestlag+i];
             plc_state->hist[CVSD_LHIST+i] = btstack_cvsd_plc_crop_sample(val);
         }
         
-        for (;i<plc_state->cvsd_fs;i++){
+        for (;i<num_samples;i++){
             val = sf*plc_state->hist[plc_state->bestlag+i]; 
             plc_state->hist[CVSD_LHIST+i] = btstack_cvsd_plc_crop_sample(val);
         }
         
-        for (;i<plc_state->cvsd_fs+CVSD_OLAL;i++){
+        for (;i<num_samples+CVSD_OLAL;i++){
             float left  = sf*plc_state->hist[plc_state->bestlag+i];
             float right = plc_state->hist[plc_state->bestlag+i];
-            val = left*rcos[i-plc_state->cvsd_fs] + right*rcos[CVSD_OLAL-1-i+plc_state->cvsd_fs];
+            val = left*rcos[i-num_samples] + right*rcos[CVSD_OLAL-1-i+num_samples];
             plc_state->hist[CVSD_LHIST+i] = btstack_cvsd_plc_crop_sample(val);
         }
 
-        for (;i<plc_state->cvsd_fs+CVSD_RT+CVSD_OLAL;i++){
+        for (;i<num_samples+CVSD_RT+CVSD_OLAL;i++){
             plc_state->hist[CVSD_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
         }
     } else {
-        for (;i<plc_state->cvsd_fs+CVSD_RT+CVSD_OLAL;i++){
+        for (;i<num_samples+CVSD_RT+CVSD_OLAL;i++){
             plc_state->hist[CVSD_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
         }
     }
 
-    for (i=0;i<plc_state->cvsd_fs;i++){
+    for (i=0;i<num_samples;i++){
         out[i] = plc_state->hist[CVSD_LHIST+i];
     }
     
     // shift the history buffer 
     for (i=0;i<CVSD_LHIST+CVSD_RT+CVSD_OLAL;i++){
-        plc_state->hist[i] = plc_state->hist[i+plc_state->cvsd_fs];
+        plc_state->hist[i] = plc_state->hist[i+num_samples];
     }
 }
 
-void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *in, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *out){
+void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *in, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *out){
     float val;
     int i = 0;
     if (plc_state->nbf>0){
@@ -208,16 +208,16 @@ void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, BTSTACK_CV
         }
     }
 
-    for (;i<plc_state->cvsd_fs;i++){
+    for (;i<num_samples;i++){
         out[i] = in[i];
     }
     // Copy the output to the history buffer
-    for (i=0;i<plc_state->cvsd_fs;i++){
+    for (i=0;i<num_samples;i++){
         plc_state->hist[CVSD_LHIST+i] = out[i];
     }
     // shift the history buffer
     for (i=0;i<CVSD_LHIST;i++){
-        plc_state->hist[i] = plc_state->hist[i+plc_state->cvsd_fs];
+        plc_state->hist[i] = plc_state->hist[i+num_samples];
     }
     plc_state->nbf=0;
 }
@@ -242,40 +242,31 @@ static int count_equal_samples(BTSTACK_CVSD_PLC_SAMPLE_FORMAT * packet, uint16_t
     return count;
 }
 
+// more than half the samples are the same -> bad frame
 static int bad_frame(btstack_cvsd_plc_state_t *plc_state, BTSTACK_CVSD_PLC_SAMPLE_FORMAT * frame, uint16_t size){
-    return count_equal_samples(frame, size) > plc_state->cvsd_fs - 4;
+    return count_equal_samples(frame, size) > size / 2;
 }
 
-void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * plc_state, BTSTACK_CVSD_PLC_SAMPLE_FORMAT * in, uint16_t size, BTSTACK_CVSD_PLC_SAMPLE_FORMAT * out){
-    if (size == 0) return;
-    if (plc_state->cvsd_fs == 0){
-        if (size > CVSD_FS_MAX){
-            log_error("btstack_cvsd_plc_process_data: audio frame size is too large.");
-            return;
-        }
-        plc_state->cvsd_fs = size;
-    } else {
-        if (plc_state->cvsd_fs != size){
-            log_error("btstack_cvsd_plc_process_data: audio frame size differs from initial.");
-            return;    
-        }
-    }
+void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * plc_state, BTSTACK_CVSD_PLC_SAMPLE_FORMAT * in, uint16_t num_samples, BTSTACK_CVSD_PLC_SAMPLE_FORMAT * out){
+    if (num_samples == 0) return;
 
     plc_state->frame_count++;
-    if (bad_frame(plc_state, in, size)){
-        memcpy(out, in, size * 2);
-        if (plc_state->good_frames_nr > CVSD_LHIST/plc_state->cvsd_fs){
-            btstack_cvsd_plc_bad_frame(plc_state, out);
+
+    if (bad_frame(plc_state, in, num_samples)){
+        memcpy(out, in, num_samples * 2);
+        if (plc_state->good_samples > CVSD_LHIST){
+            btstack_cvsd_plc_bad_frame(plc_state, num_samples, out);
             plc_state->bad_frames_nr++;
         } else {
-            memset(out, 0, size * 2);
+            memset(out, 0, num_samples * 2);
         }
     } else {
-        btstack_cvsd_plc_good_frame(plc_state, in, out);
+        btstack_cvsd_plc_good_frame(plc_state, num_samples, in, out);
         plc_state->good_frames_nr++;
         if (plc_state->good_frames_nr == 1){
             log_info("First good frame at index %d\n", plc_state->frame_count-1);
-        }        
+        } 
+        plc_state->good_samples += num_samples;
     }
 }
 
