@@ -114,7 +114,7 @@ static int find_h2_sync(const OI_BYTE *frame_data, OI_UINT32 frame_bytes, int * 
     uint8_t h2_first_byte = 0;
     uint8_t h2_second_byte = 0;
     
-    int i;
+    unsigned int i;
     for (i=0; i<frame_bytes; i++){
         if (frame_data[i] == syncword) {
             // check: first byte == 1
