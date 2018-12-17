@@ -77,8 +77,8 @@ static bd_addr_t device_addr;
 // prototypes
 static void show_usage(void);
 #endif
-static hci_con_handle_t acl_handle = -1;
-static hci_con_handle_t sco_handle;
+static hci_con_handle_t acl_handle = HCI_CON_HANDLE_INVALID;
+static hci_con_handle_t sco_handle = HCI_CON_HANDLE_INVALID;
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
 static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
 #else
@@ -441,6 +441,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
     switch (packet_type){
 
         case HCI_SCO_DATA_PACKET:
+            if (READ_SCO_CONNECTION_HANDLE(event) != sco_handle) break;
             sco_demo_receive(event, event_size);
             break;
 
@@ -464,11 +465,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             printf("Service level connection established %s.\n\n", bd_addr_to_str(device_addr));
                             break;
                         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
+                            acl_handle = HCI_CON_HANDLE_INVALID;
                             printf("Service level connection released.\n\n");
                             break;
                         case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
                             if (hfp_subevent_audio_connection_established_get_status(event)){
-                                sco_handle = 0;
                                 printf("Audio connection establishment failed with status %u\n", hfp_subevent_audio_connection_established_get_status(event));
                             } else {
                                 sco_handle = hfp_subevent_audio_connection_established_get_handle(event);
@@ -490,7 +491,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             }
                             break;
                         case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
-                            sco_handle = 0;
+                            sco_handle = HCI_CON_HANDLE_INVALID;
                             printf("Audio connection released\n");
                             sco_demo_close();
                             break;

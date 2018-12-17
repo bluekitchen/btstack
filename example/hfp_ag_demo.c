@@ -62,6 +62,9 @@
 #include "btstack_stdin.h"
 #endif
 
+// uncomment to temp disable mSBC codec
+// #undef ENABLE_HFP_WIDE_BAND_SPEECH
+
 uint8_t hfp_service_buffer[150];
 const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_ag_service_name[] = "HFP AG Demo";
@@ -77,8 +80,8 @@ static uint8_t codecs[] = {HFP_CODEC_CVSD};
 
 static uint8_t negotiated_codec = HFP_CODEC_CVSD;
 
-static hci_con_handle_t acl_handle = -1;
-static hci_con_handle_t sco_handle;
+static hci_con_handle_t acl_handle = HCI_CON_HANDLE_INVALID;
+static hci_con_handle_t sco_handle = HCI_CON_HANDLE_INVALID;
 static int memory_1_enabled = 1;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -467,12 +470,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     break;
                 case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
                     printf("Service level connection released.\n");
-                    sco_handle = 0;
+                    acl_handle = HCI_CON_HANDLE_INVALID;
                     break;
                 case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
                     if (hfp_subevent_audio_connection_established_get_status(event)){
                         printf("Audio connection establishment failed with status %u\n", hfp_subevent_audio_connection_established_get_status(event));
-                        sco_handle = 0;
                     } else {
                         sco_handle = hfp_subevent_audio_connection_established_get_handle(event);
                         printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
@@ -494,7 +496,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     break;
                 case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
                     printf("Audio connection released\n");
-                    sco_handle = 0;
+                    sco_handle = HCI_CON_HANDLE_INVALID;
                     sco_demo_close();
                     break;
                 case HFP_SUBEVENT_START_RINGINIG:
@@ -534,6 +536,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
             }
             break;
         case HCI_SCO_DATA_PACKET:
+            if (READ_SCO_CONNECTION_HANDLE(event) != sco_handle) break;
             sco_demo_receive(event, event_size);
             break;
         default:
