@@ -95,3 +95,4 @@ pklg-test: pklg_cvsd_test
 	./pklg_cvsd_test pklg/test2
 	./pklg_cvsd_test pklg/test3
 	./pklg_cvsd_test pklg/test4
+	./pklg_cvsd_test pklg/test5
