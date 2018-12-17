@@ -57,7 +57,7 @@ VPATH += ${BTSTACK_ROOT}/platform/posix
 CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/src/classic -I${POSIX_ROOT} -I${BTSTACK_ROOT}/include
 LDFLAGS += -lCppUTest -lCppUTestExt
 
-EXAMPLES = hfp_ag_parser_test hfp_ag_client_test hfp_hf_parser_test hfp_hf_client_test cvsd_plc_test
+EXAMPLES = hfp_ag_parser_test hfp_ag_client_test hfp_hf_parser_test hfp_hf_client_test cvsd_plc_test pklg_cvsd_test
 
 all: ${EXAMPLES}
 
@@ -79,6 +79,9 @@ hfp_ag_client_test: ${MOCK_OBJ} hfp_gsm_model.o hfp_ag.o hfp.o hfp_ag_client_tes
 cvsd_plc_test: ${COMMON_OBJ} btstack_cvsd_plc.o wav_util.o cvsd_plc_test.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
+pklg_cvsd_test: ${COMMON_OBJ} btstack_cvsd_plc.o wav_util.o pklg_cvsd_test.o
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
 test: all
 	mkdir -p results
 	./hfp_ag_parser_test
@@ -86,3 +89,9 @@ test: all
 	./hfp_hf_parser_test
 	./hfp_hf_client_test
 	./cvsd_plc_test
+
+pklg-test: pklg_cvsd_test
+	./pklg_cvsd_test pklg/test1
+	./pklg_cvsd_test pklg/test2
+	./pklg_cvsd_test pklg/test3
+	./pklg_cvsd_test pklg/test4
