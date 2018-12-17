@@ -134,6 +134,10 @@ int main (int argc, const char * argv[]){
         const int audio_bytes_read = size - 3;
         const int num_samples = audio_bytes_read / BYTES_PER_FRAME;
 
+        // check SCO handle -- quick hack, not correct if handle 0x0000 is actually used for SCO
+        uint16_t sco_handle = little_endian_read_16(packet, 0) & 0xfff;
+        if (sco_handle == 0) continue;
+
         // convert into host endian
         int16_t audio_frame_in[128];
         int i;
@@ -141,7 +145,13 @@ int main (int argc, const char * argv[]){
             audio_frame_in[i] = little_endian_read_16(packet, 3 + i * 2);
         }
 
+#if 1
         btstack_cvsd_plc_process_data(&plc_state, audio_frame_in, num_samples, audio_frame_out);
+#else
+        memcpy(audio_frame_out, audio_frame_in, audio_bytes_read);
+#endif
+
+
         wav_writer_write_int16(num_samples, audio_frame_out);
     }
 
