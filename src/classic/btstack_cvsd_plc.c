@@ -247,6 +247,7 @@ static int bad_frame(btstack_cvsd_plc_state_t *plc_state, BTSTACK_CVSD_PLC_SAMPL
 }
 
 void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * plc_state, BTSTACK_CVSD_PLC_SAMPLE_FORMAT * in, uint16_t size, BTSTACK_CVSD_PLC_SAMPLE_FORMAT * out){
+    if (size == 0) return;
     if (plc_state->cvsd_fs == 0){
         if (size > CVSD_FS_MAX){
             log_error("btstack_cvsd_plc_process_data: audio frame size is too large.");
