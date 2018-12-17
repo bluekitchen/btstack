@@ -336,7 +336,7 @@ TEST(CVSD_PLC, TestLiveWavFile){
 
 TEST(CVSD_PLC, TestFanfareFile){
     int corruption_step = 10;
-    introduce_bad_frames_to_wav_file("data/input/fanfare_mono.wav", "results/fanfare_mono.wav", 0);
+    introduce_bad_frames_to_wav_file("data/fanfare_mono.wav", "results/fanfare_mono.wav", 0);
     introduce_bad_frames_to_wav_file("results/fanfare_mono.wav", "results/fanfare_mono_with_bad_frames.wav", corruption_step);
     
     mark_bad_frames_wav_file("results/fanfare_mono.wav", "results/fanfare_mono_detected_frames.wav");
