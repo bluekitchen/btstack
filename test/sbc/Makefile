@@ -7,13 +7,8 @@ SBC_ENCODER_ROOT = ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder
 include ${SBC_DECODER_ROOT}/Makefile.inc
 include ${SBC_ENCODER_ROOT}/Makefile.inc
 
-SBC_DECODER += \
-	${BTSTACK_ROOT}/src/classic/btstack_sbc_plc.c \
-	${BTSTACK_ROOT}/src/classic/btstack_sbc_decoder_bluedroid.c \
-
-SBC_ENCODER += \
-	${BTSTACK_ROOT}/src/classic/btstack_sbc_encoder_bluedroid.c \
-	${BTSTACK_ROOT}/src/classic/hfp_msbc.c \
+SBC_DECODER += btstack_sbc_plc.c               btstack_sbc_decoder_bluedroid.c
+SBC_ENCODER += btstack_sbc_encoder_bluedroid.c hfp_msbc.c \
 
 SBC_DECODER_OBJ  = $(SBC_DECODER:.c=.o) 
 SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
