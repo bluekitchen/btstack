@@ -147,6 +147,11 @@ void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t nu
     int   i = 0;
     float sf = 1;
     plc_state->nbf++;
+    
+    if (plc_state->max_consecutive_bad_frames_nr < plc_state->nbf){
+        plc_state->max_consecutive_bad_frames_nr = plc_state->nbf;
+    }
+
     // plc_state->cvsd_fs = CVSD_FS_MAX;
     if (plc_state->nbf==1){
         // Perform pattern matching to find where to replicate
@@ -298,4 +303,5 @@ void btstack_cvsd_dump_statistics(btstack_cvsd_plc_state_t * state){
     log_info("Good frames: %d\n", state->good_frames_nr);
     log_info("Bad frames: %d\n", state->bad_frames_nr);
     log_info("Zero frames: %d\n", state->zero_frames_nr);
+    log_info("Max Consecutive bad frames: %d\n", state->max_consecutive_bad_frames_nr);   
 }

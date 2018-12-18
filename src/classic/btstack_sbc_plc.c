@@ -48,6 +48,7 @@
 #include <string.h>
 
 #include "btstack_sbc_plc.h"
+#include "btstack_debug.h"
 
 #define SAMPLE_FORMAT int16_t
 
@@ -158,6 +159,12 @@ void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, SAMPLE_FORMAT
     float sf = 1;
     plc_state->nbf++;
    
+    plc_state->bad_frames_nr++;
+    plc_state->frame_count++;
+    if (plc_state->max_consecutive_bad_frames_nr < plc_state->nbf){
+        plc_state->max_consecutive_bad_frames_nr = plc_state->nbf;
+    }
+
     if (plc_state->nbf==1){
         // Perform pattern matching to find where to replicate
         plc_state->bestlag = PatternMatch(plc_state->hist);
@@ -206,6 +213,9 @@ void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, SAMPLE_FORMAT
 void btstack_sbc_plc_good_frame(btstack_sbc_plc_state_t *plc_state, SAMPLE_FORMAT *in, SAMPLE_FORMAT *out){
     float val;
     int i = 0;
+    plc_state->good_frames_nr++;
+    plc_state->frame_count++;
+
     if (plc_state->nbf>0){
         for (i=0;i<SBC_RT;i++){
             out[i] = plc_state->hist[SBC_LHIST+i];
@@ -232,4 +242,10 @@ void btstack_sbc_plc_good_frame(btstack_sbc_plc_state_t *plc_state, SAMPLE_FORMA
     }
 
     plc_state->nbf=0;
+}
+
+void btstack_sbc_dump_statistics(btstack_sbc_plc_state_t * state){
+    log_info("Good frames: %d\n", state->good_frames_nr);
+    log_info("Bad frames: %d\n", state->bad_frames_nr);
+    log_info("Max Consecutive bad frames: %d\n", state->max_consecutive_bad_frames_nr);   
 }
