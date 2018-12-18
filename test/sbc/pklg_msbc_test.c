@@ -159,9 +159,19 @@ int main (int argc, const char * argv[]){
 
     wav_writer_close();
     close(fd);
-    int total_frames_nr = state.good_frames_nr + state.bad_frames_nr + state.zero_frames_nr;
 
-    printf("WAV Writer: Decoding done. Processed totaly %d frames:\n - %d good\n - %d bad\n", total_frames_nr, state.good_frames_nr, total_frames_nr - state.good_frames_nr);
+    int good = state.good_frames_nr;
+    int bad  = state.bad_frames_nr + state.zero_frames_nr;
+    int consecutive;
+    int total_frames_nr = good + bad;
+
+    printf("WAV Writer (SBC): Decoding done. Processed totaly %d frames:\n - %d good\n - %d bad\n", total_frames_nr, good, bad);
+
+    good = state.plc_state.good_frames_nr;
+    bad =  state.plc_state.bad_frames_nr;
+    consecutive = state.plc_state.max_consecutive_bad_frames_nr;
+    total_frames_nr = good + bad;
+    printf("WAV Writer (PLC): Decoding done. Processed totaly %d frames:\n - %d good\n - %d bad\n - %d consecutive\n", total_frames_nr, good, bad, consecutive);
+    
     printf("Write %d frames to wav file: %s\n\n", frame_count, wav_filename);
-
 }
