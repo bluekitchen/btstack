@@ -387,7 +387,7 @@ void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t n
             float left  = plc_state->hist[CVSD_LHIST+i];
             float right = in[i];
             val = left * rcos[i-CVSD_RT] + right *rcos[CVSD_OLAL+CVSD_RT-1-i];
-            out[i] = (BTSTACK_CVSD_PLC_SAMPLE_FORMAT)val;
+            out[i] = btstack_cvsd_plc_crop_sample((BTSTACK_CVSD_PLC_SAMPLE_FORMAT)val);
         }
     }
 
