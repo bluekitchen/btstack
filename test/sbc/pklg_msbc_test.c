@@ -57,13 +57,11 @@
 
 #include "wav_util.h"
 
-static char wav_filename[1000];
-static char pklg_filename[1000];
+#define PAKET_TYPE_SCO_OUT 8
+#define PAKET_TYPE_SCO_IN  9
 
-static int wav_writer_opened;
 static int total_num_samples = 0;
 static int frame_count = 0;
-
 
 static void show_usage(void){
     printf("\n\nUsage: ./pklg_msbc_test input_file \n");
@@ -87,60 +85,33 @@ static ssize_t __read(int fd, void *buf, size_t count){
 
 static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
     (void) context;
-    if (!wav_writer_opened){
-        wav_writer_opened = 1;
-        wav_writer_open(wav_filename, num_channels, sample_rate);
-
-    }
-
-    // printf("Sampels: num_samples %u, num_channels %u, sample_rate %u\n", num_samples, num_channels, sample_rate);
-    // printf_hexdump(data, num_samples * num_channels * 2);
-    // int i;
-    // for (i=0;i<num_channels*num_samples;i += 2){
-    //     if ((i%24) == 0) printf("\n");
-    //     printf ("%12d ", data[i]);
-    // }
-    // printf("\n");
+    (void) sample_rate;
     wav_writer_write_int16(num_samples*num_channels, data);
-
-    total_num_samples+=num_samples*num_channels;
+    total_num_samples += num_samples*num_channels;
     frame_count++;
 }
 
-int main (int argc, const char * argv[]){
-    if (argc < 2){
-        show_usage();
-        return -1;
+static void process_file(const char * pklg_path, const char * wav_path, int packet_type, int plc_enabled){
+
+    printf("Processing %s -> %s: PLC enabled: %u, direction %s\n", pklg_path, wav_path, plc_enabled, packet_type == PAKET_TYPE_SCO_OUT ? "Out" : "In");
+
+    int fd = open(pklg_path, O_RDONLY);
+    if (fd < 0) {
+        printf("Can't open file %s", pklg_path);
+        return;
     }
-    int argv_pos = 1;
-    const char * filename = argv[argv_pos++];
-    
-#ifdef OCTAVE_OUTPUT
-    printf("defined OCTAVE OUTPUT\n");
-    octave_set_base_name(filename);
-#endif
+ 
+    wav_writer_open(wav_path, 1, 16000);
+
+    total_num_samples = 0;
+    frame_count       = 0;
 
     btstack_sbc_mode_t mode = SBC_MODE_mSBC;
-
-    strcpy(pklg_filename, filename);
-    strcat(pklg_filename, ".pklg");
-
-    strcpy(wav_filename, filename);
-    strcat(wav_filename, ".wav");
-
-
-    int fd = open(pklg_filename, O_RDONLY);
-    if (fd < 0) {
-        printf("Can't open file %s", pklg_filename);
-        return -1;
-    }
-    printf("Open pklg file: %s\n", pklg_filename);
-    
 
     btstack_sbc_decoder_state_t state;
     btstack_sbc_decoder_init(&state, mode, &handle_pcm_data, NULL);
     
-    // btstack_sbc_decoder_test_disable_plc();
+    // btstack_sbc_decoder_test_set_plc_enabled(plc_enabled);
 
     int sco_packet_counter = 0;
     while (1){
@@ -155,11 +126,11 @@ int main (int argc, const char * argv[]){
         bytes_read = __read(fd, packet, size);
 
         uint8_t type = header[12];
-        if (type != 9) continue;
+
+        if (type != packet_type) continue;
+
         sco_packet_counter++;
 
-        // printf("Packet %4u, flags %x: ", sco_packet_counter, (packet[1] >> 4));
-        // printf_hexdump(packet+3, size-3);
         btstack_sbc_decoder_process_data(&state, (packet[1] >> 4) & 3, packet+3, size-3);
     }
 
@@ -179,5 +150,43 @@ int main (int argc, const char * argv[]){
     total_frames_nr = good + bad;
     printf("WAV Writer (PLC): Decoding done. Processed totaly %d frames:\n - %d good\n - %d bad\n - %d consecutive\n", total_frames_nr, good, bad, consecutive);
     
-    printf("Write %d frames to wav file: %s\n\n", frame_count, wav_filename);
+    printf("Write %d frames to wav file: %s\n\n", frame_count, wav_path);
+}
+
+
+int main (int argc, const char * argv[]){
+
+    char wav_path[1000];
+    char pklg_path[1000];
+
+    if (argc < 2){
+        show_usage();
+        return -1;
+    }
+
+    int argv_pos = 1;
+    const char * filename = argv[argv_pos++];
+    
+#ifdef OCTAVE_OUTPUT
+    printf("OCTAVE OUTPUT active\n");
+    octave_set_base_name(filename);
+#endif
+
+    strcpy(pklg_path, filename);
+    strcat(pklg_path, ".pklg");
+
+    // in file, no plc
+    strcpy(wav_path, filename);
+    strcat(wav_path, "_in_raw.wav");
+    process_file(pklg_path, wav_path, PAKET_TYPE_SCO_IN, 0);
+
+    // in file, plc
+    strcpy(wav_path, filename);
+    strcat(wav_path, "_in_plc.wav");
+    process_file(pklg_path, wav_path, PAKET_TYPE_SCO_IN, 1);
+
+    // out file, no plc
+    strcpy(wav_path, filename);
+    strcat(wav_path, "_out.wav");
+    process_file(pklg_path, wav_path, PAKET_TYPE_SCO_OUT, 0);
 }
