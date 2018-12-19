@@ -50,7 +50,7 @@ extern "C" {
 #endif
 
 #define SBC_FS 120          /* SBC Frame Size */
-#define SBC_N 256           /* 16ms - Window Length for pattern matching */ 
+#define SBC_N 512           /* 32ms - Window Length for pattern matching */ 
 #define SBC_M 64            /* 4ms - Template for matching */
 #define SBC_LHIST (SBC_N+SBC_FS-1)  /* Length of history buffer required */ 
 #define SBC_RT 36           /* SBC Reconvergence Time (samples) */
@@ -75,6 +75,10 @@ void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, int16_t *ZIRb
 void btstack_sbc_plc_good_frame(btstack_sbc_plc_state_t *plc_state, int16_t *in, int16_t *out);
 uint8_t * btstack_sbc_plc_zero_signal_frame(void);
 void btstack_sbc_dump_statistics(btstack_sbc_plc_state_t * state);
+
+#ifdef OCTAVE_OUTPUT
+void octave_set_base_name(const char * name);
+#endif
 
 #if defined __cplusplus
 }

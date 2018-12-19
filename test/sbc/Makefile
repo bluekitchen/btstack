@@ -17,6 +17,7 @@ CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/src/classic
 CFLAGS += -I${SBC_DECODER_ROOT}/include 
 CFLAGS += -I${SBC_ENCODER_ROOT}/include 
 CFLAGS += -Werror=unused-parameter
+CFLAGS += -D OCTAVE_OUTPUT 
 #CFLAGS += -D PRINT_SAMPLES -D PRINT_SCALEFACTORS -D OI_DEBUG -D TRACE_EXECUTION 
 LDFLAGS += -lCppUTest -lCppUTestExt
 VPATH += ${SBC_DECODER_ROOT}/srce 
@@ -86,11 +87,11 @@ pytest:
 	./sbc_encoder_test.py data/fanfare-stereo.wav 16 8 64 2 data/fanfare-8sb-stereo.sbc
 
 pklg-test: pklg_msbc_test
-	./pklg_msbc_test pklg/test1
-	./pklg_msbc_test pklg/test2
-	./pklg_msbc_test pklg/test3
-	./pklg_msbc_test pklg/test4
+	# ./pklg_msbc_test pklg/test1
+	# ./pklg_msbc_test pklg/test2
+	# ./pklg_msbc_test pklg/test3
+	# ./pklg_msbc_test pklg/test4
 	./pklg_msbc_test pklg/test5
 
 clean:
-	rm -f *.pyc *.wav *.sbc data/*-decoded.wav data/*-encoded.sbc *.o $(SBC_TESTS) *.dSYM *_test data_*.h pklg/*.wav
+	rm -f *.pyc *.wav *.sbc data/*-decoded.wav data/*-encoded.sbc *.o $(SBC_TESTS) *.dSYM *_test data_*.h pklg/*.wav pklg/*.m pklg/*.jpg

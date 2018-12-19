@@ -112,10 +112,14 @@ int main (int argc, const char * argv[]){
         show_usage();
         return -1;
     }
-    
     int argv_pos = 1;
     const char * filename = argv[argv_pos++];
     
+#ifdef OCTAVE_OUTPUT
+    printf("defined OCTAVE OUTPUT\n");
+    octave_set_base_name(filename);
+#endif
+
     btstack_sbc_mode_t mode = SBC_MODE_mSBC;
 
     strcpy(pklg_filename, filename);
