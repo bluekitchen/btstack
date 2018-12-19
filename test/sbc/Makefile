@@ -87,10 +87,10 @@ pytest:
 	./sbc_encoder_test.py data/fanfare-stereo.wav 16 8 64 2 data/fanfare-8sb-stereo.sbc
 
 pklg-test: pklg_msbc_test
-	# ./pklg_msbc_test pklg/test1
-	# ./pklg_msbc_test pklg/test2
-	# ./pklg_msbc_test pklg/test3
-	# ./pklg_msbc_test pklg/test4
+	./pklg_msbc_test pklg/test1
+	./pklg_msbc_test pklg/test2
+	./pklg_msbc_test pklg/test3
+	./pklg_msbc_test pklg/test4
 	./pklg_msbc_test pklg/test5
 
 clean:
