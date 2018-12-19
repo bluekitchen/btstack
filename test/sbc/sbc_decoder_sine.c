@@ -87,7 +87,7 @@ int btstack_main (int argc, const char * argv[]){
     btstack_sbc_mode_t mode = SBC_MODE_STANDARD;
     btstack_sbc_decoder_state_t state;
     btstack_sbc_decoder_init(&state, mode, &handle_pcm_data, NULL);
-    btstack_sbc_decoder_test_disable_plc();
+    btstack_sbc_decoder_test_set_plc_enabled(0);
     uint32_t t_start = btstack_run_loop_get_time_ms();
     playback_buffer = 1;
     uint32_t offset = 0;

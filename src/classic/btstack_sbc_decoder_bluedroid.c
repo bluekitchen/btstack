@@ -86,8 +86,8 @@ static int plc_enabled = 1;
 static int corrupt_frame_period = -1;
 // Testing - STOP
 
-void btstack_sbc_decoder_test_disable_plc(void){
-    plc_enabled = 0;
+void btstack_sbc_decoder_test_set_plc_enabled(int enabled){
+    plc_enabled = enabled;
 }
 
 void btstack_sbc_decoder_test_simulate_corrupt_frames(int period){
