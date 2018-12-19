@@ -53,10 +53,10 @@ extern "C" {
 
 #define CVSD_FS_MAX 60       /* CVSD Frame Size */
 #define CVSD_N 256           /* Window Length for pattern matching */ 
-#define CVSD_M 10            /* Template for matching */
+#define CVSD_M 32            /* Template for matching */
 #define CVSD_LHIST (CVSD_N+CVSD_FS_MAX-1)  /* Length of history buffer required */ 
-#define CVSD_RT 5            /*  Reconvergence Time (samples) */
-#define CVSD_OLAL 16         /*  OverLap-Add Length (samples) */
+#define CVSD_RT 18            /*  Reconvergence Time (samples) */
+#define CVSD_OLAL 8         /*  OverLap-Add Length (samples) */
 
 /* PLC State Information */
 typedef struct cvsd_plc_state {
