@@ -38,7 +38,7 @@
 #define __BTSTACK_FILE__ "btstack_cvsd_plc.c"
 
 /*
- * btstack_sbc_plc.c
+ * btstack_CVSD_plc.c
  *
  */
 
@@ -148,6 +148,153 @@ void btstack_cvsd_plc_init(btstack_cvsd_plc_state_t *plc_state){
     memset(plc_state, 0, sizeof(btstack_cvsd_plc_state_t));
 }
 
+#ifdef OCTAVE_OUTPUT
+typedef enum {
+    OCTAVE_FRAME_TYPE_UNKNOWN = 0,
+    OCTAVE_FRAME_TYPE_GOOD,
+    OCTAVE_FRAME_TYPE_BAD
+} octave_frame_type_t;
+
+static const char * octave_frame_type_name[] = {
+    "unknown",
+    "good",
+    "bad"
+};
+
+static octave_frame_type_t octave_frame_type;
+static char octave_base_name[1000];
+
+const char * octave_frame_type2str(int index){
+    if (index <= 0 || index >= sizeof(octave_frame_type_t)) return octave_frame_type_name[0];
+    return octave_frame_type_name[index];
+}
+
+void btstack_cvsd_plc_octave_set_base_name(const char * base_name){
+    strcpy(octave_base_name, base_name);
+    printf("OCTAVE: base name set to %s\n", octave_base_name);
+}
+
+static void octave_fprintf_array_int16(FILE * oct_file, char * name, int data_len, int16_t * data){
+    fprintf(oct_file, "%s = [", name);
+    int i;
+    for (i = 0; i < data_len - 1; i++){
+        fprintf(oct_file, "%d, ", data[i]);
+    }
+    fprintf(oct_file, "%d", data[i]);
+    fprintf(oct_file, "%s", "];\n");
+}
+
+static FILE * open_octave_file(btstack_cvsd_plc_state_t *plc_state, octave_frame_type_t frame_type){
+    char oct_file_name[1200];
+    octave_frame_type = frame_type;
+    sprintf(oct_file_name, "%s_octave_plc_%d_%s.m", octave_base_name, plc_state->frame_count, octave_frame_type2str(octave_frame_type));
+    
+    FILE * oct_file = fopen(oct_file_name, "wb");
+    if (oct_file == NULL){
+        printf("OCTAVE: could not open file %s\n", oct_file_name);
+        return NULL;
+    }
+    printf("OCTAVE: opened file %s\n", oct_file_name);
+    return oct_file;
+}
+
+static void octave_fprintf_plot_history_frame(btstack_cvsd_plc_state_t *plc_state, FILE * oct_file, int frame_nr){
+    char title[100];
+    char hist_name[10];
+    sprintf(hist_name, "hist%d", plc_state->nbf);
+            
+    octave_fprintf_array_int16(oct_file, hist_name, CVSD_LHIST, plc_state->hist);
+
+    fprintf(oct_file, "y = [min(%s):1000:max(%s)];\n", hist_name, hist_name);
+    fprintf(oct_file, "x = zeros(1, size(y,2));\n");
+    fprintf(oct_file, "b = [0: %d];\n", CVSD_LHIST+CVSD_FS+CVSD_RT+CVSD_OLAL);
+    
+    int pos = CVSD_FS;
+    fprintf(oct_file, "shift_x = x + %d;\n", pos);
+
+    pos = CVSD_LHIST - 1;
+    fprintf(oct_file, "lhist_x = x + %d;\n", pos);
+    pos += CVSD_OLAL;
+    fprintf(oct_file, "lhist_olal1_x = x + %d;\n", pos);
+    pos += CVSD_FS - CVSD_OLAL;
+    fprintf(oct_file, "lhist_fs_x = x + %d;\n", pos);
+    pos += CVSD_OLAL;
+    fprintf(oct_file, "lhist_olal2_x = x + %d;\n", pos);
+    pos += CVSD_RT;
+    fprintf(oct_file, "lhist_rt_x = x + %d;\n", pos);
+
+    fprintf(oct_file, "pattern_window_x = x + %d;\n", CVSD_LHIST - CVSD_M);
+    
+    fprintf(oct_file, "hf = figure();\n");
+    sprintf(title, "PLC %s frame %d", octave_frame_type2str(octave_frame_type), frame_nr);
+    
+    fprintf(oct_file, "hold on;\n");
+    fprintf(oct_file, "h1 = plot(%s); \n", hist_name);
+    
+    fprintf(oct_file, "title(\"%s\");\n", title); 
+    
+    fprintf(oct_file, "plot(lhist_x, y, 'k'); \n"); 
+    fprintf(oct_file, "text(max(lhist_x) - 10, max(y)+1000, 'lhist'); \n"); 
+
+    fprintf(oct_file, "plot(lhist_olal1_x, y, 'k'); \n");
+    fprintf(oct_file, "text(max(lhist_olal1_x) - 10, max(y)+1000, 'OLAL'); \n"); 
+
+    fprintf(oct_file, "plot(lhist_fs_x, y, 'k'); \n");
+    fprintf(oct_file, "text(max(lhist_fs_x) - 10, max(y)+1000, 'FS'); \n"); 
+
+    fprintf(oct_file, "plot(lhist_olal2_x, y, 'k'); \n");
+    fprintf(oct_file, "text(max(lhist_olal2_x) - 10, max(y)+1000, 'OLAL'); \n"); 
+
+    fprintf(oct_file, "plot(lhist_rt_x, y, 'k');\n");
+    fprintf(oct_file, "text(max(lhist_rt_x) - 10, max(y)+1000, 'RT'); \n"); 
+
+    if (octave_frame_type == OCTAVE_FRAME_TYPE_GOOD) return;
+
+    int x0 = plc_state->bestlag;
+    int x1 = plc_state->bestlag + CVSD_M - 1;
+    fprintf(oct_file, "plot(b(%d:%d), %s(%d:%d), 'rd'); \n", x0, x1, hist_name, x0, x1);
+    fprintf(oct_file, "text(%d - 10, -10, 'bestlag'); \n", x0); 
+
+    x0 = plc_state->bestlag + CVSD_M ;
+    x1 = plc_state->bestlag + CVSD_M + CVSD_FS - 1;
+    fprintf(oct_file, "plot(b(%d:%d), %s(%d:%d), 'kd'); \n", x0, x1, hist_name, x0, x1);
+    
+    x0 = CVSD_LHIST - CVSD_M;
+    x1 = CVSD_LHIST - 1;
+    fprintf(oct_file, "plot(b(%d:%d), %s(%d:%d), 'rd'); \n", x0, x1, hist_name, x0, x1);
+    fprintf(oct_file, "plot(pattern_window_x, y, 'g'); \n");
+    fprintf(oct_file, "text(max(pattern_window_x) - 10, max(y)+1000, 'M'); \n"); 
+}
+
+static void octave_fprintf_plot_output(btstack_cvsd_plc_state_t *plc_state, FILE * oct_file){
+    if (!oct_file) return;
+    char out_name[10];
+    sprintf(out_name, "out%d", plc_state->nbf);
+    int x0  = CVSD_LHIST;
+    int x1  = x0 + CVSD_FS - 1;
+    octave_fprintf_array_int16(oct_file, out_name, CVSD_FS, plc_state->hist+x0);
+    fprintf(oct_file, "h2 = plot(b(%d:%d), %s, 'cd'); \n", x0, x1, out_name);
+
+    char rest_hist_name[10];
+    sprintf(rest_hist_name, "rest%d", plc_state->nbf);
+    x0  = CVSD_LHIST + CVSD_FS;
+    x1  = x0 + CVSD_OLAL + CVSD_RT - 1;
+    octave_fprintf_array_int16(oct_file, rest_hist_name, CVSD_OLAL + CVSD_RT, plc_state->hist+x0);
+    fprintf(oct_file, "h3 = plot(b(%d:%d), %s, 'kd'); \n", x0, x1, rest_hist_name);
+
+    char new_hist_name[10];
+    sprintf(new_hist_name, "hist%d", plc_state->nbf);
+    octave_fprintf_array_int16(oct_file, new_hist_name, CVSD_LHIST, plc_state->hist);
+    fprintf(oct_file, "h4 = plot(%s, 'r--'); \n", new_hist_name);
+
+    fprintf(oct_file, "legend ([h1, h2, h3, h4], {\"hist\", \"out\", \"rest\", \"new hist\"}, \"location\", \"northeast\");\n ");
+
+    char fig_name[1200];
+    sprintf(fig_name, "../%s_octave_plc_%d_%s", octave_base_name, plc_state->frame_count, octave_frame_type2str(octave_frame_type));
+    fprintf(oct_file, "print(hf, \"%s.jpg\", \"-djpg\");", fig_name);
+}
+#endif
+
 void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *out){
     float val;
     int   i = 0;
@@ -157,11 +304,20 @@ void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t nu
     if (plc_state->max_consecutive_bad_frames_nr < plc_state->nbf){
         plc_state->max_consecutive_bad_frames_nr = plc_state->nbf;
     }
-
-    // plc_state->cvsd_fs = CVSD_FS_MAX;
     if (plc_state->nbf==1){
+        // printf("first bad frame\n");
         // Perform pattern matching to find where to replicate
         plc_state->bestlag = btstack_cvsd_plc_pattern_match(plc_state->hist);
+    }
+
+#ifdef OCTAVE_OUTPUT
+    FILE * oct_file = open_octave_file(plc_state, OCTAVE_FRAME_TYPE_BAD);
+    if (oct_file){
+        octave_fprintf_plot_history_frame(plc_state, oct_file, plc_state->frame_count);   
+    }
+#endif
+
+    if (plc_state->nbf==1){
         // the replication begins after the template match
         plc_state->bestlag += CVSD_M; 
         
@@ -201,11 +357,27 @@ void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t nu
     for (i=0;i<CVSD_LHIST+CVSD_RT+CVSD_OLAL;i++){
         plc_state->hist[i] = plc_state->hist[i+num_samples];
     }
+
+#ifdef OCTAVE_OUTPUT
+    if (oct_file){
+        octave_fprintf_plot_output(plc_state, oct_file);
+        fclose(oct_file);
+    }
+#endif
 }
 
 void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *in, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *out){
     float val;
     int i = 0;
+#ifdef OCTAVE_OUTPUT
+    FILE * oct_file = NULL;
+    if (plc_state->nbf>0){
+        oct_file = open_octave_file(plc_state, OCTAVE_FRAME_TYPE_GOOD);
+        if (oct_file){
+            octave_fprintf_plot_history_frame(plc_state, oct_file, plc_state->frame_count);
+        }
+    }
+#endif
     if (plc_state->nbf>0){
         for (i=0;i<CVSD_RT;i++){
             out[i] = plc_state->hist[CVSD_LHIST+i];
@@ -230,6 +402,13 @@ void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t n
     for (i=0;i<CVSD_LHIST;i++){
         plc_state->hist[i] = plc_state->hist[i+num_samples];
     }
+
+#ifdef OCTAVE_OUTPUT
+    if (oct_file){
+        octave_fprintf_plot_output(plc_state, oct_file);
+        fclose(oct_file);
+    }
+#endif
     plc_state->nbf=0;
 }
 

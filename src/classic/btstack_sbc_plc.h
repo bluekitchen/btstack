@@ -77,7 +77,7 @@ uint8_t * btstack_sbc_plc_zero_signal_frame(void);
 void btstack_sbc_dump_statistics(btstack_sbc_plc_state_t * state);
 
 #ifdef OCTAVE_OUTPUT
-void octave_set_base_name(const char * name);
+void btstack_sbc_plc_octave_set_base_name(const char * name);
 #endif
 
 #if defined __cplusplus

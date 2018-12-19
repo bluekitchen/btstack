@@ -162,6 +162,11 @@ int main (int argc, const char * argv[]){
     int argv_pos = 1;
     const char * filename = argv[argv_pos++];
     
+#ifdef OCTAVE_OUTPUT
+    printf("OCTAVE OUTPUT active\n");
+    btstack_cvsd_plc_octave_set_base_name(filename);
+#endif
+
     strcpy(pklg_path, filename);
     strcat(pklg_path, ".pklg");
 

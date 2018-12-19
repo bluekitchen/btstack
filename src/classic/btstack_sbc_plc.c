@@ -175,7 +175,7 @@ const char * octave_frame_type2str(int index){
     return octave_frame_type_name[index];
 }
 
-void octave_set_base_name(const char * base_name){
+void btstack_sbc_plc_octave_set_base_name(const char * base_name){
     strcpy(octave_base_name, base_name);
     printf("OCTAVE: base name set to %s\n", octave_base_name);
 }

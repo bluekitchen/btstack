@@ -51,16 +51,16 @@ extern "C" {
 
 #define BTSTACK_CVSD_PLC_SAMPLE_FORMAT int16_t
 
-#define CVSD_FS_MAX 60       /* CVSD Frame Size */
+#define CVSD_FS 60           /* CVSD Frame Size */
 #define CVSD_N 256           /* Window Length for pattern matching */ 
 #define CVSD_M 32            /* Template for matching */
-#define CVSD_LHIST (CVSD_N+CVSD_FS_MAX-1)  /* Length of history buffer required */ 
+#define CVSD_LHIST (CVSD_N+CVSD_FS-1)  /* Length of history buffer required */ 
 #define CVSD_RT 18            /*  Reconvergence Time (samples) */
 #define CVSD_OLAL 8         /*  OverLap-Add Length (samples) */
 
 /* PLC State Information */
 typedef struct cvsd_plc_state {
-    int16_t hist[CVSD_LHIST+CVSD_FS_MAX+CVSD_RT+CVSD_OLAL];
+    int16_t hist[CVSD_LHIST+CVSD_FS+CVSD_RT+CVSD_OLAL];
     int16_t bestlag;
     int     nbf;
 
@@ -87,6 +87,10 @@ int   btstack_cvsd_plc_pattern_match(BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y);
 float btstack_cvsd_plc_amplitude_match(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y, BTSTACK_CVSD_PLC_SAMPLE_FORMAT bestmatch);
 BTSTACK_CVSD_PLC_SAMPLE_FORMAT btstack_cvsd_plc_crop_sample(float val);
 float btstack_cvsd_plc_rcos(int index);
+
+#ifdef OCTAVE_OUTPUT
+void btstack_cvsd_plc_octave_set_base_name(const char * name);
+#endif
 
 #if defined __cplusplus
 }

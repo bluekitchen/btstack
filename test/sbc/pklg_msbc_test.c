@@ -169,7 +169,7 @@ int main (int argc, const char * argv[]){
     
 #ifdef OCTAVE_OUTPUT
     printf("OCTAVE OUTPUT active\n");
-    octave_set_base_name(filename);
+    btstack_sbc_plc_octave_set_base_name(filename);
 #endif
 
     strcpy(pklg_path, filename);
