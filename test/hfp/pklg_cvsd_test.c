@@ -57,8 +57,8 @@
 
 #define BYTES_PER_FRAME 2
 
-static char wav_filename[1000];
-static char pklg_filename[1000];
+#define PAKET_TYPE_SCO_OUT 8
+#define PAKET_TYPE_SCO_IN  9
 
 static btstack_cvsd_plc_state_t plc_state;
 
@@ -81,30 +81,17 @@ static ssize_t __read(int fd, void *buf, size_t count){
     return pos;
 }
 
-int main (int argc, const char * argv[]){
-    if (argc < 2){
-        show_usage();
-        return -1;
-    }
-    
-    int argv_pos = 1;
-    const char * filename = argv[argv_pos++];
-    
-    strcpy(pklg_filename, filename);
-    strcat(pklg_filename, ".pklg");
+static void process_file(const char * pklg_path, const char * wav_path, int packet_type, int plc_enabled){
 
-    strcpy(wav_filename, filename);
-    strcat(wav_filename, ".wav");
+    printf("Processing %s -> %s: PLC enabled: %u, direction %s\n", pklg_path, wav_path, plc_enabled, packet_type == PAKET_TYPE_SCO_OUT ? "Out" : "In");
 
-
-    int fd = open(pklg_filename, O_RDONLY);
+    int fd = open(pklg_path, O_RDONLY);
     if (fd < 0) {
-        printf("Can't open file %s", pklg_filename);
-        return -1;
+        printf("Can't open file %s", pklg_path);
+        return;
     }
-    printf("Open pklg file: %s\n", pklg_filename);
  
-    wav_writer_open(wav_filename, 1, 8000);
+    wav_writer_open(wav_path, 1, 8000);
 
     btstack_cvsd_plc_init(&plc_state);
     
@@ -121,7 +108,9 @@ int main (int argc, const char * argv[]){
         bytes_read = __read(fd, packet, size);
 
         uint8_t type = header[12];
-        if (type != 9) continue;
+
+        if (type != packet_type) continue;
+
         sco_packet_counter++;
 
         int16_t audio_frame_out[128];    // 
@@ -145,12 +134,11 @@ int main (int argc, const char * argv[]){
             audio_frame_in[i] = little_endian_read_16(packet, 3 + i * 2);
         }
 
-#if 1
-        btstack_cvsd_plc_process_data(&plc_state, audio_frame_in, num_samples, audio_frame_out);
-#else
-        memcpy(audio_frame_out, audio_frame_in, audio_bytes_read);
-#endif
-
+        if (plc_enabled){
+            btstack_cvsd_plc_process_data(&plc_state, audio_frame_in, num_samples, audio_frame_out);
+        } else {
+            memcpy(audio_frame_out, audio_frame_in, audio_bytes_read);
+        }
 
         wav_writer_write_int16(num_samples, audio_frame_out);
     }
@@ -159,4 +147,36 @@ int main (int argc, const char * argv[]){
     close(fd);
 
     btstack_cvsd_dump_statistics(&plc_state);
+}
+
+int main (int argc, const char * argv[]){
+
+    char wav_path[1000];
+    char pklg_path[1000];
+
+    if (argc < 2){
+        show_usage();
+        return -1;
+    }
+    
+    int argv_pos = 1;
+    const char * filename = argv[argv_pos++];
+    
+    strcpy(pklg_path, filename);
+    strcat(pklg_path, ".pklg");
+
+    // in file, no plc
+    strcpy(wav_path, filename);
+    strcat(wav_path, "_in_raw.wav");
+    process_file(pklg_path, wav_path, PAKET_TYPE_SCO_IN, 0);
+
+    // in file, plc
+    strcpy(wav_path, filename);
+    strcat(wav_path, "_in_plc.wav");
+    process_file(pklg_path, wav_path, PAKET_TYPE_SCO_IN, 1);
+
+    // out file, no plc
+    strcpy(wav_path, filename);
+    strcat(wav_path, "_out.wav");
+    process_file(pklg_path, wav_path, PAKET_TYPE_SCO_OUT, 0);
 }
