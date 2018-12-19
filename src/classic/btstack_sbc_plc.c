@@ -315,7 +315,7 @@ void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, SAMPLE_FORMAT
     }
     
     if (plc_state->nbf==1){
-        printf("first bad frame\n");
+        // printf("first bad frame\n");
         // Perform pattern matching to find where to replicate
         plc_state->bestlag = PatternMatch(plc_state->hist);
     }
@@ -333,7 +333,7 @@ void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, SAMPLE_FORMAT
         
         // Compute Scale Factor to Match Amplitude of Substitution Packet to that of Preceding Packet
         sf = AmplitudeMatch(plc_state->hist, plc_state->bestlag);
-        printf("sf Apmlitude Match %f, new data %d, bestlag+M %d\n", sf, ZIRbuf[0], plc_state->hist[plc_state->bestlag]);
+        // printf("sf Apmlitude Match %f, new data %d, bestlag+M %d\n", sf, ZIRbuf[0], plc_state->hist[plc_state->bestlag]);
         for (i=0;i<SBC_OLAL;i++){
             float left  = ZIRbuf[i];
             float right = sf*plc_state->hist[plc_state->bestlag+i];
@@ -358,7 +358,7 @@ void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, SAMPLE_FORMAT
             plc_state->hist[SBC_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
         }
     } else {
-        printf("succesive bad frame nr %d\n", plc_state->nbf);
+        // printf("succesive bad frame nr %d\n", plc_state->nbf);
         for (;i<SBC_FS+SBC_RT+SBC_OLAL;i++){
             plc_state->hist[SBC_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
         }

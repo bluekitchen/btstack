@@ -483,16 +483,13 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
         memmove(decoder_state->frame_buffer, decoder_state->frame_buffer + bytes_processed, decoder_state->bytes_in_frame_buffer);
     }
 
-#if 0
     // ignore bad data before first sync
     if (!decoder_state->first_good_frame_found) return;
 
-    // PLC on>
-    if (!plc_enabled) return;
-
+    
     // PLC
     while (decoder_state->msbc_bad_bytes >= msbc_frame_size){
-        printf("BAD Bytes %u\n",  decoder_state->msbc_bad_bytes);
+        // printf("BAD Bytes %u\n",  decoder_state->msbc_bad_bytes);
         decoder_state->msbc_bad_bytes -= msbc_frame_size;
         state->bad_frames_nr++;
 
@@ -501,6 +498,7 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
         OI_UINT32 bytes_in_frame_buffer = 57;
 
         // printf("Bad-Before: bytes in buffer %u, pcm bytes %u\n", bytes_in_frame_buffer,  decoder_state->pcm_bytes);
+        
         OI_STATUS status = status = OI_CODEC_SBC_DecodeFrame(&(decoder_state->decoder_context), 
                                             &frame_data, 
                                             &bytes_in_frame_buffer, 
@@ -515,11 +513,14 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
             log_error("PLC: not all bytes of zero frame processed, left %u\n", bytes_in_frame_buffer);
         }
 
-        printf_hexdump(decoder_state->pcm_plc_data, decoder_state->pcm_bytes);
-
-        btstack_sbc_plc_bad_frame(&state->plc_state, decoder_state->pcm_plc_data, decoder_state->pcm_data);
-
-        printf_hexdump(decoder_state->pcm_data, decoder_state->pcm_bytes);
+        // printf_hexdump(decoder_state->pcm_plc_data, decoder_state->pcm_bytes);
+        
+        if (plc_enabled) {
+            btstack_sbc_plc_bad_frame(&state->plc_state, decoder_state->pcm_plc_data, decoder_state->pcm_data);
+        } else {
+            memcpy(decoder_state->pcm_data, decoder_state->pcm_plc_data, decoder_state->pcm_bytes);
+        }
+        // printf_hexdump(decoder_state->pcm_data, decoder_state->pcm_bytes);
 
         state->handle_pcm_data(decoder_state->pcm_data, 
                             btstack_sbc_decoder_num_samples_per_frame(state), 
@@ -529,8 +530,6 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
         
         break;
     }
-#endif
-
 }
 
 void btstack_sbc_decoder_process_data(btstack_sbc_decoder_state_t * state, int packet_status_flag, uint8_t * buffer, int size){
