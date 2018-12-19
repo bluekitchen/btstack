@@ -66,8 +66,8 @@ static int frame_count = 0;
 
 
 static void show_usage(void){
-    printf("\n\nUsage: ./sco_test input_file\n");
-    printf("Example: ./sco_test pklg/test1.pklg\n");
+    printf("\n\nUsage: ./pklg_msbc_test input_file \n");
+    printf("Example: ./pklg_msbc_test pklg/test1 \n");
 }
 
 static ssize_t __read(int fd, void *buf, size_t count){
@@ -140,6 +140,8 @@ int main (int argc, const char * argv[]){
     btstack_sbc_decoder_state_t state;
     btstack_sbc_decoder_init(&state, mode, &handle_pcm_data, NULL);
     
+    // btstack_sbc_decoder_test_disable_plc();
+
     int sco_packet_counter = 0;
     while (1){
         int bytes_read;
