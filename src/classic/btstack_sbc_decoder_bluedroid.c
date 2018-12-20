@@ -526,9 +526,6 @@ static void btstack_sbc_decoder_process_msbc_data(btstack_sbc_decoder_state_t * 
                             btstack_sbc_decoder_num_samples_per_frame(state), 
                             btstack_sbc_decoder_num_channels(state), 
                             btstack_sbc_decoder_sample_rate(state), state->context);
-
-        
-        break;
     }
 }
 
