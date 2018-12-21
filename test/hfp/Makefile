@@ -76,7 +76,7 @@ hfp_ag_client_test: ${MOCK_OBJ} hfp_gsm_model.o hfp_ag.o hfp.o hfp_ag_client_tes
 cvsd_plc_test: ${COMMON_OBJ} btstack_cvsd_plc.o wav_util.o cvsd_plc_test.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-pklg_cvsd_test: ${COMMON_OBJ} btstack_cvsd_plc.o wav_util.o pklg_cvsd_test.o
+pklg_cvsd_test: hci_dump.o btstack_util.o btstack_cvsd_plc.o wav_util.o pklg_cvsd_test.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
