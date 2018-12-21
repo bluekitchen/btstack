@@ -46,7 +46,7 @@ sbc_decoder_test: ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${COMMON_OBJ} sbc_decode
 msbc_encoder_test: ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${COMMON_OBJ} msbc_encoder_test.o  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-pklg_msbc_test: ${SBC_DECODER_OBJ} ${COMMON_OBJ} pklg_msbc_test.o  
+pklg_msbc_test: ${SBC_DECODER_OBJ} hci_dump.o btstack_util.o wav_util.o pklg_msbc_test.o  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 data_sine_stereo_sbc.h: data/sine-stereo.sbc
