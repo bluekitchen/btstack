@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - SM: generate and store ER / IR keys in TLV, unless manually set by application
+- hci_dump: support PacketLogger or BlueZ format output via SEGGER RTT Channel 1 Up
 
 ### Fixed
 - SM: fix internal buffer overrun during random address generation
