@@ -19,7 +19,7 @@ CFLAGS += -I${SBC_ENCODER_ROOT}/include
 CFLAGS += -Werror=unused-parameter
 # CFLAGS += -D OCTAVE_OUTPUT 
 #CFLAGS += -D PRINT_SAMPLES -D PRINT_SCALEFACTORS -D OI_DEBUG -D TRACE_EXECUTION 
-LDFLAGS += -lCppUTest -lCppUTestExt
+LDFLAGS_CPPUTEST += -lCppUTest -lCppUTestExt
 VPATH += ${SBC_DECODER_ROOT}/srce 
 VPATH += ${SBC_ENCODER_ROOT}/srce
 VPATH += ${BTSTACK_ROOT}/src
@@ -41,13 +41,16 @@ SBC_TESTS = sbc_decoder_test msbc_encoder_test pklg_msbc_test
 all: ${SBC_TESTS}
 
 sbc_decoder_test: ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${COMMON_OBJ} sbc_decoder_test.o  
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+	${CC} $^ ${CFLAGS} ${LDFLAGS_CPPUTEST} -o $@
 
 msbc_encoder_test: ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${COMMON_OBJ} msbc_encoder_test.o  
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+	${CC} $^ ${CFLAGS} ${LDFLAGS_CPPUTEST} -o $@
 
 pklg_msbc_test: ${SBC_DECODER_OBJ} hci_dump.o btstack_util.o wav_util.o pklg_msbc_test.o  
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+	${CC} $^ ${CFLAGS} -o $@
+
+sbc_decoder_sine: ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${COMMON_OBJ} sbc_decoder_sine.o data_sine_stereo_sbc.h
+	${CC} $(filter-out data_sine_stereo_sbc.h,$^) ${CFLAGS} ${LDFLAGS_CPPUTEST} -o $@
 
 data_sine_stereo_sbc.h: data/sine-stereo.sbc
 	xxd -i -l 14800 $^ > $@
@@ -55,8 +58,6 @@ data_sine_stereo_sbc.h: data/sine-stereo.sbc
 data_fanfare_8sb_stereo_sbc.h: data/fanfare-8sb-stereo.sbc
 	xxd -i $^ > $@
 
-sbc_decoder_sine: ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${COMMON_OBJ} sbc_decoder_sine.o data_sine_stereo_sbc.h
-	${CC} $(filter-out data_sine_stereo_sbc.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 test: all
 	./sbc_decoder_test data/avdtp_sink sbc 0 0
