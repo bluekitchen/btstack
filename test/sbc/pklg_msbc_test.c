@@ -115,7 +115,7 @@ static void process_file(const char * pklg_path, const char * wav_path, int pack
     btstack_sbc_decoder_state_t state;
     btstack_sbc_decoder_init(&state, mode, &handle_pcm_data, NULL);
     
-    // btstack_sbc_decoder_test_set_plc_enabled(plc_enabled);
+    btstack_sbc_decoder_test_set_plc_enabled(plc_enabled);
 
     int sco_packet_counter = 0;
     while (1){
