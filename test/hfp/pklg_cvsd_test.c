@@ -85,7 +85,11 @@ static void process_file(const char * pklg_path, const char * wav_path, int pack
 
     printf("Processing %s -> %s: PLC enabled: %u, direction %s\n", pklg_path, wav_path, plc_enabled, packet_type == PAKET_TYPE_SCO_OUT ? "Out" : "In");
 
-    int fd = open(pklg_path, O_RDONLY);
+    int oflags = O_RDONLY;
+#ifdef _WIN32
+    oflags |= O_BINARY;
+#endif
+    int fd = open(pklg_path, oflags);
     if (fd < 0) {
         printf("Can't open file %s", pklg_path);
         return;
