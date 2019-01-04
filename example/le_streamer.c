@@ -243,7 +243,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                             // print connection parameters (without using float operations)
                             conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
                             printf("%c: Connection Interval: %u.%02u ms, latency %u\n", context->name, conn_interval * 125 / 100,
-                                25 * (conn_interval & 3), hci_subevent_le_connection_update_complete_get_conn_latency(packet));
+                                25 * (conn_interval & 3), hci_subevent_le_connection_complete_get_conn_latency(packet));
 
                             // request min con interval 15 ms for iOS 11+ 
                             // gap_request_connection_parameter_update(context->connection_handle, 12, 12, 0, 0x0048);
