@@ -3483,7 +3483,7 @@ static void hci_run(void){
                 sniff_min_interval = connection->sniff_min_interval;
                 connection->sniff_min_interval = 0;
                 hci_send_cmd(&hci_sniff_mode, connection->con_handle, connection->sniff_max_interval, sniff_min_interval, connection->sniff_attempt, connection->sniff_timeout);
-                break;
+                return;
         }
 #endif
 
@@ -3495,17 +3495,17 @@ static void hci_run(void){
                 hci_send_cmd(&hci_le_connection_update, connection->con_handle, connection->le_conn_interval_min,
                     connection->le_conn_interval_max, connection->le_conn_latency, connection->le_supervision_timeout,
                     0x0000, 0xffff);
-                break;
+                return;
             case CON_PARAMETER_UPDATE_REPLY:
                 connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
                 hci_send_cmd(&hci_le_remote_connection_parameter_request_reply, connection->con_handle, connection->le_conn_interval_min,
                     connection->le_conn_interval_max, connection->le_conn_latency, connection->le_supervision_timeout,
                     0x0000, 0xffff);
-                break;
+                return;
             case CON_PARAMETER_UPDATE_NEGATIVE_REPLY:
-                connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE; 
+                connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
                 hci_send_cmd(&hci_le_remote_connection_parameter_request_negative_reply, ERROR_CODE_UNSUPPORTED_LMP_PARAMETER_VALUE_UNSUPPORTED_LL_PARAMETER_VALUE);
-                break;
+                return;
             default:
                 break;
         }
