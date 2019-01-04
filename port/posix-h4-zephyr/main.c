@@ -86,7 +86,6 @@ static const uint8_t read_static_address_command_complete_prefix[] = { 0x0e, 0x1
 static bd_addr_t static_address;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    bd_addr_t addr;
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
@@ -94,7 +93,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             printf("BTstack up and running as %s\n",  bd_addr_to_str(static_address));
             // setup TLV
             strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
-            strcat(tlv_db_path, bd_addr_to_str(addr));
+            strcat(tlv_db_path, bd_addr_to_str(static_address));
             strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
             tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
             btstack_tlv_set_instance(tlv_impl, &tlv_context);
@@ -102,7 +101,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case HCI_EVENT_COMMAND_COMPLETE:
             if (memcmp(packet, read_static_address_command_complete_prefix, sizeof(read_static_address_command_complete_prefix)) == 0){
                 reverse_48(&packet[7], static_address);
-                gap_random_address_set(addr);
+                gap_random_address_set(static_address);
             }
             break;
         default:
