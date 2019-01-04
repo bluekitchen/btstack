@@ -527,6 +527,13 @@ typedef struct {
 
 #ifdef ENABLE_BLE
     uint16_t le_connection_interval;
+
+    // LE PHY Update via set phy command
+    uint8_t le_phy_update_all_phys;      // 0xff for idle
+    uint8_t le_phy_update_tx_phys;
+    uint8_t le_phy_update_rx_phys;
+    int8_t  le_phy_update_phy_options;
+
     // LE Security Manager
     sm_connection_t sm_connection;
 

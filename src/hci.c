@@ -202,6 +202,9 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
     conn->num_acl_packets_sent = 0;
     conn->num_sco_packets_sent = 0;
     conn->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
+#ifdef ENABLE_BLE
+    conn->le_phy_update_all_phys = 0xff;
+#endif    
     btstack_linked_list_add(&hci_stack->connections, (btstack_linked_item_t *) conn);
     return conn;
 }
@@ -3509,6 +3512,12 @@ static void hci_run(void){
             default:
                 break;
         }
+        if (connection->le_phy_update_all_phys != 0xff){
+            uint8_t all_phys = connection->le_phy_update_all_phys;
+            connection->le_phy_update_all_phys = 0xff;
+            hci_send_cmd(&hci_le_set_phy, connection->con_handle, all_phys, connection->le_phy_update_tx_phys, connection->le_phy_update_rx_phys, connection->le_phy_update_phy_options);
+            return;
+        }
 #endif
     }
     
@@ -4534,6 +4543,20 @@ gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle
 }
 
 #ifdef ENABLE_BLE
+
+uint8_t gap_le_set_phy(hci_con_handle_t connection_handle, uint8_t all_phys, uint8_t tx_phys, uint8_t rx_phys, uint8_t phy_options){
+    hci_connection_t * conn = hci_connection_for_handle(connection_handle);
+    if (!conn) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+
+    conn->le_phy_update_all_phys    = all_phys;
+    conn->le_phy_update_tx_phys     = tx_phys;
+    conn->le_phy_update_rx_phys     = rx_phys;
+    conn->le_phy_update_phy_options = phy_options;
+
+    hci_run();
+
+    return 0;
+}
 
 #ifdef ENABLE_LE_CENTRAL
 /**
