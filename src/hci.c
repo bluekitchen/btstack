@@ -1435,7 +1435,7 @@ static void hci_initializing_run(void){
             break;
         case HCI_INIT_LE_SET_EVENT_MASK:
             hci_stack->substate = HCI_INIT_W4_LE_SET_EVENT_MASK;
-            hci_send_cmd(&hci_le_set_event_mask, 0x1FF, 0x0);
+            hci_send_cmd(&hci_le_set_event_mask, 0x809FF, 0x0); // bits 0-8, 11, 19 
             break;
         case HCI_INIT_WRITE_LE_HOST_SUPPORTED:
             // LE Supported Host = 1, Simultaneous Host = 0
