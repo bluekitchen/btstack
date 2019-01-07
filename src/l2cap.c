@@ -963,8 +963,24 @@ static l2cap_fixed_channel_t * l2cap_channel_item_by_cid(uint16_t cid){
     return NULL;
 }
 
-static void l2cap_report_channel_open_failed(l2cap_channel_t * channel, uint8_t status){
+static void l2cap_handle_channel_open_failed(l2cap_channel_t * channel, uint8_t status){
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    // emit ertm buffer released, as it's not needed. if in basic mode, it was either not allocated or already released
+    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+        l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_ERTM_BUFFER_RELEASED);
+    }
+#endif
     l2cap_emit_channel_opened(channel, status);
+}
+
+static void l2cap_handle_channel_closed(l2cap_channel_t * channel){
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    // emit ertm buffer released, as it's not needed anymore. if in basic mode, it was either not allocated or already released
+    if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+        l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_ERTM_BUFFER_RELEASED);
+    }
+#endif
+    l2cap_emit_channel_closed(channel);
 }
 
 // used for fixed channels in LE (ATT/SM) and Classic (Connectionless Channel). CID < 0x04
@@ -1070,7 +1086,7 @@ static void l2cap_rtx_timeout(btstack_timer_source_t * ts){
     // "When terminating the channel, it is not necessary to send a L2CAP_DisconnectReq
     //  and enter WAIT_DISCONNECT state. Channels can be transitioned directly to the CLOSED state."
     // notify client
-    l2cap_report_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_RTX_TIMEOUT);
+    l2cap_handle_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_RTX_TIMEOUT);
 
     // discard channel
     // no need to stop timer here, it is removed from list during timer callback
@@ -1933,7 +1949,7 @@ static void l2cap_handle_connection_failed_for_addr(bd_addr_t address, uint8_t s
             if (channel->state == L2CAP_STATE_EMIT_OPEN_FAILED_AND_DISCARD){
                 done = 0;
                 // failure, forward error code
-                l2cap_report_channel_open_failed(channel, status);
+                l2cap_handle_channel_open_failed(channel, status);
                 // discard channel
                 l2cap_stop_rtx(channel);
                 btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
@@ -2046,9 +2062,9 @@ static int l2cap_send_open_failed_on_hci_disconnect(l2cap_channel_t * channel){
 #ifdef ENABLE_CLASSIC
 static void l2cap_handle_hci_disconnect_event(l2cap_channel_t * channel){
     if (l2cap_send_open_failed_on_hci_disconnect(channel)){
-        l2cap_report_channel_open_failed(channel, L2CAP_CONNECTION_BASEBAND_DISCONNECT);
+        l2cap_handle_channel_open_failed(channel, L2CAP_CONNECTION_BASEBAND_DISCONNECT);
     } else {
-        l2cap_emit_channel_closed(channel);
+        l2cap_handle_channel_closed(channel);
     }
     btstack_memory_l2cap_channel_free(channel);
 }
@@ -2474,6 +2490,7 @@ static void l2cap_signaling_handle_configure_response(l2cap_channel_t *channel, 
                     } else {
                         // On 'Reject - Unacceptable Parameters' to our optional ERTM request, fall back to BASIC mode
                         if (result == L2CAP_CONF_RESULT_UNACCEPTABLE_PARAMETERS){
+                            l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_ERTM_BUFFER_RELEASED);
                             channel->mode = L2CAP_CHANNEL_MODE_BASIC;
                         }
                     }
@@ -2569,7 +2586,7 @@ static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *c
                             // channel closed
                             channel->state = L2CAP_STATE_CLOSED;
                             // map l2cap connection response result to BTstack status enumeration
-                            l2cap_report_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_SUCCESSFUL + result);
+                            l2cap_handle_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_SUCCESSFUL + result);
                             
                             // drop link key if security block
                             if (L2CAP_CONNECTION_RESPONSE_RESULT_SUCCESSFUL + result == L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY){
@@ -2735,13 +2752,14 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
                                 // channel closed
                                 channel->state = L2CAP_STATE_CLOSED;
                                 // map l2cap connection response result to BTstack status enumeration
-                                l2cap_report_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_ERTM_NOT_SUPPORTED);
+                                l2cap_handle_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_ERTM_NOT_SUPPORTED);
                                 // discard channel
                                 btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
                                 btstack_memory_l2cap_channel_free(channel);
                                 continue;
                             } else {
                                 // fallback to Basic mode
+                                l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_ERTM_BUFFER_RELEASED);
                                 channel->mode = L2CAP_CHANNEL_MODE_BASIC;
                             }
                         }
@@ -3453,7 +3471,7 @@ void l2cap_register_fixed_channel(btstack_packet_handler_t the_packet_handler, u
 // finalize closed channel - l2cap_handle_disconnect_request & DISCONNECTION_RESPONSE
 void l2cap_finialize_channel_close(l2cap_channel_t * channel){
     channel->state = L2CAP_STATE_CLOSED;
-    l2cap_emit_channel_closed(channel);
+    l2cap_handle_channel_closed(channel);
     // discard channel
     l2cap_stop_rtx(channel);
     btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);

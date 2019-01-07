@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - L2CAP: provide channel mode (basic/ertm) and fcs option in L2CAP_EVENT_CHANNEL_OPENED 
 
+### Added
+- L2CAP: emit L2CAP_EVENT_ERTM_BUFFER_RELEASED if ERTM buffer not needed/used anymore
+
 ## Changes December 2018
 
 ### Added

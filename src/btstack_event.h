@@ -1463,6 +1463,16 @@ static inline uint16_t l2cap_event_le_packet_sent_get_local_cid(const uint8_t * 
 }
 
 /**
+ * @brief Get field local_cid from event L2CAP_EVENT_ERTM_BUFFER_RELEASED
+ * @param event packet
+ * @return local_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t l2cap_event_ertm_buffer_released_get_local_cid(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+
+/**
  * @brief Get field status from event RFCOMM_EVENT_CHANNEL_OPENED
  * @param event packet
  * @return status

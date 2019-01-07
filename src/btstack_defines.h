@@ -542,6 +542,12 @@ typedef uint8_t sm_key_t[16];
  */
 #define L2CAP_EVENT_LE_PACKET_SENT                         0x7d
 
+/*
+ * @format 2
+ * @param local_cid
+ */
+#define L2CAP_EVENT_ERTM_BUFFER_RELEASED                   0x7e
+
 
 // RFCOMM EVENTS
 
