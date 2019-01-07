@@ -1127,6 +1127,24 @@ static inline uint16_t l2cap_event_channel_opened_get_flush_timeout(const uint8_
 static inline uint8_t l2cap_event_channel_opened_get_incoming(const uint8_t * event){
     return event[23];
 }
+/**
+ * @brief Get field mode from event L2CAP_EVENT_CHANNEL_OPENED
+ * @param event packet
+ * @return mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t l2cap_event_channel_opened_get_mode(const uint8_t * event){
+    return event[24];
+}
+/**
+ * @brief Get field fcs from event L2CAP_EVENT_CHANNEL_OPENED
+ * @param event packet
+ * @return fcs
+ * @note: btstack_type 1
+ */
+static inline uint8_t l2cap_event_channel_opened_get_fcs(const uint8_t * event){
+    return event[25];
+}
 
 /**
  * @brief Get field local_cid from event L2CAP_EVENT_CHANNEL_CLOSED

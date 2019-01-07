@@ -435,7 +435,7 @@ typedef uint8_t sm_key_t[16];
 // L2CAP EVENTS
     
 /**
- * @format 1BH2222221
+ * @format 1BH222222111
  * @param status
  * @param address
  * @param handle
@@ -446,6 +446,8 @@ typedef uint8_t sm_key_t[16];
  * @param remote_mtu
  * @param flush_timeout
  * @param incoming
+ * @param mode
+ * @param fcs
  */
 #define L2CAP_EVENT_CHANNEL_OPENED                         0x70
 
