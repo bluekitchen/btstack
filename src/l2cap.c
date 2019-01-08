@@ -408,7 +408,9 @@ static uint16_t l2cap_setup_options_ertm_request(l2cap_channel_t * channel, uint
     config_options[pos++] = 2;     // length
     little_endian_store_16(config_options, pos, channel->local_mtu);
     pos += 2;
-    // 
+
+    // Issue: iOS (e.g. 10.2) uses "No FCS" as default while Core 5.0 specifies "FCS" as default
+    // Workaround: try to actively negotiate FCS option
     config_options[pos++] = L2CAP_CONFIG_OPTION_TYPE_FRAME_CHECK_SEQUENCE;
     config_options[pos++] = 1;     // length
     config_options[pos++] = channel->fcs_option;
@@ -521,10 +523,7 @@ static void l2cap_ertm_configure_channel(l2cap_channel_t * channel, l2cap_ertm_c
     pos += ertm_config->num_rx_buffers * channel->local_mps;
     channel->tx_packets_data = &buffer[pos];
 
-    // Issue: iOS (e.g. 10.2) uses "No FCS" as default while Core 5.0 specifies "FCS" as default
-    // Workaround: try to actively negotiate "No FCS" and fall back to "FCS" if "No FCS" is rejected
-    // This works as iOS accepts the "No FCS" request, hence the default value is only used on non-iOS devices
-    channel->fcs_option = 0;
+    channel->fcs_option = ertm_config->fcs_option;
 }
 
 uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, 
