@@ -134,6 +134,14 @@ static btstack_linked_list_t rfcomm_services = NULL;
 
 static gap_security_level_t rfcomm_security_level;
 
+#if defined(ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE) && defined(ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE_FOR_RFCOMM)
+#define RFCOMM_USE_OUTGOING_BUFFER
+#endif
+
+#ifdef RFCOMM_USE_OUTGOING_BUFFER
+static uint8_t outgoing_buffer[1030];
+#endif
+
 static int  rfcomm_channel_can_send(rfcomm_channel_t * channel);
 static int  rfcomm_channel_ready_for_open(rfcomm_channel_t *channel);
 static int rfcomm_channel_ready_to_send(rfcomm_channel_t * channel);
@@ -471,9 +479,13 @@ static int rfcomm_send_packet_for_multiplexer(rfcomm_multiplexer_t *multiplexer,
 
     if (!l2cap_can_send_packet_now(multiplexer->l2cap_cid)) return BTSTACK_ACL_BUFFERS_FULL;
     
+#ifdef RFCOMM_USE_OUTGOING_BUFFER
+    uint8_t * rfcomm_out_buffer = outgoing_buffer;
+#else
     l2cap_reserve_packet_buffer();
     uint8_t * rfcomm_out_buffer = l2cap_get_outgoing_buffer();
-    
+#endif
+
 	uint16_t pos = 0;
 	uint8_t crc_fields = 3;
 	
@@ -506,8 +518,12 @@ static int rfcomm_send_packet_for_multiplexer(rfcomm_multiplexer_t *multiplexer,
 	}
 	rfcomm_out_buffer[pos++] =  btstack_crc8_calc(rfcomm_out_buffer, crc_fields); // calc fcs
 
+#ifdef RFCOMM_USE_OUTGOING_BUFFER
+    int err = l2cap_send(multiplexer->l2cap_cid, rfcomm_out_buffer, pos);
+#else
     int err = l2cap_send_prepared(multiplexer->l2cap_cid, pos);
-    
+#endif
+
     return err;
 }
 
@@ -517,8 +533,12 @@ static int rfcomm_send_uih_prepared(rfcomm_multiplexer_t *multiplexer, uint8_t d
     uint8_t address = (1 << 0) | (multiplexer->outgoing << 1) | (dlci << 2); 
     uint8_t control = BT_RFCOMM_UIH;
 
+#ifdef RFCOMM_USE_OUTGOING_BUFFER
+    uint8_t * rfcomm_out_buffer = outgoing_buffer;
+#else
     uint8_t * rfcomm_out_buffer = l2cap_get_outgoing_buffer();
-    
+#endif
+
     uint16_t pos = 0;
     rfcomm_out_buffer[pos++] = address;
     rfcomm_out_buffer[pos++] = control;
@@ -531,8 +551,12 @@ static int rfcomm_send_uih_prepared(rfcomm_multiplexer_t *multiplexer, uint8_t d
     // UIH frames only calc FCS over address + control (5.1.1)
     rfcomm_out_buffer[pos++] =  btstack_crc8_calc(rfcomm_out_buffer, 2); // calc fcs
     
+#ifdef RFCOMM_USE_OUTGOING_BUFFER
+    int err = l2cap_send(multiplexer->l2cap_cid, rfcomm_out_buffer, pos);
+#else
     int err = l2cap_send_prepared(multiplexer->l2cap_cid, pos);
-    
+#endif
+
     return err;
 }
 
@@ -2085,7 +2109,14 @@ static int rfcomm_assert_send_valid(rfcomm_channel_t * channel , uint16_t len){
         log_error("rfcomm_send cid 0x%02x, rfcomm data lenght exceeds MTU!", channel->rfcomm_cid);
         return RFCOMM_DATA_LEN_EXCEEDS_MTU;
     }
-    
+
+#ifdef RFCOMM_USE_OUTGOING_BUFFER
+    if (len > rfcomm_max_frame_size_for_l2cap_mtu(sizeof(outgoing_buffer))){
+        log_error("rfcomm_send cid 0x%02x, length exceeds outgoing rfcomm_out_buffer", channel->rfcomm_cid);
+        return RFCOMM_DATA_LEN_EXCEEDS_MTU;
+    }
+#endif
+
     if (!channel->credits_outgoing){
         log_info("rfcomm_send cid 0x%02x, no rfcomm outgoing credits!", channel->rfcomm_cid);
         return RFCOMM_NO_OUTGOING_CREDITS;
@@ -2098,21 +2129,6 @@ static int rfcomm_assert_send_valid(rfcomm_channel_t * channel , uint16_t len){
     return 0;    
 }
 
-// pre: rfcomm_can_send_packet_now(rfcomm_cid) == true
-int rfcomm_reserve_packet_buffer(void){
-    return l2cap_reserve_packet_buffer();
-}
-
-void rfcomm_release_packet_buffer(void){
-    l2cap_release_packet_buffer();
-}
-
-uint8_t * rfcomm_get_outgoing_buffer(void){
-    uint8_t * rfcomm_out_buffer = l2cap_get_outgoing_buffer();
-    // address + control + length (16) + no credit field
-    return &rfcomm_out_buffer[4];
-}
-
 uint16_t rfcomm_get_max_frame_size(uint16_t rfcomm_cid){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
@@ -2120,6 +2136,34 @@ uint16_t rfcomm_get_max_frame_size(uint16_t rfcomm_cid){
         return 0;
     }
     return channel->max_frame_size;
+}
+
+// pre: rfcomm_can_send_packet_now(rfcomm_cid) == true
+int rfcomm_reserve_packet_buffer(void){
+#ifdef RFCOMM_USE_OUTGOING_BUFFER
+    log_error("rfcomm_reserve_packet_buffer should not get called with ERTM");
+    return 0;
+#else
+    return l2cap_reserve_packet_buffer();
+#endif
+}
+
+void rfcomm_release_packet_buffer(void){
+#ifdef RFCOMM_USE_OUTGOING_BUFFER
+    log_error("rfcomm_release_packet_buffer should not get called with ERTM");
+#else
+    l2cap_release_packet_buffer();
+#endif
+}
+
+uint8_t * rfcomm_get_outgoing_buffer(void){
+#ifdef RFCOMM_USE_OUTGOING_BUFFER
+    uint8_t * rfcomm_out_buffer = outgoing_buffer;
+#else
+    uint8_t * rfcomm_out_buffer = l2cap_get_outgoing_buffer();
+#endif
+    // address + control + length (16) + no credit field
+    return &rfcomm_out_buffer[4];
 }
 
 int rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
@@ -2131,10 +2175,18 @@ int rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len){
 
     int err = rfcomm_assert_send_valid(channel, len);
     if (err) return err;
+
+#ifdef RFCOMM_USE_OUTGOING_BUFFER
+    if (!l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid)){
+        log_error("rfcomm_send_prepared: l2cap cannot send now");
+        return BTSTACK_ACL_BUFFERS_FULL;
+    }
+#else
     if (!l2cap_can_send_prepared_packet_now(channel->multiplexer->l2cap_cid)){
         log_error("rfcomm_send_prepared: l2cap cannot send now");
         return BTSTACK_ACL_BUFFERS_FULL;
     }
+#endif
 
     // send might cause l2cap to emit new credits, update counters first
     if (len){
@@ -2170,13 +2222,22 @@ int rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
         return BTSTACK_ACL_BUFFERS_FULL;
     }
 
+#ifdef RFCOMM_USE_OUTGOING_BUFFER
+#else
     rfcomm_reserve_packet_buffer();
+#endif
     uint8_t * rfcomm_payload = rfcomm_get_outgoing_buffer();
+
     memcpy(rfcomm_payload, data, len);
     err = rfcomm_send_prepared(rfcomm_cid, len);    
+
+#ifdef RFCOMM_USE_OUTGOING_BUFFER
+#else
     if (err){
         rfcomm_release_packet_buffer();
     }
+#endif
+
     return err;
 }
 
@@ -2423,5 +2484,4 @@ void rfcomm_grant_credits(uint16_t rfcomm_cid, uint8_t credits){
     // process
     l2cap_request_can_send_now_event(channel->multiplexer->l2cap_cid);
 }
-
 
