@@ -47,6 +47,7 @@
 #include <stdint.h>
 #include "btstack_run_loop.h"
 #include "gap.h"
+#include "l2cap.h"
 
 #if defined __cplusplus
 extern "C" {
