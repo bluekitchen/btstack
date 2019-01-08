@@ -67,6 +67,12 @@
 #endif
 #endif
 
+// L2CAP ERTM requires ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE and ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE_FOR_RFCOMM
+#if defined(ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE) && defined(ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE_FOR_RFCOMM)
+#define RFCOMM_USE_OUTGOING_BUFFER
+#define RFCOMM_USE_ERTM
+#endif
+
 #define RFCOMM_MULIPLEXER_TIMEOUT_MS 60000
 
 #define RFCOMM_CREDITS 10
@@ -134,8 +140,10 @@ static btstack_linked_list_t rfcomm_services = NULL;
 
 static gap_security_level_t rfcomm_security_level;
 
-#if defined(ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE) && defined(ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE_FOR_RFCOMM)
-#define RFCOMM_USE_OUTGOING_BUFFER
+#ifdef RFCOMM_USE_ERTM
+static uint16_t ertm_id;
+void (*rfcomm_ertm_request_callback)(rfcomm_ertm_request_t * request);
+void (*rfcomm_ertm_released_callback)(uint16_t ertm_id);
 #endif
 
 #ifdef RFCOMM_USE_OUTGOING_BUFFER
@@ -988,6 +996,23 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
             // 
             multiplexer->state = RFCOMM_MULTIPLEXER_W4_SABM_0;
             log_info("L2CAP_EVENT_INCOMING_CONNECTION (l2cap_cid 0x%02x) for BLUETOOTH_PROTOCOL_RFCOMM => accept", l2cap_cid);
+
+#ifdef RFCOMM_USE_ERTM
+            // request
+            rfcomm_ertm_request_t request;
+            memset(&request, 0, sizeof(rfcomm_ertm_request_t));
+            memcpy(request.addr, event_addr, 6);
+            request.ertm_id = ++ertm_id;
+            if (rfcomm_ertm_request_callback){
+                (*rfcomm_ertm_request_callback)(&request);
+            }
+            if (request.ertm_config && request.ertm_buffer && request.ertm_buffer_size){
+                multiplexer->ertm_id = request.ertm_id;
+                l2cap_accept_ertm_connection(l2cap_cid, request.ertm_config, request.ertm_buffer, request.ertm_buffer_size);
+            }
+            return 1;
+#endif
+
             l2cap_accept_connection(l2cap_cid);
             return 1;
             
@@ -1079,6 +1104,19 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
             // no need to call l2cap_disconnect here, as it's already closed
             rfcomm_multiplexer_finalize(multiplexer);
             return 1;
+
+#ifdef RFCOMM_USE_ERTM
+        case L2CAP_EVENT_ERTM_BUFFER_RELEASED:
+            l2cap_cid = l2cap_event_ertm_buffer_released_get_local_cid(packet);
+            multiplexer = rfcomm_multiplexer_for_l2cap_cid(l2cap_cid);
+            if (multiplexer) {
+                log_info("buffer for ertm id %u released", multiplexer->ertm_id);
+                if (rfcomm_ertm_released_callback){
+                    (*rfcomm_ertm_released_callback)(multiplexer->ertm_id);
+                }
+            }
+            break;
+#endif
 
         default:
             break;
@@ -2339,7 +2377,25 @@ static uint8_t rfcomm_channel_create_internal(btstack_packet_handler_t packet_ha
     if (multiplexer->state != RFCOMM_MULTIPLEXER_OPEN) {
         channel->state = RFCOMM_CHANNEL_W4_MULTIPLEXER;
         uint16_t l2cap_cid = 0;
-        status = l2cap_create_channel(rfcomm_packet_handler, addr, BLUETOOTH_PROTOCOL_RFCOMM, l2cap_max_mtu(), &l2cap_cid);
+#ifdef RFCOMM_USE_ERTM
+        // request 
+        rfcomm_ertm_request_t request;
+        memset(&request, 0, sizeof(rfcomm_ertm_request_t));
+        memcpy(request.addr, addr, 6);
+        request.ertm_id = ++ertm_id;
+        if (rfcomm_ertm_request_callback){
+            (*rfcomm_ertm_request_callback)(&request);
+        }
+        if (request.ertm_config && request.ertm_buffer && request.ertm_buffer_size){
+            multiplexer->ertm_id = request.ertm_id;
+            status = l2cap_create_ertm_channel(rfcomm_packet_handler, addr, BLUETOOTH_PROTOCOL_RFCOMM, 
+                        request.ertm_config, request.ertm_buffer, request.ertm_buffer_size, &l2cap_cid);
+        }
+        else
+#endif
+        {
+            status = l2cap_create_channel(rfcomm_packet_handler, addr, BLUETOOTH_PROTOCOL_RFCOMM, l2cap_max_mtu(), &l2cap_cid);
+        }
         if (status) goto fail;
         multiplexer->l2cap_cid = l2cap_cid;
         return 0;
@@ -2485,3 +2541,9 @@ void rfcomm_grant_credits(uint16_t rfcomm_cid, uint8_t credits){
     l2cap_request_can_send_now_event(channel->multiplexer->l2cap_cid);
 }
 
+#ifdef RFCOMM_USE_ERTM
+void rfcomm_enable_l2cap_ertm(void request_callback(rfcomm_ertm_request_t * request), void released_callback(uint16_t ertm_id)){
+    rfcomm_ertm_request_callback  = request_callback;
+    rfcomm_ertm_released_callback = released_callback;
+}
+#endif
