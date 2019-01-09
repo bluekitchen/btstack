@@ -86,7 +86,7 @@ static uint16_t  rfcomm_cid = 0;
  * RFCOMM can make use for ERTM. Due to the need to re-transmit packets,
  * a large buffer is needed to still get high throughput
  */
-#if defined(ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE) && defined (ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE_FOR_RFCOMM)
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE_FOR_RFCOMM
 static uint8_t ertm_buffer[20000];
 static l2cap_ertm_config_t ertm_config = {
     0,       // ertm mandatory
@@ -287,7 +287,7 @@ int btstack_main(int argc, const char * argv[])
     rfcomm_init();
     rfcomm_register_service(packet_handler, RFCOMM_SERVER_CHANNEL, 0xffff);
 
-#if defined(ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE) && defined (ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE_FOR_RFCOMM)
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE_FOR_RFCOMM
     // setup ERTM management
     rfcomm_enable_l2cap_ertm(&rfcomm_ertm_request_handler, &rfcomm_ertm_released_handler);
 #endif
