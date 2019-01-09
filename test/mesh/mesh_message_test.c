@@ -769,7 +769,7 @@ TEST(MessageTest, Message21Send){
     mesh_upper_transport_set_seq(seq);
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message21_upper_transport_pdu, 1, message21_lower_transport_pdus, message21_network_pdus);
 }
-#endif
+
 
 #if 0
 // Message 22
@@ -808,6 +808,7 @@ TEST(MessageTest, Message22Send){
     mesh_upper_transport_set_seq(seq);
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message22_upper_transport_pdu, 1, message22_lower_transport_pdus, message22_network_pdus);
 }
+#endif
 
 #if 0
 // Message 23
