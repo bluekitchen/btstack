@@ -500,16 +500,16 @@ static void l2cap_ertm_configure_channel(l2cap_channel_t * channel, l2cap_ertm_c
     channel->num_rx_buffers = ertm_config->num_rx_buffers;
     channel->num_tx_buffers = ertm_config->num_tx_buffers;
 
-    // align buffer to 16-byte boundary, just in case
+    // align buffer to 16-byte boundary to assert l2cap_ertm_rx_packet_state_t is aligned
     int bytes_till_alignment = 16 - (((uintptr_t) buffer) & 0x0f);
     buffer += bytes_till_alignment;
     size   -= bytes_till_alignment;
 
-    // setup state buffers
+    // setup state buffers - use void cast to avoid -Wcast-align warning
     uint32_t pos = 0;
-    channel->rx_packets_state = (l2cap_ertm_rx_packet_state_t *) &buffer[pos];
+    channel->rx_packets_state = (l2cap_ertm_rx_packet_state_t *) (void *) &buffer[pos];
     pos += ertm_config->num_rx_buffers * sizeof(l2cap_ertm_rx_packet_state_t);
-    channel->tx_packets_state = (l2cap_ertm_tx_packet_state_t *) &buffer[pos];
+    channel->tx_packets_state = (l2cap_ertm_tx_packet_state_t *) (void *) &buffer[pos];
     pos += ertm_config->num_tx_buffers * sizeof(l2cap_ertm_tx_packet_state_t);
 
     // setup reassembly buffer
