@@ -1489,6 +1489,15 @@ static void l2cap_run(void){
             
             case L2CAP_STATE_CONFIG:
                 if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+                    // fallback to basic mode if ERTM requested but not not supported by remote
+                     if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+                        if (!l2cap_ertm_mode(channel)){
+                            l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_ERTM_BUFFER_RELEASED);
+                            channel->mode = L2CAP_CHANNEL_MODE_BASIC;
+                        }
+                    }
+#endif
                 if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP){
                     uint16_t flags = 0;
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP);
