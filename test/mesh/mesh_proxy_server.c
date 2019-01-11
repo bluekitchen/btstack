@@ -54,6 +54,17 @@
 
 #define BEACON_TYPE_SECURE_NETWORK 1
 
+#define USE_ADVERTISING_WITH_NETWORK_ID
+// #define USE_ADVERTISING_WITH_NODE_IDENTITY
+
+#if defined(USE_ADVERTISING_WITH_NETWORK_ID) && defined(USE_ADVERTISING_WITH_NODE_IDENTITY) 
+#error "USE_ADVERTISING_WITH_NETWORK_ID and USE_ADVERTISING_WITH_NODE_IDENTITY cannot be defined at the same time"
+#endif
+
+#if !defined(USE_ADVERTISING_WITH_NETWORK_ID) && !defined(USE_ADVERTISING_WITH_NODE_IDENTITY) 
+#error "USE_ADVERTISING_WITH_NETWORK_ID or USE_ADVERTISING_WITH_NODE_IDENTITY must be defined"
+#endif
+
 static mesh_provisioning_data_t provisioning_data;
 static const btstack_tlv_t * btstack_tlv_singleton_impl;
 static void *                btstack_tlv_singleton_context;
@@ -61,34 +72,12 @@ static uint16_t con_handle;
 static uint16_t adv_int_min = 0x0030;
 static uint16_t adv_int_max = 0x0030;
 
+#ifdef USE_ADVERTISING_WITH_NODE_IDENTITY 
 static btstack_crypto_random_t crypto_request_random;
 static btstack_crypto_aes128_t crypto_request_aes128;
 static uint8_t plaintext[16];
 static uint8_t hash[8];
 static uint8_t random_value[8];
-
-static btstack_crypto_aes128_cmac_t mesh_cmac_request;
-static uint8_t mesh_secure_network_beacon[22];
-static uint8_t mesh_secure_network_beacon_auth_value[16];
-static uint8_t mesh_flags;
-static uint8_t network_id[8];
-static uint8_t beacon_key[16];
-
-
-static btstack_packet_callback_registration_t hci_event_callback_registration;
-
-static uint8_t adv_data_with_network_id[] = {
-    // Flags general discoverable, BR/EDR not supported
-    0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
-    // 16-bit Service UUIDs
-    0x03, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, ORG_BLUETOOTH_SERVICE_MESH_PROXY & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROXY >> 8,
-    // Service Data
-    0x0C, BLUETOOTH_DATA_TYPE_SERVICE_DATA, ORG_BLUETOOTH_SERVICE_MESH_PROXY & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROXY >> 8, 
-          // MESH_IDENTIFICATION_NETWORK_ID_TYPE
-          MESH_IDENTIFICATION_NETWORK_ID_TYPE, 
-          // Network ID
-          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
 
 static uint8_t adv_data_with_node_identity[] = {
     // Flags general discoverable, BR/EDR not supported
@@ -105,8 +94,34 @@ static uint8_t adv_data_with_node_identity[] = {
           0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-const uint8_t adv_data_with_network_id_len = sizeof(adv_data_with_network_id);
 const uint8_t adv_data_with_node_identity_len = sizeof(adv_data_with_node_identity);
+#endif
+
+static uint8_t mesh_secure_network_beacon[22];
+static uint8_t mesh_secure_network_beacon_auth_value[16];
+static uint8_t mesh_flags;
+static uint8_t network_id[8];
+static uint8_t beacon_key[16];
+static btstack_crypto_aes128_cmac_t mesh_cmac_request;
+
+#ifdef USE_ADVERTISING_WITH_NETWORK_ID 
+static uint8_t adv_data_with_network_id[] = {
+    // Flags general discoverable, BR/EDR not supported
+    0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
+    // 16-bit Service UUIDs
+    0x03, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, ORG_BLUETOOTH_SERVICE_MESH_PROXY & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROXY >> 8,
+    // Service Data
+    0x0C, BLUETOOTH_DATA_TYPE_SERVICE_DATA, ORG_BLUETOOTH_SERVICE_MESH_PROXY & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROXY >> 8, 
+          // MESH_IDENTIFICATION_NETWORK_ID_TYPE
+          MESH_IDENTIFICATION_NETWORK_ID_TYPE, 
+          // Network ID
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+const uint8_t adv_data_with_network_id_len = sizeof(adv_data_with_network_id);
+#endif
+
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 
 static void show_usage(void){
@@ -133,6 +148,44 @@ static void stdin_process(char cmd){
     }
 }
 
+#ifdef USE_ADVERTISING_WITH_NODE_IDENTITY 
+static void mesh_proxy_handle_get_aes128(void * arg){
+    UNUSED(arg);
+    memcpy(&adv_data_with_node_identity[12], hash, 8);
+    memcpy(&adv_data_with_node_identity[20], random_value, 8);
+    printf("Calculated Hash\n");
+    printf_hexdump(hash, sizeof(hash));
+
+    printf("\nAdv\n");
+    printf_hexdump(adv_data_with_node_identity, sizeof(adv_data_with_node_identity));
+     // setup advertisements
+    bd_addr_t null_addr;
+    memset(null_addr, 0, 6);
+    uint8_t adv_type = 0;   // AFV_IND
+    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
+    gap_advertisements_set_data(adv_data_with_node_identity_len, (uint8_t*) adv_data_with_node_identity);
+    gap_advertisements_enable(1);
+}
+ 
+static void setup_advertising_with_node_identity(mesh_provisioning_data_t * prov_data){
+    // Hash = e(IdentityKey, Padding | Random | Address) mod 2^64
+    memset(plaintext, 0, sizeof(plaintext));
+    memcpy(&plaintext[6] , random_value, 8);
+    big_endian_store_16(plaintext, 14, prov_data->unicast_address);
+    btstack_crypto_aes128_encrypt(&crypto_request_aes128, prov_data->identity_key, plaintext, hash, mesh_proxy_handle_get_aes128, NULL);
+}  
+
+static void mesh_proxy_handle_get_random(void * arg){
+    UNUSED(arg);
+    printf("Received random value\n");
+    printf_hexdump(random_value, sizeof(random_value));
+    setup_advertising_with_node_identity(&provisioning_data);
+}
+#endif
+
+
+
+#ifdef USE_ADVERTISING_WITH_NETWORK_ID
 static void setup_advertising_with_network_id(mesh_provisioning_data_t * prov_data){
     // dynamically store network ID into adv data 
     memcpy(&adv_data_with_network_id[12], prov_data->network_id, sizeof(prov_data->network_id));
@@ -151,49 +204,7 @@ static void setup_advertising_with_network_id(mesh_provisioning_data_t * prov_da
     gap_advertisements_set_data(adv_data_with_network_id_len, (uint8_t*) adv_data_with_network_id);
     gap_advertisements_enable(1);
 }
-
-static void mesh_proxy_handle_get_aes128(void * arg){
-    UNUSED(arg);
-    memcpy(&adv_data_with_node_identity[12], hash, 8);
-    memcpy(&adv_data_with_node_identity[20], random_value, 8);
-    printf("Calculated Hash\n");
-    printf_hexdump(hash, sizeof(hash));
-
-    printf("\nAdv\n");
-    printf_hexdump(adv_data_with_node_identity, sizeof(adv_data_with_node_identity));
-     // setup advertisements
-    bd_addr_t null_addr;
-    memset(null_addr, 0, 6);
-    uint8_t adv_type = 0;   // AFV_IND
-    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
-    gap_advertisements_set_data(adv_data_with_network_id_len, (uint8_t*) adv_data_with_network_id);
-    gap_advertisements_enable(1);
-}
- 
-static void setup_advertising_with_node_identity(mesh_provisioning_data_t * prov_data){
-    // Hash = e(IdentityKey, Padding | Random | Address) mod 2^64
-    memset(plaintext, 0, sizeof(plaintext));
-    memcpy(&plaintext[6] , random_value, 8);
-    big_endian_store_16(plaintext, 14, prov_data->unicast_address);
-    btstack_crypto_aes128_encrypt(&crypto_request_aes128, prov_data->identity_key, plaintext, hash, mesh_proxy_handle_get_aes128, NULL);
-}  
-
-static void mesh_proxy_handle_get_random(void * arg){
-    UNUSED(arg);
-    printf("Received random value\n");
-    printf_hexdump(random_value, sizeof(random_value));
-    setup_advertising_with_node_identity(&provisioning_data);
-}
-
-static uint8_t mesh_salt_nhbk[16];
-static btstack_crypto_aes128_cmac_t crypto_aes128_cmac_request;
-static const char salt[] = {'n','k','i','k'};
-
-static void mesh_proxy_handle_get_salt_nhbk(void * arg){
-    UNUSED(arg);
-    printf("Received salt_nhbk\n");
-    printf_hexdump(mesh_salt_nhbk, sizeof(mesh_salt_nhbk));
-}
+#endif
 
 static void mesh_provisioning_dump(const mesh_provisioning_data_t * data){
     printf("UnicastAddr:   0x%02x\n", data->unicast_address);
@@ -212,7 +223,7 @@ static void mesh_secure_network_beacon_auth_value_calculated(void * arg){
     printf("Secure Network Beacon\n");
     printf("- ");
     printf_hexdump(mesh_secure_network_beacon, sizeof(mesh_secure_network_beacon));
-    printf("Secure Network Beacon done");
+    printf("Secure Network Beacon done\n");
     gatt_bearer_request_can_send_now_for_mesh_beacon();
 }
 
@@ -220,48 +231,67 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(channel);
     UNUSED(size);
     int prov_len;
-    if (packet_type != HCI_EVENT_PACKET) return;
-    
-    switch (hci_event_packet_get_type(packet)){
-        case BTSTACK_EVENT_STATE:{
-            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
-            // get tlv
-            btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
-            // load provisioning data
-            prov_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
-            printf("Provisioning data available: %u\n", prov_len ? 1 : 0);
-            if (!prov_len) break;
 
-            mesh_provisioning_dump(&provisioning_data);
-            setup_advertising_with_network_id(&provisioning_data);
-            // btstack_crypto_random_generate(&crypto_request_random, random_value, sizeof(random_value), mesh_proxy_handle_get_random, NULL);
+    // printf("provisioning_data packet type 0x%02x\n", packet_type); 
+    
+    switch (packet_type){
+        case PROVISIONING_DATA_PACKET:
+            printf("provisioning_data\n");
+            printf_hexdump(packet, size);
+
             break;
-        }
-        case HCI_EVENT_LE_META:
-            switch (hci_event_le_meta_get_subevent_code(packet)){
-                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                    con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
-                    printf("connected handle 0x%02x\n", con_handle);
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)){
+                case BTSTACK_EVENT_STATE:{
+                    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
+                    // get tlv
+                    btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
+                    // load provisioning data
+                    prov_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
+                    printf("Provisioning data available: %u\n", prov_len ? 1 : 0);
+                    if (!prov_len) break;
+                    mesh_provisioning_dump(&provisioning_data);
+                    
+#ifdef USE_ADVERTISING_WITH_NETWORK_ID
+                    setup_advertising_with_network_id(&provisioning_data);
+#endif
+
+#ifdef USE_ADVERTISING_WITH_NODE_IDENTITY 
+                    btstack_crypto_random_generate(&crypto_request_random, random_value, sizeof(random_value), mesh_proxy_handle_get_random, NULL);
+#endif
                     break;
-                default:
+                }
+                case HCI_EVENT_LE_META:
+                    switch (hci_event_le_meta_get_subevent_code(packet)){
+                        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                            con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                            printf("connected handle 0x%02x\n", con_handle);
+                            break;
+                        default:
+                            break;
+                    }
                     break;
-            }
-            break;
-        case HCI_EVENT_MESH_META:
-            printf("packet_handler packet_type %02x, type 0%02x\n", packet_type, hci_event_packet_get_type(packet));
-            switch (hci_event_mesh_meta_get_subevent_code(packet)){
-                case MESH_PB_TRANSPORT_LINK_OPEN:
-                    printf("mesh_proxy_server: MESH_PB_TRANSPORT_LINK_OPEN\n");
-                    printf("+ Setup Secure Network Beacon\n");
-                    mesh_secure_network_beacon[0] = BEACON_TYPE_SECURE_NETWORK;
-                    mesh_secure_network_beacon[1] = mesh_flags;
-                    memcpy(&mesh_secure_network_beacon[2], network_id, 8);
-                    big_endian_store_32(mesh_secure_network_beacon, 10, mesh_get_iv_index());
-                    btstack_crypto_aes128_cmac_message(&mesh_cmac_request, beacon_key, 13,
-                        &mesh_secure_network_beacon[1], mesh_secure_network_beacon_auth_value, &mesh_secure_network_beacon_auth_value_calculated, NULL);
+                case HCI_EVENT_MESH_META:
+                    // printf("packet_handler packet_type %02x, mesh subevent 0x%02x\n", packet_type, hci_event_mesh_meta_get_subevent_code(packet));
+                    switch (hci_event_mesh_meta_get_subevent_code(packet)){
+                        case MESH_PB_TRANSPORT_LINK_OPEN:
+                            printf("mesh_proxy_server: MESH_PB_TRANSPORT_LINK_OPEN\n");
+                            printf("+ Setup Secure Network Beacon\n");
+                            mesh_secure_network_beacon[0] = BEACON_TYPE_SECURE_NETWORK;
+                            mesh_secure_network_beacon[1] = mesh_flags;
+                            memcpy(&mesh_secure_network_beacon[2], network_id, 8);
+                            big_endian_store_32(mesh_secure_network_beacon, 10, mesh_get_iv_index());
+                            btstack_crypto_aes128_cmac_message(&mesh_cmac_request, beacon_key, 13,
+                                &mesh_secure_network_beacon[1], mesh_secure_network_beacon_auth_value, &mesh_secure_network_beacon_auth_value_calculated, NULL);
+                            break;
+                        case MESH_SUBEVENT_CAN_SEND_NOW:
+                            printf("MESH_SUBEVENT_CAN_SEND_NOW gatt_bearer_send_mesh_beacon\n");
+                            gatt_bearer_send_mesh_beacon(mesh_secure_network_beacon, sizeof(mesh_secure_network_beacon));
+                            break;
+                        default:
+                            break;
+                    }
                     break;
-                case MESH_SUBEVENT_CAN_SEND_NOW:
-                    gatt_bearer_send_mesh_beacon(mesh_secure_network_beacon, sizeof(mesh_secure_network_beacon));
                 default:
                     break;
             }
@@ -296,6 +326,7 @@ int btstack_main(void){
     gatt_bearer_init();
     gatt_bearer_register_for_mesh_message(packet_handler);
     gatt_bearer_register_for_mesh_beacon(packet_handler);
+    gatt_bearer_register_for_mesh_proxy_configuration(packet_handler);
 #ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
 #endif
