@@ -418,6 +418,9 @@ static void process_network_pdu_validate_d(void * arg){
 
     printf("TTL: 0x%02x\n", network_pdu->data[1] & 0x7f);
 
+    // set netkey_index
+    network_pdu->netkey_index = current_network_key->netkey_index;
+
     if (network_pdu->flags & 1){
 
         // no additional checks for proxy messages
@@ -446,9 +449,6 @@ static void process_network_pdu_validate_d(void * arg){
             process_network_pdu_done();
             return;
         }
-
-        // set netkey_index
-        network_pdu->netkey_index = current_network_key->netkey_index;
 
         // store in network cache
         mesh_network_cache_add(hash);
