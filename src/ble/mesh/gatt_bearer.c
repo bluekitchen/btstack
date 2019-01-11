@@ -201,9 +201,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 case MESH_MSG_TYPE_NETWORK_PDU:
                 case MESH_MSG_TYPE_BEACON:
                 case MESH_MSG_TYPE_PROXY_CONFIGURATION:
-                    printf("send buffer of size %d\n", reassembly_offset);
-                    printf_hexdump(sar_buffer.reassembly_buffer, reassembly_offset);
-
                     if ((*client_callbacks[msg_type])){
                         (*client_callbacks[msg_type])(MESH_PROXY_DATA_PACKET, 0, sar_buffer.reassembly_buffer, reassembly_offset);
                     }
