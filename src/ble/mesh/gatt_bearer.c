@@ -140,7 +140,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     uint8_t send_to_mesh_network = 0;
 
     switch (packet_type) {
-        case PROVISIONING_DATA_PACKET:
+        case MESH_PROXY_DATA_PACKET:
             pos = 0;
             // on provisioning PDU call packet handler with PROVISIONG_DATA type
             msg_sar_field = packet[pos] >> 6;
@@ -200,7 +200,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 case MESH_MSG_TYPE_BEACON:
                 case MESH_MSG_TYPE_PROXY_CONFIGURATION:
                     if ((*client_callbacks[msg_type])){
-                        (*client_callbacks[msg_type])(PROVISIONING_DATA_PACKET, 0, packet, size);
+                        (*client_callbacks[msg_type])(MESH_PROXY_DATA_PACKET, 0, packet, size);
                     }
                     break;
                 default:

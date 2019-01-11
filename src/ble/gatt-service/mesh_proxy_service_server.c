@@ -129,7 +129,7 @@ static int mesh_proxy_service_write_callback(hci_con_handle_t con_handle, uint16
 
     if (attribute_handle == instance->data_in_client_value_handle){
         if (!mesh_proxy_service_packet_handler) return 0;
-        (*mesh_proxy_service_packet_handler)(PROVISIONING_DATA_PACKET, con_handle, buffer, buffer_size);
+        (*mesh_proxy_service_packet_handler)(MESH_PROXY_DATA_PACKET, con_handle, buffer, buffer_size);
         return 0;
     }
 
