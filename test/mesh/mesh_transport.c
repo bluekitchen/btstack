@@ -140,13 +140,13 @@ static uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl
 // mesh seq auth validation
 // TODO: support multiple devices
 #define MESH_ADDRESS_UNSASSIGNED 0xfffb
-static uint16_t mesh_seq_auth_single_src = 0xfffb;
+static uint16_t mesh_seq_auth_single_src = MESH_ADDRESS_UNSASSIGNED;
 static uint32_t mesh_seq_auth_single_seq;
 
 static int mesh_seq_auth_validate(uint16_t src, uint32_t seq){
     if (mesh_seq_auth_single_src == MESH_ADDRESS_UNSASSIGNED){
         mesh_seq_auth_single_src = src;
-        mesh_seq_auth_single_src = seq;
+        mesh_seq_auth_single_seq = seq;
         return 0;
     }
     if (mesh_seq_auth_single_src != src){
@@ -742,8 +742,10 @@ static void mesh_upper_transport_network_pdu_sent(mesh_network_pdu_t * network_p
 void mesh_lower_transport_received_mesage(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu){
     switch (callback_type){
         case MESH_NETWORK_PDU_RECEIVED:
+            printf("Tranport: received message. SRC %x, SEQ %x\n", mesh_network_src(network_pdu), mesh_network_seq(network_pdu));
             // validate seq
             if (mesh_seq_auth_validate(mesh_network_src(network_pdu), mesh_network_seq(network_pdu))) {
+                printf("Transport: drop packet - src/seq auth failed\n");
                 mesh_network_message_processed_by_higher_layer(network_pdu);
                 break;
             }
