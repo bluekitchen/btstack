@@ -227,12 +227,101 @@ static void mesh_secure_network_beacon_auth_value_calculated(void * arg){
     gatt_bearer_request_can_send_now_for_mesh_beacon();
 }
 
+static void packet_handler_for_mesh_network_pdu(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    printf("packet_handler_for_mesh_network_pdu\n");
+    
+    switch (packet_type){
+        case MESH_PROXY_DATA_PACKET:
+            printf("Received network PDU\n");
+            printf_hexdump(packet, size);
+            break;
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)){
+                case HCI_EVENT_MESH_META:
+                    switch (hci_event_mesh_meta_get_subevent_code(packet)){
+                        case MESH_PB_TRANSPORT_LINK_OPEN:
+                            printf("mesh_proxy_server: MESH_PB_TRANSPORT_LINK_OPEN\n");
+                            printf("+ Setup Secure Network Beacon\n");
+                            mesh_secure_network_beacon[0] = BEACON_TYPE_SECURE_NETWORK;
+                            mesh_secure_network_beacon[1] = mesh_flags;
+                            memcpy(&mesh_secure_network_beacon[2], network_id, 8);
+                            big_endian_store_32(mesh_secure_network_beacon, 10, mesh_get_iv_index());
+                            btstack_crypto_aes128_cmac_message(&mesh_cmac_request, beacon_key, 13,
+                                &mesh_secure_network_beacon[1], mesh_secure_network_beacon_auth_value, &mesh_secure_network_beacon_auth_value_calculated, NULL);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+static void packet_handler_for_mesh_beacon(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    printf("packet_handler_for_mesh_beacon\n");
+    
+    switch (packet_type){
+        case MESH_PROXY_DATA_PACKET:
+            printf("Received beacon\n");
+            printf_hexdump(packet, size);
+            break;
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)){
+                case HCI_EVENT_MESH_META:
+                    switch (hci_event_mesh_meta_get_subevent_code(packet)){
+                        case MESH_SUBEVENT_CAN_SEND_NOW:
+                            gatt_bearer_send_mesh_beacon(mesh_secure_network_beacon, sizeof(mesh_secure_network_beacon));
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+static void packet_handler_for_mesh_proxy_configuration(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    printf("packet_handler_for_mesh_proxy_configuration\n");
+            
+    switch (packet_type){
+        case MESH_PROXY_DATA_PACKET:
+            printf("Received proxy configuration\n");
+            printf_hexdump(packet, size);
+            break;
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)){
+                case HCI_EVENT_MESH_META:
+                    switch (hci_event_mesh_meta_get_subevent_code(packet)){
+                        case MESH_SUBEVENT_CAN_SEND_NOW:
+                            printf("MESH_SUBEVENT_CAN_SEND_NOW packet_handler_for_mesh_proxy_configuration\n");
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
     int prov_len;
-
-    // printf("provisioning_data packet type 0x%02x\n", packet_type); 
     
     switch (packet_type){
         case MESH_PROXY_DATA_PACKET:
@@ -251,11 +340,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     printf("Provisioning data available: %u\n", prov_len ? 1 : 0);
                     if (!prov_len) break;
                     mesh_provisioning_dump(&provisioning_data);
-                    
+    
 #ifdef USE_ADVERTISING_WITH_NETWORK_ID
                     setup_advertising_with_network_id(&provisioning_data);
 #endif
-
 #ifdef USE_ADVERTISING_WITH_NODE_IDENTITY 
                     btstack_crypto_random_generate(&crypto_request_random, random_value, sizeof(random_value), mesh_proxy_handle_get_random, NULL);
 #endif
@@ -266,27 +354,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                             con_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
                             printf("connected handle 0x%02x\n", con_handle);
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                case HCI_EVENT_MESH_META:
-                    // printf("packet_handler packet_type %02x, mesh subevent 0x%02x\n", packet_type, hci_event_mesh_meta_get_subevent_code(packet));
-                    switch (hci_event_mesh_meta_get_subevent_code(packet)){
-                        case MESH_PB_TRANSPORT_LINK_OPEN:
-                            printf("mesh_proxy_server: MESH_PB_TRANSPORT_LINK_OPEN\n");
-                            printf("+ Setup Secure Network Beacon\n");
-                            mesh_secure_network_beacon[0] = BEACON_TYPE_SECURE_NETWORK;
-                            mesh_secure_network_beacon[1] = mesh_flags;
-                            memcpy(&mesh_secure_network_beacon[2], network_id, 8);
-                            big_endian_store_32(mesh_secure_network_beacon, 10, mesh_get_iv_index());
-                            btstack_crypto_aes128_cmac_message(&mesh_cmac_request, beacon_key, 13,
-                                &mesh_secure_network_beacon[1], mesh_secure_network_beacon_auth_value, &mesh_secure_network_beacon_auth_value_calculated, NULL);
-                            break;
-                        case MESH_SUBEVENT_CAN_SEND_NOW:
-                            printf("MESH_SUBEVENT_CAN_SEND_NOW gatt_bearer_send_mesh_beacon\n");
-                            gatt_bearer_send_mesh_beacon(mesh_secure_network_beacon, sizeof(mesh_secure_network_beacon));
                             break;
                         default:
                             break;
@@ -320,13 +387,12 @@ int btstack_main(void){
 
     // setup ATT server
     att_server_init(profile_data, NULL, NULL);    
-    // mesh_proxy_service_server_init();
-    // mesh_proxy_service_server_register_packet_handler(packet_handler);
+
     // Setup GATT bearere
     gatt_bearer_init();
-    gatt_bearer_register_for_mesh_network_pdu(packet_handler);
-    gatt_bearer_register_for_mesh_beacon(packet_handler);
-    gatt_bearer_register_for_mesh_proxy_configuration(packet_handler);
+    gatt_bearer_register_for_mesh_network_pdu(&packet_handler_for_mesh_network_pdu);
+    gatt_bearer_register_for_mesh_beacon(&packet_handler_for_mesh_beacon);
+    gatt_bearer_register_for_mesh_proxy_configuration(&packet_handler_for_mesh_proxy_configuration);
 #ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
 #endif

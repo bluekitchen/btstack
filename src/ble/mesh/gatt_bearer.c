@@ -173,35 +173,42 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 gatt_bearer_mtu = att_server_get_mtu(channel);
             }
             
+
             switch (msg_sar_field){
+                case MESH_MSG_SAR_FIELD_COMPLETE_MSG:
                 case MESH_MSG_SAR_FIELD_FIRST_SEGMENT:
                     memset(sar_buffer.reassembly_buffer, 0, sizeof(sar_buffer.reassembly_buffer));
+                    if (sizeof(sar_buffer.reassembly_buffer) < pdu_segment_len) return;
                     memcpy(sar_buffer.reassembly_buffer, packet+pos, pdu_segment_len);
                     reassembly_offset = pdu_segment_len;
-                    return;
+                    break;
                 case MESH_MSG_SAR_FIELD_CONTINUE:
+                    if ((sizeof(sar_buffer.reassembly_buffer) - reassembly_offset) < pdu_segment_len) return;
                     memcpy(sar_buffer.reassembly_buffer + reassembly_offset, packet+pos, pdu_segment_len);
                     reassembly_offset += pdu_segment_len;
                     return;
                 case MESH_MSG_SAR_FIELD_LAST_SEGMENT:
+                    if ((sizeof(sar_buffer.reassembly_buffer) - reassembly_offset) < pdu_segment_len) return;
                     memcpy(sar_buffer.reassembly_buffer + reassembly_offset, packet+pos, pdu_segment_len);
                     reassembly_offset += pdu_segment_len;
-                    send_to_mesh_network = 1;
-                    reassembly_offset = 0;
                     break; 
-                case MESH_MSG_SAR_FIELD_COMPLETE_MSG:
-                    send_to_mesh_network = 1;
-                    break;
             }
-                
+            
+            send_to_mesh_network = (msg_sar_field == MESH_MSG_SAR_FIELD_COMPLETE_MSG) || (msg_sar_field == MESH_MSG_SAR_FIELD_LAST_SEGMENT);
+                    
             if (!send_to_mesh_network) break;
             switch (msg_type){
                 case MESH_MSG_TYPE_NETWORK_PDU:
                 case MESH_MSG_TYPE_BEACON:
                 case MESH_MSG_TYPE_PROXY_CONFIGURATION:
+                    printf("send buffer of size %d\n", reassembly_offset);
+                    printf_hexdump(sar_buffer.reassembly_buffer, reassembly_offset);
+
                     if ((*client_callbacks[msg_type])){
-                        (*client_callbacks[msg_type])(MESH_PROXY_DATA_PACKET, 0, packet, size);
+                        (*client_callbacks[msg_type])(MESH_PROXY_DATA_PACKET, 0, sar_buffer.reassembly_buffer, reassembly_offset);
                     }
+                    reassembly_offset = 0;
+                    send_to_mesh_network = 0;
                     break;
                 default:
                     log_info("gatt bearer: message type %d not supported", msg_type);
