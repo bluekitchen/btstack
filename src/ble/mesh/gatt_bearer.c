@@ -104,12 +104,11 @@ static void gatt_bearer_request(mesh_msg_type_t type_id){
 
 
 static void gatt_bearer_start_sending(hci_con_handle_t con_handle){
+    uint16_t pdu_segment_len = btstack_min(proxy_pdu_size - segmentation_offset, gatt_bearer_mtu - 1 - 3);
     sar_buffer.segmentation_buffer[0] = (segmentation_state << 6) | msg_type;
-    uint16_t pdu_segment_len = btstack_min(proxy_pdu_size - segmentation_offset, gatt_bearer_mtu);
-    memcpy(&sar_buffer.segmentation_buffer[0], &proxy_pdu[segmentation_offset], pdu_segment_len);
+    memcpy(&sar_buffer.segmentation_buffer[1], &proxy_pdu[segmentation_offset], pdu_segment_len);
     segmentation_offset += pdu_segment_len;
-
-    mesh_proxy_service_server_send_proxy_pdu(con_handle, sar_buffer.segmentation_buffer, pdu_segment_len);
+    mesh_proxy_service_server_send_proxy_pdu(con_handle, sar_buffer.segmentation_buffer, pdu_segment_len + 1);
     
     switch (segmentation_state){
         case MESH_MSG_SAR_FIELD_COMPLETE_MSG:
@@ -119,7 +118,7 @@ static void gatt_bearer_start_sending(hci_con_handle_t con_handle){
             break;
         case MESH_MSG_SAR_FIELD_CONTINUE:
         case MESH_MSG_SAR_FIELD_FIRST_SEGMENT:
-            if ((proxy_pdu_size - segmentation_offset) > gatt_bearer_mtu){
+            if ((proxy_pdu_size - segmentation_offset) > (gatt_bearer_mtu - 1 - 3)){
                 segmentation_state = MESH_MSG_SAR_FIELD_CONTINUE;
             } else {
                 segmentation_state = MESH_MSG_SAR_FIELD_LAST_SEGMENT;
@@ -280,7 +279,7 @@ static void gatt_bearer_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint1
     segmentation_offset = 0;
 
     // check if segmentation is necessary
-    if (proxy_pdu_size > (gatt_bearer_mtu - 1)){
+    if (proxy_pdu_size > (gatt_bearer_mtu - 1 - 3)){
         segmentation_state = MESH_MSG_SAR_FIELD_FIRST_SEGMENT;
     } else {
         segmentation_state = MESH_MSG_SAR_FIELD_COMPLETE_MSG;

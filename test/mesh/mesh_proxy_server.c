@@ -333,7 +333,8 @@ static void packet_handler_for_mesh_proxy_configuration(uint8_t packet_type, uin
                 case HCI_EVENT_MESH_META:
                     switch (hci_event_mesh_meta_get_subevent_code(packet)){
                         case MESH_SUBEVENT_CAN_SEND_NOW:
-                            printf("MESH_SUBEVENT_CAN_SEND_NOW packet_handler_for_mesh_proxy_configuration\n");
+                            printf("MESH_SUBEVENT_CAN_SEND_NOW packet_handler_for_mesh_proxy_configuration len %d\n", encrypted_proxy_configuration_ready_to_send->len);
+                            printf_hexdump(encrypted_proxy_configuration_ready_to_send->data, encrypted_proxy_configuration_ready_to_send->len);
                             gatt_bearer_send_mesh_proxy_configuration(encrypted_proxy_configuration_ready_to_send->data, encrypted_proxy_configuration_ready_to_send->len); 
                             break;
                         default:
@@ -448,7 +449,7 @@ void proxy_configuration_message_handler(mesh_network_callback_type_t callback_t
                     uint16_t dest         = 0; // unassigned address
                     uint32_t seq          = mesh_upper_transport_next_seq();
                     uint8_t  nid          = mesh_network_nid(received_network_pdu);
-                    uint16_t netkey_index = 0; // received_network_pdu->netkey_index; 
+                    uint16_t netkey_index = received_network_pdu->netkey_index; 
                     printf("netkey index 0x%02x\n", netkey_index);
 
                     network_pdu = btstack_memory_mesh_network_pdu_get();
