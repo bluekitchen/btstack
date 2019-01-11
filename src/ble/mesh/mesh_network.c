@@ -720,7 +720,7 @@ uint32_t mesh_get_iv_index(void){
 
 // Network PDU Getter
 uint8_t  mesh_network_nid(mesh_network_pdu_t * network_pdu){
-    return network_pdu->data[1] & 0x7f;
+    return network_pdu->data[0] & 0x7f;
 }
 uint16_t mesh_network_control(mesh_network_pdu_t * network_pdu){
     return network_pdu->data[1] & 0x80;

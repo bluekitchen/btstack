@@ -46,6 +46,8 @@
 #include "ble/gatt-service/mesh_proxy_service_server.h"
 #include "mesh_proxy_server.h"
 #include "ble/mesh/mesh_network.h"
+#include "mesh_transport.h"
+
 #include "btstack_config.h"
 #include "btstack.h"
 #include "provisioning.h"
@@ -65,12 +67,17 @@
 #error "USE_ADVERTISING_WITH_NETWORK_ID or USE_ADVERTISING_WITH_NODE_IDENTITY must be defined"
 #endif
 
-static mesh_provisioning_data_t provisioning_data;
-static const btstack_tlv_t * btstack_tlv_singleton_impl;
-static void *                btstack_tlv_singleton_context;
-static uint16_t con_handle;
-static uint16_t adv_int_min = 0x0030;
-static uint16_t adv_int_max = 0x0030;
+typedef enum {
+    MESH_PROXY_CONFIGURATION_MESSAGE_OPCODE_SET_FILTER_TYPE = 0,
+    MESH_PROXY_CONFIGURATION_MESSAGE_OPCODE_ADD_ADDRESSES,
+    MESH_PROXY_CONFIGURATION_MESSAGE_OPCODE_REMOVE_ADDRESSES,
+    MESH_PROXY_CONFIGURATION_MESSAGE_OPCODE_FILTER_STATUS
+} mesh_proxy_configuration_message_opcode_t;
+
+typedef enum {
+    MESH_PROXY_CONFIGURATION_FILTER_TYPE_SET_WHITE_LIST = 0,
+    MESH_PROXY_CONFIGURATION_FILTER_TYPE_BLACK_LIST
+} mesh_proxy_configuration_filter_type_t;
 
 #ifdef USE_ADVERTISING_WITH_NODE_IDENTITY 
 static btstack_crypto_random_t crypto_request_random;
@@ -78,7 +85,6 @@ static btstack_crypto_aes128_t crypto_request_aes128;
 static uint8_t plaintext[16];
 static uint8_t hash[8];
 static uint8_t random_value[8];
-
 static uint8_t adv_data_with_node_identity[] = {
     // Flags general discoverable, BR/EDR not supported
     0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
@@ -93,7 +99,6 @@ static uint8_t adv_data_with_node_identity[] = {
           // Random
           0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
-
 const uint8_t adv_data_with_node_identity_len = sizeof(adv_data_with_node_identity);
 #endif
 
@@ -110,10 +115,15 @@ static uint8_t adv_data_with_network_id[] = {
           // Network ID
           0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
-
 const uint8_t adv_data_with_network_id_len = sizeof(adv_data_with_network_id);
 #endif
 
+static mesh_provisioning_data_t provisioning_data;
+static const btstack_tlv_t * btstack_tlv_singleton_impl;
+static void *                btstack_tlv_singleton_context;
+static uint16_t con_handle;
+static uint16_t adv_int_min = 0x0030;
+static uint16_t adv_int_max = 0x0030;
 static btstack_crypto_aes128_cmac_t mesh_cmac_request;
 static uint8_t   mesh_secure_network_beacon[22];
 static uint8_t   mesh_secure_network_beacon_auth_value[16];
@@ -123,7 +133,20 @@ static uint8_t   beacon_key[16];
 static uint8_t * network_pdu_data;
 static uint8_t   network_pdu_len;
 
+// Used to answer configutation request
+static uint16_t proxy_configuration_filter_list_len;
+static mesh_proxy_configuration_filter_type_t proxy_configuration_filter_type;
+static uint16_t primary_element_address;
+
+static mesh_network_pdu_t * encrypted_proxy_configuration_ready_to_send;
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+static void mesh_proxy_server_init(){
+    proxy_configuration_filter_list_len = 0;
+    proxy_configuration_filter_type = MESH_PROXY_CONFIGURATION_FILTER_TYPE_SET_WHITE_LIST;
+    // TODO empty white list
+}
 
 static void show_usage(void){
     bd_addr_t      iut_address;
@@ -291,9 +314,14 @@ static void packet_handler_for_mesh_beacon(uint8_t packet_type, uint16_t channel
     }
 }
 
+
+static void request_can_send_now_proxy_configuration_callback_handler(mesh_network_pdu_t * network_pdu){
+    encrypted_proxy_configuration_ready_to_send = network_pdu;
+    gatt_bearer_request_can_send_now_for_mesh_proxy_configuration();
+}
+
 static void packet_handler_for_mesh_proxy_configuration(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     printf("packet_handler_for_mesh_proxy_configuration\n");
-            
     switch (packet_type){
         case MESH_PROXY_DATA_PACKET:
             printf("Received proxy configuration\n");
@@ -306,6 +334,7 @@ static void packet_handler_for_mesh_proxy_configuration(uint8_t packet_type, uin
                     switch (hci_event_mesh_meta_get_subevent_code(packet)){
                         case MESH_SUBEVENT_CAN_SEND_NOW:
                             printf("MESH_SUBEVENT_CAN_SEND_NOW packet_handler_for_mesh_proxy_configuration\n");
+                            gatt_bearer_send_mesh_proxy_configuration(encrypted_proxy_configuration_ready_to_send->data, encrypted_proxy_configuration_ready_to_send->len); 
                             break;
                         default:
                             break;
@@ -326,7 +355,7 @@ static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * p
     // set unicast address
     mesh_network_set_primary_element_address(provisioning_data->unicast_address);
     // mesh_upper_transport_set_primary_element_address(provisioning_data->unicast_address);
-    // primary_element_address = provisioning_data->unicast_address;
+    primary_element_address = provisioning_data->unicast_address;
     // set iv_index
     mesh_set_iv_index(provisioning_data->iv_index);
     // set device_key
@@ -355,6 +384,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             switch (hci_event_packet_get_type(packet)){
                 case BTSTACK_EVENT_STATE:{
                     if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
+                    mesh_proxy_server_init();
                     // get tlv
                     btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
                     // load provisioning data
@@ -391,13 +421,53 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     }
 }
 
-void proxy_configuration_message_handler(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu){
+void proxy_configuration_message_handler(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * received_network_pdu){
+    mesh_proxy_configuration_message_opcode_t opcode;
+    uint8_t data[4];
+    mesh_network_pdu_t * network_pdu;
+
     switch (callback_type){
         case MESH_NETWORK_PDU_RECEIVED:
             printf("proxy_configuration_message_handler: MESH_PROXY_PDU_RECEIVED\n");
-            network_pdu_len = mesh_network_pdu_len(network_pdu);
-            network_pdu_data = mesh_network_pdu_data(network_pdu);
-            printf_hexdump(network_pdu_data, network_pdu_len);
+            network_pdu_len = mesh_network_pdu_len(received_network_pdu);
+            network_pdu_data = mesh_network_pdu_data(received_network_pdu);
+            // printf_hexdump(network_pdu_data, network_pdu_len);
+            opcode = network_pdu_data[0];
+            switch (opcode){
+                case MESH_PROXY_CONFIGURATION_MESSAGE_OPCODE_SET_FILTER_TYPE:{
+                    switch (network_pdu_data[1]){
+                        case MESH_PROXY_CONFIGURATION_FILTER_TYPE_SET_WHITE_LIST:
+                        case MESH_PROXY_CONFIGURATION_FILTER_TYPE_BLACK_LIST:
+                            proxy_configuration_filter_type = network_pdu_data[1];
+                            break;
+                    }
+                    
+                    uint8_t  ctl          = 1;
+                    uint8_t  ttl          = 0;
+                    uint16_t src          = primary_element_address;
+                    uint16_t dest         = 0; // unassigned address
+                    uint32_t seq          = mesh_upper_transport_next_seq();
+                    uint8_t  nid          = mesh_network_nid(received_network_pdu);
+                    uint16_t netkey_index = 0; // received_network_pdu->netkey_index; 
+                    printf("netkey index 0x%02x\n", netkey_index);
+
+                    network_pdu = btstack_memory_mesh_network_pdu_get();
+                    int pos = 0;
+                    data[pos++] = MESH_PROXY_CONFIGURATION_MESSAGE_OPCODE_FILTER_STATUS;
+                    data[pos++] = proxy_configuration_filter_type;
+                    big_endian_store_16(data, pos, proxy_configuration_filter_list_len);
+
+                    mesh_network_setup_pdu(network_pdu, netkey_index, nid, ctl, ttl, seq, src, dest, data, sizeof(data));
+                    mesh_network_encrypt_proxy_message(network_pdu, &request_can_send_now_proxy_configuration_callback_handler);
+                    
+                    // received_network_pdu is processed
+                    btstack_memory_mesh_network_pdu_free(received_network_pdu);
+                    break;
+                }
+                default:
+                    printf("proxy config not implemented, opcode %d\n", opcode);
+                    break;
+            }
             break;
         case MESH_NETWORK_PDU_SENT:
             // printf("test MESH_PROXY_PDU_SENT\n");
@@ -406,6 +476,10 @@ void proxy_configuration_message_handler(mesh_network_callback_type_t callback_t
         default:
             break;
     }
+}
+
+static void mesh_network_handler(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu){
+    printf("should not come here\n");
 }
 
 int btstack_main(void);
@@ -435,7 +509,7 @@ int btstack_main(void){
 
     gatt_bearer_register_for_mesh_proxy_configuration(&packet_handler_for_mesh_proxy_configuration);
     mesh_network_set_proxy_message_handler(proxy_configuration_message_handler);
-    
+    mesh_network_set_higher_layer_handler(mesh_network_handler);
 #ifdef HAVE_BTSTACK_STDIN
     btstack_stdin_setup(stdin_process);
 #endif
