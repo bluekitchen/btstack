@@ -324,7 +324,7 @@ int btstack_main(void){
     // mesh_proxy_service_server_register_packet_handler(packet_handler);
     // Setup GATT bearere
     gatt_bearer_init();
-    gatt_bearer_register_for_mesh_message(packet_handler);
+    gatt_bearer_register_for_mesh_network_pdu(packet_handler);
     gatt_bearer_register_for_mesh_beacon(packet_handler);
     gatt_bearer_register_for_mesh_proxy_configuration(packet_handler);
 #ifdef HAVE_BTSTACK_STDIN

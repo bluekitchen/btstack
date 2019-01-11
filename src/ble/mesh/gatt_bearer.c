@@ -247,7 +247,7 @@ void gatt_bearer_init(void){
     mesh_proxy_service_server_register_packet_handler(packet_handler);
 }
 
-void gatt_bearer_register_for_mesh_message(btstack_packet_handler_t _packet_handler){
+void gatt_bearer_register_for_mesh_network_pdu(btstack_packet_handler_t _packet_handler){
     client_callbacks[MESH_MSG_TYPE_NETWORK_PDU] = _packet_handler;
 }
 void gatt_bearer_register_for_mesh_beacon(btstack_packet_handler_t _packet_handler){
@@ -257,7 +257,7 @@ void gatt_bearer_register_for_mesh_proxy_configuration(btstack_packet_handler_t 
     client_callbacks[MESH_MSG_TYPE_PROXY_CONFIGURATION] = _packet_handler;
 }
 
-void gatt_bearer_request_can_send_now_for_mesh_message(void){
+void gatt_bearer_request_can_send_now_for_mesh_network_pdu(void){
     gatt_bearer_request(MESH_MSG_TYPE_NETWORK_PDU);
 }
 void gatt_bearer_request_can_send_now_for_mesh_beacon(void){
@@ -285,7 +285,7 @@ static void gatt_bearer_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint1
     gatt_bearer_start_sending(con_handle);
 }
 
-void gatt_bearer_send_mesh_message(const uint8_t * data, uint16_t data_len){
+void gatt_bearer_send_mesh_network_pdu(const uint8_t * data, uint16_t data_len){
     msg_type = MESH_MSG_TYPE_NETWORK_PDU;
     gatt_bearer_send_pdu(gatt_bearer_con_handle, data, data_len);
 }
@@ -295,7 +295,7 @@ void gatt_bearer_send_mesh_beacon(const uint8_t * data, uint16_t data_len){
     gatt_bearer_send_pdu(gatt_bearer_con_handle, data, data_len);
 }
 
-void gatt_bearer_send_proxy_configuration(const uint8_t * data, uint16_t data_len){
+void gatt_bearer_send_mesh_proxy_configuration(const uint8_t * data, uint16_t data_len){
     msg_type = MESH_MSG_TYPE_PROXY_CONFIGURATION;
     gatt_bearer_send_pdu(gatt_bearer_con_handle, data, data_len);
 }
