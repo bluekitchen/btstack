@@ -181,11 +181,11 @@ void mesh_network_send_pdu(mesh_network_pdu_t * network_pdu);
  * @param ctl
  * @param ttl
  * @param seq
- * @param dest
+ * @param dst
  * @param transport_pdu_data
  * @param transport_pdu_len
  */
-void mesh_network_setup_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint8_t nid, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len);
+void mesh_network_setup_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint8_t nid, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dst, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len);
 
 /**
  * @brief Validate network addresses
@@ -196,11 +196,19 @@ void mesh_network_setup_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_in
  */
 int mesh_network_addresses_valid(uint8_t ctl, uint16_t src, uint16_t dst);
 
+/**
+ * @brief Check if Unicast address
+ * @param addr
+ * @returns 1 if unicast
+ */
+int mesh_network_address_unicast(uint16_t addr);
+
 // Mesh Network PDU Getter
 uint16_t  mesh_network_control(mesh_network_pdu_t * network_pdu);
 uint8_t   mesh_network_ttl(mesh_network_pdu_t * network_pdu);
 uint32_t  mesh_network_seq(mesh_network_pdu_t * network_pdu);
 uint16_t  mesh_network_src(mesh_network_pdu_t * network_pdu);
+uint16_t  mesh_network_dst(mesh_network_pdu_t * network_pdu);
 int       mesh_network_segmented(mesh_network_pdu_t * network_pdu);
 uint8_t * mesh_network_pdu_data(mesh_network_pdu_t * network_pdu);
 uint8_t   mesh_network_pdu_len(mesh_network_pdu_t * network_pdu);

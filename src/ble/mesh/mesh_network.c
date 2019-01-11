@@ -194,6 +194,10 @@ static const mesh_network_key_t * mesh_network_key_iterator_get_next(mesh_networ
 }
 
 // common helper
+int mesh_network_address_unicast(uint16_t addr){
+    return addr < 0x8000;
+}
+
 int mesh_network_addresses_valid(uint8_t ctl, uint16_t src, uint16_t dst){
     printf("CTL: %u\n", ctl);
     printf("SRC: %04x\n", src);
@@ -726,6 +730,9 @@ uint32_t mesh_network_seq(mesh_network_pdu_t * network_pdu){
 }
 uint16_t mesh_network_src(mesh_network_pdu_t * network_pdu){
     return big_endian_read_16(network_pdu->data, 5);
+}
+uint16_t mesh_network_dst(mesh_network_pdu_t * network_pdu){
+    return big_endian_read_16(network_pdu->data, 7);
 }
 int mesh_network_segmented(mesh_network_pdu_t * network_pdu){
     return network_pdu->data[9] & 0x80;
