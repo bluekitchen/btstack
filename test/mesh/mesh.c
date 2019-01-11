@@ -52,6 +52,8 @@
 #include "btstack.h"
 #include "btstack_tlv.h"
 
+static void show_usage(void);
+
 #define BEACON_TYPE_SECURE_NETWORK 1
 
 const static uint8_t device_uuid[] = { 0x00, 0x1B, 0xDC, 0x08, 0x10, 0x21, 0x0B, 0x0E, 0x0A, 0x0C, 0x00, 0x0B, 0x0E, 0x0A, 0x0C, 0x00 };
@@ -76,10 +78,10 @@ static uint8_t beacon_key[16];
 static uint8_t network_id[8];
 static uint16_t primary_element_address;
 
-static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len){
-    printf("%-20s ", name);
-    printf_hexdump(data, len);
-}
+// static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len){
+//     printf("%-20s ", name);
+//     printf_hexdump(data, len);
+// }
 // static void mesh_print_x(const char * name, uint32_t value){
 //     printf("%20s: 0x%x", name, (int) value);
 // }
@@ -170,6 +172,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     // setup scanning
                     gap_set_scan_parameters(0, 0x300, 0x300);
                     gap_start_scan();
+                    //
+                    show_usage();
                     break;
 
                 default:
@@ -291,37 +295,6 @@ static btstack_crypto_aes128_cmac_t mesh_cmac_request;
 static uint8_t mesh_secure_network_beacon[22];
 static uint8_t mesh_secure_network_beacon_auth_value[16];
 
-// TEST APPLICATION
-
-// #define TEST_MESSAGE_1
-// #define TEST_MESSAGE_2
-// #define TEST_MESSAGE_3
-// #define TEST_MESSAGE_6
-// #define TEST_MESSAGE_7
-// #define TEST_MESSAGE_16
-// #define TEST_MESSAGE_24
-// #define TEST_MESSAGE_20
-// #define TEST_MESSAGE_23
-// #define TEST_MESSAGE_18
-// #define TEST_MESSAGE_X
-
-static void load_provisioning_data_test_message(void){
-    mesh_provisioning_data_t provisioning_data;
-    provisioning_data.nid = 0x68;
-    mesh_set_iv_index(0x12345678);
-    btstack_parse_hex("0953fa93e7caac9638f58820220a398e", 16, provisioning_data.encryption_key);
-    btstack_parse_hex("8b84eedec100067d670971dd2aa700cf", 16, provisioning_data.privacy_key);
-    mesh_network_key_list_add_from_provisioning_data(&provisioning_data);
-
-    uint8_t application_key[16];
-    btstack_parse_hex("63964771734fbd76e3b40519d1d94a48", 16, application_key);
-    mesh_application_key_set( 0, 0x26, application_key);
-
-    uint8_t device_key[16];
-    btstack_parse_hex("9d6dd0e96eb25dc19a40ed9914f8f03f", 16, device_key);
-    mesh_transport_set_device_key(device_key);
-}
-
 static void send_pts_network_messsage(int type){
     uint8_t lower_transport_pdu_data[16];
 
@@ -373,55 +346,17 @@ static void send_pts_network_messsage(int type){
     mesh_network_send(0, ctl, ttl, seq, src, dst, lower_transport_pdu_data, lower_transport_pdu_len);
 }
 
-static void send_pts_unsegmented_access_messsage(int type){
+static void send_pts_unsegmented_access_messsage(void){
     uint8_t access_pdu_data[16];
 
     uint16_t src = primary_element_address;
     uint16_t dest = 0x0001;
-    uint8_t  ttl = 0;
+    uint8_t  ttl = 10;
 
-    switch (type){
-        case 0:
-            ttl = 10;
-            dest = 0xD000;
-            printf("group/virutal, dest 0xd000, ttl=10\n");
-            break;
-        case 1:
-            dest = 0x001;
-            ttl = 10;
-            printf("unicast ttl=10\n");
-            break;
-        case 2:
-            dest = 0x001;
-            ttl = 0x7f;
-            printf("unicast ttl=0x7f\n");
-            break;
-        case 3:
-            printf("virtual\n");
-            break;
-        case 4:
-            printf("group\n");
-            break;
-        case 5:
-            printf("all-proxies\n");
-            break;
-        case 6:
-            printf("all-friends\n");
-            break;
-        case 7:
-            printf("all-relays\n");
-            break;
-        case 8:
-            printf("all-nodes\n");
-            break;
-        default:
-            return;
-    }
     int access_pdu_len = 1;
     memset(access_pdu_data, 0x55, access_pdu_len);
     uint16_t netkey_index = 0;
-    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
-
+    uint16_t appkey_index = 0; // MESH_DEVICE_KEY_INDEX;
 
     // send as unsegmented access pdu
     mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
@@ -430,50 +365,13 @@ static void send_pts_unsegmented_access_messsage(int type){
     mesh_upper_transport_send_unsegmented_access_pdu(network_pdu);
 }
 
-static void send_pts_segmented_access_messsage(int type){
+static void send_pts_segmented_access_messsage_unicast(void){
     uint8_t access_pdu_data[20];
 
     uint16_t src = primary_element_address;
     uint16_t dest = 0x0001;
-    uint8_t  ttl = 0;
+    uint8_t  ttl = 10;
 
-    switch (type){
-        case 0:
-            ttl = 10;
-            dest = 0xD000;
-            printf("group/virtual, dest 0xd000, ttl=10\n");
-            break;
-        case 1:
-            dest = 0x9779;
-            ttl = 10;
-            printf("group/virtual, dest 0x9779, ttl=10\n");
-            break;
-        case 2:
-            dest = 0x001;
-            ttl = 0x7f;
-            printf("unicast ttl=0x7f\n");
-            break;
-        case 3:
-            printf("virtual\n");
-            break;
-        case 4:
-            printf("group\n");
-            break;
-        case 5:
-            printf("all-proxies\n");
-            break;
-        case 6:
-            printf("all-friends\n");
-            break;
-        case 7:
-            printf("all-relays\n");
-            break;
-        case 8:
-            printf("all-nodes\n");
-            break;
-        default:
-            return;
-    }
     int access_pdu_len = 20;
     memset(access_pdu_data, 0x55, access_pdu_len);
     uint16_t netkey_index = 0;
@@ -498,6 +396,15 @@ static void mesh_secure_network_beacon_auth_value_calculated(void * arg){
 
 static int pts_type;
 
+static void show_usage(void){
+    bd_addr_t      iut_address;
+    gap_local_bd_addr(iut_address);
+    printf("\n--- Bluetooth Mesh Console at %s ---\n", bd_addr_to_str(iut_address));
+    printf("1      - Send Unsegmented Access Message\n");
+    printf("2      - Send   Segmented Access Message - Unicast\n");
+    printf("\n");
+}
+
 static void stdin_process(char cmd){
     if (ui_chars_for_pin){
         printf("%c", cmd);
@@ -516,10 +423,10 @@ static void stdin_process(char cmd){
             send_pts_network_messsage(pts_type++);
             break;
         case '1':
-            send_pts_unsegmented_access_messsage(pts_type++);
+            send_pts_unsegmented_access_messsage();
             break;
         case '2':
-            send_pts_segmented_access_messsage(pts_type++);
+            send_pts_segmented_access_messsage_unicast();
             break;
         case '8':
             printf("Creating link to device uuid: ");
@@ -558,8 +465,12 @@ static void stdin_process(char cmd){
             btstack_crypto_aes128_cmac_message(&mesh_cmac_request, beacon_key, 13,
                 &mesh_secure_network_beacon[1], mesh_secure_network_beacon_auth_value, &mesh_secure_network_beacon_auth_value_calculated, NULL);
             break;
+        case ' ':
+            show_usage();
+            break;
         default:
-            printf("Command: '%c'\n", cmd);
+            printf("Command: '%c' not implemented\n", cmd);
+            show_usage();
             break;
     }
 }
