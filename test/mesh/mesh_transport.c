@@ -767,7 +767,7 @@ static void mesh_transport_tx_ack_timeout(btstack_timer_source_t * ts);
 
 static int mesh_upper_transport_retry_count;
 
-static uint32_t mesh_upper_transport_next_seq(void){
+uint32_t mesh_upper_transport_next_seq(void){
     return upper_transport_seq++;
 }
 

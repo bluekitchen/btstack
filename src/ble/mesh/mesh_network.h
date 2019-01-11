@@ -205,6 +205,7 @@ int mesh_network_address_unicast(uint16_t addr);
 
 // Mesh Network PDU Getter
 uint16_t  mesh_network_control(mesh_network_pdu_t * network_pdu);
+uint8_t   mesh_network_nid(mesh_network_pdu_t * network_pdu);
 uint8_t   mesh_network_ttl(mesh_network_pdu_t * network_pdu);
 uint32_t  mesh_network_seq(mesh_network_pdu_t * network_pdu);
 uint16_t  mesh_network_src(mesh_network_pdu_t * network_pdu);

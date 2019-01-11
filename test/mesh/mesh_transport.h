@@ -53,6 +53,8 @@ void mesh_transport_init();
 
 void mesh_upper_transport_set_seq(uint32_t seq);
 
+uint32_t mesh_upper_transport_next_seq(void);
+
 void mesh_upper_transport_set_primary_element_address(uint16_t primary_element_address);
 
 void mesh_transport_set_device_key(const uint8_t * device_key);
