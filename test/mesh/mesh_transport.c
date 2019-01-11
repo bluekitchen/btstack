@@ -816,17 +816,34 @@ static void mesh_upper_transport_send_next_segment(void){
 
     if (upper_transport_outgoing_seg_o > seg_n){
         printf("[+] Upper transport, send segmented pdu complete\n");
-        return;
+        if (!mesh_network_address_unicast(mesh_transport_dest(upper_transport_outgoing_pdu))){
+            upper_transport_outgoing_seg_o   = 0;
+            // done, more?
+            if (mesh_upper_transport_retry_count){
+                printf("[+] Upper transport, message unacknowledged retry count %u\n", mesh_upper_transport_retry_count);
+                mesh_upper_transport_retry_count--;
+            } else {
+                printf("[+] Upper transport, message unacknowledged -> free\n");
+                // note: same as in seg ack handling code
+                btstack_memory_mesh_transport_pdu_free(upper_transport_outgoing_pdu);        
+                upper_transport_outgoing_pdu     = NULL;
+                btstack_memory_mesh_network_pdu_free(upper_transport_outgoing_segment);        
+                upper_transport_outgoing_segment = NULL;
+                return;
+            }
+        }
     }
 
-    // restart acknowledgment timer
-    // - "This timer shall be set to a minimum of 200 + 50 * TTL milliseconds."
-    if (upper_transport_outgoing_pdu->acknowledgement_timer_active){
-        btstack_run_loop_remove_timer(&upper_transport_outgoing_pdu->incomplete_timer);
-        upper_transport_outgoing_pdu->acknowledgement_timer_active = 0;
+    if (mesh_network_address_unicast(mesh_transport_dest(upper_transport_outgoing_pdu))){
+        // restart acknowledgment timer for unicast dst
+        // - "This timer shall be set to a minimum of 200 + 50 * TTL milliseconds."
+        if (upper_transport_outgoing_pdu->acknowledgement_timer_active){
+            btstack_run_loop_remove_timer(&upper_transport_outgoing_pdu->incomplete_timer);
+            upper_transport_outgoing_pdu->acknowledgement_timer_active = 0;
+        }
+        uint32_t timeout = 200 + 50 * mesh_transport_ttl(upper_transport_outgoing_pdu);
+        mesh_transport_start_acknowledgment_timer(upper_transport_outgoing_pdu, timeout, &mesh_transport_tx_ack_timeout);
     }
-    uint32_t timeout = 200 + 50 * mesh_transport_ttl(upper_transport_outgoing_pdu);
-    mesh_transport_start_acknowledgment_timer(upper_transport_outgoing_pdu, timeout, &mesh_transport_tx_ack_timeout);
 
     mesh_upper_transport_setup_segment(upper_transport_outgoing_pdu, upper_transport_outgoing_seg_o, upper_transport_outgoing_segment);
 
