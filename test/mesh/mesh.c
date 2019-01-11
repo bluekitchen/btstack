@@ -384,6 +384,37 @@ static void send_pts_segmented_access_messsage_unicast(void){
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
 
+static void send_pts_segmented_access_messsage_group(int type){
+    uint8_t access_pdu_data[20];
+
+    uint16_t src = primary_element_address;
+    uint16_t dest = 0xd000;
+    uint8_t  ttl = 10;
+
+    switch (type){
+        case 0:
+            printf("Group 0xd000\n");
+            dest = 0x8000;
+            break;
+        case 1:
+            printf("Virtual 0x9779\n");
+            dest = 0x9779;
+            break;
+        default:
+            return;
+    }
+
+    int access_pdu_len = 20;
+    memset(access_pdu_data, 0x55, access_pdu_len);
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = 0; // MESH_DEVICE_KEY_INDEX;
+
+    // send as segmented access pdu
+    mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
+    int status = mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
+    if (status) return;
+    mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
+}
 
 static void mesh_secure_network_beacon_auth_value_calculated(void * arg){
     UNUSED(arg);
@@ -402,6 +433,7 @@ static void show_usage(void){
     printf("\n--- Bluetooth Mesh Console at %s ---\n", bd_addr_to_str(iut_address));
     printf("1      - Send Unsegmented Access Message\n");
     printf("2      - Send   Segmented Access Message - Unicast\n");
+    printf("3      - Send   Segmented Access Message - Group/Virtual\n");
     printf("\n");
 }
 
@@ -427,6 +459,9 @@ static void stdin_process(char cmd){
             break;
         case '2':
             send_pts_segmented_access_messsage_unicast();
+            break;
+        case '3':
+            send_pts_segmented_access_messsage_group(pts_type++);
             break;
         case '8':
             printf("Creating link to device uuid: ");
