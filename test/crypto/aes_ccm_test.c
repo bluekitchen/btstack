@@ -53,10 +53,10 @@ static void message_24_upper_transport_encrypt(void){
 	uint8_t trans_mic[8];
 	btstack_crypto_init();
 	btstack_crypto_ccm_t btstack_crypto_ccm;
-	btstack_crypo_ccm_init(&btstack_crypto_ccm, app_key, app_nonce, sizeof(plaintext), sizeof(label_uuid), sizeof(trans_mic));
-	btstack_crypo_ccm_digest(&btstack_crypto_ccm, label_uuid, 16,  &ccm_done, NULL);
+	btstack_crypto_ccm_init(&btstack_crypto_ccm, app_key, app_nonce, sizeof(plaintext), sizeof(label_uuid), sizeof(trans_mic));
+	btstack_crypto_ccm_digest(&btstack_crypto_ccm, label_uuid, 16,  &ccm_done, NULL);
 	btstack_crypto_ccm_encrypt_block(&btstack_crypto_ccm, sizeof(plaintext), plaintext, ciphertext, &ccm_done, NULL);
-	btstack_crypo_ccm_get_authentication_value(&btstack_crypto_ccm, trans_mic);
+	btstack_crypto_ccm_get_authentication_value(&btstack_crypto_ccm, trans_mic);
 	printf("%16s: ", "ciphertext"); printf_hexdump(ciphertext, 8);
 	printf("%16s: ", "TransMIC");     printf_hexdump(trans_mic, 8);
 }
@@ -86,10 +86,10 @@ static void message_24_upper_transport_decrypt(void){
 	uint8_t trans_mic[8];
 	btstack_crypto_init();
 	btstack_crypto_ccm_t btstack_crypto_ccm;
-	btstack_crypo_ccm_init(&btstack_crypto_ccm, app_key, app_nonce, sizeof(ciphertext), sizeof(label_uuid), sizeof(trans_mic));
-	btstack_crypo_ccm_digest(&btstack_crypto_ccm, label_uuid, 16,  &ccm_done, NULL);
+	btstack_crypto_ccm_init(&btstack_crypto_ccm, app_key, app_nonce, sizeof(ciphertext), sizeof(label_uuid), sizeof(trans_mic));
+	btstack_crypto_ccm_digest(&btstack_crypto_ccm, label_uuid, 16,  &ccm_done, NULL);
 	btstack_crypto_ccm_decrypt_block(&btstack_crypto_ccm, sizeof(ciphertext), ciphertext, plaintext, &ccm_done, NULL);
-	btstack_crypo_ccm_get_authentication_value(&btstack_crypto_ccm, trans_mic);
+	btstack_crypto_ccm_get_authentication_value(&btstack_crypto_ccm, trans_mic);
 	printf("%16s: ", "plaintext"); printf_hexdump(plaintext, 8);
 	printf("%16s: ", "TransMIC");     printf_hexdump(trans_mic, 8);
 }
@@ -117,9 +117,9 @@ static void message_24_lower_transport_segment_0(void){
 	uint8_t net_mic[4];
 	btstack_crypto_init();
 	btstack_crypto_ccm_t btstack_crypto_ccm;
-	btstack_crypo_ccm_init(&btstack_crypto_ccm, encryption_key, network_nonce, sizeof(plaintext), 0, 4);
+	btstack_crypto_ccm_init(&btstack_crypto_ccm, encryption_key, network_nonce, sizeof(plaintext), 0, 4);
 	btstack_crypto_ccm_encrypt_block(&btstack_crypto_ccm, sizeof(plaintext), plaintext, ciphertext, &ccm_done, NULL);
-	btstack_crypo_ccm_get_authentication_value(&btstack_crypto_ccm, net_mic);
+	btstack_crypto_ccm_get_authentication_value(&btstack_crypto_ccm, net_mic);
 	printf("%16s: ", "ciphertext"); printf_hexdump(ciphertext, 18);
 	printf("%16s: ", "NetMIC");     printf_hexdump(net_mic, 4);
 }

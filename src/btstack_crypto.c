@@ -1142,7 +1142,7 @@ int btstack_crypto_ecc_p256_validate_public_key(const uint8_t * public_key){
 }
 #endif
 
-void btstack_crypo_ccm_init(btstack_crypto_ccm_t * request, const uint8_t * key, const uint8_t * nonce, uint16_t message_len, uint16_t additional_authenticated_data_len, uint8_t auth_len){
+void btstack_crypto_ccm_init(btstack_crypto_ccm_t * request, const uint8_t * key, const uint8_t * nonce, uint16_t message_len, uint16_t additional_authenticated_data_len, uint8_t auth_len){
     request->key         = key;
     request->nonce       = nonce;
     request->message_len = message_len;
@@ -1153,7 +1153,7 @@ void btstack_crypo_ccm_init(btstack_crypto_ccm_t * request, const uint8_t * key,
     request->state       = CCM_CALCULATE_X1;
 }
 
-void btstack_crypo_ccm_digest(btstack_crypto_ccm_t * request, uint8_t * additional_authenticated_data, uint16_t additional_authenticated_data_len, void (* callback)(void * arg), void * callback_arg){
+void btstack_crypto_ccm_digest(btstack_crypto_ccm_t * request, uint8_t * additional_authenticated_data, uint16_t additional_authenticated_data_len, void (* callback)(void * arg), void * callback_arg){
     // not implemented yet
     request->btstack_crypto.context_callback.callback  = callback;
     request->btstack_crypto.context_callback.context   = callback_arg;
@@ -1164,7 +1164,7 @@ void btstack_crypo_ccm_digest(btstack_crypto_ccm_t * request, uint8_t * addition
     btstack_crypto_run();
 }
 
-void btstack_crypo_ccm_get_authentication_value(btstack_crypto_ccm_t * request, uint8_t * authentication_value){
+void btstack_crypto_ccm_get_authentication_value(btstack_crypto_ccm_t * request, uint8_t * authentication_value){
     memcpy(authentication_value, request->x_i, request->auth_len);
 }
 
