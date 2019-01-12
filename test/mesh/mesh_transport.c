@@ -330,7 +330,7 @@ static void mesh_upper_transport_validate_unsegmented_message_ccm(void * arg){
 
     // store TransMIC
     uint8_t trans_mic[8];
-    btstack_crypo_ccm_get_authentication_value(&ccm, trans_mic);
+    btstack_crypto_ccm_get_authentication_value(&ccm, trans_mic);
     mesh_print_hex("TransMIC", trans_mic, trans_mic_len);
 
     uint8_t * upper_transport_pdu     = mesh_network_pdu_data(network_pdu) + 1;
@@ -378,7 +378,7 @@ static void mesh_upper_transport_validate_segmented_message_ccm(void * arg){
 
     // store TransMIC
     uint8_t trans_mic[8];
-    btstack_crypo_ccm_get_authentication_value(&ccm, trans_mic);
+    btstack_crypto_ccm_get_authentication_value(&ccm, trans_mic);
     mesh_print_hex("TransMIC", trans_mic, transport_pdu->transmic_len);
 
     if (memcmp(trans_mic, &upper_transport_pdu[upper_transport_pdu_len], transport_pdu->transmic_len) == 0){
@@ -447,7 +447,7 @@ static void mesh_upper_transport_validate_unsegmented_message(mesh_network_pdu_t
 
     // decrypt ccm
     mesh_transport_crypto_active = 1;
-    btstack_crypo_ccm_init(&ccm, message_key->key, application_nonce, upper_transport_pdu_len, 0, trans_mic_len);
+    btstack_crypto_ccm_init(&ccm, message_key->key, application_nonce, upper_transport_pdu_len, 0, trans_mic_len);
     btstack_crypto_ccm_decrypt_block(&ccm, upper_transport_pdu_len, upper_transport_pdu_data, upper_transport_pdu_data, &mesh_upper_transport_validate_unsegmented_message_ccm, network_pdu_in_validation);
 }
 
@@ -482,7 +482,7 @@ static void mesh_upper_transport_validate_segmented_message(mesh_transport_pdu_t
 
     // decrypt ccm
     mesh_transport_crypto_active = 1;
-    btstack_crypo_ccm_init(&ccm, message_key->key, application_nonce, upper_transport_pdu_len, 0, transport_pdu->transmic_len);
+    btstack_crypto_ccm_init(&ccm, message_key->key, application_nonce, upper_transport_pdu_len, 0, transport_pdu->transmic_len);
     btstack_crypto_ccm_decrypt_block(&ccm, upper_transport_pdu_len, upper_transport_pdu_data, upper_transport_pdu_data, &mesh_upper_transport_validate_segmented_message_ccm, transport_pdu);
 }
 
@@ -920,7 +920,7 @@ static void mesh_upper_transport_send_unsegmented_access_pdu_ccm(void * arg){
     uint8_t   upper_transport_pdu_len = mesh_network_pdu_len(network_pdu)  - 1;
     mesh_print_hex("EncAccessPayload", upper_transport_pdu, upper_transport_pdu_len);
     // store TransMIC
-    btstack_crypo_ccm_get_authentication_value(&ccm, &upper_transport_pdu[upper_transport_pdu_len]);
+    btstack_crypto_ccm_get_authentication_value(&ccm, &upper_transport_pdu[upper_transport_pdu_len]);
     mesh_print_hex("TransMIC", &upper_transport_pdu[upper_transport_pdu_len], 4);
     network_pdu->len += 4;
     // send network pdu
@@ -933,7 +933,7 @@ static void mesh_upper_transport_send_segmented_access_pdu_ccm(void * arg){
     mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) arg;
     mesh_print_hex("EncAccessPayload", transport_pdu->data, transport_pdu->len);
     // store TransMIC
-    btstack_crypo_ccm_get_authentication_value(&ccm, &transport_pdu->data[transport_pdu->len]);
+    btstack_crypto_ccm_get_authentication_value(&ccm, &transport_pdu->data[transport_pdu->len]);
     mesh_print_hex("TransMIC", &transport_pdu->data[transport_pdu->len], transport_pdu->transmic_len);
     transport_pdu->len += transport_pdu->transmic_len;
     mesh_upper_transport_send_segmented_pdu(transport_pdu);
@@ -1113,7 +1113,7 @@ void mesh_upper_transport_send_unsegmented_access_pdu(mesh_network_pdu_t * netwo
     // encrypt ccm
     mesh_transport_crypto_active = 1;
 
-    btstack_crypo_ccm_init(&ccm, appkey->key, application_nonce, access_pdu_len, 0, trans_mic_len);
+    btstack_crypto_ccm_init(&ccm, appkey->key, application_nonce, access_pdu_len, 0, trans_mic_len);
     btstack_crypto_ccm_encrypt_block(&ccm, access_pdu_len, access_pdu_data, access_pdu_data, &mesh_upper_transport_send_unsegmented_access_pdu_ccm, network_pdu);
 }
 
@@ -1145,7 +1145,7 @@ void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t * trans
     mesh_transport_crypto_active = 1;
 
     // encrypt ccm
-    btstack_crypo_ccm_init(&ccm, appkey->key, application_nonce, access_pdu_len, 0, transmic_len);
+    btstack_crypto_ccm_init(&ccm, appkey->key, application_nonce, access_pdu_len, 0, transmic_len);
     btstack_crypto_ccm_encrypt_block(&ccm, access_pdu_len,access_pdu_data, access_pdu_data, &mesh_upper_transport_send_segmented_access_pdu_ccm, transport_pdu);
 }
 

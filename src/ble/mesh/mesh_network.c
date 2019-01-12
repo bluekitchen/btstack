@@ -292,7 +292,7 @@ static void mesh_network_send_b(void *arg){
 
     // store NetMIC
     uint8_t net_mic[8];
-    btstack_crypo_ccm_get_authentication_value(&mesh_network_crypto_request.ccm, net_mic);
+    btstack_crypto_ccm_get_authentication_value(&mesh_network_crypto_request.ccm, net_mic);
 
     // store MIC
     uint8_t net_mic_len = network_pdu->data[1] & 0x80 ? 8 : 4;
@@ -341,7 +341,7 @@ static void mesh_network_send_a(mesh_network_pdu_t * network_pdu){
     // start ccm
     uint8_t cypher_len  = network_pdu->len - 7;
     uint8_t net_mic_len = network_pdu->data[1] & 0x80 ? 8 : 4;
-    btstack_crypo_ccm_init(&mesh_network_crypto_request.ccm, current_network_key->encryption_key, network_nonce, cypher_len, 0, net_mic_len);
+    btstack_crypto_ccm_init(&mesh_network_crypto_request.ccm, current_network_key->encryption_key, network_nonce, cypher_len, 0, net_mic_len);
     btstack_crypto_ccm_encrypt_block(&mesh_network_crypto_request.ccm, cypher_len, &network_pdu->data[7], &network_pdu->data[7], &mesh_network_send_b, network_pdu);
 }
 
@@ -390,7 +390,7 @@ static void process_network_pdu_validate_d(void * arg){
 
     // store NetMIC
     uint8_t net_mic[8];
-    btstack_crypo_ccm_get_authentication_value(&mesh_network_crypto_request.ccm, net_mic);
+    btstack_crypto_ccm_get_authentication_value(&mesh_network_crypto_request.ccm, net_mic);
     printf("NetMIC: "); 
     printf_hexdump(net_mic, net_mic_len);
     // store in pdu
@@ -498,7 +498,7 @@ static void process_network_pdu_validate_b(void * arg){
 
     // 034b50057e400000010000
 
-    btstack_crypo_ccm_init(&mesh_network_crypto_request.ccm, current_network_key->encryption_key, network_nonce, cypher_len, 0, net_mic_len);
+    btstack_crypto_ccm_init(&mesh_network_crypto_request.ccm, current_network_key->encryption_key, network_nonce, cypher_len, 0, net_mic_len);
     btstack_crypto_ccm_decrypt_block(&mesh_network_crypto_request.ccm, cypher_len, &network_pdu_in_validation->data[7], &network_pdu->data[7], &process_network_pdu_validate_d, network_pdu);
 }
 
