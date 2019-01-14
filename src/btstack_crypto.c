@@ -563,7 +563,6 @@ static void btstack_crypto_ccm_calc_aad_xn(btstack_crypto_ccm_t * btstack_crypto
     // fill from input
     uint16_t bytes_free = 16 - btstack_crypto_ccm->aad_remainder_len;
     uint16_t bytes_to_copy = btstack_min(bytes_free, btstack_crypto_ccm->block_len);
-    printf("btstack_crypto_ccm_calc_aad_xn: bytes to copy %u\n", bytes_to_copy);
     while (bytes_to_copy){
         btstack_crypto_ccm->x_i[btstack_crypto_ccm->aad_remainder_len++] ^= *btstack_crypto_ccm->input++;
         btstack_crypto_ccm->aad_offset++;
@@ -573,12 +572,7 @@ static void btstack_crypto_ccm_calc_aad_xn(btstack_crypto_ccm_t * btstack_crypto
     }
 
     // if last block, fill with zeros
-    printf("btstack_crypto_ccm_calc_aad_xn: aad_len %u, aad_offset %u. aad_remainder_len %u, bytes_free %u\n",
-        btstack_crypto_ccm->aad_len, btstack_crypto_ccm->aad_offset, btstack_crypto_ccm->aad_remainder_len, bytes_free);
-
     if (btstack_crypto_ccm->aad_offset == (btstack_crypto_ccm->aad_len + 2)){
-        printf("btstack_crypto_ccm_calc_aad_xn: fill from %u, %u bytes\n", btstack_crypto_ccm->aad_remainder_len, bytes_free);
-        // memset(&btstack_crypto_ccm->b_i[btstack_crypto_ccm->aad_remainder_len], 0, bytes_free);
         btstack_crypto_ccm->aad_remainder_len = 16;
     }
     // if not full, notify done
@@ -625,7 +619,7 @@ static void btstack_crypto_ccm_next_block(btstack_crypto_ccm_t * btstack_crypto_
     btstack_crypto_ccm->block_len   -= bytes_to_process;
     btstack_crypto_ccm->message_len -= bytes_to_process;
 #ifdef DEBUG_CCM
-    printf("btstack_crypto_ccm_next_block (message len %u, blockk_len %u)\n", btstack_crypto_ccm->message_len, btstack_crypto_ccm->block_len);
+    printf("btstack_crypto_ccm_next_block (message len %u, block_len %u)\n", btstack_crypto_ccm->message_len, btstack_crypto_ccm->block_len);
 #endif
     if (btstack_crypto_ccm->message_len == 0){
         btstack_crypto_ccm->state = CCM_CALCULATE_S0;
