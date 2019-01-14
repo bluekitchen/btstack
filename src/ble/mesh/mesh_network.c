@@ -198,6 +198,10 @@ int mesh_network_address_unicast(uint16_t addr){
     return addr < 0x8000;
 }
 
+int mesh_network_address_virtual(uint16_t addr){
+    return (addr & 0xC000) == 0x8000;   // 0b10xx xxxx xxxx xxxx
+}
+
 int mesh_network_addresses_valid(uint8_t ctl, uint16_t src, uint16_t dst){
     printf("CTL: %u\n", ctl);
     printf("SRC: %04x\n", src);

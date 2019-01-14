@@ -203,6 +203,13 @@ int mesh_network_addresses_valid(uint8_t ctl, uint16_t src, uint16_t dst);
  */
 int mesh_network_address_unicast(uint16_t addr);
 
+/**
+ * @brief Check if Virtual address
+ * @param addr
+ * @returns 1 if virtual
+ */
+int mesh_network_address_virtual(uint16_t addr);
+
 // Mesh Network PDU Getter
 uint16_t  mesh_network_control(mesh_network_pdu_t * network_pdu);
 uint8_t   mesh_network_nid(mesh_network_pdu_t * network_pdu);
