@@ -344,7 +344,7 @@ void test_send_control_message(uint16_t netkey_index, uint8_t ttl, uint16_t src,
         adv_bearer_emit_sent();
     }
 }
-
+#if 1
 // Message 1
 char * message1_network_pdus[] = {
     (char *) "68eca487516765b5e5bfdacbaf6cb7fb6bff871f035444ce83a670df"
@@ -769,31 +769,26 @@ TEST(MessageTest, Message21Send){
     mesh_upper_transport_set_seq(seq);
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message21_upper_transport_pdu, 1, message21_lower_transport_pdus, message21_network_pdus);
 }
+#endif
 
-
-#if 0
+#if 1
 // Message 22
-// char * message22_network_pdus[] = {
-//     (char *) "e8d85caecef1e3ed31f3fdcf88a411135fea55df730b6b28e255",
-// };
-// char * message22_lower_transport_pdus[] = {
-//     (char *) "663871b904d431526316ca48a0",
-// };
-// char * message22_upper_transport_pdu = (char *) "d50a0048656c6c6f";
-// TEST(MessageTest, Message22Receive){
-//     mesh_set_iv_index(0x12345677);
-//     test_receive_network_pdus(1, message22_network_pdus, message22_lower_transport_pdus, message22_upper_transport_pdu);
-// }
+char * message22_network_pdus[] = {
+    (char *) "e8d85caecef1e3ed31f3fdcf88a411135fea55df730b6b28e255",
+};
+char * message22_lower_transport_pdus[] = {
+    (char *) "663871b904d431526316ca48a0",
+};
+char * message22_upper_transport_pdu = (char *) "d50a0048656c6c6f";
+char * message22_label_string = (char *) "0073e7e4d8b9440faf8415df4c56c0e1";
 
-// buggy?
-
-// Access Payload       D5 0A 00 48 65 6C 6C 6F
-// AppOrDevKey          63 96 47 71 73 4F BD 76 E3 B4 05 19 D1 D9 4A 48
-// AppNonce             01 00 07 08 0B 12 34 B5 29 12 34 56 77
-// EncAccessPayload     38 71 B9 04 D4 31 52 63
-// TransMIC             03 55 18 C4
-
-// SPEC: TransMIC       16ca48a0
+TEST(MessageTest, Message22Receive){
+    mesh_set_iv_index(0x12345677);
+    uint8_t label_uuid[16];
+    btstack_parse_hex(message22_label_string, 16, label_uuid);
+    mesh_virtual_address_set(0xb529, label_uuid);
+    test_receive_network_pdus(1, message22_network_pdus, message22_lower_transport_pdus, message22_upper_transport_pdu);
+}
 
 TEST(MessageTest, Message22Send){
     uint16_t netkey_index = 0;
@@ -806,11 +801,14 @@ TEST(MessageTest, Message22Send){
 
     mesh_set_iv_index(0x12345677);
     mesh_upper_transport_set_seq(seq);
+    uint8_t label_uuid[16];
+    btstack_parse_hex(message22_label_string, 16, label_uuid);
+    mesh_virtual_address_set(0xb529, label_uuid);
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message22_upper_transport_pdu, 1, message22_lower_transport_pdus, message22_network_pdus);
 }
 #endif
 
-#if 0
+#if 1
 // Message 23
 char * message23_network_pdus[] = {
     (char *) "e877a48dd5fe2d7a9d696d3dd16a75489696f0b70c711b881385",
@@ -819,18 +817,13 @@ char * message23_lower_transport_pdus[] = {
     (char *) "662456db5e3100eef65daa7a38",
 };
 char * message23_upper_transport_pdu = (char *) "d50a0048656c6c6f";
-// buggy?
-
-// Access Payload       D5 0A 00 48 65 6C 6C 6F
-// AppOrDevKey          63 96 47 71 73 4F BD 76 E3 B4 05 19 D1 D9 4A 48
-// AppNonce             01 00 07 08 0C 12 34 97 36 12 34 56 77
-// EncAccessPayload     24 56 DB 5E 31 00 EE F6
-// TransMIC             26 04 3E 26
-
-// SPEC: TransMIC       5daa7a38
+char * message23_label_string = (char *) "f4a002c7fb1e4ca0a469a021de0db875";
 
 TEST(MessageTest, Message23Receive){
     mesh_set_iv_index(0x12345677);
+    uint8_t label_uuid[16];
+    btstack_parse_hex(message23_label_string, 16, label_uuid);
+    mesh_virtual_address_set(0x9736, label_uuid);
     test_receive_network_pdus(1, message23_network_pdus, message23_lower_transport_pdus, message23_upper_transport_pdu);
 }
 TEST(MessageTest, Message23Send){
@@ -844,6 +837,9 @@ TEST(MessageTest, Message23Send){
 
     mesh_set_iv_index(0x12345677);
     mesh_upper_transport_set_seq(seq);
+    uint8_t label_uuid[16];
+    btstack_parse_hex(message23_label_string, 16, label_uuid);
+    mesh_virtual_address_set(0x9736, label_uuid);
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message23_upper_transport_pdu, 1, message23_lower_transport_pdus, message23_network_pdus);
 }
 #endif
@@ -863,23 +859,27 @@ char * message24_lower_transport_pdus[] = {
     (char *) "e6a034219dbca387",
 };
 char * message24_upper_transport_pdu = (char *) "ea0a00576f726c64";
+char * message24_label_string = (char *) "f4a002c7fb1e4ca0a469a021de0db875";
 TEST(MessageTest, Message24Receive){
     mesh_set_iv_index(0x12345677);
+    uint8_t label_uuid[16];
+    btstack_parse_hex(message24_label_string, 16, label_uuid);
+    mesh_virtual_address_set(0x9736, label_uuid);
     test_receive_network_pdus(2, message24_network_pdus, message24_lower_transport_pdus, message24_upper_transport_pdu);
 }
-TEST(MessageTest, Message24Send){
-    uint16_t netkey_index = 0;
-    uint16_t appkey_index = 0;
-    uint8_t  ttl          = 3;
-    uint16_t src          = 0x1234;
-    uint16_t dest         = 0x9736;
-    uint32_t seq          = 0x07080d;
-    uint8_t  szmic        = 1;
+// TEST(MessageTest, Message24Send){
+//     uint16_t netkey_index = 0;
+//     uint16_t appkey_index = 0;
+//     uint8_t  ttl          = 3;
+//     uint16_t src          = 0x1234;
+//     uint16_t dest         = 0x9736;
+//     uint32_t seq          = 0x07080d;
+//     uint8_t  szmic        = 1;
 
-    mesh_set_iv_index(0x12345677);
-    mesh_upper_transport_set_seq(seq);
-    test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message24_upper_transport_pdu, 2, message24_lower_transport_pdus, message24_network_pdus);
-}
+//     mesh_set_iv_index(0x12345677);
+//     mesh_upper_transport_set_seq(seq);
+//     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message24_upper_transport_pdu, 2, message24_lower_transport_pdus, message24_network_pdus);
+// }
 #endif
 
 // Proxy Configuration Test
