@@ -58,9 +58,11 @@ static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len
 // application key list
 
 typedef struct {
-    uint8_t akf;
-    uint8_t aid;
-    uint8_t first;
+    uint8_t  label_uuid[16];
+    uint16_t dst;
+    uint8_t  akf;
+    uint8_t  aid;
+    uint8_t  first;
 } mesh_transport_key_iterator_t;
 
 typedef struct {
@@ -79,8 +81,14 @@ typedef struct {
     uint8_t aid;
 } mesh_transport_key_t;
 
-static mesh_transport_key_t test_application_key;
-static mesh_transport_key_t mesh_transport_device_key;
+typedef struct {
+    uint16_t hash;
+    uint8_t  label_uuid[16];
+} mesh_virtual_address_t;
+
+static mesh_transport_key_t   test_application_key;
+static mesh_transport_key_t   mesh_transport_device_key;
+static mesh_virtual_address_t test_virtual_address;
 
 void mesh_application_key_set(uint16_t appkey_index, uint8_t aid, const uint8_t * application_key){
     test_application_key.index = appkey_index;
@@ -96,6 +104,11 @@ void mesh_transport_set_device_key(const uint8_t * device_key){
     memcpy(mesh_transport_device_key.key, device_key, 16);
 }
 
+void mesh_virtual_address_set(uint16_t hash, const uint8_t * label_uuid){
+    test_virtual_address.hash   = hash;
+    memcpy(test_virtual_address.label_uuid, label_uuid, 16);
+}
+
 static const mesh_transport_key_t * mesh_transport_key_get(uint16_t appkey_index){
     if (appkey_index == MESH_DEVICE_KEY_INDEX){
         return &mesh_transport_device_key;
@@ -105,7 +118,8 @@ static const mesh_transport_key_t * mesh_transport_key_get(uint16_t appkey_index
 }
 
 // mesh network key iterator
-static void mesh_transport_key_iterator_init(mesh_transport_key_iterator_t * it, uint8_t akf, uint8_t aid){
+static void mesh_transport_key_iterator_init(mesh_transport_key_iterator_t * it, uint16_t dst, uint8_t akf, uint8_t aid){
+    it->dst = dst; 
     it->aid = aid;
     it->akf = akf;
     it->first = 1;
@@ -113,6 +127,7 @@ static void mesh_transport_key_iterator_init(mesh_transport_key_iterator_t * it,
 
 static int mesh_transport_key_iterator_has_more(mesh_transport_key_iterator_t * it){
     if (!it->first) return 0;
+    if (mesh_network_address_virtual(it->dst) && it->dst != test_virtual_address.hash) return 0;
     if (it->akf){
         return it->aid == test_application_key.aid;
     } else {
@@ -122,6 +137,9 @@ static int mesh_transport_key_iterator_has_more(mesh_transport_key_iterator_t * 
 
 static const mesh_transport_key_t * mesh_transport_key_iterator_get_next(mesh_transport_key_iterator_t * it){
     it->first = 0;
+    if (mesh_network_address_virtual(it->dst)){
+        memcpy(it->label_uuid, test_virtual_address.label_uuid, 16);
+    }
     if (it->akf){
         return &test_application_key;
     } else {
@@ -426,8 +444,26 @@ static void mesh_upper_transport_validate_segmented_message_ccm(void * arg){
         }
     }
 }
+
+static void mesh_upper_transport_validate_segmented_message_digest(void * arg){
+    mesh_transport_pdu_t * transport_pdu   = (mesh_transport_pdu_t*) arg;
+    uint8_t   upper_transport_pdu_len      = transport_pdu_in_validation->len - transport_pdu_in_validation->transmic_len;
+    uint8_t * upper_transport_pdu_data_in  = transport_pdu_in_validation->data;
+    uint8_t * upper_transport_pdu_data_out = transport_pdu->data;
+    btstack_crypto_ccm_decrypt_block(&ccm, upper_transport_pdu_len, upper_transport_pdu_data_in, upper_transport_pdu_data_out, &mesh_upper_transport_validate_segmented_message_ccm, transport_pdu);
+}
+
+static void mesh_upper_transport_validate_unsegmented_message_digest(void * arg){
+    mesh_network_pdu_t * network_pdu       = (mesh_network_pdu_t *) arg;
+    uint8_t   trans_mic_len = 4;
+    uint8_t   lower_transport_pdu_len      = network_pdu_in_validation->len - 9;
+    uint8_t * upper_transport_pdu_data_in  = &network_pdu_in_validation->data[10];
+    uint8_t * upper_transport_pdu_data_out = &network_pdu->data[10];
+    uint8_t   upper_transport_pdu_len      = lower_transport_pdu_len - 1 - trans_mic_len;
+    btstack_crypto_ccm_decrypt_block(&ccm, upper_transport_pdu_len, upper_transport_pdu_data_in, upper_transport_pdu_data_out, &mesh_upper_transport_validate_unsegmented_message_ccm, network_pdu);
+}
+
 static void mesh_upper_transport_validate_unsegmented_message(mesh_network_pdu_t * network_pdu){
-    uint8_t   lower_transport_pdu_len = network_pdu_in_validation->len - 9;
 
     if (!mesh_transport_key_iterator_has_more(&mesh_transport_key_it)){
         printf("No valid transport key found\n");
@@ -450,6 +486,7 @@ static void mesh_upper_transport_validate_unsegmented_message(mesh_network_pdu_t
     uint8_t trans_mic_len = 4;
     printf("Unsegmented Access message with TransMIC len 4\n");
 
+    uint8_t   lower_transport_pdu_len = network_pdu_in_validation->len - 9;
     uint8_t * upper_transport_pdu_data = &network_pdu_in_validation->data[10];
     uint8_t   upper_transport_pdu_len  = lower_transport_pdu_len - 1 - trans_mic_len;
 
@@ -457,8 +494,16 @@ static void mesh_upper_transport_validate_unsegmented_message(mesh_network_pdu_t
 
     // decrypt ccm
     mesh_transport_crypto_active = 1;
-    btstack_crypto_ccm_init(&ccm, message_key->key, application_nonce, upper_transport_pdu_len, 0, trans_mic_len);
-    btstack_crypto_ccm_decrypt_block(&ccm, upper_transport_pdu_len, upper_transport_pdu_data, upper_transport_pdu_data, &mesh_upper_transport_validate_unsegmented_message_ccm, network_pdu_in_validation);
+    uint16_t aad_len  = 0;
+    if (mesh_network_address_virtual(mesh_network_dst(network_pdu))){
+        aad_len  = 16;
+    }
+    btstack_crypto_ccm_init(&ccm, message_key->key, application_nonce, upper_transport_pdu_len, aad_len, trans_mic_len);
+    if (aad_len){
+        btstack_crypto_ccm_digest(&ccm, mesh_transport_key_it.label_uuid, aad_len, &mesh_upper_transport_validate_unsegmented_message_digest, network_pdu);
+    } else {
+        mesh_upper_transport_validate_unsegmented_message_digest(network_pdu);
+    }
 }
 
 static void mesh_upper_transport_validate_segmented_message(mesh_transport_pdu_t * transport_pdu){
@@ -486,8 +531,17 @@ static void mesh_upper_transport_validate_segmented_message(mesh_transport_pdu_t
 
     // decrypt ccm
     mesh_transport_crypto_active = 1;
-    btstack_crypto_ccm_init(&ccm, message_key->key, application_nonce, upper_transport_pdu_len, 0, transport_pdu->transmic_len);
-    btstack_crypto_ccm_decrypt_block(&ccm, upper_transport_pdu_len, upper_transport_pdu_data, upper_transport_pdu_data, &mesh_upper_transport_validate_segmented_message_ccm, transport_pdu);
+    uint16_t aad_len  = 0;
+    if (mesh_network_address_virtual(mesh_transport_dest(transport_pdu))){
+        aad_len  = 16;
+    }
+    btstack_crypto_ccm_init(&ccm, message_key->key, application_nonce, upper_transport_pdu_len, aad_len, transport_pdu->transmic_len);
+
+    if (aad_len){
+        btstack_crypto_ccm_digest(&ccm, mesh_transport_key_it.label_uuid, aad_len, &mesh_upper_transport_validate_segmented_message_digest, transport_pdu);
+    } else {
+        mesh_upper_transport_validate_segmented_message_digest(transport_pdu);
+    }
 }
 
 
@@ -507,13 +561,14 @@ static void mesh_lower_transport_process_unsegmented_access_message(mesh_network
     printf("AKF: %u\n",   akf);
     printf("AID: %02x\n", aid);
 
-    mesh_transport_key_iterator_init(&mesh_transport_key_it, akf, aid);
+    mesh_transport_key_iterator_init(&mesh_transport_key_it, mesh_network_dst(network_pdu), akf, aid);
     mesh_upper_transport_validate_unsegmented_message(network_pdu);
 }
 
 
 static void mesh_upper_transport_process_message(mesh_transport_pdu_t * transport_pdu){
     // copy original pdu
+    transport_pdu->len = transport_pdu_in_validation->len;
     memcpy(transport_pdu, transport_pdu_in_validation, sizeof(mesh_transport_pdu_t));
 
     // 
@@ -527,7 +582,7 @@ static void mesh_upper_transport_process_message(mesh_transport_pdu_t * transpor
     printf("AKF: %u\n",   akf);
     printf("AID: %02x\n", aid);
 
-    mesh_transport_key_iterator_init(&mesh_transport_key_it, akf, aid);
+    mesh_transport_key_iterator_init(&mesh_transport_key_it, mesh_transport_dest(transport_pdu), akf, aid);
     mesh_upper_transport_validate_segmented_message(transport_pdu);
 }
 
