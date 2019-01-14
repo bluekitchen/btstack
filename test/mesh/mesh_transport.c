@@ -58,9 +58,10 @@ static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len
 // application key list
 
 typedef struct {
+    uint8_t akf;
     uint8_t aid;
     uint8_t first;
-} mesh_application_key_iterator_t;
+} mesh_transport_key_iterator_t;
 
 typedef struct {
     btstack_linked_item_t item;
@@ -104,18 +105,28 @@ static const mesh_transport_key_t * mesh_transport_key_get(uint16_t appkey_index
 }
 
 // mesh network key iterator
-static void mesh_application_key_iterator_init(mesh_application_key_iterator_t * it, uint8_t aid){
+static void mesh_transport_key_iterator_init(mesh_transport_key_iterator_t * it, uint8_t akf, uint8_t aid){
     it->aid = aid;
+    it->akf = akf;
     it->first = 1;
 }
 
-static int mesh_application_key_iterator_has_more(mesh_application_key_iterator_t * it){
-    return it->first && it->aid == test_application_key.aid;
+static int mesh_transport_key_iterator_has_more(mesh_transport_key_iterator_t * it){
+    if (!it->first) return 0;
+    if (it->akf){
+        return it->aid == test_application_key.aid;
+    } else {
+        return 1;
+    }
 }
 
-static const mesh_transport_key_t * mesh_application_key_iterator_get_next(mesh_application_key_iterator_t * it){
+static const mesh_transport_key_t * mesh_transport_key_iterator_get_next(mesh_transport_key_iterator_t * it){
     it->first = 0;
-    return &test_application_key;
+    if (it->akf){
+        return &test_application_key;
+    } else {
+        return &mesh_transport_device_key;
+    }
 }
 
 // helper network layer, temp
@@ -175,7 +186,7 @@ static mesh_network_pdu_t   * network_pdu_in_validation;
 static mesh_transport_pdu_t * transport_pdu_in_validation;
 static uint8_t application_nonce[13];
 static btstack_crypto_ccm_t ccm;
-static mesh_application_key_iterator_t mesh_app_key_it;
+static mesh_transport_key_iterator_t mesh_transport_key_it;
 static uint32_t mesh_transport_outgoing_seq = 0;
 
 // upper transport callbacks - in access layer
@@ -416,24 +427,18 @@ static void mesh_upper_transport_validate_segmented_message_ccm(void * arg){
     }
 }
 static void mesh_upper_transport_validate_unsegmented_message(mesh_network_pdu_t * network_pdu){
-    uint8_t * lower_transport_pdu     = &network_pdu_in_validation->data[9];
     uint8_t   lower_transport_pdu_len = network_pdu_in_validation->len - 9;
 
-    const mesh_transport_key_t * message_key;
+    if (!mesh_transport_key_iterator_has_more(&mesh_transport_key_it)){
+        printf("No valid transport key found\n");
+        mesh_lower_transport_process_unsegmented_message_done(network_pdu);
+        return;
+    }
+    const mesh_transport_key_t * message_key = mesh_transport_key_iterator_get_next(&mesh_transport_key_it);
 
-    uint8_t afk = lower_transport_pdu[0] & 0x40;
-    if (afk){
-        // application key
-        if (!mesh_application_key_iterator_has_more(&mesh_app_key_it)){
-            printf("No valid application key found\n");
-            mesh_lower_transport_process_unsegmented_message_done(network_pdu);
-            return;
-        }
-        message_key = mesh_application_key_iterator_get_next(&mesh_app_key_it);
+    if (message_key->akf){
         transport_unsegmented_setup_application_nonce(application_nonce, network_pdu_in_validation);
     } else {
-        // device key
-        message_key = &mesh_transport_device_key;
         transport_unsegmented_setup_device_nonce(application_nonce, network_pdu_in_validation);
     }
 
@@ -460,22 +465,16 @@ static void mesh_upper_transport_validate_segmented_message(mesh_transport_pdu_t
     uint8_t * upper_transport_pdu_data =  transport_pdu->data;
     uint8_t   upper_transport_pdu_len  =  transport_pdu->len - transport_pdu->transmic_len;
 
-    const mesh_transport_key_t * message_key;
+    if (!mesh_transport_key_iterator_has_more(&mesh_transport_key_it)){
+        printf("No valid transport key found\n");
+        mesh_lower_transport_process_segmented_message_done(transport_pdu);
+        return;
+    }
+    const mesh_transport_key_t * message_key = mesh_transport_key_iterator_get_next(&mesh_transport_key_it);
 
-    uint8_t akf = transport_pdu->akf_aid & 0x40;
-    if (akf){
-        // application key
-        if (!mesh_application_key_iterator_has_more(&mesh_app_key_it)){
-            printf("No valid application key found\n");
-            // done
-            mesh_lower_transport_process_segmented_message_done(transport_pdu);
-            return;
-        }
-        message_key = mesh_application_key_iterator_get_next(&mesh_app_key_it);
+    if (message_key->akf){
         transport_segmented_setup_application_nonce(application_nonce, transport_pdu_in_validation);
     } else {
-        // device key
-        message_key = &mesh_transport_device_key;
         transport_segmented_setup_device_nonce(application_nonce, transport_pdu_in_validation);
     }
 
@@ -508,11 +507,7 @@ static void mesh_lower_transport_process_unsegmented_access_message(mesh_network
     printf("AKF: %u\n",   akf);
     printf("AID: %02x\n", aid);
 
-    if (akf){
-        // init application key iterator if used
-        mesh_application_key_iterator_init(&mesh_app_key_it, aid);
-    }
-
+    mesh_transport_key_iterator_init(&mesh_transport_key_it, akf, aid);
     mesh_upper_transport_validate_unsegmented_message(network_pdu);
 }
 
@@ -532,10 +527,7 @@ static void mesh_upper_transport_process_message(mesh_transport_pdu_t * transpor
     printf("AKF: %u\n",   akf);
     printf("AID: %02x\n", aid);
 
-    if (akf){
-        // init application key iterator if used
-        mesh_application_key_iterator_init(&mesh_app_key_it, aid);
-    }
+    mesh_transport_key_iterator_init(&mesh_transport_key_it, akf, aid);
     mesh_upper_transport_validate_segmented_message(transport_pdu);
 }
 
