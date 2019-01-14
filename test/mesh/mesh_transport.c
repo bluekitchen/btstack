@@ -70,7 +70,11 @@ typedef struct {
 
     // app_key
     uint8_t key[16];
+ 
+    // application key flag, 0 for device key
+    uint8_t akf;
 
+    // application key hash id
     uint8_t aid;
 } mesh_application_key_t;
 
@@ -80,22 +84,23 @@ static mesh_application_key_t mesh_transport_device_key;
 void mesh_application_key_set(uint16_t appkey_index, uint8_t aid, const uint8_t * application_key){
     test_application_key.index = appkey_index;
     test_application_key.aid   = aid;
+    test_application_key.akf   = 1;
     memcpy(test_application_key.key, application_key, 16);
 }
 
 void mesh_transport_set_device_key(const uint8_t * device_key){
     mesh_transport_device_key.index = MESH_DEVICE_KEY_INDEX;
     mesh_transport_device_key.aid   = 0;
+    mesh_transport_device_key.akf   = 0;
     memcpy(mesh_transport_device_key.key, device_key, 16);
 }
 
 static const mesh_application_key_t * mesh_application_key_list_get(uint16_t appkey_index){
+    if (appkey_index == MESH_DEVICE_KEY_INDEX){
+        return &mesh_transport_device_key;
+    }
     if (appkey_index != test_application_key.index) return NULL;
     return &test_application_key;
-}
-
-static const mesh_application_key_t * mesh_device_key_get(void){
-    return &mesh_transport_device_key;
 }
 
 // mesh network key iterator
@@ -998,20 +1003,13 @@ uint8_t mesh_upper_transport_setup_unsegmented_access_pdu(mesh_network_pdu_t * n
     printf_hexdump(access_pdu_data, access_pdu_len);
 
     // get app or device key
-    uint8_t akf;
     const mesh_application_key_t * appkey;
-    if (appkey_index == MESH_DEVICE_KEY_INDEX){
-        appkey = mesh_device_key_get();
-        akf = 0;
-    } else {
-        appkey = mesh_application_key_list_get(appkey_index);
-        if (appkey == NULL){
-            printf("appkey_index %x unknown\n", appkey_index);
-            return 1;
-        }
-        akf = 1;
+    appkey = mesh_application_key_list_get(appkey_index);
+    if (appkey == NULL){
+        printf("appkey_index %x unknown\n", appkey_index);
+        return 1;
     }
-    uint8_t akf_aid = (akf << 6) | appkey->aid;
+    uint8_t akf_aid = (appkey->akf << 6) | appkey->aid;
 
     // lookup network by netkey_index
     const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
@@ -1038,20 +1036,13 @@ uint8_t mesh_upper_transport_setup_segmented_access_pdu(mesh_transport_pdu_t * t
     printf_hexdump(access_pdu_data, access_pdu_len);
 
     // get app or device key
-    uint8_t akf;
     const mesh_application_key_t * appkey;
-    if (appkey_index == MESH_DEVICE_KEY_INDEX){
-        appkey = mesh_device_key_get();
-        akf = 0;
-    } else {
-        appkey = mesh_application_key_list_get(appkey_index);
-        if (appkey == NULL){
-            printf("appkey_index %x unknown\n", appkey_index);
-            return 1;
-        }
-        akf = 1;
+    appkey = mesh_application_key_list_get(appkey_index);
+    if (appkey == NULL){
+        printf("appkey_index %x unknown\n", appkey_index);
+        return 1;
     }
-    uint8_t akf_aid = (akf << 6) | appkey->aid;
+    uint8_t akf_aid = (appkey->akf << 6) | appkey->aid;
 
     // lookup network by netkey_index
     const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
@@ -1102,12 +1093,7 @@ void mesh_upper_transport_send_unsegmented_access_pdu(mesh_network_pdu_t * netwo
     // --
 
     // get app or device key
-    const mesh_application_key_t * appkey;
-    if (network_pdu->appkey_index == MESH_DEVICE_KEY_INDEX){
-        appkey = mesh_device_key_get();
-    } else {
-        appkey = mesh_application_key_list_get(appkey_index);
-    }
+    const mesh_application_key_t * appkey = mesh_application_key_list_get(appkey_index);
     mesh_print_hex("AppOrDevKey", appkey->key, 16);
 
     // encrypt ccm
@@ -1133,12 +1119,7 @@ void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t * trans
     uint16_t  access_pdu_len  = transport_pdu->len;
 
     // get app or device key
-    const mesh_application_key_t * appkey;
-    if (transport_pdu->appkey_index == MESH_DEVICE_KEY_INDEX){
-        appkey = mesh_device_key_get();
-    } else {
-        appkey = mesh_application_key_list_get(appkey_index);
-    }
+    const mesh_application_key_t * appkey = mesh_application_key_list_get(appkey_index);
     mesh_print_hex("AppOrDevKey", appkey->key, 16);
 
     // encrypt ccm
