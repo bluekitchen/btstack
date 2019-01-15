@@ -59,6 +59,7 @@ static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len
 
 typedef struct {
     uint8_t  label_uuid[16];
+    uint16_t pseudo_dst;
     uint16_t dst;
     uint8_t  akf;
     uint8_t  aid;
@@ -139,9 +140,9 @@ static const mesh_transport_key_t * mesh_transport_key_get(uint16_t appkey_index
 // mesh network key iterator
 static void mesh_transport_key_iterator_init(mesh_transport_key_iterator_t * it, uint16_t dst, uint8_t akf, uint8_t aid){
     it->dst = dst; 
-    it->aid = aid;
-    it->akf = akf;
-    it->first = 1;
+    it->aid      = aid;
+    it->akf      = akf;
+    it->first    = 1;
 }
 
 static int mesh_transport_key_iterator_has_more(mesh_transport_key_iterator_t * it){
@@ -158,6 +159,7 @@ static const mesh_transport_key_t * mesh_transport_key_iterator_get_next(mesh_tr
     it->first = 0;
     if (mesh_network_address_virtual(it->dst)){
         memcpy(it->label_uuid, test_virtual_address.label_uuid, 16);
+        it->pseudo_dst = test_virtual_address.pseudo_dst;
     }
     if (it->akf){
         return &test_application_key;
@@ -401,6 +403,11 @@ static void mesh_upper_transport_validate_unsegmented_message_ccm(void * arg){
         // remove TransMIC from payload
         network_pdu->len -= trans_mic_len;
 
+        // if virtual address, update dst to pseudo_dst
+        if (mesh_network_address_virtual(mesh_network_dst(network_pdu))){
+            big_endian_store_16(network_pdu->data, 7, mesh_transport_key_it.pseudo_dst);
+        }
+
         // pass to upper layer
         if (mesh_access_unsegmented_handler){
             mesh_access_unsegmented_handler(network_pdu);
@@ -443,6 +450,11 @@ static void mesh_upper_transport_validate_segmented_message_ccm(void * arg){
 
         // remove TransMIC from payload
         transport_pdu->len -= transport_pdu->transmic_len;
+
+        // if virtual address, update dst to pseudo_dst
+        if (mesh_network_address_virtual(mesh_transport_dst(transport_pdu))){
+            big_endian_store_16(transport_pdu->network_header, 7, mesh_transport_key_it.pseudo_dst);
+        }
 
         // pass to upper layer
         if (mesh_access_segmented_handler){
