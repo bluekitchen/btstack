@@ -121,6 +121,13 @@ uint16_t mesh_virtual_address_register(uint8_t * label_uuid, uint16_t hash){
 void mesh_virtual_address_unregister(uint16_t pseudo_dst){
 }
 
+static mesh_virtual_address_t * mesh_virtual_address_for_pseudo_dst(uint16_t pseudo_dst){
+    if (test_virtual_address.pseudo_dst == pseudo_dst){
+        return &test_virtual_address;
+    }
+    return NULL;
+}
+
 static const mesh_transport_key_t * mesh_transport_key_get(uint16_t appkey_index){
     if (appkey_index == MESH_DEVICE_KEY_INDEX){
         return &mesh_transport_device_key;
@@ -1150,38 +1157,41 @@ void mesh_upper_transport_send_unsegmented_access_pdu_digest(void * arg){
 
 void mesh_upper_transport_send_unsegmented_access_pdu(mesh_network_pdu_t * network_pdu){
 
-    uint16_t appkey_index = network_pdu->appkey_index;
-
-    uint16_t aad_len  = 0;
-    // @TODO: provide correct way to set virtual address,
-    if (mesh_network_address_virtual(mesh_network_dst(network_pdu))){
-        aad_len  = 16;
-        big_endian_store_16(network_pdu->data, 7, test_virtual_address.hash);
+    // if dst is virtual address, lookup label uuid and hash
+    uint16_t aad_len = 0;
+    mesh_virtual_address_t * virtual_address = NULL;
+    uint16_t dst = mesh_network_dst(network_pdu);
+    if (mesh_network_address_virtual(dst)){
+        virtual_address = mesh_virtual_address_for_pseudo_dst(dst);
+        if (!virtual_address){
+            printf("No virtual address register for pseudo dst %4x\n", dst);
+            btstack_memory_mesh_network_pdu_free(network_pdu);
+            return;
+        }
+        aad_len = 16;
+        big_endian_store_16(network_pdu->data, 7, virtual_address->hash);
     }
 
     // setup nonce
+    uint16_t appkey_index = network_pdu->appkey_index;
     if (appkey_index == MESH_DEVICE_KEY_INDEX){
         transport_unsegmented_setup_device_nonce(application_nonce, network_pdu);
     } else {
         transport_unsegmented_setup_application_nonce(application_nonce, network_pdu);
     }
 
-    uint8_t   trans_mic_len = 4;
-    uint16_t  access_pdu_len  = mesh_network_pdu_len(network_pdu)  - 1;
-
-    // --
-
     // get app or device key
     const mesh_transport_key_t * appkey = mesh_transport_key_get(appkey_index);
     mesh_print_hex("AppOrDevKey", appkey->key, 16);
 
     // encrypt ccm
+    uint8_t   trans_mic_len = 4;
+    uint16_t  access_pdu_len  = mesh_network_pdu_len(network_pdu)  - 1;
     mesh_transport_crypto_active = 1;
 
     btstack_crypto_ccm_init(&ccm, appkey->key, application_nonce, access_pdu_len, aad_len, trans_mic_len);
-    if (aad_len){
-        // @TODO: remove test_virtual_address
-        btstack_crypto_ccm_digest(&ccm, test_virtual_address.label_uuid, aad_len, &mesh_upper_transport_send_unsegmented_access_pdu_digest, network_pdu);
+    if (virtual_address){
+        btstack_crypto_ccm_digest(&ccm, virtual_address->label_uuid, 16, &mesh_upper_transport_send_unsegmented_access_pdu_digest, network_pdu);
     } else {
         mesh_upper_transport_send_unsegmented_access_pdu_digest(network_pdu);    
     }
@@ -1196,37 +1206,40 @@ void mesh_upper_transport_send_segmented_access_pdu_digest(void *arg){
 
 void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t * transport_pdu){
 
-    uint16_t appkey_index = transport_pdu->appkey_index;
-
-    uint16_t aad_len  = 0;
-    // @TODO: provide correct way to set virtual address,
-    if (mesh_network_address_virtual(mesh_transport_dst(transport_pdu))){
-        aad_len  = 16;
-        big_endian_store_16(transport_pdu->network_header, 7, test_virtual_address.hash);
+    // if dst is virtual address, lookup label uuid and hash
+    uint16_t aad_len = 0;
+    mesh_virtual_address_t * virtual_address = NULL;
+    uint16_t dst = mesh_transport_dst(transport_pdu);
+    if (mesh_network_address_virtual(dst)){
+        virtual_address = mesh_virtual_address_for_pseudo_dst(dst);
+        if (!virtual_address){
+            printf("No virtual address register for pseudo dst %4x\n", dst);
+            btstack_memory_mesh_transport_pdu_free(transport_pdu);
+            return;
+        }
+        aad_len = 16;
+        big_endian_store_16(transport_pdu->network_header, 7, virtual_address->hash);
     }
 
-    // setup nonce
+    // setup nonce - uses dst, so after pseudo address translation
+    uint16_t appkey_index = transport_pdu->appkey_index;
     if (appkey_index == MESH_DEVICE_KEY_INDEX){
         transport_segmented_setup_device_nonce(application_nonce, transport_pdu);
     } else {
         transport_segmented_setup_application_nonce(application_nonce, transport_pdu);
     }
 
-    uint8_t   transmic_len    = transport_pdu->transmic_len;
-    uint16_t  access_pdu_len  = transport_pdu->len;
-
     // get app or device key
     const mesh_transport_key_t * appkey = mesh_transport_key_get(appkey_index);
     mesh_print_hex("AppOrDevKey", appkey->key, 16);
 
     // encrypt ccm
+    uint8_t   transmic_len    = transport_pdu->transmic_len;
+    uint16_t  access_pdu_len  = transport_pdu->len;
     mesh_transport_crypto_active = 1;
-
-    // encrypt ccm
-    btstack_crypto_ccm_init(&ccm, appkey->key, application_nonce, access_pdu_len, 0, transmic_len);
-    if (aad_len){
-        // @TODO: remove test_virtual_address
-        btstack_crypto_ccm_digest(&ccm, test_virtual_address.label_uuid, aad_len, &mesh_upper_transport_send_unsegmented_access_pdu_digest, transport_pdu);
+    btstack_crypto_ccm_init(&ccm, appkey->key, application_nonce, access_pdu_len, aad_len, transmic_len);
+    if (virtual_address){
+        btstack_crypto_ccm_digest(&ccm, virtual_address->label_uuid, 16, &mesh_upper_transport_send_unsegmented_access_pdu_digest, transport_pdu);
     }
     mesh_upper_transport_send_segmented_access_pdu_digest(transport_pdu);
 }
