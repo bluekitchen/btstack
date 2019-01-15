@@ -56,8 +56,8 @@
 
 #define BEACON_TYPE_SECURE_NETWORK 1
 
-#define USE_ADVERTISING_WITH_NETWORK_ID
-// #define USE_ADVERTISING_WITH_NODE_IDENTITY
+// #define USE_ADVERTISING_WITH_NETWORK_ID
+#define USE_ADVERTISING_WITH_NODE_IDENTITY
 
 #if defined(USE_ADVERTISING_WITH_NETWORK_ID) && defined(USE_ADVERTISING_WITH_NODE_IDENTITY) 
 #error "USE_ADVERTISING_WITH_NETWORK_ID and USE_ADVERTISING_WITH_NODE_IDENTITY cannot be defined at the same time"
@@ -83,7 +83,7 @@ typedef enum {
 static btstack_crypto_random_t crypto_request_random;
 static btstack_crypto_aes128_t crypto_request_aes128;
 static uint8_t plaintext[16];
-static uint8_t hash[8];
+static uint8_t hash[16];
 static uint8_t random_value[8];
 static uint8_t adv_data_with_node_identity[] = {
     // Flags general discoverable, BR/EDR not supported
@@ -175,12 +175,12 @@ static void stdin_process(char cmd){
 #ifdef USE_ADVERTISING_WITH_NODE_IDENTITY 
 static void mesh_proxy_handle_get_aes128(void * arg){
     UNUSED(arg);
-    memcpy(&adv_data_with_node_identity[12], hash, 8);
+    memcpy(&adv_data_with_node_identity[12], &hash[8], 8);
     memcpy(&adv_data_with_node_identity[20], random_value, 8);
     printf("Calculated Hash\n");
     printf_hexdump(hash, sizeof(hash));
 
-    printf("\nAdv\n");
+    printf("\nUSE_ADVERTISING_WITH_NODE_IDENTITY:\n");
     printf_hexdump(adv_data_with_node_identity, sizeof(adv_data_with_node_identity));
      // setup advertisements
     bd_addr_t null_addr;
@@ -239,6 +239,7 @@ static void mesh_provisioning_dump(const mesh_provisioning_data_t * data){
     printf("EncryptionKey: "); printf_hexdump(data->encryption_key, 16);
     printf("PrivacyKey:    "); printf_hexdump(data->privacy_key, 16);
     printf("DevKey:        "); printf_hexdump(data->device_key, 16);
+    printf("IdentityvKey:  "); printf_hexdump(data->identity_key, 16);
 }
 
 static void mesh_secure_network_beacon_auth_value_calculated(void * arg){
