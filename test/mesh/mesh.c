@@ -282,6 +282,8 @@ static void btstack_print_hex(const uint8_t * data, uint16_t len, char separator
     }
     printf("\n");
 }
+static uint16_t pts_proxy_dst;
+static int      pts_type;
 
 static uint8_t      prov_static_oob_data[16];
 static const char * prov_static_oob_string = "00000000000000000102030405060708";
@@ -384,25 +386,31 @@ static void send_pts_segmented_access_messsage_unicast(void){
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
 
-static void send_pts_segmented_access_messsage_group(int type){
+static void send_pts_segmented_access_messsage_group(void){
     uint8_t access_pdu_data[20];
 
     uint16_t src = primary_element_address;
     uint16_t dest = 0xd000;
     uint8_t  ttl = 10;
 
-    switch (type){
-        case 0:
-            printf("Group 0xd000\n");
-            dest = 0x8000;
-            break;
-        case 1:
-            printf("Virtual 0x9779\n");
-            dest = 0x9779;
-            break;
-        default:
-            return;
-    }
+    int access_pdu_len = 20;
+    memset(access_pdu_data, 0x55, access_pdu_len);
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = 0; // MESH_DEVICE_KEY_INDEX;
+
+    // send as segmented access pdu
+    mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
+    int status = mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
+    if (status) return;
+    mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
+}
+
+static void send_pts_segmented_access_messsage_virtual(void){
+    uint8_t access_pdu_data[20];
+
+    uint16_t src = primary_element_address;
+    uint16_t dest = pts_proxy_dst;
+    uint8_t  ttl = 10;
 
     int access_pdu_len = 20;
     memset(access_pdu_data, 0x55, access_pdu_len);
@@ -425,15 +433,14 @@ static void mesh_secure_network_beacon_auth_value_calculated(void * arg){
     adv_bearer_send_mesh_beacon(mesh_secure_network_beacon, sizeof(mesh_secure_network_beacon));
 }
 
-static int pts_type;
-
 static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth Mesh Console at %s ---\n", bd_addr_to_str(iut_address));
     printf("1      - Send Unsegmented Access Message\n");
     printf("2      - Send   Segmented Access Message - Unicast\n");
-    printf("3      - Send   Segmented Access Message - Group/Virtual\n");
+    printf("3      - Send   Segmented Access Message - Group   D000\n");
+    printf("4      - Send   Segmented Access Message - Virtual 9779\n");
     printf("\n");
 }
 
@@ -461,7 +468,10 @@ static void stdin_process(char cmd){
             send_pts_segmented_access_messsage_unicast();
             break;
         case '3':
-            send_pts_segmented_access_messsage_group(pts_type++);
+            send_pts_segmented_access_messsage_group();
+            break;
+        case '4':
+            send_pts_segmented_access_messsage_virtual();
             break;
         case '8':
             printf("Creating link to device uuid: ");
@@ -547,6 +557,11 @@ int btstack_main(void)
     const char * application_key_string = "3216D1509884B533248541792B877F98";
     btstack_parse_hex(application_key_string, 16, application_key);
     mesh_application_key_set(0, 0x38, application_key); 
+
+    // PTS Virtual Address Label UUID - without Config Model, PTS uses our device uuid
+    uint8_t label_uuid[16];
+    btstack_parse_hex("001BDC0810210B0E0A0C000B0E0A0C00", 16, label_uuid);
+    pts_proxy_dst = mesh_virtual_address_register(label_uuid, 0x9779);
 
     printf("Application Key: ");
     printf_hexdump(application_key, 16);

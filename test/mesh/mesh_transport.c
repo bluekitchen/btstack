@@ -1229,6 +1229,8 @@ void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t * trans
             btstack_memory_mesh_transport_pdu_free(transport_pdu);
             return;
         }
+        // printf("Using hash %4x with LabelUUID: ", virtual_address->hash);
+        // printf_hexdump(virtual_address->label_uuid, 16);
         aad_len = 16;
         big_endian_store_16(transport_pdu->network_header, 7, virtual_address->hash);
     }
@@ -1251,7 +1253,9 @@ void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t * trans
     mesh_transport_crypto_active = 1;
     btstack_crypto_ccm_init(&ccm, appkey->key, application_nonce, access_pdu_len, aad_len, transmic_len);
     if (virtual_address){
-        btstack_crypto_ccm_digest(&ccm, virtual_address->label_uuid, 16, &mesh_upper_transport_send_unsegmented_access_pdu_digest, transport_pdu);
+        // printf("Hashing LabelUUID: ");
+        // printf_hexdump(virtual_address->label_uuid, 16);
+        btstack_crypto_ccm_digest(&ccm, virtual_address->label_uuid, 16, &mesh_upper_transport_send_segmented_access_pdu_digest, transport_pdu);
     }
     mesh_upper_transport_send_segmented_access_pdu_digest(transport_pdu);
 }
