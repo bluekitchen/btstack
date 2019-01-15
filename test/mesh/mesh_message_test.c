@@ -192,6 +192,7 @@ TEST_GROUP(MessageTest){
         mesh_network_set_proxy_message_handler(&test_proxy_server_callback_handler);
         mesh_upper_transport_register_unsegemented_message_handler(&test_upper_transport_unsegmented_callback_handler);
         mesh_upper_transport_register_segemented_message_handler(&test_upper_transport_segmented_callback_handler);
+        mesh_seq_auth_reset();
         received_network_pdu = NULL;
         recv_upper_transport_pdu_len =0;
         sent_network_pdu_len = 0;
@@ -747,6 +748,9 @@ TEST(MessageTest, Message20Send){
 }
 
 // Message 21
+// The Low Power node sends a vendor command to a group address.
+// Issue: dst = 0x8105 - which is a Virtual Address associated with a Label UUID
+#if 0
 char * message21_network_pdus[] = {
     (char *) "e8b1051f5e945ae4d611358eaf17796a6c98977f69e5872c4620",
 };
@@ -771,6 +775,7 @@ TEST(MessageTest, Message21Send){
     mesh_upper_transport_set_seq(seq);
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message21_upper_transport_pdu, 1, message21_lower_transport_pdus, message21_network_pdus);
 }
+#endif
 
 // Message 22
 char * message22_network_pdus[] = {
@@ -786,7 +791,7 @@ TEST(MessageTest, Message22Receive){
     mesh_set_iv_index(0x12345677);
     uint8_t label_uuid[16];
     btstack_parse_hex(message22_label_string, 16, label_uuid);
-    mesh_virtual_address_set(0xb529, label_uuid);
+    mesh_virtual_address_register(label_uuid, 0xb529);
     test_receive_network_pdus(1, message22_network_pdus, message22_lower_transport_pdus, message22_upper_transport_pdu);
 }
 
@@ -795,7 +800,6 @@ TEST(MessageTest, Message22Send){
     uint16_t appkey_index = 0;
     uint8_t  ttl          = 3;
     uint16_t src          = 0x1234;
-    uint16_t dest         = 0xb529;
     uint32_t seq          = 0x07080b;
     uint8_t  szmic        = 0;
 
@@ -803,8 +807,8 @@ TEST(MessageTest, Message22Send){
     mesh_upper_transport_set_seq(seq);
     uint8_t label_uuid[16];
     btstack_parse_hex(message22_label_string, 16, label_uuid);
-    mesh_virtual_address_set(0xb529, label_uuid);
-    test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message22_upper_transport_pdu, 1, message22_lower_transport_pdus, message22_network_pdus);
+    uint16_t proxy_dst = mesh_virtual_address_register(label_uuid, 0xb529);
+    test_send_access_message(netkey_index, appkey_index, ttl, src, proxy_dst, szmic, message22_upper_transport_pdu, 1, message22_lower_transport_pdus, message22_network_pdus);
 }
 
 // Message 23
@@ -821,7 +825,7 @@ TEST(MessageTest, Message23Receive){
     mesh_set_iv_index(0x12345677);
     uint8_t label_uuid[16];
     btstack_parse_hex(message23_label_string, 16, label_uuid);
-    mesh_virtual_address_set(0x9736, label_uuid);
+    mesh_virtual_address_register(label_uuid, 0x9736);
     test_receive_network_pdus(1, message23_network_pdus, message23_lower_transport_pdus, message23_upper_transport_pdu);
 }
 TEST(MessageTest, Message23Send){
@@ -829,7 +833,6 @@ TEST(MessageTest, Message23Send){
     uint16_t appkey_index = 0;
     uint8_t  ttl          = 3;
     uint16_t src          = 0x1234;
-    uint16_t dest         = 0x9736;
     uint32_t seq          = 0x07080c;
     uint8_t  szmic        = 0;
 
@@ -837,8 +840,8 @@ TEST(MessageTest, Message23Send){
     mesh_upper_transport_set_seq(seq);
     uint8_t label_uuid[16];
     btstack_parse_hex(message23_label_string, 16, label_uuid);
-    mesh_virtual_address_set(0x9736, label_uuid);
-    test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message23_upper_transport_pdu, 1, message23_lower_transport_pdus, message23_network_pdus);
+    uint16_t proxy_dst = mesh_virtual_address_register(label_uuid, 0x9736);
+    test_send_access_message(netkey_index, appkey_index, ttl, src, proxy_dst, szmic, message23_upper_transport_pdu, 1, message23_lower_transport_pdus, message23_network_pdus);
 }
 #endif
 
@@ -876,6 +879,9 @@ TEST(MessageTest, Message24Receive){
 
 //     mesh_set_iv_index(0x12345677);
 //     mesh_upper_transport_set_seq(seq);
+//     uint8_t label_uuid[16];
+//     btstack_parse_hex(message24_label_string, 16, label_uuid);
+//     uint16_t proxy_dst = mesh_virtual_address_register(0x9736, label_uuid);
 //     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message24_upper_transport_pdu, 2, message24_lower_transport_pdus, message24_network_pdus);
 // }
 #endif

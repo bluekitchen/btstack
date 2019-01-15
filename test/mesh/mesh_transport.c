@@ -82,6 +82,7 @@ typedef struct {
 } mesh_transport_key_t;
 
 typedef struct {
+    uint16_t pseudo_dst;
     uint16_t hash;
     uint8_t  label_uuid[16];
 } mesh_virtual_address_t;
@@ -104,9 +105,20 @@ void mesh_transport_set_device_key(const uint8_t * device_key){
     memcpy(mesh_transport_device_key.key, device_key, 16);
 }
 
-void mesh_virtual_address_set(uint16_t hash, const uint8_t * label_uuid){
+static void mesh_virtual_address_run(void){
+}
+
+uint16_t mesh_virtual_address_register(uint8_t * label_uuid, uint16_t hash){
+    // TODO:: check if already exists
+    // TODO: calc hash
     test_virtual_address.hash   = hash;
     memcpy(test_virtual_address.label_uuid, label_uuid, 16);
+    test_virtual_address.pseudo_dst = 0x8000;    
+    mesh_virtual_address_run();
+    return test_virtual_address.pseudo_dst;
+}
+
+void mesh_virtual_address_unregister(uint16_t pseudo_dst){
 }
 
 static const mesh_transport_key_t * mesh_transport_key_get(uint16_t appkey_index){
@@ -176,6 +188,10 @@ static uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl
 #define MESH_ADDRESS_UNSASSIGNED 0xfffb
 static uint16_t mesh_seq_auth_single_src = MESH_ADDRESS_UNSASSIGNED;
 static uint32_t mesh_seq_auth_single_seq;
+
+void mesh_seq_auth_reset(void){
+    mesh_seq_auth_single_src = MESH_ADDRESS_UNSASSIGNED;
+}
 
 static int mesh_seq_auth_validate(uint16_t src, uint32_t seq){
     if (mesh_seq_auth_single_src == MESH_ADDRESS_UNSASSIGNED){
@@ -867,23 +883,26 @@ static void mesh_upper_transport_send_next_segment(void){
     }
 
     if (upper_transport_outgoing_seg_o > seg_n){
-        printf("[+] Upper transport, send segmented pdu complete\n");
-        if (!mesh_network_address_unicast(mesh_transport_dst(upper_transport_outgoing_pdu))){
-            upper_transport_outgoing_seg_o   = 0;
-            // done, more?
-            if (mesh_upper_transport_retry_count){
-                printf("[+] Upper transport, message unacknowledged retry count %u\n", mesh_upper_transport_retry_count);
-                mesh_upper_transport_retry_count--;
-            } else {
-                printf("[+] Upper transport, message unacknowledged -> free\n");
-                // note: same as in seg ack handling code
-                btstack_memory_mesh_transport_pdu_free(upper_transport_outgoing_pdu);        
-                upper_transport_outgoing_pdu     = NULL;
-                btstack_memory_mesh_network_pdu_free(upper_transport_outgoing_segment);        
-                upper_transport_outgoing_segment = NULL;
-                return;
-            }
+        printf("[+] Upper transport, send segmented pdu complete (dst %x)\n", mesh_transport_dst(upper_transport_outgoing_pdu));
+        upper_transport_outgoing_seg_o   = 0;
+
+        // done for unicast, ack timer already set, too
+        if (mesh_network_address_unicast(mesh_transport_dst(upper_transport_outgoing_pdu))) return;
+
+        // done, more?
+        if (mesh_upper_transport_retry_count == 0){
+            printf("[+] Upper transport, message unacknowledged -> free\n");
+            // note: same as in seg ack handling code
+            btstack_memory_mesh_transport_pdu_free(upper_transport_outgoing_pdu);        
+            upper_transport_outgoing_pdu     = NULL;
+            btstack_memory_mesh_network_pdu_free(upper_transport_outgoing_segment);        
+            upper_transport_outgoing_segment = NULL;
+            return;
         }
+
+        // start retry
+        printf("[+] Upper transport, message unacknowledged retry count %u\n", mesh_upper_transport_retry_count);
+        mesh_upper_transport_retry_count--;
     }
 
     if (mesh_network_address_unicast(mesh_transport_dst(upper_transport_outgoing_pdu))){
@@ -1124,7 +1143,6 @@ void mesh_upper_transport_send_segmented_control_pdu(mesh_transport_pdu_t * tran
 
 void mesh_upper_transport_send_unsegmented_access_pdu_digest(void * arg){
     mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
-    uint8_t   trans_mic_len = 4;
     uint8_t * access_pdu_data = mesh_network_pdu_data(network_pdu) + 1;
     uint16_t  access_pdu_len  = mesh_network_pdu_len(network_pdu)  - 1;
     btstack_crypto_ccm_encrypt_block(&ccm, access_pdu_len, access_pdu_data, access_pdu_data, &mesh_upper_transport_send_unsegmented_access_pdu_ccm, network_pdu);
@@ -1134,6 +1152,13 @@ void mesh_upper_transport_send_unsegmented_access_pdu(mesh_network_pdu_t * netwo
 
     uint16_t appkey_index = network_pdu->appkey_index;
 
+    uint16_t aad_len  = 0;
+    // @TODO: provide correct way to set virtual address,
+    if (mesh_network_address_virtual(mesh_network_dst(network_pdu))){
+        aad_len  = 16;
+        big_endian_store_16(network_pdu->data, 7, test_virtual_address.hash);
+    }
+
     // setup nonce
     if (appkey_index == MESH_DEVICE_KEY_INDEX){
         transport_unsegmented_setup_device_nonce(application_nonce, network_pdu);
@@ -1142,7 +1167,6 @@ void mesh_upper_transport_send_unsegmented_access_pdu(mesh_network_pdu_t * netwo
     }
 
     uint8_t   trans_mic_len = 4;
-    uint8_t * access_pdu_data = mesh_network_pdu_data(network_pdu) + 1;
     uint16_t  access_pdu_len  = mesh_network_pdu_len(network_pdu)  - 1;
 
     // --
@@ -1153,11 +1177,7 @@ void mesh_upper_transport_send_unsegmented_access_pdu(mesh_network_pdu_t * netwo
 
     // encrypt ccm
     mesh_transport_crypto_active = 1;
-    uint16_t aad_len  = 0;
-    // @TODO: provide correct way to set virtual address,
-    if (mesh_network_address_virtual(mesh_network_dst(network_pdu))){
-        aad_len  = 16;
-    }
+
     btstack_crypto_ccm_init(&ccm, appkey->key, application_nonce, access_pdu_len, aad_len, trans_mic_len);
     if (aad_len){
         // @TODO: remove test_virtual_address
@@ -1169,7 +1189,6 @@ void mesh_upper_transport_send_unsegmented_access_pdu(mesh_network_pdu_t * netwo
 
 void mesh_upper_transport_send_segmented_access_pdu_digest(void *arg){
     mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) arg;
-    uint8_t   transmic_len    = transport_pdu->transmic_len;
     uint16_t  access_pdu_len  = transport_pdu->len;
     uint8_t * access_pdu_data = transport_pdu->data;
     btstack_crypto_ccm_encrypt_block(&ccm, access_pdu_len,access_pdu_data, access_pdu_data, &mesh_upper_transport_send_segmented_access_pdu_ccm, transport_pdu);
@@ -1178,6 +1197,13 @@ void mesh_upper_transport_send_segmented_access_pdu_digest(void *arg){
 void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t * transport_pdu){
 
     uint16_t appkey_index = transport_pdu->appkey_index;
+
+    uint16_t aad_len  = 0;
+    // @TODO: provide correct way to set virtual address,
+    if (mesh_network_address_virtual(mesh_transport_dst(transport_pdu))){
+        aad_len  = 16;
+        big_endian_store_16(transport_pdu->network_header, 7, test_virtual_address.hash);
+    }
 
     // setup nonce
     if (appkey_index == MESH_DEVICE_KEY_INDEX){
@@ -1197,11 +1223,6 @@ void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t * trans
     mesh_transport_crypto_active = 1;
 
     // encrypt ccm
-    uint16_t aad_len  = 0;
-    // @TODO: provide correct way to set virtual address,
-    if (mesh_network_address_virtual(mesh_transport_dst(transport_pdu))){
-        aad_len  = 16;
-    }
     btstack_crypto_ccm_init(&ccm, appkey->key, application_nonce, access_pdu_len, 0, transmic_len);
     if (aad_len){
         // @TODO: remove test_virtual_address

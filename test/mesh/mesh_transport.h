@@ -92,11 +92,28 @@ void mesh_upper_transport_send_unsegmented_access_pdu(mesh_network_pdu_t * netwo
 
 void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t * transport_pdu);
 
+//
+// Virtual Address Management
+// 
+
+/**
+ * @brief Register Virtual Address
+ * @param LabelUUID (16 bytes)
+ * @returns pseudo_dst that can be used as dst with all mesh_uppert_transport calls
+ */
+uint16_t mesh_virtual_address_register(uint8_t * label_uuid, uint16_t hash);
+
+/**
+ * @brief Unregister Virtual Address
+ * @param pseudo_dst to unregister
+ */
+void     mesh_virtual_address_unregister(uint16_t pseudo_dst);
 
 // test
 void mesh_lower_transport_received_mesage(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu);
 void mesh_transport_dump(void);
 void mesh_transport_reset(void);
+void mesh_seq_auth_reset(void);
 
 #ifdef __cplusplus
 } /* end of extern "C" */
