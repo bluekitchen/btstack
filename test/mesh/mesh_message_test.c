@@ -3,6 +3,8 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 
+#include "bluetooth_data_types.h"
+#include "bluetooth_gatt.h"
 #include "ble/mesh/adv_bearer.h"
 #include "ble/mesh/mesh_network.h"
 #include "mesh_transport.h"
@@ -769,9 +771,7 @@ TEST(MessageTest, Message21Send){
     mesh_upper_transport_set_seq(seq);
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message21_upper_transport_pdu, 1, message21_lower_transport_pdus, message21_network_pdus);
 }
-#endif
 
-#if 1
 // Message 22
 char * message22_network_pdus[] = {
     (char *) "e8d85caecef1e3ed31f3fdcf88a411135fea55df730b6b28e255",
@@ -806,9 +806,7 @@ TEST(MessageTest, Message22Send){
     mesh_virtual_address_set(0xb529, label_uuid);
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message22_upper_transport_pdu, 1, message22_lower_transport_pdus, message22_network_pdus);
 }
-#endif
 
-#if 1
 // Message 23
 char * message23_network_pdus[] = {
     (char *) "e877a48dd5fe2d7a9d696d3dd16a75489696f0b70c711b881385",
@@ -922,6 +920,7 @@ static void test_proxy_callback_handler(mesh_network_pdu_t * network_pdu){
     received_proxy_pdu = network_pdu;
 }
 
+
 TEST(MessageTest, ProxyConfigSend){
     uint16_t netkey_index = 0;
     uint8_t  ctl          = 1;
@@ -951,6 +950,34 @@ TEST(MessageTest, ProxyConfigSend){
     CHECK_EQUAL_ARRAY(transport_pdu_data+1, proxy_pdu_data, transport_pdu_len-1);
 
     received_proxy_pdu = NULL;
+}
+
+static btstack_crypto_aes128_t crypto_request_aes128;
+static uint8_t plaintext[16];
+static uint8_t identity_key[16];
+static uint8_t hash[16];
+static uint8_t random_value[8];
+
+static void mesh_proxy_handle_get_aes128(void * arg){
+    UNUSED(arg);
+    uint8_t expected_hash[8];
+    uint8_t expected_random_value[8];
+
+    btstack_parse_hex("00861765aefcc57b", 8, expected_hash);
+    CHECK_EQUAL_ARRAY(&hash[8], expected_hash, 8);
+    
+    btstack_parse_hex("34ae608fbbc1f2c6", 8, expected_random_value);
+    CHECK_EQUAL_ARRAY(random_value, expected_random_value, 8);
+}
+ 
+TEST(MessageTest, ServiceDataUsingNodeIdentityTest){
+    btstack_parse_hex("34ae608fbbc1f2c6", 8, random_value);
+    memset(plaintext, 0, sizeof(plaintext));
+    memcpy(&plaintext[6] , random_value, 8);
+    big_endian_store_16(plaintext, 14, 0x1201);
+    // 84396c435ac48560b5965385253e210c
+    btstack_parse_hex("84396c435ac48560b5965385253e210c", 16, identity_key);
+    btstack_crypto_aes128_encrypt(&crypto_request_aes128, identity_key, plaintext, hash, mesh_proxy_handle_get_aes128, NULL);
 }
 
 int main (int argc, const char * argv[]){
