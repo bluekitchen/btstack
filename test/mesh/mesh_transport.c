@@ -326,13 +326,25 @@ static void mesh_transport_set_dest(mesh_transport_pdu_t * transport_pdu, uint16
     big_endian_store_16(transport_pdu->network_header, 7, dest);
 }
 
-//
+// abort outgoing transmission
+static void mesh_transport_abort_transmission(void){
+    // stop timers
+    upper_transport_outgoing_pdu->acknowledgement_timer_active = 0;
+    upper_transport_outgoing_pdu->incomplete_timer_active = 0;
+    btstack_run_loop_remove_timer(&upper_transport_outgoing_pdu->acknowledgement_timer);
+    btstack_run_loop_remove_timer(&upper_transport_outgoing_pdu->incomplete_timer);
 
+    // free pdus
+    btstack_memory_mesh_transport_pdu_free(upper_transport_outgoing_pdu);        
+    upper_transport_outgoing_pdu     = NULL;
+    btstack_memory_mesh_network_pdu_free(upper_transport_outgoing_segment);        
+    upper_transport_outgoing_segment = NULL;
+}
 
 static void mesh_transport_process_unsegmented_control_message(mesh_network_pdu_t * network_pdu){
-    printf("Unsegmented Control message\n");
     uint8_t * lower_transport_pdu     = mesh_network_pdu_data(network_pdu);
     uint8_t  opcode = lower_transport_pdu[0];
+    printf("Unsegmented Control message, outgoing message %p, opcode %x\n", upper_transport_outgoing_pdu, opcode);
     uint16_t seq_zero_pdu;
     uint16_t seq_zero_out;
     uint32_t block_ack;
@@ -344,19 +356,23 @@ static void mesh_transport_process_unsegmented_control_message(mesh_network_pdu_
             block_ack = big_endian_read_32(lower_transport_pdu, 3); 
             printf("[+] Segment Acknowledgment message with seq_zero %06x, block_ack %08x - outgoing seq %06x, block_ack %08x\n",
                 seq_zero_pdu, block_ack, seq_zero_out, upper_transport_outgoing_pdu->block_ack);
-            if (seq_zero_pdu == seq_zero_out){
-                upper_transport_outgoing_pdu->block_ack &= ~block_ack;
-                printf("[+] Updated block_ack %08x\n", upper_transport_outgoing_pdu->block_ack);
-                if (upper_transport_outgoing_pdu->block_ack == 0){
-                    printf("[+] Sent complete\n");
-
-                    btstack_memory_mesh_transport_pdu_free(upper_transport_outgoing_pdu);        
-                    upper_transport_outgoing_pdu     = NULL;
-                    btstack_memory_mesh_network_pdu_free(upper_transport_outgoing_segment);        
-                    upper_transport_outgoing_segment = NULL;
-                }
-            } else {
+            if (block_ack == 0){
+                // If a Segment Acknowledgment message with the BlockAck field set to 0x00000000 is received,
+                // then the Upper Transport PDU shall be immediately cancelled and the higher layers shall be notified that
+                // the Upper Transport PDU has been cancelled.
+                printf("[+] Block Ack == 0 => Abort\n");
+                mesh_transport_abort_transmission();
+                break;                
+            }
+            if (seq_zero_pdu != seq_zero_out){
                 printf("[!] Seq Zero doesn't match\n");
+                break;
+            }
+            upper_transport_outgoing_pdu->block_ack &= ~block_ack;
+            printf("[+] Updated block_ack %08x\n", upper_transport_outgoing_pdu->block_ack);
+            if (upper_transport_outgoing_pdu->block_ack == 0){
+                printf("[+] Sent complete\n");
+                mesh_transport_abort_transmission();
             }
             break;
         default:
@@ -648,8 +664,8 @@ static void mesh_transport_send_ack(mesh_transport_pdu_t * transport_pdu){
 }
 
 static void mesh_transport_rx_ack_timeout(btstack_timer_source_t * ts){
-    printf("ACK: acknowledgement timer fired, send ACK\n");
     mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) btstack_run_loop_get_timer_context(ts);
+    printf("ACK: acknowledgement timer fired for %p, send ACK\n", transport_pdu);
     transport_pdu->acknowledgement_timer_active = 0;
     mesh_transport_send_ack(transport_pdu);
 }
@@ -995,8 +1011,8 @@ void mesh_upper_transport_send_segmented_pdu(mesh_transport_pdu_t * transport_pd
 }
 
 static void mesh_transport_tx_ack_timeout(btstack_timer_source_t * ts){
-    printf("[+] Upper transport, acknowledgement timer fired\n");
     mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) btstack_run_loop_get_timer_context(ts);
+    printf("[+] Upper transport, acknowledgement timer fired for %p\n", transport_pdu);
     transport_pdu->acknowledgement_timer_active = 0;
     upper_transport_outgoing_seg_o = 0;
     mesh_upper_transport_send_next_segment();
