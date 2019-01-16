@@ -231,7 +231,6 @@ static mesh_transport_pdu_t * transport_pdu_in_validation;
 static uint8_t application_nonce[13];
 static btstack_crypto_ccm_t ccm;
 static mesh_transport_key_iterator_t mesh_transport_key_it;
-static uint32_t mesh_transport_outgoing_seq = 0;
 
 // upper transport callbacks - in access layer
 static void (*mesh_access_unsegmented_handler)(mesh_network_pdu_t * network_pdu);
@@ -644,9 +643,12 @@ static void mesh_transport_send_ack(mesh_transport_pdu_t * transport_pdu){
     printf("mesh_transport_send_ack for pdu %p with netkey_index %x, TTL = %u, SeqZero = %x, SRC = %x, DST = %x\n",
         transport_pdu, transport_pdu->netkey_index, mesh_transport_ttl(transport_pdu), seq_zero, primary_element_address, mesh_transport_src(transport_pdu));
 
-    mesh_network_send(transport_pdu->netkey_index, 1, mesh_transport_ttl(transport_pdu),
-                      mesh_transport_outgoing_seq++, primary_element_address, mesh_transport_src(transport_pdu), 
-                      ack_msg, sizeof(ack_msg));
+    // send ack 
+    int i;
+    for (i=0;i<1;i++){
+        mesh_network_send(transport_pdu->netkey_index, 1, mesh_transport_ttl(transport_pdu), mesh_upper_transport_next_seq(),
+            primary_element_address, mesh_transport_src(transport_pdu), ack_msg, sizeof(ack_msg));
+    }
 }
 
 static void mesh_transport_rx_ack_timeout(btstack_timer_source_t * ts){
