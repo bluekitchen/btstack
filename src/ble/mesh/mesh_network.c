@@ -52,6 +52,9 @@
 #define MESH_NETWORK_CACHE_SIZE 2
 #define ENABLE_MESH_RELAY
 
+// debug config
+// #define LOG_NETWORK
+
 // structs
 
 typedef struct {
@@ -279,8 +282,10 @@ static void mesh_network_send_c(void *arg){
         network_pdu->data[1+i] ^= obfuscation_block[i];
     }
 
+#ifdef LOG_NETWORK
     printf("TX-C-NetworkPDU: ");
     printf_hexdump(network_pdu->data, network_pdu->len);
+#endif
 
     // crypto done
     mesh_crypto_active = 0;
@@ -303,8 +308,10 @@ static void mesh_network_send_b(void *arg){
     memcpy(&network_pdu->data[network_pdu->len], net_mic, net_mic_len);
     network_pdu->len += net_mic_len;
 
+#ifdef LOG_NETWORK
     printf("TX-B-NetworkPDU: ");
     printf_hexdump(network_pdu->data, network_pdu->len);
+#endif
 
     // calc PECB
     memset(encryption_block, 0, 5);
@@ -331,16 +338,22 @@ static void mesh_network_send_a(mesh_network_pdu_t * network_pdu){
     // get network nonce
     if (network_pdu->flags & 1){
         mesh_proxy_create_nonce(network_nonce, network_pdu, global_iv_index); 
+#ifdef LOG_NETWORK
         printf("TX-ProxyNonce:  ");
         printf_hexdump(network_nonce, 13);
+#endif
     } else {
         mesh_network_create_nonce(network_nonce, network_pdu, global_iv_index); 
+#ifdef LOG_NETWORK
         printf("TX-NetworkNonce:  ");
         printf_hexdump(network_nonce, 13);
+#endif
     }
 
-    printf("TX-EncryptionKey: ");
+#ifdef LOG_NETWORK
+   printf("TX-EncryptionKey: ");
     printf_hexdump(current_network_key->encryption_key, 16);
+#endif
 
     // start ccm
     uint8_t cypher_len  = network_pdu->len - 7;
@@ -395,21 +408,25 @@ static void process_network_pdu_validate_d(void * arg){
     // store NetMIC
     uint8_t net_mic[8];
     btstack_crypto_ccm_get_authentication_value(&mesh_network_crypto_request.ccm, net_mic);
-    printf("NetMIC: "); 
+#ifdef LOG_NETWORK
+    printf("RX-NetMIC: "); 
     printf_hexdump(net_mic, net_mic_len);
+#endif
     // store in pdu
     memcpy(&network_pdu->data[network_pdu->len-net_mic_len], net_mic, net_mic_len);
 
-    printf("Decrypted DST/TransportPDU: ");
+#ifdef LOG_NETWORK
+    printf("RX-Decrypted DST/TransportPDU: ");
     printf_hexdump(&network_pdu->data[7], 2 + cypher_len);
 
-    printf("Decrypted: ");
+    printf("RX-Decrypted: ");
     printf_hexdump(network_pdu->data, network_pdu->len);
+#endif
 
     // compare calcualted nic to nic in data
     if (memcmp(net_mic, &network_pdu_in_validation->data[network_pdu->len-net_mic_len], net_mic_len) != 0){
         // fail
-        printf("NetMIC mismatch, try next key\n");
+        printf("RX-NetMIC mismatch, try next key\n");
         process_network_pdu_validate(network_pdu);
         return;
     }    
@@ -418,9 +435,11 @@ static void process_network_pdu_validate_d(void * arg){
     network_pdu->len -= net_mic_len;
 
     // match
-    printf("NetMIC matches\n");
+    printf("RX-NetMIC matches\n");
 
-    printf("TTL: 0x%02x\n", network_pdu->data[1] & 0x7f);
+#ifdef LOG_NETWORK
+    printf("RX-TTL: 0x%02x\n", network_pdu->data[1] & 0x7f);
+#endif
 
     // set netkey_index
     network_pdu->netkey_index = current_network_key->netkey_index;
@@ -437,7 +456,7 @@ static void process_network_pdu_validate_d(void * arg){
         uint16_t dst = big_endian_read_16(network_pdu->data, 7);
         int valid = mesh_network_addresses_valid(ctl, src, dst);
         if (!valid){
-            printf("Address invalid\n");
+            printf("RX Address invalid\n");
             btstack_memory_mesh_network_pdu_free(network_pdu);
             process_network_pdu_done();
             return;
@@ -445,7 +464,9 @@ static void process_network_pdu_validate_d(void * arg){
 
         // check cache
         uint32_t hash = mesh_network_cache_hash(network_pdu);
-        printf("Hash: %08x\n", hash);
+#ifdef LOG_NETWORK
+        printf("RX-Hash: %08x\n", hash);
+#endif
         if (mesh_network_cache_find(hash)){
             // found in cache, drop
             printf("Found in cache -> drop packet\n");
@@ -468,9 +489,10 @@ static void process_network_pdu_validate_d(void * arg){
 static void process_network_pdu_validate_b(void * arg){
     mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
 
-    //
-    printf("PECB: ");
+#ifdef LOG_NETWORK
+    printf("RX-PECB: ");
     printf_hexdump(obfuscation_block, 6);
+#endif
 
     // de-obfuscate
     unsigned int i;
@@ -481,13 +503,17 @@ static void process_network_pdu_validate_b(void * arg){
     if (network_pdu->flags & 1){
         // create network nonce
         mesh_proxy_create_nonce(network_nonce, network_pdu, global_iv_index);
-        printf("Proxy Nonce: ");
+#ifdef LOG_NETWORK
+        printf("RX-Proxy Nonce: ");
         printf_hexdump(network_nonce, 13);
+#endif
     } else {
         // create network nonce
         mesh_network_create_nonce(network_nonce, network_pdu, global_iv_index);
-        printf("Network Nonce: ");
+#ifdef LOG_NETWORK
+        printf("RX-Network Nonce: ");
         printf_hexdump(network_nonce, 13);
+#endif
     }
 
     // 
@@ -495,12 +521,13 @@ static void process_network_pdu_validate_b(void * arg){
     uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
     uint8_t cypher_len  = network_pdu->len - 7 - net_mic_len;
 
-    printf("Cyper len %u, mic len %u\n", cypher_len, net_mic_len);
+#ifdef LOG_NETWORK
+    printf("RX-Cyper len %u, mic len %u\n", cypher_len, net_mic_len);
 
-    printf("Encryption Key: ");
+    printf("RX-Encryption Key: ");
     printf_hexdump(current_network_key->encryption_key, 16);
 
-    // 034b50057e400000010000
+#endif
 
     btstack_crypto_ccm_init(&mesh_network_crypto_request.ccm, current_network_key->encryption_key, network_nonce, cypher_len, 0, net_mic_len);
     btstack_crypto_ccm_decrypt_block(&mesh_network_crypto_request.ccm, cypher_len, &network_pdu_in_validation->data[7], &network_pdu->data[7], &process_network_pdu_validate_d, network_pdu);
@@ -575,8 +602,10 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
             // check len. minimal transport PDU len = 1, 32 bit NetMIC -> 13 bytes
             if (size < 13) break;
 
+#ifdef LOG_NETWORK
             printf("received mesh message (len %u): ", size);
             printf_hexdump(packet, size);
+#endif
             mesh_network_received_message(packet, size);
             break;
 
@@ -659,8 +688,10 @@ void mesh_network_process_proxy_message(const uint8_t * pdu_data, uint8_t pdu_le
 }
 
 void mesh_network_send_pdu(mesh_network_pdu_t * network_pdu){
+#ifdef LOG_NETWORK
     printf("NetworkPDU(unencrypted): ");
     printf_hexdump(network_pdu->data, network_pdu->len);
+#endif
 
     // setup callback
     network_pdu->callback = &mesh_network_send_d;
