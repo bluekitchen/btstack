@@ -638,11 +638,11 @@ static void mesh_lower_transport_setup_segemented_acknowledge_message(uint8_t * 
 static void mesh_transport_send_ack(mesh_transport_pdu_t * transport_pdu){
     // setup ack message
     uint8_t ack_msg[7];
-    uint16_t seq = mesh_transport_seq(transport_pdu);
-    mesh_lower_transport_setup_segemented_acknowledge_message(ack_msg, 0, seq & 0x1fff, transport_pdu->block_ack);
+    uint16_t seq_zero = mesh_transport_seq(transport_pdu) & 0x1fff;
+    mesh_lower_transport_setup_segemented_acknowledge_message(ack_msg, 0, seq_zero, transport_pdu->block_ack);
 
-    printf("mesh_transport_send_ack for pdu %p with netkey_index %x, CTL=1, ttl = %u, seq = %x, src = %x, dst = %x\n", transport_pdu, transport_pdu->netkey_index, mesh_transport_ttl(transport_pdu),
-        mesh_transport_seq(transport_pdu), primary_element_address, mesh_transport_src(transport_pdu));
+    printf("mesh_transport_send_ack for pdu %p with netkey_index %x, TTL = %u, SeqZero = %x, SRC = %x, DST = %x\n",
+        transport_pdu, transport_pdu->netkey_index, mesh_transport_ttl(transport_pdu), seq_zero, primary_element_address, mesh_transport_src(transport_pdu));
 
     mesh_network_send(transport_pdu->netkey_index, 1, mesh_transport_ttl(transport_pdu),
                       mesh_transport_outgoing_seq++, primary_element_address, mesh_transport_src(transport_pdu), 
