@@ -223,6 +223,7 @@ static int mesh_seq_auth_validate(uint16_t src, uint32_t seq){
 static void mesh_lower_transport_run(void);
 static void mesh_upper_transport_validate_unsegmented_message(mesh_network_pdu_t * network_pdu);
 static void mesh_upper_transport_validate_segmented_message(mesh_transport_pdu_t * transport_pdu);
+static void mesh_transport_abort_transmission(void);
 
 static int mesh_transport_crypto_active;
 static mesh_network_pdu_t   * network_pdu_in_validation;
@@ -324,21 +325,6 @@ static void mesh_transport_set_src(mesh_transport_pdu_t * transport_pdu, uint16_
 }
 static void mesh_transport_set_dest(mesh_transport_pdu_t * transport_pdu, uint16_t dest){
     big_endian_store_16(transport_pdu->network_header, 7, dest);
-}
-
-// abort outgoing transmission
-static void mesh_transport_abort_transmission(void){
-    // stop timers
-    upper_transport_outgoing_pdu->acknowledgement_timer_active = 0;
-    upper_transport_outgoing_pdu->incomplete_timer_active = 0;
-    btstack_run_loop_remove_timer(&upper_transport_outgoing_pdu->acknowledgement_timer);
-    btstack_run_loop_remove_timer(&upper_transport_outgoing_pdu->incomplete_timer);
-
-    // free pdus
-    btstack_memory_mesh_transport_pdu_free(upper_transport_outgoing_pdu);        
-    upper_transport_outgoing_pdu     = NULL;
-    btstack_memory_mesh_network_pdu_free(upper_transport_outgoing_segment);        
-    upper_transport_outgoing_segment = NULL;
 }
 
 static void mesh_transport_process_unsegmented_control_message(mesh_network_pdu_t * network_pdu){
@@ -682,16 +668,6 @@ static void mesh_transport_rx_incomplete_timeout(btstack_timer_source_t * ts){
     test_transport_pdu = NULL;
 }
 
-static void mesh_network_segmented_message_complete(mesh_transport_pdu_t * transport_pdu){
-    // stop timers
-    transport_pdu->acknowledgement_timer_active = 0;
-    transport_pdu->incomplete_timer_active = 0;
-    btstack_run_loop_remove_timer(&transport_pdu->acknowledgement_timer);
-    btstack_run_loop_remove_timer(&transport_pdu->incomplete_timer);
-    // send ack
-    mesh_transport_send_ack(transport_pdu);
-}
-
 static void mesh_transport_start_acknowledgment_timer(mesh_transport_pdu_t * transport_pdu, uint32_t timeout, void (*callback)(btstack_timer_source_t * ts)){
     printf("ACK: start ack timer, timeout %u ms\n", (int) timeout);
     btstack_run_loop_set_timer(&transport_pdu->acknowledgement_timer, timeout);
@@ -699,6 +675,12 @@ static void mesh_transport_start_acknowledgment_timer(mesh_transport_pdu_t * tra
     btstack_run_loop_set_timer_context(&transport_pdu->acknowledgement_timer, transport_pdu);
     btstack_run_loop_add_timer(&transport_pdu->acknowledgement_timer);
     transport_pdu->acknowledgement_timer_active = 1;
+}
+
+static void mesh_transport_stop_acknowledgment_timer(mesh_transport_pdu_t * transport_pdu){
+    if (!transport_pdu->acknowledgement_timer_active) return;
+    transport_pdu->acknowledgement_timer_active = 0;
+    btstack_run_loop_remove_timer(&transport_pdu->acknowledgement_timer);
 }
 
 static void mesh_transport_restart_incomplete_timer(mesh_transport_pdu_t * transport_pdu, uint32_t timeout, void (*callback)(btstack_timer_source_t * ts)){
@@ -709,6 +691,31 @@ static void mesh_transport_restart_incomplete_timer(mesh_transport_pdu_t * trans
     btstack_run_loop_set_timer_handler(&transport_pdu->incomplete_timer, callback);
     btstack_run_loop_set_timer_context(&transport_pdu->incomplete_timer, transport_pdu);
     btstack_run_loop_add_timer(&transport_pdu->incomplete_timer);
+}
+
+static void mesh_transport_stop_incomplete_timer(mesh_transport_pdu_t * transport_pdu){
+    if (!transport_pdu->incomplete_timer_active) return;
+    transport_pdu->incomplete_timer_active = 0;
+    btstack_run_loop_remove_timer(&transport_pdu->incomplete_timer);
+}
+
+static void mesh_network_segmented_message_complete(mesh_transport_pdu_t * transport_pdu){
+    // stop timers
+    mesh_transport_stop_acknowledgment_timer(transport_pdu);
+    mesh_transport_stop_incomplete_timer(transport_pdu);
+    // send ack
+    mesh_transport_send_ack(transport_pdu);
+}
+
+// abort outgoing transmission
+static void mesh_transport_abort_transmission(void){
+    // stop ack timers
+    mesh_transport_stop_acknowledgment_timer(upper_transport_outgoing_pdu);
+    // free pdus
+    btstack_memory_mesh_transport_pdu_free(upper_transport_outgoing_pdu);        
+    upper_transport_outgoing_pdu     = NULL;
+    btstack_memory_mesh_network_pdu_free(upper_transport_outgoing_segment);        
+    upper_transport_outgoing_segment = NULL;
 }
 
 static mesh_transport_pdu_t * mesh_transport_pdu_for_segmented_message(mesh_network_pdu_t * network_pdu){
