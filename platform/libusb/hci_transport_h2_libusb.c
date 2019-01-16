@@ -791,7 +791,7 @@ static libusb_device_handle * try_open_device(libusb_device * device){
     log_info("libusb open %d, handle %p", r, dev_handle);
 
     // reset device
-    libusb_reset_device(dev_handle);
+    r = libusb_reset_device(dev_handle);
     if (r < 0) {
         log_error("libusb_reset_device failed!");
         libusb_close(dev_handle);
