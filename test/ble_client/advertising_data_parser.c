@@ -185,9 +185,22 @@ TEST(ADParser, TestDataParsing){
     }
 }
 
-
 TEST(ADParser, TestAdvertisementEventMultipleReports){
     le_handle_advertisement_report(adv_multi_packet, sizeof(adv_multi_packet));
+}
+
+TEST(ADParser, TestMalformed){
+    ad_context_t context;
+
+    // len = 0xff, but only one byte type
+    uint8_t data[] = { 0xff, 0x01 };
+    ad_iterator_init(&context, sizeof(data), data);
+    CHECK_EQUAL(ad_iterator_has_more(&context), 0);
+
+    // len = 0x01, but not type
+    uint8_t data2[] = { 0x00, 0x01 };
+    ad_iterator_init(&context, sizeof(data2), data2);
+    CHECK_EQUAL(ad_iterator_has_more(&context), 0);
 }
 
 int main (int argc, const char * argv[]){

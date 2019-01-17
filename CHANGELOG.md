@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - L2CAP: emit L2CAP_EVENT_ERTM_BUFFER_RELEASED if ERTM buffer not needed/used anymore
 - L2CAP: add fcs_option to ERTM config l2cap_ertm_config_t
 - HCI: validate advertisement data length field when generating GAP_EVENT_ADVERTISING_REPORT
+- ad_parser: validate data element length fields in ad_iterator_has_more
 
 ## Changes December 2018
 
