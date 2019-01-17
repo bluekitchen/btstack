@@ -1228,6 +1228,7 @@ void mesh_upper_transport_send_unsegmented_access_pdu(mesh_network_pdu_t * netwo
 
     btstack_crypto_ccm_init(&ccm, appkey->key, application_nonce, access_pdu_len, aad_len, trans_mic_len);
     if (virtual_address){
+        mesh_print_hex("LabelUUID", mesh_transport_key_it.label_uuid, 16);
         btstack_crypto_ccm_digest(&ccm, virtual_address->label_uuid, 16, &mesh_upper_transport_send_unsegmented_access_pdu_digest, network_pdu);
     } else {
         mesh_upper_transport_send_unsegmented_access_pdu_digest(network_pdu);    
@@ -1278,8 +1279,7 @@ void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t * trans
     mesh_transport_crypto_active = 1;
     btstack_crypto_ccm_init(&ccm, appkey->key, application_nonce, access_pdu_len, aad_len, transmic_len);
     if (virtual_address){
-        // printf("Hashing LabelUUID: ");
-        // printf_hexdump(virtual_address->label_uuid, 16);
+        mesh_print_hex("LabelUUID", virtual_address->label_uuid, 16);
         btstack_crypto_ccm_digest(&ccm, virtual_address->label_uuid, 16, &mesh_upper_transport_send_segmented_access_pdu_digest, transport_pdu);
     }
     mesh_upper_transport_send_segmented_access_pdu_digest(transport_pdu);
