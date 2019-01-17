@@ -1037,7 +1037,11 @@ void le_handle_advertisement_report(uint8_t *packet, uint16_t size){
     // log_info("HCI: handle adv report with num reports: %d", num_reports);
     uint8_t event[12 + LE_ADVERTISING_DATA_SIZE]; // use upper bound to avoid var size automatic var
     for (i=0; i<num_reports && offset < size;i++){
-        uint8_t data_length = btstack_min( packet[offset + 8], LE_ADVERTISING_DATA_SIZE);
+        // sanity checks on data_length:
+        uint8_t data_length = packet[offset + 8];
+        if (data_length > LE_ADVERTISING_DATA_SIZE) return;
+        if (offset + 9 + data_length + 1 > size)    return;
+        // setup event
         uint8_t event_size = 10 + data_length;
         int pos = 0;
         event[pos++] = GAP_EVENT_ADVERTISING_REPORT;
@@ -1046,9 +1050,10 @@ void le_handle_advertisement_report(uint8_t *packet, uint16_t size){
         offset += 8;
         pos += 8;
         event[pos++] = packet[offset + 1 + data_length]; // rssi
-        event[pos++] = packet[offset++]; //data_length;
+        event[pos++] = data_length;
+        offset++;
         memcpy(&event[pos], &packet[offset], data_length);
-        pos += data_length;
+        pos +=    data_length;
         offset += data_length + 1; // rssi
         hci_emit_event(event, pos, 1);
     }
