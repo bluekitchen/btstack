@@ -668,6 +668,7 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
         uint8_t * packet = &hci_stack->hci_packet_buffer[acl_header_pos];
         const int size = current_acl_data_packet_length + 4;
         hci_dump_packet(HCI_ACL_DATA_PACKET, 0, packet, size);
+        hci_stack->acl_fragmentation_tx_active = 1;
         err = hci_stack->hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
 
         log_debug("hci_send_acl_packet_fragments loop after send (more fragments %d)", more_fragments);
@@ -683,6 +684,7 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
 
     // release buffer now for synchronous transport
     if (hci_transport_synchronous()){
+        hci_stack->acl_fragmentation_tx_active = 0;
         hci_release_packet_buffer();
         hci_emit_transport_packet_sent();
     }
@@ -2251,12 +2253,16 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             if (packet[2]) break;   // status != 0
             handle = little_endian_read_16(packet, 3);
-            // drop outgoing ACL fragments if it is for closed connection
+            // drop outgoing ACL fragments if it is for closed connection and release buffer if tx not active
             if (hci_stack->acl_fragmentation_total_size > 0) {
                 if (handle == READ_ACL_CONNECTION_HANDLE(hci_stack->hci_packet_buffer)){
-                    log_info("hci: drop fragmented ACL data for closed connection");
-                     hci_stack->acl_fragmentation_total_size = 0;
-                     hci_stack->acl_fragmentation_pos = 0;
+                    int release_buffer = hci_stack->acl_fragmentation_tx_active == 0;
+                    log_info("drop fragmented ACL data for closed connection, release buffer %u", release_buffer);
+                    hci_stack->acl_fragmentation_total_size = 0;
+                    hci_stack->acl_fragmentation_pos = 0;
+                    if (release_buffer){
+                        hci_release_packet_buffer();
+                    }
                 }
             }
 
@@ -2301,6 +2307,7 @@ static void event_handler(uint8_t *packet, int size){
                 log_error("Synchronous HCI Transport shouldn't send HCI_EVENT_TRANSPORT_PACKET_SENT");
                 return; // instead of break: to avoid re-entering hci_run()
             }
+            hci_stack->acl_fragmentation_tx_active = 0;
             if (hci_stack->acl_fragmentation_total_size) break;
             hci_release_packet_buffer();
             

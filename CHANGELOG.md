@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HCI: validate advertisement data length field when generating GAP_EVENT_ADVERTISING_REPORT
 - ad_parser: validate data element length fields in ad_iterator_has_more
 
+### Fixed
+- HCI: release outgoing buffer on disconnect if waiting to send another ACL fragment
+
 ## Changes December 2018
 
 ### Added
