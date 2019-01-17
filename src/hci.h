@@ -730,6 +730,7 @@ typedef struct {
     uint8_t   hci_packet_buffer_reserved;
     uint16_t  acl_fragmentation_pos;
     uint16_t  acl_fragmentation_total_size;
+    uint8_t   acl_fragmentation_tx_active;
      
     /* host to controller flow control */
     uint8_t  num_cmd_packets;
