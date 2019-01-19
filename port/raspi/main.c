@@ -87,6 +87,83 @@ static hci_transport_config_uart_t transport_config = {
     0,       // flow control
     NULL,
 };
+
+
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#include <termios.h>
+
+
+static int raspi_speed_to_baud(speed_t baud)
+{
+    switch (baud) {
+    case B9600:
+        return 9600;
+    case B19200:
+        return 19200;
+    case B38400:
+        return 38400;
+    case B57600:
+        return 57600;
+    case B115200:
+        return 115200;
+    case B230400:
+        return 230400;
+    case B460800:
+        return 460800;
+    case B500000:
+        return 500000;
+    case B576000:
+        return 576000;
+    case B921600:
+        return 921600;
+    case B1000000:
+        return 1000000;
+    case B1152000:
+        return 1152000;
+    case B1500000:
+        return 1500000;
+    case B2000000:
+        return 2000000;
+    case B2500000:
+        return 2500000;
+    case B3000000:
+        return 3000000;
+    case B3500000:
+        return 3500000;
+    case B4000000:
+        return 4000000;
+    default: 
+        return -1;
+    }
+}
+
+static void raspi_get_terminal_params( hci_transport_config_uart_t *tc )
+{
+    // open serial terminal and get parameters
+    int fd = open( tc->device_name, O_RDONLY );
+    if( fd < 0 )
+    {
+        perror( "can't open serial port" );
+        return;
+    }
+    struct termios tios;
+    tcgetattr( fd, &tios );
+    close( fd );
+
+    speed_t ospeed = cfgetospeed( &tios );
+    int baud = raspi_speed_to_baud( ospeed );
+    printf( "current serial terminal parameter baudrate: %d, flow control: %s\n", baud, (tios.c_cflag&CRTSCTS)?"Hardware":"None" );
+
+    // overwrites the initial baudrate only in case it was likely to be altered before
+    if( baud > 9600 )
+    {
+        tc->baudrate_init = baud;
+        tc->flowcontrol = (tios.c_cflag & CRTSCTS)?1:0;
+    }
+}
+
 static btstack_uart_config_t uart_config;
 
 static int main_argc;
@@ -136,6 +213,16 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
             tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
             btstack_tlv_set_instance(tlv_impl, &tlv_context);
+            break;
+        case HCI_EVENT_COMMAND_COMPLETE:
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_name)){
+                if (hci_event_command_complete_get_return_parameters(packet)[0]) break;
+                // terminate, name 248 chars
+                packet[6+248] = 0;
+                printf("Local name: %s\n", &packet[6]);
+                
+                btstack_chipset_bcm_set_device_name((const char *)&packet[6]);
+            }        
             break;
         default:
             break;
@@ -213,6 +300,8 @@ int main(int argc, const char * argv[]){
         
     // pick serial port and configure uart block driver
     transport_config.device_name = "/dev/serial1";
+    
+    raspi_get_terminal_params( &transport_config );
 
     // derive bd_addr from serial number
     bd_addr_t addr = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 };
@@ -225,26 +314,31 @@ int main(int argc, const char * argv[]){
             return -1;
         case UART_SOFTWARE_NO_FLOW:
             // ??
-            printf("Software UART without flowcontrol, 460800 baud, H5, BT_REG_EN at GPIO 128l\n");
+            printf("H5, BT_REG_EN at GPIO 128\n");
             transport_config.baudrate_main = 460800;
             transport_config.flowcontrol = 0;
             btstack_control_raspi_set_bt_reg_en_pin(128);
             break;
         case UART_HARDWARE_NO_FLOW:
             // Raspberry Pi 3 B
-            printf("Hardware UART without flowcontrol, 921600 baud, H5, BT_REG_EN at GPIOO 128\n");
+            printf("H5, BT_REG_EN at GPIOO 128\n");
             transport_config.baudrate_main = 921600;
             transport_config.flowcontrol = 0;
             btstack_control_raspi_set_bt_reg_en_pin(128);
             break;
         case UART_HARDWARE_FLOW:
             // Raspberry Pi Zero W
-            printf("Hardware UART with flowcontrol, 921600 baud, H4, BT_REG_EN at GPIO 45\n");
-            transport_config.baudrate_main = 921600;
+            // Raspberry Pi 3A+ vgpio 129 but WLAN + BL
+            // Raspberry Pi 3B+ vgpio 129 but WLAN + BL
+            transport_config.baudrate_main = 3000000;
             transport_config.flowcontrol = 1;
+            printf("H4, BT_REG_EN at GPIO 45\n");
             btstack_control_raspi_set_bt_reg_en_pin(45);
             break;
     }
+
+    printf("Hardware UART %s flowcontrol, %d baud\n",
+            transport_config.flowcontrol?"with":"without", transport_config.baudrate_main );
 
     // get BCM chipset driver
     const btstack_chipset_t * chipset = btstack_chipset_bcm_instance();
@@ -252,9 +346,6 @@ int main(int argc, const char * argv[]){
 
     // set path to firmware files
     btstack_chipset_bcm_set_hcd_folder_path("/lib/firmware/brcm");
-
-    // set chipset name
-    btstack_chipset_bcm_set_device_name("BCM43430A1");
 
     // setup UART driver
     const btstack_uart_block_t * uart_driver = btstack_uart_block_posix_instance();

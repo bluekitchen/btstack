@@ -1,6 +1,6 @@
 # BTstack Port for Raspberry Pi 3 with BCM4343 Bluetooth/Wifi Controller
 
-Tested with Raspberry Pi 3 Model B V1.2 and Raspberry Pi Zero W V1.1.
+Tested with Raspberry Pi 3 Model B V1.2, Raspberry Pi 3 Model B+, and Raspberry Pi Zero W V1.1.
 
 With minor fixes, the port should also work with older Raspberry Pi models that use the [RedBear pHAT](https://redbear.cc/product/rpi/iot-phat.html). See TODO at the end.
 
@@ -85,7 +85,7 @@ For regular use, it makes sense to add Python permanently to the Docker containe
 
 ## Running the examples
 
-Copy one of the examples to the Rasperry Pi and just run them. BTstack will always power cycle the Bluetooth Controller.
+Copy one of the examples to the Rasperry Pi and just run them. BTstack will power cycle the Bluetooth Controller on models without hardware flowcontrol, i.e., Pi 3 A/B. With flowcontrol, e.g Pi Zero W and Pi 3 A+/B+, the firmware will only uploaded on first start. 
 
 	pi@raspberrypi:~ $ ./le_counter
 	Packet Log: /tmp/hci_dump.pklg
