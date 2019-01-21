@@ -39,18 +39,21 @@
 
 // *****************************************************************************
 //
-// minimal setup for HCI code
+//   Port for Rasperry Pi with built-in BCM chipset via H4 or H5
 //
 // *****************************************************************************
 
-#include <stdint.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <inttypes.h>
+#include <signal.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
-#include <signal.h>
-#include <errno.h>
+#include <sys/stat.h>
+#include <termios.h>
+#include <unistd.h>
 
 #include "btstack_config.h"
 
@@ -88,54 +91,61 @@ static hci_transport_config_uart_t transport_config = {
     NULL,
 };
 
+static btstack_uart_config_t uart_config;
 
-#include <sys/stat.h>
-#include <fcntl.h>
+static int main_argc;
+static const char ** main_argv;
 
-#include <termios.h>
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+#define TLV_DB_PATH_PREFIX "/tmp/btstack_"
+#define TLV_DB_PATH_POSTFIX ".tlv"
+static char tlv_db_path[100];
+static const btstack_tlv_t * tlv_impl;
+static btstack_tlv_posix_t   tlv_context;
 
 
 static int raspi_speed_to_baud(speed_t baud)
 {
     switch (baud) {
-    case B9600:
-        return 9600;
-    case B19200:
-        return 19200;
-    case B38400:
-        return 38400;
-    case B57600:
-        return 57600;
-    case B115200:
-        return 115200;
-    case B230400:
-        return 230400;
-    case B460800:
-        return 460800;
-    case B500000:
-        return 500000;
-    case B576000:
-        return 576000;
-    case B921600:
-        return 921600;
-    case B1000000:
-        return 1000000;
-    case B1152000:
-        return 1152000;
-    case B1500000:
-        return 1500000;
-    case B2000000:
-        return 2000000;
-    case B2500000:
-        return 2500000;
-    case B3000000:
-        return 3000000;
-    case B3500000:
-        return 3500000;
-    case B4000000:
-        return 4000000;
-    default: 
-        return -1;
+        case B9600:
+            return 9600;
+        case B19200:
+            return 19200;
+        case B38400:
+            return 38400;
+        case B57600:
+            return 57600;
+        case B115200:
+            return 115200;
+        case B230400:
+            return 230400;
+        case B460800:
+            return 460800;
+        case B500000:
+            return 500000;
+        case B576000:
+            return 576000;
+        case B921600:
+            return 921600;
+        case B1000000:
+            return 1000000;
+        case B1152000:
+            return 1152000;
+        case B1500000:
+            return 1500000;
+        case B2000000:
+            return 2000000;
+        case B2500000:
+            return 2500000;
+        case B3000000:
+            return 3000000;
+        case B3500000:
+            return 3500000;
+        case B4000000:
+            return 4000000;
+        default: 
+            return -1;
     }
 }
 
@@ -163,19 +173,6 @@ static void raspi_get_terminal_params( hci_transport_config_uart_t *tc )
         tc->flowcontrol = (tios.c_cflag & CRTSCTS)?1:0;
     }
 }
-
-static btstack_uart_config_t uart_config;
-
-static int main_argc;
-static const char ** main_argv;
-
-static btstack_packet_callback_registration_t hci_event_callback_registration;
-
-#define TLV_DB_PATH_PREFIX "/tmp/btstack_"
-#define TLV_DB_PATH_POSTFIX ".tlv"
-static char tlv_db_path[100];
-static const btstack_tlv_t * tlv_impl;
-static btstack_tlv_posix_t   tlv_context;
 
 static void sigint_handler(int param){
     UNUSED(param);
@@ -301,44 +298,39 @@ int main(int argc, const char * argv[]){
     // pick serial port and configure uart block driver
     transport_config.device_name = "/dev/serial1";
     
-    raspi_get_terminal_params( &transport_config );
-
     // derive bd_addr from serial number
     bd_addr_t addr = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 };
     raspi_get_bd_addr(addr);
 
     // set UART config based on raspi Bluetooth UART type
+    int bt_reg_en_pin = -1;
     switch (raspi_get_bluetooth_uart_type()){
         case UART_INVALID:
             fprintf(stderr, "can't verify HW uart, %s\n", strerror( errno ) );
             return -1;
         case UART_SOFTWARE_NO_FLOW:
             // ??
-            printf("H5, BT_REG_EN at GPIO 128\n");
+            bt_reg_en_pin = 128;
             transport_config.baudrate_main = 460800;
-            transport_config.flowcontrol = 0;
-            btstack_control_raspi_set_bt_reg_en_pin(128);
+            transport_config.flowcontrol   = 0;
             break;
         case UART_HARDWARE_NO_FLOW:
+            // Raspberry Pi 3 A
             // Raspberry Pi 3 B
-            printf("H5, BT_REG_EN at GPIOO 128\n");
+            bt_reg_en_pin = 128;
             transport_config.baudrate_main = 921600;
-            transport_config.flowcontrol = 0;
-            btstack_control_raspi_set_bt_reg_en_pin(128);
+            transport_config.flowcontrol   = 0;
             break;
         case UART_HARDWARE_FLOW:
             // Raspberry Pi Zero W
             // Raspberry Pi 3A+ vgpio 129 but WLAN + BL
             // Raspberry Pi 3B+ vgpio 129 but WLAN + BL
-            transport_config.baudrate_main = 3000000;
-            transport_config.flowcontrol = 1;
-            printf("H4, BT_REG_EN at GPIO 45\n");
-            btstack_control_raspi_set_bt_reg_en_pin(45);
+            bt_reg_en_pin = 45;
+            transport_config.baudrate_main = 921600;
+            transport_config.flowcontrol   = 1;
             break;
     }
-
-    printf("Hardware UART %s flowcontrol, %d baud\n",
-            transport_config.flowcontrol?"with":"without", transport_config.baudrate_main );
+    printf("%s, %u, BT_REG_EN at GPIO %u\n", transport_config.flowcontrol ? "H4":"H5", transport_config.baudrate_main, bt_reg_en_pin);
 
     // get BCM chipset driver
     const btstack_chipset_t * chipset = btstack_chipset_bcm_instance();
@@ -381,18 +373,28 @@ int main(int argc, const char * argv[]){
     main_argc = argc;
     main_argv = argv;
 
-    // power cycle Bluetooth controller
-    btstack_control_t *control = btstack_control_raspi_get_instance();
-    control->init(NULL);
-    control->off();
-    usleep( 100000 );
-    control->on();
-
-    // for h4, we're done
     if (transport_config.flowcontrol){
-        // setup app
+
+        // re-use current terminal speed
+        raspi_get_terminal_params( &transport_config );
+
+        // with flowcontrol, we use h4 and are done
         btstack_main(main_argc, main_argv);
+
     } else {
+
+        // power cycle Bluetooth controller on older models without flowcontrol
+        printf("Power Cycle Controller\n");
+        btstack_control_raspi_set_bt_reg_en_pin(bt_reg_en_pin);
+        btstack_control_t *control = btstack_control_raspi_get_instance();
+        control->init(NULL);
+        control->off();
+        usleep( 100000 );
+        control->on();
+
+        // assume BCM4343W used in Pi 3 A/B. Pi 3 A/B+ have a newer controller but support H4 with Flowcontrol
+        btstack_chipset_bcm_set_device_name("BCM43430A1");
+
         // phase #1 download firmware
         printf("Phase 1: Download firmware\n");
 
