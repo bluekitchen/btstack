@@ -121,6 +121,7 @@ int btstack_cvsd_plc_pattern_match(BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y){
 }
 
 float btstack_cvsd_plc_amplitude_match(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y, BTSTACK_CVSD_PLC_SAMPLE_FORMAT bestmatch){
+    UNUSED(plc_state);
     int   i;
     float sumx = 0;
     float sumy = 0.000001f;
@@ -450,6 +451,7 @@ static int zero_frame(BTSTACK_CVSD_PLC_SAMPLE_FORMAT * frame, uint16_t size){
 
 // more than half the samples are the same -> bad frame
 static int bad_frame(btstack_cvsd_plc_state_t *plc_state, BTSTACK_CVSD_PLC_SAMPLE_FORMAT * frame, uint16_t size){
+    UNUSED(plc_state);
     return count_equal_samples(frame, size) >= (size / 2);
 }
 
