@@ -65,7 +65,7 @@ void adv_bearer_init(void);
  * @note data is not copied, pointer has to stay valid
  * @note '00:00:00:00:00:00' in advertising_data will be replaced with actual bd addr
  */
-void adv_bearer_advertisment_set_data(uint8_t advertising_data_length, uint8_t * advertising_data);
+void adv_bearer_advertisments_set_data(uint8_t advertising_data_length, uint8_t * advertising_data);
 
 /**
  * @brief Set Advertisement Paramters
