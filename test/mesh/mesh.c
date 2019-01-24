@@ -520,11 +520,9 @@ static void stdin_process(char cmd){
     }
 }
 
-static const uint8_t config_composition_data_get[] = { 0x80, 0x08, 0xff };
-
 static void config_composition_data_status(void){
 
-    printf("Recevied Config Composition Data Get -> send Config Composition Data Status\n");
+    printf("Received Config Composition Data Get -> send Config Composition Data Status\n");
 
     uint16_t src  = primary_element_address;
     uint16_t dest = 0x0001;
@@ -576,10 +574,52 @@ static void config_composition_data_status(void){
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
 
+static void config_appkey_status(uint32_t netkey_and_appkey_index, uint8_t status){
+    uint16_t src  = primary_element_address;
+    uint16_t dest = 0x0001;
+    uint8_t  ttl  = 10;
+
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
+
+    uint8_t access_pdu_data[2 + 4];
+    int access_pdu_len = sizeof(access_pdu_data);
+    int pos = 0;
+    access_pdu_data[pos++] = 0x80;
+    access_pdu_data[pos++] = 0x03;
+    access_pdu_data[pos++] = status;
+    little_endian_store_24(access_pdu_data, pos, netkey_and_appkey_index);
+    pos += 3;
+
+    // send as segmented access pdu
+    mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
+    mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
+    mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
+}
+
+static void config_appkey_add_handler(mesh_transport_pdu_t * transport_pdu){
+    // 00: opcode 00
+    // 01-03: netkey and appkey index
+    uint32_t netkey_and_appkey_index = little_endian_read_24(transport_pdu->data, 1);
+    uint16_t netkey_index = netkey_and_appkey_index & 0xfff;
+    uint16_t appkey_index = netkey_and_appkey_index >> 12;
+    uint8_t  key[16];
+    reverse_128(&transport_pdu->data[4], key);
+    printf("Config Appkey Add: netkey 0x%06x, appkey 0x%06x: ", netkey_index, appkey_index);
+    printf_hexdump(key, 16);
+
+    config_appkey_status(netkey_and_appkey_index, 0);
+}
+
+static const uint8_t config_composition_data_get[] = { 0x80, 0x08, 0xff };
+static const uint8_t config_appkey_add[] = { 0x00 };
+
 void mesh_segemented_message_handler(mesh_transport_pdu_t * transport_pdu){
-    // quick & dirty
     if ( (transport_pdu->len == sizeof(config_composition_data_get)) && memcmp(transport_pdu->data, config_composition_data_get, sizeof(config_composition_data_get)) == 0){
         config_composition_data_status();
+    }
+    if ( (transport_pdu->len > sizeof(config_appkey_add)) && memcmp(transport_pdu->data, config_appkey_add, sizeof(config_appkey_add)) == 0){
+        config_appkey_add_handler(transport_pdu);
     }
 }
 
