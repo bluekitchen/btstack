@@ -76,7 +76,8 @@ static uint8_t         mesh_k2_t2[16];
 static const uint8_t mesh_salt_smk2[] = { 0x4f, 0x90, 0x48, 0x0c, 0x18, 0x71, 0xbf, 0xbf, 0xfd, 0x16, 0x97, 0x1f, 0x4d, 0x8d, 0x10, 0xb1 };
 
 static void mesh_k2_callback_d(void * arg){
-    btstack_crypto_aes128_cmac_t * request = (btstack_crypto_aes128_cmac_t*) arg;
+    // btstack_crypto_aes128_cmac_t * request = (btstack_crypto_aes128_cmac_t*) arg;
+    UNUSED(arg);
     log_info("PrivacyKey: ");
     log_info_hexdump(mesh_k2_t, 16);
     // collect result
@@ -151,3 +152,37 @@ void mesh_k3(btstack_crypto_aes128_cmac_t * request, const uint8_t * n, uint8_t 
     mesh_k3_result   = result;
     btstack_crypto_aes128_cmac_message(request, mesh_salt_smk3, 16, mesh_k3_n, mesh_k3_temp, mesh_k3_temp_callback, request);
 }
+
+// mesh k4 - might get moved to btstack_crypto and all vars go into btstack_crypto_mesh_k4_t struct
+// k4N     63964771734fbd76e3b40519d1d94a48
+// k4 SALT 0e9ac1b7cefa66874c97ee54ac5f49be
+// k4T     921cb4f908cc5932e1d7b059fc163ce6
+// k4 CMAC(id6|0x01) 5f79cf09bbdab560e7f1ee404fd341a6
+// AID 26
+static const uint8_t   mesh_k4_tag[4] = { 'i', 'd', '6', 0x01}; 
+static uint8_t         mesh_k4_temp[16];
+static uint8_t         mesh_k4_result128[16];
+static void (*         mesh_k4_callback)(void * arg);
+static void *          mesh_k4_arg;
+static const uint8_t * mesh_k4_n;
+static uint8_t       * mesh_k4_result;
+
+// AES-CMAC_ZERO('smk4')
+static const uint8_t mesh_salt_smk4[] = { 0x0E, 0x9A, 0xC1, 0xB7, 0xCE, 0xFA, 0x66, 0x87, 0x4C, 0x97, 0xEE, 0x54, 0xAC, 0x5F, 0x49, 0xBE };
+static void mesh_k4_result128_calculated(void * arg){
+    UNUSED(arg);
+    mesh_k4_result[0] = mesh_k4_result128[15] & 0x3f;
+    (*mesh_k4_callback)(mesh_k3_arg);        
+}
+static void mesh_k4_temp_callback(void * arg){
+    btstack_crypto_aes128_cmac_t * request = (btstack_crypto_aes128_cmac_t*) arg;
+    btstack_crypto_aes128_cmac_message(request, mesh_k4_temp, sizeof(mesh_k4_tag), mesh_k4_tag, mesh_k4_result128, mesh_k4_result128_calculated, request);
+}
+void mesh_k4(btstack_crypto_aes128_cmac_t * request, const uint8_t * n, uint8_t * result, void (* callback)(void * arg), void * callback_arg){
+    mesh_k4_callback = callback;
+    mesh_k4_arg      = callback_arg;
+    mesh_k4_n        = n;
+    mesh_k4_result   = result;
+    btstack_crypto_aes128_cmac_message(request, mesh_salt_smk4, 16, mesh_k4_n, mesh_k4_temp, mesh_k4_temp_callback, request);
+}
+

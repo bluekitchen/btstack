@@ -6,6 +6,7 @@
 #include "bluetooth_data_types.h"
 #include "bluetooth_gatt.h"
 #include "ble/mesh/adv_bearer.h"
+#include "ble/mesh/mesh_crypto.h"
 #include "ble/mesh/mesh_network.h"
 #include "mesh_transport.h"
 #include "btstack_util.h"
@@ -984,6 +985,19 @@ TEST(MessageTest, ServiceDataUsingNodeIdentityTest){
     // 84396c435ac48560b5965385253e210c
     btstack_parse_hex("84396c435ac48560b5965385253e210c", 16, identity_key);
     btstack_crypto_aes128_encrypt(&crypto_request_aes128, identity_key, plaintext, hash, mesh_proxy_handle_get_aes128, NULL);
+}
+
+// Mesh v1.0, 8.2.1 
+static btstack_crypto_aes128_cmac_t aes_cmac_request;
+static uint8_t k4_result[1];
+static void handle_k4_result(void *arg){
+    printf("ApplicationkeyIDTest: %02x\n", k4_result[0]);
+    CHECK_EQUAL( 0x26, k4_result[0]);
+}
+TEST(MessageTest, ApplicationkeyIDTest){
+    static uint8_t application_key[16];
+    btstack_parse_hex("63964771734fbd76e3b40519d1d94a48", 16, application_key);
+    mesh_k4(&aes_cmac_request, application_key, &k4_result[0], &handle_k4_result, NULL);
 }
 
 int main (int argc, const char * argv[]){

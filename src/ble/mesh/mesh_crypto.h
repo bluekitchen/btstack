@@ -68,6 +68,11 @@ void mesh_k2(btstack_crypto_aes128_cmac_t * request, const uint8_t * n, uint8_t 
  */
 void mesh_k3(btstack_crypto_aes128_cmac_t * request, const uint8_t * n, uint8_t * result, void (* callback)(void * arg), void * callback_arg);
 
+/**
+ * Calculate mesh k3 function
+ */
+void mesh_k4(btstack_crypto_aes128_cmac_t * request, const uint8_t * n, uint8_t * result, void (* callback)(void * arg), void * callback_arg);
+
 #ifdef __cplusplus
 } /* end of extern "C" */
 #endif
