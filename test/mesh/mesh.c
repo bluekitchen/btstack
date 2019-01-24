@@ -520,6 +520,69 @@ static void stdin_process(char cmd){
     }
 }
 
+static const uint8_t config_composition_data_get[] = { 0x80, 0x08, 0xff };
+
+static void config_composition_data_status(void){
+
+    printf("Recevied Config Composition Data Get -> send Config Composition Data Status\n");
+
+    uint16_t src  = primary_element_address;
+    uint16_t dest = 0x0001;
+    uint8_t  ttl  = 10;
+
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
+
+    uint8_t access_pdu_data[2 + 10 + 8];
+    int access_pdu_len = sizeof(access_pdu_data);
+    int pos = 0;
+    access_pdu_data[pos++] = 0x02;
+    access_pdu_data[pos++] = 0x00;
+
+    // CID
+    little_endian_store_16(access_pdu_data, pos, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH);
+    pos += 2;
+    // PID
+    little_endian_store_16(access_pdu_data, pos, 0);
+    pos += 2;
+    // VID
+    little_endian_store_16(access_pdu_data, pos, 0);
+    pos += 2;
+    // CRPL - number of protection list entries
+    little_endian_store_16(access_pdu_data, pos, 1);
+    pos += 2;
+    // Features - Relay, Proxy, Friend, Lower Power, ...
+    little_endian_store_16(access_pdu_data, pos, 0);
+    pos += 2;
+
+    // Element 1
+    // Loc - bottom - https://www.bluetooth.com/specifications/assigned-numbers/gatt-namespace-descriptors
+    little_endian_store_16(access_pdu_data, pos, 0x0103);
+    pos += 2;
+    // NumS - Configuration Server + Health Server
+    access_pdu_data[pos++] = 2;
+    // NumV
+    access_pdu_data[pos++] = 0;
+    // SIG Model: Configuration Server 0x0000
+    little_endian_store_16(access_pdu_data, pos, 0);
+    pos += 2;
+    // SIG Model: Health Server 0x0002
+    little_endian_store_16(access_pdu_data, pos, 0x0002);
+    pos += 2;
+
+    // send as segmented access pdu
+    mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
+    mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
+    mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
+}
+
+void mesh_segemented_message_handler(mesh_transport_pdu_t * transport_pdu){
+    // quick & dirty
+    if ( (transport_pdu->len == sizeof(config_composition_data_get)) && memcmp(transport_pdu->data, config_composition_data_get, sizeof(config_composition_data_get)) == 0){
+        config_composition_data_status();
+    }
+}
+
 int btstack_main(void);
 int btstack_main(void)
 {
@@ -551,6 +614,7 @@ int btstack_main(void)
 
     // Transport layers (lower + upper))
     mesh_transport_init();
+    mesh_upper_transport_register_segemented_message_handler(&mesh_segemented_message_handler);
 
     // PTS app key
     uint8_t application_key[16];
