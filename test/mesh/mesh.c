@@ -42,10 +42,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ble/mesh/adv_bearer.h"
+#include "ble/mesh/beacon.h"
+#include "ble/mesh/mesh_crypto.h"
 #include "ble/mesh/pb_adv.h"
 #include "ble/mesh/pb_gatt.h"
 #include "ble/gatt-service/mesh_provisioning_service_server.h"
-#include "ble/mesh/beacon.h"
 #include "provisioning.h"
 #include "provisioning_device.h"
 #include "mesh_transport.h"
@@ -597,18 +598,34 @@ static void config_appkey_status(uint32_t netkey_and_appkey_index, uint8_t statu
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
 
+
+static uint32_t netkey_and_appkey_index;
+static uint8_t  new_app_key[16];
+static uint8_t  new_aid;
+static uint16_t new_netkey_index;
+static uint16_t new_appkey_index;
+
+static void config_appkey_add_aid(void * arg){
+    UNUSED(arg);
+    printf("Config Appkey Add: NetKey Index 0x%06x, AppKey Index 0x%06x, AID %02x: ", new_netkey_index, new_appkey_index, new_aid);
+    printf_hexdump(new_app_key, 16);
+
+    // set as main app key
+    mesh_application_key_set(new_appkey_index, new_aid, new_app_key);
+
+    config_appkey_status(netkey_and_appkey_index, 0);
+}
+
 static void config_appkey_add_handler(mesh_transport_pdu_t * transport_pdu){
     // 00: opcode 00
     // 01-03: netkey and appkey index
-    uint32_t netkey_and_appkey_index = little_endian_read_24(transport_pdu->data, 1);
-    uint16_t netkey_index = netkey_and_appkey_index & 0xfff;
-    uint16_t appkey_index = netkey_and_appkey_index >> 12;
-    uint8_t  key[16];
-    reverse_128(&transport_pdu->data[4], key);
-    printf("Config Appkey Add: netkey 0x%06x, appkey 0x%06x: ", netkey_index, appkey_index);
-    printf_hexdump(key, 16);
+    netkey_and_appkey_index = little_endian_read_24(transport_pdu->data, 1);
+    new_netkey_index = netkey_and_appkey_index & 0xfff;
+    new_appkey_index = netkey_and_appkey_index >> 12;
+    reverse_128(&transport_pdu->data[4], new_app_key);
 
-    config_appkey_status(netkey_and_appkey_index, 0);
+    // calculate AID
+    mesh_k4(&mesh_cmac_request, new_app_key, &new_aid, config_appkey_add_aid, NULL);
 }
 
 static const uint8_t config_composition_data_get[] = { 0x80, 0x08, 0xff };
