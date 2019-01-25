@@ -651,6 +651,30 @@ static void mesh_transport_send_ack(mesh_transport_pdu_t * transport_pdu){
     }
 }
 
+static void mesh_transport_stop_acknowledgment_timer(mesh_transport_pdu_t * transport_pdu){
+    if (!transport_pdu->acknowledgement_timer_active) return;
+    transport_pdu->acknowledgement_timer_active = 0;
+    btstack_run_loop_remove_timer(&transport_pdu->acknowledgement_timer);
+}
+
+static void mesh_transport_stop_incomplete_timer(mesh_transport_pdu_t * transport_pdu){
+    if (!transport_pdu->incomplete_timer_active) return;
+    transport_pdu->incomplete_timer_active = 0;
+    btstack_run_loop_remove_timer(&transport_pdu->incomplete_timer);
+}
+
+// does not free packet, just stops timers and updates reassembly engine
+static void mesh_transport_segmented_message_complete(mesh_transport_pdu_t * transport_pdu){
+    // stop timers
+    mesh_transport_stop_acknowledgment_timer(transport_pdu);
+    mesh_transport_stop_incomplete_timer(transport_pdu);
+    // reset reassembly
+    if (transport_pdu == test_transport_pdu){
+        printf("Reset Reassembly Engine\n");
+        test_transport_pdu = NULL;
+    }
+}
+
 static void mesh_transport_rx_ack_timeout(btstack_timer_source_t * ts){
     mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) btstack_run_loop_get_timer_context(ts);
     printf("ACK: acknowledgement timer fired for %p, send ACK\n", transport_pdu);
@@ -661,13 +685,10 @@ static void mesh_transport_rx_ack_timeout(btstack_timer_source_t * ts){
 static void mesh_transport_rx_incomplete_timeout(btstack_timer_source_t * ts){
     mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) btstack_run_loop_get_timer_context(ts);
     printf("mesh_transport_rx_incomplete_timeout - give up\n");
-    // also stop ack timer
-    btstack_run_loop_remove_timer(&transport_pdu->acknowledgement_timer);
+    mesh_transport_segmented_message_complete(transport_pdu);
 
     // free message
     btstack_memory_mesh_transport_pdu_free(transport_pdu);
-    // 
-    test_transport_pdu = NULL;
 }
 
 static void mesh_transport_start_acknowledgment_timer(mesh_transport_pdu_t * transport_pdu, uint32_t timeout, void (*callback)(btstack_timer_source_t * ts)){
@@ -679,12 +700,6 @@ static void mesh_transport_start_acknowledgment_timer(mesh_transport_pdu_t * tra
     transport_pdu->acknowledgement_timer_active = 1;
 }
 
-static void mesh_transport_stop_acknowledgment_timer(mesh_transport_pdu_t * transport_pdu){
-    if (!transport_pdu->acknowledgement_timer_active) return;
-    transport_pdu->acknowledgement_timer_active = 0;
-    btstack_run_loop_remove_timer(&transport_pdu->acknowledgement_timer);
-}
-
 static void mesh_transport_restart_incomplete_timer(mesh_transport_pdu_t * transport_pdu, uint32_t timeout, void (*callback)(btstack_timer_source_t * ts)){
     if (transport_pdu->incomplete_timer_active){
         btstack_run_loop_remove_timer(&transport_pdu->incomplete_timer);
@@ -693,20 +708,6 @@ static void mesh_transport_restart_incomplete_timer(mesh_transport_pdu_t * trans
     btstack_run_loop_set_timer_handler(&transport_pdu->incomplete_timer, callback);
     btstack_run_loop_set_timer_context(&transport_pdu->incomplete_timer, transport_pdu);
     btstack_run_loop_add_timer(&transport_pdu->incomplete_timer);
-}
-
-static void mesh_transport_stop_incomplete_timer(mesh_transport_pdu_t * transport_pdu){
-    if (!transport_pdu->incomplete_timer_active) return;
-    transport_pdu->incomplete_timer_active = 0;
-    btstack_run_loop_remove_timer(&transport_pdu->incomplete_timer);
-}
-
-static void mesh_network_segmented_message_complete(mesh_transport_pdu_t * transport_pdu){
-    // stop timers
-    mesh_transport_stop_acknowledgment_timer(transport_pdu);
-    mesh_transport_stop_incomplete_timer(transport_pdu);
-    // send ack
-    mesh_transport_send_ack(transport_pdu);
 }
 
 // abort outgoing transmission
@@ -776,8 +777,11 @@ static void mesh_lower_transport_process_segment( mesh_transport_pdu_t * transpo
 
     mesh_print_hex("Assembled payload", transport_pdu->data, transport_pdu->len);
 
-    // mark as done 
-    mesh_network_segmented_message_complete(test_transport_pdu);
+    // mark as done
+    mesh_transport_segmented_message_complete(transport_pdu);
+
+    // send ack
+    mesh_transport_send_ack(transport_pdu);
 
     // forward to upper transport
     uint8_t ctl = mesh_network_control(network_pdu);
