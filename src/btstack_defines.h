@@ -1273,11 +1273,12 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION 0x17
 
 /**
- * @format 111111T
+ * @format 1111111T
  * @param subevent_code
  * @param clcc_idx
  * @param clcc_dir
  * @param clcc_status
+ * @param clcc_mode
  * @param clcc_mpty
  * @param bnip_type
  * @param bnip_number

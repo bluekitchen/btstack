@@ -4009,13 +4009,22 @@ static inline uint8_t hfp_subevent_enhanced_call_status_get_clcc_status(const ui
     return event[5];
 }
 /**
+ * @brief Get field clcc_mode from event HFP_SUBEVENT_ENHANCED_CALL_STATUS
+ * @param event packet
+ * @return clcc_mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_enhanced_call_status_get_clcc_mode(const uint8_t * event){
+    return event[6];
+}
+/**
  * @brief Get field clcc_mpty from event HFP_SUBEVENT_ENHANCED_CALL_STATUS
  * @param event packet
  * @return clcc_mpty
  * @note: btstack_type 1
  */
 static inline uint8_t hfp_subevent_enhanced_call_status_get_clcc_mpty(const uint8_t * event){
-    return event[6];
+    return event[7];
 }
 /**
  * @brief Get field bnip_type from event HFP_SUBEVENT_ENHANCED_CALL_STATUS
@@ -4024,7 +4033,7 @@ static inline uint8_t hfp_subevent_enhanced_call_status_get_clcc_mpty(const uint
  * @note: btstack_type 1
  */
 static inline uint8_t hfp_subevent_enhanced_call_status_get_bnip_type(const uint8_t * event){
-    return event[7];
+    return event[8];
 }
 /**
  * @brief Get field bnip_number from event HFP_SUBEVENT_ENHANCED_CALL_STATUS
@@ -4033,7 +4042,7 @@ static inline uint8_t hfp_subevent_enhanced_call_status_get_bnip_type(const uint
  * @note: btstack_type T
  */
 static inline const char * hfp_subevent_enhanced_call_status_get_bnip_number(const uint8_t * event){
-    return (const char *) &event[8];
+    return (const char *) &event[9];
 }
 
 /**

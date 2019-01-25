@@ -97,6 +97,52 @@ static const char * hfp_ag_features[] = {
     "Reserved for future definition"
 };
 
+static const char * hfp_enhanced_call_dir[] = {
+    "outgoing",
+    "incoming"
+};
+
+static const char * hfp_enhanced_call_status[] = {
+    "active",
+    "held",
+    "outgoing dialing",
+    "outgoing alerting",
+    "incoming",
+    "incoming waiting",
+    "call held by response and hold"
+};
+
+static const char * hfp_enhanced_call_mode[] = {
+    "voice",
+    "data",
+    "fax"
+};
+
+static const char * hfp_enhanced_call_mpty[] = {
+    "not a conference call",
+    "conference call"
+};
+
+const char * hfp_enhanced_call_dir2str(uint16_t index){
+    if (index <= HFP_ENHANCED_CALL_DIR_INCOMING) return hfp_enhanced_call_dir[index];
+    return "not defined";
+}
+
+const char * hfp_enhanced_call_status2str(uint16_t index){
+    if (index <= HFP_ENHANCED_CALL_STATUS_CALL_HELD_BY_RESPONSE_AND_HOLD) return hfp_enhanced_call_status[index];
+    return "not defined";
+}
+
+const char * hfp_enhanced_call_mode2str(uint16_t index){
+    if (index <= HFP_ENHANCED_CALL_MODE_FAX) return hfp_enhanced_call_mode[index];
+    return "not defined";
+}
+
+const char * hfp_enhanced_call_mpty2str(uint16_t index){
+    if (index <= HFP_ENHANCED_CALL_MPTY_CONFERENCE_CALL) return hfp_enhanced_call_mpty[index];
+    return "not defined";
+}
+
 static void parse_sequence(hfp_connection_t * context);
 
 static btstack_linked_list_t hfp_connections = NULL;
@@ -1263,13 +1309,17 @@ static void parse_sequence(hfp_connection_t * hfp_connection){
                     break;
                 case 3:
                     value = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
-                    hfp_connection->clcc_mpty = value;
+                    hfp_connection->clcc_mode = value;
                     break;
                 case 4:
+                    value = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
+                    hfp_connection->clcc_mpty = value;
+                    break;
+                case 5:
                     strncpy(hfp_connection->bnip_number, (char *)hfp_connection->line_buffer, sizeof(hfp_connection->bnip_number));
                     hfp_connection->bnip_number[sizeof(hfp_connection->bnip_number)-1] = 0;
                     break;
-                case 5:
+                case 6:
                     value = btstack_atoi((char *)&hfp_connection->line_buffer[0]);
                     hfp_connection->bnip_type = value;
                     break;

@@ -683,6 +683,11 @@ const char * hfp_ag_feature(int index);
 
 void hfp_log_rfcomm_message(const char * tag, uint8_t * packet, uint16_t size);
 
+const char * hfp_enhanced_call_dir2str(uint16_t index);
+const char * hfp_enhanced_call_status2str(uint16_t index);
+const char * hfp_enhanced_call_mode2str(uint16_t index);
+const char * hfp_enhanced_call_mpty2str(uint16_t index);
+
 #if defined __cplusplus
 }
 #endif

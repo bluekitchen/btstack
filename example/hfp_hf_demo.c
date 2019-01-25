@@ -67,7 +67,8 @@ const uint8_t   rfcomm_channel_nr = 1;
 const char hfp_hf_service_name[] = "HFP HF Demo";
 
 #ifdef HAVE_BTSTACK_STDIN
-static const char * device_addr_string = "6C:72:E7:10:22:EE";
+// static const char * device_addr_string = "6C:72:E7:10:22:EE";
+static const char * device_addr_string = "54:E4:3A:26:A2:39";
 #endif
 
 static bd_addr_t device_addr;
@@ -544,6 +545,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             break;
                         case HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION:
                             printf("Caller ID, number %s\n", hfp_subevent_calling_line_identification_notification_get_number(event));
+                            break;
+                        case HFP_SUBEVENT_ENHANCED_CALL_STATUS:
+                            printf("Enhanced call status:\n");
+                            printf("  - call index: %d \n", hfp_subevent_enhanced_call_status_get_clcc_idx(event));
+                            printf("  - direction : %s \n", hfp_enhanced_call_dir2str(hfp_subevent_enhanced_call_status_get_clcc_dir(event)));
+                            printf("  - status    : %s \n", hfp_enhanced_call_status2str(hfp_subevent_enhanced_call_status_get_clcc_status(event)));
+                            printf("  - mode      : %s \n", hfp_enhanced_call_mode2str(hfp_subevent_enhanced_call_status_get_clcc_mode(event)));
+                            printf("  - multipart : %s \n", hfp_enhanced_call_mpty2str(hfp_subevent_enhanced_call_status_get_clcc_mpty(event)));
+                            printf("  - type      : %d \n", hfp_subevent_enhanced_call_status_get_bnip_type(event));
+                            printf("  - number    : %s \n", hfp_subevent_enhanced_call_status_get_bnip_number(event));
                             break;
                         default:
                             printf("event not handled %u\n", event[2]);
