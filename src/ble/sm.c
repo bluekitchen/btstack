@@ -2936,6 +2936,7 @@ static void sm_handle_random_result_ir(void *arg){
         log_info("Generated IR key. Store in TLV status: %d", status);
     }
     log_info_key("IR", sm_persistent_ir);
+    dkg_state = DKG_CALC_IRK;
     sm_run();
 }
 
@@ -2994,6 +2995,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             }
                         } else {
                             sm_validate_er_ir();
+                            dkg_state = DKG_CALC_IRK;
                         }
 					}
 					break;
@@ -3871,7 +3873,7 @@ void sm_init(void){
 #ifdef USE_CMAC_ENGINE
     sm_cmac_active  = 0;
 #endif
-    dkg_state = DKG_CALC_IRK;
+    dkg_state = DKG_W4_WORKING;
     rau_state = RAU_IDLE;
     sm_aes128_state = SM_AES128_IDLE;
     sm_address_resolution_test = -1;    // no private address to resolve yet
