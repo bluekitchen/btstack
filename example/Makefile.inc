@@ -4,22 +4,24 @@ VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/example
+VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce
+VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce
 VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player
+VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player
+VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods
 VPATH += ${BTSTACK_ROOT}/3rd-party/md5
 VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
-VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce
-VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder//srce
 VPATH += ${BTSTACK_ROOT}/3rd-party/yxml
 
 CFLAGS += -I.
 CFLAGS += -I${BTSTACK_ROOT}/src/ble
 CFLAGS += -I${BTSTACK_ROOT}/src/classic
 CFLAGS += -I${BTSTACK_ROOT}/src
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/hxcmod-player
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/md5
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
-CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include
-CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/yxml
 
 # for CVSD/SBC PLC
@@ -108,8 +110,8 @@ AVDTP += \
 	btstack_ring_buffer.c \
 
 HXCMOD_PLAYER = \
-	${BTSTACK_ROOT}/3rd-party/hxcmod-player/hxcmod.c 						\
-	${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c 	\
+	hxcmod.c 				    \
+	nao-deceased_by_disease.c 	\
 
 EXAMPLES = 					\
 	a2dp_sink_demo			\
