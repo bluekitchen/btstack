@@ -426,7 +426,6 @@ static hfp_connection_t * provide_hfp_connection_context_for_bd_addr(bd_addr_t b
     hfp_connection = create_hfp_connection_context();
     memcpy(hfp_connection->remote_addr, bd_addr, 6);
     hfp_connection->local_role = local_role;
-
     log_info("Create HFP context %p: role %u, addr %s", hfp_connection, local_role, bd_addr_to_str(bd_addr));
 
     return hfp_connection;
@@ -524,7 +523,6 @@ static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uin
     UNUSED(packet_type);    // ok: handling own sdp events
     UNUSED(channel);        // ok: no channel
     UNUSED(size);           // ok: handling own sdp events
-
     hfp_connection_t * hfp_connection = connection_doing_sdp_query;
     if (!hfp_connection) {
         log_error("handle_query_rfcomm_event, no connection");
@@ -735,6 +733,11 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 hfp_connection->release_audio_connection = 0;
                 hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
                 hfp_emit_event(hfp_connection, HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED, 0);
+                if (hfp_connection->release_slc_connection){
+                    hfp_connection->state = HFP_W4_RFCOMM_DISCONNECTED;
+                    hfp_connection->release_slc_connection = 0;
+                    rfcomm_disconnect(hfp_connection->rfcomm_cid);
+                }   
                 break;
             }
             break;
@@ -1477,7 +1480,6 @@ void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_
         log_error("hfp_establish_service_level_connection for addr %s failed", bd_addr_to_str(bd_addr));
         return;
     }
-
     switch (hfp_connection->state){
         case HFP_W2_DISCONNECT_RFCOMM:
             hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
@@ -1505,23 +1507,13 @@ void hfp_release_service_level_connection(hfp_connection_t * hfp_connection){
         hfp_connection->state = HFP_IDLE;
         return;
     }
-
+    
     if (hfp_connection->state == HFP_W4_RFCOMM_CONNECTED){
         hfp_connection->state = HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN;
         return;
     }
 
-    if (hfp_connection->state < HFP_W4_SCO_CONNECTED){
-        hfp_connection->state = HFP_W2_DISCONNECT_RFCOMM;
-        return;
-    }
-
-    if (hfp_connection->state < HFP_W4_SCO_DISCONNECTED){
-        hfp_connection->state = HFP_W2_DISCONNECT_SCO;
-        return;
-    }
-
-    return;
+    hfp_connection->release_slc_connection = 1;
 }
 
 void hfp_release_audio_connection(hfp_connection_t * hfp_connection){
