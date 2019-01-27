@@ -343,7 +343,7 @@ typedef enum {
     HFP_RETRIEVE_GENERIC_STATUS_INDICATORS,
     HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS,
     
-    HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS, 
+    HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS, //20
     HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS,
     
     HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 
@@ -559,6 +559,7 @@ typedef struct hfp_connection {
     uint8_t trigger_codec_exchange;
     uint8_t establish_audio_connection; 
     uint8_t release_audio_connection; 
+    uint8_t release_slc_connection; 
 
     btstack_timer_source_t hfp_timeout;
 
