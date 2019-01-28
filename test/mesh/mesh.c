@@ -118,6 +118,29 @@ static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * p
     mesh_provisioning_dump(provisioning_data);
 }
 
+static void mesh_load_app_keys(void){
+    uint8_t data[2+1+16];
+    int app_key_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, 'APPK', (uint8_t *) &data, sizeof(data));
+    if (app_key_len){
+        uint16_t appkey_index = little_endian_read_16(data, 0);
+        uint8_t  aid          = data[2];
+        uint8_t * application_key = &data[3];
+        mesh_application_key_set(appkey_index, aid, application_key); 
+        printf("Load AppKey: AppKey Index 0x%06x, AID %02x: ", appkey_index, aid);
+        printf_hexdump(application_key, 16);
+    }  else {
+        printf("No Appkey stored\n");
+    }
+}
+
+void mesh_store_app_key(uint16_t appkey_index, uint8_t aid, const uint8_t * application_key){
+    uint8_t data[2+1+16];
+    little_endian_store_16(data, 0, appkey_index);
+    data[2] = aid;
+    memcpy(&data[3], application_key, 16);
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, 'APPK', (uint8_t *) &data, sizeof(data));
+}
+
 // helper network layer, temp
 static uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len){
 
@@ -170,6 +193,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     if (prov_len){
                         mesh_setup_from_provisioning_data(&provisioning_data);
                     }
+                    // load app keys
+                    mesh_load_app_keys();
                     // setup scanning
                     gap_set_scan_parameters(0, 0x300, 0x300);
                     gap_start_scan();
@@ -610,6 +635,9 @@ static void config_appkey_add_aid(void * arg){
     printf("Config Appkey Add: NetKey Index 0x%06x, AppKey Index 0x%06x, AID %02x: ", new_netkey_index, new_appkey_index, new_aid);
     printf_hexdump(new_app_key, 16);
 
+    // store in TLV
+    mesh_store_app_key(new_appkey_index, new_aid, new_app_key);
+
     // set as main app key
     mesh_application_key_set(new_appkey_index, new_aid, new_app_key);
 
@@ -673,19 +701,21 @@ int btstack_main(void)
     mesh_transport_init();
     mesh_upper_transport_register_segemented_message_handler(&mesh_segemented_message_handler);
 
+#if 0
     // PTS app key
     uint8_t application_key[16];
     const char * application_key_string = "3216D1509884B533248541792B877F98";
     btstack_parse_hex(application_key_string, 16, application_key);
     mesh_application_key_set(0, 0x38, application_key); 
+    printf("Application Key: ");
+    printf_hexdump(application_key, 16);
+#endif
 
     // PTS Virtual Address Label UUID - without Config Model, PTS uses our device uuid
     uint8_t label_uuid[16];
     btstack_parse_hex("001BDC0810210B0E0A0C000B0E0A0C00", 16, label_uuid);
     pts_proxy_dst = mesh_virtual_address_register(label_uuid, 0x9779);
 
-    printf("Application Key: ");
-    printf_hexdump(application_key, 16);
 
     //
     btstack_parse_hex(pts_device_uuid_string, 16, pts_device_uuid);
