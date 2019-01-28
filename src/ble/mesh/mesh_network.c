@@ -206,34 +206,34 @@ int mesh_network_address_virtual(uint16_t addr){
 }
 
 int mesh_network_addresses_valid(uint8_t ctl, uint16_t src, uint16_t dst){
-    printf("CTL: %u\n", ctl);
-    printf("SRC: %04x\n", src);
-    printf("DST: %04x\n", dst);
+    // printf("CTL: %u\n", ctl);
+    // printf("SRC: %04x\n", src);
+    // printf("DST: %04x\n", dst);
     if (src == 0){
-        printf("SRC Unassigned Addr -> ignore\n");
+        // printf("SRC Unassigned Addr -> ignore\n");
         return 0;
     }
     if ((src & 0xC000) == 0x8000){
-        printf("SRC Virtual Addr -> ignore\n");
+        // printf("SRC Virtual Addr -> ignore\n");
         return 0;
     }
     if ((src & 0xC000) == 0xC000){
-        printf("SRC Group Addr -> ignore\n");
+        // printf("SRC Group Addr -> ignore\n");
         return 0;
     }
     if (dst == 0){
-        printf("DST Unassigned Addr -> ignore\n");
+        // printf("DST Unassigned Addr -> ignore\n");
         return 0;
     }
     if ( ((dst & 0xC000) == 0x8000) && (ctl == 1)){
-        printf("DST Virtual Addr in CONTROL -> ignore\n");
+        // printf("DST Virtual Addr in CONTROL -> ignore\n");
         return 0;
     }
     if ( (0xFF00 <= dst) && (dst <= 0xfffb) && (ctl == 0) ){
-        printf("DST RFU Group Addr in MESSAGE -> ignore\n");
+        // printf("DST RFU Group Addr in MESSAGE -> ignore\n");
         return 0;
     }
-    printf("SRC + DST Addr valid\n");
+    // printf("SRC + DST Addr valid\n");
     return 1;
 }
 
@@ -434,10 +434,9 @@ static void process_network_pdu_validate_d(void * arg){
     // remove NetMIC from payload
     network_pdu->len -= net_mic_len;
 
+#ifdef LOG_NETWORK
     // match
     printf("RX-NetMIC matches\n");
-
-#ifdef LOG_NETWORK
     printf("RX-TTL: 0x%02x\n", network_pdu->data[1] & 0x7f);
 #endif
 
