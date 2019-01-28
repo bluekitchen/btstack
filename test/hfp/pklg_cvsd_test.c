@@ -109,42 +109,54 @@ static void process_file(const char * pklg_path, const char * wav_path, int pack
 
         uint8_t packet[256];
         uint32_t size = big_endian_read_32(header, 0) - 9;
-        bytes_read = __read(fd, packet, size);
-
+        
         uint8_t type = header[12];
 
-        if (type != packet_type) continue;
-
-        sco_packet_counter++;
-
-        int16_t audio_frame_out[128];    // 
-
-        if (size > sizeof(audio_frame_out)){
-            printf("sco_demo_receive_CVSD: SCO packet larger than local output buffer - dropping data.\n");
-            break;
-        }
-
-        const int audio_bytes_read = size - 3;
-        const int num_samples = audio_bytes_read / BYTES_PER_FRAME;
-
-        // check SCO handle -- quick hack, not correct if handle 0x0000 is actually used for SCO
-        uint16_t sco_handle = little_endian_read_16(packet, 0) & 0xfff;
-        if (sco_handle == 0) continue;
-
-        // convert into host endian
-        int16_t audio_frame_in[128];
-        int i;
-        for (i=0;i<num_samples;i++){
-            audio_frame_in[i] = little_endian_read_16(packet, 3 + i * 2);
-        }
-
-        if (plc_enabled){
-            btstack_cvsd_plc_process_data(&plc_state, audio_frame_in, num_samples, audio_frame_out);
+        if (type != packet_type) {
+            // skip data
+            while (size){
+                int bytes_to_read = btstack_min(sizeof(packet), size);
+                __read(fd, packet, bytes_to_read);
+                size -= bytes_to_read;
+            }
         } else {
-            memcpy(audio_frame_out, audio_frame_in, audio_bytes_read);
-        }
+            if (size > sizeof(packet) ){
+                printf("Error: size %d, packet counter %d \n", size, sco_packet_counter);
+                exit(10);
+            }
+            bytes_read = __read(fd, packet, size);
 
-        wav_writer_write_int16(num_samples, audio_frame_out);
+            sco_packet_counter++;
+
+            int16_t audio_frame_out[128];    // 
+
+            if (size > sizeof(audio_frame_out)){
+                printf("sco_demo_receive_CVSD: SCO packet larger than local output buffer - dropping data.\n");
+                break;
+            }
+
+            const int audio_bytes_read = size - 3;
+            const int num_samples = audio_bytes_read / BYTES_PER_FRAME;
+
+            // check SCO handle -- quick hack, not correct if handle 0x0000 is actually used for SCO
+            uint16_t sco_handle = little_endian_read_16(packet, 0) & 0xfff;
+            if (sco_handle == 0) continue;
+
+            // convert into host endian
+            int16_t audio_frame_in[128];
+            int i;
+            for (i=0;i<num_samples;i++){
+                audio_frame_in[i] = little_endian_read_16(packet, 3 + i * 2);
+            }
+
+            if (plc_enabled){
+                btstack_cvsd_plc_process_data(&plc_state, audio_frame_in, num_samples, audio_frame_out);
+            } else {
+                memcpy(audio_frame_out, audio_frame_in, audio_bytes_read);
+            }
+
+            wav_writer_write_int16(num_samples, audio_frame_out);
+        }
     }
 
     wav_writer_close();
