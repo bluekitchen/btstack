@@ -124,18 +124,27 @@ static void process_file(const char * pklg_path, const char * wav_path, int pack
         uint8_t header[13];
         bytes_read = __read(fd, header, sizeof(header));
         if (0 >= bytes_read) break;
-
-        uint8_t packet[256];
-        uint32_t size = big_endian_read_32(header, 0) - 9;
-        bytes_read = __read(fd, packet, size);
-
         uint8_t type = header[12];
-
-        if (type != packet_type) continue;
-
-        sco_packet_counter++;
-
-        btstack_sbc_decoder_process_data(&state, (packet[1] >> 4) & 3, packet+3, size-3);
+        uint32_t size = big_endian_read_32(header, 0) - 9;
+        uint8_t packet[300];
+            
+        if (type == packet_type){
+            if (size > sizeof(packet) ){
+                printf("Error: size %d, packet counter %d \n", size, sco_packet_counter);
+                exit(10);
+            }
+            
+            bytes_read = __read(fd, packet, size);
+            sco_packet_counter++;
+            btstack_sbc_decoder_process_data(&state, (packet[1] >> 4) & 3, packet+3, size-3);
+        } else {
+            // skip data
+            while (size){
+                int bytes_to_read = btstack_min(sizeof(packet), size);
+                __read(fd, packet, bytes_to_read);
+                size -= bytes_to_read;
+            }
+        }
     }
 
     wav_writer_close();
