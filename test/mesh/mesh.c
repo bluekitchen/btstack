@@ -323,6 +323,16 @@ static btstack_crypto_aes128_cmac_t mesh_cmac_request;
 static uint8_t mesh_secure_network_beacon[22];
 static uint8_t mesh_secure_network_beacon_auth_value[16];
 
+static void load_pts_app_key(void){
+    // PTS app key
+    uint8_t application_key[16];
+    const char * application_key_string = "3216D1509884B533248541792B877F98";
+    btstack_parse_hex(application_key_string, 16, application_key);
+    mesh_application_key_set(0, 0x38, application_key); 
+    printf("PTS Application Key: ");
+    printf_hexdump(application_key, 16);
+}
+
 static void send_pts_network_messsage(int type){
     uint8_t lower_transport_pdu_data[16];
 
@@ -374,8 +384,11 @@ static void send_pts_network_messsage(int type){
     mesh_network_send(0, ctl, ttl, seq, src, dst, lower_transport_pdu_data, lower_transport_pdu_len);
 }
 
+
 static void send_pts_unsegmented_access_messsage(void){
     uint8_t access_pdu_data[16];
+
+    load_pts_app_key();
 
     uint16_t src = primary_element_address;
     uint16_t dest = 0x0001;
@@ -396,6 +409,8 @@ static void send_pts_unsegmented_access_messsage(void){
 static void send_pts_segmented_access_messsage_unicast(void){
     uint8_t access_pdu_data[20];
 
+    load_pts_app_key();
+
     uint16_t src = primary_element_address;
     uint16_t dest = 0x0001;
     uint8_t  ttl = 10;
@@ -415,6 +430,8 @@ static void send_pts_segmented_access_messsage_unicast(void){
 static void send_pts_segmented_access_messsage_group(void){
     uint8_t access_pdu_data[20];
 
+    load_pts_app_key();
+
     uint16_t src = primary_element_address;
     uint16_t dest = 0xd000;
     uint8_t  ttl = 10;
@@ -422,7 +439,7 @@ static void send_pts_segmented_access_messsage_group(void){
     int access_pdu_len = 20;
     memset(access_pdu_data, 0x55, access_pdu_len);
     uint16_t netkey_index = 0;
-    uint16_t appkey_index = 0; // MESH_DEVICE_KEY_INDEX;
+    uint16_t appkey_index = 0;
 
     // send as segmented access pdu
     mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
@@ -434,6 +451,8 @@ static void send_pts_segmented_access_messsage_group(void){
 static void send_pts_segmented_access_messsage_virtual(void){
     uint8_t access_pdu_data[20];
 
+    load_pts_app_key();
+
     uint16_t src = primary_element_address;
     uint16_t dest = pts_proxy_dst;
     uint8_t  ttl = 10;
@@ -441,7 +460,7 @@ static void send_pts_segmented_access_messsage_virtual(void){
     int access_pdu_len = 20;
     memset(access_pdu_data, 0x55, access_pdu_len);
     uint16_t netkey_index = 0;
-    uint16_t appkey_index = 0; // MESH_DEVICE_KEY_INDEX;
+    uint16_t appkey_index = 0;
 
     // send as segmented access pdu
     mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
@@ -700,16 +719,6 @@ int btstack_main(void)
     // Transport layers (lower + upper))
     mesh_transport_init();
     mesh_upper_transport_register_segemented_message_handler(&mesh_segemented_message_handler);
-
-#if 0
-    // PTS app key
-    uint8_t application_key[16];
-    const char * application_key_string = "3216D1509884B533248541792B877F98";
-    btstack_parse_hex(application_key_string, 16, application_key);
-    mesh_application_key_set(0, 0x38, application_key); 
-    printf("Application Key: ");
-    printf_hexdump(application_key, 16);
-#endif
 
     // PTS Virtual Address Label UUID - without Config Model, PTS uses our device uuid
     uint8_t label_uuid[16];
