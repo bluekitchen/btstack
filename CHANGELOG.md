@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - HCI: release outgoing buffer on disconnect if waiting to send another ACL fragment
 - POSIX: use correct baudrate enums for baud rates higher than 921600 (Linux)
+- Crypto: directly process queued crypto operation on HCI result
 
 ## Changes December 2018
 
