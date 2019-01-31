@@ -750,13 +750,11 @@ TEST(MessageTest, Message20Send){
 
 // Message 21
 // The Low Power node sends a vendor command to a group address.
-// Issue: dst = 0x8105 - which is a Virtual Address associated with a Label UUID
-#if 0
 char * message21_network_pdus[] = {
-    (char *) "e8b1051f5e945ae4d611358eaf17796a6c98977f69e5872c4620",
+    (char *) "e84e8fbe003f58a4d61157bb76352ea6307eebfe0f30b83500e9",
 };
 char * message21_lower_transport_pdus[] = {
-    (char *) "662fa730fd98f6e4bd120ea9d6",
+    (char *) "664d92e9dfcf3ab85b6e8fcf03",
 };
 char * message21_upper_transport_pdu = (char *) "d50a0048656c6c6f";
 TEST(MessageTest, Message21Receive){
@@ -768,7 +766,7 @@ TEST(MessageTest, Message21Send){
     uint16_t appkey_index = 0;
     uint8_t  ttl          = 3;
     uint16_t src          = 0x1234;
-    uint16_t dest         = 0x8105;
+    uint16_t dest         = 0xc105;
     uint32_t seq          = 0x07080a;
     uint8_t  szmic        = 0;
 
@@ -776,7 +774,6 @@ TEST(MessageTest, Message21Send){
     mesh_upper_transport_set_seq(seq);
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message21_upper_transport_pdu, 1, message21_lower_transport_pdus, message21_network_pdus);
 }
-#endif
 
 // Message 22
 char * message22_network_pdus[] = {
@@ -848,43 +845,38 @@ TEST(MessageTest, Message23Send){
 
 #if 0
 // Message 24
-// buggy?
-// ApplicationNonce (spec): 010007080d1234973612345677
-// ApplicationNonce (test): 018007080D1234973612345677
-// ApplicationNonce[1] = (SZMIC << 7)  - SZMIC if a Segmented Access message or 0 for all other message formats
 char * message24_network_pdus[] = {
-    (char *) "e834586babdef394e998b4081f5a7308ce3edbb3b06cdecd028e307f1c",
-    (char *) "e85115af73dcfddc2f4dd6fb4d328701291be4aafe",
+    (char *) "e8624e65bb8c1794e998b4081f47a35251fdd3896d99e4db489b918599",
+    (char *) "e8a7d0f0a2ea42dc2f4dd6fb4db33a6c088d023b47",
 };
 char * message24_lower_transport_pdus[] = {
-    (char *) "e6a03401de1547118463123e5f6a17b9",
-    (char *) "e6a034219dbca387",
+    (char *) "e6a03401c3c51d8e476b28e3aa5001f3",
+    (char *) "e6a034211c01cea6",
 };
 char * message24_upper_transport_pdu = (char *) "ea0a00576f726c64";
 char * message24_label_string = (char *) "f4a002c7fb1e4ca0a469a021de0db875";
-TEST(MessageTest, Message24Receive){
-    mesh_set_iv_index(0x12345677);
-    uint8_t label_uuid[16];
-    btstack_parse_hex(message24_label_string, 16, label_uuid);
-    mesh_virtual_address_set(0x9736, label_uuid);
-    test_receive_network_pdus(2, message24_network_pdus, message24_lower_transport_pdus, message24_upper_transport_pdu);
-}
-// TEST(MessageTest, Message24Send){
-//     uint16_t netkey_index = 0;
-//     uint16_t appkey_index = 0;
-//     uint8_t  ttl          = 3;
-//     uint16_t src          = 0x1234;
-//     uint16_t dest         = 0x9736;
-//     uint32_t seq          = 0x07080d;
-//     uint8_t  szmic        = 1;
-
+// TEST(MessageTest, Message24Receive){
 //     mesh_set_iv_index(0x12345677);
-//     mesh_upper_transport_set_seq(seq);
 //     uint8_t label_uuid[16];
 //     btstack_parse_hex(message24_label_string, 16, label_uuid);
-//     uint16_t proxy_dst = mesh_virtual_address_register(0x9736, label_uuid);
-//     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message24_upper_transport_pdu, 2, message24_lower_transport_pdus, message24_network_pdus);
+//     mesh_virtual_address_register(label_uuid, 0x9736);
+//     test_receive_network_pdus(2, message24_network_pdus, message24_lower_transport_pdus, message24_upper_transport_pdu);
 // }
+TEST(MessageTest, Message24Send){
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = 0;
+    uint8_t  ttl          = 3;
+    uint16_t src          = 0x1234;
+    uint32_t seq          = 0x07080d;
+    uint8_t  szmic        = 1;
+
+    mesh_set_iv_index(0x12345677);
+    mesh_upper_transport_set_seq(seq);
+    uint8_t label_uuid[16];
+    btstack_parse_hex(message24_label_string, 16, label_uuid);
+    uint16_t proxy_dst = mesh_virtual_address_register(label_uuid, 0x9736);
+    test_send_access_message(netkey_index, appkey_index, ttl, src, proxy_dst, szmic, message24_upper_transport_pdu, 2, message24_lower_transport_pdus, message24_network_pdus);
+}
 #endif
 
 // Proxy Configuration Test
