@@ -569,8 +569,12 @@ int hci_can_send_acl_classic_packet_now(void){
 
 int hci_can_send_prepared_sco_packet_now(void){
     if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) return 0;
-    if (!hci_stack->synchronous_flow_control_enabled) return 1;
-    return hci_number_free_sco_slots() > 0;    
+    if (hci_stack->synchronous_flow_control_enabled) {
+        return hci_number_free_sco_slots() > 0;    
+    } else {
+        // additional sco slot as flow control is implicit
+        return hci_number_free_sco_slots() > 2;    
+    } 
 }
 
 int hci_can_send_sco_packet_now(void){
@@ -2513,16 +2517,36 @@ static void event_handler(uint8_t *packet, int size){
 
 #ifdef ENABLE_CLASSIC
 static void sco_handler(uint8_t * packet, uint16_t size){
-    if (!hci_stack->sco_packet_handler) return;
-    hci_stack->sco_packet_handler(HCI_SCO_DATA_PACKET, 0, packet, size);
-#ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
+    // lookup connection struct
     hci_con_handle_t con_handle = READ_SCO_CONNECTION_HANDLE(packet);
-    hci_connection_t *conn      = hci_connection_for_handle(con_handle);
-    if (conn){
-        conn->num_packets_completed++;
-        hci_stack->host_completed_packets = 1;
-        hci_run();
+    hci_connection_t * conn     = hci_connection_for_handle(con_handle);
+    if (!conn) return;
+
+    int notify_sco = 0;
+
+    // treat received SCO packets as indicator of successfully sent packet, if flow control is not explicite
+    log_info("sco flow %u, handle 0x%04x, packets sent %u", hci_stack->synchronous_flow_control_enabled, (int) con_handle, conn->num_sco_packets_sent);
+    if (hci_stack->synchronous_flow_control_enabled == 0){
+        if (conn->num_sco_packets_sent){
+            conn->num_sco_packets_sent--;
+            hci_notify_if_sco_can_send_now();
+
+        }
     }
+    // deliver to app
+    if (hci_stack->sco_packet_handler) {
+        hci_stack->sco_packet_handler(HCI_SCO_DATA_PACKET, 0, packet, size);
+    }
+
+    // notify app if it can send again
+    if (notify_sco){
+        hci_notify_if_sco_can_send_now();
+    }
+
+#ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
+    conn->num_packets_completed++;
+    hci_stack->host_completed_packets = 1;
+    hci_run();
 #endif    
 }
 #endif
