@@ -510,8 +510,7 @@ typedef struct {
     uint16_t acl_recombination_length;
     
     // number packets sent to controller
-    uint8_t num_acl_packets_sent;
-    uint8_t num_sco_packets_sent;
+    uint8_t num_packets_sent;
 
 #ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
     uint8_t num_packets_completed;

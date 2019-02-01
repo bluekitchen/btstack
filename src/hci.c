@@ -199,8 +199,7 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
 #endif
     conn->acl_recombination_length = 0;
     conn->acl_recombination_pos = 0;
-    conn->num_acl_packets_sent = 0;
-    conn->num_sco_packets_sent = 0;
+    conn->num_packets_sent = 0;
     conn->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
 #ifdef ENABLE_BLE
     conn->le_phy_update_all_phys = 0xff;
@@ -420,8 +419,15 @@ void gap_link_key_iterator_done(btstack_link_key_iterator_t * it){
 #endif
 
 static int hci_is_le_connection(hci_connection_t * connection){
-    return  connection->address_type == BD_ADDR_TYPE_LE_PUBLIC ||
-    connection->address_type == BD_ADDR_TYPE_LE_RANDOM;
+    switch (connection->address_type){
+        case BD_ADDR_TYPE_LE_PUBLIC:
+        case BD_ADDR_TYPE_LE_RANDOM:
+        case BD_ADDR_TYPE_LE_PRIVAT_FALLBACK_PUBLIC:
+        case BD_ADDR_TYPE_LE_PRIVAT_FALLBACK_RANDOM:
+            return 1;
+        default:
+            return 0;
+    }
 }
 
 /**
@@ -442,10 +448,11 @@ static int hci_number_free_acl_slots_for_connection_type(bd_addr_type_t address_
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
         hci_connection_t * connection = (hci_connection_t *) it;
+        if (hci_is_le_connection(connection)){
+            num_packets_sent_le += connection->num_packets_sent;
+        }
         if (connection->address_type == BD_ADDR_TYPE_CLASSIC){
-            num_packets_sent_classic += connection->num_acl_packets_sent;
-        } else {
-            num_packets_sent_le += connection->num_acl_packets_sent;
+            num_packets_sent_classic += connection->num_packets_sent;
         }
     }
     log_debug("ACL classic buffers: %u used of %u", num_packets_sent_classic, hci_stack->acl_packets_total_num);
@@ -505,7 +512,8 @@ static int hci_number_free_sco_slots(void){
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
         hci_connection_t * connection = (hci_connection_t *) it;
-        num_sco_packets_sent += connection->num_sco_packets_sent;
+        if (connection->address_type != BD_ADDR_TYPE_SCO) continue;
+        num_sco_packets_sent += connection->num_packets_sent;
     }
     if (num_sco_packets_sent > hci_stack->sco_packets_total_num){
         log_info("hci_number_free_sco_slots:packets (%u) > total packets (%u)", num_sco_packets_sent, hci_stack->sco_packets_total_num);
@@ -655,7 +663,7 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
         little_endian_store_16(hci_stack->hci_packet_buffer, acl_header_pos + 2, current_acl_data_packet_length);
 
         // count packet
-        connection->num_acl_packets_sent++;
+        connection->num_packets_sent++;
         log_debug("hci_send_acl_packet_fragments loop before send (more fragments %d)", more_fragments);
 
         // update state for next fragment (if any) as "transport done" might be sent during send_packet already
@@ -771,7 +779,7 @@ int hci_send_sco_packet_buffer(int size){
             hci_emit_transport_packet_sent();
             return 0;
         }
-        connection->num_sco_packets_sent++;
+        connection->num_packets_sent++;
     }
 
     hci_dump_packet( HCI_SCO_DATA_PACKET, 0, packet, size);
@@ -2015,25 +2023,13 @@ static void event_handler(uint8_t *packet, int size){
                     continue;
                 }
                 
-                if (conn->address_type == BD_ADDR_TYPE_SCO){
-#ifdef ENABLE_CLASSIC
-                    if (conn->num_sco_packets_sent >= num_packets){
-                        conn->num_sco_packets_sent -= num_packets;
-                    } else {
-                        log_error("hci_number_completed_packets, more sco slots freed then sent.");
-                        conn->num_sco_packets_sent = 0;
-                    }
-                    hci_notify_if_sco_can_send_now();
-#endif
+                if (conn->num_packets_sent >= num_packets){
+                    conn->num_packets_sent -= num_packets;
                 } else {
-                    if (conn->num_acl_packets_sent >= num_packets){
-                        conn->num_acl_packets_sent -= num_packets;
-                    } else {
-                        log_error("hci_number_completed_packets, more acl slots freed then sent.");
-                        conn->num_acl_packets_sent = 0;
-                    }
+                    log_error("hci_number_completed_packets, more packet slots freed then sent.");
+                    conn->num_packets_sent = 0;
                 }
-                // log_info("hci_number_completed_packet %u processed for handle %u, outstanding %u", num_packets, handle, conn->num_acl_packets_sent);
+                // log_info("hci_number_completed_packet %u processed for handle %u, outstanding %u", num_packets, handle, conn->num_packets_sent);
             }
             break;
         }
@@ -2525,10 +2521,10 @@ static void sco_handler(uint8_t * packet, uint16_t size){
     int notify_sco = 0;
 
     // treat received SCO packets as indicator of successfully sent packet, if flow control is not explicite
-    log_info("sco flow %u, handle 0x%04x, packets sent %u", hci_stack->synchronous_flow_control_enabled, (int) con_handle, conn->num_sco_packets_sent);
+    log_info("sco flow %u, handle 0x%04x, packets sent %u", hci_stack->synchronous_flow_control_enabled, (int) con_handle, conn->num_packets_sent);
     if (hci_stack->synchronous_flow_control_enabled == 0){
-        if (conn->num_sco_packets_sent){
-            conn->num_sco_packets_sent--;
+        if (conn->num_packets_sent){
+            conn->num_packets_sent--;
             hci_notify_if_sco_can_send_now();
 
         }
