@@ -1263,7 +1263,7 @@ void mesh_upper_transport_send_unsegmented_access_pdu(mesh_network_pdu_t * netwo
 
     btstack_crypto_ccm_init(&ccm, appkey->key, application_nonce, access_pdu_len, aad_len, trans_mic_len);
     if (virtual_address){
-        mesh_print_hex("LabelUUID", mesh_transport_key_it.label_uuid, 16);
+        mesh_print_hex("LabelUUID", virtual_address->label_uuid, 16);
         btstack_crypto_ccm_digest(&ccm, virtual_address->label_uuid, 16, &mesh_upper_transport_send_unsegmented_access_pdu_digest, network_pdu);
     } else {
         mesh_upper_transport_send_unsegmented_access_pdu_digest(network_pdu);    
