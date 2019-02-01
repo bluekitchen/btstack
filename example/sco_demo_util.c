@@ -465,7 +465,7 @@ void sco_report(void){
 
 void sco_demo_send(hci_con_handle_t sco_handle){
 
-    if (!sco_handle) return;
+    if (sco_handle == HCI_CON_HANDLE_INVALID) return;
     
     int sco_packet_length = hci_get_sco_packet_length();
     int sco_payload_length = sco_packet_length - 3;
