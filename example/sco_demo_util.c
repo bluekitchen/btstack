@@ -91,16 +91,17 @@
 #define MSBC_SAMPLE_RATE        16000
 #define BYTES_PER_FRAME         2
 
-#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE || SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
 #define CVSD_PA_PREBUFFER_BYTES (SCO_CVSD_PA_PREBUFFER_MS * CVSD_SAMPLE_RATE/1000 * BYTES_PER_FRAME)
 #define MSBC_PA_PREBUFFER_BYTES (SCO_MSBC_PA_PREBUFFER_MS * MSBC_SAMPLE_RATE/1000 * BYTES_PER_FRAME)
-#endif
 
 // output
-static int                   audio_output_paused  = 0;
 
+#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
+static int                   audio_output_paused  = 0;
 static uint8_t               audio_output_ring_buffer_storage[2*MSBC_PA_PREBUFFER_BYTES];
 static btstack_ring_buffer_t audio_output_ring_buffer;
+#endif
+
 
 // input
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE
@@ -181,6 +182,8 @@ static void sco_demo_msbc_fill_sine_audio_frame(void){
 }
 #endif
 #endif
+
+#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
 
 static void playback_callback(int16_t * buffer, uint16_t num_samples){
 
@@ -263,9 +266,8 @@ static void audio_terminate(void){
     audio->close();
 }
 
-#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
-
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
+
 static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
     UNUSED(context);
     UNUSED(sample_rate);
