@@ -142,7 +142,7 @@ static const btstack_tlv_t btstack_tlv_esp32 = {
 const btstack_tlv_t * btstack_tlv_esp32_get_instance(void){
 	// Initialize NVS
     esp_err_t err = nvs_flash_init();
-    if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
 	    log_info("Error (0x%04x) init flash", err);
         // NVS partition was truncated and needs to be erased
         // Retry nvs_flash_init
