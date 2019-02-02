@@ -494,6 +494,9 @@ typedef struct {
     uint16_t sniff_max_interval;
     uint16_t sniff_attempt;
     uint16_t sniff_timeout;
+
+    // nubmer SCO bytes sent to controller (only used without explicit SCO Flow Control)
+    uint16_t num_sco_bytes_sent;
 #endif
 
     // errands
@@ -509,6 +512,7 @@ typedef struct {
     uint16_t acl_recombination_pos;
     uint16_t acl_recombination_length;
     
+
     // number packets sent to controller
     uint8_t num_packets_sent;
 

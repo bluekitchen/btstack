@@ -196,10 +196,12 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
     btstack_run_loop_set_timer_handler(&conn->timeout, hci_connection_timeout_handler);
     btstack_run_loop_set_timer_context(&conn->timeout, conn);
     hci_connection_timestamp(conn);
+    conn->num_sco_bytes_sent = 0;
 #endif
     conn->acl_recombination_length = 0;
     conn->acl_recombination_pos = 0;
     conn->num_packets_sent = 0;
+
     conn->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
 #ifdef ENABLE_BLE
     conn->le_phy_update_all_phys = 0xff;
@@ -510,16 +512,31 @@ int hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle){
 static int hci_number_free_sco_slots(void){
     unsigned int num_sco_packets_sent  = 0;
     btstack_linked_item_t *it;
-    for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
-        hci_connection_t * connection = (hci_connection_t *) it;
-        if (connection->address_type != BD_ADDR_TYPE_SCO) continue;
-        num_sco_packets_sent += connection->num_packets_sent;
+    if (hci_stack->synchronous_flow_control_enabled){
+        // explicit flow control
+        for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
+            hci_connection_t * connection = (hci_connection_t *) it;
+            if (connection->address_type != BD_ADDR_TYPE_SCO) continue;
+            num_sco_packets_sent += connection->num_packets_sent;
+        }
+    } else {
+        // implicit flow control
+        uint16_t num_sco_bytes_sent    = 0;
+        for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
+            hci_connection_t * connection = (hci_connection_t *) it;
+            if (connection->address_type != BD_ADDR_TYPE_SCO) continue;
+            num_sco_bytes_sent += connection->num_sco_bytes_sent;
+        }
+        // deduce used slots from num sco bytes (plus 2 extra to be on the safe side)
+        unsigned int sco_payload_len = hci_get_sco_packet_length() - 3;
+        num_sco_packets_sent = (num_sco_bytes_sent / sco_payload_len) + 2;
+        log_info("hci_number_free_sco_slots: bytes sent %u -> packets sent %u", num_sco_bytes_sent, num_sco_packets_sent);
     }
+
     if (num_sco_packets_sent > hci_stack->sco_packets_total_num){
         log_info("hci_number_free_sco_slots:packets (%u) > total packets (%u)", num_sco_packets_sent, hci_stack->sco_packets_total_num);
         return 0;
     }
-    // log_info("hci_number_free_sco_slots u", handle, num_sco_packets_sent);
     return hci_stack->sco_packets_total_num - num_sco_packets_sent;
 }
 #endif
@@ -577,12 +594,7 @@ int hci_can_send_acl_classic_packet_now(void){
 
 int hci_can_send_prepared_sco_packet_now(void){
     if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) return 0;
-    if (hci_stack->synchronous_flow_control_enabled) {
-        return hci_number_free_sco_slots() > 0;    
-    } else {
-        // additional sco slot as flow control is implicit
-        return hci_number_free_sco_slots() > 2;    
-    } 
+    return hci_number_free_sco_slots() > 0;    
 }
 
 int hci_can_send_sco_packet_now(void){
@@ -779,7 +791,12 @@ int hci_send_sco_packet_buffer(int size){
             hci_emit_transport_packet_sent();
             return 0;
         }
-        connection->num_packets_sent++;
+        if (hci_stack->synchronous_flow_control_enabled){
+            connection->num_packets_sent++;
+        } else {
+            uint16_t sco_payload_len = size - 3;
+            connection->num_sco_bytes_sent += sco_payload_len;
+        }
     }
 
     hci_dump_packet( HCI_SCO_DATA_PACKET, 0, packet, size);
@@ -2030,6 +2047,11 @@ static void event_handler(uint8_t *packet, int size){
                     conn->num_packets_sent = 0;
                 }
                 // log_info("hci_number_completed_packet %u processed for handle %u, outstanding %u", num_packets, handle, conn->num_packets_sent);
+
+#ifdef ENABLE_CLASSIC
+                // For SCO, we do the can_send_now_check here
+                hci_notify_if_sco_can_send_now();
+#endif
             }
             break;
         }
@@ -2520,14 +2542,27 @@ static void sco_handler(uint8_t * packet, uint16_t size){
 
     int notify_sco = 0;
 
-    // treat received SCO packets as indicator of successfully sent packet, if flow control is not explicite
-    log_info("sco flow %u, handle 0x%04x, packets sent %u", hci_stack->synchronous_flow_control_enabled, (int) con_handle, conn->num_packets_sent);
-    if (hci_stack->synchronous_flow_control_enabled == 0){
-        if (conn->num_packets_sent){
-            conn->num_packets_sent--;
-            hci_notify_if_sco_can_send_now();
-
+#if 0
+    // CSR 8811 prefixes 60 byte SCO packet in transparent mode with 20 zero bytes -> skip first 20 payload bytes
+    if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO){
+        if (size == 83 && ((hci_stack->sco_voice_setting & 0x03) == 0x03)){
+            packet[2] = 0x3c;
+            memmove(&packet[3], &packet[23], 63);
+            size = 63;
         }
+    }
+#endif
+
+    // treat received SCO packets as indicator of successfully sent packet, if flow control is not explicite
+    log_info("sco flow %u, handle 0x%04x, packets sent %u, bytes send %u", hci_stack->synchronous_flow_control_enabled, (int) con_handle, conn->num_packets_sent, conn->num_sco_bytes_sent);
+    if (hci_stack->synchronous_flow_control_enabled == 0){
+        uint16_t sco_payload_len = size - 3;
+        if (conn->num_sco_bytes_sent >= sco_payload_len){
+            conn->num_sco_bytes_sent -= sco_payload_len;
+        } else {
+            conn->num_sco_bytes_sent = 0;
+        }
+        notify_sco = 1;
     }
     // deliver to app
     if (hci_stack->sco_packet_handler) {
