@@ -4863,12 +4863,16 @@ uint16_t hci_get_sco_voice_setting(void){
     return hci_stack->sco_voice_setting;
 }
 
+#ifdef ENABLE_CLASSIC
+#ifdef ENABLE_SCO_OVER_HCI
 static int hci_have_usb_transport(void){
     if (!hci_stack->hci_transport) return 0;
     const char * transport_name = hci_stack->hci_transport->name;
     if (!transport_name) return 0;
     return (transport_name[0] == 'H') && (transport_name[1] == '2');
 }
+#endif
+#endif
 
 /** @brief Get SCO packet length for current SCO Voice setting
  *  @note  Using SCO packets of the exact length is required for USB transfer
