@@ -16,6 +16,7 @@ CORE += \
 	main.c \
 	wav_util.c 					\
 	btstack_stdin_posix.c \
+	raspi_get_model.c 
 
 # examples
 include ${BTSTACK_ROOT}/example/Makefile.inc

@@ -73,6 +73,8 @@
 #include "btstack_chipset_bcm_download_firmware.h"
 #include "btstack_control_raspi.h"
 
+#include "raspi_get_model.h"
+
 int btstack_main(int argc, const char * argv[]);
 
 typedef enum  {
@@ -322,12 +324,16 @@ int main(int argc, const char * argv[]){
             transport_config.flowcontrol   = 0;
             break;
         case UART_HARDWARE_FLOW:
-            // Raspberry Pi Zero W
+            // Raspberry Pi Zero W gpio 45
             // Raspberry Pi 3A+ vgpio 129 but WLAN + BL
             // Raspberry Pi 3B+ vgpio 129 but WLAN + BL
-            bt_reg_en_pin = 45;
-            transport_config.baudrate_main = 921600;
-            transport_config.flowcontrol   = 1;
+            transport_config.baudrate_main = 3000000;
+            transport_config.flowcontrol = 1;
+
+            // 3 mbps does not work on Zero W (investigation pending)
+            if (raspi_get_model() == MODEL_ZERO_W){
+                transport_config.baudrate_main = 921600;
+            }
             break;
     }
     printf("%s, %u, BT_REG_EN at GPIO %u\n", transport_config.flowcontrol ? "H4":"H5", transport_config.baudrate_main, bt_reg_en_pin);
