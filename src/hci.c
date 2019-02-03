@@ -2542,7 +2542,6 @@ static void sco_handler(uint8_t * packet, uint16_t size){
 
     int notify_sco = 0;
 
-#if 0
     // CSR 8811 prefixes 60 byte SCO packet in transparent mode with 20 zero bytes -> skip first 20 payload bytes
     if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO){
         if (size == 83 && ((hci_stack->sco_voice_setting & 0x03) == 0x03)){
@@ -2551,7 +2550,6 @@ static void sco_handler(uint8_t * packet, uint16_t size){
             size = 63;
         }
     }
-#endif
 
     // treat received SCO packets as indicator of successfully sent packet, if flow control is not explicite
     log_info("sco flow %u, handle 0x%04x, packets sent %u, bytes send %u", hci_stack->synchronous_flow_control_enabled, (int) con_handle, conn->num_packets_sent, conn->num_sco_bytes_sent);
@@ -4865,6 +4863,13 @@ uint16_t hci_get_sco_voice_setting(void){
     return hci_stack->sco_voice_setting;
 }
 
+static int hci_have_usb_transport(void){
+    if (!hci_stack->hci_transport) return 0;
+    const char * transport_name = hci_stack->hci_transport->name;
+    if (!transport_name) return 0;
+    return (transport_name[0] == 'H') && (transport_name[1] == '2');
+}
+
 /** @brief Get SCO packet length for current SCO Voice setting
  *  @note  Using SCO packets of the exact length is required for USB transfer
  *  @return Length of SCO packets in bytes (not audio frames)
@@ -4874,13 +4879,18 @@ int hci_get_sco_packet_length(void){
 
 #ifdef ENABLE_CLASSIC
 #ifdef ENABLE_SCO_OVER_HCI
-    // see Core Spec for H2 USB Transfer. 
 
     // CVSD requires twice as much bytes
     int multiplier = hci_stack->sco_voice_setting & 0x0020 ? 2 : 1;
 
-    // 3 byte SCO header + 24 bytes per connection
-    sco_packet_length = 3 + 24 * hci_number_sco_connections() * multiplier;
+    if (hci_have_usb_transport()){
+        // see Core Spec for H2 USB Transfer. 
+        // 3 byte SCO header + 24 bytes per connection
+        sco_packet_length = 3 + 24 * hci_number_sco_connections() * multiplier;
+    } else {
+        // 3 byte SCO header + SCO packet size over the air (60 bytes)
+        sco_packet_length = 3 + 60 * multiplier;
+    }
 #endif
 #endif
     return sco_packet_length;

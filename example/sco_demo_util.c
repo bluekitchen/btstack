@@ -66,7 +66,7 @@
 #define SCO_DEMO_MODE_MICROPHONE 5
 
 // SCO demo configuration
-#define SCO_DEMO_MODE               SCO_DEMO_MODE_ASCII
+#define SCO_DEMO_MODE               SCO_DEMO_MODE_SINE
 
 // number of sco packets until 'report' on console
 #define SCO_REPORT_PERIOD           100
@@ -474,10 +474,6 @@ void sco_demo_send(hci_con_handle_t sco_handle){
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
     if (negotiated_codec == HFP_CODEC_MSBC){
 
-        // overwrite
-        sco_payload_length = 24;
-        sco_packet_length = sco_payload_length + 3;
-
         if (hfp_msbc_num_bytes_in_stream() < sco_payload_length){
             log_error("mSBC stream is empty.");
         }
@@ -501,10 +497,6 @@ void sco_demo_send(hci_con_handle_t sco_handle){
 #ifdef HAVE_PORTAUDIO
     if (negotiated_codec == HFP_CODEC_MSBC){
         // MSBC
-
-        // overwrite
-        sco_payload_length = 24;
-        sco_packet_length = sco_payload_length + 3;
 
         if (audio_input_paused){
             if (btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) >= MSBC_PA_PREBUFFER_BYTES){
@@ -580,10 +572,6 @@ void sco_demo_send(hci_con_handle_t sco_handle){
     }
 #else
     // just send '0's
-    if (negotiated_codec == HFP_CODEC_MSBC){
-        sco_payload_length = 24;
-        sco_packet_length = sco_payload_length + 3;
-    }
     memset(sco_packet + 3, 0, sco_payload_length);
 #endif
 #endif
