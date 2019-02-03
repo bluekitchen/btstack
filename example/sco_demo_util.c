@@ -66,7 +66,7 @@
 #define SCO_DEMO_MODE_MICROPHONE 5
 
 // SCO demo configuration
-#define SCO_DEMO_MODE               SCO_DEMO_MODE_SINE
+#define SCO_DEMO_MODE               SCO_DEMO_MODE_ASCII
 
 // number of sco packets until 'report' on console
 #define SCO_REPORT_PERIOD           100
@@ -454,10 +454,6 @@ void sco_demo_init(void){
 #else
     hci_set_sco_voice_setting(0x03);    // linear, unsigned, 8-bit, transparent
 #endif
-
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_ASCII
-    phase = 'a';
-#endif
 }
 
 void sco_report(void);
@@ -477,6 +473,7 @@ void sco_demo_send(hci_con_handle_t sco_handle){
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
     if (negotiated_codec == HFP_CODEC_MSBC){
+
         // overwrite
         sco_payload_length = 24;
         sco_packet_length = sco_payload_length + 3;
@@ -592,8 +589,11 @@ void sco_demo_send(hci_con_handle_t sco_handle){
 #endif
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_ASCII
-    memset(&sco_packet[3], phase++, sco_payload_length);
-    if (phase > 'z') phase = 'a';
+    // store packet counter-xxxx
+    snprintf((char *)&sco_packet[3], 5, "%04u", phase++);
+    uint8_t ascii = (phase & 0x0f) + 'a';
+    sco_packet[3+4] = '-';
+    memset(&sco_packet[3+5], ascii, sco_payload_length-5);
 #endif
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_COUNTER
     int j;
@@ -684,12 +684,15 @@ void sco_demo_receive(uint8_t * packet, uint16_t size){
     dump_data = 0;
 #endif
 
+#if 0
     if (packet[1] & 0x30){
         crc_errors++;
-        // printf("SCO CRC Error: %x - data: ", (packet[1] & 0x30) >> 4);
-        // printf_hexdump(&packet[3], size-3);
+        printf("SCO CRC Error: %x - data: ", (packet[1] & 0x30) >> 4);
+        printf_hexdump(&packet[3], size-3);
         return;
     }
+#endif
+
     if (dump_data){
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_ASCII
         printf("data: ");
