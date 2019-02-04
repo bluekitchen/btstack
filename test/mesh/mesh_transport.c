@@ -1316,8 +1316,9 @@ void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t * trans
     if (virtual_address){
         mesh_print_hex("LabelUUID", virtual_address->label_uuid, 16);
         btstack_crypto_ccm_digest(&ccm, virtual_address->label_uuid, 16, &mesh_upper_transport_send_segmented_access_pdu_digest, transport_pdu);
+    } else {
+        mesh_upper_transport_send_segmented_access_pdu_digest(transport_pdu);
     }
-    mesh_upper_transport_send_segmented_access_pdu_digest(transport_pdu);
 }
 
 void mesh_upper_transport_set_primary_element_address(uint16_t unicast_address){
