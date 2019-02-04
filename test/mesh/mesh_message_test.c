@@ -843,7 +843,6 @@ TEST(MessageTest, Message23Send){
 }
 #endif
 
-#if 0
 // Message 24
 char * message24_network_pdus[] = {
     (char *) "e8624e65bb8c1794e998b4081f47a35251fdd3896d99e4db489b918599",
@@ -855,13 +854,13 @@ char * message24_lower_transport_pdus[] = {
 };
 char * message24_upper_transport_pdu = (char *) "ea0a00576f726c64";
 char * message24_label_string = (char *) "f4a002c7fb1e4ca0a469a021de0db875";
-// TEST(MessageTest, Message24Receive){
-//     mesh_set_iv_index(0x12345677);
-//     uint8_t label_uuid[16];
-//     btstack_parse_hex(message24_label_string, 16, label_uuid);
-//     mesh_virtual_address_register(label_uuid, 0x9736);
-//     test_receive_network_pdus(2, message24_network_pdus, message24_lower_transport_pdus, message24_upper_transport_pdu);
-// }
+TEST(MessageTest, Message24Receive){
+    mesh_set_iv_index(0x12345677);
+    uint8_t label_uuid[16];
+    btstack_parse_hex(message24_label_string, 16, label_uuid);
+    mesh_virtual_address_register(label_uuid, 0x9736);
+    test_receive_network_pdus(2, message24_network_pdus, message24_lower_transport_pdus, message24_upper_transport_pdu);
+}
 TEST(MessageTest, Message24Send){
     uint16_t netkey_index = 0;
     uint16_t appkey_index = 0;
@@ -877,7 +876,6 @@ TEST(MessageTest, Message24Send){
     uint16_t proxy_dst = mesh_virtual_address_register(label_uuid, 0x9736);
     test_send_access_message(netkey_index, appkey_index, ttl, src, proxy_dst, szmic, message24_upper_transport_pdu, 2, message24_lower_transport_pdus, message24_network_pdus);
 }
-#endif
 
 // Proxy Configuration Test
 char * proxy_config_pdus[] = {
