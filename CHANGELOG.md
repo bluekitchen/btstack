@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- Crypto: fix lockup when stack is shutdown while waiting for result of HCI Command, e.g. LE Read Local P256 Public Key
+
+## Changes December 2018
+
 ### Changed
 - L2CAP: provide channel mode (basic/ertm) and fcs option in L2CAP_EVENT_CHANNEL_OPENED 
 - RFCOMM: support L2CAP ERTM. Callbacks passed to rfcomm_enable_l2cap_ertm() are used to manage ERTM buffers

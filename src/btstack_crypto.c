@@ -944,6 +944,14 @@ static void btstack_crypto_event_handler(uint8_t packet_type, uint16_t cid, uint
     if (packet_type != HCI_EVENT_PACKET)  return;
 
     switch (hci_event_packet_get_type(packet)){
+        case BTSTACK_EVENT_STATE:
+            log_info("BTSTACK_EVENT_STATE");
+            if (btstack_event_state_get_state(packet) != HCI_STATE_HALTING) break;
+            if (!btstack_crypto_wait_for_hci_result) break;
+            // request stack to defer shutdown a bit
+            hci_halting_defer();
+            break;
+
         case HCI_EVENT_COMMAND_COMPLETE:
     	    if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_encrypt)){
                 if (hci_get_state() != HCI_STATE_WORKING) return;
