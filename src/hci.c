@@ -4928,7 +4928,8 @@ int hci_get_sco_packet_length(void){
     if (hci_have_usb_transport()){
         // see Core Spec for H2 USB Transfer. 
         // 3 byte SCO header + 24 bytes per connection
-        sco_packet_length = 3 + 24 * hci_number_sco_connections() * multiplier;
+        int num_sco_connections = btstack_max(1, hci_number_sco_connections());
+        sco_packet_length = 3 + 24 * num_sco_connections * multiplier;
     } else {
         // 3 byte SCO header + SCO packet size over the air (60 bytes)
         sco_packet_length = 3 + 60 * multiplier;
