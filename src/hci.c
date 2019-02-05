@@ -2976,7 +2976,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                 case HCI_POWER_OFF:
                     // see hci_run
                     hci_stack->state = HCI_STATE_HALTING;
-                    hci_stack->substate = HCI_HALTING_DISCONNECT_ALL;
+                    hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_NO_TIMER;
                     break;  
                 case HCI_POWER_SLEEP:
                     // see hci_run
@@ -3019,7 +3019,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                 case HCI_POWER_OFF:
                     // see hci_run
                     hci_stack->state = HCI_STATE_HALTING;
-                    hci_stack->substate = HCI_HALTING_DISCONNECT_ALL;
+                    hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_NO_TIMER;
                     break;  
                 case HCI_POWER_SLEEP:
                     // do nothing
@@ -3046,7 +3046,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                     break;
                 case HCI_POWER_OFF:
                     hci_stack->state = HCI_STATE_HALTING;
-                    hci_stack->substate = HCI_HALTING_DISCONNECT_ALL;
+                    hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_NO_TIMER;
                     break;  
                 case HCI_POWER_SLEEP:
                     // do nothing
@@ -3148,6 +3148,8 @@ static void hci_host_num_completed_packets(void){
 static void hci_halting_timeout_handler(btstack_timer_source_t * ds){
     UNUSED(ds);
     hci_stack->substate = HCI_HALTING_CLOSE;
+    // allow packet handlers to defer final shutdown
+    hci_emit_state();
     hci_run();
 }   
 
@@ -3605,10 +3607,12 @@ static void hci_run(void){
 
             log_info("HCI_STATE_HALTING, substate %x\n", hci_stack->substate);
             switch (hci_stack->substate){
-                case HCI_HALTING_DISCONNECT_ALL:
-            // free whitelist entries
+                case HCI_HALTING_DISCONNECT_ALL_NO_TIMER:
+                case HCI_HALTING_DISCONNECT_ALL_TIMER:
+
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_CENTRAL
+                    // free whitelist entries
                     {
                         btstack_linked_list_iterator_t lit;
                         btstack_linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
@@ -3643,17 +3647,17 @@ static void hci_run(void){
                         return;
                     }
 
-                    // no connections left, wait a bit (500 ms) to assert that btstack_cyrpto isn't waiting for an HCI event
-                    log_info("HCI_STATE_HALTING: wait 500 ms");
-                    hci_stack->substate = HCI_HALTING_W4_TIMER;
-                    btstack_run_loop_set_timer(&hci_stack->timeout, 500);
-                    btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_halting_timeout_handler);
-                    btstack_run_loop_add_timer(&hci_stack->timeout);
-                    break;
+                    if (hci_stack->substate == HCI_HALTING_DISCONNECT_ALL_TIMER){
+                        // no connections left, wait a bit to assert that btstack_cyrpto isn't waiting for an HCI event
+                        log_info("HCI_STATE_HALTING: wait 50 ms");
+                        hci_stack->substate = HCI_HALTING_W4_TIMER;
+                        btstack_run_loop_set_timer(&hci_stack->timeout, 50);
+                        btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_halting_timeout_handler);
+                        btstack_run_loop_add_timer(&hci_stack->timeout);
+                        break;
+                    }
 
-                case HCI_HALTING_W4_TIMER:
-                    // keep waiting
-                    break;
+                    /* explicit fall-through */
 
                 case HCI_HALTING_CLOSE:
                     log_info("HCI_STATE_HALTING, calling off");
@@ -3664,6 +3668,11 @@ static void hci_run(void){
                     log_info("HCI_STATE_HALTING, emitting state");
                     hci_emit_state();
                     log_info("HCI_STATE_HALTING, done");
+                    break;
+
+                case HCI_HALTING_W4_TIMER:
+                    // keep waiting
+
                     break;
                 default:
                     break;
@@ -5025,3 +5034,15 @@ uint8_t gap_sniff_mode_exit(hci_con_handle_t con_handle){
     return 0;
 }
 #endif
+
+void hci_halting_defer(void){
+    if (hci_stack->state != HCI_STATE_HALTING) return;
+    switch (hci_stack->substate){
+        case HCI_HALTING_DISCONNECT_ALL_NO_TIMER:
+        case HCI_HALTING_CLOSE:
+            hci_stack->substate = HCI_HALTING_DISCONNECT_ALL_TIMER;
+            break;
+        default:
+            break;
+    }
+}

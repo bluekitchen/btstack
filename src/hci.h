@@ -660,7 +660,8 @@ typedef enum hci_init_state{
 
     HCI_INIT_AFTER_SLEEP,
 
-    HCI_HALTING_DISCONNECT_ALL,
+    HCI_HALTING_DISCONNECT_ALL_NO_TIMER,
+    HCI_HALTING_DISCONNECT_ALL_TIMER,
     HCI_HALTING_W4_TIMER,
     HCI_HALTING_CLOSE,
 
@@ -1200,6 +1201,11 @@ void hci_disable_l2cap_timeout_check(void);
  * Get state
  */
 HCI_STATE hci_get_state(void);
+
+/**
+ * Defer halt. Used by btstack_crypto to allow current HCI operation to complete
+ */
+void hci_halting_defer(void);
 
 #if defined __cplusplus
 }
