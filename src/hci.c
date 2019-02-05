@@ -2976,6 +2976,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                 case HCI_POWER_OFF:
                     // see hci_run
                     hci_stack->state = HCI_STATE_HALTING;
+                    hci_stack->substate = HCI_HALTING_DISCONNECT_ALL;
                     break;  
                 case HCI_POWER_SLEEP:
                     // see hci_run
@@ -3018,6 +3019,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                 case HCI_POWER_OFF:
                     // see hci_run
                     hci_stack->state = HCI_STATE_HALTING;
+                    hci_stack->substate = HCI_HALTING_DISCONNECT_ALL;
                     break;  
                 case HCI_POWER_SLEEP:
                     // do nothing
@@ -3044,6 +3046,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                     break;
                 case HCI_POWER_OFF:
                     hci_stack->state = HCI_STATE_HALTING;
+                    hci_stack->substate = HCI_HALTING_DISCONNECT_ALL;
                     break;  
                 case HCI_POWER_SLEEP:
                     // do nothing
@@ -3141,6 +3144,12 @@ static void hci_host_num_completed_packets(void){
     }
 }
 #endif
+
+static void hci_halting_timeout_handler(btstack_timer_source_t * ds){
+    UNUSED(ds);
+    hci_stack->substate = HCI_HALTING_CLOSE;
+    hci_run();
+}   
 
 static void hci_run(void){
     
@@ -3594,52 +3603,72 @@ static void hci_run(void){
             
         case HCI_STATE_HALTING:
 
-            log_info("HCI_STATE_HALTING");
-
+            log_info("HCI_STATE_HALTING, substate %x\n", hci_stack->substate);
+            switch (hci_stack->substate){
+                case HCI_HALTING_DISCONNECT_ALL:
             // free whitelist entries
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_CENTRAL
-            {
-                btstack_linked_list_iterator_t lit;
-                btstack_linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
-                while (btstack_linked_list_iterator_has_next(&lit)){
-                    whitelist_entry_t * entry = (whitelist_entry_t*) btstack_linked_list_iterator_next(&lit);
-                    btstack_linked_list_remove(&hci_stack->le_whitelist, (btstack_linked_item_t *) entry);
-                    btstack_memory_whitelist_entry_free(entry);
-                }
-            }
+                    {
+                        btstack_linked_list_iterator_t lit;
+                        btstack_linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
+                        while (btstack_linked_list_iterator_has_next(&lit)){
+                            whitelist_entry_t * entry = (whitelist_entry_t*) btstack_linked_list_iterator_next(&lit);
+                            btstack_linked_list_remove(&hci_stack->le_whitelist, (btstack_linked_item_t *) entry);
+                            btstack_memory_whitelist_entry_free(entry);
+                        }
+                    }
 #endif
 #endif
-            // close all open connections
-            connection =  (hci_connection_t *) hci_stack->connections;
-            if (connection){
-                hci_con_handle_t con_handle = (uint16_t) connection->con_handle;
-                if (!hci_can_send_command_packet_now()) return;
+                    // close all open connections
+                    connection =  (hci_connection_t *) hci_stack->connections;
+                    if (connection){
+                        hci_con_handle_t con_handle = (uint16_t) connection->con_handle;
+                        if (!hci_can_send_command_packet_now()) return;
 
-                // check state
-                if (connection->state == SENT_DISCONNECT) return;
-                connection->state = SENT_DISCONNECT;
+                        // check state
+                        if (connection->state == SENT_DISCONNECT) return;
+                        connection->state = SENT_DISCONNECT;
 
-                log_info("HCI_STATE_HALTING, connection %p, handle %u", connection, con_handle);
+                        log_info("HCI_STATE_HALTING, connection %p, handle %u", connection, con_handle);
 
-                // cancel all l2cap connections right away instead of waiting for disconnection complete event ...
-                hci_emit_disconnection_complete(con_handle, 0x16); // terminated by local host
+                        // cancel all l2cap connections right away instead of waiting for disconnection complete event ...
+                        hci_emit_disconnection_complete(con_handle, 0x16); // terminated by local host
 
-                // ... which would be ignored anyway as we shutdown (free) the connection now
-                hci_shutdown_connection(connection);
+                        // ... which would be ignored anyway as we shutdown (free) the connection now
+                        hci_shutdown_connection(connection);
 
-                // finally, send the disconnect command
-                hci_send_cmd(&hci_disconnect, con_handle, 0x13);  // remote closed connection
-                return;
+                        // finally, send the disconnect command
+                        hci_send_cmd(&hci_disconnect, con_handle, 0x13);  // remote closed connection
+                        return;
+                    }
+
+                    // no connections left, wait a bit (500 ms) to assert that btstack_cyrpto isn't waiting for an HCI event
+                    log_info("HCI_STATE_HALTING: wait 500 ms");
+                    hci_stack->substate = HCI_HALTING_W4_TIMER;
+                    btstack_run_loop_set_timer(&hci_stack->timeout, 500);
+                    btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_halting_timeout_handler);
+                    btstack_run_loop_add_timer(&hci_stack->timeout);
+                    break;
+
+                case HCI_HALTING_W4_TIMER:
+                    // keep waiting
+                    break;
+
+                case HCI_HALTING_CLOSE:
+                    log_info("HCI_STATE_HALTING, calling off");
+                    
+                    // switch mode
+                    hci_power_control_off();
+                    
+                    log_info("HCI_STATE_HALTING, emitting state");
+                    hci_emit_state();
+                    log_info("HCI_STATE_HALTING, done");
+                    break;
+                default:
+                    break;
             }
-            log_info("HCI_STATE_HALTING, calling off");
-            
-            // switch mode
-            hci_power_control_off();
-            
-            log_info("HCI_STATE_HALTING, emitting state");
-            hci_emit_state();
-            log_info("HCI_STATE_HALTING, done");
+
             break;
             
         case HCI_STATE_FALLING_ASLEEP:
