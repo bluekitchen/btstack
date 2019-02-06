@@ -274,9 +274,13 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
 // get device information: addr type and address
 void le_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t irk){
 
+    // set defaults
+    le_device_db_entry_t entry;
+    memset(&entry, 0, sizeof(le_device_db_entry_t));
+    entry.addr_type = BD_ADDR_TYPE_UNKNOWN;
+
 	// fetch entry
-	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch(index, &entry);
+    int ok = le_device_db_tlv_fetch(index, &entry);
 	if (!ok) return;
 
     if (addr_type) *addr_type = entry.addr_type;
