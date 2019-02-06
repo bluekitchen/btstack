@@ -280,8 +280,7 @@ void le_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t irk)
     entry.addr_type = BD_ADDR_TYPE_UNKNOWN;
 
 	// fetch entry
-    int ok = le_device_db_tlv_fetch(index, &entry);
-	if (!ok) return;
+    le_device_db_tlv_fetch(index, &entry);
 
     if (addr_type) *addr_type = entry.addr_type;
     if (addr) memcpy(addr, entry.addr, 6);
