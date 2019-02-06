@@ -52,48 +52,98 @@ extern "C" {
 
 typedef struct {
 
-	/**
+    /**
 	 * @brief Setup audio codec for specified samplerate and number of channels
 	 * @param Channels (1=mono, 2=stereo)
 	 * @param Sample rate
 	 * @param Playback callback
-	 * @param Recording callback
 	 * @return 1 on success
 	 */
 	int (*init)(uint8_t channels,
 				uint32_t samplerate, 
-				void (*playback) (      int16_t * buffer, uint16_t num_samples),
-				void (*recording)(const int16_t * buffer, uint16_t num_samples));
+				void (*playback) (      int16_t * buffer, uint16_t num_samples));
 
-	/** 
+    /** 
 	 * @brief Start stream
 	 */
 	void (*start_stream)(void);
 
-	/**
+    /** 
+	 * @brief Stop stream
+	 */
+	void (*stop_stream)(void);
+
+    /**
 	 * @brief Close audio codec
 	 */
 	void (*close)(void);
 
-} btstack_audio_t;
+} btstack_audio_sink_t;
+
+
+typedef struct {
+
+    /**
+     * @brief Setup audio codec for specified samplerate and number of channels
+     * @param Channels (1=mono, 2=stereo)
+     * @param Sample rate
+     * @param Recording callback
+     * @return 1 on success
+     */
+	int (*init)(uint8_t channels,
+				uint32_t samplerate, 
+				void (*recording)(const int16_t * buffer, uint16_t num_samples));
+
+    /** 
+     * @brief Start stream
+     */
+	void (*start_stream)(void);
+
+    /** 
+     * @brief Stop stream
+     */
+    void (*stop_stream)(void);
+
+    /**
+     * @brief Close audio codec
+     */
+    void (*close)(void);
+
+} btstack_audio_source_t;
+
 
 /**
- * @brief Get BTstack Audio Instance
- * @returns btstack_audio implementation
+ * @brief Get BTstack Audio Sink Instance
+ * @returns btstack_audio_sink implementation
  */
-const btstack_audio_t * btstack_audio_get_instance(void);
+const btstack_audio_sink_t * btstack_audio_sink_get_instance(void);
 
 /**
- * @brief Get BTstack Audio Instance
- * @param btstack_audio implementation
+ * @brief Get BTstack Audio Source Instance
+ * @returns btstack_audio_source implementation
  */
-void btstack_audio_set_instance(const btstack_audio_t * audio_impl);
+const btstack_audio_source_t * btstack_audio_source_get_instance(void);
+
+
+/**
+ * @brief Get BTstack Audio Sink Instance
+ * @param btstack_audio_sink implementation
+ */
+void btstack_audio_sink_set_instance(const btstack_audio_sink_t * audio_sink_impl);
+
+/**
+ * @brief Get BTstack Audio Source Instance
+ * @param btstack_audio_source implementation
+ */
+void btstack_audio_source_set_instance(const btstack_audio_source_t * audio_source_impl);
 
 
 // common implementations
-const btstack_audio_t * btstack_audio_portaudio_get_instance(void);
-const btstack_audio_t * btstack_audio_embedded_get_instance(void);
-const btstack_audio_t * btstack_audio_esp32_get_instance(void);
+const btstack_audio_sink_t * btstack_audio_portaudio_sink_get_instance(void);
+const btstack_audio_source_t * btstack_audio_portaudio_source_get_instance(void);
+
+//const btstack_audio_t * btstack_audio_embedded_get_instance(void);
+//const btstack_audio_t * btstack_audio_esp32_get_instance(void);
 
 #if defined __cplusplus
 }

@@ -386,9 +386,9 @@ static int media_processing_init(avdtp_media_codec_configuration_sbc_t configura
     btstack_resample_init(&resample_instance, configuration.num_channels);
 
     // setup audio playback
-    const btstack_audio_t * audio = btstack_audio_get_instance();
+    const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
     if (audio){
-        audio->init(NUM_CHANNELS, configuration.sampling_frequency, &playback_handler, NULL);
+        audio->init(NUM_CHANNELS, configuration.sampling_frequency, &playback_handler);
     }
 
     audio_stream_started = 0;
@@ -415,7 +415,7 @@ static void media_processing_close(void){
 #endif     
 
     // stop audio playback
-    const btstack_audio_t * audio = btstack_audio_get_instance();
+    const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
     if (audio){
         audio->close();
     }
@@ -442,7 +442,7 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     avdtp_sbc_codec_header_t sbc_header;
     if (!read_sbc_header(packet, size, &pos, &sbc_header)) return;
 
-    const btstack_audio_t * audio = btstack_audio_get_instance();
+    const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
 
     // process data right away if there's no audio implementation active, e.g. on posix systems to store as .wav
     if (!audio){
