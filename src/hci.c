@@ -4923,7 +4923,7 @@ int hci_get_sco_packet_length(void){
 #ifdef ENABLE_SCO_OVER_HCI
 
     // CVSD requires twice as much bytes
-    int multiplier = hci_stack->sco_voice_setting & 0x0020 ? 2 : 1;
+    int multiplier = hci_stack->sco_voice_setting_active & 0x0020 ? 2 : 1;
 
     if (hci_have_usb_transport()){
         // see Core Spec for H2 USB Transfer. 
