@@ -105,6 +105,9 @@ static union {
 static char time_string[40];
 static int  max_nr_packets = -1;
 static int  nr_packets = 0;
+#endif
+
+#if defined(HAVE_POSIX_FILE_IO) || defined (ENABLE_SEGGER_RTT)
 static char log_message_buffer[256];
 #endif
 
@@ -331,7 +334,7 @@ static int hci_dump_log_level_active(int log_level){
 void hci_dump_log_va_arg(int log_level, const char * format, va_list argptr){
     if (!hci_dump_log_level_active(log_level)) return;
 
-#ifdef HAVE_POSIX_FILE_IO
+#if defined(HAVE_POSIX_FILE_IO) || defined (ENABLE_SEGGER_RTT)
     if (dump_file >= 0){
         int len = vsnprintf(log_message_buffer, sizeof(log_message_buffer), format, argptr);
         hci_dump_packet(LOG_MESSAGE_PACKET, 0, (uint8_t*) log_message_buffer, len);
