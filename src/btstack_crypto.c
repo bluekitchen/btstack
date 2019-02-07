@@ -954,13 +954,11 @@ static void btstack_crypto_event_handler(uint8_t packet_type, uint16_t cid, uint
 
         case HCI_EVENT_COMMAND_COMPLETE:
     	    if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_encrypt)){
-                if (hci_get_state() != HCI_STATE_WORKING) return;
                 if (!btstack_crypto_wait_for_hci_result) return;
                 btstack_crypto_wait_for_hci_result = 0;
     	        btstack_crypto_handle_encryption_result(&packet[6]);
     	    }
     	    if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_rand)){
-                if (hci_get_state() != HCI_STATE_WORKING) return;
                 if (!btstack_crypto_wait_for_hci_result) return;
                 btstack_crypto_wait_for_hci_result = 0;
     	        btstack_crypto_handle_random_data(&packet[6], 8);
