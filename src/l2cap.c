@@ -948,19 +948,6 @@ static void l2cap_emit_incoming_connection(l2cap_channel_t *channel) {
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
-#endif
-
-static l2cap_fixed_channel_t * l2cap_channel_item_by_cid(uint16_t cid){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &l2cap_channels);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        l2cap_fixed_channel_t * channel = (l2cap_fixed_channel_t*) btstack_linked_list_iterator_next(&it);
-        if (channel->local_cid == cid) {
-            return channel;
-        }
-    } 
-    return NULL;
-}
 
 static void l2cap_handle_channel_open_failed(l2cap_channel_t * channel, uint8_t status){
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
@@ -980,6 +967,19 @@ static void l2cap_handle_channel_closed(l2cap_channel_t * channel){
     }
 #endif
     l2cap_emit_channel_closed(channel);
+}
+#endif
+
+static l2cap_fixed_channel_t * l2cap_channel_item_by_cid(uint16_t cid){
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, &l2cap_channels);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        l2cap_fixed_channel_t * channel = (l2cap_fixed_channel_t*) btstack_linked_list_iterator_next(&it);
+        if (channel->local_cid == cid) {
+            return channel;
+        }
+    } 
+    return NULL;
 }
 
 // used for fixed channels in LE (ATT/SM) and Classic (Connectionless Channel). CID < 0x04
