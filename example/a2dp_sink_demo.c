@@ -800,6 +800,11 @@ static void stdin_process(char cmd){
             case 'b':
             case 'c':
                 break;
+            case '\n':
+            case '\r':
+            case ' ':
+                show_usage();
+                return;
             default:
                 printf("Not connected. Please use 'c' to establish an AVRCP connection with device (addr %s).\n", bd_addr_to_str(device_addr));
                 return;    
