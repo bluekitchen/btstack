@@ -494,6 +494,9 @@ typedef struct {
     uint16_t sniff_max_interval;
     uint16_t sniff_attempt;
     uint16_t sniff_timeout;
+
+    // nubmer SCO bytes sent to controller (only used without explicit SCO Flow Control)
+    uint16_t num_sco_bytes_sent;
 #endif
 
     // errands
@@ -509,9 +512,9 @@ typedef struct {
     uint16_t acl_recombination_pos;
     uint16_t acl_recombination_length;
     
+
     // number packets sent to controller
-    uint8_t num_acl_packets_sent;
-    uint8_t num_sco_packets_sent;
+    uint8_t num_packets_sent;
 
 #ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
     uint8_t num_packets_completed;
@@ -527,6 +530,13 @@ typedef struct {
 
 #ifdef ENABLE_BLE
     uint16_t le_connection_interval;
+
+    // LE PHY Update via set phy command
+    uint8_t le_phy_update_all_phys;      // 0xff for idle
+    uint8_t le_phy_update_tx_phys;
+    uint8_t le_phy_update_rx_phys;
+    int8_t  le_phy_update_phy_options;
+
     // LE Security Manager
     sm_connection_t sm_connection;
 
@@ -648,7 +658,12 @@ typedef enum hci_init_state{
     HCI_FALLING_ASLEEP_W4_WRITE_SCAN_ENABLE,
     HCI_FALLING_ASLEEP_COMPLETE,
 
-    HCI_INIT_AFTER_SLEEP
+    HCI_INIT_AFTER_SLEEP,
+
+    HCI_HALTING_DISCONNECT_ALL_NO_TIMER,
+    HCI_HALTING_DISCONNECT_ALL_TIMER,
+    HCI_HALTING_W4_TIMER,
+    HCI_HALTING_CLOSE,
 
 } hci_substate_t;
 
@@ -723,6 +738,7 @@ typedef struct {
     uint8_t   hci_packet_buffer_reserved;
     uint16_t  acl_fragmentation_pos;
     uint16_t  acl_fragmentation_total_size;
+    uint8_t   acl_fragmentation_tx_active;
      
     /* host to controller flow control */
     uint8_t  num_cmd_packets;
@@ -739,12 +755,13 @@ typedef struct {
     uint8_t local_supported_features[8];
 
     /* local supported commands summary - complete info is 64 bytes */
-    /* 0 - Read Buffer Size */
-    /* 1 - Write Le Host Supported */
-    /* 2 - Write Synchronous Flow Control Enable (Octet 10/bit 4) */
-    /* 3 - Write Default Erroneous Data Reporting (Octet 18/bit 3) */
-    /* 4 - LE Write Suggested Default Data Length (Octet 34/bit 0) */
-    /* 5 - LE Read Maximum Data Length (Octet 35/bit 3) */
+    /* 0 - Read Buffer Size                        (Octet 14/bit 7) */
+    /* 1 - Write Le Host Supported                 (Octet 24/bit 6) */
+    /* 2 - Write Synchronous Flow Control Enable   (Octet 10/bit 4) */
+    /* 3 - Write Default Erroneous Data Reporting  (Octet 18/bit 3) */
+    /* 4 - LE Write Suggested Default Data Length  (Octet 34/bit 0) */
+    /* 5 - LE Read Maximum Data Length             (Octet 35/bit 3) */
+    /* 6 - LE Set Default PHY                      (Octet 35/bit 5) */ 
     uint8_t local_supported_commands[1];
 
     /* bluetooth device information from hci read local version information */
@@ -1184,6 +1201,11 @@ void hci_disable_l2cap_timeout_check(void);
  * Get state
  */
 HCI_STATE hci_get_state(void);
+
+/**
+ * Defer halt. Used by btstack_crypto to allow current HCI operation to complete
+ */
+void hci_halting_defer(void);
 
 #if defined __cplusplus
 }

@@ -167,7 +167,7 @@ int main (int argc, const char * argv[]){
     btstack_sbc_decoder_init(&state, mode, &handle_pcm_data, NULL);
     
     if (!plc_enabled){
-        btstack_sbc_decoder_test_disable_plc();
+        btstack_sbc_decoder_test_set_plc_enabled(0);
     }
     if (corrupt_frame_period > 0){
         btstack_sbc_decoder_test_simulate_corrupt_frames(corrupt_frame_period);

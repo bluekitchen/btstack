@@ -1127,6 +1127,24 @@ static inline uint16_t l2cap_event_channel_opened_get_flush_timeout(const uint8_
 static inline uint8_t l2cap_event_channel_opened_get_incoming(const uint8_t * event){
     return event[23];
 }
+/**
+ * @brief Get field mode from event L2CAP_EVENT_CHANNEL_OPENED
+ * @param event packet
+ * @return mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t l2cap_event_channel_opened_get_mode(const uint8_t * event){
+    return event[24];
+}
+/**
+ * @brief Get field fcs from event L2CAP_EVENT_CHANNEL_OPENED
+ * @param event packet
+ * @return fcs
+ * @note: btstack_type 1
+ */
+static inline uint8_t l2cap_event_channel_opened_get_fcs(const uint8_t * event){
+    return event[25];
+}
 
 /**
  * @brief Get field local_cid from event L2CAP_EVENT_CHANNEL_CLOSED
@@ -1441,6 +1459,16 @@ static inline uint16_t l2cap_event_le_can_send_now_get_local_cid(const uint8_t *
  * @note: btstack_type 2
  */
 static inline uint16_t l2cap_event_le_packet_sent_get_local_cid(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+
+/**
+ * @brief Get field local_cid from event L2CAP_EVENT_ERTM_BUFFER_RELEASED
+ * @param event packet
+ * @return local_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t l2cap_event_ertm_buffer_released_get_local_cid(const uint8_t * event){
     return little_endian_read_16(event, 2);
 }
 
@@ -3748,13 +3776,58 @@ static inline uint8_t hfp_subevent_ag_indicator_status_changed_get_indicator_sta
     return event[4];
 }
 /**
+ * @brief Get field indicator_min_range from event HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED
+ * @param event packet
+ * @return indicator_min_range
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_ag_indicator_status_changed_get_indicator_min_range(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field indicator_max_range from event HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED
+ * @param event packet
+ * @return indicator_max_range
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_ag_indicator_status_changed_get_indicator_max_range(const uint8_t * event){
+    return event[6];
+}
+/**
+ * @brief Get field indicator_mandatory from event HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED
+ * @param event packet
+ * @return indicator_mandatory
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_ag_indicator_status_changed_get_indicator_mandatory(const uint8_t * event){
+    return event[7];
+}
+/**
+ * @brief Get field indicator_enabled from event HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED
+ * @param event packet
+ * @return indicator_enabled
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_ag_indicator_status_changed_get_indicator_enabled(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field indicator_status_changed from event HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED
+ * @param event packet
+ * @return indicator_status_changed
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_ag_indicator_status_changed_get_indicator_status_changed(const uint8_t * event){
+    return event[9];
+}
+/**
  * @brief Get field indicator_name from event HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED
  * @param event packet
  * @return indicator_name
  * @note: btstack_type T
  */
 static inline const char * hfp_subevent_ag_indicator_status_changed_get_indicator_name(const uint8_t * event){
-    return (const char *) &event[5];
+    return (const char *) &event[10];
 }
 
 /**
@@ -3936,13 +4009,22 @@ static inline uint8_t hfp_subevent_enhanced_call_status_get_clcc_status(const ui
     return event[5];
 }
 /**
+ * @brief Get field clcc_mode from event HFP_SUBEVENT_ENHANCED_CALL_STATUS
+ * @param event packet
+ * @return clcc_mode
+ * @note: btstack_type 1
+ */
+static inline uint8_t hfp_subevent_enhanced_call_status_get_clcc_mode(const uint8_t * event){
+    return event[6];
+}
+/**
  * @brief Get field clcc_mpty from event HFP_SUBEVENT_ENHANCED_CALL_STATUS
  * @param event packet
  * @return clcc_mpty
  * @note: btstack_type 1
  */
 static inline uint8_t hfp_subevent_enhanced_call_status_get_clcc_mpty(const uint8_t * event){
-    return event[6];
+    return event[7];
 }
 /**
  * @brief Get field bnip_type from event HFP_SUBEVENT_ENHANCED_CALL_STATUS
@@ -3951,7 +4033,7 @@ static inline uint8_t hfp_subevent_enhanced_call_status_get_clcc_mpty(const uint
  * @note: btstack_type 1
  */
 static inline uint8_t hfp_subevent_enhanced_call_status_get_bnip_type(const uint8_t * event){
-    return event[7];
+    return event[8];
 }
 /**
  * @brief Get field bnip_number from event HFP_SUBEVENT_ENHANCED_CALL_STATUS
@@ -3960,7 +4042,7 @@ static inline uint8_t hfp_subevent_enhanced_call_status_get_bnip_type(const uint
  * @note: btstack_type T
  */
 static inline const char * hfp_subevent_enhanced_call_status_get_bnip_number(const uint8_t * event){
-    return (const char *) &event[8];
+    return (const char *) &event[9];
 }
 
 /**

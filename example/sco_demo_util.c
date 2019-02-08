@@ -91,16 +91,17 @@
 #define MSBC_SAMPLE_RATE        16000
 #define BYTES_PER_FRAME         2
 
-#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE || SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
 #define CVSD_PA_PREBUFFER_BYTES (SCO_CVSD_PA_PREBUFFER_MS * CVSD_SAMPLE_RATE/1000 * BYTES_PER_FRAME)
 #define MSBC_PA_PREBUFFER_BYTES (SCO_MSBC_PA_PREBUFFER_MS * MSBC_SAMPLE_RATE/1000 * BYTES_PER_FRAME)
-#endif
 
 // output
-static int                   audio_output_paused  = 0;
 
+#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
+static int                   audio_output_paused  = 0;
 static uint8_t               audio_output_ring_buffer_storage[2*MSBC_PA_PREBUFFER_BYTES];
 static btstack_ring_buffer_t audio_output_ring_buffer;
+#endif
+
 
 // input
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE
@@ -181,6 +182,8 @@ static void sco_demo_msbc_fill_sine_audio_frame(void){
 }
 #endif
 #endif
+
+#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
 
 static void playback_callback(int16_t * buffer, uint16_t num_samples){
 
@@ -263,9 +266,8 @@ static void audio_terminate(void){
     audio->close();
 }
 
-#if (SCO_DEMO_MODE == SCO_DEMO_MODE_SINE) || (SCO_DEMO_MODE == SCO_DEMO_MODE_MICROPHONE)
-
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
+
 static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
     UNUSED(context);
     UNUSED(sample_rate);
@@ -452,10 +454,6 @@ void sco_demo_init(void){
 #else
     hci_set_sco_voice_setting(0x03);    // linear, unsigned, 8-bit, transparent
 #endif
-
-#if SCO_DEMO_MODE == SCO_DEMO_MODE_ASCII
-    phase = 'a';
-#endif
 }
 
 void sco_report(void);
@@ -465,7 +463,7 @@ void sco_report(void){
 
 void sco_demo_send(hci_con_handle_t sco_handle){
 
-    if (!sco_handle) return;
+    if (sco_handle == HCI_CON_HANDLE_INVALID) return;
     
     int sco_packet_length = hci_get_sco_packet_length();
     int sco_payload_length = sco_packet_length - 3;
@@ -475,9 +473,6 @@ void sco_demo_send(hci_con_handle_t sco_handle){
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_SINE
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
     if (negotiated_codec == HFP_CODEC_MSBC){
-        // overwrite
-        sco_payload_length = 24;
-        sco_packet_length = sco_payload_length + 3;
 
         if (hfp_msbc_num_bytes_in_stream() < sco_payload_length){
             log_error("mSBC stream is empty.");
@@ -502,10 +497,6 @@ void sco_demo_send(hci_con_handle_t sco_handle){
 #ifdef HAVE_PORTAUDIO
     if (negotiated_codec == HFP_CODEC_MSBC){
         // MSBC
-
-        // overwrite
-        sco_payload_length = 24;
-        sco_packet_length = sco_payload_length + 3;
 
         if (audio_input_paused){
             if (btstack_ring_buffer_bytes_available(&audio_input_ring_buffer) >= MSBC_PA_PREBUFFER_BYTES){
@@ -581,17 +572,16 @@ void sco_demo_send(hci_con_handle_t sco_handle){
     }
 #else
     // just send '0's
-    if (negotiated_codec == HFP_CODEC_MSBC){
-        sco_payload_length = 24;
-        sco_packet_length = sco_payload_length + 3;
-    }
     memset(sco_packet + 3, 0, sco_payload_length);
 #endif
 #endif
 
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_ASCII
-    memset(&sco_packet[3], phase++, sco_payload_length);
-    if (phase > 'z') phase = 'a';
+    // store packet counter-xxxx
+    snprintf((char *)&sco_packet[3], 5, "%04u", phase++);
+    uint8_t ascii = (phase & 0x0f) + 'a';
+    sco_packet[3+4] = '-';
+    memset(&sco_packet[3+5], ascii, sco_payload_length-5);
 #endif
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_COUNTER
     int j;
@@ -682,12 +672,15 @@ void sco_demo_receive(uint8_t * packet, uint16_t size){
     dump_data = 0;
 #endif
 
+#if 0
     if (packet[1] & 0x30){
         crc_errors++;
-        // printf("SCO CRC Error: %x - data: ", (packet[1] & 0x30) >> 4);
-        // printf_hexdump(&packet[3], size-3);
+        printf("SCO CRC Error: %x - data: ", (packet[1] & 0x30) >> 4);
+        printf_hexdump(&packet[3], size-3);
         return;
     }
+#endif
+
     if (dump_data){
 #if SCO_DEMO_MODE == SCO_DEMO_MODE_ASCII
         printf("data: ");

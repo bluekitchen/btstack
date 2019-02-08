@@ -265,17 +265,23 @@ static inline void hal_uart_dma_disable_rx(void){
     P1OUT |= BIT3;  // = 1 - RTS high -> stop
 }
 
-// int used to indicate a request for more new data
 void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len){
-
-    UCA2IE &= ~UCRXIE ;  // disable RX interrupts
+    // disable RX interrupts
+    UCA2IE &= ~UCRXIE ;
 
     rx_buffer_ptr = buffer;
     bytes_to_read = len;
-    
-    UCA2IE |= UCRXIE;    // enable RX interrupts
 
-    hal_uart_dma_enable_rx();     // enable receive 
+    // check if byte already received
+    int pending = UCA2IFG & UCRXIFG;
+
+    // enable RX interrupts - will trigger ISR below if byte pending
+    UCA2IE |= UCRXIE;
+
+    // if byte was pending, ISR controls RTS
+    if (!pending) {
+        hal_uart_dma_enable_rx();
+    }
 }
 
 void hal_uart_dma_set_sleep(uint8_t sleep){
@@ -305,6 +311,7 @@ void usbRxTxISR(void){
             ++rx_buffer_ptr;
             --bytes_to_read;
             if (bytes_to_read > 0) {
+                hal_uart_dma_enable_rx();
                 return;
             }
             P1OUT |= BIT3;      // = 1 - RTS high -> stop

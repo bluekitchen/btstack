@@ -159,6 +159,9 @@ typedef struct {
     // Number of packets that can be received out of order (-> our tx_window size)
     uint8_t num_rx_buffers;
 
+    // Frame Check Sequence (FCS) Option
+    uint8_t fcs_option;
+
 } l2cap_ertm_config_t;
 
 // info regarding an actual channel

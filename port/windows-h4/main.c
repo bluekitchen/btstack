@@ -149,7 +149,7 @@ static void local_version_information_handler(uint8_t * packet){
     printf("- Manufacturer 0x%04x\n", manufacturer);
     switch (manufacturer){
         case BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO:
-            printf("Cambridge Silicon Radio - CSR chipset.\n");
+            printf("Cambridge Silicon Radio - CSR chipset, Build ID: %u.\n", hci_revision);
             use_fast_uart();
             hci_set_chipset(btstack_chipset_csr_instance());
             break;

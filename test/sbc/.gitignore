@@ -3,3 +3,6 @@ sbc_encoder_test
 sine_wave.py
 data_sine_stereo_sbc.h
 sbc_decoder_sine
+msbc_encoder_test
+pklg_msbc_test
+pklg/*

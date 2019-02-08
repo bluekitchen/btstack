@@ -435,7 +435,7 @@ typedef uint8_t sm_key_t[16];
 // L2CAP EVENTS
     
 /**
- * @format 1BH2222221
+ * @format 1BH222222111
  * @param status
  * @param address
  * @param handle
@@ -446,6 +446,8 @@ typedef uint8_t sm_key_t[16];
  * @param remote_mtu
  * @param flush_timeout
  * @param incoming
+ * @param mode
+ * @param fcs
  */
 #define L2CAP_EVENT_CHANNEL_OPENED                         0x70
 
@@ -539,6 +541,12 @@ typedef uint8_t sm_key_t[16];
  * @param local_cid
  */
 #define L2CAP_EVENT_LE_PACKET_SENT                         0x7d
+
+/*
+ * @format 2
+ * @param local_cid
+ */
+#define L2CAP_EVENT_ERTM_BUFFER_RELEASED                   0x7e
 
 
 // RFCOMM EVENTS
@@ -1140,10 +1148,15 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_COMPLETE                              0x05
 
 /**
- * @format 111T
+ * @format 11111111T
  * @param subevent_code
  * @param indicator_index
  * @param indicator_status
+ * @param indicator_min_range
+ * @param indicator_max_range
+ * @param indicator_mandatory
+ * @param indicator_enabled
+ * @param indicator_status_changed
  * @param indicator_name
  */
 #define HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED           0x06
@@ -1260,11 +1273,12 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION 0x17
 
 /**
- * @format 111111T
+ * @format 1111111T
  * @param subevent_code
  * @param clcc_idx
  * @param clcc_dir
  * @param clcc_status
+ * @param clcc_mode
  * @param clcc_mpty
  * @param bnip_type
  * @param bnip_number

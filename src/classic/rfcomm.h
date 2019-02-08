@@ -47,6 +47,7 @@
 #include <stdint.h>
 #include "btstack_run_loop.h"
 #include "gap.h"
+#include "l2cap.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -180,6 +181,9 @@ typedef struct {
     // non supported command, 0 if not set
     uint8_t nsc_command;
 
+    // ertm id
+    uint16_t ertm_id;
+
     // test data - limited to RFCOMM_TEST_DATA_MAX_LEN
     uint8_t test_data_len;
     uint8_t test_data[RFCOMM_TEST_DATA_MAX_LEN];
@@ -244,6 +248,22 @@ typedef struct {
     uint8_t   waiting_for_can_send_now;
         
 } rfcomm_channel_t;
+
+// struct used in ERTM callback
+typedef struct {
+    // remote address
+    bd_addr_t             addr;
+
+    // ERTM ID - returned in RFCOMM_EVENT_ERTM_BUFFER_RELEASED.
+    uint16_t              ertm_id;
+
+    // ERTM Configuration - needs to stay valid indefinitely
+    l2cap_ertm_config_t * ertm_config;
+
+    // ERTM buffer
+    uint8_t *             ertm_buffer;
+    uint32_t              ertm_buffer_size;
+} rfcomm_ertm_request_t;
 
 /* API_START */
 
@@ -394,6 +414,19 @@ int       rfcomm_reserve_packet_buffer(void);
 uint8_t * rfcomm_get_outgoing_buffer(void);
 int       rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len);
 void      rfcomm_release_packet_buffer(void);
+
+/**
+ * @brief Enable L2CAP ERTM mode for RFCOMM. request callback is used to provide ERTM buffer. released callback returns buffer
+ *
+ * @note on request_callback, the app must set the ertm_config, buffer, size fields to enable ERTM for the current connection
+ * @note if buffer is not set, BASIC mode will be used instead
+ *
+ * @note released_callback provides ertm_id from earlier request to match request and release
+ *
+ * @param request_callback
+ * @param released_callback
+ */
+void rfcomm_enable_l2cap_ertm(void request_callback(rfcomm_ertm_request_t * request), void released_callback(uint16_t ertm_id));
 
 /* API_END */
 

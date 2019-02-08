@@ -115,6 +115,11 @@ int bt_mesh_ccm_decrypt(const u8_t key[16], u8_t nonce[13],
 			pmsg[i] = Xn[i];
 		}
 
+#ifdef LOG_XN
+	printf("%16s: ", "Xn XOR bn");
+	printf_hexdump(pmsg, 16);
+#endif
+
 		err = bt_encrypt_be(key, pmsg, Xn);
 		if (err) {
 			return err;
@@ -323,10 +328,21 @@ int bt_mesh_ccm_encrypt(const u8_t key[16], u8_t nonce[13],
 			aad_len -= 16;
 			i = 0;
 
+#ifdef LOG_XN
+	printf("%16s: ", "Xn XOR bn (aad)");
+	printf_hexdump(pmsg, 16);
+#endif
+
 			err = bt_encrypt_be(key, pmsg, Xn);
 			if (err) {
 				return err;
 			}
+
+#ifdef LOG_XN
+	printf("%16s: ", "Xn+1 AAD");
+	printf_hexdump(Xn, 16);
+#endif
+
 		}
 
 		for (i = 0; i < aad_len; i++, j++) {
@@ -337,10 +353,20 @@ int bt_mesh_ccm_encrypt(const u8_t key[16], u8_t nonce[13],
 			pmsg[i] = Xn[i];
 		}
 
+#ifdef LOG_XN
+	printf("%16s: ", "Xn XOR bn (aad)");
+	printf_hexdump(pmsg, 16);
+#endif
+
 		err = bt_encrypt_be(key, pmsg, Xn);
 		if (err) {
 			return err;
 		}
+#ifdef LOG_XN
+	printf("%16s: ", "Xn+1 AAD");
+	printf_hexdump(Xn, 16);
+#endif
+
 	}
 
 	last_blk = msg_len % 16;

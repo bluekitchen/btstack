@@ -67,7 +67,7 @@
 static uint8_t       hsp_service_buffer[150];
 static const uint8_t rfcomm_channel_nr = 1;
 static const char    hsp_ag_service_name[] = "Audio Gateway Test";
-static uint16_t      sco_handle = 0;
+static uint16_t      sco_handle = HCI_CON_HANDLE_INVALID;
 
 static char hs_cmd_buffer[100];
 
@@ -180,6 +180,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
 
     switch (packet_type){
         case HCI_SCO_DATA_PACKET:
+            if (READ_SCO_CONNECTION_HANDLE(event) != sco_handle) break;
             sco_demo_receive(event, event_size);
             break;
 
@@ -218,7 +219,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                         case HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE:
                             if (hsp_subevent_audio_connection_complete_get_status(event)){
                                 printf("Audio connection establishment failed with status %u\n", hsp_subevent_audio_connection_complete_get_status(event));
-                                sco_handle = 0;
                             } else {
                                 sco_handle = hsp_subevent_audio_connection_complete_get_handle(event);
                                 printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
@@ -226,12 +226,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             }
                             break;
                         case HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE:
-                            if (hsp_subevent_audio_disconnection_complete_get_status(event)){
-                                printf("Audio connection releasing failed with status %u\n", hsp_subevent_audio_disconnection_complete_get_status(event));
-                            } else {
-                                printf("Audio connection released.\n\n");
-                                sco_handle = 0;    
-                            }
+                            printf("Audio connection released.\n\n");
+                            sco_handle = HCI_CON_HANDLE_INVALID;    
                             break;
                         case HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED:
                             printf("Received microphone gain change %d\n", hsp_subevent_microphone_gain_changed_get_gain(event));

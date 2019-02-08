@@ -44,40 +44,40 @@ COMMON_OBJ  = $(COMMON:.c=.o)
 MOCK_OBJ  = $(MOCK:.c=.o)
 
 # CC = gcc-fsf-4.9
-CFLAGS  = -g -Wall -Wmissing-prototype -Wnarrowing \
-		  -I. \
-		  -I.. \
-		  -I${BTSTACK_ROOT}/src
-# CFLAGS += -Werror
-
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/platform/posix
 
-CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/src/classic -I${POSIX_ROOT} -I${BTSTACK_ROOT}/include
-LDFLAGS += -lCppUTest -lCppUTestExt
+CFLAGS   = -g -Wall -Wmissing-prototypes -Wnarrowing 
+# CFLAGS += -Werror
+CFLAGS  += -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/src/classic -I${POSIX_ROOT} -I${BTSTACK_ROOT}/include
+# CFLAGS  += -D OCTAVE_OUTPUT
+LDFLAGS_CPPUTEST += -lCppUTest -lCppUTestExt
 
-EXAMPLES = hfp_ag_parser_test hfp_ag_client_test hfp_hf_parser_test hfp_hf_client_test cvsd_plc_test
+EXAMPLES = hfp_ag_parser_test hfp_ag_client_test hfp_hf_parser_test hfp_hf_client_test cvsd_plc_test pklg_cvsd_test
 
 all: ${EXAMPLES}
 
 clean:
-	rm -rf *.o $(EXAMPLES) $(CLIENT_EXAMPLES) *.dSYM *.wav results/*
+	rm -rf *.o $(EXAMPLES) $(CLIENT_EXAMPLES) *.dSYM *.wav results/* pklg/*.wav
 
 hfp_ag_parser_test: ${COMMON_OBJ} hfp_gsm_model.o hfp_ag.o hfp.o hfp_ag_parser_test.c  
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+	${CC} $^ ${CFLAGS} ${LDFLAGS_CPPUTEST} -o $@
 
 hfp_hf_parser_test: ${COMMON_OBJ} hfp_hf.o hfp.o hfp_hf_parser_test.c  
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+	${CC} $^ ${CFLAGS} ${LDFLAGS_CPPUTEST} -o $@
 
 hfp_hf_client_test: ${MOCK_OBJ} hfp_hf.o hfp.o hfp_hf_client_test.c  
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+	${CC} $^ ${CFLAGS} ${LDFLAGS_CPPUTEST} -o $@
 
 hfp_ag_client_test: ${MOCK_OBJ} hfp_gsm_model.o hfp_ag.o hfp.o hfp_ag_client_test.c  
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+	${CC} $^ ${CFLAGS} ${LDFLAGS_CPPUTEST} -o $@
 
 cvsd_plc_test: ${COMMON_OBJ} btstack_cvsd_plc.o wav_util.o cvsd_plc_test.c  
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+	${CC} $^ ${CFLAGS} ${LDFLAGS_CPPUTEST} -o $@
+
+pklg_cvsd_test: hci_dump.o btstack_util.o btstack_cvsd_plc.o wav_util.o pklg_cvsd_test.o
+	${CC} $^ ${CFLAGS} -o $@
 
 test: all
 	mkdir -p results
@@ -86,3 +86,10 @@ test: all
 	./hfp_hf_parser_test
 	./hfp_hf_client_test
 	./cvsd_plc_test
+
+pklg-test: pklg_cvsd_test
+	./pklg_cvsd_test pklg/test1
+	./pklg_cvsd_test pklg/test2
+	./pklg_cvsd_test pklg/test3
+	./pklg_cvsd_test pklg/test4
+	./pklg_cvsd_test pklg/test5

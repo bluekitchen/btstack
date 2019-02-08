@@ -429,26 +429,42 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint
             printf("HFP AG HFP_SUBEVENT_COMPLETE.\n");
             break;
         case HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED:
-            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator '%s' (index: %d) to: %d\n", (const char*) &event[5], event[3], event[4]);
+            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator (index: %d) to: %d of range [%d, %d], name '%s'\n", 
+                hfp_subevent_ag_indicator_status_changed_get_indicator_index(event), 
+                hfp_subevent_ag_indicator_status_changed_get_indicator_status(event),
+                hfp_subevent_ag_indicator_status_changed_get_indicator_min_range(event),
+                hfp_subevent_ag_indicator_status_changed_get_indicator_max_range(event),
+                (const char*) hfp_subevent_ag_indicator_status_changed_get_indicator_name(event));
             break;
         case HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED:
-            printf("NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", event[3], event[4], (char *) &event[5]);
+            printf("NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", 
+                hfp_subevent_network_operator_changed_get_network_operator_mode(event), 
+                hfp_subevent_network_operator_changed_get_network_operator_format(event), 
+                (char *) hfp_subevent_network_operator_changed_get_network_operator_name(event));
             break;
         case HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR:
-            if (event[4])
-            printf("EXTENDED_AUDIO_GATEWAY_ERROR_REPORT, status : %d\n", event[3]);
+            printf("EXTENDED_AUDIO_GATEWAY_ERROR_REPORT, status : %d\n", 
+                hfp_subevent_extended_audio_gateway_error_get_error(event));
             break;
         case HFP_SUBEVENT_RING:
             printf("** Ring **\n");
             break;
         case HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG:
-            printf("Phone number for voice tag: %s\n", (const char *) &event[3]);
+            printf("Phone number for voice tag: %s\n", 
+                (const char *) hfp_subevent_number_for_voice_tag_get_number(event));
             break;
         case HFP_SUBEVENT_SPEAKER_VOLUME:
-            printf("Speaker volume: %u\n", event[3]);
+            printf("Speaker volume: status %u, gain %u\n", 
+                hfp_subevent_speaker_volume_get_status(event),
+                hfp_subevent_speaker_volume_get_gain(event));
             break;
         case HFP_SUBEVENT_MICROPHONE_VOLUME:
-            printf("Microphone volume: %u\n", event[3]);
+            printf("Microphone volume: status %u, gain %u\n", 
+                hfp_subevent_microphone_volume_get_status(event),
+                hfp_subevent_microphone_volume_get_gain(event));
+            break;
+        case HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION:
+            printf("Caller ID, number %s\n", hfp_subevent_calling_line_identification_notification_get_number(event));
             break;
         default:
             printf("event not handled %u\n", event[2]);

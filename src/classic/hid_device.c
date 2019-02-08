@@ -436,6 +436,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
     int pos = 0;
     int report_size;
     uint8_t report[48];
+    hid_message_type_t message_type;
 
     switch (packet_type){
         case L2CAP_DATA_PACKET:
@@ -444,13 +445,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                 log_error("no device with cid 0x%02x", channel);
                 return;
             }
-            hid_message_type_t message_type = packet[0] >> 4;
+            message_type = (hid_message_type_t)(packet[0] >> 4);
             // printf("L2CAP_DATA_PACKET message_type %d, packet_size %d  \n", message_type, packet_size);
             switch (message_type){
                 case HID_MESSAGE_TYPE_GET_REPORT:
 
                     pos = 0;
-                    device->report_type = packet[pos++] & 0x03;
+                    device->report_type = (hid_report_type_t)(packet[pos++] & 0x03);
                     device->report_id = 0;
                     device->report_status = HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL;
                     device->state = HID_DEVICE_W2_GET_REPORT;
@@ -488,8 +489,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         hid_device_request_can_send_now_event(channel);
                         break;
                     } 
-                    hid_report_id_status_t report_id_status = hid_report_id_status(device->cid, device->report_id);
-                    switch (report_id_status){
+                    switch (hid_report_id_status(device->cid, device->report_id)){
                         case HID_REPORT_ID_INVALID:
                             device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_REPORT_ID;
                             break;
@@ -512,7 +512,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                 case HID_MESSAGE_TYPE_SET_REPORT:
                     device->state = HID_DEVICE_W2_SET_REPORT;  
                     device->report_size = l2cap_max_mtu();
-                    device->report_type = packet[0] & 0x03;
+                    device->report_type = (hid_report_type_t)(packet[0] & 0x03);
                     if (packet_size < 1){
                         device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
                         break;
@@ -543,7 +543,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             } 
                             break;
                     }
-                    device->report_type = packet[0] & 0x03;
+                    device->report_type = (hid_report_type_t)(packet[0] & 0x03);
                     hid_device_request_can_send_now_event(channel);
                     // l2cap_request_can_send_now_event(device->control_cid);
                     break;
@@ -571,7 +571,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         device->report_status = HID_HANDSHAKE_PARAM_TYPE_ERR_INVALID_PARAMETER;
                         break;
                     }
-                    device->protocol_mode = param;
+                    device->protocol_mode = (hid_protocol_mode_t) param;
                     switch (device->protocol_mode){
                         case HID_PROTOCOL_MODE_BOOT: 
                             // printf("Set protocol mode to BOOT\n");
@@ -606,7 +606,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         break;
                     }
                     pos = 0;
-                    device->report_type = packet[pos++] & 0x03;
+                    device->report_type = (hid_report_type_t)(packet[pos++] & 0x03);
                     device->report_id = 0;
                     if (btstack_hid_report_id_declared(hid_descriptor_len, hid_descriptor)){
                         device->report_id = packet[pos++];

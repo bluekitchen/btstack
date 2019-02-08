@@ -60,6 +60,7 @@ typedef enum {
 	BTSTACK_CRYPTO_CMAC_MESSAGE,
 	BTSTACK_CRYPTO_ECC_P256_GENERATE_KEY,
 	BTSTACK_CRYPTO_ECC_P256_CALCULATE_DHKEY,
+	BTSTACK_CRYPTO_CCM_DIGEST_BLOCK,
 	BTSTACK_CRYPTO_CCM_ENCRYPT_BLOCK,
 	BTSTACK_CRYPTO_CCM_DECRYPT_BLOCK,
 } btstack_crypto_operation_t;
@@ -102,6 +103,8 @@ typedef struct {
 typedef enum {
     CCM_CALCULATE_X1,
     CCM_W4_X1,
+    CCM_CALCULATE_AAD_XN,
+    CCM_W4_AAD_XN,
     CCM_CALCULATE_XN,
     CCM_W4_XN,
     CCM_CALCULATE_S0,
@@ -118,10 +121,13 @@ typedef struct {
 	const uint8_t * input;
 	uint8_t       * output;
 	uint8_t         x_i[16];
+	uint16_t        aad_offset;
+	uint16_t        aad_len;
 	uint16_t        message_len;
-	uint16_t        block_len;
 	uint16_t        counter;
+	uint16_t        block_len;
 	uint8_t         auth_len;
+	uint8_t         aad_remainder_len;
 } btstack_crypto_ccm_t;
 
 /** 
@@ -220,16 +226,27 @@ int btstack_crypto_ecc_p256_validate_public_key(const uint8_t * public_key);
  * @param nonce
  * @param key
  * @param message_len
+ * @param additional_authenticated_data_len must be smaller than 0xff00
  * @param auth_len
  */
-void btstack_crypo_ccm_init(btstack_crypto_ccm_t * request, const uint8_t * key, const uint8_t * nonce, uint16_t message_len, uint8_t auth_len);
+void btstack_crypto_ccm_init(btstack_crypto_ccm_t * request, const uint8_t * key, const uint8_t * nonce, uint16_t message_len, uint16_t additional_authenticated_data_len, uint8_t auth_len);
 
 /** 
  * Get authentication value after encrypt or decrypt operation
  * @param request
  * @param authentication_value
  */
-void btstack_crypo_ccm_get_authentication_value(btstack_crypto_ccm_t * request, uint8_t * authentication_value);
+void btstack_crypto_ccm_get_authentication_value(btstack_crypto_ccm_t * request, uint8_t * authentication_value);
+
+/** 
+ * Digest Additional Authentication Data - can be called multipled times up to total additional_authenticated_data_len specified in btstack_crypto_ccm_init
+ * @param request
+ * @param additional_authenticated_data
+ * @param additional_authenticated_data_len
+ * @param callback
+ * @param callback_arg
+ */
+void btstack_crypto_ccm_digest(btstack_crypto_ccm_t * request, uint8_t * additional_authenticated_data, uint16_t additional_authenticated_data_len, void (* callback)(void * arg), void * callback_arg);
 
 /**
  * Encrypt block - can be called multiple times. len must be a multiply of 16 for all but the last call

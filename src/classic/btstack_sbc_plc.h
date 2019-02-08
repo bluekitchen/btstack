@@ -50,7 +50,7 @@ extern "C" {
 #endif
 
 #define SBC_FS 120          /* SBC Frame Size */
-#define SBC_N 256           /* 16ms - Window Length for pattern matching */ 
+#define SBC_N 512           /* 32ms - Window Length for pattern matching */ 
 #define SBC_M 64            /* 4ms - Template for matching */
 #define SBC_LHIST (SBC_N+SBC_FS-1)  /* Length of history buffer required */ 
 #define SBC_RT 36           /* SBC Reconvergence Time (samples) */
@@ -61,6 +61,12 @@ typedef struct sbc_plc_state {
     int16_t hist[SBC_LHIST+SBC_FS+SBC_RT+SBC_OLAL];
     int16_t bestlag;
     int     nbf;
+
+    // summary of processed good and bad frames
+    int good_frames_nr;
+    int bad_frames_nr;
+    int frame_count;
+    int max_consecutive_bad_frames_nr;
 } btstack_sbc_plc_state_t;
 
 // All int16 audio samples are in host endiness
@@ -68,6 +74,11 @@ void btstack_sbc_plc_init(btstack_sbc_plc_state_t *plc_state);
 void btstack_sbc_plc_bad_frame(btstack_sbc_plc_state_t *plc_state, int16_t *ZIRbuf, int16_t *out); 
 void btstack_sbc_plc_good_frame(btstack_sbc_plc_state_t *plc_state, int16_t *in, int16_t *out);
 uint8_t * btstack_sbc_plc_zero_signal_frame(void);
+void btstack_sbc_dump_statistics(btstack_sbc_plc_state_t * state);
+
+#ifdef OCTAVE_OUTPUT
+void btstack_sbc_plc_octave_set_base_name(const char * name);
+#endif
 
 #if defined __cplusplus
 }

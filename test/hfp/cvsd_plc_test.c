@@ -123,21 +123,34 @@ void create_sine_wav(const char * out_filename){
     wav_writer_close();
 }
 
-void introduce_bad_frames_to_wav_file(const char * in_filename, const char * out_filename, int corruption_step){
+int introduce_bad_frames_to_wav_file(const char * in_filename, const char * out_filename, int corruption_step){
     btstack_cvsd_plc_init(&plc_state);
     wav_writer_open(out_filename, 1, 8000);
     wav_reader_open(in_filename);
-
+    int total_corruption_times = 0;
     int fc = 0;
+    int start_corruption = 0;
+
     while (wav_reader_read_int16(audio_samples_per_frame, audio_frame_in) == 0){
         if (corruption_step > 0 && fc >= corruption_step && fc%corruption_step == 0){
-            memset(audio_frame_in, 50,  audio_samples_per_frame * 2);
+            printf("corrupt fc %d, corruption_step %d\n", fc, corruption_step);
+            start_corruption = 1;
         } 
+        if (start_corruption > 0 && start_corruption < 4){
+            memset(audio_frame_in, 50,  audio_samples_per_frame * 2);
+            start_corruption++;
+        } 
+        if (start_corruption > 4){
+            start_corruption = 0;
+            total_corruption_times++;
+            // printf("corupted 3 frames\n");
+        }
         wav_writer_write_int16(audio_samples_per_frame, audio_frame_in);
         fc++;
     } 
     wav_reader_close();
     wav_writer_close();
+    return total_corruption_times;
 }
 
 void process_wav_file_with_plc(const char * in_filename, const char * out_filename){
@@ -193,14 +206,14 @@ static void fprintf_plot_history(FILE * oct_file, char * name, int data_len, int
     fprintf(oct_file, "x = zeros(1, size(y,2));\n");
     fprintf(oct_file, "b = [0:500];\n");
     
-    int pos = CVSD_FS_MAX;
+    int pos = CVSD_FS;
     fprintf(oct_file, "shift_x = x + %d;\n", pos);
 
     pos = CVSD_LHIST - 1;
     fprintf(oct_file, "lhist_x = x + %d;\n", pos);
     pos += CVSD_OLAL;
     fprintf(oct_file, "lhist_olal1_x = x + %d;\n", pos);
-    pos += CVSD_FS_MAX - CVSD_OLAL;
+    pos += CVSD_FS - CVSD_OLAL;
     fprintf(oct_file, "lhist_fs_x = x + %d;\n", pos);
     pos += CVSD_OLAL;
     fprintf(oct_file, "lhist_olal2_x = x + %d;\n", pos);
@@ -235,14 +248,12 @@ static void fprintf_plot_history(FILE * oct_file, char * name, int data_len, int
 
 TEST(CVSD_PLC, CountEqBytes){
     // init cvsd_fs in plc_state
-    plc_state.cvsd_fs = audio_samples_per_frame;
-
     float val, sf;
     int i, x0, x1;
 
     char * name;
-    BTSTACK_CVSD_PLC_SAMPLE_FORMAT out[CVSD_FS_MAX];
-    BTSTACK_CVSD_PLC_SAMPLE_FORMAT hist[CVSD_LHIST+CVSD_FS_MAX+CVSD_RT+CVSD_OLAL];
+    BTSTACK_CVSD_PLC_SAMPLE_FORMAT out[CVSD_FS];
+    BTSTACK_CVSD_PLC_SAMPLE_FORMAT hist[CVSD_LHIST+CVSD_FS+CVSD_RT+CVSD_OLAL];
     FILE * oct_file = fopen("/Users/mringwal/octave/plc.m", "wb");
     if (!oct_file) return;
     fprintf(oct_file, "%s", "1;\n\n");
@@ -258,7 +269,7 @@ TEST(CVSD_PLC, CountEqBytes){
     fprintf_plot_history(oct_file, name, hist_len, plc_state.hist);
     
     plc_state.bestlag += CVSD_M;
-    sf = btstack_cvsd_plc_amplitude_match(&plc_state, plc_state.hist, plc_state.bestlag);
+    sf = btstack_cvsd_plc_amplitude_match(&plc_state, audio_samples_per_frame, plc_state.hist, plc_state.bestlag);
     
     for (i=0;i<CVSD_OLAL;i++){
         val = sf*plc_state.hist[plc_state.bestlag+i];
@@ -270,21 +281,21 @@ TEST(CVSD_PLC, CountEqBytes){
     fprintf_array_int16(oct_file, name, CVSD_OLAL, plc_state.hist+x0);
     fprintf(oct_file, "plot(b(%d:%d), %s, 'b.'); \n", x0, x1, name);
 
-    for (;i<CVSD_FS_MAX;i++){
+    for (;i<CVSD_FS;i++){
         val = sf*plc_state.hist[plc_state.bestlag+i]; 
         plc_state.hist[CVSD_LHIST+i] = btstack_cvsd_plc_crop_sample(val);
     }
     name = (char *)"fs_minus_olal";
     x0  = x1 + 1;
-    x1  = x0 + CVSD_FS_MAX - CVSD_OLAL - 1;
-    fprintf_array_int16(oct_file, name, CVSD_FS_MAX - CVSD_OLAL, plc_state.hist+x0);
+    x1  = x0 + CVSD_FS - CVSD_OLAL - 1;
+    fprintf_array_int16(oct_file, name, CVSD_FS - CVSD_OLAL, plc_state.hist+x0);
     fprintf(oct_file, "plot(b(%d:%d), %s, 'b.'); \n", x0, x1, name);
     
 
-    for (;i<CVSD_FS_MAX+CVSD_OLAL;i++){
+    for (;i<CVSD_FS+CVSD_OLAL;i++){
         float left  = sf*plc_state.hist[plc_state.bestlag+i];
         float right = plc_state.hist[plc_state.bestlag+i];
-        val = left*btstack_cvsd_plc_rcos(i-CVSD_FS_MAX) + right*btstack_cvsd_plc_rcos(CVSD_OLAL-1-i+CVSD_FS_MAX);
+        val = left*btstack_cvsd_plc_rcos(i-CVSD_FS) + right*btstack_cvsd_plc_rcos(CVSD_OLAL-1-i+CVSD_FS);
         plc_state.hist[CVSD_LHIST+i]  = btstack_cvsd_plc_crop_sample(val);
     }
     name = (char *)"olal2";
@@ -293,7 +304,7 @@ TEST(CVSD_PLC, CountEqBytes){
     fprintf_array_int16(oct_file, name, CVSD_OLAL, plc_state.hist+x0);
     fprintf(oct_file, "plot(b(%d:%d), %s, 'b.'); \n", x0, x1, name);
     
-    for (;i<CVSD_FS_MAX+CVSD_RT+CVSD_OLAL;i++){
+    for (;i<CVSD_FS+CVSD_RT+CVSD_OLAL;i++){
         plc_state.hist[CVSD_LHIST+i] = plc_state.hist[plc_state.bestlag+i];
     }
     name = (char *)"rt";
@@ -302,18 +313,18 @@ TEST(CVSD_PLC, CountEqBytes){
     fprintf_array_int16(oct_file, name, CVSD_RT, plc_state.hist+x0);
     fprintf(oct_file, "plot(b(%d:%d), %s, 'b.'); \n", x0, x1, name);
     
-    for (i=0;i<CVSD_FS_MAX;i++){
+    for (i=0;i<CVSD_FS;i++){
         out[i] = plc_state.hist[CVSD_LHIST+i];
     }
     name = (char *)"out";
     x0  = CVSD_LHIST;
-    x1  = x0 + CVSD_FS_MAX - 1;
-    fprintf_array_int16(oct_file, name, CVSD_FS_MAX, plc_state.hist+x0);
+    x1  = x0 + CVSD_FS - 1;
+    fprintf_array_int16(oct_file, name, CVSD_FS, plc_state.hist+x0);
     fprintf(oct_file, "plot(b(%d:%d), %s, 'cd'); \n", x0, x1, name);
     
     // shift the history buffer 
     for (i=0;i<CVSD_LHIST+CVSD_RT+CVSD_OLAL;i++){
-        plc_state.hist[i] = plc_state.hist[i+CVSD_FS_MAX];
+        plc_state.hist[i] = plc_state.hist[i+CVSD_FS];
     }
     fclose(oct_file);
 }
@@ -326,31 +337,31 @@ TEST(CVSD_PLC, CountEqBytes){
 //     CHECK_EQUAL(23, count_equal_bytes(test_data[3],24));   
 // }
 
-TEST(CVSD_PLC, TestLiveWavFile){
-    int corruption_step = 10;
-    introduce_bad_frames_to_wav_file("data/sco_input-16bit.wav", "results/sco_input.wav", 0);
-    introduce_bad_frames_to_wav_file("data/sco_input-16bit.wav", "results/sco_input_with_bad_frames.wav", corruption_step);
+// TEST(CVSD_PLC, TestLiveWavFile){
+//     int corruption_step = 10;
+//     introduce_bad_frames_to_wav_file("data/sco_input-16bit.wav", "results/sco_input.wav", 0);
+//     introduce_bad_frames_to_wav_file("data/sco_input-16bit.wav", "results/sco_input_with_bad_frames.wav", corruption_step);
     
-    mark_bad_frames_wav_file("results/sco_input.wav", "results/sco_input_detected_frames.wav");
-    process_wav_file_with_plc("results/sco_input.wav", "results/sco_input_after_plc.wav");
-    process_wav_file_with_plc("results/sco_input_with_bad_frames.wav", "results/sco_input_with_bad_frames_after_plc.wav");
-}
+//     mark_bad_frames_wav_file("results/sco_input.wav", "results/sco_input_detected_frames.wav");
+//     process_wav_file_with_plc("results/sco_input.wav", "results/sco_input_after_plc.wav");
+//     process_wav_file_with_plc("results/sco_input_with_bad_frames.wav", "results/sco_input_with_bad_frames_after_plc.wav");
+// }
 
-TEST(CVSD_PLC, TestFanfareFile){
-    int corruption_step = 10;
-    introduce_bad_frames_to_wav_file("data/input/fanfare_mono.wav", "results/fanfare_mono.wav", 0);
-    introduce_bad_frames_to_wav_file("results/fanfare_mono.wav", "results/fanfare_mono_with_bad_frames.wav", corruption_step);
+// TEST(CVSD_PLC, TestFanfareFile){
+//     int corruption_step = 10;
+//     introduce_bad_frames_to_wav_file("data/fanfare_mono.wav", "results/fanfare_mono.wav", 0);
+//     introduce_bad_frames_to_wav_file("results/fanfare_mono.wav", "results/fanfare_mono_with_bad_frames.wav", corruption_step);
     
-    mark_bad_frames_wav_file("results/fanfare_mono.wav", "results/fanfare_mono_detected_frames.wav");
-    process_wav_file_with_plc("results/fanfare_mono.wav", "results/fanfare_mono_after_plc.wav");
-    process_wav_file_with_plc("results/fanfare_mono_with_bad_frames.wav", "results/fanfare_mono_with_bad_frames_after_plc.wav");
-}
+//     mark_bad_frames_wav_file("results/fanfare_mono.wav", "results/fanfare_mono_detected_frames.wav");
+//     process_wav_file_with_plc("results/fanfare_mono.wav", "results/fanfare_mono_after_plc.wav");
+//     process_wav_file_with_plc("results/fanfare_mono_with_bad_frames.wav", "results/fanfare_mono_with_bad_frames_after_plc.wav");
+// }
 
 TEST(CVSD_PLC, TestSineWave){
-    int corruption_step = 25;
+    int corruption_step = 600;
     create_sine_wav("results/sine_test.wav");
-    introduce_bad_frames_to_wav_file("results/sine_test.wav", "results/sine_test_with_bad_frames.wav", corruption_step);
-    
+    int total_corruption_times = introduce_bad_frames_to_wav_file("results/sine_test.wav", "results/sine_test_with_bad_frames.wav", corruption_step);
+    printf("corruptions %d\n", total_corruption_times);
     process_wav_file_with_plc("results/sine_test.wav", "results/sine_test_after_plc.wav");
     process_wav_file_with_plc("results/sine_test_with_bad_frames.wav", "results/sine_test_with_bad_frames_after_plc.wav");
 }

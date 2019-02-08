@@ -720,7 +720,7 @@ static void sm_notify_client_passkey(uint8_t type, hci_con_handle_t con_handle, 
 }
 
 static void sm_notify_client_index(uint8_t type, hci_con_handle_t con_handle, uint8_t addr_type, bd_addr_t address, uint16_t index){
-    // fetch addr and addr type from db
+    // fetch addr and addr type from db, only called for valid entries
     bd_addr_t identity_address;
     int identity_address_type;
     le_device_db_info(index, &identity_address_type, identity_address, NULL);
@@ -1254,7 +1254,7 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
                 bd_addr_t address;
                 int address_type = BD_ADDR_TYPE_UNKNOWN;
                 le_device_db_info(i, &address_type, address, irk);
-                // check if valid entry retrieved
+                // skip unused entries
                 if (address_type == BD_ADDR_TYPE_UNKNOWN) continue;
                 // compare IRK
                 if (memcmp(irk, setup->sm_peer_irk, 16) != 0) continue;
@@ -1274,8 +1274,10 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
             int i;
             for (i=0; i < le_device_db_max_count(); i++){
                 bd_addr_t address;
-                int address_type;
+                int address_type = BD_ADDR_TYPE_UNKNOWN;
                 le_device_db_info(i, &address_type, address, NULL);
+                // skip unused entries
+                if (address_type == BD_ADDR_TYPE_UNKNOWN) continue;
                 log_info("device %u, sm peer addr type %u, peer addres %s", i, address_type, bd_addr_to_str(address));
                 if (address_type == BD_ADDR_TYPE_LE_PUBLIC && memcmp(address, setup->sm_peer_address, 6) == 0){
                     log_info("sm: device found for public address, updating");
@@ -1905,11 +1907,17 @@ static void sm_run(void){
     if (!sm_address_resolution_idle()){
         log_info("LE Device Lookup: device %u/%u", sm_address_resolution_test, le_device_db_max_count());
         while (sm_address_resolution_test < le_device_db_max_count()){
-            int addr_type;
+            int addr_type = BD_ADDR_TYPE_UNKNOWN;
             bd_addr_t addr;
             sm_key_t irk;
             le_device_db_info(sm_address_resolution_test, &addr_type, addr, irk);
             log_info("device type %u, addr: %s", addr_type, bd_addr_to_str(addr));
+
+            // skip unused entries
+            if (addr_type == BD_ADDR_TYPE_UNKNOWN){
+                sm_address_resolution_test++;
+                continue;
+            }
 
             if (sm_address_resolution_addr_type == addr_type && memcmp(addr, sm_address_resolution_address, 6) == 0){
                 log_info("LE Device Lookup: found CSRK by { addr_type, address} ");
@@ -1917,7 +1925,8 @@ static void sm_run(void){
                 break;
             }
 
-            if (sm_address_resolution_addr_type == 0){
+            // if entry is public address, it is for a different device
+            if (addr_type == BD_ADDR_TYPE_LE_PUBLIC){
                 sm_address_resolution_test++;
                 continue;
             }
@@ -2936,6 +2945,7 @@ static void sm_handle_random_result_ir(void *arg){
         log_info("Generated IR key. Store in TLV status: %d", status);
     }
     log_info_key("IR", sm_persistent_ir);
+    dkg_state = DKG_CALC_IRK;
     sm_run();
 }
 
@@ -2994,6 +3004,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             }
                         } else {
                             sm_validate_er_ir();
+                            dkg_state = DKG_CALC_IRK;
                         }
 					}
 					break;
@@ -3871,7 +3882,7 @@ void sm_init(void){
 #ifdef USE_CMAC_ENGINE
     sm_cmac_active  = 0;
 #endif
-    dkg_state = DKG_CALC_IRK;
+    dkg_state = DKG_W4_WORKING;
     rau_state = RAU_IDLE;
     sm_aes128_state = SM_AES128_IDLE;
     sm_address_resolution_test = -1;    // no private address to resolve yet

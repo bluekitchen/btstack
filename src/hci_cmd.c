@@ -1198,6 +1198,37 @@ OPCODE(OGF_LE_CONTROLLER, 0x2F), ""
 // return: status, supported max tx octets, supported max tx time, supported max rx octets, supported max rx time
 };
 
+/**
+ * @param con_handle
+ */
+const hci_cmd_t hci_le_read_phy = {
+OPCODE(OGF_LE_CONTROLLER, 0x30), "H"
+// return: status, connection handler, tx phy, rx phy
+};
+
+/**
+ * @param all_phys
+ * @param tx_phys
+ * @param rx_phys
+ */
+const hci_cmd_t hci_le_set_default_phy = {
+OPCODE(OGF_LE_CONTROLLER, 0x31), "111"
+// return: status
+};
+
+/**
+ * @param con_handle
+ * @param all_phys
+ * @param tx_phys
+ * @param rx_phys
+ * @param phy_options
+ */
+const hci_cmd_t hci_le_set_phy = {
+OPCODE(OGF_LE_CONTROLLER, 0x32), "H1111"
+// LE PHY Update Complete is generated on completion
+};
+
+
 #endif
 
 // Broadcom / Cypress specific HCI commands

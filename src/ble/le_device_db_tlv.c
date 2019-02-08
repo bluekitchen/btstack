@@ -275,10 +275,16 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
 void le_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t irk){
 
 	// fetch entry
-	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch(index, &entry);
-	if (!ok) return;
+    le_device_db_entry_t entry;
+    int ok = le_device_db_tlv_fetch(index, &entry);
 
+    // set defaults if not found
+    if (!ok) {
+        memset(&entry, 0, sizeof(le_device_db_entry_t));
+        entry.addr_type = BD_ADDR_TYPE_UNKNOWN;
+    }
+
+    // setup return values
     if (addr_type) *addr_type = entry.addr_type;
     if (addr) memcpy(addr, entry.addr, 6);
     if (irk) memcpy(irk, entry.irk, 16);

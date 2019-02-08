@@ -38,7 +38,7 @@
 #define __BTSTACK_FILE__ "btstack_cvsd_plc.c"
 
 /*
- * btstack_sbc_plc.c
+ * btstack_CVSD_plc.c
  *
  */
 
@@ -50,11 +50,17 @@
 #include "btstack_cvsd_plc.h"
 #include "btstack_debug.h"
 
+// static float rcos[CVSD_OLAL] = {
+//     0.99148655f,0.96623611f,0.92510857f,0.86950446f,
+//     0.80131732f,0.72286918f,0.63683150f,0.54613418f, 
+//     0.45386582f,0.36316850f,0.27713082f,0.19868268f, 
+//     0.13049554f,0.07489143f,0.03376389f,0.00851345f};
+
 static float rcos[CVSD_OLAL] = {
-    0.99148655f,0.96623611f,0.92510857f,0.86950446f,
-    0.80131732f,0.72286918f,0.63683150f,0.54613418f, 
-    0.45386582f,0.36316850f,0.27713082f,0.19868268f, 
-    0.13049554f,0.07489143f,0.03376389f,0.00851345f};
+    0.99148655f,0.92510857f,
+    0.80131732f,0.63683150f, 
+    0.45386582f,0.27713082f, 
+    0.13049554f,0.03376389f};
 
 float btstack_cvsd_plc_rcos(int index){
     if (index > CVSD_OLAL) return 0;
@@ -114,14 +120,15 @@ int btstack_cvsd_plc_pattern_match(BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y){
     return bestmatch;
 }
 
-float btstack_cvsd_plc_amplitude_match(btstack_cvsd_plc_state_t *plc_state, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y, BTSTACK_CVSD_PLC_SAMPLE_FORMAT bestmatch){
+float btstack_cvsd_plc_amplitude_match(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *y, BTSTACK_CVSD_PLC_SAMPLE_FORMAT bestmatch){
+    UNUSED(plc_state);
     int   i;
     float sumx = 0;
     float sumy = 0.000001f;
     float sf;
     
-    for (i=0;i<plc_state->cvsd_fs;i++){
-        sumx += btstack_cvsd_plc_absolute(y[CVSD_LHIST-plc_state->cvsd_fs+i]);
+    for (i=0;i<num_samples;i++){
+        sumx += btstack_cvsd_plc_absolute(y[CVSD_LHIST-num_samples+i]);
         sumy += btstack_cvsd_plc_absolute(y[bestmatch+i]);
     }
     sf = sumx/sumy;
@@ -142,59 +149,236 @@ void btstack_cvsd_plc_init(btstack_cvsd_plc_state_t *plc_state){
     memset(plc_state, 0, sizeof(btstack_cvsd_plc_state_t));
 }
 
-void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *out){
+#ifdef OCTAVE_OUTPUT
+typedef enum {
+    OCTAVE_FRAME_TYPE_UNKNOWN = 0,
+    OCTAVE_FRAME_TYPE_GOOD,
+    OCTAVE_FRAME_TYPE_BAD
+} octave_frame_type_t;
+
+static const char * octave_frame_type_name[] = {
+    "unknown",
+    "good",
+    "bad"
+};
+
+static octave_frame_type_t octave_frame_type;
+static char octave_base_name[1000];
+
+const char * octave_frame_type2str(int index){
+    if (index <= 0 || index >= sizeof(octave_frame_type_t)) return octave_frame_type_name[0];
+    return octave_frame_type_name[index];
+}
+
+void btstack_cvsd_plc_octave_set_base_name(const char * base_name){
+    strcpy(octave_base_name, base_name);
+    printf("OCTAVE: base name set to %s\n", octave_base_name);
+}
+
+static void octave_fprintf_array_int16(FILE * oct_file, char * name, int data_len, int16_t * data){
+    fprintf(oct_file, "%s = [", name);
+    int i;
+    for (i = 0; i < data_len - 1; i++){
+        fprintf(oct_file, "%d, ", data[i]);
+    }
+    fprintf(oct_file, "%d", data[i]);
+    fprintf(oct_file, "%s", "];\n");
+}
+
+static FILE * open_octave_file(btstack_cvsd_plc_state_t *plc_state, octave_frame_type_t frame_type){
+    char oct_file_name[1200];
+    octave_frame_type = frame_type;
+    sprintf(oct_file_name, "%s_octave_plc_%d_%s.m", octave_base_name, plc_state->frame_count, octave_frame_type2str(octave_frame_type));
+    
+    FILE * oct_file = fopen(oct_file_name, "wb");
+    if (oct_file == NULL){
+        printf("OCTAVE: could not open file %s\n", oct_file_name);
+        return NULL;
+    }
+    printf("OCTAVE: opened file %s\n", oct_file_name);
+    return oct_file;
+}
+
+static void octave_fprintf_plot_history_frame(btstack_cvsd_plc_state_t *plc_state, FILE * oct_file, int frame_nr){
+    char title[100];
+    char hist_name[10];
+    sprintf(hist_name, "hist%d", plc_state->nbf);
+            
+    octave_fprintf_array_int16(oct_file, hist_name, CVSD_LHIST, plc_state->hist);
+
+    fprintf(oct_file, "y = [min(%s):1000:max(%s)];\n", hist_name, hist_name);
+    fprintf(oct_file, "x = zeros(1, size(y,2));\n");
+    fprintf(oct_file, "b = [0: %d];\n", CVSD_LHIST+CVSD_FS+CVSD_RT+CVSD_OLAL);
+    
+    int pos = CVSD_FS;
+    fprintf(oct_file, "shift_x = x + %d;\n", pos);
+
+    pos = CVSD_LHIST - 1;
+    fprintf(oct_file, "lhist_x = x + %d;\n", pos);
+    pos += CVSD_OLAL;
+    fprintf(oct_file, "lhist_olal1_x = x + %d;\n", pos);
+    pos += CVSD_FS - CVSD_OLAL;
+    fprintf(oct_file, "lhist_fs_x = x + %d;\n", pos);
+    pos += CVSD_OLAL;
+    fprintf(oct_file, "lhist_olal2_x = x + %d;\n", pos);
+    pos += CVSD_RT;
+    fprintf(oct_file, "lhist_rt_x = x + %d;\n", pos);
+
+    fprintf(oct_file, "pattern_window_x = x + %d;\n", CVSD_LHIST - CVSD_M);
+    
+    fprintf(oct_file, "hf = figure();\n");
+    sprintf(title, "PLC %s frame %d", octave_frame_type2str(octave_frame_type), frame_nr);
+    
+    fprintf(oct_file, "hold on;\n");
+    fprintf(oct_file, "h1 = plot(%s); \n", hist_name);
+    
+    fprintf(oct_file, "title(\"%s\");\n", title); 
+    
+    fprintf(oct_file, "plot(lhist_x, y, 'k'); \n"); 
+    fprintf(oct_file, "text(max(lhist_x) - 10, max(y)+1000, 'lhist'); \n"); 
+
+    fprintf(oct_file, "plot(lhist_olal1_x, y, 'k'); \n");
+    fprintf(oct_file, "text(max(lhist_olal1_x) - 10, max(y)+1000, 'OLAL'); \n"); 
+
+    fprintf(oct_file, "plot(lhist_fs_x, y, 'k'); \n");
+    fprintf(oct_file, "text(max(lhist_fs_x) - 10, max(y)+1000, 'FS'); \n"); 
+
+    fprintf(oct_file, "plot(lhist_olal2_x, y, 'k'); \n");
+    fprintf(oct_file, "text(max(lhist_olal2_x) - 10, max(y)+1000, 'OLAL'); \n"); 
+
+    fprintf(oct_file, "plot(lhist_rt_x, y, 'k');\n");
+    fprintf(oct_file, "text(max(lhist_rt_x) - 10, max(y)+1000, 'RT'); \n"); 
+
+    if (octave_frame_type == OCTAVE_FRAME_TYPE_GOOD) return;
+
+    int x0 = plc_state->bestlag;
+    int x1 = plc_state->bestlag + CVSD_M - 1;
+    fprintf(oct_file, "plot(b(%d:%d), %s(%d:%d), 'rd'); \n", x0, x1, hist_name, x0, x1);
+    fprintf(oct_file, "text(%d - 10, -10, 'bestlag'); \n", x0); 
+
+    x0 = plc_state->bestlag + CVSD_M ;
+    x1 = plc_state->bestlag + CVSD_M + CVSD_FS - 1;
+    fprintf(oct_file, "plot(b(%d:%d), %s(%d:%d), 'kd'); \n", x0, x1, hist_name, x0, x1);
+    
+    x0 = CVSD_LHIST - CVSD_M;
+    x1 = CVSD_LHIST - 1;
+    fprintf(oct_file, "plot(b(%d:%d), %s(%d:%d), 'rd'); \n", x0, x1, hist_name, x0, x1);
+    fprintf(oct_file, "plot(pattern_window_x, y, 'g'); \n");
+    fprintf(oct_file, "text(max(pattern_window_x) - 10, max(y)+1000, 'M'); \n"); 
+}
+
+static void octave_fprintf_plot_output(btstack_cvsd_plc_state_t *plc_state, FILE * oct_file){
+    if (!oct_file) return;
+    char out_name[10];
+    sprintf(out_name, "out%d", plc_state->nbf);
+    int x0  = CVSD_LHIST;
+    int x1  = x0 + CVSD_FS - 1;
+    octave_fprintf_array_int16(oct_file, out_name, CVSD_FS, plc_state->hist+x0);
+    fprintf(oct_file, "h2 = plot(b(%d:%d), %s, 'cd'); \n", x0, x1, out_name);
+
+    char rest_hist_name[10];
+    sprintf(rest_hist_name, "rest%d", plc_state->nbf);
+    x0  = CVSD_LHIST + CVSD_FS;
+    x1  = x0 + CVSD_OLAL + CVSD_RT - 1;
+    octave_fprintf_array_int16(oct_file, rest_hist_name, CVSD_OLAL + CVSD_RT, plc_state->hist+x0);
+    fprintf(oct_file, "h3 = plot(b(%d:%d), %s, 'kd'); \n", x0, x1, rest_hist_name);
+
+    char new_hist_name[10];
+    sprintf(new_hist_name, "hist%d", plc_state->nbf);
+    octave_fprintf_array_int16(oct_file, new_hist_name, CVSD_LHIST, plc_state->hist);
+    fprintf(oct_file, "h4 = plot(%s, 'r--'); \n", new_hist_name);
+
+    fprintf(oct_file, "legend ([h1, h2, h3, h4], {\"hist\", \"out\", \"rest\", \"new hist\"}, \"location\", \"northeast\");\n ");
+
+    char fig_name[1200];
+    sprintf(fig_name, "../%s_octave_plc_%d_%s", octave_base_name, plc_state->frame_count, octave_frame_type2str(octave_frame_type));
+    fprintf(oct_file, "print(hf, \"%s.jpg\", \"-djpg\");", fig_name);
+}
+#endif
+
+void btstack_cvsd_plc_bad_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *out){
     float val;
     int   i = 0;
     float sf = 1;
     plc_state->nbf++;
-    // plc_state->cvsd_fs = CVSD_FS_MAX;
+    
+    if (plc_state->max_consecutive_bad_frames_nr < plc_state->nbf){
+        plc_state->max_consecutive_bad_frames_nr = plc_state->nbf;
+    }
     if (plc_state->nbf==1){
+        // printf("first bad frame\n");
         // Perform pattern matching to find where to replicate
         plc_state->bestlag = btstack_cvsd_plc_pattern_match(plc_state->hist);
+    }
+
+#ifdef OCTAVE_OUTPUT
+    FILE * oct_file = open_octave_file(plc_state, OCTAVE_FRAME_TYPE_BAD);
+    if (oct_file){
+        octave_fprintf_plot_history_frame(plc_state, oct_file, plc_state->frame_count);   
+    }
+#endif
+
+    if (plc_state->nbf==1){
         // the replication begins after the template match
         plc_state->bestlag += CVSD_M; 
         
         // Compute Scale Factor to Match Amplitude of Substitution Packet to that of Preceding Packet
-        sf = btstack_cvsd_plc_amplitude_match(plc_state, plc_state->hist, plc_state->bestlag);
+        sf = btstack_cvsd_plc_amplitude_match(plc_state, num_samples, plc_state->hist, plc_state->bestlag);
         for (i=0;i<CVSD_OLAL;i++){
             val = sf*plc_state->hist[plc_state->bestlag+i];
             plc_state->hist[CVSD_LHIST+i] = btstack_cvsd_plc_crop_sample(val);
         }
         
-        for (;i<plc_state->cvsd_fs;i++){
+        for (;i<num_samples;i++){
             val = sf*plc_state->hist[plc_state->bestlag+i]; 
             plc_state->hist[CVSD_LHIST+i] = btstack_cvsd_plc_crop_sample(val);
         }
         
-        for (;i<plc_state->cvsd_fs+CVSD_OLAL;i++){
+        for (;i<num_samples+CVSD_OLAL;i++){
             float left  = sf*plc_state->hist[plc_state->bestlag+i];
             float right = plc_state->hist[plc_state->bestlag+i];
-            val = left*rcos[i-plc_state->cvsd_fs] + right*rcos[CVSD_OLAL-1-i+plc_state->cvsd_fs];
+            val = left*rcos[i-num_samples] + right*rcos[CVSD_OLAL-1-i+num_samples];
             plc_state->hist[CVSD_LHIST+i] = btstack_cvsd_plc_crop_sample(val);
         }
 
-        for (;i<plc_state->cvsd_fs+CVSD_RT+CVSD_OLAL;i++){
+        for (;i<num_samples+CVSD_RT+CVSD_OLAL;i++){
             plc_state->hist[CVSD_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
         }
     } else {
-        for (;i<plc_state->cvsd_fs+CVSD_RT+CVSD_OLAL;i++){
+        for (;i<num_samples+CVSD_RT+CVSD_OLAL;i++){
             plc_state->hist[CVSD_LHIST+i] = plc_state->hist[plc_state->bestlag+i];
         }
     }
 
-    for (i=0;i<plc_state->cvsd_fs;i++){
+    for (i=0;i<num_samples;i++){
         out[i] = plc_state->hist[CVSD_LHIST+i];
     }
     
     // shift the history buffer 
     for (i=0;i<CVSD_LHIST+CVSD_RT+CVSD_OLAL;i++){
-        plc_state->hist[i] = plc_state->hist[i+plc_state->cvsd_fs];
+        plc_state->hist[i] = plc_state->hist[i+num_samples];
     }
+
+#ifdef OCTAVE_OUTPUT
+    if (oct_file){
+        octave_fprintf_plot_output(plc_state, oct_file);
+        fclose(oct_file);
+    }
+#endif
 }
 
-void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *in, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *out){
+void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, uint16_t num_samples, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *in, BTSTACK_CVSD_PLC_SAMPLE_FORMAT *out){
     float val;
     int i = 0;
+#ifdef OCTAVE_OUTPUT
+    FILE * oct_file = NULL;
+    if (plc_state->nbf>0){
+        oct_file = open_octave_file(plc_state, OCTAVE_FRAME_TYPE_GOOD);
+        if (oct_file){
+            octave_fprintf_plot_history_frame(plc_state, oct_file, plc_state->frame_count);
+        }
+    }
+#endif
     if (plc_state->nbf>0){
         for (i=0;i<CVSD_RT;i++){
             out[i] = plc_state->hist[CVSD_LHIST+i];
@@ -204,21 +388,28 @@ void btstack_cvsd_plc_good_frame(btstack_cvsd_plc_state_t *plc_state, BTSTACK_CV
             float left  = plc_state->hist[CVSD_LHIST+i];
             float right = in[i];
             val = left * rcos[i-CVSD_RT] + right *rcos[CVSD_OLAL+CVSD_RT-1-i];
-            out[i] = (BTSTACK_CVSD_PLC_SAMPLE_FORMAT)val;
+            out[i] = btstack_cvsd_plc_crop_sample((BTSTACK_CVSD_PLC_SAMPLE_FORMAT)val);
         }
     }
 
-    for (;i<plc_state->cvsd_fs;i++){
+    for (;i<num_samples;i++){
         out[i] = in[i];
     }
     // Copy the output to the history buffer
-    for (i=0;i<plc_state->cvsd_fs;i++){
+    for (i=0;i<num_samples;i++){
         plc_state->hist[CVSD_LHIST+i] = out[i];
     }
     // shift the history buffer
     for (i=0;i<CVSD_LHIST;i++){
-        plc_state->hist[i] = plc_state->hist[i+plc_state->cvsd_fs];
+        plc_state->hist[i] = plc_state->hist[i+num_samples];
     }
+
+#ifdef OCTAVE_OUTPUT
+    if (oct_file){
+        octave_fprintf_plot_output(plc_state, oct_file);
+        fclose(oct_file);
+    }
+#endif
     plc_state->nbf=0;
 }
 
@@ -242,43 +433,62 @@ static int count_equal_samples(BTSTACK_CVSD_PLC_SAMPLE_FORMAT * packet, uint16_t
     return count;
 }
 
-static int bad_frame(btstack_cvsd_plc_state_t *plc_state, BTSTACK_CVSD_PLC_SAMPLE_FORMAT * frame, uint16_t size){
-    return count_equal_samples(frame, size) > plc_state->cvsd_fs - 4;
-}
-
-void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * plc_state, BTSTACK_CVSD_PLC_SAMPLE_FORMAT * in, uint16_t size, BTSTACK_CVSD_PLC_SAMPLE_FORMAT * out){
-    if (plc_state->cvsd_fs == 0){
-        if (size > CVSD_FS_MAX){
-            log_error("btstack_cvsd_plc_process_data: audio frame size is too large.");
-            return;
-        }
-        plc_state->cvsd_fs = size;
-    } else {
-        if (plc_state->cvsd_fs != size){
-            log_error("btstack_cvsd_plc_process_data: audio frame size differs from initial.");
-            return;    
+static int count_zeros(BTSTACK_CVSD_PLC_SAMPLE_FORMAT * frame, uint16_t size){
+    int nr_zeros = 0;
+    int i;
+    for (i = 0; i < size-1; i++){
+        if (frame[i] == 0){
+            nr_zeros++;
         }
     }
+    return nr_zeros;
+}
+
+// note: a zero_frame is currently also a 'bad_frame'
+static int zero_frame(BTSTACK_CVSD_PLC_SAMPLE_FORMAT * frame, uint16_t size){
+    return count_zeros(frame, size) > (size/2);
+}
+
+// more than half the samples are the same -> bad frame
+static int bad_frame(btstack_cvsd_plc_state_t *plc_state, BTSTACK_CVSD_PLC_SAMPLE_FORMAT * frame, uint16_t size){
+    UNUSED(plc_state);
+    return count_equal_samples(frame, size) >= (size / 2);
+}
+
+
+void btstack_cvsd_plc_process_data(btstack_cvsd_plc_state_t * plc_state, BTSTACK_CVSD_PLC_SAMPLE_FORMAT * in, uint16_t num_samples, BTSTACK_CVSD_PLC_SAMPLE_FORMAT * out){
+    if (num_samples == 0) return;
 
     plc_state->frame_count++;
-    if (bad_frame(plc_state, in, size)){
-        memcpy(out, in, size * 2);
-        if (plc_state->good_frames_nr > CVSD_LHIST/plc_state->cvsd_fs){
-            btstack_cvsd_plc_bad_frame(plc_state, out);
-            plc_state->bad_frames_nr++;
+
+    int is_zero_frame = zero_frame(in, num_samples);
+    int is_bad_frame  = bad_frame(plc_state, in, num_samples);
+
+    if (is_bad_frame){
+        memcpy(out, in, num_samples * 2);
+        if (plc_state->good_samples > CVSD_LHIST){
+            btstack_cvsd_plc_bad_frame(plc_state, num_samples, out);
+            if (is_zero_frame){
+                plc_state->zero_frames_nr++;
+            } else {
+                plc_state->bad_frames_nr++;
+            }
         } else {
-            memset(out, 0, size * 2);
+            memset(out, 0, num_samples * 2);
         }
     } else {
-        btstack_cvsd_plc_good_frame(plc_state, in, out);
+        btstack_cvsd_plc_good_frame(plc_state, num_samples, in, out);
         plc_state->good_frames_nr++;
         if (plc_state->good_frames_nr == 1){
             log_info("First good frame at index %d\n", plc_state->frame_count-1);
-        }        
+        } 
+        plc_state->good_samples += num_samples;
     }
 }
 
 void btstack_cvsd_dump_statistics(btstack_cvsd_plc_state_t * state){
     log_info("Good frames: %d\n", state->good_frames_nr);
     log_info("Bad frames: %d\n", state->bad_frames_nr);
+    log_info("Zero frames: %d\n", state->zero_frames_nr);
+    log_info("Max Consecutive bad frames: %d\n", state->max_consecutive_bad_frames_nr);   
 }

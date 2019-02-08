@@ -59,7 +59,17 @@
 
 #define RFCOMM_SERVER_CHANNEL 1
 
+#define NUM_ROWS 25
+#define NUM_COLS 40
+
 #define TEST_COD 0x1234
+
+#define TEST_MODE_SEND      1
+#define TEST_MODE_RECEIVE   2
+#define TEST_MODE_DUPLEX    3
+
+// configure test mode: send only, receive only, full duplex
+#define TEST_MODE TEST_MODE_SEND
 
 typedef enum {
     // SPP
@@ -72,6 +82,9 @@ typedef enum {
     DONE
 } state_t;
 
+static uint8_t   test_data[NUM_ROWS * NUM_COLS];
+static uint16_t  spp_test_data_len;
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static bd_addr_t peer_addr;
@@ -82,6 +95,36 @@ static uint16_t  rfcomm_mtu;
 static uint16_t  rfcomm_cid = 0;
 // static uint32_t  data_to_send =  DATA_VOLUME;
 
+/**
+ * RFCOMM can make use for ERTM. Due to the need to re-transmit packets,
+ * a large buffer is needed to still get high throughput
+ */
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE_FOR_RFCOMM
+static uint8_t ertm_buffer[20000];
+static l2cap_ertm_config_t ertm_config = {
+    0,       // ertm mandatory
+    8,       // max transmit
+    2000,
+    12000,
+    1000,    // l2cap ertm mtu
+    8,
+    8,
+    0,       // No FCS
+};
+static int ertm_buffer_in_use;
+static void rfcomm_ertm_request_handler(rfcomm_ertm_request_t * ertm_request){
+    printf("ERTM Buffer requested, buffer in use %u\n", ertm_buffer_in_use);
+    if (ertm_buffer_in_use) return;
+    ertm_buffer_in_use = 1;
+    ertm_request->ertm_config      = &ertm_config;
+    ertm_request->ertm_buffer      = ertm_buffer;
+    ertm_request->ertm_buffer_size = sizeof(ertm_buffer);
+}
+static void rfcomm_ertm_released_handler(uint16_t ertm_id){
+    printf("ERTM Buffer released, buffer in use  %u, ertm_id %x\n", ertm_buffer_in_use, ertm_id);
+    ertm_buffer_in_use = 0;
+}
+#endif
 
 /** 
  * Find remote peer by COD
@@ -130,6 +173,24 @@ static void test_track_transferred(int bytes_sent){
 }
 /* LISTING_END(tracking): Tracking throughput */
 
+#if (TEST_MODE & TEST_MODE_SEND)
+static void spp_create_test_data(void){
+    int x,y;
+    for (y=0;y<NUM_ROWS;y++){
+        for (x=0;x<NUM_COLS-2;x++){
+            test_data[y*NUM_COLS+x] = '0' + (x % 10);
+        }
+        test_data[y*NUM_COLS+NUM_COLS-2] = '\n';
+        test_data[y*NUM_COLS+NUM_COLS-1] = '\r';
+    }
+}
+static void spp_send_packet(void){
+    rfcomm_send(rfcomm_cid, (uint8_t*) test_data, spp_test_data_len);
+    test_track_transferred(spp_test_data_len);
+    rfcomm_request_can_send_now_event(rfcomm_cid);
+}
+#endif
+
 /* 
  * @section Packet Handler
  * 
@@ -146,53 +207,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 	switch (packet_type) {
 		case HCI_EVENT_PACKET:
 			switch (hci_event_packet_get_type(packet)) {
-
-                case HCI_EVENT_PIN_CODE_REQUEST:
-                    // inform about pin code request
-                    printf("Pin code request - using '0000'\n");
-                    hci_event_pin_code_request_get_bd_addr(packet, event_addr);
-                    gap_pin_code_response(event_addr, "0000");
-                    break;
-
-                case HCI_EVENT_USER_CONFIRMATION_REQUEST:
-                    // inform about user confirmation request
-                    printf("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n", little_endian_read_32(packet, 8));
-                    printf("SSP User Confirmation Auto accept\n");
-                    break;
-
-                case RFCOMM_EVENT_INCOMING_CONNECTION:
-					// data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
-                    rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr); 
-                    rfcomm_channel_nr = rfcomm_event_incoming_connection_get_server_channel(packet);
-                    rfcomm_cid = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
-                    printf("RFCOMM channel %u requested for %s\n", rfcomm_channel_nr, bd_addr_to_str(event_addr));
-                    rfcomm_accept_connection(rfcomm_cid);
-					break;
-					
-				case RFCOMM_EVENT_CHANNEL_OPENED:
-					// data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
-					if (rfcomm_event_channel_opened_get_status(packet)) {
-                        printf("RFCOMM channel open failed, status %u\n", rfcomm_event_channel_opened_get_status(packet));
-                    } else {
-                        rfcomm_cid = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
-                        rfcomm_mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
-                        printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_cid, rfcomm_mtu);
-                        test_reset();
-
-                        // disable page/inquiry scan to get max performance
-                        gap_discoverable_control(0);
-                        gap_connectable_control(0);
-                    }
-					break;
-
-                case RFCOMM_EVENT_CHANNEL_CLOSED:
-                    printf("RFCOMM channel closed\n");
-                    rfcomm_cid = 0;
-
-                    // re-enable page/inquiry scan again
-                    gap_discoverable_control(1);
-                    gap_connectable_control(1);
-                    break;
 
                 case BTSTACK_EVENT_STATE:
                     if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
@@ -230,6 +244,73 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     if (state == W4_PEER_COD){
                     }
                     break;
+
+                case HCI_EVENT_PIN_CODE_REQUEST:
+                    // inform about pin code request
+                    printf("Pin code request - using '0000'\n");
+                    hci_event_pin_code_request_get_bd_addr(packet, event_addr);
+                    gap_pin_code_response(event_addr, "0000");
+                    break;
+
+                case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+                    // inform about user confirmation request
+                    printf("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n", little_endian_read_32(packet, 8));
+                    printf("SSP User Confirmation Auto accept\n");
+                    break;
+
+                case RFCOMM_EVENT_INCOMING_CONNECTION:
+					// data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
+                    rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr); 
+                    rfcomm_channel_nr = rfcomm_event_incoming_connection_get_server_channel(packet);
+                    rfcomm_cid = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
+                    printf("RFCOMM channel %u requested for %s\n", rfcomm_channel_nr, bd_addr_to_str(event_addr));
+                    rfcomm_accept_connection(rfcomm_cid);
+					break;
+					
+				case RFCOMM_EVENT_CHANNEL_OPENED:
+					// data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
+					if (rfcomm_event_channel_opened_get_status(packet)) {
+                        printf("RFCOMM channel open failed, status %u\n", rfcomm_event_channel_opened_get_status(packet));
+                    } else {
+                        rfcomm_cid = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
+                        rfcomm_mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
+                        printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_cid, rfcomm_mtu);
+                        test_reset();
+
+                        // disable page/inquiry scan to get max performance
+                        gap_discoverable_control(0);
+                        gap_connectable_control(0);
+
+#if (TEST_MODE & TEST_MODE_SEND)
+                        // configure test data
+                        spp_test_data_len = rfcomm_mtu;
+                        if (spp_test_data_len > sizeof(test_data)){
+                            spp_test_data_len = sizeof(test_data);
+                        }
+                        spp_create_test_data();
+
+                        // start sending
+                        rfcomm_request_can_send_now_event(rfcomm_cid);
+#endif
+                    }
+					break;
+
+#if (TEST_MODE & TEST_MODE_SEND)
+                case RFCOMM_EVENT_CAN_SEND_NOW:
+                    spp_send_packet();
+                    break;
+#endif
+
+                case RFCOMM_EVENT_CHANNEL_CLOSED:
+                    printf("RFCOMM channel closed\n");
+                    rfcomm_cid = 0;
+
+                    // re-enable page/inquiry scan again
+                    gap_discoverable_control(1);
+                    gap_connectable_control(1);
+                    break;
+
+
 
                 default:
                     break;
@@ -270,6 +351,11 @@ int btstack_main(int argc, const char * argv[]){
 
     rfcomm_init();
     rfcomm_register_service(packet_handler, RFCOMM_SERVER_CHANNEL, 0xffff);
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE_FOR_RFCOMM
+    // setup ERTM management
+    rfcomm_enable_l2cap_ertm(&rfcomm_ertm_request_handler, &rfcomm_ertm_released_handler);
+#endif
 
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;

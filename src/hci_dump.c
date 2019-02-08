@@ -46,7 +46,6 @@
  *  - Apple's PacketLogger
  *  - stdout hexdump
  *
- *  Created by Matthias Ringwald on 5/26/09.
  */
 
 #include "btstack_config.h"
@@ -67,6 +66,11 @@
 #include <time.h>
 #include <sys/time.h>     // for timestamps
 #include <sys/stat.h>     // for mode flags
+#endif
+
+#ifdef ENABLE_SEGGER_RTT
+#include "SEGGER_RTT.h"
+static char channel1_out[1024];
 #endif
 
 // BLUEZ hcidump - struct not used directly, but left here as documentation
@@ -92,13 +96,18 @@ pktlog_hdr;
 #define PKTLOG_HDR_SIZE 13
 
 static int dump_file = -1;
-#ifdef HAVE_POSIX_FILE_IO
 static int dump_format;
-static uint8_t header_bluez[HCIDUMP_HDR_SIZE];
-static uint8_t header_packetlogger[PKTLOG_HDR_SIZE];
+static union {
+    uint8_t header_bluez[HCIDUMP_HDR_SIZE];
+    uint8_t header_packetlogger[PKTLOG_HDR_SIZE];
+} header;
+#ifdef HAVE_POSIX_FILE_IO
 static char time_string[40];
 static int  max_nr_packets = -1;
 static int  nr_packets = 0;
+#endif
+
+#if defined(HAVE_POSIX_FILE_IO) || defined (ENABLE_SEGGER_RTT)
 static char log_message_buffer[256];
 #endif
 
@@ -106,8 +115,10 @@ static char log_message_buffer[256];
 static int log_level_enabled[3] = { 1, 1, 1};
 
 void hci_dump_open(const char *filename, hci_dump_format_t format){
-#ifdef HAVE_POSIX_FILE_IO
+
     dump_format = format;
+
+#ifdef HAVE_POSIX_FILE_IO
     if (dump_format == HCI_DUMP_STDOUT) {
         dump_file = fileno(stdout);
     } else {
@@ -116,15 +127,30 @@ void hci_dump_open(const char *filename, hci_dump_format_t format){
 #ifdef _WIN32
         oflags |= O_BINARY;
 #endif
-
         dump_file = open(filename, oflags, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH );
         if (dump_file < 0){
             printf("hci_dump_open: failed to open file %s\n", filename);
         }
     }
 #else
+
     UNUSED(filename);
-    UNUSED(format);
+
+#ifdef ENABLE_SEGGER_RTT
+    switch (dump_format){
+        case HCI_DUMP_PACKETLOGGER:
+        case HCI_DUMP_BLUEZ:
+            // Configure up channel 1, options:
+            // - SEGGER_RTT_MODE_NO_BLOCK_SKIP
+            // - SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL
+            // Note: with SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL, firwmware will hang if RTT not supported/debug probe not connected
+            // Note: with SEGGER_RTT_MODE_NO_BLOCK_SKIP, there's a chance for log file corruption if second write (packet) is skipped
+            SEGGER_RTT_ConfigUpBuffer(1, "hci_dump", &channel1_out[0], sizeof(channel1_out), SEGGER_RTT_MODE_NO_BLOCK_SKIP) ;;
+            break;
+        default:
+            break;
+    }
+#endif
     
     dump_file = 1;
 #endif
@@ -135,6 +161,42 @@ void hci_dump_set_max_packets(int packets){
     max_nr_packets = packets;
 }
 #endif
+
+static void hci_dump_packetlogger_setup_header(uint8_t * buffer, uint32_t tv_sec, uint32_t tv_us, uint8_t packet_type, uint8_t in, uint16_t len){
+    big_endian_store_32( buffer, 0, PKTLOG_HDR_SIZE - 4 + len);
+    big_endian_store_32( buffer, 4, tv_sec);
+    big_endian_store_32( buffer, 8, tv_us);
+    uint8_t packet_logger_type = 0;
+    switch (packet_type){
+        case HCI_COMMAND_DATA_PACKET:
+            packet_logger_type = 0x00;
+            break;
+        case HCI_ACL_DATA_PACKET:
+            packet_logger_type = in ? 0x03 : 0x02;
+            break;
+        case HCI_SCO_DATA_PACKET:
+            packet_logger_type = in ? 0x09 : 0x08;
+            break;
+        case HCI_EVENT_PACKET:
+            packet_logger_type = 0x01;
+            break;
+        case LOG_MESSAGE_PACKET:
+            packet_logger_type = 0xfc;
+            break;
+        default:
+            return;
+    }
+    buffer[12] = packet_logger_type;
+}
+
+static void hci_dump_bluez_setup_header(uint8_t * buffer, uint32_t tv_sec, uint32_t tv_us, uint8_t packet_type, uint8_t in, uint16_t len){
+    little_endian_store_16( buffer, 0, 1 + len);
+    buffer[2] = in;
+    buffer[3] = 0;
+    little_endian_store_32( buffer, 4, tv_sec);
+    little_endian_store_32( buffer, 8, tv_us);
+    buffer[12] = packet_type;
+}
 
 static void printf_packet(uint8_t packet_type, uint8_t in, uint8_t * packet, uint16_t len){
     switch (packet_type){
@@ -187,7 +249,7 @@ static void printf_timestamp(void){
     uint32_t time_ms = btstack_run_loop_get_time_ms();
     int      seconds = time_ms / 1000;
     int      minutes = seconds / 60;
-    unsigned int hours   = minutes / 60;
+    unsigned int hours = minutes / 60;
 
     uint16_t p_ms      = time_ms - (seconds * 1000);
     uint16_t p_seconds = seconds - (minutes * 60);
@@ -201,7 +263,6 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
     if (dump_file < 0) return; // not activated yet
 
 #ifdef HAVE_POSIX_FILE_IO
-
     // don't grow bigger than max_nr_packets
     if (dump_format != HCI_DUMP_STDOUT && max_nr_packets > 0){
         if (nr_packets >= max_nr_packets){
@@ -213,76 +274,55 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
         }
         nr_packets++;
     }
-    
+#endif
+
+    if (dump_format == HCI_DUMP_STDOUT){
+        printf_timestamp();
+        printf_packet(packet_type, in, packet, len);
+        return;        
+    }
+
+    uint32_t tv_sec = 0;
+    uint32_t tv_us  = 0;
+
     // get time
+#ifdef HAVE_POSIX_FILE_IO
     struct timeval curr_time;
     gettimeofday(&curr_time, NULL);
+    tv_sec = curr_time.tv_sec;
+    tv_us  = curr_time.tv_usec;
+#else
+    uint32_t time_ms = btstack_run_loop_get_time_ms();
+    tv_us   = time_ms * 1000;
+    tv_sec  = 946728000UL + (time_ms / 1000);
+#endif
 
+    uint16_t header_len = 0;
+    switch (dump_format){
+        case HCI_DUMP_BLUEZ:
+            hci_dump_bluez_setup_header(header.header_bluez, tv_sec, tv_us, packet_type, in, len);
+            header_len = HCIDUMP_HDR_SIZE;
+            break;
+        case HCI_DUMP_PACKETLOGGER:
+            hci_dump_packetlogger_setup_header(header.header_packetlogger, tv_sec, tv_us, packet_type, in, len);
+            header_len = PKTLOG_HDR_SIZE;
+            break;
+        default:
+            return;
+    }
+
+#ifdef HAVE_POSIX_FILE_IO
     // avoid -Wunused-result
     int res = 0;
-    switch (dump_format){
-        case HCI_DUMP_STDOUT: {
-            printf_timestamp();
-            printf_packet(packet_type, in, packet, len);
-            break;
-        }
-            
-        case HCI_DUMP_BLUEZ:
-            little_endian_store_16( header_bluez, 0, 1 + len);
-            header_bluez[2] = in;
-            header_bluez[3] = 0;
-            little_endian_store_32( header_bluez, 4, (uint32_t) curr_time.tv_sec);
-            little_endian_store_32( header_bluez, 8,            curr_time.tv_usec);
-            header_bluez[12] = packet_type;
-            res = write (dump_file, header_bluez, HCIDUMP_HDR_SIZE);
-            res = write (dump_file, packet, len );
-            break;
-            
-        case HCI_DUMP_PACKETLOGGER:
-            big_endian_store_32( header_packetlogger, 0, PKTLOG_HDR_SIZE - 4 + len);
-            big_endian_store_32( header_packetlogger, 4,  (uint32_t) curr_time.tv_sec);
-            big_endian_store_32( header_packetlogger, 8, curr_time.tv_usec);
-            switch (packet_type){
-                case HCI_COMMAND_DATA_PACKET:
-                    header_packetlogger[12] = 0x00;
-                    break;
-                case HCI_ACL_DATA_PACKET:
-                    if (in) {
-                        header_packetlogger[12] = 0x03;
-                    } else {
-                        header_packetlogger[12] = 0x02;
-                    }
-                    break;
-                case HCI_SCO_DATA_PACKET:
-                    if (in) {
-                        header_packetlogger[12] = 0x09;
-                    } else {
-                        header_packetlogger[12] = 0x08;
-                    }
-                    break;
-                case HCI_EVENT_PACKET:
-                    header_packetlogger[12] = 0x01;
-                    break;
-                case LOG_MESSAGE_PACKET:
-                    header_packetlogger[12] = 0xfc;
-                    break;
-                default:
-                    return;
-            }
-            res = write (dump_file, &header_packetlogger, PKTLOG_HDR_SIZE);
-            res = write (dump_file, packet, len );
-            break;
-            
-        default:
-            break;
-    }
+    res = write (dump_file, &header, header_len);
+    res = write (dump_file, packet, len );
     UNUSED(res);
-#else
-
-    printf_timestamp();
-    printf_packet(packet_type, in, packet, len);
-
 #endif
+#ifdef ENABLE_SEGGER_RTT
+    SEGGER_RTT_Write(1, &header, header_len);
+    SEGGER_RTT_Write(1, packet, len);
+#endif
+    UNUSED(header_len);
 }
 
 static int hci_dump_log_level_active(int log_level){
@@ -294,7 +334,7 @@ static int hci_dump_log_level_active(int log_level){
 void hci_dump_log_va_arg(int log_level, const char * format, va_list argptr){
     if (!hci_dump_log_level_active(log_level)) return;
 
-#ifdef HAVE_POSIX_FILE_IO
+#if defined(HAVE_POSIX_FILE_IO) || defined (ENABLE_SEGGER_RTT)
     if (dump_file >= 0){
         int len = vsnprintf(log_message_buffer, sizeof(log_message_buffer), format, argptr);
         hci_dump_packet(LOG_MESSAGE_PACKET, 0, (uint8_t*) log_message_buffer, len);

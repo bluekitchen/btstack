@@ -153,7 +153,7 @@ int  btstack_sbc_encoder_num_audio_frames(void);
 /* API_END */
 
 // testing only
-void btstack_sbc_decoder_test_disable_plc(void);
+void btstack_sbc_decoder_test_set_plc_enabled(int plc_enabled);
 void btstack_sbc_decoder_test_simulate_corrupt_frames(int period);
 
 #if defined __cplusplus

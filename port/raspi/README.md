@@ -1,6 +1,6 @@
 # BTstack Port for Raspberry Pi 3 with BCM4343 Bluetooth/Wifi Controller
 
-Tested with Raspberry Pi 3 Model B V1.2 and Raspberry Pi Zero W V1.1.
+Tested with Raspberry Pi 3 Model B V1.2, Raspberry Pi 3 Model B+, and Raspberry Pi Zero W V1.1.
 
 With minor fixes, the port should also work with older Raspberry Pi models that use the [RedBear pHAT](https://redbear.cc/product/rpi/iot-phat.html). See TODO at the end.
 
@@ -85,7 +85,7 @@ For regular use, it makes sense to add Python permanently to the Docker containe
 
 ## Running the examples
 
-Copy one of the examples to the Rasperry Pi and just run them. BTstack will always power cycle the Bluetooth Controller.
+Copy one of the examples to the Rasperry Pi and just run them. BTstack will power cycle the Bluetooth Controller on models without hardware flowcontrol, i.e., Pi 3 A/B. With flowcontrol, e.g Pi Zero W and Pi 3 A+/B+, the firmware will only uploaded on first start. 
 
 	pi@raspberrypi:~ $ ./le_counter
 	Packet Log: /tmp/hci_dump.pklg
@@ -94,6 +94,18 @@ Copy one of the examples to the Rasperry Pi and just run them. BTstack will alwa
 	Phase 2: Main app
 	BTstack counter 0001
 	BTstack up and running at B8:27:EB:27:AF:56
+
+## Bluetooth Hardware Overview
+
+Model                    | Bluetooth Controller                                    | UART Type | UART Flowcontrol | BT_REG_EN   | HCI Transport | Baudrate
+-------------------------|---------------------------------------------------------|-----------|------------------|-------------|---------------|----------
+Older                    | None                                                    |           |                  |             |               |
+Pi 3 Model A, Model B    | [CYW43438](http://www.cypress.com/file/298076/download) | Hardware  | No               | 128         | H5            | 921600
+Pi 3 Model A+, Model B + | [CYW43455](http://www.cypress.com/file/358916/download) | Hardware  | Yes              | 129 (See 1) | H4            | 921600 (See 2)
+Pi Zero W                | [CYW43438](http://www.cypress.com/file/298076/download) | Hardware  | Yes              | 45          | H4            | 921600
+
+1. Model A+/B+ have BT_REG_EN AND WL_REG_EN on the same (virtual) GPIO 129. A Bluetooth Controller power cycle also shuts down Wifi (temporarily). BTstack avoids a power cycle on A+/B+.
+2. Model A+/B+ support 3 mbps baudrate. Not enabled/activated yet.
 
 ## TODO
 - Raspberry Pi Zero W: Check if higher baud rate can be used, 3 mbps does not work.

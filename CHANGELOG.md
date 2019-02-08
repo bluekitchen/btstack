@@ -6,8 +6,32 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- Crypto: fix lockup when stack is shutdown while waiting for result of HCI Command, e.g. LE Read Local P256 Public Key
+
+## Changes January 2019
+
+### Changed
+- L2CAP: provide channel mode (basic/ertm) and fcs option in L2CAP_EVENT_CHANNEL_OPENED 
+- RFCOMM: support L2CAP ERTM. Callbacks passed to rfcomm_enable_l2cap_ertm() are used to manage ERTM buffers
+
+### Added
+- L2CAP: emit L2CAP_EVENT_ERTM_BUFFER_RELEASED if ERTM buffer not needed/used anymore
+- L2CAP: add fcs_option to ERTM config l2cap_ertm_config_t
+- HCI: validate advertisement data length field when generating GAP_EVENT_ADVERTISING_REPORT
+- ad_parser: validate data element length fields in ad_iterator_has_more
+- Raspberry Pi 3 A+/B+ port in port/raspi, starts without power cycle
+
+### Fixed
+- HCI: release outgoing buffer on disconnect if waiting to send another ACL fragment
+- POSIX: use correct baudrate enums for baud rates higher than 921600 (Linux)
+- Crypto: directly process queued crypto operation on HCI result
+
+## Changes December 2018
+
 ### Added
 - SM: generate and store ER / IR keys in TLV, unless manually set by application
+- hci_dump: support PacketLogger or BlueZ format output via SEGGER RTT Channel 1 Up
 
 ### Fixed
 - SM: fix internal buffer overrun during random address generation
@@ -81,7 +105,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HID Device: hid_device_connect(..) function
 - ESP32: implement hal_audio
 - DA14585: support for Dialog Semiconductor DA14585 LE-only controller
-- Rasperry Pi 3 + Raspberry Pi Zero W port in port/raspi
+- Raspberry Pi 3 + Raspberry Pi Zero W port in port/raspi
 
 ### Changed
 - Errata 10734:

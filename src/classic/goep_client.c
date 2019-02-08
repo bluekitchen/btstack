@@ -112,6 +112,7 @@ static l2cap_ertm_config_t ertm_config = {
     512,    // l2cap ertm mtu
     2,
     2,
+    0,      // No FCS
 };
 #endif
 

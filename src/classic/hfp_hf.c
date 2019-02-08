@@ -137,21 +137,25 @@ static void hfp_hf_emit_type_and_number(btstack_packet_handler_t callback, uint8
 }
 
 static void hfp_hf_emit_enhanced_call_status(btstack_packet_handler_t callback, uint8_t clcc_idx, uint8_t clcc_dir,
-                uint8_t clcc_status, uint8_t clcc_mpty, uint8_t bnip_type, const char * bnip_number){
+                uint8_t clcc_status, uint8_t clcc_mode, uint8_t clcc_mpty, uint8_t bnip_type, const char * bnip_number){
     if (!callback) return;
-    uint8_t event[35];
-    event[0] = HCI_EVENT_HFP_META;
-    event[1] = sizeof(event) - 2;
-    event[2] = HFP_SUBEVENT_ENHANCED_CALL_STATUS;
-    event[3] = clcc_idx;
-    event[4] = clcc_dir;
-    event[6] = clcc_status;
-    event[7] = clcc_mpty;
-    event[8] = bnip_type;
-    int size = (strlen(bnip_number) < sizeof(event) - 10) ? (int) strlen(bnip_number) : (int) sizeof(event) - 10;
-    strncpy((char*)&event[9], bnip_number, size);
-    event[9 + size] = 0;
-    (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    printf("hfp_hf_emit_enhanced_call_status: %s \n", bnip_number);
+    uint8_t event[36];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_HFP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = HFP_SUBEVENT_ENHANCED_CALL_STATUS;
+    event[pos++] = clcc_idx;
+    event[pos++] = clcc_dir;
+    event[pos++] = clcc_status;
+    event[pos++] = clcc_mode;
+    event[pos++] = clcc_mpty;
+    event[pos++] = bnip_type;
+    int size = (strlen(bnip_number) < sizeof(event) - pos) ? (int) strlen(bnip_number) : (int) sizeof(event) - pos;
+    strncpy((char*)&event[pos], bnip_number, size);
+    pos += size;
+    event[pos++] = 0;
+    (*callback)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
 static int has_codec_negotiation_feature(hfp_connection_t * hfp_connection){
@@ -360,14 +364,21 @@ static int hfp_hf_send_clcc(uint16_t cid){
 
 static void hfp_emit_ag_indicator_event(btstack_packet_handler_t callback, hfp_ag_indicator_t indicator){
     if (!callback) return;
-    uint8_t event[5+HFP_MAX_INDICATOR_DESC_SIZE+1];
-    event[0] = HCI_EVENT_HFP_META;
-    event[1] = sizeof(event) - 2;
-    event[2] = HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED;
-    event[3] = indicator.index; 
-    event[4] = indicator.status;
-    strncpy((char*)&event[5], indicator.name, HFP_MAX_INDICATOR_DESC_SIZE);
-    event[5+HFP_MAX_INDICATOR_DESC_SIZE] = 0;
+    uint8_t event[10+HFP_MAX_INDICATOR_DESC_SIZE+1];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_HFP_META;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED;
+    event[pos++] = indicator.index; 
+    event[pos++] = indicator.status;
+    event[pos++] = indicator.min_range;
+    event[pos++] = indicator.max_range;
+    event[pos++] = indicator.mandatory;
+    event[pos++] = indicator.enabled;
+    event[pos++] = indicator.status_changed;
+    strncpy((char*)&event[pos], indicator.name, HFP_MAX_INDICATOR_DESC_SIZE);
+    pos += HFP_MAX_INDICATOR_DESC_SIZE;
+    event[pos] = 0;
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -538,8 +549,7 @@ static int hfp_hf_run_for_audio_connection(hfp_connection_t * hfp_connection){
     if (hfp_connection->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED ||
         hfp_connection->state > HFP_W2_DISCONNECT_SCO) return 0;
 
-
-    if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED && hfp_connection->release_audio_connection){
+    if (hfp_connection->release_audio_connection){
         hfp_connection->state = HFP_W4_SCO_DISCONNECTED;
         hfp_connection->release_audio_connection = 0;
         gap_disconnect(hfp_connection->sco_handle);
@@ -989,7 +999,6 @@ static int hfp_parser_is_end_of_line(uint8_t byte){
 
 static void hfp_hf_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);    // ok: only called with RFCOMM_DATA_PACKET
-
     // assertion: size >= 1 as rfcomm.c does not deliver empty packets
     if (size < 1) return;
 
@@ -1000,12 +1009,12 @@ static void hfp_hf_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, ui
 
     // process messages byte-wise
     int pos;
-    for (pos = 0; pos < size ; pos++){
+    for (pos = 0; pos < size; pos++){
         hfp_parse(hfp_connection, packet[pos], 1);
 
-        // parse until end of line
+        // parse until end of line "\r\n"
         if (!hfp_parser_is_end_of_line(packet[pos])) continue;
-
+        
         int value;
         int i;
         switch (hfp_connection->command){
@@ -1020,8 +1029,8 @@ static void hfp_hf_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, ui
             case HFP_CMD_LIST_CURRENT_CALLS:
                 hfp_connection->command = HFP_CMD_NONE;
                 hfp_hf_emit_enhanced_call_status(hfp_hf_callback, hfp_connection->clcc_idx,
-                    hfp_connection->clcc_dir, hfp_connection->clcc_status, hfp_connection->clcc_mpty,
-                    hfp_connection->bnip_type, hfp_connection->bnip_number);
+                    hfp_connection->clcc_dir, hfp_connection->clcc_status, hfp_connection->clcc_mode,
+                    hfp_connection->clcc_mpty, hfp_connection->bnip_type, hfp_connection->bnip_number);
                 break;
             case HFP_CMD_SET_SPEAKER_GAIN:
                 hfp_connection->command = HFP_CMD_NONE;
@@ -1083,6 +1092,12 @@ static void hfp_hf_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, ui
                     }
                 }
                 break;
+            case HFP_CMD_RETRIEVE_AG_INDICATORS_STATUS:
+                for (i = 0; i < hfp_connection->ag_indicators_nr; i++){
+                    hfp_emit_ag_indicator_event(hfp_hf_callback, hfp_connection->ag_indicators[i]);
+                }
+                hfp_connection->command = HFP_CMD_NONE;
+                break; 
             default:
                 break;
         }
