@@ -286,7 +286,7 @@ void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len){
     bytes_to_read = len;
     
     // check if byte already received
-    int pending = UCAIFG & UCRXIFG;
+    int pending = UCA0IFG & UCRXIFG;
 
     // enable RX interrupts - will trigger ISR below if byte pending
     UCA0IE |= UCRXIE;    // enable RX interrupts
