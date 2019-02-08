@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - Crypto: fix lockup when stack is shutdown while waiting for result of HCI Command, e.g. LE Read Local P256 Public Key
 
-## Changes December 2018
+## Changes January 2019
 
 ### Changed
 - L2CAP: provide channel mode (basic/ertm) and fcs option in L2CAP_EVENT_CHANNEL_OPENED 
@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - L2CAP: add fcs_option to ERTM config l2cap_ertm_config_t
 - HCI: validate advertisement data length field when generating GAP_EVENT_ADVERTISING_REPORT
 - ad_parser: validate data element length fields in ad_iterator_has_more
+- Raspberry Pi 3 A+/B+ port in port/raspi, starts without power cycle
 
 ### Fixed
 - HCI: release outgoing buffer on disconnect if waiting to send another ACL fragment
@@ -104,7 +105,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - HID Device: hid_device_connect(..) function
 - ESP32: implement hal_audio
 - DA14585: support for Dialog Semiconductor DA14585 LE-only controller
-- Rasperry Pi 3 + Raspberry Pi Zero W port in port/raspi
+- Raspberry Pi 3 + Raspberry Pi Zero W port in port/raspi
 
 ### Changed
 - Errata 10734:
