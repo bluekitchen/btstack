@@ -46,7 +46,7 @@
 #define __AVRCP_BROWSING_TARGET_H
 
 #include <stdint.h>
-#include "avrcp.h"
+#include "classic/avrcp.h"
 
 #if defined __cplusplus
 extern "C" {

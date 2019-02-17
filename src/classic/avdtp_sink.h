@@ -48,7 +48,7 @@
 
 #include <stdint.h>
 #include "hci.h"
-#include "avdtp.h"
+#include "classic/avdtp.h"
 
 #if defined __cplusplus
 extern "C" {

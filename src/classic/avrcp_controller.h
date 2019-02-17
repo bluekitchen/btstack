@@ -48,7 +48,7 @@
 #include <stdint.h>
 #include "btstack_run_loop.h"
 #include "btstack_linked_list.h"
-#include "avrcp.h"
+#include "classic/avrcp.h"
 
 #if defined __cplusplus
 extern "C" {

@@ -46,7 +46,7 @@
 #define __AVDTP_UITL_H
 
 #include <stdint.h>
-#include "avdtp.h"
+#include "classic/avdtp.h"
 
 #if defined __cplusplus
 extern "C" {
