@@ -859,7 +859,12 @@ int btstack_main(int argc, const char * argv[]){
     
     // Create AVRCP target service record and register it with SDP.
     memset(sdp_avrcp_target_service_buffer, 0, sizeof(sdp_avrcp_target_service_buffer));
-    avrcp_target_create_sdp_record(sdp_avrcp_target_service_buffer, 0x10001, AVRCP_BROWSING_ENABLED, 1, NULL, NULL);
+
+    uint16_t supported_features = (1 << AVRCP_TARGET_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER);
+    if (AVRCP_BROWSING_ENABLED) {
+        supported_features |= (1 << AVRCP_TARGET_SUPPORTED_FEATURE_BROWSING);
+    } 
+    avrcp_target_create_sdp_record(sdp_avrcp_target_service_buffer, 0x10001, AVRCP_BROWSING_ENABLED, supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_target_service_buffer);
 
     // Set local name with a template Bluetooth address, that will be automatically

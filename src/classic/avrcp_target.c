@@ -53,8 +53,15 @@ static const uint8_t AVRCP_NOTIFICATION_TRACK_NOT_SELECTED[] = {0xFF,0xFF,0xFF,0
 
 avrcp_context_t avrcp_target_context;
 
+static int avrcp_target_supports_browsing(uint16_t target_supported_features){
+    return target_supported_features & (1 << AVRCP_TARGET_SUPPORTED_FEATURE_BROWSING);
+}
+
 void avrcp_target_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name){
-    avrcp_create_sdp_record(0, service, service_record_handle, browsing, supported_features, service_name, service_provider_name);
+    if (browsing){
+        supported_features |= (1 << AVRCP_TARGET_SUPPORTED_FEATURE_BROWSING);
+    }
+    avrcp_create_sdp_record(0, service, service_record_handle, avrcp_target_supports_browsing(supported_features), supported_features, service_name, service_provider_name);
 }
 
 static void avrcp_target_emit_operation(btstack_packet_handler_t callback, uint16_t avrcp_cid, avrcp_operation_id_t operation_id, uint8_t operands_length, uint8_t operand){

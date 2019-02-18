@@ -1148,7 +1148,12 @@ int btstack_main(int argc, const char * argv[]){
     
     // setup AVRCP
     memset(sdp_avrcp_controller_service_buffer, 0, sizeof(sdp_avrcp_controller_service_buffer));
-    avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10001, AVRCP_BROWSING_ENABLED, 1, NULL, NULL);
+    
+    uint16_t supported_features = (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER);
+    if (AVRCP_BROWSING_ENABLED) {
+        supported_features |= (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_BROWSING);
+    }
+    avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10001, AVRCP_BROWSING_ENABLED, supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_controller_service_buffer);
 
     gap_set_local_name("BTstack AVRCP Controller PTS 00:00:00:00:00:00");

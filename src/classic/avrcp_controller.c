@@ -50,8 +50,15 @@
 // made public in avrcp_controller.h
 avrcp_context_t avrcp_controller_context;
 
+static int avrcp_controller_supports_browsing(uint16_t controller_supported_features){
+    return controller_supported_features & (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_BROWSING);
+}
+
 void avrcp_controller_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name){
-    avrcp_create_sdp_record(1, service, service_record_handle, browsing, supported_features, service_name, service_provider_name);
+    if (browsing){
+        supported_features |= (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_BROWSING);
+    }
+    avrcp_create_sdp_record(1, service, service_record_handle, avrcp_controller_supports_browsing(supported_features), supported_features, service_name, service_provider_name);
 }
 
 static void avrcp_emit_repeat_and_shuffle_mode(btstack_packet_handler_t callback, uint16_t avrcp_cid, uint8_t ctype, avrcp_repeat_mode_t repeat_mode, avrcp_shuffle_mode_t shuffle_mode){

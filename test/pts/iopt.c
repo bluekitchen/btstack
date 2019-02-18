@@ -130,13 +130,21 @@ int btstack_main(int argc, const char * argv[]){
     a2dp_sink_create_sdp_record(a2dp_sink_service_buffer, 0x10007, 1, NULL, NULL);
     sdp_register_service(a2dp_sink_service_buffer);
     
-    avrcp_controller_create_sdp_record(avrcp_controller_service_buffer, 0x10008, AVRCP_BROWSING_ENABLED, 1, NULL, NULL);
+    uint16_t controller_supported_features = (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER);
+    if (AVRCP_BROWSING_ENABLED) {
+        controller_supported_features |= (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_BROWSING);
+    }
+    avrcp_controller_create_sdp_record(avrcp_controller_service_buffer, 0x10008, AVRCP_BROWSING_ENABLED, controller_supported_features, NULL, NULL);
     sdp_register_service(avrcp_controller_service_buffer);
 
     a2dp_source_create_sdp_record(a2dp_source_service_buffer, 0x10009, 1, NULL, NULL);
     sdp_register_service(a2dp_source_service_buffer);
-    
-    avrcp_target_create_sdp_record(avrcp_target_service_buffer, 0x1000a, AVRCP_BROWSING_ENABLED, 1, NULL, NULL);
+
+    uint16_t target_supported_features = (1 << AVRCP_TARGET_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER);
+    if (AVRCP_BROWSING_ENABLED) {
+        target_supported_features |= (1 << AVRCP_TARGET_SUPPORTED_FEATURE_BROWSING);
+    }
+    avrcp_target_create_sdp_record(avrcp_target_service_buffer, 0x1000a, AVRCP_BROWSING_ENABLED, target_supported_features, NULL, NULL);
     sdp_register_service(avrcp_target_service_buffer);
 
     // set CoD for all this
