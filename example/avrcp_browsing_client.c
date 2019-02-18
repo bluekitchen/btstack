@@ -66,6 +66,8 @@
 #include "btstack_stdin.h"
 #endif
 
+#define AVRCP_BROWSING_ENABLED 
+
 #define AVRCP_BROWSING_MAX_PLAYERS          10
 #define AVRCP_BROWSING_MAX_FOLDERS          10
 #define AVRCP_BROWSING_MAX_FOLDER_NAME_LEN  30
@@ -166,7 +168,6 @@ static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16
 static void stdin_process(char cmd);
 #endif
 
-#define AVRCP_BROWSING_ENABLED 1
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
@@ -191,10 +192,10 @@ int btstack_main(int argc, const char * argv[]){
     memset(sdp_avrcp_browsing_controller_service_buffer, 0, sizeof(sdp_avrcp_browsing_controller_service_buffer));
 
     uint16_t supported_features = (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER);
-    if (AVRCP_BROWSING_ENABLED) {
-        supported_features |= (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_BROWSING);
-    }
-    avrcp_controller_create_sdp_record(sdp_avrcp_browsing_controller_service_buffer, 0x10001, AVRCP_BROWSING_ENABLED, supported_features, NULL, NULL);
+#ifdef AVRCP_BROWSING_ENABLED
+    supported_features |= (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_BROWSING);
+#endif
+    avrcp_controller_create_sdp_record(sdp_avrcp_browsing_controller_service_buffer, 0x10001, supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_browsing_controller_service_buffer);
     
     // Set local name with a template Bluetooth address, that will be automatically

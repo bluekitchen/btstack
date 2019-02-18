@@ -68,7 +68,7 @@
 
 #include "btstack.h"
 
-#define AVRCP_BROWSING_ENABLED 0
+//#define AVRCP_BROWSING_ENABLED
 
 #ifdef HAVE_BTSTACK_STDIN
 #include "btstack_stdin.h"
@@ -237,10 +237,10 @@ static int a2dp_and_avrcp_setup(void){
     memset(sdp_avrcp_controller_service_buffer, 0, sizeof(sdp_avrcp_controller_service_buffer));
     
     uint16_t supported_features = (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER);
-    if (AVRCP_BROWSING_ENABLED) {
-        supported_features |= (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_BROWSING);
-    }
-    avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10001, AVRCP_BROWSING_ENABLED, supported_features, NULL, NULL);
+#ifdef AVRCP_BROWSING_ENABLED
+    supported_features |= (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_BROWSING);
+#endif
+    avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10001, supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_controller_service_buffer);
     
     gap_set_local_name("A2DP Sink Demo 00:00:00:00:00:00");

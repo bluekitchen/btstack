@@ -70,7 +70,7 @@
 // #define VOLUME_REDUCTION 3
 // #undef  HAVE_BTSTACK_STDIN
 
-#define AVRCP_BROWSING_ENABLED 0
+//#define AVRCP_BROWSING_ENABLED
 
 #define NUM_CHANNELS                2
 #define A2DP_SAMPLE_RATE            44100
@@ -263,7 +263,12 @@ static int a2dp_source_and_avrcp_services_init(void){
     
     // Create AVRCP target service record and register it with SDP.
     memset(sdp_avrcp_target_service_buffer, 0, sizeof(sdp_avrcp_target_service_buffer));
-    avrcp_target_create_sdp_record(sdp_avrcp_target_service_buffer, 0x10001, AVRCP_BROWSING_ENABLED, 1, NULL, NULL);
+    uint16_t supported_features = (1 << AVRCP_TARGET_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER);
+#ifdef AVRCP_BROWSING_ENABLED
+    supported_features |= (1 << AVRCP_TARGET_SUPPORTED_FEATURE_BROWSING);
+#endif
+    
+    avrcp_target_create_sdp_record(sdp_avrcp_target_service_buffer, 0x10001, supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_target_service_buffer);
 
     // Set local name with a template Bluetooth address, that will be automatically
