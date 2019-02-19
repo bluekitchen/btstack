@@ -49,37 +49,6 @@
 #define PSM_AVCTP                       BLUETOOTH_PROTOCOL_AVCTP
 #define PSM_AVCTP_BROWSING              0x001b
 
-/* 
-Category 1: Player/Recorder
-Category 2: Monitor/Amplifier
-Category 3: Tuner
-Category 4: Menu
-*/
-
-/* controller supported features
-Bit 0 = Category 1
-Bit 1 = Category 2
-Bit 2 = Category 3
-Bit 3 = Category 4
-Bit 4-5 = RFA
-Bit 6 = Supports browsing
-Bit 7-15 = RFA
-The bits for supported categories are set to 1. Others are set to 0.
-*/
-
-/* target supported features
-Bit 0 = Category 1 
-Bit 1 = Category 2 
-Bit 2 = Category 3 
-Bit 3 = Category 4
-Bit 4 = Player Application Settings. Bit 0 should be set for this bit to be set.
-Bit 5 = Group Navigation. Bit 0 should be set for this bit to be set.
-Bit 6 = Supports browsing*4
-Bit 7 = Supports multiple media player applications
-Bit 8-15 = RFA
-The bits for supported categories are set to 1. Others are set to 0.
-*/
-
 static const char * default_avrcp_controller_service_name = "BTstack AVRCP Controller Service";
 static const char * default_avrcp_controller_service_provider_name = "BTstack AVRCP Controller Service Provider";
 static const char * default_avrcp_target_service_name = "BTstack AVRCP Target Service";
@@ -661,9 +630,10 @@ void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
 
 uint8_t avrcp_connect(bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * avrcp_cid){
     avrcp_connection_t * connection = get_avrcp_connection_for_bd_addr(bd_addr, context);
-    if (connection){
-        return ERROR_CODE_COMMAND_DISALLOWED;
-    }
+    if (connection) return ERROR_CODE_COMMAND_DISALLOWED;
+
+    if (!sdp_client_ready()) return ERROR_CODE_COMMAND_DISALLOWED;
+
     connection = avrcp_create_connection(bd_addr, context);
     if (!connection){
         log_error("avrcp: could not allocate connection struct.");
@@ -673,22 +643,14 @@ uint8_t avrcp_connect(bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * a
     if (avrcp_cid){
         *avrcp_cid = connection->avrcp_cid;
     }
-
-    connection->state = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
     
     context->avrcp_l2cap_psm = 0;
     context->avrcp_version = 0;
     context->avrcp_cid = connection->avrcp_cid;
     connection->browsing_l2cap_psm = 0;
+    connection->state = AVCTP_CONNECTION_W4_SDP_QUERY_COMPLETE;
+
     sdp_query_context = context;
-
-    uint8_t status = sdp_client_query_uuid16(&avrcp_handle_sdp_client_query_result, bd_addr, BLUETOOTH_PROTOCOL_AVCTP);
-
-    // free connection struct in case of SDP connection error
-    if (status){
-        log_info("AVRCP: SDP query failed with status 0x%02x.", status);
-        avrcp_finalize_connection(connection, context);
-    }
-
-    return status;
+    sdp_client_query_uuid16(&avrcp_handle_sdp_client_query_result, connection->remote_addr, BLUETOOTH_PROTOCOL_AVCTP);
+    return ERROR_CODE_SUCCESS;
 }

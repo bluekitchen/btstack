@@ -390,7 +390,7 @@ typedef struct {
     uint16_t l2cap_signaling_cid;
     uint16_t l2cap_mtu;
     uint16_t avrcp_cid;
-
+    
     uint16_t avrcp_browsing_cid;
     uint16_t browsing_l2cap_psm;
     uint16_t browsing_version;
@@ -399,7 +399,7 @@ typedef struct {
 
     avctp_connection_state_t state;
     uint8_t wait_to_send;
-
+    
     // PID check
     uint8_t reject_transport_header;
     uint8_t transport_header;
