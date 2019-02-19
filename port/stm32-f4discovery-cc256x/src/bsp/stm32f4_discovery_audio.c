@@ -132,6 +132,7 @@ b) RECORD A FILE:
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4_discovery_audio.h"
+#include "btstack_config.h"
 
 /** @addtogroup BSP
   * @{
