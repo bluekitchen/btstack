@@ -510,7 +510,6 @@ typedef enum {
 
 typedef struct {
     avrcp_role_t role;
-    btstack_linked_list_t connections;
     btstack_packet_handler_t avrcp_callback;
     btstack_packet_handler_t packet_handler;
 
@@ -535,6 +534,8 @@ const char * avrcp_ctype2str(uint8_t index);
 const char * avrcp_repeat2str(uint8_t index);
 const char * avrcp_shuffle2str(uint8_t index);
 
+void avrcp_init(void);
+
 void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avrcp_context_t * context);
 
 void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name);
@@ -543,9 +544,15 @@ void avrcp_emit_connection_established(btstack_packet_handler_t callback, uint16
 void avrcp_emit_connection_closed(btstack_packet_handler_t callback, uint16_t avrcp_cid);
 
 uint8_t avrcp_cmd_opcode(uint8_t *packet, uint16_t size);
-avrcp_connection_t * get_avrcp_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid, avrcp_context_t * context);
-avrcp_connection_t * get_avrcp_connection_for_avrcp_cid(uint16_t avrcp_cid, avrcp_context_t * context);
-avrcp_connection_t * get_avrcp_connection_for_bd_addr(bd_addr_t addr, avrcp_context_t * context);
+
+avrcp_connection_t * get_avrcp_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid);
+avrcp_connection_t * get_avrcp_connection_for_avrcp_cid(uint16_t avrcp_cid);
+avrcp_connection_t * get_avrcp_connection_for_bd_addr(bd_addr_t addr);
+
+avrcp_connection_t * get_avrcp_connection_for_browsing_cid(uint16_t browsing_cid);
+avrcp_connection_t * get_avrcp_connection_for_browsing_l2cap_cid(uint16_t browsing_l2cap_cid);
+avrcp_browsing_connection_t * get_avrcp_browsing_connection_for_l2cap_cid(uint16_t l2cap_cid);
+
 void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_cid);
 uint16_t avrcp_get_next_cid(void);
 
