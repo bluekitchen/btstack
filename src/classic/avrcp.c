@@ -61,6 +61,9 @@ static uint8_t   attribute_value[1000];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
 static btstack_linked_list_t connections;
+static btstack_packet_handler_t avrcp_controller_packet_handler;
+static btstack_packet_handler_t avrcp_target_packet_handler;
+// static int l2cap_service_registered = 0;
 
 static const char * avrcp_subunit_type_name[] = {
     "MONITOR", "AUDIO", "PRINTER", "DISC", "TAPE_RECORDER_PLAYER", "TUNER", 
@@ -591,77 +594,98 @@ void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
     avrcp_connection_t * connection = NULL;
     uint16_t psm;
 
-    if (packet_type != HCI_EVENT_PACKET) return;
+    switch (packet_type) {
 
-    switch (hci_event_packet_get_type(packet)) {
-        case HCI_EVENT_DISCONNECTION_COMPLETE:
-            avrcp_emit_connection_closed(context->avrcp_callback, 0);
+#if 0
+        case L2CAP_DATA_PACKET:
+            // figure out role!
+            connection = get_avrcp_connection_for_l2cap_signaling_cid(AVRCP_CONTROLLER, channel);
+            // or?
+            connection = get_avrcp_connection_for_l2cap_signaling_cid(AVRCP_TARGET, channel);
+            if (!connection) break;
+            // call correct controller/target packet hander
             break;
-        case L2CAP_EVENT_INCOMING_CONNECTION:
-            l2cap_event_incoming_connection_get_address(packet, event_addr);
-            local_cid = l2cap_event_incoming_connection_get_local_cid(packet);
-            connection = avrcp_create_connection(context->role, event_addr);
-            if (!connection) {
-                log_error("Failed to alloc connection structure");
-                l2cap_decline_connection(local_cid);
-                break;
-            }
-            
-            psm = l2cap_event_incoming_connection_get_psm(packet);
-            if (psm == PSM_AVCTP){
-                if (!connection->l2cap_signaling_cid){
-                    connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
-                    connection->l2cap_signaling_cid = local_cid;
-                    log_info("L2CAP_EVENT_INCOMING_CONNECTION avrcp_cid 0x%02x, l2cap_signaling_cid 0x%02x", connection->avrcp_cid, connection->l2cap_signaling_cid);
-                    l2cap_accept_connection(local_cid);
+#endif
+
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)) {
+                case HCI_EVENT_DISCONNECTION_COMPLETE:
+                    avrcp_emit_connection_closed(context->avrcp_callback, 0);
                     break;
-                }
-            }
-            log_info("L2CAP_EVENT_INCOMING_CONNECTION local_cid 0x%02x, psm 0x%2x, decline connection", local_cid, psm);
-            l2cap_decline_connection(local_cid);
-            break;
-            
-        case L2CAP_EVENT_CHANNEL_OPENED:
-            l2cap_event_channel_opened_get_address(packet, event_addr);
-            status = l2cap_event_channel_opened_get_status(packet);
-            local_cid = l2cap_event_channel_opened_get_local_cid(packet);
-            
-            connection = get_avrcp_connection_for_bd_addr(context->role, event_addr);
-            if (!connection){
-                // TODO: validate if this cannot happen. If not,  drop disconnect call
-                log_error("AVRCP connection lookup failed");
-                l2cap_disconnect(local_cid, 0); // reason isn't used
-                break;
-            }
-            if (status != ERROR_CODE_SUCCESS){
-                log_info("L2CAP connection to connection %s failed. status code 0x%02x", bd_addr_to_str(event_addr), status);
-                avrcp_emit_connection_established(context->avrcp_callback, connection->avrcp_cid, event_addr, status);
-                avrcp_finalize_connection(connection);
-                break;
-            }
+                case L2CAP_EVENT_INCOMING_CONNECTION:
+                    l2cap_event_incoming_connection_get_address(packet, event_addr);
+                    local_cid = l2cap_event_incoming_connection_get_local_cid(packet);
 
-            psm = l2cap_event_channel_opened_get_psm(packet);
-            if (psm == PSM_AVCTP){
-                connection->l2cap_signaling_cid = local_cid;
-                connection->l2cap_mtu = l2cap_event_channel_opened_get_remote_mtu(packet);
-                connection->song_length_ms = 0xFFFFFFFF;
-                connection->song_position_ms = 0xFFFFFFFF;
-                connection->playback_status = AVRCP_PLAYBACK_STATUS_ERROR;
+                    // create two connection objects (both)
+                    connection = avrcp_create_connection(context->role, event_addr);
+                    if (!connection) {
+                        log_error("Failed to alloc connection structure");
+                        l2cap_decline_connection(local_cid);
+                        break;
+                    }
+                    
+                    psm = l2cap_event_incoming_connection_get_psm(packet);
+                    if (psm == PSM_AVCTP){
+                        if (!connection->l2cap_signaling_cid){
+                            connection->state = AVCTP_CONNECTION_W4_L2CAP_CONNECTED;
+                            connection->l2cap_signaling_cid = local_cid;
+                            log_info("L2CAP_EVENT_INCOMING_CONNECTION avrcp_cid 0x%02x, l2cap_signaling_cid 0x%02x", connection->avrcp_cid, connection->l2cap_signaling_cid);
+                            l2cap_accept_connection(local_cid);
+                            break;
+                        }
+                    }
+                    log_info("L2CAP_EVENT_INCOMING_CONNECTION local_cid 0x%02x, psm 0x%2x, decline connection", local_cid, psm);
+                    l2cap_decline_connection(local_cid);
+                    break;
+                    
+                case L2CAP_EVENT_CHANNEL_OPENED:
+                    l2cap_event_channel_opened_get_address(packet, event_addr);
+                    status = l2cap_event_channel_opened_get_status(packet);
+                    local_cid = l2cap_event_channel_opened_get_local_cid(packet);
+                    
+                    connection = get_avrcp_connection_for_bd_addr(context->role, event_addr);
+                    if (!connection){
+                        // TODO: validate if this cannot happen. If not,  drop disconnect call
+                        log_error("AVRCP connection lookup failed");
+                        l2cap_disconnect(local_cid, 0); // reason isn't used
+                        break;
+                    }
+                    if (status != ERROR_CODE_SUCCESS){
+                        log_info("L2CAP connection to connection %s failed. status code 0x%02x", bd_addr_to_str(event_addr), status);
+                        // emit twice for each role
+                        avrcp_emit_connection_established(context->avrcp_callback, connection->avrcp_cid, event_addr, status);
+                        avrcp_finalize_connection(connection);
+                        break;
+                    }
 
-                log_info("L2CAP_EVENT_CHANNEL_OPENED avrcp_cid 0x%02x, l2cap_signaling_cid 0x%02x", connection->avrcp_cid, connection->l2cap_signaling_cid);
-                connection->state = AVCTP_CONNECTION_OPENED;
-                avrcp_emit_connection_established(context->avrcp_callback, connection->avrcp_cid, event_addr, ERROR_CODE_SUCCESS);
-            }
-            break;
-        
-        case L2CAP_EVENT_CHANNEL_CLOSED:
-            // data: event (8), len(8), channel (16)
-            local_cid = l2cap_event_channel_closed_get_local_cid(packet);
-            connection = get_avrcp_connection_for_l2cap_signaling_cid(context->role, local_cid);
-            if (connection){
-                avrcp_emit_connection_closed(context->avrcp_callback, connection->avrcp_cid);
-                avrcp_finalize_connection(connection);
-                break;
+                    psm = l2cap_event_channel_opened_get_psm(packet);
+                    if (psm == PSM_AVCTP){
+                        connection->l2cap_signaling_cid = local_cid;
+                        connection->l2cap_mtu = l2cap_event_channel_opened_get_remote_mtu(packet);
+                        connection->song_length_ms = 0xFFFFFFFF;
+                        connection->song_position_ms = 0xFFFFFFFF;
+                        connection->playback_status = AVRCP_PLAYBACK_STATUS_ERROR;
+
+                        log_info("L2CAP_EVENT_CHANNEL_OPENED avrcp_cid 0x%02x, l2cap_signaling_cid 0x%02x", connection->avrcp_cid, connection->l2cap_signaling_cid);
+                        connection->state = AVCTP_CONNECTION_OPENED;
+                        // emit twice for each role
+                        avrcp_emit_connection_established(context->avrcp_callback, connection->avrcp_cid, event_addr, ERROR_CODE_SUCCESS);
+                    }
+                    break;
+                
+                case L2CAP_EVENT_CHANNEL_CLOSED:
+                    // data: event (8), len(8), channel (16)
+                    local_cid = l2cap_event_channel_closed_get_local_cid(packet);
+                    connection = get_avrcp_connection_for_l2cap_signaling_cid(context->role, local_cid);
+                        // emit twice for each role
+                    if (connection){
+                        avrcp_emit_connection_closed(context->avrcp_callback, connection->avrcp_cid);
+                        avrcp_finalize_connection(connection);
+                        break;
+                    }
+                    break;
+                default:
+                    break;
             }
             break;
         default:
@@ -698,4 +722,21 @@ uint8_t avrcp_connect(avrcp_role_t role, bd_addr_t bd_addr, avrcp_context_t * co
 
 void avrcp_init(void){
     connections = NULL;
+
+#if 0
+    if (l2cap_service_registered) return;
+    int status = l2cap_register_service(&avrcp_packet_handler, BLUETOOTH_PROTOCOL_AVCTP, 0xffff, LEVEL_2);
+    if (status != ERROR_CODE_SUCCESS) return;
+    l2cap_service_registered = 1;
+#endif
 }
+
+void avrcp_register_controller_packet_handler(btstack_packet_handler_t callback){
+    avrcp_controller_packet_handler = callback;
+}
+
+
+void avrcp_register_target_packet_handler(btstack_packet_handler_t callback){
+    avrcp_target_packet_handler = callback;
+}
+

@@ -1242,6 +1242,7 @@ void avrcp_target_init(void){
     avrcp_init();
     avrcp_target_context.role = AVRCP_TARGET;
     avrcp_target_context.packet_handler = avrcp_target_packet_handler;
+    avrcp_register_controller_packet_handler(&avrcp_target_packet_handler);
     l2cap_register_service(&avrcp_target_packet_handler, BLUETOOTH_PROTOCOL_AVCTP, 0xffff, LEVEL_2);
 }
 

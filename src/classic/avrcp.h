@@ -517,7 +517,7 @@ typedef struct {
     btstack_packet_handler_t browsing_packet_handler;
 
     // SDP query
-    uint8_t parse_sdp_record;
+    uint8_t  parse_sdp_record;
     uint32_t record_id;
     uint16_t avrcp_cid;
     uint16_t avrcp_l2cap_psm;
@@ -535,6 +535,9 @@ const char * avrcp_repeat2str(uint8_t index);
 const char * avrcp_shuffle2str(uint8_t index);
 
 void avrcp_init(void);
+
+void avrcp_register_controller_packet_handler(btstack_packet_handler_t avrcp_controller_packet_handler);
+void avrcp_register_target_packet_handler(btstack_packet_handler_t avrcp_target_packet_handler);
 
 void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avrcp_context_t * context);
 
