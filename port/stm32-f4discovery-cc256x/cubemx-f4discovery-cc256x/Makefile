@@ -319,6 +319,7 @@ EXAMPLES = 					\
 	sdp_bnep_query 			\
 	sdp_general_query		\
 	sdp_rfcomm_query		\
+	sine_player             \
 	sm_pairing_central      \
 	sm_pairing_peripheral   \
 	spp_and_le_counter 		\
