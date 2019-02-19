@@ -3213,8 +3213,14 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     }
 
                     // pairing failed, if it was ongoing
-                    if (sm_conn->sm_engine_state != SM_INITIATOR_CONNECTED && sm_conn->sm_engine_state != SM_GENERAL_IDLE){
-                        sm_notify_client_status_reason(sm_conn, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION, 0);
+                    switch (sm_conn->sm_engine_state){
+                        case SM_GENERAL_IDLE:
+                        case SM_INITIATOR_CONNECTED:
+                        case SM_RESPONDER_IDLE:
+                            break;
+                        default:
+                            sm_notify_client_status_reason(sm_conn, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION, 0);
+                            break;
                     }
 
                     sm_conn->sm_engine_state = SM_GENERAL_IDLE;
