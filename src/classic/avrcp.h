@@ -63,6 +63,8 @@ extern "C" {
 #define AVRCP_NO_TRACK_SELECTED_PLAYBACK_POSITION_CHANGED    0xFFFFFFFF
 // #define AVRCP_NO_TRACK_SELECTED_TRACK_CHANGED                0xFFFFFFFFFFFFFFFF
 
+#define AVRCP_BROWSING_ITEM_HEADER_LEN 3
+
 typedef enum {
     AVRCP_STATUS_INVALID_COMMAND = 0,           // sent if TG received a PDU that it did not understand.
     AVRCP_STATUS_INVALID_PARAMETER,             // Sent if the TG received a PDU with a parameter ID that it did not understand, or, if there is only one parameter ID in the PDU.
@@ -310,7 +312,10 @@ typedef enum {
 } avrcp_parser_state_t;
 
 
-#define AVRCP_BROWSING_ITEM_HEADER_LEN 3
+typedef enum{
+    AVRCP_CONTROLLER = 0,
+    AVRCP_TARGET
+} avrcp_role_t;
 
 // BROWSING 
 typedef struct {
@@ -386,6 +391,8 @@ typedef struct {
 
 typedef struct {
     btstack_linked_item_t    item;
+    
+    avrcp_role_t role;
     bd_addr_t remote_addr;
     uint16_t l2cap_signaling_cid;
     uint16_t l2cap_mtu;
@@ -497,11 +504,6 @@ typedef enum {
     AVRCP_REPEAT_MODE_GROUP
 } avrcp_repeat_mode_t;
 
-typedef enum{
-    AVRCP_CONTROLLER = 0,
-    AVRCP_TARGET
-} avrcp_role_t;
-
 typedef enum {
     RFC2978_CHARSET_MIB_UTF8 = 106
 } rfc2978_charset_mib_enumid_t;
@@ -536,7 +538,7 @@ const char * avrcp_shuffle2str(uint8_t index);
 void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avrcp_context_t * context);
 
 void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name);
-uint8_t avrcp_connect(bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * avrcp_cid);
+uint8_t avrcp_connect(avrcp_role_t role, bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * avrcp_cid);
 void avrcp_emit_connection_established(btstack_packet_handler_t callback, uint16_t avrcp_cid, bd_addr_t addr, uint8_t status);
 void avrcp_emit_connection_closed(btstack_packet_handler_t callback, uint16_t avrcp_cid);
 

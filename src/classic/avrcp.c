@@ -334,12 +334,13 @@ uint16_t avrcp_get_next_cid(void){
     return avrcp_cid_counter;
 }
 
-static avrcp_connection_t * avrcp_create_connection(bd_addr_t remote_addr, avrcp_context_t * context){
+static avrcp_connection_t * avrcp_create_connection(avrcp_role_t role, bd_addr_t remote_addr, avrcp_context_t * context){
     avrcp_connection_t * connection = btstack_memory_avrcp_connection_get();
     if (!connection){
         log_error("avrcp: not enough memory to create connection");
         return NULL;
     }
+    connection->role = role;
     connection->state = AVCTP_CONNECTION_IDLE;
     connection->transaction_label = 0xFF;
     connection->max_num_fragments = 0xFF;
@@ -559,7 +560,7 @@ void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
         case L2CAP_EVENT_INCOMING_CONNECTION:
             l2cap_event_incoming_connection_get_address(packet, event_addr);
             local_cid = l2cap_event_incoming_connection_get_local_cid(packet);
-            connection = avrcp_create_connection(event_addr, context);
+            connection = avrcp_create_connection(context->role, event_addr, context);
             if (!connection) {
                 log_error("Failed to alloc connection structure");
                 l2cap_decline_connection(local_cid);
@@ -628,13 +629,13 @@ void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
     }
 }
 
-uint8_t avrcp_connect(bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * avrcp_cid){
+uint8_t avrcp_connect(avrcp_role_t role, bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * avrcp_cid){
     avrcp_connection_t * connection = get_avrcp_connection_for_bd_addr(bd_addr, context);
     if (connection) return ERROR_CODE_COMMAND_DISALLOWED;
 
     if (!sdp_client_ready()) return ERROR_CODE_COMMAND_DISALLOWED;
 
-    connection = avrcp_create_connection(bd_addr, context);
+    connection = avrcp_create_connection(role, bd_addr, context);
     if (!connection){
         log_error("avrcp: could not allocate connection struct.");
         return BTSTACK_MEMORY_ALLOC_FAILED;
