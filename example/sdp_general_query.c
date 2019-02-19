@@ -56,10 +56,10 @@
 
 
 #ifndef HAVE_POSIX_FILE_IO
-// Jambox static const char * device_addr_string = "00:21:3C:AC:F7:38";
-// Mac static const char * device_addr_string = "F0:18:98:60:3E:E5";
+// Jambox static const char * remote_addr_string = "00:21:3C:AC:F7:38";
+// Mac static const char * remote_addr_string = "F0:18:98:60:3E:E5";
 // iPhone 5S: 
-static const char * device_addr_string = "6C:72:E7:10:22:EE";
+static const char * remote_addr_string = "6C:72:E7:10:22:EE";
 #endif
 
 static bd_addr_t remote_addr;
@@ -180,7 +180,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
 #ifdef HAVE_POSIX_FILE_IO
 static void usage(const char *name){
     printf("\nUsage: %s -a|--address aa:bb:cc:dd:ee:ff\n", name);
-    printf("Use argument [-a] to connect to a specific device and dump the result of SDP query for L2CAP service.\n\n");
+    printf("Use argument -a to connect to a specific device and dump the result of SDP query for L2CAP services.\n\n");
 }
 #endif
 
@@ -201,7 +201,7 @@ int btstack_main(int argc, const char * argv[]){
 #else
     (void)argc;
     (void)argv;
-    sscanf_bd_addr(device_addr_string, device_addr);
+    sscanf_bd_addr(remote_addr_string, remote_addr);
 #endif
     
     sdp_client_init();
