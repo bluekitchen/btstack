@@ -100,8 +100,9 @@ static btstack_ring_buffer_t sbc_frame_ring_buffer;
 static unsigned int sbc_frame_size;
 static int sbc_samples_fix;
 
-// rest buffer for not fully used sbc frames
-static uint8_t decoded_audio_storage[(MAX_SBC_FRAME_SIZE+4) * BYTES_PER_FRAME];
+// ring buffer for not fully used sbc frames
+#define MAX_NUM_SBC_SAMPLES 128
+static uint8_t decoded_audio_storage[(MAX_NUM_SBC_SAMPLES+4) * BYTES_PER_FRAME];
 static btstack_ring_buffer_t decoded_audio_ring_buffer;
 
 // 
