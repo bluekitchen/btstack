@@ -539,8 +539,6 @@ void avrcp_init(void);
 void avrcp_register_controller_packet_handler(btstack_packet_handler_t avrcp_controller_packet_handler);
 void avrcp_register_target_packet_handler(btstack_packet_handler_t avrcp_target_packet_handler);
 
-void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avrcp_context_t * context);
-
 void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name);
 uint8_t avrcp_connect(avrcp_role_t role, bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * avrcp_cid);
 void avrcp_emit_connection_established(btstack_packet_handler_t callback, uint16_t avrcp_cid, bd_addr_t addr, uint8_t status);

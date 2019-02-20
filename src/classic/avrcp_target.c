@@ -1132,6 +1132,10 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
             break;
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)){
+                case HCI_EVENT_AVRCP_META:
+                    // forward to app
+                    (*avrcp_target_context.avrcp_callback)(packet_type, channel, packet, size);
+                    break;
                 case L2CAP_EVENT_CAN_SEND_NOW:{
                     connection = get_avrcp_connection_for_l2cap_signaling_cid(AVRCP_TARGET, channel);
                     if (!connection) {
@@ -1230,7 +1234,6 @@ static void avrcp_target_packet_handler(uint8_t packet_type, uint16_t channel, u
                     break;
             }
             default:
-                avrcp_packet_handler(packet_type, channel, packet, size, &avrcp_target_context);
                 break;
         }
         default:
@@ -1243,7 +1246,6 @@ void avrcp_target_init(void){
     avrcp_target_context.role = AVRCP_TARGET;
     avrcp_target_context.packet_handler = avrcp_target_packet_handler;
     avrcp_register_controller_packet_handler(&avrcp_target_packet_handler);
-    l2cap_register_service(&avrcp_target_packet_handler, BLUETOOTH_PROTOCOL_AVCTP, 0xffff, LEVEL_2);
 }
 
 void avrcp_target_register_packet_handler(btstack_packet_handler_t callback){

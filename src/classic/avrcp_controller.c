@@ -123,9 +123,10 @@ static uint8_t request_pass_through_release_control_cmd(avrcp_connection_t * con
 static inline uint8_t request_pass_through_press_control_cmd(uint16_t avrcp_cid, avrcp_operation_id_t opid, uint16_t playback_speed, uint8_t continuous_fast_forward_cmd){
     avrcp_connection_t * connection = get_avrcp_connection_for_avrcp_cid(AVRCP_CONTROLLER, avrcp_cid);
     if (!connection){
-        log_error("avrcp: could not find a connection.");
+        log_error("avrcp: could not find a connection. avrcp cid 0x%02x", avrcp_cid);
         return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     }
+    
     if (connection->state != AVCTP_CONNECTION_OPENED) return ERROR_CODE_COMMAND_DISALLOWED;
     connection->state = AVCTP_W2_SEND_PRESS_COMMAND;
     connection->command_opcode =  AVRCP_CMD_OPCODE_PASS_THROUGH;
@@ -911,15 +912,21 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             if (!connection) break;
             avrcp_handle_l2cap_data_packet_for_signaling_connection(connection, packet, size);
             break;
+        
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)){
+                case HCI_EVENT_AVRCP_META:
+                    // forward to app
+                    (*avrcp_controller_context.avrcp_callback)(packet_type, channel, packet, size);
+                    break;
+                
                 case L2CAP_EVENT_CAN_SEND_NOW:
+                    // printf("AVRCP: received by controller L2CAP_EVENT_CAN_SEND_NOW, channel 0x%02x\n", channel);
                     connection = get_avrcp_connection_for_l2cap_signaling_cid(AVRCP_CONTROLLER, channel);
                     if (!connection) break;
                     avrcp_controller_handle_can_send_now(connection);
                     break;
             default:
-                avrcp_packet_handler(packet_type, channel, packet, size, &avrcp_controller_context);
                 break;
         }
         default:
@@ -932,7 +939,6 @@ void avrcp_controller_init(void){
     avrcp_controller_context.role = AVRCP_CONTROLLER;
     avrcp_controller_context.packet_handler = avrcp_controller_packet_handler;
     avrcp_register_controller_packet_handler(&avrcp_controller_packet_handler);
-    l2cap_register_service(&avrcp_controller_packet_handler, BLUETOOTH_PROTOCOL_AVCTP, 0xffff, LEVEL_2);
 }
 
 void avrcp_controller_register_packet_handler(btstack_packet_handler_t callback){
