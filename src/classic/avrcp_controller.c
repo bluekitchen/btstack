@@ -468,7 +468,7 @@ static void avrcp_handle_l2cap_data_packet_for_signaling_connection(avrcp_connec
     int     pos = 3;
     // uint8_t transport_header = packet[0];
     // uint8_t transaction_label = transport_header >> 4;
-    // uint8_t packet_type = (transport_header & 0x0F) >> 2;
+    // uint8_t packet_type = (transport_header & 0x0C) >> 2;
     // uint8_t frame_type = (transport_header & 0x02) >> 1;
     // uint8_t ipid = transport_header & 0x01;
     // uint8_t byte_value = packet[2];
