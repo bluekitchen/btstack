@@ -440,18 +440,23 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     // decide on audio sync drift based on number of sbc frames in queue
     int sbc_frames_in_buffer = btstack_ring_buffer_bytes_available(&sbc_frame_ring_buffer) / sbc_frame_size;
     uint32_t resampling_factor;
+
+    // nomimal factor (fixed-point 2^16) and compensation offset
+    uint32_t nomimal_factor = 0x0FF80;
+    uint32_t compensation   = 0x00100;
+
     if (sbc_frames_in_buffer < OPTIMAL_FRAMES_MIN){
-    	resampling_factor = 0x0FE00;    // stretch samples
+    	resampling_factor = nomimal_factor - compensation;    // stretch samples
     } else if (sbc_frames_in_buffer <= OPTIMAL_FRAMES_MAX){
-    	resampling_factor = 0x10000;    // nothing to do
+    	resampling_factor = nomimal_factor;                   // nothing to do
     } else {
-    	resampling_factor = 0x10200;    // compress samples
+    	resampling_factor = nomimal_factor + compensation;    // compress samples
     }
 
     btstack_resample_set_factor(&resample_instance, resampling_factor);
 
     // dump
-    // printf("%6u %03u %05x\n",  (int) btstack_run_loop_get_time_ms(), sbc_frames_in_buffer, resampling_factor);
+    printf("%6u %03u %05x\n",  (int) btstack_run_loop_get_time_ms(), sbc_frames_in_buffer, resampling_factor);
     // log_info("%03u %05x", sbc_frames_in_buffer, resampling_factor);
 
 #ifdef STORE_SBC_TO_SBC_FILE
