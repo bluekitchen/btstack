@@ -36,10 +36,13 @@
  */
 
 #include "hal_audio.h"
+#include "btstack_debug.h"
 #include "stm32f4_discovery_audio.h"
 
 #define OUTPUT_BUFFER_NUM_SAMPLES       512
 #define NUM_OUTPUT_BUFFERS              2
+
+// #define MEASURE_SAMPLE_RATE
 
 static void (*audio_played_handler)(uint8_t buffer_index);
 static int started;
@@ -47,11 +50,37 @@ static int started;
 // our storage
 static int16_t output_buffer[NUM_OUTPUT_BUFFERS * OUTPUT_BUFFER_NUM_SAMPLES * 2];   // stereo
 
+#ifdef MEASURE_SAMPLE_RATE
+static uint32_t stream_start_ms;
+static uint32_t stream_samples;
+#endif
+
 void  BSP_AUDIO_OUT_HalfTransfer_CallBack(void){
+
+#ifdef MEASURE_SAMPLE_RATE
+	if (stream_start_ms == 0){
+		stream_start_ms = btstack_run_loop_get_time_ms();
+	} else {
+		stream_samples++;
+	}
+#endif
+
 	(*audio_played_handler)(0);
 }
 
 void BSP_AUDIO_OUT_TransferComplete_CallBack(void){
+
+#ifdef MEASURE_SAMPLE_RATE
+	if (stream_samples == 500){
+		uint32_t now = btstack_run_loop_get_time_ms();
+		uint32_t delta = now - stream_start_ms;
+		log_info("Samples per second: %u", stream_samples * OUTPUT_BUFFER_NUM_SAMPLES * 1000 / delta);
+		stream_start_ms = now;
+		stream_samples = 0;
+	}
+	stream_samples++;
+#endif
+
 	(*audio_played_handler)(1);
 }
 
