@@ -996,7 +996,7 @@ static void stdin_process(char cmd){
         // Volume Control
         case 't':
             volume_percentage = volume_percentage <= 90 ? volume_percentage + 10 : volume_percentage;
-            printf(" - volume up for 10 percent, %d%% (%d) \n", volume_percentage, volume_percentage * 127 / 100);
+            printf(" - volume up   for 10 percent, %d%% (%d) \n", volume_percentage, volume_percentage * 127 / 100);
             status = avrcp_target_volume_changed(avrcp_target_cid, volume_percentage * 127 / 100);
             break;
         case 'T':
