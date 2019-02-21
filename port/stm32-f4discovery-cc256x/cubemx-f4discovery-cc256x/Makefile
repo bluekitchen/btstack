@@ -99,6 +99,7 @@ btstack_cvsd_plc.c \
 btstack_linked_list.c \
 btstack_memory.c \
 btstack_memory_pool.c \
+btstack_resample.c \
 btstack_ring_buffer.c \
 btstack_stdin_embedded.c \
 btstack_run_loop.c \
