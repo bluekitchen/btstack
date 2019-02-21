@@ -966,8 +966,8 @@ static void show_usage(void){
     printf("N - stop rewind\n");
     printf("i - forward\n");
     printf("I - backward\n");
-    printf("t - volume up\n");
-    printf("T - volume down\n");
+    printf("t - volume up to 70 percent\n");
+    printf("T - volume down to 10 percent\n");
     printf("p - absolute volume of 50 percent\n");
     printf("M - mute\n");
     printf("r - skip\n");
@@ -1063,12 +1063,12 @@ static void stdin_process(char cmd){
             status = avrcp_controller_backward(avrcp_controller_cid);
             break;
         case 't':
-            printf(" - volume up to 70, avrcp controller cid 0x%02x\n", avrcp_controller_cid);
+            printf(" - volume up to 70 percent, avrcp target cid 0x%02x\n", avrcp_controller_cid);
             // status = avrcp_controller_volume_up(avrcp_controller_cid);
             status = avrcp_target_volume_changed(avrcp_target_cid, 70);
             break;
         case 'T':
-            printf(" - volume down to 10, avrcp controller cid 0x%02x\n", avrcp_controller_cid);
+            printf(" - volume down to 10 percent, avrcp target cid 0x%02x\n", avrcp_controller_cid);
             // status = avrcp_controller_volume_down(avrcp_controller_cid);
             status = avrcp_target_volume_changed(avrcp_target_cid, 10);
             break;
