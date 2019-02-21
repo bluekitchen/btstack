@@ -733,6 +733,7 @@ static void show_usage(void){
     printf("e      - reconfigure stream for 48000 Hz\n");
     printf("t      - volume up\n");
     printf("T      - volume down\n");
+    printf("v      - absolute volume of 50 percent\n");
 
     printf("\n--- Bluetooth  AVRCP Target Commands %s ---\n", bd_addr_to_str(iut_address));
     printf("---\n");
@@ -769,6 +770,10 @@ static void stdin_process(char cmd){
         case 'T':
             printf(" - volume down\n");
             status = avrcp_controller_volume_down(avrcp_controller_cid);
+            break;
+        case 'v':
+            printf(" - absolute volume of 50%% (64)\n");
+            status = avrcp_controller_set_absolute_volume(avrcp_controller_cid, 64);
             break;
 
         case 'x':
