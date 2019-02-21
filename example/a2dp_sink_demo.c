@@ -302,16 +302,11 @@ static void playback_handler(int16_t * buffer, uint16_t num_frames){
     // then start decoding sbc frames using request_* globals
     request_buffer = buffer;
     request_frames = num_frames;
-    while (request_frames){
-        if (btstack_ring_buffer_bytes_available(&sbc_frame_ring_buffer) >= sbc_frame_size){
-            // decode frame
-            uint8_t sbc_frame[MAX_SBC_FRAME_SIZE];
-            btstack_ring_buffer_read(&sbc_frame_ring_buffer, sbc_frame, sbc_frame_size, &bytes_read);
-            btstack_sbc_decoder_process_data(&state, 0, sbc_frame, sbc_frame_size);
-        } else {
-            printf("No SBC frame ready in ring buffer\n");
-            break;
-        }
+    while (request_frames && btstack_ring_buffer_bytes_available(&sbc_frame_ring_buffer) >= sbc_frame_size){
+        // decode frame
+        uint8_t sbc_frame[MAX_SBC_FRAME_SIZE];
+        btstack_ring_buffer_read(&sbc_frame_ring_buffer, sbc_frame, sbc_frame_size, &bytes_read);
+        btstack_sbc_decoder_process_data(&state, 0, sbc_frame, sbc_frame_size);
     }
 
 #ifdef STORE_FROM_PLAYBACK
@@ -897,7 +892,7 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
             if (cid != a2dp_cid) break;
             a2dp_local_seid = a2dp_subevent_stream_suspended_get_local_seid(packet);
             printf("A2DP  Sink      : stream paused\n");
-            // media_processing_close();
+            // TODO: pause stream
             break;
         
         case A2DP_SUBEVENT_STREAM_RELEASED:
@@ -995,12 +990,12 @@ static void stdin_process(char cmd){
             break;
         // Volume Control
         case 't':
-            volume_percentage = volume_percentage <= 90 ? volume_percentage + 10 : volume_percentage;
+            volume_percentage = volume_percentage <= 90 ? volume_percentage + 10 : 100;
             printf(" - volume up   for 10 percent, %d%% (%d) \n", volume_percentage, volume_percentage * 127 / 100);
             status = avrcp_target_volume_changed(avrcp_target_cid, volume_percentage * 127 / 100);
             break;
         case 'T':
-            volume_percentage = volume_percentage >= 10 ? volume_percentage - 10 : volume_percentage;
+            volume_percentage = volume_percentage >= 10 ? volume_percentage - 10 : 0;
             printf(" - volume down for 10 percent, %d%% (%d) \n", volume_percentage, volume_percentage * 127 / 100);
             status = avrcp_target_volume_changed(avrcp_target_cid, volume_percentage * 127 / 100);
             break;
