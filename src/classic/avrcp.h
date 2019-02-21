@@ -161,8 +161,10 @@ typedef enum {
     AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED = 0x0a,          // The available players have changed, see 6.9.4.
     AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED = 0x0b,           // The Addressed Player has been changed, see 6.9.2.
     AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED = 0x0c,                       // The UIDs have changed, see 6.10.3.3.
-    AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED = 0x0d                      // The volume has been changed locally on the TG, see 6.13.3.
+    AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED = 0x0d,                     // The volume has been changed locally on the TG, see 6.13.3.
+    AVRCP_NOTIFICATION_EVENT_COUNT = 0x0d
 } avrcp_notification_event_id_t;
+
 
 // control command response: accepted, rejected, interim
 // status  command response: not implemented, rejected, in transition, stable
@@ -434,6 +436,7 @@ typedef struct {
     uint16_t notifications_enabled;
     uint16_t notifications_to_register;
     uint16_t notifications_to_deregister; 
+    uint8_t  notifications_transaction_label[AVRCP_NOTIFICATION_EVENT_COUNT];
 
     avrcp_subunit_type_t unit_type;
     uint32_t company_id;
@@ -458,7 +461,8 @@ typedef struct {
     avrcp_battery_status_t battery_status;
     uint8_t battery_status_changed;
     uint8_t volume_percentage;
-    uint8_t volume_percentage_changed;
+    uint8_t notify_volume_percentage_changed;
+    
     uint8_t now_playing_info_response;
     uint8_t now_playing_info_attr_bitmap;
     uint8_t abort_continue_response;
@@ -487,6 +491,8 @@ typedef struct {
     // PTS requires definition of max num fragments
     uint8_t max_num_fragments;
     uint8_t num_received_fragments;
+
+    uint8_t accept_response;
 } avrcp_connection_t;
 
 typedef enum {
