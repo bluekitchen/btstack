@@ -336,8 +336,8 @@ static void handle_pcm_data(int16_t * data, int num_frames, int num_channels, in
 #endif
 #endif
 
-    const btstack_audio_t * audio = btstack_audio_get_instance();
-    if (!audio) return;
+    const btstack_audio_sink_t * audio_sink = btstack_audio_sink_get_instance();
+    if (!audio_sink) return;
 
     // store data in btstack_audio buffer first
     int frames_to_copy = btstack_min(resampled_frames, request_frames);

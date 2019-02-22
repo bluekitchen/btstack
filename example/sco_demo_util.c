@@ -66,7 +66,7 @@
 #define SCO_DEMO_MODE_MICROPHONE 5
 
 // SCO demo configuration
-#define SCO_DEMO_MODE               SCO_DEMO_MODE_SINE
+#define SCO_DEMO_MODE               SCO_DEMO_MODE_MICROPHONE
 
 // number of sco packets until 'report' on console
 #define SCO_REPORT_PERIOD           100
@@ -232,28 +232,35 @@ static void recording_callback(const int16_t * buffer, uint16_t num_samples){
 // return 1 if ok
 static int audio_initialize(int sample_rate){
 
+    // -- output -- //
+
     // init buffers
     memset(audio_output_ring_buffer_storage, 0, sizeof(audio_output_ring_buffer_storage));
     btstack_ring_buffer_init(&audio_output_ring_buffer, audio_output_ring_buffer_storage, sizeof(audio_output_ring_buffer_storage));
-#ifdef USE_AUDIO_INPUT
-    memset(audio_input_ring_buffer_storage, 0, sizeof(audio_input_ring_buffer_storage));
-    btstack_ring_buffer_init(&audio_input_ring_buffer, audio_input_ring_buffer_storage, sizeof(audio_input_ring_buffer_storage));
-    printf("Audio: Input buffer size %u\n", btstack_ring_buffer_bytes_free(&audio_input_ring_buffer));
-#endif
 
-    // config and setup audio playback/recording
-    const btstack_audio_t * audio = btstack_audio_get_instance();
-    if (!audio) return 0;
+    // config and setup audio playback
+    const btstack_audio_sink_t * audio_sink = btstack_audio_sink_get_instance();
+    if (!audio_sink) return 0;
 
-    void (*recording)(const int16_t * buffer, uint16_t num_samples) = NULL;
-#ifdef USE_AUDIO_INPUT
-    recording = &recording_callback;
-#endif
-    audio->init(1, sample_rate, &playback_callback, recording);
-    audio->start_stream();
+    audio_sink->init(1, sample_rate, &playback_callback);
+    audio_sink->start_stream();
 
     audio_output_paused  = 1;
+
+    // -- input -- //
+
 #ifdef USE_AUDIO_INPUT
+    // init buffers
+    memset(audio_input_ring_buffer_storage, 0, sizeof(audio_input_ring_buffer_storage));
+    btstack_ring_buffer_init(&audio_input_ring_buffer, audio_input_ring_buffer_storage, sizeof(audio_input_ring_buffer_storage));
+
+    // config and setup audio recording
+    const btstack_audio_source_t * audio_source = btstack_audio_source_get_instance();
+    if (!audio_source) return 0;
+
+    audio_source->init(1, sample_rate, &recording_callback);
+    audio_source->start_stream();
+
     audio_input_paused  = 1;
 #endif
 
@@ -261,9 +268,15 @@ static int audio_initialize(int sample_rate){
 }
 
 static void audio_terminate(void){
-    const btstack_audio_t * audio = btstack_audio_get_instance();
-    if (!audio) return;
-    audio->close();
+    const btstack_audio_sink_t * audio_sink = btstack_audio_sink_get_instance();
+    if (!audio_sink) return;
+    audio_sink->close();
+
+#ifdef USE_AUDIO_INPUT
+    const btstack_audio_source_t * audio_source= btstack_audio_source_get_instance();
+    if (!audio_source) return;
+    audio_source->close();
+#endif
 }
 
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
