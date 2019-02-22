@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __BTSTACK_AUDIO_DMA_H
-#define __BTSTACK_AUDIO_DMA_H
+#ifndef __BTSTACK_AUDIO_H
+#define __BTSTACK_AUDIO_H
 
 #include <stdint.h>
 
@@ -53,30 +53,30 @@ extern "C" {
 typedef struct {
 
     /**
-	 * @brief Setup audio codec for specified samplerate and number of channels
-	 * @param Channels (1=mono, 2=stereo)
-	 * @param Sample rate
-	 * @param Playback callback
-	 * @return 1 on success
-	 */
-	int (*init)(uint8_t channels,
-				uint32_t samplerate, 
-				void (*playback) (      int16_t * buffer, uint16_t num_samples));
+     * @brief Setup audio codec for specified samplerate and number of channels
+     * @param Channels (1=mono, 2=stereo)
+     * @param Sample rate
+     * @param Playback callback
+     * @return 1 on success
+     */
+    int (*init)(uint8_t channels,
+                uint32_t samplerate, 
+                void (*playback) (int16_t * buffer, uint16_t num_samples));
 
     /** 
-	 * @brief Start stream
-	 */
-	void (*start_stream)(void);
+     * @brief Start stream
+     */
+    void (*start_stream)(void);
 
     /** 
-	 * @brief Stop stream
-	 */
-	void (*stop_stream)(void);
+     * @brief Stop stream
+     */
+    void (*stop_stream)(void);
 
     /**
-	 * @brief Close audio codec
-	 */
-	void (*close)(void);
+     * @brief Close audio codec
+     */
+    void (*close)(void);
 
 } btstack_audio_sink_t;
 
@@ -90,14 +90,14 @@ typedef struct {
      * @param Recording callback
      * @return 1 on success
      */
-	int (*init)(uint8_t channels,
-				uint32_t samplerate, 
-				void (*recording)(const int16_t * buffer, uint16_t num_samples));
+    int (*init)(uint8_t channels,
+                uint32_t samplerate, 
+                void (*recording)(const int16_t * buffer, uint16_t num_samples));
 
     /** 
      * @brief Start stream
      */
-	void (*start_stream)(void);
+    void (*start_stream)(void);
 
     /** 
      * @brief Stop stream
@@ -139,11 +139,14 @@ void btstack_audio_source_set_instance(const btstack_audio_source_t * audio_sour
 
 
 // common implementations
-const btstack_audio_sink_t * btstack_audio_portaudio_sink_get_instance(void);
+const btstack_audio_sink_t *   btstack_audio_portaudio_sink_get_instance(void);
 const btstack_audio_source_t * btstack_audio_portaudio_source_get_instance(void);
 
-//const btstack_audio_t * btstack_audio_embedded_get_instance(void);
-//const btstack_audio_t * btstack_audio_esp32_get_instance(void);
+const btstack_audio_sink_t *   btstack_audio_embedded_sink_get_instance(void);
+const btstack_audio_source_t * btstack_audio_embedded_source_get_instance(void);
+
+const btstack_audio_sink_t *   btstack_audio_esp32_sink_get_instance(void);
+// const btstack_audio_source_t *   btstack_audio_esp32_source_get_instance(void);
 
 #if defined __cplusplus
 }
