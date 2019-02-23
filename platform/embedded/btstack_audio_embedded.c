@@ -83,8 +83,7 @@ static void driver_timer_handler_sink(btstack_timer_source_t * ts){
 
     // playback buffer ready to fill
     if (output_buffer_to_play != output_buffer_to_fill){
-        // fill buffer
-        int16_t * buffer = hal_audio_get_output_buffer(output_buffer_to_fill);
+        int16_t * buffer = hal_audio_sink_get_output_buffer(output_buffer_to_fill);
         (*playback_callback)(buffer, output_buffer_samples);
 
         // next
@@ -114,8 +113,7 @@ static int btstack_audio_embedded_sink_init(
 
     playback_callback  = playback;
 
-    // TODO: split HAL Audio API as well
-    hal_audio_init(channels, samplerate, &btstack_audio_audio_played, NULL);
+    hal_audio_sink_init(channels, samplerate, &btstack_audio_audio_played);
 
     return 0;
 }
@@ -134,13 +132,13 @@ static int btstack_audio_embedded_source_init(
 
 static void btstack_audio_embedded_sink_start_stream(void){
 
-    output_buffer_count   = hal_audio_get_num_output_buffers();
-    output_buffer_samples = hal_audio_get_num_output_buffer_samples();
+    output_buffer_count   = hal_audio_sink_get_num_output_buffers();
+    output_buffer_samples = hal_audio_sink_get_num_output_buffer_samples();
 
     // pre-fill HAL buffers
     uint16_t i;
     for (i=0;i<output_buffer_count;i++){
-        int16_t * buffer = hal_audio_get_output_buffer(i);
+        int16_t * buffer = hal_audio_sink_get_output_buffer(i);
         (*playback_callback)(buffer, output_buffer_samples);
     }
 
@@ -148,7 +146,7 @@ static void btstack_audio_embedded_sink_start_stream(void){
     output_buffer_to_fill = 0;
 
     // start playback
-    hal_audio_start();
+    hal_audio_sink_start();
 
     // start timer
     btstack_run_loop_set_timer_handler(&driver_timer_sink, &driver_timer_handler_sink);
@@ -164,7 +162,7 @@ static void btstack_audio_embedded_sink_close(void){
     // stop timer
     btstack_run_loop_remove_timer(&driver_timer_sink);
     // close HAL
-    hal_audio_close();
+    hal_audio_sink_close();
 }
 
 static void btstack_audio_embedded_source_close(void){

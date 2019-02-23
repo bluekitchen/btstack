@@ -91,13 +91,11 @@ void BSP_AUDIO_OUT_TransferComplete_CallBack(void){
  * @param Buffer played callback
  * @param Buffer recorded callback (use NULL if no recording)
  */
-void hal_audio_init(uint8_t channels, 
+void hal_audio_sink_init(uint8_t channels, 
                     uint32_t sample_rate,
-                    void (*buffer_played_callback)  (uint8_t buffer_index),
-                    void (*buffer_recorded_callback)(const int16_t * buffer, uint16_t num_samples)){
+                    void (*buffer_played_callback)  (uint8_t buffer_index)){
 
 	audio_played_handler = buffer_played_callback;
-	UNUSED(buffer_recorded_callback);
 	BSP_AUDIO_OUT_Init(OUTPUT_DEVICE_BOTH, 80, sample_rate);
 }
 
@@ -105,7 +103,7 @@ void hal_audio_init(uint8_t channels,
  * @brief Get number of output buffers in HAL
  * @returns num buffers
  */
-uint16_t hal_audio_get_num_output_buffers(void){
+uint16_t hal_audio_sink_get_num_output_buffers(void){
 	return NUM_OUTPUT_BUFFERS;
 }
 
@@ -113,7 +111,7 @@ uint16_t hal_audio_get_num_output_buffers(void){
  * @brief Get size of single output buffer in HAL
  * @returns buffer size
  */
-uint16_t hal_audio_get_num_output_buffer_samples(void){
+uint16_t hal_audio_sink_get_num_output_buffer_samples(void){
 	return OUTPUT_BUFFER_NUM_SAMPLES;
 }
 
@@ -121,7 +119,7 @@ uint16_t hal_audio_get_num_output_buffer_samples(void){
  * @brief Reserve output buffer
  * @returns buffer
  */
-int16_t * hal_audio_get_output_buffer(uint8_t buffer_index){
+int16_t * hal_audio_sink_get_output_buffer(uint8_t buffer_index){
 	switch (buffer_index){
 		case 0:
 			return output_buffer;
@@ -135,7 +133,7 @@ int16_t * hal_audio_get_output_buffer(uint8_t buffer_index){
 /**
  * @brief Start stream
  */
-void hal_audio_start(void){
+void hal_audio_sink_start(void){
 	started = 1;
 	// BSP_AUDIO_OUT_Play gets number bytes -> 1 frame - 16 bit/stereo = 4 bytes
 	BSP_AUDIO_OUT_Play( (uint16_t*) output_buffer, NUM_OUTPUT_BUFFERS * OUTPUT_BUFFER_NUM_SAMPLES * 4);
@@ -144,7 +142,7 @@ void hal_audio_start(void){
 /**
  * @brief Close audio codec
  */
-void hal_audio_close(void){
+void hal_audio_sink_close(void){
 	started = 0;
 	BSP_AUDIO_OUT_Stop(CODEC_PDWN_HW);
 }
