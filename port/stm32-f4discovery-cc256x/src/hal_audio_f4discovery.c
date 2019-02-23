@@ -146,3 +146,37 @@ void hal_audio_sink_close(void){
 	started = 0;
 	BSP_AUDIO_OUT_Stop(CODEC_PDWN_HW);
 }
+
+
+/**
+ * @brief Setup audio codec for recording using specified samplerate and number of channels
+ * @param Channels
+ * @param Sample rate
+ * @param Buffer recorded callback
+ */
+void hal_audio_source_init(uint8_t channels, 
+                           uint32_t sample_rate,
+                           void (*buffer_recorded_callback)(const int16_t * buffer, uint16_t num_samples)){
+    // TODO    
+}
+
+/**
+ * @brief Start stream
+ */
+void hal_audio_source_start(void){
+    // TODO
+}
+
+/**
+ * @brief Stop stream
+ */
+void hal_audio_source_stop(void){
+    // TODO
+}
+
+/**
+ * @brief Close audio codec
+ */
+void hal_audio_source_close(void){
+    // TODO
+}

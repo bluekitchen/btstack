@@ -57,27 +57,30 @@
 
 // client
 static void (*playback_callback)(int16_t * buffer, uint16_t num_samples);
-// static void (*recording_callback)(const int16_t * buffer, uint16_t num_samples);
+static void (*recording_callback)(const int16_t * buffer, uint16_t num_samples);
 
 // timer to fill output ring buffer
 static btstack_timer_source_t  driver_timer_sink;
-// static btstack_timer_source_t  driver_timer_source;
+static btstack_timer_source_t  driver_timer_source;
 
 static volatile unsigned int output_buffer_to_play;
 static          unsigned int output_buffer_to_fill;
 static          unsigned int output_buffer_count;
 static          unsigned int output_buffer_samples;
 
+static volatile int       input_buffer_ready;
+static volatile const int16_t * input_buffer_samples;
+static volatile uint16_t  input_buffer_num_samples;
+
 static void btstack_audio_audio_played(uint8_t buffer_index){
     output_buffer_to_play = (buffer_index + 1) % output_buffer_count;
 }
 
-#if 0
 static void btstack_audio_audio_recorded(const int16_t * samples, uint16_t num_samples){
-    UNUSED(samples);
-    UNUSED(num_samples);
+    input_buffer_samples     = samples;
+    input_buffer_num_samples = num_samples;
+    input_buffer_ready       = 1;
 }
-#endif
 
 static void driver_timer_handler_sink(btstack_timer_source_t * ts){
 
@@ -95,11 +98,17 @@ static void driver_timer_handler_sink(btstack_timer_source_t * ts){
     btstack_run_loop_add_timer(ts);
 }
 
-#if 0
 static void driver_timer_handler_source(btstack_timer_source_t * ts){
-    // TODO
+    // deliver samples if ready
+    if (input_buffer_ready){
+        (*recording_callback)((const int16_t *)input_buffer_samples, input_buffer_num_samples);
+        input_buffer_ready = 0;
+    }
+
+    // re-set timer
+    btstack_run_loop_set_timer(ts, DRIVER_POLL_INTERVAL_MS);
+    btstack_run_loop_add_timer(ts);
 }
-#endif
 
 static int btstack_audio_embedded_sink_init(
     uint8_t channels,
@@ -127,11 +136,15 @@ static int btstack_audio_embedded_source_init(
         log_error("No recording callback");
         return 1;
     }
+
+    recording_callback  = recording;
+
+    hal_audio_source_init(channels, samplerate, &btstack_audio_audio_recorded);
+
     return 0;
 }
 
 static void btstack_audio_embedded_sink_start_stream(void){
-
     output_buffer_count   = hal_audio_sink_get_num_output_buffers();
     output_buffer_samples = hal_audio_sink_get_num_output_buffer_samples();
 
@@ -155,7 +168,16 @@ static void btstack_audio_embedded_sink_start_stream(void){
 }
 
 static void btstack_audio_embedded_source_start_stream(void){
-    // TODO
+    // just started, no data ready
+    input_buffer_ready = 0;
+
+    // start recording
+    hal_audio_source_start();
+
+    // start timer
+    btstack_run_loop_set_timer_handler(&driver_timer_source, &driver_timer_handler_source);
+    btstack_run_loop_set_timer(&driver_timer_source, DRIVER_POLL_INTERVAL_MS);
+    btstack_run_loop_add_timer(&driver_timer_source);
 }
 
 static void btstack_audio_embedded_sink_close(void){
@@ -166,7 +188,10 @@ static void btstack_audio_embedded_sink_close(void){
 }
 
 static void btstack_audio_embedded_source_close(void){
-    // TODO
+    // stop timer
+    btstack_run_loop_remove_timer(&driver_timer_source);
+    // close HAL
+    hal_audio_source_close();
 }
 
 static const btstack_audio_sink_t btstack_audio_embedded_sink = {
