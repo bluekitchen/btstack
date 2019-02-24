@@ -140,11 +140,20 @@ void hal_audio_sink_start(void){
 }
 
 /**
+ * @brief Stop stream
+ */
+void hal_audio_sink_stop(void){
+	started = 0;
+	BSP_AUDIO_OUT_Stop(CODEC_PDWN_HW);
+}
+
+/**
  * @brief Close audio codec
  */
 void hal_audio_sink_close(void){
-	started = 0;
-	BSP_AUDIO_OUT_Stop(CODEC_PDWN_HW);
+	if (started){
+		hal_audio_sink_close();
+	}
 }
 
 
