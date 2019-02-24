@@ -1016,7 +1016,9 @@ static void hfp_ag_trigger_terminate_call(void){
         if (hfp_connection->call_state == HFP_CALL_IDLE) continue;
         hfp_connection->call_state = HFP_CALL_IDLE;
         hfp_connection->ag_indicators_status_update_bitmap = store_bit(hfp_connection->ag_indicators_status_update_bitmap, call_indicator_index, 1);
-        hfp_connection->release_audio_connection = 1;
+        if (hfp_connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
+            hfp_connection->release_audio_connection = 1;
+        }
         hfp_ag_run_for_context(hfp_connection);
     }
     hfp_ag_emit_simple_event(HFP_SUBEVENT_CALL_TERMINATED);
