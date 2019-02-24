@@ -72,6 +72,9 @@ static volatile int       input_buffer_ready;
 static volatile const int16_t * input_buffer_samples;
 static volatile uint16_t  input_buffer_num_samples;
 
+static int source_active;
+static int sink_active;
+
 static void btstack_audio_audio_played(uint8_t buffer_index){
     output_buffer_to_play = (buffer_index + 1) % output_buffer_count;
 }
@@ -165,6 +168,9 @@ static void btstack_audio_embedded_sink_start_stream(void){
     btstack_run_loop_set_timer_handler(&driver_timer_sink, &driver_timer_handler_sink);
     btstack_run_loop_set_timer(&driver_timer_sink, DRIVER_POLL_INTERVAL_MS);
     btstack_run_loop_add_timer(&driver_timer_sink);
+
+    // state
+    sink_active = 1;
 }
 
 static void btstack_audio_embedded_source_start_stream(void){
@@ -178,18 +184,43 @@ static void btstack_audio_embedded_source_start_stream(void){
     btstack_run_loop_set_timer_handler(&driver_timer_source, &driver_timer_handler_source);
     btstack_run_loop_set_timer(&driver_timer_source, DRIVER_POLL_INTERVAL_MS);
     btstack_run_loop_add_timer(&driver_timer_source);
+
+    // state
+    source_active = 1;
+}
+
+static void btstack_audio_embedded_sink_stop_stream(void){
+    // stop stream
+    hal_audio_sink_stop();
+    // stop timer
+    btstack_run_loop_remove_timer(&driver_timer_sink);
+    // state
+    sink_active = 0;
+}
+
+static void btstack_audio_embedded_source_stop_stream(void){
+    // stop stream
+    hal_audio_source_stop();
+    // stop timer
+    btstack_run_loop_remove_timer(&driver_timer_source);
+    // state
+    source_active = 0;
 }
 
 static void btstack_audio_embedded_sink_close(void){
-    // stop timer
-    btstack_run_loop_remove_timer(&driver_timer_sink);
+    // stop stream if needed
+    if (sink_active){
+        btstack_audio_embedded_sink_stop_stream();
+    }
     // close HAL
     hal_audio_sink_close();
 }
 
 static void btstack_audio_embedded_source_close(void){
-    // stop timer
-    btstack_run_loop_remove_timer(&driver_timer_source);
+    // stop stream if needed
+    if (source_active){
+        btstack_audio_embedded_source_stop_stream();
+    }
     // close HAL
     hal_audio_source_close();
 }
@@ -197,12 +228,14 @@ static void btstack_audio_embedded_source_close(void){
 static const btstack_audio_sink_t btstack_audio_embedded_sink = {
     /* int (*init)(..);*/                                       &btstack_audio_embedded_sink_init,
     /* void (*start_stream(void));*/                            &btstack_audio_embedded_sink_start_stream,
+    /* void (*stop_stream)(void)  */                            &btstack_audio_embedded_sink_stop_stream,
     /* void (*close)(void); */                                  &btstack_audio_embedded_sink_close
 };
 
 static const btstack_audio_source_t btstack_audio_embedded_source = {
     /* int (*init)(..);*/                                       &btstack_audio_embedded_source_init,
     /* void (*start_stream(void));*/                            &btstack_audio_embedded_source_start_stream,
+    /* void (*stop_stream)(void)  */                            &btstack_audio_embedded_source_stop_stream,
     /* void (*close)(void); */                                  &btstack_audio_embedded_source_close
 };
 
