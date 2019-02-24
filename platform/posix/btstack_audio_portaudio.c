@@ -192,7 +192,7 @@ static int btstack_audio_portaudio_sink_init(
     if (!portaudio_initialized){
         err = Pa_Initialize();
         if (err != paNoError){
-            log_error("Error initializing portaudio: \"%s\"\n",  Pa_GetErrorText(err));
+            log_error("Portudio: error initializing portaudio: \"%s\"\n",  Pa_GetErrorText(err));
             return err;
         } 
         portaudio_initialized = 1;        
@@ -208,7 +208,7 @@ static int btstack_audio_portaudio_sink_init(
 
     const PaDeviceInfo *outputDeviceInfo;
     outputDeviceInfo = Pa_GetDeviceInfo( theOutputParameters.device );
-    log_info("PortAudio: Output device: %s", outputDeviceInfo->name);
+    log_info("PortAudio: sink device: %s", outputDeviceInfo->name);
 
     /* -- setup stream -- */
     err = Pa_OpenStream(
@@ -222,13 +222,13 @@ static int btstack_audio_portaudio_sink_init(
            NULL );   
     
     if (err != paNoError){
-        log_error("Error initializing portaudio: \"%s\"\n",  Pa_GetErrorText(err));
+        log_error("Portudio: error initializing portaudio: \"%s\"\n",  Pa_GetErrorText(err));
         return err;
     }
-    log_info("PortAudio: stream opened");
+    log_info("PortAudio: sink stream created");
 
     const PaStreamInfo * stream_info = Pa_GetStreamInfo(stream_source);
-    log_info("PortAudio: Output latency: %f", stream_info->outputLatency);
+    log_info("PortAudio: sink latency: %f", stream_info->outputLatency);
 
     playback_callback  = playback;
 
@@ -256,7 +256,7 @@ static int btstack_audio_portaudio_source_init(
     if (!portaudio_initialized){
         err = Pa_Initialize();
         if (err != paNoError){
-            log_error("Error initializing portaudio: \"%s\"\n",  Pa_GetErrorText(err));
+            log_error("Portudio: Error initializing portaudio: \"%s\"\n",  Pa_GetErrorText(err));
             return err;
         } 
         portaudio_initialized = 1;        
@@ -272,7 +272,7 @@ static int btstack_audio_portaudio_source_init(
 
     const PaDeviceInfo *inputDeviceInfo;
     inputDeviceInfo = Pa_GetDeviceInfo( theInputParameters.device );
-    log_info("PortAudio: Input device: %s", inputDeviceInfo->name);
+    log_info("PortAudio: source device: %s", inputDeviceInfo->name);
 
     /* -- setup stream -- */
     err = Pa_OpenStream(
@@ -289,10 +289,10 @@ static int btstack_audio_portaudio_source_init(
         log_error("Error initializing portaudio: \"%s\"\n",  Pa_GetErrorText(err));
         return err;
     }
-    log_info("PortAudio: stream opened");
+    log_info("PortAudio: source stream created");
 
     const PaStreamInfo * stream_info = Pa_GetStreamInfo(stream_sink);
-    log_info("PortAudio: Input  latency: %f", stream_info->inputLatency);
+    log_info("PortAudio: source latency: %f", stream_info->inputLatency);
 
     recording_callback = recording;
 
@@ -314,7 +314,7 @@ static void btstack_audio_portaudio_sink_start_stream(void){
     /* -- start stream -- */
     PaError err = Pa_StartStream(stream_source);
     if (err != paNoError){
-        log_error("Error starting the stream: \"%s\"\n",  Pa_GetErrorText(err));
+        log_error("PortAudio: error starting sink stream: \"%s\"\n",  Pa_GetErrorText(err));
         return;
     }
 
@@ -333,7 +333,7 @@ static void btstack_audio_portaudio_source_start_stream(void){
     /* -- start stream -- */
     PaError err = Pa_StartStream(stream_sink);
     if (err != paNoError){
-        log_error("Error starting the stream: \"%s\"\n",  Pa_GetErrorText(err));
+        log_error("PortAudio: error starting source stream: \"%s\"\n",  Pa_GetErrorText(err));
         return;
     }
 
@@ -353,12 +353,13 @@ static void btstack_audio_portaudio_sink_stop_stream(void){
     // stop timer
     btstack_run_loop_remove_timer(&driver_timer_sink);
 
-    log_info("PortAudio: Stream closed");
     PaError err = Pa_StopStream(stream_sink);
     if (err != paNoError){
-        log_error("Error stopping the stream: \"%s\"",  Pa_GetErrorText(err));
+        log_error("PortAudio: error stopping sink stream: \"%s\"",  Pa_GetErrorText(err));
         return;
     } 
+
+    sink_active = 0;
 }
 
 static void btstack_audio_portaudio_source_stop_stream(void){
@@ -369,12 +370,13 @@ static void btstack_audio_portaudio_source_stop_stream(void){
     // stop timer
     btstack_run_loop_remove_timer(&driver_timer_source);
 
-    log_info("PortAudio: Stream closed");
     PaError err = Pa_StopStream(stream_source);
     if (err != paNoError){
-        log_error("Error stopping the stream: \"%s\"",  Pa_GetErrorText(err));
+        log_error("PortAudio: error stopping source stream: \"%s\"",  Pa_GetErrorText(err));
         return;
     } 
+
+    source_active = 0;
 }
 
 static void btstack_audio_portaudio_close_pa_if_not_needed(void){
@@ -382,7 +384,7 @@ static void btstack_audio_portaudio_close_pa_if_not_needed(void){
     if (sink_initialized) return;
     PaError err = Pa_Terminate();
     if (err != paNoError){
-        log_error("Error terminating portaudio: \"%s\"",  Pa_GetErrorText(err));
+        log_error("Portudio: Error terminating portaudio: \"%s\"",  Pa_GetErrorText(err));
         return;
     } 
 }
@@ -397,7 +399,7 @@ static void btstack_audio_portaudio_sink_close(void){
 
     PaError err = Pa_CloseStream(stream_sink);
     if (err != paNoError){
-        log_error("Error closing the stream: \"%s\"",  Pa_GetErrorText(err));
+        log_error("PortAudio: error closing sink stream: \"%s\"",  Pa_GetErrorText(err));
         return;
     } 
 
@@ -416,7 +418,7 @@ static void btstack_audio_portaudio_source_close(void){
 
     PaError err = Pa_CloseStream(stream_source);
     if (err != paNoError){
-        log_error("Error closing the stream: \"%s\"",  Pa_GetErrorText(err));
+        log_error("PortAudio: error closing source stream: \"%s\"",  Pa_GetErrorText(err));
         return;
     } 
 
