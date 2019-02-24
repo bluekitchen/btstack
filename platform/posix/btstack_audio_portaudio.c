@@ -395,7 +395,7 @@ static void btstack_audio_portaudio_sink_close(void){
         btstack_audio_portaudio_sink_stop_stream();
     }
 
-    err = Pa_CloseStream(stream_sink);
+    PaError err = Pa_CloseStream(stream_sink);
     if (err != paNoError){
         log_error("Error closing the stream: \"%s\"",  Pa_GetErrorText(err));
         return;
@@ -414,7 +414,7 @@ static void btstack_audio_portaudio_source_close(void){
         btstack_audio_portaudio_sink_stop_stream();
     }
 
-    err = Pa_CloseStream(stream_source);
+    PaError err = Pa_CloseStream(stream_source);
     if (err != paNoError){
         log_error("Error closing the stream: \"%s\"",  Pa_GetErrorText(err));
         return;
@@ -427,14 +427,14 @@ static void btstack_audio_portaudio_source_close(void){
 static const btstack_audio_sink_t btstack_audio_portaudio_sink = {
     /* int (*init)(..);*/                                       &btstack_audio_portaudio_sink_init,
     /* void (*start_stream(void));*/                            &btstack_audio_portaudio_sink_start_stream,
-    /* void (*stop_stream)(void)  */                            &btstack_audio_portaudio_sink_stop_stream;
+    /* void (*stop_stream)(void)  */                            &btstack_audio_portaudio_sink_stop_stream,
     /* void (*close)(void); */                                  &btstack_audio_portaudio_sink_close
 };
 
 static const btstack_audio_source_t btstack_audio_portaudio_source = {
     /* int (*init)(..);*/                                       &btstack_audio_portaudio_source_init,
     /* void (*start_stream(void));*/                            &btstack_audio_portaudio_source_start_stream,
-    /* void (*stop_stream)(void)  */                            &btstack_audio_portaudio_source_stop_stream;
+    /* void (*stop_stream)(void)  */                            &btstack_audio_portaudio_source_stop_stream,
     /* void (*close)(void); */                                  &btstack_audio_portaudio_source_close
 };
 
