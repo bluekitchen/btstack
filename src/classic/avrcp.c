@@ -672,7 +672,7 @@ static avrcp_role_t avrcp_role_from_transport_header(uint8_t transport_header){
     switch (frame_type){
         case AVRCP_COMMAND_FRAME:
             return AVRCP_TARGET;
-        case AVRCP_RESPONSE_FRAME:
+        default: // AVRCP_RESPONSE_FRAME - make compiler happy
             return AVRCP_CONTROLLER;
     }
 }
