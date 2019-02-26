@@ -347,6 +347,7 @@ void port_main(void){
 #ifdef HAVE_HAL_AUDIO
     // setup audio
    	btstack_audio_sink_set_instance(btstack_audio_embedded_sink_get_instance());
+    btstack_audio_source_set_instance(btstack_audio_embedded_source_get_instance());
 #endif
    	
     // inform about BTstack state
