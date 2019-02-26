@@ -387,6 +387,7 @@ static void btstack_audio_portaudio_close_pa_if_not_needed(void){
         log_error("Portudio: Error terminating portaudio: \"%s\"",  Pa_GetErrorText(err));
         return;
     } 
+    portaudio_initialized = 0;
 }
 
 static void btstack_audio_portaudio_sink_close(void){
