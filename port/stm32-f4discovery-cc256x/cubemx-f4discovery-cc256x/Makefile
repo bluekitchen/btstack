@@ -294,8 +294,9 @@ LE_EXAMPLES = \
 	sm_pairing_central 
 
 EXAMPLES = 					\
+	audio_duplex            \
 	a2dp_sink_demo			\
-	a2dp_source_demo       \
+	a2dp_source_demo        \
 	ancs_client_demo		\
 	dut_mode_classic        \
 	gap_dedicated_bonding	\
