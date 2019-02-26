@@ -192,10 +192,9 @@ __IO uint16_t AudioInVolume = DEFAULT_AUDIO_IN_VOLUME;
 /** @defgroup STM32F4_DISCOVERY_AUDIO_Private_Function_Prototypes STM32F4 DISCOVERY AUDIO Private Function Prototypes
   * @{
   */ 
+static uint8_t I2S2_Init(uint32_t AudioFreq);
 static uint8_t I2S3_Init(uint32_t AudioFreq);
-
-// static uint8_t I2S2_Init(uint32_t AudioFreq);
-// static void PDMDecoder_Init(uint32_t AudioFreq, uint32_t ChnlNbr);
+static void PDMDecoder_Init(uint32_t AudioFreq, uint32_t ChnlNbr);
 
 /**
   * @}
@@ -698,8 +697,6 @@ static uint8_t I2S3_Init(uint32_t AudioFreq)
   }
 }
 
-#if 0
-
 /**
   * @}
   */ 
@@ -824,6 +821,7 @@ uint8_t BSP_AUDIO_IN_SetVolume(uint8_t Volume)
   */
 uint8_t BSP_AUDIO_IN_PDMToPCM(uint16_t *PDMBuf, uint16_t *PCMBuf)
 {
+#if 0
   uint16_t AppPDM[INTERNAL_BUFF_SIZE/2];
   uint32_t index = 0; 
   
@@ -845,6 +843,7 @@ uint8_t BSP_AUDIO_IN_PDMToPCM(uint16_t *PDMBuf, uint16_t *PCMBuf)
   }
   
   /* Return AUDIO_OK when all operations are correctly done */
+#endif
   return AUDIO_OK; 
 }
 
@@ -1046,6 +1045,7 @@ __weak void BSP_AUDIO_IN_Error_Callback(void)
   */
 static void PDMDecoder_Init(uint32_t AudioFreq, uint32_t ChnlNbr)
 { 
+#if 0
   uint32_t i = 0;
   
   /* Enable CRC peripheral to unlock the PDM library */
@@ -1063,6 +1063,7 @@ static void PDMDecoder_Init(uint32_t AudioFreq, uint32_t ChnlNbr)
     Filter[i].In_MicChannels = ChnlNbr; 
     PDM_Filter_Init((PDMFilter_InitStruct *)&Filter[i]);
   }  
+#endif
 }
 
 /**
@@ -1099,7 +1100,6 @@ static uint8_t I2S2_Init(uint32_t AudioFreq)
     return AUDIO_OK; 
   }
 }  
-#endif
 
 /**
   * @}
@@ -1121,12 +1121,10 @@ void HAL_I2S_ErrorCallback(I2S_HandleTypeDef *hi2s)
   {
     BSP_AUDIO_OUT_Error_CallBack();
   }
-#if 0
   if(hi2s->Instance == I2S2)
   {
     BSP_AUDIO_IN_Error_Callback();
   }
-#endif
  }
 
 /**
