@@ -35,17 +35,20 @@
  *
  */
 
+#define __BTSTACK_FILE__ "hal_audio_f4_discovery.c"
+
 #include "hal_audio.h"
 #include "btstack_debug.h"
 #include "stm32f4_discovery_audio.h"
 
+// output
 #define OUTPUT_BUFFER_NUM_SAMPLES       512
 #define NUM_OUTPUT_BUFFERS              2
 
 // #define MEASURE_SAMPLE_RATE
 
 static void (*audio_played_handler)(uint8_t buffer_index);
-static int started;
+static int playback_started;
 
 // our storage
 static int16_t output_buffer[NUM_OUTPUT_BUFFERS * OUTPUT_BUFFER_NUM_SAMPLES * 2];   // stereo
@@ -54,6 +57,23 @@ static int16_t output_buffer[NUM_OUTPUT_BUFFERS * OUTPUT_BUFFER_NUM_SAMPLES * 2]
 static uint32_t stream_start_ms;
 static uint32_t stream_samples;
 #endif
+
+// input
+#define INPUT_BUFFER_NUM_SAMPLES       512
+#define NUM_INPUT_BUFFERS              2
+
+static int recording_started;
+static int32_t recording_sample_rate;
+
+static void (*audio_recorded_callback)(const int16_t * buffer, uint16_t num_samples);
+
+static int16_t input_buffer[NUM_INPUT_BUFFERS * INPUT_BUFFER_NUM_SAMPLES];   // mono
+
+// 2048 16-bit samples decimation -> half/complete every 10 ms -> 160 audio samples
+
+static uint16_t pdm_buffer[2048];
+#define NUM_SINE_SAMPLES 160
+
 
 void  BSP_AUDIO_OUT_HalfTransfer_CallBack(void){
 
@@ -134,7 +154,7 @@ int16_t * hal_audio_sink_get_output_buffer(uint8_t buffer_index){
  * @brief Start stream
  */
 void hal_audio_sink_start(void){
-	started = 1;
+	playback_started = 1;
 	// BSP_AUDIO_OUT_Play gets number bytes -> 1 frame - 16 bit/stereo = 4 bytes
 	BSP_AUDIO_OUT_Play( (uint16_t*) output_buffer, NUM_OUTPUT_BUFFERS * OUTPUT_BUFFER_NUM_SAMPLES * 4);
 }
@@ -143,7 +163,7 @@ void hal_audio_sink_start(void){
  * @brief Stop stream
  */
 void hal_audio_sink_stop(void){
-	started = 0;
+	playback_started = 0;
 	BSP_AUDIO_OUT_Stop(CODEC_PDWN_HW);
 }
 
@@ -151,11 +171,69 @@ void hal_audio_sink_stop(void){
  * @brief Close audio codec
  */
 void hal_audio_sink_close(void){
-	if (started){
+	if (playback_started){
 		hal_audio_sink_close();
 	}
 }
 
+// temp sine simulator
+// input signal: pre-computed sine wave, 266 Hz at 16000 kHz
+static const int16_t sine_int16_at_16000hz[] = {
+     0,   3135,   6237,   9270,  12202,  14999,  17633,  20073,  22294,  24270,
+ 25980,  27406,  28531,  29344,  29835,  30000,  29835,  29344,  28531,  27406,
+ 25980,  24270,  22294,  20073,  17633,  14999,  12202,   9270,   6237,   3135,
+     0,  -3135,  -6237,  -9270, -12202, -14999, -17633, -20073, -22294, -24270,
+-25980, -27406, -28531, -29344, -29835, -30000, -29835, -29344, -28531, -27406,
+-25980, -24270, -22294, -20073, -17633, -14999, -12202,  -9270,  -6237,  -3135,
+};
+static unsigned int phase;
+
+// 8 kHz samples in host endianess
+static void sco_demo_sine_wave_int16_at_8000_hz_host_endian(unsigned int num_samples, int16_t * data){
+    unsigned int i;
+    for (i=0; i < num_samples; i++){
+        data[i] = sine_int16_at_16000hz[phase++];
+        // ony use every second sample from 16khz table to get 8khz
+        phase += 2;
+        if (phase >= (sizeof(sine_int16_at_16000hz) / sizeof(int16_t))){
+            phase = 0;
+        }
+    }
+}
+
+// 16 kHz samples in host endianess
+static void sco_demo_sine_wave_int16_at_16000_hz_host_endian(unsigned int num_samples, int16_t * data){
+    unsigned int i;
+    for (i=0; i < num_samples; i++){
+        data[i] = sine_int16_at_16000hz[phase++];
+        if (phase >= (sizeof(sine_int16_at_16000hz) / sizeof(int16_t))){
+            phase = 0;
+        }
+    }
+}
+
+static int buffer = 0;
+
+static void generate_sine(void){
+     log_info("generate_sine %u", NUM_SINE_SAMPLES);
+     if (recording_sample_rate == 8000){
+     	sco_demo_sine_wave_int16_at_8000_hz_host_endian(NUM_SINE_SAMPLES, &input_buffer[buffer * NUM_SINE_SAMPLES]);
+     } else {
+     	sco_demo_sine_wave_int16_at_16000_hz_host_endian(NUM_SINE_SAMPLES, &input_buffer[buffer * NUM_SINE_SAMPLES]);
+     }
+     // notify
+     (*audio_recorded_callback)(&input_buffer[buffer * NUM_SINE_SAMPLES], NUM_SINE_SAMPLES);
+
+     // swap buffer
+     buffer = 1 - buffer;
+}
+
+void BSP_AUDIO_IN_TransferComplete_CallBack(void){
+	generate_sine();
+}
+void BSP_AUDIO_IN_HalfTransfer_CallBack(void){
+	generate_sine();
+}
 
 /**
  * @brief Setup audio codec for recording using specified samplerate and number of channels
@@ -166,26 +244,35 @@ void hal_audio_sink_close(void){
 void hal_audio_source_init(uint8_t channels, 
                            uint32_t sample_rate,
                            void (*buffer_recorded_callback)(const int16_t * buffer, uint16_t num_samples)){
-    // TODO    
+
+    BSP_AUDIO_IN_Init(sample_rate, 16, channels);
+    audio_recorded_callback = buffer_recorded_callback;
+    recording_sample_rate = sample_rate;
 }
+
 
 /**
  * @brief Start stream
  */
 void hal_audio_source_start(void){
-    // TODO
+    BSP_AUDIO_IN_Record(pdm_buffer,  sizeof(pdm_buffer) / 2);
+    recording_started = 1;
 }
 
 /**
  * @brief Stop stream
  */
 void hal_audio_source_stop(void){
-    // TODO
+	if (!recording_started) return;
+	BSP_AUDIO_IN_Stop();
+    recording_started = 0;
 }
 
 /**
  * @brief Close audio codec
  */
 void hal_audio_source_close(void){
-    // TODO
+	if (recording_started) {
+		hal_audio_source_stop();
+	}
 }
