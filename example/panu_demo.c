@@ -57,6 +57,11 @@
 #include "btstack_config.h"
 #include "btstack.h"
 
+// network types
+#define NETWORK_TYPE_IPv4       0x0800
+#define NETWORK_TYPE_ARP        0x0806
+#define NETWORK_TYPE_IPv6       0x86DD
+
 static int record_id = -1;
 static uint16_t bnep_l2cap_psm      = 0;
 static uint32_t bnep_remote_uuid    = 0;
@@ -71,7 +76,7 @@ static uint8_t   attribute_value[1000];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
 // MBP 2016
-static const char * remote_addr_string = "F4-0F-24-3B-1B-E1";
+static const char * remote_addr_string = "78:4F:43:8C:B2:5D";
 // Wiko Sunny static const char * remote_addr_string = "A0:4C:5B:0F:B2:42";
 
 static bd_addr_t remote_addr;
@@ -81,6 +86,8 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 // outgoing network packet
 static const uint8_t * network_buffer;
 static uint16_t network_buffer_len;
+
+static uint8_t panu_sdpp_record[200];
 
 /* @section Main application configuration
  *
@@ -103,6 +110,13 @@ static void panu_setup(void){
 
     // Minimum L2CAP MTU for bnep is 1691 bytes
     bnep_register_service(packet_handler, BLUETOOTH_SERVICE_CLASS_PANU, 1691);  
+
+    // init SDP, create record for PANU and register with SDP
+    sdp_init();
+    memset(panu_sdpp_record, 0, sizeof(panu_sdpp_record));
+    uint16_t network_packet_types[] = { NETWORK_TYPE_IPv4, NETWORK_TYPE_ARP, 0};    // 0 as end of list
+    pan_create_panu_sdp_record(panu_sdpp_record, sdp_create_service_record_handle(), network_packet_types, NULL, NULL, BNEP_SECURITY_NONE);
+    printf("SDP service record size: %u\n", de_get_len((uint8_t*) panu_sdpp_record));
 
     // Initialize network interface
     btstack_network_init(&network_send_packet_callback);
