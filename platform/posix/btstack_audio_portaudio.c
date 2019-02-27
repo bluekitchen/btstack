@@ -56,7 +56,8 @@
 
 // config
 static int                    num_channels;
-static int                    num_bytes_per_sample;
+static int                    num_bytes_per_sample_sink;
+static int                    num_bytes_per_sample_source;
 
 // portaudio
 static int portaudio_initialized;
@@ -110,7 +111,7 @@ static int portaudio_callback_sink( const void *                     inputBuffer
     (void) inputBuffer;
 
     // fill from one of our buffers
-    memcpy(outputBuffer, output_buffers[output_buffer_to_play], NUM_FRAMES_PER_PA_BUFFER * num_bytes_per_sample);
+    memcpy(outputBuffer, output_buffers[output_buffer_to_play], NUM_FRAMES_PER_PA_BUFFER * num_bytes_per_sample_sink);
 
     // next
     output_buffer_to_play = (output_buffer_to_play + 1 ) % NUM_OUTPUT_BUFFERS;
@@ -134,7 +135,7 @@ static int portaudio_callback_source( const void *                     inputBuff
     (void) outputBuffer;
 
     // store in one of our buffers
-    memcpy(input_buffers[input_buffer_to_fill], inputBuffer, NUM_FRAMES_PER_PA_BUFFER * num_bytes_per_sample);
+    memcpy(input_buffers[input_buffer_to_fill], inputBuffer, NUM_FRAMES_PER_PA_BUFFER * num_bytes_per_sample_source);
 
     // next
     input_buffer_to_fill = (input_buffer_to_fill + 1 ) % NUM_INPUT_BUFFERS;
@@ -181,7 +182,7 @@ static int btstack_audio_portaudio_sink_init(
     PaError err;
 
     num_channels = channels;
-    num_bytes_per_sample = 2 * channels;
+    num_bytes_per_sample_sink = 2 * channels;
 
     if (!playback){
         log_error("No playback callback");
@@ -245,7 +246,7 @@ static int btstack_audio_portaudio_source_init(
     PaError err;
 
     num_channels = channels;
-    num_bytes_per_sample = 2 * channels;
+    num_bytes_per_sample_source = 2 * channels;
 
     if (!recording){
         log_error("No recording callback");
