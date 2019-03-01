@@ -77,11 +77,12 @@
 // length and name of wav file on disk
 #define SCO_WAV_DURATION_IN_SECONDS 15
 #define SCO_WAV_FILENAME            "sco_input.wav"
-#endif
 
 // name of sbc test files
 #define SCO_MSBC_OUT_FILENAME       "sco_output.msbc"
 #define SCO_MSBC_IN_FILENAME        "sco_input.msbc"
+#endif
+
 
 // pre-buffer for CVSD and mSBC - also defines latency
 #define SCO_CVSD_PA_PREBUFFER_MS    50
@@ -120,16 +121,17 @@ static int negotiated_codec = -1;
 
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
 static btstack_sbc_decoder_state_t decoder_state;
+
+#ifdef HAVE_POSIX_FILE_IO
+FILE * msbc_file_in;
+FILE * msbc_file_out;
+#endif
+
 #endif
 
 static btstack_cvsd_plc_state_t cvsd_plc_state;
 
 #define MAX_NUM_MSBC_SAMPLES (16*8)
-
-#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
-FILE * msbc_file_in;
-FILE * msbc_file_out;
-#endif
 
 int num_samples_to_write;
 int num_audio_frames;
@@ -369,12 +371,14 @@ static void sco_demo_init_mSBC(void){
 }
 
 static void sco_demo_receive_mSBC(uint8_t * packet, uint16_t size){
+#ifdef HAVE_POSIX_FILE_IO
     if (num_samples_to_write){
         if (msbc_file_in){
             // log incoming mSBC data for testing
             fwrite(packet+3, size-3, 1, msbc_file_in);
         }
     }
+#endif
     btstack_sbc_decoder_process_data(&decoder_state, (packet[1] >> 4) & 3, packet+3, size-3);  
 }
 #endif
@@ -518,11 +522,12 @@ void sco_demo_send(hci_con_handle_t sco_handle){
             log_error("mSBC stream is empty.");
         }
         hfp_msbc_read_from_stream(sco_packet + 3, sco_payload_length);
+#ifdef HAVE_POSIX_FILE_IO
         if (msbc_file_out){
             // log outgoing mSBC data for testing
             fwrite(sco_packet + 3, sco_payload_length, 1, msbc_file_out);
         }
-
+#endif
         sco_demo_msbc_fill_sine_audio_frame();
     } else
 #endif
