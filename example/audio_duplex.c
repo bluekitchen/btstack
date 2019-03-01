@@ -128,12 +128,12 @@ int btstack_main(int argc, const char * argv[]){
     btstack_ring_buffer_init(&audio_buffer, (uint8_t*) &audio_buffer_storage[0], sizeof(audio_buffer_storage));
 
     // setup audio: mono input -> stereo output
-    audio_source->init(1, samplerate, &audio_recording);
     audio_sink->init(2, samplerate, &audio_playback);
+    audio_source->init(1, samplerate, &audio_recording);
 
     // start duplex
-    audio_source->start_stream();
     audio_sink->start_stream();
+    audio_source->start_stream();
 
     return 0;
 }
