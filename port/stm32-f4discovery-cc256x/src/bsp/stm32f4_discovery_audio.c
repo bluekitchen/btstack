@@ -715,9 +715,12 @@ static uint8_t I2S3_Init(uint32_t AudioFreq)
 uint8_t BSP_AUDIO_IN_Init(uint32_t AudioFreq, uint32_t BitRes, uint32_t ChnlNbr)
 {
   
+#if 0
+  // BK: only do PLL clock configuration in sink
   /* Configure PLL clock */ 
   BSP_AUDIO_IN_ClockConfig(&hAudioInI2s, AudioFreq, NULL);
-  
+#endif
+
   /* Configure the PDM library */
   PDMDecoder_Init(AudioFreq, ChnlNbr);
 
