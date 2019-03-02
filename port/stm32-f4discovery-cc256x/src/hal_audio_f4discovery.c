@@ -59,20 +59,17 @@ static uint32_t stream_samples;
 #endif
 
 // input
-#define INPUT_BUFFER_NUM_SAMPLES       512
-#define NUM_INPUT_BUFFERS              2
+#define INPUT_BUFFER_NUM_SAMPLES       256
 
 static int recording_started;
 static int32_t recording_sample_rate;
 
 static void (*audio_recorded_callback)(const int16_t * buffer, uint16_t num_samples);
 
-static int16_t input_buffer[NUM_INPUT_BUFFERS * INPUT_BUFFER_NUM_SAMPLES];   // mono
+static int16_t input_buffer[INPUT_BUFFER_NUM_SAMPLES];   // single mono buffer
 
 // 2048 16-bit samples decimation -> half/complete every 10 ms -> 160 audio samples
-
-static uint16_t pdm_buffer[2048];
-#define NUM_SINE_SAMPLES 160
+static uint16_t pdm_buffer[INPUT_BUFFER_NUM_SAMPLES*8];
 
 
 void  BSP_AUDIO_OUT_HalfTransfer_CallBack(void){
@@ -212,20 +209,15 @@ static void sco_demo_sine_wave_int16_at_16000_hz_host_endian(unsigned int num_sa
     }
 }
 
-static int buffer = 0;
-
 static void generate_sine(void){
-     log_info("generate_sine %u", NUM_SINE_SAMPLES);
+     log_info("generate_sine %u", INPUT_BUFFER_NUM_SAMPLES);
      if (recording_sample_rate == 8000){
-     	sco_demo_sine_wave_int16_at_8000_hz_host_endian(NUM_SINE_SAMPLES, &input_buffer[buffer * NUM_SINE_SAMPLES]);
+     	sco_demo_sine_wave_int16_at_8000_hz_host_endian(INPUT_BUFFER_NUM_SAMPLES, input_buffer);
      } else {
-     	sco_demo_sine_wave_int16_at_16000_hz_host_endian(NUM_SINE_SAMPLES, &input_buffer[buffer * NUM_SINE_SAMPLES]);
+     	sco_demo_sine_wave_int16_at_16000_hz_host_endian(INPUT_BUFFER_NUM_SAMPLES, input_buffer);
      }
      // notify
-     (*audio_recorded_callback)(&input_buffer[buffer * NUM_SINE_SAMPLES], NUM_SINE_SAMPLES);
-
-     // swap buffer
-     buffer = 1 - buffer;
+     (*audio_recorded_callback)(input_buffer, INPUT_BUFFER_NUM_SAMPLES);
 }
 
 void BSP_AUDIO_IN_TransferComplete_CallBack(void){
