@@ -58,7 +58,7 @@ static uint32_t stream_start_ms;
 static uint32_t stream_samples;
 #endif
 
-// input
+// input - irq every 16 ms currently
 #define INPUT_BUFFER_NUM_SAMPLES       256
 
 static int recording_started;
@@ -70,7 +70,9 @@ static int16_t input_buffer[INPUT_BUFFER_NUM_SAMPLES];   // single mono buffer
 static uint16_t  pdm_buffer[INPUT_BUFFER_NUM_SAMPLES*8];
 
 static int sink_pcm_samples_per_ms;
-static int sink_pdm_byes_per_ms;
+static int sink_pdm_bytes_per_ms;
+static int sink_pcm_samples_per_irq;
+static int sink_pdm_samples_total;
 
 void  BSP_AUDIO_OUT_HalfTransfer_CallBack(void){
 
@@ -225,19 +227,19 @@ static void generate_sine(void){
 
 static void process_pdm(uint16_t * pdm_half_buffer){
 	
-	int samples_needed = INPUT_BUFFER_NUM_SAMPLES;
+	int samples_needed = sink_pcm_samples_per_irq;
 	int16_t * pcm_buffer = input_buffer;
 
 	while (samples_needed){
 		// TODO: use int16_t for pcm samples
 		BSP_AUDIO_IN_PDMToPCM(pdm_half_buffer, (uint16_t *) pcm_buffer);
-		pdm_half_buffer += sink_pdm_byes_per_ms / 2;
+		pdm_half_buffer += sink_pdm_bytes_per_ms / 2;
 		pcm_buffer      += sink_pcm_samples_per_ms;
 		samples_needed  -= sink_pcm_samples_per_ms; 
 	}
 
      // notify
-     (*audio_recorded_callback)(input_buffer, INPUT_BUFFER_NUM_SAMPLES);
+     (*audio_recorded_callback)(input_buffer, sink_pcm_samples_per_irq);
 }
 
 #endif
@@ -254,7 +256,7 @@ void BSP_AUDIO_IN_TransferComplete_CallBack(void){
 #ifdef SIMULATE_SINE
 	generate_sine();
 #else
-	process_pdm(&pdm_buffer[INPUT_BUFFER_NUM_SAMPLES*4]);
+	process_pdm(&pdm_buffer[sink_pdm_samples_total/2]);
 #endif
 }
 
@@ -270,10 +272,17 @@ void hal_audio_source_init(uint8_t channels,
 
     BSP_AUDIO_IN_Init(sample_rate, 16, channels);
 
-	// size of input & output of PDM filter depend on output frequency and decimation
 	int decimation = 64;
+
+	// size of input & output of PDM filter depend on output frequency and decimation
+	sink_pcm_samples_per_irq = sample_rate / 1000 * 16;	// 256@16 kHz, 128@8 kHz
+
 	sink_pcm_samples_per_ms = sample_rate / 1000;
-	sink_pdm_byes_per_ms    = sink_pcm_samples_per_ms * decimation / 8;
+	sink_pdm_bytes_per_ms   = sink_pcm_samples_per_ms * decimation / 8;
+
+	sink_pdm_samples_total  = INPUT_BUFFER_NUM_SAMPLES * 8 * sample_rate / 16000;
+
+	log_info("Source: PDM bytes per ms %u, PDM samples total %u - PCM samples per ms %u", sink_pdm_bytes_per_ms, sink_pdm_samples_total, sink_pcm_samples_per_ms);
 
     audio_recorded_callback = buffer_recorded_callback;
     recording_sample_rate = sample_rate;
@@ -283,7 +292,7 @@ void hal_audio_source_init(uint8_t channels,
  * @brief Start stream
  */
 void hal_audio_source_start(void){
-    BSP_AUDIO_IN_Record(pdm_buffer,  sizeof(pdm_buffer) / 2);
+    BSP_AUDIO_IN_Record(pdm_buffer, sink_pdm_samples_total);
     recording_started = 1;
 }
 
