@@ -777,7 +777,7 @@ int hci_send_sco_packet_buffer(int size){
 
         // check for free places on Bluetooth module
         if (!hci_can_send_prepared_sco_packet_now()) {
-            log_error("hci_send_sco_packet_buffer called but no free ACL buffers on controller");
+            log_error("hci_send_sco_packet_buffer called but no free SCO buffers on controller");
             hci_release_packet_buffer();
             hci_emit_transport_packet_sent();
             return BTSTACK_ACL_BUFFERS_FULL;
@@ -2552,7 +2552,7 @@ static void sco_handler(uint8_t * packet, uint16_t size){
     }
 
     // treat received SCO packets as indicator of successfully sent packet, if flow control is not explicite
-    log_info("sco flow %u, handle 0x%04x, packets sent %u, bytes send %u", hci_stack->synchronous_flow_control_enabled, (int) con_handle, conn->num_packets_sent, conn->num_sco_bytes_sent);
+    log_debug("sco flow %u, handle 0x%04x, packets sent %u, bytes send %u", hci_stack->synchronous_flow_control_enabled, (int) con_handle, conn->num_packets_sent, conn->num_sco_bytes_sent);
     if (hci_stack->synchronous_flow_control_enabled == 0){
         uint16_t sco_payload_len = size - 3;
         if (conn->num_sco_bytes_sent >= sco_payload_len){
