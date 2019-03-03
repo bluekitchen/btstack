@@ -115,7 +115,7 @@ for file in example_files:
     btstack_tree = project_folder + 'btstack/'
     if os.path.exists(btstack_tree):
         shutil.rmtree(btstack_tree)
-    for subtree in ['3rd-party/bluedroid', '3rd-party/hxcmod-player', '3rd-party/micro-ecc', 'chipset/cc256x', 'platform/embedded', 'port/stm32-f4discovery-cc256x/src', 'src']:
+    for subtree in ['3rd-party/bluedroid', '3rd-party/hxcmod-player', '3rd-party/micro-ecc', '3rd-party/md5', '3rd-party/segger-rtt', '3rd-party/yxml', 'chipset/cc256x', 'platform/embedded', 'port/stm32-f4discovery-cc256x/src', 'port/stm32-f4discovery-cc256x/pdm', 'src']:
         shutil.copytree(btstack_root + subtree, btstack_tree + subtree)
 
     # create update_gatt.sh if .gatt file is present
