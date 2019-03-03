@@ -132,6 +132,7 @@ b) RECORD A FILE:
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4_discovery_audio.h"
+#include "pdm_filter.h"
 #include "btstack_config.h"
 
 /** @addtogroup BSP
@@ -159,9 +160,9 @@ b) RECORD A FILE:
   * @{
   */ 
 /* These PLL parameters are valid when the f(VCO clock) = 1Mhz */
-const uint32_t I2SFreq[8] = {8000, 11025, 16000, 22050, 32000, 44100, 48000, 96000};
-const uint32_t I2SPLLN[8] = {256, 429, 213, 429, 426, 271, 258, 344};
-const uint32_t I2SPLLR[8] = {5, 4, 4, 4, 4, 6, 3, 1};
+static const uint32_t I2SFreq[8] = {8000, 11025, 16000, 22050, 32000, 44100, 48000, 96000};
+static const uint32_t I2SPLLN[8] = {256, 429, 213, 429, 426, 271, 258, 344};
+static const uint32_t I2SPLLR[8] = {5, 4, 4, 4, 4, 6, 3, 1};
 /**
   * @}
   */ 
@@ -183,7 +184,7 @@ I2S_HandleTypeDef                 hAudioOutI2s;
 /*### RECORDER ###*/
 I2S_HandleTypeDef                 hAudioInI2s;
 
-//PDMFilter_InitStruct Filter[DEFAULT_AUDIO_IN_CHANNEL_NBR];
+static PDMFilter_InitStruct Filter[DEFAULT_AUDIO_IN_CHANNEL_NBR];
 __IO uint16_t AudioInVolume = DEFAULT_AUDIO_IN_VOLUME;
 /**
   * @}
@@ -824,7 +825,6 @@ uint8_t BSP_AUDIO_IN_SetVolume(uint8_t Volume)
   */
 uint8_t BSP_AUDIO_IN_PDMToPCM(uint16_t *PDMBuf, uint16_t *PCMBuf)
 {
-#if 0
   uint16_t AppPDM[INTERNAL_BUFF_SIZE/2];
   uint32_t index = 0; 
   
@@ -839,14 +839,17 @@ uint8_t BSP_AUDIO_IN_PDMToPCM(uint16_t *PDMBuf, uint16_t *PCMBuf)
     /* PDM to PCM filter */
     PDM_Filter_64_LSB((uint8_t*)&AppPDM[index], (uint16_t*)&(PCMBuf[index]), AudioInVolume , (PDMFilter_InitStruct *)&Filter[index]);
   }
+#if 0
+  // BK - generate mono output
+
   /* Duplicate samples since a single microphone in mounted on STM32F4-Discovery */
   for(index = 0; index < PCM_OUT_SIZE; index++)
   {
     PCMBuf[(index<<1)+1] = PCMBuf[index<<1];
   }
-  
-  /* Return AUDIO_OK when all operations are correctly done */
 #endif
+
+  /* Return AUDIO_OK when all operations are correctly done */
   return AUDIO_OK; 
 }
 
@@ -1048,7 +1051,7 @@ __weak void BSP_AUDIO_IN_Error_Callback(void)
   */
 static void PDMDecoder_Init(uint32_t AudioFreq, uint32_t ChnlNbr)
 { 
-#if 0
+#if 1
   uint32_t i = 0;
   
   /* Enable CRC peripheral to unlock the PDM library */
@@ -1062,7 +1065,9 @@ static void PDMDecoder_Init(uint32_t AudioFreq, uint32_t ChnlNbr)
     Filter[i].Fs = AudioFreq;
     /* On STM32F4-Discovery a single microphone is mounted, samples are duplicated
        to make stereo audio streams */
-    Filter[i].Out_MicChannels = 2;
+    // BK - generate mono output
+    // Filter[i].Out_MicChannels = 2;
+    Filter[i].Out_MicChannels = 1;
     Filter[i].In_MicChannels = ChnlNbr; 
     PDM_Filter_Init((PDMFilter_InitStruct *)&Filter[i]);
   }  
