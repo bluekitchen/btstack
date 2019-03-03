@@ -67,10 +67,10 @@ static int32_t recording_sample_rate;
 static void (*audio_recorded_callback)(const int16_t * buffer, uint16_t num_samples);
 
 static int16_t input_buffer[INPUT_BUFFER_NUM_SAMPLES];   // single mono buffer
+static uint16_t  pdm_buffer[INPUT_BUFFER_NUM_SAMPLES*8];
 
-// 2048 16-bit samples decimation -> half/complete every 10 ms -> 160 audio samples
-static uint16_t pdm_buffer[INPUT_BUFFER_NUM_SAMPLES*8];
-
+static int sink_pcm_samples_per_ms;
+static int sink_pdm_byes_per_ms;
 
 void  BSP_AUDIO_OUT_HalfTransfer_CallBack(void){
 
@@ -173,6 +173,8 @@ void hal_audio_sink_close(void){
 	}
 }
 
+#ifdef SIMULATE_SINE
+
 // temp sine simulator
 // input signal: pre-computed sine wave, 266 Hz at 16000 kHz
 static const int16_t sine_int16_at_16000hz[] = {
@@ -198,6 +200,7 @@ static void sco_demo_sine_wave_int16_at_8000_hz_host_endian(unsigned int num_sam
     }
 }
 
+
 // 16 kHz samples in host endianess
 static void sco_demo_sine_wave_int16_at_16000_hz_host_endian(unsigned int num_samples, int16_t * data){
     unsigned int i;
@@ -210,7 +213,6 @@ static void sco_demo_sine_wave_int16_at_16000_hz_host_endian(unsigned int num_sa
 }
 
 static void generate_sine(void){
-     log_info("generate_sine %u", INPUT_BUFFER_NUM_SAMPLES);
      if (recording_sample_rate == 8000){
      	sco_demo_sine_wave_int16_at_8000_hz_host_endian(INPUT_BUFFER_NUM_SAMPLES, input_buffer);
      } else {
@@ -219,12 +221,41 @@ static void generate_sine(void){
      // notify
      (*audio_recorded_callback)(input_buffer, INPUT_BUFFER_NUM_SAMPLES);
 }
+#else
+
+static void process_pdm(uint16_t * pdm_half_buffer){
+	
+	int samples_needed = INPUT_BUFFER_NUM_SAMPLES;
+	int16_t * pcm_buffer = input_buffer;
+
+	while (samples_needed){
+		// TODO: use int16_t for pcm samples
+		BSP_AUDIO_IN_PDMToPCM(pdm_half_buffer, (uint16_t *) pcm_buffer);
+		pdm_half_buffer += sink_pdm_byes_per_ms / 2;
+		pcm_buffer      += sink_pcm_samples_per_ms;
+		samples_needed  -= sink_pcm_samples_per_ms; 
+	}
+
+     // notify
+     (*audio_recorded_callback)(input_buffer, INPUT_BUFFER_NUM_SAMPLES);
+}
+
+#endif
+
+void BSP_AUDIO_IN_HalfTransfer_CallBack(void){
+#ifdef SIMULATE_SINE
+	generate_sine();
+#else
+	process_pdm(&pdm_buffer[0]);
+#endif
+}
 
 void BSP_AUDIO_IN_TransferComplete_CallBack(void){
+#ifdef SIMULATE_SINE
 	generate_sine();
-}
-void BSP_AUDIO_IN_HalfTransfer_CallBack(void){
-	generate_sine();
+#else
+	process_pdm(&pdm_buffer[INPUT_BUFFER_NUM_SAMPLES*4]);
+#endif
 }
 
 /**
@@ -238,10 +269,15 @@ void hal_audio_source_init(uint8_t channels,
                            void (*buffer_recorded_callback)(const int16_t * buffer, uint16_t num_samples)){
 
     BSP_AUDIO_IN_Init(sample_rate, 16, channels);
+
+	// size of input & output of PDM filter depend on output frequency and decimation
+	int decimation = 64;
+	sink_pcm_samples_per_ms = sample_rate / 1000;
+	sink_pdm_byes_per_ms    = sink_pcm_samples_per_ms * decimation / 8;
+
     audio_recorded_callback = buffer_recorded_callback;
     recording_sample_rate = sample_rate;
 }
-
 
 /**
  * @brief Start stream
