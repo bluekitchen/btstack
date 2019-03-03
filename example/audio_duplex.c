@@ -42,6 +42,16 @@
 
 #include "btstack.h"
 
+
+// uncomment to test start/stop of loopback / audio driver
+// #define TEST_START_STOP_INTERVAL 5000
+
+#ifdef TEST_START_STOP_INTERVAL
+static void stop_loopback(btstack_timer_source_t * ts);
+#endif
+
+static btstack_timer_source_t start_stop_timer;
+
 // samplerate
 const uint32_t samplerate = 16000;
 
@@ -106,6 +116,56 @@ static void audio_playback(int16_t * pcm_buffer, uint16_t num_samples_to_write){
     }
 }
 
+static void start_loopback(btstack_timer_source_t * ts){
+
+    const btstack_audio_sink_t   * audio_sink   = btstack_audio_sink_get_instance();
+    const btstack_audio_source_t * audio_source = btstack_audio_source_get_instance();
+
+    // prepare audio buffer
+    btstack_ring_buffer_init(&audio_buffer, (uint8_t*) &audio_buffer_storage[0], sizeof(audio_buffer_storage));
+
+    // setup audio: mono input -> stereo output
+    audio_sink->init(2, samplerate, &audio_playback);
+    audio_source->init(1, samplerate, &audio_recording);
+
+    // start duplex
+    audio_sink->start_stream();
+    audio_source->start_stream();
+
+    printf("Start Audio Loopback\n");
+
+#ifdef TEST_START_STOP_INTERVAL
+    // schedule stop
+    btstack_run_loop_set_timer_handler(ts, &stop_loopback);
+    btstack_run_loop_set_timer(ts, TEST_START_STOP_INTERVAL);
+    btstack_run_loop_add_timer(ts);
+#endif
+}
+
+#ifdef TEST_START_STOP_INTERVAL
+static void stop_loopback(btstack_timer_source_t * ts){
+    const btstack_audio_sink_t   * audio_sink   = btstack_audio_sink_get_instance();
+    const btstack_audio_source_t * audio_source = btstack_audio_source_get_instance();
+
+    // stop streams
+    audio_sink->stop_stream();
+    audio_source->stop_stream();
+
+    // close audio
+    audio_sink->close();
+    audio_source->close();
+
+    playback_started = 0;
+
+    printf("Stop Audio Loopback\n");
+
+    // schedule stop
+    btstack_run_loop_set_timer_handler(ts, &start_loopback);
+    btstack_run_loop_set_timer(ts, TEST_START_STOP_INTERVAL);
+    btstack_run_loop_add_timer(ts);
+}
+#endif
+
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     (void)argc;
@@ -124,16 +184,7 @@ int btstack_main(int argc, const char * argv[]){
         return 10;
     }
 
-    // prepare audio buffer
-    btstack_ring_buffer_init(&audio_buffer, (uint8_t*) &audio_buffer_storage[0], sizeof(audio_buffer_storage));
-
-    // setup audio: mono input -> stereo output
-    audio_sink->init(2, samplerate, &audio_playback);
-    audio_source->init(1, samplerate, &audio_recording);
-
-    // start duplex
-    audio_sink->start_stream();
-    audio_source->start_stream();
+    start_loopback(&start_stop_timer);
 
     return 0;
 }
