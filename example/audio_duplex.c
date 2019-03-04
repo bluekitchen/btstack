@@ -117,7 +117,6 @@ static void audio_playback(int16_t * pcm_buffer, uint16_t num_samples_to_write){
 }
 
 static void start_loopback(btstack_timer_source_t * ts){
-
     const btstack_audio_sink_t   * audio_sink   = btstack_audio_sink_get_instance();
     const btstack_audio_source_t * audio_source = btstack_audio_source_get_instance();
 
@@ -139,6 +138,8 @@ static void start_loopback(btstack_timer_source_t * ts){
     btstack_run_loop_set_timer_handler(ts, &stop_loopback);
     btstack_run_loop_set_timer(ts, TEST_START_STOP_INTERVAL);
     btstack_run_loop_add_timer(ts);
+#else
+    UNUSED(ts);
 #endif
 }
 
