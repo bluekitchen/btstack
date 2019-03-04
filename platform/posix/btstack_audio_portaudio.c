@@ -213,7 +213,7 @@ static int btstack_audio_portaudio_sink_init(
 
     /* -- setup stream -- */
     err = Pa_OpenStream(
-           &stream_source,
+           &stream_sink,
            NULL,
            &theOutputParameters,
            samplerate,
@@ -228,7 +228,7 @@ static int btstack_audio_portaudio_sink_init(
     }
     log_info("PortAudio: sink stream created");
 
-    const PaStreamInfo * stream_info = Pa_GetStreamInfo(stream_source);
+    const PaStreamInfo * stream_info = Pa_GetStreamInfo(stream_sink);
     log_info("PortAudio: sink latency: %f", stream_info->outputLatency);
 
     playback_callback  = playback;
@@ -277,7 +277,7 @@ static int btstack_audio_portaudio_source_init(
 
     /* -- setup stream -- */
     err = Pa_OpenStream(
-           &stream_sink,
+           &stream_source,
            &theInputParameters,
            NULL,
            samplerate,
@@ -292,7 +292,7 @@ static int btstack_audio_portaudio_source_init(
     }
     log_info("PortAudio: source stream created");
 
-    const PaStreamInfo * stream_info = Pa_GetStreamInfo(stream_sink);
+    const PaStreamInfo * stream_info = Pa_GetStreamInfo(stream_source);
     log_info("PortAudio: source latency: %f", stream_info->inputLatency);
 
     recording_callback = recording;
