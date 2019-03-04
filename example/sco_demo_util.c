@@ -582,7 +582,7 @@ void sco_demo_send(hci_con_handle_t sco_handle){
         } else {
             // CVSD
 
-            log_info("send: bytes avail %u, free %u", btstack_ring_buffer_bytes_available(&audio_input_ring_buffer), btstack_ring_buffer_bytes_free(&audio_input_ring_buffer));
+            log_debug("send: bytes avail %u, free %u", btstack_ring_buffer_bytes_available(&audio_input_ring_buffer), btstack_ring_buffer_bytes_free(&audio_input_ring_buffer));
             // fill with silence while paused
             int bytes_to_copy = sco_payload_length;
             if (audio_input_paused){
