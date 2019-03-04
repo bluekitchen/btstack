@@ -313,7 +313,7 @@ static void btstack_audio_portaudio_sink_start_stream(void){
     output_buffer_to_fill = 2;
 
     /* -- start stream -- */
-    PaError err = Pa_StartStream(stream_source);
+    PaError err = Pa_StartStream(stream_sink);
     if (err != paNoError){
         log_error("PortAudio: error starting sink stream: \"%s\"\n",  Pa_GetErrorText(err));
         return;
@@ -332,7 +332,7 @@ static void btstack_audio_portaudio_source_start_stream(void){
     if (!recording_callback) return;
 
     /* -- start stream -- */
-    PaError err = Pa_StartStream(stream_sink);
+    PaError err = Pa_StartStream(stream_source);
     if (err != paNoError){
         log_error("PortAudio: error starting source stream: \"%s\"\n",  Pa_GetErrorText(err));
         return;
