@@ -80,7 +80,7 @@
 #ifdef HAVE_POSIX_FILE_IO
 #include "wav_util.h"
 #define STORE_SBC_TO_SBC_FILE 
-#define STORE_SBC_TO_WAV_FILE 
+#define STORE_TO_WAV_FILE 
 #endif
 
 #define NUM_CHANNELS 2
@@ -114,7 +114,7 @@ static int       request_frames;
 #define STORE_FROM_PLAYBACK
 
 // WAV File
-#ifdef STORE_SBC_TO_WAV_FILE    
+#ifdef STORE_TO_WAV_FILE    
 static int frame_count = 0;
 static char * wav_filename = "avdtp_sink.wav";
 #endif
@@ -208,15 +208,15 @@ static btstack_resample_t resample_instance;
  * SDP records and register them with the SDP service. 
  * You'll also need to register several packet handlers:
  * - a2dp_sink_packet_handler - handles events on stream connection status (established, released), the media codec configuration, and, the status of the stream itself (opened, paused, stopped).
- * - handle_l2cap_media_data_packet - used to receive streaming data. If HAVE_PORTAUDIO or STORE_SBC_TO_WAV_FILE directives (check btstack_config.h) are used, the SBC decoder will be used to decode the SBC data into PCM frames. The resulting PCM frames are then processed in the SBC Decoder callback.
+ * - handle_l2cap_media_data_packet - used to receive streaming data. If STORE_TO_WAV_FILE directive (check btstack_config.h) is used, the SBC decoder will be used to decode the SBC data into PCM frames. The resulting PCM frames are then processed in the SBC Decoder callback.
  * - stdin_process callback - used to trigger AVRCP commands to the A2DP Source device, such are get now playing info, start, stop, volume control. Requires HAVE_BTSTACK_STDIN.
  * - avrcp_controller_packet_handler - used to receive answers for AVRCP commands,
  *
  * @text Note, currently only the SBC codec is supported. 
- * If you want to store the audio data in a file, you'll need to define STORE_SBC_TO_WAV_FILE. The HAVE_PORTAUDIO directive indicates if the audio is played back via PortAudio.
- * If HAVE_PORTAUDIO or STORE_SBC_TO_WAV_FILE directives is defined, the SBC decoder needs to get initialized when a2dp_sink_packet_handler receives event A2DP_SUBEVENT_STREAM_STARTED. 
+ * If you want to store the audio data in a file, you'll need to define STORE_TO_WAV_FILE. 
+ * If STORE_TO_WAV_FILE directive is defined, the SBC decoder needs to get initialized when a2dp_sink_packet_handler receives event A2DP_SUBEVENT_STREAM_STARTED. 
  * The initialization of the SBC decoder requires a callback that handles PCM data:
- * - handle_pcm_data - handles PCM audio frames. Here, they are stored a in wav file if STORE_SBC_TO_WAV_FILE is defined, and/or played using the PortAudio library if HAVE_PORTAUDIO is defined.
+ * - handle_pcm_data - handles PCM audio frames. Here, they are stored a in wav file if STORE_TO_WAV_FILE is defined, and/or played using the audio library.
  */
 
 /* LISTING_START(MainConfiguration): Setup Audio Sink and AVRCP Controller services */
@@ -285,7 +285,7 @@ static int a2dp_and_avrcp_setup(void){
     } else {
         printf("Audio playback supported.\n");
     }
-#ifdef STORE_SBC_TO_WAV_FILE 
+#ifdef STORE_TO_WAV_FILE 
    printf("Audio will be stored to \'%s\' file.\n",  wav_filename);
 #endif
 #endif
@@ -294,15 +294,12 @@ static int a2dp_and_avrcp_setup(void){
 
 static void playback_handler(int16_t * buffer, uint16_t num_frames){
 
-#ifdef STORE_FROM_PLAYBACK
-#ifdef STORE_SBC_TO_WAV_FILE
+#ifdef STORE_TO_WAV_FILE
     int       wav_samples = num_frames * NUM_CHANNELS;
     int16_t * wav_buffer  = buffer;
 #endif
-#endif
     
     // called from lower-layer but guaranteed to be on main thread
-
     if (sbc_frame_size == 0){
         memset(buffer, 0, num_frames * BYTES_PER_FRAME);
         return;
@@ -324,10 +321,8 @@ static void playback_handler(int16_t * buffer, uint16_t num_frames){
         btstack_sbc_decoder_process_data(&state, 0, sbc_frame, sbc_frame_size);
     }
 
-#ifdef STORE_FROM_PLAYBACK
-#ifdef STORE_SBC_TO_WAV_FILE
+#ifdef STORE_TO_WAV_FILE
     wav_writer_write_int16(wav_samples, wav_buffer);
-#endif
 #endif
 }
 
@@ -336,36 +331,23 @@ static void handle_pcm_data(int16_t * data, int num_frames, int num_channels, in
     UNUSED(context);
     UNUSED(num_channels);   // must be stereo == 2
 
-#ifdef STORE_DECODED
-    wav_writer_write_int16(num_frames * NUM_CHANNELS, data);
+    const btstack_audio_sink_t * audio_sink = btstack_audio_sink_get_instance();
+    if (!audio_sink){
+#ifdef STORE_TO_WAV_FILE
+        wav_writer_write_int16(num_frames * NUM_CHANNELS, data);
 #endif
+        return;
+    }
 
     // resample into request buffer - add some additional space for resampling
     int16_t  output_buffer[(128+16) * NUM_CHANNELS]; // 16 * 8 * 2
     uint32_t resampled_frames = btstack_resample_block(&resample_instance, data, num_frames, output_buffer);
-
-#ifdef STORE_RESAMPLED
-#ifdef STORE_SBC_TO_WAV_FILE
-    wav_writer_write_int16(resampled_frames * NUM_CHANNELS, output_buffer);
-    frame_count++;
-#endif
-#endif
-
-    const btstack_audio_sink_t * audio_sink = btstack_audio_sink_get_instance();
-    if (!audio_sink) return;
 
     // store data in btstack_audio buffer first
     int frames_to_copy = btstack_min(resampled_frames, request_frames);
     memcpy(request_buffer, output_buffer, frames_to_copy * BYTES_PER_FRAME);
     request_frames  -= frames_to_copy;
     request_buffer  += frames_to_copy * NUM_CHANNELS;
-
-#ifdef STORE_BEFORE_PLAYBACK
-#ifdef STORE_SBC_TO_WAV_FILE
-    wav_writer_write_int16(frames_to_copy * NUM_CHANNELS, output_buffer);
-    frame_count++;
-#endif
-#endif
 
     // and rest in ring buffer
     int frames_to_store = resampled_frames - frames_to_copy;
@@ -374,12 +356,6 @@ static void handle_pcm_data(int16_t * data, int num_frames, int num_channels, in
         if (status){
             printf("Error storing samples in PCM ring buffer!!!\n");
         }
-#ifdef STORE_BEFORE_PLAYBACK
-#ifdef STORE_SBC_TO_WAV_FILE
-        wav_writer_write_int16(frames_to_store * NUM_CHANNELS, &output_buffer[frames_to_copy * NUM_CHANNELS]);
-        frame_count++;
-#endif
-#endif
     }
 }
 
@@ -388,7 +364,7 @@ static int media_processing_init(avdtp_media_codec_configuration_sbc_t configura
 
     btstack_sbc_decoder_init(&state, mode, handle_pcm_data, NULL);
 
-#ifdef STORE_SBC_TO_WAV_FILE
+#ifdef STORE_TO_WAV_FILE
     wav_writer_open(wav_filename, configuration.num_channels, configuration.sampling_frequency);
 #endif
 
@@ -437,7 +413,7 @@ static void media_processing_close(void){
     audio_stream_started = 0;
     sbc_frame_size = 0;
 
-#ifdef STORE_SBC_TO_WAV_FILE                 
+#ifdef STORE_TO_WAV_FILE                 
     wav_writer_close();
     int total_frames_nr = state.good_frames_nr + state.bad_frames_nr + state.zero_frames_nr;
 
