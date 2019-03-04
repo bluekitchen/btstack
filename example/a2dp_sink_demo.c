@@ -279,6 +279,16 @@ static int a2dp_and_avrcp_setup(void){
     hci_event_callback_registration.callback = &hci_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
+#ifdef HAVE_POSIX_FILE_IO
+    if (!btstack_audio_sink_get_instance()){
+        printf("No audio playback.\n");
+    } else {
+        printf("Audio playback supported.\n");
+    }
+#ifdef STORE_SBC_TO_WAV_FILE 
+   printf("Audio will be stored to \'%s\' file.\n",  wav_filename);
+#endif
+#endif
     return 0;
 }
 
@@ -292,6 +302,11 @@ static void playback_handler(int16_t * buffer, uint16_t num_frames){
 #endif
     
     // called from lower-layer but guaranteed to be on main thread
+
+    if (sbc_frame_size == 0){
+        memset(buffer, 0, num_frames * BYTES_PER_FRAME);
+        return;
+    }
 
     // first fill from resampled audio
     uint32_t bytes_read;
@@ -396,13 +411,33 @@ static int media_processing_init(avdtp_media_codec_configuration_sbc_t configura
     return 0;
 }
 
-static void media_processing_close(void){
+static void media_processing_start(void){
+    if (!media_initialized) return;
+    // setup audio playback
+    const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
+    if (audio){
+        audio->start_stream();
+    }
+    audio_stream_started = 1;
+}
 
+static void media_processing_pause(void){
+    if (!media_initialized) return;
+    // stop audio playback
+    audio_stream_started = 0;
+    const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
+    if (audio){
+        audio->stop_stream();
+    }
+}
+
+static void media_processing_close(void){
     if (!media_initialized) return;
     media_initialized = 0;
     audio_stream_started = 0;
+    sbc_frame_size = 0;
 
-#ifdef STORE_SBC_TO_WAV_FILE                  
+#ifdef STORE_SBC_TO_WAV_FILE                 
     wav_writer_close();
     int total_frames_nr = state.good_frames_nr + state.bad_frames_nr + state.zero_frames_nr;
 
@@ -417,6 +452,7 @@ static void media_processing_close(void){
     // stop audio playback
     const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
     if (audio){
+        printf("close stream\n");
         audio->close();
     }
 }
@@ -435,7 +471,7 @@ static int read_sbc_header(uint8_t * packet, int size, int * offset, avdtp_sbc_c
 static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16_t size){
     UNUSED(seid);
     int pos = 0;
-    
+     
     avdtp_media_packet_header_t media_header;
     if (!read_media_data_header(packet, size, &pos, &media_header)) return;
     
@@ -621,22 +657,22 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
     memset(value, 0, sizeof(value));
     switch (packet[2]){
         case AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED:
-            printf("AVRCP Controller: playback position changed, position %d ms\n", (unsigned int) avrcp_subevent_notification_playback_pos_changed_get_playback_position_ms(packet));
+            printf("AVRCP Controller: Playback position changed, position %d ms\n", (unsigned int) avrcp_subevent_notification_playback_pos_changed_get_playback_position_ms(packet));
             break;
         case AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_STATUS_CHANGED:
-            printf("AVRCP Controller: playback status changed %s\n", avrcp_play_status2str(avrcp_subevent_notification_playback_status_changed_get_play_status(packet)));
+            printf("AVRCP Controller: Playback status changed %s\n", avrcp_play_status2str(avrcp_subevent_notification_playback_status_changed_get_play_status(packet)));
             return;
         case AVRCP_SUBEVENT_NOTIFICATION_NOW_PLAYING_CONTENT_CHANGED:
-            printf("AVRCP Controller: playing content changed\n");
+            printf("AVRCP Controller: Playing content changed\n");
             return;
         case AVRCP_SUBEVENT_NOTIFICATION_TRACK_CHANGED:
-            printf("AVRCP Controller: track changed\n");
+            printf("AVRCP Controller: Track changed\n");
             return;
         case AVRCP_SUBEVENT_NOTIFICATION_VOLUME_CHANGED:
-            printf("AVRCP Controller: absolute volume changed %d\n", avrcp_subevent_notification_volume_changed_get_absolute_volume(packet));
+            printf("AVRCP Controller: Absolute volume changed %d\n", avrcp_subevent_notification_volume_changed_get_absolute_volume(packet));
             return;
         case AVRCP_SUBEVENT_NOTIFICATION_AVAILABLE_PLAYERS_CHANGED:
-            printf("AVRCP Controller: changed\n");
+            printf("AVRCP Controller: Changed\n");
             return; 
         case AVRCP_SUBEVENT_SHUFFLE_AND_REPEAT_MODE:{
             uint8_t shuffle_mode = avrcp_subevent_shuffle_and_repeat_mode_get_shuffle_mode(packet);
@@ -696,7 +732,7 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
             break;
         
         default:
-            printf("AVRCP Controller: event 0x%02x is not parsed\n", packet[2]);
+            printf("AVRCP Controller: Event 0x%02x is not parsed\n", packet[2]);
             break;
     }  
 }
@@ -883,30 +919,30 @@ static void a2dp_sink_packet_handler(uint8_t packet_type, uint16_t channel, uint
             cid = a2dp_subevent_stream_started_get_a2dp_cid(packet);
             if (cid != a2dp_cid) break;
             a2dp_local_seid = a2dp_subevent_stream_started_get_local_seid(packet);
-            printf("A2DP  Sink      : stream started\n");
-            media_processing_init(sbc_configuration);
+            printf("A2DP  Sink      : Stream started\n");
+            media_processing_start();
             break;
         
         case A2DP_SUBEVENT_STREAM_SUSPENDED:
             cid = a2dp_subevent_stream_suspended_get_a2dp_cid(packet);
             if (cid != a2dp_cid) break;
             a2dp_local_seid = a2dp_subevent_stream_suspended_get_local_seid(packet);
-            printf("A2DP  Sink      : stream paused\n");
-            // TODO: pause stream
+            printf("A2DP  Sink      : Stream paused\n");
+            media_processing_pause();
             break;
         
         case A2DP_SUBEVENT_STREAM_RELEASED:
             a2dp_local_seid = a2dp_subevent_stream_released_get_local_seid(packet);
-            printf("A2DP  Sink      : stream released\n");
+            printf("A2DP  Sink      : Stream released\n");
             media_processing_close();
             break;
         case A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED:
             cid = a2dp_subevent_signaling_connection_released_get_a2dp_cid(packet);
-            printf("A2DP  Sink      : signaling connection released\n");
+            printf("A2DP  Sink      : Signaling connection released\n");
             media_processing_close();
             break;
         default:
-            printf("A2DP  Sink      : not parsed 0x%02x\n", packet[2]);
+            printf("A2DP  Sink      : Not parsed 0x%02x\n", packet[2]);
             break; 
     }
 }
