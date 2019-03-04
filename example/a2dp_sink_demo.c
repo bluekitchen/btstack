@@ -79,7 +79,7 @@
 
 #ifdef HAVE_POSIX_FILE_IO
 #include "wav_util.h"
-#define STORE_SBC_TO_SBC_FILE 
+#define STORE_TO_SBC_FILE 
 #define STORE_TO_WAV_FILE 
 #endif
 
@@ -119,7 +119,7 @@ static int frame_count = 0;
 static char * wav_filename = "avdtp_sink.wav";
 #endif
 
-#ifdef STORE_SBC_TO_SBC_FILE    
+#ifdef STORE_TO_SBC_FILE    
 static FILE * sbc_file;
 static char * sbc_filename = "avdtp_sink.sbc";
 #endif
@@ -368,7 +368,7 @@ static int media_processing_init(avdtp_media_codec_configuration_sbc_t configura
     wav_writer_open(wav_filename, configuration.num_channels, configuration.sampling_frequency);
 #endif
 
-#ifdef STORE_SBC_TO_SBC_FILE    
+#ifdef STORE_TO_SBC_FILE    
    sbc_file = fopen(sbc_filename, "wb"); 
 #endif
 
@@ -421,7 +421,7 @@ static void media_processing_close(void){
     printf("WAV Writer: Written %d frames to wav file: %s\n", frame_count, wav_filename);
 #endif
 
-#ifdef STORE_SBC_TO_SBC_FILE
+#ifdef STORE_TO_SBC_FILE
     fclose(sbc_file);
 #endif     
 
@@ -454,8 +454,11 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     avdtp_sbc_codec_header_t sbc_header;
     if (!read_sbc_header(packet, size, &pos, &sbc_header)) return;
 
-    const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
+#ifdef STORE_TO_SBC_FILE
+    fwrite(packet+pos, size-pos, 1, sbc_file);
+#endif
 
+    const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
     // process data right away if there's no audio implementation active, e.g. on posix systems to store as .wav
     if (!audio){
         btstack_sbc_decoder_process_data(&state, 0, packet+pos, size-pos);
@@ -491,10 +494,6 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     // dump
     // printf("%6u %03u %05x\n",  (int) btstack_run_loop_get_time_ms(), sbc_frames_in_buffer, resampling_factor);
     // log_info("%03u %05x", sbc_frames_in_buffer, resampling_factor);
-
-#ifdef STORE_SBC_TO_SBC_FILE
-    fwrite(packet+pos, size-pos, 1, sbc_file);
-#endif
 
     // start stream if enough frames buffered
     if (!audio_stream_started && sbc_frames_in_buffer >= OPTIMAL_FRAMES_MIN){
