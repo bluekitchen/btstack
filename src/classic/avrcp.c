@@ -738,10 +738,10 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
 
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     local_cid = l2cap_event_can_send_now_get_local_cid(packet);
-                    
                     connection = get_avrcp_connection_for_l2cap_signaling_cid(AVRCP_TARGET, local_cid);
                     if (connection && connection->wait_to_send){
                         // printf("AVRCP: L2CAP_EVENT_CAN_SEND_NOW target\n");
+                        connection->wait_to_send = 0;
                         (*avrcp_target_packet_handler)(HCI_EVENT_PACKET, channel, packet, size);
                         break;    
                     }
@@ -749,6 +749,7 @@ static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
                     connection = get_avrcp_connection_for_l2cap_signaling_cid(AVRCP_CONTROLLER, local_cid);
                     if (connection && connection->wait_to_send){
                         // printf("AVRCP: L2CAP_EVENT_CAN_SEND_NOW controller\n");
+                        connection->wait_to_send = 0;
                         (*avrcp_controller_packet_handler)(HCI_EVENT_PACKET, channel, packet, size);
                         break;    
                     }
