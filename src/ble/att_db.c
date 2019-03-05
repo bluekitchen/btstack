@@ -292,6 +292,7 @@ static inline uint16_t setup_error_invalid_offset(uint8_t * response_buffer, uin
 
 static uint8_t att_validate_security(att_connection_t * att_connection, att_operation_t operation, att_iterator_t * it){
     int required_security_level = 0;
+    int requires_secure_connection = 0;
     switch (operation){
         case ATT_READ:
             if (it->flags & ATT_PROPERTY_READ_PERMISSION_BIT_0) {
@@ -300,6 +301,9 @@ static uint8_t att_validate_security(att_connection_t * att_connection, att_oper
             if (it->flags & ATT_PROPERTY_READ_PERMISSION_BIT_1) {
                 required_security_level |= 2;
             }
+            if (it->flags & ATT_PROPERTY_READ_PERMISSION_SC) {
+                requires_secure_connection = 1;
+            }
             break;
         case ATT_WRITE:
             if (it->flags & ATT_PROPERTY_WRITE_PERMISSION_BIT_0) {
@@ -307,6 +311,9 @@ static uint8_t att_validate_security(att_connection_t * att_connection, att_oper
             }
             if (it->flags & ATT_PROPERTY_WRITE_PERMISSION_BIT_1) {
                 required_security_level |= 2;
+            }
+            if (it->flags & ATT_PROPERTY_WRITE_PERMISSION_SC) {
+                requires_secure_connection = 1;
             }
             break;
     }
