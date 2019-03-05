@@ -1132,6 +1132,7 @@ typedef enum {
 #define ATT_SECURITY_ENCRYPTED 1
 #define ATT_SECURITY_AUTHENTICATED 2
 #define ATT_SECURITY_AUTHORIZED 3
+#define ATT_SECURITY_AUTHENTICATED_SC 4
 
 // internal additions
 // 128 bit UUID used
@@ -1141,6 +1142,8 @@ typedef enum {
 #define ATT_PROPERTY_READ_PERMISSION_BIT_1  0x0800
 #define ATT_PROPERTY_WRITE_PERMISSION_BIT_0 0x0001
 #define ATT_PROPERTY_WRITE_PERMISSION_BIT_1 0x0010
+#define ATT_PROPERTY_READ_PERMISSION_SC     0x0020
+#define ATT_PROPERTY_WRITE_PERMISSION_SC    0x0080
 
 
 // ATT Transaction Timeout of 30 seconds for Command/Response or Indication/Confirmation
