@@ -176,6 +176,15 @@ static uint16_t att_db_util_encode_permissions(uint16_t properties, uint8_t read
     if ((read_permission > ATT_SECURITY_NONE) || (write_permission > ATT_SECURITY_NONE)){
     	flags |= 0xf000;
     }
+    // map SC requirement
+    if (read_permission == ATT_SECURITY_AUTHENTICATED_SC){
+        read_permission =  ATT_SECURITY_AUTHENTICATED;
+        flags |= ATT_PROPERTY_READ_PERMISSION_SC;
+    }
+    if (write_permission == ATT_SECURITY_AUTHENTICATED_SC){
+        write_permission =  ATT_SECURITY_AUTHENTICATED;
+        flags |= ATT_PROPERTY_WRITE_PERMISSION_SC;
+    }
     // encode read/write security levels
     if (read_permission & 1){
     	flags |= ATT_PROPERTY_READ_PERMISSION_BIT_0;
