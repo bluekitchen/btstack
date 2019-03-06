@@ -69,6 +69,7 @@ typedef struct att_connection {
     uint8_t  encryption_key_size;
     uint8_t  authenticated;
     uint8_t  authorized;
+    uint8_t  secure_connection;
 } att_connection_t;
 
 // ATT Client Read Callback for Dynamic Data
