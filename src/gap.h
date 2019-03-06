@@ -429,6 +429,13 @@ int gap_encryption_key_size(hci_con_handle_t con_handle);
 int gap_authenticated(hci_con_handle_t con_handle);
 
 /**
+ * @brief Get secure connection property
+ * @param con_handle
+ * @return 1 if bonded usiung LE Secure Connections
+ */
+int gap_secure_connection(hci_con_handle_t con_handle);
+
+/**
  * @brief Queries authorization state.
  * @param con_handle
  * @return authorization_state for the current session

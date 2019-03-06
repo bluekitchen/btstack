@@ -5001,6 +5001,13 @@ int gap_authenticated(hci_con_handle_t con_handle){
     return sm_conn->sm_connection_authenticated;
 }
 
+int gap_secure_connection(hci_con_handle_t con_handle){
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
+    if (!sm_conn) return 0;     // wrong connection
+    if (!sm_conn->sm_connection_encrypted) return 0; // unencrypted connection cannot be authenticated
+    return sm_conn->sm_connection_sc;
+}
+
 authorization_state_t gap_authorization_state(hci_con_handle_t con_handle){
     sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
     if (!sm_conn) return AUTHORIZATION_UNKNOWN;     // wrong connection
