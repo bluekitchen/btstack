@@ -2033,7 +2033,7 @@ static void sm_run(void){
                 case SM_RESPONDER_SEND_SECURITY_REQUEST:
                     // send packet if possible,
                     if (l2cap_can_send_fixed_channel_packet_now(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL)){
-                        const uint8_t buffer[2] = { SM_CODE_SECURITY_REQUEST, SM_AUTHREQ_BONDING};
+                        const uint8_t buffer[2] = { SM_CODE_SECURITY_REQUEST, sm_auth_req};
                         sm_connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_REQUEST;
                         l2cap_send_connectionless(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                     } else {

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - Crypto: fix lockup when stack is shutdown while waiting for result of HCI Command, e.g. LE Read Local P256 Public Key
 - SM: Avoid SM_EVENT_PAIRING_COMPLETE with ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION after successful pairing in responder role
+- SM: Use provided authentication requirements in slave security request
 
 ### Added
 - SM: Track if connection encryption is based on LE Secure Connection pairing
