@@ -3144,6 +3144,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     }
 
                     if (!sm_conn->sm_connection_encrypted) break;
+                    sm_conn->sm_connection_sc = setup->sm_use_secure_connections;
 
                     // continue pairing
                     switch (sm_conn->sm_engine_state){
