@@ -163,7 +163,7 @@ void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_k
 void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk, int * key_size, int * authenticated, int * authorized, int * secure_connection){
     le_device_memory_db_t * device = &le_devices[index];
     log_info("LE Device DB encryption for %u, ediv x%04x, keysize %u, authenticated %u, authorized %u, secure connection %u",
-        index, entry.ediv, entry.key_size, entry.authenticated, entry.authorized, entry.secure_connection);
+        index, device->ediv, device->key_size, device->authenticated, device->authorized, device->secure_connection);
     if (ediv) *ediv = device->ediv;
     if (rand) memcpy(rand, device->rand, 8);
     if (ltk)  memcpy(ltk, device->ltk, 16);    
