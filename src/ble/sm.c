@@ -1925,8 +1925,8 @@ static void sm_run(void){
                 break;
             }
 
-            // if entry is public address, it is for a different device
-            if (addr_type == BD_ADDR_TYPE_LE_PUBLIC){
+            // if connection type is public, it must be a different one
+            if (sm_address_resolution_addr_type == BD_ADDR_TYPE_LE_PUBLIC){
                 sm_address_resolution_test++;
                 continue;
             }
