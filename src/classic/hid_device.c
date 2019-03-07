@@ -132,11 +132,12 @@ static hid_device_t * hid_device_get_instance_for_cid(uint16_t cid){
     return NULL;
 }
 
-static hid_device_t * hid_device_provide_instance_for_bt_addr(bd_addr_t bd_addr){
+static hid_device_t * hid_device_provide_instance_for_bd_addr(bd_addr_t bd_addr){
     if (!_hid_device.cid){
         memcpy(_hid_device.bd_addr, bd_addr, 6);
         _hid_device.cid = hid_device_get_next_cid();
         _hid_device.protocol_mode = HID_PROTOCOL_MODE_REPORT;
+        _hid_device.con_handle = HCI_CON_HANDLE_INVALID;
     }
     return &_hid_device;
 }
@@ -637,13 +638,13 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         case PSM_HID_CONTROL:
                         case PSM_HID_INTERRUPT:
                             l2cap_event_incoming_connection_get_address(packet, address); 
-                            device = hid_device_provide_instance_for_bt_addr(address);
+                            device = hid_device_provide_instance_for_bd_addr(address);
                             if (!device) {
                                 log_error("L2CAP_EVENT_INCOMING_CONNECTION, no hid device for con handle 0x%02x", l2cap_event_incoming_connection_get_handle(packet));
                                 l2cap_decline_connection(channel);
                                 break;
                             }
-                            if (device->con_handle == 0 || l2cap_event_incoming_connection_get_handle(packet) == device->con_handle){
+                            if (device->con_handle == HCI_CON_HANDLE_INVALID || l2cap_event_incoming_connection_get_handle(packet) == device->con_handle){
                                 device->con_handle = l2cap_event_incoming_connection_get_handle(packet);
                                 device->incoming = 1;
                                 l2cap_event_incoming_connection_get_address(packet, device->bd_addr);
@@ -918,6 +919,7 @@ uint8_t hid_device_connect(bd_addr_t addr, uint16_t * hid_cid){
     }
     // assign hic_cid
     *hid_cid = hid_device_get_next_cid();
+    
     // store address
     memcpy(hid_device->bd_addr, addr, 6);
 
@@ -927,6 +929,8 @@ uint8_t hid_device_connect(bd_addr_t addr, uint16_t * hid_cid){
     hid_device->connected     = 0;
     hid_device->control_cid   = 0;
     hid_device->interrupt_cid = 0;
+    hid_device->con_handle    = HCI_CON_HANDLE_INVALID;
+
     // create l2cap control using fixed HID L2CAP PSM
     log_info("Create outgoing HID Control");
     uint8_t status = l2cap_create_channel(packet_handler, hid_device->bd_addr, PSM_HID_CONTROL, 48, &hid_device->control_cid);
