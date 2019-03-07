@@ -2,6 +2,7 @@
 
 // include STM32 first to avoid warning about redefinition of UNUSED
 #include "stm32f4xx_hal.h"
+#include "main.h"
 
 #include "port.h"
 #include "btstack.h"
