@@ -2544,7 +2544,7 @@ static void sco_handler(uint8_t * packet, uint16_t size){
 
     // CSR 8811 prefixes 60 byte SCO packet in transparent mode with 20 zero bytes -> skip first 20 payload bytes
     if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO){
-        if (size == 83 && ((hci_stack->sco_voice_setting & 0x03) == 0x03)){
+        if (size == 83 && ((hci_stack->sco_voice_setting_active & 0x03) == 0x03)){
             packet[2] = 0x3c;
             memmove(&packet[3], &packet[23], 63);
             size = 63;
