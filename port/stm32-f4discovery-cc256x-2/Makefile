@@ -237,7 +237,6 @@ C_INCLUDES =  \
 -IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
 -IDrivers/CMSIS/Include \
 
-C_INCLUDES += -I.
 C_INCLUDES += -I$(BUILD_DIR)
 C_INCLUDES += -I${BTSTACK_ROOT}/src/ble
 C_INCLUDES += -I${BTSTACK_ROOT}/src/ble/gatt-service
@@ -253,11 +252,11 @@ C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/yxml
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/segger-rtt
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/embedded
 C_INCLUDES += -I${BTSTACK_ROOT}/chipset/cc256x
+C_INCLUDES += -I Drivers/STM32F4xx_HAL_Driver/Inc
 C_INCLUDES += -I pdm
 C_INCLUDES += -I port
 C_INCLUDES += -I port/bsp
 C_INCLUDES += -I src
-C_INCLUDES += -I Drivers/STM32F4xx_HAL_Driver/Inc
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
