@@ -373,23 +373,13 @@ include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 $(BUILD_DIR)/%.h: %.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 
-# $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
-# 	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
-
-# $(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
-# 	$(AS) -c $(CFLAGS) $< -o $@
-
-# $(BUILD_DIR)/%.elf: $(OBJECTS) Makefile %.o
-# 	$(CC) $(filter-out Makefile,$^)  $(LDFLAGS) -o $@
-# 	$(SZ) $@
-
-$(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
+$(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR)
 	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
 
 $(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
 	$(AS) -c $(CFLAGS) $< -o $@
 
-$(BUILD_DIR)/%.elf: $(OBJECTS) %.o
+$(BUILD_DIR)/%.elf: Makefile $(OBJECTS) $(BUILD_DIR)/%.o
 	$(CC) $(filter-out Makefile,$^)  $(LDFLAGS) -o $@
 	$(SZ) $@
 
@@ -407,7 +397,7 @@ $(BUILD_DIR):
 #######################################
 clean:
 	-rm -fR $(BUILD_DIR)
-  
+
 #######################################
 # dependencies
 #######################################
