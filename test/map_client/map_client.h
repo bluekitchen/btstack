@@ -46,6 +46,12 @@ extern "C" {
 
 /* API_START */
 
+#define MAP_MESSAGE_HANDLE_SIZE 8
+/**
+ * @brief MAP Message handle
+ */
+typedef uint8_t map_message_handle_t[MAP_MESSAGE_HANDLE_SIZE];
+
 /**
  *
  */
@@ -65,14 +71,38 @@ uint8_t map_client_connect(btstack_packet_handler_t handler, bd_addr_t addr, uin
  * @param map_cid
  * @return status
  */
-uint8_t map_client_disconnect(uint16_t bip_cid);
+uint8_t map_client_disconnect(uint16_t map_cid);
 
 /** 
- * @brief Get all folders.
+ * @brief Get list of folders.
  * @param map_cid
  * @return status
  */
-uint8_t map_client_get_folder_listing(uint16_t bip_cid);
+uint8_t map_client_get_folder_listing(uint16_t map_cid);
+
+/** 
+ * @brief Set current folder
+ * @param map_cid
+ * @return status
+ */
+uint8_t map_client_set_path(uint16_t map_cid, char * path);
+
+/** 
+ * @brief Get list of messages for particular folder.
+ * @param map_cid
+ * @param folder_name
+ * @return status
+ */
+uint8_t map_client_get_message_listing_for_folder(uint16_t map_cid, const char * folder_name);
+
+/** 
+ * @brief Get message with particular handle.
+ * @param map_cid
+ * @param map_message_handle
+ * @param with_attachment
+ * @return status
+ */
+uint8_t map_client_get_message_with_handle(uint16_t map_cid, const map_message_handle_t map_message_handle, uint8_t with_attachment);
 
 /* API_END */
 

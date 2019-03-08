@@ -75,6 +75,9 @@ static bd_addr_t    remote_addr;
 // iPhone 5 static  char * remote_addr_string = "6C:72:E7:10:22:EE";
 // Android
 static  char * remote_addr_string = "a0:28:ed:04:33:b0";
+static const char * folder_name = "telecom";
+static map_message_handle_t message_handle;
+static char * path = "telecom/msg";
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint16_t map_cid;
@@ -89,7 +92,10 @@ static void show_usage(void){
     printf("\n");
     printf("a - establish MAP connection to %s\n", bd_addr_to_str(remote_addr));
     printf("A - disconnect from %s\n", bd_addr_to_str(remote_addr));
+    printf("p - set path \'%s\'\n", path);
     printf("f - get folder listing\n");
+    printf("F - get message listing for folder \'%s\'\n", folder_name);
+    printf("l - get message for last found handle'\n");
     printf("\n");
 }
 
@@ -104,9 +110,21 @@ static void stdin_process(char c){
             map_client_disconnect(map_cid);
             break;
 
+        case 'p':
+            printf("[+] Get folder listing\n");
+            map_client_set_path(map_cid, path);
+            break;
         case 'f':
-            printf("[+] Get folder listing from %s...\n", bd_addr_to_str(remote_addr));
+            printf("[+] Get folder listing\n");
             map_client_get_folder_listing(map_cid);
+            break;
+        case 'F':
+            printf("[+] Get message listing for folder \'%s\'\n", folder_name);
+            map_client_get_message_listing_for_folder(map_cid, folder_name);
+            break;
+        case 'l':
+            printf("[+] Get message for last found handle\n");
+            map_client_get_message_with_handle(map_cid, message_handle, 1);
             break;
         
         default:
