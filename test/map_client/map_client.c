@@ -265,7 +265,8 @@ static void map_handle_can_send_now(void){
             application_parameters[pos++] = 0x14; // Charset
             application_parameters[pos++] = 1;
             application_parameters[pos++] = 1;    // UTF-8
-            
+            goep_client_add_header_application_parameters(map_client->goep_cid, 6, &application_parameters[0]);
+
             map_client->state = MAP_W4_MESSAGE;
             goep_client_execute(map_client->goep_cid);
             break;

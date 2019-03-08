@@ -75,8 +75,9 @@ static bd_addr_t    remote_addr;
 // iPhone 5 static  char * remote_addr_string = "6C:72:E7:10:22:EE";
 // Android
 static  char * remote_addr_string = "a0:28:ed:04:33:b0";
-static const char * folder_name = "telecom";
-static map_message_handle_t message_handle;
+static const char * folder_name = "inbox";
+static map_message_handle_t message_handle = {0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+
 static char * path = "telecom/msg";
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -111,7 +112,7 @@ static void stdin_process(char c){
             break;
 
         case 'p':
-            printf("[+] Get folder listing\n");
+            printf("[+] Set path \'%s\'\n", path);
             map_client_set_path(map_cid, path);
             break;
         case 'f':
@@ -123,7 +124,7 @@ static void stdin_process(char c){
             map_client_get_message_listing_for_folder(map_cid, folder_name);
             break;
         case 'l':
-            printf("[+] Get message for last found handle\n");
+            printf("[+] Get message for hardcoded handle\n");
             map_client_get_message_with_handle(map_cid, message_handle, 1);
             break;
         
