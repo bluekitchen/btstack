@@ -50,7 +50,7 @@ VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += Drivers/STM32F4xx_HAL_DRIVER/Src
 VPATH += Src
 VPATH += port
-VPATH += port/bsp
+VPATH += bsp
 
 ######################################
 # source
@@ -253,9 +253,9 @@ C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/segger-rtt
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/embedded
 C_INCLUDES += -I${BTSTACK_ROOT}/chipset/cc256x
 C_INCLUDES += -I Drivers/STM32F4xx_HAL_Driver/Inc
+C_INCLUDES += -I bsp
 C_INCLUDES += -I pdm
 C_INCLUDES += -I port
-C_INCLUDES += -I port/bsp
 C_INCLUDES += -I src
 
 # compile gcc flags
