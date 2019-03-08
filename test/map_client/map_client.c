@@ -1,0 +1,282 @@
+/*
+ * Copyright (C) 2019 BlueKitchen GmbH
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holders nor the names of
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ * 4. Any redistribution, use, or modification is done solely for
+ *    personal benefit and not for any commercial purpose or for
+ *    monetary gain.
+ *
+ * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
+ * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+ * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ * Please inquire about commercial licensing options at 
+ * contact@bluekitchen-gmbh.com
+ *
+ */
+
+#define __BTSTACK_FILE__ "map_client.c"
+ 
+#include "btstack_config.h"
+
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "hci_cmd.h"
+#include "btstack_run_loop.h"
+#include "btstack_debug.h"
+#include "hci.h"
+#include "btstack_memory.h"
+#include "hci_dump.h"
+#include "l2cap.h"
+#include "bluetooth_sdp.h"
+#include "classic/sdp_client_rfcomm.h"
+#include "btstack_event.h"
+
+#include "classic/obex.h"
+#include "classic/obex_iterator.h"
+#include "classic/goep_client.h"
+#include "map_client.h"
+
+#define MAP_MAX_NUM_ENTRIES 1024
+
+// map access service bb582b40-420c-11db-b0de-0800200c9a66
+static const uint8_t map_client_access_service_uuid[] = {0xbb, 0x58, 0x2b, 0x40, 0x42, 0xc, 0x11, 0xdb, 0xb0, 0xde, 0x8, 0x0, 0x20, 0xc, 0x9a, 0x66};
+static uint32_t map_supported_features = 0x1F;
+
+typedef enum {
+    MAP_INIT = 0,
+    MAP_W4_GOEP_CONNECTION,
+    MAP_W2_SEND_CONNECT_REQUEST,
+    MAP_W4_CONNECT_RESPONSE,
+    MAP_CONNECT_RESPONSE_RECEIVED,
+    MAP_CONNECTED,
+    
+    MAP_W2_SEND_GET_FOLDERS,
+    MAP_W4_FOLDERS,
+
+    MAP_W2_SEND_DISCONNECT_REQUEST,
+    MAP_W4_DISCONNECT_RESPONSE,
+} map_state_t;
+
+typedef struct map_client {
+    map_state_t state;
+    uint16_t  cid;
+    bd_addr_t bd_addr;
+    hci_con_handle_t con_handle;
+    uint8_t   incoming;
+    uint16_t  goep_cid;
+    btstack_packet_handler_t client_handler;
+} map_client_t;
+
+static map_client_t _map_client;
+static map_client_t * map_client = &_map_client;
+
+static void map_client_emit_connected_event(map_client_t * context, uint8_t status){
+    uint8_t event[15];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_MAP_META;
+    pos++;  // skip len
+    event[pos++] = MAP_SUBEVENT_CONNECTION_OPENED;
+    little_endian_store_16(event,pos,context->cid);
+    pos+=2;
+    event[pos++] = status;
+    memcpy(&event[pos], context->bd_addr, 6);
+    pos += 6;
+    little_endian_store_16(event,pos,context->con_handle);
+    pos += 2;
+    event[pos++] = context->incoming;
+    event[1] = pos - 2;
+    if (pos != sizeof(event)) log_error("map_client_emit_connected_event size %u", pos);
+    context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
+}  
+
+static void map_client_emit_connection_closed_event(map_client_t * context){
+    uint8_t event[5];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_MAP_META;
+    pos++;  // skip len
+    event[pos++] = MAP_SUBEVENT_CONNECTION_CLOSED;
+    little_endian_store_16(event,pos,context->cid);
+    pos+=2;
+    event[1] = pos - 2;
+    if (pos != sizeof(event)) log_error("map_client_emit_connection_closed_event size %u", pos);
+    context->client_handler(HCI_EVENT_PACKET, context->cid, &event[0], pos);
+}   
+
+
+static void map_handle_can_send_now(void){
+    uint8_t application_parameters[6];
+
+    switch (map_client->state){
+        case MAP_W2_SEND_CONNECT_REQUEST:
+            goep_client_create_connect_request(map_client->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
+            goep_client_add_header_target(map_client->goep_cid, 16, map_client_access_service_uuid);
+            // Mandatory if the PSE advertises a PbapSupportedFeatures attribute in its SDP record, else excluded.
+            // if (goep_client_get_map_supported_features(map_client->goep_cid) != MAP_FEATURES_NOT_PRESENT){
+                application_parameters[0] = 0x29; // MAP_APPLICATION_PARAMETER_PBAP_SUPPORTED_FEATURES;
+                application_parameters[1] = 4;
+                big_endian_store_32(application_parameters, 2, map_supported_features);
+                goep_client_add_header_application_parameters(map_client->goep_cid, 6, &application_parameters[0]);
+
+            // }
+            map_client->state = MAP_W4_CONNECT_RESPONSE;
+            goep_client_execute(map_client->goep_cid);
+            break;
+        case MAP_W2_SEND_DISCONNECT_REQUEST:
+            goep_client_create_disconnect_request(map_client->goep_cid);
+            map_client->state = MAP_W4_DISCONNECT_RESPONSE;
+            goep_client_execute(map_client->goep_cid);
+            break;
+        case MAP_W2_SEND_GET_FOLDERS:
+            goep_client_create_get_request(map_client->goep_cid);
+            goep_client_add_header_type(map_client->goep_cid, "x-obex/folder-listing");
+            map_client->state = MAP_W4_FOLDERS;
+            goep_client_execute(map_client->goep_cid);
+            break;
+        default:
+            break;
+    }
+}
+
+static void map_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel); 
+    UNUSED(size);    
+    printf("packet_type 0x%02x, event type 0x%02x, subevent 0x%02x\n", packet_type, hci_event_packet_get_type(packet), hci_event_goep_meta_get_subevent_code(packet));
+    obex_iterator_t it;
+    uint8_t status;
+    // int i;
+    // int wait_for_user = 0;
+    switch (packet_type){
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)) {
+                case HCI_EVENT_GOEP_META:
+                    switch (hci_event_goep_meta_get_subevent_code(packet)){
+                        case GOEP_SUBEVENT_CONNECTION_OPENED:
+                            status = goep_subevent_connection_opened_get_status(packet);
+                            map_client->con_handle = goep_subevent_connection_opened_get_con_handle(packet);
+                            map_client->incoming = goep_subevent_connection_opened_get_incoming(packet);
+                            goep_subevent_connection_opened_get_bd_addr(packet, map_client->bd_addr); 
+                            if (status){
+                                log_info("map: connection failed %u", status);
+                                map_client->state = MAP_INIT;
+                                map_client_emit_connected_event(map_client, status);
+                            } else {
+                                log_info("map: connection established");
+                                map_client->goep_cid = goep_subevent_connection_opened_get_goep_cid(packet);
+                                map_client->state = MAP_W2_SEND_CONNECT_REQUEST;
+                                goep_client_request_can_send_now(map_client->goep_cid);
+                            }
+                            break;
+                        case GOEP_SUBEVENT_CONNECTION_CLOSED:
+                            if (map_client->state != MAP_CONNECTED){
+                                // map_client_emit_operation_complete_event(map_client, OBEX_DISCONNECTED);
+                            }
+                            map_client->state = MAP_INIT;
+                            map_client_emit_connection_closed_event(map_client);
+                            break;
+                        case GOEP_SUBEVENT_CAN_SEND_NOW:
+                            map_handle_can_send_now();
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case GOEP_DATA_PACKET:
+            switch (map_client->state){
+                case MAP_W4_CONNECT_RESPONSE:
+                    switch (packet[0]){
+                        case OBEX_RESP_SUCCESS:
+                            for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(map_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
+                                uint8_t hi = obex_iterator_get_hi(&it);
+                                if (hi == OBEX_HEADER_CONNECTION_ID){
+                                    goep_client_set_connection_id(map_client->goep_cid, obex_iterator_get_data_32(&it));
+                                }
+                            }
+                            map_client->state = MAP_CONNECTED;
+                            // map_client->vcard_selector_supported = map_supported_features & goep_client_get_map_supported_features(map_client->goep_cid) & MAP_SUPPORTED_FEATURES_VCARD_SELECTING;
+                            map_client_emit_connected_event(map_client, 0);
+                            break;
+                        default:
+                            log_info("map: obex connect failed, result 0x%02x", packet[0]);
+                            map_client->state = MAP_INIT;
+                            map_client_emit_connected_event(map_client, OBEX_CONNECT_FAILED);
+                            break;                            
+                    }
+                    break;
+                case MAP_W4_DISCONNECT_RESPONSE:
+                    map_client->state = MAP_INIT;
+                    goep_client_disconnect(map_client->goep_cid);
+                    break;
+                case MAP_W4_FOLDERS:
+                    map_client->state = MAP_CONNECTED;
+                    printf("Folders:\n");
+                    printf_hexdump(packet, size);
+                    printf("\n");
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+void map_client_init(void){
+    memset(map_client, 0, sizeof(map_client_t));
+    map_client->state = MAP_INIT;
+    map_client->cid = 1;
+}
+
+uint8_t map_client_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid){
+    if (map_client->state != MAP_INIT) return BTSTACK_MEMORY_ALLOC_FAILED;
+
+    map_client->state = MAP_W4_GOEP_CONNECTION;
+    map_client->client_handler = handler;
+    
+    uint8_t err = goep_client_create_connection(&map_packet_handler, addr, BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER, &map_client->goep_cid);
+    *out_cid = map_client->cid;
+    if (err) return err;
+    return 0;
+}
+
+uint8_t map_client_disconnect(uint16_t bip_cid){
+    UNUSED(bip_cid);
+    if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
+    map_client->state = MAP_W2_SEND_DISCONNECT_REQUEST;
+    goep_client_request_can_send_now(map_client->goep_cid);
+    return 0;
+}
+
+uint8_t map_client_get_folder_listing(uint16_t bip_cid){
+    UNUSED(bip_cid);
+    if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
+    map_client->state = MAP_W2_SEND_GET_FOLDERS;
+    goep_client_request_can_send_now(map_client->goep_cid);
+    return 0;
+}
