@@ -364,7 +364,8 @@ all: \
 	$(addprefix $(BUILD_DIR)/,$(GATT_FILES:.gatt=.h)) \
 	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.elf)) \
 	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.hex)) \
-	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.bin))
+	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.bin)) \
+	$(addprefix $(BUILD_DIR)/,$(EXAMPLES:=.jdebug)) \
 
 include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 
@@ -387,6 +388,9 @@ $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 	$(BIN) $< $@	
 	
+$(BUILD_DIR)/%.jdebug: ozone.jdebug | $(BUILD_DIR)
+	sed -e "s|EXAMPLE|$(basename $(notdir $@))|" $<  > $@
+
 $(BUILD_DIR):
 	mkdir $@		
 

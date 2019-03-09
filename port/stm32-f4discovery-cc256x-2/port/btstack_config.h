@@ -23,7 +23,7 @@
 #define ENABLE_HFP_WIDE_BAND_SPEECH
 #define ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
 // #define ENABLE_EHCILL
-// #define ENABLE_SEGGER_RTT
+#define ENABLE_SEGGER_RTT
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 1021
