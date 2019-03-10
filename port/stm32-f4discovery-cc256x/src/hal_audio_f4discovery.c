@@ -177,7 +177,7 @@ void hal_audio_sink_stop(void){
  */
 void hal_audio_sink_close(void){
 	if (playback_started){
-		hal_audio_sink_close();
+		hal_audio_sink_stop();
 	}
 }
 
