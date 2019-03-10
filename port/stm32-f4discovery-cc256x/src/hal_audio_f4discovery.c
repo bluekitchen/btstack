@@ -49,6 +49,7 @@
 
 static void (*audio_played_handler)(uint8_t buffer_index);
 static int playback_started;
+static uint32_t sink_sample_rate;
 
 // our storage
 static int16_t output_buffer[NUM_OUTPUT_BUFFERS * OUTPUT_BUFFER_NUM_SAMPLES * 2];   // stereo
@@ -69,6 +70,7 @@ static void (*audio_recorded_callback)(const int16_t * buffer, uint16_t num_samp
 static int16_t input_buffer[INPUT_BUFFER_NUM_SAMPLES];   // single mono buffer
 static uint16_t  pdm_buffer[INPUT_BUFFER_NUM_SAMPLES*8];
 
+static uint32_t source_sample_rate;
 static int source_pcm_samples_per_ms;
 static int source_pdm_bytes_per_ms;
 static int source_pcm_samples_per_irq;
@@ -121,7 +123,7 @@ void hal_audio_sink_init(uint8_t channels,
 	}
 
 	audio_played_handler = buffer_played_callback;
-	BSP_AUDIO_OUT_Init(OUTPUT_DEVICE_BOTH, 80, sample_rate);
+	sink_sample_rate = sample_rate;
 }
 
 /**
@@ -160,6 +162,9 @@ int16_t * hal_audio_sink_get_output_buffer(uint8_t buffer_index){
  */
 void hal_audio_sink_start(void){
 	playback_started = 1;
+
+	BSP_AUDIO_OUT_Init(OUTPUT_DEVICE_BOTH, 80, sink_sample_rate);
+
 	// BSP_AUDIO_OUT_Play gets number bytes -> 1 frame - 16 bit/stereo = 4 bytes
 	BSP_AUDIO_OUT_Play( (uint16_t*) output_buffer, NUM_OUTPUT_BUFFERS * OUTPUT_BUFFER_NUM_SAMPLES * 4);
 }
@@ -276,7 +281,13 @@ void hal_audio_source_init(uint8_t channels,
                            uint32_t sample_rate,
                            void (*buffer_recorded_callback)(const int16_t * buffer, uint16_t num_samples)){
 
-    BSP_AUDIO_IN_Init(sample_rate, 16, channels);
+	source_sample_rate = sample_rate;
+
+	// Driver only supports mono recording
+	if (channels != 1){
+		log_error("F4 Discovery only has single microphone, stereo recording not supported");
+		return;
+	}
 
 	int decimation = 64;
 
@@ -298,6 +309,7 @@ void hal_audio_source_init(uint8_t channels,
  * @brief Start stream
  */
 void hal_audio_source_start(void){
+    BSP_AUDIO_IN_Init(source_sample_rate, 16, 1);
     BSP_AUDIO_IN_Record(pdm_buffer, source_pdm_samples_total);
     recording_started = 1;
 }
