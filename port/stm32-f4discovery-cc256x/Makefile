@@ -32,142 +32,124 @@ OPT = -O2
 BUILD_DIR = build
 
 BTSTACK_ROOT = ../..
-VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
-VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce
-VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce
-VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player
-VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods
-VPATH += ${BTSTACK_ROOT}/3rd-party/md5
-VPATH += ${BTSTACK_ROOT}/3rd-party/yxml
-VPATH += ${BTSTACK_ROOT}/3rd-party/segger-rtt
-VPATH += ${BTSTACK_ROOT}/chipset/cc256x
 VPATH += ${BTSTACK_ROOT}/example
-VPATH += ${BTSTACK_ROOT}/platform/embedded
-VPATH += ${BTSTACK_ROOT}/src
-VPATH += ${BTSTACK_ROOT}/src/ble
-VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service
-VPATH += ${BTSTACK_ROOT}/src/classic
-VPATH += Drivers/STM32F4xx_HAL_DRIVER/Src
-VPATH += Src
-VPATH += port
-VPATH += bsp
 
 ######################################
 # source
 ######################################
 # C sources
 C_SOURCES =  \
-3rd-party/hxcmod-player/hxcmod.c \
-3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c \
-3rd-party/micro-ecc/uECC.c \
-3rd-party/segger-rtt/SEGGER_RTT.c \
-3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c \
-3rd-party/yxml/yxml.c \
-3rd-prty/md5.c \
+${BTSTACK_ROOT}/3rd-party/hxcmod-player/hxcmod.c \
+${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods/nao-deceased_by_disease.c \
+${BTSTACK_ROOT}/3rd-party/micro-ecc/uECC.c \
+${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT.c \
+${BTSTACK_ROOT}/3rd-party/segger-rtt/SEGGER_RTT_Syscalls_GCC.c \
+${BTSTACK_ROOT}/3rd-party/yxml/yxml.c \
+${BTSTACK_ROOT}/3rd-party/md5/md5.c \
+${BTSTACK_ROOT}/chipset/cc256x/btstack_chipset_cc256x.c \
+${BTSTACK_ROOT}/example/sco_demo_util.c \
+${BTSTACK_ROOT}/platform/embedded/btstack_audio_embedded.c \
+${BTSTACK_ROOT}/platform/embedded/btstack_run_loop_embedded.c \
+${BTSTACK_ROOT}/platform/embedded/btstack_stdin_embedded.c \
+${BTSTACK_ROOT}/platform/embedded/btstack_tlv_flash_bank.c \
+${BTSTACK_ROOT}/platform/embedded/btstack_uart_block_embedded.c \
+${BTSTACK_ROOT}/src/ad_parser.c \
+${BTSTACK_ROOT}/src/ble/ancs_client.c \
+${BTSTACK_ROOT}/src/ble/att_db.c \
+${BTSTACK_ROOT}/src/ble/att_dispatch.c \
+${BTSTACK_ROOT}/src/ble/att_server.c \
+${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_server.c \
+${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_server.c \
+${BTSTACK_ROOT}/src/ble/gatt-service/hids_device.c \
+${BTSTACK_ROOT}/src/ble/gatt_client.c \
+${BTSTACK_ROOT}/src/ble/le_device_db_memory.c \
+${BTSTACK_ROOT}/src/ble/le_device_db_tlv.c \
+${BTSTACK_ROOT}/src/ble/sm.c \
+${BTSTACK_ROOT}/src/btstack_audio.c \
+${BTSTACK_ROOT}/src/btstack_crypto.c \
+${BTSTACK_ROOT}/src/btstack_hid_parser.c \
+${BTSTACK_ROOT}/src/btstack_linked_list.c \
+${BTSTACK_ROOT}/src/btstack_memory.c \
+${BTSTACK_ROOT}/src/btstack_memory_pool.c \
+${BTSTACK_ROOT}/src/btstack_resample.c \
+${BTSTACK_ROOT}/src/btstack_ring_buffer.c \
+${BTSTACK_ROOT}/src/btstack_run_loop.c \
+${BTSTACK_ROOT}/src/btstack_tlv.c \
+${BTSTACK_ROOT}/src/btstack_util.c \
+${BTSTACK_ROOT}/src/classic/a2dp_sink.c \
+${BTSTACK_ROOT}/src/classic/a2dp_source.c \
+${BTSTACK_ROOT}/src/classic/avdtp.c \
+${BTSTACK_ROOT}/src/classic/avdtp_acceptor.c \
+${BTSTACK_ROOT}/src/classic/avdtp_initiator.c \
+${BTSTACK_ROOT}/src/classic/avdtp_sink.c \
+${BTSTACK_ROOT}/src/classic/avdtp_source.c \
+${BTSTACK_ROOT}/src/classic/avdtp_util.c \
+${BTSTACK_ROOT}/src/classic/avrcp.c \
+${BTSTACK_ROOT}/src/classic/avrcp_browsing_controller.c \
+${BTSTACK_ROOT}/src/classic/avrcp_controller.c \
+${BTSTACK_ROOT}/src/classic/avrcp_media_item_iterator.c \
+${BTSTACK_ROOT}/src/classic/avrcp_target.c \
+${BTSTACK_ROOT}/src/classic/btstack_cvsd_plc.c \
+${BTSTACK_ROOT}/src/classic/btstack_link_key_db_tlv.c \
+${BTSTACK_ROOT}/src/classic/btstack_sbc_decoder_bluedroid.c \
+${BTSTACK_ROOT}/src/classic/btstack_sbc_encoder_bluedroid.c \
+${BTSTACK_ROOT}/src/classic/btstack_sbc_plc.c \
+${BTSTACK_ROOT}/src/classic/device_id_server.c \
+${BTSTACK_ROOT}/src/classic/goep_client.c \
+${BTSTACK_ROOT}/src/classic/hfp.c \
+${BTSTACK_ROOT}/src/classic/hfp_ag.c \
+${BTSTACK_ROOT}/src/classic/hfp_gsm_model.c \
+${BTSTACK_ROOT}/src/classic/hfp_hf.c \
+${BTSTACK_ROOT}/src/classic/hfp_msbc.c \
+${BTSTACK_ROOT}/src/classic/hid_device.c \
+${BTSTACK_ROOT}/src/classic/hsp_ag.c \
+${BTSTACK_ROOT}/src/classic/hsp_hs.c \
+${BTSTACK_ROOT}/src/classic/obex_iterator.c \
+${BTSTACK_ROOT}/src/classic/pbap_client.c \
+${BTSTACK_ROOT}/src/classic/rfcomm.c \
+${BTSTACK_ROOT}/src/classic/sdp_client.c \
+${BTSTACK_ROOT}/src/classic/sdp_client_rfcomm.c \
+${BTSTACK_ROOT}/src/classic/sdp_server.c \
+${BTSTACK_ROOT}/src/classic/sdp_util.c \
+${BTSTACK_ROOT}/src/classic/spp_server.c \
+${BTSTACK_ROOT}/src/hci.c \
+${BTSTACK_ROOT}/src/hci_cmd.c \
+${BTSTACK_ROOT}/src/hci_dump.c \
+${BTSTACK_ROOT}/src/hci_transport_h4.c \
+${BTSTACK_ROOT}/src/l2cap.c \
+${BTSTACK_ROOT}/src/l2cap_signaling.c \
 bluetooth_init_cc2564B_1.6_BT_Spec_4.1.c \
 bsp/audio.c \
 bsp/cs43l22.c \
 bsp/stm32f4_discovery.c \
 bsp/stm32f4_discovery_audio.c \
-chipset/cc256x/btstack_chipset_cc256x.c \
-Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal.c \
-Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_cortex.c \
-Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_dma.c \
-Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_dma_ex.c \
-Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_exti.c \
-Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_flash.c \
-Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_flash_ex.c \
-Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_flash_ramfunc.c \
-Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_gpio.c \
-Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_i2c.c \
-Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_i2c_ex.c \
-Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_i2s.c \
-Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_i2s_ex.c \
-Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_pwr.c \
-Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_pwr_ex.c \
-Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_rcc.c \
-Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_rcc_ex.c \
-Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_spi.c \
-Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_tim.c \
-Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_tim_ex.c \
-Drivers/STM32F4xx_HAL_Driver/stm32f4xx_hal_uart.c \
-exampe/sco_demo_util.c \
-platform/embedded/btstack_audio_embedded.c \
-platform/embedded/btstack_run_loop_embedded.c \
-platform/embedded/btstack_stdin_embedded.c \
-platform/embedded/btstack_tlv_flash_bank.c \
-platform/embedded/btstack_uart_block_embedded.c \
+Drivers/STM32F4xx_HAL_Driver/SRC/stm32f4xx_hal.c \
+Drivers/STM32F4xx_HAL_Driver/SRC/stm32f4xx_hal_cortex.c \
+Drivers/STM32F4xx_HAL_Driver/SRC/stm32f4xx_hal_dma.c \
+Drivers/STM32F4xx_HAL_Driver/SRC/stm32f4xx_hal_dma_ex.c \
+Drivers/STM32F4xx_HAL_Driver/SRC/stm32f4xx_hal_exti.c \
+Drivers/STM32F4xx_HAL_Driver/SRC/stm32f4xx_hal_flash.c \
+Drivers/STM32F4xx_HAL_Driver/SRC/stm32f4xx_hal_flash_ex.c \
+Drivers/STM32F4xx_HAL_Driver/SRC/stm32f4xx_hal_flash_ramfunc.c \
+Drivers/STM32F4xx_HAL_Driver/SRC/stm32f4xx_hal_gpio.c \
+Drivers/STM32F4xx_HAL_Driver/SRC/stm32f4xx_hal_i2c.c \
+Drivers/STM32F4xx_HAL_Driver/SRC/stm32f4xx_hal_i2c_ex.c \
+Drivers/STM32F4xx_HAL_Driver/SRC/stm32f4xx_hal_i2s.c \
+Drivers/STM32F4xx_HAL_Driver/SRC/stm32f4xx_hal_i2s_ex.c \
+Drivers/STM32F4xx_HAL_Driver/SRC/stm32f4xx_hal_pwr.c \
+Drivers/STM32F4xx_HAL_Driver/SRC/stm32f4xx_hal_pwr_ex.c \
+Drivers/STM32F4xx_HAL_Driver/SRC/stm32f4xx_hal_rcc.c \
+Drivers/STM32F4xx_HAL_Driver/SRC/stm32f4xx_hal_rcc_ex.c \
+Drivers/STM32F4xx_HAL_Driver/SRC/stm32f4xx_hal_spi.c \
+Drivers/STM32F4xx_HAL_Driver/SRC/stm32f4xx_hal_tim.c \
+Drivers/STM32F4xx_HAL_Driver/SRC/stm32f4xx_hal_tim_ex.c \
+Drivers/STM32F4xx_HAL_Driver/SRC/stm32f4xx_hal_uart.c \
 port/hal_audio_f4discovery.c \
 port/hal_flash_bank_stm32.c \
-src/ad_parser.c \
-src/ble/ancs_client.c \
-src/ble/att_db.c \
-src/ble/att_dispatch.c \
-src/ble/att_server.c \
-src/ble/gatt-service/battery_service_server.c \
-src/ble/gatt-service/device_information_service_server.c \
-src/ble/gatt-service/hids_device.c \
-src/ble/gatt_client.c \
-src/ble/le_device_db_memory.c \
-src/ble/le_device_db_tlv.c \
-src/ble/sm.c \
-src/btstack_audio.c \
-src/btstack_crypto.c \
-src/btstack_hid_parser.c \
-src/btstack_linked_list.c \
-src/btstack_memory.c \
-src/btstack_memory_pool.c \
-src/btstack_resample.c \
-src/btstack_ring_buffer.c \
-src/btstack_run_loop.c \
-src/btstack_tlv.c \
-src/btstack_util.c \
-src/classic/a2dp_sink.c \
-src/classic/a2dp_source.c \
-src/classic/avdtp.c \
-src/classic/avdtp_acceptor.c \
-src/classic/avdtp_initiator.c \
-src/classic/avdtp_sink.c \
-src/classic/avdtp_source.c \
-src/classic/avdtp_util.c \
-src/classic/avrcp.c \
-src/classic/avrcp_browsing_controller.c \
-src/classic/avrcp_controller.c \
-src/classic/avrcp_media_item_iterator.c \
-src/classic/avrcp_target.c \
-src/classic/btstack_cvsd_plc.c \
-src/classic/btstack_link_key_db_tlv.c \
-src/classic/btstack_sbc_decoder_bluedroid.c \
-src/classic/btstack_sbc_encoder_bluedroid.c \
-src/classic/btstack_sbc_plc.c \
-src/classic/device_id_server.c \
-src/classic/goep_client.c \
-src/classic/hfp.c \
-src/classic/hfp_ag.c \
-src/classic/hfp_gsm_model.c \
-src/classic/hfp_hf.c \
-src/classic/hfp_msbc.c \
-src/classic/hid_device.c \
-src/classic/hsp_ag.c \
-src/classic/hsp_hs.c \
-src/classic/obex_iterator.c \
-src/classic/pbap_client.c \
-src/classic/rfcomm.c \
-src/classic/sdp_client.c \
-src/classic/sdp_client_rfcomm.c \
-src/classic/sdp_server.c \
-src/classic/sdp_util.c \
-src/classic/spp_server.c \
+port/port.c \
 Src/dma.c \
 Src/gpio.c \
-src/hci.c \
-src/hci_cmd.c \
-src/hci_dump.c \
-src/hci_transport_h4.c \
-src/l2cap.c \
-src/l2cap_signaling.c \
 Src/main.c \
-Src/port.c \
 Src/spi.c \
 Src/stm32f4xx_hal_msp.c \
 Src/stm32f4xx_it.c \
@@ -282,17 +264,6 @@ LIBDIR = -Lpdm
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all
-LE_EXAMPLES = \
-	ancs_client_demo \
-	gap_le_advertisements \
-	gatt_battery_query \
-	gatt_browser \
-	le_counter \
-	le_streamer \
-	le_streamer_client \
-	sm_pairing_peripheral \
-	sm_pairing_central 
-
 EXAMPLES = 					\
 	audio_duplex            \
 	a2dp_sink_demo			\
@@ -343,9 +314,12 @@ GATT_FILES = \
 	spp_and_le_counter.gatt \
 	spp_and_le_streamer.gatt \
 
+# SBC codec
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/Makefile.inc
 
+VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce
+VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce
 C_SOURCES += ${SBC_ENCODER}
 C_SOURCES += ${SBC_DECODER}
 
