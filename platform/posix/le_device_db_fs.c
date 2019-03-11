@@ -61,6 +61,7 @@ typedef struct le_device_memory_db {
     uint8_t  key_size;
     uint8_t  authenticated;
     uint8_t  authorized;
+    uint8_t  secure_connection;
 
 #ifdef ENABLE_LE_SIGNED_WRITE
     // Signed Writes by remote
@@ -87,7 +88,12 @@ typedef struct le_device_memory_db {
 
 #define DB_PATH_TEMPLATE (LE_DEVICE_DB_PATH "btstack_at_%s_le_device_db.txt")
 
-const  char * csv_header = "# addr_type, addr, irk, ltk, ediv, rand[8], key_size, authenticated, authorized, remote_csrk, remote_counter, local_csrk, local_counter";
+#ifdef ENABLE_LE_SIGNED_WRITE
+const  char * csv_header = "# addr_type, addr, irk, ltk, ediv, rand[8], key_size, authenticated, authorized, remote_csrk, remote_counter, local_csrk, local_counter, secure_connection";
+#else
+const  char * csv_header = "# addr_type, addr, irk, ltk, ediv, rand[8], key_size, authenticated, authorized, secure_connection";
+#endif
+
 static char db_path[sizeof(DB_PATH_TEMPLATE) - 2 + 17 + 1];
 
 static le_device_memory_db_t le_devices[LE_DEVICE_MEMORY_SIZE];
@@ -165,6 +171,7 @@ static void le_device_db_store(void) {
         write_hex(wFile,   le_devices[i].local_csrk, 16);
         write_value(wFile, le_devices[i].local_counter, 2);
 #endif
+        write_value(wFile, le_devices[i].secure_connection, 1);
         fwrite("\n", 1, 1, wFile);
     }
     fclose(wFile);
@@ -213,6 +220,7 @@ static void le_device_db_read(void){
     // read entries
     int i;
     for (i=0 ; i<LE_DEVICE_MEMORY_SIZE ; i++){
+        memset(&le_devices[i], 0, sizeof(le_device_memory_db_t));
         le_devices[i].addr_type = read_value(wFile, 1);
         if (feof(wFile)){
             le_devices[i].addr_type = INVALID_ENTRY_ADDR_TYPE;
@@ -232,8 +240,14 @@ static void le_device_db_read(void){
         read_hex(wFile,   le_devices[i].local_csrk, 16);
         le_devices[i].local_counter = read_value(wFile, 2);
 #endif
-        // read newling
-        fgetc(wFile);
+        // read next character and secure connection field if hex nibble follows
+        int c = fgetc(wFile);
+        if (nibble_for_char(c) >= 0){
+            int d = fgetc(wFile);
+            le_devices[i].secure_connection = nibble_for_char(c) << 4 | nibble_for_char(d);
+            // read newline
+            fgetc(wFile);
+        }
     }
 exit:
     fclose(wFile);
@@ -310,9 +324,9 @@ void le_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t irk)
     if (irk) memcpy(irk, le_devices[index].irk, 16);
 }
 
-void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_key_t ltk, int key_size, int authenticated, int authorized){
-    log_info("Central Device DB set encryption for %u, ediv x%04x, key size %u, authenticated %u, authorized %u",
-        index, ediv, key_size, authenticated, authorized);
+void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_key_t ltk, int key_size, int authenticated, int authorized, int secure_connection){
+    log_info("LE Device DB set encryption for %u, ediv x%04x, key size %u, authenticated %u, authorized %u, secure connection %u",
+        index, ediv, key_size, authenticated, authorized, secure_connection);
     le_device_memory_db_t * device = &le_devices[index];
     device->ediv = ediv;
     if (rand) memcpy(device->rand, rand, 8);
@@ -320,20 +334,22 @@ void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_k
     device->key_size = key_size;
     device->authenticated = authenticated;
     device->authorized = authorized;
+    device->secure_connection = secure_connection;
 
     le_device_db_store();
 }
 
-void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk, int * key_size, int * authenticated, int * authorized){
+void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk, int * key_size, int * authenticated, int * authorized, int * secure_connection){
     le_device_memory_db_t * device = &le_devices[index];
-    log_info("Central Device DB encryption for %u, ediv x%04x, keysize %u, authenticated %u, authorized %u",
-        index, device->ediv, device->key_size, device->authenticated, device->authorized);
+    log_info("LE Device DB encryption for %u, ediv x%04x, keysize %u, authenticated %u, authorized %u, secure connection %u",
+        index, device->ediv, device->key_size, device->authenticated, device->authorized, device->secure_connection);
     if (ediv) *ediv = device->ediv;
     if (rand) memcpy(rand, device->rand, 8);
     if (ltk)  memcpy(ltk, device->ltk, 16);    
     if (key_size) *key_size = device->key_size;
     if (authenticated) *authenticated = device->authenticated;
     if (authorized) *authorized = device->authorized;
+    if (secure_connection) *secure_connection = device->secure_connection;
 }
 
 #ifdef ENABLE_LE_SIGNED_WRITE

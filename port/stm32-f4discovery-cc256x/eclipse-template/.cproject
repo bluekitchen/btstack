@@ -64,6 +64,7 @@
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.966627019" name="Cross ARM GNU C Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler">
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths.290257913" name="Include paths (-I)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.paths" useByScannerDiscovery="true" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;../include&quot;"/>
+									<listOptionValue builtIn="false" value="../btstack/port/stm32-f4discovery-cc256x/src/pdm"/>
 									<listOptionValue builtIn="false" value="&quot;../system/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;../system/include/cmsis&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;../system/include/stm32f4xx&quot;"/>
@@ -74,17 +75,21 @@
 									<listOptionValue builtIn="false" value="../btstack/platform/embedded"/>
 									<listOptionValue builtIn="false" value="../btstack/port/stm32-f4discovery-cc256x/src"/>
 									<listOptionValue builtIn="false" value="../btstack/port/stm32-f4discovery-cc256x/src/bsp"/>
+									<listOptionValue builtIn="false" value="../btstack/port/stm32-f4discovery-cc256x/pdm"/>
 									<listOptionValue builtIn="false" value="../btstack/3rd-party/bluedroid/encoder/include"/>
 									<listOptionValue builtIn="false" value="../btstack/3rd-party/bluedroid/decoder/include"/>
 									<listOptionValue builtIn="false" value="../btstack/3rd-party/hxcmod-player/mods"/>
 									<listOptionValue builtIn="false" value="../btstack/3rd-party/hxcmod-player"/>
 									<listOptionValue builtIn="false" value="../btstack/3rd-party/md5"/>
+									<listOptionValue builtIn="false" value="../btstack/3rd-party/segger-rtt"/>
+									<listOptionValue builtIn="false" value="../btstack/3rd-party/yxml"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.defs.1206315366" name="Defined symbols (-D)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.defs" useByScannerDiscovery="true" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="DEBUG"/>
 									<listOptionValue builtIn="false" value="TRACE"/>
 									<listOptionValue builtIn="false" value="STM32F407xx"/>
 								</option>
+								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.files.1716771904" name="Include files (-include)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.include.files" useByScannerDiscovery="true" valueType="includeFiles"/>
 								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.1102706333" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input"/>
 							</tool>
 							<tool id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1657601652" name="Cross ARM GNU C++ Compiler" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler">
@@ -123,6 +128,7 @@
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.gcsections.1328145195" name="Remove unused sections (-Xlinker --gc-sections)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.gcsections" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.paths.1236587795" name="Library search path (-L)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.paths" useByScannerDiscovery="false" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;../ldscripts&quot;"/>
+									<listOptionValue builtIn="false" value="../btstack/port/stm32-f4discovery-cc256x/pdm"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.scriptfile.2002215184" name="Script files (-T)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.scriptfile" useByScannerDiscovery="false" valueType="stringList">
 									<listOptionValue builtIn="false" value="mem.ld"/>
@@ -132,6 +138,9 @@
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.nostart.592280905" name="Do not use standard start files (-nostartfiles)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.nostart" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.usenewlibnano.377258084" name="Use newlib-nano (--specs=nano.specs)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.usenewlibnano" useByScannerDiscovery="false" value="false" valueType="boolean"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.other.634535448" name="Other linker flags" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.other" useByScannerDiscovery="false" value="--specs=nano.specs" valueType="string"/>
+								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.libs.1316281200" name="Libraries (-l)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.linker.libs" useByScannerDiscovery="false" valueType="libs">
+									<listOptionValue builtIn="false" value="PDMFilter_CM4_GCC"/>
+								</option>
 								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.linker.input.1645446484" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -155,6 +164,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="btstack/3rd-party/bluedroid"/>
 						<entry excluding="test" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="btstack/3rd-party/micro-ecc"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="btstack/chipset/cc256x"/>
+						<entry excluding="SEGGER_RTT_Syscalls_IAR.c|SEGGER_RTT_Syscalls_KEIL.c|SEGGER_RTT_Syscalls_SES.c" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="btstack/3rd-party/segger-rtt"/>
 						<entry excluding="hci_transport_h4_embedded.c|hci_transport_h4_ehcill_embedded.c" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="btstack/platform/embedded"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="btstack/port/stm32-f4discovery-cc256x/src"/>
 						<entry excluding="ble/att_db_util.c|ble/le_device_db_memory.c" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="btstack/src"/>

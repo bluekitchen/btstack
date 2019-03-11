@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 BlueKitchen GmbH
+ * Copyright (C) 2018 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,46 +35,55 @@
  *
  */
 
-#include "btstack_audio.h"
+#ifndef __BTSTACK_RESAMPLE_H
+#define __BTSTACK_RESAMPLE_H
+
+#include <stdint.h>
+
+#if defined __cplusplus
+extern "C" {
+#endif
 
 /*
- *  btstack_audio.c
+ *  btstack_resample.h
  *
+ *  Linear resampling for 16-bit audio code samples using 16 bit/16 bit fixed point math
  */
 
-static const btstack_audio_sink_t * btstack_audio_sink_instance;
+#define BTSTACK_RESAMPLE_MAX_CHANNELS 2
 
-static const btstack_audio_source_t * btstack_audio_source_instance;
+typedef struct {
+    uint32_t src_pos;
+    uint32_t src_step;
+    int16_t  last_sample[BTSTACK_RESAMPLE_MAX_CHANNELS];
+    int      num_channels;
+} btstack_resample_t;
 
 /**
- * @brief Get BTstack Audio Sink Instance
- * @returns btstack_audio_sink implementation
+ * @brief Init resample context
+ * @param num_channels
+ * @returns btstack_audio implementation
  */
-const btstack_audio_sink_t * btstack_audio_sink_get_instance(void){
-	return btstack_audio_sink_instance;
-}
+void btstack_resample_init(btstack_resample_t * context, int num_channels);
 
 /**
- * @brief Get BTstack Audio Source Instance
- * @returns btstack_audio_source implementation
+ * @brief Set resampling factor
+ * @param factor as fixed point value, identity is 0x10000
  */
-const btstack_audio_source_t * btstack_audio_source_get_instance(void){
-	return btstack_audio_source_instance;
-}
+void btstack_resample_set_factor(btstack_resample_t * context, uint32_t factor);
 
 /**
- * @brief Get BTstack Audio Sink Instance
- * @param btstack_audio_sink implementation
+ * @brief Process block of input samples
+ * @note size of output buffer is not checked
+ * @param input_buffer
+ * @param num_frames
+ * @param output_buffer
+ * @returns number destination frames
  */
-void btstack_audio_sink_set_instance(const btstack_audio_sink_t * audio_sink_impl){
-	btstack_audio_sink_instance = audio_sink_impl;
-}
+uint16_t btstack_resample_block(btstack_resample_t * context, const int16_t * input_buffer, uint32_t num_frames, int16_t * output_buffer);
 
-/**
- * @brief Get BTstack Audio Source Instance
- * @param btstack_audio_source implementation
- */
-void btstack_audio_source_set_instance(const btstack_audio_source_t * audio_source_impl){
-	btstack_audio_source_instance = audio_source_impl;
+#if defined __cplusplus
 }
+#endif
 
+#endif

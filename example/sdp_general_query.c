@@ -54,8 +54,17 @@
 
 #include "btstack.h"
 
-int record_id = -1;
-int attribute_id = -1;
+
+#ifndef HAVE_POSIX_FILE_IO
+// Jambox static const char * remote_addr_string = "00:21:3C:AC:F7:38";
+// Mac static const char * remote_addr_string = "F0:18:98:60:3E:E5";
+// iPhone 5S: 
+static const char * remote_addr_string = "6C:72:E7:10:22:EE";
+#endif
+
+static bd_addr_t remote_addr;
+
+static int record_id = -1;
 
 static uint8_t   attribute_value[1000];
 static const int attribute_value_buffer_size = sizeof(attribute_value);
@@ -94,10 +103,6 @@ static void sdp_client_init(void){
  * by the GAP Inquiry example in the previous section.
  */ 
 
-/* LISTING_START(Remote): Address of remote device in big-endian order */
-static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
-/* LISTING_END */
-
 /* LISTING_START(SDPQueryUUID): Querying a list of service records on a remote device. */
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
@@ -110,7 +115,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started 
             if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
-                sdp_client_query_uuid16(&handle_sdp_client_query_result, remote, BLUETOOTH_ATTRIBUTE_PUBLIC_BROWSE_ROOT);
+                printf("Connecting to %s\n", bd_addr_to_str(remote_addr));
+                sdp_client_query_uuid16(&handle_sdp_client_query_result, remote_addr, BLUETOOTH_PROTOCOL_L2CAP);
             }
             break;
         default:
@@ -171,15 +177,34 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
 }
 /* LISTING_END */
 
+#ifdef HAVE_POSIX_FILE_IO
+static void usage(const char *name){
+    printf("\nUsage: %s -a|--address aa:bb:cc:dd:ee:ff\n", name);
+    printf("Use argument -a to connect to a specific device and dump the result of SDP query for L2CAP services.\n\n");
+}
+#endif
+
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+
+#ifdef HAVE_POSIX_FILE_IO
+    int remote_addr_found = 0;
+    if (argc == 3) {
+        if(!strcmp(argv[1], "-a") || !strcmp(argv[1], "--address")){
+            remote_addr_found = sscanf_bd_addr(argv[2], remote_addr);
+        }
+    }
+    if (!remote_addr_found){
+        usage(argv[0]);
+        exit(1);    
+    }
+#else
     (void)argc;
     (void)argv;
-    
-    printf("Client HCI init done\r\n");
+    sscanf_bd_addr(remote_addr_string, remote_addr);
+#endif
     
     sdp_client_init();
-
     // turn on!
     hci_power_control(HCI_POWER_ON);
             

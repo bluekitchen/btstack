@@ -52,44 +52,73 @@
  */
 
 /**
- * @brief Setup audio codec for specified samplerate and number channels
+ * @brief Setup audio codec for playback using specified samplerate and number of channels
  * @param Channels
  * @param Sample rate
  * @param Buffer played callback
- * @param Buffer recorded callback (use NULL if no recording)
  */
-void hal_audio_init(uint8_t channels, 
-                    uint32_t sample_rate,
-                    void (*buffer_played_callback)  (uint8_t buffer_index),
-                    void (*buffer_recorded_callback)(const int16_t * buffer, uint16_t num_samples));
+void hal_audio_sink_init(uint8_t channels, 
+                         uint32_t sample_rate,
+                         void (*buffer_played_callback)(uint8_t buffer_index));
 
 /**
  * @brief Get number of output buffers in HAL
  * @returns num buffers
  */
-uint16_t hal_audio_get_num_output_buffers(void);
+uint16_t hal_audio_sink_get_num_output_buffers(void);
 
 /**
  * @brief Get size of single output buffer in HAL
  * @returns buffer size
  */
-uint16_t hal_audio_get_num_output_buffer_samples(void);
+uint16_t hal_audio_sink_get_num_output_buffer_samples(void);
 
 /**
- * @brief Gey output buffer
+ * @brief Get output buffer
  * @param buffer index
  * @returns buffer
  */
-int16_t * hal_audio_get_output_buffer(uint8_t buffer_index);
+int16_t * hal_audio_sink_get_output_buffer(uint8_t buffer_index);
 
 /**
  * @brief Start stream
  */
-void hal_audio_start(void);
+void hal_audio_sink_start(void);
+
+/**
+ * @brief Stop stream
+ */
+void hal_audio_sink_stop(void);
 
 /**
  * @brief Close audio codec
  */
-void hal_audio_close(void);
+void hal_audio_sink_close(void);
+
+
+/**
+ * @brief Setup audio codec for recording using specified samplerate and number of channels
+ * @param Channels
+ * @param Sample rate
+ * @param Buffer recorded callback
+ */
+void hal_audio_source_init(uint8_t channels, 
+                           uint32_t sample_rate,
+                           void (*buffer_recorded_callback)(const int16_t * buffer, uint16_t num_samples));
+
+/**
+ * @brief Start stream
+ */
+void hal_audio_source_start(void);
+
+/**
+ * @brief Stop stream
+ */
+void hal_audio_source_stop(void);
+
+/**
+ * @brief Close audio codec
+ */
+void hal_audio_source_close(void);
 
 #endif

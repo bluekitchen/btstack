@@ -777,7 +777,7 @@ int hci_send_sco_packet_buffer(int size){
 
         // check for free places on Bluetooth module
         if (!hci_can_send_prepared_sco_packet_now()) {
-            log_error("hci_send_sco_packet_buffer called but no free ACL buffers on controller");
+            log_error("hci_send_sco_packet_buffer called but no free SCO buffers on controller");
             hci_release_packet_buffer();
             hci_emit_transport_packet_sent();
             return BTSTACK_ACL_BUFFERS_FULL;
@@ -2544,7 +2544,7 @@ static void sco_handler(uint8_t * packet, uint16_t size){
 
     // CSR 8811 prefixes 60 byte SCO packet in transparent mode with 20 zero bytes -> skip first 20 payload bytes
     if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO){
-        if (size == 83 && ((hci_stack->sco_voice_setting & 0x03) == 0x03)){
+        if (size == 83 && ((hci_stack->sco_voice_setting_active & 0x03) == 0x03)){
             packet[2] = 0x3c;
             memmove(&packet[3], &packet[23], 63);
             size = 63;
@@ -2552,7 +2552,7 @@ static void sco_handler(uint8_t * packet, uint16_t size){
     }
 
     // treat received SCO packets as indicator of successfully sent packet, if flow control is not explicite
-    log_info("sco flow %u, handle 0x%04x, packets sent %u, bytes send %u", hci_stack->synchronous_flow_control_enabled, (int) con_handle, conn->num_packets_sent, conn->num_sco_bytes_sent);
+    log_debug("sco flow %u, handle 0x%04x, packets sent %u, bytes send %u", hci_stack->synchronous_flow_control_enabled, (int) con_handle, conn->num_packets_sent, conn->num_sco_bytes_sent);
     if (hci_stack->synchronous_flow_control_enabled == 0){
         uint16_t sco_payload_len = size - 3;
         if (conn->num_sco_bytes_sent >= sco_payload_len){
@@ -4933,6 +4933,10 @@ int hci_get_sco_packet_length(void){
     } else {
         // 3 byte SCO header + SCO packet size over the air (60 bytes)
         sco_packet_length = 3 + 60 * multiplier;
+        // assert that it still fits inside an SCO buffer
+        if (sco_packet_length > hci_stack->sco_data_packet_length){
+            sco_packet_length = 3 + 60;
+        }
     }
 #endif
 #endif
@@ -4999,6 +5003,13 @@ int gap_authenticated(hci_con_handle_t con_handle){
     if (!sm_conn) return 0;     // wrong connection
     if (!sm_conn->sm_connection_encrypted) return 0; // unencrypted connection cannot be authenticated
     return sm_conn->sm_connection_authenticated;
+}
+
+int gap_secure_connection(hci_con_handle_t con_handle){
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
+    if (!sm_conn) return 0;     // wrong connection
+    if (!sm_conn->sm_connection_encrypted) return 0; // unencrypted connection cannot be authenticated
+    return sm_conn->sm_connection_sc;
 }
 
 authorization_state_t gap_authorization_state(hci_con_handle_t con_handle){

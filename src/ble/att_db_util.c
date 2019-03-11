@@ -163,18 +163,27 @@ uint16_t att_db_util_add_service_uuid128(const uint8_t * uuid128){
 
 static void att_db_util_add_client_characteristic_configuration(uint16_t flags){
 	uint8_t buffer[2];
-	// drop permission for read (0xc00), keep write permissions (0x0011)
-	flags = (flags & 0x1f311) | ATT_PROPERTY_READ | ATT_PROPERTY_WRITE | ATT_PROPERTY_DYNAMIC;
+	// drop permission for read (0xc00), keep write permissions (0x0091)
+	flags = (flags & 0x1f391) | ATT_PROPERTY_READ | ATT_PROPERTY_WRITE | ATT_PROPERTY_DYNAMIC;
 	little_endian_store_16(buffer, 0, 0); 
 	att_db_util_add_attribute_uuid16(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION, flags, buffer, 2);
 }
 
 static uint16_t att_db_util_encode_permissions(uint16_t properties, uint8_t read_permission, uint8_t write_permission){
-    // drop Broadcast (0x01), Notify (0x10), Indicate (0x20) - not used for flags 
-    uint16_t flags = properties & 0xfffce;
+    // drop Broadcast (0x01), Notify (0x10), Indicate (0x20), Extended Attributes (0x80) - not used for flags 
+    uint16_t flags = properties & 0xfff4e;
     // if encryption requested, set encryption key size to 16
     if ((read_permission > ATT_SECURITY_NONE) || (write_permission > ATT_SECURITY_NONE)){
     	flags |= 0xf000;
+    }
+    // map SC requirement
+    if (read_permission == ATT_SECURITY_AUTHENTICATED_SC){
+        read_permission =  ATT_SECURITY_AUTHENTICATED;
+        flags |= ATT_PROPERTY_READ_PERMISSION_SC;
+    }
+    if (write_permission == ATT_SECURITY_AUTHENTICATED_SC){
+        write_permission =  ATT_SECURITY_AUTHENTICATED;
+        flags |= ATT_PROPERTY_WRITE_PERMISSION_SC;
     }
     // encode read/write security levels
     if (read_permission & 1){

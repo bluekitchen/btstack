@@ -63,6 +63,8 @@ extern "C" {
 #define AVRCP_NO_TRACK_SELECTED_PLAYBACK_POSITION_CHANGED    0xFFFFFFFF
 // #define AVRCP_NO_TRACK_SELECTED_TRACK_CHANGED                0xFFFFFFFFFFFFFFFF
 
+#define AVRCP_BROWSING_ITEM_HEADER_LEN 3
+
 typedef enum {
     AVRCP_STATUS_INVALID_COMMAND = 0,           // sent if TG received a PDU that it did not understand.
     AVRCP_STATUS_INVALID_PARAMETER,             // Sent if the TG received a PDU with a parameter ID that it did not understand, or, if there is only one parameter ID in the PDU.
@@ -159,8 +161,10 @@ typedef enum {
     AVRCP_NOTIFICATION_EVENT_AVAILABLE_PLAYERS_CHANGED = 0x0a,          // The available players have changed, see 6.9.4.
     AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED = 0x0b,           // The Addressed Player has been changed, see 6.9.2.
     AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED = 0x0c,                       // The UIDs have changed, see 6.10.3.3.
-    AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED = 0x0d                      // The volume has been changed locally on the TG, see 6.13.3.
+    AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED = 0x0d,                     // The volume has been changed locally on the TG, see 6.13.3.
+    AVRCP_NOTIFICATION_EVENT_COUNT = 0x0d
 } avrcp_notification_event_id_t;
+
 
 // control command response: accepted, rejected, interim
 // status  command response: not implemented, rejected, in transition, stable
@@ -310,7 +314,10 @@ typedef enum {
 } avrcp_parser_state_t;
 
 
-#define AVRCP_BROWSING_ITEM_HEADER_LEN 3
+typedef enum{
+    AVRCP_CONTROLLER = 0,
+    AVRCP_TARGET
+} avrcp_role_t;
 
 // BROWSING 
 typedef struct {
@@ -386,11 +393,13 @@ typedef struct {
 
 typedef struct {
     btstack_linked_item_t    item;
+    
+    avrcp_role_t role;
     bd_addr_t remote_addr;
     uint16_t l2cap_signaling_cid;
     uint16_t l2cap_mtu;
     uint16_t avrcp_cid;
-
+    
     uint16_t avrcp_browsing_cid;
     uint16_t browsing_l2cap_psm;
     uint16_t browsing_version;
@@ -399,7 +408,7 @@ typedef struct {
 
     avctp_connection_state_t state;
     uint8_t wait_to_send;
-
+    
     // PID check
     uint8_t reject_transport_header;
     uint8_t transport_header;
@@ -427,6 +436,7 @@ typedef struct {
     uint16_t notifications_enabled;
     uint16_t notifications_to_register;
     uint16_t notifications_to_deregister; 
+    uint8_t  notifications_transaction_label[AVRCP_NOTIFICATION_EVENT_COUNT];
 
     avrcp_subunit_type_t unit_type;
     uint32_t company_id;
@@ -451,7 +461,8 @@ typedef struct {
     avrcp_battery_status_t battery_status;
     uint8_t battery_status_changed;
     uint8_t volume_percentage;
-    uint8_t volume_percentage_changed;
+    uint8_t notify_volume_percentage_changed;
+    
     uint8_t now_playing_info_response;
     uint8_t now_playing_info_attr_bitmap;
     uint8_t abort_continue_response;
@@ -480,6 +491,8 @@ typedef struct {
     // PTS requires definition of max num fragments
     uint8_t max_num_fragments;
     uint8_t num_received_fragments;
+
+    uint8_t accept_response;
 } avrcp_connection_t;
 
 typedef enum {
@@ -497,18 +510,12 @@ typedef enum {
     AVRCP_REPEAT_MODE_GROUP
 } avrcp_repeat_mode_t;
 
-typedef enum{
-    AVRCP_CONTROLLER = 0,
-    AVRCP_TARGET
-} avrcp_role_t;
-
 typedef enum {
     RFC2978_CHARSET_MIB_UTF8 = 106
 } rfc2978_charset_mib_enumid_t;
 
 typedef struct {
     avrcp_role_t role;
-    btstack_linked_list_t connections;
     btstack_packet_handler_t avrcp_callback;
     btstack_packet_handler_t packet_handler;
 
@@ -516,7 +523,7 @@ typedef struct {
     btstack_packet_handler_t browsing_packet_handler;
 
     // SDP query
-    uint8_t parse_sdp_record;
+    uint8_t  parse_sdp_record;
     uint32_t record_id;
     uint16_t avrcp_cid;
     uint16_t avrcp_l2cap_psm;
@@ -533,17 +540,26 @@ const char * avrcp_ctype2str(uint8_t index);
 const char * avrcp_repeat2str(uint8_t index);
 const char * avrcp_shuffle2str(uint8_t index);
 
-void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avrcp_context_t * context);
+void avrcp_init(void);
+
+void avrcp_register_controller_packet_handler(btstack_packet_handler_t avrcp_controller_packet_handler);
+void avrcp_register_target_packet_handler(btstack_packet_handler_t avrcp_target_packet_handler);
 
 void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name);
-uint8_t avrcp_connect(bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * avrcp_cid);
+uint8_t avrcp_connect(avrcp_role_t role, bd_addr_t bd_addr, avrcp_context_t * context, uint16_t * avrcp_cid);
 void avrcp_emit_connection_established(btstack_packet_handler_t callback, uint16_t avrcp_cid, bd_addr_t addr, uint8_t status);
 void avrcp_emit_connection_closed(btstack_packet_handler_t callback, uint16_t avrcp_cid);
 
 uint8_t avrcp_cmd_opcode(uint8_t *packet, uint16_t size);
-avrcp_connection_t * get_avrcp_connection_for_l2cap_signaling_cid(uint16_t l2cap_cid, avrcp_context_t * context);
-avrcp_connection_t * get_avrcp_connection_for_avrcp_cid(uint16_t avrcp_cid, avrcp_context_t * context);
-avrcp_connection_t * get_avrcp_connection_for_bd_addr(bd_addr_t addr, avrcp_context_t * context);
+
+avrcp_connection_t * get_avrcp_connection_for_l2cap_signaling_cid(avrcp_role_t role, uint16_t l2cap_cid);
+avrcp_connection_t * get_avrcp_connection_for_avrcp_cid(avrcp_role_t role, uint16_t avrcp_cid);
+avrcp_connection_t * get_avrcp_connection_for_bd_addr(avrcp_role_t role, bd_addr_t addr);
+
+avrcp_connection_t * get_avrcp_connection_for_browsing_cid(avrcp_role_t role, uint16_t browsing_cid);
+avrcp_connection_t * get_avrcp_connection_for_browsing_l2cap_cid(avrcp_role_t role, uint16_t browsing_l2cap_cid);
+avrcp_browsing_connection_t * get_avrcp_browsing_connection_for_l2cap_cid(avrcp_role_t role, uint16_t l2cap_cid);
+
 void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_cid);
 uint16_t avrcp_get_next_cid(void);
 

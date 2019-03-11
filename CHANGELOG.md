@@ -6,8 +6,33 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- le_device_db: add secure_connection argument to le_device_db_encryption_set and le_device_db_encryption_get
+
+### Fixed
+- SM: Use provided authentication requirements in slave security request
+
+### Added
+- SM: Track if connection encryption is based on LE Secure Connection pairing
+- ATT DB: Validate if connection encrypted is based on SC if requested 
+- att_db_util: support ATT_SECURITY_AUTHENTICATED_SC permission flag
+- GATT Compiler: support READ_AUTHENTICATED and WRITE_AUTHENTICATED permsission flags
+- port/stm32-f4discovery-cc256x: add support for built-in MEMS microphone
+
+## Changes February 2019
+
+### Changed
+- example/a2dp_sink_demo: use linear resampling to fix sample rate drift
+- btstack_audio: split interface into sink and source
+
 ### Fixed
 - Crypto: fix lockup when stack is shutdown while waiting for result of HCI Command, e.g. LE Read Local P256 Public Key
+- SM: Avoid SM_EVENT_PAIRING_COMPLETE with ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION after successful pairing in responder role
+
+### Added
+- example/a2dp_sink_demo: add target role, support volume control on both devices
+- example/audio_duplex: playback audio audio source on audio sink (test audio path)
+- btstack_audio_embedded: implement audio source path
 
 ## Changes January 2019
 

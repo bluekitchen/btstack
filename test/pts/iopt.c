@@ -50,6 +50,8 @@
 
 #include "btstack.h"
 
+//#define AVRCP_BROWSING_ENABLED
+
 #define NETWORK_TYPE_IPv4       0x0800
 #define NETWORK_TYPE_ARP        0x0806
 
@@ -90,7 +92,6 @@ static uint8_t a2dp_source_service_buffer[150];
 static uint8_t avrcp_controller_service_buffer[200];
 static uint8_t avrcp_target_service_buffer[200];
 
-#define AVRCP_BROWSING_ENABLED 0
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
@@ -130,13 +131,21 @@ int btstack_main(int argc, const char * argv[]){
     a2dp_sink_create_sdp_record(a2dp_sink_service_buffer, 0x10007, 1, NULL, NULL);
     sdp_register_service(a2dp_sink_service_buffer);
     
-    avrcp_controller_create_sdp_record(avrcp_controller_service_buffer, 0x10008, AVRCP_BROWSING_ENABLED, 1, NULL, NULL);
+    uint16_t controller_supported_features = (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER);
+#ifdef AVRCP_BROWSING_ENABLED
+    controller_supported_features |= (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_BROWSING);
+#endif
+    avrcp_controller_create_sdp_record(avrcp_controller_service_buffer, 0x10008, controller_supported_features, NULL, NULL);
     sdp_register_service(avrcp_controller_service_buffer);
 
     a2dp_source_create_sdp_record(a2dp_source_service_buffer, 0x10009, 1, NULL, NULL);
     sdp_register_service(a2dp_source_service_buffer);
-    
-    avrcp_target_create_sdp_record(avrcp_target_service_buffer, 0x1000a, AVRCP_BROWSING_ENABLED, 1, NULL, NULL);
+
+    uint16_t target_supported_features = (1 << AVRCP_TARGET_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER);
+#ifdef AVRCP_BROWSING_ENABLED
+    target_supported_features |= (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_BROWSING);
+#endif
+    avrcp_target_create_sdp_record(avrcp_target_service_buffer, 0x1000a, target_supported_features, NULL, NULL);
     sdp_register_service(avrcp_target_service_buffer);
 
     // set CoD for all this

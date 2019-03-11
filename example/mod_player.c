@@ -58,12 +58,12 @@ int btstack_main(int argc, const char * argv[]){
     hxcmod_load(&mod_context, (void *) &mod_data, mod_len);
 
     // setup audio playback
-    const btstack_audio_t * audio = btstack_audio_get_instance();
+    const btstack_audio_sink_t * audio = btstack_audio_sink_get_instance();
     if (!audio){
-        printf("BTstack Audio not setup\n");
+        printf("BTstack Audio Sink not setup\n");
         return 10;
     }
-    audio->init(2, 44100, &audio_playback, NULL);
+    audio->init(2, 44100, &audio_playback);
     audio->start_stream();
 
     return 0;

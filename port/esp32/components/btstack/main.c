@@ -385,8 +385,8 @@ int app_main(void){
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-    // setup i2s audio
-    btstack_audio_set_instance(btstack_audio_esp32_get_instance());
+    // setup i2s audio sink
+    btstack_audio_sink_set_instance(btstack_audio_esp32_sink_get_instance());
 
     btstack_main(0, NULL);
 

@@ -388,6 +388,7 @@ typedef struct sm_connection {
     irk_lookup_state_t      sm_irk_lookup_state;
     uint8_t                  sm_connection_encrypted;
     uint8_t                  sm_connection_authenticated;   // [0..1]
+    uint8_t                  sm_connection_sc;
     uint8_t                  sm_actual_encryption_key_size;
     sm_pairing_packet_t      sm_m_preq;  // only used during c1
     authorization_state_t    sm_connection_authorization_state;

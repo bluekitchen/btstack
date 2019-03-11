@@ -125,7 +125,16 @@ static void process_file(const char * pklg_path, const char * wav_path, int pack
         bytes_read = __read(fd, header, sizeof(header));
         if (0 >= bytes_read) break;
         uint8_t type = header[12];
-        uint32_t size = big_endian_read_32(header, 0) - 9;
+
+        uint32_t size = big_endian_read_32(header, 0);
+
+        // auto-detect endianess of size param
+        if (size >0xffff){
+            size = little_endian_read_32(header, 0);
+        }
+        // subtract header
+        size -= 9;
+
         uint8_t packet[300];
             
         if (type == packet_type){

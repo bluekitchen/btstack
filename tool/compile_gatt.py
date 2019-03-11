@@ -44,7 +44,7 @@ assigned_uuids = {
     'GATT_SERVICE_CHANGED' : 0x2a05,
 }
 
-security_permsission = ['ANYBODY','ENCRYPTED', 'AUTHENTICATED', 'AUTHORIZED']
+security_permsission = ['ANYBODY','ENCRYPTED', 'AUTHENTICATED', 'AUTHORIZED', 'AUTHENTICATED_SC']
 
 property_flags = {
     # GATT Characteristic Properties
@@ -79,25 +79,27 @@ property_flags = {
     
     # only used by gatt compiler >= 0xffff
     # Extended Properties
-    'RELIABLE_WRITE':              0x0010000,
-    'AUTHENTICATION_REQUIRED':     0x0020000,
-    'AUTHORIZATION_REQUIRED':      0x0040000,
-    'READ_ANYBODY':                0x0080000,
-    'READ_ENCRYPTED':              0x0100000,
-    'READ_AUTHENTICATED':          0x0200000,
-    'READ_AUTHORIZED':             0x0400000,
-    'WRITE_ANYBODY':               0x0800000,
-    'WRITE_ENCRYPTED':             0x1000000,
-    'WRITE_AUTHENTICATED':         0x2000000,
-    'WRITE_AUTHORIZED':            0x4000000,
+    'RELIABLE_WRITE':              0x00010000,
+    'AUTHENTICATION_REQUIRED':     0x00020000,
+    'AUTHORIZATION_REQUIRED':      0x00040000,
+    'READ_ANYBODY':                0x00080000,
+    'READ_ENCRYPTED':              0x00100000,
+    'READ_AUTHENTICATED':          0x00200000,
+    'READ_AUTHENTICATED_SC':       0x00400000,
+    'READ_AUTHORIZED':             0x00800000,
+    'WRITE_ANYBODY':               0x01000000,
+    'WRITE_ENCRYPTED':             0x02000000,
+    'WRITE_AUTHENTICATED':         0x04000000,
+    'WRITE_AUTHENTICATED_SC':      0x08000000,
+    'WRITE_AUTHORIZED':            0x10000000,
 
     # Broadcast, Notify, Indicate, Extended Properties are only used to describe a GATT Characteristic, but are free to use with att_db
-
-    # write permissions
+    # - write permissions
     'WRITE_PERMISSION_BIT_0':      0x01,
     'WRITE_PERMISSION_BIT_1':      0x10,
-    # 0x20
-    # 0x80
+    # - SC required
+    'READ_PERMISSION_SC':          0x20,
+    'WRITE_PERMISSION_SC':         0x80,
 }
 
 services = dict()
@@ -173,17 +175,19 @@ def gatt_characteristic_properties(properties):
     return properties & 0xff
 
 def att_flags(properties):
-    # drop Broadcast (0x01), Notify (0x10), Indicate (0x20) - not used for flags 
-    properties &= 0xffffffce 
+    # drop Broadcast (0x01), Notify (0x10), Indicate (0x20), Extended Properties (0x80) - not used for flags 
+    properties &= 0xffffff4e 
 
     # rw permissions distinct
     distinct_permissions_used = properties & (
         property_flags['READ_AUTHORIZED'] |
+        property_flags['READ_AUTHENTICATED_SC'] |
         property_flags['READ_AUTHENTICATED'] |
         property_flags['READ_ENCRYPTED'] |
         property_flags['READ_ANYBODY'] |
         property_flags['WRITE_AUTHORIZED'] |
         property_flags['WRITE_AUTHENTICATED'] |
+        property_flags['WRITE_AUTHENTICATED_SC'] |
         property_flags['WRITE_ENCRYPTED'] |
         property_flags['WRITE_ANYBODY']
     ) != 0
@@ -206,16 +210,24 @@ def att_flags(properties):
     # determine read/write security requirements
     read_security_level  = 0
     write_security_level = 0 
+    read_requires_sc     = False
+    write_requires_sc    = False
     if properties & property_flags['READ_AUTHORIZED']:
         read_security_level = 3
     elif properties & property_flags['READ_AUTHENTICATED']:
         read_security_level = 2
+    elif properties & property_flags['READ_AUTHENTICATED_SC']:
+        read_security_level = 2
+        read_requires_sc = True
     elif properties & property_flags['READ_ENCRYPTED']:
         read_security_level = 1
     if properties & property_flags['WRITE_AUTHORIZED']:
         write_security_level = 3
     elif properties & property_flags['WRITE_AUTHENTICATED']:
         write_security_level = 2
+    elif properties & property_flags['WRITE_AUTHENTICATED_SC']:
+        write_security_level = 2
+        write_requires_sc = True
     elif properties & property_flags['WRITE_ENCRYPTED']:
         write_security_level = 1
 
@@ -224,10 +236,14 @@ def att_flags(properties):
         properties |= property_flags['READ_PERMISSION_BIT_1']
     if read_security_level & 1:
         properties |= property_flags['READ_PERMISSION_BIT_0']
+    if read_requires_sc:
+        properties |= property_flags['READ_PERMISSION_SC']
     if write_security_level & 2:
         properties |= property_flags['WRITE_PERMISSION_BIT_1']
     if write_security_level & 1:
         properties |= property_flags['WRITE_PERMISSION_BIT_0']
+    if write_requires_sc:
+        properties |= property_flags['WRITE_PERMISSION_SC']
 
     return properties
 
@@ -262,6 +278,8 @@ def read_permissions_from_flags(flags):
         permissions |= 1
     if flags & property_flags['READ_PERMISSION_BIT_1']:
         permissions |= 2
+    if flags & property_flags['READ_PERMISSION_SC'] and permissions == 2:
+        permissions = 4
     return permissions
 
 def write_permissions_from_flags(flags):
@@ -270,6 +288,8 @@ def write_permissions_from_flags(flags):
         permissions |= 1
     if flags & property_flags['WRITE_PERMISSION_BIT_1']:
         permissions |= 2
+    if flags & property_flags['WRITE_PERMISSION_SC'] and permissions == 2:
+        permissions = 4
     return permissions
 
 def encryption_key_size_from_flags(flags):

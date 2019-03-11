@@ -266,11 +266,13 @@ int _fstat(int file){
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	UNUSED(size);
 	UNUSED(channel);
+	bd_addr_t local_addr;
     if (packet_type != HCI_EVENT_PACKET) return;
     switch(hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
-            printf("BTstack up and running.\n");
+            gap_local_bd_addr(local_addr);
+            printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
@@ -344,7 +346,8 @@ void port_main(void){
 
 #ifdef HAVE_HAL_AUDIO
     // setup audio
-   	btstack_audio_set_instance(btstack_audio_embedded_get_instance());
+   	btstack_audio_sink_set_instance(btstack_audio_embedded_sink_get_instance());
+    btstack_audio_source_set_instance(btstack_audio_embedded_source_get_instance());
 #endif
    	
     // inform about BTstack state
@@ -357,3 +360,61 @@ void port_main(void){
     // go
     btstack_run_loop_execute();
 }
+
+#if 0
+
+// Help with debugging hard faults - from FreeRTOS docu
+// https://www.freertos.org/Debugging-Hard-Faults-On-Cortex-M-Microcontrollers.html
+
+void prvGetRegistersFromStack( uint32_t *pulFaultStackAddress );
+void prvGetRegistersFromStack( uint32_t *pulFaultStackAddress ) {
+
+	/* These are volatile to try and prevent the compiler/linker optimising them
+	away as the variables never actually get used.  If the debugger won't show the
+	values of the variables, make them global my moving their declaration outside
+	of this function. */
+	volatile uint32_t r0;
+	volatile uint32_t r1;
+	volatile uint32_t r2;
+	volatile uint32_t r3;
+	volatile uint32_t r12;
+	volatile uint32_t lr; /* Link register. */
+	volatile uint32_t pc; /* Program counter. */
+	volatile uint32_t psr;/* Program status register. */
+
+    r0  = pulFaultStackAddress[ 0 ];
+    r1  = pulFaultStackAddress[ 1 ];
+    r2  = pulFaultStackAddress[ 2 ];
+    r3  = pulFaultStackAddress[ 3 ];
+
+    r12 = pulFaultStackAddress[ 4 ];
+    lr  = pulFaultStackAddress[ 5 ];
+    pc  = pulFaultStackAddress[ 6 ];
+    psr = pulFaultStackAddress[ 7 ];
+
+    /* When the following line is hit, the variables contain the register values. */
+    for( ;; );
+}
+
+/* The prototype shows it is a naked function - in effect this is just an
+assembly function. */
+void HardFault_Handler( void ) __attribute__( ( naked ) );
+
+/* The fault handler implementation calls a function called
+prvGetRegistersFromStack(). */
+void HardFault_Handler(void)
+{
+    __asm volatile
+    (
+        " tst lr, #4                                                \n"
+        " ite eq                                                    \n"
+        " mrseq r0, msp                                             \n"
+        " mrsne r0, psp                                             \n"
+        " ldr r1, [r0, #24]                                         \n"
+        " ldr r2, handler2_address_const                            \n"
+        " bx r2                                                     \n"
+        " handler2_address_const: .word prvGetRegistersFromStack    \n"
+    );
+}
+
+#endif

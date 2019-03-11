@@ -1175,7 +1175,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                         break;
                     }
 #ifdef ENABLE_LE_CENTRAL
-                    le_device_db_encryption_get(sm_connection->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL);
+                    le_device_db_encryption_get(sm_connection->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL, NULL);
                     have_ltk = !sm_is_null_key(ltk);
                     pairing_need = sm_connection->sm_pairing_requested || sm_connection->sm_security_request_received;
                     log_info("central: pairing request local %u, remote %u => action %u. have_ltk %u",
@@ -1317,7 +1317,7 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
                 uint8_t zero_rand[8];
                 memset(zero_rand, 0, 8);
                 le_device_db_encryption_set(le_db_index, 0, zero_rand, setup->sm_ltk, sm_conn->sm_actual_encryption_key_size,
-                    sm_conn->sm_connection_authenticated, sm_conn->sm_connection_authorization_state == AUTHORIZATION_GRANTED);
+                    sm_conn->sm_connection_authenticated, sm_conn->sm_connection_authorization_state == AUTHORIZATION_GRANTED, 1);
             }
 
             // store encryption information for legacy pairing: peer LTK, EDIV, RAND
@@ -1325,7 +1325,7 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
                    && (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_MASTER_IDENTIFICATION )){
                 log_info("sm: set encryption information (key size %u, authenticated %u)", sm_conn->sm_actual_encryption_key_size, sm_conn->sm_connection_authenticated);
                 le_device_db_encryption_set(le_db_index, setup->sm_peer_ediv, setup->sm_peer_rand, setup->sm_peer_ltk,
-                    sm_conn->sm_actual_encryption_key_size, sm_conn->sm_connection_authenticated, sm_conn->sm_connection_authorization_state == AUTHORIZATION_GRANTED);
+                    sm_conn->sm_actual_encryption_key_size, sm_conn->sm_connection_authenticated, sm_conn->sm_connection_authorization_state == AUTHORIZATION_GRANTED, 0);
 
             }
         }
@@ -1781,14 +1781,16 @@ static void sm_load_security_info(sm_connection_t * sm_connection){
     int encryption_key_size;
     int authenticated;
     int authorized;
+    int secure_connection;
 
     // fetch data from device db - incl. authenticated/authorized/key size. Note all sm_connection_X require encryption enabled
     le_device_db_encryption_get(sm_connection->sm_le_db_index, &setup->sm_peer_ediv, setup->sm_peer_rand, setup->sm_peer_ltk,
-                                &encryption_key_size, &authenticated, &authorized);
-    log_info("db index %u, key size %u, authenticated %u, authorized %u", sm_connection->sm_le_db_index, encryption_key_size, authenticated, authorized);
+                                &encryption_key_size, &authenticated, &authorized, &secure_connection);
+    log_info("db index %u, key size %u, authenticated %u, authorized %u, secure connetion %u", sm_connection->sm_le_db_index, encryption_key_size, authenticated, authorized, secure_connection);
     sm_connection->sm_actual_encryption_key_size = encryption_key_size;
     sm_connection->sm_connection_authenticated = authenticated;
     sm_connection->sm_connection_authorization_state = authorized ? AUTHORIZATION_GRANTED : AUTHORIZATION_UNKNOWN;
+    sm_connection->sm_connection_sc = secure_connection;
 }
 #endif
 
@@ -1801,6 +1803,8 @@ static void sm_start_calculating_ltk_from_ediv_and_rand(sm_connection_t * sm_con
     sm_connection->sm_actual_encryption_key_size = (setup->sm_local_rand[7] & 0x0f) + 1;
     // no db for authenticated flag hack: flag is stored in bit 4 of LSB
     sm_connection->sm_connection_authenticated = (setup->sm_local_rand[7] & 0x10) >> 4;
+    // Legacy paring -> not SC
+    sm_connection->sm_connection_sc = 0;
     log_info("sm: received ltk request with key size %u, authenticated %u",
             sm_connection->sm_actual_encryption_key_size, sm_connection->sm_connection_authenticated);
     sm_connection->sm_engine_state = SM_RESPONDER_PH4_Y_GET_ENC;
@@ -1925,8 +1929,8 @@ static void sm_run(void){
                 break;
             }
 
-            // if entry is public address, it is for a different device
-            if (addr_type == BD_ADDR_TYPE_LE_PUBLIC){
+            // if connection type is public, it must be a different one
+            if (sm_address_resolution_addr_type == BD_ADDR_TYPE_LE_PUBLIC){
                 sm_address_resolution_test++;
                 continue;
             }
@@ -2029,7 +2033,7 @@ static void sm_run(void){
                 case SM_RESPONDER_SEND_SECURITY_REQUEST:
                     // send packet if possible,
                     if (l2cap_can_send_fixed_channel_packet_now(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL)){
-                        const uint8_t buffer[2] = { SM_CODE_SECURITY_REQUEST, SM_AUTHREQ_BONDING};
+                        const uint8_t buffer[2] = { SM_CODE_SECURITY_REQUEST, sm_auth_req};
                         sm_connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_REQUEST;
                         l2cap_send_connectionless(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                     } else {
@@ -3140,6 +3144,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     }
 
                     if (!sm_conn->sm_connection_encrypted) break;
+                    sm_conn->sm_connection_sc = setup->sm_use_secure_connections;
 
                     // continue pairing
                     switch (sm_conn->sm_engine_state){
@@ -3213,8 +3218,14 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     }
 
                     // pairing failed, if it was ongoing
-                    if (sm_conn->sm_engine_state != SM_INITIATOR_CONNECTED && sm_conn->sm_engine_state != SM_GENERAL_IDLE){
-                        sm_notify_client_status_reason(sm_conn, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION, 0);
+                    switch (sm_conn->sm_engine_state){
+                        case SM_GENERAL_IDLE:
+                        case SM_INITIATOR_CONNECTED:
+                        case SM_RESPONDER_IDLE:
+                            break;
+                        default:
+                            sm_notify_client_status_reason(sm_conn, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION, 0);
+                            break;
                     }
 
                     sm_conn->sm_engine_state = SM_GENERAL_IDLE;
@@ -3960,7 +3971,7 @@ void sm_request_pairing(hci_con_handle_t con_handle){
             switch (sm_conn->sm_irk_lookup_state){
                 case IRK_LOOKUP_SUCCEEDED:
 #ifndef ENABLE_LE_CENTRAL_AUTO_ENCRYPTION
-                    le_device_db_encryption_get(sm_conn->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL);
+                    le_device_db_encryption_get(sm_conn->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL, NULL);
                     int have_ltk = !sm_is_null_key(ltk);
                     log_info("have ltk %u", have_ltk);
                     // trigger 'pairing complete' event on encryption change

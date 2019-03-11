@@ -184,6 +184,7 @@ AVDTP += \
 	a2dp_source.c 		\
 	a2dp_sink.c  		\
 	btstack_ring_buffer.c \
+    btstack_resample.c  \
 	avrcp.c \
 	avrcp_target.c \
 	avrcp_controller.c \

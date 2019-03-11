@@ -63,7 +63,7 @@ static int bytes_per_sample;
 
 // client
 static void (*playback_callback)(int16_t * buffer, uint16_t num_samples);
-static void (*recording_callback)(const int16_t * buffer, uint16_t num_samples);
+// static void (*recording_callback)(const int16_t * buffer, uint16_t num_samples);
 
 // timer to fill output ring buffer
 static btstack_timer_source_t  driver_timer;
@@ -72,6 +72,8 @@ static btstack_timer_source_t  driver_timer;
 static QueueHandle_t i2s_event_queue;
 
 static int i2s_num = I2S_NUM_0;
+
+static int sink_streaming;
 
 static void fill_buffer(void){
     size_t bytes_written;
@@ -94,23 +96,17 @@ static void driver_timer_handler(btstack_timer_source_t * ts){
         }
     }
 
-    // recording buffer ready to process
-    if (recording_callback){
-    }    
-
     // re-set timer
     btstack_run_loop_set_timer(ts, DRIVER_POLL_INTERVAL_MS);
     btstack_run_loop_add_timer(ts);
 }
 
-static int btstack_audio_esp32_init(
+static int btstack_audio_esp32_sink_init(
     uint8_t channels,
     uint32_t samplerate, 
-    void (*playback)(int16_t * buffer, uint16_t num_samples),
-    void (*recording)(const int16_t * buffer, uint16_t num_samples)
-){
+    void (*playback)(int16_t * buffer, uint16_t num_samples)){
+
     playback_callback  = playback;
-    recording_callback = recording;
     num_channels       = channels;
     bytes_per_sample   = channels * 2;  // 16-bit
 
@@ -140,7 +136,7 @@ static int btstack_audio_esp32_init(
     return 0;
 }
 
-static void btstack_audio_esp32_start_stream(void){
+static void btstack_audio_esp32_sink_start_stream(void){
 
     if (playback_callback){
         // pre-fill HAL buffers
@@ -160,25 +156,68 @@ static void btstack_audio_esp32_start_stream(void){
     btstack_run_loop_set_timer_handler(&driver_timer, &driver_timer_handler);
     btstack_run_loop_set_timer(&driver_timer, DRIVER_POLL_INTERVAL_MS);
     btstack_run_loop_add_timer(&driver_timer);
+
+    // state
+    sink_streaming = 1;
 }
 
-static void btstack_audio_esp32_close(void){
+static void btstack_audio_esp32_sink_stop_stream(void){
+
+    if (!sink_streaming) return;
+
     // stop timer
     btstack_run_loop_remove_timer(&driver_timer);
 
     // stop i2s
      i2s_stop(i2s_num);
 
-     // uninstall driver
-     i2s_driver_uninstall(i2s_num);
+    // state
+    sink_streaming = 0;
 }
 
-static const btstack_audio_t btstack_audio_esp32 = {
-    /* int (*init)(..);*/                                       &btstack_audio_esp32_init,
-    /* void (*start_stream(void));*/                            &btstack_audio_esp32_start_stream,
-    /* void (*close)(void); */                                  &btstack_audio_esp32_close
+static void btstack_audio_esp32_sink_close(void){
+
+    if (sink_streaming) {
+        btstack_audio_esp32_sink_stop_stream();
+    }
+
+    // uninstall driver
+    i2s_driver_uninstall(i2s_num);
+}
+
+static const btstack_audio_sink_t btstack_audio_sink_esp32 = {
+    /* int (*init)(..);*/                                       &btstack_audio_esp32_sink_init,
+    /* void (*start_stream(void));*/                            &btstack_audio_esp32_sink_start_stream,
+    /* void (*stop_stream)(void)  */                            &btstack_audio_esp32_sink_stop_stream,
+    /* void (*close)(void); */                                  &btstack_audio_esp32_sink_close
 };
 
-const btstack_audio_t * btstack_audio_esp32_get_instance(void){
-    return &btstack_audio_esp32;
+#if 0
+static int btstack_audio_esp32_source_init(
+    uint8_t channels,
+    uint32_t samplerate, 
+    void (*recording)(const int16_t * buffer, uint16_t num_samples)
+){
+    playback_callback  = playback;
+    recording_callback = recording;
+    num_channels       = channels;
+    bytes_per_sample   = channels * 2;  // 16-bit
+    ...
 }
+static const btstack_audio_source_t btstack_audio_source_esp32 = {
+    /* int (*init)(..);*/                                       &btstack_audio_esp32_source_init,
+    /* void (*start_stream(void));*/                            &btstack_audio_esp32_source_start_stream,
+    /* void (*stop_stream)(void)  */                            &btstack_audio_esp32_source_stop_stream,
+    /* void (*close)(void); */                                  &btstack_audio_esp32_source_close
+};
+#endif
+
+const btstack_audio_sink_t * btstack_audio_esp32_sink_get_instance(void){
+    return &btstack_audio_sink_esp32;
+}
+
+#if 0
+const btstack_audio_source_t * btstack_audio_esp32_source_get_instance(void){
+    return &btstack_audio_esp32_source;
+}
+#endif
