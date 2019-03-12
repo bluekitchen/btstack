@@ -527,9 +527,9 @@ static int hci_number_free_sco_slots(void){
             if (connection->address_type != BD_ADDR_TYPE_SCO) continue;
             num_sco_bytes_sent += connection->num_sco_bytes_sent;
         }
-        // deduce used slots from num sco bytes (plus 2 extra to be on the safe side)
+        // deduce used slots from num sco bytes
         unsigned int sco_payload_len = hci_get_sco_packet_length() - 3;
-        num_sco_packets_sent = (num_sco_bytes_sent / sco_payload_len) + 2;
+        num_sco_packets_sent = (num_sco_bytes_sent / sco_payload_len);
         log_info("hci_number_free_sco_slots: bytes sent %u -> packets sent %u", num_sco_bytes_sent, num_sco_packets_sent);
     }
 
@@ -2141,6 +2141,14 @@ static void event_handler(uint8_t *packet, int size){
             // update SCO
             if (conn->address_type == BD_ADDR_TYPE_SCO && hci_stack->hci_transport && hci_stack->hci_transport->set_sco_config){
                 hci_stack->hci_transport->set_sco_config(hci_stack->sco_voice_setting_active, hci_number_sco_connections());
+            }
+            // wait with SCO send until first packet was received
+            if ((hci_stack->sco_voice_setting_active & 0x03) == 0x03){
+                // mSBC
+                conn->num_sco_bytes_sent = 60;
+            } else {
+                // CVSD
+                conn->num_sco_bytes_sent = 120;
             }
 #endif
             break;
