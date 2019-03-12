@@ -686,12 +686,17 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         }
                         return;
                     }
+
+                    // store con_handle
+                    if (device->con_handle == HCI_CON_HANDLE_INVALID){
+                        device->con_handle  = l2cap_event_channel_opened_get_handle(packet);
+                    }
+
+                    // store l2cap cid
                     psm = l2cap_event_channel_opened_get_psm(packet);
-                    connected_before = device->connected;
                     switch (psm){
                         case PSM_HID_CONTROL:
                             device->control_cid = l2cap_event_channel_opened_get_local_cid(packet);
-                            device->con_handle  = l2cap_event_incoming_connection_get_handle(packet);
                             break;
                         case PSM_HID_INTERRUPT:
                             device->interrupt_cid = l2cap_event_channel_opened_get_local_cid(packet);
@@ -699,13 +704,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         default:
                             break;
                     }
-                    
+
                     // connect HID Interrupt for outgoing
                     if (device->incoming == 0 && psm == PSM_HID_CONTROL){
                         // printf("Create outgoing HID Interrupt\n");
                         status = l2cap_create_channel(packet_handler, device->bd_addr, PSM_HID_INTERRUPT, 48, &device->interrupt_cid);
                         break;
                     }
+
+                    // emit connected if both channels are open
+                    connected_before = device->connected;
                     if (!connected_before && device->control_cid && device->interrupt_cid){
                         device->connected = 1;
                         hid_device_emit_connected_event(device, 0);
