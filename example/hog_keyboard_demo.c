@@ -172,6 +172,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 const uint8_t adv_data[] = {
     // Flags general discoverable, BR/EDR not supported
     0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06,
+    // Set keyboard icon
+    0x03, 0x19, 0xC1, 0x03,
     // Name
     0x0d, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'H', 'I', 'D', ' ', 'K', 'e', 'y', 'b', 'o', 'a', 'r', 'd',
     // 16-bit Service UUIDs
