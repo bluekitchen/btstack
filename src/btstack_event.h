@@ -158,6 +158,14 @@ static inline uint8_t hci_event_le_meta_get_subevent_code(const uint8_t * event)
     return event[2];
 }
 /***
+ * @brief Get subevent code for map event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_map_meta_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/***
  * @brief Get subevent code for pbap event
  * @param event packet
  * @return subevent_code
@@ -6974,6 +6982,81 @@ static inline uint16_t gattservice_subevent_cycling_power_broadcast_start_get_co
  */
 static inline uint16_t gattservice_subevent_cycling_power_broadcast_stop_get_con_handle(const uint8_t * event){
     return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field map_cid from event MAP_SUBEVENT_CONNECTION_OPENED
+ * @param event packet
+ * @return map_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t map_subevent_connection_opened_get_map_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event MAP_SUBEVENT_CONNECTION_OPENED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t map_subevent_connection_opened_get_status(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field bd_addr from event MAP_SUBEVENT_CONNECTION_OPENED
+ * @param event packet
+ * @param Pointer to storage for bd_addr
+ * @note: btstack_type B
+ */
+static inline void map_subevent_connection_opened_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
+    reverse_bd_addr(&event[6], bd_addr);
+}
+/**
+ * @brief Get field con_handle from event MAP_SUBEVENT_CONNECTION_OPENED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t map_subevent_connection_opened_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 12);
+}
+/**
+ * @brief Get field incoming from event MAP_SUBEVENT_CONNECTION_OPENED
+ * @param event packet
+ * @return incoming
+ * @note: btstack_type 1
+ */
+static inline uint8_t map_subevent_connection_opened_get_incoming(const uint8_t * event){
+    return event[14];
+}
+
+/**
+ * @brief Get field goep_cid from event MAP_SUBEVENT_CONNECTION_CLOSED
+ * @param event packet
+ * @return goep_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t map_subevent_connection_closed_get_goep_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field goep_cid from event MAP_SUBEVENT_OPERATION_COMPLETED
+ * @param event packet
+ * @return goep_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t map_subevent_operation_completed_get_goep_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field status from event MAP_SUBEVENT_OPERATION_COMPLETED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t map_subevent_operation_completed_get_status(const uint8_t * event){
+    return event[5];
 }
 
 
