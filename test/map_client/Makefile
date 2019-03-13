@@ -29,7 +29,7 @@ LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 
 all: map_client_test
 
-map_client_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} md5.o obex_iterator.o goep_client.o yxml.o map_client.o map_client_test.c 
+map_client_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SDP_SERVER} md5.o obex_iterator.o goep_client.o yxml.o map_client.o map_server.o map_client_test.c 
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 

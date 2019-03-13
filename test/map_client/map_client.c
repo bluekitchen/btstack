@@ -54,6 +54,8 @@
 #include "bluetooth_sdp.h"
 #include "classic/sdp_client_rfcomm.h"
 #include "btstack_event.h"
+#include "classic/sdp_client.h"
+#include "classic/sdp_util.h"
 
 #include "classic/obex.h"
 #include "classic/obex_iterator.h"
@@ -106,6 +108,7 @@ typedef struct map_client {
     map_message_handle_t message_handle; 
     uint8_t get_message_attachment;
 } map_client_t;
+
 
 static map_client_t _map_client;
 static map_client_t * map_client = &_map_client;

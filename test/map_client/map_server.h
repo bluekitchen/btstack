@@ -35,70 +35,29 @@
  *
  */
 
-#ifndef __MAP_CLIENT_H
-#define __MAP_CLIENT_H
+#ifndef __MAP_SERVER_H
+#define __MAP_SERVER_H
 
 #if defined __cplusplus
 extern "C" {
 #endif
  
 #include "btstack_config.h"
-#include "map.h"
 #include <stdint.h>
+#include "map.h"
 
 /* API_START */
 
 /**
  *
  */
-void map_client_init(void);
+void map_access_service_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t service_uuid, uint8_t instance_id,
+    int rfcomm_channel_nr, uint16_t goep_l2cap_psm, map_message_type_t supported_message_types, map_feature_t supported_features, const char * name);
 
 /**
- * @brief Create MAP Client connection.
- * @param handler 
- * @param addr
- * @param out_cid to use for further commands
- * @result status
-*/
-uint8_t map_client_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid);
-
-/** 
- * @brief Disconnects MAP connection with given identifier.
- * @param map_cid
- * @return status
+ *
  */
-uint8_t map_client_disconnect(uint16_t map_cid);
-
-/** 
- * @brief Get list of folders.
- * @param map_cid
- * @return status
- */
-uint8_t map_client_get_folder_listing(uint16_t map_cid);
-
-/** 
- * @brief Set current folder
- * @param map_cid
- * @return status
- */
-uint8_t map_client_set_path(uint16_t map_cid, char * path);
-
-/** 
- * @brief Get list of messages for particular folder.
- * @param map_cid
- * @param folder_name
- * @return status
- */
-uint8_t map_client_get_message_listing_for_folder(uint16_t map_cid, const char * folder_name);
-
-/** 
- * @brief Get message with particular handle.
- * @param map_cid
- * @param map_message_handle
- * @param with_attachment
- * @return status
- */
-uint8_t map_client_get_message_with_handle(uint16_t map_cid, const map_message_handle_t map_message_handle, uint8_t with_attachment);
+void map_server_init(void);
 
 /* API_END */
 

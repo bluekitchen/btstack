@@ -60,6 +60,10 @@
 #include "btstack_event.h"
 #include "classic/goep_client.h"
 #include "map_client.h"
+#include "map_server.h"
+#include "classic/sdp_client.h"
+#include "classic/sdp_util.h"
+#include "classic/sdp_server.h"
 
 #ifdef HAVE_BTSTACK_STDIN
 #include "btstack_stdin.h"
@@ -186,6 +190,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 }
 #endif
 
+static uint8_t  map_message_service_service_buffer[150];
+const char * name = "MAP Service";
+
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
@@ -201,8 +208,19 @@ int btstack_main(int argc, const char * argv[]){
     // init GOEP Client
     goep_client_init();
 
-    // init PBAP Client
+    // init MAP Client
     map_client_init();
+    // init MAP Server
+    map_server_init();
+
+    sdp_init();
+    // setup AVDTP sink
+    map_message_type_t supported_message_types = MAP_MESSAGE_TYPE_SMS_GSM;
+    map_feature_t supported_features = 0x1F;
+
+    memset(map_message_service_service_buffer, 0, sizeof(map_message_service_service_buffer));
+    map_access_service_create_sdp_record(map_message_service_service_buffer, 0x10001, 1, 1, 1, 1, supported_message_types, supported_features, name);
+    sdp_register_service(map_message_service_service_buffer);
 
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;

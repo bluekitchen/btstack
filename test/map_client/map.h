@@ -35,70 +35,57 @@
  *
  */
 
-#ifndef __MAP_CLIENT_H
-#define __MAP_CLIENT_H
+#ifndef __MAP_H
+#define __MAP_H
 
 #if defined __cplusplus
 extern "C" {
 #endif
  
 #include "btstack_config.h"
-#include "map.h"
 #include <stdint.h>
 
 /* API_START */
 
+#define MAP_MESSAGE_HANDLE_SIZE 8
 /**
- *
+ * @brief MAP Message handle
  */
-void map_client_init(void);
+typedef uint8_t map_message_handle_t[MAP_MESSAGE_HANDLE_SIZE];
 
-/**
- * @brief Create MAP Client connection.
- * @param handler 
- * @param addr
- * @param out_cid to use for further commands
- * @result status
-*/
-uint8_t map_client_connect(btstack_packet_handler_t handler, bd_addr_t addr, uint16_t * out_cid);
+typedef enum {
+    MAP_MESSAGE_TYPE_EMAIL = 0,
+    MAP_MESSAGE_TYPE_SMS_GSM,
+    MAP_MESSAGE_TYPE_SMS_CDMA,
+    MAP_MESSAGE_TYPE_MMS,
+    MAP_MESSAGE_TYPE_IM
+} map_message_type_t;
 
-/** 
- * @brief Disconnects MAP connection with given identifier.
- * @param map_cid
- * @return status
- */
-uint8_t map_client_disconnect(uint16_t map_cid);
-
-/** 
- * @brief Get list of folders.
- * @param map_cid
- * @return status
- */
-uint8_t map_client_get_folder_listing(uint16_t map_cid);
-
-/** 
- * @brief Set current folder
- * @param map_cid
- * @return status
- */
-uint8_t map_client_set_path(uint16_t map_cid, char * path);
-
-/** 
- * @brief Get list of messages for particular folder.
- * @param map_cid
- * @param folder_name
- * @return status
- */
-uint8_t map_client_get_message_listing_for_folder(uint16_t map_cid, const char * folder_name);
-
-/** 
- * @brief Get message with particular handle.
- * @param map_cid
- * @param map_message_handle
- * @param with_attachment
- * @return status
- */
-uint8_t map_client_get_message_with_handle(uint16_t map_cid, const map_message_handle_t map_message_handle, uint8_t with_attachment);
+typedef enum {
+    MAP_FEATURE_NOTIFICATION_REGISTRATION = 0,
+    MAP_FEATURE_NOTIFICATION,
+    MAP_FEATURE_BROWSING,
+    MAP_FEATURE_UPLOADING,
+    MAP_FEATURE_DELETE,
+    MAP_FEATURE_INSTANCE_INFORMATION,
+    MAP_FEATURE_EXTENDED_EVENT_REPORT_1_1,
+    MAP_FEATURE_EVENT_REPORT_VERSION_1_2,
+    MAP_FEATURE_MESSAGE_FORMAT_VERSION_1_1,
+    MAP_FEATURE_MESSAGES_LISTING_FORMAT_VERSION_1_1,
+    MAP_FEATURE_PERSISTENT_MESSAGE_HANDLES,
+    MAP_FEATURE_DATABASE_IDENTIFIER,
+    MAP_FEATURE_FOLDER_VERSION_COUNTER,
+    MAP_FEATURE_CONVERSATION_VERSION_COUNTERS,
+    MAP_FEATURE_PARTICIPANT_PRESENCE_CHANGE_NOTIFICATION,
+    MAP_FEATURE_PARTICIPANT_CHAT_STATE_CHANGE_NOTIFICATION,
+    MAP_FEATURE_PBAP_CONTACT_CROSS_REFERENCE,
+    MAP_FEATURE_NOTIFICATION_FILTERING,
+    MAP_FEATURE_UTC_OFFSET_TIMESTAMP_FORMAT,
+    MAP_FEATURE_MAPSUPPORTEDFEATURES_IN_CONNECT_REQUEST,
+    MAP_FEATURE_CONVERSATION_LISTING,
+    MAP_FEATURE_OWNER_STATUS_BIT,
+    MAP_FEATURE_MESSAGE_FORWARDING
+} map_feature_t;
 
 /* API_END */
 
