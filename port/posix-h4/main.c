@@ -197,7 +197,12 @@ static void local_version_information_handler(uint8_t * packet){
         case BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION:   
             printf("Broadcom - using BCM driver.\n");
             hci_set_chipset(btstack_chipset_bcm_instance());
-
+            use_fast_uart();
+            is_bcm = 1;
+            break;
+        case BLUETOOTH_COMPANY_ID_CYPRESS_SEMICONDUCTOR:   
+            printf("Cypress - using BCM driver.\n");
+            hci_set_chipset(btstack_chipset_bcm_instance());
             use_fast_uart();
             is_bcm = 1;
             break;
