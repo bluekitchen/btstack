@@ -790,7 +790,7 @@ int hci_send_sco_packet_buffer(int size){
         if (hci_stack->synchronous_flow_control_enabled){
             connection->num_packets_sent++;
         } else {
-            connection->sco_tx_ready = 0;
+            connection->sco_tx_ready--;
         }
     }
 
@@ -2547,6 +2547,10 @@ static void sco_tx_timeout_handler(btstack_timer_source_t * ts){
 
     // trigger send
     conn->sco_tx_ready = 1;
+    // extra packet if CVSD but SCO buffer is too short
+    if (((hci_stack->sco_voice_setting_active & 0x03) != 0x03) && hci_stack->sco_data_packet_length < 123){
+        conn->sco_tx_ready++;
+    }
     hci_notify_if_sco_can_send_now();
 }
 
