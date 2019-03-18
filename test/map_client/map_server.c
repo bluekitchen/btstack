@@ -83,8 +83,9 @@ typedef struct map_server {
 static map_server_t _map_server;
 static map_server_t * map_server = &_map_server;
 
-void map_access_service_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t service_uuid, uint8_t instance_id,
+static void map_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t service_uuid, uint8_t instance_id,
     int rfcomm_channel_nr, uint16_t goep_l2cap_psm, map_message_type_t supported_message_types, map_feature_t supported_features, const char * name){
+    UNUSED(goep_l2cap_psm);
     uint8_t* attribute;
     de_create_sequence(service);
 
@@ -98,7 +99,6 @@ void map_access_service_create_sdp_record(uint8_t * service, uint32_t service_re
     {
         //  "UUID for Service"
         de_add_number(attribute, DE_UUID, DE_SIZE_16, service_uuid);
-        de_add_number(attribute, DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER);
     }
     de_pop_sequence(service, attribute);
 
@@ -173,15 +173,29 @@ void map_access_service_create_sdp_record(uint8_t * service, uint32_t service_re
     de_add_number(service, DE_UINT, DE_SIZE_32, supported_features);
 }
 
+void map_message_access_service_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t instance_id,
+    int rfcomm_channel_nr, uint16_t goep_l2cap_psm, map_message_type_t supported_message_types, map_feature_t supported_features, const char * name){
+    map_create_sdp_record(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER, instance_id, rfcomm_channel_nr,
+        goep_l2cap_psm, supported_message_types, supported_features, name);
+}
 
+void map_message_notification_service_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t instance_id,
+    int rfcomm_channel_nr, uint16_t goep_l2cap_psm, map_message_type_t supported_message_types, map_feature_t supported_features, const char * name){
+    map_create_sdp_record(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_MESSAGE_NOTIFICATION_SERVER, instance_id, rfcomm_channel_nr,
+        goep_l2cap_psm, supported_message_types, supported_features, name);
+}
+
+#if 0
 static void map_handle_can_send_now(void){
 }
 
 static void map_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel); 
     UNUSED(size);    
-    // printf("packet_type 0x%02x, event type 0x%02x, subevent 0x%02x\n", packet_type, hci_event_packet_get_type(packet), hci_event_goep_meta_get_subevent_code(packet));
+    printf("packet_type 0x%02x, event type 0x%02x, subevent 0x%02x\n", packet_type, hci_event_packet_get_type(packet), hci_event_goep_meta_get_subevent_code(packet));
 }
+
+#endif
 
 void map_server_init(void){
     memset(map_server, 0, sizeof(map_server_t));
