@@ -176,6 +176,8 @@ const uint8_t adv_data[] = {
     0x0d, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'H', 'I', 'D', ' ', 'K', 'e', 'y', 'b', 'o', 'a', 'r', 'd',
     // 16-bit Service UUIDs
     0x03, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, ORG_BLUETOOTH_SERVICE_HUMAN_INTERFACE_DEVICE & 0xff, ORG_BLUETOOTH_SERVICE_HUMAN_INTERFACE_DEVICE >> 8,
+    // Appearance HID - Keyboard (Category 15, Sub-Category 1)
+    0x03, BLUETOOTH_DATA_TYPE_APPEARANCE, 0xC1, 0x03,
 };
 const uint8_t adv_data_len = sizeof(adv_data);
 

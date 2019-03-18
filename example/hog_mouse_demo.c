@@ -111,6 +111,8 @@ const uint8_t adv_data[] = {
     0x0a, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'H', 'I', 'D', ' ', 'M', 'o', 'u', 's', 'e',
     // 16-bit Service UUIDs
     0x03, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, ORG_BLUETOOTH_SERVICE_HUMAN_INTERFACE_DEVICE & 0xff, ORG_BLUETOOTH_SERVICE_HUMAN_INTERFACE_DEVICE >> 8,
+    // Appearance HID - Mouse (Category 15, Sub-Category 2)
+    0x03, BLUETOOTH_DATA_TYPE_APPEARANCE, 0xC2, 0x03,
 };
 const uint8_t adv_data_len = sizeof(adv_data);
 
