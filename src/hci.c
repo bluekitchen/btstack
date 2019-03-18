@@ -196,7 +196,6 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
     btstack_run_loop_set_timer_handler(&conn->timeout, hci_connection_timeout_handler);
     btstack_run_loop_set_timer_context(&conn->timeout, conn);
     hci_connection_timestamp(conn);
-    conn->num_sco_bytes_sent = 0;
 #endif
     conn->acl_recombination_length = 0;
     conn->acl_recombination_pos = 0;
@@ -519,25 +518,16 @@ static int hci_number_free_sco_slots(void){
             if (connection->address_type != BD_ADDR_TYPE_SCO) continue;
             num_sco_packets_sent += connection->num_packets_sent;
         }
-    } else {
-        // implicit flow control
-        uint16_t num_sco_bytes_sent    = 0;
-        for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
-            hci_connection_t * connection = (hci_connection_t *) it;
-            if (connection->address_type != BD_ADDR_TYPE_SCO) continue;
-            num_sco_bytes_sent += connection->num_sco_bytes_sent;
+        if (num_sco_packets_sent > hci_stack->sco_packets_total_num){
+            log_info("hci_number_free_sco_slots:packets (%u) > total packets (%u)", num_sco_packets_sent, hci_stack->sco_packets_total_num);
+            return 0;
         }
-        // deduce used slots from num sco bytes
-        unsigned int sco_payload_len = hci_get_sco_packet_length() - 3;
-        num_sco_packets_sent = (num_sco_bytes_sent / sco_payload_len);
-        log_info("hci_number_free_sco_slots: bytes sent %u -> packets sent %u", num_sco_bytes_sent, num_sco_packets_sent);
-    }
-
-    if (num_sco_packets_sent > hci_stack->sco_packets_total_num){
-        log_info("hci_number_free_sco_slots:packets (%u) > total packets (%u)", num_sco_packets_sent, hci_stack->sco_packets_total_num);
+        return hci_stack->sco_packets_total_num - num_sco_packets_sent;
+    } else {
+        // implicit flow control -- TODO
         return 0;
     }
-    return hci_stack->sco_packets_total_num - num_sco_packets_sent;
+
 }
 #endif
 
@@ -793,9 +783,6 @@ int hci_send_sco_packet_buffer(int size){
         }
         if (hci_stack->synchronous_flow_control_enabled){
             connection->num_packets_sent++;
-        } else {
-            uint16_t sco_payload_len = size - 3;
-            connection->num_sco_bytes_sent += sco_payload_len;
         }
     }
 
@@ -2142,14 +2129,6 @@ static void event_handler(uint8_t *packet, int size){
             if (conn->address_type == BD_ADDR_TYPE_SCO && hci_stack->hci_transport && hci_stack->hci_transport->set_sco_config){
                 hci_stack->hci_transport->set_sco_config(hci_stack->sco_voice_setting_active, hci_number_sco_connections());
             }
-            // wait with SCO send until first packet was received
-            if ((hci_stack->sco_voice_setting_active & 0x03) == 0x03){
-                // mSBC
-                conn->num_sco_bytes_sent = 60;
-            } else {
-                // CVSD
-                conn->num_sco_bytes_sent = 120;
-            }
 #endif
             break;
 
@@ -2559,17 +2538,11 @@ static void sco_handler(uint8_t * packet, uint16_t size){
         }
     }
 
-    // treat received SCO packets as indicator of successfully sent packet, if flow control is not explicite
-    log_debug("sco flow %u, handle 0x%04x, packets sent %u, bytes send %u", hci_stack->synchronous_flow_control_enabled, (int) con_handle, conn->num_packets_sent, conn->num_sco_bytes_sent);
+    // log_debug("sco flow %u, handle 0x%04x, packets sent %u, bytes send %u", hci_stack->synchronous_flow_control_enabled, (int) con_handle, conn->num_packets_sent, conn->num_sco_bytes_sent);
     if (hci_stack->synchronous_flow_control_enabled == 0){
-        uint16_t sco_payload_len = size - 3;
-        if (conn->num_sco_bytes_sent >= sco_payload_len){
-            conn->num_sco_bytes_sent -= sco_payload_len;
-        } else {
-            conn->num_sco_bytes_sent = 0;
-        }
-        notify_sco = 1;
+        // TODO:
     }
+
     // deliver to app
     if (hci_stack->sco_packet_handler) {
         hci_stack->sco_packet_handler(HCI_SCO_DATA_PACKET, 0, packet, size);
