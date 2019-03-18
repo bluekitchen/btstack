@@ -496,9 +496,18 @@ typedef struct {
     uint16_t sniff_attempt;
     uint16_t sniff_timeout;
 
-    // nubmer SCO bytes sent to controller (only used without explicit SCO Flow Control)
-    uint16_t num_sco_bytes_sent;
+#ifdef ENABLE_SCO_OVER_HCI
+    // track SCO rx event
+    uint32_t sco_rx_ms;
+    uint8_t  sco_rx_count;
+    uint8_t  sco_rx_valid;
+
+    // generate sco can send now based on received packets, using timeout below
+    uint8_t  sco_tx_ready;
+    uint8_t  sco_tx_count;
 #endif
+
+#endif /* ENABLE_CLASSIC */
 
     // errands
     uint32_t authentication_flags;

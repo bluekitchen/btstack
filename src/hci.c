@@ -525,9 +525,15 @@ static int hci_number_free_sco_slots(void){
         return hci_stack->sco_packets_total_num - num_sco_packets_sent;
     } else {
         // implicit flow control -- TODO
-        return 0;
+        int num_ready = 0;
+        for (it = (btstack_linked_item_t *) hci_stack->connections; it ; it = it->next){
+            hci_connection_t * connection = (hci_connection_t *) it;
+            if (connection->address_type != BD_ADDR_TYPE_SCO) continue;
+            if (connection->sco_tx_ready == 0) continue;
+            num_ready++;
+        }
+        return num_ready;
     }
-
 }
 #endif
 
@@ -783,6 +789,8 @@ int hci_send_sco_packet_buffer(int size){
         }
         if (hci_stack->synchronous_flow_control_enabled){
             connection->num_packets_sent++;
+        } else {
+            connection->sco_tx_ready = 0;
         }
     }
 
@@ -2521,6 +2529,51 @@ static void event_handler(uint8_t *packet, int size){
 }
 
 #ifdef ENABLE_CLASSIC
+
+#define SCO_TX_AFTER_RX_MS 6
+
+static void sco_tx_timeout_handler(btstack_timer_source_t * ts);
+static void sco_schedule_tx(hci_connection_t * conn);
+
+static void sco_tx_timeout_handler(btstack_timer_source_t * ts){
+    log_info("SCO TX Timeout");
+    hci_con_handle_t con_handle = (hci_con_handle_t) btstack_run_loop_get_timer_context(ts);
+    hci_connection_t * conn = hci_connection_for_handle(con_handle);
+    if (!conn) return;
+
+    // trigger send
+    conn->sco_tx_count++;
+    conn->sco_tx_ready = 1;
+    hci_notify_if_sco_can_send_now();
+
+    // schedule next
+    sco_schedule_tx(conn);
+}
+
+static void sco_schedule_tx(hci_connection_t * conn){
+    // find next time to send
+    uint32_t now = btstack_run_loop_get_time_ms();
+    uint32_t tx_ms;
+    int time_delta_ms;
+    while (1){
+        // packet delay: count(rx) - count(tx)
+        int packet_offset = (int8_t) (conn->sco_tx_count - conn->sco_rx_count);
+        tx_ms = conn->sco_rx_ms + ((packet_offset * 15) >> 1) + SCO_TX_AFTER_RX_MS;
+        time_delta_ms = (int) (tx_ms - now);
+        if (time_delta_ms > 3){    // arbitrary threshold
+            break;
+        }
+        // skip packet
+        conn->sco_tx_count++;
+    }
+    // 
+    log_info("SCO TX at %u in %u", (int) tx_ms, time_delta_ms);
+    btstack_run_loop_set_timer(&conn->timeout, time_delta_ms);
+    btstack_run_loop_set_timer_context(&conn->timeout, (void *) (uintptr_t) conn->con_handle);
+    btstack_run_loop_set_timer_handler(&conn->timeout, &sco_tx_timeout_handler);
+    btstack_run_loop_add_timer(&conn->timeout);
+}
+
 static void sco_handler(uint8_t * packet, uint16_t size){
     // lookup connection struct
     hci_con_handle_t con_handle = READ_SCO_CONNECTION_HANDLE(packet);
@@ -2540,7 +2593,27 @@ static void sco_handler(uint8_t * packet, uint16_t size){
 
     // log_debug("sco flow %u, handle 0x%04x, packets sent %u, bytes send %u", hci_stack->synchronous_flow_control_enabled, (int) con_handle, conn->num_packets_sent, conn->num_sco_bytes_sent);
     if (hci_stack->synchronous_flow_control_enabled == 0){
-        // TODO:
+        uint32_t now = btstack_run_loop_get_time_ms();
+        if (conn->sco_rx_valid){
+            conn->sco_rx_count++;
+            // expected arrival timme
+            conn->sco_rx_ms += 8;
+            int delta = (int) (now - conn->sco_rx_ms);
+            if (delta < 0){
+                log_info("SCO NOW < EXP, use new value");
+                conn->sco_rx_ms = now;
+            } else if (delta == 0){
+                log_info("SCO NOW = EXP");
+            } else {
+                log_info("SCO NOW > EXP");
+            }
+        } else {
+            // use first timestamp as is
+            conn->sco_rx_ms = now;
+            conn->sco_rx_valid = 1;
+            log_info("SCO first rx");
+            sco_schedule_tx(conn);
+        }
     }
 
     // deliver to app
@@ -4903,8 +4976,8 @@ int hci_get_sco_packet_length(void){
 #ifdef ENABLE_CLASSIC
 #ifdef ENABLE_SCO_OVER_HCI
 
-    // CVSD requires twice as much bytes
-    int multiplier = hci_stack->sco_voice_setting_active & 0x0020 ? 2 : 1;
+    // Transparent = mSBC => 1, CVSD with 16-bit samples requires twice as much bytes
+    int multiplier = ((hci_stack->sco_voice_setting_active & 0x03) == 0x03) ? 1 : 2;
 
     if (hci_have_usb_transport()){
         // see Core Spec for H2 USB Transfer. 
