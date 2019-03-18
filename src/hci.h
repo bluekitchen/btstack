@@ -496,7 +496,6 @@ typedef struct {
     uint16_t sniff_attempt;
     uint16_t sniff_timeout;
 
-#ifdef ENABLE_SCO_OVER_HCI
     // track SCO rx event
     uint32_t sco_rx_ms;
     uint8_t  sco_rx_count;
@@ -505,8 +504,7 @@ typedef struct {
     // generate sco can send now based on received packets, using timeout below
     uint8_t  sco_tx_ready;
     uint8_t  sco_tx_count;
-#endif
-
+    
 #endif /* ENABLE_CLASSIC */
 
     // errands
