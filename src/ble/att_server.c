@@ -135,7 +135,7 @@ static void att_handle_value_indication_notify_client(uint8_t status, uint16_t c
     little_endian_store_16(event, pos, client_handle);
     pos += 2;
     little_endian_store_16(event, pos, attribute_handle);
-    (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
+    (*packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 
 static void att_emit_event_to_all(const uint8_t * event, uint16_t size){
