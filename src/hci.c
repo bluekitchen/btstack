@@ -2597,15 +2597,13 @@ static void sco_handler(uint8_t * packet, uint16_t size){
         if (conn->sco_rx_valid){
             conn->sco_rx_count++;
             // expected arrival timme
-            conn->sco_rx_ms += 8;
-            int delta = (int) (now - conn->sco_rx_ms);
-            if (delta < 0){
-                log_info("SCO NOW < EXP, use new value");
-                conn->sco_rx_ms = now;
-            } else if (delta == 0){
-                log_info("SCO NOW = EXP");
+            conn->sco_rx_ms += 7;
+            int delta = (int32_t) (now - conn->sco_rx_ms);
+            if (delta <= 0){
+                log_info("SCO NOW - EXP = %d, use +7 ms", delta);
             } else {
-                log_info("SCO NOW > EXP");
+                conn->sco_rx_ms++;
+                log_info("SCO NOW > EXP = %d, use +8 ms", delta);
             }
         } else {
             // use first timestamp as is
