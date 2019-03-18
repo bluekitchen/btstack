@@ -114,6 +114,9 @@ typedef uint8_t sm_key_t[16];
 // AVRCP browsing data
 #define AVRCP_BROWSING_DATA_PACKET     0x0f
 
+// MAP data
+#define MAP_DATA_PACKET        0x10
+
  
 // debug log messages
 #define LOG_MESSAGE_PACKET      0xfc

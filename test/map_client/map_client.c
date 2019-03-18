@@ -87,6 +87,8 @@ typedef enum {
     MAP_W4_MESSAGES_IN_FOLDER,
     MAP_W2_SEND_GET_MESSAGE_WITH_HANDLE,
     MAP_W4_MESSAGE,
+    MAP_W2_SET_NOTIFICATION,
+    MAP_W4_SET_NOTIFICATION,
     
     MAP_W2_SEND_DISCONNECT_REQUEST,
     MAP_W4_DISCONNECT_RESPONSE,
@@ -104,11 +106,11 @@ typedef struct map_client {
     const char * folder_name;
     const char * current_folder;
     uint16_t set_path_offset;
+    uint8_t  notifications_enabled;
     
     map_message_handle_t message_handle; 
     uint8_t get_message_attachment;
 } map_client_t;
-
 
 static map_client_t _map_client;
 static map_client_t * map_client = &_map_client;
@@ -270,6 +272,20 @@ static void map_handle_can_send_now(void){
             application_parameters[pos++] = 1;    // UTF-8
             goep_client_add_header_application_parameters(map_client->goep_cid, 6, &application_parameters[0]);
 
+            map_client->state = MAP_W4_MESSAGE;
+            goep_client_execute(map_client->goep_cid);
+            break;
+
+        case MAP_W2_SET_NOTIFICATION:
+            goep_client_create_put_request(map_client->goep_cid);
+            goep_client_add_header_type(map_client->goep_cid, "x-bt/MAP-NotificationRegistration");
+
+            application_parameters[pos++] = 0x0E; // NotificationStatus
+            application_parameters[pos++] = 1;
+            application_parameters[pos++] = map_client->notifications_enabled;
+
+            goep_client_add_header_application_parameters(map_client->goep_cid, pos, &application_parameters[0]);
+            goep_client_add_body_static(map_client->goep_cid, 1, (uint8_t *) "0");
             map_client->state = MAP_W4_MESSAGE;
             goep_client_execute(map_client->goep_cid);
             break;
@@ -457,6 +473,24 @@ uint8_t map_client_set_path(uint16_t map_cid, char * path){
     map_client->state = MAP_W2_SET_PATH_ROOT;
     map_client->current_folder = path;
     map_client->set_path_offset = 0;
+    goep_client_request_can_send_now(map_client->goep_cid);
+    return 0;    
+}
+
+uint8_t map_client_enable_notifications(uint16_t map_cid){
+    UNUSED(map_cid);
+    if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
+    map_client->state = MAP_W2_SET_NOTIFICATION;
+    map_client->notifications_enabled = 1;
+    goep_client_request_can_send_now(map_client->goep_cid);
+    return 0;    
+}
+
+uint8_t map_client_disable_notifications(uint16_t map_cid){
+    UNUSED(map_cid);
+    if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
+    map_client->state = MAP_W2_SET_NOTIFICATION;
+    map_client->notifications_enabled = 0;
     goep_client_request_can_send_now(map_client->goep_cid);
     return 0;    
 }

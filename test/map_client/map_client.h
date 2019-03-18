@@ -100,6 +100,20 @@ uint8_t map_client_get_message_listing_for_folder(uint16_t map_cid, const char *
  */
 uint8_t map_client_get_message_with_handle(uint16_t map_cid, const map_message_handle_t map_message_handle, uint8_t with_attachment);
 
+/** 
+ * @brief Enable notifications.
+ * @param map_cid
+ * @return status
+ */
+uint8_t map_client_enable_notifications(uint16_t map_cid);
+
+/** 
+ * @brief Disable notifications.
+ * @param map_cid
+ * @return status
+ */
+uint8_t map_client_disable_notifications(uint16_t map_cid);
+
 /* API_END */
 
 #if defined __cplusplus

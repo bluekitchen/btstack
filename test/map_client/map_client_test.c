@@ -58,6 +58,7 @@
 #include "l2cap.h"
 #include "classic/rfcomm.h"
 #include "btstack_event.h"
+#include "bluetooth_sdp.h"
 #include "classic/goep_client.h"
 #include "map_client.h"
 #include "map_server.h"
@@ -72,6 +73,7 @@
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static bd_addr_t    remote_addr;
+static uint16_t rfcomm_channel_id;
 // MBP2016 "F4-0F-24-3B-1B-E1"
 // Nexus 7 "30-85-A9-54-2E-78"
 // iPhone SE "BC:EC:5D:E6:15:03"
@@ -100,7 +102,9 @@ static void show_usage(void){
     printf("p - set path \'%s\'\n", path);
     printf("f - get folder listing\n");
     printf("F - get message listing for folder \'%s\'\n", folder_name);
-    printf("l - get message for last found handle'\n");
+    printf("l - get message for last found handle\n");
+    printf("n - enable notifications\n");
+    
     printf("\n");
 }
 
@@ -131,7 +135,10 @@ static void stdin_process(char c){
             printf("[+] Get message for hardcoded handle\n");
             map_client_get_message_with_handle(map_cid, message_handle, 1);
             break;
-        
+        case 'n':
+            printf("[+] Enable notifications\n");
+            map_client_enable_notifications(map_cid);
+            break;
         default:
             show_usage();
             break;
@@ -144,7 +151,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(size);
     int i;
     uint8_t status;
-    // char buffer[32];
+    uint16_t  mtu;
+    
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
@@ -154,6 +162,29 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         show_usage();
                     }
                     break;
+
+                 case RFCOMM_EVENT_INCOMING_CONNECTION:
+                    rfcomm_channel_id = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
+                    printf("RFCOMM connection opened\n");
+                    rfcomm_accept_connection(rfcomm_channel_id);
+                    break;
+               
+                case RFCOMM_EVENT_CHANNEL_OPENED:
+                    // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
+                    if (rfcomm_event_channel_opened_get_status(packet)) {
+                        printf("RFCOMM channel open failed, status %u\n", rfcomm_event_channel_opened_get_status(packet));
+                    } else {
+                        rfcomm_channel_id = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
+                        mtu = rfcomm_event_channel_opened_get_max_frame_size(packet);
+                        printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_channel_id, mtu);
+                    }
+                    break;
+    
+                case RFCOMM_EVENT_CHANNEL_CLOSED:
+                    printf("RFCOMM channel closed\n");
+                    rfcomm_channel_id = 0;
+                    break;
+
                 case HCI_EVENT_MAP_META:
                     switch (hci_event_map_meta_get_subevent_code(packet)){
                         case MAP_SUBEVENT_CONNECTION_OPENED:
@@ -179,10 +210,20 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     break;
             }
             break;
+   
+        case RFCOMM_DATA_PACKET:
+            printf("RFCOMM data packet: '");
+            for (i=0;i<size;i++){
+                printf("%02x ", packet[i]);
+            }
+            printf("'\n");
+            break;
+
         case MAP_DATA_PACKET:
             for (i=0;i<size;i++){
                 printf("%c", packet[i]);
             }
+            printf("\n");
             break;
         default:
             break;
@@ -190,7 +231,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 }
 #endif
 
-static uint8_t  map_message_service_service_buffer[150];
+static uint8_t  map_message_notification_service_buffer[150];
 const char * name = "MAP Service";
 
 int btstack_main(int argc, const char * argv[]);
@@ -218,10 +259,14 @@ int btstack_main(int argc, const char * argv[]){
     map_message_type_t supported_message_types = MAP_MESSAGE_TYPE_SMS_GSM;
     map_feature_t supported_features = 0x1F;
 
-    memset(map_message_service_service_buffer, 0, sizeof(map_message_service_service_buffer));
-    map_access_service_create_sdp_record(map_message_service_service_buffer, 0x10001, 1, 1, 1, 1, supported_message_types, supported_features, name);
-    sdp_register_service(map_message_service_service_buffer);
+    int rfcomm_channel_nr = 1;
 
+    memset(map_message_notification_service_buffer, 0, sizeof(map_message_notification_service_buffer));
+    map_message_notification_service_create_sdp_record(map_message_notification_service_buffer, 0x10001,
+            1, rfcomm_channel_nr, 1, supported_message_types, supported_features, name);
+    sdp_register_service(map_message_notification_service_buffer);
+
+    rfcomm_register_service(&packet_handler, rfcomm_channel_nr, 0xFFFF);
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
