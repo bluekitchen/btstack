@@ -153,6 +153,7 @@ static void hci_emit_acl_packet(uint8_t * packet, uint16_t size);
 static void hci_run(void);
 static int  hci_is_le_connection(hci_connection_t * connection);
 static int  hci_number_free_acl_slots_for_connection_type( bd_addr_type_t address_type);
+static int hci_have_usb_transport(void);
 
 #ifdef ENABLE_BLE
 #ifdef ENABLE_LE_CENTRAL
@@ -590,7 +591,11 @@ int hci_can_send_acl_classic_packet_now(void){
 
 int hci_can_send_prepared_sco_packet_now(void){
     if (!hci_transport_can_send_prepared_packet_now(HCI_SCO_DATA_PACKET)) return 0;
-    return hci_number_free_sco_slots() > 0;    
+    if (hci_have_usb_transport()){
+        return hci_stack->sco_can_send_now;
+    } else {
+        return hci_number_free_sco_slots() > 0;    
+    }
 }
 
 int hci_can_send_sco_packet_now(void){
@@ -787,10 +792,16 @@ int hci_send_sco_packet_buffer(int size){
             hci_emit_transport_packet_sent();
             return 0;
         }
-        if (hci_stack->synchronous_flow_control_enabled){
-            connection->num_packets_sent++;
+
+        if (hci_have_usb_transport()){
+            // token used
+            hci_stack->sco_can_send_now = 0;
         } else {
-            connection->sco_tx_ready--;
+            if (hci_stack->synchronous_flow_control_enabled){
+                connection->num_packets_sent++;
+            } else {
+                connection->sco_tx_ready--;
+            }
         }
     }
 
@@ -2137,6 +2148,10 @@ static void event_handler(uint8_t *packet, int size){
             if (conn->address_type == BD_ADDR_TYPE_SCO && hci_stack->hci_transport && hci_stack->hci_transport->set_sco_config){
                 hci_stack->hci_transport->set_sco_config(hci_stack->sco_voice_setting_active, hci_number_sco_connections());
             }
+            // trigger can send now
+            if (hci_have_usb_transport()){
+                hci_stack->sco_can_send_now = 1;
+            }
 #endif
             break;
 
@@ -2339,6 +2354,7 @@ static void event_handler(uint8_t *packet, int size){
 #ifdef ENABLE_CLASSIC
         case HCI_EVENT_SCO_CAN_SEND_NOW:
             // For SCO, we do the can_send_now_check here
+            hci_stack->sco_can_send_now = 1;
             hci_notify_if_sco_can_send_now();
             return;
 
@@ -2595,29 +2611,32 @@ static void sco_handler(uint8_t * packet, uint16_t size){
         }
     }
 
-    // log_debug("sco flow %u, handle 0x%04x, packets sent %u, bytes send %u", hci_stack->synchronous_flow_control_enabled, (int) con_handle, conn->num_packets_sent, conn->num_sco_bytes_sent);
-    if (hci_stack->synchronous_flow_control_enabled == 0){
-        uint32_t now = btstack_run_loop_get_time_ms();
-        if (conn->sco_rx_valid){
-            conn->sco_rx_count++;
-            // expected arrival timme
-            conn->sco_rx_ms += 7;
-            int delta = (int32_t) (now - conn->sco_rx_ms);
-            if (delta <= 0){
-                log_info("SCO NOW - EXP = %d, use +7 ms", delta);
+    if (hci_have_usb_transport()){
+        // Nothing to do
+    } else {
+        // log_debug("sco flow %u, handle 0x%04x, packets sent %u, bytes send %u", hci_stack->synchronous_flow_control_enabled, (int) con_handle, conn->num_packets_sent, conn->num_sco_bytes_sent);
+        if (hci_stack->synchronous_flow_control_enabled == 0){
+            uint32_t now = btstack_run_loop_get_time_ms();
+            if (conn->sco_rx_valid){
+                conn->sco_rx_count++;
+                // expected arrival timme
+                conn->sco_rx_ms += 7;
+                int delta = (int32_t) (now - conn->sco_rx_ms);
+                if (delta <= 0){
+                    log_info("SCO NOW - EXP = %d, use +7 ms", delta);
+                } else {
+                    conn->sco_rx_ms++;
+                    log_info("SCO NOW > EXP = %d, use +8 ms", delta);
+                }
             } else {
-                conn->sco_rx_ms++;
-                log_info("SCO NOW > EXP = %d, use +8 ms", delta);
+                // use first timestamp as is
+                conn->sco_rx_ms = now;
+                conn->sco_rx_valid = 1;
+                log_info("SCO first rx");
+                sco_schedule_tx(conn);
             }
-        } else {
-            // use first timestamp as is
-            conn->sco_rx_ms = now;
-            conn->sco_rx_valid = 1;
-            log_info("SCO first rx");
-            sco_schedule_tx(conn);
         }
     }
-
     // deliver to app
     if (hci_stack->sco_packet_handler) {
         hci_stack->sco_packet_handler(HCI_SCO_DATA_PACKET, 0, packet, size);

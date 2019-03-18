@@ -758,6 +758,7 @@ typedef struct {
     uint8_t  le_acl_packets_total_num;
     uint16_t le_data_packets_length;
     uint8_t  sco_waiting_for_can_send_now;
+    uint8_t  sco_can_send_now;
 
     /* local supported features */
     uint8_t local_supported_features[8];
