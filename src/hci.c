@@ -2530,7 +2530,7 @@ static void event_handler(uint8_t *packet, int size){
 
 #ifdef ENABLE_CLASSIC
 
-#define SCO_TX_AFTER_RX_MS 6
+#define SCO_TX_AFTER_RX_MS 5
 
 static void sco_tx_timeout_handler(btstack_timer_source_t * ts);
 static void sco_schedule_tx(hci_connection_t * conn);
@@ -2541,13 +2541,13 @@ static void sco_tx_timeout_handler(btstack_timer_source_t * ts){
     hci_connection_t * conn = hci_connection_for_handle(con_handle);
     if (!conn) return;
 
-    // trigger send
-    conn->sco_tx_count++;
-    conn->sco_tx_ready = 1;
-    hci_notify_if_sco_can_send_now();
-
     // schedule next
     sco_schedule_tx(conn);
+    conn->sco_tx_count++;
+
+    // trigger send
+    conn->sco_tx_ready = 1;
+    hci_notify_if_sco_can_send_now();
 }
 
 static void sco_schedule_tx(hci_connection_t * conn){
