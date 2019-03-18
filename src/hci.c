@@ -2537,7 +2537,7 @@ static void sco_schedule_tx(hci_connection_t * conn);
 
 static void sco_tx_timeout_handler(btstack_timer_source_t * ts){
     log_info("SCO TX Timeout");
-    hci_con_handle_t con_handle = (hci_con_handle_t) btstack_run_loop_get_timer_context(ts);
+    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) btstack_run_loop_get_timer_context(ts);
     hci_connection_t * conn = hci_connection_for_handle(con_handle);
     if (!conn) return;
 
