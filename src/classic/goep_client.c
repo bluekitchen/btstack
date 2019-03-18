@@ -457,6 +457,11 @@ void goep_client_create_get_request(uint16_t goep_cid){
     goep_client_packet_add_connection_id(goep_cid);
 }
 
+void goep_client_create_put_request(uint16_t goep_cid){
+    goep_client_packet_init(goep_cid, OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK);
+    goep_client_packet_add_connection_id(goep_cid);
+}
+
 void goep_client_create_set_path_request(uint16_t goep_cid, uint8_t flags){
     UNUSED(goep_cid);
     goep_client_packet_init(goep_cid, OBEX_OPCODE_SETPATH);
@@ -519,6 +524,11 @@ void goep_client_add_header_challenge_response(uint16_t goep_cid, uint16_t lengt
     goep_client_add_variable_header(goep_cid, OBEX_HEADER_AUTHENTICATION_RESPONSE, length,  data);
 }
 
+void goep_client_add_body_static(uint16_t goep_cid,  uint32_t length, const uint8_t * data){
+    UNUSED(goep_cid);
+    goep_client_add_variable_header(goep_cid, OBEX_HEADER_END_OF_BODY, length,  data);
+}
+
 void goep_client_add_header_name(uint16_t goep_cid, const char * name){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
@@ -562,3 +572,4 @@ int goep_client_execute(uint16_t goep_cid){
         return rfcomm_send_prepared(context->bearer_cid, pos);
     }
 }
+
