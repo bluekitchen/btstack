@@ -2580,7 +2580,7 @@ static void sco_schedule_tx(hci_connection_t * conn){
         int packet_offset = (int8_t) (conn->sco_tx_count - conn->sco_rx_count);
         tx_ms = conn->sco_rx_ms + ((packet_offset * 15) >> 1) + SCO_TX_AFTER_RX_MS;
         time_delta_ms = (int) (tx_ms - now);
-        if (time_delta_ms > 3){    // arbitrary threshold
+        if (time_delta_ms >= 3){
             break;
         }
         // skip packet
