@@ -83,11 +83,11 @@ static uint16_t rfcomm_channel_id;
 // PTS "001BDC080AA5"
 // iPhone 5 static  char * remote_addr_string = "6C:72:E7:10:22:EE";
 // Android
-static  char * remote_addr_string = "a0:28:ed:04:33:b0";
+static const char * remote_addr_string = "a0:28:ed:04:33:b0";
 static const char * folder_name = "inbox";
 static map_message_handle_t message_handle = {0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
 
-static char * path = "telecom/msg";
+static const char * path = "telecom/msg";
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint16_t map_cid;
@@ -294,7 +294,7 @@ int btstack_main(int argc, const char * argv[]){
     sdp_init();
     // setup AVDTP sink
     map_message_type_t supported_message_types = MAP_MESSAGE_TYPE_SMS_GSM;
-    map_feature_t supported_features = 0x1F;
+    uint32_t supported_features = 0x1F;
 
     int rfcomm_channel_nr = 1;
 

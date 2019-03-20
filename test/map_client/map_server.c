@@ -84,7 +84,7 @@ static map_server_t _map_server;
 static map_server_t * map_server = &_map_server;
 
 static void map_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t service_uuid, uint8_t instance_id,
-    int rfcomm_channel_nr, uint16_t goep_l2cap_psm, map_message_type_t supported_message_types, map_feature_t supported_features, const char * name){
+    int rfcomm_channel_nr, uint16_t goep_l2cap_psm, map_message_type_t supported_message_types, uint32_t supported_features, const char * name){
     UNUSED(goep_l2cap_psm);
     uint8_t* attribute;
     de_create_sequence(service);
@@ -174,13 +174,13 @@ static void map_create_sdp_record(uint8_t * service, uint32_t service_record_han
 }
 
 void map_message_access_service_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t instance_id,
-    int rfcomm_channel_nr, uint16_t goep_l2cap_psm, map_message_type_t supported_message_types, map_feature_t supported_features, const char * name){
+    int rfcomm_channel_nr, uint16_t goep_l2cap_psm, map_message_type_t supported_message_types, uint32_t supported_features, const char * name){
     map_create_sdp_record(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_SERVER, instance_id, rfcomm_channel_nr,
         goep_l2cap_psm, supported_message_types, supported_features, name);
 }
 
 void map_message_notification_service_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t instance_id,
-    int rfcomm_channel_nr, uint16_t goep_l2cap_psm, map_message_type_t supported_message_types, map_feature_t supported_features, const char * name){
+    int rfcomm_channel_nr, uint16_t goep_l2cap_psm, map_message_type_t supported_message_types, uint32_t supported_features, const char * name){
     map_create_sdp_record(service, service_record_handle, BLUETOOTH_SERVICE_CLASS_MESSAGE_NOTIFICATION_SERVER, instance_id, rfcomm_channel_nr,
         goep_l2cap_psm, supported_message_types, supported_features, name);
 }

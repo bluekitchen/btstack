@@ -61,7 +61,7 @@ extern "C" {
  */
 
 void map_message_access_service_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t instance_id,
-    int rfcomm_channel_nr, uint16_t goep_l2cap_psm, map_message_type_t supported_message_types, map_feature_t supported_features, const char * name);
+    int rfcomm_channel_nr, uint16_t goep_l2cap_psm, map_message_type_t supported_message_types, uint32_t supported_features, const char * name);
 
 
 /**
@@ -77,7 +77,7 @@ void map_message_access_service_create_sdp_record(uint8_t * service, uint32_t se
  */
 
 void map_message_notification_service_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t instance_id,
-    int rfcomm_channel_nr, uint16_t goep_l2cap_psm, map_message_type_t supported_message_types, map_feature_t supported_features, const char * name);
+    int rfcomm_channel_nr, uint16_t goep_l2cap_psm, map_message_type_t supported_message_types, uint32_t supported_features, const char * name);
 
 /**
  *
