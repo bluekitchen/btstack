@@ -81,7 +81,7 @@ uint8_t map_client_get_folder_listing(uint16_t map_cid);
  * @param map_cid
  * @return status
  */
-uint8_t map_client_set_path(uint16_t map_cid, char * path);
+uint8_t map_client_set_path(uint16_t map_cid, const char * path);
 
 /** 
  * @brief Get list of messages for particular folder.

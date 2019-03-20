@@ -390,19 +390,55 @@ static void map_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                 case MAP_W4_FOLDERS:
                     map_client->state = MAP_CONNECTED;
                     printf("Folders:\n");
-                    printf_hexdump(packet, size);
+                    for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(map_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
+                        uint8_t hi = obex_iterator_get_hi(&it);
+                        // uint16_t     data_len = obex_iterator_get_data_len(&it);
+                        const uint8_t  * data = obex_iterator_get_data(&it);
+                        switch (hi){
+                            case OBEX_HEADER_BODY:
+                            case OBEX_HEADER_END_OF_BODY:
+                                printf("%s\n", data);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
                     printf("\n");
                     break;
                 case MAP_W4_MESSAGES_IN_FOLDER:
                     map_client->state = MAP_CONNECTED;
                     printf("Messages:\n");
-                    printf_hexdump(packet, size);
+                    for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(map_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
+                        uint8_t hi = obex_iterator_get_hi(&it);
+                        // uint16_t     data_len = obex_iterator_get_data_len(&it);
+                        const uint8_t  * data = obex_iterator_get_data(&it);
+                        switch (hi){
+                            case OBEX_HEADER_BODY:
+                            case OBEX_HEADER_END_OF_BODY:
+                                printf("%s\n", data);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
                     printf("\n");
                     break;
                 case MAP_W4_MESSAGE:
                     map_client->state = MAP_CONNECTED;
                     printf("Message :\n");
-                    printf_hexdump(packet, size);
+                    for (obex_iterator_init_with_response_packet(&it, goep_client_get_request_opcode(map_client->goep_cid), packet, size); obex_iterator_has_more(&it) ; obex_iterator_next(&it)){
+                        uint8_t hi = obex_iterator_get_hi(&it);
+                        // uint16_t     data_len = obex_iterator_get_data_len(&it);
+                        const uint8_t  * data = obex_iterator_get_data(&it);
+                        switch (hi){
+                            case OBEX_HEADER_BODY:
+                            case OBEX_HEADER_END_OF_BODY:
+                                printf("%s\n", data);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
                     printf("\n");
                     break;
                 default:
@@ -467,7 +503,7 @@ uint8_t map_client_get_message_with_handle(uint16_t map_cid, const map_message_h
     return 0;    
 }
 
-uint8_t map_client_set_path(uint16_t map_cid, char * path){
+uint8_t map_client_set_path(uint16_t map_cid, const char * path){
     UNUSED(map_cid);
     if (map_client->state != MAP_CONNECTED) return BTSTACK_BUSY;
     map_client->state = MAP_W2_SET_PATH_ROOT;
