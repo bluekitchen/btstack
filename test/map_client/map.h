@@ -46,7 +46,9 @@ extern "C" {
 #include <stdint.h>
 
 /* API_START */
-
+#define MAP_MAX_VALUE_LEN    32
+#define MAP_MAX_HANDLE_LEN   16
+    
 #define MAP_MESSAGE_HANDLE_SIZE 8
 /**
  * @brief MAP Message handle
@@ -60,6 +62,12 @@ typedef enum {
     MAP_MESSAGE_TYPE_MMS,
     MAP_MESSAGE_TYPE_IM
 } map_message_type_t;
+
+typedef enum {
+    MAP_RECEPTION_STATUS_COMPLETE,    // Complete message has been received by the MSE
+    MAP_RECEPTION_STATUS_FRACTIONED,  // Only a part of the message has been received by the MSE (e.g., fractioned email of push-service)
+    MAP_RECEPTION_STATUS_NOTIFICATION // Only a notification of the message has been received by the MSE
+} map_reception_status_t;
 
 typedef enum {
     MAP_FEATURE_NOTIFICATION_REGISTRATION = 0,
@@ -86,6 +94,20 @@ typedef enum {
     MAP_FEATURE_OWNER_STATUS_BIT,
     MAP_FEATURE_MESSAGE_FORWARDING
 } map_feature_t;
+
+typedef struct {
+    char handle[MAP_MAX_HANDLE_LEN];
+    char datetime[MAP_MAX_HANDLE_LEN];
+    
+    char subject[MAP_MAX_VALUE_LEN];
+    char sender_name[MAP_MAX_VALUE_LEN];
+    char sender_addressing[MAP_MAX_HANDLE_LEN];
+    
+    map_message_type_t type;
+    
+    uint16_t attachment_size;
+    uint8_t flags; // 0 - read, 1 - text
+} map_message_t;
 
 /* API_END */
 
