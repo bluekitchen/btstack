@@ -1975,8 +1975,15 @@ static void event_handler(uint8_t *packet, int size){
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
                 // hci_stack->hci_version    = little_endian_read_16(packet, 4);
                 // hci_stack->hci_revision   = little_endian_read_16(packet, 6);
+                uint16_t manufacturer = little_endian_read_16(packet, 10);
+                // map Cypress to Broadcom
+                if (manufacturer  == BLUETOOTH_COMPANY_ID_CYPRESS_SEMICONDUCTOR){
+                    log_info("Treat Cypress as Broadcom");
+                    manufacturer = BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION;
+                    little_endian_store_16(packet, 10, manufacturer);
+                }
+                hci_stack->manufacturer = manufacturer;
                 // hci_stack->lmp_version    = little_endian_read_16(packet, 8);
-                hci_stack->manufacturer   = little_endian_read_16(packet, 10);
                 // hci_stack->lmp_subversion = little_endian_read_16(packet, 12);
                 log_info("Manufacturer: 0x%04x", hci_stack->manufacturer);
             }
