@@ -6,6 +6,7 @@
 #include "btstack_util.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
+#include "map_util.h"
 
 const static char * folders = 
 "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>"
@@ -66,8 +67,6 @@ const static char * message =
 #endif
 
 /* xml parser */
-static yxml_t  xml_parser;
-static uint8_t xml_buffer[50];
 static int num_found_items;
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -79,160 +78,12 @@ static void CHECK_EQUAL_ARRAY(const uint8_t * expected, uint8_t * actual, int si
     }
 }
 
-static void map_client_emit_folder_listing_item_event(btstack_packet_handler_t callback, uint16_t cid, uint8_t * folder_name, uint16_t folder_name_len){
-    uint8_t event[7 + MAP_MAX_VALUE_LEN];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_MAP_META;
-    pos++;  // skip len
-    event[pos++] = MAP_SUBEVENT_FOLDER_LISTING_ITEM;
-    little_endian_store_16(event,pos,cid);
-    pos+=2;
-    uint16_t value_len = btstack_min(folder_name_len, sizeof(event) - pos);
-    little_endian_store_16(event, pos, value_len);
-    pos += 2;
-    memcpy(event+pos, folder_name, value_len);
-    pos += value_len;
-    event[1] = pos - 2;
-    if (pos > sizeof(event)) log_error("map_client_emit_folder_listing_item_event size %u", pos);
-    (*callback)(HCI_EVENT_PACKET, cid, &event[0], pos);
-}  
-
-static void map_client_emit_message_listing_item_event(btstack_packet_handler_t callback, uint16_t cid, map_message_handle_t message_handle){
-    uint8_t event[7 + MAP_MESSAGE_HANDLE_SIZE];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_MAP_META;
-    pos++;  // skip len
-    event[pos++] = MAP_SUBEVENT_MESSAGE_LISTING_ITEM;
-    little_endian_store_16(event,pos,cid);
-    pos+=2;
-    
-    memcpy(event+pos, message_handle, MAP_MESSAGE_HANDLE_SIZE);
-    pos += MAP_MESSAGE_HANDLE_SIZE;
-    
-    event[1] = pos - 2;
-    if (pos > sizeof(event)) log_error("map_client_emit_message_listing_item_event size %u", pos);
-    (*callback)(HCI_EVENT_PACKET, cid, &event[0], pos);
-} 
-
-static void map_client_emit_parsing_done_event(btstack_packet_handler_t callback, uint16_t cid){
-    uint8_t event[5];
-    int pos = 0;
-    event[pos++] = HCI_EVENT_MAP_META;
-    pos++;  // skip len
-    event[pos++] = MAP_SUBEVENT_PARSING_DONE;
-    little_endian_store_16(event,pos,cid);
-    pos += 2;
-    event[1] = pos - 2;
-    if (pos != sizeof(event)) log_error("map_client_emit_parsing_done_event size %u", pos);
-    (*callback)(HCI_EVENT_PACKET, cid, &event[0], pos);
-}
-
-static void map_client_parse_folder_listing(btstack_packet_handler_t callback, uint16_t cid, const uint8_t * data, uint16_t data_len){
-    int folder_found = 0;
-    int name_found = 0;
-    char name[MAP_MAX_VALUE_LEN];
-    
-    while (data_len--){
-        yxml_ret_t r = yxml_parse(&xml_parser, *data++);
-        switch (r){
-            case YXML_ELEMSTART:
-                folder_found = strcmp("folder", xml_parser.elem) == 0;
-                break;
-            case YXML_ELEMEND:
-                if (folder_found){
-                    map_client_emit_folder_listing_item_event(callback, cid, (uint8_t *) name, strlen(name));
-                }
-                folder_found = 0;
-                break;
-            case YXML_ATTRSTART:
-                if (!folder_found) break;
-                if (strcmp("name", xml_parser.attr) == 0){
-                    name_found = 1;
-                    name[0]    = 0;
-                    break;
-                }
-                break;
-            case YXML_ATTRVAL:
-                if (name_found) {
-                    // "In UTF-8, characters from the U+0000..U+10FFFF range (the UTF-16 accessible range) are encoded using sequences of 1 to 4 octets."
-                    if (strlen(name) + 4 + 1 >= sizeof(name)) break;
-                    strcat(name, xml_parser.data);
-                    break;
-                }
-                break;
-            case YXML_ATTREND:
-                name_found = 0;
-                break;
-            default:
-                break;
-        }
-    }
-    map_client_emit_parsing_done_event(callback, cid);
-}
-
-static void map_message_str_to_handle(const char * value, map_message_handle_t msg_handle){
-    int i;
-    for (i = 0; i < MAP_MESSAGE_HANDLE_SIZE; i++) {
-        uint8_t upper_nibble = nibble_for_char(*value++);
-        uint8_t lower_nibble = nibble_for_char(*value++);
-        msg_handle[i] = (upper_nibble << 4) | lower_nibble;
-    }
-}
-
-static void map_client_parse_message_listing(btstack_packet_handler_t callback, uint16_t cid, const uint8_t * data, uint16_t data_len){
-    // now try parsing it
-    int message_found = 0;
-    int handle_found = 0;
-    char handle[MAP_MESSAGE_HANDLE_SIZE * 2];
-    map_message_handle_t msg_handle;
-
-    while (data_len--){
-        yxml_ret_t r = yxml_parse(&xml_parser, *data++);
-        switch (r){
-            case YXML_ELEMSTART:
-                message_found = strcmp("msg", xml_parser.elem) == 0;
-                break;
-            case YXML_ELEMEND:
-                if (!message_found) break;
-                message_found = 0;
-                if (strlen(handle) != MAP_MESSAGE_HANDLE_SIZE * 2){
-                    log_info("message handle string length != 16");
-                    break;
-                }
-                map_message_str_to_handle(handle, msg_handle);
-                map_client_emit_message_listing_item_event(callback, cid, msg_handle);
-                break;
-            case YXML_ATTRSTART:
-                if (!message_found) break;
-                if (strcmp("handle", xml_parser.attr) == 0){
-                    handle_found = 1;
-                    handle[0]    = 0;
-                    break;
-                }
-                break;
-            case YXML_ATTRVAL:
-                if (handle_found) {
-
-                    strcat(handle, xml_parser.data);
-                    break;
-                }
-                break;
-            case YXML_ATTREND:
-                handle_found = 0;
-                break;
-            default:
-                break;
-        }
-    }
-    map_client_emit_parsing_done_event(callback, cid);
-}
-
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if  (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_MAP_META) return;
 
-    char value[MAP_MAX_VALUE_LEN];
     int value_len;
+    char value[MAP_MAX_VALUE_LEN];
     memset(value, 0, MAP_MAX_VALUE_LEN);
     
     switch (hci_event_goep_meta_get_subevent_code(packet)){
@@ -260,7 +111,6 @@ TEST_GROUP(MAP_XML){
         map_callback = &packet_handler;
         num_found_items = 0;
         map_cid = 1;
-        yxml_init(&xml_parser, xml_buffer, sizeof(xml_buffer));
     }
 };
 

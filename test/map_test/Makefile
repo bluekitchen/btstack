@@ -22,7 +22,10 @@ COMMON = \
     yxml.c \
     btstack_util.c \
     hci_dump.c \
-    
+    map_util.c  \
+    btstack_util.c \
+
+
 COMMON_OBJ = $(COMMON:.c=.o)
 
 all: map_xml_test

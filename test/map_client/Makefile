@@ -27,9 +27,21 @@ VPATH += ${BTSTACK_ROOT}/port/libusb
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 
+MAP = \
+	obex_iterator.c \
+	goep_client.c \
+	yxml.c \
+	btstack_util.c \
+	hci_dump.c \
+	map_util.c \
+	map_client.c \
+	map_server.c \
+    
+MAP_OBJ = $(MAP:.c=.o)
+
 all: map_client_test
 
-map_client_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SDP_SERVER} md5.o obex_iterator.o goep_client.o yxml.o map_client.o map_server.o map_client_test.c 
+map_client_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${MAP_OBJ} map_client_test.c 
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 

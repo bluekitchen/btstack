@@ -189,6 +189,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     uint8_t status;
     uint16_t  mtu;
     
+    int value_len;
+    char value[MAP_MAX_VALUE_LEN];
+    memset(value, 0, MAP_MAX_VALUE_LEN);
+
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
@@ -237,7 +241,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         case MAP_SUBEVENT_OPERATION_COMPLETED:
                             printf("[+] Operation complete\n");
                             break;
-                        
+                        case MAP_SUBEVENT_FOLDER_LISTING_ITEM:
+                            value_len = btstack_min(map_subevent_folder_listing_item_get_name_len(packet), MAP_MAX_VALUE_LEN);
+                            memcpy(value, map_subevent_folder_listing_item_get_name(packet), value_len);
+                            printf("Folder \'%s\'\n", value);
+                            break;
+                        case MAP_SUBEVENT_MESSAGE_LISTING_ITEM:
+                            memcpy((uint8_t *) message_handle, map_subevent_message_listing_item_get_handle(packet), MAP_MESSAGE_HANDLE_SIZE);
+                            printf("Message handle: ");
+                            printf_hexdump((uint8_t *) message_handle, MAP_MESSAGE_HANDLE_SIZE);
+                            printf("\n");
+                            break;
+                        case MAP_SUBEVENT_PARSING_DONE:
+                            break;
                         default:
                             break;
                     }
