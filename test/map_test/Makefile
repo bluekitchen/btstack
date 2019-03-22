@@ -20,6 +20,8 @@ CFLAGS += -I${BTSTACK_ROOT}/test/map_client
 
 COMMON = \
     yxml.c \
+    btstack_util.c \
+    hci_dump.c \
     
 COMMON_OBJ = $(COMMON:.c=.o)
 

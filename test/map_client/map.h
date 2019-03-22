@@ -47,8 +47,6 @@ extern "C" {
 
 /* API_START */
 #define MAP_MAX_VALUE_LEN    32
-#define MAP_MAX_HANDLE_LEN   16
-    
 #define MAP_MESSAGE_HANDLE_SIZE 8
 /**
  * @brief MAP Message handle
@@ -96,12 +94,12 @@ typedef enum {
 } map_feature_t;
 
 typedef struct {
-    char handle[MAP_MAX_HANDLE_LEN];
-    char datetime[MAP_MAX_HANDLE_LEN];
+    char handle[MAP_MESSAGE_HANDLE_SIZE];
+    char datetime[MAP_MAX_VALUE_LEN];
     
     char subject[MAP_MAX_VALUE_LEN];
     char sender_name[MAP_MAX_VALUE_LEN];
-    char sender_addressing[MAP_MAX_HANDLE_LEN];
+    char sender_addressing[MAP_MAX_VALUE_LEN];
     
     map_message_type_t type;
     
