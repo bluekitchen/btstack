@@ -7031,22 +7031,22 @@ static inline uint8_t map_subevent_connection_opened_get_incoming(const uint8_t 
 }
 
 /**
- * @brief Get field goep_cid from event MAP_SUBEVENT_CONNECTION_CLOSED
+ * @brief Get field map_cid from event MAP_SUBEVENT_CONNECTION_CLOSED
  * @param event packet
- * @return goep_cid
+ * @return map_cid
  * @note: btstack_type 2
  */
-static inline uint16_t map_subevent_connection_closed_get_goep_cid(const uint8_t * event){
+static inline uint16_t map_subevent_connection_closed_get_map_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 
 /**
- * @brief Get field goep_cid from event MAP_SUBEVENT_OPERATION_COMPLETED
+ * @brief Get field map_cid from event MAP_SUBEVENT_OPERATION_COMPLETED
  * @param event packet
- * @return goep_cid
+ * @return map_cid
  * @note: btstack_type 2
  */
-static inline uint16_t map_subevent_operation_completed_get_goep_cid(const uint8_t * event){
+static inline uint16_t map_subevent_operation_completed_get_map_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
@@ -7057,6 +7057,63 @@ static inline uint16_t map_subevent_operation_completed_get_goep_cid(const uint8
  */
 static inline uint8_t map_subevent_operation_completed_get_status(const uint8_t * event){
     return event[5];
+}
+
+/**
+ * @brief Get field map_cid from event MAP_SUBEVENT_FOLDER_LISTING_ITEM
+ * @param event packet
+ * @return map_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t map_subevent_folder_listing_item_get_map_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field name_len from event MAP_SUBEVENT_FOLDER_LISTING_ITEM
+ * @param event packet
+ * @return name_len
+ * @note: btstack_type L
+ */
+static inline int map_subevent_folder_listing_item_get_name_len(const uint8_t * event){
+    return little_endian_read_16(event, 5);
+}
+/**
+ * @brief Get field name from event MAP_SUBEVENT_FOLDER_LISTING_ITEM
+ * @param event packet
+ * @return name
+ * @note: btstack_type V
+ */
+static inline const uint8_t * map_subevent_folder_listing_item_get_name(const uint8_t * event){
+    return &event[7];
+}
+
+/**
+ * @brief Get field map_cid from event MAP_SUBEVENT_MESSAGE_LISTING_ITEM
+ * @param event packet
+ * @return map_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t map_subevent_message_listing_item_get_map_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field handle from event MAP_SUBEVENT_MESSAGE_LISTING_ITEM
+ * @param event packet
+ * @return handle
+ * @note: btstack_type D
+ */
+static inline const uint8_t * map_subevent_message_listing_item_get_handle(const uint8_t * event){
+    return (const uint8_t *) &event[5];
+}
+
+/**
+ * @brief Get field map_cid from event MAP_SUBEVENT_PARSING_DONE
+ * @param event packet
+ * @return map_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t map_subevent_parsing_done_get_map_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
 }
 
 

@@ -2251,17 +2251,45 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 12
  * @param subevent_code
- * @param goep_cid
+ * @param map_cid
 */
 #define MAP_SUBEVENT_CONNECTION_CLOSED                                    0x02
 
 /**
  * @format 121
  * @param subevent_code
- * @param goep_cid
+ * @param map_cid
  * @param status
  */
 #define MAP_SUBEVENT_OPERATION_COMPLETED                                  0x03
+
+
+/**
+ * @format 12LV
+ * @param subevent_code
+ * @param map_cid
+ * @param name_len
+ * @param name
+ */
+#define MAP_SUBEVENT_FOLDER_LISTING_ITEM                                  0x04
+
+/**
+ * @format 12D
+ * @param subevent_code
+ * @param map_cid
+ * @param handle
+
+ */
+#define MAP_SUBEVENT_MESSAGE_LISTING_ITEM                                 0x05
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param map_cid
+ */
+#define MAP_SUBEVENT_PARSING_DONE                                         0x06
+
+
 
 
 #endif
