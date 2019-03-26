@@ -10,12 +10,14 @@ LDFLAGS += -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src/ble 
 VPATH += ${BTSTACK_ROOT}/src
+VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/platform/posix
 
 COMMON = \
     btstack_util.c \
     hci_dump.c \
-    
+    obex_message_builder.c \
+
 COMMON_OBJ = $(COMMON:.c=.o)
 
 all: obex_message_builder_test
