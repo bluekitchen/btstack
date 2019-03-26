@@ -141,12 +141,12 @@ static void map_create_sdp_record(uint8_t * service, uint32_t service_record_han
     de_add_number(service,  DE_UINT, DE_SIZE_16, BLUETOOTH_ATTRIBUTE_BLUETOOTH_PROFILE_DESCRIPTOR_LIST);
     attribute = de_push_sequence(service);
     {
-        uint8_t *sppProfile = de_push_sequence(attribute);
+        uint8_t *profile = de_push_sequence(attribute);
         {
-            de_add_number(sppProfile,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_PROFILE); 
-            de_add_number(sppProfile,  DE_UINT, DE_SIZE_16, 0x0103); // Verision 1.7
+            de_add_number(profile,  DE_UUID, DE_SIZE_16, BLUETOOTH_SERVICE_CLASS_MESSAGE_ACCESS_PROFILE); 
+            de_add_number(profile,  DE_UINT, DE_SIZE_16, 0x0103); // Verision 1.7
         }
-        de_pop_sequence(attribute, sppProfile);
+        de_pop_sequence(attribute, profile);
     }
     de_pop_sequence(service, attribute);
 
