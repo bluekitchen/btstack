@@ -113,17 +113,29 @@ static void beacon_timer_handler(btstack_timer_source_t * ts){
     adv_bearer_request_can_send_now_for_mesh_beacon();
 }
 
-void beacon_init(const uint8_t * device_uuid, uint16_t oob_information){
-    
-    beacon_oob_information = oob_information;
+void beacon_init(void){
     adv_bearer_register_for_mesh_beacon(&beacon_packet_handler);
+}
 
+/**
+ * Start Unprovisioned Device Beacon
+ */
+void beacon_unprovisioned_device_start(const uint8_t * device_uuid, uint16_t oob_information){
+    beacon_oob_information = oob_information;
     if (device_uuid){
         beacon_device_uuid = device_uuid;
         beacon_timer.process = &beacon_timer_handler;
         beacon_timer_handler(&beacon_timer);
     }
 }
+
+/**
+ * Stop Unprovisioned Device Beacon
+ */
+void beacon_unprovisioned_device_stop(void){
+    btstack_run_loop_remove_timer(&beacon_timer);
+}
+
 
 void beacon_register_for_unprovisioned_device_beacons(btstack_packet_handler_t packet_handler){
     unprovisioned_device_beacon_handler = packet_handler;

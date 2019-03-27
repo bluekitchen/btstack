@@ -50,7 +50,17 @@ extern "C" {
 /**
  * Initialize Mesh Beacon
  */
-void beacon_init(const uint8_t * device_uuid, uint16_t oob_information);
+void beacon_init(void);
+
+/**
+ * Start Unprovisioned Device Beacon
+ */
+void beacon_unprovisioned_device_start(const uint8_t * device_uuid, uint16_t oob_information);
+
+/**
+ * Stop Unprovisioned Device Beacon
+ */
+void beacon_unprovisioned_device_stop(void);
 
 /**
  * Register Beacon handler for unprovisioned device beacons

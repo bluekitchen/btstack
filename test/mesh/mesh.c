@@ -134,6 +134,7 @@ static void mesh_load_app_keys(void){
 }
 
 void mesh_store_app_key(uint16_t appkey_index, uint8_t aid, const uint8_t * application_key){
+    printf("Store AppKey: AppKey Index 0x%06x, AID %02x: ", appkey_index, aid);
     uint8_t data[2+1+16];
     little_endian_store_16(data, 0, appkey_index);
     data[2] = aid;
@@ -192,6 +193,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     printf("Provisioning data available: %u\n", prov_len ? 1 : 0);
                     if (prov_len){
                         mesh_setup_from_provisioning_data(&provisioning_data);
+                    } else {
+                        printf("Starting Unprovisioned Device Beacon\n");
+                        beacon_unprovisioned_device_start(device_uuid, 0);
                     }
                     // load app keys
                     mesh_load_app_keys();
@@ -329,7 +333,7 @@ static void load_pts_app_key(void){
     const char * application_key_string = "3216D1509884B533248541792B877F98";
     btstack_parse_hex(application_key_string, 16, application_key);
     mesh_application_key_set(0, 0x38, application_key); 
-    printf("PTS Application Key: ");
+    printf("PTS Application Key (AID %02x): ", 0x38);
     printf_hexdump(application_key, 16);
 }
 
@@ -486,6 +490,7 @@ static void show_usage(void){
     printf("2      - Send   Segmented Access Message - Unicast\n");
     printf("3      - Send   Segmented Access Message - Group   D000\n");
     printf("4      - Send   Segmented Access Message - Virtual 9779\n");
+    printf("7      - Load PTS App key\n");
     printf("\n");
 }
 
@@ -517,6 +522,9 @@ static void stdin_process(char cmd){
             break;
         case '4':
             send_pts_segmented_access_messsage_virtual();
+            break;
+        case '7':
+            load_pts_app_key();
             break;
         case '8':
             printf("Creating link to device uuid: ");
@@ -706,7 +714,7 @@ int btstack_main(void)
     // mesh
     adv_bearer_init();
 
-    beacon_init(device_uuid, 0);
+    beacon_init();
     beacon_register_for_unprovisioned_device_beacons(&mesh_unprovisioned_beacon_handler);
     
     // Provisioning in device role
