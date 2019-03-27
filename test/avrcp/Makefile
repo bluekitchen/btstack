@@ -17,6 +17,8 @@ CORE += \
 
 COMMON += \
 	ad_parser.c 				\
+	btstack_audio.c             \
+	btstack_audio_portaudio.c   \
 	btstack_link_key_db_fs.c    \
 	btstack_run_loop_posix.c    \
 	hci.c			            \
@@ -31,7 +33,8 @@ COMMON += \
 	sdp_util.c	                \
 	wav_util.c 					\
 
-CFLAGS += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-variable -Wunused-parameter -Werror 
+CFLAGS += -g -Wall -Wmissing-prototypes -Wshadow -Wunused-variable -Wunused-parameter -Werror 
+#  -Wstrict-prototypes disabled because of portaudio headers
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/src/classic
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include -D OI_DEBUG

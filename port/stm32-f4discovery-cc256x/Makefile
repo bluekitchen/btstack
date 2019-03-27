@@ -105,6 +105,7 @@ ${BTSTACK_ROOT}/src/classic/hid_device.c \
 ${BTSTACK_ROOT}/src/classic/hsp_ag.c \
 ${BTSTACK_ROOT}/src/classic/hsp_hs.c \
 ${BTSTACK_ROOT}/src/classic/obex_iterator.c \
+${BTSTACK_ROOT}/src/classic/obex_message_builder.c \
 ${BTSTACK_ROOT}/src/classic/pbap_client.c \
 ${BTSTACK_ROOT}/src/classic/rfcomm.c \
 ${BTSTACK_ROOT}/src/classic/sdp_client.c \
