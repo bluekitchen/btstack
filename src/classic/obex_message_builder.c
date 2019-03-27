@@ -158,7 +158,7 @@ uint8_t obex_message_builder_header_add_challenge_response(uint8_t * buffer, uin
     return obex_message_builder_header_add_variable(buffer, buffer_len, OBEX_HEADER_AUTHENTICATION_RESPONSE, data, length);
 }
 
-uint8_t obex_message_builder_static_add_body(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint32_t length){
+uint8_t obex_message_builder_body_add_static(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint32_t length){
     return obex_message_builder_header_add_variable(buffer, buffer_len, OBEX_HEADER_END_OF_BODY, data, length);
 }
 

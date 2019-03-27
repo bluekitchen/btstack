@@ -559,8 +559,9 @@ void goep_client_add_body_static(uint16_t goep_cid,  uint32_t length, const uint
     
     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
     uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
-    obex_message_builder_static_add_body(buffer, buffer_len, data, length);
+    obex_message_builder_body_add_static(buffer, buffer_len, data, length);
 }
+
 void goep_client_add_header_name(uint16_t goep_cid, const char * name){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;

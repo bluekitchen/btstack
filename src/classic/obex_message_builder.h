@@ -218,11 +218,11 @@ uint8_t obex_message_builder_header_add_challenge_response(uint8_t * buffer, uin
  * @param lenght 
  * @return status
  */
-uint8_t obex_message_builder_static_add_body(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint32_t length);
+uint8_t obex_message_builder_body_add_static(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint32_t length);
 
 /* API_END */
 
-// int  obex_message_builder_add_body_dynamic(uint8_t * buffer, uint16_t buffer_len, uint32_t length, void (*data_callback)(uint32_t offset, uint8_t * buffer, uint32_t len));
+// int  obex_message_builder_body_add_dynamic(uint8_t * buffer, uint16_t buffer_len, uint32_t length, void (*data_callback)(uint32_t offset, uint8_t * buffer, uint32_t len));
 
 #if defined __cplusplus
 }
