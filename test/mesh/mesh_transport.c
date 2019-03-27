@@ -326,7 +326,7 @@ static uint32_t mesh_transport_seq(mesh_transport_pdu_t * transport_pdu){
     return big_endian_read_24(transport_pdu->network_header, 2);
 }
 static uint32_t mesh_transport_seq_zero(mesh_transport_pdu_t * transport_pdu){
-    return big_endian_read_24(transport_pdu->network_header, 2) & 0x1fff;
+    return transport_pdu->seq_zero;
 }
 static uint16_t mesh_transport_src(mesh_transport_pdu_t * transport_pdu){
     return big_endian_read_16(transport_pdu->network_header, 5);
@@ -662,7 +662,7 @@ static void mesh_lower_transport_setup_segemented_acknowledge_message(uint8_t * 
 static void mesh_transport_send_ack(mesh_transport_pdu_t * transport_pdu){
     // setup ack message
     uint8_t  ack_msg[7];
-    uint16_t seq_zero = transport_pdu->seq_zero;
+    uint16_t seq_zero = mesh_transport_seq_zero(transport_pdu);
     mesh_lower_transport_setup_segemented_acknowledge_message(ack_msg, 0, seq_zero, transport_pdu->block_ack);
     printf("mesh_transport_send_ack for pdu %p with netkey_index %x, TTL = %u, SeqZero = %x, SRC = %x, DST = %x\n",
         transport_pdu, transport_pdu->netkey_index, mesh_transport_ttl(transport_pdu), seq_zero, primary_element_address, mesh_transport_src(transport_pdu));
