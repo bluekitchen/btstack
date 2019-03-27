@@ -203,6 +203,9 @@ void mesh_seq_auth_reset(void){
     mesh_seq_auth_single_src = MESH_ADDRESS_UNSASSIGNED;
 }
 
+// 0: valid
+// 1: different node / cache full
+// 2: older message
 static int mesh_seq_auth_validate(uint16_t src, uint32_t seq){
     if (mesh_seq_auth_single_src == MESH_ADDRESS_UNSASSIGNED){
         mesh_seq_auth_single_src = src;
@@ -217,9 +220,11 @@ static int mesh_seq_auth_validate(uint16_t src, uint32_t seq){
     }
     mesh_seq_auth_single_seq = seq;
     return 0;
+
 }
 
 static int mesh_seq_zero_validate(uint16_t src, uint16_t seq_zero){
+    printf("mesh_seq_zero_validate(%x, %x) -- last (%x, %x)\n", src, seq_zero, mesh_seq_auth_single_src, mesh_seq_auth_single_zero);
     // assume mesh_seq_auth_validate was already called
     if (mesh_seq_auth_single_src == MESH_ADDRESS_UNSASSIGNED) return 0;
     if (mesh_seq_auth_single_src != src){
@@ -228,10 +233,14 @@ static int mesh_seq_zero_validate(uint16_t src, uint16_t seq_zero){
     if (mesh_seq_auth_single_zero >= seq_zero){
         return 2;
     }
-    mesh_seq_auth_single_zero = seq_zero;
     return 0;
 }
 
+static void  mesh_seq_zero_commit(uint16_t src, uint16_t seq_zero){
+    printf("mesh_seq_zero_commit(%x, %x) -- last (%x, %x)\n", src, seq_zero, mesh_seq_auth_single_src, mesh_seq_auth_single_zero);
+    mesh_seq_auth_single_src  = src; 
+    mesh_seq_auth_single_zero = seq_zero;
+}
 
 // stub lower transport
 
@@ -643,6 +652,7 @@ static mesh_transport_pdu_t * test_transport_pdu;
 
 
 static void mesh_lower_transport_setup_segemented_acknowledge_message(uint8_t * data, uint8_t obo, uint16_t seq_zero, uint32_t block_ack){
+    // printf("ACK Upper Transport, seq_zero %x\n", seq_zero);
     data[0] = 0;    // SEG = 0, Opcode = 0
     big_endian_store_16( data, 1, (obo << 15) | (seq_zero << 2) | 0);    // OBO, SeqZero, RFU
     big_endian_store_32( data, 3, block_ack);
@@ -651,10 +661,9 @@ static void mesh_lower_transport_setup_segemented_acknowledge_message(uint8_t * 
 
 static void mesh_transport_send_ack(mesh_transport_pdu_t * transport_pdu){
     // setup ack message
-    uint8_t ack_msg[7];
-    uint16_t seq_zero = mesh_transport_seq(transport_pdu) & 0x1fff;
+    uint8_t  ack_msg[7];
+    uint16_t seq_zero = transport_pdu->seq_zero;
     mesh_lower_transport_setup_segemented_acknowledge_message(ack_msg, 0, seq_zero, transport_pdu->block_ack);
-
     printf("mesh_transport_send_ack for pdu %p with netkey_index %x, TTL = %u, SeqZero = %x, SRC = %x, DST = %x\n",
         transport_pdu, transport_pdu->netkey_index, mesh_transport_ttl(transport_pdu), seq_zero, primary_element_address, mesh_transport_src(transport_pdu));
 
@@ -680,14 +689,11 @@ static void mesh_transport_stop_incomplete_timer(mesh_transport_pdu_t * transpor
 
 // does not free packet, just stops timers and updates reassembly engine
 static void mesh_transport_segmented_message_complete(mesh_transport_pdu_t * transport_pdu){
+    /// set flag
+    transport_pdu->message_complete = 1;
     // stop timers
     mesh_transport_stop_acknowledgment_timer(transport_pdu);
     mesh_transport_stop_incomplete_timer(transport_pdu);
-    // reset reassembly
-    if (transport_pdu == test_transport_pdu){
-        printf("Reset Reassembly Engine\n");
-        test_transport_pdu = NULL;
-    }
 }
 
 static void mesh_transport_rx_ack_timeout(btstack_timer_source_t * ts){
@@ -738,8 +744,9 @@ static void mesh_transport_abort_transmission(void){
 
 static mesh_transport_pdu_t * mesh_transport_pdu_for_segmented_message(mesh_network_pdu_t * network_pdu){
     // tracks last received seq auth and indirectly drops segments for older transport pdus
+    uint16_t src = mesh_network_src(network_pdu);
     uint16_t seq_zero = ( big_endian_read_16(mesh_network_pdu_data(network_pdu), 1) >> 2) & 0x1fff;
-    // printf("mesh_transport_pdu_for_segmented_message: seq_zero %x\n", seq_zero);
+    printf("mesh_transport_pdu_for_segmented_message: seq_zero %x\n", seq_zero);
     // printf("mesh_transport_pdu_for_segmented_message: test transport pdu %p\n", test_transport_pdu);
     if (test_transport_pdu){
         // check if segment for same seq zero
@@ -748,28 +755,44 @@ static mesh_transport_pdu_t * mesh_transport_pdu_for_segmented_message(mesh_netw
             printf("mesh_transport_pdu_for_segmented_message: segment for current transport pdu with SeqZero %x\n", active_seq_zero);
             return test_transport_pdu;
         } else {
-            // seq zero differs from current transport pdu
-            printf("mesh_transport_pdu_for_segmented_message: drop segment. current transport pdu SeqZero %x, now %x\n", active_seq_zero, seq_zero);
-            return NULL;
+            // check if network_pdu starts a new message
+            if (test_transport_pdu->message_complete){
+                if (mesh_seq_zero_validate(src, seq_zero) == 0){
+                    printf("mesh_transport_pdu_for_segmented_message: segment of new transport pdu with SeqZero %x, reset assembly\n", seq_zero);
+                    // reset reassembly, see below
+                    test_transport_pdu = NULL;
+                } else {
+                    printf("mesh_transport_pdu_for_segmented_message: segment for complete message. send ack\n");
+                    mesh_transport_send_ack(test_transport_pdu);
+                    return NULL;
+                }
+            } else {
+                // seq zero differs from current transport pdu, but current pdu is not complete
+                printf("mesh_transport_pdu_for_segmented_message: drop segment. current transport pdu SeqZero %x, now %x\n", active_seq_zero, seq_zero);
+                return NULL;
+            }
         }
-    } else {
-        // no transport pdu acive, check if seq zero is new
-        uint16_t src = mesh_network_src(network_pdu);
-        if (mesh_seq_zero_validate(src, seq_zero) == 0){
-            test_transport_pdu = btstack_memory_mesh_transport_pdu_get();
-            // copy meta data
-            memcpy(test_transport_pdu->network_header, network_pdu->data, 9);
-            test_transport_pdu->netkey_index = network_pdu->netkey_index;
-            test_transport_pdu->block_ack = 0;
-            test_transport_pdu->acknowledgement_timer_active = 0;
-            printf("mesh_transport_pdu_for_segmented_message: setup transport pdu %p for src %x, seq %06x\n", test_transport_pdu, src, mesh_transport_seq(test_transport_pdu));
-            return test_transport_pdu;
-        }  else {
-            // seq zero differs from current transport pdu
-            printf("mesh_transport_pdu_for_segmented_message: drop segment for old seq %x\n", seq_zero);
-            return NULL;
-        }     
     }
+
+    // no transport pdu active, check if seq zero is new
+    if (mesh_seq_zero_validate(src, seq_zero) == 0){
+        test_transport_pdu = btstack_memory_mesh_transport_pdu_get();
+        mesh_seq_zero_commit(src, seq_zero);
+        // copy meta data
+        memcpy(test_transport_pdu->network_header, network_pdu->data, 9);
+        test_transport_pdu->netkey_index = network_pdu->netkey_index;
+        test_transport_pdu->block_ack = 0;
+        test_transport_pdu->acknowledgement_timer_active = 0;
+        test_transport_pdu->message_complete = 0;
+        test_transport_pdu->seq_zero = seq_zero;
+        printf("mesh_transport_pdu_for_segmented_message: setup transport pdu %p for src %x, seq %06x, seq_zero %x\n", test_transport_pdu, src, mesh_transport_seq(test_transport_pdu), seq_zero);
+        return test_transport_pdu;
+
+    }  else {
+        // seq zero differs from current transport pdu
+        printf("mesh_transport_pdu_for_segmented_message: drop segment for old seq %x\n", seq_zero);
+        return NULL;
+    }     
 }
 
 static void mesh_lower_transport_process_segment( mesh_transport_pdu_t * transport_pdu, mesh_network_pdu_t * network_pdu){

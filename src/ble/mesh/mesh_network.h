@@ -97,6 +97,10 @@ typedef struct {
     uint8_t               acknowledgement_timer_active;
     // incomplete timer active
     uint8_t               incomplete_timer_active;
+    // message complete
+    uint8_t               message_complete;
+    // seq_zero for segmented messages
+    uint16_t              seq_zero;
     // pdu
     uint16_t              len;
     uint8_t               data[MESH_ACCESS_PAYLOAD_MAX];
