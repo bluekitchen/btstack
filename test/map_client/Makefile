@@ -29,6 +29,7 @@ LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 
 MAP = \
 	obex_iterator.c \
+	obex_message_builder.c \
 	goep_client.c \
 	yxml.c \
 	btstack_util.c \
