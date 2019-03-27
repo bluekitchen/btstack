@@ -182,14 +182,14 @@ static void map_handle_can_send_now(void){
 
     switch (map_client->state){
         case MAP_W2_SEND_CONNECT_REQUEST:
-            goep_client_create_connect_request(map_client->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
-            goep_client_add_header_target(map_client->goep_cid, 16, map_client_access_service_uuid);
+            goep_client_request_create_connect(map_client->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
+            goep_client_header_add_target(map_client->goep_cid, map_client_access_service_uuid, 16);
             // Mandatory if the PSE advertises a PbapSupportedFeatures attribute in its SDP record, else excluded.
             // if (goep_client_get_map_supported_features(map_client->goep_cid) != MAP_FEATURES_NOT_PRESENT){
                 application_parameters[0] = 0x29; // MAP_APPLICATION_PARAMETER_MAP_SUPPORTED_FEATURES;
                 application_parameters[1] = 4;
                 big_endian_store_32(application_parameters, 2, map_supported_features);
-                goep_client_add_header_application_parameters(map_client->goep_cid, 6, &application_parameters[0]);
+                goep_client_header_add_application_parameters(map_client->goep_cid, &application_parameters[0], 6);
 
             // }
             map_client->state = MAP_W4_CONNECT_RESPONSE;
@@ -197,14 +197,14 @@ static void map_handle_can_send_now(void){
             break;
         
         case MAP_W2_SEND_DISCONNECT_REQUEST:
-            goep_client_create_disconnect_request(map_client->goep_cid);
+            goep_client_request_create_disconnect(map_client->goep_cid);
             map_client->state = MAP_W4_DISCONNECT_RESPONSE;
             goep_client_execute(map_client->goep_cid);
             break;
         
         case MAP_W2_SET_PATH_ROOT:
-            goep_client_create_set_path_request(map_client->goep_cid, 1 << 1); // Don’t create directory
-            goep_client_add_header_name(map_client->goep_cid, "");
+            goep_client_request_create_set_path(map_client->goep_cid, 1 << 1); // Don’t create directory
+            goep_client_header_add_name(map_client->goep_cid, "");
             // state
             map_client->state = MAP_W4_SET_PATH_ROOT_COMPLETE;
             // send packet
@@ -232,8 +232,8 @@ static void map_handle_can_send_now(void){
             // status
             log_info("Path element '%s', done %u", path_element, done);
 
-            goep_client_create_set_path_request(map_client->goep_cid, 1 << 1); // Don’t create directory
-            goep_client_add_header_name(map_client->goep_cid, (const char *) path_element); // next element
+            goep_client_request_create_set_path(map_client->goep_cid, 1 << 1); // Don’t create directory
+            goep_client_header_add_name(map_client->goep_cid, (const char *) path_element); // next element
             // state
             map_client->state = MAP_W4_SET_PATH_ELEMENT_COMPLETE;
             // send packet
@@ -241,27 +241,27 @@ static void map_handle_can_send_now(void){
             break;
 
         case MAP_W2_SEND_GET_FOLDERS:
-            goep_client_create_get_request(map_client->goep_cid);
-            goep_client_add_header_type(map_client->goep_cid, "x-obex/folder-listing");
+            goep_client_request_create_get(map_client->goep_cid);
+            goep_client_header_add_type(map_client->goep_cid, "x-obex/folder-listing");
             map_client->state = MAP_W4_FOLDERS;
             goep_client_execute(map_client->goep_cid);
             break;
         
         case MAP_W2_SEND_GET_MESSAGES_FOR_FOLDER:
-            goep_client_create_get_request(map_client->goep_cid);
-            goep_client_add_header_type(map_client->goep_cid, "x-bt/MAP-msg-listing");
-            goep_client_add_header_name(map_client->goep_cid, map_client->folder_name);
+            goep_client_request_create_get(map_client->goep_cid);
+            goep_client_header_add_type(map_client->goep_cid, "x-bt/MAP-msg-listing");
+            goep_client_header_add_name(map_client->goep_cid, map_client->folder_name);
             map_client->state = MAP_W4_MESSAGES_IN_FOLDER;
             goep_client_execute(map_client->goep_cid);
             break;
         
         case MAP_W2_SEND_GET_MESSAGE_WITH_HANDLE:
-            goep_client_create_get_request(map_client->goep_cid);
+            goep_client_request_create_get(map_client->goep_cid);
             
             map_message_handle_to_str(map_message_handle_to_str_buffer, map_client->message_handle);
-            goep_client_add_header_name(map_client->goep_cid, map_message_handle_to_str_buffer);
+            goep_client_header_add_name(map_client->goep_cid, map_message_handle_to_str_buffer);
             
-            goep_client_add_header_type(map_client->goep_cid, "x-bt/message");
+            goep_client_header_add_type(map_client->goep_cid, "x-bt/message");
             
             application_parameters[pos++] = 0x0A; // attachment
             application_parameters[pos++] = 1;
@@ -270,22 +270,22 @@ static void map_handle_can_send_now(void){
             application_parameters[pos++] = 0x14; // Charset
             application_parameters[pos++] = 1;
             application_parameters[pos++] = 1;    // UTF-8
-            goep_client_add_header_application_parameters(map_client->goep_cid, 6, &application_parameters[0]);
+            goep_client_header_add_application_parameters(map_client->goep_cid, &application_parameters[0], 6);
 
             map_client->state = MAP_W4_MESSAGE;
             goep_client_execute(map_client->goep_cid);
             break;
 
         case MAP_W2_SET_NOTIFICATION:
-            goep_client_create_put_request(map_client->goep_cid);
-            goep_client_add_header_type(map_client->goep_cid, "x-bt/MAP-NotificationRegistration");
+            goep_client_request_create_put(map_client->goep_cid);
+            goep_client_header_add_type(map_client->goep_cid, "x-bt/MAP-NotificationRegistration");
 
             application_parameters[pos++] = 0x0E; // NotificationStatus
             application_parameters[pos++] = 1;
             application_parameters[pos++] = map_client->notifications_enabled;
 
-            goep_client_add_header_application_parameters(map_client->goep_cid, pos, &application_parameters[0]);
-            goep_client_add_body_static(map_client->goep_cid, 1, (uint8_t *) "0");
+            goep_client_header_add_application_parameters(map_client->goep_cid, &application_parameters[0], pos);
+            goep_client_body_add_static(map_client->goep_cid, (uint8_t *) "0", 1);
             map_client->state = MAP_W4_MESSAGE;
             goep_client_execute(map_client->goep_cid);
             break;
