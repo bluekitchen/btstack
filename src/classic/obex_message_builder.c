@@ -63,7 +63,21 @@ static uint8_t obex_message_builder_packet_append(uint8_t * buffer, uint16_t buf
      return ERROR_CODE_SUCCESS;
 }
 
-static uint8_t obex_message_builder_header_add_variable(uint8_t * buffer, uint16_t buffer_len, uint8_t header_type, const uint8_t * header_data, uint16_t header_data_length){
+uint8_t obex_message_builder_header_add_byte(uint8_t * buffer, uint16_t buffer_len, uint8_t header_type, uint8_t value){
+    uint8_t header[2];
+    header[0] = header_type;
+    header[1] = value;
+    return obex_message_builder_packet_append(buffer, buffer_len, &header[0], sizeof(header));
+}
+
+uint8_t obex_message_builder_header_add_word(uint8_t * buffer, uint16_t buffer_len, uint8_t header_type, uint32_t value){
+    uint8_t header[5];
+    header[0] = header_type;
+    big_endian_store_32(header, 1, value);
+    return obex_message_builder_packet_append(buffer, buffer_len, &header[0], sizeof(header));
+}
+
+uint8_t obex_message_builder_header_add_variable(uint8_t * buffer, uint16_t buffer_len, uint8_t header_type, const uint8_t * header_data, uint16_t header_data_length){
     uint8_t header[3];
     header[0] = header_type;
     big_endian_store_16(header, 1, sizeof(header) + header_data_length);
@@ -72,20 +86,6 @@ static uint8_t obex_message_builder_header_add_variable(uint8_t * buffer, uint16
     if (status != ERROR_CODE_SUCCESS) return status;
 
     return obex_message_builder_packet_append(buffer, buffer_len, header_data, header_data_length);        
-}
-
-static uint8_t obex_message_builder_header_add_byte(uint8_t * buffer, uint16_t buffer_len, uint8_t header_type, uint8_t value){
-    uint8_t header[2];
-    header[0] = header_type;
-    header[1] = value;
-    return obex_message_builder_packet_append(buffer, buffer_len, &header[0], sizeof(header));
-}
-
-static uint8_t obex_message_builder_header_add_word(uint8_t * buffer, uint16_t buffer_len, uint8_t header_type, uint32_t value){
-    uint8_t header[5];
-    header[0] = header_type;
-    big_endian_store_32(header, 1, value);
-    return obex_message_builder_packet_append(buffer, buffer_len, &header[0], sizeof(header));
 }
 
 static uint8_t obex_message_builder_header_add_connection_id(uint8_t * buffer, uint16_t buffer_len, uint32_t obex_connection_id){
