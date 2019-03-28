@@ -262,6 +262,11 @@ static void mesh_proxy_create_nonce(uint8_t * nonce, const mesh_network_pdu_t * 
 
 static void mesh_network_send_d(mesh_network_pdu_t * network_pdu){
 
+#ifdef LOG_NETWORK
+    printf("TX-D-NetworkPDU (%p): ", network_pdu);
+    printf_hexdump(network_pdu->data, network_pdu->len);
+#endif
+
     // add to queue
     btstack_linked_list_add_tail(&network_pdus_outgoing, (btstack_linked_item_t *) network_pdu);
 
@@ -283,7 +288,7 @@ static void mesh_network_send_c(void *arg){
     }
 
 #ifdef LOG_NETWORK
-    printf("TX-C-NetworkPDU: ");
+    printf("TX-C-NetworkPDU (%p): ", network_pdu);
     printf_hexdump(network_pdu->data, network_pdu->len);
 #endif
 
@@ -309,7 +314,7 @@ static void mesh_network_send_b(void *arg){
     network_pdu->len += net_mic_len;
 
 #ifdef LOG_NETWORK
-    printf("TX-B-NetworkPDU: ");
+    printf("TX-B-NetworkPDU (%p): ", network_pdu);
     printf_hexdump(network_pdu->data, network_pdu->len);
 #endif
 
@@ -615,9 +620,16 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
                         case MESH_SUBEVENT_CAN_SEND_NOW:
                             if (btstack_linked_list_empty(&network_pdus_outgoing)) break;
                             network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing);
+#ifdef LOG_NETWORK
+                            printf("TX-E-NetworkPDU (%p): ", network_pdu);
+                            printf_hexdump(network_pdu->data, network_pdu->len);
+#endif
                             adv_bearer_send_mesh_message(network_pdu->data, network_pdu->len);
                             // notify upper layer
                             (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_SENT, network_pdu);
+                            // request again
+                            if (btstack_linked_list_empty(&network_pdus_outgoing)) break;
+                            adv_bearer_request_can_send_now_for_mesh_message();
                             break;
                         default:
                             break;
@@ -688,7 +700,7 @@ void mesh_network_process_proxy_message(const uint8_t * pdu_data, uint8_t pdu_le
 
 void mesh_network_send_pdu(mesh_network_pdu_t * network_pdu){
 #ifdef LOG_NETWORK
-    printf("NetworkPDU(unencrypted): ");
+    printf("TX-A-NetworkPDU (%p): ", network_pdu);
     printf_hexdump(network_pdu->data, network_pdu->len);
 #endif
 
