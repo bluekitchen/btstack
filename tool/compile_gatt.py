@@ -18,6 +18,11 @@ import argparse
 
 header = '''
 // {0} generated from {1} for BTstack
+// it needs to be regenerated when the .gatt file is updated. 
+
+// To generate {0}:
+// {2} {1} {0}
+
 // att db format version 1
 
 // binary attribute representation:
@@ -837,11 +842,11 @@ def parseLines(fname_in, fin, fout):
 
             print("WARNING: unknown token: %s\n" % (parts[0]))
 
-def parse(fname_in, fin, fname_out, fout):
+def parse(fname_in, fin, fname_out, tool_path, fout):
     global handle
     global total_size
     
-    fout.write(header.format(fname_out, fname_in))
+    fout.write(header.format(fname_out, fname_in, tool_path))
     fout.write('{\n')
     write_indent(fout)
     fout.write('// ATT DB Version\n')
@@ -917,7 +922,7 @@ try:
     filename = args.hfile
     fin  = codecs.open (args.gattfile, encoding='utf-8')
     fout = open (filename, 'w')
-    parse(args.gattfile, fin, filename, fout)
+    parse(args.gattfile, fin, filename, sys.argv[0], fout)
     listHandles(fout)    
     fout.close()
     print('Created %s' % filename)
