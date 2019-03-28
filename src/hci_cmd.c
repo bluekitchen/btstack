@@ -317,11 +317,18 @@ const hci_cmd_t hci_remote_name_request_cancel = {
 OPCODE(OGF_LINK_CONTROL, 0x1A), "B"
 };
 
-/**
+ /**
  * @param handle
  */
 const hci_cmd_t hci_read_remote_supported_features_command = {
 OPCODE(OGF_LINK_CONTROL, 0x1B), "H"
+};
+
+/**
+ * @param handle
+ */
+const hci_cmd_t hci_read_remote_version_information = {
+OPCODE(OGF_LINK_CONTROL, 0x1D), "H"
 };
 
 /** 

@@ -472,6 +472,52 @@ static inline uint8_t hci_event_master_link_key_complete_get_key_flag(const uint
 }
 
 /**
+ * @brief Get field status from event HCI_EVENT_READ_REMOTE_VERSION_INFORMATION_COMPLETE
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_read_remote_version_information_complete_get_status(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field connection_handle from event HCI_EVENT_READ_REMOTE_VERSION_INFORMATION_COMPLETE
+ * @param event packet
+ * @return connection_handle
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_read_remote_version_information_complete_get_connection_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field version from event HCI_EVENT_READ_REMOTE_VERSION_INFORMATION_COMPLETE
+ * @param event packet
+ * @return version
+ * @note: btstack_type 1
+ */
+static inline uint8_t hci_event_read_remote_version_information_complete_get_version(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field manufacturer_name from event HCI_EVENT_READ_REMOTE_VERSION_INFORMATION_COMPLETE
+ * @param event packet
+ * @return manufacturer_name
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_read_remote_version_information_complete_get_manufacturer_name(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field subversion from event HCI_EVENT_READ_REMOTE_VERSION_INFORMATION_COMPLETE
+ * @param event packet
+ * @return subversion
+ * @note: btstack_type 2
+ */
+static inline uint16_t hci_event_read_remote_version_information_complete_get_subversion(const uint8_t * event){
+    return little_endian_read_16(event, 8);
+}
+
+/**
  * @brief Get field num_hci_command_packets from event HCI_EVENT_COMMAND_COMPLETE
  * @param event packet
  * @return num_hci_command_packets

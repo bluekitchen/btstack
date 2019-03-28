@@ -439,6 +439,14 @@ typedef enum {
 
 #define HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE  0x0B
 
+/**
+ * @format 12122
+ * @param status
+ * @param connection_handle
+ * @param version
+ * @param manufacturer_name
+ * @param subversion
+ */
 #define HCI_EVENT_READ_REMOTE_VERSION_INFORMATION_COMPLETE 0x0C
 
 #define HCI_EVENT_QOS_SETUP_COMPLETE                       0x0D
