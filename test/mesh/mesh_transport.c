@@ -277,17 +277,28 @@ static uint16_t               upper_transport_outgoing_seg_o;
 
 static uint32_t               upper_transport_seq;
 
+static uint32_t iv_index_for_ivi_nid(uint8_t ivi_nid){
+    // get IV Index and IVI
+    uint32_t iv_index = mesh_get_iv_index();
+    int ivi = ivi_nid >> 7;
+
+    // if least significant bit differs, use previous IV Index
+    if ((iv_index & 1 ) ^ ivi){
+        iv_index--;
+    }
+    return iv_index;
+}
 
 static void transport_unsegmented_setup_nonce(uint8_t * nonce, const mesh_network_pdu_t * network_pdu){
     nonce[1] = 0x00;    // SZMIC if a Segmented Access message or 0 for all other message formats
     memcpy(&nonce[2], &network_pdu->data[2], 7);
-    big_endian_store_32(nonce, 9, mesh_get_iv_index());
+    big_endian_store_32(nonce, 9, iv_index_for_ivi_nid(network_pdu->data[0]));
 }
 
 static void transport_segmented_setup_nonce(uint8_t * nonce, const mesh_transport_pdu_t * transport_pdu){
     nonce[1] = transport_pdu->transmic_len == 8 ? 0x80 : 0x00;
     memcpy(&nonce[2], &transport_pdu->network_header[2], 7);
-    big_endian_store_32(nonce, 9, mesh_get_iv_index());
+    big_endian_store_32(nonce, 9, iv_index_for_ivi_nid(transport_pdu->network_header[0]));
 }
 
 static void transport_unsegmented_setup_application_nonce(uint8_t * nonce, const mesh_network_pdu_t * network_pdu){

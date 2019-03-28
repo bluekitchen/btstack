@@ -490,6 +490,21 @@ static void process_network_pdu_validate_d(void * arg){
     process_network_pdu_done();
 }
 
+static uint32_t iv_index_for_pdu(const mesh_network_pdu_t * network_pdu){
+    // get IV Index and IVI
+    uint32_t iv_index = global_iv_index;
+    int ivi = network_pdu->data[0] >> 7;
+
+    // if least significant bit differs, use previous IV Index
+    if ((iv_index & 1 ) ^ ivi){
+        iv_index--;
+#ifdef LOG_NETWORK
+        printf("RX-IV: IVI indicates previous IV index, using 0x%08x\n", iv_index);
+#endif
+    }
+    return iv_index;
+}
+
 static void process_network_pdu_validate_b(void * arg){
     mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
 
@@ -504,16 +519,18 @@ static void process_network_pdu_validate_b(void * arg){
         network_pdu->data[1+i] = network_pdu_in_validation->data[1+i] ^ obfuscation_block[i];
     }
 
+    uint32_t iv_index = iv_index_for_pdu(network_pdu);
+
     if (network_pdu->flags & 1){
         // create network nonce
-        mesh_proxy_create_nonce(network_nonce, network_pdu, global_iv_index);
+        mesh_proxy_create_nonce(network_nonce, network_pdu, iv_index);
 #ifdef LOG_NETWORK
         printf("RX-Proxy Nonce: ");
         printf_hexdump(network_nonce, 13);
 #endif
     } else {
         // create network nonce
-        mesh_network_create_nonce(network_nonce, network_pdu, global_iv_index);
+        mesh_network_create_nonce(network_nonce, network_pdu, iv_index);
 #ifdef LOG_NETWORK
         printf("RX-Network Nonce: ");
         printf_hexdump(network_nonce, 13);
@@ -548,8 +565,9 @@ static void process_network_pdu_validate(mesh_network_pdu_t * network_pdu){
     current_network_key = mesh_network_key_iterator_get_next(&validation_network_key_it);
 
     // calc PECB
+    uint32_t iv_index = iv_index_for_pdu(network_pdu);
     memset(encryption_block, 0, 5);
-    big_endian_store_32(encryption_block, 5, global_iv_index);
+    big_endian_store_32(encryption_block, 5, iv_index);
     memcpy(&encryption_block[9], &network_pdu_in_validation->data[7], 7);
     btstack_crypto_aes128_encrypt(&mesh_network_crypto_request.aes128, current_network_key->privacy_key, encryption_block, obfuscation_block, &process_network_pdu_validate_b, network_pdu);
 }
