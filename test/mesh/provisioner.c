@@ -291,7 +291,7 @@ int btstack_main(void)
     adv_bearer_init();
     adv_bearer_register_for_mesh_message(&mesh_message_handler);
 
-    beacon_init(NULL, 0);
+    beacon_init();
     beacon_register_for_unprovisioned_device_beacons(&mesh_unprovisioned_beacon_handler);
     
     // Provisioning in device role
