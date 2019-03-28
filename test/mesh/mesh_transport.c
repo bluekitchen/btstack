@@ -223,16 +223,18 @@ static int mesh_seq_auth_validate(uint16_t src, uint32_t seq){
 
 }
 
+// return: 
+// - 0 = new seq_zero
+// - 1 = different src
+// - 2 = current src + seq_zer0
+// - 3 = older
 static int mesh_seq_zero_validate(uint16_t src, uint16_t seq_zero){
     printf("mesh_seq_zero_validate(%x, %x) -- last (%x, %x)\n", src, seq_zero, mesh_seq_auth_single_src, mesh_seq_auth_single_zero);
     // assume mesh_seq_auth_validate was already called
     if (mesh_seq_auth_single_src == MESH_ADDRESS_UNSASSIGNED) return 0;
-    if (mesh_seq_auth_single_src != src){
-        return 1;
-    }
-    if (mesh_seq_auth_single_zero >= seq_zero){
-        return 2;
-    }
+    if (mesh_seq_auth_single_src != src)                      return 1;
+    if (mesh_seq_auth_single_zero == seq_zero)                return 2;
+    if (mesh_seq_auth_single_zero > seq_zero)                 return 3;
     return 0;
 }
 
@@ -705,15 +707,18 @@ static void mesh_transport_rx_ack_timeout(btstack_timer_source_t * ts){
 
 static void mesh_transport_rx_incomplete_timeout(btstack_timer_source_t * ts){
     mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) btstack_run_loop_get_timer_context(ts);
-    printf("mesh_transport_rx_incomplete_timeout - give up\n");
+    printf("mesh_transport_rx_incomplete_timeout for %p - give up\n", transport_pdu);
     mesh_transport_segmented_message_complete(transport_pdu);
-
+    // stop reassembly
+    if (test_transport_pdu == transport_pdu){
+        test_transport_pdu = NULL;
+    }
     // free message
     btstack_memory_mesh_transport_pdu_free(transport_pdu);
 }
 
 static void mesh_transport_start_acknowledgment_timer(mesh_transport_pdu_t * transport_pdu, uint32_t timeout, void (*callback)(btstack_timer_source_t * ts)){
-    printf("ACK: start ack timer, timeout %u ms\n", (int) timeout);
+    printf("ACK: start ack timer for %p, timeout %u ms\n", transport_pdu, (int) timeout);
     btstack_run_loop_set_timer(&transport_pdu->acknowledgement_timer, timeout);
     btstack_run_loop_set_timer_handler(&transport_pdu->acknowledgement_timer, callback);
     btstack_run_loop_set_timer_context(&transport_pdu->acknowledgement_timer, transport_pdu);
@@ -722,6 +727,7 @@ static void mesh_transport_start_acknowledgment_timer(mesh_transport_pdu_t * tra
 }
 
 static void mesh_transport_restart_incomplete_timer(mesh_transport_pdu_t * transport_pdu, uint32_t timeout, void (*callback)(btstack_timer_source_t * ts)){
+    printf("RX-(re)start incomplete timer for %p, timeout %u ms\n", transport_pdu, (int) timeout);
     if (transport_pdu->incomplete_timer_active){
         btstack_run_loop_remove_timer(&transport_pdu->incomplete_timer);
     }
@@ -729,6 +735,7 @@ static void mesh_transport_restart_incomplete_timer(mesh_transport_pdu_t * trans
     btstack_run_loop_set_timer_handler(&transport_pdu->incomplete_timer, callback);
     btstack_run_loop_set_timer_context(&transport_pdu->incomplete_timer, transport_pdu);
     btstack_run_loop_add_timer(&transport_pdu->incomplete_timer);
+    transport_pdu->incomplete_timer_active = 1;
 }
 
 // abort outgoing transmission
@@ -757,14 +764,18 @@ static mesh_transport_pdu_t * mesh_transport_pdu_for_segmented_message(mesh_netw
         } else {
             // check if network_pdu starts a new message
             if (test_transport_pdu->message_complete){
-                if (mesh_seq_zero_validate(src, seq_zero) == 0){
-                    printf("mesh_transport_pdu_for_segmented_message: segment of new transport pdu with SeqZero %x, reset assembly\n", seq_zero);
-                    // reset reassembly, see below
-                    test_transport_pdu = NULL;
-                } else {
-                    printf("mesh_transport_pdu_for_segmented_message: segment for complete message. send ack\n");
-                    mesh_transport_send_ack(test_transport_pdu);
-                    return NULL;
+                switch(mesh_seq_zero_validate(src, seq_zero)){
+                    case 0:
+                        printf("mesh_transport_pdu_for_segmented_message: segment of new transport pdu with SeqZero %x, reset assembly\n", seq_zero);
+                        // reset reassembly, see below
+                        test_transport_pdu = NULL;
+                        break;
+                    case 2:
+                        printf("mesh_transport_pdu_for_segmented_message: segment for complete message. send ack\n");
+                        mesh_transport_send_ack(test_transport_pdu);
+                        return NULL;
+                    break;
+                        break;
                 }
             } else {
                 // seq zero differs from current transport pdu, but current pdu is not complete
