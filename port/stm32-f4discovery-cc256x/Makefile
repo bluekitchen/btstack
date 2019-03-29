@@ -22,7 +22,7 @@ TARGET = stm32f4-discovery-cc256x
 # debug build?
 DEBUG = 1
 # optimization
-OPT = -O2
+OPT = -Os
 
 
 #######################################
