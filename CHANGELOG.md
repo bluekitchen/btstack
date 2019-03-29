@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - att_db_util: support ATT_SECURITY_AUTHENTICATED_SC permission flag
 - GATT Compiler: support READ_AUTHENTICATED and WRITE_AUTHENTICATED permsission flags
 - port/stm32-f4discovery-cc256x: add support for built-in MEMS microphone
-
+- libusb: add support for nRF52840-PCA10056 running Zephyr hci_usb example
 ## Changes February 2019
 
 ### Changed
