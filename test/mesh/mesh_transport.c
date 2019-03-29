@@ -195,53 +195,76 @@ static uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl
 // mesh seq auth validation
 // TODO: support multiple devices
 #define MESH_ADDRESS_UNSASSIGNED 0xfffb
-static uint16_t mesh_seq_auth_single_src = MESH_ADDRESS_UNSASSIGNED;
-static uint32_t mesh_seq_auth_single_seq;
-static uint16_t mesh_seq_auth_single_zero;
+
+typedef struct {
+    // primary element address
+    uint16_t address;
+    // next expected seq number
+    uint32_t seq;
+    // seq_zero
+    uint16_t seq_zero;
+
+} mesh_peer_t;
+
+#define MESH_NUM_PEERS 5
+static mesh_peer_t mesh_peers[MESH_NUM_PEERS];
+
+static mesh_peer_t * mesh_peer_for_addr(uint16_t address){
+    int i;
+    for (i=0;i<MESH_NUM_PEERS;i++){
+        if (mesh_peers[i].address == address){
+            return &mesh_peers[i];
+        }
+    }
+    for (i=0;i<MESH_NUM_PEERS;i++){
+        // TODO: use MESH_ADDRESS_UNASSIGNED (after setting it to 0)
+        if (mesh_peers[i].address== 0){
+            memset(&mesh_peers[i], 0, sizeof(mesh_peer_t));
+            mesh_peers[i].address = address;
+            return &mesh_peers[i];
+        }
+    }
+    return NULL;
+}
 
 void mesh_seq_auth_reset(void){
-    mesh_seq_auth_single_src = MESH_ADDRESS_UNSASSIGNED;
+    int i;
+    for(i=0;i<MESH_NUM_PEERS;i++){
+        memset(&mesh_peers[i], 0, sizeof(mesh_peer_t));
+    }
 }
 
 // 0: valid
 // 1: different node / cache full
 // 2: older message
 static int mesh_seq_auth_validate(uint16_t src, uint32_t seq){
-    if (mesh_seq_auth_single_src == MESH_ADDRESS_UNSASSIGNED){
-        mesh_seq_auth_single_src = src;
-        mesh_seq_auth_single_seq = seq;
-        return 0;
-    }
-    if (mesh_seq_auth_single_src != src){
-        return 1;
-    }
-    if (mesh_seq_auth_single_seq >= seq){
-        return 2;
-    }
-    mesh_seq_auth_single_seq = seq;
+    mesh_peer_t * peer = mesh_peer_for_addr(src);
+    if (peer == NULL)     return 1;
+    if (peer->seq >= seq) return 2;
+    peer->seq = seq;
     return 0;
-
 }
 
 // return: 
 // - 0 = new seq_zero
-// - 1 = different src
+// - 1 = different src / cache full
 // - 2 = current src + seq_zer0
 // - 3 = older
 static int mesh_seq_zero_validate(uint16_t src, uint16_t seq_zero){
-    printf("mesh_seq_zero_validate(%x, %x) -- last (%x, %x)\n", src, seq_zero, mesh_seq_auth_single_src, mesh_seq_auth_single_zero);
+    mesh_peer_t * peer = mesh_peer_for_addr(src);
+    if (peer == 0) return 1;
+    printf("mesh_seq_zero_validate(%x, %x) -- last (%x, %x)\n", src, seq_zero, peer->address, peer->seq_zero);
     // assume mesh_seq_auth_validate was already called
-    if (mesh_seq_auth_single_src == MESH_ADDRESS_UNSASSIGNED) return 0;
-    if (mesh_seq_auth_single_src != src)                      return 1;
-    if (mesh_seq_auth_single_zero == seq_zero)                return 2;
-    if (mesh_seq_auth_single_zero > seq_zero)                 return 3;
+    if (peer->seq_zero == seq_zero) return 2;
+    if (peer->seq_zero > seq_zero)  return 3;
     return 0;
 }
 
 static void  mesh_seq_zero_commit(uint16_t src, uint16_t seq_zero){
-    printf("mesh_seq_zero_commit(%x, %x) -- last (%x, %x)\n", src, seq_zero, mesh_seq_auth_single_src, mesh_seq_auth_single_zero);
-    mesh_seq_auth_single_src  = src; 
-    mesh_seq_auth_single_zero = seq_zero;
+    mesh_peer_t * peer = mesh_peer_for_addr(src);
+    if (peer == 0) return;
+    printf("mesh_seq_zero_commit(%x, %x) -- last (%x, %x)\n", src, seq_zero, peer->address, peer->seq_zero);
+    peer->seq_zero = seq_zero;
 }
 
 // stub lower transport

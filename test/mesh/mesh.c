@@ -490,6 +490,7 @@ static void show_usage(void){
     printf("2      - Send   Segmented Access Message - Unicast\n");
     printf("3      - Send   Segmented Access Message - Group   D000\n");
     printf("4      - Send   Segmented Access Message - Virtual 9779\n");
+    printf("6      - Clear Replay Protection List\n");
     printf("7      - Load PTS App key\n");
     printf("\n");
 }
@@ -522,6 +523,10 @@ static void stdin_process(char cmd){
             break;
         case '4':
             send_pts_segmented_access_messsage_virtual();
+            break;
+        case '6':
+            printf("Clearing Replay Protection List\n");
+            mesh_seq_auth_reset();
             break;
         case '7':
             load_pts_app_key();
