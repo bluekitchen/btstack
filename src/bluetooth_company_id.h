@@ -1187,4 +1187,7 @@
 #define BLUETOOTH_COMPANY_ID_COCHLEAR_LIMITED                                            0x0497
 #define BLUETOOTH_COMPANY_ID_METER_GROUP_INC_USA                                         0x0498
 
+// manually added
+#define BLUETOOTH_COMPANY_ID_THE_LINUX_FOUNDATION                                        0x05F1
+
 #endif

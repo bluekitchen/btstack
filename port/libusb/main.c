@@ -51,6 +51,7 @@
 
 #include "btstack_config.h"
 
+#include "bluetooth_company_id.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_link_key_db_fs.h"
@@ -63,6 +64,7 @@
 #include "btstack_stdin.h"
 #include "btstack_audio.h"
 #include "btstack_tlv_posix.h"
+#include "btstack_chipset_zephyr.h"
 
 #define TLV_DB_PATH_PREFIX "/tmp/btstack_"
 #define TLV_DB_PATH_POSTFIX ".tlv"
@@ -73,7 +75,34 @@ static bd_addr_t             local_addr;
 
 int btstack_main(int argc, const char * argv[]);
 
+static const uint8_t read_static_address_command_complete_prefix[] = { 0x0e, 0x1b, 0x01, 0x09, 0xfc };
+
+static bd_addr_t static_address;
+static int using_static_address;
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+static void local_version_information_handler(uint8_t * packet){
+    printf("Local version information:\n");
+    uint16_t hci_version    = packet[6];
+    uint16_t hci_revision   = little_endian_read_16(packet, 7);
+    uint16_t lmp_version    = packet[9];
+    uint16_t manufacturer   = little_endian_read_16(packet, 10);
+    uint16_t lmp_subversion = little_endian_read_16(packet, 12);
+    printf("- HCI Version    0x%04x\n", hci_version);
+    printf("- HCI Revision   0x%04x\n", hci_revision);
+    printf("- LMP Version    0x%04x\n", lmp_version);
+    printf("- LMP Subversion 0x%04x\n", lmp_subversion);
+    printf("- Manufacturer 0x%04x\n", manufacturer);
+    switch (manufacturer){
+        case BLUETOOTH_COMPANY_ID_THE_LINUX_FOUNDATION:
+            printf("Linux Foundation - assume Zephyr hci_usb example running on nRF52xx\n");
+            hci_set_chipset(btstack_chipset_zephyr_instance());
+            break;
+        default:
+            break;
+    }
+}
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
@@ -83,12 +112,25 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case BTSTACK_EVENT_STATE:
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
             gap_local_bd_addr(local_addr);
+            if (using_static_address){
+                memcpy(local_addr, static_address, 6);
+            }
             printf("BTstack up and running on %s.\n", bd_addr_to_str(local_addr));
             strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
             strcat(tlv_db_path, bd_addr_to_str(local_addr));
             strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
             tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
             btstack_tlv_set_instance(tlv_impl, &tlv_context);
+            break;
+        case HCI_EVENT_COMMAND_COMPLETE:
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
+                local_version_information_handler(packet);
+            }
+            if (memcmp(packet, read_static_address_command_complete_prefix, sizeof(read_static_address_command_complete_prefix)) == 0){
+                reverse_48(&packet[7], static_address);
+                gap_random_address_set(static_address);
+                using_static_address = 1;
+            }
             break;
         default:
             break;
