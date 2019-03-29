@@ -584,7 +584,9 @@ static const uint16_t known_bt_devices[] = {
     // Asus BT400
     0x0b05, 0x17cb,
     // BCM20702B0 (Generic USB Detuned Class 1 @ 20 MHz)
-    0x0a5c, 0x22be
+    0x0a5c, 0x22be,
+    // Zephyr e.g nRF52840-PCA10056
+    0x2fe3, 0x0100,
 };
 
 static int num_known_devices = sizeof(known_bt_devices) / sizeof(uint16_t) / 2;
