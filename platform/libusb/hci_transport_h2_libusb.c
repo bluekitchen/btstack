@@ -193,6 +193,7 @@ static int      sco_shutdown;
 
 // dynamic SCO configuration
 static uint16_t iso_packet_size;
+static int      sco_enabled;
 
 #endif
 
@@ -754,7 +755,7 @@ static int prepare_device(libusb_device_handle * aHandle){
     log_info("claiming interface 0...");
     r = libusb_claim_interface(aHandle, 0);
     if (r < 0) {
-        log_error("Error claiming interface %d", r);
+        log_error("Error %d claiming interface 0", r);
         if (kernel_driver_detached){
             libusb_attach_kernel_driver(aHandle, 0);
         }
@@ -766,12 +767,9 @@ static int prepare_device(libusb_device_handle * aHandle){
     log_info("claiming interface 1...");
     r = libusb_claim_interface(aHandle, 1);
     if (r < 0) {
-        log_error("Error claiming interface %d", r);
-        if (kernel_driver_detached){
-            libusb_attach_kernel_driver(aHandle, 0);
-        }
-        libusb_close(aHandle);
-        return r;
+        log_error("Error %d claiming interface 1: - disabling SCO over HCI", r);
+    } else {
+        sco_enabled = 1;
     }
 #endif
 
@@ -1269,6 +1267,7 @@ static int usb_close(void){
                         break;
                     }
                 }
+                sco_enabled = 0;
 #endif
             }
 
@@ -1356,6 +1355,7 @@ static int usb_can_send_packet_now(uint8_t packet_type){
             return !usb_acl_out_active;
 #ifdef ENABLE_SCO_OVER_HCI
         case HCI_SCO_DATA_PACKET:
+            if (!sco_enabled) return 0;
             return sco_ring_have_space();
 #endif
         default:
@@ -1371,6 +1371,7 @@ static int usb_send_packet(uint8_t packet_type, uint8_t * packet, int size){
             return usb_send_acl_packet(packet, size);
 #ifdef ENABLE_SCO_OVER_HCI
         case HCI_SCO_DATA_PACKET:
+            if (!sco_enabled) return -1;
             return usb_send_sco_packet(packet, size);
 #endif
         default:
@@ -1380,6 +1381,8 @@ static int usb_send_packet(uint8_t packet_type, uint8_t * packet, int size){
 
 #ifdef ENABLE_SCO_OVER_HCI
 static void usb_set_sco_config(uint16_t voice_setting, int num_connections){
+    if (!sco_enabled) return;
+
     log_info("usb_set_sco_config: voice settings 0x%04x, num connections %u", voice_setting, num_connections);
 
     if (num_connections != sco_num_connections){
