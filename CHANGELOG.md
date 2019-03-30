@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - le_device_db: add secure_connection argument to le_device_db_encryption_set and le_device_db_encryption_get
-
+- replaced stm
 ### Fixed
 - SM: Use provided authentication requirements in slave security request
 
@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GATT Compiler: support READ_AUTHENTICATED and WRITE_AUTHENTICATED permsission flags
 - port/stm32-f4discovery-cc256x: add support for built-in MEMS microphone
 - libusb: add support for nRF52840-PCA10056 running Zephyr hci_usb example
+- port for Nucelo L073RZ with EM9304 DVK: stm32-l073rz-nucleo-em9304
+
 ## Changes February 2019
 
 ### Changed
