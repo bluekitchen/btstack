@@ -65,6 +65,7 @@ static const uint16_t init_script_size = sizeof(init_script);
 static uint32_t init_script_offset  = 0;
 
 static void chipset_init(const void * config){
+    UNUSED(config);
     init_script_offset = 0;
 }
 
