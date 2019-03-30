@@ -393,9 +393,6 @@ static const stk_generation_method_t stk_generation_method_with_secure_connectio
 #endif
 
 static void sm_run(void);
-#ifdef USE_CMAC_ENGINE
-static void sm_cmac_message_start(const sm_key_t key, uint16_t message_len, const uint8_t * message, void (*done_callback)(uint8_t * hash));
-#endif
 static void sm_done_for_handle(hci_con_handle_t con_handle);
 static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handle);
 static inline int sm_calc_actual_encryption_key_size(int other);
@@ -419,6 +416,7 @@ static void sm_handle_encryption_result_rau(void *arg);
 static void sm_handle_random_result_ph2_tk(void * arg);
 static void sm_handle_random_result_rau(void * arg);
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
+static void sm_cmac_message_start(const sm_key_t key, uint16_t message_len, const uint8_t * message, void (*done_callback)(uint8_t * hash));
 static void sm_ec_generate_new_key(void);
 static void sm_handle_random_result_sc_get_random(void * arg);
 static int sm_passkey_entry(stk_generation_method_t method);
@@ -890,7 +888,9 @@ static void sm_cmac_done_trampoline(void * arg){
 int sm_cmac_ready(void){
     return sm_cmac_active == 0;
 }
+#endif
 
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
 // generic cmac calculation
 static void sm_cmac_message_start(const sm_key_t key, uint16_t message_len, const uint8_t * message, void (*done_callback)(uint8_t * hash)){
     sm_cmac_active = 1;

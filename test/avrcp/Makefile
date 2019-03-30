@@ -36,6 +36,7 @@ COMMON += \
 	sm.c 						\
 	btstack_crypto.c            \
 	uECC.c                      \
+	le_device_db_fs.c           \
 
 CFLAGS += -g -Wall -Wmissing-prototypes -Wshadow -Wunused-variable -Wunused-parameter -Werror 
 #  -Wstrict-prototypes disabled because of portaudio headers
@@ -52,11 +53,13 @@ CFLAGS += -I..
 VPATH += ${BTSTACK_ROOT}/chipset/zephyr
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/classic
+VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/libusb
 VPATH += ${BTSTACK_ROOT}/port/libusb
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce 
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce 
+VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
 
 # use pkg-config for libusb
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
