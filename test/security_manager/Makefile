@@ -32,7 +32,8 @@ COMMON = \
     rijndael.c 					\
     sm.c     					\
     btstack_util.c			            \
-	
+	btstack_tlv.c \
+    
 COMMON_OBJ = $(COMMON:.c=.o)
 
 MBEDTLS = \

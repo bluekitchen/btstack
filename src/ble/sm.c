@@ -3972,8 +3972,7 @@ void sm_request_pairing(hci_con_handle_t con_handle){
                 case IRK_LOOKUP_SUCCEEDED:
 #ifndef ENABLE_LE_CENTRAL_AUTO_ENCRYPTION
                     le_device_db_encryption_get(sm_conn->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL, NULL);
-                    int have_ltk = !sm_is_null_key(ltk);
-                    log_info("have ltk %u", have_ltk);
+                    log_info("have ltk %u", !sm_is_null_key(ltk));
                     // trigger 'pairing complete' event on encryption change
                     sm_conn->sm_pairing_requested = 1;
                     sm_conn->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;

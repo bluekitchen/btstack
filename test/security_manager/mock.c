@@ -127,6 +127,10 @@ void gap_local_bd_addr(bd_addr_t address_buffer){
 		address_buffer[i] = 0x11 * (i+1);
 	}
 }
+
+void hci_halting_defer(void){
+}
+
 int hci_can_send_command_packet_now(void){
 	return 1;
 }
