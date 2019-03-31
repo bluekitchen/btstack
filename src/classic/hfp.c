@@ -725,15 +725,15 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             
             if (!hfp_connection) break;
 
-            log_info("SCO disconnected, w2 disconnect RFCOMM\n");
             hfp_connection->sco_handle = HCI_CON_HANDLE_INVALID;
             hfp_connection->release_audio_connection = 0;
             hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
             hfp_emit_event(hfp_connection, HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED, 0);
+
             if (hfp_connection->release_slc_connection){
-                hfp_connection->state = HFP_W4_RFCOMM_DISCONNECTED;
                 hfp_connection->release_slc_connection = 0;
-                rfcomm_disconnect(hfp_connection->rfcomm_cid);
+                log_info("SCO disconnected, w2 disconnect RFCOMM\n");
+                hfp_connection->state = HFP_W2_DISCONNECT_RFCOMM;
             }   
             break;
 
@@ -1508,6 +1508,17 @@ void hfp_release_service_level_connection(hfp_connection_t * hfp_connection){
         return;
     }
 
+    if (hfp_connection->state < HFP_W4_SCO_CONNECTED){
+        hfp_connection->state = HFP_W2_DISCONNECT_RFCOMM;
+        return;
+    }
+
+    if (hfp_connection->state < HFP_W4_SCO_DISCONNECTED){
+        hfp_connection->state = HFP_W2_DISCONNECT_SCO;
+        return;
+    }
+
+    // HFP_W4_SCO_DISCONNECTED or later 
     hfp_connection->release_slc_connection = 1;
 }
 
