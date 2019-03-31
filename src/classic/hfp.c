@@ -409,6 +409,9 @@ static hfp_connection_t * create_hfp_connection_context(void){
     hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
     hfp_connection->command = HFP_CMD_NONE;
     
+    hfp_connection->acl_handle = HCI_CON_HANDLE_INVALID;
+    hfp_connection->sco_handle = HCI_CON_HANDLE_INVALID;
+
     hfp_reset_context_flags(hfp_connection);
 
     btstack_linked_list_add(&hfp_connections, (btstack_linked_item_t*)hfp_connection);
@@ -729,7 +732,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
                 
             if (handle == hfp_connection->sco_handle){
                 log_info("SCO disconnected, w2 disconnect RFCOMM\n");
-                hfp_connection->sco_handle = 0;
+                hfp_connection->sco_handle = HCI_CON_HANDLE_INVALID;
                 hfp_connection->release_audio_connection = 0;
                 hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
                 hfp_emit_event(hfp_connection, HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED, 0);
