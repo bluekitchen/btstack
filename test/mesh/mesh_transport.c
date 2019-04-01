@@ -800,7 +800,7 @@ static mesh_transport_pdu_t * mesh_transport_pdu_for_segmented_message(mesh_netw
         if (!pdu) return NULL;
 
         // store meta data in new pdu
-        memcpy(peer->transport_pdu->network_header, network_pdu->data, 9);
+        memcpy(pdu->network_header, network_pdu->data, 9);
         pdu->netkey_index = network_pdu->netkey_index;
         pdu->block_ack = 0;
         pdu->acknowledgement_timer_active = 0;
