@@ -40,6 +40,7 @@
 #include <string.h>
 
 #include "ble/gatt-service/mesh_proxy_service_server.h"
+#include "ble/att_server.h"
 #include "ble/mesh/gatt_bearer.h"
 #include "ble/core.h"
 #include "bluetooth.h"
@@ -51,7 +52,6 @@
 #include "gap.h"
 #include "btstack_event.h"
 #include "provisioning.h"
-#include "att_server.h"
 
 #define NUM_TYPES 3
 
@@ -125,6 +125,8 @@ static void gatt_bearer_start_sending(hci_con_handle_t con_handle){
             }
             mesh_proxy_service_server_request_can_send_now(con_handle);
             break;
+        default:
+            break;
     }
 }
 
@@ -136,7 +138,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     int pdu_segment_len;
     int pos;
     hci_con_handle_t con_handle;
-    uint8_t send_to_mesh_network = 0;
+    int send_to_mesh_network;
 
     switch (packet_type) {
         case MESH_PROXY_DATA_PACKET:
@@ -171,7 +173,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 log_info("Remote uses larger MTU, enable long PDUs");
                 gatt_bearer_mtu = att_server_get_mtu(channel);
             }
-            
 
             switch (msg_sar_field){
                 case MESH_MSG_SAR_FIELD_COMPLETE_MSG:
@@ -190,7 +191,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     if ((sizeof(sar_buffer.reassembly_buffer) - reassembly_offset) < pdu_segment_len) return;
                     memcpy(sar_buffer.reassembly_buffer + reassembly_offset, packet+pos, pdu_segment_len);
                     reassembly_offset += pdu_segment_len;
-                    break; 
+                    break;
+                default:
+                    break;
             }
             
             send_to_mesh_network = (msg_sar_field == MESH_MSG_SAR_FIELD_COMPLETE_MSG) || (msg_sar_field == MESH_MSG_SAR_FIELD_LAST_SEGMENT);
@@ -204,7 +207,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         (*client_callbacks[msg_type])(MESH_PROXY_DATA_PACKET, 0, sar_buffer.reassembly_buffer, reassembly_offset);
                     }
                     reassembly_offset = 0;
-                    send_to_mesh_network = 0;
                     break;
                 default:
                     log_info("gatt bearer: message type %d not supported", msg_type);
