@@ -715,9 +715,19 @@ static void mesh_transport_send_ack_for_transport_pdu(mesh_transport_pdu_t *tran
     uint16_t seq_zero = mesh_transport_seq_zero(transport_pdu);
     uint8_t ttl = mesh_transport_ttl(transport_pdu);
     uint16_t dest = mesh_transport_src(transport_pdu);
+    uint16_t netkey_index = transport_pdu->netkey_index;
     printf("mesh_transport_send_ack_for_transport_pdu %p with netkey_index %x, TTL = %u, SeqZero = %x, SRC = %x, DST = %x\n",
-           transport_pdu, transport_pdu->netkey_index, mesh_transport_ttl(transport_pdu), seq_zero, primary_element_address, dest);
-    mesh_transport_send_ack(transport_pdu->netkey_index, ttl, dest, seq_zero, transport_pdu->block_ack);
+           transport_pdu, netkey_index, ttl, seq_zero, primary_element_address, dest);
+    mesh_transport_send_ack(netkey_index, ttl, dest, seq_zero, transport_pdu->block_ack);
+}
+
+static void mesh_transport_send_ack_for_network_pdu(mesh_network_pdu_t *network_pdu, uint16_t seq_zero, uint32_t block_ack) {
+    uint8_t ttl = mesh_network_ttl(network_pdu);
+    uint16_t dest = mesh_network_src(network_pdu);
+    uint16_t netkey_index = network_pdu->netkey_index;
+    printf("mesh_transport_send_ack_for_network_pdu %p with netkey_index %x, TTL = %u, SeqZero = %x, SRC = %x, DST = %x\n",
+           network_pdu, netkey_index, ttl, seq_zero, primary_element_address, dest);
+    mesh_transport_send_ack(netkey_index, ttl, dest, seq_zero, block_ack);
 }
 
 static void mesh_transport_stop_acknowledgment_timer(mesh_transport_pdu_t * transport_pdu){
@@ -793,11 +803,23 @@ static void mesh_transport_abort_transmission(void){
 }
 
 static mesh_transport_pdu_t * mesh_transport_pdu_for_segmented_message(mesh_network_pdu_t * network_pdu){
-    // tracks last received seq auth and indirectly drops segments for older transport pdus
     uint16_t src = mesh_network_src(network_pdu);
     uint16_t seq_zero = ( big_endian_read_16(mesh_network_pdu_data(network_pdu), 1) >> 2) & 0x1fff;
     printf("mesh_transport_pdu_for_segmented_message: seq_zero %x\n", seq_zero);
-    // printf("mesh_transport_pdu_for_segmented_message: test transport pdu %p\n", test_transport_pdu);
+    mesh_peer_t * peer = mesh_peer_for_addr(src);
+    if (!peer) {
+        return NULL;
+    }
+
+    // check if segment for completed transport pdu
+    if (seq_zero == peer->seq_zero && test_transport_pdu->message_complete){
+        printf("mesh_transport_pdu_for_segmented_message: segment for complete message. send ack\n");
+        mesh_transport_send_ack_for_network_pdu(test_transport_pdu, seq_zero, peer->block_ack);
+        return NULL;
+    }
+
+    // tracks last received seq auth and indirectly drops segments for older transport pdus
+
     if (test_transport_pdu){
         // check if segment for same seq zero
         uint16_t active_seq_zero = mesh_transport_seq(test_transport_pdu) & 0x1fff;
@@ -814,6 +836,7 @@ static mesh_transport_pdu_t * mesh_transport_pdu_for_segmented_message(mesh_netw
                         test_transport_pdu = NULL;
                         break;
                     case 2:
+                        // TODO: obsolete (remove when test_transport_pdu is gone)
                         printf("mesh_transport_pdu_for_segmented_message: segment for complete message. send ack\n");
                         mesh_transport_send_ack_for_transport_pdu(test_transport_pdu);
                         return NULL;
