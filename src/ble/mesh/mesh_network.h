@@ -51,6 +51,8 @@ extern "C" {
 #define MESH_NETWORK_PAYLOAD_MAX      29
 #define MESH_ACCESS_PAYLOAD_MAX      384
 
+#define MESH_ADDRESS_UNSASSIGNED       0
+
 typedef enum {
     MESH_NETWORK_PDU_RECEIVED,
     MESH_NETWORK_PDU_SENT,
