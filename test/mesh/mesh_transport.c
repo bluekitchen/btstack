@@ -193,9 +193,6 @@ static uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl
 }
 
 // mesh seq auth validation
-// TODO: support multiple devices
-#define MESH_ADDRESS_UNSASSIGNED 0xfffb
-
 typedef struct {
     // primary element address
     uint16_t address;
@@ -222,8 +219,7 @@ static mesh_peer_t * mesh_peer_for_addr(uint16_t address){
         }
     }
     for (i=0;i<MESH_NUM_PEERS;i++){
-        // TODO: use MESH_ADDRESS_UNASSIGNED (after setting it to 0)
-        if (mesh_peers[i].address== 0){
+        if (mesh_peers[i].address== MESH_ADDRESS_UNSASSIGNED){
             memset(&mesh_peers[i], 0, sizeof(mesh_peer_t));
             mesh_peers[i].address = address;
             return &mesh_peers[i];
@@ -237,40 +233,6 @@ void mesh_seq_auth_reset(void){
     for(i=0;i<MESH_NUM_PEERS;i++){
         memset(&mesh_peers[i], 0, sizeof(mesh_peer_t));
     }
-}
-
-// 0: valid
-// 1: different node / cache full
-// 2: older message
-static int mesh_seq_auth_validate(uint16_t src, uint32_t seq){
-    mesh_peer_t * peer = mesh_peer_for_addr(src);
-    if (peer == NULL)     return 1;
-    if (peer->seq >= seq) return 2;
-    peer->seq = seq;
-    return 0;
-}
-
-// return: 
-// - 0 = new seq_zero
-// - 1 = different src / cache full
-// - 2 = current src + seq_zer0
-// - 3 = older
-static int mesh_seq_zero_validate(uint16_t src, uint16_t seq_zero){
-    mesh_peer_t * peer = mesh_peer_for_addr(src);
-    if (peer == 0) return 1;
-    printf("mesh_seq_zero_validate(%x, %x) -- last (%x, %x)\n", src, seq_zero, peer->address, peer->seq_zero);
-    // assume mesh_seq_auth_validate was already called
-    if (peer->seq_zero == seq_zero) return 2;
-    if (peer->seq_zero > seq_zero)  return 3;
-    return 0;
-}
-
-static void  mesh_seq_zero_commit(uint16_t src, uint16_t seq_zero){
-    mesh_peer_t * peer = mesh_peer_for_addr(src);
-    if (peer == 0) return;
-    printf("mesh_seq_zero_commit(%x, %x) -- last (%x, %x)\n", src, seq_zero, peer->address, peer->seq_zero);
-    peer->seq_zero  = seq_zero;
-    peer->block_ack = 0;
 }
 
 // stub lower transport
@@ -809,6 +771,7 @@ static mesh_transport_pdu_t * mesh_transport_pdu_for_segmented_message(mesh_netw
     if (!peer) {
         return NULL;
     }
+    printf("mesh_seq_zero_validate(%x, %x) -- last (%x, %x)\n", src, seq_zero, peer->address, peer->seq_zero);
 
     // reception of transport message ongoing
     if (peer->transport_pdu){
@@ -832,21 +795,25 @@ static mesh_transport_pdu_t * mesh_transport_pdu_for_segmented_message(mesh_netw
     }
 
     // no transport pdu active, check if seq zero is new
-    if (mesh_seq_zero_validate(src, seq_zero) == 0){
+    if (seq_zero > peer->seq_zero){
         mesh_transport_pdu_t * pdu = btstack_memory_mesh_transport_pdu_get();
         if (!pdu) return NULL;
 
-        mesh_seq_zero_commit(src, seq_zero);
-
-        // copy meta data
+        // store meta data in new pdu
         memcpy(peer->transport_pdu->network_header, network_pdu->data, 9);
         pdu->netkey_index = network_pdu->netkey_index;
         pdu->block_ack = 0;
         pdu->acknowledgement_timer_active = 0;
         pdu->message_complete = 0;
         pdu->seq_zero = seq_zero;
+
+        // update peer info
         peer->transport_pdu = pdu;
+        peer->seq_zero      = seq_zero;
+        peer->block_ack     = 0;
+
         printf("mesh_transport_pdu_for_segmented_message: setup transport pdu %p for src %x, seq %06x, seq_zero %x\n", pdu, src, mesh_transport_seq(pdu), seq_zero);
+
         return peer->transport_pdu;
     }  else {
         // seq zero differs from current transport pdu
@@ -980,18 +947,27 @@ static void mesh_lower_transport_run(void){
 static void mesh_upper_transport_network_pdu_sent(mesh_network_pdu_t * network_pdu);
 
 void mesh_lower_transport_received_mesage(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu){
+    mesh_peer_t * peer;
+    uint16_t src;
+    uint16_t seq;
     switch (callback_type){
         case MESH_NETWORK_PDU_RECEIVED:
-            printf("Tranport: received message. SRC %x, SEQ %x\n", mesh_network_src(network_pdu), mesh_network_seq(network_pdu));
+            src = mesh_network_src(network_pdu);
+            seq = mesh_network_seq(network_pdu);
+            peer = mesh_peer_for_addr(src);
+            printf("Transport: received message. SRC %x, SEQ %x\n", src, seq);
             // validate seq
-            if (mesh_seq_auth_validate(mesh_network_src(network_pdu), mesh_network_seq(network_pdu))) {
+            if (peer && seq > peer->seq){
+                // track seq
+                peer->seq = seq;
+                // add to list and go
+                btstack_linked_list_add_tail(&lower_transport_incoming, (btstack_linked_item_t *) network_pdu);
+                mesh_lower_transport_run();
+            } else {
+                // drop packet
                 printf("Transport: drop packet - src/seq auth failed\n");
                 mesh_network_message_processed_by_higher_layer(network_pdu);
-                break;
             }
-            // add to list and go
-            btstack_linked_list_add_tail(&lower_transport_incoming, (btstack_linked_item_t *) network_pdu);
-            mesh_lower_transport_run();
             break;
         case MESH_NETWORK_PDU_SENT:
             mesh_upper_transport_network_pdu_sent(network_pdu);
