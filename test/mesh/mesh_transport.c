@@ -811,44 +811,26 @@ static mesh_transport_pdu_t * mesh_transport_pdu_for_segmented_message(mesh_netw
         return NULL;
     }
 
-    // check if segment for completed transport pdu
-    if (seq_zero == peer->seq_zero && test_transport_pdu->message_complete){
-        printf("mesh_transport_pdu_for_segmented_message: segment for complete message. send ack\n");
-        mesh_transport_send_ack_for_network_pdu(test_transport_pdu, seq_zero, peer->block_ack);
-        return NULL;
-    }
-
     // tracks last received seq auth and indirectly drops segments for older transport pdus
-
     if (test_transport_pdu){
         // check if segment for same seq zero
-        uint16_t active_seq_zero = mesh_transport_seq(test_transport_pdu) & 0x1fff;
+        uint16_t active_seq_zero = mesh_transport_seq_zero(test_transport_pdu);
         if (active_seq_zero == seq_zero) {
             printf("mesh_transport_pdu_for_segmented_message: segment for current transport pdu with SeqZero %x\n", active_seq_zero);
             return test_transport_pdu;
         } else {
-            // check if network_pdu starts a new message
-            if (test_transport_pdu->message_complete){
-                switch(mesh_seq_zero_validate(src, seq_zero)){
-                    case 0:
-                        printf("mesh_transport_pdu_for_segmented_message: segment of new transport pdu with SeqZero %x, reset assembly\n", seq_zero);
-                        // reset reassembly, see below
-                        test_transport_pdu = NULL;
-                        break;
-                    case 2:
-                        // TODO: obsolete (remove when test_transport_pdu is gone)
-                        printf("mesh_transport_pdu_for_segmented_message: segment for complete message. send ack\n");
-                        mesh_transport_send_ack_for_transport_pdu(test_transport_pdu);
-                        return NULL;
-                    break;
-                        break;
-                }
-            } else {
-                // seq zero differs from current transport pdu, but current pdu is not complete
-                printf("mesh_transport_pdu_for_segmented_message: drop segment. current transport pdu SeqZero %x, now %x\n", active_seq_zero, seq_zero);
-                return NULL;
-            }
+            // seq zero differs from current transport pdu, but current pdu is not complete
+            printf("mesh_transport_pdu_for_segmented_message: drop segment. current transport pdu SeqZero %x, now %x\n",
+                   active_seq_zero, seq_zero);
+            return NULL;
         }
+    }
+
+    // send ACK if segment for already completed transport pdu
+    if ((peer->block_ack != 0)&& (seq_zero == peer->seq_zero) && (test_transport_pdu == NULL)){
+        printf("mesh_transport_pdu_for_segmented_message: segment for laset completed message. send ack\n");
+        mesh_transport_send_ack_for_network_pdu(network_pdu, seq_zero, peer->block_ack);
+        return NULL;
     }
 
     // no transport pdu active, check if seq zero is new
@@ -920,6 +902,9 @@ static void mesh_lower_transport_process_segment( mesh_transport_pdu_t * transpo
     if (peer){
         peer->block_ack = transport_pdu->block_ack;
     }
+
+    // clear test transport pdu
+    test_transport_pdu = NULL;
 
     // send ack
     mesh_transport_send_ack_for_transport_pdu(transport_pdu);
