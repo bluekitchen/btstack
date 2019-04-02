@@ -755,7 +755,7 @@ static void config_model_app_bind_handler(mesh_transport_pdu_t * transport_pdu){
     uint16_t app_key_index = little_endian_read_16(transport_pdu->data, 4);
     uint16_t model_identifier = little_endian_read_16(transport_pdu->data, 6);
 
-    config_model_subscription_status(0, element_address, app_key_index, model_identifier);    
+    config_model_app_status(0, element_address, app_key_index, model_identifier);
 }
 
 static const uint8_t config_composition_data_get[] = { 0x80, 0x08, 0xff };
