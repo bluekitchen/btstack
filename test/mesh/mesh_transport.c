@@ -1213,8 +1213,8 @@ uint8_t mesh_upper_transport_setup_unsegmented_access_pdu(mesh_network_pdu_t * n
 
     uint32_t seq = mesh_upper_transport_peek_seq();
 
-    printf("[+] Upper transport, setup unsegmented Access PDU (seq %06x): ", seq);
-    printf_hexdump(access_pdu_data, access_pdu_len);
+    printf("[+] Upper transport, setup unsegmented Access PDU - seq %06x\n", seq);
+    mesh_print_hex("Access Payload", access_pdu_data, access_pdu_len);
 
     // get app or device key
     const mesh_transport_key_t * appkey;
@@ -1233,7 +1233,6 @@ uint8_t mesh_upper_transport_setup_unsegmented_access_pdu(mesh_network_pdu_t * n
     transport_pdu_data[0] = akf_aid;
     memcpy(&transport_pdu_data[1], access_pdu_data, access_pdu_len);
     uint16_t transport_pdu_len = access_pdu_len + 1;
-    mesh_print_hex("Access Payload", access_pdu_data, access_pdu_len);
 
     // setup network_pdu
     mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, 0, ttl, mesh_upper_transport_next_seq(), src, dest, transport_pdu_data, transport_pdu_len);
@@ -1246,8 +1245,8 @@ uint8_t mesh_upper_transport_setup_segmented_access_pdu(mesh_transport_pdu_t * t
 
     uint32_t seq = mesh_upper_transport_peek_seq();
 
-    printf("[+] Upper transport, setup segmented Access PDU (seq %06x, szmic %u): ", seq, szmic);
-    printf_hexdump(access_pdu_data, access_pdu_len);
+    printf("[+] Upper transport, setup segmented Access PDU - seq %06x, szmic %u, iv_index %08x\n", seq, szmic, mesh_get_iv_index());
+    mesh_print_hex("Access Payload", access_pdu_data, access_pdu_len);
 
     // get app or device key
     const mesh_transport_key_t * appkey;
@@ -1272,7 +1271,7 @@ uint8_t mesh_upper_transport_setup_segmented_access_pdu(mesh_transport_pdu_t * t
     transport_pdu->netkey_index = netkey_index;
     transport_pdu->appkey_index = appkey_index;
     transport_pdu->akf_aid      = akf_aid;
-    mesh_transport_set_nid_ivi(transport_pdu, network_key->nid);
+    mesh_transport_set_nid_ivi(transport_pdu, network_key->nid | ((mesh_get_iv_index() & 1) << 7));
     mesh_transport_set_seq(transport_pdu, seq);
     mesh_transport_set_src(transport_pdu, src);
     mesh_transport_set_dest(transport_pdu, dest);
