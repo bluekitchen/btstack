@@ -53,7 +53,7 @@ void mesh_transport_init();
 
 void mesh_upper_transport_set_seq(uint32_t seq);
 
-uint32_t mesh_upper_transport_next_seq(void);
+uint32_t mesh_lower_transport_next_seq(void);
 
 void mesh_upper_transport_set_primary_element_address(uint16_t primary_element_address);
 
@@ -108,9 +108,9 @@ uint16_t mesh_virtual_address_register(uint8_t * label_uuid, uint16_t hash);
 void     mesh_virtual_address_unregister(uint16_t pseudo_dst);
 
 // test
-void mesh_lower_transport_received_mesage(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu);
-void mesh_transport_dump(void);
-void mesh_transport_reset(void);
+void mesh_lower_transport_received_message(mesh_network_callback_type_t callback_type, mesh_network_pdu_t *network_pdu);
+void mesh_lower_transport_dump(void);
+void mesh_lower_transport_reset(void);
 void mesh_seq_auth_reset(void);
 
 #ifdef __cplusplus

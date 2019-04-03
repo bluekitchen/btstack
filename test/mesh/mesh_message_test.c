@@ -146,7 +146,7 @@ static void test_lower_transport_callback_handler(mesh_network_callback_type_t c
             break;
         case MESH_NETWORK_PDU_SENT:
             printf("test MESH_NETWORK_PDU_SENT\n");
-            mesh_lower_transport_received_mesage(MESH_NETWORK_PDU_SENT, network_pdu);
+            mesh_lower_transport_received_message(MESH_NETWORK_PDU_SENT, network_pdu);
             break;
         default:
             break;
@@ -241,7 +241,7 @@ void test_receive_network_pdus(int count, char ** network_pdus, char ** lower_tr
         CHECK_EQUAL_ARRAY(transport_pdu_data, lower_transport_pdu, transport_pdu_len);
 
         // forward to mesh_transport
-        mesh_lower_transport_received_mesage(MESH_NETWORK_PDU_RECEIVED, received_network_pdu);
+        mesh_lower_transport_received_message(MESH_NETWORK_PDU_RECEIVED, received_network_pdu);
 
         // done
         received_network_pdu = NULL;

@@ -448,7 +448,7 @@ void proxy_configuration_message_handler(mesh_network_callback_type_t callback_t
                     uint8_t  ttl          = 0;
                     uint16_t src          = primary_element_address;
                     uint16_t dest         = 0; // unassigned address
-                    uint32_t seq          = mesh_upper_transport_next_seq();
+                    uint32_t seq          = mesh_lower_transport_next_seq();
                     uint8_t  nid          = mesh_network_nid(received_network_pdu);
                     uint16_t netkey_index = received_network_pdu->netkey_index; 
                     printf("netkey index 0x%02x\n", netkey_index);
