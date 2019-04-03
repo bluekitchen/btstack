@@ -46,13 +46,13 @@ LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 LDFLAGS += -lCppUTest -lCppUTestExt
 
 
-mesh: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} pb_adv.o pb_gatt.o mesh_proxy_service_server.o mesh_provisioning_service_server.o mesh_crypto.o provisioning_device.o mesh_network.o mesh_transport.o mesh.o
+mesh: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} pb_adv.o pb_gatt.o mesh_proxy_service_server.o mesh_provisioning_service_server.o mesh_crypto.o provisioning_device.o mesh_network.o mesh_peer.o mesh_transport.o mesh.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 provisioner: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} pb_adv.o mesh_crypto.o provisioning_provisioner.o provisioner.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-mesh_message_test: mesh_message_test.c mesh_network.o mesh_transport.o mesh_crypto.o btstack_memory.o btstack_util.o btstack_crypto.o btstack_linked_list.o hci_dump.o uECC.o mock.o rijndael.o hci_cmd.o
+mesh_message_test: mesh_message_test.c mesh_network.o mesh_peer.o mesh_transport.o mesh_crypto.o btstack_memory.o btstack_util.o btstack_crypto.o btstack_linked_list.o hci_dump.o uECC.o mock.o rijndael.o hci_cmd.o
 	g++ $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 sniffer: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} sniffer.c 
@@ -73,7 +73,7 @@ mesh_provisioning_device: mesh_provisioning_device.h ${CORE_OBJ} ${COMMON_OBJ} $
 mesh_proxy_server.h: mesh_proxy_server.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 	
-mesh_proxy_server: mesh_proxy_server.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} mesh_transport.o mesh_network.o mesh_crypto.o gatt_bearer.c mesh_proxy_service_server.o mesh_proxy_server.o
+mesh_proxy_server: mesh_proxy_server.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} mesh_peer.o mesh_transport.o mesh_network.o mesh_crypto.o gatt_bearer.c mesh_proxy_service_server.o mesh_proxy_server.o
 	${CC} $(filter-out mesh_proxy_server.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 EXAMPLES = mesh provisioner mesh_message_test sniffer provisioning_device_test provisioning_provisioner_test mesh_provisioning_device mesh_proxy_server

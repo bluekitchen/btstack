@@ -44,6 +44,7 @@
 #include "mesh_transport.h"
 #include "btstack_util.h"
 #include "btstack_memory.h"
+#include "mesh_peer.h"
 
 static uint16_t primary_element_address;
 
@@ -190,49 +191,6 @@ static uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl
     // send network_pdu
     mesh_network_send_pdu(network_pdu);
     return 0;
-}
-
-// mesh seq auth validation
-typedef struct {
-    // primary element address
-    uint16_t address;
-    // next expected seq number
-    uint32_t seq;
-
-    // segmented transport message
-    mesh_transport_pdu_t * transport_pdu;
-    // seq_zero
-    uint16_t seq_zero;
-    // block ack
-    uint32_t block_ack;
-
-} mesh_peer_t;
-
-#define MESH_NUM_PEERS 5
-static mesh_peer_t mesh_peers[MESH_NUM_PEERS];
-
-static mesh_peer_t * mesh_peer_for_addr(uint16_t address){
-    int i;
-    for (i=0;i<MESH_NUM_PEERS;i++){
-        if (mesh_peers[i].address == address){
-            return &mesh_peers[i];
-        }
-    }
-    for (i=0;i<MESH_NUM_PEERS;i++){
-        if (mesh_peers[i].address== MESH_ADDRESS_UNSASSIGNED){
-            memset(&mesh_peers[i], 0, sizeof(mesh_peer_t));
-            mesh_peers[i].address = address;
-            return &mesh_peers[i];
-        }
-    }
-    return NULL;
-}
-
-void mesh_seq_auth_reset(void){
-    int i;
-    for(i=0;i<MESH_NUM_PEERS;i++){
-        memset(&mesh_peers[i], 0, sizeof(mesh_peer_t));
-    }
 }
 
 // stub lower transport
