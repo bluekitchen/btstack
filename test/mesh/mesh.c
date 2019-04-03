@@ -722,6 +722,9 @@ static void config_model_subscription_add_handler(mesh_transport_pdu_t * transpo
 
     config_model_subscription_status(0, element_address, address, model_identifier);    
 }
+static void config_model_subscription_virtual_address_add_handler(mesh_transport_pdu_t * transport_pdu){
+    config_model_subscription_add_handler(transport_pdu);
+}
 
 static void config_model_app_status(uint8_t status, uint16_t element_address, uint16_t app_key_index, uint32_t model_identifier){
     uint16_t src  = primary_element_address;
@@ -758,22 +761,34 @@ static void config_model_app_bind_handler(mesh_transport_pdu_t * transport_pdu){
     config_model_app_status(0, element_address, app_key_index, model_identifier);
 }
 
-static const uint8_t config_composition_data_get[] = { 0x80, 0x08, 0xff };
-static const uint8_t config_appkey_add[] = { 0x00 };
-static const uint8_t config_model_subscription_add[] = { 0x80, 0x1b };
-static const uint8_t config_model_app_bind[] = { 0x80, 0x3d };
+static const uint8_t config_appkey_add[] =                             { 0x00 };
+static const uint8_t config_composition_data_get[] =                   { 0x80, 0x08, 0xff };
+static const uint8_t config_model_subscription_add[] =                 { 0x80, 0x1b };
+static const uint8_t config_model_subscription_virtual_address_add[] = { 0x80, 0x20 };
+static const uint8_t config_model_app_bind[] =                         { 0x80, 0x3d };
 
 void mesh_segemented_message_handler(mesh_transport_pdu_t * transport_pdu){
+    printf("MESH Access Message: ");
+    printf_hexdump(transport_pdu->data, transport_pdu->len);
+
     if ( (transport_pdu->len == sizeof(config_composition_data_get)) && memcmp(transport_pdu->data, config_composition_data_get, sizeof(config_composition_data_get)) == 0){
+        printf("MESH config_composition_data_get\n");
         config_composition_data_status();
     }
     if ( (transport_pdu->len > sizeof(config_appkey_add)) && memcmp(transport_pdu->data, config_appkey_add, sizeof(config_appkey_add)) == 0){
+        printf("MESH config_appkey_add\n");
         config_appkey_add_handler(transport_pdu);
     }
     if ( (transport_pdu->len > sizeof(config_model_subscription_add)) && memcmp(transport_pdu->data, config_model_subscription_add, sizeof(config_model_subscription_add)) == 0){
+        printf("MESH config_model_subscription_add\n");
         config_model_subscription_add_handler(transport_pdu);
     }
+    if ( (transport_pdu->len > sizeof(config_model_subscription_virtual_address_add)) && memcmp(transport_pdu->data, config_model_subscription_virtual_address_add, sizeof(config_model_subscription_virtual_address_add)) == 0){
+        printf("MESH config_model_subscription_virtual_address_add_handler\n");
+        config_model_subscription_virtual_address_add_handler(transport_pdu);
+    }
     if ( (transport_pdu->len > sizeof(config_model_app_bind)) && memcmp(transport_pdu->data, config_model_app_bind, sizeof(config_model_app_bind)) == 0){
+        printf("MESH config_model_app_bind\n");
         config_model_app_bind_handler(transport_pdu);
     }
 }
