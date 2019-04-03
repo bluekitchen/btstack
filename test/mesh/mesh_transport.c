@@ -799,8 +799,12 @@ static mesh_transport_pdu_t * mesh_transport_pdu_for_segmented_message(mesh_netw
         mesh_transport_pdu_t * pdu = btstack_memory_mesh_transport_pdu_get();
         if (!pdu) return NULL;
 
-        // store meta data in new pdu
+        // cache network pdu header
         memcpy(pdu->network_header, network_pdu->data, 9);
+        // store lower 24 bit of SeqAuth for App / Device Nonce (by storing 16-bit seq_zero in seq)
+        big_endian_store_16(pdu->network_header, 3, seq_zero);
+
+        // store meta data in new pdu
         pdu->netkey_index = network_pdu->netkey_index;
         pdu->block_ack = 0;
         pdu->acknowledgement_timer_active = 0;
