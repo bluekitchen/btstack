@@ -662,7 +662,7 @@ static void mesh_transport_stop_incomplete_timer(mesh_transport_pdu_t * transpor
 
 // stops timers and updates reassembly engine
 static void mesh_transport_segmented_message_complete(mesh_transport_pdu_t * transport_pdu){
-    /// set flag
+    // set flag
     transport_pdu->message_complete = 1;
     // stop timers
     mesh_transport_stop_acknowledgment_timer(transport_pdu);
@@ -752,15 +752,22 @@ static mesh_transport_pdu_t * mesh_transport_pdu_for_segmented_message(mesh_netw
         return NULL;
     }
 
+    // reconstruct lowest 24 bit of SeqAuth
+    uint32_t seq = mesh_network_seq(network_pdu);
+    uint32_t seq_auth = (seq & 0xffe000) | seq_zero;
+    if (seq_auth > seq){
+        seq_auth -= 0x2000;
+    }
+
     // no transport pdu active, check if seq zero is new
-    if (seq_zero > peer->seq_zero){
+    if (seq_auth > peer->seq_auth){
         mesh_transport_pdu_t * pdu = btstack_memory_mesh_transport_pdu_get();
         if (!pdu) return NULL;
 
         // cache network pdu header
         memcpy(pdu->network_header, network_pdu->data, 9);
-        // store lower 24 bit of SeqAuth for App / Device Nonce (by storing 16-bit seq_zero in seq)
-        big_endian_store_16(pdu->network_header, 3, seq_zero);
+        // store lower 24 bit of SeqAuth for App / Device Nonce
+        big_endian_store_24(pdu->network_header, 2, seq_auth);
 
         // store meta data in new pdu
         pdu->netkey_index = network_pdu->netkey_index;
@@ -772,6 +779,7 @@ static mesh_transport_pdu_t * mesh_transport_pdu_for_segmented_message(mesh_netw
         // update peer info
         peer->transport_pdu = pdu;
         peer->seq_zero      = seq_zero;
+        peer->seq_auth      = seq_auth;
         peer->block_ack     = 0;
 
         printf("mesh_transport_pdu_for_segmented_message: setup transport pdu %p for src %x, seq %06x, seq_zero %x\n", pdu, src, mesh_transport_seq(pdu), seq_zero);

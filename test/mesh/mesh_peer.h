@@ -51,6 +51,8 @@ typedef struct {
     mesh_transport_pdu_t * transport_pdu;
     // seq_zero
     uint16_t seq_zero;
+    // seq_auth
+    uint32_t seq_auth;
     // block ack
     uint32_t block_ack;
 } mesh_peer_t;
