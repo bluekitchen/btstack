@@ -100,9 +100,8 @@ static void mesh_transport_set_dest(mesh_transport_pdu_t * transport_pdu, uint16
 
 // prototypes
 
-static void mesh_transport_run(void);
-static void mesh_lower_transport_abort_transmission(void);
 static void mesh_lower_transport_run(void);
+static void mesh_lower_transport_abort_transmission(void);
 
 // temp prototypes upper transport
 static void mesh_upper_unsegmented_control_message_received(mesh_network_pdu_t * network_pdu);
@@ -426,6 +425,19 @@ static void mesh_lower_transport_process_segment( mesh_transport_pdu_t * transpo
     mesh_upper_segmented_message_received(transport_pdu);
 }
 
+void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_NETWORK:
+            mesh_network_message_processed_by_higher_layer((mesh_network_pdu_t *) pdu);
+            break;
+        case MESH_PDU_TYPE_TRANSPORT:
+            mesh_transport_pdu_free((mesh_transport_pdu_t *) pdu);
+            break;
+        default:
+            break;
+    }
+}
+
 static void mesh_lower_transport_network_pdu_sent(mesh_network_pdu_t *network_pdu);
 
 static void mesh_lower_transport_tx_ack_timeout(btstack_timer_source_t * ts);
@@ -446,7 +458,7 @@ void mesh_lower_transport_received_message(mesh_network_callback_type_t callback
                 peer->seq = seq;
                 // add to list and go
                 btstack_linked_list_add_tail(&lower_transport_incoming, (btstack_linked_item_t *) network_pdu);
-                mesh_transport_run();
+                mesh_lower_transport_run();
             } else {
                 // drop packet
                 printf("Transport: drop packet - src/seq auth failed\n");
@@ -759,6 +771,8 @@ static mesh_virtual_address_t * mesh_virtual_address_for_pseudo_dst(uint16_t pse
 static void mesh_upper_transport_validate_unsegmented_message(mesh_network_pdu_t * network_pdu);
 static void mesh_upper_transport_validate_segmented_message(mesh_transport_pdu_t * transport_pdu);
 
+static void mesh_transport_run(void);
+
 static int mesh_transport_crypto_active;
 static mesh_network_pdu_t   * network_pdu_in_validation;
 static mesh_transport_pdu_t * transport_pdu_in_validation;
@@ -770,12 +784,8 @@ static mesh_transport_key_iterator_t mesh_transport_key_it;
 static void (*mesh_access_unsegmented_handler)(mesh_network_pdu_t * network_pdu);
 static void (*mesh_access_segmented_handler)(mesh_transport_pdu_t * transport_pdu);
 
-// upper transport segmented access messages (to validate)
-static btstack_linked_list_t upper_transport_access;
-// upper transport segmented control messages (to process)
-static btstack_linked_list_t upper_transport_control;
-// access segmented access messages (to process)
-// static btstack_linked_list_t access_incoming;
+// unsegmented (network) and segmented (transport) control and access messages
+static btstack_linked_list_t upper_transport_incoming;
 
 
 static void mesh_upper_unsegmented_control_message_received(mesh_network_pdu_t * network_pdu){
@@ -790,13 +800,13 @@ static void mesh_upper_unsegmented_control_message_received(mesh_network_pdu_t *
 
 static void mesh_upper_transport_process_unsegmented_message_done(mesh_network_pdu_t *network_pdu){
     mesh_transport_crypto_active = 0;
-    mesh_network_message_processed_by_higher_layer(network_pdu_in_validation);
+    mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *) network_pdu_in_validation);
     mesh_transport_run();
 }
 
 static void mesh_upper_transport_process_segmented_message_done(mesh_transport_pdu_t *transport_pdu){
     mesh_transport_crypto_active = 0;
-    btstack_memory_mesh_transport_pdu_free(transport_pdu);
+    mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *)transport_pdu);
     mesh_transport_run();
 }
 
@@ -1087,14 +1097,8 @@ static void mesh_upper_transport_process_message(mesh_transport_pdu_t * transpor
 }
 
 static void mesh_upper_segmented_message_received(mesh_transport_pdu_t * transport_pdu){
-    uint8_t ctl = mesh_transport_ctl(transport_pdu);
-    if (ctl){
-        printf("Store Reassembled Control Message for processing\n");
-        btstack_linked_list_add_tail(&upper_transport_control, (btstack_linked_item_t*) transport_pdu);
-    } else {
-        printf("Store Reassembled Access Message for decryption\n");
-        btstack_linked_list_add_tail(&upper_transport_access, (btstack_linked_item_t*) transport_pdu);
-    }
+    btstack_linked_list_add_tail(&upper_transport_incoming, (btstack_linked_item_t*) transport_pdu);
+    mesh_transport_run();
 }
 
 static void mesh_upper_transport_send_unsegmented_access_pdu_ccm(void * arg){
@@ -1374,11 +1378,9 @@ void mesh_transport_init(){
     mesh_network_set_higher_layer_handler(&mesh_lower_transport_received_message);
 }
 
-static void mesh_transport_run(void){
+static void mesh_lower_transport_run(void){
     while(1){
         int done = 1;
-
-        if (mesh_transport_crypto_active) return;
 
         if (!btstack_linked_list_empty(&lower_transport_incoming)){
             done = 0;
@@ -1420,18 +1422,30 @@ static void mesh_transport_run(void){
             }
         }
 
-        if (!btstack_linked_list_empty(&upper_transport_access)){
-            // peek at next message
-            mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) btstack_linked_list_get_first_item(&upper_transport_access);
+        if (done) return;
+    }
+}
+
+static void mesh_transport_run(void){
+    while(!btstack_linked_list_empty(&upper_transport_incoming)){
+
+        if (mesh_transport_crypto_active) return;
+
+        // peek at next message
+        mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) btstack_linked_list_get_first_item(&upper_transport_incoming);
+        uint8_t ctl = mesh_transport_ctl(transport_pdu);
+        if (ctl){
+            printf("Ignoring Store Reassembled Control Message\n");
+            (void) btstack_linked_list_pop(&upper_transport_incoming);
+            mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *) transport_pdu);
+        } else {
             mesh_transport_pdu_t * decode_pdu = mesh_transport_pdu_get();
             if (!decode_pdu) return;
             // get encoded transport pdu and start processing
             transport_pdu_in_validation = transport_pdu;
-            (void) btstack_linked_list_pop(&upper_transport_access);
+            (void) btstack_linked_list_pop(&upper_transport_incoming);
             mesh_upper_transport_process_message(decode_pdu);
         }
-
-        if (done) return;
     }
 }
 
