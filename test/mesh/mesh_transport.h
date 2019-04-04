@@ -51,7 +51,7 @@ extern "C"
 
 void mesh_transport_init();
 
-void mesh_upper_transport_set_seq(uint32_t seq);
+void mesh_lower_transport_set_seq(uint32_t seq);
 
 uint32_t mesh_lower_transport_next_seq(void);
 
@@ -91,6 +91,11 @@ uint8_t mesh_upper_transport_setup_segmented_access_pdu(mesh_transport_pdu_t * t
 void mesh_upper_transport_send_unsegmented_access_pdu(mesh_network_pdu_t * network_pdu);
 
 void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t * transport_pdu);
+
+// temp prototypes upper transport
+void mesh_upper_unsegmented_control_message_received(mesh_network_pdu_t * network_pdu);
+void mesh_upper_transport_segmented_message_received(mesh_transport_pdu_t *transport_pdu);
+void mesh_upper_transport_unsegmented_message_received(mesh_network_pdu_t * network_pdu);
 
 //
 // Virtual Address Management
