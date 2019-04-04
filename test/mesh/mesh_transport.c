@@ -105,7 +105,8 @@ static void mesh_lower_transport_abort_transmission(void);
 
 // temp prototypes upper transport
 static void mesh_upper_unsegmented_control_message_received(mesh_network_pdu_t * network_pdu);
-static void mesh_upper_segmented_message_received(mesh_transport_pdu_t * transport_pdu);
+static void mesh_upper_transport_segmented_message_received(mesh_transport_pdu_t *transport_pdu);
+static void mesh_upper_transport_unsegmented_message_received(mesh_network_pdu_t * network_pdu);
 
 // state
 static int                    lower_transport_retry_count;
@@ -176,9 +177,10 @@ static void mesh_lower_transport_process_unsegmented_control_message(mesh_networ
                 printf("[+] Sent complete\n");
                 mesh_lower_transport_abort_transmission();
             }
+            mesh_network_message_processed_by_higher_layer(network_pdu);
             break;
         default:
-            mesh_upper_unsegmented_control_message_received(network_pdu);
+            mesh_upper_transport_unsegmented_message_received(network_pdu);
             break;
     }
 }
@@ -422,7 +424,7 @@ static void mesh_lower_transport_process_segment( mesh_transport_pdu_t * transpo
     mesh_lower_transport_send_ack_for_transport_pdu(transport_pdu);
 
     // forward to upper transport
-    mesh_upper_segmented_message_received(transport_pdu);
+    mesh_upper_transport_segmented_message_received(transport_pdu);
 }
 
 void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
@@ -615,6 +617,49 @@ static void mesh_lower_transport_tx_ack_timeout(btstack_timer_source_t * ts){
     mesh_lower_transport_send_next_segment();
 }
 
+static void mesh_lower_transport_run(void){
+    while(1){
+        int done = 1;
+
+        if (!btstack_linked_list_empty(&lower_transport_incoming)){
+            done = 0;
+            // peek at next message
+            mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&lower_transport_incoming);
+            // segmented?
+            if (mesh_network_segmented(network_pdu)){
+                mesh_transport_pdu_t * transport_pdu = mesh_lower_transport_pdu_for_segmented_message(network_pdu);
+                if (!transport_pdu) return;
+                (void) btstack_linked_list_pop(&lower_transport_incoming);
+                // start acknowledgment timer if inactive
+                if (transport_pdu->acknowledgement_timer_active == 0){
+                    // - "The acknowledgment timer shall be set to a minimum of 150 + 50 * TTL milliseconds"
+                    uint32_t timeout = 150 + 50 * mesh_network_ttl(network_pdu);
+                    mesh_lower_transport_start_acknowledgment_timer(transport_pdu, timeout,
+                                                                    &mesh_lower_transport_rx_ack_timeout);
+                }
+                // restart incomplete timer
+                mesh_lower_transport_restart_incomplete_timer(transport_pdu, 10000,
+                                                              &mesh_lower_transport_rx_incomplete_timeout);
+                mesh_lower_transport_process_segment(transport_pdu, network_pdu);
+                mesh_network_message_processed_by_higher_layer(network_pdu);
+            } else {
+                // control?
+                if (mesh_network_control(network_pdu)){
+                    // unsegmented control message (not encrypted)
+                    (void) btstack_linked_list_pop(&lower_transport_incoming);
+                    mesh_lower_transport_process_unsegmented_control_message(network_pdu);
+                } else {
+                    // unsegmented access message (encrypted)
+                    (void) btstack_linked_list_pop(&lower_transport_incoming);
+                    mesh_upper_transport_unsegmented_message_received(network_pdu);
+                }
+            }
+        }
+
+        if (done) return;
+    }
+}
+
 uint32_t mesh_lower_transport_next_seq(void){
     return lower_transport_seq++;
 }
@@ -773,7 +818,7 @@ static void mesh_upper_transport_validate_segmented_message(mesh_transport_pdu_t
 
 static void mesh_transport_run(void);
 
-static int mesh_transport_crypto_active;
+static int crypto_active;
 static mesh_network_pdu_t   * network_pdu_in_validation;
 static mesh_transport_pdu_t * transport_pdu_in_validation;
 static uint8_t application_nonce[13];
@@ -799,13 +844,13 @@ static void mesh_upper_unsegmented_control_message_received(mesh_network_pdu_t *
 }
 
 static void mesh_upper_transport_process_unsegmented_message_done(mesh_network_pdu_t *network_pdu){
-    mesh_transport_crypto_active = 0;
+    crypto_active = 0;
     mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *) network_pdu_in_validation);
     mesh_transport_run();
 }
 
 static void mesh_upper_transport_process_segmented_message_done(mesh_transport_pdu_t *transport_pdu){
-    mesh_transport_crypto_active = 0;
+    crypto_active = 0;
     mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *)transport_pdu);
     mesh_transport_run();
 }
@@ -1005,7 +1050,7 @@ static void mesh_upper_transport_validate_unsegmented_message(mesh_network_pdu_t
     mesh_print_hex("EncAccessPayload", upper_transport_pdu_data, upper_transport_pdu_len);
 
     // decrypt ccm
-    mesh_transport_crypto_active = 1;
+    crypto_active = 1;
     uint16_t aad_len  = 0;
     if (mesh_network_address_virtual(mesh_network_dst(network_pdu))){
         aad_len  = 16;
@@ -1042,7 +1087,7 @@ static void mesh_upper_transport_validate_segmented_message(mesh_transport_pdu_t
     mesh_print_hex("EncAccessPayload", upper_transport_pdu_data, upper_transport_pdu_len);
 
     // decrypt ccm
-    mesh_transport_crypto_active = 1;
+    crypto_active = 1;
     uint16_t aad_len  = 0;
     if (mesh_network_address_virtual(mesh_transport_dst(transport_pdu))){
         aad_len  = 16;
@@ -1096,13 +1141,18 @@ static void mesh_upper_transport_process_message(mesh_transport_pdu_t * transpor
     mesh_upper_transport_validate_segmented_message(transport_pdu);
 }
 
-static void mesh_upper_segmented_message_received(mesh_transport_pdu_t * transport_pdu){
+static void mesh_upper_transport_segmented_message_received(mesh_transport_pdu_t *transport_pdu){
     btstack_linked_list_add_tail(&upper_transport_incoming, (btstack_linked_item_t*) transport_pdu);
     mesh_transport_run();
 }
 
+static void mesh_upper_transport_unsegmented_message_received(mesh_network_pdu_t * network_pdu){
+    btstack_linked_list_add_tail(&upper_transport_incoming, (btstack_linked_item_t*) network_pdu);
+    mesh_transport_run();
+}
+
 static void mesh_upper_transport_send_unsegmented_access_pdu_ccm(void * arg){
-    mesh_transport_crypto_active = 0;
+    crypto_active = 0;
 
     mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
     uint8_t * upper_transport_pdu     = mesh_network_pdu_data(network_pdu) + 1;
@@ -1117,7 +1167,7 @@ static void mesh_upper_transport_send_unsegmented_access_pdu_ccm(void * arg){
 }
 
 static void mesh_upper_transport_send_segmented_access_pdu_ccm(void * arg){
-    mesh_transport_crypto_active = 0;
+    crypto_active = 0;
 
     mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) arg;
     mesh_print_hex("EncAccessPayload", transport_pdu->data, transport_pdu->len);
@@ -1297,7 +1347,7 @@ void mesh_upper_transport_send_unsegmented_access_pdu(mesh_network_pdu_t * netwo
     // encrypt ccm
     uint8_t   trans_mic_len = 4;
     uint16_t  access_pdu_len  = mesh_network_pdu_len(network_pdu)  - 1;
-    mesh_transport_crypto_active = 1;
+    crypto_active = 1;
 
     btstack_crypto_ccm_init(&ccm, appkey->key, application_nonce, access_pdu_len, aad_len, trans_mic_len);
     if (virtual_address){
@@ -1349,7 +1399,7 @@ void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t * trans
     // encrypt ccm
     uint8_t   transmic_len    = transport_pdu->transmic_len;
     uint16_t  access_pdu_len  = transport_pdu->len;
-    mesh_transport_crypto_active = 1;
+    crypto_active = 1;
     btstack_crypto_ccm_init(&ccm, appkey->key, application_nonce, access_pdu_len, aad_len, transmic_len);
     if (virtual_address){
         mesh_print_hex("LabelUUID", virtual_address->label_uuid, 16);
@@ -1378,73 +1428,50 @@ void mesh_transport_init(){
     mesh_network_set_higher_layer_handler(&mesh_lower_transport_received_message);
 }
 
-static void mesh_lower_transport_run(void){
-    while(1){
-        int done = 1;
+static void mesh_transport_run(void){
+    while(!btstack_linked_list_empty(&upper_transport_incoming)){
 
-        if (!btstack_linked_list_empty(&lower_transport_incoming)){
-            done = 0;
-            // peek at next message
-            mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&lower_transport_incoming);
-            // segmented?
-            if (mesh_network_segmented(network_pdu)){
-                mesh_transport_pdu_t * transport_pdu = mesh_lower_transport_pdu_for_segmented_message(network_pdu);
-                if (!transport_pdu) return;
-                (void) btstack_linked_list_pop(&lower_transport_incoming);
-                // start acknowledgment timer if inactive
-                if (transport_pdu->acknowledgement_timer_active == 0){
-                    // - "The acknowledgment timer shall be set to a minimum of 150 + 50 * TTL milliseconds"
-                    uint32_t timeout = 150 + 50 * mesh_network_ttl(network_pdu);
-                    mesh_lower_transport_start_acknowledgment_timer(transport_pdu, timeout,
-                                                                    &mesh_lower_transport_rx_ack_timeout);
-                }
-                // restart incomplete timer
-                mesh_lower_transport_restart_incomplete_timer(transport_pdu, 10000,
-                                                              &mesh_lower_transport_rx_incomplete_timeout);
-                mesh_lower_transport_process_segment(transport_pdu, network_pdu);
-                mesh_network_message_processed_by_higher_layer(network_pdu);
-            } else {
+        if (crypto_active) return;
+
+        // peek at next message
+        mesh_pdu_t * pdu =  (mesh_pdu_t *) btstack_linked_list_get_first_item(&upper_transport_incoming);
+        mesh_transport_pdu_t * transport_pdu;
+        mesh_network_pdu_t   * network_pdu;
+        switch (pdu->pdu_type){
+            case MESH_PDU_TYPE_NETWORK:
+                network_pdu = (mesh_network_pdu_t *) pdu;
                 // control?
-                if (mesh_network_control(network_pdu)){
-                    // unsegmented control message (not encrypted)
-                    (void) btstack_linked_list_pop(&lower_transport_incoming);
-                    mesh_lower_transport_process_unsegmented_control_message(network_pdu);
-                    mesh_network_message_processed_by_higher_layer(network_pdu);
+                if (mesh_network_control(network_pdu)) {
+                    (void) btstack_linked_list_pop(&upper_transport_incoming);
+                    mesh_upper_unsegmented_control_message_received(network_pdu);
+                    mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *) network_pdu);
                 } else {
-                    // unsegmented access message (encrypted)
                     mesh_network_pdu_t * decode_pdu = mesh_network_pdu_get();
                     if (!decode_pdu) return;
                     // get encoded network pdu and start processing
                     network_pdu_in_validation = network_pdu;
-                    (void) btstack_linked_list_pop(&lower_transport_incoming);
+                    (void) btstack_linked_list_pop(&upper_transport_incoming);
                     mesh_upper_transport_process_unsegmented_access_message(decode_pdu);
                 }
-            }
-        }
-
-        if (done) return;
-    }
-}
-
-static void mesh_transport_run(void){
-    while(!btstack_linked_list_empty(&upper_transport_incoming)){
-
-        if (mesh_transport_crypto_active) return;
-
-        // peek at next message
-        mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) btstack_linked_list_get_first_item(&upper_transport_incoming);
-        uint8_t ctl = mesh_transport_ctl(transport_pdu);
-        if (ctl){
-            printf("Ignoring Store Reassembled Control Message\n");
-            (void) btstack_linked_list_pop(&upper_transport_incoming);
-            mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *) transport_pdu);
-        } else {
-            mesh_transport_pdu_t * decode_pdu = mesh_transport_pdu_get();
-            if (!decode_pdu) return;
-            // get encoded transport pdu and start processing
-            transport_pdu_in_validation = transport_pdu;
-            (void) btstack_linked_list_pop(&upper_transport_incoming);
-            mesh_upper_transport_process_message(decode_pdu);
+                break;
+            case MESH_PDU_TYPE_TRANSPORT:
+                transport_pdu = (mesh_transport_pdu_t *) pdu;
+                uint8_t ctl = mesh_transport_ctl(transport_pdu);
+                if (ctl){
+                    printf("Ignoring Segmented Control Message\n");
+                    (void) btstack_linked_list_pop(&upper_transport_incoming);
+                    mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *) transport_pdu);
+                } else {
+                    mesh_transport_pdu_t * decode_pdu = mesh_transport_pdu_get();
+                    if (!decode_pdu) return;
+                    // get encoded transport pdu and start processing
+                    transport_pdu_in_validation = transport_pdu;
+                    (void) btstack_linked_list_pop(&upper_transport_incoming);
+                    mesh_upper_transport_process_message(decode_pdu);
+                }
+                break;
+            default:
+                break;
         }
     }
 }
