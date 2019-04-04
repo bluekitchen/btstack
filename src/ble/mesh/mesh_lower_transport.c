@@ -614,45 +614,35 @@ static void mesh_lower_transport_tx_ack_timeout(btstack_timer_source_t * ts){
 }
 
 static void mesh_lower_transport_run(void){
-    while(1){
-        int done = 1;
-
-        if (!btstack_linked_list_empty(&lower_transport_incoming)){
-            done = 0;
-            // peek at next message
-            mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&lower_transport_incoming);
-            // segmented?
-            if (mesh_network_segmented(network_pdu)){
-                mesh_transport_pdu_t * transport_pdu = mesh_lower_transport_pdu_for_segmented_message(network_pdu);
-                if (!transport_pdu) return;
-                (void) btstack_linked_list_pop(&lower_transport_incoming);
-                // start acknowledgment timer if inactive
-                if (transport_pdu->acknowledgement_timer_active == 0){
-                    // - "The acknowledgment timer shall be set to a minimum of 150 + 50 * TTL milliseconds"
-                    uint32_t timeout = 150 + 50 * mesh_network_ttl(network_pdu);
-                    mesh_lower_transport_start_acknowledgment_timer(transport_pdu, timeout,
-                                                                    &mesh_lower_transport_rx_ack_timeout);
-                }
-                // restart incomplete timer
-                mesh_lower_transport_restart_incomplete_timer(transport_pdu, 10000,
-                                                              &mesh_lower_transport_rx_incomplete_timeout);
-                mesh_lower_transport_process_segment(transport_pdu, network_pdu);
-                mesh_network_message_processed_by_higher_layer(network_pdu);
+    while(!btstack_linked_list_empty(&lower_transport_incoming)){
+        // get next message
+        mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&lower_transport_incoming);
+        // segmented?
+        if (mesh_network_segmented(network_pdu)){
+            mesh_transport_pdu_t * transport_pdu = mesh_lower_transport_pdu_for_segmented_message(network_pdu);
+            if (!transport_pdu) return;
+            // start acknowledgment timer if inactive
+            if (transport_pdu->acknowledgement_timer_active == 0){
+                // - "The acknowledgment timer shall be set to a minimum of 150 + 50 * TTL milliseconds"
+                uint32_t timeout = 150 + 50 * mesh_network_ttl(network_pdu);
+                mesh_lower_transport_start_acknowledgment_timer(transport_pdu, timeout,
+                                                                &mesh_lower_transport_rx_ack_timeout);
+            }
+            // restart incomplete timer
+            mesh_lower_transport_restart_incomplete_timer(transport_pdu, 10000,
+                                                          &mesh_lower_transport_rx_incomplete_timeout);
+            mesh_lower_transport_process_segment(transport_pdu, network_pdu);
+            mesh_network_message_processed_by_higher_layer(network_pdu);
+        } else {
+            // control?
+            if (mesh_network_control(network_pdu)){
+                // unsegmented control message (not encrypted)
+                mesh_lower_transport_process_unsegmented_control_message(network_pdu);
             } else {
-                // control?
-                if (mesh_network_control(network_pdu)){
-                    // unsegmented control message (not encrypted)
-                    (void) btstack_linked_list_pop(&lower_transport_incoming);
-                    mesh_lower_transport_process_unsegmented_control_message(network_pdu);
-                } else {
-                    // unsegmented access message (encrypted)
-                    (void) btstack_linked_list_pop(&lower_transport_incoming);
-                    mesh_upper_transport_unsegmented_message_received(network_pdu);
-                }
+                // unsegmented access message (encrypted)
+                mesh_upper_transport_unsegmented_message_received(network_pdu);
             }
         }
-
-        if (done) return;
     }
 }
 
