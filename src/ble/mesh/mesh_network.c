@@ -408,7 +408,6 @@ static void process_network_pdu_validate_d(void * arg){
     uint8_t ctl_ttl     = network_pdu->data[1];
     uint8_t ctl         = ctl_ttl >> 7;
     uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
-    uint8_t cypher_len  = network_pdu->len - 9 - net_mic_len;
 
     // store NetMIC
     uint8_t net_mic[8];
@@ -421,6 +420,7 @@ static void process_network_pdu_validate_d(void * arg){
     memcpy(&network_pdu->data[network_pdu->len-net_mic_len], net_mic, net_mic_len);
 
 #ifdef LOG_NETWORK
+    uint8_t cypher_len  = network_pdu->len - 9 - net_mic_len;
     printf("RX-Decrypted DST/TransportPDU: ");
     printf_hexdump(&network_pdu->data[7], 2 + cypher_len);
 
