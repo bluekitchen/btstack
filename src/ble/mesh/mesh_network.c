@@ -598,7 +598,7 @@ static void mesh_network_run(void){
     if (mesh_crypto_active) return;
 
     if (!btstack_linked_list_empty(&network_pdus_received)){
-        mesh_network_pdu_t * decode_pdu = btstack_memory_mesh_network_pdu_get();
+        mesh_network_pdu_t * decode_pdu = mesh_network_pdu_get();
         if (!decode_pdu) return; 
         // get encoded network pdu and start processing
         mesh_crypto_active = 1;
@@ -682,9 +682,8 @@ void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len){
     if (pdu_len > 29) return;
 
     // allocate network_pdu
-    mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
+    mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
     if (!network_pdu) return;
-    memset(network_pdu, 0, sizeof(mesh_network_pdu_t));
 
     // store data
     memcpy(network_pdu->data, pdu_data, pdu_len);
@@ -702,9 +701,8 @@ void mesh_network_process_proxy_message(const uint8_t * pdu_data, uint8_t pdu_le
     if (pdu_len > 29) return;
 
     // allocate network_pdu
-    mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
+    mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
     if (!network_pdu) return;
-    memset(network_pdu, 0, sizeof(mesh_network_pdu_t));
 
     // store data
     memcpy(network_pdu->data, pdu_data, pdu_len);
@@ -842,4 +840,18 @@ void mesh_network_reset(void){
     mesh_network_reset_network_pdus(&network_pdus_received);
     mesh_network_reset_network_pdus(&network_pdus_queued);
     mesh_network_reset_network_pdus(&network_pdus_outgoing);
+}
+
+// buffer pool
+mesh_network_pdu_t * mesh_network_pdu_get(void){
+    mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
+    if (network_pdu) {
+        memset(network_pdu, 0, sizeof(mesh_network_pdu_t));
+        network_pdu->pdu_header.pdu_type = MESH_PDU_TYPE_NETWORK;
+    }
+    return network_pdu;
+}
+
+void mesh_network_pdu_free(mesh_network_pdu_t * network_pdu){
+    btstack_memory_mesh_network_pdu_free(network_pdu);
 }

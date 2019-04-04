@@ -155,7 +155,7 @@ static uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl
     if (!network_key) return 0;
 
     // allocate network_pdu
-    mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
+    mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
     if (!network_pdu) return 0;
 
     // setup network_pdu
@@ -404,7 +404,7 @@ static void send_pts_unsegmented_access_messsage(void){
     uint16_t appkey_index = 0; // MESH_DEVICE_KEY_INDEX;
 
     // send as unsegmented access pdu
-    mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
+    mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
     int status = mesh_upper_transport_setup_unsegmented_access_pdu(network_pdu, netkey_index, appkey_index, ttl, src, dest, access_pdu_data, access_pdu_len);
     if (status) return;
     mesh_upper_transport_send_unsegmented_access_pdu(network_pdu);
@@ -425,7 +425,7 @@ static void send_pts_segmented_access_messsage_unicast(void){
     uint16_t appkey_index = 0; // MESH_DEVICE_KEY_INDEX;
 
     // send as segmented access pdu
-    mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
+    mesh_transport_pdu_t * transport_pdu = mesh_transport_pdu_get();
     int status = mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
     if (status) return;
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
@@ -446,7 +446,7 @@ static void send_pts_segmented_access_messsage_group(void){
     uint16_t appkey_index = 0;
 
     // send as segmented access pdu
-    mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
+    mesh_transport_pdu_t * transport_pdu = mesh_transport_pdu_get();
     int status = mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
     if (status) return;
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
@@ -467,7 +467,7 @@ static void send_pts_segmented_access_messsage_virtual(void){
     uint16_t appkey_index = 0;
 
     // send as segmented access pdu
-    mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
+    mesh_transport_pdu_t * transport_pdu = mesh_transport_pdu_get();
     int status = mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
     if (status) return;
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
@@ -627,7 +627,7 @@ static void config_composition_data_status(void){
     pos += 2;
 
     // send as segmented access pdu
-    mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
+    mesh_transport_pdu_t * transport_pdu = mesh_transport_pdu_get();
     mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
@@ -650,7 +650,7 @@ static void config_appkey_status(uint32_t netkey_and_appkey_index, uint8_t statu
     pos += 3;
 
     // send as segmented access pdu
-    mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
+    mesh_transport_pdu_t * transport_pdu = mesh_transport_pdu_get();
     mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
@@ -710,7 +710,7 @@ static void config_model_subscription_status(uint8_t status, uint16_t element_ad
     pos += 2;
 
     // send as segmented access pdu
-    mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
+    mesh_transport_pdu_t * transport_pdu = mesh_transport_pdu_get();
     mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
@@ -748,7 +748,7 @@ static void config_model_app_status(uint8_t status, uint16_t element_address, ui
     pos += 2;
 
     // send as segmented access pdu
-    mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
+    mesh_transport_pdu_t * transport_pdu = mesh_transport_pdu_get();
     mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }

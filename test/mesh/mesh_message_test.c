@@ -268,12 +268,12 @@ void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uin
 
     if (count == 1 ){
         // send as unsegmented access pdu
-        mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
+        mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
         mesh_upper_transport_setup_unsegmented_access_pdu(network_pdu, netkey_index, appkey_index, ttl, src, dest, transport_pdu_data, transport_pdu_len);
         mesh_upper_transport_send_unsegmented_access_pdu(network_pdu);
     } else {
         // send as segmented access pdu
-        mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
+        mesh_transport_pdu_t * transport_pdu = mesh_transport_pdu_get();
         mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, szmic, transport_pdu_data, transport_pdu_len);
         mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
     } 
@@ -314,12 +314,12 @@ void test_send_control_message(uint16_t netkey_index, uint8_t ttl, uint16_t src,
 
     if (transport_pdu_len < 12){
         // send as unsegmented control pdu
-        mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
+        mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
         mesh_upper_transport_setup_unsegmented_control_pdu(network_pdu, netkey_index, ttl, src, dest, opcode, transport_pdu_data+1, transport_pdu_len-1);
         mesh_upper_transport_send_unsegmented_control_pdu(network_pdu);
     } else {
         // send as segmented control pdu
-        mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
+        mesh_transport_pdu_t * transport_pdu = mesh_transport_pdu_get();
         mesh_upper_transport_setup_segmented_control_pdu(transport_pdu, netkey_index, ttl, src, dest, opcode, transport_pdu_data+1, transport_pdu_len-1);
         mesh_upper_transport_send_segmented_control_pdu(transport_pdu);
     }
@@ -928,7 +928,7 @@ TEST(MessageTest, ProxyConfigSend){
     uint8_t  nid          = 0x10;
     mesh_set_iv_index(0x12345678);
     load_network_key_nid_10();
-    mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
+    mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
     uint8_t data[] = { 0 , 0 };
     mesh_network_setup_pdu(network_pdu, netkey_index, nid, ctl, ttl, seq, src, dest, data, sizeof(data));
     mesh_network_encrypt_proxy_message(network_pdu, &test_proxy_callback_handler);

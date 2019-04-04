@@ -113,6 +113,10 @@ void mesh_lower_transport_dump(void);
 void mesh_lower_transport_reset(void);
 void mesh_seq_auth_reset(void);
 
+// allocator
+mesh_transport_pdu_t * mesh_transport_pdu_get(void);
+void mesh_transport_pdu_free(mesh_transport_pdu_t * transport_pdu);
+
 #ifdef __cplusplus
 } /* end of extern "C" */
 #endif

@@ -133,7 +133,7 @@ static uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl
     if (!network_key) return 0;
 
     // allocate network_pdu
-    mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
+    mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
     if (!network_pdu) return 0;
 
     // setup network_pdu
@@ -339,7 +339,7 @@ static mesh_transport_pdu_t * mesh_lower_transport_pdu_for_segmented_message(mes
 
     // no transport pdu active, check if seq zero is new
     if (seq_auth > peer->seq_auth){
-        mesh_transport_pdu_t * pdu = btstack_memory_mesh_transport_pdu_get();
+        mesh_transport_pdu_t * pdu = mesh_transport_pdu_get();
         if (!pdu) return NULL;
 
         // cache network pdu header
@@ -568,7 +568,7 @@ static void mesh_lower_transport_send_segmented_pdu_once(mesh_transport_pdu_t *t
     lower_transport_retry_count--;
 
     // allocate network_pdu
-    mesh_network_pdu_t * network_pdu = btstack_memory_mesh_network_pdu_get();
+    mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
     if (!network_pdu) return;
 
     // setup
@@ -1410,7 +1410,7 @@ static void mesh_transport_run(void){
                     mesh_network_message_processed_by_higher_layer(network_pdu);
                 } else {
                     // unsegmented access message (encrypted)
-                    mesh_network_pdu_t * decode_pdu = btstack_memory_mesh_network_pdu_get();
+                    mesh_network_pdu_t * decode_pdu = mesh_network_pdu_get();
                     if (!decode_pdu) return;
                     // get encoded network pdu and start processing
                     network_pdu_in_validation = network_pdu;
@@ -1423,7 +1423,7 @@ static void mesh_transport_run(void){
         if (!btstack_linked_list_empty(&upper_transport_access)){
             // peek at next message
             mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) btstack_linked_list_get_first_item(&upper_transport_access);
-            mesh_transport_pdu_t * decode_pdu = btstack_memory_mesh_transport_pdu_get();
+            mesh_transport_pdu_t * decode_pdu = mesh_transport_pdu_get();
             if (!decode_pdu) return;
             // get encoded transport pdu and start processing
             transport_pdu_in_validation = transport_pdu;
@@ -1433,4 +1433,18 @@ static void mesh_transport_run(void){
 
         if (done) return;
     }
+}
+
+// buffer pool
+mesh_transport_pdu_t * mesh_transport_pdu_get(void){
+    mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
+    if (transport_pdu) {
+        memset(transport_pdu, 0, sizeof(mesh_transport_pdu_t));
+        transport_pdu->pdu_header.pdu_type = MESH_PDU_TYPE_TRANSPORT;
+    }
+    return transport_pdu;
+}
+
+void mesh_transport_pdu_free(mesh_transport_pdu_t * transport_pdu){
+    btstack_memory_mesh_transport_pdu_free(transport_pdu);
 }

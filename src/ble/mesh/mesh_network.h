@@ -58,9 +58,21 @@ typedef enum {
     MESH_NETWORK_PDU_SENT,
 } mesh_network_callback_type_t;
 
-typedef struct mesh_network_pdu {
+typedef enum {
+    MESH_PDU_TYPE_NETWORK = 0,
+    MESH_PDU_TYPE_TRANSPORT,
+} mesh_pdu_type_t;
+
+typedef struct mesh_pdu {
     // allow for linked lists
     btstack_linked_item_t item;
+    // type
+    mesh_pdu_type_t pdu_type;
+} mesh_pdu_t;
+
+typedef struct mesh_network_pdu {
+    mesh_pdu_t pdu_header;
+
     // callback
     void (*callback)(struct mesh_network_pdu * network_pdu);
 
@@ -77,8 +89,8 @@ typedef struct mesh_network_pdu {
 } mesh_network_pdu_t;
 
 typedef struct {
-    // allow for linked lists
-    btstack_linked_item_t item;
+    mesh_pdu_t pdu_header;
+
     // rx/tx: acknowledgement timer / segment transmission timer
     btstack_timer_source_t acknowledgement_timer;
     // rx: incomplete timer / tx: resend timer
@@ -215,6 +227,10 @@ int mesh_network_address_unicast(uint16_t addr);
  * @returns 1 if virtual
  */
 int mesh_network_address_virtual(uint16_t addr);
+
+// buffer pool
+mesh_network_pdu_t * mesh_network_pdu_get(void);
+void mesh_network_pdu_free(mesh_network_pdu_t * network_pdu);
 
 // Mesh Network PDU Getter
 uint16_t  mesh_network_control(mesh_network_pdu_t * network_pdu);
