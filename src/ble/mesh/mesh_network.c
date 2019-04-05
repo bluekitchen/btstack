@@ -428,7 +428,7 @@ static void process_network_pdu_validate_d(void * arg){
     printf_hexdump(network_pdu->data, network_pdu->len);
 #endif
 
-    // compare calcualted nic to nic in data
+    // validate network mic
     if (memcmp(net_mic, &network_pdu_in_validation->data[network_pdu->len-net_mic_len], net_mic_len) != 0){
         // fail
         printf("RX-NetMIC mismatch, try next key\n");
