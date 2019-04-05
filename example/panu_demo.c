@@ -109,21 +109,23 @@ static void panu_setup(void){
     // Initialize L2CAP 
     l2cap_init();
 
-    // Initialise BNEP
-    bnep_init();
-
-    // Minimum L2CAP MTU for bnep is 1691 bytes
-    bnep_register_service(packet_handler, BLUETOOTH_SERVICE_CLASS_PANU, 1691);  
 
     // init SDP, create record for PANU and register with SDP
     sdp_init();
     memset(panu_sdp_record, 0, sizeof(panu_sdp_record));
     uint16_t network_packet_types[] = { NETWORK_TYPE_IPv4, NETWORK_TYPE_ARP, 0};    // 0 as end of list
+
+    // Initialise BNEP
+    bnep_init();
+    // Minimum L2CAP MTU for bnep is 1691 bytes
 #ifdef ENABLE_PANU_CLIENT
+    bnep_register_service(packet_handler, BLUETOOTH_SERVICE_CLASS_PANU, 1691);
+    // PANU
     pan_create_panu_sdp_record(panu_sdp_record, sdp_create_service_record_handle(), network_packet_types, NULL, NULL, BNEP_SECURITY_NONE);
 #else
-    // NAP: Network Access Type: Cable Modem, 1 MB/s
-    pan_create_nap_sdp_record(panu_sdp_record, sdp_create_service_record_handle(), network_packet_types, NULL, NULL, BNEP_SECURITY_SERVICE_LEVEL_ENFORCED, PAN_NET_ACCESS_TYPE_CABLE_MODEM, 1000000, NULL, NULL);
+    bnep_register_service(packet_handler, BLUETOOTH_SERVICE_CLASS_NAP, 1691);
+    // NAP Network Access Type: Other, 1 MB/s
+    pan_create_nap_sdp_record(panu_sdp_record, sdp_create_service_record_handle(), network_packet_types, NULL, NULL, BNEP_SECURITY_NONE, PAN_NET_ACCESS_TYPE_OTHER, 1000000, NULL, NULL);
 #endif
     sdp_register_service(panu_sdp_record);
     printf("SDP service record size: %u\n", de_get_len((uint8_t*) panu_sdp_record));
