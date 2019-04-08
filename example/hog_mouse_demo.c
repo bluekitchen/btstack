@@ -358,11 +358,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
                             break;
                         case HIDS_SUBEVENT_BOOT_KEYBOARD_INPUT_REPORT_ENABLE:
-                            con_handle = hids_subevent_input_report_enable_get_con_handle(packet);
+                            con_handle = hids_subevent_boot_keyboard_input_report_enable_get_con_handle(packet);
                             printf("Boot Keyboard Characteristic Subscribed %u\n", hids_subevent_boot_keyboard_input_report_enable_get_enable(packet));
                             break;
                         case HIDS_SUBEVENT_BOOT_MOUSE_INPUT_REPORT_ENABLE:
-                            con_handle = hids_subevent_input_report_enable_get_con_handle(packet);
+                            con_handle = hids_subevent_boot_mouse_input_report_enable_get_con_handle(packet);
                             printf("Boot Mouse Characteristic Subscribed %u\n", hids_subevent_boot_mouse_input_report_enable_get_enable(packet));
                             break;
                         case HIDS_SUBEVENT_PROTOCOL_MODE:
