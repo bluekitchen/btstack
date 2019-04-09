@@ -764,7 +764,36 @@ static void config_model_app_bind_handler(mesh_transport_pdu_t * transport_pdu){
 }
 
 static void config_model_publication_virtual_address_add_handler(mesh_transport_pdu_t * transport_pdu){
-    // uses many params, quick hack
+
+    // ElementAddress - Address of the element - should be us
+    uint16_t element_address = little_endian_read_16(transport_pdu->data, 2);
+    // PublishAddress, 128 bit
+    // uint8_t * label_uuid = &transport_pdu->data[4];
+    // AppKeyIndex (12), CredentialFlag (1), RFU (3)
+    uint16_t temp = little_endian_read_16(transport_pdu->data, 20);
+    uint16_t app_key_index = temp & 0x0fff;
+    uint8_t  credential_flag = (temp >> 12) & 1;
+    // PublishTTL
+    uint8_t publish_ttl = transport_pdu->data[22];
+    // PublishPeriod
+    uint8_t publish_period = transport_pdu->data[23];
+    // PublishRetransmitCount(3), PublishRetransmitCount(5)
+    uint8_t publish_transmit_count           = transport_pdu->data[24] & 0x07;
+    uint8_t publish_retransmit_iterval_steps = transport_pdu->data[24] >> 3;
+    uint8_t model_id_len;
+    uint32_t model_id;
+    if (transport_pdu->len == 29){
+        // Vendor Model ID
+        model_id_len = 4;
+        model_id = little_endian_read_32(transport_pdu->data, 25);
+    } else {
+        // SIG Model ID
+        model_id_len = 2;
+        model_id = little_endian_read_16(transport_pdu->data, 25);
+    }
+
+    // TODO: calculate publish address from label uuid
+    uint16_t publish_address = 0x1234;
 
     uint16_t src  = primary_element_address;
     uint16_t dest = 0x0001;
@@ -773,16 +802,27 @@ static void config_model_publication_virtual_address_add_handler(mesh_transport_
     uint16_t netkey_index = 0;
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
 
+
     uint8_t access_pdu_data[40];
-    uint16_t access_pdu_len = 1 + transport_pdu->len;
+    // uint16_t access_pdu_len = 1 + transport_pdu->len;
     access_pdu_data[0] = 0x80;
     access_pdu_data[1] = 0x19;
     access_pdu_data[2] = 0;
-    memcpy(&access_pdu_data[3], &transport_pdu->data[2], transport_pdu->len - 2);
+    little_endian_store_16(access_pdu_data, 3, element_address);
+    little_endian_store_16(access_pdu_data, 5, publish_address);
+    little_endian_store_16(access_pdu_data, 7, (1<<credential_flag) | app_key_index);
+    access_pdu_data[9]  = publish_ttl;
+    access_pdu_data[10] = publish_period;
+    access_pdu_data[11] = (publish_retransmit_iterval_steps << 3) | publish_transmit_count;
+    if (model_id_len == 2){
+        little_endian_store_16(access_pdu_data, 12, model_id);
+    } else {
+        little_endian_store_32(access_pdu_data, 12, model_id);
+    }
 
     // send as segmented access pdu
     transport_pdu = mesh_transport_pdu_get();
-    mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
+    mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, 12 + model_id_len);
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
 
