@@ -17,7 +17,7 @@ order to be seen by a device performing the inquiry scan. To become
 discoverable, an application can call *gap_discoverable_control* with
 input parameter 1. If you want to provide a helpful name for your
 device, the application can set its local name by calling
-$gap_set_local_name$. To save energy, you may set the device as
+*gap_set_local_name*. To save energy, you may set the device as
 undiscoverable again, once a connection is established. See Listing
 [below](#lst:Discoverable) for an example.
 
@@ -194,7 +194,7 @@ an SDP record for it and publish it with the SDP server by calling
 *sdp_register_service*. BTstack provides the
 *spp_create_sdp_record* function in that requires an empty buffer of
 approximately 200 bytes, the service channel number, and a service name.
-Have a look at the [SPP Counter example](examples/generated/#sec:sppcounterExample].
+Have a look at the [SPP Counter example](examples/generated/#sec:sppcounterExample).
 
 
 ## PAN - Personal Area Networking Profile {#sec:panProfiles}
@@ -232,7 +232,7 @@ Currently, BTstack supports only PANU.
 To access a remote PANU service, you first need perform an SDP query to
 get the L2CAP PSM for the requested PANU UUID. With these two pieces of
 information, you can connect BNEP to the remote PANU service with the
-*bnep_connect* function. The Section on [PANU Demo example](#exaples/#sec:panudemoExample)
+*bnep_connect* function. The Section on [PANU Demo example](examples/generated/#sec:panudemoExample)
 shows how this is accomplished.
 
 ### Providing a PANU service
