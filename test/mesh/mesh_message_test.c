@@ -190,8 +190,11 @@ TEST_GROUP(MessageTest){
         btstack_crypto_init();
         load_provisioning_data_test_message();
         mesh_network_init();
+        mesh_transport_init();
+        // intercept messages between network and lower layer
         mesh_network_set_higher_layer_handler(&test_lower_transport_callback_handler);
         mesh_network_set_proxy_message_handler(&test_proxy_server_callback_handler);
+        // register to receive upper transport messages
         mesh_upper_transport_register_unsegemented_message_handler(&test_upper_transport_unsegmented_callback_handler);
         mesh_upper_transport_register_segemented_message_handler(&test_upper_transport_segmented_callback_handler);
         mesh_seq_auth_reset();
