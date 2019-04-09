@@ -49,6 +49,11 @@
 
 static uint16_t primary_element_address;
 
+// temp prototypes upper transport
+void mesh_upper_unsegmented_control_message_received(mesh_network_pdu_t * network_pdu);
+void mesh_upper_transport_segmented_message_received(mesh_transport_pdu_t *transport_pdu);
+void mesh_upper_transport_unsegmented_message_received(mesh_network_pdu_t * network_pdu);
+
 static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len){
     printf("%-20s ", name);
     printf_hexdump(data, len);
