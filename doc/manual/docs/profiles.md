@@ -109,7 +109,7 @@ device implements Bluetooth Specification 2.1 or higher, the
 *hci_write_inquiry_mode* command enables reporting of this advanced
 features (0 for standard results, 1 for RSSI, 2 for RSSI and EIR).
 
-A complete GAP inquiry example is provided [here](examples/generated/#sec:gapinquiryExample).
+A complete GAP inquiry example is provided [here](examples/examples/#sec:gapinquiryExample).
 
 ### Pairing of Devices
 
@@ -194,7 +194,7 @@ an SDP record for it and publish it with the SDP server by calling
 *sdp_register_service*. BTstack provides the
 *spp_create_sdp_record* function in that requires an empty buffer of
 approximately 200 bytes, the service channel number, and a service name.
-Have a look at the [SPP Counter example](examples/generated/#sec:sppcounterExample).
+Have a look at the [SPP Counter example](examples/examples/#sec:sppcounterExample).
 
 
 ## PAN - Personal Area Networking Profile {#sec:panProfiles}
@@ -232,7 +232,7 @@ Currently, BTstack supports only PANU.
 To access a remote PANU service, you first need perform an SDP query to
 get the L2CAP PSM for the requested PANU UUID. With these two pieces of
 information, you can connect BNEP to the remote PANU service with the
-*bnep_connect* function. The Section on [PANU Demo example](examples/generated/#sec:panudemoExample)
+*bnep_connect* function. The Section on [PANU Demo example](examples/examples/#sec:panudemoExample)
 shows how this is accomplished.
 
 ### Providing a PANU service
@@ -325,7 +325,7 @@ can also provide Scan Response data, which has to be explicitly queried
 by the central device. It can be set with *gap_scan_response_set_data*.
 
 Please have a look at the [SPP and LE
-Counter example](examples/generated/#sec:sppandlecounterExample).
+Counter example](examples/examples/#sec:sppandlecounterExample).
 
 The scan parameters can be set with
 *gap_set_scan_parameters*. The scan can be started/stopped
