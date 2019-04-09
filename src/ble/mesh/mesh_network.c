@@ -50,7 +50,7 @@
 
 // configuration
 #define MESH_NETWORK_CACHE_SIZE 2
-#define ENABLE_MESH_RELAY
+// #define ENABLE_MESH_RELAY
 
 // debug config
 // #define LOG_NETWORK

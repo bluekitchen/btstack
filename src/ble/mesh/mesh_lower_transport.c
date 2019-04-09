@@ -690,6 +690,10 @@ void mesh_lower_transport_init(){
     mesh_network_set_higher_layer_handler(&mesh_lower_transport_received_message);
 }
 
+void mesh_lower_transport_set_primary_element_address(uint16_t unicast_address){
+    primary_element_address = unicast_address;
+}
+
 void mesh_lower_transport_set_higher_layer_handler(void (*pdu_handler)( mesh_pdu_t * pdu)){
     higher_layer_handler = pdu_handler;
 }
