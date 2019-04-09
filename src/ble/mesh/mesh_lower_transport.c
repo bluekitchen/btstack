@@ -609,8 +609,8 @@ static void mesh_lower_transport_tx_ack_timeout(btstack_timer_source_t * ts){
     mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) btstack_run_loop_get_timer_context(ts);
     printf("[+] Lower transport, acknowledgement timer fired for %p\n", transport_pdu);
     transport_pdu->acknowledgement_timer_active = 0;
-    lower_transport_outgoing_seg_o = 0;
-    mesh_lower_transport_send_next_segment();
+    // send remaining segments again
+    mesh_lower_transport_send_segmented_pdu_once(transport_pdu);
 }
 
 static void mesh_lower_transport_run(void){
