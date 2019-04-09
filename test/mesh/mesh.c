@@ -722,9 +722,11 @@ static void config_model_subscription_add_handler(mesh_transport_pdu_t * transpo
 
     config_model_subscription_status(0, element_address, address, model_identifier);    
 }
+
 static void config_model_subscription_virtual_address_add_handler(mesh_transport_pdu_t * transport_pdu){
     config_model_subscription_add_handler(transport_pdu);
 }
+
 
 static void config_model_app_status(uint8_t status, uint16_t element_address, uint16_t app_key_index, uint32_t model_identifier){
     uint16_t src  = primary_element_address;
@@ -761,11 +763,35 @@ static void config_model_app_bind_handler(mesh_transport_pdu_t * transport_pdu){
     config_model_app_status(0, element_address, app_key_index, model_identifier);
 }
 
+static void config_model_publication_virtual_address_add_handler(mesh_transport_pdu_t * transport_pdu){
+    // uses many params, quick hack
+
+    uint16_t src  = primary_element_address;
+    uint16_t dest = 0x0001;
+    uint8_t  ttl  = 10;
+
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
+
+    uint8_t access_pdu_data[40];
+    uint16_t access_pdu_len = 1 + transport_pdu->len;
+    access_pdu_data[0] = 0x80;
+    access_pdu_data[1] = 0x19;
+    access_pdu_data[2] = 0;
+    memcpy(&access_pdu_data[3], &transport_pdu->data[2], transport_pdu->len - 2);
+
+    // send as segmented access pdu
+    transport_pdu = mesh_transport_pdu_get();
+    mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
+    mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
+}
+
 static const uint8_t config_appkey_add[] =                             { 0x00 };
 static const uint8_t config_composition_data_get[] =                   { 0x80, 0x08, 0xff };
 static const uint8_t config_model_subscription_add[] =                 { 0x80, 0x1b };
 static const uint8_t config_model_subscription_virtual_address_add[] = { 0x80, 0x20 };
 static const uint8_t config_model_app_bind[] =                         { 0x80, 0x3d };
+static const uint8_t config_model_publication_virtual_address_add[] =  { 0x80, 0x1A };
 
 void mesh_segemented_message_handler(mesh_transport_pdu_t * transport_pdu){
     printf("MESH Access Message: ");
@@ -786,6 +812,10 @@ void mesh_segemented_message_handler(mesh_transport_pdu_t * transport_pdu){
     if ( (transport_pdu->len > sizeof(config_model_subscription_virtual_address_add)) && memcmp(transport_pdu->data, config_model_subscription_virtual_address_add, sizeof(config_model_subscription_virtual_address_add)) == 0){
         printf("MESH config_model_subscription_virtual_address_add_handler\n");
         config_model_subscription_virtual_address_add_handler(transport_pdu);
+    }
+    if ( (transport_pdu->len > sizeof(config_model_publication_virtual_address_add)) && memcmp(transport_pdu->data, config_model_publication_virtual_address_add, sizeof(config_model_publication_virtual_address_add)) == 0){
+        printf("MESH config_model_publication_virtual_address_add\n");
+        config_model_publication_virtual_address_add_handler(transport_pdu);
     }
     if ( (transport_pdu->len > sizeof(config_model_app_bind)) && memcmp(transport_pdu->data, config_model_app_bind, sizeof(config_model_app_bind)) == 0){
         printf("MESH config_model_app_bind\n");
