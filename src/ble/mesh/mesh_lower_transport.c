@@ -41,18 +41,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ble/mesh/beacon.h"
-#include "mesh_transport.h"
 #include "btstack_util.h"
 #include "btstack_memory.h"
 #include "mesh_peer.h"
 #include "mesh_lower_transport.h"
 
 static uint16_t primary_element_address;
-
-// temp prototypes upper transport
-void mesh_upper_unsegmented_control_message_received(mesh_network_pdu_t * network_pdu);
-void mesh_upper_transport_segmented_message_received(mesh_transport_pdu_t *transport_pdu);
-void mesh_upper_transport_unsegmented_message_received(mesh_network_pdu_t * network_pdu);
+static void (*higher_layer_handler)( mesh_pdu_t * pdu);
 
 static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len){
     printf("%-20s ", name);
@@ -181,7 +176,7 @@ static void mesh_lower_transport_process_unsegmented_control_message(mesh_networ
             mesh_network_message_processed_by_higher_layer(network_pdu);
             break;
         default:
-            mesh_upper_transport_unsegmented_message_received(network_pdu);
+            higher_layer_handler((mesh_pdu_t *) network_pdu);
             break;
     }
 }
@@ -425,7 +420,7 @@ static void mesh_lower_transport_process_segment( mesh_transport_pdu_t * transpo
     mesh_lower_transport_send_ack_for_transport_pdu(transport_pdu);
 
     // forward to upper transport
-    mesh_upper_transport_segmented_message_received(transport_pdu);
+    higher_layer_handler((mesh_pdu_t*) transport_pdu);
 }
 
 void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
@@ -645,7 +640,7 @@ static void mesh_lower_transport_run(void){
                 mesh_lower_transport_process_unsegmented_control_message(network_pdu);
             } else {
                 // unsegmented access message (encrypted)
-                mesh_upper_transport_unsegmented_message_received(network_pdu);
+                higher_layer_handler((mesh_pdu_t *) network_pdu);
             }
         }
     }
@@ -695,3 +690,6 @@ void mesh_lower_transport_init(){
     mesh_network_set_higher_layer_handler(&mesh_lower_transport_received_message);
 }
 
+void mesh_lower_transport_set_higher_layer_handler(void (*pdu_handler)( mesh_pdu_t * pdu)){
+    higher_layer_handler = pdu_handler;
+}

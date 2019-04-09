@@ -69,6 +69,7 @@ void mesh_transport_set_dest(mesh_transport_pdu_t * transport_pdu, uint16_t dest
 
 
 void mesh_lower_transport_init();
+void mesh_lower_transport_set_higher_layer_handler(void (*pdu_handler)( mesh_pdu_t * pdu));
 
 void     mesh_lower_transport_set_seq(uint32_t seq);
 uint32_t mesh_lower_transport_next_seq(void);;

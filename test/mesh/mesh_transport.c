@@ -508,13 +508,8 @@ static void mesh_upper_transport_process_message(mesh_transport_pdu_t * transpor
     mesh_upper_transport_validate_segmented_message(transport_pdu);
 }
 
-void mesh_upper_transport_segmented_message_received(mesh_transport_pdu_t *transport_pdu){
-    btstack_linked_list_add_tail(&upper_transport_incoming, (btstack_linked_item_t*) transport_pdu);
-    mesh_transport_run();
-}
-
-void mesh_upper_transport_unsegmented_message_received(mesh_network_pdu_t * network_pdu){
-    btstack_linked_list_add_tail(&upper_transport_incoming, (btstack_linked_item_t*) network_pdu);
+void mesh_upper_transport_message_received(mesh_pdu_t * pdu){
+    btstack_linked_list_add_tail(&upper_transport_incoming, (btstack_linked_item_t*) pdu);
     mesh_transport_run();
 }
 
@@ -789,6 +784,7 @@ void mesh_upper_transport_register_segemented_message_handler(void (*callback)(m
 
 void mesh_transport_init(){
     mesh_lower_transport_init();
+    mesh_lower_transport_set_higher_layer_handler(&mesh_upper_transport_message_received);
 }
 
 static void mesh_transport_run(void){
