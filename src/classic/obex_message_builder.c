@@ -63,6 +63,10 @@ static uint8_t obex_message_builder_packet_append(uint8_t * buffer, uint16_t buf
      return ERROR_CODE_SUCCESS;
 }
 
+uint16_t obex_message_builder_get_message_length(uint8_t * buffer){
+    return big_endian_read_16(buffer, 1);
+}
+
 uint8_t obex_message_builder_header_add_byte(uint8_t * buffer, uint16_t buffer_len, uint8_t header_type, uint8_t value){
     uint8_t header[2];
     header[0] = header_type;
@@ -94,8 +98,9 @@ static uint8_t obex_message_builder_header_add_connection_id(uint8_t * buffer, u
     return obex_message_builder_header_add_word(buffer, buffer_len, OBEX_HEADER_CONNECTION_ID, obex_connection_id);
 }
 
-uint8_t obex_message_builder_request_create_connect(uint8_t * buffer, uint16_t buffer_len, uint8_t obex_version_number, uint8_t flags, uint16_t maximum_obex_packet_length){
-    uint8_t status = obex_message_builder_packet_init(buffer, buffer_len, OBEX_OPCODE_CONNECT);
+static inline uint8_t obex_message_builder_create_connect(uint8_t * buffer, uint16_t buffer_len, uint8_t opcode,
+    uint8_t obex_version_number, uint8_t flags, uint16_t maximum_obex_packet_length){
+    uint8_t status = obex_message_builder_packet_init(buffer, buffer_len, opcode);
     if (status != ERROR_CODE_SUCCESS) return status;
 
     uint8_t fields[4];
@@ -103,6 +108,20 @@ uint8_t obex_message_builder_request_create_connect(uint8_t * buffer, uint16_t b
     fields[1] = flags;
     big_endian_store_16(fields, 2, maximum_obex_packet_length);
     return obex_message_builder_packet_append(buffer, buffer_len, &fields[0], sizeof(fields));
+}
+
+uint8_t obex_message_builder_request_create_connect(uint8_t * buffer, uint16_t buffer_len, 
+    uint8_t obex_version_number, uint8_t flags, uint16_t maximum_obex_packet_length){
+
+    return obex_message_builder_create_connect(buffer, buffer_len, OBEX_OPCODE_CONNECT, obex_version_number, flags, maximum_obex_packet_length);
+}
+
+uint8_t obex_message_builder_response_create_connect(uint8_t * buffer, uint16_t buffer_len, uint8_t obex_version_number, 
+    uint8_t flags, uint16_t maximum_obex_packet_length, uint32_t obex_connection_id){
+
+    uint8_t status = obex_message_builder_create_connect(buffer, buffer_len, OBEX_RESP_SUCCESS, obex_version_number, flags, maximum_obex_packet_length);
+    if (status != ERROR_CODE_SUCCESS) return status;
+    return obex_message_builder_header_add_connection_id(buffer, buffer_len, obex_connection_id);
 }
 
 uint8_t obex_message_builder_request_create_get(uint8_t * buffer, uint16_t buffer_len, uint32_t obex_connection_id){
@@ -156,6 +175,10 @@ uint8_t obex_message_builder_header_add_application_parameters(uint8_t * buffer,
 
 uint8_t obex_message_builder_header_add_challenge_response(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint16_t length){
     return obex_message_builder_header_add_variable(buffer, buffer_len, OBEX_HEADER_AUTHENTICATION_RESPONSE, data, length);
+}
+
+uint8_t obex_message_builder_header_add_who(uint8_t * buffer, uint16_t buffer_len, const uint8_t * who){
+    return obex_message_builder_header_add_variable(buffer, buffer_len, OBEX_HEADER_WHO, who, 16);
 }
 
 uint8_t obex_message_builder_body_add_static(uint8_t * buffer, uint16_t buffer_len, const uint8_t * data, uint32_t length){
