@@ -27,7 +27,7 @@ file(GLOB SOURCES_LIBUSB    "../../platform/libusb/*.c")
 file(GLOB SOURCES_OFF "../../src/ble/le_device_db_memory.c" "../../src/ble/le_device_db_tlv.c")
 list(REMOVE_ITEM SOURCES_BLE ${SOURCES_OFF})
 
-set(SOURCES_MESH_NEW main.c mesh_transport.c mesh_lower_transport.c mesh_peer.c provisioner.c provisioning.c provisioning_device.c provisioning_provisioner.c)
+set(SOURCES_MESH_NEW main.c mesh_transport.c mesh_keys.c mesh_peer.c provisioner.c provisioning.c provisioning_device.c provisioning_provisioner.c)
 
 set(SOURCES 
 	${SOURCES_POSIX}

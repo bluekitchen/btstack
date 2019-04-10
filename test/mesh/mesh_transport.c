@@ -46,7 +46,7 @@
 #include "btstack_memory.h"
 #include "ble/mesh/mesh_lower_transport.h"
 #include "mesh_peer.h"
-//#include "mesh_keys.h"
+#include "mesh_keys.h"
 
 static uint16_t primary_element_address;
 
@@ -57,89 +57,6 @@ static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len
 // static void mesh_print_x(const char * name, uint32_t value){
 //     printf("%20s: 0x%x", name, (int) value);
 // }
-
-// utility
-
-// lower transport
-
-// prototypes
-
-// application key list
-
-
-typedef struct {
-    btstack_linked_item_t item;
-
-    // index into shared global key list
-    uint16_t index;
-
-    // app_key
-    uint8_t key[16];
-
-    // application key flag, 0 for device key
-    uint8_t akf;
-
-    // application key hash id
-    uint8_t aid;
-} mesh_transport_key_t;
-
-// key management
-static mesh_transport_key_t   test_application_key;
-static mesh_transport_key_t   mesh_transport_device_key;
-
-void mesh_application_key_set(uint16_t appkey_index, uint8_t aid, const uint8_t * application_key){
-    test_application_key.index = appkey_index;
-    test_application_key.aid   = aid;
-    test_application_key.akf   = 1;
-    memcpy(test_application_key.key, application_key, 16);
-}
-
-void mesh_transport_set_device_key(const uint8_t * device_key){
-    mesh_transport_device_key.index = MESH_DEVICE_KEY_INDEX;
-    mesh_transport_device_key.aid   = 0;
-    mesh_transport_device_key.akf   = 0;
-    memcpy(mesh_transport_device_key.key, device_key, 16);
-}
-
-static const mesh_transport_key_t * mesh_transport_key_get(uint16_t appkey_index){
-    if (appkey_index == MESH_DEVICE_KEY_INDEX){
-        return &mesh_transport_device_key;
-    }
-    if (appkey_index != test_application_key.index) return NULL;
-    return &test_application_key;
-}
-
-// key iterator
-
-typedef struct {
-    uint8_t  akf;
-    uint8_t  aid;
-    uint8_t  first;
-} mesh_transport_key_iterator_t;
-
-static void mesh_transport_key_iterator_init(mesh_transport_key_iterator_t *it, uint8_t akf, uint8_t aid){
-    it->aid      = aid;
-    it->akf      = akf;
-    it->first    = 1;
-}
-
-static int mesh_transport_key_iterator_has_more(mesh_transport_key_iterator_t *it){
-    if (!it->first) return 0;
-    if (it->akf){
-        return it->aid == test_application_key.aid;
-    } else {
-        return 1;
-    }
-}
-
-static const mesh_transport_key_t * mesh_transport_key_iterator_get_next(mesh_transport_key_iterator_t *it){
-    it->first = 0;
-    if (it->akf){
-        return &test_application_key;
-    } else {
-        return &mesh_transport_device_key;
-    }
-}
 
 // virtual address management
 
