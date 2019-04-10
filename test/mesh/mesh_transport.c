@@ -47,6 +47,7 @@
 #include "ble/mesh/mesh_lower_transport.h"
 #include "mesh_peer.h"
 #include "mesh_keys.h"
+#include "mesh_virtual_addresses.h"
 
 static uint16_t primary_element_address;
 
@@ -58,61 +59,6 @@ static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len
 //     printf("%20s: 0x%x", name, (int) value);
 // }
 
-// virtual address management
-
-typedef struct {
-    uint16_t pseudo_dst;
-    uint16_t hash;
-    uint8_t  label_uuid[16];
-} mesh_virtual_address_t;
-
-
-static mesh_virtual_address_t test_virtual_address;
-
-static void mesh_virtual_address_run(void){
-}
-
-uint16_t mesh_virtual_address_register(uint8_t * label_uuid, uint16_t hash){
-    // TODO:: check if already exists
-    // TODO: calc hash
-    test_virtual_address.hash   = hash;
-    memcpy(test_virtual_address.label_uuid, label_uuid, 16);
-    test_virtual_address.pseudo_dst = 0x8000;
-    mesh_virtual_address_run();
-    return test_virtual_address.pseudo_dst;
-}
-
-void mesh_virtual_address_unregister(uint16_t pseudo_dst){
-}
-
-static mesh_virtual_address_t * mesh_virtual_address_for_pseudo_dst(uint16_t pseudo_dst){
-    if (test_virtual_address.pseudo_dst == pseudo_dst){
-        return &test_virtual_address;
-    }
-    return NULL;
-}
-
-// virtual address iterator
-
-typedef struct {
-    uint8_t   first;
-    uint16_t  hash;
-} mesh_virtual_address_iterator_t;
-
-static void mesh_virtual_address_iterator_init(mesh_virtual_address_iterator_t * it, uint16_t hash){
-    it->first = 1;
-    it->hash = hash;
-}
-static int mesh_virtual_address_iterator_has_more(mesh_virtual_address_iterator_t * it){
-    if (!it->first) return 0;
-    if (it->hash != test_virtual_address.hash) return 0;
-    return 1;
-}
-
-static const mesh_virtual_address_t * mesh_virtual_address_iterator_get_next(mesh_virtual_address_iterator_t * it){
-    it->first = 0;
-    return &test_virtual_address;
-}
 
 // combined key x address iterator for upper transport decryption
 
