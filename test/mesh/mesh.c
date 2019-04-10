@@ -44,6 +44,7 @@
 #include "ble/mesh/adv_bearer.h"
 #include "ble/mesh/beacon.h"
 #include "ble/mesh/mesh_crypto.h"
+#include "ble/mesh/mesh_lower_transport.h"
 #include "ble/mesh/pb_adv.h"
 #include "ble/mesh/pb_gatt.h"
 #include "ble/gatt-service/mesh_provisioning_service_server.h"
@@ -826,6 +827,52 @@ static void config_model_publication_virtual_address_add_handler(mesh_transport_
     mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, 12 + model_id_len);
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
+static uint8_t config_heartbeat[9];
+
+void config_heartbeat_publication_status(void){
+
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
+    uint16_t src  = primary_element_address;
+    uint16_t dest = 0x0001;
+    uint8_t  ttl  = 10;
+
+    // setup response
+    uint8_t access_pdu_data[11];
+    uint16_t access_pdu_len = 11;
+    access_pdu_data[0] = 0x06;
+    access_pdu_data[1] = 0;
+    memcpy(&access_pdu_data[2], config_heartbeat, 9);
+    mesh_transport_pdu_t * transport_pdu = mesh_transport_pdu_get();
+    mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
+    mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
+}
+
+void config_heartbeat_publication_set_handler(mesh_transport_pdu_t *transport_pdu){
+    // parse
+
+#if 0
+    // Destination address for Heartbeat messages
+    uint16_t destination = little_endian_read_16(transport_pdu->data, 2);
+    // Number of Heartbeat messages to be sent
+    uint8_t count_log = transport_pdu->data[4];
+    //  Period for sending Heartbeat messages
+    uint8_t period_log = transport_pdu->data[5];
+    //  TTL to be used when sending Heartbeat messages
+    uint8_t ttl = transport_pdu->data[6];
+    // Bit field indicating features that trigger Heartbeat messages when changed
+    uint16_t features = little_endian_read_16(transport_pdu->data, 7);
+    // NetKey Index
+    uint16_t netkey_index = little_endian_read_16(transport_pdu->data, 9);
+#endif
+    memcpy(config_heartbeat, &transport_pdu->data[2], 9);
+    config_heartbeat_publication_status();
+}
+
+void config_heartbeat_publication_get_handler(mesh_transport_pdu_t *transport_pdu){
+    UNUSED(transport_pdu);
+    config_heartbeat_publication_status();
+}
 
 static const uint8_t config_appkey_add[] =                             { 0x00 };
 static const uint8_t config_composition_data_get[] =                   { 0x80, 0x08, 0xff };
@@ -833,6 +880,8 @@ static const uint8_t config_model_subscription_add[] =                 { 0x80, 0
 static const uint8_t config_model_subscription_virtual_address_add[] = { 0x80, 0x20 };
 static const uint8_t config_model_app_bind[] =                         { 0x80, 0x3d };
 static const uint8_t config_model_publication_virtual_address_add[] =  { 0x80, 0x1A };
+static const uint8_t config_heartbeat_publication_set[] =       { 0x80, 0x39 };
+static const uint8_t config_heartbeat_publication_get[] =       { 0x80, 0x38 };
 
 void mesh_segemented_message_handler(mesh_transport_pdu_t * transport_pdu){
     printf("MESH Access Message: ");
@@ -842,25 +891,33 @@ void mesh_segemented_message_handler(mesh_transport_pdu_t * transport_pdu){
         printf("MESH config_composition_data_get\n");
         config_composition_data_status();
     }
-    if ( (transport_pdu->len > sizeof(config_appkey_add)) && memcmp(transport_pdu->data, config_appkey_add, sizeof(config_appkey_add)) == 0){
+    if ( (transport_pdu->len >= sizeof(config_appkey_add)) && memcmp(transport_pdu->data, config_appkey_add, sizeof(config_appkey_add)) == 0){
         printf("MESH config_appkey_add\n");
         config_appkey_add_handler(transport_pdu);
     }
-    if ( (transport_pdu->len > sizeof(config_model_subscription_add)) && memcmp(transport_pdu->data, config_model_subscription_add, sizeof(config_model_subscription_add)) == 0){
+    if ( (transport_pdu->len >= sizeof(config_model_subscription_add)) && memcmp(transport_pdu->data, config_model_subscription_add, sizeof(config_model_subscription_add)) == 0){
         printf("MESH config_model_subscription_add\n");
         config_model_subscription_add_handler(transport_pdu);
     }
-    if ( (transport_pdu->len > sizeof(config_model_subscription_virtual_address_add)) && memcmp(transport_pdu->data, config_model_subscription_virtual_address_add, sizeof(config_model_subscription_virtual_address_add)) == 0){
+    if ( (transport_pdu->len >= sizeof(config_model_subscription_virtual_address_add)) && memcmp(transport_pdu->data, config_model_subscription_virtual_address_add, sizeof(config_model_subscription_virtual_address_add)) == 0){
         printf("MESH config_model_subscription_virtual_address_add_handler\n");
         config_model_subscription_virtual_address_add_handler(transport_pdu);
     }
-    if ( (transport_pdu->len > sizeof(config_model_publication_virtual_address_add)) && memcmp(transport_pdu->data, config_model_publication_virtual_address_add, sizeof(config_model_publication_virtual_address_add)) == 0){
+    if ( (transport_pdu->len >= sizeof(config_model_publication_virtual_address_add)) && memcmp(transport_pdu->data, config_model_publication_virtual_address_add, sizeof(config_model_publication_virtual_address_add)) == 0){
         printf("MESH config_model_publication_virtual_address_add\n");
         config_model_publication_virtual_address_add_handler(transport_pdu);
     }
-    if ( (transport_pdu->len > sizeof(config_model_app_bind)) && memcmp(transport_pdu->data, config_model_app_bind, sizeof(config_model_app_bind)) == 0){
+    if ( (transport_pdu->len >= sizeof(config_model_app_bind)) && memcmp(transport_pdu->data, config_model_app_bind, sizeof(config_model_app_bind)) == 0){
         printf("MESH config_model_app_bind\n");
         config_model_app_bind_handler(transport_pdu);
+    }
+    if ( (transport_pdu->len >= sizeof(config_heartbeat_publication_set)) && memcmp(transport_pdu->data, config_heartbeat_publication_set, sizeof(config_heartbeat_publication_set)) == 0){
+        printf("MESH config_config_heartbeat_publication\n");
+        config_heartbeat_publication_set_handler(transport_pdu);
+    }
+    if ( (transport_pdu->len >= sizeof(config_heartbeat_publication_get)) && memcmp(transport_pdu->data, config_heartbeat_publication_get, sizeof(config_heartbeat_publication_get)) == 0){
+        printf("MESH config_heartbeat_publication_get\n");
+        config_heartbeat_publication_get_handler(transport_pdu);
     }
 }
 
