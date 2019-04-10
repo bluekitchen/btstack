@@ -65,14 +65,6 @@ static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len
 
 // application key list
 
-typedef struct {
-    uint8_t  label_uuid[16];
-    uint16_t pseudo_dst;
-    uint16_t dst;
-    uint8_t  akf;
-    uint8_t  aid;
-    uint8_t  first;
-} mesh_transport_key_iterator_t;
 
 typedef struct {
     btstack_linked_item_t item;
@@ -90,46 +82,9 @@ typedef struct {
     uint8_t aid;
 } mesh_transport_key_t;
 
-typedef struct {
-    uint16_t pseudo_dst;
-    uint16_t hash;
-    uint8_t  label_uuid[16];
-} mesh_virtual_address_t;
-
+// key management
 static mesh_transport_key_t   test_application_key;
 static mesh_transport_key_t   mesh_transport_device_key;
-static mesh_virtual_address_t test_virtual_address;
-
-// mesh network key iterator
-static void mesh_transport_key_iterator_init(mesh_transport_key_iterator_t * it, uint16_t dst, uint8_t akf, uint8_t aid){
-    it->dst = dst;
-    it->aid      = aid;
-    it->akf      = akf;
-    it->first    = 1;
-}
-
-static int mesh_transport_key_iterator_has_more(mesh_transport_key_iterator_t * it){
-    if (!it->first) return 0;
-    if (mesh_network_address_virtual(it->dst) && it->dst != test_virtual_address.hash) return 0;
-    if (it->akf){
-        return it->aid == test_application_key.aid;
-    } else {
-        return 1;
-    }
-}
-
-static const mesh_transport_key_t * mesh_transport_key_iterator_get_next(mesh_transport_key_iterator_t * it){
-    it->first = 0;
-    if (mesh_network_address_virtual(it->dst)){
-        memcpy(it->label_uuid, test_virtual_address.label_uuid, 16);
-        it->pseudo_dst = test_virtual_address.pseudo_dst;
-    }
-    if (it->akf){
-        return &test_application_key;
-    } else {
-        return &mesh_transport_device_key;
-    }
-}
 
 void mesh_application_key_set(uint16_t appkey_index, uint8_t aid, const uint8_t * application_key){
     test_application_key.index = appkey_index;
@@ -152,6 +107,49 @@ static const mesh_transport_key_t * mesh_transport_key_get(uint16_t appkey_index
     if (appkey_index != test_application_key.index) return NULL;
     return &test_application_key;
 }
+
+// key iterator
+
+typedef struct {
+    uint8_t  akf;
+    uint8_t  aid;
+    uint8_t  first;
+} mesh_transport_key_iterator_t;
+
+static void mesh_transport_key_iterator_init(mesh_transport_key_iterator_t *it, uint8_t akf, uint8_t aid){
+    it->aid      = aid;
+    it->akf      = akf;
+    it->first    = 1;
+}
+
+static int mesh_transport_key_iterator_has_more(mesh_transport_key_iterator_t *it){
+    if (!it->first) return 0;
+    if (it->akf){
+        return it->aid == test_application_key.aid;
+    } else {
+        return 1;
+    }
+}
+
+static const mesh_transport_key_t * mesh_transport_key_iterator_get_next(mesh_transport_key_iterator_t *it){
+    it->first = 0;
+    if (it->akf){
+        return &test_application_key;
+    } else {
+        return &mesh_transport_device_key;
+    }
+}
+
+// virtual address management
+
+typedef struct {
+    uint16_t pseudo_dst;
+    uint16_t hash;
+    uint8_t  label_uuid[16];
+} mesh_virtual_address_t;
+
+
+static mesh_virtual_address_t test_virtual_address;
 
 static void mesh_virtual_address_run(void){
 }
@@ -176,6 +174,87 @@ static mesh_virtual_address_t * mesh_virtual_address_for_pseudo_dst(uint16_t pse
     return NULL;
 }
 
+// virtual address iterator
+
+typedef struct {
+    uint8_t   first;
+    uint16_t  hash;
+} mesh_virtual_address_iterator_t;
+
+static void mesh_virtual_address_iterator_init(mesh_virtual_address_iterator_t * it, uint16_t hash){
+    it->first = 1;
+    it->hash = hash;
+}
+static int mesh_virtual_address_iterator_has_more(mesh_virtual_address_iterator_t * it){
+    if (!it->first) return 0;
+    if (it->hash != test_virtual_address.hash) return 0;
+    return 1;
+}
+
+static const mesh_virtual_address_t * mesh_virtual_address_iterator_get_next(mesh_virtual_address_iterator_t * it){
+    it->first = 0;
+    return &test_virtual_address;
+}
+
+// combined key x address iterator for upper transport decryption
+
+typedef struct {
+    // state
+    mesh_transport_key_iterator_t  key_it;
+    mesh_virtual_address_iterator_t address_it;
+    // elements
+    const mesh_transport_key_t *   key;
+    const mesh_virtual_address_t * address;
+    // address - might be virtual
+    uint16_t dst;
+    // key info
+    uint8_t  akf;
+    uint8_t  aid;
+} mesh_transport_key_and_virtual_address_iterator_t;
+
+static void mesh_transport_key_and_virtual_address_iterator_init(mesh_transport_key_and_virtual_address_iterator_t * it, uint16_t dst, uint8_t akf, uint8_t aid){
+    printf("KEY_INIT: dst %04x, akf %x, aid %x\n", dst, akf, aid);
+    // config
+    it->dst   = dst;
+    it->aid   = aid;
+    it->akf   = akf;
+    // init elements
+    it->key     = NULL;
+    it->address = NULL;
+    // init element iterators
+    mesh_transport_key_iterator_init(&it->key_it, akf, aid);
+    // get first key
+    if (mesh_transport_key_iterator_has_more(&it->key_it)) {
+        it->key = mesh_transport_key_iterator_get_next(&it->key_it);
+    }
+    // init address iterator
+    if (mesh_network_address_virtual(it->dst)){
+        mesh_virtual_address_iterator_init(&it->address_it, dst);
+    }
+}
+
+// cartesian product: keys x addressses
+static int mesh_transport_key_and_virtual_address_iterator_has_more(mesh_transport_key_and_virtual_address_iterator_t * it){
+    if (mesh_network_address_virtual(it->dst)) {
+        // find next valid entry
+        while (1){
+            if (mesh_virtual_address_iterator_has_more(&it->address_it)) return 1;
+            if (!mesh_transport_key_iterator_has_more(&it->key_it)) return 0;
+            // get next key
+            it->key = mesh_transport_key_iterator_get_next(&it->key_it);
+            mesh_virtual_address_iterator_init(&it->address_it, it->dst);
+        }
+    } else {
+        return mesh_transport_key_iterator_has_more(&it->key_it);
+    }
+}
+
+static void mesh_transport_key_and_virtual_address_iterator_next(mesh_transport_key_and_virtual_address_iterator_t * it){
+    if (mesh_network_address_virtual(it->dst)) {
+        it->address = mesh_virtual_address_iterator_get_next(&it->address_it);
+    }
+}
+
 // UPPER TRANSPORT
 
 // stub lower transport
@@ -190,7 +269,7 @@ static mesh_network_pdu_t   * network_pdu_in_validation;
 static mesh_transport_pdu_t * transport_pdu_in_validation;
 static uint8_t application_nonce[13];
 static btstack_crypto_ccm_t ccm;
-static mesh_transport_key_iterator_t mesh_transport_key_it;
+static mesh_transport_key_and_virtual_address_iterator_t mesh_transport_key_it;
 
 // upper transport callbacks - in access layer
 static void (*mesh_access_unsegmented_handler)(mesh_network_pdu_t * network_pdu);
@@ -294,7 +373,7 @@ static void mesh_upper_transport_validate_unsegmented_message_ccm(void * arg){
 
         // if virtual address, update dst to pseudo_dst
         if (mesh_network_address_virtual(mesh_network_dst(network_pdu))){
-            big_endian_store_16(network_pdu->data, 7, mesh_transport_key_it.pseudo_dst);
+            big_endian_store_16(network_pdu->data, 7, mesh_transport_key_it.address->pseudo_dst);
         }
 
         // pass to upper layer
@@ -342,7 +421,7 @@ static void mesh_upper_transport_validate_segmented_message_ccm(void * arg){
 
         // if virtual address, update dst to pseudo_dst
         if (mesh_network_address_virtual(mesh_transport_dst(transport_pdu))){
-            big_endian_store_16(transport_pdu->network_header, 7, mesh_transport_key_it.pseudo_dst);
+            big_endian_store_16(transport_pdu->network_header, 7, mesh_transport_key_it.address->pseudo_dst);
         }
 
         // pass to upper layer
@@ -389,12 +468,13 @@ static void mesh_upper_transport_validate_unsegmented_message_digest(void * arg)
 
 static void mesh_upper_transport_validate_unsegmented_message(mesh_network_pdu_t * network_pdu){
 
-    if (!mesh_transport_key_iterator_has_more(&mesh_transport_key_it)){
+    if (!mesh_transport_key_and_virtual_address_iterator_has_more(&mesh_transport_key_it)){
         printf("No valid transport key found\n");
         mesh_upper_transport_process_unsegmented_message_done(network_pdu);
         return;
     }
-    const mesh_transport_key_t * message_key = mesh_transport_key_iterator_get_next(&mesh_transport_key_it);
+    mesh_transport_key_and_virtual_address_iterator_next(&mesh_transport_key_it);
+    const mesh_transport_key_t * message_key = mesh_transport_key_it.key;
 
     if (message_key->akf){
         transport_unsegmented_setup_application_nonce(application_nonce, network_pdu_in_validation);
@@ -424,7 +504,7 @@ static void mesh_upper_transport_validate_unsegmented_message(mesh_network_pdu_t
     }
     btstack_crypto_ccm_init(&ccm, message_key->key, application_nonce, upper_transport_pdu_len, aad_len, trans_mic_len);
     if (aad_len){
-        btstack_crypto_ccm_digest(&ccm, mesh_transport_key_it.label_uuid, aad_len, &mesh_upper_transport_validate_unsegmented_message_digest, network_pdu);
+        btstack_crypto_ccm_digest(&ccm, (uint8_t*) mesh_transport_key_it.address->label_uuid, aad_len, &mesh_upper_transport_validate_unsegmented_message_digest, network_pdu);
     } else {
         mesh_upper_transport_validate_unsegmented_message_digest(network_pdu);
     }
@@ -434,12 +514,13 @@ static void mesh_upper_transport_validate_segmented_message(mesh_transport_pdu_t
     uint8_t * upper_transport_pdu_data =  transport_pdu->data;
     uint8_t   upper_transport_pdu_len  =  transport_pdu->len - transport_pdu->transmic_len;
 
-    if (!mesh_transport_key_iterator_has_more(&mesh_transport_key_it)){
+    if (!mesh_transport_key_and_virtual_address_iterator_has_more(&mesh_transport_key_it)){
         printf("No valid transport key found\n");
         mesh_upper_transport_process_segmented_message_done(transport_pdu);
         return;
     }
-    const mesh_transport_key_t * message_key = mesh_transport_key_iterator_get_next(&mesh_transport_key_it);
+    mesh_transport_key_and_virtual_address_iterator_next(&mesh_transport_key_it);
+    const mesh_transport_key_t * message_key = mesh_transport_key_it.key;
 
     if (message_key->akf){
         transport_segmented_setup_application_nonce(application_nonce, transport_pdu_in_validation);
@@ -462,7 +543,7 @@ static void mesh_upper_transport_validate_segmented_message(mesh_transport_pdu_t
     btstack_crypto_ccm_init(&ccm, message_key->key, application_nonce, upper_transport_pdu_len, aad_len, transport_pdu->transmic_len);
 
     if (aad_len){
-        btstack_crypto_ccm_digest(&ccm, mesh_transport_key_it.label_uuid, aad_len, &mesh_upper_transport_validate_segmented_message_digest, transport_pdu);
+        btstack_crypto_ccm_digest(&ccm, (uint8_t *) mesh_transport_key_it.address->label_uuid, aad_len, &mesh_upper_transport_validate_segmented_message_digest, transport_pdu);
     } else {
         mesh_upper_transport_validate_segmented_message_digest(transport_pdu);
     }
@@ -484,7 +565,7 @@ static void mesh_upper_transport_process_unsegmented_access_message(mesh_network
     printf("AKF: %u\n",   akf);
     printf("AID: %02x\n", aid);
 
-    mesh_transport_key_iterator_init(&mesh_transport_key_it, mesh_network_dst(network_pdu), akf, aid);
+    mesh_transport_key_and_virtual_address_iterator_init(&mesh_transport_key_it, mesh_network_dst(network_pdu), akf, aid);
     mesh_upper_transport_validate_unsegmented_message(network_pdu);
 }
 
@@ -504,7 +585,7 @@ static void mesh_upper_transport_process_message(mesh_transport_pdu_t * transpor
     printf("AKF: %u\n",   akf);
     printf("AID: %02x\n", aid);
 
-    mesh_transport_key_iterator_init(&mesh_transport_key_it, mesh_transport_dst(transport_pdu), akf, aid);
+    mesh_transport_key_and_virtual_address_iterator_init(&mesh_transport_key_it, mesh_transport_dst(transport_pdu), akf, aid);
     mesh_upper_transport_validate_segmented_message(transport_pdu);
 }
 
