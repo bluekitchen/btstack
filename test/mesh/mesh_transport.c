@@ -46,6 +46,7 @@
 #include "btstack_memory.h"
 #include "ble/mesh/mesh_lower_transport.h"
 #include "mesh_peer.h"
+//#include "mesh_keys.h"
 
 static uint16_t primary_element_address;
 
@@ -223,13 +224,13 @@ static void mesh_transport_key_and_virtual_address_iterator_init(mesh_transport_
     it->address = NULL;
     // init element iterators
     mesh_transport_key_iterator_init(&it->key_it, akf, aid);
-    // get first key
-    if (mesh_transport_key_iterator_has_more(&it->key_it)) {
-        it->key = mesh_transport_key_iterator_get_next(&it->key_it);
-    }
     // init address iterator
     if (mesh_network_address_virtual(it->dst)){
         mesh_virtual_address_iterator_init(&it->address_it, dst);
+        // get first key
+        if (mesh_transport_key_iterator_has_more(&it->key_it)) {
+            it->key = mesh_transport_key_iterator_get_next(&it->key_it);
+        }
     }
 }
 
@@ -252,6 +253,8 @@ static int mesh_transport_key_and_virtual_address_iterator_has_more(mesh_transpo
 static void mesh_transport_key_and_virtual_address_iterator_next(mesh_transport_key_and_virtual_address_iterator_t * it){
     if (mesh_network_address_virtual(it->dst)) {
         it->address = mesh_virtual_address_iterator_get_next(&it->address_it);
+    } else {
+        it->key = mesh_transport_key_iterator_get_next(&it->key_it);
     }
 }
 
