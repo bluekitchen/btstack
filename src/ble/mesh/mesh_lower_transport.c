@@ -292,8 +292,6 @@ static void mesh_lower_transport_abort_transmission(void){
     // free pdus
     btstack_memory_mesh_transport_pdu_free(lower_transport_outgoing_pdu);
     lower_transport_outgoing_pdu     = NULL;
-    btstack_memory_mesh_network_pdu_free(lower_transport_outgoing_segment);
-    lower_transport_outgoing_segment = NULL;
 }
 
 static mesh_transport_pdu_t * mesh_lower_transport_pdu_for_segmented_message(mesh_network_pdu_t *network_pdu){
@@ -523,8 +521,6 @@ static void mesh_lower_transport_send_next_segment(void){
             // note: same as in seg ack handling code
             btstack_memory_mesh_transport_pdu_free(lower_transport_outgoing_pdu);
             lower_transport_outgoing_pdu     = NULL;
-            btstack_memory_mesh_network_pdu_free(lower_transport_outgoing_segment);
-            lower_transport_outgoing_segment = NULL;
             return;
         }
 
@@ -573,17 +569,15 @@ static void mesh_lower_transport_send_segmented_pdu_once(mesh_transport_pdu_t *t
         return;
     }
 
+    // check if we have outgoing segment allocated
+    if (!lower_transport_outgoing_segment) return;
+
     // chop into chunks
     printf("[+] Upper transport, send segmented pdu (retry count %u)\n", lower_transport_retry_count);
     lower_transport_retry_count--;
 
-    // allocate network_pdu
-    mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
-    if (!network_pdu) return;
-
     // setup
     lower_transport_outgoing_pdu     = transport_pdu;
-    lower_transport_outgoing_segment = network_pdu;
     lower_transport_outgoing_seg_o   = 0;
 
     // setup block ack - set bit for segment to send, clear on ack
@@ -687,7 +681,10 @@ void mesh_lower_transport_reset(void){
 }
 
 void mesh_lower_transport_init(){
+    // register with network layer
     mesh_network_set_higher_layer_handler(&mesh_lower_transport_received_message);
+    // allocate network_pdu for segmentation
+    lower_transport_outgoing_segment = mesh_network_pdu_get();
 }
 
 void mesh_lower_transport_set_primary_element_address(uint16_t unicast_address){
