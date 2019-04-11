@@ -827,7 +827,54 @@ static void config_model_publication_virtual_address_add_handler(mesh_transport_
     mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, 12 + model_id_len);
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
-static uint8_t config_heartbeat[9];
+
+// Heartbeat Publication
+#define MESH_HEARTBEAT_FEATURES_SUPPORTED_MASK 0x000f
+
+typedef struct  {
+    btstack_timer_source_t timer;
+    uint16_t destination;
+    uint16_t count;
+    uint8_t  period_log;
+    uint8_t  ttl;
+    uint16_t features;
+    uint16_t netkey_index;
+} mesh_heartbeat_publication_t;
+static mesh_heartbeat_publication_t mesh_heartbeat_publication;
+
+
+static uint16_t heartbeat_pwr2(uint8_t value){
+    if (!value)                         return 0x0000;
+    if (value == 0xff || value == 0x11) return 0xffff;
+    return 1 << (value-1);
+}
+
+static uint8_t heartbeat_count_log(uint16_t value){
+    if (!value)          return 0x00;
+    if (value == 0x01)   return 0x01;
+    if (value == 0xffff) return 0xff;
+    // count leading zeros, supported by clang and gcc
+    return 32 - __builtin_clz(value - 1) + 1;
+}
+
+void config_heartbeat_publication_emit(btstack_timer_source_t * ts){
+    uint32_t time_ms = heartbeat_pwr2(mesh_heartbeat_publication.period_log) * 1000;
+    printf("CONFIG_SERVER_HEARTBEAT: Emit (count %u, period %u ms)\n", mesh_heartbeat_publication.count, time_ms);
+    mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
+    if (mesh_heartbeat_publication.count == 0) return;
+    mesh_heartbeat_publication.count--;
+    if (network_pdu){
+        uint8_t data[3];
+        data[0] = (mesh_heartbeat_publication.ttl << 1);
+        little_endian_store_16(data, 1, mesh_heartbeat_publication.features);
+        mesh_upper_transport_setup_unsegmented_control_pdu(network_pdu, mesh_heartbeat_publication.netkey_index,
+                mesh_heartbeat_publication.ttl, primary_element_address, mesh_heartbeat_publication.destination,
+                MESH_TRANSPORT_OPCODE_HEARTBEAT, data, sizeof(data));
+        mesh_upper_transport_send_unsegmented_control_pdu(network_pdu);
+    }
+    btstack_run_loop_set_timer(ts, time_ms);
+    btstack_run_loop_add_timer(ts);
+}
 
 void config_heartbeat_publication_status(void){
 
@@ -842,7 +889,16 @@ void config_heartbeat_publication_status(void){
     uint16_t access_pdu_len = 11;
     access_pdu_data[0] = 0x06;
     access_pdu_data[1] = 0;
-    memcpy(&access_pdu_data[2], config_heartbeat, 9);
+
+    little_endian_store_16(access_pdu_data, 2, mesh_heartbeat_publication.destination);
+    access_pdu_data[4] = heartbeat_count_log(mesh_heartbeat_publication.count);
+    access_pdu_data[5] = mesh_heartbeat_publication.period_log;
+    access_pdu_data[6] = mesh_heartbeat_publication.ttl;
+    little_endian_store_16(access_pdu_data, 7, mesh_heartbeat_publication.features);
+    little_endian_store_16(access_pdu_data, 9, mesh_heartbeat_publication.netkey_index);
+
+    printf("MESH config_heartbeat_publication_status count = %u => count_log = %u\n", mesh_heartbeat_publication.count, access_pdu_data[4]);
+
     mesh_transport_pdu_t * transport_pdu = mesh_transport_pdu_get();
     mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
@@ -851,22 +907,28 @@ void config_heartbeat_publication_status(void){
 void config_heartbeat_publication_set_handler(mesh_transport_pdu_t *transport_pdu){
     // parse
 
-#if 0
+    // TODO: validate fields
+
     // Destination address for Heartbeat messages
-    uint16_t destination = little_endian_read_16(transport_pdu->data, 2);
+    mesh_heartbeat_publication.destination = little_endian_read_16(transport_pdu->data, 2);
     // Number of Heartbeat messages to be sent
-    uint8_t count_log = transport_pdu->data[4];
+    mesh_heartbeat_publication.count = heartbeat_pwr2(transport_pdu->data[4]);
     //  Period for sending Heartbeat messages
-    uint8_t period_log = transport_pdu->data[5];
+    mesh_heartbeat_publication.period_log = transport_pdu->data[5];
     //  TTL to be used when sending Heartbeat messages
-    uint8_t ttl = transport_pdu->data[6];
+    mesh_heartbeat_publication.ttl = transport_pdu->data[6];
     // Bit field indicating features that trigger Heartbeat messages when changed
-    uint16_t features = little_endian_read_16(transport_pdu->data, 7);
+    mesh_heartbeat_publication.features = little_endian_read_16(transport_pdu->data, 7) & MESH_HEARTBEAT_FEATURES_SUPPORTED_MASK;
     // NetKey Index
-    uint16_t netkey_index = little_endian_read_16(transport_pdu->data, 9);
-#endif
-    memcpy(config_heartbeat, &transport_pdu->data[2], 9);
+    mesh_heartbeat_publication.netkey_index = little_endian_read_16(transport_pdu->data, 9);
+
+    printf("MESH config_heartbeat_publication_set, count = %x, period = %u s\n", mesh_heartbeat_publication.count, heartbeat_pwr2(mesh_heartbeat_publication.period_log));
+
     config_heartbeat_publication_status();
+
+    // TODO: check if heartbeat was off before
+    btstack_run_loop_set_timer_handler(&mesh_heartbeat_publication.timer, config_heartbeat_publication_emit);
+    config_heartbeat_publication_emit(&mesh_heartbeat_publication.timer);
 }
 
 void config_heartbeat_publication_get_handler(mesh_transport_pdu_t *transport_pdu){
@@ -912,7 +974,6 @@ void mesh_segemented_message_handler(mesh_transport_pdu_t * transport_pdu){
         config_model_app_bind_handler(transport_pdu);
     }
     if ( (transport_pdu->len >= sizeof(config_heartbeat_publication_set)) && memcmp(transport_pdu->data, config_heartbeat_publication_set, sizeof(config_heartbeat_publication_set)) == 0){
-        printf("MESH config_config_heartbeat_publication\n");
         config_heartbeat_publication_set_handler(transport_pdu);
     }
     if ( (transport_pdu->len >= sizeof(config_heartbeat_publication_get)) && memcmp(transport_pdu->data, config_heartbeat_publication_get, sizeof(config_heartbeat_publication_get)) == 0){
