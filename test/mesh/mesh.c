@@ -858,15 +858,17 @@ static uint8_t heartbeat_count_log(uint16_t value){
 }
 
 void config_heartbeat_publication_emit(btstack_timer_source_t * ts){
-    uint32_t time_ms = heartbeat_pwr2(mesh_heartbeat_publication.period_log) * 1000;
-    printf("CONFIG_SERVER_HEARTBEAT: Emit (count %u, period %u ms)\n", mesh_heartbeat_publication.count, time_ms);
-    mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
     if (mesh_heartbeat_publication.count == 0) return;
+
+    uint32_t time_ms = heartbeat_pwr2(mesh_heartbeat_publication.period_log) * 1000;
+    printf("CONFIG_SERVER_HEARTBEAT: Emit (dest %04x, count %u, period %u ms, seq %x)\n", mesh_heartbeat_publication.destination, mesh_heartbeat_publication.count, time_ms, mesh_lower_transport_peek_seq());
     mesh_heartbeat_publication.count--;
+
+    mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
     if (network_pdu){
         uint8_t data[3];
-        data[0] = (mesh_heartbeat_publication.ttl << 1);
-        little_endian_store_16(data, 1, mesh_heartbeat_publication.features);
+        data[0] = mesh_heartbeat_publication.ttl;
+        big_endian_store_16(data, 1, mesh_heartbeat_publication.features);
         mesh_upper_transport_setup_unsegmented_control_pdu(network_pdu, mesh_heartbeat_publication.netkey_index,
                 mesh_heartbeat_publication.ttl, primary_element_address, mesh_heartbeat_publication.destination,
                 MESH_TRANSPORT_OPCODE_HEARTBEAT, data, sizeof(data));
@@ -908,6 +910,7 @@ void config_heartbeat_publication_set_handler(mesh_transport_pdu_t *transport_pd
     // parse
 
     // TODO: validate fields
+    uint16_t destination =
 
     // Destination address for Heartbeat messages
     mesh_heartbeat_publication.destination = little_endian_read_16(transport_pdu->data, 2);
@@ -922,13 +925,23 @@ void config_heartbeat_publication_set_handler(mesh_transport_pdu_t *transport_pd
     // NetKey Index
     mesh_heartbeat_publication.netkey_index = little_endian_read_16(transport_pdu->data, 9);
 
-    printf("MESH config_heartbeat_publication_set, count = %x, period = %u s\n", mesh_heartbeat_publication.count, heartbeat_pwr2(mesh_heartbeat_publication.period_log));
+    printf("MESH config_heartbeat_publication_set, destination %x, count = %x, period = %u s\n",
+            mesh_heartbeat_publication.destination, mesh_heartbeat_publication.count, heartbeat_pwr2(mesh_heartbeat_publication.period_log));
 
     config_heartbeat_publication_status();
 
+    // check if we should enable hearbeats
+    if (mesh_heartbeat_publication.destination == MESH_ADDRESS_UNSASSIGNED) {
+        btstack_run_loop_remove_timer(&mesh_heartbeat_publication.timer);
+        printf("MESH config_heartbeat_publication_set, disable\n");
+        return;
+    }
+
+    // NOTE: defer first heartbeat to allow config status getting sent first
     // TODO: check if heartbeat was off before
     btstack_run_loop_set_timer_handler(&mesh_heartbeat_publication.timer, config_heartbeat_publication_emit);
-    config_heartbeat_publication_emit(&mesh_heartbeat_publication.timer);
+    btstack_run_loop_set_timer(&mesh_heartbeat_publication.timer, 2000);
+    btstack_run_loop_add_timer(&mesh_heartbeat_publication.timer);
 }
 
 void config_heartbeat_publication_get_handler(mesh_transport_pdu_t *transport_pdu){
