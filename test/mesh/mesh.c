@@ -949,49 +949,88 @@ void config_heartbeat_publication_get_handler(mesh_transport_pdu_t *transport_pd
     config_heartbeat_publication_status();
 }
 
-static const uint8_t config_appkey_add[] =                             { 0x00 };
-static const uint8_t config_composition_data_get[] =                   { 0x80, 0x08, 0xff };
-static const uint8_t config_model_subscription_add[] =                 { 0x80, 0x1b };
-static const uint8_t config_model_subscription_virtual_address_add[] = { 0x80, 0x20 };
-static const uint8_t config_model_app_bind[] =                         { 0x80, 0x3d };
-static const uint8_t config_model_publication_virtual_address_add[] =  { 0x80, 0x1A };
-static const uint8_t config_heartbeat_publication_set[] =       { 0x80, 0x39 };
-static const uint8_t config_heartbeat_publication_get[] =       { 0x80, 0x38 };
+#define MESH_FOUNDATION_OPERATION_APP_KEY_ADD                             0x00
+#define MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_GET                  0x8008
+#define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_GET                 0x8018
+#define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_STATUS              0x8019
+#define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_VIRTUAL_ADDRESS_SET 0x801a
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_ADD                0x801b
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DEL                0x801c
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DEL_ALL            0x801d
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_OVERWRITE          0x801e
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_STATUS             0x801f
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_ADD             0x8020
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_DEL             0x8021
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_OVERWRITE       0x8022
+#define MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_GET                     0x8038
+#define MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_SET                     0x8039
+#define MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_GET                    0x803a
+#define MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_SET                    0x803b
+#define MESH_FOUNDATION_OPERATION_MODEL_APP_BIND                          0x803d
+#define MESH_FOUNDATION_OPERATION_MODEL_APP_STATUS                        0x803e
+#define MESH_FOUNDATION_OPERATION_MODEL_APP_UNBIND                        0x803f
+
+static int mesh_access_transport_get_opcode(mesh_transport_pdu_t * transport_pdu, uint32_t * opcode){
+    switch (transport_pdu->data[0] >> 6){
+        case 0:
+        case 1:
+            if (transport_pdu->data[0] == 0x7f) return -1;
+            *opcode = transport_pdu->data[0];
+            return 0;
+        case 2:
+            if (transport_pdu->len < 2) return -1;
+            *opcode = big_endian_read_16(transport_pdu->data, 0);
+            return 1;
+        case 3:
+            if (transport_pdu->len < 3) return -1;
+            *opcode = (transport_pdu->data[0] << 16) | big_endian_read_16(transport_pdu->data, 1);
+            return 1;
+        default:
+            return 0;
+    }
+}
 
 void mesh_segemented_message_handler(mesh_transport_pdu_t * transport_pdu){
     printf("MESH Access Message: ");
     printf_hexdump(transport_pdu->data, transport_pdu->len);
 
-    if ( (transport_pdu->len == sizeof(config_composition_data_get)) && memcmp(transport_pdu->data, config_composition_data_get, sizeof(config_composition_data_get)) == 0){
-        printf("MESH config_composition_data_get\n");
-        config_composition_data_status();
-    }
-    if ( (transport_pdu->len >= sizeof(config_appkey_add)) && memcmp(transport_pdu->data, config_appkey_add, sizeof(config_appkey_add)) == 0){
-        printf("MESH config_appkey_add\n");
-        config_appkey_add_handler(transport_pdu);
-    }
-    if ( (transport_pdu->len >= sizeof(config_model_subscription_add)) && memcmp(transport_pdu->data, config_model_subscription_add, sizeof(config_model_subscription_add)) == 0){
-        printf("MESH config_model_subscription_add\n");
-        config_model_subscription_add_handler(transport_pdu);
-    }
-    if ( (transport_pdu->len >= sizeof(config_model_subscription_virtual_address_add)) && memcmp(transport_pdu->data, config_model_subscription_virtual_address_add, sizeof(config_model_subscription_virtual_address_add)) == 0){
-        printf("MESH config_model_subscription_virtual_address_add_handler\n");
-        config_model_subscription_virtual_address_add_handler(transport_pdu);
-    }
-    if ( (transport_pdu->len >= sizeof(config_model_publication_virtual_address_add)) && memcmp(transport_pdu->data, config_model_publication_virtual_address_add, sizeof(config_model_publication_virtual_address_add)) == 0){
-        printf("MESH config_model_publication_virtual_address_add\n");
-        config_model_publication_virtual_address_add_handler(transport_pdu);
-    }
-    if ( (transport_pdu->len >= sizeof(config_model_app_bind)) && memcmp(transport_pdu->data, config_model_app_bind, sizeof(config_model_app_bind)) == 0){
-        printf("MESH config_model_app_bind\n");
-        config_model_app_bind_handler(transport_pdu);
-    }
-    if ( (transport_pdu->len >= sizeof(config_heartbeat_publication_set)) && memcmp(transport_pdu->data, config_heartbeat_publication_set, sizeof(config_heartbeat_publication_set)) == 0){
-        config_heartbeat_publication_set_handler(transport_pdu);
-    }
-    if ( (transport_pdu->len >= sizeof(config_heartbeat_publication_get)) && memcmp(transport_pdu->data, config_heartbeat_publication_get, sizeof(config_heartbeat_publication_get)) == 0){
-        printf("MESH config_heartbeat_publication_get\n");
-        config_heartbeat_publication_get_handler(transport_pdu);
+    uint32_t opcode = 0;
+    int ok = mesh_access_transport_get_opcode(transport_pdu, &opcode);
+    if (!ok) return;
+    switch (opcode){
+        case MESH_FOUNDATION_OPERATION_APP_KEY_ADD:
+            printf("MESH config_appkey_add\n");
+            config_appkey_add_handler(transport_pdu);
+            break;
+        case MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_GET:
+            printf("MESH config_composition_data_get\n");
+            config_composition_data_status();
+            break;
+        case MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_ADD:
+            printf("MESH config_model_subscription_add\n");
+            config_model_subscription_add_handler(transport_pdu);
+            break;
+        case MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_ADD:
+            printf("MESH config_model_subscription_virtual_address_add_handler\n");
+            config_model_subscription_virtual_address_add_handler(transport_pdu);
+            break;
+        case MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_VIRTUAL_ADDRESS_SET:
+            printf("MESH config_model_publication_virtual_address_add\n");
+            config_model_publication_virtual_address_add_handler(transport_pdu);
+            break;
+        case MESH_FOUNDATION_OPERATION_MODEL_APP_BIND:
+            printf("MESH config_model_app_bind\n");
+            config_model_app_bind_handler(transport_pdu);
+            break;
+        case  MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_GET:
+            printf("MESH config_heartbeat_publication_get\n");
+            config_heartbeat_publication_get_handler(transport_pdu);
+            break;
+        case MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_SET:
+            config_heartbeat_publication_set_handler(transport_pdu);
+            break;
+        default:
+            break;
     }
 }
 
