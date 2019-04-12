@@ -580,6 +580,60 @@ static void stdin_process(char cmd){
     }
 }
 
+// to sort
+
+static uint32_t netkey_and_appkey_index;
+static uint8_t  new_app_key[16];
+static uint8_t  new_aid;
+static uint16_t new_netkey_index;
+static uint16_t new_appkey_index;
+
+
+// Foundation Model Operations
+#define MESH_FOUNDATION_OPERATION_APPKEY_ADD                             0x00
+#define MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_GET                  0x8008
+#define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_GET                 0x8018
+#define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_STATUS              0x8019
+#define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_VIRTUAL_ADDRESS_SET 0x801a
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_ADD                0x801b
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DEL                0x801c
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DEL_ALL            0x801d
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_OVERWRITE          0x801e
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_STATUS                          0x801f
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_ADD             0x8020
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_DEL             0x8021
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_OVERWRITE       0x8022
+#define MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_GET                     0x8038
+#define MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_SET                     0x8039
+#define MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_GET                    0x803a
+#define MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_SET                    0x803b
+#define MESH_FOUNDATION_OPERATION_MODEL_APP_BIND                          0x803d
+#define MESH_FOUNDATION_OPERATION_MODEL_APP_STATUS                        0x803e
+#define MESH_FOUNDATION_OPERATION_MODEL_APP_UNBIND                        0x803f
+
+typedef struct  {
+    btstack_timer_source_t timer;
+    uint16_t destination;
+    uint16_t count;
+    uint8_t  period_log;
+    uint8_t  ttl;
+    uint16_t features;
+    uint16_t netkey_index;
+} mesh_heartbeat_publication_t;
+
+typedef struct {
+    mesh_heartbeat_publication_t heartbeat_publication;
+} mesh_configuration_server_model_contextt;
+
+typedef struct {
+    // model info: id, operations, etc.
+    // data
+    void * model_data;
+} mesh_model_t;
+
+static mesh_heartbeat_publication_t mesh_heartbeat_publication;
+static mesh_model_t mesh_configuration_server_model = { &mesh_heartbeat_publication };
+
 static void config_composition_data_status(void){
 
     printf("Received Config Composition Data Get -> send Config Composition Data Status\n");
@@ -633,6 +687,9 @@ static void config_composition_data_status(void){
     mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
+static void config_composition_data_get_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu){
+    config_composition_data_status();
+}
 
 static void config_appkey_status(uint32_t netkey_and_appkey_index, uint8_t status){
     uint16_t src  = primary_element_address;
@@ -657,13 +714,6 @@ static void config_appkey_status(uint32_t netkey_and_appkey_index, uint8_t statu
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
 
-
-static uint32_t netkey_and_appkey_index;
-static uint8_t  new_app_key[16];
-static uint8_t  new_aid;
-static uint16_t new_netkey_index;
-static uint16_t new_appkey_index;
-
 static void config_appkey_add_aid(void * arg){
     UNUSED(arg);
     printf("Config Appkey Add: NetKey Index 0x%06x, AppKey Index 0x%06x, AID %02x: ", new_netkey_index, new_appkey_index, new_aid);
@@ -678,7 +728,7 @@ static void config_appkey_add_aid(void * arg){
     config_appkey_status(netkey_and_appkey_index, 0);
 }
 
-static void config_appkey_add_handler(mesh_transport_pdu_t * transport_pdu){
+static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
     // 00: opcode 00
     // 01-03: netkey and appkey index
     netkey_and_appkey_index = little_endian_read_24(transport_pdu->data, 1);
@@ -717,7 +767,7 @@ static void config_model_subscription_status(uint8_t status, uint16_t element_ad
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
 
-static void config_model_subscription_add_handler(mesh_transport_pdu_t * transport_pdu){
+static void config_model_subscription_add_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
     uint16_t element_address = little_endian_read_16(transport_pdu->data, 2);
     uint16_t address = little_endian_read_16(transport_pdu->data, 4);
     uint16_t model_identifier = little_endian_read_16(transport_pdu->data, 6);
@@ -725,8 +775,9 @@ static void config_model_subscription_add_handler(mesh_transport_pdu_t * transpo
     config_model_subscription_status(0, element_address, address, model_identifier);    
 }
 
-static void config_model_subscription_virtual_address_add_handler(mesh_transport_pdu_t * transport_pdu){
-    config_model_subscription_add_handler(transport_pdu);
+static void
+config_model_subscription_virtual_address_add_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
+    config_model_subscription_add_handler(NULL, transport_pdu);
 }
 
 
@@ -757,7 +808,7 @@ static void config_model_app_status(uint8_t status, uint16_t element_address, ui
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
 
-static void config_model_app_bind_handler(mesh_transport_pdu_t * transport_pdu){
+static void config_model_app_bind_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
     uint16_t element_address = little_endian_read_16(transport_pdu->data, 2);
     uint16_t app_key_index = little_endian_read_16(transport_pdu->data, 4);
     uint16_t model_identifier = little_endian_read_16(transport_pdu->data, 6);
@@ -765,7 +816,8 @@ static void config_model_app_bind_handler(mesh_transport_pdu_t * transport_pdu){
     config_model_app_status(0, element_address, app_key_index, model_identifier);
 }
 
-static void config_model_publication_virtual_address_add_handler(mesh_transport_pdu_t * transport_pdu){
+static void
+config_model_publication_virtual_address_add_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
 
     // ElementAddress - Address of the element - should be us
     uint16_t element_address = little_endian_read_16(transport_pdu->data, 2);
@@ -831,18 +883,6 @@ static void config_model_publication_virtual_address_add_handler(mesh_transport_
 // Heartbeat Publication
 #define MESH_HEARTBEAT_FEATURES_SUPPORTED_MASK 0x000f
 
-typedef struct  {
-    btstack_timer_source_t timer;
-    uint16_t destination;
-    uint16_t count;
-    uint8_t  period_log;
-    uint8_t  ttl;
-    uint16_t features;
-    uint16_t netkey_index;
-} mesh_heartbeat_publication_t;
-static mesh_heartbeat_publication_t mesh_heartbeat_publication;
-
-
 static uint16_t heartbeat_pwr2(uint8_t value){
     if (!value)                         return 0x0000;
     if (value == 0xff || value == 0x11) return 0xffff;
@@ -857,7 +897,7 @@ static uint8_t heartbeat_count_log(uint16_t value){
     return 32 - __builtin_clz(value - 1) + 1;
 }
 
-void config_heartbeat_publication_emit(btstack_timer_source_t * ts){
+static void config_heartbeat_publication_emit(btstack_timer_source_t * ts){
     if (mesh_heartbeat_publication.count == 0) return;
 
     uint32_t time_ms = heartbeat_pwr2(mesh_heartbeat_publication.period_log) * 1000;
@@ -878,7 +918,7 @@ void config_heartbeat_publication_emit(btstack_timer_source_t * ts){
     btstack_run_loop_add_timer(ts);
 }
 
-void config_heartbeat_publication_status(void){
+static void config_heartbeat_publication_status(void){
 
     uint16_t netkey_index = 0;
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
@@ -906,7 +946,7 @@ void config_heartbeat_publication_status(void){
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
 
-void config_heartbeat_publication_set_handler(mesh_transport_pdu_t *transport_pdu){
+static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
     // parse
 
     // TODO: validate fields
@@ -944,93 +984,73 @@ void config_heartbeat_publication_set_handler(mesh_transport_pdu_t *transport_pd
     btstack_run_loop_add_timer(&mesh_heartbeat_publication.timer);
 }
 
-void config_heartbeat_publication_get_handler(mesh_transport_pdu_t *transport_pdu){
+static void config_heartbeat_publication_get_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
     UNUSED(transport_pdu);
     config_heartbeat_publication_status();
 }
 
-#define MESH_FOUNDATION_OPERATION_APP_KEY_ADD                             0x00
-#define MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_GET                  0x8008
-#define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_GET                 0x8018
-#define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_STATUS              0x8019
-#define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_VIRTUAL_ADDRESS_SET 0x801a
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_ADD                0x801b
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DEL                0x801c
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DEL_ALL            0x801d
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_OVERWRITE          0x801e
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_STATUS             0x801f
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_ADD             0x8020
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_DEL             0x8021
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_OVERWRITE       0x8022
-#define MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_GET                     0x8038
-#define MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_SET                     0x8039
-#define MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_GET                    0x803a
-#define MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_SET                    0x803b
-#define MESH_FOUNDATION_OPERATION_MODEL_APP_BIND                          0x803d
-#define MESH_FOUNDATION_OPERATION_MODEL_APP_STATUS                        0x803e
-#define MESH_FOUNDATION_OPERATION_MODEL_APP_UNBIND                        0x803f
+//
 
-static int mesh_access_transport_get_opcode(mesh_transport_pdu_t * transport_pdu, uint32_t * opcode){
+static int mesh_access_transport_get_opcode(mesh_transport_pdu_t * transport_pdu, uint32_t * opcode, uint16_t * opcode_size){
     switch (transport_pdu->data[0] >> 6){
         case 0:
         case 1:
             if (transport_pdu->data[0] == 0x7f) return -1;
             *opcode = transport_pdu->data[0];
+            *opcode_size = 1;
             return 0;
         case 2:
             if (transport_pdu->len < 2) return -1;
             *opcode = big_endian_read_16(transport_pdu->data, 0);
+            *opcode_size = 2;
             return 1;
         case 3:
             if (transport_pdu->len < 3) return -1;
             *opcode = (transport_pdu->data[0] << 16) | big_endian_read_16(transport_pdu->data, 1);
+            *opcode_size = 3;
             return 1;
         default:
             return 0;
     }
 }
 
-void mesh_segemented_message_handler(mesh_transport_pdu_t * transport_pdu){
-    printf("MESH Access Message: ");
+typedef void (*mesh_operation_handler)(mesh_model_t * mesh_model, mesh_transport_pdu_t * transport_pdu);
+
+typedef struct {
+    uint32_t opcode;
+    uint16_t minimum_length;
+    mesh_operation_handler handler;
+} mesh_operation_t;
+
+static mesh_operation_t mesh_configuration_server_model_operations[] = {
+    { MESH_FOUNDATION_OPERATION_APPKEY_ADD,                                  19, config_appkey_add_handler   },
+    { MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_GET,                         1, config_composition_data_get_handler },
+    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_ADD,                       6, config_model_subscription_add_handler},
+    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_ADD,      20, config_model_subscription_virtual_address_add_handler},
+    { MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_VIRTUAL_ADDRESS_SET,       24, config_model_publication_virtual_address_add_handler},
+    { MESH_FOUNDATION_OPERATION_MODEL_APP_BIND,                               6, config_model_app_bind_handler},
+    { MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_GET,                    0, config_heartbeat_publication_get_handler},
+    { MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_SET,                    5, config_heartbeat_publication_set_handler},
+    { 0, 0, NULL}
+};
+
+static void mesh_segmented_message_handler(mesh_transport_pdu_t *transport_pdu){
+    // get opcode and size
+    uint32_t opcode = 0;
+    uint16_t opcode_size = 0;
+    int ok = mesh_access_transport_get_opcode(transport_pdu, &opcode, &opcode_size);
+    if (!ok) return;
+
+    printf("MESH Access Message, Opcode = %x:", opcode);
     printf_hexdump(transport_pdu->data, transport_pdu->len);
 
-    uint32_t opcode = 0;
-    int ok = mesh_access_transport_get_opcode(transport_pdu, &opcode);
-    if (!ok) return;
-    switch (opcode){
-        case MESH_FOUNDATION_OPERATION_APP_KEY_ADD:
-            printf("MESH config_appkey_add\n");
-            config_appkey_add_handler(transport_pdu);
-            break;
-        case MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_GET:
-            printf("MESH config_composition_data_get\n");
-            config_composition_data_status();
-            break;
-        case MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_ADD:
-            printf("MESH config_model_subscription_add\n");
-            config_model_subscription_add_handler(transport_pdu);
-            break;
-        case MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_ADD:
-            printf("MESH config_model_subscription_virtual_address_add_handler\n");
-            config_model_subscription_virtual_address_add_handler(transport_pdu);
-            break;
-        case MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_VIRTUAL_ADDRESS_SET:
-            printf("MESH config_model_publication_virtual_address_add\n");
-            config_model_publication_virtual_address_add_handler(transport_pdu);
-            break;
-        case MESH_FOUNDATION_OPERATION_MODEL_APP_BIND:
-            printf("MESH config_model_app_bind\n");
-            config_model_app_bind_handler(transport_pdu);
-            break;
-        case  MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_GET:
-            printf("MESH config_heartbeat_publication_get\n");
-            config_heartbeat_publication_get_handler(transport_pdu);
-            break;
-        case MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_SET:
-            config_heartbeat_publication_set_handler(transport_pdu);
-            break;
-        default:
-            break;
+    // find opcode in table
+    mesh_model_t * model = &mesh_configuration_server_model;
+    mesh_operation_t * operation;
+    for (operation = mesh_configuration_server_model_operations; operation->handler != NULL ; operation++){
+        if (operation->opcode != opcode) continue;
+        if ((opcode_size + operation->minimum_length) > transport_pdu->len) break;
+        operation->handler(model, transport_pdu);
     }
 }
 
@@ -1065,7 +1085,7 @@ int btstack_main(void)
 
     // Transport layers (lower + upper))
     mesh_transport_init();
-    mesh_upper_transport_register_segemented_message_handler(&mesh_segemented_message_handler);
+    mesh_upper_transport_register_segemented_message_handler(&mesh_segmented_message_handler);
 
     // PTS Virtual Address Label UUID - without Config Model, PTS uses our device uuid
     uint8_t label_uuid[16];
