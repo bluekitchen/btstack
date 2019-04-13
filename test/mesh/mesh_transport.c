@@ -472,7 +472,7 @@ static void mesh_upper_transport_send_unsegmented_access_pdu_ccm(void * arg){
     mesh_print_hex("TransMIC", &upper_transport_pdu[upper_transport_pdu_len], 4);
     network_pdu->len += 4;
     // send network pdu
-    mesh_network_send_pdu(network_pdu);
+    mesh_lower_transport_send_unsegmented_pdu(network_pdu);
 }
 
 static void mesh_upper_transport_send_segmented_access_pdu_ccm(void * arg){
@@ -610,7 +610,7 @@ uint8_t mesh_upper_transport_setup_segmented_access_pdu(mesh_transport_pdu_t * t
 }
 
 void mesh_upper_transport_send_unsegmented_control_pdu(mesh_network_pdu_t * network_pdu){
-    mesh_network_send_pdu(network_pdu);
+    mesh_lower_transport_send_unsegmented_pdu(network_pdu);
 }
 
 void mesh_upper_transport_send_segmented_control_pdu(mesh_transport_pdu_t * transport_pdu){

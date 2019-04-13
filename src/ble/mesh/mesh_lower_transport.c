@@ -116,30 +116,6 @@ static mesh_transport_pdu_t * lower_transport_outgoing_pdu;
 static mesh_network_pdu_t   * lower_transport_outgoing_segment;
 static uint16_t               lower_transport_outgoing_seg_o;
 
-// helper network layer, temp
-static uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len){
-
-    // "3.4.5.2: The output filter of the interface connected to advertising or GATT bearers shall drop all messages with TTL value set to 1."
-    // if (ttl <= 1) return 0;
-
-    // TODO: check transport_pdu_len depending on ctl
-
-    // lookup network by netkey_index
-    const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
-    if (!network_key) return 0;
-
-    // allocate network_pdu
-    mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
-    if (!network_pdu) return 0;
-
-    // setup network_pdu
-    mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, ctl, ttl, seq, src, dest, transport_pdu_data, transport_pdu_len);
-
-    // send network_pdu
-    mesh_network_send_pdu(network_pdu);
-    return 0;
-}
-
 static void mesh_lower_transport_process_unsegmented_control_message(mesh_network_pdu_t *network_pdu){
     uint8_t * lower_transport_pdu     = mesh_network_pdu_data(network_pdu);
     uint8_t  opcode = lower_transport_pdu[0];
@@ -195,11 +171,25 @@ static void mesh_lower_transport_send_ack(uint16_t netkey_index, uint8_t ttl, ui
     // setup ack message
     uint8_t  ack_msg[7];
     mesh_lower_transport_setup_segmented_acknowledge_message(ack_msg, 0, seq_zero, block_ack);
-    // send ack
-    int i;
-    for (i=0;i<1;i++){
-        mesh_network_send(netkey_index, 1, ttl, mesh_lower_transport_next_seq(), primary_element_address, dest, ack_msg, sizeof(ack_msg));
-    }
+    //
+    // "3.4.5.2: The output filter of the interface connected to advertising or GATT bearers shall drop all messages with TTL value set to 1."
+    // if (ttl <= 1) return 0;
+
+    // TODO: check transport_pdu_len depending on ctl
+
+    // lookup network by netkey_index
+    const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
+    if (!network_key) return;
+
+    // allocate network_pdu
+    mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
+    if (!network_pdu) return;
+
+    // setup network_pdu
+    mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, 1, ttl, mesh_lower_transport_next_seq(), primary_element_address, dest, ack_msg, sizeof(ack_msg));
+
+    // send network_pdu
+    mesh_network_send_pdu(network_pdu);
 }
 
 static void mesh_lower_transport_send_ack_for_transport_pdu(mesh_transport_pdu_t *transport_pdu){
@@ -597,6 +587,10 @@ static void mesh_lower_transport_send_segmented_pdu_once(mesh_transport_pdu_t *t
 void mesh_lower_transport_send_segmented_pdu(mesh_transport_pdu_t *transport_pdu){
     lower_transport_retry_count = 2;
     mesh_lower_transport_send_segmented_pdu_once(transport_pdu);
+}
+
+void mesh_lower_transport_send_unsegmented_pdu(mesh_network_pdu_t *network_pdu){
+    mesh_network_send_pdu(network_pdu);
 }
 
 static void mesh_lower_transport_tx_ack_timeout(btstack_timer_source_t * ts){

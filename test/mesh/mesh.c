@@ -164,7 +164,7 @@ static uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl
     mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, ctl, ttl, seq, src, dest, transport_pdu_data, transport_pdu_len);
 
     // send network_pdu
-    mesh_network_send_pdu(network_pdu);
+    mesh_lower_transport_send_unsegmented_pdu(network_pdu);
     return 0;
 }
 
