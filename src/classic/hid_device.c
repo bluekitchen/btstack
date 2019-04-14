@@ -691,7 +691,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     switch (psm){
                         case PSM_HID_CONTROL:
                             device->control_cid = l2cap_event_channel_opened_get_local_cid(packet);
-                            device->con_handle  = l2cap_event_incoming_connection_get_handle(packet);
+                            device->con_handle  = l2cap_event_channel_opened_get_handle(packet);
                             break;
                         case PSM_HID_INTERRUPT:
                             device->interrupt_cid = l2cap_event_channel_opened_get_local_cid(packet);
