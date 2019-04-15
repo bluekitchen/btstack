@@ -7,7 +7,7 @@ BINARY=spp_and_le_counter
 OPENCM3_DIR = libopencm3
 LDSCRIPT = stm32f1-nucleo.ld
 
-BTSTACK_ROOT = ../..
+BTSTACK_ROOT ?= ../..
 VPATH  = $(BTSTACK_ROOT)/example
 VPATH += $(BTSTACK_ROOT)/src
 VPATH += $(BTSTACK_ROOT)/src/ble

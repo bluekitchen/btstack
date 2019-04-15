@@ -1,5 +1,5 @@
 # Makefile for posix-h4 based examples
-BTSTACK_ROOT = ../..
+BTSTACK_ROOT ?= ../..
 
 CORE += \
 	btstack_link_key_db_fs.c \

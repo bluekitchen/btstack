@@ -1,5 +1,5 @@
 # Makefile for libusb based examples
-BTSTACK_ROOT = ../..
+BTSTACK_ROOT ?= ../..
 
 CORE += \
 	btstack_chipset_da14581.c \

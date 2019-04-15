@@ -8,7 +8,7 @@ CC2560B = bluetooth_init_cc2560B_1.6_BT_Spec_4.1.o
 CC2564B = bluetooth_init_cc2564B_1.6_BT_Spec_4.1.o
 CC2567  = CC256x_BT_Service_Pack_2.8_ANT_1.16.o
 
-BTSTACK_ROOT = ../..
+BTSTACK_ROOT ?= ../..
 VPATH += example
 VPATH += firmware
 VPATH += src

@@ -1,5 +1,5 @@
 # Makefile for libusb based examples
-BTSTACK_ROOT = ../..
+BTSTACK_ROOT ?= ../..
 
 CORE += \
 	bluetooth_init_cc2564B_1.6_BT_Spec_4.1.c \

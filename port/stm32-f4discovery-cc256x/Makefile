@@ -31,7 +31,7 @@ OPT = -Os
 # Build path
 BUILD_DIR = build
 
-BTSTACK_ROOT = ../..
+BTSTACK_ROOT ?= ../..
 VPATH += ${BTSTACK_ROOT}/example
 
 ######################################
