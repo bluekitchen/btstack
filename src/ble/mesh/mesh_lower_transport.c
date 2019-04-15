@@ -112,6 +112,9 @@ static uint32_t               lower_transport_seq;
 // lower transport incoming
 static btstack_linked_list_t  lower_transport_incoming;
 
+// lower transport ougoing
+static btstack_linked_list_t lower_transport_outgoing;
+
 static mesh_transport_pdu_t * lower_transport_outgoing_pdu;
 static mesh_network_pdu_t   * lower_transport_outgoing_segment;
 static uint16_t               lower_transport_outgoing_seg_o;
@@ -574,10 +577,10 @@ static void mesh_lower_transport_send_segmented_pdu_once(mesh_transport_pdu_t *t
     int      ctl = mesh_transport_ctl(lower_transport_outgoing_pdu);
     uint16_t max_segment_len = ctl ? 8 : 12;    // control 8 bytes (64 bit NetMic), access 12 bytes (32 bit NetMIC)
     uint8_t  seg_n = (lower_transport_outgoing_pdu->len - 1) / max_segment_len;
-    if (seg_n == 31){
-        transport_pdu->block_ack = -1;
-    } else {
+    if (seg_n < 31){
         transport_pdu->block_ack = (1 << (seg_n+1)) - 1;
+    } else {
+        transport_pdu->block_ack = 0xffffffff;
     }
 
     // start sending
@@ -585,12 +588,13 @@ static void mesh_lower_transport_send_segmented_pdu_once(mesh_transport_pdu_t *t
 }
 
 void mesh_lower_transport_send_segmented_pdu(mesh_transport_pdu_t *transport_pdu){
-    lower_transport_retry_count = 2;
-    mesh_lower_transport_send_segmented_pdu_once(transport_pdu);
+    btstack_linked_list_add_tail(&lower_transport_outgoing, (btstack_linked_item_t*) transport_pdu);
+    mesh_lower_transport_run();
 }
 
 void mesh_lower_transport_send_unsegmented_pdu(mesh_network_pdu_t *network_pdu){
-    mesh_network_send_pdu(network_pdu);
+    btstack_linked_list_add_tail(&lower_transport_outgoing, (btstack_linked_item_t*) network_pdu);
+    mesh_lower_transport_run();
 }
 
 static void mesh_lower_transport_tx_ack_timeout(btstack_timer_source_t * ts){
@@ -630,6 +634,26 @@ static void mesh_lower_transport_run(void){
                 // unsegmented access message (encrypted)
                 higher_layer_handler((mesh_pdu_t *) network_pdu);
             }
+        }
+    }
+
+    while(!btstack_linked_list_empty(&lower_transport_outgoing)) {
+        // get next message
+        mesh_transport_pdu_t * transport_pdu;
+        mesh_network_pdu_t   * network_pdu;
+        mesh_pdu_t * pdu = (mesh_pdu_t *) btstack_linked_list_pop(&lower_transport_outgoing);
+        switch (pdu->pdu_type) {
+            case MESH_PDU_TYPE_NETWORK:
+                network_pdu = (mesh_network_pdu_t *) pdu;
+                mesh_network_send_pdu(network_pdu);
+                break;
+            case MESH_PDU_TYPE_TRANSPORT:
+                transport_pdu = (mesh_transport_pdu_t *) pdu;
+                lower_transport_retry_count = 2;
+                mesh_lower_transport_send_segmented_pdu_once(transport_pdu);
+                break;
+            default:
+                break;
         }
     }
 }
