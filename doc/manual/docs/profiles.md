@@ -355,28 +355,27 @@ or both GATT roles.
 
 ### GATT Client {#sec:GATTClientProfiles}
 
-The GATT Client is used to discover services, and their characteristics
-and descriptors on a peer device. It can also subscribe for
+The GATT Client is used to discover services, characteristics
+and their descriptors on a peer device. It allows to subscribe for
 notifications or indications that the characteristic on the GATT server
 has changed its value.
 
-To perform GATT queries, provides a rich interface. Before calling
+To perform GATT queries, it provides a rich interface. Before calling
 queries, the GATT client must be initialized with *gatt_client_init*
 once.
 
 To allow for modular profile implementations, GATT client can be used
 independently by multiple entities.
 
-To use it by a GATT client, you register a packet handler with
-*gatt_client_register_packet_ handler*. The return value of that is
-a GATT client ID which has to be provided in all queries.
-
 After an LE connection was created using the GAP LE API, you can query
 for the connection MTU with *gatt_client_get_mtu*.
 
-GATT queries cannot be interleaved. Therefore, you can check if you can
-perform a GATT query on a particular connection using
-*gatt_client_is_ready*. As a result to a GATT query, zero to many
+Multiple GATT queries to the same GATT Server cannot be interleaved.
+Therefore, you can either use a state machine or similar to perform the 
+queries in sequence, or you can check if you can perform a GATT query
+on a particular connection right now using
+*gatt_client_is_ready*, and retry later if it is not ready.
+As a result to a GATT query, zero to many
 *le_event*s are returned before a *GATT_EVENT_QUERY_COMPLETE* event
 completes the query.
 
