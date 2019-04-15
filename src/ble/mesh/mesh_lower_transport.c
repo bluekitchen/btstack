@@ -562,9 +562,6 @@ static void mesh_lower_transport_send_segmented_pdu_once(mesh_transport_pdu_t *t
         return;
     }
 
-    // check if we have outgoing segment allocated
-    if (!lower_transport_outgoing_segment) return;
-
     // chop into chunks
     printf("[+] Upper transport, send segmented pdu (retry count %u)\n", lower_transport_retry_count);
     lower_transport_retry_count--;
@@ -588,6 +585,9 @@ static void mesh_lower_transport_send_segmented_pdu_once(mesh_transport_pdu_t *t
 }
 
 void mesh_lower_transport_send_segmented_pdu(mesh_transport_pdu_t *transport_pdu){
+    // check if we have outgoing segment allocated
+    if (!lower_transport_outgoing_segment) return;
+    // queue transport (= segmented pdu)
     btstack_linked_list_add_tail(&lower_transport_outgoing, (btstack_linked_item_t*) transport_pdu);
     mesh_lower_transport_run();
 }
@@ -637,6 +637,9 @@ static void mesh_lower_transport_run(void){
         }
     }
 
+    // check if outgoing segmented pdu is active
+    if (lower_transport_outgoing_pdu) return;
+
     while(!btstack_linked_list_empty(&lower_transport_outgoing)) {
         // get next message
         mesh_transport_pdu_t * transport_pdu;
@@ -649,6 +652,7 @@ static void mesh_lower_transport_run(void){
                 break;
             case MESH_PDU_TYPE_TRANSPORT:
                 transport_pdu = (mesh_transport_pdu_t *) pdu;
+                // start sending segmented pdu
                 lower_transport_retry_count = 2;
                 mesh_lower_transport_send_segmented_pdu_once(transport_pdu);
                 break;
