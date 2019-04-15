@@ -51,6 +51,8 @@
 
 static uint16_t primary_element_address;
 
+static void (*higher_layer_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
+
 static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len){
     printf("%-20s ", name);
     printf_hexdump(data, len);
@@ -468,18 +470,22 @@ void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t callback_ty
             mesh_upper_transport_message_received(pdu);
             break;
         case MESH_TRANSPORT_PDU_SENT:
-            // TODO: process, for now, just free
-            switch (pdu->pdu_type) {
-                case MESH_PDU_TYPE_NETWORK:
-                    network_pdu = (mesh_network_pdu_t *) pdu;
-                    mesh_network_pdu_free(network_pdu);
-                    break;
-                case MESH_PDU_TYPE_TRANSPORT:
-                    transport_pdu = (mesh_transport_pdu_t *) pdu;
-                    mesh_transport_pdu_free(transport_pdu);
-                    break;
-                default:
-                    break;
+            // notify upper layer (or just free pdu)
+            if (higher_layer_handler){
+                higher_layer_handler(callback_type, status, pdu);
+            } else {
+                switch (pdu->pdu_type) {
+                    case MESH_PDU_TYPE_NETWORK:
+                        network_pdu = (mesh_network_pdu_t *) pdu;
+                        mesh_network_pdu_free(network_pdu);
+                        break;
+                    case MESH_PDU_TYPE_TRANSPORT:
+                        transport_pdu = (mesh_transport_pdu_t *) pdu;
+                        mesh_transport_pdu_free(transport_pdu);
+                        break;
+                    default:
+                        break;
+                }
             }
             break;
         default:
@@ -753,6 +759,10 @@ void mesh_upper_transport_register_unsegemented_message_handler(void (*callback)
 }
 void mesh_upper_transport_register_segemented_message_handler(void (*callback)(mesh_transport_pdu_t * transport_pdu)){
     mesh_access_segmented_handler = callback;
+}
+
+void mesh_upper_transport_set_higher_layer_handler(void (*pdu_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu)){
+    higher_layer_handler = pdu_handler;
 }
 
 void mesh_transport_init(){
