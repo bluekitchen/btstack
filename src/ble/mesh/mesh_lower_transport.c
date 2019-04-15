@@ -47,7 +47,7 @@
 #include "mesh_lower_transport.h"
 
 static uint16_t primary_element_address;
-static void (*higher_layer_handler)( mesh_pdu_t * pdu);
+static void (*higher_layer_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
 
 static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len){
     printf("%-20s ", name);
@@ -155,7 +155,7 @@ static void mesh_lower_transport_process_unsegmented_control_message(mesh_networ
             mesh_network_message_processed_by_higher_layer(network_pdu);
             break;
         default:
-            higher_layer_handler((mesh_pdu_t *) network_pdu);
+            higher_layer_handler(MESH_TRANSPORT_PDU_RECEIVED, MESH_TRANSPORT_STATUS_SUCCESS, (mesh_pdu_t *) network_pdu);
             break;
     }
 }
@@ -282,9 +282,11 @@ static void mesh_lower_transport_restart_incomplete_timer(mesh_transport_pdu_t *
 static void mesh_lower_transport_abort_transmission(void){
     // stop ack timers
     mesh_lower_transport_stop_acknowledgment_timer(lower_transport_outgoing_pdu);
-    // free pdus
-    btstack_memory_mesh_transport_pdu_free(lower_transport_outgoing_pdu);
-    lower_transport_outgoing_pdu     = NULL;
+
+    // notify upper transport
+    mesh_transport_pdu_t * pdu   = lower_transport_outgoing_pdu;
+    lower_transport_outgoing_pdu = NULL;
+    higher_layer_handler(MESH_TRANSPORT_PDU_SENT, MESH_TRANSPORT_STATUS_SEND_ABORT_BY_REMOTE, (mesh_pdu_t *) pdu);
 }
 
 static mesh_transport_pdu_t * mesh_lower_transport_pdu_for_segmented_message(mesh_network_pdu_t *network_pdu){
@@ -411,7 +413,7 @@ static void mesh_lower_transport_process_segment( mesh_transport_pdu_t * transpo
     mesh_lower_transport_send_ack_for_transport_pdu(transport_pdu);
 
     // forward to upper transport
-    higher_layer_handler((mesh_pdu_t*) transport_pdu);
+    higher_layer_handler(MESH_TRANSPORT_PDU_RECEIVED, MESH_TRANSPORT_STATUS_SUCCESS, (mesh_pdu_t*) transport_pdu);
 }
 
 void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
@@ -511,9 +513,10 @@ static void mesh_lower_transport_send_next_segment(void){
         // done, more?
         if (lower_transport_retry_count == 0){
             printf("[+] Upper transport, message unacknowledged -> free\n");
-            // note: same as in seg ack handling code
-            btstack_memory_mesh_transport_pdu_free(lower_transport_outgoing_pdu);
-            lower_transport_outgoing_pdu     = NULL;
+            // notify upper transport
+            mesh_transport_pdu_t * pdu   = lower_transport_outgoing_pdu;
+            lower_transport_outgoing_pdu = NULL;
+            higher_layer_handler(MESH_TRANSPORT_PDU_SENT, MESH_TRANSPORT_STATUS_SEND_FAILED, (mesh_pdu_t *) pdu);
             return;
         }
 
@@ -548,11 +551,22 @@ static void mesh_lower_transport_send_next_segment(void){
 }
 
 static void mesh_lower_transport_network_pdu_sent(mesh_network_pdu_t *network_pdu){
+    // figure out what pdu was sent
+
+    // single segment of segmented message?
     if (lower_transport_outgoing_segment == network_pdu){
         mesh_lower_transport_send_next_segment();
-    } else {
-        btstack_memory_mesh_network_pdu_free(network_pdu);
+        return;
     }
+
+    // Segment Acknowledgment message sent by us?
+    if (mesh_network_control(network_pdu) && network_pdu->data[0] == 0){
+        btstack_memory_mesh_network_pdu_free(network_pdu);
+        return;
+    }
+
+    // other
+    higher_layer_handler(MESH_TRANSPORT_PDU_SENT, MESH_TRANSPORT_STATUS_SUCCESS, (mesh_pdu_t *) network_pdu);
 }
 
 static void mesh_lower_transport_send_segmented_pdu_once(mesh_transport_pdu_t *transport_pdu){
@@ -632,7 +646,7 @@ static void mesh_lower_transport_run(void){
                 mesh_lower_transport_process_unsegmented_control_message(network_pdu);
             } else {
                 // unsegmented access message (encrypted)
-                higher_layer_handler((mesh_pdu_t *) network_pdu);
+                higher_layer_handler(MESH_TRANSPORT_PDU_RECEIVED, MESH_TRANSPORT_STATUS_SUCCESS, (mesh_pdu_t *) network_pdu);
             }
         }
     }
@@ -713,6 +727,6 @@ void mesh_lower_transport_set_primary_element_address(uint16_t unicast_address){
     primary_element_address = unicast_address;
 }
 
-void mesh_lower_transport_set_higher_layer_handler(void (*pdu_handler)( mesh_pdu_t * pdu)){
+void mesh_lower_transport_set_higher_layer_handler(void (*pdu_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu)){
     higher_layer_handler = pdu_handler;
 }

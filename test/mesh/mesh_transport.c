@@ -460,6 +460,31 @@ void mesh_upper_transport_message_received(mesh_pdu_t * pdu){
     mesh_transport_run();
 }
 
+void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
+    mesh_network_pdu_t * network_pdu;
+    mesh_transport_pdu_t * transport_pdu;
+    switch (callback_type){
+        case MESH_TRANSPORT_PDU_RECEIVED:
+            mesh_upper_transport_message_received(pdu);
+        case MESH_TRANSPORT_PDU_SENT:
+            // TODO: process, for now, just free
+            switch (pdu->pdu_type) {
+                case MESH_PDU_TYPE_NETWORK:
+                    network_pdu = (mesh_network_pdu_t *) pdu;
+                    mesh_network_pdu_free(network_pdu);
+                    break;
+                case MESH_PDU_TYPE_TRANSPORT:
+                    transport_pdu = (mesh_transport_pdu_t *) pdu;
+                    mesh_transport_pdu_free(transport_pdu);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+}
 static void mesh_upper_transport_send_unsegmented_access_pdu_ccm(void * arg){
     crypto_active = 0;
 
@@ -731,7 +756,7 @@ void mesh_upper_transport_register_segemented_message_handler(void (*callback)(m
 
 void mesh_transport_init(){
     mesh_lower_transport_init();
-    mesh_lower_transport_set_higher_layer_handler(&mesh_upper_transport_message_received);
+    mesh_lower_transport_set_higher_layer_handler(&mesh_upper_transport_pdu_handler);
 }
 
 static void mesh_transport_run(void){

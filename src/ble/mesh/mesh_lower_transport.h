@@ -62,6 +62,17 @@ typedef enum {
     MESH_TRANSPORT_OPCODE_HEARTBEAT,
 } mesh_transport_opcode_t;
 
+typedef enum {
+    MESH_TRANSPORT_PDU_RECEIVED,
+    MESH_TRANSPORT_PDU_SENT,
+} mesh_transport_callback_type_t;
+
+typedef enum {
+    MESH_TRANSPORT_STATUS_SUCCESS,
+    MESH_TRANSPORT_STATUS_SEND_FAILED,
+    MESH_TRANSPORT_STATUS_SEND_ABORT_BY_REMOTE,
+} mesh_transport_status_t;
+
 // allocator
 mesh_transport_pdu_t * mesh_transport_pdu_get(void);
 void mesh_transport_pdu_free(mesh_transport_pdu_t * transport_pdu);
@@ -84,7 +95,7 @@ void mesh_transport_set_dest(mesh_transport_pdu_t * transport_pdu, uint16_t dest
 
 void mesh_lower_transport_init();
 void mesh_lower_transport_set_primary_element_address(uint16_t unicast_address);
-void mesh_lower_transport_set_higher_layer_handler(void (*pdu_handler)( mesh_pdu_t * pdu));
+void mesh_lower_transport_set_higher_layer_handler(void (*pdu_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu));
 
 void     mesh_lower_transport_set_seq(uint32_t seq);
 uint32_t mesh_lower_transport_next_seq(void);;
