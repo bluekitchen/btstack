@@ -466,6 +466,7 @@ void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t callback_ty
     switch (callback_type){
         case MESH_TRANSPORT_PDU_RECEIVED:
             mesh_upper_transport_message_received(pdu);
+            break;
         case MESH_TRANSPORT_PDU_SENT:
             // TODO: process, for now, just free
             switch (pdu->pdu_type) {

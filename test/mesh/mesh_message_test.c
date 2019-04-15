@@ -208,7 +208,7 @@ TEST_GROUP(MessageTest){
             mock_process_hci_cmd();
         }
         // mesh_network_reset();
-        // mesh_transport_reset();
+        mesh_lower_transport_reset();
         // mesh_network_dump();
         // mesh_transport_dump();
         printf("-- teardown complete --\n\n");
