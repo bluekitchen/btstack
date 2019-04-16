@@ -57,6 +57,7 @@
 static void show_usage(void);
 
 #define BEACON_TYPE_SECURE_NETWORK 1
+#define PTS_DEFAULT_TTL 10
 
 const static uint8_t device_uuid[] = { 0x00, 0x1B, 0xDC, 0x08, 0x10, 0x21, 0x0B, 0x0E, 0x0A, 0x0C, 0x00, 0x0B, 0x0E, 0x0A, 0x0C, 0x00 };
 
@@ -356,7 +357,7 @@ static void send_pts_network_messsage(int type){
             break;
         case 1:
             dst = 0x001;
-            ttl = 10;
+            ttl = PTS_DEFAULT_TTL;
             printf("unicast ttl=10\n");
             break;
         case 2:
@@ -398,7 +399,7 @@ static void send_pts_unsegmented_access_messsage(void){
 
     uint16_t src = primary_element_address;
     uint16_t dest = 0x0001;
-    uint8_t  ttl = 10;
+    uint8_t  ttl = PTS_DEFAULT_TTL;
 
     int access_pdu_len = 1;
     memset(access_pdu_data, 0x55, access_pdu_len);
@@ -419,7 +420,7 @@ static void send_pts_segmented_access_messsage_unicast(void){
 
     uint16_t src = primary_element_address;
     uint16_t dest = 0x0001;
-    uint8_t  ttl = 10;
+    uint8_t  ttl = PTS_DEFAULT_TTL;
 
     int access_pdu_len = 20;
     memset(access_pdu_data, 0x55, access_pdu_len);
@@ -440,7 +441,7 @@ static void send_pts_segmented_access_messsage_group(void){
 
     uint16_t src = primary_element_address;
     uint16_t dest = 0xd000;
-    uint8_t  ttl = 10;
+    uint8_t  ttl = PTS_DEFAULT_TTL;
 
     int access_pdu_len = 20;
     memset(access_pdu_data, 0x55, access_pdu_len);
@@ -461,7 +462,7 @@ static void send_pts_segmented_access_messsage_virtual(void){
 
     uint16_t src = primary_element_address;
     uint16_t dest = pts_proxy_dst;
-    uint8_t  ttl = 10;
+    uint8_t  ttl = PTS_DEFAULT_TTL;
 
     int access_pdu_len = 20;
     memset(access_pdu_data, 0x55, access_pdu_len);
@@ -730,7 +731,7 @@ static void config_composition_data_status(void){
 
     uint16_t src  = primary_element_address;
     uint16_t dest = 0x0001;
-    uint8_t  ttl  = 10;
+    uint8_t  ttl  = mesh_foundation_default_ttl_get();
 
     uint16_t netkey_index = 0;
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
@@ -775,7 +776,7 @@ static void config_composition_data_get_handler(mesh_model_t *mesh_model, mesh_t
 static void config_model_default_ttl_status(mesh_model_t * mesh_model){
     uint16_t src  = primary_element_address;
     uint16_t dest = 0x0001;
-    uint8_t  ttl  = 10;
+    uint8_t  ttl  = mesh_foundation_default_ttl_get();
 
     uint16_t netkey_index = 0;
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
@@ -808,7 +809,7 @@ static void config_model_default_ttl_set_handler(mesh_model_t * mesh_model, mesh
 static void config_appkey_status(uint32_t netkey_and_appkey_index, uint8_t status){
     uint16_t src  = primary_element_address;
     uint16_t dest = 0x0001;
-    uint8_t  ttl  = 10;
+    uint8_t  ttl  = mesh_foundation_default_ttl_get();
 
     uint16_t netkey_index = 0;
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
@@ -853,7 +854,7 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_transport_p
 static void config_model_subscription_status(uint8_t status, uint16_t element_address, uint16_t address, uint32_t model_identifier){
     uint16_t src  = primary_element_address;
     uint16_t dest = 0x0001;
-    uint8_t  ttl  = 10;
+    uint8_t  ttl  = mesh_foundation_default_ttl_get();
 
     uint16_t netkey_index = 0;
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
@@ -888,7 +889,7 @@ config_model_subscription_virtual_address_add_handler(mesh_model_t *mesh_model, 
 static void config_model_app_status(uint8_t status, uint16_t element_address, uint16_t app_key_index, uint32_t model_identifier){
     uint16_t src  = primary_element_address;
     uint16_t dest = 0x0001;
-    uint8_t  ttl  = 10;
+    uint8_t  ttl  = mesh_foundation_default_ttl_get();
 
     uint16_t netkey_index = 0;
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
@@ -949,7 +950,7 @@ config_model_publication_virtual_address_add_handler(mesh_model_t *mesh_model, m
 
     uint16_t src  = primary_element_address;
     uint16_t dest = 0x0001;
-    uint8_t  ttl  = 10;
+    uint8_t  ttl  = mesh_foundation_default_ttl_get();
 
     uint16_t netkey_index = 0;
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
@@ -1020,7 +1021,7 @@ static void config_heartbeat_publication_status(void){
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
     uint16_t src  = primary_element_address;
     uint16_t dest = 0x0001;
-    uint8_t  ttl  = 10;
+    uint8_t  ttl  = mesh_foundation_default_ttl_get();
 
     mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_STATUS);
     if (!transport_pdu) return;
