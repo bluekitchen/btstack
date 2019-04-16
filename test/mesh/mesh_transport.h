@@ -82,6 +82,9 @@ uint8_t mesh_upper_transport_setup_unsegmented_access_pdu(mesh_network_pdu_t * n
 uint8_t mesh_upper_transport_setup_segmented_access_pdu(mesh_transport_pdu_t * transport_pdu, uint16_t netkey_index, uint16_t appkey_index,
 	uint8_t ttl, uint16_t src, uint16_t dest, uint8_t szmic, const uint8_t * access_pdu_data, uint8_t access_pdu_len);
 
+uint8_t mesh_upper_transport_setup_segmented_access_pdu_header(mesh_transport_pdu_t * transport_pdu, uint16_t netkey_index, uint16_t appkey_index,
+                                                        uint8_t ttl, uint16_t src, uint16_t dest, uint8_t szmic);
+
 void mesh_upper_transport_send_unsegmented_access_pdu(mesh_network_pdu_t * network_pdu);
 
 void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t * transport_pdu);

@@ -601,43 +601,50 @@ uint8_t mesh_upper_transport_setup_unsegmented_access_pdu(mesh_network_pdu_t * n
     return 0;
 }
 
-uint8_t mesh_upper_transport_setup_segmented_access_pdu(mesh_transport_pdu_t * transport_pdu, uint16_t netkey_index, uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest,
-                          uint8_t szmic, const uint8_t * access_pdu_data, uint8_t access_pdu_len){
-
+uint8_t mesh_upper_transport_setup_segmented_access_pdu_header(mesh_transport_pdu_t * transport_pdu, uint16_t netkey_index, uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest,
+                                                        uint8_t szmic){
     uint32_t seq = mesh_lower_transport_peek_seq();
 
-    printf("[+] Upper transport, setup segmented Access PDU - seq %06x, szmic %u, iv_index %08x\n", seq, szmic, mesh_get_iv_index());
-    mesh_print_hex("Access Payload", access_pdu_data, access_pdu_len);
+    printf("[+] Upper transport, setup segmented Access PDU - seq %06x, szmic %u, iv_index %08x\n", seq, szmic,
+           mesh_get_iv_index());
 
     // get app or device key
-    const mesh_transport_key_t * appkey;
+    const mesh_transport_key_t *appkey;
     appkey = mesh_transport_key_get(appkey_index);
-    if (appkey == NULL){
+    if (appkey == NULL) {
         printf("appkey_index %x unknown\n", appkey_index);
         return 1;
     }
     uint8_t akf_aid = (appkey->akf << 6) | appkey->aid;
 
     // lookup network by netkey_index
-    const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
+    const mesh_network_key_t *network_key = mesh_network_key_list_get(netkey_index);
     if (!network_key) return 1;
 
     const uint8_t trans_mic_len = szmic ? 8 : 4;
 
-
     // store in transport pdu
-    memcpy(transport_pdu->data, access_pdu_data, access_pdu_len);
-    transport_pdu->len = access_pdu_len;
     transport_pdu->transmic_len = trans_mic_len;
     transport_pdu->netkey_index = netkey_index;
     transport_pdu->appkey_index = appkey_index;
-    transport_pdu->akf_aid      = akf_aid;
+    transport_pdu->akf_aid = akf_aid;
     mesh_transport_set_nid_ivi(transport_pdu, network_key->nid | ((mesh_get_iv_index() & 1) << 7));
     mesh_transport_set_seq(transport_pdu, seq);
     mesh_transport_set_src(transport_pdu, src);
     mesh_transport_set_dest(transport_pdu, dest);
     mesh_transport_set_ctl_ttl(transport_pdu, ttl);
+    return 0;
+}
 
+
+uint8_t mesh_upper_transport_setup_segmented_access_pdu(mesh_transport_pdu_t * transport_pdu, uint16_t netkey_index, uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest,
+                          uint8_t szmic, const uint8_t * access_pdu_data, uint8_t access_pdu_len){
+    int status = mesh_upper_transport_setup_segmented_access_pdu_header(transport_pdu, netkey_index, appkey_index, ttl, src, dest, szmic);
+    if (status) return status;
+
+    // store in transport pdu
+    memcpy(transport_pdu->data, access_pdu_data, access_pdu_len);
+    transport_pdu->len = access_pdu_len;
     return 0;
 }
 
