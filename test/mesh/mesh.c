@@ -659,6 +659,8 @@ static uint8_t mesh_foundation_gatt_proxy = 0;
 static uint8_t mesh_foundation_beacon = 0;
 static uint8_t mesh_foundation_default_ttl = 7;
 static uint8_t mesh_foundation_network_transmit = (10 << 3) | 2; // step 300 ms, send 3 times
+static uint8_t mesh_foundation_relay = 2; // not supported
+static uint8_t mesh_foundation_relay_retransmit = 0;
 
 void mesh_foundation_gatt_proxy_set(uint8_t ttl){
     mesh_foundation_gatt_proxy = ttl;
@@ -691,6 +693,23 @@ void mesh_foundation_network_transmit_set(uint8_t network_transmit){
 }
 uint8_t mesh_foundation_network_transmit_get(void){
     return mesh_foundation_network_transmit;
+}
+
+void mesh_foundation_relay_set(uint8_t relay){
+    mesh_foundation_relay = relay;
+    printf("MESH: Relay = 0x%02x\n", mesh_foundation_relay);
+}
+uint8_t mesh_foundation_relay_get(void){
+    return mesh_foundation_relay;
+}
+
+void mesh_foundation_relay_retransmit_set(uint8_t relay_retransmit){
+    mesh_foundation_relay_retransmit = relay_retransmit;
+    printf("MESH: Relay Retransmit = 0x%02x - %u transmissions, %u ms interval\n",
+            mesh_foundation_relay_retransmit, (mesh_foundation_relay_retransmit & 7) + 1, (mesh_foundation_relay_retransmit >> 3) * 10);
+}
+uint8_t mesh_foundation_relay_retransmit_get(void){
+    return mesh_foundation_relay_retransmit;
 }
 
 void mesh_foundation_node_reset(void){
@@ -738,6 +757,9 @@ static uint16_t new_appkey_index;
 #define MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_GET                          0x8023
 #define MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_SET                          0x8024
 #define MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_STATUS                       0x8025
+#define MESH_FOUNDATION_OPERATION_RELAY_GET                                     0x8026
+#define MESH_FOUNDATION_OPERATION_RELAY_SET                                     0x8027
+#define MESH_FOUNDATION_OPERATION_RELAY_STATUS                                  0x8028
 
 #define MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_GET                     0x8038
 #define MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_SET                     0x8039
@@ -920,6 +942,48 @@ static void config_gatt_proxy_set_handler(mesh_model_t *mesh_model, mesh_transpo
     mesh_foundation_gatt_proxy_set(enabled);
     //
     config_model_gatt_proxy_status(mesh_model);
+}
+
+static void config_model_relay_status(mesh_model_t * mesh_model){
+    uint16_t src  = primary_element_address;
+    uint16_t dest = 0x0001;
+    uint8_t  ttl  = mesh_foundation_default_ttl_get();
+
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
+
+    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_RELAY_STATUS);
+    if (!transport_pdu) return;
+
+    mesh_access_transport_add_uint8( transport_pdu, mesh_foundation_relay_get());
+    mesh_access_transport_add_uint8( transport_pdu, mesh_foundation_relay_retransmit_get());
+
+    // send as segmented access pdu
+    mesh_upper_transport_setup_segmented_access_pdu_header(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0);
+    mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
+}
+
+static void config_relay_get_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu){
+    UNUSED(transport_pdu);
+    config_model_relay_status(mesh_model);
+}
+
+static void config_relay_set_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu){
+    // check if valid
+    uint8_t relay            = transport_pdu->data[2];  // 2-byte op
+    uint8_t relay_retransmit = transport_pdu->data[3];
+
+    // check if valid
+    if (relay > 1) return;
+
+    // only update if supported
+    if (mesh_foundation_relay_get() < 2){
+        mesh_foundation_relay_set(relay);
+        mesh_foundation_relay_retransmit_set(relay_retransmit);
+    }
+
+    //
+    config_model_relay_status(mesh_model);
 }
 
 static void config_model_network_transmit_status(mesh_model_t * mesh_model){
@@ -1276,6 +1340,8 @@ static mesh_operation_t mesh_configuration_server_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_SET,                         1, config_model_network_transmit_set_handler},
     { MESH_FOUNDATION_OPERATION_GATT_PROXY_GET,                               0, config_gatt_proxy_get_handler},
     { MESH_FOUNDATION_OPERATION_GATT_PROXY_SET,                               1, config_gatt_proxy_set_handler},
+    { MESH_FOUNDATION_OPERATION_RELAY_GET,                                    0, config_relay_get_handler},
+    { MESH_FOUNDATION_OPERATION_RELAY_SET,                                    1, config_relay_set_handler},
     { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_ADD,      20, config_model_subscription_virtual_address_add_handler},
     { MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_VIRTUAL_ADDRESS_SET,       24, config_model_publication_virtual_address_add_handler},
     { MESH_FOUNDATION_OPERATION_MODEL_APP_BIND,                               6, config_model_app_bind_handler},
