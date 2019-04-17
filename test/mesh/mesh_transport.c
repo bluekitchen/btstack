@@ -607,6 +607,7 @@ uint8_t mesh_upper_transport_setup_segmented_access_pdu_header(mesh_transport_pd
 
     printf("[+] Upper transport, setup segmented Access PDU - seq %06x, szmic %u, iv_index %08x\n", seq, szmic,
            mesh_get_iv_index());
+    mesh_print_hex("Access Payload", transport_pdu->data, transport_pdu->len);
 
     // get app or device key
     const mesh_transport_key_t *appkey;
