@@ -599,8 +599,6 @@ static void mesh_lower_transport_send_segmented_pdu_once(mesh_transport_pdu_t *t
 }
 
 void mesh_lower_transport_send_segmented_pdu(mesh_transport_pdu_t *transport_pdu){
-    // check if we have outgoing segment allocated
-    if (!lower_transport_outgoing_segment) return;
     // queue transport (= segmented pdu)
     btstack_linked_list_add_tail(&lower_transport_outgoing, (btstack_linked_item_t*) transport_pdu);
     mesh_lower_transport_run();
