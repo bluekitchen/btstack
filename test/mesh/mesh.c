@@ -655,8 +655,17 @@ static int mesh_access_transport_get_opcode(mesh_transport_pdu_t * transport_pdu
 
 #define MESH_TTL_MAX 0x7f
 
+static uint8_t mesh_foundation_beacon = 0;
 static uint8_t mesh_foundation_default_ttl = 7;
 static uint8_t mesh_foundation_network_transmit = (10 << 3) | 2; // step 300 ms, send 3 times
+
+void mesh_foundation_beacon_set(uint8_t ttl){
+    mesh_foundation_beacon = ttl;
+    printf("MESH: Secure Network Beacon %x\n", mesh_foundation_beacon);
+}
+uint8_t mesh_foundation_becaon_get(void){
+    return mesh_foundation_beacon;
+}
 
 void mesh_foundation_default_ttl_set(uint8_t ttl){
     mesh_foundation_default_ttl = ttl;
@@ -675,6 +684,9 @@ uint8_t mesh_foundation_network_transmit_get(void){
     return mesh_foundation_network_transmit;
 }
 
+void mesh_foundation_node_reset(void){
+    printf("MESH: NODE RESET\n");
+}
 
 // to sort
 
@@ -691,6 +703,9 @@ static uint16_t new_appkey_index;
 #define MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_STATUS                    0x06
 #define MESH_FOUNDATION_OPERATION_APPKEY_STATUS                                 0x8003
 #define MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_GET                          0x8008
+#define MESH_FOUNDATION_OPERATION_BEACON_GET                                    0x8009
+#define MESH_FOUNDATION_OPERATION_BEACON_SET                                    0x800a
+#define MESH_FOUNDATION_OPERATION_BEACON_STATUS                                 0x800b
 #define MESH_FOUNDATION_OPERATION_DEFAULT_TTL_GET                               0x800c
 #define MESH_FOUNDATION_OPERATION_DEFAULT_TTL_SET                               0x800d
 #define MESH_FOUNDATION_OPERATION_DEFAULT_TTL_STATUS                            0x800e
@@ -715,6 +730,8 @@ static uint16_t new_appkey_index;
 #define MESH_FOUNDATION_OPERATION_MODEL_APP_BIND                                0x803d
 #define MESH_FOUNDATION_OPERATION_MODEL_APP_STATUS                              0x803e
 #define MESH_FOUNDATION_OPERATION_MODEL_APP_UNBIND                              0x803f
+#define MESH_FOUNDATION_OPERATION_NODE_RESET                                    0x8049
+#define MESH_FOUNDATION_OPERATION_NODE_RESET_STATUS                             0x804a
 
 typedef struct  {
     btstack_timer_source_t timer;
@@ -783,8 +800,42 @@ static void config_composition_data_status(void){
     mesh_upper_transport_setup_segmented_access_pdu_header(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0);
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
+
 static void config_composition_data_get_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu){
     config_composition_data_status();
+}
+
+static void config_model_beacon_status(mesh_model_t * mesh_model){
+    uint16_t src  = primary_element_address;
+    uint16_t dest = 0x0001;
+    uint8_t  ttl  = mesh_foundation_becaon_get();
+
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
+
+    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_BEACON_STATUS);
+    if (!transport_pdu) return;
+
+    mesh_access_transport_add_uint8( transport_pdu, mesh_foundation_becaon_get());
+
+    // send as segmented access pdu
+    mesh_upper_transport_setup_segmented_access_pdu_header(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0);
+    mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
+}
+
+static void config_beacon_get_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu){
+    UNUSED(transport_pdu);
+    config_model_beacon_status(mesh_model);
+}
+
+static void config_beacon_set_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu){
+    uint8_t new_ttl = transport_pdu->data[2];  // 2-byte op
+    // beacon valid
+    if (new_ttl > 0x01) return;
+    // store
+    mesh_foundation_beacon_set(new_ttl);
+    //
+    config_model_beacon_status(mesh_model);
 }
 
 static void config_model_default_ttl_status(mesh_model_t * mesh_model){
@@ -805,12 +856,12 @@ static void config_model_default_ttl_status(mesh_model_t * mesh_model){
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
 
-static void config_model_default_ttl_get_handler(mesh_model_t * mesh_model, mesh_transport_pdu_t * transport_pdu){
+static void config_default_ttl_get_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu){
     UNUSED(transport_pdu);
     config_model_default_ttl_status(mesh_model);
 }
 
-static void config_model_default_ttl_set_handler(mesh_model_t * mesh_model, mesh_transport_pdu_t * transport_pdu){
+static void config_default_ttl_set_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu){
     uint8_t new_ttl = transport_pdu->data[2];  // 2-byte op
     // ttl valid
     if (new_ttl > 0x7f || new_ttl == 0x01) return;
@@ -1130,6 +1181,27 @@ static void config_heartbeat_publication_get_handler(mesh_model_t *mesh_model, m
     config_heartbeat_publication_status();
 }
 
+static void config_node_reset_status(mesh_model_t *mesh_model){
+    uint16_t src  = primary_element_address;
+    uint16_t dest = 0x0001;
+    uint8_t  ttl  = mesh_foundation_default_ttl_get();
+
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
+
+    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_NODE_RESET_STATUS);
+    if (!transport_pdu) return;
+
+    // send as segmented access pdu
+    mesh_upper_transport_setup_segmented_access_pdu_header(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0);
+    mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
+}
+
+static void config_node_reset_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
+    UNUSED(transport_pdu);
+    config_node_reset_status(mesh_model);
+}
+
 //
 
 typedef void (*mesh_operation_handler)(mesh_model_t * mesh_model, mesh_transport_pdu_t * transport_pdu);
@@ -1144,8 +1216,10 @@ static mesh_operation_t mesh_configuration_server_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_APPKEY_ADD,                                  19, config_appkey_add_handler   },
     { MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_GET,                         1, config_composition_data_get_handler },
     { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_ADD,                       6, config_model_subscription_add_handler},
-    { MESH_FOUNDATION_OPERATION_DEFAULT_TTL_GET,                              0, config_model_default_ttl_get_handler},
-    { MESH_FOUNDATION_OPERATION_DEFAULT_TTL_SET,                              1, config_model_default_ttl_set_handler},
+    { MESH_FOUNDATION_OPERATION_BEACON_GET,                                   0, config_beacon_get_handler},
+    { MESH_FOUNDATION_OPERATION_BEACON_SET,                                   1, config_beacon_set_handler},
+    { MESH_FOUNDATION_OPERATION_DEFAULT_TTL_GET,                              0, config_default_ttl_get_handler},
+    { MESH_FOUNDATION_OPERATION_DEFAULT_TTL_SET,                              1, config_default_ttl_set_handler},
     { MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_GET,                         0, config_model_network_transmit_get_handler},
     { MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_SET,                         1, config_model_network_transmit_set_handler},
     { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_ADD,      20, config_model_subscription_virtual_address_add_handler},
@@ -1153,6 +1227,7 @@ static mesh_operation_t mesh_configuration_server_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_MODEL_APP_BIND,                               6, config_model_app_bind_handler},
     { MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_GET,                    0, config_heartbeat_publication_get_handler},
     { MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_SET,                    5, config_heartbeat_publication_set_handler},
+    { MESH_FOUNDATION_OPERATION_NODE_RESET,                                   0, config_node_reset_handler},
     { 0, 0, NULL}
 };
 
