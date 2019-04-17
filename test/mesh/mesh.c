@@ -660,10 +660,21 @@ static uint8_t mesh_foundation_network_transmit = (10 << 3) | 2; // step 300 ms,
 
 void mesh_foundation_default_ttl_set(uint8_t ttl){
     mesh_foundation_default_ttl = ttl;
+    printf("MESH: Default TTL = 0x%x\n", mesh_foundation_default_ttl);
 }
 uint8_t mesh_foundation_default_ttl_get(void){
     return mesh_foundation_default_ttl;
 }
+
+void mesh_foundation_network_transmit_set(uint8_t network_transmit){
+    mesh_foundation_network_transmit = network_transmit;
+    printf("MESH: Network Transmit = 0x%02x - %u transmissions, %u ms interval\n",
+            mesh_foundation_network_transmit, (mesh_foundation_network_transmit & 7) + 1, (mesh_foundation_network_transmit >> 3) * 10);
+}
+uint8_t mesh_foundation_network_transmit_get(void){
+    return mesh_foundation_network_transmit;
+}
+
 
 // to sort
 
@@ -694,6 +705,9 @@ static uint16_t new_appkey_index;
 #define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_ADD        0x8020
 #define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_DEL        0x8021
 #define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_OVERWRITE  0x8022
+#define MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_GET                          0x8023
+#define MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_SET                          0x8024
+#define MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_STATUS                       0x8025
 #define MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_GET                     0x8038
 #define MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_SET                     0x8039
 #define MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_GET                    0x803a
@@ -804,6 +818,37 @@ static void config_model_default_ttl_set_handler(mesh_model_t * mesh_model, mesh
     mesh_foundation_default_ttl_set(new_ttl);
     //
     config_model_default_ttl_status(mesh_model);
+}
+
+static void config_model_network_transmit_status(mesh_model_t * mesh_model){
+    uint16_t src  = primary_element_address;
+    uint16_t dest = 0x0001;
+    uint8_t  ttl  = mesh_foundation_default_ttl_get();
+
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
+
+    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_STATUS);
+    if (!transport_pdu) return;
+
+    mesh_access_transport_add_uint8( transport_pdu, mesh_foundation_network_transmit_get());
+
+    // send as segmented access pdu
+    mesh_upper_transport_setup_segmented_access_pdu_header(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0);
+    mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
+}
+
+static void config_model_network_transmit_get_handler(mesh_model_t * mesh_model, mesh_transport_pdu_t * transport_pdu){
+    UNUSED(transport_pdu);
+    config_model_network_transmit_status(mesh_model);
+}
+
+static void config_model_network_transmit_set_handler(mesh_model_t * mesh_model, mesh_transport_pdu_t * transport_pdu){
+    uint8_t new_ttl = transport_pdu->data[2];  // 2-byte op
+    // store
+    mesh_foundation_network_transmit_set(new_ttl);
+    //
+    config_model_network_transmit_status(mesh_model);
 }
 
 static void config_appkey_status(uint32_t netkey_and_appkey_index, uint8_t status){
@@ -1101,6 +1146,8 @@ static mesh_operation_t mesh_configuration_server_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_ADD,                       6, config_model_subscription_add_handler},
     { MESH_FOUNDATION_OPERATION_DEFAULT_TTL_GET,                              0, config_model_default_ttl_get_handler},
     { MESH_FOUNDATION_OPERATION_DEFAULT_TTL_SET,                              1, config_model_default_ttl_set_handler},
+    { MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_GET,                         0, config_model_network_transmit_get_handler},
+    { MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_SET,                         1, config_model_network_transmit_set_handler},
     { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_ADD,      20, config_model_subscription_virtual_address_add_handler},
     { MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_VIRTUAL_ADDRESS_SET,       24, config_model_publication_virtual_address_add_handler},
     { MESH_FOUNDATION_OPERATION_MODEL_APP_BIND,                               6, config_model_app_bind_handler},
