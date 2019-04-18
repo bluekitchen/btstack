@@ -720,6 +720,11 @@ void mesh_network_send_pdu(mesh_network_pdu_t * network_pdu){
     printf_hexdump(network_pdu->data, network_pdu->len);
 #endif
 
+    if (network_pdu->len > 29){
+        printf("too long, %u\n", network_pdu->len);
+        return;
+    }
+
     // setup callback
     network_pdu->callback = &mesh_network_send_d;
     network_pdu->flags    = 0;
