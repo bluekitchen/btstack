@@ -172,7 +172,7 @@ static const uint8_t mesh_salt_smk4[] = { 0x0E, 0x9A, 0xC1, 0xB7, 0xCE, 0xFA, 0x
 static void mesh_k4_result128_calculated(void * arg){
     UNUSED(arg);
     mesh_k4_result[0] = mesh_k4_result128[15] & 0x3f;
-    (*mesh_k4_callback)(mesh_k3_arg);        
+    (*mesh_k4_callback)(mesh_k4_arg);
 }
 static void mesh_k4_temp_callback(void * arg){
     btstack_crypto_aes128_cmac_t * request = (btstack_crypto_aes128_cmac_t*) arg;
