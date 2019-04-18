@@ -275,7 +275,7 @@ static int hfp_hf_send_dtmf(uint16_t cid, char code){
 }
 
 static int hfp_hf_cmd_ata(uint16_t cid){
-    return send_str_over_rfcomm(cid, "ATA\r\n");
+    return send_str_over_rfcomm(cid, (char *) "ATA\r\n");
 }
 
 static int hfp_hf_cmd_exchange_supported_features(uint16_t cid){
