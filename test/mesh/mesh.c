@@ -581,6 +581,54 @@ static void stdin_process(char cmd){
     }
 }
 
+// Foundation Model Operations
+#define MESH_FOUNDATION_OPERATION_APPKEY_ADD                                      0x00
+#define MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS                         0x02
+#define MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_STATUS                    0x06
+#define MESH_FOUNDATION_OPERATION_APPKEY_STATUS                                 0x8003
+
+#define MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_GET                          0x8008
+#define MESH_FOUNDATION_OPERATION_BEACON_GET                                    0x8009
+#define MESH_FOUNDATION_OPERATION_BEACON_SET                                    0x800a
+#define MESH_FOUNDATION_OPERATION_BEACON_STATUS                                 0x800b
+#define MESH_FOUNDATION_OPERATION_DEFAULT_TTL_GET                               0x800c
+#define MESH_FOUNDATION_OPERATION_DEFAULT_TTL_SET                               0x800d
+#define MESH_FOUNDATION_OPERATION_DEFAULT_TTL_STATUS                            0x800e
+
+#define MESH_FOUNDATION_OPERATION_GATT_PROXY_GET                                0x8012
+#define MESH_FOUNDATION_OPERATION_GATT_PROXY_SET                                0x8013
+#define MESH_FOUNDATION_OPERATION_GATT_PROXY_STATUS                             0x8014
+
+#define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_GET                         0x8018
+#define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_STATUS                      0x8019
+#define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_VIRTUAL_ADDRESS_SET         0x801a
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_ADD                        0x801b
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DEL                        0x801c
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DEL_ALL                    0x801d
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_OVERWRITE                  0x801e
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_STATUS                     0x801f
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_ADD        0x8020
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_DEL        0x8021
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_OVERWRITE  0x8022
+#define MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_GET                          0x8023
+#define MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_SET                          0x8024
+#define MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_STATUS                       0x8025
+#define MESH_FOUNDATION_OPERATION_RELAY_GET                                     0x8026
+#define MESH_FOUNDATION_OPERATION_RELAY_SET                                     0x8027
+#define MESH_FOUNDATION_OPERATION_RELAY_STATUS                                  0x8028
+
+#define MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_GET                     0x8038
+#define MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_SET                     0x8039
+#define MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_GET                    0x803a
+#define MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_SET                    0x803b
+#define MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_STATUS                 0x803c
+#define MESH_FOUNDATION_OPERATION_MODEL_APP_BIND                                0x803d
+#define MESH_FOUNDATION_OPERATION_MODEL_APP_STATUS                              0x803e
+#define MESH_FOUNDATION_OPERATION_MODEL_APP_UNBIND                              0x803f
+
+#define MESH_FOUNDATION_OPERATION_NODE_RESET                                    0x8049
+#define MESH_FOUNDATION_OPERATION_NODE_RESET_STATUS                             0x804a
+
 // message builder
 static int mesh_access_setup_opcode(uint8_t * buffer, uint32_t opcode){
     if (opcode < 0x100){
@@ -650,8 +698,92 @@ static int mesh_access_transport_get_opcode(mesh_transport_pdu_t * transport_pdu
     return mesh_access_get_opcode(transport_pdu->data, transport_pdu->len, opcode, opcode_size);
 }
 
+// access message template
+#include <stdarg.h>
+
+typedef struct {
+    uint32_t     opcode;
+    const char * format;
+} mesh_access_message_t;
+
+
+static mesh_transport_pdu_t * mesh_access_setup_transport_message(const mesh_access_message_t * template, ...){
+    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(template->opcode);
+    if (!transport_pdu) return NULL;
+
+    va_list argptr;
+    va_start(argptr, template);
+
+    // add params
+    const char * format = template->format;
+    uint16_t word;
+    uint32_t longword;
+    while (*format){
+        switch (*format++){
+            case '1':
+                word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
+                mesh_access_transport_add_uint8( transport_pdu, word);
+                break;
+            case '2':
+                word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
+                mesh_access_transport_add_uint16( transport_pdu, word);
+                break;
+            case '3':
+                longword = va_arg(argptr, uint32_t);
+                mesh_access_transport_add_uint16( transport_pdu, longword);
+                break;
+            case '4':
+                longword = va_arg(argptr, uint32_t);
+                mesh_access_transport_add_uint16( transport_pdu, longword);
+                break;
+            default:
+                break;
+        }
+    }
+
+    va_end(argptr);
+
+    return transport_pdu;
+}
 
 // Foundatiopn
+
+const mesh_access_message_t mesh_foundation_config_beacon_status = {
+        MESH_FOUNDATION_OPERATION_BEACON_STATUS, "1"
+};
+const mesh_access_message_t mesh_foundation_config_default_ttl_status = {
+        MESH_FOUNDATION_OPERATION_DEFAULT_TTL_STATUS, "1"
+};
+const mesh_access_message_t mesh_foundation_config_gatt_proxy_status = {
+        MESH_FOUNDATION_OPERATION_GATT_PROXY_STATUS, "1"
+};
+const mesh_access_message_t mesh_foundation_config_relay_status = {
+        MESH_FOUNDATION_OPERATION_RELAY_STATUS, "11"
+};
+const mesh_access_message_t mesh_foundation_config_model_app_status_sig = {
+        MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_STATUS, "12221112"
+};
+const mesh_access_message_t mesh_foundation_config_model_app_status_vendor = {
+        MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_STATUS, "12221114"
+};
+const mesh_access_message_t mesh_foundation_config_model_subscription_status = {
+        MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_STATUS, "1222"
+};
+const mesh_access_message_t mesh_foundation_config_appkey_status = {
+        MESH_FOUNDATION_OPERATION_APPKEY_STATUS, "13"
+};
+const mesh_access_message_t mesh_foundation_config_model_app_status = {
+        MESH_FOUNDATION_OPERATION_MODEL_APP_STATUS, "1222"
+};
+const mesh_access_message_t mesh_foundation_node_reset_status = {
+        MESH_FOUNDATION_OPERATION_NODE_RESET_STATUS, ""
+};
+const mesh_access_message_t mesh_foundation_config_heartbeat_publication_status = {
+        MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_STATUS, "1211122"
+};
+const mesh_access_message_t mesh_foundation_config_network_transmit_status = {
+        MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_STATUS, "11"
+};
 
 #define MESH_TTL_MAX 0x7f
 
@@ -724,54 +856,6 @@ static uint8_t  new_aid;
 static uint16_t new_netkey_index;
 static uint16_t new_appkey_index;
 
-
-// Foundation Model Operations
-#define MESH_FOUNDATION_OPERATION_APPKEY_ADD                                      0x00
-#define MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS                         0x02
-#define MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_STATUS                    0x06
-#define MESH_FOUNDATION_OPERATION_APPKEY_STATUS                                 0x8003
-
-#define MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_GET                          0x8008
-#define MESH_FOUNDATION_OPERATION_BEACON_GET                                    0x8009
-#define MESH_FOUNDATION_OPERATION_BEACON_SET                                    0x800a
-#define MESH_FOUNDATION_OPERATION_BEACON_STATUS                                 0x800b
-#define MESH_FOUNDATION_OPERATION_DEFAULT_TTL_GET                               0x800c
-#define MESH_FOUNDATION_OPERATION_DEFAULT_TTL_SET                               0x800d
-#define MESH_FOUNDATION_OPERATION_DEFAULT_TTL_STATUS                            0x800e
-
-#define MESH_FOUNDATION_OPERATION_GATT_PROXY_GET                                0x8012
-#define MESH_FOUNDATION_OPERATION_GATT_PROXY_SET                                0x8013
-#define MESH_FOUNDATION_OPERATION_GATT_PROXY_STATUS                             0x8014
-
-#define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_GET                         0x8018
-#define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_STATUS                      0x8019
-#define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_VIRTUAL_ADDRESS_SET         0x801a
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_ADD                        0x801b
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DEL                        0x801c
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DEL_ALL                    0x801d
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_OVERWRITE                  0x801e
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_STATUS                     0x801f
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_ADD        0x8020
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_DEL        0x8021
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_OVERWRITE  0x8022
-#define MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_GET                          0x8023
-#define MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_SET                          0x8024
-#define MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_STATUS                       0x8025
-#define MESH_FOUNDATION_OPERATION_RELAY_GET                                     0x8026
-#define MESH_FOUNDATION_OPERATION_RELAY_SET                                     0x8027
-#define MESH_FOUNDATION_OPERATION_RELAY_STATUS                                  0x8028
-
-#define MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_GET                     0x8038
-#define MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_SET                     0x8039
-#define MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_GET                    0x803a
-#define MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_SET                    0x803b
-#define MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_STATUS                 0x803c
-#define MESH_FOUNDATION_OPERATION_MODEL_APP_BIND                                0x803d
-#define MESH_FOUNDATION_OPERATION_MODEL_APP_STATUS                              0x803e
-#define MESH_FOUNDATION_OPERATION_MODEL_APP_UNBIND                              0x803f
-
-#define MESH_FOUNDATION_OPERATION_NODE_RESET                                    0x8049
-#define MESH_FOUNDATION_OPERATION_NODE_RESET_STATUS                             0x804a
 
 typedef struct  {
     btstack_timer_source_t timer;
@@ -846,19 +930,16 @@ static void config_composition_data_get_handler(mesh_model_t *mesh_model, mesh_t
 }
 
 static void config_model_beacon_status(mesh_model_t * mesh_model){
+    // setup message
+    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_transport_message(&mesh_foundation_config_beacon_status, mesh_foundation_becaon_get());
+    if (!transport_pdu) return;
+
+    // send as segmented access pdu
     uint16_t src  = primary_element_address;
     uint16_t dest = 0x0001;
     uint8_t  ttl  = mesh_foundation_becaon_get();
-
     uint16_t netkey_index = 0;
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
-
-    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_BEACON_STATUS);
-    if (!transport_pdu) return;
-
-    mesh_access_transport_add_uint8( transport_pdu, mesh_foundation_becaon_get());
-
-    // send as segmented access pdu
     mesh_upper_transport_setup_segmented_access_pdu_header(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0);
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
@@ -879,19 +960,16 @@ static void config_beacon_set_handler(mesh_model_t *mesh_model, mesh_transport_p
 }
 
 static void config_model_default_ttl_status(mesh_model_t * mesh_model){
+    // setup message
+    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_transport_message(&mesh_foundation_config_default_ttl_status, mesh_foundation_default_ttl_get());
+    if (!transport_pdu) return;
+
+    // send as segmented access pdu
     uint16_t src  = primary_element_address;
     uint16_t dest = 0x0001;
     uint8_t  ttl  = mesh_foundation_default_ttl_get();
-
     uint16_t netkey_index = 0;
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
-
-    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_DEFAULT_TTL_STATUS);
-    if (!transport_pdu) return;
-
-    mesh_access_transport_add_uint8( transport_pdu, mesh_foundation_default_ttl_get());
-
-    // send as segmented access pdu
     mesh_upper_transport_setup_segmented_access_pdu_header(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0);
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
@@ -912,19 +990,16 @@ static void config_default_ttl_set_handler(mesh_model_t *mesh_model, mesh_transp
 }
 
 static void config_model_gatt_proxy_status(mesh_model_t * mesh_model){
+    // setup message
+    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_transport_message(&mesh_foundation_config_gatt_proxy_status, mesh_foundation_gatt_proxy_get());
+    if (!transport_pdu) return;
+
+    // send as segmented access pdu
     uint16_t src  = primary_element_address;
     uint16_t dest = 0x0001;
     uint8_t  ttl  = mesh_foundation_default_ttl_get();
-
     uint16_t netkey_index = 0;
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
-
-    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_GATT_PROXY_STATUS);
-    if (!transport_pdu) return;
-
-    mesh_access_transport_add_uint8( transport_pdu, mesh_foundation_gatt_proxy_get());
-
-    // send as segmented access pdu
     mesh_upper_transport_setup_segmented_access_pdu_header(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0);
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
@@ -945,20 +1020,16 @@ static void config_gatt_proxy_set_handler(mesh_model_t *mesh_model, mesh_transpo
 }
 
 static void config_model_relay_status(mesh_model_t * mesh_model){
+    // setup message
+    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_transport_message(&mesh_foundation_config_relay_status, mesh_foundation_relay_get(), mesh_foundation_relay_retransmit_get());
+    if (!transport_pdu) return;
+
+    // send as segmented access pdu
     uint16_t src  = primary_element_address;
     uint16_t dest = 0x0001;
     uint8_t  ttl  = mesh_foundation_default_ttl_get();
-
     uint16_t netkey_index = 0;
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
-
-    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_RELAY_STATUS);
-    if (!transport_pdu) return;
-
-    mesh_access_transport_add_uint8( transport_pdu, mesh_foundation_relay_get());
-    mesh_access_transport_add_uint8( transport_pdu, mesh_foundation_relay_retransmit_get());
-
-    // send as segmented access pdu
     mesh_upper_transport_setup_segmented_access_pdu_header(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0);
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
@@ -987,19 +1058,16 @@ static void config_relay_set_handler(mesh_model_t *mesh_model, mesh_transport_pd
 }
 
 static void config_model_network_transmit_status(mesh_model_t * mesh_model){
+    // setup message
+    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_transport_message(&mesh_foundation_config_network_transmit_status, mesh_foundation_network_transmit_get());
+    if (!transport_pdu) return;
+
+    // send as segmented access pdu
     uint16_t src  = primary_element_address;
     uint16_t dest = 0x0001;
     uint8_t  ttl  = mesh_foundation_default_ttl_get();
-
     uint16_t netkey_index = 0;
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
-
-    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_STATUS);
-    if (!transport_pdu) return;
-
-    mesh_access_transport_add_uint8( transport_pdu, mesh_foundation_network_transmit_get());
-
-    // send as segmented access pdu
     mesh_upper_transport_setup_segmented_access_pdu_header(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0);
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
@@ -1018,20 +1086,16 @@ static void config_model_network_transmit_set_handler(mesh_model_t * mesh_model,
 }
 
 static void config_appkey_status(uint32_t netkey_and_appkey_index, uint8_t status){
+    // setup message
+    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_transport_message(&mesh_foundation_config_appkey_status, status, netkey_and_appkey_index);
+    if (!transport_pdu) return;
+
+    // send as segmented access pdu
     uint16_t src  = primary_element_address;
     uint16_t dest = 0x0001;
     uint8_t  ttl  = mesh_foundation_default_ttl_get();
-
-    uint16_t netkey_index = 0;
+   uint16_t netkey_index = 0;
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
-
-    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_APPKEY_STATUS);
-    if (!transport_pdu) return;
-
-    mesh_access_transport_add_uint8( transport_pdu, status);
-    mesh_access_transport_add_uint24( transport_pdu, netkey_and_appkey_index);
-
-    // send as segmented access pdu
     mesh_upper_transport_setup_segmented_access_pdu_header(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0);
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
@@ -1063,22 +1127,16 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_transport_p
 }
 
 static void config_model_subscription_status(uint8_t status, uint16_t element_address, uint16_t address, uint32_t model_identifier){
+    // setup message
+    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_transport_message(&mesh_foundation_config_model_subscription_status, status, element_address, address, model_identifier);
+    if (!transport_pdu) return;
+
+    // send as segmented access pdu
     uint16_t src  = primary_element_address;
     uint16_t dest = 0x0001;
     uint8_t  ttl  = mesh_foundation_default_ttl_get();
-
     uint16_t netkey_index = 0;
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
-
-    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_STATUS);
-    if (!transport_pdu) return;
-
-    mesh_access_transport_add_uint8(transport_pdu, status);
-    mesh_access_transport_add_uint16(transport_pdu, element_address);
-    mesh_access_transport_add_uint16(transport_pdu, address);
-    mesh_access_transport_add_uint16(transport_pdu, model_identifier);
-
-    // send as segmented access pdu
     mesh_upper_transport_setup_segmented_access_pdu_header(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0);
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
@@ -1096,24 +1154,17 @@ config_model_subscription_virtual_address_add_handler(mesh_model_t *mesh_model, 
     config_model_subscription_add_handler(NULL, transport_pdu);
 }
 
-
 static void config_model_app_status(uint8_t status, uint16_t element_address, uint16_t app_key_index, uint32_t model_identifier){
+    // setup message
+    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_transport_message(&mesh_foundation_config_model_app_status, status, element_address, app_key_index, model_identifier);
+    if (!transport_pdu) return;
+
+    // send as segmented access pdu
     uint16_t src  = primary_element_address;
     uint16_t dest = 0x0001;
     uint8_t  ttl  = mesh_foundation_default_ttl_get();
-
     uint16_t netkey_index = 0;
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
-
-    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_MODEL_APP_STATUS);
-    if (!transport_pdu) return;
-
-    mesh_access_transport_add_uint8(transport_pdu,  status);
-    mesh_access_transport_add_uint16(transport_pdu, element_address);
-    mesh_access_transport_add_uint16(transport_pdu, app_key_index);
-    mesh_access_transport_add_uint16(transport_pdu, model_identifier);
-
-    // send as segmented access pdu
     mesh_upper_transport_setup_segmented_access_pdu_header(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0);
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
@@ -1158,32 +1209,27 @@ config_model_publication_virtual_address_add_handler(mesh_model_t *mesh_model, m
 
     // TODO: calculate publish address from label uuid
     uint16_t publish_address = 0x1234;
+    uint8_t status = 0;
 
+    // setup message
+    const mesh_access_message_t * message;
+    if (model_id_len == 2){
+        message = &mesh_foundation_config_model_app_status_sig;
+    } else {
+        message = &mesh_foundation_config_model_app_status_vendor;
+    }
+    uint16_t app_key_index_and_credential_flag = (credential_flag << 12) | app_key_index;
+    uint8_t  publish_retransmit = (publish_retransmit_iterval_steps << 3) | publish_transmit_count;
+    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_transport_message(message, status, element_address, publish_address, app_key_index_and_credential_flag,
+            publish_ttl, publish_period, publish_retransmit,  model_id);
+    if (!transport_pdu) return;
+
+    // send as segmented access pdu
     uint16_t src  = primary_element_address;
     uint16_t dest = 0x0001;
     uint8_t  ttl  = mesh_foundation_default_ttl_get();
-
     uint16_t netkey_index = 0;
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
-
-    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_STATUS);
-    if (!transport_pdu) return;
-
-    uint8_t status = 0;
-    mesh_access_transport_add_uint8(transport_pdu, status);
-    mesh_access_transport_add_uint16(transport_pdu, element_address);
-    mesh_access_transport_add_uint16(transport_pdu, publish_address);
-    mesh_access_transport_add_uint16(transport_pdu, (1<<credential_flag) | app_key_index);
-    mesh_access_transport_add_uint8(transport_pdu, publish_ttl);
-    mesh_access_transport_add_uint8(transport_pdu, publish_period);
-    mesh_access_transport_add_uint8(transport_pdu, (publish_retransmit_iterval_steps << 3) | publish_transmit_count);
-    if (model_id_len == 2){
-        mesh_access_transport_add_uint16(transport_pdu, model_id);
-    } else {
-        mesh_access_transport_add_uint32(transport_pdu, model_id);
-    }
-
-    // send as segmented access pdu
     mesh_upper_transport_setup_segmented_access_pdu_header(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0);
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
@@ -1228,28 +1274,26 @@ static void config_heartbeat_publication_emit(btstack_timer_source_t * ts){
 
 static void config_heartbeat_publication_status(void){
 
+    // setup message
+    uint8_t status = 0;
+    uint8_t count_log = heartbeat_count_log(mesh_heartbeat_publication.count);
+    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_transport_message(&mesh_foundation_config_heartbeat_publication_status,
+            status,
+            mesh_heartbeat_publication.destination,
+            count_log,
+            mesh_heartbeat_publication.period_log,
+            mesh_heartbeat_publication.ttl,
+            mesh_heartbeat_publication.features,
+            mesh_heartbeat_publication.netkey_index);
+    if (!transport_pdu) return;
+    printf("MESH config_heartbeat_publication_status count = %u => count_log = %u\n", mesh_heartbeat_publication.count, count_log);
+
+    // send segmented message
     uint16_t netkey_index = 0;
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
     uint16_t src  = primary_element_address;
     uint16_t dest = 0x0001;
     uint8_t  ttl  = mesh_foundation_default_ttl_get();
-
-    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_STATUS);
-    if (!transport_pdu) return;
-
-    uint8_t status = 0;
-    uint8_t count_log = heartbeat_count_log(mesh_heartbeat_publication.count);
-    mesh_access_transport_add_uint8(transport_pdu, status);
-    mesh_access_transport_add_uint16(transport_pdu, mesh_heartbeat_publication.destination);
-    mesh_access_transport_add_uint8(transport_pdu, count_log);
-    mesh_access_transport_add_uint8(transport_pdu, mesh_heartbeat_publication.period_log);
-    mesh_access_transport_add_uint8(transport_pdu, mesh_heartbeat_publication.ttl);
-
-    mesh_access_transport_add_uint16(transport_pdu, mesh_heartbeat_publication.features);
-    mesh_access_transport_add_uint16(transport_pdu, mesh_heartbeat_publication.netkey_index);
-
-    printf("MESH config_heartbeat_publication_status count = %u => count_log = %u\n", mesh_heartbeat_publication.count, count_log);
-
     mesh_upper_transport_setup_segmented_access_pdu_header(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0);
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
@@ -1297,17 +1341,18 @@ static void config_heartbeat_publication_get_handler(mesh_model_t *mesh_model, m
 }
 
 static void config_node_reset_status(mesh_model_t *mesh_model){
-    uint16_t src  = primary_element_address;
-    uint16_t dest = 0x0001;
-    uint8_t  ttl  = mesh_foundation_default_ttl_get();
+    UNUSED(mesh_model);
 
-    uint16_t netkey_index = 0;
-    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
-
-    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_NODE_RESET_STATUS);
+    // setup message
+    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_transport_message(&mesh_foundation_node_reset_status);
     if (!transport_pdu) return;
 
     // send as segmented access pdu
+    uint16_t src  = primary_element_address;
+    uint16_t dest = 0x0001;
+    uint8_t  ttl  = mesh_foundation_default_ttl_get();
+    uint16_t netkey_index = 0;
+    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
     mesh_upper_transport_setup_segmented_access_pdu_header(transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0);
     mesh_upper_transport_send_segmented_access_pdu(transport_pdu);
 }
