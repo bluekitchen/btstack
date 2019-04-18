@@ -40,6 +40,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "btstack_debug.h"
+#include "btstack_util.h"
 #include "mesh_crypto.h"
 
 // mesh k1 - might get moved to btstack_crypto and all vars go into btstack_crypto_mesh_k1_t struct
@@ -186,3 +187,23 @@ void mesh_k4(btstack_crypto_aes128_cmac_t * request, const uint8_t * n, uint8_t 
     btstack_crypto_aes128_cmac_message(request, mesh_salt_smk4, 16, mesh_k4_n, mesh_k4_temp, mesh_k4_temp_callback, request);
 }
 
+// mesh virtual address hash - might get moved to btstack_crypto and all vars go into btstack_crypto_mesh_virtual_address_t struct
+
+static uint8_t mesh_salt_vtad[] = { 0xce, 0xf7, 0xfa, 0x9d, 0xc4, 0x7b, 0xaf, 0x5d, 0xaa, 0xee, 0xd1, 0x94, 0x06, 0x09, 0x4f, 0x37, };
+static void *  mesh_virtual_address_arg;
+static void (* mesh_virtual_address_callback)(void * arg);
+static uint16_t * mesh_virtual_address_hash;
+static uint8_t mesh_virtual_address_temp[16];
+
+static void mesh_virtual_address_temp_callback(void * arg){
+    uint16_t addr = (big_endian_read_16(mesh_virtual_address_temp, 14) & 0x3fff) | 0x8000;
+    *mesh_virtual_address_hash = addr;
+    (*mesh_virtual_address_callback)(mesh_virtual_address_arg);
+}
+
+void mesh_virtual_address(btstack_crypto_aes128_cmac_t * request, const uint8_t * label_uuid, uint16_t * addr, void (* callback)(void * arg), void * callback_arg){
+    mesh_virtual_address_callback  = callback;
+    mesh_virtual_address_arg       = callback_arg;
+    mesh_virtual_address_hash      = addr;
+    btstack_crypto_aes128_cmac_message(request, mesh_salt_vtad, 16, label_uuid, mesh_virtual_address_temp, mesh_virtual_address_temp_callback, request);
+}

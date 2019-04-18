@@ -69,9 +69,19 @@ void mesh_k2(btstack_crypto_aes128_cmac_t * request, const uint8_t * n, uint8_t 
 void mesh_k3(btstack_crypto_aes128_cmac_t * request, const uint8_t * n, uint8_t * result, void (* callback)(void * arg), void * callback_arg);
 
 /**
- * Calculate mesh k3 function
+ * Calculate mesh k4 function
  */
 void mesh_k4(btstack_crypto_aes128_cmac_t * request, const uint8_t * n, uint8_t * result, void (* callback)(void * arg), void * callback_arg);
+
+/**
+ * Calculate mesh virtual address hash
+ * @param request
+ * @param label_uuid
+ * @param addr
+ * @param callback
+ * @param callback_arg
+ */
+void mesh_virtual_address(btstack_crypto_aes128_cmac_t * request, const uint8_t * label_uuid, uint16_t * addr, void (* callback)(void * arg), void * callback_arg);
 
 #ifdef __cplusplus
 } /* end of extern "C" */
