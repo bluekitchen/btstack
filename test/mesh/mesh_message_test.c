@@ -177,11 +177,13 @@ static void test_upper_transport_unsegmented_callback_handler(mesh_network_pdu_t
         recv_upper_transport_pdu_len = mesh_network_pdu_len(network_pdu)  - 1;
         memcpy(recv_upper_transport_pdu_data, mesh_network_pdu_data(network_pdu) + 1, recv_upper_transport_pdu_len);
     }
+    mesh_upper_transport_unsegmented_message_processed_by_higher_layer(network_pdu);
 }
 
 static void test_upper_transport_segmented_callback_handler(mesh_transport_pdu_t * transport_pdu){
     recv_upper_transport_pdu_len = transport_pdu->len;
     memcpy(recv_upper_transport_pdu_data, transport_pdu->data, recv_upper_transport_pdu_len);
+    mesh_upper_transport_segmented_message_processed_by_higher_layer(transport_pdu);
 }
 
 TEST_GROUP(MessageTest){

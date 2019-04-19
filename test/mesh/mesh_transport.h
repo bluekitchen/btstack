@@ -89,6 +89,9 @@ void mesh_upper_transport_send_unsegmented_access_pdu(mesh_network_pdu_t * netwo
 
 void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t * transport_pdu);
 
+void mesh_upper_transport_segmented_message_processed_by_higher_layer(mesh_transport_pdu_t * transport_pdu);
+void mesh_upper_transport_unsegmented_message_processed_by_higher_layer(mesh_network_pdu_t * network_pdu);
+
 //
 // Virtual Address Management
 // 

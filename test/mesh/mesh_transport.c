@@ -252,9 +252,6 @@ static void mesh_upper_transport_validate_unsegmented_message_ccm(void * arg){
         }
         
         printf("\n");
-
-        // done
-        mesh_upper_transport_process_unsegmented_message_done(network_pdu);
     } else {
         uint8_t afk = lower_transport_pdu[0] & 0x40;
         if (afk){
@@ -301,8 +298,6 @@ static void mesh_upper_transport_validate_segmented_message_ccm(void * arg){
         
         printf("\n");
 
-        // done
-        mesh_upper_transport_process_segmented_message_done(transport_pdu);
     } else {
         uint8_t akf = transport_pdu->akf_aid & 0x40;
         if (akf){
@@ -314,6 +309,13 @@ static void mesh_upper_transport_validate_segmented_message_ccm(void * arg){
             mesh_upper_transport_process_segmented_message_done(transport_pdu);
         }
     }
+}
+
+void mesh_upper_transport_segmented_message_processed_by_higher_layer(mesh_transport_pdu_t * transport_pdu){
+    mesh_upper_transport_process_segmented_message_done(transport_pdu);
+}
+void mesh_upper_transport_unsegmented_message_processed_by_higher_layer(mesh_network_pdu_t * network_pdu){
+    mesh_upper_transport_process_unsegmented_message_done(network_pdu);
 }
 
 static void mesh_upper_transport_validate_segmented_message_digest(void * arg){

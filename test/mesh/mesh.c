@@ -1559,7 +1559,7 @@ static mesh_operation_t mesh_configuration_server_model_operations[] = {
     { 0, 0, NULL}
 };
 
-static void mesh_segmented_message_handler(mesh_transport_pdu_t *transport_pdu){
+static void mesh_segmented_message_process(mesh_transport_pdu_t *transport_pdu){
     // get opcode and size
     uint32_t opcode = 0;
     uint16_t opcode_size = 0;
@@ -1580,6 +1580,11 @@ static void mesh_segmented_message_handler(mesh_transport_pdu_t *transport_pdu){
         return;
     }
     printf("Message not handled\n");
+}
+
+static void mesh_segmented_message_handler(mesh_transport_pdu_t *transport_pdu){
+    mesh_segmented_message_process(transport_pdu);
+    mesh_upper_transport_segmented_message_processed_by_higher_layer(transport_pdu);
 }
 
 static btstack_crypto_aes128_cmac_t salt_request;
