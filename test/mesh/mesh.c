@@ -734,6 +734,182 @@ const mesh_access_message_t mesh_foundation_config_network_transmit_status = {
         MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_STATUS, "11"
 };
 
+// message parser
+
+static int mesh_access_get_opcode(uint8_t * buffer, uint16_t buffer_size, uint32_t * opcode, uint16_t * opcode_size){
+    switch (buffer[0] >> 6){
+        case 0:
+        case 1:
+            if (buffer[0] == 0x7f) return 0;
+            *opcode = buffer[0];
+            *opcode_size = 1;
+            return 1;
+        case 2:
+            if (buffer_size < 2) return 0;
+            *opcode = big_endian_read_16(buffer, 0);
+            *opcode_size = 2;
+            return 1;
+        case 3:
+            if (buffer_size < 3) return 0;
+            *opcode = (buffer[0] << 16) | little_endian_read_16(buffer, 1);
+            *opcode_size = 3;
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+static int mesh_access_transport_get_opcode(mesh_transport_pdu_t * transport_pdu, uint32_t * opcode, uint16_t * opcode_size){
+    return mesh_access_get_opcode(transport_pdu->data, transport_pdu->len, opcode, opcode_size);
+}
+
+static int mesh_access_network_get_opcode(mesh_network_pdu_t * network_pdu, uint32_t * opcode, uint16_t * opcode_size){
+    // TransMIC already removed by mesh_upper_transport_validate_unsegmented_message_ccm
+    return mesh_access_get_opcode(&network_pdu->data[10], network_pdu->len - 10, opcode, opcode_size);
+}
+
+static int mesh_access_pdu_get_opcode(mesh_pdu_t * pdu, uint32_t * opcode, uint16_t * opcode_size){
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            return mesh_access_transport_get_opcode((mesh_transport_pdu_t*) pdu, opcode, opcode_size);
+        case MESH_PDU_TYPE_NETWORK:
+            return mesh_access_network_get_opcode((mesh_network_pdu_t *) pdu, opcode, opcode_size);
+        default:
+            return 0;
+    }
+}
+
+static uint16_t mesh_pdu_src(mesh_pdu_t * pdu){
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            return mesh_transport_src((mesh_transport_pdu_t*) pdu);
+        case MESH_PDU_TYPE_NETWORK:
+            return mesh_network_src((mesh_network_pdu_t *) pdu);
+        default:
+            return MESH_ADDRESS_UNSASSIGNED;
+    }
+}
+
+typedef struct {
+    mesh_pdu_t * pdu;
+    uint16_t pos;
+} mesh_access_parser_state_t;
+
+static int mesh_access_parser_init(mesh_access_parser_state_t * state, mesh_pdu_t * pdu){
+    state->pdu = pdu;
+    uint32_t opcode = 0;
+    int ok = mesh_access_pdu_get_opcode(pdu, &opcode, &state->pos);
+    if (pdu->pdu_type == MESH_PDU_TYPE_NETWORK){
+        state->pos += 10;
+    }
+    return ok;
+}
+
+static void mesh_access_parser_skip(mesh_access_parser_state_t * state, uint16_t bytes_to_skip){
+    state->pos += bytes_to_skip;
+}
+
+static uint16_t mesh_access_parser_available(mesh_access_parser_state_t * state){
+    switch (state->pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            return ((mesh_transport_pdu_t *) state->pdu)->len - state->pos;
+        case MESH_PDU_TYPE_NETWORK:
+            return ((mesh_network_pdu_t *) state->pdu)->len - state->pos;
+        default:
+            return 0;
+    }
+}
+
+static uint8_t mesh_access_parser_get_u8(mesh_access_parser_state_t * state){
+    switch (state->pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            return ((mesh_transport_pdu_t *) state->pdu)->data[state->pos++];
+        case MESH_PDU_TYPE_NETWORK:
+            return ((mesh_network_pdu_t *) state->pdu)->data[state->pos++];
+        default:
+            return 0;
+    }
+}
+
+static uint16_t mesh_access_parser_get_u16(mesh_access_parser_state_t * state){
+    uint16_t value;
+    switch (state->pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            value = little_endian_read_16( ((mesh_transport_pdu_t *) state->pdu)->data, state->pos);
+            break;
+        case MESH_PDU_TYPE_NETWORK:
+            value = little_endian_read_16( ((mesh_network_pdu_t *) state->pdu)->data, state->pos);
+            break;
+        default:
+            value = 0;
+            break;
+    }
+    state->pos += 2;
+    return value;
+}
+
+static uint32_t mesh_access_parser_get_u24(mesh_access_parser_state_t * state){
+    uint32_t value;
+    switch (state->pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            value = little_endian_read_24( ((mesh_transport_pdu_t *) state->pdu)->data, state->pos);
+            break;
+        case MESH_PDU_TYPE_NETWORK:
+            value = little_endian_read_24( ((mesh_network_pdu_t *) state->pdu)->data, state->pos);
+            break;
+        default:
+            value = 0;
+            break;
+    }
+    state->pos += 3;
+    return value;
+}
+
+static uint32_t mesh_access_parser_get_u32(mesh_access_parser_state_t * state){
+    uint32_t value;
+    switch (state->pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            value = little_endian_read_32( ((mesh_transport_pdu_t *) state->pdu)->data, state->pos);
+            break;
+        case MESH_PDU_TYPE_NETWORK:
+            value = little_endian_read_32( ((mesh_network_pdu_t *) state->pdu)->data, state->pos);
+            break;
+        default:
+            value = 0;
+            break;
+    }
+    state->pos += 4;
+    return value;
+}
+
+static void mesh_access_parser_get_u128(mesh_access_parser_state_t * state, uint8_t * dest){
+    switch (state->pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            reverse_128( ((mesh_transport_pdu_t *) state->pdu)->data, dest);
+            break;
+        case MESH_PDU_TYPE_NETWORK:
+            reverse_128( ((mesh_network_pdu_t *) state->pdu)->data, dest);
+            break;
+        default:
+            break;
+    }
+    state->pos += 16;
+}
+
+static void mesh_access_parser_get_label_uuid(mesh_access_parser_state_t * state, uint8_t * dest){
+    switch (state->pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            memcpy( dest, ((mesh_transport_pdu_t *) state->pdu)->data, 16);
+            break;
+        case MESH_PDU_TYPE_NETWORK:
+            memcpy( dest, ((mesh_network_pdu_t *) state->pdu)->data, 16);
+            break;
+        default:
+            break;
+    }
+    state->pos += 16;
+}
+
 // message builder
 static int mesh_access_setup_opcode(uint8_t * buffer, uint32_t opcode){
     if (opcode < 0x100){
@@ -774,33 +950,6 @@ static void mesh_access_transport_add_uint24(mesh_transport_pdu_t * pdu, uint16_
 static void mesh_access_transport_add_uint32(mesh_transport_pdu_t * pdu, uint16_t value){
     little_endian_store_32(pdu->data, pdu->len, value);
     pdu->len += 4;
-}
-
-static int mesh_access_get_opcode(uint8_t * buffer, uint16_t buffer_size, uint32_t * opcode, uint16_t * opcode_size){
-    switch (buffer[0] >> 6){
-        case 0:
-        case 1:
-            if (buffer[0] == 0x7f) return 0;
-            *opcode = buffer[0];
-            *opcode_size = 1;
-            return 1;
-        case 2:
-            if (buffer_size < 2) return 0;
-            *opcode = big_endian_read_16(buffer, 0);
-            *opcode_size = 2;
-            return 1;
-        case 3:
-            if (buffer_size < 3) return 0;
-            *opcode = (buffer[0] << 16) | little_endian_read_16(buffer, 1);
-            *opcode_size = 3;
-            return 1;
-        default:
-            return 0;
-    }
-}
-
-static int mesh_access_transport_get_opcode(mesh_transport_pdu_t * transport_pdu, uint32_t * opcode, uint16_t * opcode_size){
-    return mesh_access_get_opcode(transport_pdu->data, transport_pdu->len, opcode, opcode_size);
 }
 
 // access message template
@@ -954,11 +1103,6 @@ static void config_composition_data_status(mesh_model_t * mesh_model, uint16_t n
 
     printf("Received Config Composition Data Get -> send Config Composition Data Status\n");
 
-    uint16_t src  = primary_element_address;
-    uint8_t  ttl  = mesh_foundation_default_ttl_get();
-
-    uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
-
     mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS);
     if (!transport_pdu) return;
 
@@ -1011,11 +1155,16 @@ static void config_beacon_get_handler(mesh_model_t *mesh_model, mesh_transport_p
 }
 
 static void config_beacon_set_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu){
-    uint8_t new_ttl = transport_pdu->data[2];  // 2-byte op
+    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu;
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+
+    uint8_t beacon_enabled = mesh_access_parser_get_u8(&parser);
+
     // beacon valid
-    if (new_ttl > 0x01) return;
+    if (beacon_enabled > 0x01) return;
     // store
-    mesh_foundation_beacon_set(new_ttl);
+    mesh_foundation_beacon_set(beacon_enabled);
     //
     config_model_beacon_status(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu));
 }
@@ -1035,7 +1184,12 @@ static void config_default_ttl_get_handler(mesh_model_t *mesh_model, mesh_transp
 }
 
 static void config_default_ttl_set_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu){
-    uint8_t new_ttl = transport_pdu->data[2];  // 2-byte op
+    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu;
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+
+    uint8_t new_ttl = mesh_access_parser_get_u8(&parser);
+
     // ttl valid
     if (new_ttl > 0x7f || new_ttl == 0x01) return;
     // store
@@ -1058,7 +1212,12 @@ static void config_gatt_proxy_get_handler(mesh_model_t *mesh_model, mesh_transpo
 }
 
 static void config_gatt_proxy_set_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu){
-    uint8_t enabled = transport_pdu->data[2];  // 2-byte op
+    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu;
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+
+    uint8_t enabled = mesh_access_parser_get_u8(&parser);
+
     // ttl valid
     if (enabled > 1) return;
     // store
@@ -1081,9 +1240,14 @@ static void config_relay_get_handler(mesh_model_t *mesh_model, mesh_transport_pd
 }
 
 static void config_relay_set_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu){
+
+    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu;
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+
     // check if valid
-    uint8_t relay            = transport_pdu->data[2];  // 2-byte op
-    uint8_t relay_retransmit = transport_pdu->data[3];
+    uint8_t relay            = mesh_access_parser_get_u8(&parser);
+    uint8_t relay_retransmit = mesh_access_parser_get_u8(&parser);
 
     // check if valid
     if (relay > 1) return;
@@ -1112,7 +1276,12 @@ static void config_model_network_transmit_get_handler(mesh_model_t * mesh_model,
 }
 
 static void config_model_network_transmit_set_handler(mesh_model_t * mesh_model, mesh_transport_pdu_t * transport_pdu){
-    uint8_t new_ttl = transport_pdu->data[2];  // 2-byte op
+    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu;
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+
+    uint8_t new_ttl = mesh_access_parser_get_u8(&parser);
+
     // store
     mesh_foundation_network_transmit_set(new_ttl);
     //
@@ -1145,12 +1314,15 @@ static void config_appkey_add_aid(void * arg){
 }
 
 static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
-    // 00: opcode 00
+    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu;
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+
     // 01-03: netkey and appkey index
-    netkey_and_appkey_index = little_endian_read_24(transport_pdu->data, 1);
+    netkey_and_appkey_index = mesh_access_parser_get_u24(&parser);
     new_netkey_index = netkey_and_appkey_index & 0xfff;
     new_appkey_index = netkey_and_appkey_index >> 12;
-    reverse_128(&transport_pdu->data[4], new_app_key);
+    mesh_access_parser_get_u128(&parser, new_app_key);
 
     // calculate AID
     mesh_k4(&mesh_cmac_request, new_app_key, &new_aid, config_appkey_add_aid, (uintptr_t*) (uintptr_t) mesh_transport_src(transport_pdu));
@@ -1166,9 +1338,13 @@ static void config_model_subscription_status(mesh_model_t * mesh_model, uint16_t
 }
 
 static void config_model_subscription_add_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
-    uint16_t element_address = little_endian_read_16(transport_pdu->data, 2);
-    uint16_t address = little_endian_read_16(transport_pdu->data, 4);
-    uint16_t model_identifier = little_endian_read_16(transport_pdu->data, 6);
+    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu;
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+
+    uint16_t element_address  = mesh_access_parser_get_u16(&parser);
+    uint16_t address          = mesh_access_parser_get_u16(&parser);
+    uint16_t model_identifier = mesh_access_parser_get_u16(&parser);
 
     config_model_subscription_status(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu), 0, element_address, address, model_identifier);
 }
@@ -1188,9 +1364,13 @@ static void config_model_app_status(mesh_model_t * mesh_model, uint16_t netkey_i
 }
 
 static void config_model_app_bind_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
-    uint16_t element_address = little_endian_read_16(transport_pdu->data, 2);
-    uint16_t app_key_index = little_endian_read_16(transport_pdu->data, 4);
-    uint16_t model_identifier = little_endian_read_16(transport_pdu->data, 6);
+    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu;
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+
+    uint16_t element_address  = mesh_access_parser_get_u16(&parser);
+    uint16_t app_key_index    = mesh_access_parser_get_u16(&parser);
+    uint16_t model_identifier = mesh_access_parser_get_u16(&parser);
 
     config_model_app_status(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu), 0, element_address, app_key_index, model_identifier);
 }
@@ -1241,33 +1421,39 @@ static btstack_crypto_aes128_cmac_t model_publication_request;
 static void
 config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
 
+    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu;
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+
     // ElementAddress - Address of the element - should be us
-    uint16_t element_address = little_endian_read_16(transport_pdu->data, 1);
-    if (transport_pdu->len == 13){
-        // Vendor Model ID
-        model_id_len = 4;
-        model_id = little_endian_read_32(transport_pdu->data, 10);
-    } else {
-        // SIG Model ID
-        model_id_len = 2;
-        model_id = little_endian_read_16(transport_pdu->data, 10);
-    }
+    uint16_t element_address = mesh_access_parser_get_u16(&parser);
 
     // TODO: find model for element_address and model_id
 
     // TODO: validate params
     // PublishAddress, 16 bit
-    publication_model.address = little_endian_read_16(transport_pdu->data, 3);
+    publication_model.address = mesh_access_parser_get_u16(&parser);
     if (publication_model.address == MESH_ADDRESS_UNSASSIGNED){
         memset(&publication_model, 0, sizeof(publication_model));
+        // skip data
+        mesh_access_parser_skip(&parser, 5);
     } else {
         // AppKeyIndex (12), CredentialFlag (1), RFU (3)
-        uint16_t temp = little_endian_read_16(transport_pdu->data, 5);
+        uint16_t temp = mesh_access_parser_get_u16(&parser);
         publication_model.appkey_index = temp & 0x0fff;
         publication_model.friendship_credential_flag = (temp >> 12) & 1;
-        publication_model.ttl = transport_pdu->data[7];
-        publication_model.period = transport_pdu->data[8];
-        publication_model.retransmit = transport_pdu->data[9];
+        publication_model.ttl        = mesh_access_parser_get_u8(&parser);
+        publication_model.period     = mesh_access_parser_get_u8(&parser);
+        publication_model.retransmit = mesh_access_parser_get_u8(&parser);
+    }
+
+    model_id_len = mesh_access_parser_available(&parser);
+    if (model_id_len == 4){
+        // Vendor Model ID
+        model_id = mesh_access_parser_get_u32(&parser);
+    } else {
+        // SIG Model ID
+        model_id = mesh_access_parser_get_u16(&parser);
     }
 
     // send status
@@ -1299,36 +1485,37 @@ static void
 config_model_publication_virtual_address_set_handler(mesh_model_t *mesh_model,
                                                      mesh_transport_pdu_t *transport_pdu_incoming) {
 
+    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu_incoming;
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+
     // ElementAddress - Address of the element - should be us
-    uint16_t element_address = little_endian_read_16(transport_pdu_incoming->data, 2);
+    uint16_t element_address = mesh_access_parser_get_u16(&parser);
 
-    if (transport_pdu_incoming->len == 29){
-        // Vendor Model ID
-        model_id_len = 4;
-        model_id = little_endian_read_32(transport_pdu_incoming->data, 25);
-    } else {
-        // SIG Model ID
-        model_id_len = 2;
-        model_id = little_endian_read_16(transport_pdu_incoming->data, 25);
-    }
-
-    // TODO: find model for element_address and model_id
-
-    // TODO: validate params
-
-    // PublishAddress, 128 bit - offset 4
+    // TODO: don't use globals
+    mesh_access_parser_get_label_uuid(&parser, model_publication_label_uuid);
 
     // AppKeyIndex (12), CredentialFlag (1), RFU (3)
-    uint16_t temp = little_endian_read_16(transport_pdu_incoming->data, 20);
+    uint16_t temp = mesh_access_parser_get_u16(&parser);
     publication_model.appkey_index = temp & 0x0fff;
     publication_model.friendship_credential_flag = (temp >> 12) & 1;
     publication_model.ttl = transport_pdu_incoming->data[22];
     publication_model.period = transport_pdu_incoming->data[23];
     publication_model.retransmit = transport_pdu_incoming->data[24];
 
-    // TODO: don't use globals
-    // reverse_128(&transport_pdu_incoming->data[4], model_publication_label_uuid);
-    memcpy(model_publication_label_uuid, &transport_pdu_incoming->data[4], 16);
+    model_id_len = mesh_access_parser_available(&parser);
+
+    if (model_id_len == 4){
+        // Vendor Model ID
+        model_id = mesh_access_parser_get_u32(&parser);
+    } else {
+        // SIG Model ID
+        model_id = mesh_access_parser_get_u16(&parser);
+    }
+
+    // TODO: find model for element_address and model_id
+
+    // TODO: validate params
 
     model_publication_dest = mesh_transport_src(transport_pdu_incoming);
     mesh_virtual_address(&model_publication_request, model_publication_label_uuid, &publication_model.address, &config_model_publication_virtual_address_set_hash, NULL);
@@ -1337,20 +1524,25 @@ config_model_publication_virtual_address_set_handler(mesh_model_t *mesh_model,
 static void
 config_model_publication_get_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
 
+    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu;
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+
     // ElementAddress - Address of the element - should be us
-    uint16_t element_address = little_endian_read_16(transport_pdu->data, 2);
+    uint16_t element_address = mesh_access_parser_get_u16(&parser);
 
     // Model ID
     uint8_t model_id_len;
     uint32_t model_id;
-    if (transport_pdu->len == 8){
+
+    model_id_len = mesh_access_parser_available(&parser);
+
+    if (model_id_len == 4){
         // Vendor Model ID
-        model_id_len = 4;
-        model_id = little_endian_read_32(transport_pdu->data, 4);
+        model_id = mesh_access_parser_get_u32(&parser);
     } else {
         // SIG Model ID
-        model_id_len = 2;
-        model_id = little_endian_read_16(transport_pdu->data, 4);
+        model_id = mesh_access_parser_get_u16(&parser);
     }
 
     // TODO: find model for element_address and model_id
@@ -1425,29 +1617,31 @@ static void config_heartbeat_publication_status(mesh_model_t *mesh_model, uint16
 }
 
 static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
-    // parse
+    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu;
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
     // TODO: validate fields
 
     // Destination address for Heartbeat messages
-    mesh_heartbeat_publication.destination = little_endian_read_16(transport_pdu->data, 2);
+    mesh_heartbeat_publication.destination = mesh_access_parser_get_u16(&parser);
     // Number of Heartbeat messages to be sent
-    mesh_heartbeat_publication.count = heartbeat_pwr2(transport_pdu->data[4]);
+    mesh_heartbeat_publication.count = heartbeat_pwr2(mesh_access_parser_get_u8(&parser));
     //  Period for sending Heartbeat messages
-    mesh_heartbeat_publication.period_log = transport_pdu->data[5];
+    mesh_heartbeat_publication.period_log = mesh_access_parser_get_u8(&parser);
     //  TTL to be used when sending Heartbeat messages
-    mesh_heartbeat_publication.ttl = transport_pdu->data[6];
+    mesh_heartbeat_publication.ttl = mesh_access_parser_get_u8(&parser);
     // Bit field indicating features that trigger Heartbeat messages when changed
-    mesh_heartbeat_publication.features = little_endian_read_16(transport_pdu->data, 7) & MESH_HEARTBEAT_FEATURES_SUPPORTED_MASK;
+    mesh_heartbeat_publication.features = mesh_access_parser_get_u16(&parser) & MESH_HEARTBEAT_FEATURES_SUPPORTED_MASK;
     // NetKey Index
-    mesh_heartbeat_publication.netkey_index = little_endian_read_16(transport_pdu->data, 9);
+    mesh_heartbeat_publication.netkey_index = mesh_access_parser_get_u16(&parser);
 
     printf("MESH config_heartbeat_publication_set, destination %x, count = %x, period = %u s\n",
             mesh_heartbeat_publication.destination, mesh_heartbeat_publication.count, heartbeat_pwr2(mesh_heartbeat_publication.period_log));
 
     config_heartbeat_publication_status(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu));
 
-    // check if we should enable hearbeats
+    // check if we should enable heartbeats
     if (mesh_heartbeat_publication.destination == MESH_ADDRESS_UNSASSIGNED) {
         btstack_run_loop_remove_timer(&mesh_heartbeat_publication.timer);
         printf("MESH config_heartbeat_publication_set, disable\n");
