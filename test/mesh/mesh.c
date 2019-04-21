@@ -790,6 +790,28 @@ static uint16_t mesh_pdu_src(mesh_pdu_t * pdu){
     }
 }
 
+static uint16_t mesh_pdu_netkey_index(mesh_pdu_t * pdu){
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            return ((mesh_transport_pdu_t*) pdu)->netkey_index;
+        case MESH_PDU_TYPE_NETWORK:
+            return ((mesh_network_pdu_t *) pdu)->netkey_index;
+        default:
+            return MESH_ADDRESS_UNSASSIGNED;
+    }
+}
+
+static uint16_t mesh_pdu_len(mesh_pdu_t * pdu){
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            return ((mesh_transport_pdu_t*) pdu)->len;
+        case MESH_PDU_TYPE_NETWORK:
+            return ((mesh_network_pdu_t *) pdu)->len - 10;
+        default:
+            return 0;
+    }
+}
+
 typedef struct {
     mesh_pdu_t * pdu;
     uint16_t pos;
@@ -1136,8 +1158,8 @@ static void config_composition_data_status(mesh_model_t * mesh_model, uint16_t n
     config_server_send_message(mesh_model, netkey_index, dest, transport_pdu);
 }
 
-static void config_composition_data_get_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu){
-    config_composition_data_status(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu));
+static void config_composition_data_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    config_composition_data_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 }
 
 static void config_model_beacon_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
@@ -1149,13 +1171,11 @@ static void config_model_beacon_status(mesh_model_t * mesh_model, uint16_t netke
     config_server_send_message(mesh_model, netkey_index, dest, transport_pdu);
 }
 
-static void config_beacon_get_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu){
-    UNUSED(transport_pdu);
-    config_model_beacon_status(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu));
+static void config_beacon_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    config_model_beacon_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 }
 
-static void config_beacon_set_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu){
-    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu;
+static void config_beacon_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
@@ -1166,7 +1186,7 @@ static void config_beacon_set_handler(mesh_model_t *mesh_model, mesh_transport_p
     // store
     mesh_foundation_beacon_set(beacon_enabled);
     //
-    config_model_beacon_status(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu));
+    config_model_beacon_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 }
 
 static void config_model_default_ttl_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
@@ -1178,13 +1198,11 @@ static void config_model_default_ttl_status(mesh_model_t * mesh_model, uint16_t 
     config_server_send_message(mesh_model, netkey_index, dest, transport_pdu);
 }
 
-static void config_default_ttl_get_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu){
-    UNUSED(transport_pdu);
-    config_model_default_ttl_status(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu));
+static void config_default_ttl_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    config_model_default_ttl_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 }
 
-static void config_default_ttl_set_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu){
-    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu;
+static void config_default_ttl_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
@@ -1195,7 +1213,7 @@ static void config_default_ttl_set_handler(mesh_model_t *mesh_model, mesh_transp
     // store
     mesh_foundation_default_ttl_set(new_ttl);
     //
-    config_model_default_ttl_status(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu));
+    config_model_default_ttl_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 }
 
 static void config_model_gatt_proxy_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
@@ -1207,12 +1225,11 @@ static void config_model_gatt_proxy_status(mesh_model_t * mesh_model, uint16_t n
     config_server_send_message(mesh_model, netkey_index, dest, transport_pdu);
 }
 
-static void config_gatt_proxy_get_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu){
-    config_model_gatt_proxy_status(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu));
+static void config_gatt_proxy_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    config_model_gatt_proxy_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 }
 
-static void config_gatt_proxy_set_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu){
-    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu;
+static void config_gatt_proxy_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
@@ -1223,7 +1240,7 @@ static void config_gatt_proxy_set_handler(mesh_model_t *mesh_model, mesh_transpo
     // store
     mesh_foundation_gatt_proxy_set(enabled);
     //
-    config_model_gatt_proxy_status(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu));
+    config_model_gatt_proxy_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 }
 
 static void config_model_relay_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
@@ -1235,13 +1252,12 @@ static void config_model_relay_status(mesh_model_t * mesh_model, uint16_t netkey
     config_server_send_message(mesh_model, netkey_index, dest, transport_pdu);
 }
 
-static void config_relay_get_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu){
-    config_model_relay_status(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu));
+static void config_relay_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    config_model_relay_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 }
 
-static void config_relay_set_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu){
+static void config_relay_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
 
-    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu;
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
@@ -1259,7 +1275,7 @@ static void config_relay_set_handler(mesh_model_t *mesh_model, mesh_transport_pd
     }
 
     //
-    config_model_relay_status(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu));
+    config_model_relay_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 }
 
 static void config_model_network_transmit_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
@@ -1271,12 +1287,11 @@ static void config_model_network_transmit_status(mesh_model_t * mesh_model, uint
     config_server_send_message(mesh_model, netkey_index, dest, transport_pdu);
 }
 
-static void config_model_network_transmit_get_handler(mesh_model_t * mesh_model, mesh_transport_pdu_t * transport_pdu){
-    config_model_network_transmit_status(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu));
+static void config_model_network_transmit_get_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu){
+    config_model_network_transmit_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 }
 
-static void config_model_network_transmit_set_handler(mesh_model_t * mesh_model, mesh_transport_pdu_t * transport_pdu){
-    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu;
+static void config_model_network_transmit_set_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
@@ -1285,7 +1300,7 @@ static void config_model_network_transmit_set_handler(mesh_model_t * mesh_model,
     // store
     mesh_foundation_network_transmit_set(new_ttl);
     //
-    config_model_network_transmit_status(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu));
+    config_model_network_transmit_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 }
 
 static void config_appkey_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint32_t netkey_and_appkey_index, uint8_t status){
@@ -1313,8 +1328,7 @@ static void config_appkey_add_aid(void * arg){
     config_appkey_status(NULL, netkey_index, dest, netkey_and_appkey_index, 0);
 }
 
-static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
-    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu;
+static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
@@ -1325,7 +1339,7 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_transport_p
     mesh_access_parser_get_u128(&parser, new_app_key);
 
     // calculate AID
-    mesh_k4(&mesh_cmac_request, new_app_key, &new_aid, config_appkey_add_aid, (uintptr_t*) (uintptr_t) mesh_transport_src(transport_pdu));
+    mesh_k4(&mesh_cmac_request, new_app_key, &new_aid, config_appkey_add_aid, (uintptr_t*) (uintptr_t) mesh_pdu_src(pdu));
 }
 
 static void config_model_subscription_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status, uint16_t element_address, uint16_t address, uint32_t model_identifier){
@@ -1337,8 +1351,7 @@ static void config_model_subscription_status(mesh_model_t * mesh_model, uint16_t
     config_server_send_message(mesh_model, netkey_index, dest, transport_pdu);
 }
 
-static void config_model_subscription_add_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
-    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu;
+static void config_model_subscription_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
@@ -1346,11 +1359,11 @@ static void config_model_subscription_add_handler(mesh_model_t *mesh_model, mesh
     uint16_t address          = mesh_access_parser_get_u16(&parser);
     uint16_t model_identifier = mesh_access_parser_get_u16(&parser);
 
-    config_model_subscription_status(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu), 0, element_address, address, model_identifier);
+    config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), 0, element_address, address, model_identifier);
 }
 
 static void
-config_model_subscription_virtual_address_add_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
+config_model_subscription_virtual_address_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
     // TODO: not implemented yet
 }
 
@@ -1363,8 +1376,7 @@ static void config_model_app_status(mesh_model_t * mesh_model, uint16_t netkey_i
     config_server_send_message(mesh_model, netkey_index, dest, transport_pdu);
 }
 
-static void config_model_app_bind_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
-    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu;
+static void config_model_app_bind_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
@@ -1372,7 +1384,7 @@ static void config_model_app_bind_handler(mesh_model_t *mesh_model, mesh_transpo
     uint16_t app_key_index    = mesh_access_parser_get_u16(&parser);
     uint16_t model_identifier = mesh_access_parser_get_u16(&parser);
 
-    config_model_app_status(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu), 0, element_address, app_key_index, model_identifier);
+    config_model_app_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), 0, element_address, app_key_index, model_identifier);
 }
 
 typedef struct {
@@ -1419,9 +1431,8 @@ static uint16_t model_publication_dest;
 static btstack_crypto_aes128_cmac_t model_publication_request;
 
 static void
-config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
+config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
 
-    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu;
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
@@ -1459,10 +1470,10 @@ config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_transport_pd
     // send status
     uint8_t status = 0;
     if (model_id_len == 2){
-        config_model_publication_status_sig(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu),
+        config_model_publication_status_sig(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu),
                                             status, model_id, &publication_model);
     } else {
-        config_model_publication_status_vendor(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu),
+        config_model_publication_status_vendor(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu),
                                                status, model_id, &publication_model);
     }
 }
@@ -1483,9 +1494,8 @@ static void config_model_publication_virtual_address_set_hash(void *arg){
 
 static void
 config_model_publication_virtual_address_set_handler(mesh_model_t *mesh_model,
-                                                     mesh_transport_pdu_t *transport_pdu_incoming) {
+                                                     mesh_pdu_t * pdu) {
 
-    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu_incoming;
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
@@ -1499,9 +1509,9 @@ config_model_publication_virtual_address_set_handler(mesh_model_t *mesh_model,
     uint16_t temp = mesh_access_parser_get_u16(&parser);
     publication_model.appkey_index = temp & 0x0fff;
     publication_model.friendship_credential_flag = (temp >> 12) & 1;
-    publication_model.ttl = transport_pdu_incoming->data[22];
-    publication_model.period = transport_pdu_incoming->data[23];
-    publication_model.retransmit = transport_pdu_incoming->data[24];
+    publication_model.ttl        = mesh_access_parser_get_u8(&parser);
+    publication_model.period     = mesh_access_parser_get_u8(&parser);
+    publication_model.retransmit = mesh_access_parser_get_u8(&parser);
 
     model_id_len = mesh_access_parser_available(&parser);
 
@@ -1517,14 +1527,13 @@ config_model_publication_virtual_address_set_handler(mesh_model_t *mesh_model,
 
     // TODO: validate params
 
-    model_publication_dest = mesh_transport_src(transport_pdu_incoming);
+    model_publication_dest = mesh_pdu_src(pdu);
     mesh_virtual_address(&model_publication_request, model_publication_label_uuid, &publication_model.address, &config_model_publication_virtual_address_set_hash, NULL);
 }
 
 static void
-config_model_publication_get_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
+config_model_publication_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
 
-    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu;
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
@@ -1549,10 +1558,10 @@ config_model_publication_get_handler(mesh_model_t *mesh_model, mesh_transport_pd
 
     uint8_t status = 0;
     if (model_id_len == 2){
-        config_model_publication_status_sig(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu),
+        config_model_publication_status_sig(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu),
                                             status, model_id, &publication_model);
     } else {
-        config_model_publication_status_vendor(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu),
+        config_model_publication_status_vendor(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu),
                                                status, model_id, &publication_model);
     }
 }
@@ -1616,8 +1625,7 @@ static void config_heartbeat_publication_status(mesh_model_t *mesh_model, uint16
     config_server_send_message(mesh_model, netkey_index, dest, transport_pdu);
 }
 
-static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
-    mesh_pdu_t * pdu = (mesh_pdu_t*) transport_pdu;
+static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
@@ -1639,7 +1647,7 @@ static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, m
     printf("MESH config_heartbeat_publication_set, destination %x, count = %x, period = %u s\n",
             mesh_heartbeat_publication.destination, mesh_heartbeat_publication.count, heartbeat_pwr2(mesh_heartbeat_publication.period_log));
 
-    config_heartbeat_publication_status(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu));
+    config_heartbeat_publication_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 
     // check if we should enable heartbeats
     if (mesh_heartbeat_publication.destination == MESH_ADDRESS_UNSASSIGNED) {
@@ -1655,8 +1663,8 @@ static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, m
     btstack_run_loop_add_timer(&mesh_heartbeat_publication.timer);
 }
 
-static void config_heartbeat_publication_get_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
-    config_heartbeat_publication_status(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu));
+static void config_heartbeat_publication_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
+    config_heartbeat_publication_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 }
 
 static void config_node_reset_status(mesh_model_t *mesh_model, uint16_t netkey_index, uint16_t dest){
@@ -1668,14 +1676,14 @@ static void config_node_reset_status(mesh_model_t *mesh_model, uint16_t netkey_i
     config_server_send_message(mesh_model, netkey_index, dest, transport_pdu);
 }
 
-static void config_node_reset_handler(mesh_model_t *mesh_model, mesh_transport_pdu_t *transport_pdu) {
+static void config_node_reset_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
     mesh_foundation_node_reset();
-    config_node_reset_status(mesh_model, transport_pdu->netkey_index, mesh_transport_src(transport_pdu));
+    config_node_reset_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 }
 
 //
 
-typedef void (*mesh_operation_handler)(mesh_model_t * mesh_model, mesh_transport_pdu_t * transport_pdu);
+typedef void (*mesh_operation_handler)(mesh_model_t * mesh_model, mesh_pdu_t * pdu);
 
 typedef struct {
     uint32_t opcode;
@@ -1708,32 +1716,47 @@ static mesh_operation_t mesh_configuration_server_model_operations[] = {
     { 0, 0, NULL}
 };
 
-static void mesh_segmented_message_process(mesh_transport_pdu_t *transport_pdu){
+static void mesh_access_process(mesh_pdu_t * pdu){
     // get opcode and size
     uint32_t opcode = 0;
     uint16_t opcode_size = 0;
 
-    int ok = mesh_access_transport_get_opcode(transport_pdu, &opcode, &opcode_size);
+    int ok = mesh_access_pdu_get_opcode( pdu, &opcode, &opcode_size);
     if (!ok) return;
 
+    uint16_t len = mesh_pdu_len(pdu);
     printf("MESH Access Message, Opcode = %x: ", opcode);
-    printf_hexdump(transport_pdu->data, transport_pdu->len);
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_NETWORK:
+            printf_hexdump(&((mesh_network_pdu_t *) pdu)->data[10], len);
+            break;
+        case MESH_PDU_TYPE_TRANSPORT:
+            printf_hexdump(((mesh_transport_pdu_t *) pdu)->data, len);
+            break;
+        default:
+            break;
+    }
 
     // find opcode in table
     mesh_model_t * model = &mesh_configuration_server_model;
     mesh_operation_t * operation;
     for (operation = mesh_configuration_server_model_operations; operation->handler != NULL ; operation++){
         if (operation->opcode != opcode) continue;
-        if ((opcode_size + operation->minimum_length) > transport_pdu->len) continue;
-        operation->handler(model, transport_pdu);
+        if ((opcode_size + operation->minimum_length) > len) continue;
+        operation->handler(model, pdu);
         return;
     }
     printf("Message not handled\n");
 }
 
 static void mesh_segmented_message_handler(mesh_transport_pdu_t *transport_pdu){
-    mesh_segmented_message_process(transport_pdu);
+    mesh_access_process((mesh_pdu_t*) transport_pdu);
     mesh_upper_transport_segmented_message_processed_by_higher_layer(transport_pdu);
+}
+
+static void mesh_unsegmented_message_handler(mesh_network_pdu_t *network_pdu){
+    mesh_access_process((mesh_pdu_t*) network_pdu);
+    mesh_upper_transport_unsegmented_message_processed_by_higher_layer(network_pdu);
 }
 
 static btstack_crypto_aes128_cmac_t salt_request;
@@ -1790,6 +1813,7 @@ int btstack_main(void)
     // Transport layers (lower + upper))
     mesh_transport_init();
     mesh_upper_transport_register_segemented_message_handler(&mesh_segmented_message_handler);
+    mesh_upper_transport_register_unsegemented_message_handler(&mesh_unsegmented_message_handler);
 
     // PTS Virtual Address Label UUID - without Config Model, PTS uses our device uuid
     btstack_parse_hex("001BDC0810210B0E0A0C000B0E0A0C00", 16, label_uuid);
