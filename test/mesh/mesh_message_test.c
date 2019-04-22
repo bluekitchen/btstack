@@ -297,17 +297,16 @@ void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uin
     transport_pdu_len = strlen(control_pdu) / 2;
     btstack_parse_hex(control_pdu, transport_pdu_len, transport_pdu_data);
 
+    mesh_pdu_t * pdu;
     if (count == 1 ){
         // send as unsegmented access pdu
-        mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
-        mesh_upper_transport_setup_unsegmented_access_pdu(network_pdu, netkey_index, appkey_index, ttl, src, dest, transport_pdu_data, transport_pdu_len);
-        mesh_upper_transport_send_access_pdu((mesh_pdu_t*) network_pdu);
+        pdu = (mesh_pdu_t*) mesh_network_pdu_get();
     } else {
         // send as segmented access pdu
-        mesh_transport_pdu_t * transport_pdu = mesh_transport_pdu_get();
-        mesh_upper_transport_setup_segmented_access_pdu(transport_pdu, netkey_index, appkey_index, ttl, src, dest, szmic, transport_pdu_data, transport_pdu_len);
-        mesh_upper_transport_send_access_pdu((mesh_pdu_t*)transport_pdu);
+        pdu = (mesh_pdu_t*) mesh_transport_pdu_get();
     } 
+    mesh_upper_transport_setup_access_pdu(pdu, netkey_index, appkey_index, ttl, src, dest, szmic, transport_pdu_data, transport_pdu_len);
+    mesh_upper_transport_send_access_pdu(pdu);
 
     // check for all network pdus
     int i;
