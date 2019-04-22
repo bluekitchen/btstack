@@ -1854,8 +1854,7 @@ int btstack_main(void)
 
     // Transport layers (lower + upper))
     mesh_transport_init();
-    mesh_upper_transport_register_segmented_access_message_handler(&mesh_segmented_message_handler);
-    mesh_upper_transport_register_unsegmented_access_message_handler(&mesh_unsegmented_message_handler);
+    mesh_upper_transport_register_access_message_handler(&mesh_segmented_message_handler);
 
     // PTS Virtual Address Label UUID - without Config Model, PTS uses our device uuid
     btstack_parse_hex("001BDC0810210B0E0A0C000B0E0A0C00", 16, label_uuid);

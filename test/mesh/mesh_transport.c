@@ -140,8 +140,7 @@ static btstack_crypto_ccm_t ccm;
 static mesh_transport_key_and_virtual_address_iterator_t mesh_transport_key_it;
 
 // upper transport callbacks - in access layer
-static void (*mesh_access_unsegmented_handler)(mesh_network_pdu_t * network_pdu);
-static void (*mesh_access_segmented_handler)(mesh_transport_pdu_t * transport_pdu);
+static void (*mesh_access_message_handler)(mesh_pdu_t * pdu);
 static void (*mesh_control_unsegmented_handler)(mesh_network_pdu_t * network_pdu);
 
 // unsegmented (network) and segmented (transport) control and access messages
@@ -248,8 +247,8 @@ static void mesh_upper_transport_validate_unsegmented_message_ccm(void * arg){
         }
 
         // pass to upper layer
-        if (mesh_access_unsegmented_handler){
-            mesh_access_unsegmented_handler(network_pdu);
+        if (mesh_access_message_handler){
+            mesh_access_message_handler((mesh_pdu_t*) network_pdu);
         } else {
             printf("[!] Unhandled Unsegmented Access message\n");
             // done
@@ -295,8 +294,8 @@ static void mesh_upper_transport_validate_segmented_message_ccm(void * arg){
         }
 
         // pass to upper layer
-        if (mesh_access_segmented_handler){
-            mesh_access_segmented_handler(transport_pdu);
+        if (mesh_access_message_handler){
+            mesh_access_message_handler((mesh_pdu_t*) transport_pdu);
         } else {
             printf("[!] Unhandled Segmented Access/Control message\n");
             // done
@@ -777,12 +776,9 @@ void mesh_upper_transport_set_primary_element_address(uint16_t unicast_address){
     primary_element_address = unicast_address;
 }
 
-void mesh_upper_transport_register_unsegmented_access_message_handler(void (*callback)(mesh_network_pdu_t *network_pdu)){
-    mesh_access_unsegmented_handler = callback;
-}
-void mesh_upper_transport_register_segmented_access_message_handler(
-        void (*callback)(mesh_transport_pdu_t *transport_pdu)){
-    mesh_access_segmented_handler = callback;
+
+void mesh_upper_transport_register_access_message_handler(void (*callback)(mesh_pdu_t *pdu)){
+    mesh_access_message_handler = callback;
 }
 void mesh_upper_transport_register_unsegmented_control_message_handler(void (*callback)(mesh_network_pdu_t *network_pdu)){
     mesh_control_unsegmented_handler = callback;
