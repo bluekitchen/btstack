@@ -161,13 +161,25 @@ void mesh_upper_unsegmented_control_message_received(mesh_network_pdu_t * networ
 
 static void mesh_upper_transport_process_unsegmented_message_done(mesh_network_pdu_t *network_pdu){
     crypto_active = 0;
-    mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *) network_pdu_in_validation);
+    if (mesh_network_control(network_pdu)) {
+        mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *) network_pdu);
+    } else {
+        mesh_network_pdu_free(network_pdu);
+        mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *) network_pdu_in_validation);
+        network_pdu_in_validation = NULL;
+    }
     mesh_transport_run();
 }
 
 static void mesh_upper_transport_process_segmented_message_done(mesh_transport_pdu_t *transport_pdu){
     crypto_active = 0;
-    mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *)transport_pdu);
+    if (mesh_transport_ctl(transport_pdu)) {
+        mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *)transport_pdu);
+    } else {
+        mesh_transport_pdu_free(transport_pdu);
+        mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *)transport_pdu_in_validation);
+        transport_pdu_in_validation = NULL;
+    }
     mesh_transport_run();
 }
 
@@ -318,7 +330,17 @@ static void mesh_upper_transport_validate_segmented_message_ccm(void * arg){
 }
 
 void mesh_upper_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
-    mesh_upper_transport_process_unsegmented_message_done(pdu);
+    crypto_active = 0;
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_NETWORK:
+            mesh_upper_transport_process_unsegmented_message_done((mesh_network_pdu_t *) pdu);
+            break;
+        case MESH_PDU_TYPE_TRANSPORT:
+            mesh_upper_transport_process_segmented_message_done((mesh_transport_pdu_t *) pdu);
+            break;
+        default:
+            break;
+    }
 }
 
 static void mesh_upper_transport_validate_segmented_message_digest(void * arg){
