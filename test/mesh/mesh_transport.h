@@ -59,7 +59,7 @@ void mesh_application_key_set(uint16_t appkey_index, uint8_t aid, const uint8_t 
 
 // Control PDUs
 
-void mesh_upper_transport_register_unsegmented_control_message_handler(void (*callback)(mesh_network_pdu_t *network_pdu));
+void mesh_upper_transport_register_control_message_handler(void (*callback)(mesh_pdu_t * pdu));
 
 uint8_t mesh_upper_transport_setup_segmented_control_pdu(mesh_transport_pdu_t * transport_pdu, uint16_t netkey_index,
 	uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode, const uint8_t * control_pdu_data, uint16_t control_pdu_len);
