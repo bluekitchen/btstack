@@ -317,11 +317,8 @@ static void mesh_upper_transport_validate_segmented_message_ccm(void * arg){
     }
 }
 
-void mesh_upper_transport_segmented_message_processed_by_higher_layer(mesh_transport_pdu_t * transport_pdu){
-    mesh_upper_transport_process_segmented_message_done(transport_pdu);
-}
-void mesh_upper_transport_unsegmented_message_processed_by_higher_layer(mesh_network_pdu_t * network_pdu){
-    mesh_upper_transport_process_unsegmented_message_done(network_pdu);
+void mesh_upper_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu){
+    mesh_upper_transport_process_unsegmented_message_done(pdu);
 }
 
 static void mesh_upper_transport_validate_segmented_message_digest(void * arg){

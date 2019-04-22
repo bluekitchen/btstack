@@ -177,13 +177,13 @@ static void test_upper_transport_access_message_handler(mesh_pdu_t * pdu){
             transport_pdu = (mesh_transport_pdu_t *) pdu;
             recv_upper_transport_pdu_len = transport_pdu->len;
             memcpy(recv_upper_transport_pdu_data, transport_pdu->data, recv_upper_transport_pdu_len);
-            mesh_upper_transport_segmented_message_processed_by_higher_layer(transport_pdu);
+            mesh_upper_transport_message_processed_by_higher_layer(pdu);
             break;
         case MESH_PDU_TYPE_NETWORK:
             network_pdu = (mesh_network_pdu_t *) pdu;
             recv_upper_transport_pdu_len = mesh_network_pdu_len(network_pdu)  - 1;
             memcpy(recv_upper_transport_pdu_data, mesh_network_pdu_data(network_pdu) + 1, recv_upper_transport_pdu_len);
-            mesh_upper_transport_unsegmented_message_processed_by_higher_layer(network_pdu);
+            mesh_upper_transport_message_processed_by_higher_layer(pdu);
             break;
         default:
             break;
@@ -198,13 +198,13 @@ static void test_upper_transport_control_message_handler(mesh_pdu_t * pdu){
             transport_pdu = (mesh_transport_pdu_t *) pdu;
             recv_upper_transport_pdu_len = transport_pdu->len;
             memcpy(recv_upper_transport_pdu_data, transport_pdu->data, recv_upper_transport_pdu_len);
-            mesh_upper_transport_segmented_message_processed_by_higher_layer(transport_pdu);
+            mesh_upper_transport_message_processed_by_higher_layer(pdu);
             break;
         case MESH_PDU_TYPE_NETWORK:
             network_pdu = (mesh_network_pdu_t *) pdu;
             recv_upper_transport_pdu_len = mesh_network_pdu_len(network_pdu);
             memcpy(recv_upper_transport_pdu_data, mesh_network_pdu_data(network_pdu), recv_upper_transport_pdu_len);
-            mesh_upper_transport_unsegmented_message_processed_by_higher_layer(network_pdu);
+            mesh_upper_transport_message_processed_by_higher_layer(pdu);
             break;
         default:
             break;

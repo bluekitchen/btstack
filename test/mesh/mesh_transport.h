@@ -57,6 +57,8 @@ void mesh_transport_set_device_key(const uint8_t * device_key);
 
 void mesh_application_key_set(uint16_t appkey_index, uint8_t aid, const uint8_t * application_key);
 
+void mesh_upper_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu);
+
 // Control PDUs
 
 void mesh_upper_transport_register_control_message_handler(void (*callback)(mesh_pdu_t * pdu));
@@ -92,9 +94,6 @@ uint8_t mesh_upper_transport_setup_segmented_access_pdu(mesh_transport_pdu_t * t
 void mesh_upper_transport_send_unsegmented_access_pdu(mesh_network_pdu_t * network_pdu);
 
 void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t * transport_pdu);
-
-void mesh_upper_transport_segmented_message_processed_by_higher_layer(mesh_transport_pdu_t * transport_pdu);
-void mesh_upper_transport_unsegmented_message_processed_by_higher_layer(mesh_network_pdu_t * network_pdu);
 
 //
 // Virtual Address Management

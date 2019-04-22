@@ -1791,14 +1791,9 @@ static void mesh_access_process(mesh_pdu_t * pdu){
     printf("Message not handled\n");
 }
 
-static void mesh_segmented_message_handler(mesh_transport_pdu_t *transport_pdu){
-    mesh_access_process((mesh_pdu_t*) transport_pdu);
-    mesh_upper_transport_segmented_message_processed_by_higher_layer(transport_pdu);
-}
-
-static void mesh_unsegmented_message_handler(mesh_network_pdu_t *network_pdu){
-    mesh_access_process((mesh_pdu_t*) network_pdu);
-    mesh_upper_transport_unsegmented_message_processed_by_higher_layer(network_pdu);
+static void mesh_access_message_process_handler(mesh_pdu_t *pdu){
+    mesh_access_process(pdu);
+    mesh_upper_transport_message_processed_by_higher_layer(pdu);
 }
 
 static btstack_crypto_aes128_cmac_t salt_request;
@@ -1854,7 +1849,7 @@ int btstack_main(void)
 
     // Transport layers (lower + upper))
     mesh_transport_init();
-    mesh_upper_transport_register_access_message_handler(&mesh_segmented_message_handler);
+    mesh_upper_transport_register_access_message_handler(&mesh_access_message_process_handler);
 
     // PTS Virtual Address Label UUID - without Config Model, PTS uses our device uuid
     btstack_parse_hex("001BDC0810210B0E0A0C000B0E0A0C00", 16, label_uuid);
