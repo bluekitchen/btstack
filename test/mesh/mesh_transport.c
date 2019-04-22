@@ -142,6 +142,7 @@ static mesh_transport_key_and_virtual_address_iterator_t mesh_transport_key_it;
 // upper transport callbacks - in access layer
 static void (*mesh_access_unsegmented_handler)(mesh_network_pdu_t * network_pdu);
 static void (*mesh_access_segmented_handler)(mesh_transport_pdu_t * transport_pdu);
+static void (*mesh_control_unsegmented_handler)(mesh_network_pdu_t * network_pdu);
 
 // unsegmented (network) and segmented (transport) control and access messages
 static btstack_linked_list_t upper_transport_incoming;
@@ -150,10 +151,12 @@ static btstack_linked_list_t upper_transport_incoming;
 void mesh_upper_unsegmented_control_message_received(mesh_network_pdu_t * network_pdu){
     uint8_t * lower_transport_pdu     = mesh_network_pdu_data(network_pdu);
     uint8_t  opcode = lower_transport_pdu[0];
-    if (mesh_access_unsegmented_handler){
-        mesh_access_unsegmented_handler(network_pdu);
+    if (mesh_control_unsegmented_handler){
+        mesh_control_unsegmented_handler(network_pdu);
     } else {
         printf("[!] Unhandled Control message with opcode %02x\n", opcode);
+        // done
+        mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *) network_pdu);
     }
 }
 
@@ -249,6 +252,8 @@ static void mesh_upper_transport_validate_unsegmented_message_ccm(void * arg){
             mesh_access_unsegmented_handler(network_pdu);
         } else {
             printf("[!] Unhandled Unsegmented Access message\n");
+            // done
+            mesh_upper_transport_process_unsegmented_message_done(network_pdu);
         }
         
         printf("\n");
@@ -294,6 +299,8 @@ static void mesh_upper_transport_validate_segmented_message_ccm(void * arg){
             mesh_access_segmented_handler(transport_pdu);
         } else {
             printf("[!] Unhandled Segmented Access/Control message\n");
+            // done
+            mesh_upper_transport_process_segmented_message_done(transport_pdu);
         }
         
         printf("\n");
@@ -777,6 +784,9 @@ void mesh_upper_transport_register_segmented_access_message_handler(
         void (*callback)(mesh_transport_pdu_t *transport_pdu)){
     mesh_access_segmented_handler = callback;
 }
+void mesh_upper_transport_register_unsegmented_control_message_handler(void (*callback)(mesh_network_pdu_t *network_pdu)){
+    mesh_control_unsegmented_handler = callback;
+}
 
 void mesh_upper_transport_set_higher_layer_handler(void (*pdu_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu)){
     higher_layer_handler = pdu_handler;
@@ -803,7 +813,6 @@ static void mesh_transport_run(void){
                 if (mesh_network_control(network_pdu)) {
                     (void) btstack_linked_list_pop(&upper_transport_incoming);
                     mesh_upper_unsegmented_control_message_received(network_pdu);
-                    mesh_lower_transport_message_processed_by_higher_layer((mesh_pdu_t *) network_pdu);
                 } else {
                     mesh_network_pdu_t * decode_pdu = mesh_network_pdu_get();
                     if (!decode_pdu) return;

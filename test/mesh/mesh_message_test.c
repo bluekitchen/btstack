@@ -197,8 +197,9 @@ TEST_GROUP(MessageTest){
         mesh_network_set_higher_layer_handler(&test_lower_transport_callback_handler);
         mesh_network_set_proxy_message_handler(&test_proxy_server_callback_handler);
         // register to receive upper transport messages
-        mesh_upper_transport_register_unsegemented_message_handler(&test_upper_transport_unsegmented_callback_handler);
-        mesh_upper_transport_register_segemented_message_handler(&test_upper_transport_segmented_callback_handler);
+        mesh_upper_transport_register_unsegmented_control_message_handler(&test_upper_transport_unsegmented_callback_handler);
+        mesh_upper_transport_register_unsegmented_access_message_handler(&test_upper_transport_unsegmented_callback_handler);
+        mesh_upper_transport_register_segmented_access_message_handler(&test_upper_transport_segmented_callback_handler);
         mesh_seq_auth_reset();
         received_network_pdu = NULL;
         recv_upper_transport_pdu_len =0;

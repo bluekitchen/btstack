@@ -57,14 +57,11 @@ void mesh_transport_set_device_key(const uint8_t * device_key);
 
 void mesh_application_key_set(uint16_t appkey_index, uint8_t aid, const uint8_t * application_key);
 
-void mesh_upper_transport_register_unsegmented_access_message_handler(void (*callback)(mesh_network_pdu_t *network_pdu));
-
-void mesh_upper_transport_register_segmented_access_message_handler(
-        void (*callback)(mesh_transport_pdu_t *transport_pdu));
-
 // Control PDUs
 
-uint8_t mesh_upper_transport_setup_segmented_control_pdu(mesh_transport_pdu_t * transport_pdu, uint16_t netkey_index, 
+void mesh_upper_transport_register_unsegmented_control_message_handler(void (*callback)(mesh_network_pdu_t *network_pdu));
+
+uint8_t mesh_upper_transport_setup_segmented_control_pdu(mesh_transport_pdu_t * transport_pdu, uint16_t netkey_index,
 	uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode, const uint8_t * control_pdu_data, uint16_t control_pdu_len);
 
 uint8_t mesh_upper_transport_setup_unsegmented_control_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, 
@@ -76,6 +73,10 @@ void mesh_upper_transport_send_segmented_control_pdu(mesh_transport_pdu_t * tran
 
 
 // Access PDUs
+
+void mesh_upper_transport_register_unsegmented_access_message_handler(void (*callback)(mesh_network_pdu_t *network_pdu));
+
+void mesh_upper_transport_register_segmented_access_message_handler(void (*callback)(mesh_transport_pdu_t *transport_pdu));
 
 uint8_t mesh_upper_transport_setup_unsegmented_access_pdu_header(mesh_network_pdu_t * network_pdu, uint16_t netkey_index,
                                                                  uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest);
