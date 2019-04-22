@@ -631,7 +631,7 @@ uint8_t mesh_upper_transport_setup_unsegmented_access_pdu_header(mesh_network_pd
     return 0;
 }
 
-uint8_t mesh_upper_transport_setup_unsegmented_access_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest,
+static uint8_t mesh_upper_transport_setup_unsegmented_access_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest,
                                                        const uint8_t * access_pdu_data, uint8_t access_pdu_len){
 
     int status = mesh_upper_transport_setup_unsegmented_access_pdu_header(network_pdu, netkey_index, appkey_index, ttl, src, dest);
@@ -683,7 +683,7 @@ uint8_t mesh_upper_transport_setup_segmented_access_pdu_header(mesh_transport_pd
 }
 
 
-uint8_t mesh_upper_transport_setup_segmented_access_pdu(mesh_transport_pdu_t * transport_pdu, uint16_t netkey_index, uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest,
+static uint8_t mesh_upper_transport_setup_segmented_access_pdu(mesh_transport_pdu_t * transport_pdu, uint16_t netkey_index, uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest,
                           uint8_t szmic, const uint8_t * access_pdu_data, uint8_t access_pdu_len){
     int status = mesh_upper_transport_setup_segmented_access_pdu_header(transport_pdu, netkey_index, appkey_index, ttl, src, dest, szmic);
     if (status) return status;
@@ -692,6 +692,21 @@ uint8_t mesh_upper_transport_setup_segmented_access_pdu(mesh_transport_pdu_t * t
     memcpy(transport_pdu->data, access_pdu_data, access_pdu_len);
     transport_pdu->len = access_pdu_len;
     return 0;
+}
+
+uint8_t mesh_upper_transport_setup_access_pdu(mesh_pdu_t * pdu, uint16_t netkey_index, uint16_t appkey_index,
+                                              uint8_t ttl, uint16_t src, uint16_t dest, uint8_t szmic,
+                                              const uint8_t * access_pdu_data, uint8_t access_pdu_len){
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_NETWORK:
+            mesh_upper_transport_setup_unsegmented_access_pdu((mesh_network_pdu_t *) pdu, netkey_index, appkey_index, ttl, src, dest, access_pdu_data, access_pdu_len);
+            break;
+        case MESH_PDU_TYPE_TRANSPORT:
+            mesh_upper_transport_setup_segmented_access_pdu((mesh_transport_pdu_t *) pdu, netkey_index, appkey_index, ttl, src, dest, szmic, access_pdu_data, access_pdu_len);
+            break;
+        default:
+            break;
+    }
 }
 
 void mesh_upper_transport_send_control_pdu(mesh_pdu_t * pdu){
