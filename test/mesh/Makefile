@@ -46,7 +46,7 @@ LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 LDFLAGS += -lCppUTest -lCppUTestExt
 
 
-mesh: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} pb_adv.o pb_gatt.o mesh_proxy_service_server.o mesh_provisioning_service_server.o mesh_crypto.o provisioning_device.o mesh_network.o mesh_peer.o mesh_lower_transport.o mesh_transport.o mesh_virtual_addresses.o  mesh_keys.o  mesh.o
+mesh: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} pb_adv.o pb_gatt.o mesh_foundation.o mesh_proxy_service_server.o mesh_provisioning_service_server.o mesh_crypto.o provisioning_device.o mesh_network.o mesh_peer.o mesh_lower_transport.o mesh_transport.o mesh_virtual_addresses.o  mesh_keys.o  mesh.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 provisioner: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} pb_adv.o mesh_crypto.o provisioning_provisioner.o provisioner.o
