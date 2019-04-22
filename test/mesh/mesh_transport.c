@@ -770,10 +770,11 @@ void mesh_upper_transport_set_primary_element_address(uint16_t unicast_address){
     primary_element_address = unicast_address;
 }
 
-void mesh_upper_transport_register_unsegemented_message_handler(void (*callback)(mesh_network_pdu_t * network_pdu)){
+void mesh_upper_transport_register_unsegmented_access_message_handler(void (*callback)(mesh_network_pdu_t *network_pdu)){
     mesh_access_unsegmented_handler = callback;
 }
-void mesh_upper_transport_register_segemented_message_handler(void (*callback)(mesh_transport_pdu_t * transport_pdu)){
+void mesh_upper_transport_register_segmented_access_message_handler(
+        void (*callback)(mesh_transport_pdu_t *transport_pdu)){
     mesh_access_segmented_handler = callback;
 }
 
