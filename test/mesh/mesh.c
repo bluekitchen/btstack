@@ -703,6 +703,9 @@ const mesh_access_message_t mesh_foundation_config_beacon_status = {
 const mesh_access_message_t mesh_foundation_config_default_ttl_status = {
         MESH_FOUNDATION_OPERATION_DEFAULT_TTL_STATUS, "1"
 };
+const mesh_access_message_t mesh_foundation_config_friend_status = {
+        MESH_FOUNDATION_OPERATION_FRIEND_STATUS, "1"
+};
 const mesh_access_message_t mesh_foundation_config_gatt_proxy_status = {
         MESH_FOUNDATION_OPERATION_GATT_PROXY_STATUS, "1"
 };
@@ -1033,13 +1036,15 @@ static mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_acc
 }
 
 #define MESH_TTL_MAX 0x7f
+#define MESH_FOUNDATION_STATE_NOT_SUPPORTED 2
 
 static uint8_t mesh_foundation_gatt_proxy = 0;
 static uint8_t mesh_foundation_beacon = 0;
 static uint8_t mesh_foundation_default_ttl = 7;
 static uint8_t mesh_foundation_network_transmit = (10 << 3) | 2; // step 300 ms, send 3 times
-static uint8_t mesh_foundation_relay = 2; // not supported
+static uint8_t mesh_foundation_relay = MESH_FOUNDATION_STATE_NOT_SUPPORTED;
 static uint8_t mesh_foundation_relay_retransmit = 0;
+static uint8_t mesh_foundation_friend = MESH_FOUNDATION_STATE_NOT_SUPPORTED; // not supported
 
 void mesh_foundation_gatt_proxy_set(uint8_t ttl){
     mesh_foundation_gatt_proxy = ttl;
@@ -1063,6 +1068,14 @@ void mesh_foundation_default_ttl_set(uint8_t ttl){
 }
 uint8_t mesh_foundation_default_ttl_get(void){
     return mesh_foundation_default_ttl;
+}
+
+void mesh_foundation_friend_set(uint8_t ttl){
+    mesh_foundation_friend = ttl;
+    printf("MESH: Friend = 0x%x\n", mesh_foundation_friend);
+}
+uint8_t mesh_foundation_friend_get(void){
+    return mesh_foundation_friend;
 }
 
 void mesh_foundation_network_transmit_set(uint8_t network_transmit){
@@ -1210,7 +1223,8 @@ static void config_beacon_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     uint8_t beacon_enabled = mesh_access_parser_get_u8(&parser);
 
     // beacon valid
-    if (beacon_enabled > 0x01) return;
+    if (beacon_enabled >= MESH_FOUNDATION_STATE_NOT_SUPPORTED) return;
+
     // store
     mesh_foundation_beacon_set(beacon_enabled);
     //
@@ -1243,6 +1257,38 @@ static void config_default_ttl_set_handler(mesh_model_t *mesh_model, mesh_pdu_t 
     mesh_foundation_default_ttl_set(new_ttl);
     //
     config_model_default_ttl_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
+}
+
+static void config_friend_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
+    // setup message
+    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
+            &mesh_foundation_config_friend_status, mesh_foundation_friend_get());
+    if (!transport_pdu) return;
+
+    // send as segmented access pdu
+    config_server_send_segmented_message(mesh_model, netkey_index, dest, transport_pdu);
+}
+
+static void config_friend_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    config_friend_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
+}
+
+static void config_friend_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+
+    uint8_t new_friend_state = mesh_access_parser_get_u8(&parser);
+
+    // validate
+    if (new_friend_state >= MESH_FOUNDATION_STATE_NOT_SUPPORTED) return;
+
+    // store if supported
+    if (mesh_foundation_friend_get() != MESH_FOUNDATION_STATE_NOT_SUPPORTED){
+        mesh_foundation_friend_set(new_friend_state);
+    }
+
+    //
+    config_friend_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 }
 
 static void config_model_gatt_proxy_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
@@ -1301,7 +1347,7 @@ static void config_relay_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
     if (relay > 1) return;
 
     // only update if supported
-    if (mesh_foundation_relay_get() < 2){
+    if (mesh_foundation_relay_get() != MESH_FOUNDATION_STATE_NOT_SUPPORTED){
         mesh_foundation_relay_set(relay);
         mesh_foundation_relay_retransmit_set(relay_retransmit);
     }
@@ -1741,6 +1787,8 @@ static mesh_operation_t mesh_configuration_server_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_BEACON_SET,                                   1, config_beacon_set_handler},
     { MESH_FOUNDATION_OPERATION_DEFAULT_TTL_GET,                              0, config_default_ttl_get_handler},
     { MESH_FOUNDATION_OPERATION_DEFAULT_TTL_SET,                              1, config_default_ttl_set_handler},
+    { MESH_FOUNDATION_OPERATION_FRIEND_GET,                                   0, config_friend_get_handler},
+    { MESH_FOUNDATION_OPERATION_FRIEND_SET,                                   1, config_friend_set_handler},
     { MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_GET,                         0, config_model_network_transmit_get_handler},
     { MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_SET,                         1, config_model_network_transmit_set_handler},
     { MESH_FOUNDATION_OPERATION_GATT_PROXY_GET,                               0, config_gatt_proxy_get_handler},
