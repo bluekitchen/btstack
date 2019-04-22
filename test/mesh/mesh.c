@@ -1044,6 +1044,7 @@ static uint8_t  new_aid;
 static uint16_t new_netkey_index;
 static uint16_t new_appkey_index;
 
+static mesh_pdu_t * access_pdu_in_process;
 
 typedef struct  {
     btstack_timer_source_t timer;
@@ -1342,9 +1343,10 @@ static void config_appkey_status(mesh_model_t * mesh_model, uint16_t netkey_inde
 }
 
 static void config_appkey_add_aid(void * arg){
+    UNUSED(arg);
+
     printf("Config Appkey Add: NetKey Index 0x%06x, AppKey Index 0x%06x, AID %02x: ", new_netkey_index, new_appkey_index, new_aid);
     printf_hexdump(new_app_key, 16);
-    uint16_t dest = (uint16_t)(uintptr_t) arg;
 
     // store in TLV
     mesh_store_app_key(new_appkey_index, new_aid, new_app_key);
@@ -1354,7 +1356,9 @@ static void config_appkey_add_aid(void * arg){
 
     // TODO: find a way to get netkey_index
     uint16_t netkey_index = 0;
-    config_appkey_status(NULL, netkey_index, dest, netkey_and_appkey_index, 0);
+    config_appkey_status(NULL, netkey_index, mesh_pdu_src(access_pdu_in_process), netkey_and_appkey_index, 0);
+
+    mesh_access_message_processed(access_pdu_in_process);
 }
 
 static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
@@ -1368,9 +1372,8 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     mesh_access_parser_get_u128(&parser, new_app_key);
 
     // calculate AID
-    mesh_k4(&mesh_cmac_request, new_app_key, &new_aid, config_appkey_add_aid, (uintptr_t*) (uintptr_t) mesh_pdu_src(pdu));
-
-    mesh_access_message_processed(pdu);
+    access_pdu_in_process = pdu;
+    mesh_k4(&mesh_cmac_request, new_app_key, &new_aid, config_appkey_add_aid, NULL);
 }
 
 static void config_model_subscription_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status, uint16_t element_address, uint16_t address, uint32_t model_identifier){
@@ -1470,7 +1473,6 @@ static mesh_publication_model_t publication_model;
 static uint32_t model_id;
 static uint16_t model_id_len;
 static uint8_t  model_publication_label_uuid[16];
-static uint16_t model_publication_dest;
 static btstack_crypto_aes128_cmac_t model_publication_request;
 
 static void
@@ -1521,19 +1523,23 @@ config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
     }
     mesh_access_message_processed(pdu);
 }
+
 static void config_model_publication_virtual_address_set_hash(void *arg){
     mesh_model_t *mesh_model = (mesh_model_t*) arg;
     uint8_t status = 0;
     printf("Virtual Address Hash: %04x\n", publication_model.address);
     // TODO: find a way to get netkey_index
     uint16_t netkey_index = 0;
+
     if (model_id_len == 2){
-        config_model_publication_status_sig(mesh_model, netkey_index, model_publication_dest, status, model_id,
+        config_model_publication_status_sig(mesh_model, netkey_index, mesh_pdu_src(access_pdu_in_process), status, model_id,
                                             &publication_model);
     } else {
-        config_model_publication_status_vendor(mesh_model, netkey_index, model_publication_dest, status, model_id,
+        config_model_publication_status_vendor(mesh_model, netkey_index, mesh_pdu_src(access_pdu_in_process), status, model_id,
                                                &publication_model);
     }
+
+    mesh_access_message_processed(access_pdu_in_process);
 }
 
 static void
@@ -1546,7 +1552,7 @@ config_model_publication_virtual_address_set_handler(mesh_model_t *mesh_model,
     // ElementAddress - Address of the element - should be us
     uint16_t element_address = mesh_access_parser_get_u16(&parser);
 
-    // TODO: don't use globals
+    // store label uuid
     mesh_access_parser_get_label_uuid(&parser, model_publication_label_uuid);
 
     // AppKeyIndex (12), CredentialFlag (1), RFU (3)
@@ -1571,10 +1577,8 @@ config_model_publication_virtual_address_set_handler(mesh_model_t *mesh_model,
 
     // TODO: validate params
 
-    model_publication_dest = mesh_pdu_src(pdu);
-    mesh_virtual_address(&model_publication_request, model_publication_label_uuid, &publication_model.address, &config_model_publication_virtual_address_set_hash, NULL);
-
-    mesh_access_message_processed(pdu);
+    access_pdu_in_process = pdu;
+    mesh_virtual_address(&model_publication_request, model_publication_label_uuid, &publication_model.address, &config_model_publication_virtual_address_set_hash, mesh_model);
 }
 
 static void
