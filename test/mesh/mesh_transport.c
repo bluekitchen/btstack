@@ -571,13 +571,8 @@ uint8_t mesh_upper_transport_setup_segmented_control_pdu(mesh_transport_pdu_t * 
     return 0;
 }
 
-uint8_t mesh_upper_transport_setup_unsegmented_access_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest,
-                          const uint8_t * access_pdu_data, uint8_t access_pdu_len){
-
-    uint32_t seq = mesh_lower_transport_peek_seq();
-
-    printf("[+] Upper transport, setup unsegmented Access PDU - seq %06x\n", seq);
-    mesh_print_hex("Access Payload", access_pdu_data, access_pdu_len);
+uint8_t mesh_upper_transport_setup_unsegmented_access_pdu_header(mesh_network_pdu_t * network_pdu, uint16_t netkey_index,
+        uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest){
 
     // get app or device key
     const mesh_transport_key_t * appkey;
@@ -592,14 +587,25 @@ uint8_t mesh_upper_transport_setup_unsegmented_access_pdu(mesh_network_pdu_t * n
     const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
     if (!network_key) return 1;
 
-    uint8_t transport_pdu_data[16];
-    transport_pdu_data[0] = akf_aid;
-    memcpy(&transport_pdu_data[1], access_pdu_data, access_pdu_len);
-    uint16_t transport_pdu_len = access_pdu_len + 1;
-
+    network_pdu->data[9] = akf_aid;
     // setup network_pdu
-    mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, 0, ttl, mesh_lower_transport_next_seq(), src, dest, transport_pdu_data, transport_pdu_len);
+    mesh_network_setup_pdu_header(network_pdu, netkey_index, network_key->nid, 0, ttl, mesh_lower_transport_next_seq(), src, dest);
     network_pdu->appkey_index = appkey_index;
+    return 0;
+}
+
+uint8_t mesh_upper_transport_setup_unsegmented_access_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest,
+                                                       const uint8_t * access_pdu_data, uint8_t access_pdu_len){
+
+    int status = mesh_upper_transport_setup_unsegmented_access_pdu_header(network_pdu, netkey_index, appkey_index, ttl, src, dest);
+    if (status) return status;
+
+    printf("[+] Upper transport, setup unsegmented Access PDU - seq %06x\n", mesh_network_seq(network_pdu));
+    mesh_print_hex("Access Payload", access_pdu_data, access_pdu_len);
+
+    // store in transport pdu
+    memcpy(&network_pdu->data[10], access_pdu_data, access_pdu_len);
+    network_pdu->len = 10 + access_pdu_len;
     return 0;
 }
 
