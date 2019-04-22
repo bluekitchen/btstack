@@ -584,13 +584,13 @@ static void stdin_process(char cmd){
 
 // Foundation Model Operations
 #define MESH_FOUNDATION_OPERATION_APPKEY_ADD                                      0x00
-#define MESH_FOUNDATION_OPERATION_APP_KEY_UPDATE                                  0x01
+#define MESH_FOUNDATION_OPERATION_APPKEY_UPDATE                                   0x01
 #define MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS                         0x02
 #define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_SET                           0x03
 #define MESH_FOUNDATION_OPERATION_HEALTH_CURRENT_STATUS                           0x04
 #define MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS                             0x05
 #define MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_STATUS                    0x06
-#define MESH_FOUNDATION_OPERATION_APPKEY_DEL                                    0x8000
+#define MESH_FOUNDATION_OPERATION_APPKEY_DELETE                                 0x8000
 #define MESH_FOUNDATION_OPERATION_APPKEY_GET                                    0x8001
 #define MESH_FOUNDATION_OPERATION_APPKEY_LIST                                   0x8002
 #define MESH_FOUNDATION_OPERATION_APPKEY_STATUS                                 0x8003
@@ -613,17 +613,17 @@ static void stdin_process(char cmd){
 #define MESH_FOUNDATION_OPERATION_GATT_PROXY_STATUS                             0x8014
 #define MESH_FOUNDATION_OPERATION_KEY_REFRESH_PAHSE_GET                         0x8015
 #define MESH_FOUNDATION_OPERATION_KEY_REFRESH_PAHSE_SET                         0x8016
-#define MESH_FOUNDATION_OPERATION_KEY_REFRESH_PAHSE_STATUS                      0x8017
+#define MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_STATUS                      0x8017
 #define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_GET                         0x8018
 #define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_STATUS                      0x8019
 #define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_VIRTUAL_ADDRESS_SET         0x801a
 #define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_ADD                        0x801b
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DEL                        0x801c
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DEL_ALL                    0x801d
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DELETE                     0x801c
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DELETE_ALL                 0x801d
 #define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_OVERWRITE                  0x801e
 #define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_STATUS                     0x801f
 #define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_ADD        0x8020
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_DEL        0x8021
+#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_DELETE     0x8021
 #define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_OVERWRITE  0x8022
 #define MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_GET                          0x8023
 #define MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_SET                          0x8024
@@ -655,7 +655,7 @@ static void stdin_process(char cmd){
 #define MESH_FOUNDATION_OPERATION_MODEL_APP_STATUS                              0x803e
 #define MESH_FOUNDATION_OPERATION_MODEL_APP_UNBIND                              0x803f
 #define MESH_FOUNDATION_OPERATION_NETKEY_ADD                                    0x8040
-#define MESH_FOUNDATION_OPERATION_NETKEY_DEL                                    0x8041
+#define MESH_FOUNDATION_OPERATION_NETKEY_DELETE                                 0x8041
 #define MESH_FOUNDATION_OPERATION_NETKEY_GET                                    0x8042
 #define MESH_FOUNDATION_OPERATION_NETKEY_LIST                                   0x8043
 #define MESH_FOUNDATION_OPERATION_NETKEY_STATUS                                 0x8044
@@ -1781,8 +1781,14 @@ typedef struct {
 
 static mesh_operation_t mesh_configuration_server_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_APPKEY_ADD,                                  19, config_appkey_add_handler   },
+//    { MESH_FOUNDATION_OPERATION_APPKEY_DELETE,                                3, config_appkey_delete_handler },
+//    { MESH_FOUNDATION_OPERATION_APPKEY_GET,                                   2, config_appkey_get_handler },
+//    { MESH_FOUNDATION_OPERATION_APPKEY_UPDATE,                               19, config_appkey_update_handler },
+//    { MESH_FOUNDATION_OPERATION_NETKEY_ADD,                                  18, config_netkey_add_handler },
+//    { MESH_FOUNDATION_OPERATION_NETKEY_UPDATE,                               18, config_netkey_update_handler },
+//    { MESH_FOUNDATION_OPERATION_NETKEY_DELETE,                                2, config_netkey_delete_handler },
+//    { MESH_FOUNDATION_OPERATION_NETKEY_GET,                                   0, config_netkey_get_handler },
     { MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_GET,                         1, config_composition_data_get_handler },
-    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_ADD,                       6, config_model_subscription_add_handler},
     { MESH_FOUNDATION_OPERATION_BEACON_GET,                                   0, config_beacon_get_handler},
     { MESH_FOUNDATION_OPERATION_BEACON_SET,                                   1, config_beacon_set_handler},
     { MESH_FOUNDATION_OPERATION_DEFAULT_TTL_GET,                              0, config_default_ttl_get_handler},
@@ -1795,14 +1801,32 @@ static mesh_operation_t mesh_configuration_server_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_GATT_PROXY_SET,                               1, config_gatt_proxy_set_handler},
     { MESH_FOUNDATION_OPERATION_RELAY_GET,                                    0, config_relay_get_handler},
     { MESH_FOUNDATION_OPERATION_RELAY_SET,                                    1, config_relay_set_handler},
+    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_ADD,                       6, config_model_subscription_add_handler},
     { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_ADD,      20, config_model_subscription_virtual_address_add_handler},
+//    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DELETE,                    6, config_model_subscription_delete_handler},
+//    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_DELETE,   20, config_model_subscription_virtual_address_delete_handler},
+//    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_OVERWRITE,                 6, config_model_subscription_overwrite_handler},
+//    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_OVERWRITE,20, config_model_subscription_virtual_address_overwrite_handler},
+//    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DELETE_ALL,                4, config_model_subscription_delete_all_handler},
+//    { MESH_FOUNDATION_OPERATION_SIG_MODEL_SUBSCRIPTION_GET,                   4, config_sig_model_subscription_get_handler},
+//    { MESH_FOUNDATION_OPERATION_VENDOR_MODEL_SUBSCRIPTION_GET,                6, config_vendor_model_subscription_get_handler},
+//    { MESH_FOUNDATION_OPERATION_SIG_MODEL_APP_GET,                            4, config_sig_model_app_get_handler},
+//    { MESH_FOUNDATION_OPERATION_VENDOR_MODEL_APP_GET,                         6, config_vendor_model_app_get_handler},
     { MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_SET,                       11, config_model_publication_set_handler},
     { MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_VIRTUAL_ADDRESS_SET,       25, config_model_publication_virtual_address_set_handler},
     { MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_GET,                        4, config_model_publication_get_handler},
     { MESH_FOUNDATION_OPERATION_MODEL_APP_BIND,                               6, config_model_app_bind_handler},
+//    { MESH_FOUNDATION_OPERATION_MODEL_APP_UNBIND,                             6, config_model_app_unbind_handler},
     { MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_GET,                    0, config_heartbeat_publication_get_handler},
     { MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_SET,                    9, config_heartbeat_publication_set_handler},
+//    { MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_GET,                   0, config_heartbeat_subscription_get_handler},
+//    { MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_SET,                   5, config_heartbeat_subscription_set_handler},
+//    { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PAHSE_GET,                        2, config_key_refresh_phase_get_handler},
+//    { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PAHSE_SET,                        3, config_key_refresh_phase_set_handler},
     { MESH_FOUNDATION_OPERATION_NODE_RESET,                                   0, config_node_reset_handler},
+//    { MESH_FOUNDATION_OPERATION_LOW_POWER_NODE_POLL_TIMEOUT_GET,              2, config_low_power_node_poll_timeout_get_handler },
+//    { MESH_FOUNDATION_OPERATION_NODE_IDENTITY_GET,                            2, config_node_identity_get_handler },
+//    { MESH_FOUNDATION_OPERATION_NODE_IDENTITY_SET,                            2, config_node_identity_set_handler },
     { 0, 0, NULL}
 };
 
