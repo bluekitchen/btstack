@@ -546,7 +546,7 @@ static void mesh_upper_transport_send_segmented_access_pdu_ccm(void * arg){
     mesh_lower_transport_send_pdu((mesh_pdu_t*) transport_pdu);
 }
 
-uint8_t mesh_upper_transport_setup_unsegmented_control_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode,
+static uint8_t mesh_upper_transport_setup_unsegmented_control_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode,
                           const uint8_t * control_pdu_data, uint16_t control_pdu_len){
 
     printf("[+] Upper transport, setup unsegmented Control PDU (opcode %02x): \n", opcode);
@@ -569,7 +569,7 @@ uint8_t mesh_upper_transport_setup_unsegmented_control_pdu(mesh_network_pdu_t * 
     return 0;
 }
 
-uint8_t mesh_upper_transport_setup_segmented_control_pdu(mesh_transport_pdu_t * transport_pdu, uint16_t netkey_index, uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode,
+static uint8_t mesh_upper_transport_setup_segmented_control_pdu(mesh_transport_pdu_t * transport_pdu, uint16_t netkey_index, uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode,
                           const uint8_t * control_pdu_data, uint16_t control_pdu_len){
 
     printf("[+] Upper transport, setup segmented Control PDU (opcode %02x): \n", opcode);
@@ -594,6 +594,18 @@ uint8_t mesh_upper_transport_setup_segmented_control_pdu(mesh_transport_pdu_t * 
     mesh_transport_set_ctl_ttl(transport_pdu, 0x80 | ttl);
 
     return 0;
+}
+
+uint8_t mesh_upper_transport_setup_control_pdu(mesh_pdu_t * pdu, uint16_t netkey_index,
+                                               uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode, const uint8_t * control_pdu_data, uint16_t control_pdu_len){
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_NETWORK:
+            return mesh_upper_transport_setup_unsegmented_control_pdu((mesh_network_pdu_t *) pdu, netkey_index, ttl, src, dest, opcode, control_pdu_data, control_pdu_len);
+        case MESH_PDU_TYPE_TRANSPORT:
+            return mesh_upper_transport_setup_segmented_control_pdu((mesh_transport_pdu_t *) pdu, netkey_index, ttl, src, dest, opcode, control_pdu_data, control_pdu_len);
+        default:
+            return 1;
+    }
 }
 
 uint8_t mesh_upper_transport_setup_unsegmented_access_pdu_header(mesh_network_pdu_t * network_pdu, uint16_t netkey_index,

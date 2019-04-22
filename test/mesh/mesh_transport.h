@@ -63,11 +63,8 @@ void mesh_upper_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu);
 
 void mesh_upper_transport_register_control_message_handler(void (*callback)(mesh_pdu_t * pdu));
 
-uint8_t mesh_upper_transport_setup_segmented_control_pdu(mesh_transport_pdu_t * transport_pdu, uint16_t netkey_index,
-	uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode, const uint8_t * control_pdu_data, uint16_t control_pdu_len);
-
-uint8_t mesh_upper_transport_setup_unsegmented_control_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, 
-	uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode, const uint8_t * control_pdu_data, uint16_t control_pdu_len);
+uint8_t mesh_upper_transport_setup_control_pdu(mesh_pdu_t * pdu, uint16_t netkey_index,
+        uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode, const uint8_t * control_pdu_data, uint16_t control_pdu_len);
 
 void mesh_upper_transport_send_control_pdu(mesh_pdu_t * pdu);
 

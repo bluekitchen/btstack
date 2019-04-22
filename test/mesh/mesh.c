@@ -1611,7 +1611,7 @@ static void config_heartbeat_publication_emit(btstack_timer_source_t * ts){
         uint8_t data[3];
         data[0] = mesh_heartbeat_publication.ttl;
         big_endian_store_16(data, 1, mesh_heartbeat_publication.features);
-        mesh_upper_transport_setup_unsegmented_control_pdu(network_pdu, mesh_heartbeat_publication.netkey_index,
+        mesh_upper_transport_setup_control_pdu((mesh_pdu_t *) network_pdu, mesh_heartbeat_publication.netkey_index,
                 mesh_heartbeat_publication.ttl, primary_element_address, mesh_heartbeat_publication.destination,
                 MESH_TRANSPORT_OPCODE_HEARTBEAT, data, sizeof(data));
         mesh_upper_transport_send_control_pdu((mesh_pdu_t *) network_pdu);
