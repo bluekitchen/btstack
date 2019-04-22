@@ -105,6 +105,7 @@ void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu);
 
 void mesh_lower_transport_send_unsegmented_pdu(mesh_network_pdu_t *network_pdu);
 void mesh_lower_transport_send_segmented_pdu(mesh_transport_pdu_t *transport_pdu);
+void mesh_lower_transport_send_pdu(mesh_pdu_t * pdu);
 
 // test
 void mesh_lower_transport_received_message(mesh_network_callback_type_t callback_type, mesh_network_pdu_t *network_pdu);

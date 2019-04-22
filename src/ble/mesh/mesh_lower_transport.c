@@ -609,6 +609,11 @@ void mesh_lower_transport_send_unsegmented_pdu(mesh_network_pdu_t *network_pdu){
     mesh_lower_transport_run();
 }
 
+void mesh_lower_transport_send_pdu(mesh_pdu_t *pdu){
+    btstack_linked_list_add_tail(&lower_transport_outgoing, (btstack_linked_item_t*) pdu);
+    mesh_lower_transport_run();
+}
+
 static void mesh_lower_transport_tx_ack_timeout(btstack_timer_source_t * ts){
     mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) btstack_run_loop_get_timer_context(ts);
     printf("[+] Lower transport, acknowledgement timer fired for %p\n", transport_pdu);
