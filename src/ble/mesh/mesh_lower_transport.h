@@ -103,8 +103,6 @@ uint32_t mesh_lower_transport_peek_seq(void);
 
 void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu);
 
-void mesh_lower_transport_send_unsegmented_pdu(mesh_network_pdu_t *network_pdu);
-void mesh_lower_transport_send_segmented_pdu(mesh_transport_pdu_t *transport_pdu);
 void mesh_lower_transport_send_pdu(mesh_pdu_t * pdu);
 
 // test

@@ -598,17 +598,6 @@ static void mesh_lower_transport_send_segmented_pdu_once(mesh_transport_pdu_t *t
     mesh_lower_transport_send_next_segment();
 }
 
-void mesh_lower_transport_send_segmented_pdu(mesh_transport_pdu_t *transport_pdu){
-    // queue transport (= segmented pdu)
-    btstack_linked_list_add_tail(&lower_transport_outgoing, (btstack_linked_item_t*) transport_pdu);
-    mesh_lower_transport_run();
-}
-
-void mesh_lower_transport_send_unsegmented_pdu(mesh_network_pdu_t *network_pdu){
-    btstack_linked_list_add_tail(&lower_transport_outgoing, (btstack_linked_item_t*) network_pdu);
-    mesh_lower_transport_run();
-}
-
 void mesh_lower_transport_send_pdu(mesh_pdu_t *pdu){
     btstack_linked_list_add_tail(&lower_transport_outgoing, (btstack_linked_item_t*) pdu);
     mesh_lower_transport_run();
