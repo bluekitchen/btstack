@@ -206,6 +206,19 @@ void mesh_network_send_pdu(mesh_network_pdu_t * network_pdu);
 void mesh_network_setup_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint8_t nid, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dst, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len);
 
 /**
+ * Setup network pdu header without modifying len or payload
+ * @param network_pdu
+ * @param netkey_index
+ * @param nid
+ * @param ctl
+ * @param ttl
+ * @param seq
+ * @param src
+ * @param dest
+ */
+void mesh_network_setup_pdu_header(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint8_t nid, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest);
+
+/**
  * @brief Validate network addresses
  * @param ctl
  * @param src

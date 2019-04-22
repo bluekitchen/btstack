@@ -777,6 +777,26 @@ void mesh_network_setup_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_in
     network_pdu->len += transport_pdu_len;
 }
 
+/*
+ * @brief Setup network pdu header
+ * @param netkey_index
+ * @param ctl
+ * @param ttl
+ * @param seq
+ * @param dest
+ */
+void mesh_network_setup_pdu_header(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint8_t nid, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest){
+    // set netkey_index
+    network_pdu->netkey_index = netkey_index;
+    // setup header
+    network_pdu->data[0] = (global_iv_index << 7) |  nid;
+    uint8_t ctl_ttl = (ctl << 7) | (ttl & 0x7f);
+    network_pdu->data[1] = ctl_ttl;
+    big_endian_store_24(network_pdu->data, 2, seq);
+    big_endian_store_16(network_pdu->data, 5, src);
+    big_endian_store_16(network_pdu->data, 7, dest);
+}
+
 void mesh_set_iv_index(uint32_t iv_index){
     global_iv_index = iv_index;
 }
