@@ -69,10 +69,7 @@ uint8_t mesh_upper_transport_setup_segmented_control_pdu(mesh_transport_pdu_t * 
 uint8_t mesh_upper_transport_setup_unsegmented_control_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, 
 	uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode, const uint8_t * control_pdu_data, uint16_t control_pdu_len);
 
-void mesh_upper_transport_send_unsegmented_control_pdu(mesh_network_pdu_t * network_pdu);
-
-void mesh_upper_transport_send_segmented_control_pdu(mesh_transport_pdu_t * transport_pdu);
-
+void mesh_upper_transport_send_control_pdu(mesh_pdu_t * pdu);
 
 // Access PDUs
 

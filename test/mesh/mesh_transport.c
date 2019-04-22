@@ -682,12 +682,8 @@ uint8_t mesh_upper_transport_setup_segmented_access_pdu(mesh_transport_pdu_t * t
     return 0;
 }
 
-void mesh_upper_transport_send_unsegmented_control_pdu(mesh_network_pdu_t * network_pdu){
-    mesh_lower_transport_send_pdu((mesh_pdu_t*) network_pdu);
-}
-
-void mesh_upper_transport_send_segmented_control_pdu(mesh_transport_pdu_t * transport_pdu){
-    mesh_lower_transport_send_pdu((mesh_pdu_t*) transport_pdu);
+void mesh_upper_transport_send_control_pdu(mesh_pdu_t * pdu){
+    mesh_lower_transport_send_pdu((mesh_pdu_t*) pdu);
 }
 
 void mesh_upper_transport_send_unsegmented_access_pdu_digest(void * arg){

@@ -1614,7 +1614,7 @@ static void config_heartbeat_publication_emit(btstack_timer_source_t * ts){
         mesh_upper_transport_setup_unsegmented_control_pdu(network_pdu, mesh_heartbeat_publication.netkey_index,
                 mesh_heartbeat_publication.ttl, primary_element_address, mesh_heartbeat_publication.destination,
                 MESH_TRANSPORT_OPCODE_HEARTBEAT, data, sizeof(data));
-        mesh_upper_transport_send_unsegmented_control_pdu(network_pdu);
+        mesh_upper_transport_send_control_pdu((mesh_pdu_t *) network_pdu);
     }
     btstack_run_loop_set_timer(ts, time_ms);
     btstack_run_loop_add_timer(ts);
