@@ -813,123 +813,73 @@ static uint16_t mesh_pdu_len(mesh_pdu_t * pdu){
 }
 
 typedef struct {
-    mesh_pdu_t * pdu;
-    uint16_t pos;
+    uint32_t opcode;
+    uint8_t * data;
+    uint16_t len;
 } mesh_access_parser_state_t;
 
+static void mesh_access_parser_skip(mesh_access_parser_state_t * state, uint16_t bytes_to_skip){
+    state->data += bytes_to_skip;
+    state->len  -= bytes_to_skip;
+}
+
 static int mesh_access_parser_init(mesh_access_parser_state_t * state, mesh_pdu_t * pdu){
-    state->pdu = pdu;
-    uint32_t opcode = 0;
-    int ok = mesh_access_pdu_get_opcode(pdu, &opcode, &state->pos);
-    if (pdu->pdu_type == MESH_PDU_TYPE_NETWORK){
-        state->pos += 10;
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            state->data =  ((mesh_transport_pdu_t*) pdu)->data;
+            state->len  = ((mesh_transport_pdu_t*) pdu)->len;
+            break;
+        case MESH_PDU_TYPE_NETWORK:
+            state->data =  &((mesh_transport_pdu_t*) pdu)->data[10];
+            state->len  = ((mesh_network_pdu_t *) pdu)->len - 10;
+            break;
+        default:
+            return 0;
+    }
+    uint16_t opcode_size = 0;
+    int ok = mesh_access_get_opcode(state->data, state->len, &state->opcode, &opcode_size);
+    if (ok){
+        mesh_access_parser_skip(state, opcode_size);
     }
     return ok;
 }
 
-static void mesh_access_parser_skip(mesh_access_parser_state_t * state, uint16_t bytes_to_skip){
-    state->pos += bytes_to_skip;
-}
-
 static uint16_t mesh_access_parser_available(mesh_access_parser_state_t * state){
-    switch (state->pdu->pdu_type){
-        case MESH_PDU_TYPE_TRANSPORT:
-            return ((mesh_transport_pdu_t *) state->pdu)->len - state->pos;
-        case MESH_PDU_TYPE_NETWORK:
-            return ((mesh_network_pdu_t *) state->pdu)->len - state->pos;
-        default:
-            return 0;
-    }
+    return state->len;
 }
 
 static uint8_t mesh_access_parser_get_u8(mesh_access_parser_state_t * state){
-    switch (state->pdu->pdu_type){
-        case MESH_PDU_TYPE_TRANSPORT:
-            return ((mesh_transport_pdu_t *) state->pdu)->data[state->pos++];
-        case MESH_PDU_TYPE_NETWORK:
-            return ((mesh_network_pdu_t *) state->pdu)->data[state->pos++];
-        default:
-            return 0;
-    }
+    uint8_t value = *state->data;
+    mesh_access_parser_skip(state, 1);
+    return value;
 }
 
 static uint16_t mesh_access_parser_get_u16(mesh_access_parser_state_t * state){
-    uint16_t value;
-    switch (state->pdu->pdu_type){
-        case MESH_PDU_TYPE_TRANSPORT:
-            value = little_endian_read_16( ((mesh_transport_pdu_t *) state->pdu)->data, state->pos);
-            break;
-        case MESH_PDU_TYPE_NETWORK:
-            value = little_endian_read_16( ((mesh_network_pdu_t *) state->pdu)->data, state->pos);
-            break;
-        default:
-            value = 0;
-            break;
-    }
-    state->pos += 2;
+    uint16_t value = little_endian_read_16(state->data, 0);
+    mesh_access_parser_skip(state, 2);
     return value;
 }
 
 static uint32_t mesh_access_parser_get_u24(mesh_access_parser_state_t * state){
-    uint32_t value;
-    switch (state->pdu->pdu_type){
-        case MESH_PDU_TYPE_TRANSPORT:
-            value = little_endian_read_24( ((mesh_transport_pdu_t *) state->pdu)->data, state->pos);
-            break;
-        case MESH_PDU_TYPE_NETWORK:
-            value = little_endian_read_24( ((mesh_network_pdu_t *) state->pdu)->data, state->pos);
-            break;
-        default:
-            value = 0;
-            break;
-    }
-    state->pos += 3;
+    uint32_t value = little_endian_read_24(state->data, 0);
+    mesh_access_parser_skip(state, 3);
     return value;
 }
 
 static uint32_t mesh_access_parser_get_u32(mesh_access_parser_state_t * state){
-    uint32_t value;
-    switch (state->pdu->pdu_type){
-        case MESH_PDU_TYPE_TRANSPORT:
-            value = little_endian_read_32( ((mesh_transport_pdu_t *) state->pdu)->data, state->pos);
-            break;
-        case MESH_PDU_TYPE_NETWORK:
-            value = little_endian_read_32( ((mesh_network_pdu_t *) state->pdu)->data, state->pos);
-            break;
-        default:
-            value = 0;
-            break;
-    }
-    state->pos += 4;
+    uint32_t value = little_endian_read_24(state->data, 0);
+    mesh_access_parser_skip(state, 4);
     return value;
 }
 
 static void mesh_access_parser_get_u128(mesh_access_parser_state_t * state, uint8_t * dest){
-    switch (state->pdu->pdu_type){
-        case MESH_PDU_TYPE_TRANSPORT:
-            reverse_128( ((mesh_transport_pdu_t *) state->pdu)->data, dest);
-            break;
-        case MESH_PDU_TYPE_NETWORK:
-            reverse_128( ((mesh_network_pdu_t *) state->pdu)->data, dest);
-            break;
-        default:
-            break;
-    }
-    state->pos += 16;
+    reverse_128( state->data, dest);
+    mesh_access_parser_skip(state, 16);
 }
 
 static void mesh_access_parser_get_label_uuid(mesh_access_parser_state_t * state, uint8_t * dest){
-    switch (state->pdu->pdu_type){
-        case MESH_PDU_TYPE_TRANSPORT:
-            memcpy( dest, ((mesh_transport_pdu_t *) state->pdu)->data, 16);
-            break;
-        case MESH_PDU_TYPE_NETWORK:
-            memcpy( dest, ((mesh_network_pdu_t *) state->pdu)->data, 16);
-            break;
-        default:
-            break;
-    }
-    state->pos += 16;
+    memcpy( dest, state->data, 16);
+    mesh_access_parser_skip(state, 16);
 }
 
 // message builder
