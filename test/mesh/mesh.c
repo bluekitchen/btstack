@@ -1410,6 +1410,31 @@ static void config_netkey_get_handler(mesh_model_t * mesh_model, mesh_pdu_t * pd
     config_netkey_list(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 }
 
+static void config_netkey_update_derived(void * arg){
+    mesh_network_key_t * network_key = (mesh_network_key_t *) arg;
+    config_netkey_status(NULL, mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), MESH_FOUNDATION_STATUS_SUCCESS, network_key->netkey_index);
+}
+
+static void config_netkey_update_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu) {
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t *) pdu);
+
+    // get params
+    uint8_t new_netkey[16];
+    uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
+    mesh_access_parser_get_u128(&parser, new_netkey);
+
+    // get existing network_key
+    mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
+    if (network_key == NULL){
+        config_netkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX, netkey_index);
+    } else {
+        memcpy(network_key->net_key, new_netkey, 16);
+        access_pdu_in_process = pdu;
+        mesh_network_key_derive(&configuration_server_cmac_request, network_key, config_netkey_update_derived, network_key);
+    }
+}
+
 static void config_appkey_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint32_t netkey_and_appkey_index, uint8_t status){
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_config_appkey_status,
@@ -1830,7 +1855,7 @@ static mesh_operation_t mesh_configuration_server_model_operations[] = {
 //    { MESH_FOUNDATION_OPERATION_APPKEY_GET,                                   2, config_appkey_get_handler },
 //    { MESH_FOUNDATION_OPERATION_APPKEY_UPDATE,                               19, config_appkey_update_handler },
     { MESH_FOUNDATION_OPERATION_NETKEY_ADD,                                  18, config_netkey_add_handler },
-//    { MESH_FOUNDATION_OPERATION_NETKEY_UPDATE,                               18, config_netkey_update_handler },
+    { MESH_FOUNDATION_OPERATION_NETKEY_UPDATE,                               18, config_netkey_update_handler },
 //    { MESH_FOUNDATION_OPERATION_NETKEY_DELETE,                                2, config_netkey_delete_handler },
     { MESH_FOUNDATION_OPERATION_NETKEY_GET,                                   0, config_netkey_get_handler },
     { MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_GET,                         1, config_composition_data_get_handler },
