@@ -41,6 +41,8 @@
 #include <stdio.h>
 #include "mesh_keys.h"
 #include "btstack_util.h"
+#include "btstack_memory.h"
+
 
 static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len){
     printf("%-20s ", name);
@@ -48,18 +50,61 @@ static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len
 }
 
 // network key list
+static btstack_linked_list_t network_keys;
 
-// mesh network key list
-static mesh_network_key_t mesh_network_primary_key;
-
-const mesh_network_key_t * mesh_network_key_list_get(uint16_t netkey_index){
-    if (netkey_index) return NULL;
-    return &mesh_network_primary_key;
+void mesh_network_key_init(void){
+    network_keys = NULL;
 }
 
+void mesh_network_key_add(mesh_network_key_t * network_key){
+    btstack_linked_list_add(&network_keys, (btstack_linked_item_t *) network_key);
+}
+
+int mesh_network_key_remove(mesh_network_key_t * network_key){
+    return btstack_linked_list_remove(&network_keys, (btstack_linked_item_t *) network_key);
+}
+
+const mesh_network_key_t * mesh_network_key_list_get(uint16_t netkey_index){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &network_keys);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        mesh_network_key_t * item = (mesh_network_key_t *) btstack_linked_list_iterator_next(&it);
+        if (item->netkey_index == netkey_index) return item;
+    }
+    return NULL;
+}
+
+// mesh network key iterator for a given nid
+void mesh_network_key_iterator_init(mesh_network_key_iterator_t * it, uint8_t nid){
+    btstack_linked_list_iterator_init(&it->it, &network_keys);
+    it->key = NULL;
+    it->nid = nid;
+}
+
+int mesh_network_key_iterator_has_more(mesh_network_key_iterator_t * it){
+    // find next matching key
+    while (1){
+        if (it->key && it->key->nid == it->nid) return 1;
+        if (!btstack_linked_list_iterator_has_next(&it->it)) break;
+        it->key = (mesh_network_key_t *) btstack_linked_list_iterator_next(&it->it);
+    }
+    return 0;
+}
+
+const mesh_network_key_t * mesh_network_key_iterator_get_next(mesh_network_key_iterator_t * it){
+    mesh_network_key_t * key = it->key;
+    it->key = NULL;
+    return key;
+}
+
+// ---
+
 void mesh_network_key_list_add_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
+
+    // get key
+    mesh_network_key_t * network_key = btstack_memory_mesh_network_key_get();
+
     // get single instance
-    mesh_network_key_t * network_key = &mesh_network_primary_key;
     memset(network_key, 0, sizeof(mesh_network_key_t));
 
     // NetKey
@@ -82,23 +127,9 @@ void mesh_network_key_list_add_from_provisioning_data(const mesh_provisioning_da
 
     // NetworkID
     memcpy(network_key->network_id, provisioning_data->network_id, 8);
-}
 
-// mesh network key iterator
-void mesh_network_key_iterator_init(mesh_network_key_iterator_t * it, uint8_t nid){
-    it->nid = nid;
-    it->first = 1;
+    mesh_network_key_add(network_key);
 }
-
-int mesh_network_key_iterator_has_more(mesh_network_key_iterator_t * it){
-    return it->first && it->nid == mesh_network_primary_key.nid;
-}
-
-const mesh_network_key_t * mesh_network_key_iterator_get_next(mesh_network_key_iterator_t * it){
-    it->first = 0;
-    return &mesh_network_primary_key;
-}
-
 
 // application key list
 

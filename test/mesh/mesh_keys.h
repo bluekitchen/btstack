@@ -74,8 +74,9 @@ typedef struct {
 } mesh_network_key_t;
 
 typedef struct {
+    btstack_linked_list_iterator_t it;
+    mesh_network_key_t * key;
     uint8_t nid;
-    uint8_t first;
 } mesh_network_key_iterator_t;
 
 typedef struct {
@@ -101,10 +102,24 @@ typedef struct {
 } mesh_transport_key_iterator_t;
 
 /**
- * @brief Initialize network key list from provisioning data
- * @param provisioning_data
+ * @brief Init network key storage
  */
-void mesh_network_key_list_add_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data);
+void mesh_network_key_init(void);
+
+/**
+ * @brief Add network key to list
+ * @param network_key
+ * @note derivative data k1-k3 need to be already calculated
+ */
+void mesh_network_key_add(mesh_network_key_t * network_key);
+
+/**
+ * @brief Remove network key from list
+ * @param network_key
+ * @return 0 if removed
+ * @note key is only removed from list, memory is not released
+ */
+int mesh_network_key_remove(mesh_network_key_t * network_key);
 
 /**
  * @brief Get network_key for netkey_index
@@ -112,6 +127,12 @@ void mesh_network_key_list_add_from_provisioning_data(const mesh_provisioning_da
  * @returns mesh_network_key_t or NULL
  */
 const mesh_network_key_t * mesh_network_key_list_get(uint16_t netkey_index);
+
+/**
+ * @brief Initialize network key list from provisioning data
+ * @param provisioning_data
+ */
+void mesh_network_key_list_add_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data);
 
 /**
  *
