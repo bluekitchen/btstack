@@ -612,8 +612,8 @@ static void stdin_process(char cmd){
 #define MESH_FOUNDATION_OPERATION_GATT_PROXY_GET                                0x8012
 #define MESH_FOUNDATION_OPERATION_GATT_PROXY_SET                                0x8013
 #define MESH_FOUNDATION_OPERATION_GATT_PROXY_STATUS                             0x8014
-#define MESH_FOUNDATION_OPERATION_KEY_REFRESH_PAHSE_GET                         0x8015
-#define MESH_FOUNDATION_OPERATION_KEY_REFRESH_PAHSE_SET                         0x8016
+#define MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_GET                         0x8015
+#define MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_SET                         0x8016
 #define MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_STATUS                      0x8017
 #define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_GET                         0x8018
 #define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_STATUS                      0x8019
@@ -672,24 +672,24 @@ static void stdin_process(char cmd){
 #define MESH_FOUNDATION_OPERATION_VENDOR_MODEL_APP_LIST                         0x804e
 
 // Foundation Models Status Codes
-#define MEHSH_FOUNDATION_STATUS_SUCCESS                                           0x00
-#define MEHSH_FOUNDATION_STATUS_INVALID_ADDRESS                                   0x01
-#define MEHSH_FOUNDATION_STATUS_INVALID_MODEL                                     0x02
-#define MEHSH_FOUNDATION_STATUS_INVALID_APPKEY_INDEX                              0x03
-#define MEHSH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX                              0x04
-#define MEHSH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES                            0x05
-#define MEHSH_FOUNDATION_STATUS_KEY_INDEX_ALREADY_STORED                          0x06
-#define MEHSH_FOUNDATION_STATUS_INVALID_PUBLISH_PARAMETER                         0x07
-#define MEHSH_FOUNDATION_STATUS_NOT_A_SUBSCRIPTION_MODEL                          0x08
-#define MEHSH_FOUNDATION_STATUS_STORAGE_FAILURE                                   0x09
-#define MEHSH_FOUNDATION_STATUS_FEATURE_NOT_SUPPORTED                             0x0a
-#define MEHSH_FOUNDATION_STATUS_CANNOT_UPDATE                                     0x0b
-#define MEHSH_FOUNDATION_STATUS_CANNOT_REMOVE                                     0x0c
-#define MEHSH_FOUNDATION_STATUS_CANNOT_BIND                                       0x0d
-#define MEHSH_FOUNDATION_STATUS_TEMPORARILY_UNABLE_TO_CHANGE_STATE                0x0e
-#define MEHSH_FOUNDATION_STATUS_CANNOT_SET                                        0x0f
-#define MEHSH_FOUNDATION_STATUS_UNSPECIFIED_ERROR                                 0x10
-#define MEHSH_FOUNDATION_STATUS_INVALID_BINDING                                   0x11
+#define MESH_FOUNDATION_STATUS_SUCCESS                                           0x00
+#define MESH_FOUNDATION_STATUS_INVALID_ADDRESS                                   0x01
+#define MESH_FOUNDATION_STATUS_INVALID_MODEL                                     0x02
+#define MESH_FOUNDATION_STATUS_INVALID_APPKEY_INDEX                              0x03
+#define MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX                              0x04
+#define MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES                            0x05
+#define MESH_FOUNDATION_STATUS_KEY_INDEX_ALREADY_STORED                          0x06
+#define MESH_FOUNDATION_STATUS_INVALID_PUBLISH_PARAMETER                         0x07
+#define MESH_FOUNDATION_STATUS_NOT_A_SUBSCRIPTION_MODEL                          0x08
+#define MESH_FOUNDATION_STATUS_STORAGE_FAILURE                                   0x09
+#define MESH_FOUNDATION_STATUS_FEATURE_NOT_SUPPORTED                             0x0a
+#define MESH_FOUNDATION_STATUS_CANNOT_UPDATE                                     0x0b
+#define MESH_FOUNDATION_STATUS_CANNOT_REMOVE                                     0x0c
+#define MESH_FOUNDATION_STATUS_CANNOT_BIND                                       0x0d
+#define MESH_FOUNDATION_STATUS_TEMPORARILY_UNABLE_TO_CHANGE_STATE                0x0e
+#define MESH_FOUNDATION_STATUS_CANNOT_SET                                        0x0f
+#define MESH_FOUNDATION_STATUS_UNSPECIFIED_ERROR                                 0x10
+#define MESH_FOUNDATION_STATUS_INVALID_BINDING                                   0x11
 
 // Foundatiopn Message
 
@@ -721,6 +721,9 @@ const mesh_access_message_t mesh_foundation_config_model_app_status_vendor = {
 };
 const mesh_access_message_t mesh_foundation_config_model_subscription_status = {
         MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_STATUS, "1222"
+};
+const mesh_access_message_t mesh_foundation_config_netkey_status = {
+        MESH_FOUNDATION_OPERATION_NETKEY_STATUS, "12"
 };
 const mesh_access_message_t mesh_foundation_config_appkey_status = {
         MESH_FOUNDATION_OPERATION_APPKEY_STATUS, "13"
@@ -1038,6 +1041,8 @@ static mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_acc
 
 // to sort
 
+static btstack_crypto_aes128_cmac_t configuration_server_cmac_request;
+
 static uint32_t netkey_and_appkey_index;
 static uint8_t  new_app_key[16];
 static uint8_t  new_aid;
@@ -1332,6 +1337,79 @@ static void config_model_network_transmit_set_handler(mesh_model_t * mesh_model,
     mesh_access_message_processed(pdu);
 }
 
+static void config_netkey_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status, uint16_t new_netkey_index){
+    // setup message
+    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
+            &mesh_foundation_config_netkey_status, status, new_netkey_index);
+    if (!transport_pdu) return;
+
+    // send as segmented access pdu
+    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+}
+
+static void config_netkey_add_derived(void * arg){
+    mesh_network_key_t * network_key = (mesh_network_key_t *) arg;
+    mesh_network_key_add(network_key);
+    config_netkey_status(NULL, mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), MESH_FOUNDATION_STATUS_SUCCESS, network_key->netkey_index);
+}
+
+static void config_netkey_add_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu){
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+
+    // get params
+    uint8_t new_netkey[16];
+    uint16_t new_netkey_index = mesh_access_parser_get_u16(&parser);
+    mesh_access_parser_get_u128(&parser, new_netkey);
+
+    uint8_t status;
+
+    const mesh_network_key_t * existing_network_key = mesh_network_key_list_get(new_netkey_index);
+    if (existing_network_key){
+        // network key for netkey index already exists
+        if (memcmp(existing_network_key->net_key, new_netkey, 16) == 0){
+            // same netkey
+            status = MESH_FOUNDATION_STATUS_SUCCESS;
+        } else {
+            // different netkey
+            status = MESH_FOUNDATION_STATUS_KEY_INDEX_ALREADY_STORED;
+        }
+    } else {
+        // setup new key
+        mesh_network_key_t * new_network_key = btstack_memory_mesh_network_key_get();
+        if (new_network_key == NULL){
+            status = MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
+        } else {
+            access_pdu_in_process = pdu;
+            new_network_key->netkey_index = new_netkey_index;
+            memcpy(new_network_key->net_key, new_netkey, 16);
+            mesh_network_key_derive(&configuration_server_cmac_request, new_network_key, config_netkey_add_derived, new_network_key);
+            return;
+        }
+    }
+    config_netkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, new_netkey_index);
+}
+
+static void config_netkey_list(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest) {
+    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_NETKEY_LIST);
+    if (!transport_pdu) return;
+
+    // add list of netkey indexes
+    mesh_network_key_iterator_t it;
+    mesh_network_key_iterator_init(&it);
+    while (mesh_network_key_iterator_has_more(&it)){
+        mesh_network_key_t * network_key = mesh_network_key_iterator_get_next(&it);
+        mesh_access_transport_add_uint16(transport_pdu, network_key->netkey_index);
+    }
+
+    // send as segmented access pdu
+    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+}
+
+static void config_netkey_get_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu){
+    config_netkey_list(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
+}
+
 static void config_appkey_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint32_t netkey_and_appkey_index, uint8_t status){
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_config_appkey_status,
@@ -1473,7 +1551,6 @@ static mesh_publication_model_t publication_model;
 static uint32_t model_id;
 static uint16_t model_id_len;
 static uint8_t  model_publication_label_uuid[16];
-static btstack_crypto_aes128_cmac_t model_publication_request;
 
 static void
 config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
@@ -1578,7 +1655,7 @@ config_model_publication_virtual_address_set_handler(mesh_model_t *mesh_model,
     // TODO: validate params
 
     access_pdu_in_process = pdu;
-    mesh_virtual_address(&model_publication_request, model_publication_label_uuid, &publication_model.address, &config_model_publication_virtual_address_set_hash, mesh_model);
+    mesh_virtual_address(&configuration_server_cmac_request, model_publication_label_uuid, &publication_model.address, &config_model_publication_virtual_address_set_hash, mesh_model);
 }
 
 static void
@@ -1752,10 +1829,10 @@ static mesh_operation_t mesh_configuration_server_model_operations[] = {
 //    { MESH_FOUNDATION_OPERATION_APPKEY_DELETE,                                3, config_appkey_delete_handler },
 //    { MESH_FOUNDATION_OPERATION_APPKEY_GET,                                   2, config_appkey_get_handler },
 //    { MESH_FOUNDATION_OPERATION_APPKEY_UPDATE,                               19, config_appkey_update_handler },
-//    { MESH_FOUNDATION_OPERATION_NETKEY_ADD,                                  18, config_netkey_add_handler },
+    { MESH_FOUNDATION_OPERATION_NETKEY_ADD,                                  18, config_netkey_add_handler },
 //    { MESH_FOUNDATION_OPERATION_NETKEY_UPDATE,                               18, config_netkey_update_handler },
 //    { MESH_FOUNDATION_OPERATION_NETKEY_DELETE,                                2, config_netkey_delete_handler },
-//    { MESH_FOUNDATION_OPERATION_NETKEY_GET,                                   0, config_netkey_get_handler },
+    { MESH_FOUNDATION_OPERATION_NETKEY_GET,                                   0, config_netkey_get_handler },
     { MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_GET,                         1, config_composition_data_get_handler },
     { MESH_FOUNDATION_OPERATION_BEACON_GET,                                   0, config_beacon_get_handler},
     { MESH_FOUNDATION_OPERATION_BEACON_SET,                                   1, config_beacon_set_handler},
@@ -1789,8 +1866,8 @@ static mesh_operation_t mesh_configuration_server_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_SET,                    9, config_heartbeat_publication_set_handler},
 //    { MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_GET,                   0, config_heartbeat_subscription_get_handler},
 //    { MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_SET,                   5, config_heartbeat_subscription_set_handler},
-//    { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PAHSE_GET,                        2, config_key_refresh_phase_get_handler},
-//    { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PAHSE_SET,                        3, config_key_refresh_phase_set_handler},
+//    { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASEE_GET,                        2, config_key_refresh_phase_get_handler},
+//    { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASEE_SET,                        3, config_key_refresh_phase_set_handler},
     { MESH_FOUNDATION_OPERATION_NODE_RESET,                                   0, config_node_reset_handler},
 //    { MESH_FOUNDATION_OPERATION_LOW_POWER_NODE_POLL_TIMEOUT_GET,              2, config_low_power_node_poll_timeout_get_handler },
 //    { MESH_FOUNDATION_OPERATION_NODE_IDENTITY_GET,                            2, config_node_identity_get_handler },
