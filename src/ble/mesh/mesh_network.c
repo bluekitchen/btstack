@@ -498,14 +498,14 @@ static void process_network_pdu_validate_b(void * arg){
 }
 
 static void process_network_pdu_validate(mesh_network_pdu_t * network_pdu){
-    if (!mesh_network_key_iterator_has_more(&validation_network_key_it)){
+    if (!mesh_network_key_nid_iterator_has_more(&validation_network_key_it)){
         printf("No valid network key found\n");
         btstack_memory_mesh_network_pdu_free(network_pdu);
         process_network_pdu_done();
         return;
     }
 
-    current_network_key = mesh_network_key_iterator_get_next(&validation_network_key_it);
+    current_network_key = mesh_network_key_nid_iterator_get_next(&validation_network_key_it);
 
     // calc PECB
     uint32_t iv_index = iv_index_for_pdu(network_pdu);
@@ -528,7 +528,7 @@ static void process_network_pdu(mesh_network_pdu_t * network_pdu){
     // init provisioning data iterator
     uint8_t nid = nid_ivi & 0x7f;
     // uint8_t iv_index = network_pdu_data[0] >> 7;
-    mesh_network_key_iterator_init(&validation_network_key_it, nid);
+    mesh_network_key_nid_iterator_init(&validation_network_key_it, nid);
 
     process_network_pdu_validate(network_pdu);
 }

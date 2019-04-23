@@ -75,13 +75,13 @@ const mesh_network_key_t * mesh_network_key_list_get(uint16_t netkey_index){
 }
 
 // mesh network key iterator for a given nid
-void mesh_network_key_iterator_init(mesh_network_key_iterator_t * it, uint8_t nid){
+void mesh_network_key_nid_iterator_init(mesh_network_key_iterator_t *it, uint8_t nid){
     btstack_linked_list_iterator_init(&it->it, &network_keys);
     it->key = NULL;
     it->nid = nid;
 }
 
-int mesh_network_key_iterator_has_more(mesh_network_key_iterator_t * it){
+int mesh_network_key_nid_iterator_has_more(mesh_network_key_iterator_t *it){
     // find next matching key
     while (1){
         if (it->key && it->key->nid == it->nid) return 1;
@@ -91,7 +91,7 @@ int mesh_network_key_iterator_has_more(mesh_network_key_iterator_t * it){
     return 0;
 }
 
-const mesh_network_key_t * mesh_network_key_iterator_get_next(mesh_network_key_iterator_t * it){
+const mesh_network_key_t * mesh_network_key_nid_iterator_get_next(mesh_network_key_iterator_t *it){
     mesh_network_key_t * key = it->key;
     it->key = NULL;
     return key;
