@@ -280,7 +280,7 @@ for struct_names in list_of_structs:
     for struct_name in struct_names:
         writeln(f, replacePlaceholder(init_template, struct_name))
 writeln(f, "#ifdef ENABLE_CLASSIC")
-for struct_names in list_of_le_structs:
+for struct_names in list_of_classic_structs:
     for struct_name in struct_names:
         writeln(f, replacePlaceholder(init_template, struct_name))
 writeln(f, "#endif")
@@ -290,7 +290,7 @@ for struct_names in list_of_le_structs:
         writeln(f, replacePlaceholder(init_template, struct_name))
 writeln(f, "#endif")
 writeln(f, "#ifdef ENABLE_MESH")
-for struct_names in list_of_le_structs:
+for struct_names in list_of_mesh_structs:
     for struct_name in struct_names:
         writeln(f, replacePlaceholder(init_template, struct_name))
 writeln(f, "#endif")

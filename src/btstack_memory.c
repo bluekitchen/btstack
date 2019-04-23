@@ -1051,14 +1051,41 @@ void btstack_memory_init(void){
     btstack_memory_pool_create(&l2cap_channel_pool, l2cap_channel_storage, MAX_NR_L2CAP_CHANNELS, sizeof(l2cap_channel_t));
 #endif
 #ifdef ENABLE_CLASSIC
-#if MAX_NR_GATT_CLIENTS > 0
-    btstack_memory_pool_create(&gatt_client_pool, gatt_client_storage, MAX_NR_GATT_CLIENTS, sizeof(gatt_client_t));
+#if MAX_NR_RFCOMM_MULTIPLEXERS > 0
+    btstack_memory_pool_create(&rfcomm_multiplexer_pool, rfcomm_multiplexer_storage, MAX_NR_RFCOMM_MULTIPLEXERS, sizeof(rfcomm_multiplexer_t));
 #endif
-#if MAX_NR_WHITELIST_ENTRIES > 0
-    btstack_memory_pool_create(&whitelist_entry_pool, whitelist_entry_storage, MAX_NR_WHITELIST_ENTRIES, sizeof(whitelist_entry_t));
+#if MAX_NR_RFCOMM_SERVICES > 0
+    btstack_memory_pool_create(&rfcomm_service_pool, rfcomm_service_storage, MAX_NR_RFCOMM_SERVICES, sizeof(rfcomm_service_t));
 #endif
-#if MAX_NR_SM_LOOKUP_ENTRIES > 0
-    btstack_memory_pool_create(&sm_lookup_entry_pool, sm_lookup_entry_storage, MAX_NR_SM_LOOKUP_ENTRIES, sizeof(sm_lookup_entry_t));
+#if MAX_NR_RFCOMM_CHANNELS > 0
+    btstack_memory_pool_create(&rfcomm_channel_pool, rfcomm_channel_storage, MAX_NR_RFCOMM_CHANNELS, sizeof(rfcomm_channel_t));
+#endif
+#if MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES > 0
+    btstack_memory_pool_create(&btstack_link_key_db_memory_entry_pool, btstack_link_key_db_memory_entry_storage, MAX_NR_BTSTACK_LINK_KEY_DB_MEMORY_ENTRIES, sizeof(btstack_link_key_db_memory_entry_t));
+#endif
+#if MAX_NR_BNEP_SERVICES > 0
+    btstack_memory_pool_create(&bnep_service_pool, bnep_service_storage, MAX_NR_BNEP_SERVICES, sizeof(bnep_service_t));
+#endif
+#if MAX_NR_BNEP_CHANNELS > 0
+    btstack_memory_pool_create(&bnep_channel_pool, bnep_channel_storage, MAX_NR_BNEP_CHANNELS, sizeof(bnep_channel_t));
+#endif
+#if MAX_NR_HFP_CONNECTIONS > 0
+    btstack_memory_pool_create(&hfp_connection_pool, hfp_connection_storage, MAX_NR_HFP_CONNECTIONS, sizeof(hfp_connection_t));
+#endif
+#if MAX_NR_SERVICE_RECORD_ITEMS > 0
+    btstack_memory_pool_create(&service_record_item_pool, service_record_item_storage, MAX_NR_SERVICE_RECORD_ITEMS, sizeof(service_record_item_t));
+#endif
+#if MAX_NR_AVDTP_STREAM_ENDPOINTS > 0
+    btstack_memory_pool_create(&avdtp_stream_endpoint_pool, avdtp_stream_endpoint_storage, MAX_NR_AVDTP_STREAM_ENDPOINTS, sizeof(avdtp_stream_endpoint_t));
+#endif
+#if MAX_NR_AVDTP_CONNECTIONS > 0
+    btstack_memory_pool_create(&avdtp_connection_pool, avdtp_connection_storage, MAX_NR_AVDTP_CONNECTIONS, sizeof(avdtp_connection_t));
+#endif
+#if MAX_NR_AVRCP_CONNECTIONS > 0
+    btstack_memory_pool_create(&avrcp_connection_pool, avrcp_connection_storage, MAX_NR_AVRCP_CONNECTIONS, sizeof(avrcp_connection_t));
+#endif
+#if MAX_NR_AVRCP_BROWSING_CONNECTIONS > 0
+    btstack_memory_pool_create(&avrcp_browsing_connection_pool, avrcp_browsing_connection_storage, MAX_NR_AVRCP_BROWSING_CONNECTIONS, sizeof(avrcp_browsing_connection_t));
 #endif
 #endif
 #ifdef ENABLE_BLE
@@ -1073,14 +1100,14 @@ void btstack_memory_init(void){
 #endif
 #endif
 #ifdef ENABLE_MESH
-#if MAX_NR_GATT_CLIENTS > 0
-    btstack_memory_pool_create(&gatt_client_pool, gatt_client_storage, MAX_NR_GATT_CLIENTS, sizeof(gatt_client_t));
+#if MAX_NR_MESH_NETWORK_PDUS > 0
+    btstack_memory_pool_create(&mesh_network_pdu_pool, mesh_network_pdu_storage, MAX_NR_MESH_NETWORK_PDUS, sizeof(mesh_network_pdu_t));
 #endif
-#if MAX_NR_WHITELIST_ENTRIES > 0
-    btstack_memory_pool_create(&whitelist_entry_pool, whitelist_entry_storage, MAX_NR_WHITELIST_ENTRIES, sizeof(whitelist_entry_t));
+#if MAX_NR_MESH_TRANSPORT_PDUS > 0
+    btstack_memory_pool_create(&mesh_transport_pdu_pool, mesh_transport_pdu_storage, MAX_NR_MESH_TRANSPORT_PDUS, sizeof(mesh_transport_pdu_t));
 #endif
-#if MAX_NR_SM_LOOKUP_ENTRIES > 0
-    btstack_memory_pool_create(&sm_lookup_entry_pool, sm_lookup_entry_storage, MAX_NR_SM_LOOKUP_ENTRIES, sizeof(sm_lookup_entry_t));
+#if MAX_NR_MESH_NETWORK_KEYS > 0
+    btstack_memory_pool_create(&mesh_network_key_pool, mesh_network_key_storage, MAX_NR_MESH_NETWORK_KEYS, sizeof(mesh_network_key_t));
 #endif
 #endif
 }
