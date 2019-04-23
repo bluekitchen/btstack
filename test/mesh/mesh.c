@@ -1841,6 +1841,7 @@ static btstack_crypto_aes128_cmac_t salt_request;
 static uint8_t label_uuid[16];
 static uint8_t salt_hash[16];
 static uint16_t virtual_address_hash;
+static mesh_network_key_t test_network_key;
 
 static void salt_complete(void * arg){
     int i;
@@ -1857,6 +1858,9 @@ static void virtual_address_complete(void * arg){
     printf("Label UUID: ");
     printf_hexdump(label_uuid, 16);
     printf("Virtual Address %04x\n", virtual_address_hash);
+}
+
+static void key_derived(void * arg){
 }
 
 int btstack_main(void);
@@ -1902,7 +1906,12 @@ int btstack_main(void)
     // calc virtual address hash
     // mesh_virtual_address(&salt_request, label_uuid, &virtual_address_hash, virtual_address_complete, NULL);
 
-    //
+    // calc network key derivative
+    // btstack_parse_hex("7dd7364cd842ad18c17c2b820c84c3d6", 16, test_network_key.net_key);
+    // printf("NetKey: ");
+    // printf_hexdump(test_network_key.net_key, 16);
+    // mesh_network_key_derive(&salt_request, &test_network_key, key_derived, NULL);
+
     btstack_parse_hex(pts_device_uuid_string, 16, pts_device_uuid);
     btstack_print_hex(pts_device_uuid, 16, 0);
 

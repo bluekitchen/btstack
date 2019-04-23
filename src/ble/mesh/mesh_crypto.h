@@ -45,6 +45,7 @@
 #include <stdint.h>
 #include "btstack_defines.h"
 #include "btstack_crypto.h"
+#include "mesh_keys.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -82,6 +83,15 @@ void mesh_k4(btstack_crypto_aes128_cmac_t * request, const uint8_t * n, uint8_t 
  * @param callback_arg
  */
 void mesh_virtual_address(btstack_crypto_aes128_cmac_t * request, const uint8_t * label_uuid, uint16_t * addr, void (* callback)(void * arg), void * callback_arg);
+
+/**
+ * Derive security material from netkey
+ * @param request
+ * @param network_key
+ * @param callback
+ * @param callback_arg
+ */
+void mesh_network_key_derive(btstack_crypto_aes128_cmac_t * request, mesh_network_key_t * network_key, void (* callback)(void * arg), void * callback_arg);
 
 #ifdef __cplusplus
 } /* end of extern "C" */
