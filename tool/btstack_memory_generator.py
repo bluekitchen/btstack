@@ -84,6 +84,7 @@ extern "C" {
 
 #ifdef ENABLE_MESH
 #include "ble/mesh/mesh_network.h"
+#include "mesh_keys.h"
 #endif
 
 /* API_START */

@@ -914,7 +914,11 @@ void btstack_memory_sm_lookup_entry_free(sm_lookup_entry_t *sm_lookup_entry){
 static mesh_network_pdu_t mesh_network_pdu_storage[MAX_NR_MESH_NETWORK_PDUS];
 static btstack_memory_pool_t mesh_network_pdu_pool;
 mesh_network_pdu_t * btstack_memory_mesh_network_pdu_get(void){
-    return (mesh_network_pdu_t *) btstack_memory_pool_get(&mesh_network_pdu_pool);
+    void * buffer = btstack_memory_pool_get(&mesh_network_pdu_pool);
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_network_pdu_t));
+    }
+    return (mesh_network_pdu_t *) buffer;
 }
 void btstack_memory_mesh_network_pdu_free(mesh_network_pdu_t *mesh_network_pdu){
     btstack_memory_pool_free(&mesh_network_pdu_pool, mesh_network_pdu);
@@ -930,7 +934,11 @@ void btstack_memory_mesh_network_pdu_free(mesh_network_pdu_t *mesh_network_pdu){
 #endif
 #elif defined(HAVE_MALLOC)
 mesh_network_pdu_t * btstack_memory_mesh_network_pdu_get(void){
-    return (mesh_network_pdu_t*) malloc(sizeof(mesh_network_pdu_t));
+    void * buffer = malloc(sizeof(mesh_network_pdu_t));
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_network_pdu_t));
+    }
+    return (mesh_network_pdu_t *) buffer;
 }
 void btstack_memory_mesh_network_pdu_free(mesh_network_pdu_t *mesh_network_pdu){
     free(mesh_network_pdu);
@@ -952,7 +960,11 @@ void btstack_memory_mesh_network_pdu_free(mesh_network_pdu_t *mesh_network_pdu){
 static mesh_transport_pdu_t mesh_transport_pdu_storage[MAX_NR_MESH_TRANSPORT_PDUS];
 static btstack_memory_pool_t mesh_transport_pdu_pool;
 mesh_transport_pdu_t * btstack_memory_mesh_transport_pdu_get(void){
-    return (mesh_transport_pdu_t *) btstack_memory_pool_get(&mesh_transport_pdu_pool);
+    void * buffer = btstack_memory_pool_get(&mesh_transport_pdu_pool);
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_transport_pdu_t));
+    }
+    return (mesh_transport_pdu_t *) buffer;
 }
 void btstack_memory_mesh_transport_pdu_free(mesh_transport_pdu_t *mesh_transport_pdu){
     btstack_memory_pool_free(&mesh_transport_pdu_pool, mesh_transport_pdu);
@@ -968,7 +980,11 @@ void btstack_memory_mesh_transport_pdu_free(mesh_transport_pdu_t *mesh_transport
 #endif
 #elif defined(HAVE_MALLOC)
 mesh_transport_pdu_t * btstack_memory_mesh_transport_pdu_get(void){
-    return (mesh_transport_pdu_t*) malloc(sizeof(mesh_transport_pdu_t));
+    void * buffer = malloc(sizeof(mesh_transport_pdu_t));
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_transport_pdu_t));
+    }
+    return (mesh_transport_pdu_t *) buffer;
 }
 void btstack_memory_mesh_transport_pdu_free(mesh_transport_pdu_t *mesh_transport_pdu){
     free(mesh_transport_pdu);
@@ -990,7 +1006,11 @@ void btstack_memory_mesh_transport_pdu_free(mesh_transport_pdu_t *mesh_transport
 static mesh_network_key_t mesh_network_key_storage[MAX_NR_MESH_NETWORK_KEYS];
 static btstack_memory_pool_t mesh_network_key_pool;
 mesh_network_key_t * btstack_memory_mesh_network_key_get(void){
-    return (mesh_network_key_t *) btstack_memory_pool_get(&mesh_network_key_pool);
+    void * buffer = btstack_memory_pool_get(&mesh_network_key_pool);
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_network_key_t));
+    }
+    return (mesh_network_key_t *) buffer;
 }
 void btstack_memory_mesh_network_key_free(mesh_network_key_t *mesh_network_key){
     btstack_memory_pool_free(&mesh_network_key_pool, mesh_network_key);
@@ -1006,7 +1026,11 @@ void btstack_memory_mesh_network_key_free(mesh_network_key_t *mesh_network_key){
 #endif
 #elif defined(HAVE_MALLOC)
 mesh_network_key_t * btstack_memory_mesh_network_key_get(void){
-    return (mesh_network_key_t*) malloc(sizeof(mesh_network_key_t));
+    void * buffer = malloc(sizeof(mesh_network_key_t));
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_network_key_t));
+    }
+    return (mesh_network_key_t *) buffer;
 }
 void btstack_memory_mesh_network_key_free(mesh_network_key_t *mesh_network_key){
     free(mesh_network_key);

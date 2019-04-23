@@ -53,6 +53,35 @@ typedef struct {
     btstack_linked_item_t item;
 
     // index into shared global key list
+    uint16_t netkey_index;
+
+    // random net_key
+    uint8_t net_key[16];
+
+    // derivative data
+
+    // k1
+    uint8_t identity_key[16];
+    uint8_t beacon_key[16];
+
+    // k2
+    uint8_t nid;
+    uint8_t encryption_key[16];
+    uint8_t privacy_key[16];
+
+    // k3
+    uint8_t network_id[8];
+} mesh_network_key_t;
+
+typedef struct {
+    uint8_t nid;
+    uint8_t first;
+} mesh_network_key_iterator_t;
+
+typedef struct {
+    btstack_linked_item_t item;
+
+    // index into shared global key list
     uint16_t index;
 
     // app_key
@@ -70,6 +99,40 @@ typedef struct {
     uint8_t  aid;
     uint8_t  first;
 } mesh_transport_key_iterator_t;
+
+/**
+ * @brief Initialize network key list from provisioning data
+ * @param provisioning_data
+ */
+void mesh_network_key_list_add_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data);
+
+/**
+ * @brief Get network_key for netkey_index
+ * @param netkey_index
+ * @returns mesh_network_key_t or NULL
+ */
+const mesh_network_key_t * mesh_network_key_list_get(uint16_t netkey_index);
+
+/**
+ *
+ * @param it
+ * @param nid
+ */
+void mesh_network_key_iterator_init(mesh_network_key_iterator_t * it, uint8_t nid);
+
+/**
+ *
+ * @param it
+ * @return
+ */
+int mesh_network_key_iterator_has_more(mesh_network_key_iterator_t * it);
+
+/**
+ *
+ * @param it
+ * @return
+ */
+const mesh_network_key_t * mesh_network_key_iterator_get_next(mesh_network_key_iterator_t * it);
 
 /**
  * Set device key

@@ -46,6 +46,7 @@
 #include "ble/mesh/beacon.h"
 #include "provisioning.h"
 #include "provisioning_device.h"
+#include "mesh_keys.h"
 #include "btstack.h"
 
 // configuration
@@ -56,11 +57,6 @@
 // #define LOG_NETWORK
 
 // structs
-
-typedef struct {
-    uint8_t nid;
-    uint8_t first;
-} mesh_network_key_iterator_t;
 
 // globals
 
@@ -105,10 +101,6 @@ static btstack_linked_list_t network_pdus_queued;
 // Network PDUs ready to send via adv bearer
 static btstack_linked_list_t network_pdus_outgoing;
 
-
-// mesh network key list
-static mesh_network_key_t mesh_network_primary_key;
-
 // mesh network cache - we use 32-bit 'hashes'
 static uint32_t mesh_network_cache[MESH_NETWORK_CACHE_SIZE];
 static int      mesh_network_cache_index;
@@ -145,55 +137,6 @@ static void mesh_network_cache_add(uint32_t hash){
     if (mesh_network_cache_index >= MESH_NETWORK_CACHE_SIZE){
         mesh_network_cache_index = 0;
     }
-}
-
-// network key list
-
-const mesh_network_key_t * mesh_network_key_list_get(uint16_t netkey_index){
-    if (netkey_index) return NULL;
-    return &mesh_network_primary_key;
-}
-
-void mesh_network_key_list_add_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
-    // get single instance
-    mesh_network_key_t * network_key = &mesh_network_primary_key;
-    memset(network_key, 0, sizeof(mesh_network_key_t));
-
-    // NetKey
-    // memcpy(network_key->net_key, provisioning_data, net_key);
-
-    // IdentityKey
-    // memcpy(network_key->identity_key, provisioning_data->identity_key, 16);
-
-    // BeaconKey
-    memcpy(network_key->beacon_key, provisioning_data->beacon_key, 16);
-
-    // NID
-    network_key->nid = provisioning_data->nid;
-
-    // EncryptionKey
-    memcpy(network_key->encryption_key, provisioning_data->encryption_key, 16);
-
-    // PrivacyKey
-    memcpy(network_key->privacy_key, provisioning_data->privacy_key, 16);
-
-    // NetworkID
-    memcpy(network_key->network_id, provisioning_data->network_id, 8);
-}
-
-// mesh network key iterator
-static void mesh_network_key_iterator_init(mesh_network_key_iterator_t * it, uint8_t nid){
-    it->nid = nid;
-    it->first = 1;
-}
-
-static int mesh_network_key_iterator_has_more(mesh_network_key_iterator_t * it){
-    return it->first && it->nid == mesh_network_primary_key.nid;
-}
-
-static const mesh_network_key_t * mesh_network_key_iterator_get_next(mesh_network_key_iterator_t * it){
-    it->first = 0;
-    return &mesh_network_primary_key;
 }
 
 // common helper

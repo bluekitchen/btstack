@@ -120,30 +120,6 @@ typedef struct {
     uint8_t               data[MESH_ACCESS_PAYLOAD_MAX];
 } mesh_transport_pdu_t;
 
-//
-typedef struct {
-    btstack_linked_item_t item;
-
-    // index into shared global key list
-    uint16_t netkey_index;
-
-    // random net_key
-    uint8_t net_key[16];
-
-    // derivative data
-
-    // k1
-    uint8_t identity_key[16];
-    uint8_t beacon_key[16];
-
-    // k2
-    uint8_t nid;
-    uint8_t encryption_key[16];
-    uint8_t privacy_key[16];
-
-    // k3
-    uint8_t network_id[8];
-} mesh_network_key_t;
 
 /**
  * @brief Init Mesh Network Layer
@@ -172,19 +148,6 @@ void mesh_network_message_processed_by_higher_layer(mesh_network_pdu_t * network
  * @brief Configure address filter
  */
 void mesh_network_set_primary_element_address(uint16_t addr);
-
-/**
- * @brief Initialize network key list from provisioning data
- * @param provisioning_data
- */
-void mesh_network_key_list_add_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data);
-
-/**
- * @brief Get network_key for netkey_index
- * @param netkey_index
- * @returns mesh_network_key_t or NULL
- */
-const mesh_network_key_t * mesh_network_key_list_get(uint16_t netkey_index);
 
 /**
  * @brief Send network_pdu after encryption
