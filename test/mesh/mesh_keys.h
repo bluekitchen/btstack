@@ -135,21 +135,41 @@ const mesh_network_key_t * mesh_network_key_list_get(uint16_t netkey_index);
 void mesh_network_key_list_add_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data);
 
 /**
- *
+ * @brief Iterate over all network keys
+ * @param it
+ */
+void mesh_network_key_iterator_init(mesh_network_key_iterator_t *it);
+
+/**
+ * Check if another network_key is available
+ * @param it
+ * @return
+ */
+int mesh_network_key_iterator_has_more(mesh_network_key_iterator_t *it);
+
+/**
+ * Get net network_key
+ * @param it
+ * @return
+ */
+const mesh_network_key_t * mesh_network_key_iterator_get_next(mesh_network_key_iterator_t *it);
+
+/**
+ * @brief Iterate over all network keys with a given NID
  * @param it
  * @param nid
  */
 void mesh_network_key_nid_iterator_init(mesh_network_key_iterator_t *it, uint8_t nid);
 
 /**
- *
+ * Check if another network_key with given NID is available
  * @param it
  * @return
  */
 int mesh_network_key_nid_iterator_has_more(mesh_network_key_iterator_t *it);
 
 /**
- *
+ * Get net network_key with given NID
  * @param it
  * @return
  */
