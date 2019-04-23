@@ -126,7 +126,7 @@ int mesh_network_key_remove(mesh_network_key_t * network_key);
  * @param netkey_index
  * @returns mesh_network_key_t or NULL
  */
-const mesh_network_key_t * mesh_network_key_list_get(uint16_t netkey_index);
+mesh_network_key_t * mesh_network_key_list_get(uint16_t netkey_index);
 
 /**
  * @brief Initialize network key list from provisioning data
@@ -152,7 +152,7 @@ int mesh_network_key_iterator_has_more(mesh_network_key_iterator_t *it);
  * @param it
  * @return
  */
-const mesh_network_key_t * mesh_network_key_iterator_get_next(mesh_network_key_iterator_t *it);
+mesh_network_key_t * mesh_network_key_iterator_get_next(mesh_network_key_iterator_t *it);
 
 /**
  * @brief Iterate over all network keys with a given NID

@@ -64,7 +64,7 @@ int mesh_network_key_remove(mesh_network_key_t * network_key){
     return btstack_linked_list_remove(&network_keys, (btstack_linked_item_t *) network_key);
 }
 
-const mesh_network_key_t * mesh_network_key_list_get(uint16_t netkey_index){
+mesh_network_key_t * mesh_network_key_list_get(uint16_t netkey_index){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &network_keys);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -83,7 +83,7 @@ int mesh_network_key_iterator_has_more(mesh_network_key_iterator_t *it){
     return btstack_linked_list_iterator_has_next(&it->it);
 }
 
-const mesh_network_key_t * mesh_network_key_iterator_get_next(mesh_network_key_iterator_t *it){
+mesh_network_key_t * mesh_network_key_iterator_get_next(mesh_network_key_iterator_t *it){
     return (mesh_network_key_t *) btstack_linked_list_iterator_next(&it->it);
 }
 
