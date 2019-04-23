@@ -119,31 +119,16 @@ static uint8_t enc_provisioning_data[25];
 // ProvisioningData
 static uint8_t provisioning_data[25];
 
+// received network_key
+static mesh_network_key_t network_key;
 
 // DeviceKey
 static uint8_t device_key[16];
-// NetKey
-static uint8_t  net_key[16];
-// NetKeyIndex
-static uint16_t net_key_index;
-// k2: NID (7), EncryptionKey (128), PrivacyKey (128) 
-static uint8_t k2_result[33];
 
 static uint8_t  flags;
 
 static uint32_t iv_index;
 static uint16_t unicast_address;
-
-static const uint8_t id128_tag[] = { 'i', 'd', '1', '2', '8', 0x01};
-
-// AES-CMAC_ZERO('nhbk')
-static const uint8_t mesh_salt_nhbk[] = {
-    0x2c, 0x24, 0x61, 0x9a, 0xb7, 0x93, 0xc1, 0x23, 0x3f, 0x6e, 0x22, 0x67, 0x38, 0x39, 0x3d, 0xec, };
-
-// AES-CMAC_ZERO('nkik')
-static const uint8_t mesh_salt_nkik[] = {
-    0xF8, 0x79, 0x5A, 0x1A, 0xAB, 0xF1, 0x82, 0xE4, 0xF1, 0x63, 0xD8, 0x6E, 0x24, 0x5E, 0x19, 0xF4};
-
 
 typedef enum {
     DEVICE_W4_INVITE,
@@ -164,10 +149,6 @@ typedef enum {
 
 static device_state_t device_state;
 static uint16_t pb_transport_cid;
-// derived
-static uint8_t network_id[8];
-static uint8_t beacon_key[16];
-static uint8_t identity_key[16];
 static pb_type_t pb_type;
 
 static void pb_send_pdu(uint16_t transport_cid, const uint8_t * buffer, uint16_t buffer_size){
@@ -698,15 +679,21 @@ static void provisioning_handle_random(uint8_t *packet, uint16_t size){
 }
 
 // PROV_DATA
-static void provisioning_handle_data_k2_calculated(void * arg){
-    // Dump
-    printf("NID: %02x\n", k2_result[0]);
-    printf("EncryptionKey: ");
-    printf_hexdump(&k2_result[1], 16);
-    printf("PrivacyKey: ");
-    printf_hexdump(&k2_result[17], 16);
+static void provisioning_handle_network_dervived(void * arg){
 
-    // 
+    printf("BeaconKey: ");
+    printf_hexdump(network_key.beacon_key, 16);
+    printf("Network ID: ");
+    printf_hexdump(network_key.network_id, 8);
+    printf("IdentityKey: ");
+    printf_hexdump(network_key.identity_key, 16);
+    printf("NID: %02x\n", network_key.nid);
+    printf("EncryptionKey: ");
+    printf_hexdump(network_key.encryption_key, 16);
+    printf("PrivacyKey: ");
+    printf_hexdump(network_key.privacy_key, 16);
+
+    //
     provisioning_timer_stop();
 
     // notify client
@@ -714,31 +701,7 @@ static void provisioning_handle_data_k2_calculated(void * arg){
 
     device_state = DEVICE_SEND_COMPLETE;
     provisioning_run();
-}
 
-static void provisioning_handle_beacon_key_calculated(void *arg){
-    printf("IdentityKey: ");
-    printf_hexdump(identity_key, 16);
-
-    // calc k2
-    mesh_k2(&prov_cmac_request, net_key, k2_result, &provisioning_handle_data_k2_calculated, NULL);
-}
-
-
-static void provisioning_handle_identity_key_calculated(void *arg){
-    printf("BeaconKey: ");
-    printf_hexdump(beacon_key, 16);
-
-    // calc identity key
-    mesh_k1(&prov_cmac_request, net_key, 16, mesh_salt_nkik, id128_tag, sizeof(id128_tag), identity_key, &provisioning_handle_beacon_key_calculated, NULL);
-}
-
-static void provisioning_handle_data_network_id_calculated(void * arg){
-    // dump
-    printf("Network ID: ");
-    printf_hexdump(network_id, 8);
-    // calc k1 using 
-    mesh_k1(&prov_cmac_request, net_key, 16, mesh_salt_nhbk, id128_tag, sizeof(id128_tag), beacon_key, &provisioning_handle_identity_key_calculated, NULL);
 }
 
 static void provisioning_handle_data_device_key(void * arg){
@@ -746,8 +709,8 @@ static void provisioning_handle_data_device_key(void * arg){
     printf("DeviceKey: ");
     printf_hexdump(device_key, 16);
 
-    // calculate Network ID
-    mesh_k3(&prov_cmac_request, net_key, network_id, provisioning_handle_data_network_id_calculated, NULL);
+    // derive full network key
+    mesh_network_key_derive(&prov_cmac_request, &network_key, &provisioning_handle_network_dervived, NULL);
 }
 
 static void provisioning_handle_data_ccm(void * arg){
@@ -761,16 +724,16 @@ static void provisioning_handle_data_ccm(void * arg){
     printf_hexdump(mic, 8);
 
     // sort provisoning data
-    memcpy(net_key, provisioning_data, 16);
-    net_key_index = big_endian_read_16(provisioning_data, 16);
+    memcpy(network_key.net_key, provisioning_data, 16);
+    network_key.netkey_index = big_endian_read_16(provisioning_data, 16);
     flags = provisioning_data[18];
     iv_index = big_endian_read_32(provisioning_data, 19);
     unicast_address = big_endian_read_16(provisioning_data, 23);
 
     // dump
     printf("NetKey: ");
-    printf_hexdump(net_key, 16);
-    printf("NetKeyIndex: %04x\n", net_key_index);
+    printf_hexdump(network_key.net_key, 16);
+    printf("NetKeyIndex: %04x\n", network_key.netkey_index);
     printf("Flags: %02x\n", flags);
     printf("IVIndex: %04x\n", iv_index);
     printf("UnicastAddress: %02x\n", unicast_address);
@@ -958,23 +921,23 @@ const uint8_t * provisioning_device_data_get_device_key(void){
     return device_key;
 }
 const uint8_t * provisioning_device_data_get_network_id(void){
-    return network_id;
+    return network_key.network_id;
 }
 uint32_t provisioning_device_data_get_iv_index(void){
     return iv_index;
 }
 const uint8_t * provisioning_device_data_get_beacon_key(void){
-    return beacon_key;
+    return network_key.beacon_key;
 }
 const uint8_t * provisioning_device_data_get_identity_key(void){
-    return identity_key;
+    return network_key.identity_key;
 }
 uint8_t provisioning_device_data_get_nid(void){
-    return k2_result[0];
+    return network_key.nid;
 }
 const uint8_t * provisioning_device_data_get_encryption_key(void){
-    return &k2_result[1];
+    return network_key.encryption_key;
 }
 const uint8_t * provisioning_device_data_get_privacy_key(void){
-    return  &k2_result[17];
+    return  network_key.privacy_key;
 }
