@@ -379,7 +379,7 @@ static void mesh_upper_transport_validate_unsegmented_message(mesh_network_pdu_t
 
     // store application / device key index
     mesh_print_hex("AppOrDevKey", message_key->key, 16);
-    network_pdu->appkey_index = message_key->index; 
+    network_pdu->appkey_index = message_key->appkey_index;
 
     // unsegmented message have TransMIC of 32 bit
     uint8_t trans_mic_len = 4;
@@ -425,7 +425,7 @@ static void mesh_upper_transport_validate_segmented_message(mesh_transport_pdu_t
 
     // store application / device key index
     mesh_print_hex("AppOrDevKey", message_key->key, 16);
-    transport_pdu->appkey_index = message_key->index; 
+    transport_pdu->appkey_index = message_key->appkey_index;
 
     mesh_print_hex("EncAccessPayload", upper_transport_pdu_data, upper_transport_pdu_len);
 

@@ -55,7 +55,7 @@ typedef struct {
     // index into shared global key list
     uint16_t netkey_index;
 
-    // random net_key
+    // net_key from provisioner or Config Model Client
     uint8_t net_key[16];
 
     // derivative data
@@ -83,7 +83,7 @@ typedef struct {
     btstack_linked_item_t item;
 
     // index into shared global key list
-    uint16_t index;
+    uint16_t appkey_index;
 
     // app_key
     uint8_t key[16];
