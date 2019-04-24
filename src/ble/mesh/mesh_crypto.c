@@ -272,6 +272,9 @@ void mesh_network_key_derive(btstack_crypto_aes128_cmac_t * request, mesh_networ
     mesh_network_key_derive_arg = callback_arg;
     mesh_network_key_derive_key = network_key;
 
+    printf("NetKey: ");
+    printf_hexdump(network_key->net_key, 16);
+
     // calc k1 using
     mesh_k1(request, mesh_network_key_derive_key->net_key, 16, mesh_salt_nhbk, id128_tag, sizeof(id128_tag),
             mesh_network_key_derive_key->beacon_key, &mesh_network_key_derive_beacon_key_calculated, request);
