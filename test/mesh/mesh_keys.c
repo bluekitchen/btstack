@@ -158,6 +158,7 @@ void mesh_application_key_set(uint16_t appkey_index, uint8_t aid, const uint8_t 
     test_application_key.appkey_index = appkey_index;
     test_application_key.aid   = aid;
     test_application_key.akf   = 1;
+    test_application_key.netkey_index = 0;  // TODO: primary subnet
     memcpy(test_application_key.key, application_key, 16);
 }
 
@@ -165,6 +166,7 @@ void mesh_transport_set_device_key(const uint8_t * device_key){
     mesh_transport_device_key.appkey_index = MESH_DEVICE_KEY_INDEX;
     mesh_transport_device_key.aid   = 0;
     mesh_transport_device_key.akf   = 0;
+    mesh_transport_device_key.netkey_index = 0; // unused
     memcpy(mesh_transport_device_key.key, device_key, 16);
 }
 

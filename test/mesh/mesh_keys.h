@@ -82,7 +82,10 @@ typedef struct {
 typedef struct {
     btstack_linked_item_t item;
 
-    // index into shared global key list
+    // netkey_index of subnet this app key is used with
+    uint16_t netkey_index;
+
+    // index into shared global app key list
     uint16_t appkey_index;
 
     // app_key
