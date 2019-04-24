@@ -889,6 +889,11 @@ static void mesh_access_parser_get_label_uuid(mesh_access_parser_state_t * state
     mesh_access_parser_skip(state, 16);
 }
 
+static void mesh_access_parser_get_key(mesh_access_parser_state_t * state, uint8_t * dest){
+    memcpy( dest, state->data, 16);
+    mesh_access_parser_skip(state, 16);
+}
+
 // message builder
 static int mesh_access_setup_opcode(uint8_t * buffer, uint32_t opcode){
     if (opcode < 0x100){
@@ -1360,7 +1365,7 @@ static void config_netkey_add_handler(mesh_model_t * mesh_model, mesh_pdu_t * pd
     // get params
     uint8_t new_netkey[16];
     uint16_t new_netkey_index = mesh_access_parser_get_u16(&parser);
-    mesh_access_parser_get_u128(&parser, new_netkey);
+    mesh_access_parser_get_key(&parser, new_netkey);
 
     uint8_t status;
 
@@ -1446,9 +1451,15 @@ static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t *
     uint8_t status;
     mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
     if (network_key){
-        mesh_network_key_remove(network_key);
+        if (mesh_network_key_list_count() > 1){
+            mesh_network_key_remove(network_key);
+            status = MESH_FOUNDATION_STATUS_SUCCESS;
+        } else {
+            // we cannot remove the last network key
+            status = MESH_FOUNDATION_STATUS_CANNOT_REMOVE;
+        }
     }
-    config_netkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), MESH_FOUNDATION_STATUS_SUCCESS, netkey_index);
+    config_netkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, netkey_index);
 }
 
 static void config_appkey_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint32_t netkey_and_appkey_index, uint8_t status){
@@ -1488,7 +1499,8 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     netkey_and_appkey_index = mesh_access_parser_get_u24(&parser);
     new_netkey_index = netkey_and_appkey_index & 0xfff;
     new_appkey_index = netkey_and_appkey_index >> 12;
-    mesh_access_parser_get_u128(&parser, new_app_key);
+    // actual key
+    mesh_access_parser_get_key(&parser, new_app_key);
 
     // calculate AID
     access_pdu_in_process = pdu;
@@ -2025,7 +2037,8 @@ int btstack_main(void)
     // mesh_virtual_address(&salt_request, label_uuid, &virtual_address_hash, virtual_address_complete, NULL);
 
     // calc network key derivative
-    // btstack_parse_hex("7dd7364cd842ad18c17c2b820c84c3d6", 16, test_network_key.net_key);
+    // btstack_parse_hex("7dd7364cd842ad18c17c2b820c84c3d6", 16, test_network_key.net_key); // spec sample data
+    // btstack_parse_hex("B72892443F28F28FD61F4B63FF86F695", 16, test_network_key.net_key);
     // printf("NetKey: ");
     // printf_hexdump(test_network_key.net_key, 16);
     // mesh_network_key_derive(&salt_request, &test_network_key, key_derived, NULL);
