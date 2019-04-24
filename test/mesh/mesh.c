@@ -1435,6 +1435,22 @@ static void config_netkey_update_handler(mesh_model_t * mesh_model, mesh_pdu_t *
     }
 }
 
+static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu) {
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t *) pdu);
+
+    // get params
+    uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
+
+    // get existing network_key
+    uint8_t status;
+    mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
+    if (network_key){
+        mesh_network_key_remove(network_key);
+    }
+    config_netkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), MESH_FOUNDATION_STATUS_SUCCESS, netkey_index);
+}
+
 static void config_appkey_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint32_t netkey_and_appkey_index, uint8_t status){
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_config_appkey_status,
@@ -1856,7 +1872,7 @@ static mesh_operation_t mesh_configuration_server_model_operations[] = {
 //    { MESH_FOUNDATION_OPERATION_APPKEY_UPDATE,                               19, config_appkey_update_handler },
     { MESH_FOUNDATION_OPERATION_NETKEY_ADD,                                  18, config_netkey_add_handler },
     { MESH_FOUNDATION_OPERATION_NETKEY_UPDATE,                               18, config_netkey_update_handler },
-//    { MESH_FOUNDATION_OPERATION_NETKEY_DELETE,                                2, config_netkey_delete_handler },
+    { MESH_FOUNDATION_OPERATION_NETKEY_DELETE,                                2, config_netkey_delete_handler },
     { MESH_FOUNDATION_OPERATION_NETKEY_GET,                                   0, config_netkey_get_handler },
     { MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_GET,                         1, config_composition_data_get_handler },
     { MESH_FOUNDATION_OPERATION_BEACON_GET,                                   0, config_beacon_get_handler},
