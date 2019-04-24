@@ -125,7 +125,7 @@ void mesh_network_key_list_add_from_provisioning_data(const mesh_provisioning_da
     memset(network_key, 0, sizeof(mesh_network_key_t));
 
     // NetKey
-    // memcpy(network_key->net_key, provisioning_data, net_key);
+    memcpy(network_key->net_key, provisioning_data->net_key, 16);
 
     // IdentityKey
     // memcpy(network_key->identity_key, provisioning_data->identity_key, 16);

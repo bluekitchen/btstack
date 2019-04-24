@@ -941,3 +941,6 @@ const uint8_t * provisioning_device_data_get_encryption_key(void){
 const uint8_t * provisioning_device_data_get_privacy_key(void){
     return  network_key.privacy_key;
 }
+const uint8_t * provisioning_device_data_get_net_key(void){
+    return network_key.net_key;
+}
