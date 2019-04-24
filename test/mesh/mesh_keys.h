@@ -129,6 +129,12 @@ int mesh_network_key_remove(mesh_network_key_t * network_key);
 mesh_network_key_t * mesh_network_key_list_get(uint16_t netkey_index);
 
 /**
+ * @brief Get number of stored network_keys
+ * @returns count
+ */
+int mesh_network_key_list_count(void);
+
+/**
  * @brief Initialize network key list from provisioning data
  * @param provisioning_data
  */

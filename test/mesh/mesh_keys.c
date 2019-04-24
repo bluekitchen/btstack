@@ -74,6 +74,10 @@ mesh_network_key_t * mesh_network_key_list_get(uint16_t netkey_index){
     return NULL;
 }
 
+int mesh_network_key_list_count(void){
+    return btstack_linked_list_count(&network_keys);
+}
+
 // mesh network key iterator over all keys
 void mesh_network_key_iterator_init(mesh_network_key_iterator_t *it){
     btstack_linked_list_iterator_init(&it->it, &network_keys);
