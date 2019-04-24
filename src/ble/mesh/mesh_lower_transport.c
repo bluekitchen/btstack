@@ -327,8 +327,8 @@ static mesh_transport_pdu_t * mesh_lower_transport_pdu_for_segmented_message(mes
         seq_auth -= 0x2000;
     }
 
-    // no transport pdu active, check if seq zero is new
-    if (seq_auth > peer->seq_auth){
+    // no transport pdu active, check new message: seq auth is greater OR seq auth is same but no segments
+    if (seq_auth > peer->seq_auth || (seq_auth == peer->seq_auth && peer->block_ack == 0)){
         mesh_transport_pdu_t * pdu = mesh_transport_pdu_get();
         if (!pdu) return NULL;
 
