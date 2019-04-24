@@ -93,6 +93,16 @@ void mesh_virtual_address(btstack_crypto_aes128_cmac_t * request, const uint8_t 
  */
 void mesh_network_key_derive(btstack_crypto_aes128_cmac_t * request, mesh_network_key_t * network_key, void (* callback)(void * arg), void * callback_arg);
 
+/**
+ * Calc AID from AppKey
+ * @param request
+ * @param transport_key
+ * @param callback
+ * @param callback_arg
+ */
+void mesh_transport_key_calc_aid(btstack_crypto_aes128_cmac_t * request, mesh_transport_key_t * app_key, void (* callback)(void * arg), void * callback_arg);
+
+
 #ifdef __cplusplus
 } /* end of extern "C" */
 #endif

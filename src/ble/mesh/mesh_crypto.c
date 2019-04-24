@@ -279,3 +279,8 @@ void mesh_network_key_derive(btstack_crypto_aes128_cmac_t * request, mesh_networ
     mesh_k1(request, mesh_network_key_derive_key->net_key, 16, mesh_salt_nhbk, id128_tag, sizeof(id128_tag),
             mesh_network_key_derive_key->beacon_key, &mesh_network_key_derive_beacon_key_calculated, request);
 }
+
+void mesh_transport_key_calc_aid(btstack_crypto_aes128_cmac_t * request, mesh_transport_key_t * app_key, void (* callback)(void * arg), void * callback_arg){
+    mesh_k4(request, app_key->key, &app_key->aid, callback, callback_arg);
+}
+

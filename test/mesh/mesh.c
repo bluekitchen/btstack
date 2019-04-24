@@ -1524,7 +1524,7 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
 
     // calculate AID
     access_pdu_in_process = pdu;
-    mesh_k4(&mesh_cmac_request, new_app_key, &new_aid, config_appkey_add_aid, NULL);
+    mesh_transport_key_calc_aid(&mesh_cmac_request, new_app_key, config_appkey_add_aid, NULL);
 }
 
 static void config_model_subscription_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status, uint16_t element_address, uint16_t address, uint32_t model_identifier){
