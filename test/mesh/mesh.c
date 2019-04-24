@@ -82,23 +82,26 @@ static uint8_t beacon_key[16];
 static uint8_t network_id[8];
 static uint16_t primary_element_address;
 
-// static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len){
-//     printf("%-20s ", name);
-//     printf_hexdump(data, len);
-// }
+static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len){
+     printf("%-20s ", name);
+     printf_hexdump(data, len);
+}
+
 // static void mesh_print_x(const char * name, uint32_t value){
 //     printf("%20s: 0x%x", name, (int) value);
 // }
 
 static void mesh_provisioning_dump(const mesh_provisioning_data_t * data){
     printf("UnicastAddr:   0x%02x\n", data->unicast_address);
-    printf("NID:           0x%02x\n", data->nid);
     printf("IV Index:      0x%08x\n", data->iv_index);
+    printf("DevKey:        "); printf_hexdump(data->device_key, 16);
+    printf("NetKey:        "); printf_hexdump(data->net_key, 16);
+    printf("NID:           0x%02x\n", data->nid);
     printf("NetworkID:     "); printf_hexdump(data->network_id, 8);
     printf("BeaconKey:     "); printf_hexdump(data->beacon_key, 16);
     printf("EncryptionKey: "); printf_hexdump(data->encryption_key, 16);
     printf("PrivacyKey:    "); printf_hexdump(data->privacy_key, 16);
-    printf("DevKey:        "); printf_hexdump(data->device_key, 16);
+    printf("IdentityKey:   "); printf_hexdump(data->identity_key, 16);
 }
 
 static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
@@ -242,6 +245,7 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
                     break;
                 case MESH_PB_PROV_COMPLETE:
                     printf("Provisioning complete\n");
+                    memcpy(provisioning_data.net_key, provisioning_device_data_get_net_key(), 16);
                     memcpy(provisioning_data.network_id, provisioning_device_data_get_network_id(), 8);
                     memcpy(provisioning_data.identity_key, provisioning_device_data_get_identity_key(), 16);
                     memcpy(provisioning_data.beacon_key, provisioning_device_data_get_beacon_key(), 16);
