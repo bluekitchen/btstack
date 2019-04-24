@@ -920,27 +920,9 @@ uint16_t provisioning_device_data_get_unicast_address(void){
 const uint8_t * provisioning_device_data_get_device_key(void){
     return device_key;
 }
-const uint8_t * provisioning_device_data_get_network_id(void){
-    return network_key.network_id;
-}
 uint32_t provisioning_device_data_get_iv_index(void){
     return iv_index;
 }
-const uint8_t * provisioning_device_data_get_beacon_key(void){
-    return network_key.beacon_key;
-}
-const uint8_t * provisioning_device_data_get_identity_key(void){
-    return network_key.identity_key;
-}
-uint8_t provisioning_device_data_get_nid(void){
-    return network_key.nid;
-}
-const uint8_t * provisioning_device_data_get_encryption_key(void){
-    return network_key.encryption_key;
-}
-const uint8_t * provisioning_device_data_get_privacy_key(void){
-    return  network_key.privacy_key;
-}
-const uint8_t * provisioning_device_data_get_net_key(void){
-    return network_key.net_key;
+mesh_network_key_t * provisioning_device_data_get_network_key(void){
+    return &network_key;
 }
