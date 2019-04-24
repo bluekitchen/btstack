@@ -1362,6 +1362,12 @@ static void config_netkey_add_derived(void * arg){
     config_netkey_status(NULL, mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), MESH_FOUNDATION_STATUS_SUCCESS, network_key->netkey_index);
 }
 
+static int config_netkey_list_max = 0;
+
+static void config_nekey_list_set_max(uint16_t max){
+    config_netkey_list_max = max;
+}
+
 static void config_netkey_add_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
@@ -1384,16 +1390,21 @@ static void config_netkey_add_handler(mesh_model_t * mesh_model, mesh_pdu_t * pd
             status = MESH_FOUNDATION_STATUS_KEY_INDEX_ALREADY_STORED;
         }
     } else {
-        // setup new key
-        mesh_network_key_t * new_network_key = btstack_memory_mesh_network_key_get();
-        if (new_network_key == NULL){
+        // check limit for pts
+        if (config_netkey_list_max && mesh_network_key_list_count() >= config_netkey_list_max){
             status = MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
         } else {
-            access_pdu_in_process = pdu;
-            new_network_key->netkey_index = new_netkey_index;
-            memcpy(new_network_key->net_key, new_netkey, 16);
-            mesh_network_key_derive(&configuration_server_cmac_request, new_network_key, config_netkey_add_derived, new_network_key);
-            return;
+            // setup new key
+            mesh_network_key_t * new_network_key = btstack_memory_mesh_network_key_get();
+            if (new_network_key == NULL){
+                status = MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
+            } else {
+                access_pdu_in_process = pdu;
+                new_network_key->netkey_index = new_netkey_index;
+                memcpy(new_network_key->net_key, new_netkey, 16);
+                mesh_network_key_derive(&configuration_server_cmac_request, new_network_key, config_netkey_add_derived, new_network_key);
+                return;
+            }
         }
     }
     config_netkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, new_netkey_index);
