@@ -209,7 +209,7 @@ list_of_le_structs = [
     ["gatt_client", "whitelist_entry", "sm_lookup_entry"],
 ]
 list_of_mesh_structs = [
-    ['mesh_network_pdu', 'mesh_transport_pdu', 'mesh_network_key'] 
+    ['mesh_network_pdu', 'mesh_transport_pdu', 'mesh_network_key', 'mesh_transport_key']
 ]
 
 btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')

@@ -1038,6 +1038,52 @@ void btstack_memory_mesh_network_key_free(mesh_network_key_t *mesh_network_key){
 #endif
 
 
+// MARK: mesh_transport_key_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_MESH_TRANSPORT_KEYS)
+    #if defined(MAX_NO_MESH_TRANSPORT_KEYS)
+        #error "Deprecated MAX_NO_MESH_TRANSPORT_KEYS defined instead of MAX_NR_MESH_TRANSPORT_KEYS. Please update your btstack_config.h to use MAX_NR_MESH_TRANSPORT_KEYS."
+    #else
+        #define MAX_NR_MESH_TRANSPORT_KEYS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_MESH_TRANSPORT_KEYS
+#if MAX_NR_MESH_TRANSPORT_KEYS > 0
+static mesh_transport_key_t mesh_transport_key_storage[MAX_NR_MESH_TRANSPORT_KEYS];
+static btstack_memory_pool_t mesh_transport_key_pool;
+mesh_transport_key_t * btstack_memory_mesh_transport_key_get(void){
+    void * buffer = btstack_memory_pool_get(&mesh_transport_key_pool);
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_transport_key_t));
+    }
+    return (mesh_transport_key_t *) buffer;
+}
+void btstack_memory_mesh_transport_key_free(mesh_transport_key_t *mesh_transport_key){
+    btstack_memory_pool_free(&mesh_transport_key_pool, mesh_transport_key);
+}
+#else
+mesh_transport_key_t * btstack_memory_mesh_transport_key_get(void){
+    return NULL;
+}
+void btstack_memory_mesh_transport_key_free(mesh_transport_key_t *mesh_transport_key){
+    // silence compiler warning about unused parameter in a portable way
+    (void) mesh_transport_key;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+mesh_transport_key_t * btstack_memory_mesh_transport_key_get(void){
+    void * buffer = malloc(sizeof(mesh_transport_key_t));
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_transport_key_t));
+    }
+    return (mesh_transport_key_t *) buffer;
+}
+void btstack_memory_mesh_transport_key_free(mesh_transport_key_t *mesh_transport_key){
+    free(mesh_transport_key);
+}
+#endif
+
+
 #endif
 // init
 void btstack_memory_init(void){
@@ -1108,6 +1154,9 @@ void btstack_memory_init(void){
 #endif
 #if MAX_NR_MESH_NETWORK_KEYS > 0
     btstack_memory_pool_create(&mesh_network_key_pool, mesh_network_key_storage, MAX_NR_MESH_NETWORK_KEYS, sizeof(mesh_network_key_t));
+#endif
+#if MAX_NR_MESH_TRANSPORT_KEYS > 0
+    btstack_memory_pool_create(&mesh_transport_key_pool, mesh_transport_key_storage, MAX_NR_MESH_TRANSPORT_KEYS, sizeof(mesh_transport_key_t));
 #endif
 #endif
 }
