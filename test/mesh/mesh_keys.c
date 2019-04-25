@@ -195,8 +195,10 @@ const mesh_transport_key_t * mesh_transport_key_get(uint16_t appkey_index){
 
 // key iterator
 
-void mesh_transport_key_iterator_init(mesh_transport_key_iterator_t *it, uint8_t akf, uint8_t aid){
+void
+mesh_transport_key_iterator_init(mesh_transport_key_iterator_t *it, uint16_t netkey_index, uint8_t akf, uint8_t aid) {
     btstack_linked_list_iterator_init(&it->it, &application_keys);
+    it->netkey_index = netkey_index;
     it->aid      = aid;
     it->akf      = akf;
     it->first    = 1;
@@ -209,7 +211,7 @@ int mesh_transport_key_iterator_has_more(mesh_transport_key_iterator_t *it){
     }
     // find next matching key
     while (1){
-        if (it->key && it->key->aid == it->aid) return 1;
+        if (it->key && it->key->aid == it->aid && it->key->netkey_index == it->netkey_index) return 1;
         if (!btstack_linked_list_iterator_has_next(&it->it)) break;
         it->key = (mesh_transport_key_t *) btstack_linked_list_iterator_next(&it->it);
     }

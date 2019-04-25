@@ -230,10 +230,11 @@ const mesh_transport_key_t * mesh_transport_key_get(uint16_t appkey_index);
 /**
  * Transport Key Iterator - init
  * @param it
+ * @param netkey_index
  * @param akf
  * @param aid
  */
-void mesh_transport_key_iterator_init(mesh_transport_key_iterator_t *it, uint8_t akf, uint8_t aid);
+void mesh_transport_key_iterator_init(mesh_transport_key_iterator_t *it, uint16_t netkey_index, uint8_t akf, uint8_t aid);
 
 /**
  * Transport Key Iterator - has more?

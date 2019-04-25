@@ -78,7 +78,9 @@ typedef struct {
     uint8_t  aid;
 } mesh_transport_key_and_virtual_address_iterator_t;
 
-static void mesh_transport_key_and_virtual_address_iterator_init(mesh_transport_key_and_virtual_address_iterator_t * it, uint16_t dst, uint8_t akf, uint8_t aid){
+static void mesh_transport_key_and_virtual_address_iterator_init(mesh_transport_key_and_virtual_address_iterator_t *it,
+                                                                 uint16_t dst, uint16_t netkey_index, uint8_t akf,
+                                                                 uint8_t aid) {
     printf("KEY_INIT: dst %04x, akf %x, aid %x\n", dst, akf, aid);
     // config
     it->dst   = dst;
@@ -88,7 +90,7 @@ static void mesh_transport_key_and_virtual_address_iterator_init(mesh_transport_
     it->key     = NULL;
     it->address = NULL;
     // init element iterators
-    mesh_transport_key_iterator_init(&it->key_it, akf, aid);
+    mesh_transport_key_iterator_init(&it->key_it, netkey_index, akf, aid);
     // init address iterator
     if (mesh_network_address_virtual(it->dst)){
         mesh_virtual_address_iterator_init(&it->address_it, dst);
@@ -460,7 +462,8 @@ static void mesh_upper_transport_process_unsegmented_access_message(mesh_network
     printf("AKF: %u\n",   akf);
     printf("AID: %02x\n", aid);
 
-    mesh_transport_key_and_virtual_address_iterator_init(&mesh_transport_key_it, mesh_network_dst(network_pdu), akf, aid);
+    mesh_transport_key_and_virtual_address_iterator_init(&mesh_transport_key_it, mesh_network_dst(network_pdu),
+            network_pdu->netkey_index, akf, aid);
     mesh_upper_transport_validate_unsegmented_message(network_pdu);
 }
 
@@ -480,7 +483,8 @@ static void mesh_upper_transport_process_message(mesh_transport_pdu_t * transpor
     printf("AKF: %u\n",   akf);
     printf("AID: %02x\n", aid);
 
-    mesh_transport_key_and_virtual_address_iterator_init(&mesh_transport_key_it, mesh_transport_dst(transport_pdu), akf, aid);
+    mesh_transport_key_and_virtual_address_iterator_init(&mesh_transport_key_it, mesh_transport_dst(transport_pdu),
+            transport_pdu->netkey_index, akf, aid);
     mesh_upper_transport_validate_segmented_message(transport_pdu);
 }
 
