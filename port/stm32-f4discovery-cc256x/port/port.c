@@ -343,7 +343,7 @@ void port_main(void){
     hci_set_link_key_db(btstack_link_key_db);
 
     // setup LE Device DB using TLV
-    le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
+    // le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
 
 #ifdef HAVE_HAL_AUDIO
     // setup audio

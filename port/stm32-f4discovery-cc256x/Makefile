@@ -54,17 +54,6 @@ ${BTSTACK_ROOT}/platform/embedded/btstack_stdin_embedded.c \
 ${BTSTACK_ROOT}/platform/embedded/btstack_tlv_flash_bank.c \
 ${BTSTACK_ROOT}/platform/embedded/btstack_uart_block_embedded.c \
 ${BTSTACK_ROOT}/src/ad_parser.c \
-${BTSTACK_ROOT}/src/ble/ancs_client.c \
-${BTSTACK_ROOT}/src/ble/att_db.c \
-${BTSTACK_ROOT}/src/ble/att_dispatch.c \
-${BTSTACK_ROOT}/src/ble/att_server.c \
-${BTSTACK_ROOT}/src/ble/gatt-service/battery_service_server.c \
-${BTSTACK_ROOT}/src/ble/gatt-service/device_information_service_server.c \
-${BTSTACK_ROOT}/src/ble/gatt-service/hids_device.c \
-${BTSTACK_ROOT}/src/ble/gatt_client.c \
-${BTSTACK_ROOT}/src/ble/le_device_db_memory.c \
-${BTSTACK_ROOT}/src/ble/le_device_db_tlv.c \
-${BTSTACK_ROOT}/src/ble/sm.c \
 ${BTSTACK_ROOT}/src/btstack_audio.c \
 ${BTSTACK_ROOT}/src/btstack_crypto.c \
 ${BTSTACK_ROOT}/src/btstack_hid_parser.c \
@@ -119,7 +108,7 @@ ${BTSTACK_ROOT}/src/hci_dump.c \
 ${BTSTACK_ROOT}/src/hci_transport_h4.c \
 ${BTSTACK_ROOT}/src/l2cap.c \
 ${BTSTACK_ROOT}/src/l2cap_signaling.c \
-bluetooth_init_cc2564B_1.6_BT_Spec_4.1.c \
+bluetooth_init_cc2564C_1.1.c \
 bsp/audio.c \
 bsp/cs43l22.c \
 bsp/stm32f4_discovery.c \
