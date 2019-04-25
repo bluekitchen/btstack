@@ -155,7 +155,7 @@ static mesh_transport_key_t   test_application_key;
 static mesh_transport_key_t   mesh_transport_device_key;
 static btstack_linked_list_t  application_keys;
 
-void mesh_application_key_set(uint16_t appkey_index, uint8_t aid, const uint8_t * application_key){
+void mesh_application_key_set(uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, const uint8_t *application_key) {
     test_application_key.appkey_index = appkey_index;
     test_application_key.aid   = aid;
     test_application_key.akf   = 1;

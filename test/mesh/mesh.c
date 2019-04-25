@@ -132,7 +132,7 @@ static void mesh_load_app_keys(void){
         uint16_t appkey_index = little_endian_read_16(data, 0);
         uint8_t  aid          = data[2];
         uint8_t * application_key = &data[3];
-        mesh_application_key_set(appkey_index, aid, application_key); 
+        mesh_application_key_set(0, appkey_index, aid, application_key);
         printf("Load AppKey: AppKey Index 0x%06x, AID %02x: ", appkey_index, aid);
         printf_hexdump(application_key, 16);
     }  else {
@@ -346,7 +346,7 @@ static void load_pts_app_key(void){
     uint8_t application_key[16];
     const char * application_key_string = "3216D1509884B533248541792B877F98";
     btstack_parse_hex(application_key_string, 16, application_key);
-    mesh_application_key_set(0, 0x38, application_key); 
+    mesh_application_key_set(0, 0, 0x38, application_key);
     printf("PTS Application Key (AID %02x): ", 0x38);
     printf_hexdump(application_key, 16);
 }
@@ -1469,12 +1469,11 @@ static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t *
     uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
 
     // get existing network_key
-    uint8_t status;
+    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
     mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
     if (network_key){
         if (mesh_network_key_list_count() > 1){
             mesh_network_key_remove(network_key);
-            status = MESH_FOUNDATION_STATUS_SUCCESS;
         } else {
             // we cannot remove the last network key
             status = MESH_FOUNDATION_STATUS_CANNOT_REMOVE;
@@ -1502,11 +1501,12 @@ static void config_appkey_add_aid(void * arg){
     // store in TLV
     mesh_store_app_key(new_appkey_index, new_aid, new_app_key.key);
 
-    // set as main app key
-    mesh_application_key_set(new_appkey_index, new_aid, new_app_key.key);
-
     // TODO: find a way to get netkey_index
     uint16_t netkey_index = 0;
+
+    // set as main app key
+    mesh_application_key_set(netkey_index, new_appkey_index, new_aid, new_app_key.key);
+
     config_appkey_status(NULL, netkey_index, mesh_pdu_src(access_pdu_in_process), netkey_and_appkey_index, 0);
 
     mesh_access_message_processed(access_pdu_in_process);

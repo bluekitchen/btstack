@@ -215,7 +215,7 @@ int mesh_transport_key_remove(mesh_transport_key_t * transport_key);
  * @param aid
  * @param application_key
  */
-void mesh_application_key_set(uint16_t appkey_index, uint8_t aid, const uint8_t * application_key);
+void mesh_application_key_set(uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, const uint8_t *application_key);
 
 /**
  * Get transport key for appkey_index

@@ -132,7 +132,7 @@ static void load_provisioning_data_test_message(void){
     load_network_key_nid_68();
     uint8_t application_key[16];
     btstack_parse_hex("63964771734fbd76e3b40519d1d94a48", 16, application_key);
-    mesh_application_key_set( 0, 0x26, application_key);
+    mesh_application_key_set( 0, 0, 0x26, application_key);
 
     uint8_t device_key[16];
     btstack_parse_hex("9d6dd0e96eb25dc19a40ed9914f8f03f", 16, device_key);

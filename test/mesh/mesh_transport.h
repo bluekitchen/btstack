@@ -55,7 +55,8 @@ void mesh_upper_transport_set_primary_element_address(uint16_t primary_element_a
 
 void mesh_transport_set_device_key(const uint8_t * device_key);
 
-void mesh_application_key_set(uint16_t appkey_index, uint8_t aid, const uint8_t * application_key);
+void
+mesh_application_key_set(uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, const uint8_t *application_key);
 
 void mesh_upper_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu);
 
