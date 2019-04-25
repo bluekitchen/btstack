@@ -74,8 +74,6 @@ typedef struct {
     // address - might be virtual
     uint16_t dst;
     // key info
-    uint8_t  akf;
-    uint8_t  aid;
 } mesh_transport_key_and_virtual_address_iterator_t;
 
 static void mesh_transport_key_and_virtual_address_iterator_init(mesh_transport_key_and_virtual_address_iterator_t *it,
@@ -84,8 +82,6 @@ static void mesh_transport_key_and_virtual_address_iterator_init(mesh_transport_
     printf("KEY_INIT: dst %04x, akf %x, aid %x\n", dst, akf, aid);
     // config
     it->dst   = dst;
-    it->aid   = aid;
-    it->akf   = akf;
     // init elements
     it->key     = NULL;
     it->address = NULL;
