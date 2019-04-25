@@ -155,20 +155,21 @@ static mesh_transport_key_t   test_application_key;
 static mesh_transport_key_t   mesh_transport_device_key;
 static btstack_linked_list_t  application_keys;
 
-void mesh_application_key_set(uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, const uint8_t *application_key) {
-    test_application_key.appkey_index = appkey_index;
-    test_application_key.aid   = aid;
-    test_application_key.akf   = 1;
-    test_application_key.netkey_index = 0;  // TODO: primary subnet
-    memcpy(test_application_key.key, application_key, 16);
-}
-
 void mesh_transport_set_device_key(const uint8_t * device_key){
     mesh_transport_device_key.appkey_index = MESH_DEVICE_KEY_INDEX;
     mesh_transport_device_key.aid   = 0;
     mesh_transport_device_key.akf   = 0;
     mesh_transport_device_key.netkey_index = 0; // unused
     memcpy(mesh_transport_device_key.key, device_key, 16);
+}
+
+void mesh_application_key_set(uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, const uint8_t *application_key) {
+    test_application_key.netkey_index = netkey_index;
+    test_application_key.appkey_index = appkey_index;
+    test_application_key.aid   = aid;
+    test_application_key.akf   = 1;
+    memcpy(test_application_key.key, application_key, 16);
+    mesh_transport_key_add(&test_application_key);
 }
 
 void mesh_transport_key_add(mesh_transport_key_t * transport_key){
@@ -183,33 +184,44 @@ const mesh_transport_key_t * mesh_transport_key_get(uint16_t appkey_index){
     if (appkey_index == MESH_DEVICE_KEY_INDEX){
         return &mesh_transport_device_key;
     }
-    if (appkey_index != test_application_key.appkey_index) return NULL;
-    return &test_application_key;
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &application_keys);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        mesh_transport_key_t * item = (mesh_transport_key_t *) btstack_linked_list_iterator_next(&it);
+        if (item->appkey_index == appkey_index) return item;
+    }
+    return NULL;
 }
 
 // key iterator
 
-
 void mesh_transport_key_iterator_init(mesh_transport_key_iterator_t *it, uint8_t akf, uint8_t aid){
+    btstack_linked_list_iterator_init(&it->it, &application_keys);
     it->aid      = aid;
     it->akf      = akf;
     it->first    = 1;
+    it->key      = NULL;
 }
 
 int mesh_transport_key_iterator_has_more(mesh_transport_key_iterator_t *it){
-    if (!it->first) return 0;
-    if (it->akf){
-        return it->aid == test_application_key.aid;
-    } else {
-        return 1;
+    if (it->akf == 0){
+        return it->first;
     }
+    // find next matching key
+    while (1){
+        if (it->key && it->key->aid == it->aid) return 1;
+        if (!btstack_linked_list_iterator_has_next(&it->it)) break;
+        it->key = (mesh_transport_key_t *) btstack_linked_list_iterator_next(&it->it);
+    }
+    return 0;
 }
 
 const mesh_transport_key_t * mesh_transport_key_iterator_get_next(mesh_transport_key_iterator_t *it){
-    it->first = 0;
-    if (it->akf){
-        return &test_application_key;
-    } else {
+    if (it->akf == 0) {
+        it->first = 0;
         return &mesh_transport_device_key;
     }
+    mesh_transport_key_t * key = it->key;
+    it->key = NULL;
+    return key;
 }

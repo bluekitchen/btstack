@@ -99,6 +99,9 @@ typedef struct {
 } mesh_transport_key_t;
 
 typedef struct {
+    btstack_linked_list_iterator_t it;
+    mesh_transport_key_t * key;
+    uint16_t netkey_index;
     uint8_t  akf;
     uint8_t  aid;
     uint8_t  first;
