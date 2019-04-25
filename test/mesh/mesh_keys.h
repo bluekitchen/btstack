@@ -227,27 +227,28 @@ void mesh_application_key_set(uint16_t netkey_index, uint16_t appkey_index, uint
 const mesh_transport_key_t * mesh_transport_key_get(uint16_t appkey_index);
 
 /**
- * Transport Key Iterator - init
+ * Transport Key Iterator by AID - init
  * @param it
  * @param netkey_index
  * @param akf
  * @param aid
  */
-void mesh_transport_key_iterator_init(mesh_transport_key_iterator_t *it, uint16_t netkey_index, uint8_t akf, uint8_t aid);
+void mesh_transport_key_aid_iterator_init(mesh_transport_key_iterator_t *it, uint16_t netkey_index, uint8_t akf,
+                                          uint8_t aid);
 
 /**
- * Transport Key Iterator - has more?
+ * Transport Key Iterator by AID - has more?
  * @param it
  * @return
  */
-int mesh_transport_key_iterator_has_more(mesh_transport_key_iterator_t *it);
+int mesh_transport_key_aid_iterator_has_more(mesh_transport_key_iterator_t *it);
 
-/** Transport Key Iterator - get next
+/** Transport Key Iterator by AID - get next
  *
  * @param it
  * @return transport key
  */
-const mesh_transport_key_t * mesh_transport_key_iterator_get_next(mesh_transport_key_iterator_t *it);
+const mesh_transport_key_t * mesh_transport_key_aid_iterator_get_next(mesh_transport_key_iterator_t *it);
 
 #ifdef __cplusplus
 } /* end of extern "C" */

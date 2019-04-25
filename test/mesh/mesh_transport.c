@@ -86,13 +86,13 @@ static void mesh_transport_key_and_virtual_address_iterator_init(mesh_transport_
     it->key     = NULL;
     it->address = NULL;
     // init element iterators
-    mesh_transport_key_iterator_init(&it->key_it, netkey_index, akf, aid);
+    mesh_transport_key_aid_iterator_init(&it->key_it, netkey_index, akf, aid);
     // init address iterator
     if (mesh_network_address_virtual(it->dst)){
         mesh_virtual_address_iterator_init(&it->address_it, dst);
         // get first key
-        if (mesh_transport_key_iterator_has_more(&it->key_it)) {
-            it->key = mesh_transport_key_iterator_get_next(&it->key_it);
+        if (mesh_transport_key_aid_iterator_has_more(&it->key_it)) {
+            it->key = mesh_transport_key_aid_iterator_get_next(&it->key_it);
         }
     }
 }
@@ -103,13 +103,13 @@ static int mesh_transport_key_and_virtual_address_iterator_has_more(mesh_transpo
         // find next valid entry
         while (1){
             if (mesh_virtual_address_iterator_has_more(&it->address_it)) return 1;
-            if (!mesh_transport_key_iterator_has_more(&it->key_it)) return 0;
+            if (!mesh_transport_key_aid_iterator_has_more(&it->key_it)) return 0;
             // get next key
-            it->key = mesh_transport_key_iterator_get_next(&it->key_it);
+            it->key = mesh_transport_key_aid_iterator_get_next(&it->key_it);
             mesh_virtual_address_iterator_init(&it->address_it, it->dst);
         }
     } else {
-        return mesh_transport_key_iterator_has_more(&it->key_it);
+        return mesh_transport_key_aid_iterator_has_more(&it->key_it);
     }
 }
 
@@ -117,7 +117,7 @@ static void mesh_transport_key_and_virtual_address_iterator_next(mesh_transport_
     if (mesh_network_address_virtual(it->dst)) {
         it->address = mesh_virtual_address_iterator_get_next(&it->address_it);
     } else {
-        it->key = mesh_transport_key_iterator_get_next(&it->key_it);
+        it->key = mesh_transport_key_aid_iterator_get_next(&it->key_it);
     }
 }
 
