@@ -194,6 +194,26 @@ const mesh_transport_key_t * mesh_transport_key_get(uint16_t appkey_index){
 }
 
 // key iterator
+void mesh_transport_key_iterator_init(mesh_transport_key_iterator_t *it, uint16_t netkey_index){
+    btstack_linked_list_iterator_init(&it->it, &application_keys);
+    it->netkey_index = netkey_index;
+}
+
+int mesh_transport_key_iterator_has_more(mesh_transport_key_iterator_t *it){
+    // find next matching key
+    while (1){
+        if (it->key && it->key->netkey_index == it->netkey_index) return 1;
+        if (!btstack_linked_list_iterator_has_next(&it->it)) break;
+        it->key = (mesh_transport_key_t *) btstack_linked_list_iterator_next(&it->it);
+    }
+    return 0;
+}
+
+mesh_transport_key_t * mesh_transport_key_iterator_get_next(mesh_transport_key_iterator_t *it){
+    mesh_transport_key_t * key = it->key;
+    it->key = NULL;
+    return key;
+}
 
 void
 mesh_transport_key_aid_iterator_init(mesh_transport_key_iterator_t *it, uint16_t netkey_index, uint8_t akf, uint8_t aid) {
@@ -206,7 +226,6 @@ mesh_transport_key_aid_iterator_init(mesh_transport_key_iterator_t *it, uint16_t
     } else {
         it->key = &mesh_transport_device_key;
     }
-
 }
 
 int mesh_transport_key_aid_iterator_has_more(mesh_transport_key_iterator_t *it){

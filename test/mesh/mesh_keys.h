@@ -180,7 +180,7 @@ void mesh_network_key_nid_iterator_init(mesh_network_key_iterator_t *it, uint8_t
 int mesh_network_key_nid_iterator_has_more(mesh_network_key_iterator_t *it);
 
 /**
- * Get net network_key with given NID
+ * Get next network_key with given NID
  * @param it
  * @return
  */
@@ -225,6 +225,27 @@ void mesh_application_key_set(uint16_t netkey_index, uint16_t appkey_index, uint
  * @return
  */
 const mesh_transport_key_t * mesh_transport_key_get(uint16_t appkey_index);
+
+/**
+ * @brief Iterate over all transport keys (AppKeys) for a given netkey index
+ * @param it
+ * @param netkey_index
+ */
+void mesh_transport_key_iterator_init(mesh_transport_key_iterator_t *it, uint16_t netkey_index);
+
+/**
+ * Check if another transport key (AppKey) is available
+ * @param it
+ * @return
+ */
+int mesh_transport_key_iterator_has_more(mesh_transport_key_iterator_t *it);
+
+/**
+ * Get next transport key (AppKey)
+ * @param it
+ * @return
+ */
+mesh_transport_key_t * mesh_transport_key_iterator_get_next(mesh_transport_key_iterator_t *it);
 
 /**
  * Transport Key Iterator by AID - init
