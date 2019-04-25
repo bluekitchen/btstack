@@ -1058,12 +1058,13 @@ static mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_acc
 static btstack_crypto_aes128_cmac_t configuration_server_cmac_request;
 
 static uint32_t netkey_and_appkey_index;
-static uint8_t  new_app_key[16];
 static uint8_t  new_aid;
 static uint16_t new_netkey_index;
 static uint16_t new_appkey_index;
 
 static mesh_pdu_t * access_pdu_in_process;
+
+static mesh_transport_key_t new_app_key;
 
 typedef struct  {
     btstack_timer_source_t timer;
@@ -1496,13 +1497,13 @@ static void config_appkey_add_aid(void * arg){
     UNUSED(arg);
 
     printf("Config Appkey Add: NetKey Index 0x%06x, AppKey Index 0x%06x, AID %02x: ", new_netkey_index, new_appkey_index, new_aid);
-    printf_hexdump(new_app_key, 16);
+    printf_hexdump(new_app_key.key, 16);
 
     // store in TLV
-    mesh_store_app_key(new_appkey_index, new_aid, new_app_key);
+    mesh_store_app_key(new_appkey_index, new_aid, new_app_key.key);
 
     // set as main app key
-    mesh_application_key_set(new_appkey_index, new_aid, new_app_key);
+    mesh_application_key_set(new_appkey_index, new_aid, new_app_key.key);
 
     // TODO: find a way to get netkey_index
     uint16_t netkey_index = 0;
@@ -1520,11 +1521,11 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     new_netkey_index = netkey_and_appkey_index & 0xfff;
     new_appkey_index = netkey_and_appkey_index >> 12;
     // actual key
-    mesh_access_parser_get_key(&parser, new_app_key);
+    mesh_access_parser_get_key(&parser, new_app_key.key);
 
     // calculate AID
     access_pdu_in_process = pdu;
-    mesh_transport_key_calc_aid(&mesh_cmac_request, new_app_key, config_appkey_add_aid, NULL);
+    mesh_transport_key_calc_aid(&mesh_cmac_request, &new_app_key, config_appkey_add_aid, NULL);
 }
 
 static void config_model_subscription_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status, uint16_t element_address, uint16_t address, uint32_t model_identifier){
