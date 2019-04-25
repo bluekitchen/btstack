@@ -104,6 +104,16 @@ static void btstack_print_hex(const uint8_t * data, uint16_t len, char separator
     printf("\n");
 }
 
+static mesh_transport_key_t   test_application_key;
+static void mesh_application_key_set(uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, const uint8_t *application_key) {
+    test_application_key.netkey_index = netkey_index;
+    test_application_key.appkey_index = appkey_index;
+    test_application_key.aid   = aid;
+    test_application_key.akf   = 1;
+    memcpy(test_application_key.key, application_key, 16);
+    mesh_transport_key_add(&test_application_key);
+}
+
 static void load_network_key_nid_68(void){
     mesh_provisioning_data_t provisioning_data;
     provisioning_data.nid = 0x68;

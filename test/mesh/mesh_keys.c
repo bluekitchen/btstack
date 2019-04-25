@@ -151,7 +151,6 @@ void mesh_network_key_list_add_from_provisioning_data(const mesh_provisioning_da
 // application key list
 
 // key management
-static mesh_transport_key_t   test_application_key;
 static mesh_transport_key_t   mesh_transport_device_key;
 static btstack_linked_list_t  application_keys;
 
@@ -161,15 +160,6 @@ void mesh_transport_set_device_key(const uint8_t * device_key){
     mesh_transport_device_key.akf   = 0;
     mesh_transport_device_key.netkey_index = 0; // unused
     memcpy(mesh_transport_device_key.key, device_key, 16);
-}
-
-void mesh_application_key_set(uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, const uint8_t *application_key) {
-    test_application_key.netkey_index = netkey_index;
-    test_application_key.appkey_index = appkey_index;
-    test_application_key.aid   = aid;
-    test_application_key.akf   = 1;
-    memcpy(test_application_key.key, application_key, 16);
-    mesh_transport_key_add(&test_application_key);
 }
 
 void mesh_transport_key_add(mesh_transport_key_t * transport_key){
