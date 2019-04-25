@@ -104,7 +104,6 @@ typedef struct {
     uint16_t netkey_index;
     uint8_t  akf;
     uint8_t  aid;
-    uint8_t  first;
 } mesh_transport_key_iterator_t;
 
 /**
