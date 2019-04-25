@@ -185,10 +185,29 @@ int mesh_network_key_nid_iterator_has_more(mesh_network_key_iterator_t *it);
 const mesh_network_key_t * mesh_network_key_nid_iterator_get_next(mesh_network_key_iterator_t *it);
 
 /**
+ * Transport Keys = Application Keys + Device Key
+ */
+
+/**
  * Set device key
  * @param device_key
  */
 void mesh_transport_set_device_key(const uint8_t * device_key);
+
+/**
+ * @brief Add network key to list
+ * @param application key
+ * @note AID needs to be set
+ */
+void mesh_transport_key_add(mesh_transport_key_t * transport_key);
+
+/**
+ * @brief Remove network key from list
+ * @param application key
+ * @return 0 if removed
+ * @note key is only removed from list, memory is not released
+ */
+int mesh_transport_key_remove(mesh_transport_key_t * transport_key);
 
 /**
  * Add Application Key
