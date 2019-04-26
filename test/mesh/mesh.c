@@ -1502,6 +1502,33 @@ static void config_appkey_status(mesh_model_t * mesh_model, uint16_t netkey_inde
     config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
+static void config_appkey_list(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint32_t netkey_index_of_list){
+    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_APPKEY_LIST);
+    if (!transport_pdu) return;
+
+    // check netkey_index is valid
+    mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index_of_list);
+    uint8_t status;
+    if (network_key == NULL){
+        status = MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX;
+    } else {
+        status = MESH_FOUNDATION_STATUS_SUCCESS;
+    }
+    mesh_access_transport_add_uint8(transport_pdu, status);
+    mesh_access_transport_add_uint16(transport_pdu, netkey_index_of_list);
+
+    // add list of appkey indexes
+    mesh_transport_key_iterator_t it;
+    mesh_transport_key_iterator_init(&it, netkey_index);
+    while (mesh_transport_key_iterator_has_more(&it)){
+        mesh_transport_key_t * transport_key = mesh_transport_key_iterator_get_next(&it);
+        mesh_access_transport_add_uint16(transport_pdu, transport_key->appkey_index);
+    }
+
+    // send as segmented access pdu
+    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+}
+
 static void config_appkey_add_aid(void * arg){
     mesh_transport_key_t * transport_key = (mesh_transport_key_t *) arg;
 
@@ -1577,7 +1604,6 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
 }
 
 static void config_appkey_delete_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
-
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t *) pdu);
 
@@ -1600,6 +1626,15 @@ static void config_appkey_delete_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
         mesh_transport_key_remove(transport_key);
     }
     config_appkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_SUCCESS);
+    mesh_access_message_processed(pdu);
+}
+
+static void config_appkey_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t *) pdu);
+    uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
+
+    config_appkey_list(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_index);
     mesh_access_message_processed(pdu);
 }
 
@@ -1976,7 +2011,7 @@ typedef struct {
 static mesh_operation_t mesh_configuration_server_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_APPKEY_ADD,                                  19, config_appkey_add_handler   },
     { MESH_FOUNDATION_OPERATION_APPKEY_DELETE,                                3, config_appkey_delete_handler },
-//    { MESH_FOUNDATION_OPERATION_APPKEY_GET,                                   2, config_appkey_get_handler },
+    { MESH_FOUNDATION_OPERATION_APPKEY_GET,                                   2, config_appkey_get_handler },
 //    { MESH_FOUNDATION_OPERATION_APPKEY_UPDATE,                               19, config_appkey_update_handler },
     { MESH_FOUNDATION_OPERATION_NETKEY_ADD,                                  18, config_netkey_add_handler },
     { MESH_FOUNDATION_OPERATION_NETKEY_UPDATE,                               18, config_netkey_update_handler },
