@@ -108,7 +108,7 @@ int mesh_network_key_nid_iterator_has_more(mesh_network_key_iterator_t *it){
     return 0;
 }
 
-const mesh_network_key_t * mesh_network_key_nid_iterator_get_next(mesh_network_key_iterator_t *it){
+mesh_network_key_t * mesh_network_key_nid_iterator_get_next(mesh_network_key_iterator_t *it){
     mesh_network_key_t * key = it->key;
     it->key = NULL;
     return key;
@@ -170,7 +170,7 @@ int mesh_transport_key_remove(mesh_transport_key_t * transport_key){
     return btstack_linked_list_remove(&application_keys, (btstack_linked_item_t *) transport_key);
 }
 
-const mesh_transport_key_t * mesh_transport_key_get(uint16_t appkey_index){
+mesh_transport_key_t * mesh_transport_key_get(uint16_t appkey_index){
     if (appkey_index == MESH_DEVICE_KEY_INDEX){
         return &mesh_transport_device_key;
     }
@@ -231,7 +231,7 @@ int mesh_transport_key_aid_iterator_has_more(mesh_transport_key_iterator_t *it){
     return 0;
 }
 
-const mesh_transport_key_t * mesh_transport_key_aid_iterator_get_next(mesh_transport_key_iterator_t *it){
+mesh_transport_key_t * mesh_transport_key_aid_iterator_get_next(mesh_transport_key_iterator_t *it){
     mesh_transport_key_t * key = it->key;
     it->key = NULL;
     return key;

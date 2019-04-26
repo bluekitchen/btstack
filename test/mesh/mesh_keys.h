@@ -184,7 +184,7 @@ int mesh_network_key_nid_iterator_has_more(mesh_network_key_iterator_t *it);
  * @param it
  * @return
  */
-const mesh_network_key_t * mesh_network_key_nid_iterator_get_next(mesh_network_key_iterator_t *it);
+mesh_network_key_t * mesh_network_key_nid_iterator_get_next(mesh_network_key_iterator_t *it);
 
 /**
  * Transport Keys = Application Keys + Device Key
@@ -216,7 +216,7 @@ int mesh_transport_key_remove(mesh_transport_key_t * transport_key);
  * @param appkey_index
  * @return
  */
-const mesh_transport_key_t * mesh_transport_key_get(uint16_t appkey_index);
+mesh_transport_key_t * mesh_transport_key_get(uint16_t appkey_index);
 
 /**
  * @brief Iterate over all transport keys (AppKeys) for a given netkey index
@@ -261,7 +261,7 @@ int mesh_transport_key_aid_iterator_has_more(mesh_transport_key_iterator_t *it);
  * @param it
  * @return transport key
  */
-const mesh_transport_key_t * mesh_transport_key_aid_iterator_get_next(mesh_transport_key_iterator_t *it);
+mesh_transport_key_t * mesh_transport_key_aid_iterator_get_next(mesh_transport_key_iterator_t *it);
 
 #ifdef __cplusplus
 } /* end of extern "C" */
