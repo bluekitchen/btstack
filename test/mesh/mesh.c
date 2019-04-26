@@ -1519,7 +1519,7 @@ static void config_appkey_list(mesh_model_t * mesh_model, uint16_t netkey_index,
 
     // add list of appkey indexes
     mesh_transport_key_iterator_t it;
-    mesh_transport_key_iterator_init(&it, netkey_index);
+    mesh_transport_key_iterator_init(&it, netkey_index_of_list);
     while (mesh_transport_key_iterator_has_more(&it)){
         mesh_transport_key_t * transport_key = mesh_transport_key_iterator_get_next(&it);
         mesh_access_transport_add_uint16(transport_pdu, transport_key->appkey_index);
@@ -1573,7 +1573,7 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     mesh_transport_key_t * transport_key = mesh_transport_key_get(appkey_index);
     if (transport_key){
         uint8_t status;
-        if (memcmp(transport_key, appkey, 16) == 0){
+        if (memcmp(transport_key->key, appkey, 16) == 0){
             // key identical
             status = MESH_FOUNDATION_STATUS_SUCCESS;
         } else {
