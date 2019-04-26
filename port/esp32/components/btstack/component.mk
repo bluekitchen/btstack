@@ -7,14 +7,14 @@
 # please read the ESP-IDF documents if you need to do this.
 #
 
-# micro-ecc of ESP32 tree was moved into components/bootloader/micro-ecc
+# micro-ecc of ESP32 tree was moved into components/bootloader/micro-ecc in v3.3
+# we use our copy, but keep it private to not clash compiling the bootloader
 
 COMPONENT_ADD_INCLUDEDIRS := \
 	3rd-party/bluedroid/decoder/include \
 	3rd-party/bluedroid/encoder/include \
 	3rd-party/hxcmod-player \
 	3rd-party/hxcmod-player/mods \
-	3rd-party/micro-ecc \
 	3rd-party/md5 \
 	3rd-party/yxml \
 	src/classic \
@@ -25,6 +25,9 @@ COMPONENT_ADD_INCLUDEDIRS := \
 	platform/embedded \
 	platform/freertos \
 	include \
+
+COMPONENT_PRIV_INCLUDEDIRS := \
+	3rd-party/micro-ecc \
 
 COMPONENT_SRCDIRS := \
 	3rd-party/bluedroid/decoder/srce \
