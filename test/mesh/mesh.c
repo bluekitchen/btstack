@@ -137,6 +137,7 @@ static void mesh_application_key_set(uint16_t netkey_index, uint16_t appkey_inde
 }
 
 static void mesh_load_app_keys(void){
+/*
     uint8_t data[2+1+16];
     int app_key_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, 'APPK', (uint8_t *) &data, sizeof(data));
     if (app_key_len){
@@ -149,9 +150,11 @@ static void mesh_load_app_keys(void){
     }  else {
         printf("No Appkey stored\n");
     }
+*/
 }
 
 void mesh_store_app_key(uint16_t appkey_index, uint8_t aid, const uint8_t * application_key){
+/*
     printf("Store AppKey: AppKey Index 0x%06x, AID %02x: ", appkey_index, aid);
     printf_hexdump(application_key, 16);
     uint8_t data[2+1+16];
@@ -159,6 +162,7 @@ void mesh_store_app_key(uint16_t appkey_index, uint8_t aid, const uint8_t * appl
     data[2] = aid;
     memcpy(&data[3], application_key, 16);
     btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, 'APPK', (uint8_t *) &data, sizeof(data));
+*/
 }
 
 // helper network layer, temp
@@ -946,12 +950,12 @@ static void mesh_access_transport_add_uint16(mesh_transport_pdu_t * pdu, uint16_
     pdu->len += 2;
 }
 
-static void mesh_access_transport_add_uint24(mesh_transport_pdu_t * pdu, uint16_t value){
+static void mesh_access_transport_add_uint24(mesh_transport_pdu_t * pdu, uint32_t value){
     little_endian_store_24(pdu->data, pdu->len, value);
     pdu->len += 3;
 }
 
-static void mesh_access_transport_add_uint32(mesh_transport_pdu_t * pdu, uint16_t value){
+static void mesh_access_transport_add_uint32(mesh_transport_pdu_t * pdu, uint32_t value){
     little_endian_store_32(pdu->data, pdu->len, value);
     pdu->len += 4;
 }
@@ -1551,6 +1555,7 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
         }
         config_appkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_and_appkey_index, status);
         mesh_access_message_processed(pdu);
+        return;
     }
 
     // create app key
