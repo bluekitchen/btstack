@@ -251,7 +251,7 @@ int btstack_network_up(bd_addr_t network_address){
     btstack_run_loop_add_data_source(&tap_dev_ds);
     btstack_run_loop_enable_data_source_callbacks(&tap_dev_ds, DATA_SOURCE_CALLBACK_READ);
 
-    return 0;
+    return 0;;
 }
 
 /**
@@ -264,16 +264,13 @@ const char * btstack_network_get_name(void){
 }
 
 /**
- * @brief Bring up network interface
+ * @brief Bring up network interfacd
  * @param network_address
  * @return 0 if ok
  */
 int btstack_network_down(void){
     log_info("BNEP channel closed");
     btstack_run_loop_remove_data_source(&tap_dev_ds);
-    if (tap_fd >= 0){
-        close(tap_fd);
-    }
     tap_fd = -1;
     return 0;
 }
