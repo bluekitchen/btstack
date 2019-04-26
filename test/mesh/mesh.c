@@ -1573,7 +1573,10 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     mesh_transport_key_t * transport_key = mesh_transport_key_get(appkey_index);
     if (transport_key){
         uint8_t status;
-        if (memcmp(transport_key->key, appkey, 16) == 0){
+        if (transport_key->netkey_index != netkey_index){
+            // already stored but with different netkey
+            status = MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX;
+        } else if (memcmp(transport_key->key, appkey, 16) == 0 && transport_key->netkey_index == netkey_index){
             // key identical
             status = MESH_FOUNDATION_STATUS_SUCCESS;
         } else {
