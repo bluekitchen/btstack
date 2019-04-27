@@ -1495,7 +1495,15 @@ static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t *
     mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
     if (network_key){
         if (mesh_network_key_list_count() > 1){
+            // remove netkey
             mesh_network_key_remove(network_key);
+            // remove all appkeys for this netkey
+            mesh_transport_key_iterator_t it;
+            mesh_transport_key_iterator_init(&it, netkey_index);
+            while (mesh_transport_key_iterator_has_more(&it)){
+                mesh_transport_key_t * transport_key = mesh_transport_key_iterator_get_next(&it);
+                mesh_transport_key_remove(transport_key);
+            }
         } else {
             // we cannot remove the last network key
             status = MESH_FOUNDATION_STATUS_CANNOT_REMOVE;
