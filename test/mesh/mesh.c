@@ -1541,10 +1541,10 @@ static void config_appkey_list(mesh_model_t * mesh_model, uint16_t netkey_index,
     config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
-static void config_appkey_add_aid(void * arg){
+static void config_appkey_add_or_udpate_aid(void *arg){
     mesh_transport_key_t * transport_key = (mesh_transport_key_t *) arg;
 
-    printf("Config Appkey Add: NetKey Index 0x%04x, AppKey Index 0x%04x, AID %02x: ", transport_key->netkey_index, transport_key->appkey_index, transport_key->aid);
+    printf("Config Appkey Add/Update: NetKey Index 0x%04x, AppKey Index 0x%04x, AID %02x: ", transport_key->netkey_index, transport_key->appkey_index, transport_key->aid);
     printf_hexdump(transport_key->key, 16);
 
     // store in TLV
@@ -1615,7 +1615,7 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
 
     // calculate AID
     access_pdu_in_process = pdu;
-    mesh_transport_key_calc_aid(&mesh_cmac_request, app_key, config_appkey_add_aid, app_key);
+    mesh_transport_key_calc_aid(&mesh_cmac_request, app_key, config_appkey_add_or_udpate_aid, app_key);
 }
 
 static void config_appkey_update_aid(void * arg){
@@ -1677,12 +1677,23 @@ static void config_appkey_update_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
         return;
     }
 
-    // update key
-    memcpy(transport_key->key, appkey, 16);
+    // create app key
+    mesh_transport_key_t * app_key = btstack_memory_mesh_transport_key_get();
+    if (app_key == NULL) {
+        config_appkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES);
+        mesh_access_message_processed(pdu);
+        return;
+    }
+
+    // store data
+    app_key->appkey_index = appkey_index;
+    app_key->netkey_index = netkey_index;
+    app_key->key_refresh  = 1;
+    memcpy(app_key->key, appkey, 16);
 
     // calculate AID
     access_pdu_in_process = pdu;
-    mesh_transport_key_calc_aid(&mesh_cmac_request, transport_key, config_appkey_update_aid, transport_key);
+    mesh_transport_key_calc_aid(&mesh_cmac_request, app_key, config_appkey_add_or_udpate_aid, app_key);
 }
 
 static void config_appkey_delete_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
