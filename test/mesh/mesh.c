@@ -1362,6 +1362,14 @@ static void config_model_network_transmit_set_handler(mesh_model_t * mesh_model,
     mesh_access_message_processed(pdu);
 }
 
+// NetKey List
+
+static int config_netkey_list_max = 0;
+
+static void config_nekey_list_set_max(uint16_t max){
+    config_netkey_list_max = max;
+}
+
 static void config_netkey_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status, uint16_t new_netkey_index){
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
@@ -1372,16 +1380,27 @@ static void config_netkey_status(mesh_model_t * mesh_model, uint16_t netkey_inde
     config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
-static void config_netkey_add_derived(void * arg){
+static void config_netkey_list(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest) {
+    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_NETKEY_LIST);
+    if (!transport_pdu) return;
+
+    // add list of netkey indexes
+    mesh_network_key_iterator_t it;
+    mesh_network_key_iterator_init(&it);
+    while (mesh_network_key_iterator_has_more(&it)){
+        mesh_network_key_t * network_key = mesh_network_key_iterator_get_next(&it);
+        mesh_access_transport_add_uint16(transport_pdu, network_key->netkey_index);
+    }
+
+    // send as segmented access pdu
+    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+}
+
+static void config_netkey_add_or_update_derived(void * arg){
     mesh_network_key_t * network_key = (mesh_network_key_t *) arg;
     mesh_network_key_add(network_key);
     config_netkey_status(NULL, mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), MESH_FOUNDATION_STATUS_SUCCESS, network_key->netkey_index);
-}
-
-static int config_netkey_list_max = 0;
-
-static void config_nekey_list_set_max(uint16_t max){
-    config_netkey_list_max = max;
+    mesh_access_message_processed(access_pdu_in_process);
 }
 
 static void config_netkey_add_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu){
@@ -1418,37 +1437,18 @@ static void config_netkey_add_handler(mesh_model_t * mesh_model, mesh_pdu_t * pd
                 access_pdu_in_process = pdu;
                 new_network_key->netkey_index = new_netkey_index;
                 memcpy(new_network_key->net_key, new_netkey, 16);
-                mesh_network_key_derive(&configuration_server_cmac_request, new_network_key, config_netkey_add_derived, new_network_key);
+                mesh_network_key_derive(&configuration_server_cmac_request, new_network_key, config_netkey_add_or_update_derived, new_network_key);
                 return;
             }
         }
     }
     config_netkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, new_netkey_index);
-}
-
-static void config_netkey_list(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest) {
-    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_NETKEY_LIST);
-    if (!transport_pdu) return;
-
-    // add list of netkey indexes
-    mesh_network_key_iterator_t it;
-    mesh_network_key_iterator_init(&it);
-    while (mesh_network_key_iterator_has_more(&it)){
-        mesh_network_key_t * network_key = mesh_network_key_iterator_get_next(&it);
-        mesh_access_transport_add_uint16(transport_pdu, network_key->netkey_index);
-    }
-
-    // send as segmented access pdu
-    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    mesh_access_message_processed(access_pdu_in_process);
 }
 
 static void config_netkey_get_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu){
     config_netkey_list(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
-}
-
-static void config_netkey_update_derived(void * arg){
-    mesh_network_key_t * network_key = (mesh_network_key_t *) arg;
-    config_netkey_status(NULL, mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), MESH_FOUNDATION_STATUS_SUCCESS, network_key->netkey_index);
+    mesh_access_message_processed(pdu);
 }
 
 static void config_netkey_update_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu) {
@@ -1464,11 +1464,23 @@ static void config_netkey_update_handler(mesh_model_t * mesh_model, mesh_pdu_t *
     mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
     if (network_key == NULL){
         config_netkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX, netkey_index);
-    } else {
-        memcpy(network_key->net_key, new_netkey, 16);
-        access_pdu_in_process = pdu;
-        mesh_network_key_derive(&configuration_server_cmac_request, network_key, config_netkey_update_derived, network_key);
+        mesh_access_message_processed(access_pdu_in_process);
+        return;
     }
+
+    // setup new key
+    mesh_network_key_t * new_network_key = btstack_memory_mesh_network_key_get();
+    if (new_network_key == NULL){
+        config_netkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES, netkey_index);
+        mesh_access_message_processed(access_pdu_in_process);
+        return;
+    }
+
+    access_pdu_in_process = pdu;
+    new_network_key->netkey_index = netkey_index;
+    new_network_key->key_refresh  = 1;
+    memcpy(new_network_key->net_key, new_netkey, 16);
+    mesh_network_key_derive(&configuration_server_cmac_request, new_network_key, config_netkey_add_or_update_derived, new_network_key);
 }
 
 static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu) {
@@ -1653,7 +1665,7 @@ static void config_appkey_update_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
 
     if (transport_key->netkey_index != netkey_index){
         // already stored but with different netkey
-        config_appkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX);
+        config_appkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_INVALID_BINDING);
         mesh_access_message_processed(pdu);
         return;
     }
