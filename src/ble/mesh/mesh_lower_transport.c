@@ -278,15 +278,18 @@ static void mesh_lower_transport_restart_incomplete_timer(mesh_transport_pdu_t *
     transport_pdu->incomplete_timer_active = 1;
 }
 
-// abort outgoing transmission
+static void mesh_lower_transport_outgoing_complete(void){
+    mesh_transport_pdu_t * pdu   = lower_transport_outgoing_pdu;
+    lower_transport_outgoing_pdu = NULL;
+    higher_layer_handler(MESH_TRANSPORT_PDU_SENT, MESH_TRANSPORT_STATUS_SEND_ABORT_BY_REMOTE, (mesh_pdu_t *) pdu);
+}
+
 static void mesh_lower_transport_abort_transmission(void){
     // stop ack timers
     mesh_lower_transport_stop_acknowledgment_timer(lower_transport_outgoing_pdu);
 
     // notify upper transport
-    mesh_transport_pdu_t * pdu   = lower_transport_outgoing_pdu;
-    lower_transport_outgoing_pdu = NULL;
-    higher_layer_handler(MESH_TRANSPORT_PDU_SENT, MESH_TRANSPORT_STATUS_SEND_ABORT_BY_REMOTE, (mesh_pdu_t *) pdu);
+    mesh_lower_transport_outgoing_complete();
 }
 
 static mesh_transport_pdu_t * mesh_lower_transport_pdu_for_segmented_message(mesh_network_pdu_t *network_pdu){
@@ -504,7 +507,7 @@ static void mesh_lower_transport_send_next_segment(void){
     }
 
     if (lower_transport_outgoing_seg_o > seg_n){
-        printf("[+] Upper transport, send segmented pdu complete (dst %x)\n", mesh_transport_dst(lower_transport_outgoing_pdu));
+        printf("[+] Lower Transport, send segmented pdu complete (dst %x)\n", mesh_transport_dst(lower_transport_outgoing_pdu));
         lower_transport_outgoing_seg_o   = 0;
 
         // done for unicast, ack timer already set, too
@@ -512,16 +515,14 @@ static void mesh_lower_transport_send_next_segment(void){
 
         // done, more?
         if (lower_transport_retry_count == 0){
-            printf("[+] Upper transport, message unacknowledged -> free\n");
+            printf("[+] Lower Transport, message unacknowledged -> free\n");
             // notify upper transport
-            mesh_transport_pdu_t * pdu   = lower_transport_outgoing_pdu;
-            lower_transport_outgoing_pdu = NULL;
-            higher_layer_handler(MESH_TRANSPORT_PDU_SENT, MESH_TRANSPORT_STATUS_SEND_FAILED, (mesh_pdu_t *) pdu);
+            mesh_lower_transport_outgoing_complete();
             return;
         }
 
         // start retry
-        printf("[+] Upper transport, message unacknowledged retry count %u\n", lower_transport_retry_count);
+        printf("[+] Lower Transport, message unacknowledged retry count %u\n", lower_transport_retry_count);
         lower_transport_retry_count--;
     }
 
@@ -540,7 +541,7 @@ static void mesh_lower_transport_send_next_segment(void){
     mesh_lower_transport_setup_segment(lower_transport_outgoing_pdu, lower_transport_outgoing_seg_o,
                                        lower_transport_outgoing_segment);
 
-    printf("[+] Upper transport, send segmented pdu: seg_o %x, seg_n %x\n", lower_transport_outgoing_seg_o, seg_n);
+    printf("[+] Lower Transport, send segmented pdu: seg_o %x, seg_n %x\n", lower_transport_outgoing_seg_o, seg_n);
     mesh_print_hex("LowerTransportPDU", lower_transport_outgoing_segment->data, lower_transport_outgoing_segment->len);
 
     // next segment
@@ -573,11 +574,12 @@ static void mesh_lower_transport_send_segmented_pdu_once(mesh_transport_pdu_t *t
 
     if (lower_transport_retry_count == 0){
         printf("[!] Upper transport, send segmented pdu failed, retries exhausted\n");
+        mesh_lower_transport_outgoing_complete();
         return;
     }
 
     // chop into chunks
-    printf("[+] Upper transport, send segmented pdu (retry count %u)\n", lower_transport_retry_count);
+    printf("[+] Lower Transport, send segmented pdu (retry count %u)\n", lower_transport_retry_count);
     lower_transport_retry_count--;
 
     // setup
