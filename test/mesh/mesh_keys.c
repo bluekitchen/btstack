@@ -57,7 +57,7 @@ void mesh_network_key_init(void){
 }
 
 void mesh_network_key_add(mesh_network_key_t * network_key){
-    btstack_linked_list_add(&network_keys, (btstack_linked_item_t *) network_key);
+    btstack_linked_list_add_tail(&network_keys, (btstack_linked_item_t *) network_key);
 }
 
 int mesh_network_key_remove(mesh_network_key_t * network_key){
@@ -163,7 +163,7 @@ void mesh_transport_set_device_key(const uint8_t * device_key){
 }
 
 void mesh_transport_key_add(mesh_transport_key_t * transport_key){
-    btstack_linked_list_add(&application_keys, (btstack_linked_item_t *) transport_key);
+    btstack_linked_list_add_tail(&application_keys, (btstack_linked_item_t *) transport_key);
 }
 
 int mesh_transport_key_remove(mesh_transport_key_t * transport_key){

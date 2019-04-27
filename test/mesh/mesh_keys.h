@@ -64,13 +64,17 @@ typedef struct {
     uint8_t identity_key[16];
     uint8_t beacon_key[16];
 
+    // k3
+    uint8_t network_id[8];
+
     // k2
     uint8_t nid;
     uint8_t encryption_key[16];
     uint8_t privacy_key[16];
 
-    // k3
-    uint8_t network_id[8];
+    // key refresth
+    uint8_t key_refresh;
+
 } mesh_network_key_t;
 
 typedef struct {
@@ -96,6 +100,10 @@ typedef struct {
 
     // application key hash id
     uint8_t aid;
+
+    // key refresth
+    uint8_t key_refresh;
+
 } mesh_transport_key_t;
 
 typedef struct {
@@ -152,14 +160,14 @@ void mesh_network_key_list_add_from_provisioning_data(const mesh_provisioning_da
 void mesh_network_key_iterator_init(mesh_network_key_iterator_t *it);
 
 /**
- * Check if another network_key is available
+ * @brief Check if another network_key is available
  * @param it
  * @return
  */
 int mesh_network_key_iterator_has_more(mesh_network_key_iterator_t *it);
 
 /**
- * Get net network_key
+ * @brief Get net network_key
  * @param it
  * @return
  */
@@ -173,14 +181,14 @@ mesh_network_key_t * mesh_network_key_iterator_get_next(mesh_network_key_iterato
 void mesh_network_key_nid_iterator_init(mesh_network_key_iterator_t *it, uint8_t nid);
 
 /**
- * Check if another network_key with given NID is available
+ * @brief Check if another network_key with given NID is available
  * @param it
  * @return
  */
 int mesh_network_key_nid_iterator_has_more(mesh_network_key_iterator_t *it);
 
 /**
- * Get next network_key with given NID
+ * @brief Get next network_key with given NID
  * @param it
  * @return
  */
@@ -191,20 +199,20 @@ mesh_network_key_t * mesh_network_key_nid_iterator_get_next(mesh_network_key_ite
  */
 
 /**
- * Set device key
+ * @brief Set device key
  * @param device_key
  */
 void mesh_transport_set_device_key(const uint8_t * device_key);
 
 /**
- * @brief Add network key to list
+ * @brief Add application key to list
  * @param application key
  * @note AID needs to be set
  */
 void mesh_transport_key_add(mesh_transport_key_t * transport_key);
 
 /**
- * @brief Remove network key from list
+ * @brief Remove application key from list
  * @param application key
  * @return 0 if removed
  * @note key is only removed from list, memory is not released
@@ -226,21 +234,21 @@ mesh_transport_key_t * mesh_transport_key_get(uint16_t appkey_index);
 void mesh_transport_key_iterator_init(mesh_transport_key_iterator_t *it, uint16_t netkey_index);
 
 /**
- * Check if another transport key (AppKey) is available
+ * @brief Check if another transport key (AppKey) is available
  * @param it
  * @return
  */
 int mesh_transport_key_iterator_has_more(mesh_transport_key_iterator_t *it);
 
 /**
- * Get next transport key (AppKey)
+ * @brief Get next transport key (AppKey)
  * @param it
  * @return
  */
 mesh_transport_key_t * mesh_transport_key_iterator_get_next(mesh_transport_key_iterator_t *it);
 
 /**
- * Transport Key Iterator by AID - init
+ * @brief Transport Key Iterator by AID - init
  * @param it
  * @param netkey_index
  * @param akf
@@ -250,14 +258,14 @@ void mesh_transport_key_aid_iterator_init(mesh_transport_key_iterator_t *it, uin
                                           uint8_t aid);
 
 /**
- * Transport Key Iterator by AID - has more?
+ * @brief Transport Key Iterator by AID - has more?
  * @param it
  * @return
  */
 int mesh_transport_key_aid_iterator_has_more(mesh_transport_key_iterator_t *it);
 
-/** Transport Key Iterator by AID - get next
- *
+/**
+ * @brief Transport Key Iterator by AID - get next
  * @param it
  * @return transport key
  */
