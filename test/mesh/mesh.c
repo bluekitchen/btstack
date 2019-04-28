@@ -1073,6 +1073,11 @@ static mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_acc
 // move to btstack_config.h
 #define MAX_NR_MESH_APPKEYS_PER_MODEL 3
 #define MESH_APPKEY_INVALID 0xffff
+#define MESH_SIG_MODEL_ID_CONFIGURATION_SERVER 0
+#define MESH_SIG_MODEL_ID_CONFIGURATION_CLIENT 1
+#define MESH_SIG_MODEL_ID_HEALTH_SERVER 2
+#define MESH_SIG_MODEL_ID_HEALTH_CLIENT 3
+
 static btstack_crypto_aes128_cmac_t configuration_server_cmac_request;
 
 static mesh_pdu_t * access_pdu_in_process;
@@ -1095,7 +1100,12 @@ typedef struct {
 
 typedef struct {
     // linked list item
-    // model info: id, operations, etc.
+
+    // model id, use BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC for SIG models
+    uint16_t vendor_id;
+    uint16_t model_id;
+
+    // model operations
 
     // data
     void * model_data;
@@ -1105,14 +1115,49 @@ typedef struct {
 
 } mesh_model_t;
 
+typedef struct {
+    btstack_linked_list_iterator_t it;
+} mesh_model_iterator_t;
+
+static btstack_linked_list_t mesh_models;
+
 static mesh_heartbeat_publication_t mesh_heartbeat_publication;
-static mesh_model_t mesh_configuration_server_model = { &mesh_heartbeat_publication };
+static mesh_model_t                 mesh_configuration_server_model;
+
 
 static void mesh_model_reset_appkeys(mesh_model_t * mesh_model){
     int i;
     for (i=0;i<MAX_NR_MESH_APPKEYS_PER_MODEL;i++){
         mesh_model->appkey_indices[i] = MESH_APPKEY_INVALID;
     }
+}
+
+static void mesh_model_add(mesh_model_t * mesh_model){
+    btstack_linked_list_add_tail(&mesh_models, (btstack_linked_item_t *) mesh_model);
+}
+
+static void mesh_model_iterator_init(mesh_model_iterator_t * iterator){
+    btstack_linked_list_iterator_init(&iterator->it, &mesh_models);
+}
+
+static int mesh_model_iterator_has_next(mesh_model_iterator_t * iterator){
+    return btstack_linked_list_iterator_has_next(&iterator->it);
+}
+
+static mesh_model_t * mesh_model_iterator_get_next(mesh_model_iterator_t * iterator){
+    return (mesh_model_t *) btstack_linked_list_iterator_next(&iterator->it);
+}
+
+static mesh_model_t * mesh_model_get_by_model_id(uint16_t vendor_id, uint16_t model_id){
+    mesh_model_iterator_t it;
+    mesh_model_iterator_init(&it);
+    while (mesh_model_iterator_has_next(&it)){
+        mesh_model_t * model = mesh_model_iterator_get_next(&it);
+        if (model->vendor_id != vendor_id) continue;
+        if (model->model_id  != model_id)  continue;
+        return model;
+    }
+    return NULL;
 }
 
 static void mesh_access_message_processed(mesh_pdu_t * pdu){
@@ -2279,7 +2324,10 @@ int btstack_main(void)
     pts_proxy_dst = mesh_virtual_address_register(label_uuid, 0x9779);
 
     // Access layer - setup models
+    mesh_configuration_server_model.vendor_id = BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC;
+    mesh_configuration_server_model.model_id  = MESH_SIG_MODEL_ID_CONFIGURATION_SERVER;
     mesh_model_reset_appkeys(&mesh_configuration_server_model);
+    mesh_model_add(&mesh_configuration_server_model);
 
     // calc s1('vtad')
     // btstack_crypto_aes128_cmac_zero(&salt_request, 4, (const uint8_t *) "vtad", salt_hash, salt_complete, NULL);
