@@ -1070,6 +1070,9 @@ static mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_acc
 
 // to sort
 
+// move to btstack_config.h
+#define MAX_NR_MESH_APPKEYS_PER_MODEL 3
+#define MESH_APPKEY_INVALID 0xffff
 static btstack_crypto_aes128_cmac_t configuration_server_cmac_request;
 
 static mesh_pdu_t * access_pdu_in_process;
@@ -1091,13 +1094,26 @@ typedef struct {
 } mesh_configuration_server_model_context;
 
 typedef struct {
+    // linked list item
     // model info: id, operations, etc.
+
     // data
     void * model_data;
+
+    // bound appkeys
+    uint16_t appkey_indices[MAX_NR_MESH_APPKEYS_PER_MODEL];
+
 } mesh_model_t;
 
 static mesh_heartbeat_publication_t mesh_heartbeat_publication;
 static mesh_model_t mesh_configuration_server_model = { &mesh_heartbeat_publication };
+
+static void mesh_model_reset_appkeys(mesh_model_t * mesh_model){
+    int i;
+    for (i=0;i<MAX_NR_MESH_APPKEYS_PER_MODEL;i++){
+        mesh_model->appkey_indices[i] = MESH_APPKEY_INVALID;
+    }
+}
 
 static void mesh_access_message_processed(mesh_pdu_t * pdu){
     mesh_upper_transport_message_processed_by_higher_layer(pdu);
@@ -2261,6 +2277,9 @@ int btstack_main(void)
     // PTS Virtual Address Label UUID - without Config Model, PTS uses our device uuid
     btstack_parse_hex("001BDC0810210B0E0A0C000B0E0A0C00", 16, label_uuid);
     pts_proxy_dst = mesh_virtual_address_register(label_uuid, 0x9779);
+
+    // Access layer - setup models
+    mesh_model_reset_appkeys(&mesh_configuration_server_model);
 
     // calc s1('vtad')
     // btstack_crypto_aes128_cmac_zero(&salt_request, 4, (const uint8_t *) "vtad", salt_hash, salt_complete, NULL);
