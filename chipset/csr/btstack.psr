@@ -1,0 +1,25 @@
+    // Set ANA_Freq to 26MHz
+    &01fe = 6590
+
+    // Set HCI_NOP_DISABLE
+    &00f2 = 0001
+
+#ifdef ENABLE_SCO_OVER_HCI
+    // Set HOSTIO_MAP_SCO_PCM to 0
+    &01ab = 0000
+
+    // Set HOSTIO_MAP_SCO_CODEC to 0
+    &01b0 = 0000
+
+    // Set ENABLE_SCO_STREAMS to 0
+    &22c9 = 0000
+#endif
+
+    // Enable RTS/CTS for BCSP (0806 -> 080e)
+    &01bf = 080e
+
+    // Set UART baudrate to 115200
+    &01ea = 0001 c200
+
+    // Set Bluetooth address 
+    &0001 = 00f3 f4f5 00f0 f1f2
