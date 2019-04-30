@@ -4154,6 +4154,17 @@ uint8_t sm_generate_sc_oob_data(void (*callback)(const uint8_t * confirm_value, 
 #endif
 
 /**
+ * @brief Get Identity Resolving state
+ * @param con_handle
+ * @return irk_lookup_state_t
+ */
+irk_lookup_state_t sm_identity_resolving_state(hci_con_handle_t con_handle){
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
+    if (!sm_conn) return IRK_LOOKUP_IDLE;
+    return sm_conn->sm_irk_lookup_state;
+}
+
+/**
  * @brief Identify device in LE Device DB
  * @param handle
  * @returns index from le_device_db or -1 if not found/identified
