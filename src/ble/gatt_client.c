@@ -1038,11 +1038,11 @@ static int gatt_client_run_for_peripheral( gatt_client_t * peripheral){
             // bump local signing counter
             uint32_t sign_counter = le_device_db_local_counter_get(peripheral->le_device_index);
             le_device_db_local_counter_set(peripheral->le_device_index, sign_counter + 1);
-
+            // send signed write command
             send_gatt_signed_write_request(peripheral, sign_counter);
-            peripheral->gatt_client_state = P_READY;
             // finally, notifiy client that write is complete
             gatt_client_handle_transaction_complete(peripheral);
+            emit_gatt_complete_event(peripheral, 0);
             return 1;
         }
 #endif
