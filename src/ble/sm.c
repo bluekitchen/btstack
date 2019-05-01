@@ -841,7 +841,9 @@ static void sm_setup_key_distribution(uint8_t key_set){
     setup->sm_key_distribution_received_set = 0;
     setup->sm_key_distribution_send_set = sm_key_distribution_flags_for_set(key_set);
     setup->sm_key_distribution_sent_set = 0;
+#ifdef ENABLE_LE_SIGNED_WRITE
     setup->sm_le_device_index = -1;
+#endif
 }
 
 // CSRK Key Lookup
