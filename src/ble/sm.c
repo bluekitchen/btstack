@@ -3913,6 +3913,9 @@ void sm_init(void){
     // 
     btstack_crypto_init();
 
+    // init le_device_db
+    le_device_db_init();
+
     // and L2CAP PDUs + L2CAP_EVENT_CAN_SEND_NOW
     l2cap_register_fixed_channel(sm_pdu_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
 
