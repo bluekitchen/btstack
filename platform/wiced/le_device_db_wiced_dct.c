@@ -203,7 +203,7 @@ void le_device_db_info(int device_index, int * addr_type, bd_addr_t addr, sm_key
 
     // set defaults if not found
     if (!valid) {
-        memset(&entry, 0, sizeof(le_device_db_entry_t));
+        memset(&entry, 0, sizeof(le_device_nvm_t));
         entry.addr_type = BD_ADDR_TYPE_UNKNOWN;
     }
 
