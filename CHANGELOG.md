@@ -9,8 +9,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - le_device_db: add secure_connection argument to le_device_db_encryption_set and le_device_db_encryption_get
 - replaced stm
+- gatt_client: emit query complete event for signed write operation
+
 ### Fixed
 - SM: Use provided authentication requirements in slave security request
+- ESP32: use micro-ecc from 3rd-party as esp-idf removed it in their 3.3 release
 
 ### Added
 - SM: Track if connection encryption is based on LE Secure Connection pairing

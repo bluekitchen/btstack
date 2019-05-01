@@ -424,6 +424,7 @@ uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handl
 
 /** 
  * @brief Writes the authenticated characteristic value using the characteristic's value handle without an acknowledgment that the write was successfully performed.
+ * @note GATT_EVENT_QUERY_COMPLETE is emitted with 0 for success or ATT_ERROR_BONDING_INFORMATION_MISSING if there is no bonding information stored
  * @param callback   
  * @param con_handle
  * @param value_handle
