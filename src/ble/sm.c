@@ -1295,6 +1295,7 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
         if (le_db_index >= 0){
 
             sm_notify_client_index(SM_EVENT_IDENTITY_CREATED, sm_conn->sm_handle, setup->sm_peer_addr_type, setup->sm_peer_address, le_db_index);
+            sm_conn->sm_irk_lookup_state = IRK_LOOKUP_SUCCEEDED;
 
 #ifdef ENABLE_LE_SIGNED_WRITE
             // store local CSRK
