@@ -1111,6 +1111,9 @@ typedef enum {
 #define ATT_ERROR_UNSUPPORTED_GROUP_TYPE           0x10
 #define ATT_ERROR_INSUFFICIENT_RESOURCES           0x11
 
+// MARK: ATT Error Codes used internally by BTstack
+#define ATT_ERROR_BONDING_INFORMATION_MISSING      0x70
+
 // MARK: ATT Error Codes from Cycling Power Service spec
 #define CYCLING_POWER_ERROR_CODE_INAPPROPRIATE_CONNECTION_PARAMETERS                          0x80
 #define CYCLING_POWER_ERROR_CODE_PROCEDURE_ALREADY_IN_PROGRESS                                0xFE
