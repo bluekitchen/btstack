@@ -6,9 +6,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-### Fixed
-sm: store local CSRK
-
 ### Changed
 - le_device_db: add secure_connection argument to le_device_db_encryption_set and le_device_db_encryption_get
 - replaced stm
@@ -17,6 +14,8 @@ sm: store local CSRK
 ### Fixed
 - SM: Use provided authentication requirements in slave security request
 - ESP32: use micro-ecc from 3rd-party as esp-idf removed it in their 3.3 release
+- SM: store local CSRK
+- ATT DB: call write callback for validated signed writes
 
 ### Added
 - SM: Track if connection encryption is based on LE Secure Connection pairing
