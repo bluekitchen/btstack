@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+sm: store local CSRK
+
 ### Changed
 - le_device_db: add secure_connection argument to le_device_db_encryption_set and le_device_db_encryption_get
 - replaced stm

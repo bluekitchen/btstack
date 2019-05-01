@@ -297,8 +297,9 @@ typedef struct sm_setup_context {
     uint8_t   sm_keypress_notification; // bitmap: passkey started, digit entered, digit erased, passkey cleared, passkey complete, 3 bit count
 
     // defines which keys will be send after connection is encrypted - calculated during Phase 1, used Phase 3
-    int       sm_key_distribution_send_set;
-    int       sm_key_distribution_received_set;
+    uint8_t   sm_key_distribution_send_set;
+    uint8_t   sm_key_distribution_sent_set;
+    uint8_t   sm_key_distribution_received_set;
 
     // Phase 2 (Pairing over SMP)
     stk_generation_method_t sm_stk_generation_method;
@@ -356,6 +357,9 @@ typedef struct sm_setup_context {
     sm_key_t  sm_peer_csrk;
     uint8_t   sm_peer_addr_type;
     bd_addr_t sm_peer_address;
+#ifdef ENABLE_LE_SIGNED_WRITE
+    int       sm_le_device_index;
+#endif
 
 } sm_setup_context_t;
 
@@ -836,6 +840,8 @@ static int sm_key_distribution_flags_for_set(uint8_t key_set){
 static void sm_setup_key_distribution(uint8_t key_set){
     setup->sm_key_distribution_received_set = 0;
     setup->sm_key_distribution_send_set = sm_key_distribution_flags_for_set(key_set);
+    setup->sm_key_distribution_sent_set = 0;
+    setup->sm_le_device_index = -1;
 }
 
 // CSRK Key Lookup
@@ -1299,7 +1305,8 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
 
 #ifdef ENABLE_LE_SIGNED_WRITE
             // store local CSRK
-            if (setup->sm_key_distribution_send_set & SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
+            setup->sm_le_device_index = le_db_index;
+            if ((setup->sm_key_distribution_sent_set) & SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
                 log_info("sm: store local CSRK");
                 le_device_db_local_csrk_set(le_db_index, setup->sm_local_csrk);
                 le_device_db_local_counter_set(le_db_index, 0);
@@ -2563,6 +2570,7 @@ static void sm_run(void){
             case SM_PH3_DISTRIBUTE_KEYS:
                 if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION){
                     setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
+                    setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
                     uint8_t buffer[17];
                     buffer[0] = SM_CODE_ENCRYPTION_INFORMATION;
                     reverse_128(setup->sm_ltk, &buffer[1]);
@@ -2572,6 +2580,7 @@ static void sm_run(void){
                 }
                 if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_MASTER_IDENTIFICATION){
                     setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
+                    setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
                     uint8_t buffer[11];
                     buffer[0] = SM_CODE_MASTER_IDENTIFICATION;
                     little_endian_store_16(buffer, 1, setup->sm_local_ediv);
@@ -2582,6 +2591,7 @@ static void sm_run(void){
                 }
                 if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_IDENTITY_INFORMATION){
                     setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
+                    setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
                     uint8_t buffer[17];
                     buffer[0] = SM_CODE_IDENTITY_INFORMATION;
                     reverse_128(sm_persistent_irk, &buffer[1]);
@@ -2591,6 +2601,7 @@ static void sm_run(void){
                 }
                 if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION){
                     setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
+                    setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
                     bd_addr_t local_address;
                     uint8_t buffer[8];
                     buffer[0] = SM_CODE_IDENTITY_ADDRESS_INFORMATION;
@@ -2614,11 +2625,21 @@ static void sm_run(void){
                 }
                 if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
                     setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
+                    setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
 
+#ifdef ENABLE_LE_SIGNED_WRITE
                     // hack to reproduce test runs
                     if (test_use_fixed_local_csrk){
                         memset(setup->sm_local_csrk, 0xcc, 16);
                     }
+
+                    // store local CSRK
+                    if (setup->sm_le_device_index >= 0){
+                        log_info("sm: store local CSRK");
+                        le_device_db_local_csrk_set(setup->sm_le_device_index, setup->sm_local_csrk);
+                        le_device_db_local_counter_set(setup->sm_le_device_index, 0);
+                    }
+#endif
 
                     uint8_t buffer[17];
                     buffer[0] = SM_CODE_SIGNING_INFORMATION;
