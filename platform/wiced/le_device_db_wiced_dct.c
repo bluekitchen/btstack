@@ -58,8 +58,6 @@
 // Link Key Magic
 #define LE_DEVICE_MAGIC ((uint32_t) 'L' << 24 | 'E' << 16 | 'D' << 8 | 'B')
 
-#define INVALID_ENTRY_ADDR_TYPE 0xff
-
 typedef struct le_device_nvm {
 	uint32_t magic;
 	uint32_t seq_nr;	// used for "last recently stored" eviction strategy
@@ -201,7 +199,14 @@ int le_device_db_max_count(void){
 void le_device_db_info(int device_index, int * addr_type, bd_addr_t addr, sm_key_t irk){
 	int absolute_index = le_device_db_get_absolute_index_for_device_index(device_index);
     le_device_nvm_t entry;
-	le_device_db_entry_read(absolute_index, &entry);
+    int valid = le_device_db_entry_read(absolute_index, &entry);
+
+    // set defaults if not found
+    if (!valid) {
+        memset(&entry, 0, sizeof(le_device_db_entry_t));
+        entry.addr_type = BD_ADDR_TYPE_UNKNOWN;
+    }
+
     if (addr_type) *addr_type = entry.addr_type;
     if (addr) memcpy(addr, entry.addr, 6);
     if (irk) memcpy(irk, entry.irk, 16);
