@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - ESP32: use micro-ecc from 3rd-party as esp-idf removed it in their 3.3 release
 - SM: store local CSRK
 - ATT DB: call write callback for validated signed writes
+- ATT Server: abort signed write validation on incoming new request
 
 ### Added
 - SM: Track if connection encryption is based on LE Secure Connection pairing

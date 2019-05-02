@@ -658,13 +658,25 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
 
             // check size
             if (size > sizeof(att_server->request_buffer)) {
-                log_info("att_packet_handler: dropping att pdu 0x%02x as size %u > att_server->request_buffer %u", packet[0], size, (int) sizeof(att_server->request_buffer));
+                log_info("drop att pdu 0x%02x as size %u > att_server->request_buffer %u", packet[0], size, (int) sizeof(att_server->request_buffer));
                 return;
             }
 
+#ifdef ENABLE_LE_SIGNED_WRITE
+            // abort signed write validation if a new request comes in (but finish previous signed write if possible)
+            if (att_server->state == ATT_SERVER_W4_SIGNED_WRITE_VALIDATION){
+                if (packet[0] == ATT_SIGNED_WRITE_COMMAND){
+                    log_info("skip new signed write request as previous is in validation");
+                    return;
+                } else {
+                    log_info("abort signed write validation to process new request");
+                    att_server->state = ATT_SERVER_IDLE;
+                }
+            }
+#endif
             // last request still in processing?
             if (att_server->state != ATT_SERVER_IDLE){
-                log_info("att_packet_handler: skipping att pdu 0x%02x as server not idle (state %u)", packet[0], att_server->state);
+                log_info("skip att pdu 0x%02x as server not idle (state %u)", packet[0], att_server->state);
                 return;
             }
 
