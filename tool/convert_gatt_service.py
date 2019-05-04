@@ -12,6 +12,7 @@ import requests
 import sys
 import xml.etree.ElementTree as ET
 
+headers = {'user-agent': 'curl/7.63.0'}
 
 def indent(elem, level=0):
     i = "\n" + level*"  "
@@ -31,14 +32,17 @@ def indent(elem, level=0):
     return elem  
 
 def list_services():
-    url = 'https://www.bluetooth.com/specifications/gatt/services'
+    global headers
+
+    url     = 'https://www.bluetooth.com/specifications/gatt/services'
     print("Fetching list of services from %s" % url)
     print('')
 
-    page = requests.get(url)
+    page = requests.get(url, headers=headers)
+
     tree = html.fromstring(page.content)
-    # get all <tr> elements in <table id="gattTable">
-    rows = tree.xpath('//table[@id="gattTable"]/tbody/tr')
+    # get all <tr> elements in <table">
+    rows = tree.xpath('//table/tbody/tr')
     print("%-55s| %-30s| %s" % ('Specification Type', 'Specification Name', 'UUID'))
     print('-'*55 + '+-' + '-' * 30 + '+-' + '-'*10)
     maxlen_type = 0
@@ -86,12 +90,14 @@ def define_for_type(type):
     return type.upper().replace('.','_')
 
 def convert_service(fout, specification_type):
-    url = 'https://www.bluetooth.com/api/gatt/xmlfile?xmlFileName=%s.xml' % specification_type
+    global headers
 
+    url = 'https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Services/%s.xml' % specification_type
     print('Fetching %s from %s' %(specification_type, url))
 
     try:
-        page = requests.get(url)
+        page = requests.get(url, headers=headers)
+        print(page.content)
         tree = ET.fromstring(page.content)
         service_attributes = tree.attrib
     except ET.ParseError:
