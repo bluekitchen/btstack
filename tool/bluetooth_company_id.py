@@ -14,6 +14,8 @@ import codecs
 import os
 import re
 
+headers = {'user-agent': 'curl/7.63.0'}
+
 program_info = '''
 BTstack Company ID Scraper for BTstack
 Copyright 2017, BlueKitchen GmbH
@@ -41,7 +43,13 @@ trailer = '''
 
 tags = []
 
+def strip_non_ascii(string):
+    stripped = (c for c in string if 0 < ord(c) < 127)
+    return ''.join(stripped)
+
 def create_name(company):
+    # limit to ascii
+    company = strip_non_ascii(company)
     # remove parts in braces
     p = re.compile('\(.*\)')
     tag = p.sub('',company).rstrip().upper()
@@ -59,46 +67,40 @@ def create_name(company):
     tag = tag.replace('  ',' ')
     tag = tag.replace('  ',' ')
     tag = tag.replace(' ','_')
+    tag = tag.replace('&','AND')
+    tag = tag.replace("'","_")
+    tag = tag.replace('"','_')
+    tag = tag.replace('!','_')
     return "BLUETOOTH_COMPANY_ID_" + tag
 
 def scrape_page(fout, url):
+    global headers
+
     print("Parsing %s" % url)    
     fout.write(page_info.format(page=url))
 
     # get from web
-    r = requests.get(url)
-    content = r.text
+    # r = requests.get(url, headers=headers)
+    # content = r.text
 
     # test: fetch from local file 'service-discovery.html'
-    # f = codecs.open("company-identifiers.html", "r", "utf-8")
-    # content = f.read();
+    f = codecs.open("company-identifiers.html", "r", "utf-8")
+    content = f.read();
 
     tree = html.fromstring(content)
-    # get all java script
-    rows = tree.xpath('//script')
+    rows = tree.xpath('//table/tbody/tr')
     for row in rows:
-        script = row.text_content()
-        if not 'DataTable' in script:
-            continue
-        start_tag = 'data:  ['
-        end_tag   = '["65535","0xFFFF",'
-        start = script.find(start_tag)
-        end   = script.find(end_tag)
-        company_list = script[start + len(start_tag):end]
-        for entry in company_list.split('],'):
-            if len(entry) < 5:
-                break
-            entry = entry[1:]
-            fields = entry.split('","')
-            id_hex = fields[1]
-            company = create_name(fields[2][:-1])
-            if company in tags:
-                company = company + "2"
-            else:
-                tags.append(company)
-            if len(company) < 2:
-                continue
-            fout.write("#define %-80s %s\n" %  (company, id_hex))
+        children = row.getchildren()
+        id_hex  = children[1].text_content()
+        company = create_name(children[2].text_content())
+        if company in tags:
+            company = company+"2"
+        else:
+            tags.append(company)
+        fout.write("#define %-80s %s\n" %  (company, id_hex))
+
+    # map CSR onto QTIL
+    fout.write("#define BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO BLUETOOTH_COMPANY_ID_QUALCOMM_TECHNOLOGIES_INTERNATIONAL_LTD\n")
 
 btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')
 gen_path = btstack_root + '/src/bluetooth_company_id.h'
