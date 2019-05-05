@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - SM: store local CSRK
 - ATT DB: call write callback for validated signed writes
 - ATT Server: abort signed write validation on incoming new request
+- Bluetooth SIG web scraping tools updated
 
 ### Added
 - SM: Track if connection encryption is based on LE Secure Connection pairing
