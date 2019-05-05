@@ -80,12 +80,12 @@ def scrape_page(fout, url):
     fout.write(page_info.format(page=url))
 
     # get from web
-    # r = requests.get(url, headers=headers)
-    # content = r.text
+    r = requests.get(url, headers=headers)
+    content = r.text
 
     # test: fetch from local file 'service-discovery.html'
-    f = codecs.open("company-identifiers.html", "r", "utf-8")
-    content = f.read();
+    # f = codecs.open("company-identifiers.html", "r", "utf-8")
+    # content = f.read();
 
     tree = html.fromstring(content)
     rows = tree.xpath('//table/tbody/tr')
