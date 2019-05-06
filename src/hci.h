@@ -503,8 +503,8 @@ typedef struct {
 
     // generate sco can send now based on received packets, using timeout below
     uint8_t  sco_tx_ready;
-    uint8_t  sco_tx_count;
     
+    btstack_timer_source_t timeout_sco;
 #endif /* ENABLE_CLASSIC */
 
     // errands
