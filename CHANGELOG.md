@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - ATT DB: call write callback for validated signed writes
 - ATT Server: abort signed write validation on incoming new request
 - Bluetooth SIG web scraping tools updated
+- ESP32: Configure SCO over HCI after power up
 
 ### Added
 - SM: Track if connection encryption is based on LE Secure Connection pairing
