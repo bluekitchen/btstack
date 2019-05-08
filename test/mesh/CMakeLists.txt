@@ -45,12 +45,23 @@ list(SORT SOURCES)
 add_library(btstack STATIC ${SOURCES})
 
 # list of targets
-set(TARGETS_C mesh.c)
+set(EXAMPLES_C mesh.c)
+
+file(GLOB EXAMPLES_GATT "*.gatt")
 
 # create targets
-foreach(EXAMPLE_FILE ${TARGETS_C})
+foreach(EXAMPLE_FILE ${EXAMPLES_C})
 	get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
-	message("example ${EXAMPLE}")
-	add_executable(${EXAMPLE} ${EXAMPLE_FILE})
+	if ( "${EXAMPLES_GATT}" MATCHES ${EXAMPLE} )
+		message("example ${EXAMPLE} -- with GATT DB")
+		add_custom_command(
+		    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
+    		COMMAND ${CMAKE_SOURCE_DIR}/../../tool/compile_gatt.py ${CMAKE_SOURCE_DIR}/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h > /dev/null
+		)
+		add_executable(${EXAMPLE} ${EXAMPLE_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
+	else()
+		message("example ${EXAMPLE}")
+		add_executable(${EXAMPLE} ${EXAMPLE_FILE})
+	endif()
 	target_link_libraries(${EXAMPLE} btstack)
 endforeach(EXAMPLE_FILE)

@@ -52,6 +52,7 @@
 #include "provisioning_device.h"
 #include "mesh_transport.h"
 #include "mesh_foundation.h"
+#include "mesh.h"
 #include "btstack.h"
 #include "btstack_tlv.h"
 
@@ -123,6 +124,11 @@ static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * p
     mesh_flags = provisioning_data->flags;
     // dump data
     mesh_provisioning_dump(provisioning_data);
+}
+
+static void mesh_setup_without_provisiong_data(void){
+    printf("Starting Unprovisioned Device Beacon\n");
+    beacon_unprovisioned_device_start(device_uuid, 0);
 }
 
 static mesh_transport_key_t   test_application_key;
@@ -217,8 +223,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     if (prov_len){
                         mesh_setup_from_provisioning_data(&provisioning_data);
                     } else {
-                        printf("Starting Unprovisioned Device Beacon\n");
-                        beacon_unprovisioned_device_start(device_uuid, 0);
+                        mesh_setup_without_provisiong_data();
                     }
                     // load app keys
                     mesh_load_app_keys();
