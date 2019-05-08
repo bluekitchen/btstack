@@ -63,6 +63,23 @@ static void show_usage(void);
 
 const static uint8_t device_uuid[] = { 0x00, 0x1B, 0xDC, 0x08, 0x10, 0x21, 0x0B, 0x0E, 0x0A, 0x0C, 0x00, 0x0B, 0x0E, 0x0A, 0x0C, 0x00 };
 
+// Mesh Provisioning
+static uint8_t adv_data[] = {
+    // Flags general discoverable, BR/EDR not supported
+    0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
+    // 16-bit Service UUIDs
+    0x03, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, ORG_BLUETOOTH_SERVICE_MESH_PROVISIONING & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROVISIONING >> 8,
+    // Service Data (22)
+    0x15, BLUETOOTH_DATA_TYPE_SERVICE_DATA, ORG_BLUETOOTH_SERVICE_MESH_PROVISIONING & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROVISIONING >> 8, 
+          // UUID
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+          // OOB information
+          0x00, 0x00
+};
+
+const uint8_t adv_data_len = sizeof(adv_data);
+
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -127,8 +144,23 @@ static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * p
 }
 
 static void mesh_setup_without_provisiong_data(void){
+    // PB-ADV    
     printf("Starting Unprovisioned Device Beacon\n");
     beacon_unprovisioned_device_start(device_uuid, 0);
+    // PB_GATT
+    printf("Advertise Mesh Provisioning Service\n");
+    // dynamically store device uuid into adv data 
+    memcpy(&adv_data[11], device_uuid, sizeof(device_uuid));
+    
+    // setup advertisements
+    uint8_t adv_type = 0;   // ADV_IND
+    uint16_t adv_int_min = 0x0030;
+    uint16_t adv_int_max = 0x0030;
+    bd_addr_t null_addr;
+    memset(null_addr, 0, 6);
+    adv_bearer_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
+    adv_bearer_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
+    adv_bearer_advertisements_enable(1);
 }
 
 static mesh_transport_key_t   test_application_key;
@@ -2489,11 +2521,20 @@ int btstack_main(void)
     // crypto
     btstack_crypto_init();
 
+    // l2cap
+    l2cap_init();
+
+    // setup le device db
+    le_device_db_init();
+
     // 
     sm_init();
 
     // mesh
     adv_bearer_init();
+
+    // setup ATT server
+    att_server_init(profile_data, NULL, NULL);    
 
     beacon_init();
     beacon_register_for_unprovisioned_device_beacons(&mesh_unprovisioned_beacon_handler);
