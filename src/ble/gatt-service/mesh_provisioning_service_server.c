@@ -127,12 +127,12 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
         log_error("mesh_provisioning_service_write_callback: instance is null");
         return 0;
     }
-    printf("mesh_provisioning_service_write_callback: handle 0x%02x, buffer size %d", attribute_handle, buffer_size);
+    printf("mesh_provisioning_service_write_callback: handle 0x%02x, buffer size %d: ", attribute_handle, buffer_size);
     printf_hexdump(buffer, buffer_size);
 
     if (attribute_handle == instance->data_in_client_value_handle){
         if (!mesh_provisioning_service_packet_handler) return 0;
-        mesh_msg_type_t msg_type = buffer[0] & 0xC0;
+        mesh_msg_type_t msg_type = buffer[0] & 0x3f;
         switch (msg_type){
             case MESH_MSG_TYPE_PROXY_CONFIGURATION:
                 log_info("data_in_client_value_handle not handled, msg_type %d", msg_type);
