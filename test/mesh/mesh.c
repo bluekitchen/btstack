@@ -57,8 +57,14 @@
 #include "btstack.h"
 #include "btstack_tlv.h"
 
+// #define ENABLE_MESH_ADV_BEARER
+// #define ENABLE_MESH_PB_ADV
+#define ENABLE_MESH_GATT_BEARER
+#define ENABLE_MESH_PB_GATT
+
+
 #define USE_ADVERTISING_WITH_NETWORK_ID
-// #define USE_ADVERTISING_WITH_NODE_IDENTITY
+//#define USE_ADVERTISING_WITH_NODE_IDENTITY
 
 #if defined(USE_ADVERTISING_WITH_NETWORK_ID) && defined(USE_ADVERTISING_WITH_NODE_IDENTITY) 
 #error "USE_ADVERTISING_WITH_NETWORK_ID and USE_ADVERTISING_WITH_NODE_IDENTITY cannot be defined at the same time"
@@ -148,6 +154,7 @@ static const btstack_tlv_t * btstack_tlv_singleton_impl;
 static void *                btstack_tlv_singleton_context;
 
 static uint8_t beacon_key[16];
+static uint8_t identity_key[16];
 static uint8_t network_id[8];
 static uint16_t primary_element_address;
 
@@ -181,19 +188,19 @@ static void mesh_proxy_handle_get_aes128(void * arg){
     adv_bearer_advertisements_enable(1);
 }
 
-static void setup_advertising_with_node_identity(const mesh_provisioning_data_t * prov_data){
+static void setup_advertising_with_node_identity(void){
     // Hash = e(IdentityKey, Padding | Random | Address) mod 2^64
     memset(plaintext, 0, sizeof(plaintext));
     memcpy(&plaintext[6] , random_value, 8);
-    big_endian_store_16(plaintext, 14, prov_data->unicast_address);
-    btstack_crypto_aes128_encrypt(&crypto_request_aes128, prov_data->identity_key, plaintext, hash, mesh_proxy_handle_get_aes128, NULL);
+    big_endian_store_16(plaintext, 14, primary_element_address);
+    btstack_crypto_aes128_encrypt(&crypto_request_aes128,identity_key, plaintext, hash, mesh_proxy_handle_get_aes128, NULL);
 }
 
 static void mesh_proxy_handle_get_random(void * arg){
     UNUSED(arg);
     printf("Received random value\n");
     printf_hexdump(random_value, sizeof(random_value));
-    setup_advertising_with_node_identity(&provisioning_data);
+    setup_advertising_with_node_identity();
 }
 #endif
 
@@ -246,6 +253,7 @@ static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * p
     // set device_key
     mesh_transport_set_device_key(provisioning_data->device_key);
     // copy beacon key and network id
+    memcpy(identity_key, provisioning_data->identity_key, 16);
     memcpy(beacon_key, provisioning_data->beacon_key, 16);
     memcpy(network_id, provisioning_data->network_id, 8);
     // for secure beacon
@@ -265,9 +273,12 @@ static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * p
 }
 
 static void mesh_setup_without_provisiong_data(void){
+#ifdef ENABLE_MESH_PB_ADV
     // PB-ADV    
     printf("Starting Unprovisioned Device Beacon\n");
     beacon_unprovisioned_device_start(device_uuid, 0);
+#endif
+#ifdef ENABLE_MESH_PB_GATT
     // PB_GATT
     printf("Advertise Mesh Provisioning Service\n");
     // dynamically store device uuid into adv data 
@@ -282,6 +293,7 @@ static void mesh_setup_without_provisiong_data(void){
     adv_bearer_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
     adv_bearer_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
     adv_bearer_advertisements_enable(1);
+#endif
 }
 
 
@@ -2843,10 +2855,12 @@ int btstack_main(void)
     gatt_bearer_register_for_mesh_proxy_configuration(&packet_handler_for_mesh_proxy_configuration);
     mesh_network_set_proxy_message_handler(proxy_configuration_message_handler);
 
+#ifdef ENABLE_MESH_ADV_BEARER
     // Setup Unprovisioned Device Beacon
     beacon_init();
     beacon_register_for_unprovisioned_device_beacons(&mesh_unprovisioned_beacon_handler);
-    
+#endif
+
     // Provisioning in device role
     provisioning_device_init(device_uuid);
     provisioning_device_register_packet_handler(&mesh_message_handler);
