@@ -36,6 +36,7 @@
  */
  
 #ifndef __OBEX_H
+#define __OBEX_H
 
 #define OBEX_OPCODE_CONNECT                0x80
 #define OBEX_OPCODE_DISCONNECT             0x81

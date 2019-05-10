@@ -36,6 +36,7 @@
  */
 
 #ifndef __GOEP_CLIENT_H
+#define __GOEP_CLIENT_H
 
 #if defined __cplusplus
 extern "C" {

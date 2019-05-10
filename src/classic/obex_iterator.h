@@ -36,6 +36,7 @@
  */
  
 #ifndef __OBEX_ITERATOR_H
+#define __OBEX_ITERATOR_H
 
 #if defined __cplusplus
 extern "C" {
