@@ -715,8 +715,8 @@ static int prepare_device(libusb_device_handle * aHandle){
     int r;
     int kernel_driver_detached = 0;
 
-    // Detach OS driver (not possible for OS X and WIN32)
-#if !defined(__APPLE__) && !defined(_WIN32)
+    // Detach OS driver (not possible for OS X, FreeBSD, and WIN32)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(__FreeBSD__)
     r = libusb_kernel_driver_active(aHandle, 0);
     if (r < 0) {
         log_error("libusb_kernel_driver_active error %d", r);
@@ -725,7 +725,7 @@ static int prepare_device(libusb_device_handle * aHandle){
     }
 
     if (r == 1) {
-        r = libusb_detach_kernel_driver(aHandle, 0);
+      r = libusb_detach_kernel_driver(aHandle, 0);
         if (r < 0) {
             log_error("libusb_detach_kernel_driver error %d", r);
             libusb_close(aHandle);
@@ -790,13 +790,15 @@ static libusb_device_handle * try_open_device(libusb_device * device){
 
     log_info("libusb open %d, handle %p", r, dev_handle);
 
-    // reset device
+    // reset device (Not currently possible under FreeBSD 11.x/12.x due to usb framework)
+#if !defined(__FreeBSD__)    
     r = libusb_reset_device(dev_handle);
     if (r < 0) {
         log_error("libusb_reset_device failed!");
         libusb_close(dev_handle);
         return NULL;
     }
+#endif
     return dev_handle;
 }
 
@@ -1108,7 +1110,7 @@ static int usb_open(void){
      }
 
     // Check for pollfds functionality
-    doing_pollfds = libusb_pollfds_handle_timeouts(NULL);
+    //doing_pollfds = libusb_pollfds_handle_timeouts(NULL);
     
     // NOTE: using pollfds doesn't work on Linux, so it is disable until further investigation here
     doing_pollfds = 0;
