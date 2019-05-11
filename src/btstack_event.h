@@ -1775,7 +1775,7 @@ static inline uint16_t sdp_event_query_attribute_value_get_attribute_id(const ui
  * @return attribute_length
  * @note: btstack_type L
  */
-static inline int sdp_event_query_attribute_value_get_attribute_length(const uint8_t * event){
+static inline uint16_t sdp_event_query_attribute_value_get_attribute_length(const uint8_t * event){
     return little_endian_read_16(event, 6);
 }
 /**
@@ -1955,7 +1955,7 @@ static inline uint16_t gatt_event_characteristic_value_query_result_get_value_ha
  * @return value_length
  * @note: btstack_type L
  */
-static inline int gatt_event_characteristic_value_query_result_get_value_length(const uint8_t * event){
+static inline uint16_t gatt_event_characteristic_value_query_result_get_value_length(const uint8_t * event){
     return little_endian_read_16(event, 6);
 }
 /**
@@ -2003,7 +2003,7 @@ static inline uint16_t gatt_event_long_characteristic_value_query_result_get_val
  * @return value_length
  * @note: btstack_type L
  */
-static inline int gatt_event_long_characteristic_value_query_result_get_value_length(const uint8_t * event){
+static inline uint16_t gatt_event_long_characteristic_value_query_result_get_value_length(const uint8_t * event){
     return little_endian_read_16(event, 8);
 }
 /**
@@ -2042,7 +2042,7 @@ static inline uint16_t gatt_event_notification_get_value_handle(const uint8_t * 
  * @return value_length
  * @note: btstack_type L
  */
-static inline int gatt_event_notification_get_value_length(const uint8_t * event){
+static inline uint16_t gatt_event_notification_get_value_length(const uint8_t * event){
     return little_endian_read_16(event, 6);
 }
 /**
@@ -2081,7 +2081,7 @@ static inline uint16_t gatt_event_indication_get_value_handle(const uint8_t * ev
  * @return value_length
  * @note: btstack_type L
  */
-static inline int gatt_event_indication_get_value_length(const uint8_t * event){
+static inline uint16_t gatt_event_indication_get_value_length(const uint8_t * event){
     return little_endian_read_16(event, 6);
 }
 /**
@@ -2120,7 +2120,7 @@ static inline uint16_t gatt_event_characteristic_descriptor_query_result_get_des
  * @return descriptor_length
  * @note: btstack_type L
  */
-static inline int gatt_event_characteristic_descriptor_query_result_get_descriptor_length(const uint8_t * event){
+static inline uint16_t gatt_event_characteristic_descriptor_query_result_get_descriptor_length(const uint8_t * event){
     return little_endian_read_16(event, 6);
 }
 /**
@@ -2159,7 +2159,7 @@ static inline uint16_t gatt_event_long_characteristic_descriptor_query_result_ge
  * @return descriptor_length
  * @note: btstack_type L
  */
-static inline int gatt_event_long_characteristic_descriptor_query_result_get_descriptor_length(const uint8_t * event){
+static inline uint16_t gatt_event_long_characteristic_descriptor_query_result_get_descriptor_length(const uint8_t * event){
     return little_endian_read_16(event, 6);
 }
 /**
@@ -3098,7 +3098,7 @@ static inline uint8_t gap_event_advertising_report_get_rssi(const uint8_t * even
  * @return data_length
  * @note: btstack_type J
  */
-static inline int gap_event_advertising_report_get_data_length(const uint8_t * event){
+static inline uint8_t gap_event_advertising_report_get_data_length(const uint8_t * event){
     return event[11];
 }
 /**
@@ -3180,7 +3180,7 @@ static inline uint8_t gap_event_inquiry_result_get_name_available(const uint8_t 
  * @return name_len
  * @note: btstack_type J
  */
-static inline int gap_event_inquiry_result_get_name_len(const uint8_t * event){
+static inline uint8_t gap_event_inquiry_result_get_name_len(const uint8_t * event){
     return event[17];
 }
 /**
@@ -3702,7 +3702,7 @@ static inline uint8_t hsp_subevent_speaker_gain_changed_get_gain(const uint8_t *
  * @return value_length
  * @note: btstack_type J
  */
-static inline int hsp_subevent_hs_command_get_value_length(const uint8_t * event){
+static inline uint8_t hsp_subevent_hs_command_get_value_length(const uint8_t * event){
     return event[3];
 }
 /**
@@ -3721,7 +3721,7 @@ static inline const uint8_t * hsp_subevent_hs_command_get_value(const uint8_t * 
  * @return value_length
  * @note: btstack_type J
  */
-static inline int hsp_subevent_ag_indication_get_value_length(const uint8_t * event){
+static inline uint8_t hsp_subevent_ag_indication_get_value_length(const uint8_t * event){
     return event[3];
 }
 /**
@@ -4510,7 +4510,7 @@ static inline uint16_t avdtp_subevent_signaling_media_codec_other_capability_get
  * @return media_codec_information_len
  * @note: btstack_type L
  */
-static inline int avdtp_subevent_signaling_media_codec_other_capability_get_media_codec_information_len(const uint8_t * event){
+static inline uint16_t avdtp_subevent_signaling_media_codec_other_capability_get_media_codec_information_len(const uint8_t * event){
     return little_endian_read_16(event, 10);
 }
 /**
@@ -4676,7 +4676,7 @@ static inline uint16_t avdtp_subevent_signaling_content_protection_capability_ge
  * @return cp_type_value_len
  * @note: btstack_type L
  */
-static inline int avdtp_subevent_signaling_content_protection_capability_get_cp_type_value_len(const uint8_t * event){
+static inline uint16_t avdtp_subevent_signaling_content_protection_capability_get_cp_type_value_len(const uint8_t * event){
     return little_endian_read_16(event, 9);
 }
 /**
@@ -5050,7 +5050,7 @@ static inline uint16_t avdtp_subevent_signaling_media_codec_other_configuration_
  * @return media_codec_information_len
  * @note: btstack_type L
  */
-static inline int avdtp_subevent_signaling_media_codec_other_configuration_get_media_codec_information_len(const uint8_t * event){
+static inline uint16_t avdtp_subevent_signaling_media_codec_other_configuration_get_media_codec_information_len(const uint8_t * event){
     return little_endian_read_16(event, 11);
 }
 /**
@@ -5391,7 +5391,7 @@ static inline uint16_t a2dp_subevent_signaling_media_codec_other_configuration_g
  * @return media_codec_information_len
  * @note: btstack_type L
  */
-static inline int a2dp_subevent_signaling_media_codec_other_configuration_get_media_codec_information_len(const uint8_t * event){
+static inline uint16_t a2dp_subevent_signaling_media_codec_other_configuration_get_media_codec_information_len(const uint8_t * event){
     return little_endian_read_16(event, 11);
 }
 /**
@@ -6188,7 +6188,7 @@ static inline uint8_t avrcp_subevent_now_playing_title_info_get_command_type(con
  * @return value_len
  * @note: btstack_type J
  */
-static inline int avrcp_subevent_now_playing_title_info_get_value_len(const uint8_t * event){
+static inline uint8_t avrcp_subevent_now_playing_title_info_get_value_len(const uint8_t * event){
     return event[6];
 }
 /**
@@ -6225,7 +6225,7 @@ static inline uint8_t avrcp_subevent_now_playing_artist_info_get_command_type(co
  * @return value_len
  * @note: btstack_type J
  */
-static inline int avrcp_subevent_now_playing_artist_info_get_value_len(const uint8_t * event){
+static inline uint8_t avrcp_subevent_now_playing_artist_info_get_value_len(const uint8_t * event){
     return event[6];
 }
 /**
@@ -6262,7 +6262,7 @@ static inline uint8_t avrcp_subevent_now_playing_album_info_get_command_type(con
  * @return value_len
  * @note: btstack_type J
  */
-static inline int avrcp_subevent_now_playing_album_info_get_value_len(const uint8_t * event){
+static inline uint8_t avrcp_subevent_now_playing_album_info_get_value_len(const uint8_t * event){
     return event[6];
 }
 /**
@@ -6299,7 +6299,7 @@ static inline uint8_t avrcp_subevent_now_playing_genre_info_get_command_type(con
  * @return value_len
  * @note: btstack_type J
  */
-static inline int avrcp_subevent_now_playing_genre_info_get_value_len(const uint8_t * event){
+static inline uint8_t avrcp_subevent_now_playing_genre_info_get_value_len(const uint8_t * event){
     return event[6];
 }
 /**
@@ -6721,7 +6721,7 @@ static inline uint16_t pbap_subevent_card_result_get_goep_cid(const uint8_t * ev
  * @return name_len
  * @note: btstack_type J
  */
-static inline int pbap_subevent_card_result_get_name_len(const uint8_t * event){
+static inline uint8_t pbap_subevent_card_result_get_name_len(const uint8_t * event){
     return event[5];
 }
 /**
@@ -6739,7 +6739,7 @@ static inline const uint8_t * pbap_subevent_card_result_get_name(const uint8_t *
  * @return handle_len
  * @note: btstack_type J
  */
-static inline int pbap_subevent_card_result_get_handle_len(const uint8_t * event){
+static inline uint8_t pbap_subevent_card_result_get_handle_len(const uint8_t * event){
     return event[6 + event[5]];
 }
 /**
@@ -7120,7 +7120,7 @@ static inline uint16_t map_subevent_folder_listing_item_get_map_cid(const uint8_
  * @return name_len
  * @note: btstack_type L
  */
-static inline int map_subevent_folder_listing_item_get_name_len(const uint8_t * event){
+static inline uint16_t map_subevent_folder_listing_item_get_name_len(const uint8_t * event){
     return little_endian_read_16(event, 5);
 }
 /**
