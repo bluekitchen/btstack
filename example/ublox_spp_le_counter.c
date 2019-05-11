@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "ublox_le_counter.c"
+#define __BTSTACK_FILE__ "ublox_spp_le_counter.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(ublox_le_counter): LE Peripheral - Nordic SPP-like profile
