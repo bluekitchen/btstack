@@ -91,8 +91,8 @@ hfile_header_begin = """
  *
  */
 
-#ifndef __BTSTACK_EVENT_H
-#define __BTSTACK_EVENT_H
+#ifndef BTSTACK_EVENT_H
+#define BTSTACK_EVENT_H
 
 #if defined __cplusplus
 extern "C" {
@@ -126,7 +126,7 @@ hfile_header_end = """
 }
 #endif
 
-#endif // __BTSTACK_EVENT_H
+#endif // BTSTACK_EVENT_H
 """
 
 c_prototoype_simple_return = '''/**

@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __GAP_H
-#define __GAP_H
+#ifndef GAP_H
+#define GAP_H
 
 #if defined __cplusplus
 extern "C" {
@@ -618,4 +618,4 @@ int gap_reconnect_security_setup_active(hci_con_handle_t con_handle);
 }
 #endif
 
-#endif // __GAP_H
+#endif // GAP_H

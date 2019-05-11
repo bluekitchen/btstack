@@ -39,8 +39,8 @@
  *  sdp_client.h
  */
 
-#ifndef __SDP_CLIENT_H
-#define __SDP_CLIENT_H
+#ifndef SDP_CLIENT_H
+#define SDP_CLIENT_H
 
 #include "btstack_config.h"
 
@@ -122,4 +122,4 @@ void sdp_client_parse_service_record_handle_list(uint8_t* packet, uint16_t total
 }
 #endif
 
-#endif // __SDP_CLIENT_H
+#endif // SDP_CLIENT_H

@@ -44,8 +44,8 @@
  *
  */
 
-#ifndef __BTSTACK_MEMORY_H
-#define __BTSTACK_MEMORY_H
+#ifndef BTSTACK_MEMORY_H
+#define BTSTACK_MEMORY_H
 
 #if defined __cplusplus
 extern "C" {
@@ -149,5 +149,5 @@ void   btstack_memory_sm_lookup_entry_free(sm_lookup_entry_t *sm_lookup_entry);
 }
 #endif
 
-#endif // __BTSTACK_MEMORY_H
+#endif // BTSTACK_MEMORY_H
 

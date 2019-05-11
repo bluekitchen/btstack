@@ -41,8 +41,8 @@
  *  Single-pass HID Report Parser: HID Report is directly parsed without preprocessing HID Descriptor to minimize memory
  */
 
-#ifndef __BTSTACK_HID_PARSER_H
-#define __BTSTACK_HID_PARSER_H
+#ifndef BTSTACK_HID_PARSER_H
+#define BTSTACK_HID_PARSER_H
 
 #include <stdint.h>
 
@@ -226,4 +226,4 @@ int btstack_hid_report_id_declared(uint16_t hid_descriptor_len, const uint8_t * 
 }
 #endif
 
-#endif // __BTSTACK_HID_PARSER_H
+#endif // BTSTACK_HID_PARSER_H

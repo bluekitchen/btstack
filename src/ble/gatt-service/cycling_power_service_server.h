@@ -34,8 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
-#ifndef __CYCLING_POWER_SERVICE_SERVER_H
-#define __CYCLING_POWER_SERVICE_SERVER_H
+#ifndef CYCLING_POWER_SERVICE_SERVER_H
+#define CYCLING_POWER_SERVICE_SERVER_H
 
 #include <stdint.h>
 

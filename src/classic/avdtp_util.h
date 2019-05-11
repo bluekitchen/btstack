@@ -42,8 +42,8 @@
  *
  */
 
-#ifndef __AVDTP_UITL_H
-#define __AVDTP_UITL_H
+#ifndef AVDTP_UITL_H
+#define AVDTP_UITL_H
 
 #include <stdint.h>
 #include "classic/avdtp.h"
@@ -115,4 +115,4 @@ void a2dp_streaming_emit_connection_established(btstack_packet_handler_t callbac
 }
 #endif
 
-#endif // __AVDTP_UITL_H
+#endif // AVDTP_UITL_H

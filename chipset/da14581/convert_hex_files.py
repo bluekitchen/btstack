@@ -18,8 +18,8 @@ header = '''
  * BASENAME.h converted from BASENAME.hex 
  */
 
-#ifndef __BASENAME_H
-#define __BASENAME_H
+#ifndef BASENAME_H
+#define BASENAME_H
 
 #include <stdint.h>
 

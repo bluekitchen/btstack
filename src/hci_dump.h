@@ -43,8 +43,8 @@
  *  Created by Matthias Ringwald on 5/26/09.
  */
 
-#ifndef __HCI_DUMP_H
-#define __HCI_DUMP_H
+#ifndef HCI_DUMP_H
+#define HCI_DUMP_H
 
 #include <stdint.h>
 #include <stdarg.h>       // for va_list
@@ -114,4 +114,4 @@ void hci_dump_log_P(int log_level, PGM_P format, ...);
 #if defined __cplusplus
 }
 #endif
-#endif // __HCI_DUMP_H
+#endif // HCI_DUMP_H

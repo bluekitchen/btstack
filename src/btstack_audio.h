@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __BTSTACK_AUDIO_H
-#define __BTSTACK_AUDIO_H
+#ifndef BTSTACK_AUDIO_H
+#define BTSTACK_AUDIO_H
 
 #include <stdint.h>
 

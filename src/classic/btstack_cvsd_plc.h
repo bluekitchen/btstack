@@ -40,8 +40,8 @@
  *
  */
 
-#ifndef __BTSTACK_CVSD_PLC_H
-#define __BTSTACK_CVSD_PLC_H
+#ifndef BTSTACK_CVSD_PLC_H
+#define BTSTACK_CVSD_PLC_H
 
 #include <stdint.h>
 
@@ -96,4 +96,4 @@ void btstack_cvsd_plc_octave_set_base_name(const char * name);
 }
 #endif
 
-#endif // __BTSTACK_CVSD_PLC_H
+#endif // BTSTACK_CVSD_PLC_H

@@ -41,8 +41,8 @@
  * Create Device ID SDP Records
  */
 
-#ifndef __DEVICE_ID_SERVER_H
-#define __DEVICE_ID_SERVER_H
+#ifndef DEVICE_ID_SERVER_H
+#define DEVICE_ID_SERVER_H
 
 #include <stdint.h>
  
@@ -68,4 +68,4 @@ void device_id_create_sdp_record(uint8_t *service, uint32_t service_record_handl
 #if defined __cplusplus
 }
 #endif
-#endif // __DEVICE_ID_SERVER_H
+#endif // DEVICE_ID_SERVER_H

@@ -39,8 +39,8 @@
  *  btstack_ring_buffer.h
  */
 
-#ifndef __BTSTACK_RING_BUFFER_H
-#define __BTSTACK_RING_BUFFER_H
+#ifndef BTSTACK_RING_BUFFER_H
+#define BTSTACK_RING_BUFFER_H
 
 #if defined __cplusplus
 extern "C" {
@@ -107,4 +107,4 @@ void btstack_ring_buffer_read(btstack_ring_buffer_t * ring_buffer, uint8_t * buf
 }
 #endif
 
-#endif // __BTSTACK_RING_BUFFER_H
+#endif // BTSTACK_RING_BUFFER_H

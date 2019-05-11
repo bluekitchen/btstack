@@ -41,8 +41,8 @@
  *  Created by Matthias Ringwald on 7/23/09.
  */
 
-#ifndef __HCI_CMDS_H
-#define __HCI_CMDS_H
+#ifndef HCI_CMDS_H
+#define HCI_CMDS_H
 
 #include "bluetooth.h"
 #include "btstack_defines.h"
@@ -229,4 +229,4 @@ extern const hci_cmd_t hci_bcm_write_sco_pcm_int;
 }
 #endif
 
-#endif // __HCI_CMDS_H
+#endif // HCI_CMDS_H

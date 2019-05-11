@@ -41,8 +41,8 @@
  * Numbers defined or derived from the official Bluetooth specification
  */
 
-#ifndef __BLUETOOTH_H
-#define __BLUETOOTH_H
+#ifndef BLUETOOTH_H
+#define BLUETOOTH_H
 
 #include <stdint.h>
 

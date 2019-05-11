@@ -42,8 +42,8 @@
 // *****************************************************************************
 
 
-#ifndef __BTSTACK_HFP_H
-#define __BTSTACK_HFP_H
+#ifndef BTSTACK_HFP_H
+#define BTSTACK_HFP_H
 
 #include "hci.h"
 #include "classic/sdp_client_rfcomm.h"
@@ -693,4 +693,4 @@ const char * hfp_enhanced_call_mpty2str(uint16_t index);
 }
 #endif
 
-#endif // __BTSTACK_HFP_H
+#endif // BTSTACK_HFP_H

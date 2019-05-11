@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __OBEX_MESSAGE_BUILDER_H
-#define __OBEX_MESSAGE_BUILDER_H
+#ifndef OBEX_MESSAGE_BUILDER_H
+#define OBEX_MESSAGE_BUILDER_H
 
 #if defined __cplusplus
 extern "C" {

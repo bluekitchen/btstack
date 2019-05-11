@@ -39,8 +39,8 @@
  * interface to provide link key storage via BTstack's TLV storage
  */
 
-#ifndef __BTSTACK_LINK_KEY_DB_TLV_H
-#define __BTSTACK_LINK_KEY_DB_TLV_H
+#ifndef BTSTACK_LINK_KEY_DB_TLV_H
+#define BTSTACK_LINK_KEY_DB_TLV_H
 
 #include "btstack_tlv.h"
 #include "classic/btstack_link_key_db.h"
@@ -64,4 +64,4 @@ const btstack_link_key_db_t * btstack_link_key_db_tlv_get_instance(const btstack
 }
 #endif
 
-#endif // __BTSTACK_LINK_KEY_DB_TLV_H
+#endif // BTSTACK_LINK_KEY_DB_TLV_H

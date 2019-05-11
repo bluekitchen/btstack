@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __ANT_CMDS_H
-#define __ANT_CMDS_H
+#ifndef ANT_CMDS_H
+#define ANT_CMDS_H
 
 #include <stdint.h>
 #include "hci_cmd.h"
@@ -180,4 +180,4 @@ const ant_cmd_t ant_request_message;
 }
 #endif
 
-#endif // __ANT_CMDS_H
+#endif // ANT_CMDS_H

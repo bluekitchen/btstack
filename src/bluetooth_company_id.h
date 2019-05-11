@@ -3,8 +3,8 @@
  * bluetooth_company_id.h generated from Bluetooth SIG website for BTstack
  */
 
-#ifndef __BLUETOOTH_COMPANY_ID_H
-#define __BLUETOOTH_COMPANY_ID_H
+#ifndef BLUETOOTH_COMPANY_ID_H
+#define BLUETOOTH_COMPANY_ID_H
 
 /**
  * Assigned numbers from https://www.bluetooth.com/specifications/assigned-numbers/company-identifiers

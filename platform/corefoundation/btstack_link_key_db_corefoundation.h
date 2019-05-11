@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __BTSTACK_LINK_KEY_DB_FS_H
-#define __BTSTACK_LINK_KEY_DB_FS_H
+#ifndef BTSTACK_LINK_KEY_DB_FS_H
+#define BTSTACK_LINK_KEY_DB_FS_H
 
 #include "classic/btstack_link_key_db.h"
 
@@ -55,4 +55,4 @@ const btstack_link_key_db_t * btstack_link_key_db_corefoundation_instance(void);
 }
 #endif
 
-#endif // __BTSTACK_LINK_KEY_DB_FS_H
+#endif // BTSTACK_LINK_KEY_DB_FS_H

@@ -42,8 +42,8 @@
  *
  */
 
-#ifndef __AVRCP_BROWSING_CONTROLLER_H
-#define __AVRCP_BROWSING_CONTROLLER_H
+#ifndef AVRCP_BROWSING_CONTROLLER_H
+#define AVRCP_BROWSING_CONTROLLER_H
 
 #include <stdint.h>
 #include "classic/avrcp.h"
@@ -231,4 +231,4 @@ uint8_t avrcp_browsing_controller_search(uint16_t avrcp_browsing_cid, uint16_t s
 }
 #endif
 
-#endif // __AVRCP_BROWSING_CONTROLLER_H
+#endif // AVRCP_BROWSING_CONTROLLER_H

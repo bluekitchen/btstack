@@ -43,8 +43,8 @@
  *  Allows to set public BD ADDR
  */
 
-#ifndef __BTSTACK_CHIPSET_EM9301_H
-#define __BTSTACK_CHIPSET_EM9301_H
+#ifndef BTSTACK_CHIPSET_EM9301_H
+#define BTSTACK_CHIPSET_EM9301_H
 
 #if defined __cplusplus
 extern "C" {
@@ -68,4 +68,4 @@ extern const hci_cmd_t hci_vendor_em_set_sleep_options;
 }
 #endif
 
-#endif // __BTSTACK_CHIPSET_EM9301_H
+#endif // BTSTACK_CHIPSET_EM9301_H

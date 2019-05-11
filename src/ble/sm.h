@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __SM_H
-#define __SM_H
+#ifndef SM_H
+#define SM_H
 
  #if defined __cplusplus
 extern "C" {
@@ -263,4 +263,4 @@ void sm_test_set_pairing_failure(int reason);
 }
 #endif
 
-#endif // __SM_H
+#endif // SM_H

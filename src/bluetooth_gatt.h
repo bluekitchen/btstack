@@ -3,8 +3,8 @@
  * bluetooth_gatt.h generated from Bluetooth SIG website for BTstack on 2018-03-09 12:55:06.388357
  */
 
-#ifndef __BLUETOOTH_GATT_H
-#define __BLUETOOTH_GATT_H
+#ifndef BLUETOOTH_GATT_H
+#define BLUETOOTH_GATT_H
 
 /**
  * Assigned numbers from https://www.bluetooth.com/specifications/gatt/declarations

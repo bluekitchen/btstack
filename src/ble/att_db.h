@@ -36,8 +36,8 @@
  */
 
 
-#ifndef __ATT_H
-#define __ATT_H
+#ifndef ATT_H
+#define ATT_H
 
 #include <stdint.h>
 #include "bluetooth.h"
@@ -268,4 +268,4 @@ int att_is_persistent_ccc(uint16_t handle);
 }
 #endif
 
-#endif // __ATT_H
+#endif // ATT_H

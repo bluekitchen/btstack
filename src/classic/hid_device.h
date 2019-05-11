@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __HID_DEVICE_H
-#define __HID_DEVICE_H
+#ifndef HID_DEVICE_H
+#define HID_DEVICE_H
 
 #include <stdint.h>
 #include "btstack_defines.h"

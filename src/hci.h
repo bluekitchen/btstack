@@ -42,8 +42,8 @@
  *
  */
 
-#ifndef __HCI_H
-#define __HCI_H
+#ifndef HCI_H
+#define HCI_H
 
 #include "btstack_config.h"
 
@@ -1220,4 +1220,4 @@ void hci_halting_defer(void);
 }
 #endif
 
-#endif // __HCI_H
+#endif // HCI_H

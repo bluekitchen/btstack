@@ -27,8 +27,8 @@ header = '''
  * {datetime}
  */
 
-#ifndef __BLUETOOTH_COMPANY_ID_H
-#define __BLUETOOTH_COMPANY_ID_H
+#ifndef BLUETOOTH_COMPANY_ID_H
+#define BLUETOOTH_COMPANY_ID_H
 '''
 
 page_info = '''

@@ -40,8 +40,8 @@
  *
  * BTstack definitions, events, and error codes */
 
-#ifndef __BTSTACK_DEFINES_H
-#define __BTSTACK_DEFINES_H
+#ifndef BTSTACK_DEFINES_H
+#define BTSTACK_DEFINES_H
 
 #include <stdint.h>
 #include "btstack_linked_list.h" 

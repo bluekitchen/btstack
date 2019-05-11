@@ -40,8 +40,8 @@
  *
  */
 
-#ifndef __BTSTACK_SBC_H
-#define __BTSTACK_SBC_H
+#ifndef BTSTACK_SBC_H
+#define BTSTACK_SBC_H
 
 #include <stdint.h>
 #include "btstack_sbc_plc.h"
@@ -160,4 +160,4 @@ void btstack_sbc_decoder_test_simulate_corrupt_frames(int period);
 }
 #endif
 
-#endif // __BTSTACK_SBC_H
+#endif // BTSTACK_SBC_H

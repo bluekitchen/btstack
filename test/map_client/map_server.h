@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __MAP_SERVER_H
-#define __MAP_SERVER_H
+#ifndef MAP_SERVER_H
+#define MAP_SERVER_H
 
 #if defined __cplusplus
 extern "C" {

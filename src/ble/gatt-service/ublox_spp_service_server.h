@@ -34,8 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
-#ifndef __UBLOX_SPP_H
-#define __UBLOX_SPP_H
+#ifndef UBLOX_SPP_H
+#define UBLOX_SPP_H
 
 #include <stdint.h>
 #include "bluetooth.h"

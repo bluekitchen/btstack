@@ -41,8 +41,8 @@
  *  Persistent Link Key implemenetation for WICED using DCT mechanism
  */
 
-#ifndef __LE_DEVICE_DB_WICED_DCT_H
-#define __LE_DEVICE_DB_WICED_DCT_H
+#ifndef LE_DEVICE_DB_WICED_DCT_H
+#define LE_DEVICE_DB_WICED_DCT_H
 
 #if defined __cplusplus
 extern "C" {
@@ -73,4 +73,4 @@ void le_device_db_wiced_dct_delete_all(void);
 }
 #endif
 
-#endif // __LE_DEVICE_DB_WICED_DCT_H
+#endif // LE_DEVICE_DB_WICED_DCT_H

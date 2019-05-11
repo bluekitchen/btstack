@@ -41,8 +41,8 @@
  *  Created by Matthias Ringwald on 7/23/09.
  */
 
-#ifndef __L2CAP_SIGNALING_H
-#define __L2CAP_SIGNALING_H
+#ifndef L2CAP_SIGNALING_H
+#define L2CAP_SIGNALING_H
 
 #include <stdint.h>
 #include <stdarg.h>
@@ -91,4 +91,4 @@ uint16_t l2cap_next_local_cid(void);
 }
 #endif
 
-#endif // __L2CAP_SIGNALING_H
+#endif // L2CAP_SIGNALING_H

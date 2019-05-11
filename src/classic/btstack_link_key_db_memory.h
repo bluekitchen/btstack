@@ -39,8 +39,8 @@
  * interface to provide link key storage
  */
 
-#ifndef __BTSTACK_LINK_KEY_DB_MEMORY_H
-#define __BTSTACK_LINK_KEY_DB_MEMORY_H
+#ifndef BTSTACK_LINK_KEY_DB_MEMORY_H
+#define BTSTACK_LINK_KEY_DB_MEMORY_H
 
 #include "btstack_link_key_db.h"
 #include "btstack_linked_list.h"
@@ -67,4 +67,4 @@ typedef struct {
 }
 #endif
 
-#endif // __BTSTACK_LINK_KEY_DB_MEMORY_H
+#endif // BTSTACK_LINK_KEY_DB_MEMORY_H

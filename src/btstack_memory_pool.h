@@ -46,8 +46,8 @@
  *  @Note minimal implementation, no error checking/handling
  */
 
-#ifndef __btstack_memory_pool_H
-#define __btstack_memory_pool_H
+#ifndef btstack_memory_pool_H
+#define btstack_memory_pool_H
 
 #if defined __cplusplus
 extern "C" {
@@ -68,4 +68,4 @@ void   btstack_memory_pool_free(btstack_memory_pool_t *pool, void * block);
 }
 #endif
 
-#endif // __btstack_memory_pool_H
+#endif // btstack_memory_pool_H

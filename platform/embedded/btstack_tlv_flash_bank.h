@@ -36,8 +36,8 @@
  *  using hal_flash_bank storage
  */
 
-#ifndef __BTSTACK_TLV_FLASH_BANK_H
-#define __BTSTACK_TLV_FLASH_BANK_H
+#ifndef BTSTACK_TLV_FLASH_BANK_H
+#define BTSTACK_TLV_FLASH_BANK_H
 
 #include <stdint.h>
 #include "btstack_tlv.h"
@@ -65,4 +65,4 @@ const btstack_tlv_t * btstack_tlv_flash_bank_init_instance(btstack_tlv_flash_ban
 #if defined __cplusplus
 }
 #endif
-#endif // __BTSTACK_TLV_FLASH_BANK_H
+#endif // BTSTACK_TLV_FLASH_BANK_H

@@ -34,8 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
-#ifndef __HIDS_DEVICE_H
-#define __HIDS_DEVICE_H
+#ifndef HIDS_DEVICE_H
+#define HIDS_DEVICE_H
 
 #include <stdint.h>
 #include "btstack_defines.h"

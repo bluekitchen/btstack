@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __BTSTACK_STDIN_H
-#define __BTSTACK_STDIN_H
+#ifndef BTSTACK_STDIN_H
+#define BTSTACK_STDIN_H
 
 #include "btstack_run_loop.h"
 

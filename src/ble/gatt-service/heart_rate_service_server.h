@@ -34,8 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
-#ifndef __HEART_RATE_SERVICE_SERVER_H
-#define __HEART_RATE_SERVICE_SERVER_H
+#ifndef HEART_RATE_SERVICE_SERVER_H
+#define HEART_RATE_SERVICE_SERVER_H
 
 #include <stdint.h>
 

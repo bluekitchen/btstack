@@ -36,8 +36,8 @@
  *  using in-memory storage (RAM & malloc) and append-only log files on disc
  */
 
-#ifndef __BTSTACK_TLV_POSIX_H
-#define __BTSTACK_TLV_POSIX_H
+#ifndef BTSTACK_TLV_POSIX_H
+#define BTSTACK_TLV_POSIX_H
 
 #include <stdint.h>
 #include <stdio.h>
@@ -64,4 +64,4 @@ const btstack_tlv_t * btstack_tlv_posix_init_instance(btstack_tlv_posix_t * cont
 #if defined __cplusplus
 }
 #endif
-#endif // __BTSTACK_TLV_POSIX_H
+#endif // BTSTACK_TLV_POSIX_H

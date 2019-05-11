@@ -43,8 +43,8 @@
  *
  */
 
-#ifndef __BTSTACK_SERVER_H
-#define __BTSTACK_SERVER_H
+#ifndef BTSTACK_SERVER_H
+#define BTSTACK_SERVER_H
 
 /** 
  * @brief Start BTstack Server either with TCP or Unix Domain Socket

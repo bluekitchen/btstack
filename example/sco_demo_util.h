@@ -40,8 +40,8 @@
  */
 
 
-#ifndef __SCO_DEMO_UTIL_H
-#define __SCO_DEMO_UTIL_H
+#ifndef SCO_DEMO_UTIL_H
+#define SCO_DEMO_UTIL_H
 
 #include "hci.h"
 

@@ -40,8 +40,8 @@
  *  Functionality special to the embedded run loop
  */
 
-#ifndef __BTSTACK_RUN_LOOP_EMBEDDED_H
-#define __BTSTACK_RUN_LOOP_EMBEDDED_H
+#ifndef BTSTACK_RUN_LOOP_EMBEDDED_H
+#define BTSTACK_RUN_LOOP_EMBEDDED_H
 
 #include "btstack_config.h"
 #include "btstack_linked_list.h"
@@ -88,4 +88,4 @@ void btstack_run_loop_embedded_execute_once(void);
 }
 #endif
 
-#endif // __BTSTACK_RUN_LOOP_EMBEDDED_H
+#endif // BTSTACK_RUN_LOOP_EMBEDDED_H

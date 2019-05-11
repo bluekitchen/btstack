@@ -42,8 +42,8 @@
  *
  */
 
-#ifndef __AVRCP_BROWSING_TARGET_H
-#define __AVRCP_BROWSING_TARGET_H
+#ifndef AVRCP_BROWSING_TARGET_H
+#define AVRCP_BROWSING_TARGET_H
 
 #include <stdint.h>
 #include "classic/avrcp.h"
@@ -110,4 +110,4 @@ uint8_t avrcp_subevent_browsing_get_total_num_items_response(uint16_t avrcp_brow
 }
 #endif
 
-#endif // __AVRCP_BROWSING_TARGET_H
+#endif // AVRCP_BROWSING_TARGET_H

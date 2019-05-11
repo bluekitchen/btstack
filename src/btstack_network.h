@@ -39,8 +39,8 @@
  *  Network interface abstraction
  */
 
-#ifndef __BTSTACK_NETWORK_H
-#define __BTSTACK_NETWORK_H
+#ifndef BTSTACK_NETWORK_H
+#define BTSTACK_NETWORK_H
 
 #include <stdint.h>
 #include "bluetooth.h"

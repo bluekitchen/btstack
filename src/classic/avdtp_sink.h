@@ -43,8 +43,8 @@
  * AVDTP Sink is a device that accepts streamed media data.  
  */
 
-#ifndef __AVDTP_SINK_H
-#define __AVDTP_SINK_H
+#ifndef AVDTP_SINK_H
+#define AVDTP_SINK_H
 
 #include <stdint.h>
 #include "hci.h"
@@ -180,4 +180,4 @@ uint8_t avdtp_sink_delay_report(uint16_t avdtp_cid, uint8_t local_seid, uint16_t
 }
 #endif
 
-#endif // __AVDTP_SINK_H
+#endif // AVDTP_SINK_H

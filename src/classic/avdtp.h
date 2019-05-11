@@ -47,8 +47,8 @@
  * Media packets are unidirectional, they travel downstream from AVDTP Source to AVDTP Sink. 
  */
 
-#ifndef __AVDTP_H
-#define __AVDTP_H
+#ifndef AVDTP_H
+#define AVDTP_H
 
 #include <stdint.h>
 #include "hci.h"
@@ -592,4 +592,4 @@ uint8_t is_avdtp_remote_seid_registered(avdtp_stream_endpoint_t * stream_endpoin
 }
 #endif
 
-#endif // __AVDTP_H
+#endif // AVDTP_H

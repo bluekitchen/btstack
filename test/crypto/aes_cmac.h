@@ -1,5 +1,5 @@
-#ifndef __AES_CMAC_H
-#define __AES_CMAC_H
+#ifndef AES_CMAC_H
+#define AES_CMAC_H
 
 #include <stdint.h>
 typedef uint8_t sm_key_t[16];

@@ -41,8 +41,8 @@
  *  Adapter to use CSR-based chipsets with BTstack
  */
  
-#ifndef __BTSTACK_CHIPSET_CSR_H
-#define __BTSTACK_CHIPSET_CSR_H
+#ifndef BTSTACK_CHIPSET_CSR_H
+#define BTSTACK_CHIPSET_CSR_H
 
 #if defined __cplusplus
 extern "C" {
@@ -67,4 +67,4 @@ const btstack_chipset_t * btstack_chipset_csr_instance(void);
 }
 #endif
 
-#endif // __BTSTACK_CHIPSET_CSR_H
+#endif // BTSTACK_CHIPSET_CSR_H

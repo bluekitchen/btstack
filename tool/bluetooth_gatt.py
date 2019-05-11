@@ -23,8 +23,8 @@ header = '''
  * {datetime}
  */
 
-#ifndef __BLUETOOTH_GATT_H
-#define __BLUETOOTH_GATT_H
+#ifndef BLUETOOTH_GATT_H
+#define BLUETOOTH_GATT_H
 '''
 
 page_info = '''

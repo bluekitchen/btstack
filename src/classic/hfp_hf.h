@@ -42,8 +42,8 @@
 // *****************************************************************************
 
 
-#ifndef __BTSTACK_HFP_HF_H
-#define __BTSTACK_HFP_HF_H
+#ifndef BTSTACK_HFP_HF_H
+#define BTSTACK_HFP_HF_H
 
 #include "hci.h"
 #include "classic/sdp_client_rfcomm.h"
@@ -428,4 +428,4 @@ int hfp_hf_in_band_ringtone_active(hci_con_handle_t acl_handle);
 }
 #endif
 
-#endif // __BTSTACK_HFP_HF_H
+#endif // BTSTACK_HFP_HF_H

@@ -41,8 +41,8 @@
  * Create SPP SDP Records
  */
 
-#ifndef __SPP_SERVER_H
-#define __SPP_SERVER_H
+#ifndef SPP_SERVER_H
+#define SPP_SERVER_H
 
 #include <stdint.h>
  
@@ -66,4 +66,4 @@ void spp_create_sdp_record(uint8_t *service, uint32_t service_record_handle, int
 #if defined __cplusplus
 }
 #endif
-#endif // __SPP_SERVER_H
+#endif // SPP_SERVER_H

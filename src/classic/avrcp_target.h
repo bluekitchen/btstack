@@ -42,8 +42,8 @@
  *
  */
 
-#ifndef __AVRCP_TARGET_H
-#define __AVRCP_TARGET_H
+#ifndef AVRCP_TARGET_H
+#define AVRCP_TARGET_H
 
 #include <stdint.h>
 #include "classic/avrcp.h"
@@ -116,4 +116,4 @@ extern avrcp_context_t avrcp_target_context;
 }
 #endif
 
-#endif // __AVRCP_TARGET_H
+#endif // AVRCP_TARGET_H

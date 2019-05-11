@@ -50,8 +50,8 @@ hfile_header_begin = """
  *
  */
 
-#ifndef __BTSTACK_MEMORY_H
-#define __BTSTACK_MEMORY_H
+#ifndef BTSTACK_MEMORY_H
+#define BTSTACK_MEMORY_H
 
 #if defined __cplusplus
 extern "C" {
@@ -95,7 +95,7 @@ hfile_header_end = """
 }
 #endif
 
-#endif // __BTSTACK_MEMORY_H
+#endif // BTSTACK_MEMORY_H
 """
 
 cfile_header_begin = """

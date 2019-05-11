@@ -24,8 +24,8 @@ header = '''/**
  * {datetime}
  */
 
-#ifndef __BLUETOOTH_DATA_TYPES_H
-#define __BLUETOOTH_DATA_TYPES_H
+#ifndef BLUETOOTH_DATA_TYPES_H
+#define BLUETOOTH_DATA_TYPES_H
 
 '''
 

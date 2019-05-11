@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __MAP_UTIL_H
-#define __MAP_UTIL_H
+#ifndef MAP_UTIL_H
+#define MAP_UTIL_H
 
 #if defined __cplusplus
 extern "C" {

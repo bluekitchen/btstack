@@ -40,8 +40,8 @@
  *  Functionality special to the POSIX run loop
  */
 
-#ifndef __btstack_run_loop_POSIX_H
-#define __btstack_run_loop_POSIX_H
+#ifndef btstack_run_loop_POSIX_H
+#define btstack_run_loop_POSIX_H
 
 #include "btstack_run_loop.h"
 
@@ -60,4 +60,4 @@ const btstack_run_loop_t * btstack_run_loop_posix_get_instance(void);
 }
 #endif
 
-#endif // __btstack_run_loop_POSIX_H
+#endif // btstack_run_loop_POSIX_H
