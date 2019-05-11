@@ -51,6 +51,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <ifaddrs.h>
+#include <net/if_arp.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,7 +60,6 @@
 
 #if defined(__APPLE__) || defined(__FreeBSD__)
 #include <net/if.h>
-#include <net/if_arp.h>
 #include <net/if_types.h>
 #include <netinet/if_ether.h>
 #include <netinet/in.h>
