@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "le_data_channel_client.c"
+#define BTSTACK_FILE__ "le_data_channel_client.c"
 
 /*
  * le_data_channel_client.c

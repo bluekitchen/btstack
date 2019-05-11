@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "att_db.c"
+#define BTSTACK_FILE__ "att_db.c"
 
 #include <string.h>
 

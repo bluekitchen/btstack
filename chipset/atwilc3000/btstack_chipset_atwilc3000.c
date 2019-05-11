@@ -42,7 +42,7 @@
  *  
  */
 
-#define __BTSTACK_FILE__ "btstack_chipset_atwilc3000.c"
+#define BTSTACK_FILE__ "btstack_chipset_atwilc3000.c"
 
 #include "btstack_config.h"
 #include "btstack_chipset_atwilc3000.h"

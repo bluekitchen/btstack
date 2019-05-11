@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_memory.c"
+#define BTSTACK_FILE__ "btstack_memory.c"
 
 
 /*

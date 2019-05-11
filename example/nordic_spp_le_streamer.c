@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "nordic_spp_le_streamer.c"
+#define BTSTACK_FILE__ "nordic_spp_le_streamer.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(nordic_spp_le_streamer): LE Streamer - Stream data over GATT.

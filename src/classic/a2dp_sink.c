@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "a2dp_sink.c"
+#define BTSTACK_FILE__ "a2dp_sink.c"
 
 #include <stdint.h>
 #include <stdio.h>

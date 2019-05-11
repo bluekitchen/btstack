@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "le_device_db_wiced_dct.c"
+#define BTSTACK_FILE__ "le_device_db_wiced_dct.c"
 
 /*
  *  le_device_db_wiced_dct.c

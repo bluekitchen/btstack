@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "panu_demo.c"
+#define BTSTACK_FILE__ "panu_demo.c"
 
 /*
  * panu_demo.c

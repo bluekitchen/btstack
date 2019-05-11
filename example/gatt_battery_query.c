@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "gatt_battery_query.c"
+#define BTSTACK_FILE__ "gatt_battery_query.c"
 
 // *****************************************************************************
 //

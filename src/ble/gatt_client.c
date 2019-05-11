@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "gatt_client.c"
+#define BTSTACK_FILE__ "gatt_client.c"
 
 #include <stdint.h>
 #include <string.h>

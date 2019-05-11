@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "sdp_rfcomm_query.c"
+#define BTSTACK_FILE__ "sdp_rfcomm_query.c"
  
 // *****************************************************************************
 //

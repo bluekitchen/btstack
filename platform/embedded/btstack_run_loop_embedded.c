@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_run_loop_embedded.c"
+#define BTSTACK_FILE__ "btstack_run_loop_embedded.c"
 
 /*
  *  btstack_run_loop_embedded.c

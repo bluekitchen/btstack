@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hid_device.c"
+#define BTSTACK_FILE__ "hid_device.c"
 
 #include <string.h>
 

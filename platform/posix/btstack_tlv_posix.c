@@ -29,7 +29,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_tlv_posix.c"
+#define BTSTACK_FILE__ "btstack_tlv_posix.c"
 
 #include "btstack_tlv.h"
 #include "btstack_tlv_posix.h"

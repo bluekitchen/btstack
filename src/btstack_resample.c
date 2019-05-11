@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_resample.c"
+#define BTSTACK_FILE__ "btstack_resample.c"
 
 #include "btstack_resample.h"
 

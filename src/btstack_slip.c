@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_slip.c"
+#define BTSTACK_FILE__ "btstack_slip.c"
 
 /*
  *  btstack_slip.c

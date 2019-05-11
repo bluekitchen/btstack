@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "avrcp_media_item_iterator.c"
+#define BTSTACK_FILE__ "avrcp_media_item_iterator.c"
 
 
 // *****************************************************************************

@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hfp_ag_demo.c"
+#define BTSTACK_FILE__ "hfp_ag_demo.c"
  
 /*
  * hfp_ag_demo.c

@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "test.c"
+#define BTSTACK_FILE__ "test.c"
 
 /*
  *  test.c

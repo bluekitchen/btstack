@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "spp_and_le_counter.c"
+#define BTSTACK_FILE__ "spp_and_le_counter.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(spp_and_le_counter): Dual mode example

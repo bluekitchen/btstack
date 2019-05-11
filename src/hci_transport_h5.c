@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hci_transport_h5.c"
+#define BTSTACK_FILE__ "hci_transport_h5.c"
 
 /*
  *  hci_transport_h5.c

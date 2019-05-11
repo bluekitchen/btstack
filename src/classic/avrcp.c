@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "avrcp.c"
+#define BTSTACK_FILE__ "avrcp.c"
 
 #include <stdint.h>
 #include <stdio.h>

@@ -34,7 +34,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hal_flash_bank_memory.c"
+#define BTSTACK_FILE__ "hal_flash_bank_memory.c"
 
 #include "hal_flash_bank.h"
 #include "hal_flash_bank_memory.h"

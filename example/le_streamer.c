@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "le_streamer.c"
+#define BTSTACK_FILE__ "le_streamer.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(le_streamer): LE Streamer - Stream data over GATT.

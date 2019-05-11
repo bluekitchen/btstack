@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "daemon.c"
+#define BTSTACK_FILE__ "daemon.c"
 
 /*
  *  daemon.c

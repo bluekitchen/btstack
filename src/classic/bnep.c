@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "bnep.c"
+#define BTSTACK_FILE__ "bnep.c"
 
 /*
  * bnep.c

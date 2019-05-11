@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_cvsd_plc.c"
+#define BTSTACK_FILE__ "btstack_cvsd_plc.c"
 
 /*
  * btstack_CVSD_plc.c

@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "ancs_client_demo.c"
+#define BTSTACK_FILE__ "ancs_client_demo.c"
 
 // *****************************************************************************
 //

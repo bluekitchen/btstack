@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_stdin_posix.c"
+#define BTSTACK_FILE__ "btstack_stdin_posix.c"
 
 #include <errno.h>
 #include <stdio.h>

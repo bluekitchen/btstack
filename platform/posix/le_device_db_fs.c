@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "le_device_db_fs.c"
+#define BTSTACK_FILE__ "le_device_db_fs.c"
  
 #include <stdio.h>
 #include <string.h>

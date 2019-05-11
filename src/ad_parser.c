@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "ad_parser.c"
+#define BTSTACK_FILE__ "ad_parser.c"
 
 
 // *****************************************************************************

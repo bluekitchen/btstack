@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "sm.c"
+#define BTSTACK_FILE__ "sm.c"
 
 #include <string.h>
 #include <inttypes.h>

@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "obex_message_builder.c"
+#define BTSTACK_FILE__ "obex_message_builder.c"
  
 #include "btstack_config.h"
 

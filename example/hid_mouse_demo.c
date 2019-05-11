@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hid_mouse_demo.c"
+#define BTSTACK_FILE__ "hid_mouse_demo.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(hid_mouse_demo): HID Mouse (Server) Demo

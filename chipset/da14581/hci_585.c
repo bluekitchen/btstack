@@ -3,7 +3,7 @@
  * hci_585.c converted from hci_585.hex
  */
 
-#define __BTSTACK_FILE__ "hci_585.c"
+#define BTSTACK_FILE__ "hci_585.c"
 
 #include "hci_585.h"
 

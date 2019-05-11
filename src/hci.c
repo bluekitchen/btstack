@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hci.c"
+#define BTSTACK_FILE__ "hci.c"
 
 /*
  *  hci.c

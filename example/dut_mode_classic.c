@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "dut_mode_classic.c"
+#define BTSTACK_FILE__ "dut_mode_classic.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(dut_mode_classic): Enable Device Under Test (DUT) Mode for BR/EDR

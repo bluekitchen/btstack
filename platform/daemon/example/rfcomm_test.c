@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "rfcomm_test.c"
+#define BTSTACK_FILE__ "rfcomm_test.c"
 
 /*
  *  rfcomm_echo.c

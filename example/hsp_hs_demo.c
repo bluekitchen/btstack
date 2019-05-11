@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hsp_hs_demo.c"
+#define BTSTACK_FILE__ "hsp_hs_demo.c"
 
 /*
  * hsp_hs_demo.c

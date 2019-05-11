@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "spp_counter.c"
+#define BTSTACK_FILE__ "spp_counter.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(spp_counter): SPP Server - Heartbeat Counter over RFCOMM

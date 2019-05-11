@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "ant_test.c"
+#define BTSTACK_FILE__ "ant_test.c"
 
 // *****************************************************************************
 // ANT + SPP Counter demo for TI CC2567

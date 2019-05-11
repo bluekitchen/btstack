@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "att_delayed_response.c"
+#define BTSTACK_FILE__ "att_delayed_response.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(att_delayed_response): LE Peripheral - Delayed Response

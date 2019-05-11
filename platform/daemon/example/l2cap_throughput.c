@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "l2cap_throughput.c"
+#define BTSTACK_FILE__ "l2cap_throughput.c"
 
 /*
  *  l2cap_throughput.c 

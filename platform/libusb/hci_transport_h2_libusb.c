@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hci_transport_h2_libusb.c"
+#define BTSTACK_FILE__ "hci_transport_h2_libusb.c"
 
 /*
  *  hci_transport_usb.c

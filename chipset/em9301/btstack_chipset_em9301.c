@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_chipset_em9301.c"
+#define BTSTACK_FILE__ "btstack_chipset_em9301.c"
 
 /*
  *  btstack_chipset_em9301.c

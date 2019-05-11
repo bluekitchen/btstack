@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_network_posix.c"
+#define BTSTACK_FILE__ "btstack_network_posix.c"
 
 /*
  * btstack_network.c

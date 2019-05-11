@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_stdin_embedded.c"
+#define BTSTACK_FILE__ "btstack_stdin_embedded.c"
 
 /*
  *  btstack_stdin_embedded.c

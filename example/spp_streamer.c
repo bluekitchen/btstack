@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "spp_streamer.c"
+#define BTSTACK_FILE__ "spp_streamer.c"
 
 /*
  * spp_streamer.c

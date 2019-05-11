@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "sdp_general_query.c"
+#define BTSTACK_FILE__ "sdp_general_query.c"
  
 // *****************************************************************************
 /* EXAMPLE_START(sdp_general_query): Dump remote SDP Records

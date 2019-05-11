@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "cycling_speed_and_cadence_service_server.c"
+#define BTSTACK_FILE__ "cycling_speed_and_cadence_service_server.c"
 
 
 #include "bluetooth.h"

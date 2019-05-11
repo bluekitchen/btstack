@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "avrcp_browsing_client.c"
+#define BTSTACK_FILE__ "avrcp_browsing_client.c"
 
 /*
  * avrcp_browsing_client.c

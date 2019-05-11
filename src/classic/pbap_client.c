@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "pbap_client.c"
+#define BTSTACK_FILE__ "pbap_client.c"
  
 #include "btstack_config.h"
 

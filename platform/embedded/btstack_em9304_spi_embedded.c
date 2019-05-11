@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_em9304_spi_embedded.c"
+#define BTSTACK_FILE__ "btstack_em9304_spi_embedded.c"
 
 /*
  * btstack_em9304_spi_embedded.c

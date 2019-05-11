@@ -5,7 +5,7 @@
  * BTstack: added config for 8 connections + 251 packet len
  */
 
-#define __BTSTACK_FILE__ "0000000_META_hci_patches_v7.c"
+#define BTSTACK_FILE__ "0000000_META_hci_patches_v7.c"
 
 #include <stdint.h>
 

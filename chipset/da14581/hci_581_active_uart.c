@@ -3,7 +3,7 @@
  * hci_581_active_uart.c converted from hci_581_active_uart.hex
  */
 
-#define __BTSTACK_FILE__ "hci_581_active_uart.c"
+#define BTSTACK_FILE__ "hci_581_active_uart.c"
 
 #include "hci_581_active_uart.h"
 

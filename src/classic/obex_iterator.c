@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "obex_iterator.c"
+#define BTSTACK_FILE__ "obex_iterator.c"
  
 #include "btstack_config.h"
 

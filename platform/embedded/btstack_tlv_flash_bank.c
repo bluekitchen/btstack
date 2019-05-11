@@ -29,7 +29,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_tlv_flash_bank.c"
+#define BTSTACK_FILE__ "btstack_tlv_flash_bank.c"
 
 #include "btstack_tlv.h"
 #include "btstack_tlv_flash_bank.h"

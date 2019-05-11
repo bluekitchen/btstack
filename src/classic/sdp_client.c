@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "sdp_client.c"
+#define BTSTACK_FILE__ "sdp_client.c"
 
 /*
  *  sdp_client.c

@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hids_device.c"
+#define BTSTACK_FILE__ "hids_device.c"
 
 /**
  * Implementation of the GATT HIDS Device

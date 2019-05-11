@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "att_dispatch.c"
+#define BTSTACK_FILE__ "att_dispatch.c"
 
 
 /**

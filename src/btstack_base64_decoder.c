@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_base64_decoder.c"
+#define BTSTACK_FILE__ "btstack_base64_decoder.c"
 
 /*
  *  btstack_base64_decoder.c

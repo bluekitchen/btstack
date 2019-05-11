@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hid_host_demo.c"
+#define BTSTACK_FILE__ "hid_host_demo.c"
 
 /*
  * hid_host_demo.c

@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "a2dp_sink_demo.c"
+#define BTSTACK_FILE__ "a2dp_sink_demo.c"
 
 /*
  * a2dp_sink_demo.c

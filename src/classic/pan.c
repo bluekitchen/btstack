@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "pan.c"
+#define BTSTACK_FILE__ "pan.c"
 
 /*
  *  pan.h
