@@ -57,12 +57,10 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <net/if_arp.h>
-
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
 #include <net/if.h>
+#include <net/if_arp.h>
 #include <net/if_types.h>
-
 #include <netinet/if_ether.h>
 #include <netinet/in.h>
 #endif
@@ -85,7 +83,7 @@ static uint8_t network_buffer[BNEP_MTU_MIN];
 static size_t  network_buffer_len = 0;
 static char tap_dev_name[16];
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
 // tuntaposx provides fixed set of tapX devices
 static const char * tap_dev = "/dev/tap0";
 static const char * tap_dev_name_template = "tap0";
