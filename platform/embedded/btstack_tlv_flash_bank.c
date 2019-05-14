@@ -145,7 +145,6 @@ static void btstack_tlv_flash_bank_iterator_fetch_tag_len(btstack_tlv_flash_bank
 	if (delete_tag == 0){
 		it->tag = 0;
 	}
-	log_info("fetch tag: %x, len %u, delete %x (offset %u)", it->tag, it->len, delete_tag, it->offset);
 #endif
 }
 
