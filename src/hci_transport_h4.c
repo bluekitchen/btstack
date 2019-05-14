@@ -151,11 +151,11 @@ static uint8_t * hci_packet = &hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFE
 static const uint8_t local_version_event_prefix[] = { 0x04, 0x0e, 0x0c, 0x01, 0x01, 0x10};
 static const uint8_t baud_rate_command_prefix[]   = { 0x01, 0x36, 0xff, 0x04};
 static enum {
-    CC256X_WORKAROUND_IDLE,
-    CC256X_WORKAROUND_CHIPSET_DETECTED,
-    CC256X_WORKAROUND_BAUDRATE_COMMAND_SENT,
-    CC256X_WORKAROUND_DONE
-} cc256x_workaround_state;
+    BAUDRATE_CHANGE_WORKAROUND_IDLE,
+    BAUDRATE_CHANGE_WORKAROUND_CHIPSET_DETECTED,
+    BAUDRATE_CHANGE_WORKAROUND_BAUDRATE_COMMAND_SENT,
+    BAUDRATE_CHANGE_WORKAROUND_DONE
+} baudrate_change_workaround_state;
 #endif
 
 static int hci_transport_h4_set_baudrate(uint32_t baudrate){
@@ -244,16 +244,16 @@ static void hci_transport_h4_block_read(void){
 
         case H4_W4_PAYLOAD:
 #ifdef ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
-            if (cc256x_workaround_state == CC256X_WORKAROUND_IDLE
+            if (baudrate_change_workaround_state == BAUDRATE_CHANGE_WORKAROUND_IDLE
             && memcmp(hci_packet, local_version_event_prefix, sizeof(local_version_event_prefix)) == 0){
                 if (little_endian_read_16(hci_packet, 11) == BLUETOOTH_COMPANY_ID_TEXAS_INSTRUMENTS_INC){
                     // detect TI CC256x controller based on manufacturer
                     log_info("Detected CC256x controller");
-                    cc256x_workaround_state = CC256X_WORKAROUND_CHIPSET_DETECTED;
+                    baudrate_change_workaround_state = BAUDRATE_CHANGE_WORKAROUND_CHIPSET_DETECTED;
                 } else {
                     // work around not needed
                     log_info("Bluetooth controller not by TI");
-                    cc256x_workaround_state = CC256X_WORKAROUND_DONE;
+                    baudrate_change_workaround_state = BAUDRATE_CHANGE_WORKAROUND_DONE;
                 }
             }
 #endif
@@ -265,8 +265,8 @@ static void hci_transport_h4_block_read(void){
     }
 
 #ifdef ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
-    if (cc256x_workaround_state == CC256X_WORKAROUND_BAUDRATE_COMMAND_SENT){
-        cc256x_workaround_state = CC256X_WORKAROUND_IDLE;
+    if (baudrate_change_workaround_state == BAUDRATE_CHANGE_WORKAROUND_BAUDRATE_COMMAND_SENT){
+        baudrate_change_workaround_state = BAUDRATE_CHANGE_WORKAROUND_IDLE;
         // avoid flowcontrol problem by reading expected hci command complete event of 7 bytes in a single block read
         h4_state = H4_W4_PAYLOAD;
         bytes_to_read = 7;
@@ -317,10 +317,10 @@ static int hci_transport_h4_send_packet(uint8_t packet_type, uint8_t * packet, i
     *packet = packet_type;
 
 #ifdef ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
-    if ((cc256x_workaround_state == CC256X_WORKAROUND_CHIPSET_DETECTED)
+    if ((baudrate_change_workaround_state == BAUDRATE_CHANGE_WORKAROUND_CHIPSET_DETECTED)
     && (memcmp(packet, baud_rate_command_prefix, sizeof(baud_rate_command_prefix)) == 0)) {
-        log_info("CC256x baud rate command detected, expect command complete event next");
-        cc256x_workaround_state = CC256X_WORKAROUND_BAUDRATE_COMMAND_SENT;
+        log_info("Baud rate command detected, expect command complete event next");
+        baudrate_change_workaround_state = BAUDRATE_CHANGE_WORKAROUND_BAUDRATE_COMMAND_SENT;
     }
 #endif
 
