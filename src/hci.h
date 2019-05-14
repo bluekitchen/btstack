@@ -788,6 +788,7 @@ typedef struct {
     HCI_STATE      state;
     hci_substate_t substate;
     btstack_timer_source_t timeout;
+    btstack_chipset_result_t chipset_result;
 
     uint16_t  last_cmd_opcode;
 

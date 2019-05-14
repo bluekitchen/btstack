@@ -1271,9 +1271,9 @@ static void hci_initializing_run(void){
         case HCI_INIT_CUSTOM_INIT:
             // Custom initialization
             if (hci_stack->chipset && hci_stack->chipset->next_command){
-                btstack_chipset_result_t result = (*hci_stack->chipset->next_command)(hci_stack->hci_packet_buffer);
+                hci_stack->chipset_result = (*hci_stack->chipset->next_command)(hci_stack->hci_packet_buffer);
                 int send_cmd = 0;
-                switch (result){
+                switch (hci_stack->chipset_result){
                     case BTSTACK_CHIPSET_VALID_COMMAND:
                         send_cmd = 1;
                         hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT;
@@ -1310,7 +1310,7 @@ static void hci_initializing_run(void){
                 log_info("Init script done");
 
                 // Init script download on Broadcom chipsets causes:
-                if ( (result != BTSTACK_CHIPSET_NO_INIT_SCRIPT) &&
+                if ( (hci_stack->chipset_result != BTSTACK_CHIPSET_NO_INIT_SCRIPT) &&
                    (  hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION 
                 ||    hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_EM_MICROELECTRONIC_MARIN_SA) ){
 
@@ -1688,7 +1688,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 #endif
 
         case HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS:
-            if (need_baud_change &&
+            if (need_baud_change && hci_stack->chipset_result != BTSTACK_CHIPSET_NO_INIT_SCRIPT &&
               ((hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION) || 
                (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_EM_MICROELECTRONIC_MARIN_SA))) {
                 hci_stack->substate = HCI_INIT_SEND_BAUD_CHANGE_BCM;
