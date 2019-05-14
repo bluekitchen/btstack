@@ -165,7 +165,7 @@ static void tlv_iterator_fetch_next(btstack_tlv_flash_bank_t * self, tlv_iterato
 
 #ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
 	// skip delete field
-	it->offset += 4;
+	it->offset += self->delete_tag_len;
 #endif
 
 	if (it->offset >= self->hal_flash_bank_impl->get_size(self->hal_flash_bank_context)) {
@@ -264,8 +264,8 @@ static void btstack_tlv_flash_bank_migrate(btstack_tlv_flash_bank_t * self){
 
 #ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
 			// skip delete field
-			tag_index      += 4;
-			next_write_pos += 4;
+			tag_index      += self->delete_tag_len;
+			next_write_pos += self->delete_tag_len;
 #endif
 			// copy value
 			int bytes_to_copy = tag_len;
@@ -342,7 +342,7 @@ static int btstack_tlv_flash_bank_get_tag(void * context, uint32_t tag, uint8_t 
 	uint32_t value_offset = tag_index + 8;
 #ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
 	// skip delete field
-	value_offset += 4;
+	value_offset += self->delete_tag_len;
 #endif
 	btstack_tlv_flash_bank_read(self, self->current_bank, value_offset, buffer, copy_size);
 	return copy_size;
@@ -359,11 +359,12 @@ static int btstack_tlv_flash_bank_store_tag(void * context, uint32_t tag, const 
 	btstack_tlv_flash_bank_t * self = (btstack_tlv_flash_bank_t *) context;
 
 	// trigger migration if not enough space
-	if (self->write_offset + 8 + data_size > self->hal_flash_bank_impl->get_size(self->hal_flash_bank_context)){
+	uint32_t required_space = 8 + self->delete_tag_len + data_size;
+	if (self->write_offset + required_space > self->hal_flash_bank_impl->get_size(self->hal_flash_bank_context)){
 		btstack_tlv_flash_bank_migrate(self);
 	}
 
-	if (self->write_offset + 8 + data_size > self->hal_flash_bank_impl->get_size(self->hal_flash_bank_context)){
+	if (self->write_offset + required_space > self->hal_flash_bank_impl->get_size(self->hal_flash_bank_context)){
 		log_error("couldn't write entry, not enough space left");
 		return 2;
 	}
@@ -378,7 +379,7 @@ static int btstack_tlv_flash_bank_store_tag(void * context, uint32_t tag, const 
 	uint32_t value_offset = self->write_offset + 8;
 #ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
 	// skip delete field
-	value_offset += 4;
+	value_offset += self->delete_tag_len;
 #endif
 
 	// write value first
@@ -395,7 +396,7 @@ static int btstack_tlv_flash_bank_store_tag(void * context, uint32_t tag, const 
 
 #ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
 	// skip delete field
-	self->write_offset += 4;
+	self->write_offset += self->delete_tag_len;
 #endif
 
 	return 0;
@@ -421,15 +422,20 @@ static const btstack_tlv_t btstack_tlv_flash_bank = {
  */
 const btstack_tlv_t * btstack_tlv_flash_bank_init_instance(btstack_tlv_flash_bank_t * self, const hal_flash_bank_t * hal_flash_bank_impl, void * hal_flash_bank_context){
 
-#ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
-	if (hal_flash_bank_impl->get_alignment(hal_flash_bank_context) > 4){
-		log_error("Flash alignment > 4 with ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD not supported");
-		return NULL;
-	}
-#endif
-
 	self->hal_flash_bank_impl    = hal_flash_bank_impl;
 	self->hal_flash_bank_context = hal_flash_bank_context;
+	self->delete_tag_len = 0;
+
+#ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
+	if (hal_flash_bank_impl->get_alignment(hal_flash_bank_context) > 8){
+		log_error("Flash alignment > 8 with ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD not supported");
+		return NULL;
+	}
+	// set delete tag len
+	uint32_t aligment = self->hal_flash_bank_impl->get_alignment(self->hal_flash_bank_context);
+	self->delete_tag_len = (uint8_t) btstack_max(4, aligment);
+	log_info("delete tag len %u", self->delete_tag_len);
+#endif
 
 	// try to find current bank
 	self->current_bank = btstack_tlv_flash_bank_get_latest_bank(self);
