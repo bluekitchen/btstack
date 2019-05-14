@@ -1271,36 +1271,39 @@ static void hci_initializing_run(void){
         case HCI_INIT_CUSTOM_INIT:
             // Custom initialization
             if (hci_stack->chipset && hci_stack->chipset->next_command){
-                int valid_cmd = (*hci_stack->chipset->next_command)(hci_stack->hci_packet_buffer);
-                if (valid_cmd){
+                btstack_chipset_result_t result = (*hci_stack->chipset->next_command)(hci_stack->hci_packet_buffer);
+                int send_cmd = 0;
+                switch (result){
+                    case BTSTACK_CHIPSET_VALID_COMMAND:
+                        send_cmd = 1;
+                        hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT;
+                        break;
+                    case BTSTACK_CHIPSET_WARMSTART_REQUIRED:
+                        send_cmd = 1;
+                        // CSR Warm Boot: Wait a bit, then send HCI Reset until HCI Command Complete
+                        log_info("CSR Warm Boot");
+                        btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
+                        btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
+                        btstack_run_loop_add_timer(&hci_stack->timeout);
+                        if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO
+                            && hci_stack->config
+                            && hci_stack->chipset
+                            // && hci_stack->chipset->set_baudrate_command -- there's no such command
+                            && hci_stack->hci_transport->set_baudrate
+                            && hci_transport_uart_get_main_baud_rate()){
+                            hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE;
+                        } else {
+                           hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT_LINK_RESET;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+
+                if (send_cmd){
                     int size = 3 + hci_stack->hci_packet_buffer[2];
                     hci_stack->last_cmd_opcode = little_endian_read_16(hci_stack->hci_packet_buffer, 0);
                     hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, hci_stack->hci_packet_buffer, size);
-                    switch (valid_cmd) {
-                        case BTSTACK_CHIPSET_VALID_COMMAND:
-                            hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT;
-                            break;
-                        case BTSTACK_CHIPSET_WARMSTART_REQUIRED:
-                            // CSR Warm Boot: Wait a bit, then send HCI Reset until HCI Command Complete
-                            log_info("CSR Warm Boot");
-                            btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
-                            btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
-                            btstack_run_loop_add_timer(&hci_stack->timeout);
-                            if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_CAMBRIDGE_SILICON_RADIO
-                                && hci_stack->config
-                                && hci_stack->chipset
-                                // && hci_stack->chipset->set_baudrate_command -- there's no such command
-                                && hci_stack->hci_transport->set_baudrate
-                                && hci_transport_uart_get_main_baud_rate()){
-                                hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE;
-                            } else {
-                               hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT_LINK_RESET;
-                            }
-                            break;
-                        default:
-                            // should not get here
-                            break;
-                    }
                     hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, hci_stack->hci_packet_buffer, size);
                     break;
                 }
