@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - le_device_db: add secure_connection argument to le_device_db_encryption_set and le_device_db_encryption_get
 - replaced stm
 - gatt_client: emit query complete event for signed write operation
+- btstack_tlv_flash_bank: support targets where a value cannot be overwritten with zero. When ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
+  is defined, an explicit delete field is used to indicate an invalid entry.
 
 ### Fixed
 - SM: Use provided authentication requirements in slave security request

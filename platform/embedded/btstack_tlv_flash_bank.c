@@ -48,7 +48,20 @@
 // Entries
 // - Tag: 32 bit
 // - Len: 32 bit
+// - Delete: 32 delete field - only used with ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD 
 // - Value: Len in bytes
+
+// ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD 
+// 
+// Most Flash implementations allow to:
+// - erase sector -> all values are 0xff
+// - write value (1s -> 0s)
+// - overwrite value with zero (remaininig 1s -> 0s)
+//
+// We use the ability to overwrite a value with zeros to mark deleted enttries (by writing zero into the tag field).
+// Some targetes, E.g. Kinetix K64F, do enot allow for that. 
+//
+// With ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD an extra field is reserved to indicate a deleted tag, while keeping main logic
 
 #define BTSTACK_TLV_HEADER_LEN 8
 
@@ -124,6 +137,16 @@ static void btstack_tlv_flash_bank_iterator_fetch_tag_len(btstack_tlv_flash_bank
 	btstack_tlv_flash_bank_read(self, it->bank, it->offset, entry, 8);
 	it->tag = big_endian_read_32(entry, 0);
 	it->len = big_endian_read_32(entry, 4);
+
+#ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
+	// clear tag, if delete field is set
+	uint32_t delete_tag;
+	btstack_tlv_flash_bank_read(self, it->bank, it->offset + 8, (uint8_t *) &delete_tag, 4);
+	if (delete_tag == 0){
+		it->tag = 0;
+	}
+	log_info("fetch tag: %x, len %u, delete %x (offset %u)", it->tag, it->len, delete_tag, it->offset);
+#endif
 }
 
 static void btstack_tlv_flash_bank_iterator_init(btstack_tlv_flash_bank_t * self, tlv_iterator_t * it, int bank){
@@ -140,6 +163,12 @@ static int btstack_tlv_flash_bank_iterator_has_next(btstack_tlv_flash_bank_t * s
 
 static void tlv_iterator_fetch_next(btstack_tlv_flash_bank_t * self, tlv_iterator_t * it){
 	it->offset += 8 + btstack_tlv_flash_bank_align_size(self, it->len);
+
+#ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
+	// skip delete field
+	it->offset += 4;
+#endif
+
 	if (it->offset >= self->hal_flash_bank_impl->get_size(self->hal_flash_bank_context)) {
 		it->tag = 0xffffffff;
 		it->len = 0;
@@ -225,9 +254,22 @@ static void btstack_tlv_flash_bank_migrate(btstack_tlv_flash_bank_t * self){
 			uint32_t tag_len = it.len;
 			uint32_t tag_index = it.offset;
 
-			// copy
-			int bytes_to_copy = 8 + tag_len;
-			log_info("migrate pos %u, tag '%x' len %u -> new pos %u", tag_index, it.tag, bytes_to_copy, next_write_pos);
+			log_info("migrate pos %u, tag '%x' len %u -> new pos %u", tag_index, it.tag, tag_len, next_write_pos);
+
+			// copy header
+			uint8_t header_buffer[8];
+			btstack_tlv_flash_bank_read(self, self->current_bank, tag_index,      header_buffer, 8);
+			btstack_tlv_flash_bank_write(self, next_bank,         next_write_pos, header_buffer, 8);
+			tag_index      += 8;
+			next_write_pos += 8;
+
+#ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
+			// skip delete field
+			tag_index      += 4;
+			next_write_pos += 4;
+#endif
+			// copy value
+			int bytes_to_copy = tag_len;
 			uint8_t copy_buffer[32];
 			while (bytes_to_copy){
 				int bytes_this_iteration = btstack_min(bytes_to_copy, sizeof(copy_buffer));
@@ -255,9 +297,17 @@ static void btstack_tlv_flash_bank_delete_tag_until_offset(btstack_tlv_flash_ban
 	while (btstack_tlv_flash_bank_iterator_has_next(self, &it) && it.offset < offset){
 		if (it.tag == tag){
 			log_info("Erase tag '%x' at position %u", tag, it.offset);
-			// overwrite tag with invalid tag
-			uint32_t zero_tag = 0;
-			btstack_tlv_flash_bank_write(self, self->current_bank, it.offset, (uint8_t*) &zero_tag, sizeof(zero_tag));
+
+			// mark entry as invalid
+			uint32_t zero_value = 0;
+#ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
+			// write delete field at offset 8
+			btstack_tlv_flash_bank_write(self, self->current_bank, it.offset+8, (uint8_t*) &zero_value, sizeof(zero_value));
+#else
+			// overwrite tag with zero value
+			btstack_tlv_flash_bank_write(self, self->current_bank, it.offset, (uint8_t*) &zero_value, sizeof(zero_value));
+#endif
+
 		}
 		tlv_iterator_fetch_next(self, &it);
 	}
@@ -290,7 +340,12 @@ static int btstack_tlv_flash_bank_get_tag(void * context, uint32_t tag, uint8_t 
 	if (tag_index == 0) return 0;
 	if (!buffer) return tag_len;
 	int copy_size = btstack_min(buffer_size, tag_len);
-	btstack_tlv_flash_bank_read(self, self->current_bank, tag_index + 8, buffer, copy_size);
+	uint32_t value_offset = tag_index + 8;
+#ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
+	// skip delete field
+	value_offset += 4;
+#endif
+	btstack_tlv_flash_bank_read(self, self->current_bank, value_offset, buffer, copy_size);
 	return copy_size;
 }
 
@@ -321,8 +376,14 @@ static int btstack_tlv_flash_bank_store_tag(void * context, uint32_t tag, const 
 
 	log_info("write '%x', len %u at %u", tag, data_size, self->write_offset);
 
+	uint32_t value_offset = self->write_offset + 8;
+#ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
+	// skip delete field
+	value_offset += 4;
+#endif
+
 	// write value first
-	btstack_tlv_flash_bank_write(self, self->current_bank, self->write_offset + 8, data, data_size);
+	btstack_tlv_flash_bank_write(self, self->current_bank, value_offset, data, data_size);
 
 	// then entry
 	btstack_tlv_flash_bank_write(self, self->current_bank, self->write_offset, entry, sizeof(entry));
@@ -332,6 +393,11 @@ static int btstack_tlv_flash_bank_store_tag(void * context, uint32_t tag, const 
 
 	// done
 	self->write_offset += sizeof(entry) + btstack_tlv_flash_bank_align_size(self, data_size);
+
+#ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
+	// skip delete field
+	self->write_offset += 4;
+#endif
 
 	return 0;
 }
@@ -355,6 +421,13 @@ static const btstack_tlv_t btstack_tlv_flash_bank = {
  * Init Tag Length Value Store
  */
 const btstack_tlv_t * btstack_tlv_flash_bank_init_instance(btstack_tlv_flash_bank_t * self, const hal_flash_bank_t * hal_flash_bank_impl, void * hal_flash_bank_context){
+
+#ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
+	if (hal_flash_bank_impl->get_alignment(hal_flash_bank_context) > 4){
+		log_error("Flash alignment > 4 with ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD not supported");
+		return NULL;
+	}
+#endif
 
 	self->hal_flash_bank_impl    = hal_flash_bank_impl;
 	self->hal_flash_bank_context = hal_flash_bank_context;

@@ -13,7 +13,12 @@
 #include "btstack_config.h"
 #include "btstack_debug.h"
 
-#define HAL_FLASH_BANK_MEMORY_STORAGE_SIZE 256
+#ifdef ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
+// Provide additional bytes for 3 x delete fields (in both banks)
+#define HAL_FLASH_BANK_MEMORY_STORAGE_SIZE (256 + 24)
+#else
+#define HAL_FLASH_BANK_MEMORY_STORAGE_SIZE (256)
+#endif
 static uint8_t hal_flash_bank_memory_storage[HAL_FLASH_BANK_MEMORY_STORAGE_SIZE];
 
 static void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
