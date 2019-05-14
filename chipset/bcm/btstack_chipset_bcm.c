@@ -120,7 +120,7 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
         hcd_fd = open(hcd_file_path, O_RDONLY);
         if (hcd_fd < 0){
             log_error("chipset-bcm: can't open file %s", hcd_file_path);
-            return BTSTACK_CHIPSET_DONE;
+            return BTSTACK_CHIPSET_NO_INIT_SCRIPT;
         }
     }
 
@@ -263,6 +263,9 @@ static void chipset_init(const void * config){
 }
 
 static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
+    // no initscript
+    if (brcm_patch_ram_length == 0) return BTSTACK_CHIPSET_NO_INIT_SCRIPT;
+
     // send download firmware command
     if (send_download_command){
         send_download_command = 0;

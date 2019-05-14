@@ -1310,8 +1310,9 @@ static void hci_initializing_run(void){
                 log_info("Init script done");
 
                 // Init script download on Broadcom chipsets causes:
-                if (hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION 
-                ||  hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_EM_MICROELECTRONIC_MARIN_SA){
+                if ( (result != BTSTACK_CHIPSET_NO_INIT_SCRIPT) &&
+                   (  hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_BROADCOM_CORPORATION 
+                ||    hci_stack->manufacturer == BLUETOOTH_COMPANY_ID_EM_MICROELECTRONIC_MARIN_SA) ){
 
                     // - baud rate to reset, restore UART baud rate if needed
                     int need_baud_change = hci_stack->config
