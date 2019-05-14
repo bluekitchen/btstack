@@ -90,6 +90,7 @@ ENABLE_ATT_DELAYED_RESPONSE      | Enable support for delayed ATT operations, se
 ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE | Enable L2CAP Enhanced Retransmission Mode. Mandatory for AVRCP Browsing
 ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL | Enable HCI Controller to Host Flow Control, see below
 ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND | Enable workaround for bug in CC256x Flow Control during baud rate change, see chipset docs.
+ENABLE_CYPRESS_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND | Enable workaround for bug in CYW2070x Flow Control during baud rate change, similar to CC256x.
 ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD | Enable use of explicit delete field in TLV Flash implemenation - required when flash value cannot be overwritten with zero
 
 

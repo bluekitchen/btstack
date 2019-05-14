@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - port/stm32-f4discovery-cc256x: add support for built-in MEMS microphone
 - libusb: add support for nRF52840-PCA10056 running Zephyr hci_usb example
 - port for Nucelo L073RZ with EM9304 DVK: stm32-l073rz-nucleo-em9304
+- hci_transport_h4: add workaround for flow control bug in CYW2070x, enable with ENABLE_CYPRESS_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND 
 
 ## Changes February 2019
 

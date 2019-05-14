@@ -147,9 +147,22 @@ static int read_pos;
 static uint8_t hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + HCI_INCOMING_PACKET_BUFFER_SIZE + 1]; // packet type + max(acl header + acl payload, event header + event data)
 static uint8_t * hci_packet = &hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE];
 
+// Baudrate change bugs in TI CC256x and CYW20704
 #ifdef ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
-static const uint8_t local_version_event_prefix[] = { 0x04, 0x0e, 0x0c, 0x01, 0x01, 0x10};
+#define ENABLE_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
 static const uint8_t baud_rate_command_prefix[]   = { 0x01, 0x36, 0xff, 0x04};
+#endif
+
+#ifdef ENABLE_CYPRESS_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
+#ifdef ENABLE_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
+#error "Please enable either ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND or ENABLE_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND"
+#endif
+#define ENABLE_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
+static const uint8_t baud_rate_command_prefix[]   = { 0x01, 0x18, 0xfc, 0x06};
+#endif
+
+#ifdef ENABLE_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
+static const uint8_t local_version_event_prefix[] = { 0x04, 0x0e, 0x0c, 0x01, 0x01, 0x10};
 static enum {
     BAUDRATE_CHANGE_WORKAROUND_IDLE,
     BAUDRATE_CHANGE_WORKAROUND_CHIPSET_DETECTED,
@@ -243,9 +256,10 @@ static void hci_transport_h4_block_read(void){
             break;
 
         case H4_W4_PAYLOAD:
-#ifdef ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
+#ifdef ENABLE_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
             if (baudrate_change_workaround_state == BAUDRATE_CHANGE_WORKAROUND_IDLE
             && memcmp(hci_packet, local_version_event_prefix, sizeof(local_version_event_prefix)) == 0){
+#ifdef ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
                 if (little_endian_read_16(hci_packet, 11) == BLUETOOTH_COMPANY_ID_TEXAS_INSTRUMENTS_INC){
                     // detect TI CC256x controller based on manufacturer
                     log_info("Detected CC256x controller");
@@ -255,6 +269,18 @@ static void hci_transport_h4_block_read(void){
                     log_info("Bluetooth controller not by TI");
                     baudrate_change_workaround_state = BAUDRATE_CHANGE_WORKAROUND_DONE;
                 }
+#endif
+#ifdef ENABLE_CYPRESS_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
+                if (little_endian_read_16(hci_packet, 11) == BLUETOOTH_COMPANY_ID_CYPRESS_SEMICONDUCTOR){
+                    // detect Cypress controller based on manufacturer
+                    log_info("Detected Cypress controller");
+                    baudrate_change_workaround_state = BAUDRATE_CHANGE_WORKAROUND_CHIPSET_DETECTED;
+                } else {
+                    // work around not needed
+                    log_info("Bluetooth controller not by Cypress");
+                    baudrate_change_workaround_state = BAUDRATE_CHANGE_WORKAROUND_DONE;
+                }
+#endif
             }
 #endif
             packet_handler(hci_packet[0], &hci_packet[1], read_pos-1);
@@ -264,7 +290,7 @@ static void hci_transport_h4_block_read(void){
             break;
     }
 
-#ifdef ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
+#ifdef ENABLE_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
     if (baudrate_change_workaround_state == BAUDRATE_CHANGE_WORKAROUND_BAUDRATE_COMMAND_SENT){
         baudrate_change_workaround_state = BAUDRATE_CHANGE_WORKAROUND_IDLE;
         // avoid flowcontrol problem by reading expected hci command complete event of 7 bytes in a single block read
@@ -316,7 +342,7 @@ static int hci_transport_h4_send_packet(uint8_t packet_type, uint8_t * packet, i
     packet--;
     *packet = packet_type;
 
-#ifdef ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
+#ifdef ENABLE_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
     if ((baudrate_change_workaround_state == BAUDRATE_CHANGE_WORKAROUND_CHIPSET_DETECTED)
     && (memcmp(packet, baud_rate_command_prefix, sizeof(baud_rate_command_prefix)) == 0)) {
         log_info("Baud rate command detected, expect command complete event next");
