@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Bluetooth SIG web scraping tools updated
 - ESP32: Configure SCO over HCI after power up
 - libusb: compiles for FreeBSD
+- SM: Avoid potential use-after-free on immediate disconnect (lookup connection via con handle instead of storing pointer)
 
 ### Added
 - SM: Track if connection encryption is based on LE Secure Connection pairing
