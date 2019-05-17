@@ -110,6 +110,9 @@ int btstack_main(int argc, const char * argv[]) {
     (void)argc;
     (void)argv;
 
+    // disable Secure Simple Pairinng
+    gap_ssp_set_enable(0);
+
     // make device connectable
     // @note: gap_connectable_control will be enabled when an L2CAP service 
     // (e.g. RFCOMM) is initialized). Therefore, it's not needed in regular applications
