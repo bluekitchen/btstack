@@ -58,10 +58,11 @@ static void stdin_process(btstack_data_source_t *ds, btstack_data_source_callbac
     UNUSED(callback_type);
 
     char data;
-    read(stdin_source.source.fd, &data, 1);
-    if (stdin_handler){
-        (*stdin_handler)(data);
-    }
+    int result = read(stdin_source.source.fd, &data, 1);
+    if (result < 1) return;
+    if (stdin_handler == NULL) return;
+
+    (*stdin_handler)(data);
 }
 
 void btstack_stdin_setup(void (*handler)(char c)){
