@@ -1,11 +1,16 @@
 TARGET := iphone:clang
 TARGET_IPHONEOS_DEPLOYMENT_VERSION = 3.0
-ARCHS = armv7
+ARCHS = armv7 arm64
 
 BTSTACK_ROOT=../../..
 
 ADDITIONAL_CFLAGS =  -I.. -I$(BTSTACK_ROOT)/include
-ADDITIONAL_LDFLAGS = -L../src/.theos/obj -lBTstack
+
+ifeq ($(FINALPACKAGE),1)
+ADDITIONAL_LDFLAGS = -L../.theos/obj -lBTstack
+else 
+ADDITIONAL_LDFLAGS = -L../.theos/obj/debug -lBTstack
+endif
 
 TOOL_NAME = inquiry l2cap-test rfcomm-echo rfcomm-cat rfcomm-test l2cap-server l2cap-throughput
 

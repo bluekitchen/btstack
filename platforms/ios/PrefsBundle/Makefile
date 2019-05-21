@@ -9,7 +9,12 @@ BTstack_INSTALL_PATH = /Library/PreferenceBundles
 BTstack_FRAMEWORKS = UIKit
 BTstack_CFLAGS = -I.. -I../../../include -g
 
-BTstack_LDFLAGS = -L../src/.theos/obj -lBTstack
+ifeq ($(FINALPACKAGE),1)
+BTstack_LDFLAGS = -L../.theos/obj -lBTstack
+else 
+BTstack_LDFLAGS = -L../.theos/obj/debug -lBTstack
+endif
+
 BTstack_LDFLAGS += -F../Frameworks 
 BTstack_PRIVATE_FRAMEWORKS = Preferences
 
