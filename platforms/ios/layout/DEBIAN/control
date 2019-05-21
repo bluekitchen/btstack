@@ -8,5 +8,4 @@ Pre-Depends: ldid
 Depends: firmware (>= 3.0), ch.ringwald.springboardaccess (>= 0.3), preferenceloader (>= 2.2.2) 
 Author: Mattthias Ringwald <tickets@btstack.uservoice.com>
 Maintainer: Mattthias Ringwald <tickets@btstack.uservoice.com>
-Section: Development
 Version: 1.0
