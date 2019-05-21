@@ -45,6 +45,7 @@ BTdaemon_FILES = \
 
 BTdaemon_CFLAGS = -Wno-varargs -I$(BTSTACK_ROOT)/include -I$(BTSTACK_ROOT)/ble -I$(BTSTACK_ROOT)/src -I..
 BTdaemon_PRIVATE_FRAMEWORKS = IOKit
+BTdaemon_CODESIGN_FLAGS = -S../ent.xml
 
 before-all::
 	../../../tools/get_version.sh
