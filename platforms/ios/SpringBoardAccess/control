@@ -2,7 +2,7 @@ Package: ch.ringwald.springboardaccess
 Name: SpringBoardAccess
 Description: Controls status bar icons from daemons
 Architecture: iphoneos-arm
-Depends: mobilesubstrate (>= 0.9.5101), firmware (<< 4.0) | org.thebigboss.libstatus9 | libstatusbar (>= 0.9.8.4)
+Depends: mobilesubstrate (>= 0.9.5101), firmware (<< 4.0) | libmoorecon | libstatusbar (>= 0.9.8.4)
 Author: Mattthias Ringwald <tickets@btstack.uservoice.com>
 Maintainer: Mattthias Ringwald <tickets@btstack.uservoice.com>
 Section: Development
