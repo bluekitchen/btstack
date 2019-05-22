@@ -419,7 +419,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     // enable PB_GATT
                     if (provisioned == 0){
-                        setup_advertising_unprovisioned();
+                         setup_advertising_unprovisioned();
                     }
                     break;
                     
@@ -723,6 +723,7 @@ static void show_usage(void){
     printf("4      - Send   Segmented Access Message - Virtual 9779\n");
     printf("6      - Clear Replay Protection List\n");
     printf("7      - Load PTS App key\n");
+    printf("8      - Delete provisioning data\n");
     printf("\n");
 }
 
@@ -763,13 +764,8 @@ static void stdin_process(char cmd){
             load_pts_app_key();
             break;
         case '8':
-            printf("Creating link to device uuid: ");
-            printf_hexdump(pts_device_uuid, 16);
-            pb_adv_create_link(pts_device_uuid);
-            break;
-        case '9':
-            printf("Close link\n");
-            pb_adv_close_link(1, 0);
+            btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, 'PROV');
+            printf("Provisioning data deleted\n");
             break;
         case 'p':
             printf("+ Public Key OOB Enabled\n");

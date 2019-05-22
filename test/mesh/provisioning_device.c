@@ -681,20 +681,6 @@ static void provisioning_handle_random(uint8_t *packet, uint16_t size){
 
 // PROV_DATA
 static void provisioning_handle_network_dervived(void * arg){
-
-    printf("BeaconKey: ");
-    printf_hexdump(network_key.beacon_key, 16);
-    printf("Network ID: ");
-    printf_hexdump(network_key.network_id, 8);
-    printf("IdentityKey: ");
-    printf_hexdump(network_key.identity_key, 16);
-    printf("NID: %02x\n", network_key.nid);
-    printf("EncryptionKey: ");
-    printf_hexdump(network_key.encryption_key, 16);
-    printf("PrivacyKey: ");
-    printf_hexdump(network_key.privacy_key, 16);
-
-    //
     provisioning_timer_stop();
 
     // notify client
@@ -706,10 +692,6 @@ static void provisioning_handle_network_dervived(void * arg){
 }
 
 static void provisioning_handle_data_device_key(void * arg){
-    // dump
-    printf("DeviceKey: ");
-    printf_hexdump(device_key, 16);
-
     // derive full network key
     mesh_network_key_derive(&prov_cmac_request, &network_key, &provisioning_handle_network_dervived, NULL);
 }
@@ -730,14 +712,6 @@ static void provisioning_handle_data_ccm(void * arg){
     flags = provisioning_data[18];
     iv_index = big_endian_read_32(provisioning_data, 19);
     unicast_address = big_endian_read_16(provisioning_data, 23);
-
-    // dump
-    printf("NetKey: ");
-    printf_hexdump(network_key.net_key, 16);
-    printf("NetKeyIndex: %04x\n", network_key.netkey_index);
-    printf("Flags: %02x\n", flags);
-    printf("IVIndex: %04x\n", iv_index);
-    printf("UnicastAddress: %02x\n", unicast_address);
 
     // DeviceKey
     mesh_k1(&prov_cmac_request, dhkey, sizeof(dhkey), provisioning_salt, (const uint8_t*) "prdk", 4, device_key, &provisioning_handle_data_device_key, NULL);

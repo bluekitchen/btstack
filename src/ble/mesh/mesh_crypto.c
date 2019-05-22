@@ -232,12 +232,6 @@ static void mesh_network_key_derive_network_id_calculated(void * arg) {
 }
 
 static void mesh_network_key_derive_k2_calculated(void * arg){
-    printf("NID: %02x\n", k2_result[0]);
-    printf("EncryptionKey: ");
-    printf_hexdump(&k2_result[1], 16);
-    printf("PrivacyKey: ");
-    printf_hexdump(&k2_result[17], 16);
-
     // store
     mesh_network_key_derive_key->nid = k2_result[0];
     memcpy(mesh_network_key_derive_key->encryption_key, &k2_result[1], 16);
@@ -249,18 +243,12 @@ static void mesh_network_key_derive_k2_calculated(void * arg){
 }
 
 static void mesh_network_key_derive_identity_key_calculated(void *arg) {
-    printf("IdentityKey: ");
-    printf_hexdump(mesh_network_key_derive_key->identity_key, 16);
-
     // calc k2
     btstack_crypto_aes128_cmac_t * request = (btstack_crypto_aes128_cmac_t*) arg;
     mesh_k2(request, mesh_network_key_derive_key->net_key, k2_result, &mesh_network_key_derive_k2_calculated, request);
 }
 
 static void mesh_network_key_derive_beacon_key_calculated(void *arg){
-    printf("BeaconKey: ");
-    printf_hexdump(mesh_network_key_derive_key->beacon_key, 16);
-
     // calc identity key
     btstack_crypto_aes128_cmac_t * request = (btstack_crypto_aes128_cmac_t*) arg;
     mesh_k1(request, mesh_network_key_derive_key->net_key, 16, mesh_salt_nkik, id128_tag, sizeof(id128_tag),
@@ -271,9 +259,6 @@ void mesh_network_key_derive(btstack_crypto_aes128_cmac_t * request, mesh_networ
     mesh_network_key_derive_callback = callback;
     mesh_network_key_derive_arg = callback_arg;
     mesh_network_key_derive_key = network_key;
-
-    printf("NetKey: ");
-    printf_hexdump(network_key->net_key, 16);
 
     // calc k1 using
     mesh_k1(request, mesh_network_key_derive_key->net_key, 16, mesh_salt_nhbk, id128_tag, sizeof(id128_tag),
