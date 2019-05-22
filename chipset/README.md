@@ -54,13 +54,14 @@ CSR, which has been acquired by Qualcomm, provides all relevant information on t
 Chipset              | Type      | HCI Transport  | BD_ADDR (1)  | SCO over HCI (2) | LE DLE | Multiple LE Roles    | BTstack folder | Comment
 -------------------- |-----------| ---------------|--------------|------------------|--------|----------------------|----------------|---------
 Atmel ATWILC3000     | LE        | H4             | Yes          | Don't know       | No     |         No           | atwilc3000     | BLE Firmware size: 60 kB
-Broadcom UART        | Dual mode | H4, H5         | Rarely       | Probably (2)     | No     |      Maybe (3)       | bcm            | Max UART baudrate 2 mbps
+Broadcom UART        | Dual mode | H4, H5         | Rarely       | Partially (2)    | No     |      Maybe (3)       | bcm            | Max UART baudrate 2 mbps
 Broadcom USB Dongles | Dual mode | USB            | Yes          | Yes              | No     |         No           | bcm            |
-CSR UART             | Dual mode | H4, H5, BCSP   | Rarely       | No (didn't work) | No     |         No           | csr            |
+CSR UART             | Dual mode | H4, H5, BCSP   | Rarely       | Partially (2)    | No     |         No           | csr            |
 CSR USB Dongles      | Dual mode | USB            | Mostly       | Yes              | No     |         No           | csr            |
-Cypress CYW20704     | Dual mode | H4, H5, USB    | Don't know   | Probably (2)     | Yes    |        Yes           | bcm            |
+Cypress CYW20704     | Dual mode | H4, H5, USB    | Don't know   | Partially (2)    | Yes    |        Yes           | bcm            |
 Dialog DA14581       | LE        | H4, SPI        | No           | n.a.             | No     |         No           | da14581        | Official HCI firmware included in BTstack
-Dialog DA14585       | LE        | H4, SPI        | No           | n.a.             | Yes     |       Yes           | da14581        | Official HCI firmware included in BTstack
+Dialog DA14585       | LE        | H4, SPI        | No           | n.a.             | Yes    |        Yes           | da14581        | Official HCI firmware included in BTstack
+Dialog DA1469x       | LE        | H4, SPI        | No           | n.a.             | Yes    |        Yes           | da14581        | HCI Firmware part of DA1469x SDK
 Espressif ESP32      | Dual mode | VHCI           | Yes          | Not yet          | Yes    |        Yes           |                | SoC with Bluetooth and Wifi
 EM 9301              | LE        | SPI, H4        | No           | n.a.             | No     |         No           | em9301         | Custom HCI SPI implementation
 EM 9304              | LE        | SPI, H4        | Yes          | n.a.             | Yes    |        Yes           | em9301         | Custom HCI SPI implementation
@@ -73,7 +74,8 @@ TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL | Yes          | Yes          
 **Notes**:
 
   1. BD_ADDR: Indiates if Bluetooth chipset compes with its own valid MAC Addess. Better Broadcom and CSR dongles usually come with a MAC address from the dongle manufacturer, but cheaper ones might come with identical addresses.
-  2. SCO over HCI: All Bluetooth Classic chipsets support SCO over HCI, for those that are marked with No, we either didn't try or didn't found enough information to configure it correctly.
+  2. SCO over HCI: All Bluetooth Classic chipsets support SCO over HCI in general. BTstack can receive SCO packets without problems. However, only TI CC256x has support for using SCO buffers in the Controller and a useful flow control. On CSR/Broadcom/Cypress Controllers, BTstack cannot queue multiple SCO packets in the Controller. Instead, the SCO packet must be sent periodically at the right time - without a clear indication about when this time is. The current implementation observes the timestamps of the received SCO packets to schedule sending packets. With full control over the system and no other Bluetooth data, this can be flawless, but it's rather fragile in general. For these, it's necessary to use the I2S/PCM interface for stable operation.
+  , for those that are marked with No, we either didn't try or didn't found enough information to configure it correctly.
   3. Multiple LE Roles: Apple uses Broadcom Bluetooth+Wifi in their iOS devices and newer iOS versions support multiple concurrent LE roles,
   so at least some Broadcom models support multiple concurrent LE roles.
 
@@ -95,7 +97,9 @@ A popular example is the Ampak AP6212A module that contains an BCM 43438A1 and i
 
 The CYW20704 A2 controller supports both DLE as well as multiple LE roles and is available e.g. from [LairdTech](https://www.lairdtech.com/bt850-bt851-and-bt860-series-modules-adapter-dvks-0002) as UART module (BT860), USB module (BT850), and USB dongle.
 
-The best source for documentation on vendor specific commands so far has been the source code for blueZ and the Bluedroid Bluetooth stack from Android.
+Interestingly, the CYW20704 exhibits the same UART flow control bug as the CC2564. You can add ENABLE_CYPRESS_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND to activate a workaround and/or read the bug & workardound description in the TI section below.
+
+The best source for documentation on vendor specific commands so far has been the source code for blueZ and the Bluedroid Bluetooth stack from Android, but with the takeover by Cypress, documentation is directly available.
 
 Broadcom USB dongles do not require special configuration, however SCO data is not routed over USB by default.
 
@@ -144,11 +148,13 @@ It does not implement the Data Length Extension or supports multiple concurrent 
 
 The newer DA14585 uses the same firmware upload mechanism as the 581 model. In addition, it supports both Data Length Extension as well as multiple concurrent roles.
 
+The even newer DA1469x uses an external flash. The DA 1469x SDK contains a HCI firmware that can be compiled and downloaded into flash using the SmartSnippets Studio.
+
 **BD Addr** fixed to 80:EA:CA:00:00:01. No command in HCI firmware to set it differently. Random addresses could be used instead.
 
-**Baud rate**: The baud rate is fixed at 115200 with the provided firmware. A higher baud rate could be achieved by re-compiling the HCI firmware using Dialog's HCI SDK.
+**Baud rate**: The baud rate is fixed at 115200 with the provided firmware. A higher baud rate could be achieved by re-compiling the HCI firmware.
 
-**BTstack integration**: *btstack_chipset_da14581.c* contains the code to download the provided HCI firmware into the SRAM of the DA14581. After that, it can be used as any other HCI chipset.
+**BTstack integration**: *btstack_chipset_da14581.c* contains the code to download the provided HCI firmware into the SRAM of the DA1458x. After that, it can be used as any other HCI chipset. No special support needed for DA1469x.
 
 ## Espressif ESP32
 
