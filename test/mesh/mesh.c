@@ -157,6 +157,7 @@ static uint8_t beacon_key[16];
 static uint8_t identity_key[16];
 static uint8_t network_id[8];
 static uint16_t primary_element_address;
+static int pb_gatt_adv_active = 0;
 
 static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len){
      printf("%-20s ", name);
@@ -293,6 +294,7 @@ static void mesh_setup_without_provisiong_data(void){
     adv_bearer_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
     adv_bearer_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
     adv_bearer_advertisements_enable(1);
+    pb_gatt_adv_active = 1;
 #endif
 }
 
@@ -394,13 +396,24 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     }
                     // load app keys
                     mesh_load_app_keys();
+#if defined(ENABLE_MESH_ADV_BEARER) || defined(ENABLE_MESH_PB_ADV)
                     // setup scanning
                     gap_set_scan_parameters(0, 0x300, 0x300);
                     gap_start_scan();
+#endif
                     //
                     show_usage();
                     break;
 
+                case HCI_EVENT_LE_META:
+                    if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+                    // disable PB_GATT
+                    if (pb_gatt_adv_active){
+                        printf("Connected, disabling PB_GATT advertising\n");
+                        pb_gatt_adv_active = 0;
+                        adv_bearer_advertisements_enable(0);
+                    }
+                    break;
                 default:
                     break;
             }
