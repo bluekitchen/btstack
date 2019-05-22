@@ -157,7 +157,8 @@ static uint8_t beacon_key[16];
 static uint8_t identity_key[16];
 static uint8_t network_id[8];
 static uint16_t primary_element_address;
-static int pb_gatt_adv_active = 0;
+
+static int provisioned;
 
 static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len){
      printf("%-20s ", name);
@@ -242,6 +243,8 @@ static void mesh_provisioning_dump(const mesh_provisioning_data_t * data){
 }
 
 static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
+    provisioned = 1;
+
     // add to network key list
     mesh_network_key_list_add_from_provisioning_data(provisioning_data);
     // set unicast address
@@ -273,16 +276,10 @@ static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * p
 #endif
 }
 
-static void mesh_setup_without_provisiong_data(void){
-#ifdef ENABLE_MESH_PB_ADV
-    // PB-ADV    
-    printf("Starting Unprovisioned Device Beacon\n");
-    beacon_unprovisioned_device_start(device_uuid, 0);
-#endif
 #ifdef ENABLE_MESH_PB_GATT
-    // PB_GATT
+static void setup_advertising_unprovisioned(void) {
     printf("Advertise Mesh Provisioning Service\n");
-    // dynamically store device uuid into adv data 
+    // dynamically store device uuid into adv data
     memcpy(&adv_data[11], device_uuid, sizeof(device_uuid));
     
     // setup advertisements
@@ -294,7 +291,21 @@ static void mesh_setup_without_provisiong_data(void){
     adv_bearer_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
     adv_bearer_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
     adv_bearer_advertisements_enable(1);
-    pb_gatt_adv_active = 1;
+}
+#endif
+
+
+static void mesh_setup_without_provisiong_data(void){
+    provisioned = 0;
+
+#ifdef ENABLE_MESH_PB_ADV
+    // PB-ADV    
+    printf("Starting Unprovisioned Device Beacon\n");
+    beacon_unprovisioned_device_start(device_uuid, 0);
+#endif
+#ifdef ENABLE_MESH_PB_GATT
+    // PB_GATT
+    setup_advertising_unprovisioned();
 #endif
 }
 
@@ -404,13 +415,19 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     //
                     show_usage();
                     break;
-
+                
+                case HCI_EVENT_DISCONNECTION_COMPLETE:
+                    // enable PB_GATT
+                    if (provisioned == 0){
+                        setup_advertising_unprovisioned();
+                    }
+                    break;
+                    
                 case HCI_EVENT_LE_META:
                     if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
                     // disable PB_GATT
-                    if (pb_gatt_adv_active){
+                    if (provisioned == 0){
                         printf("Connected, disabling PB_GATT advertising\n");
-                        pb_gatt_adv_active = 0;
                         adv_bearer_advertisements_enable(0);
                     }
                     break;
