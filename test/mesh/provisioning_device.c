@@ -418,6 +418,7 @@ static void provisioning_run(void){
             provisioning_send_random();
             break;
         case DEVICE_SEND_COMPLETE:
+            start_timer = 0;    // last message
             prov_waiting_for_outgoing_complete = 1;
             provisioning_send_complete();
             provisioning_done();
