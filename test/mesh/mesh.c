@@ -63,8 +63,8 @@
 #define ENABLE_MESH_PB_GATT
 
 
-#define USE_ADVERTISING_WITH_NETWORK_ID
-//#define USE_ADVERTISING_WITH_NODE_IDENTITY
+//#define USE_ADVERTISING_WITH_NETWORK_ID8
+#define USE_ADVERTISING_WITH_NODE_IDENTITY
 
 #if defined(USE_ADVERTISING_WITH_NETWORK_ID) && defined(USE_ADVERTISING_WITH_NODE_IDENTITY) 
 #error "USE_ADVERTISING_WITH_NETWORK_ID and USE_ADVERTISING_WITH_NODE_IDENTITY cannot be defined at the same time"
@@ -426,7 +426,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_EVENT_LE_META:
                     if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
                     // disable PB_GATT
-                    if (provisioned == 0){
+                    if (provisioned){
+                        printf("Connected, disabling GATT Proxy advertising\n");
+                        adv_bearer_advertisements_enable(0);
+                    } else {
                         printf("Connected, disabling PB_GATT advertising\n");
                         adv_bearer_advertisements_enable(0);
                     }
@@ -766,6 +769,7 @@ static void stdin_process(char cmd){
         case '8':
             btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, 'PROV');
             printf("Provisioning data deleted\n");
+            setup_advertising_unprovisioned();
             break;
         case 'p':
             printf("+ Public Key OOB Enabled\n");
