@@ -2462,4 +2462,26 @@ typedef uint8_t sm_key_t[16];
  */
 #define MESH_PB_PROV_COMPLETE                                               0x1d
 
+/**
+ * @format 11H
+ * @param subevent_code
+ * @param status
+ * @param con_handle
+ */
+#define MESH_PROXY_CONNECTED                                                0x20
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+ */
+#define MESH_PROXY_PDU_SENT                                                 0x21
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+ */
+#define MESH_PROXY_DISCONNECTED                                             0x22
+
 #endif

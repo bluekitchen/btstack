@@ -3545,6 +3545,45 @@ static inline uint16_t mesh_pb_prov_complete_event_get_pb_transport_cid(const ui
 }
 
 /**
+ * @brief Get field status from event MESH_PROXY_CONNECTED_EVENT
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_proxy_connected_event_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field con_handle from event MESH_PROXY_CONNECTED_EVENT
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t mesh_proxy_connected_event_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+
+/**
+ * @brief Get field con_handle from event MESH_PROXY_PDU_SENT_EVENT
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t mesh_proxy_pdu_sent_event_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field con_handle from event MESH_PROXY_DISCONNECTED_EVENT
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t mesh_proxy_disconnected_event_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
  * @brief Get field status from event HCI_SUBEVENT_LE_CONNECTION_COMPLETE
  * @param event packet
  * @return status
