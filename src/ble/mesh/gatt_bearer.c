@@ -97,6 +97,14 @@ static void gatt_bearer_emit_can_send_now(void){
     }
 }
 
+static void gatt_bearer_emit_event_for_all(uint8_t * packet, uint16_t size){
+    unsigned int i;
+    for (i=0; i < NUM_TYPES; i++){
+        if ( client_callbacks[i] == NULL) continue;
+        (*client_callbacks[last_sender])(HCI_EVENT_PACKET, 0, packet, size);
+    }
+}
+
 static void gatt_bearer_request(mesh_msg_type_t type_id){
     request_can_send_now[type_id] = 1;
     mesh_proxy_service_server_request_can_send_now(gatt_bearer_con_handle);
@@ -219,14 +227,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             switch (hci_event_packet_get_type(packet)) {
                 case HCI_EVENT_MESH_META:
                     switch (hci_event_mesh_meta_get_subevent_code(packet)){
-                        case MESH_PB_TRANSPORT_LINK_OPEN:
-                        case MESH_PB_TRANSPORT_LINK_CLOSED:
+                        case MESH_PROXY_DISCONNECTED:
                             gatt_bearer_mtu = ATT_DEFAULT_MTU;
-                            gatt_bearer_con_handle  = mesh_pb_transport_link_open_event_get_pb_transport_cid(packet);
-                            if ((*client_callbacks[MESH_MSG_TYPE_NETWORK_PDU])){
-                                (*client_callbacks[MESH_MSG_TYPE_NETWORK_PDU])(HCI_EVENT_PACKET, 0, packet, size);
-                            }
-                            break; 
+                            gatt_bearer_con_handle = mesh_proxy_connected_event_get_con_handle(packet);
+                            gatt_bearer_emit_event_for_all(packet, size);
+                            break;
+                        case MESH_PROXY_CONNECTED:
+                            gatt_bearer_con_handle = HCI_CON_HANDLE_INVALID;
+                            gatt_bearer_emit_event_for_all(packet, size);
+                            break;
                         case MESH_SUBEVENT_CAN_SEND_NOW:
                             con_handle = little_endian_read_16(packet, 3); 
                             if (con_handle == HCI_CON_HANDLE_INVALID) return;

@@ -441,7 +441,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     }
 }
 
-static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     mesh_provisioning_data_t provisioning_data;
     mesh_network_key_t * network_key;
@@ -2673,7 +2673,7 @@ static void virtual_address_complete(void * arg){
 static void key_derived(void * arg){
 }
 
-static void packet_handler_for_mesh_beacon(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void mesh_proxy_packet_handler_beacon(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     printf("packet_handler_for_mesh_beacon\n");
     
     switch (packet_type){
@@ -2701,7 +2701,7 @@ static void packet_handler_for_mesh_beacon(uint8_t packet_type, uint16_t channel
     }
 }
 
-static void packet_handler_for_mesh_network_pdu(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void mesh_proxy_packet_handler_network_pdu(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     printf("packet_handler_for_mesh_network_pdu\n");
     
     switch (packet_type){
@@ -2714,8 +2714,8 @@ static void packet_handler_for_mesh_network_pdu(uint8_t packet_type, uint16_t ch
             switch (hci_event_packet_get_type(packet)){
                 case HCI_EVENT_MESH_META:
                     switch (hci_event_mesh_meta_get_subevent_code(packet)){
-                        case MESH_PB_TRANSPORT_LINK_OPEN:
-                            printf("mesh_proxy_server: MESH_PB_TRANSPORT_LINK_OPEN\n");
+                        case MESH_PROXY_CONNECTED:
+                            printf("mesh_proxy_server: MESH_PROXY_CONNECTED\n");
                             printf("+ Setup Secure Network Beacon\n");
                             mesh_secure_network_beacon[0] = BEACON_TYPE_SECURE_NETWORK;
                             mesh_secure_network_beacon[1] = mesh_flags;
@@ -2880,8 +2880,8 @@ int btstack_main(void)
 
     // Setup GATT bearer
     gatt_bearer_init();
-    gatt_bearer_register_for_mesh_network_pdu(&packet_handler_for_mesh_network_pdu);
-    gatt_bearer_register_for_mesh_beacon(&packet_handler_for_mesh_beacon);
+    gatt_bearer_register_for_mesh_network_pdu(&mesh_proxy_packet_handler_network_pdu);
+    gatt_bearer_register_for_mesh_beacon(&mesh_proxy_packet_handler_beacon);
 
     gatt_bearer_register_for_mesh_proxy_configuration(&packet_handler_for_mesh_proxy_configuration);
     mesh_network_set_proxy_message_handler(proxy_configuration_message_handler);
@@ -2894,7 +2894,7 @@ int btstack_main(void)
 
     // Provisioning in device role
     provisioning_device_init(device_uuid);
-    provisioning_device_register_packet_handler(&mesh_message_handler);
+    provisioning_device_register_packet_handler(&mesh_provisioning_message_handler);
 
     // Network layer
     mesh_network_init();

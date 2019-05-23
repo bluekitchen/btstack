@@ -75,15 +75,14 @@ static att_service_handler_t mesh_proxy_service;
 static mesh_proxy_t mesh_proxy;
 
 
-static void mesh_proxy_service_emit_link_open(hci_con_handle_t con_handle, uint8_t status){
-    uint8_t event[7] = { HCI_EVENT_MESH_META, 5, MESH_PB_TRANSPORT_LINK_OPEN, status};
+static void mesh_proxy_service_emit_connected(hci_con_handle_t con_handle){
+    uint8_t event[5] = { HCI_EVENT_MESH_META, 3, MESH_PROXY_CONNECTED};
     little_endian_store_16(event, 4, con_handle);
-    event[6] = PB_TYPE_GATT;
     mesh_proxy_service_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void mesh_proxy_service_emit_link_close(hci_con_handle_t con_handle, uint8_t reason){
-    uint8_t event[5] = { HCI_EVENT_MESH_META, 3, MESH_PB_TRANSPORT_LINK_CLOSED};
+static void mesh_proxy_service_emit_disconnected(hci_con_handle_t con_handle){
+    uint8_t event[5] = { HCI_EVENT_MESH_META, 3, MESH_PROXY_DISCONNECTED};
     little_endian_store_16(event, 4, con_handle);
     mesh_proxy_service_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -140,9 +139,9 @@ static int mesh_proxy_service_write_callback(hci_con_handle_t con_handle, uint16
         instance->data_out_client_configuration_descriptor_value = little_endian_read_16(buffer, 0);
         log_info("mesh_proxy_service_write_callback: data out notify enabled %d, con handle 0x%02x", instance->data_out_client_configuration_descriptor_value, con_handle);
         if (instance->data_out_client_configuration_descriptor_value){
-            mesh_proxy_service_emit_link_open(con_handle, 0);
+            mesh_proxy_service_emit_connected(con_handle);
         } else {
-            mesh_proxy_service_emit_link_close(con_handle, 0);
+            mesh_proxy_service_emit_disconnected(con_handle);
         }
         return 0;
     }
