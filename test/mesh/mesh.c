@@ -2708,6 +2708,7 @@ static void packet_handler_for_mesh_network_pdu(uint8_t packet_type, uint16_t ch
         case MESH_PROXY_DATA_PACKET:
             printf("Received network PDU\n");
             printf_hexdump(packet, size);
+            mesh_network_received_message(packet, size);
             break;
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)){
