@@ -16,18 +16,19 @@ include_directories(../../platform/posix)
 # include_directories(../../platform/embedded)
 include_directories(.)
 
-file(GLOB SOURCES_SRC       "../../src/*.c" "../../example/sco_demo_util.c")
-file(GLOB SOURCES_BLE       "../../src/ble/*.c")
-file(GLOB SOURCES_MESH      "../../src/ble/mesh/*.c")
-file(GLOB SOURCES_GATT      "../../src/ble/gatt-service/*.c")
-file(GLOB SOURCES_UECC      "../../3rd-party/micro-ecc/uECC.c")
-file(GLOB SOURCES_POSIX     "../../platform/posix/*.c")
-file(GLOB SOURCES_LIBUSB    "../../platform/libusb/*.c")
+file(GLOB SOURCES_SRC       "../../src/*.c"                     "../../src/*.h" "../../example/sco_demo_util.c" "../../example/sco_demo_util.h")
+file(GLOB SOURCES_BLE       "../../src/ble/*.c"                 "../../src/ble/*.h")
+file(GLOB SOURCES_MESH      "../../src/ble/mesh/*.c"            "../../src/ble/mesh/*.h" )
+file(GLOB SOURCES_GATT      "../../src/ble/gatt-service/*.c"    "../../src/ble/gatt-service/*.h")
+file(GLOB SOURCES_UECC      "../../3rd-party/micro-ecc/uECC.c"  "../../3rd-party/micro-ecc/uECC.h")
+file(GLOB SOURCES_POSIX     "../../platform/posix/*.c"          "../../platform/posix/*.h")
+file(GLOB SOURCES_LIBUSB    "../../platform/libusb/*.c"         "../../platform/libusb/*.h")
 
-file(GLOB SOURCES_OFF "../../src/ble/le_device_db_memory.c" "../../src/ble/le_device_db_tlv.c")
+
+file(GLOB SOURCES_OFF "../../src/ble/le_device_db_memory.c" "../../src/ble/le_device_db_memory.h" "../../src/ble/le_device_db_tlv.c" "../../src/ble/le_device_db_tlv.h")
 list(REMOVE_ITEM SOURCES_BLE ${SOURCES_OFF})
 
-set(SOURCES_MESH_NEW main.c mesh_transport.c mesh_foundation.c mesh_keys.c mesh_virtual_addresses.c mesh_peer.c provisioner.c provisioning.c provisioning_device.c provisioning_provisioner.c)
+set(SOURCES_MESH_NEW main.c mesh_transport.c mesh_transport.h mesh_foundation.c mesh_foundation.h mesh_keys.c mesh_keys.h mesh_virtual_addresses.c mesh_virtual_addresses.h mesh_peer.c mesh_peer.h provisioner.c provisioning.c provisioning.h provisioning_device.c provisioning_device.h provisioning_provisioner.c provisioning_provisioner.h )
 
 set(SOURCES 
 	${SOURCES_POSIX}
