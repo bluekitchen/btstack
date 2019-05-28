@@ -6,6 +6,7 @@
 #include "bluetooth_data_types.h"
 #include "bluetooth_gatt.h"
 #include "ble/mesh/adv_bearer.h"
+#include "ble/mesh/gatt_bearer.h"
 #include "ble/mesh/mesh_crypto.h"
 #include "ble/mesh/mesh_network.h"
 #include "ble/mesh/mesh_lower_transport.h"
@@ -93,6 +94,7 @@ static int btstack_parse_hex(const char * string, uint16_t len, uint8_t * buffer
     return 1;
 }
 
+#if 0
 static void btstack_print_hex(const uint8_t * data, uint16_t len, char separator){
     int i;
     for (i=0;i<len;i++){
@@ -103,6 +105,7 @@ static void btstack_print_hex(const uint8_t * data, uint16_t len, char separator
     }
     printf("\n");
 }
+#endif
 
 static mesh_transport_key_t   test_application_key;
 static void mesh_application_key_set(uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, const uint8_t *application_key) {
