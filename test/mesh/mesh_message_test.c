@@ -27,6 +27,7 @@ static uint8_t  recv_upper_transport_pdu_data[100];
 static uint16_t recv_upper_transport_pdu_len;
 
 static btstack_packet_handler_t mesh_packet_handler;
+
 void adv_bearer_register_for_mesh_message(btstack_packet_handler_t packet_handler){
     mesh_packet_handler = packet_handler;
 }
@@ -52,6 +53,26 @@ void adv_bearer_emit_sent(void){
     event[1] = 1;
     event[2] = MESH_SUBEVENT_CAN_SEND_NOW;
     (*mesh_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
+}
+//
+void gatt_bearer_request_can_send_now_for_mesh_network_pdu(void){
+    printf("gatt_bearer_request_can_send_now_for_mesh_network_pdu\n");
+    // simulate can send now
+    uint8_t event[3];
+    event[0] = HCI_EVENT_MESH_META;
+    event[1] = 1;
+    event[2] = MESH_SUBEVENT_CAN_SEND_NOW;
+    mesh_gatt_handle_event(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
+}
+void gatt_bearer_send_mesh_network_pdu(const uint8_t * network_pdu, uint16_t size){
+    printf("gatt_bearer_send_mesh_network_pdu: \n");
+    printf_hexdump(network_pdu, size);
+    // stored by adv bearer
+    uint8_t event[3];
+    event[0] = HCI_EVENT_MESH_META;
+    event[1] = 1;
+    event[2] = MESH_SUBEVENT_MESSAGE_SENT;
+    mesh_gatt_handle_event(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 
 void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){

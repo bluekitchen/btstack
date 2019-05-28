@@ -59,7 +59,6 @@
 
 // #define ENABLE_MESH_ADV_BEARER
 // #define ENABLE_MESH_PB_ADV
-#define ENABLE_MESH_GATT_BEARER
 #define ENABLE_MESH_PB_GATT
 
 
