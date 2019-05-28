@@ -47,7 +47,12 @@
 #include "provisioning.h"
 #include "provisioning_device.h"
 #include "mesh_keys.h"
-#include "btstack.h"
+#include "btstack_util.h"
+#include "btstack_memory.h"
+
+#ifdef ENABLE_MESH_GATT_BEARER
+#include "ble/mesh/gatt_bearer.h"
+#endif
 
 // configuration
 #define MESH_NETWORK_CACHE_SIZE 2
@@ -98,8 +103,11 @@ static mesh_network_key_iterator_t  validation_network_key_it;
 // Network PDUs queued by mesh_network_send
 static btstack_linked_list_t network_pdus_queued;
 
-// Network PDUs ready to send via adv bearer
+// Network PDUs ready to send 
 static btstack_linked_list_t network_pdus_outgoing;
+
+// Network PDU ready to send via gatt/adv bearer
+static mesh_network_pdu_t * actual_bearer_network_pdu;
 
 // mesh network cache - we use 32-bit 'hashes'
 static uint32_t mesh_network_cache[MESH_NETWORK_CACHE_SIZE];
@@ -212,9 +220,6 @@ static void mesh_network_send_d(mesh_network_pdu_t * network_pdu){
 
     // add to queue
     btstack_linked_list_add_tail(&network_pdus_outgoing, (btstack_linked_item_t *) network_pdu);
-
-    // request to send
-    adv_bearer_request_can_send_now_for_mesh_message();
 
     // go
     mesh_network_run();
@@ -538,6 +543,18 @@ static void process_network_pdu(mesh_network_pdu_t * network_pdu){
 // }
 
 static void mesh_network_run(void){
+    if (!btstack_linked_list_empty(&network_pdus_outgoing)){
+        actual_bearer_network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing);
+
+#ifdef ENABLE_MESH_GATT_BEARER
+        // request to send via gatt
+        gatt_bearer_request_can_send_now_for_mesh_network_pdu();
+#else
+         // request to send via adv 
+        adv_bearer_request_can_send_now_for_mesh_message();
+#endif
+    }
+
     if (mesh_crypto_active) return;
 
     if (!btstack_linked_list_empty(&network_pdus_received)){
@@ -558,8 +575,7 @@ static void mesh_network_run(void){
     }
 }
 
-static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-
+static void mesh_adv_message_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     mesh_network_pdu_t * network_pdu;
 
     switch (packet_type){
@@ -579,18 +595,20 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
                 case HCI_EVENT_MESH_META:
                     switch(packet[2]){
                         case MESH_SUBEVENT_CAN_SEND_NOW:
-                            if (btstack_linked_list_empty(&network_pdus_outgoing)) break;
-                            network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing);
+                            if (actual_bearer_network_pdu == NULL) break;
 #ifdef LOG_NETWORK
-                            printf("TX-E-NetworkPDU (%p): ", network_pdu);
-                            printf_hexdump(network_pdu->data, network_pdu->len);
+                            printf("TX-E-NetworkPDU (%p): ", actual_bearer_network_pdu);
+                            printf_hexdump(actual_bearer_network_pdu->data, actual_bearer_network_pdu->len);
 #endif
-                            adv_bearer_send_mesh_message(network_pdu->data, network_pdu->len);
+                            adv_bearer_send_mesh_message(actual_bearer_network_pdu->data, actual_bearer_network_pdu->len);
+                            network_pdu = actual_bearer_network_pdu;
+                            actual_bearer_network_pdu = NULL;
+
                             // notify upper layer
                             (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_SENT, network_pdu);
-                            // request again
-                            if (btstack_linked_list_empty(&network_pdus_outgoing)) break;
-                            adv_bearer_request_can_send_now_for_mesh_message();
+
+                            // check if more to send
+                            mesh_network_run();
                             break;
                         default:
                             break;
@@ -603,8 +621,41 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
     }
 }
 
+void mesh_gatt_handle_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+#ifdef ENABLE_MESH_GATT_BEARER
+    switch (packet_type){
+        case HCI_EVENT_PACKET:
+            switch(packet[0]){
+                case HCI_EVENT_MESH_META:
+                    switch(packet[2]){
+                        case MESH_SUBEVENT_CAN_SEND_NOW:
+                            if (actual_bearer_network_pdu == NULL) break;
+#ifdef LOG_NETWORK
+                            printf("G-TX-E-NetworkPDU (%p): ", actual_bearer_network_pdu);
+                            printf_hexdump(actual_bearer_network_pdu->data, actual_bearer_network_pdu->len);
+#endif
+                            gatt_bearer_send_mesh_network_pdu(actual_bearer_network_pdu->data, actual_bearer_network_pdu->len);
+                            break;
+
+                        case MESH_SUBEVENT_MESSAGE_SENT:
+                            if (actual_bearer_network_pdu == NULL) break;
+                            // notify upper layer
+                            adv_bearer_request_can_send_now_for_mesh_message();
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+    }
+#endif
+}
+
 void mesh_network_init(void){
-    adv_bearer_register_for_mesh_message(&mesh_message_handler);
+    adv_bearer_register_for_mesh_message(&mesh_adv_message_handler);
 }
 
 void mesh_network_set_higher_layer_handler(void (*packet_handler)(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu)){

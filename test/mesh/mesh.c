@@ -2674,8 +2674,6 @@ static void key_derived(void * arg){
 }
 
 static void mesh_proxy_packet_handler_beacon(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    printf("packet_handler_for_mesh_beacon\n");
-    
     switch (packet_type){
         case MESH_PROXY_DATA_PACKET:
             printf("Received beacon\n");
@@ -2702,11 +2700,9 @@ static void mesh_proxy_packet_handler_beacon(uint8_t packet_type, uint16_t chann
 }
 
 static void mesh_proxy_packet_handler_network_pdu(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    printf("packet_handler_for_mesh_network_pdu\n");
-    
     switch (packet_type){
         case MESH_PROXY_DATA_PACKET:
-            printf("Received network PDU\n");
+            printf("mesh: Received network PDU (proxy)\n");
             printf_hexdump(packet, size);
             mesh_network_received_message(packet, size);
             break;
@@ -2714,8 +2710,14 @@ static void mesh_proxy_packet_handler_network_pdu(uint8_t packet_type, uint16_t 
             switch (hci_event_packet_get_type(packet)){
                 case HCI_EVENT_MESH_META:
                     switch (hci_event_mesh_meta_get_subevent_code(packet)){
+                        case MESH_SUBEVENT_CAN_SEND_NOW:  
+                            mesh_gatt_handle_event(packet_type, channel, packet, size);
+                            break;
+                        case MESH_SUBEVENT_MESSAGE_SENT:
+                            mesh_gatt_handle_event(packet_type, channel, packet, size);
+                            break;
                         case MESH_PROXY_CONNECTED:
-                            printf("mesh_proxy_server: MESH_PROXY_CONNECTED\n");
+                            printf("mesh: MESH_PROXY_CONNECTED\n");
                             printf("+ Setup Secure Network Beacon\n");
                             mesh_secure_network_beacon[0] = BEACON_TYPE_SECURE_NETWORK;
                             mesh_secure_network_beacon[1] = mesh_flags;
