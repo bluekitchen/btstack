@@ -87,14 +87,28 @@ static void gatt_bearer_emit_can_send_now(void){
         if (request_can_send_now[last_sender]){
             request_can_send_now[last_sender] = 0;
             // emit can send now
-            uint8_t event[3];
-            event[0] = HCI_EVENT_MESH_META;
-            event[1] = 1;
-            event[2] = MESH_SUBEVENT_CAN_SEND_NOW;
-            (*client_callbacks[last_sender])(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
+            uint8_t event[5];
+            int pos = 0;
+            event[pos++] = HCI_EVENT_MESH_META;
+            event[pos++] = 1;
+            event[pos++] = MESH_SUBEVENT_CAN_SEND_NOW;
+            little_endian_store_16(event, pos, gatt_bearer_con_handle);
+            pos += 2;
+            (*client_callbacks[last_sender])(HCI_EVENT_PACKET, 0, &event[0], pos);
             return;
         }
     }
+}
+
+static void gatt_bearer_emit_message_sent(mesh_msg_type_t type_id){
+    uint8_t event[5];
+    int pos = 0;
+    event[pos++] = HCI_EVENT_MESH_META;
+    event[pos++] = 1;
+    event[pos++] = MESH_SUBEVENT_MESSAGE_SENT;
+    little_endian_store_16(event, pos, gatt_bearer_con_handle);
+    pos += 2;
+    (*client_callbacks[type_id])(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 
 static void gatt_bearer_emit_event_for_all(uint8_t * packet, uint16_t size){
@@ -123,6 +137,7 @@ static void gatt_bearer_start_sending(hci_con_handle_t con_handle){
         case MESH_MSG_SAR_FIELD_LAST_SEGMENT:
             // gatt_bearer_emit_pdu_sent(0);
             outgoing_ready = 0;
+            gatt_bearer_emit_message_sent(msg_type);
             break;
         case MESH_MSG_SAR_FIELD_CONTINUE:
         case MESH_MSG_SAR_FIELD_FIRST_SEGMENT:
@@ -227,12 +242,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             switch (hci_event_packet_get_type(packet)) {
                 case HCI_EVENT_MESH_META:
                     switch (hci_event_mesh_meta_get_subevent_code(packet)){
-                        case MESH_PROXY_DISCONNECTED:
+                        case MESH_PROXY_CONNECTED:
                             gatt_bearer_mtu = ATT_DEFAULT_MTU;
                             gatt_bearer_con_handle = mesh_proxy_connected_event_get_con_handle(packet);
                             gatt_bearer_emit_event_for_all(packet, size);
                             break;
-                        case MESH_PROXY_CONNECTED:
+                        case MESH_PROXY_DISCONNECTED:
                             gatt_bearer_con_handle = HCI_CON_HANDLE_INVALID;
                             gatt_bearer_emit_event_for_all(packet, size);
                             break;
