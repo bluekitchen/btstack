@@ -82,6 +82,7 @@ Broadcom USB Dongles         | Dual mode | USB             | Yes              | 
 CSR UART                     | Dual mode | H4, H5, BCSP    | No (didn't work) | csr            |
 CSR USB Dongles              | Dual mode | USB             | Yes              | csr            |
 Cypress CYW20704             | Dual mode | H4, H5, USB     | Probably         | bcm            |
+Cypress PSoC 4               | LE        | H4              | n.a.             |                | HCI Firmware part of PSoC Creator kit examples
 Dialog Semiconductor DA14581, DA14585 | LE      | H4, SPI  | n.a.             | da14581        | Official HCI firmware used
 Espressif ESP32              | Dual mode | VHCI            | Not yet          |                | SoC with Bluetooth and Wifi
 EM 9301, 9304                | LE        | SPI             | n.a.             | em9301         | Custom HCI SPI implementation

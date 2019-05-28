@@ -58,7 +58,8 @@ Broadcom UART        | Dual mode | H4, H5         | Rarely       | Partially (2)
 Broadcom USB Dongles | Dual mode | USB            | Yes          | Yes              | No     |         No           | bcm            |
 CSR UART             | Dual mode | H4, H5, BCSP   | Rarely       | Partially (2)    | No     |         No           | csr            |
 CSR USB Dongles      | Dual mode | USB            | Mostly       | Yes              | No     |         No           | csr            |
-Cypress CYW20704     | Dual mode | H4, H5, USB    | Don't know   | Partially (2)    | Yes    |        Yes           | bcm            |
+Cypress CYW20704/7   | Dual mode | H4, H5, USB    | Don't know   | Partially (2)    | Yes    |        Yes           | bcm            |
+Cypress PSoC 4       | LE        | H4             | Don't know   | n.a.             | Yes    |    Don't know        |                | HCI Firmware part of PSoC Creator kits examples
 Dialog DA14581       | LE        | H4, SPI        | No           | n.a.             | No     |         No           | da14581        | Official HCI firmware included in BTstack
 Dialog DA14585       | LE        | H4, SPI        | No           | n.a.             | Yes    |        Yes           | da14581        | Official HCI firmware included in BTstack
 Dialog DA1469x       | LE        | H4, SPI        | No           | n.a.             | Yes    |        Yes           | da14581        | HCI Firmware part of DA1469x SDK
@@ -67,7 +68,7 @@ EM 9301              | LE        | SPI, H4        | No           | n.a.         
 EM 9304              | LE        | SPI, H4        | Yes          | n.a.             | Yes    |        Yes           | em9301         | Custom HCI SPI implementation
 Intel Dual Wireless 8260, 8265 | Dual mode | USB  | Yes          | Probably         | Don't know | Don't know       | intel          | Firmware size: 400 kB 
 Nordic nRF           | LE        | H4             | Fixed Random | n.a.             | Yes    |        Yes           |                | Requires HCI firmware
-STM STLC2500D        | Classic   | H4             | No           | No (didn't try)  | n.a    |         n.a.         | stlc2500d      | Custom deep sleep management not supported
+STM STLC2500D        | Classic   | H4             | No           | Don't know       | n.a    |         n.a.         | stlc2500d      | Custom deep sleep management not supported
 Toshiba TC35661      | Dual mode | H4             | No           | No               | No     |         No           | tc3566         | Only -007/009 models provide full HCI. See below
 TI CC256x, WL183x    | Dual mode | H4, H5, eHCILL | Yes          | Yes              | No     |    Yes for CC256XC   | cc256x         | Also WL185x, WL187x, and WL189x
 
@@ -102,6 +103,8 @@ Interestingly, the CYW20704 exhibits the same UART flow control bug as the CC256
 The best source for documentation on vendor specific commands so far has been the source code for blueZ and the Bluedroid Bluetooth stack from Android, but with the takeover by Cypress, documentation is directly available.
 
 Broadcom USB dongles do not require special configuration, however SCO data is not routed over USB by default.
+
+The PSoC 4 SoCs can be programmed with the "BLE DTM" HCI Firmware from the PSoC Creator Kit Examples. The UART baudrate is set to 115200. For higher baud rates, the clocks probably need to be configured differently, as the IDE gives a warning about this.
 
 **Init scripts**: For UART connected chipsets, an init script has to be uploaded after power on. For Bluetooth chipsets that are used in Broadcom Wifi+Bluetooth combos, this file often can be found as a binary file in Linux distributions with the ending *'.hcd'* or as part of the WICED SDK as C source file that contains the init script as a data array for use without a file system.
 
