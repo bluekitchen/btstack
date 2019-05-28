@@ -2484,4 +2484,11 @@ typedef uint8_t sm_key_t[16];
  */
 #define MESH_PROXY_DISCONNECTED                                             0x22
 
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+ */
+#define MESH_SUBEVENT_MESSAGE_SENT                                          0x23
+
 #endif
