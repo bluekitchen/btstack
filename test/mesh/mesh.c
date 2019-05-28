@@ -1282,6 +1282,8 @@ static mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_acc
 #define MESH_SIG_MODEL_ID_CONFIGURATION_CLIENT 1
 #define MESH_SIG_MODEL_ID_HEALTH_SERVER 2
 #define MESH_SIG_MODEL_ID_HEALTH_CLIENT 3
+#define MESH_SIG_MODEL_ID_GENERIC_ON_OFF_SERVER 0x1000u
+#define MESH_SIG_MODEL_ID_GENERIC_ON_OFF_CLIENT 0x1001u
 
 static btstack_crypto_aes128_cmac_t configuration_server_cmac_request;
 
@@ -1430,14 +1432,16 @@ static void config_composition_data_status(mesh_model_t * mesh_model, uint16_t n
     // Element 1
     // Loc - bottom - https://www.bluetooth.com/specifications/assigned-numbers/gatt-namespace-descriptors
     mesh_access_transport_add_uint16(transport_pdu, 0x0103);
-    // NumS - Configuration Server + Health Server
-    mesh_access_transport_add_uint8( transport_pdu, 2);
+    // NumS - Configuration Server + Health Server + Generic On/Off Server
+    mesh_access_transport_add_uint8( transport_pdu, 3);
     // NumV
     mesh_access_transport_add_uint8( transport_pdu, 1);
     // SIG Model: Configuration Server 0x0000
     mesh_access_transport_add_uint16(transport_pdu, MESH_SIG_MODEL_ID_CONFIGURATION_SERVER);
     // SIG Model: Health Server 0x0002
     mesh_access_transport_add_uint16(transport_pdu, MESH_SIG_MODEL_ID_HEALTH_SERVER);
+    // SIG Model: Health Server 0x0002
+    mesh_access_transport_add_uint16(transport_pdu, MESH_SIG_MODEL_ID_GENERIC_ON_OFF_SERVER);
     // Vendor Model: 0x0000
     mesh_access_transport_add_uint16(transport_pdu, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH);
     mesh_access_transport_add_uint16(transport_pdu, 0);
