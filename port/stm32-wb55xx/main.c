@@ -78,23 +78,19 @@
 PLACE_IN_SECTION("MB_MEM1") ALIGN(4) static TL_CmdPacket_t BleCmdBuffer;
 PLACE_IN_SECTION("MB_MEM2") ALIGN(4) static uint8_t EvtPool[POOL_SIZE];
 PLACE_IN_SECTION("MB_MEM2") ALIGN(4) static TL_CmdPacket_t SystemCmdBuffer;
-PLACE_IN_SECTION("MB_MEM2") ALIGN(4) static uint8_t
-	SystemSpareEvtBuffer[sizeof(TL_PacketHeader_t) + TL_EVT_HDR_SIZE + 255];
-PLACE_IN_SECTION("MB_MEM2") ALIGN(4) static uint8_t
-	BleSpareEvtBuffer[sizeof(TL_PacketHeader_t) + TL_EVT_HDR_SIZE + 255];
-PLACE_IN_SECTION("MB_MEM2") ALIGN(4) static uint8_t
-	HciAclDataBuffer[sizeof(TL_PacketHeader_t) + 5 + 251];
+PLACE_IN_SECTION("MB_MEM2") ALIGN(4) static uint8_t SystemSpareEvtBuffer[sizeof(TL_PacketHeader_t) + TL_EVT_HDR_SIZE + 255];
+PLACE_IN_SECTION("MB_MEM2") ALIGN(4) static uint8_t	BleSpareEvtBuffer[sizeof(TL_PacketHeader_t) + TL_EVT_HDR_SIZE + 255];
+PLACE_IN_SECTION("MB_MEM2") ALIGN(4) static uint8_t	HciAclDataBuffer[sizeof(TL_PacketHeader_t) + 5 + 251];
     
 static void (*transport_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
-static uint8_t hci_receive_buffer[1 + HCI_INCOMING_PACKET_BUFFER_SIZE];
 static SemaphoreHandle_t C2StartedSem;
 static SemaphoreHandle_t shciSem;
 static QueueHandle_t hciEvtQueue;
+static int hci_acl_can_send_now;
 
 // data source for integration with BTstack Runloop
 static btstack_data_source_t transport_data_source;
-static int hci_acl_can_send_now;
 
 
 
@@ -369,13 +365,16 @@ static int transport_close(void){
 }
 
 /**
- * register packet handler for HCI packets: ACL, SCO, and Events
+ * register packet handler for HCI packets: ACL and Events
  */
 static void transport_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
     log_info("transport_register_packet_handler");
     transport_packet_handler = handler;
 }
 
+/**
+ * support async transport layers, e.g. IRQ driven without buffers
+ */
 static int transport_can_send_packet_now(uint8_t packet_type) {
     switch (packet_type)
     {
@@ -388,6 +387,9 @@ static int transport_can_send_packet_now(uint8_t packet_type) {
     return 1;
 }
 
+/**
+ * send packet
+ */
 static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size){
 	TL_CmdPacket_t *ble_cmd_buff = &BleCmdBuffer;
 
@@ -403,6 +405,7 @@ static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size)
         case HCI_ACL_DATA_PACKET:
             memcpy((void *)&((TL_AclDataPacket_t *)HciAclDataBuffer)->AclDataSerial,packet, size);
             TL_BLE_SendAclData(NULL, 0);
+            transport_notify_packet_send();
             break;
 
         default:
