@@ -241,11 +241,33 @@ static void transport_send_hardware_error(uint8_t error_code){
 
 static void transport_deliver_hci_packets(void){
     TL_EvtPacket_t *hcievt;
+	TL_AclDataSerial_t *acl;
 
     while (xQueueReceive(hciEvtQueue, &hcievt, portMAX_DELAY) == pdTRUE)
     {
-        /* Send buffer to upper stack */
-        transport_packet_handler(hcievt->evtserial.type, (uint8_t*)&hcievt->evtserial.evt, hcievt->evtserial.evt.plen+2);
+        switch (hcievt->evtserial.type)
+        {
+            case HCI_EVENT_PACKET:
+                /* Send buffer to upper stack */
+                transport_packet_handler(
+                    hcievt->evtserial.type,
+                    (uint8_t*)&hcievt->evtserial.evt,
+                    hcievt->evtserial.evt.plen+2);
+                break;
+
+            case HCI_ACL_DATA_PACKET:
+		        acl = &(((TL_AclDataPacket_t *)hcievt)->AclDataSerial);
+                /* Send buffer to upper stack */
+                transport_packet_handler(
+                    acl->type,
+                    &((uint8_t*)acl)[1],
+                    acl->length+4);
+                break;
+            
+            default:
+                transport_send_hardware_error(0x01);  // invalid HCI packet
+                break;
+        }
         
         /* Release buffer for memory manager */
         TL_MM_EvtDone(hcievt);
@@ -305,14 +327,14 @@ static void transport_init(const void *transport_config){
 	tl_mm_config.AsynchEvtPoolSize = POOL_SIZE;
 	TL_MM_Init(&tl_mm_config);
 
+	TL_Enable();
+    
 	/**< BLE channel initialization */
 	tl_ble_config.p_cmdbuffer = (uint8_t *)&BleCmdBuffer;
 	tl_ble_config.p_AclDataBuffer = HciAclDataBuffer;
 	tl_ble_config.IoBusEvtCallBack = ble_evt_received;
 	tl_ble_config.IoBusAclDataTxAck = ble_acl_acknowledged;
 	TL_BLE_Init((void *)&tl_ble_config);
-
-	TL_Enable();
 
     // set up polling data_source
     btstack_run_loop_set_data_source_handler(&transport_data_source, &transport_process);
@@ -431,7 +453,7 @@ extern int btstack_main(int argc, const char * argv[]);
 int app_main(void const* args){
 
     // enable packet logger
-    //hci_dump_open(NULL, HCI_DUMP_STDOUT);
+    hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
     /// GET STARTED with BTstack ///
     btstack_memory_init();
