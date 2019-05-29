@@ -734,6 +734,11 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_TRANSPORT_SLEEP_MODE                     0x69
 
 /**
+ * @brief Transport ready 
+ */
+#define HCI_EVENT_TRANSPORT_READY                          0x6D
+
+/**
  * @brief Outgoing packet 
  */
 #define HCI_EVENT_TRANSPORT_PACKET_SENT                    0x6E
