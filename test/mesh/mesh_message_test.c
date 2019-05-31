@@ -163,7 +163,6 @@ static void load_network_key_nid_10(void){
 }
 
 static void load_provisioning_data_test_message(void){
-    load_network_key_nid_68();
     uint8_t application_key[16];
     btstack_parse_hex("63964771734fbd76e3b40519d1d94a48", 16, application_key);
     mesh_application_key_set( 0, 0, 0x26, application_key);
@@ -252,6 +251,7 @@ TEST_GROUP(MessageTest){
         load_provisioning_data_test_message();
         mesh_network_init();
         mesh_transport_init();
+        mesh_network_key_init();
         // intercept messages between network and lower layer
         mesh_network_set_higher_layer_handler(&test_lower_transport_callback_handler);
         mesh_network_set_proxy_message_handler(&test_proxy_server_callback_handler);
@@ -421,6 +421,7 @@ char * message1_lower_transport_pdus[] = {
 };
 char * message1_upper_transport_pdu = (char *) "034b50057e400000010000";
 TEST(MessageTest, Message1Receive){
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345678);
     test_receive_network_pdus(1, message1_network_pdus, message1_lower_transport_pdus, message1_upper_transport_pdu);
 }
@@ -430,6 +431,7 @@ TEST(MessageTest, Message1Send){
     uint16_t src          = 0x1201;
     uint16_t dest         = 0xfffd;
     uint32_t seq          = 1;
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345678);
     mesh_lower_transport_set_seq(seq);
     test_send_control_message(netkey_index, ttl, src, dest, message1_upper_transport_pdu, 1, message1_lower_transport_pdus, message1_network_pdus);
@@ -444,6 +446,7 @@ char * message2_lower_transport_pdus[] = {
 };
 char * message2_upper_transport_pdu = (char *) "04320308ba072f";
 TEST(MessageTest, Message2Receive){
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345678);
     test_receive_network_pdus(1, message2_network_pdus, message2_lower_transport_pdus, message2_upper_transport_pdu);
 }
@@ -453,6 +456,7 @@ TEST(MessageTest, Message2Send){
     uint16_t src          = 0x2345;
     uint16_t dest         = 0x1201;
     uint32_t seq          = 0x014820;
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345678);
     mesh_lower_transport_set_seq(seq);
     test_send_control_message(netkey_index, ttl, src, dest, message2_upper_transport_pdu, 1, message2_lower_transport_pdus, message2_network_pdus);
@@ -467,6 +471,7 @@ char * message3_lower_transport_pdus[] = {
 };
 char * message3_upper_transport_pdu = (char *) "04fa0205a6000a";
 TEST(MessageTest, Message3Receive){
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345678);
     test_receive_network_pdus(1, message3_network_pdus, message3_lower_transport_pdus, message3_upper_transport_pdu);
 }
@@ -476,6 +481,7 @@ TEST(MessageTest, Message3Send){
     uint16_t src          = 0x2fe3;
     uint16_t dest         = 0x1201;
     uint32_t seq          = 0x2b3832;
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345678);
     mesh_lower_transport_set_seq(seq);
     test_send_control_message(netkey_index, ttl, src, dest, message3_upper_transport_pdu, 1, message3_lower_transport_pdus, message3_network_pdus);
@@ -542,6 +548,7 @@ char * message6_lower_transport_pdus[] = {
 };
 char * message6_upper_transport_pdu = (char *) "0056341263964771734fbd76e3b40519d1d94a48";
 TEST(MessageTest, Message6Receive){
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345678);
     test_receive_network_pdus(2, message6_network_pdus, message6_lower_transport_pdus, message6_upper_transport_pdu);
 }
@@ -554,6 +561,7 @@ TEST(MessageTest, Message6Send){
     uint32_t seq          = 0x3129ab;
     uint8_t  szmic        = 0;
 
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345678);
     mesh_lower_transport_set_seq(seq);
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message6_upper_transport_pdu, 2, message6_lower_transport_pdus, message6_network_pdus);
@@ -574,6 +582,7 @@ TEST(MessageTest, Message7Send){
     uint16_t dest         = 0x0003;
     uint32_t seq          = 0x014835;
 
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345678);
     mesh_lower_transport_set_seq(seq);
     test_send_control_message(netkey_index, ttl, src, dest, message7_upper_transport_pdu, 1, message7_lower_transport_pdus, message7_network_pdus);
@@ -672,7 +681,7 @@ TEST(MessageTest, Message14Receive){
     mesh_set_iv_index(0x12345678);
     test_receive_network_pdus(1, message14_network_pdus, message14_lower_transport_pdus, message14_upper_transport_pdu);
 }
-TEST(MessageTest, Messagee14Send){
+TEST(MessageTest, Message14Send){
     uint16_t netkey_index = 0;
     uint8_t  ttl          = 0;
     uint16_t src          = 0x1201;
@@ -711,6 +720,7 @@ char * message16_lower_transport_pdus[] = {
 };
 char * message16_upper_transport_pdu = (char *) "800300563412";
 TEST(MessageTest, Message16Receive){
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345678);
     test_receive_network_pdus(1, message16_network_pdus, message16_lower_transport_pdus, message16_upper_transport_pdu);
 }
@@ -723,6 +733,7 @@ TEST(MessageTest, Message16Send){
     uint32_t seq          = 0x000006;
     uint8_t  szmic        = 0;
 
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345678);
     mesh_lower_transport_set_seq(seq);
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message16_upper_transport_pdu, 1, message16_lower_transport_pdus, message16_network_pdus);
@@ -739,6 +750,7 @@ char * message18_lower_transport_pdus[] = {
 };
 char * message18_upper_transport_pdu = (char *) "0400000000";
 TEST(MessageTest, Message18Receive){
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345678);
     test_receive_network_pdus(1, message18_network_pdus, message18_lower_transport_pdus, message18_upper_transport_pdu);
 }
@@ -751,6 +763,7 @@ TEST(MessageTest, Message18Send){
     uint32_t seq          = 0x00007;
     uint8_t  szmic        = 0;
 
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345678);
     mesh_lower_transport_set_seq(seq);
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message18_upper_transport_pdu, 1, message18_lower_transport_pdus, message18_network_pdus);
@@ -768,6 +781,7 @@ char * message19_lower_transport_pdus[] = {
 };
 char * message19_upper_transport_pdu = (char *) "04000000010703";
 TEST(MessageTest, Message19Receive){
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345678);
     test_receive_network_pdus(1, message19_network_pdus, message19_lower_transport_pdus, message19_upper_transport_pdu);
 }
@@ -780,6 +794,7 @@ TEST(MessageTest, Message19Send){
     uint32_t seq          = 0x00009;
     uint8_t  szmic        = 0;
 
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345678);
     mesh_lower_transport_set_seq(seq);
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message19_upper_transport_pdu, 1, message19_lower_transport_pdus, message19_network_pdus);
@@ -794,6 +809,7 @@ char * message20_lower_transport_pdus[] = {
 };
 char * message20_upper_transport_pdu = (char *) "04000000010703";
 TEST(MessageTest, Message20Receive){
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345677);
     test_receive_network_pdus(1, message20_network_pdus, message20_lower_transport_pdus, message20_upper_transport_pdu);
 }
@@ -806,6 +822,7 @@ TEST(MessageTest, Message20Send){
     uint32_t seq          = 0x070809;
     uint8_t  szmic        = 0;
 
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345677);
     mesh_lower_transport_set_seq(seq);
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message20_upper_transport_pdu, 1, message20_lower_transport_pdus, message20_network_pdus);
@@ -821,6 +838,7 @@ char * message21_lower_transport_pdus[] = {
 };
 char * message21_upper_transport_pdu = (char *) "d50a0048656c6c6f";
 TEST(MessageTest, Message21Receive){
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345677);
     test_receive_network_pdus(1, message21_network_pdus, message21_lower_transport_pdus, message21_upper_transport_pdu);
 }
@@ -833,6 +851,7 @@ TEST(MessageTest, Message21Send){
     uint32_t seq          = 0x07080a;
     uint8_t  szmic        = 0;
 
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345677);
     mesh_lower_transport_set_seq(seq);
     test_send_access_message(netkey_index, appkey_index, ttl, src, dest, szmic, message21_upper_transport_pdu, 1, message21_lower_transport_pdus, message21_network_pdus);
@@ -849,6 +868,7 @@ char * message22_upper_transport_pdu = (char *) "d50a0048656c6c6f";
 char * message22_label_string = (char *) "0073e7e4d8b9440faf8415df4c56c0e1";
 
 TEST(MessageTest, Message22Receive){
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345677);
     uint8_t label_uuid[16];
     btstack_parse_hex(message22_label_string, 16, label_uuid);
@@ -864,6 +884,7 @@ TEST(MessageTest, Message22Send){
     uint32_t seq          = 0x07080b;
     uint8_t  szmic        = 0;
 
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345677);
     mesh_lower_transport_set_seq(seq);
     uint8_t label_uuid[16];
@@ -883,6 +904,7 @@ char * message23_upper_transport_pdu = (char *) "d50a0048656c6c6f";
 char * message23_label_string = (char *) "f4a002c7fb1e4ca0a469a021de0db875";
 
 TEST(MessageTest, Message23Receive){
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345677);
     uint8_t label_uuid[16];
     btstack_parse_hex(message23_label_string, 16, label_uuid);
@@ -897,6 +919,7 @@ TEST(MessageTest, Message23Send){
     uint32_t seq          = 0x07080c;
     uint8_t  szmic        = 0;
 
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345677);
     mesh_lower_transport_set_seq(seq);
     uint8_t label_uuid[16];
@@ -918,6 +941,7 @@ char * message24_lower_transport_pdus[] = {
 char * message24_upper_transport_pdu = (char *) "ea0a00576f726c64";
 char * message24_label_string = (char *) "f4a002c7fb1e4ca0a469a021de0db875";
 TEST(MessageTest, Message24Receive){
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345677);
     uint8_t label_uuid[16];
     btstack_parse_hex(message24_label_string, 16, label_uuid);
@@ -932,6 +956,7 @@ TEST(MessageTest, Message24Send){
     uint32_t seq          = 0x07080d;
     uint8_t  szmic        = 1;
 
+    load_network_key_nid_68();
     mesh_set_iv_index(0x12345677);
     mesh_lower_transport_set_seq(seq);
     uint8_t label_uuid[16];
