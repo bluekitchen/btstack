@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - BNEP: Bluetooth address is stored in little-endian format for all BNEP_EVENT_*
 
 ### Added
+- example: pan_lwip_http_server using lwIP as network stack to implement PAN NAP service
+- platform/lwip/bnep_lwip.c: BNEP lwIP adapter that forwards packets between BNEP service and lwIP
 
 ---
 

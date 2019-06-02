@@ -9,9 +9,17 @@ VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce
 VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player
 VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player
 VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods
+VPATH += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/
+VPATH += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4
+VPATH += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv6
+VPATH += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/netif
+VPATH += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http
+VPATH += ${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server
 VPATH += ${BTSTACK_ROOT}/3rd-party/md5
 VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
 VPATH += ${BTSTACK_ROOT}/3rd-party/yxml
+VPATH += ${BTSTACK_ROOT}/platform/lwip
+
 
 CFLAGS += -I.
 CFLAGS += -I${BTSTACK_ROOT}/src/ble
@@ -20,9 +28,13 @@ CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/hxcmod-player
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/lwip/core/src/include/
+CFLAGS += -I${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/md5
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/yxml
+CFLAGS += -I${BTSTACK_ROOT}/platform/lwip
+
 
 # for CVSD/SBC PLC
 LDFLAGS += -lm
@@ -80,6 +92,12 @@ MBEDTLS = 					\
 	sm_mbedtls_allocator.c  \
 	memory_buffer_alloc.c   \
 	platform.c 				\
+
+LWIP_CORE_SRC  = init.c mem.c memp.c netif.c udp.c ip.c pbuf.c inet_chksum.c def.c tcp.c tcp_in.c tcp_out.c timeouts.c sys_arch.c
+LWIP_IPV4_SRC  = acd.c dhcp.c etharp.c icmp.c ip4.c ip4_frag.c ip4_addr.c
+LWIP_NETIF_SRC = ethernet.c
+LWIP_HTTPD = altcp_proxyconnect.c fs.c httpd.c
+LWIP_SRC = ${LWIP_CORE_SRC} ${LWIP_IPV4_SRC} ${LWIP_NETIF_SRC} ${LWIP_HTTPD} dhserver.c
 
 # List of files for Bluedroid SBC codec
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
@@ -190,6 +208,7 @@ SBC_ENCODER_OBJ  = $(SBC_ENCODER:.c=.o)
 CVSD_PLC_OBJ = $(CVSD_PLC:.c=.o)
 AVDTP_OBJ  = $(AVDTP:.c=.o)
 HXCMOD_PLAYER_OBJ = $(HXCMOD_PLAYER:.c=.o)
+LWIP_OBJ = $(LWIP_SRC:.c=.o)
 
 default_target: all
 
@@ -268,6 +287,9 @@ gap_link_keys: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} gap_link_keys.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 panu_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${PAN_OBJ} panu_demo.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+pan_lwip_http_server: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${PAN_OBJ} ${LWIP_SRC} btstack_ring_buffer.o bnep_lwip.o pan_lwip_http_server.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 gatt_browser: gatt_browser.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} gatt_browser.c
