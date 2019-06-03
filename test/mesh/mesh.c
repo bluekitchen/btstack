@@ -82,7 +82,7 @@ static void show_usage(void);
 const static uint8_t device_uuid[] = { 0x00, 0x1B, 0xDC, 0x08, 0x10, 0x21, 0x0B, 0x0E, 0x0A, 0x0C, 0x00, 0x0B, 0x0E, 0x0A, 0x0C, 0x00 };
 
 // Mesh Provisioning
-static uint8_t adv_data[] = {
+static uint8_t adv_data_unprovisioned[] = {
     // Flags general discoverable, BR/EDR not supported
     0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
     // 16-bit Service UUIDs
@@ -94,6 +94,7 @@ static uint8_t adv_data[] = {
           // OOB information
           0x00, 0x00
 };
+const uint8_t adv_data_unprovisioned_len = sizeof(adv_data_unprovisioned);
 
 #ifdef USE_ADVERTISING_WITH_NODE_IDENTITY 
 static btstack_crypto_random_t crypto_request_random;
@@ -134,8 +135,7 @@ static uint8_t adv_data_with_network_id[] = {
 const uint8_t adv_data_with_network_id_len = sizeof(adv_data_with_network_id);
 #endif
 
-const uint8_t adv_data_len = sizeof(adv_data);
-
+static adv_bearer_connectable_advertisement_data_item_t connectable_advertisement_item;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
@@ -179,6 +179,12 @@ static void mesh_proxy_handle_get_aes128(void * arg){
     
     printf("\nUSE_ADVERTISING_WITH_NODE_IDENTITY:\n");
     printf_hexdump(adv_data_with_node_identity, sizeof(adv_data_with_node_identity));
+
+    // store in advertisement item
+    memset(connectable_advertisement_item, 0, sizeof(connectable_advertisement_item));
+    connectable_advertisement_item.adv_length = adv_data_with_node_identity_len;
+    memcpy(connectable_advertisement_item.adv_data, (uint8_t*) adv_data_with_node_identity,  adv_data_with_node_identity_len);
+
     // setup advertisements
     bd_addr_t null_addr;
     memset(null_addr, 0, 6);
@@ -186,7 +192,7 @@ static void mesh_proxy_handle_get_aes128(void * arg){
     uint16_t adv_int_min = 0x0030;
     uint16_t adv_int_max = 0x0030;
     adv_bearer_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
-    adv_bearer_advertisements_set_data(adv_data_with_node_identity_len, (uint8_t*) adv_data_with_node_identity);
+    adv_bearer_advertisements_add_item(&connectable_advertisement_item);
     adv_bearer_advertisements_enable(1);
 }
 
@@ -208,16 +214,16 @@ static void mesh_proxy_handle_get_random(void * arg){
 
 
 #ifdef USE_ADVERTISING_WITH_NETWORK_ID
-static void setup_advertising_with_network_id(const mesh_provisioning_data_t * prov_data){
+static void setup_advertising_with_network_id(void){
+
     // dynamically store network ID into adv data
-    memcpy(&adv_data_with_network_id[12], prov_data->network_id, sizeof(prov_data->network_id));
-    // copy beacon key and network id
-    memcpy(beacon_key, prov_data->beacon_key, 16);
-    memcpy(network_id, prov_data->network_id, 8);
-    
-    printf_hexdump(prov_data->network_id, 8);
-    mesh_flags = prov_data->flags;
-    
+    memcpy(&adv_data_with_network_id[12], network_id, sizeof(network_id));
+
+    // store in advertisement item
+    memset(&connectable_advertisement_item, 0, sizeof(connectable_advertisement_item));
+    connectable_advertisement_item.adv_length = adv_data_with_network_id_len;
+    memcpy(connectable_advertisement_item.adv_data, (uint8_t*) adv_data_with_network_id,  adv_data_with_network_id_len);
+
     // setup advertisements
     bd_addr_t null_addr;
     memset(null_addr, 0, 6);
@@ -225,7 +231,7 @@ static void setup_advertising_with_network_id(const mesh_provisioning_data_t * p
     uint16_t adv_int_min = 0x0030;
     uint16_t adv_int_max = 0x0030;
     adv_bearer_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
-    adv_bearer_advertisements_set_data(adv_data_with_network_id_len, (uint8_t*) adv_data_with_network_id);
+    adv_bearer_advertisements_add_item(&connectable_advertisement_item);
     adv_bearer_advertisements_enable(1);
 }
 #endif
@@ -264,11 +270,11 @@ static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * p
     mesh_flags = provisioning_data->flags;
     // dump data
     mesh_provisioning_dump(provisioning_data);
-
+    
     // Mesh Proxy
 #ifdef USE_ADVERTISING_WITH_NETWORK_ID
     printf("Advertise Mesh Proxy Service with Network ID\n");
-    setup_advertising_with_network_id(provisioning_data);
+    setup_advertising_with_network_id();
 #endif
 #ifdef USE_ADVERTISING_WITH_NODE_IDENTITY 
     printf("Advertise Mesh Proxy Service with Node Identity\n");
@@ -280,7 +286,11 @@ static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * p
 static void setup_advertising_unprovisioned(void) {
     printf("Advertise Mesh Provisioning Service\n");
     // dynamically store device uuid into adv data
-    memcpy(&adv_data[11], device_uuid, sizeof(device_uuid));
+    memcpy(&adv_data_unprovisioned[11], device_uuid, sizeof(device_uuid));
+    // store in advertisement item
+    memset(&connectable_advertisement_item, 0, sizeof(connectable_advertisement_item));
+    connectable_advertisement_item.adv_length = adv_data_unprovisioned_len;
+    memcpy(connectable_advertisement_item.adv_data, (uint8_t*) adv_data_unprovisioned, adv_data_unprovisioned_len);
     
     // setup advertisements
     uint8_t adv_type = 0;   // ADV_IND
@@ -289,7 +299,7 @@ static void setup_advertising_unprovisioned(void) {
     bd_addr_t null_addr;
     memset(null_addr, 0, 6);
     adv_bearer_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
-    adv_bearer_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
+    adv_bearer_advertisements_add_item(&connectable_advertisement_item);
     adv_bearer_advertisements_enable(1);
 }
 #endif
@@ -420,19 +430,23 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     // enable PB_GATT
                     if (provisioned == 0){
                          setup_advertising_unprovisioned();
+                    } else {
+#ifdef USE_ADVERTISING_WITH_NETWORK_ID
+                        printf("Advertise Mesh Proxy Service with Network ID\n");
+                        setup_advertising_with_network_id();
+#endif
+#ifdef USE_ADVERTISING_WITH_NODE_IDENTITY 
+                        printf("Advertise Mesh Proxy Service with Node Identity\n");
+                        btstack_crypto_random_generate(&crypto_request_random, random_value, sizeof(random_value), mesh_proxy_handle_get_random, NULL);
+#endif
                     }
                     break;
                     
                 case HCI_EVENT_LE_META:
                     if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
                     // disable PB_GATT
-                    if (provisioned){
-                        printf("Connected, disabling GATT Proxy advertising\n");
-                        adv_bearer_advertisements_enable(0);
-                    } else {
-                        printf("Connected, disabling PB_GATT advertising\n");
-                        adv_bearer_advertisements_enable(0);
-                    }
+                    printf("Connected, stop advertising gatt service\n");
+                    adv_bearer_advertisements_remove_item(&connectable_advertisement_item);
                     break;
                 default:
                     break;
@@ -483,6 +497,11 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
 
                     // store in TLV
                     btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
+
+                    // stop adv using adv data
+                    adv_bearer_advertisements_remove_item(&connectable_advertisement_item);
+
+                    // setup after provisioned
                     mesh_setup_from_provisioning_data(&provisioning_data);
                     break;
                 default:

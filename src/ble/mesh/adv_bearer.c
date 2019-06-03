@@ -103,8 +103,6 @@ static uint8_t   adv_bearer_count;
 static uint16_t  adv_bearer_interval;
 
 // gap advertising
-static uint8_t   gap_advertising_data_length;
-static uint8_t * gap_advertising_data;
 static int       gap_advertising_enabled;
 static uint16_t  gap_adv_int_min    = 0x30;
 static uint16_t  gap_adv_int_ms;
@@ -114,6 +112,8 @@ static uint8_t   gap_direct_address_typ;
 static bd_addr_t gap_direct_address;
 static uint8_t   gap_channel_map    = 0x07;
 static uint8_t   gap_filter_policy  = 0;
+
+static btstack_linked_list_t gap_connectable_advertisements;
 
 // dispatch advertising events
 static void adv_bearer_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -240,13 +240,18 @@ static void adv_bearer_run(void){
         case STATE_IDLE:
             if (gap_advertising_enabled){
                 if ((int32_t)(now - gap_adv_next_ms) >= 0){
-                    // time to advertise again
-                    log_debug("Start GAP ADV");
-                    gap_advertisements_set_params(ADVERTISING_INTERVAL_CONNECTABLE_MIN, ADVERTISING_INTERVAL_CONNECTABLE_MIN, gap_adv_type, gap_direct_address_typ, gap_direct_address, gap_channel_map, gap_filter_policy);
-                    gap_advertisements_set_data(gap_advertising_data_length, gap_advertising_data);
-                    gap_advertisements_enable(1);
-                    adv_bearer_set_timeout(ADVERTISING_INTERVAL_CONNECTABLE_MIN_MS);
-                    adv_bearer_state = STATE_GAP;
+                    adv_bearer_connectable_advertisement_data_item_t * item = (adv_bearer_connectable_advertisement_data_item_t *) btstack_linked_list_pop(&gap_connectable_advertisements);
+                    if (item != NULL){
+                        // queue again
+                        btstack_linked_list_add_tail(&gap_connectable_advertisements, (void*) item);                        
+                        // time to advertise again
+                        log_debug("Start GAP ADV, %p", item);
+                        gap_advertisements_set_params(ADVERTISING_INTERVAL_CONNECTABLE_MIN, ADVERTISING_INTERVAL_CONNECTABLE_MIN, gap_adv_type, gap_direct_address_typ, gap_direct_address, gap_channel_map, gap_filter_policy);
+                        gap_advertisements_set_data(item->adv_length, item->adv_data);
+                        gap_advertisements_enable(1);
+                        adv_bearer_set_timeout(ADVERTISING_INTERVAL_CONNECTABLE_MIN_MS);
+                        adv_bearer_state = STATE_GAP;
+                    }
                     break;
                 }
             }
@@ -353,9 +358,12 @@ void adv_bearer_advertisements_enable(int enabled){
     adv_bearer_run();
 }
 
-void adv_bearer_advertisements_set_data(uint8_t advertising_data_length, uint8_t * advertising_data){
-    gap_advertising_data_length = advertising_data_length;
-    gap_advertising_data        = advertising_data;
+void adv_bearer_advertisements_add_item(adv_bearer_connectable_advertisement_data_item_t * item){
+    btstack_linked_list_add(&gap_connectable_advertisements, (void*) item);
+}
+
+void adv_bearer_advertisements_remove_item(adv_bearer_connectable_advertisement_data_item_t * item){
+    btstack_linked_list_remove(&gap_connectable_advertisements, (void*) item);
 }
 
 void adv_bearer_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,

@@ -47,6 +47,12 @@
 extern "C" {
 #endif
 
+typedef struct {
+	void * next;
+	uint8_t adv_length;
+	uint8_t adv_data[31];
+} adv_bearer_connectable_advertisement_data_item_t;
+
 /**
  * Initialize Advertising Bearer
  */
@@ -58,14 +64,20 @@ void adv_bearer_init(void);
 // Advertisements are interleaved with ADV Bearer Messages
 
 /**
- * Set Advertisement Data
- *
- * @param advertising_data_length
- * @param advertising_data (max 31 octets)
- * @note data is not copied, pointer has to stay valid
+ * Add Connectable Advertisement Data Item
+ * @param item
+ * @note item is not copied, pointer has to stay valid
  * @note '00:00:00:00:00:00' in advertising_data will be replaced with actual bd addr
  */
-void adv_bearer_advertisements_set_data(uint8_t advertising_data_length, uint8_t * advertising_data);
+void adv_bearer_advertisements_add_item(adv_bearer_connectable_advertisement_data_item_t * item);
+
+/**
+ * Remove Connectable Advertisement Data Item
+ * @param item
+ * @note item is not copied, pointer has to stay valid
+ * @note '00:00:00:00:00:00' in advertising_data will be replaced with actual bd addr
+ */
+void adv_bearer_advertisements_remove_item(adv_bearer_connectable_advertisement_data_item_t * item);
 
 /**
  * @brief Set Advertisement Paramters
