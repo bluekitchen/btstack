@@ -2559,29 +2559,14 @@ static void config_node_reset_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     mesh_access_message_processed(pdu);
 }
 
-static void config_node_identity_status(mesh_model_t *mesh_model, uint16_t netkey_index_dest, uint16_t dest, uint16_t netkey_index) {
-    mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
-    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
-    mesh_foundation_node_identity_state_t state = MESH_FOUNDATION_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED;
-        
-    if (network_key == NULL){
-        status = MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX;
-    } else {
-#ifdef ENABLE_MESH_PROXY_SERVER
-        if (network_key->node_id_advertisement_running == 0){
-            state = MESH_FOUNDATION_NODE_IDENTITY_STATE_ADVERTISING_STOPPED;
-        } else {
-            state = MESH_FOUNDATION_NODE_IDENTITY_STATE_ADVERTISING_RUNNING;
-        }
-#endif
-    }
-
+static void config_node_identity_status(mesh_model_t *mesh_model, uint16_t netkey_index_dest, uint16_t dest, uint8_t status, uint16_t netkey_index, 
+    mesh_foundation_node_identity_state_t node_identity_state) {
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
         &mesh_foundation_node_identity_status,
         status,
         netkey_index_dest,
-        state);
+        node_identity_state);
     if (!transport_pdu) return;
     
     // send as segmented access pdu
@@ -2592,11 +2577,57 @@ static void config_node_identity_get_handler(mesh_model_t *mesh_model, mesh_pdu_
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
-    config_node_identity_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_index);
+    mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
+   
+    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
+    mesh_foundation_node_identity_state_t node_identity_state = MESH_FOUNDATION_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED;
+    
+    if (network_key == NULL){
+        status = MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX;
+    } else {
+#ifdef ENABLE_MESH_PROXY_SERVER
+        if (network_key->node_id_advertisement_running == 0){
+            node_identity_state = MESH_FOUNDATION_NODE_IDENTITY_STATE_ADVERTISING_STOPPED;
+        } else {
+            node_identity_state = MESH_FOUNDATION_NODE_IDENTITY_STATE_ADVERTISING_RUNNING;
+        }
+#endif
+    }
+
+    config_node_identity_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, netkey_index, node_identity_state);
     mesh_access_message_processed(pdu);
 }
 
 static void config_node_identity_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+    uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
+    mesh_foundation_node_identity_state_t node_identity_state = (mesh_foundation_node_identity_state_t) mesh_access_parser_get_u8(&parser);
+    
+    uint8_t status = MESH_FOUNDATION_STATUS_FEATURE_NOT_SUPPORTED;
+    
+    mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
+    if (network_key == NULL){
+        status = MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX;
+    } else {
+#ifdef ENABLE_MESH_PROXY_SERVER
+        switch (node_identity_state){
+            case MESH_FOUNDATION_NODE_IDENTITY_STATE_ADVERTISING_STOPPED:
+                network_key->node_id_advertisement_running = 0;
+                status = MESH_FOUNDATION_STATUS_SUCCESS;
+                break;
+            case MESH_FOUNDATION_NODE_IDENTITY_STATE_ADVERTISING_RUNNING:
+                network_key->node_id_advertisement_running = 1;
+                status = MESH_FOUNDATION_STATUS_SUCCESS;
+                break;
+            default:
+                break;
+        }
+#endif
+    }
+
+    config_node_identity_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, netkey_index, node_identity_state);
+    mesh_access_message_processed(pdu);
 }
 
 //
@@ -2651,12 +2682,12 @@ static mesh_operation_t mesh_configuration_server_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_SET,                    9, config_heartbeat_publication_set_handler},
 //    { MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_GET,                   0, config_heartbeat_subscription_get_handler},
 //    { MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_SET,                   5, config_heartbeat_subscription_set_handler},
-//    { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASEE_GET,                        2, config_key_refresh_phase_get_handler},
-//    { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASEE_SET,                        3, config_key_refresh_phase_set_handler},
+//    { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_GET,                        2, config_key_refresh_phase_get_handler},
+//    { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_SET,                        3, config_key_refresh_phase_set_handler},
     { MESH_FOUNDATION_OPERATION_NODE_RESET,                                   0, config_node_reset_handler},
 //    { MESH_FOUNDATION_OPERATION_LOW_POWER_NODE_POLL_TIMEOUT_GET,              2, config_low_power_node_poll_timeout_get_handler },
     { MESH_FOUNDATION_OPERATION_NODE_IDENTITY_GET,                            2, config_node_identity_get_handler },
-//    { MESH_FOUNDATION_OPERATION_NODE_IDENTITY_SET,                            2, config_node_identity_set_handler },
+    { MESH_FOUNDATION_OPERATION_NODE_IDENTITY_SET,                            3, config_node_identity_set_handler },
     { 0, 0, NULL}
 };
 
