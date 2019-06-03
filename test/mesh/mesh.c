@@ -62,8 +62,8 @@
 #define ENABLE_MESH_PB_GATT
 
 
-//#define USE_ADVERTISING_WITH_NETWORK_ID8
-#define USE_ADVERTISING_WITH_NODE_IDENTITY
+#define USE_ADVERTISING_WITH_NETWORK_ID
+// #define USE_ADVERTISING_WITH_NODE_IDENTITY
 
 #if defined(USE_ADVERTISING_WITH_NETWORK_ID) && defined(USE_ADVERTISING_WITH_NODE_IDENTITY) 
 #error "USE_ADVERTISING_WITH_NETWORK_ID and USE_ADVERTISING_WITH_NODE_IDENTITY cannot be defined at the same time"
@@ -968,7 +968,9 @@ const mesh_access_message_t mesh_foundation_config_heartbeat_publication_status 
 const mesh_access_message_t mesh_foundation_config_network_transmit_status = {
         MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_STATUS, "11"
 };
-
+const mesh_access_message_t mesh_foundation_node_identity_status = {
+        MESH_FOUNDATION_OPERATION_NODE_IDENTITY_STATUS, "121"
+};
 // message parser
 
 static int mesh_access_get_opcode(uint8_t * buffer, uint16_t buffer_size, uint32_t * opcode, uint16_t * opcode_size){
@@ -1283,6 +1285,12 @@ static mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_acc
 #define MESH_SIG_MODEL_ID_HEALTH_CLIENT 3
 #define MESH_SIG_MODEL_ID_GENERIC_ON_OFF_SERVER 0x1000u
 #define MESH_SIG_MODEL_ID_GENERIC_ON_OFF_CLIENT 0x1001u
+
+typedef enum {
+    MESH_FOUNDATION_NODE_IDENTITY_STATE_ADVERTISING_STOPPED = 0,
+    MESH_FOUNDATION_NODE_IDENTITY_STATE_ADVERTISING_RUNNING,
+    MESH_FOUNDATION_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED
+} mesh_foundation_node_identity_state_t;
 
 static btstack_crypto_aes128_cmac_t configuration_server_cmac_request;
 
@@ -2550,6 +2558,44 @@ static void config_node_reset_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     mesh_access_message_processed(pdu);
 }
 
+static void config_node_identity_status(mesh_model_t *mesh_model, uint16_t netkey_index_dest, uint16_t dest, uint16_t netkey_index) {
+    mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
+    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
+    mesh_foundation_node_identity_state_t state  = MESH_FOUNDATION_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED;
+        
+    if (network_key == NULL){
+        status = MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX;
+    } else {
+        if (network_key->node_id_advertisement_running == 0){
+            state = MESH_FOUNDATION_NODE_IDENTITY_STATE_ADVERTISING_STOPPED;
+        } else {
+            state = MESH_FOUNDATION_NODE_IDENTITY_STATE_ADVERTISING_RUNNING;
+        }
+    }
+
+    // setup message
+    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
+        &mesh_foundation_node_identity_status,
+        status,
+        netkey_index_dest,
+        state);
+    if (!transport_pdu) return;
+    
+    // send as segmented access pdu
+    config_server_send_message(mesh_model, netkey_index_dest, dest, (mesh_pdu_t *) transport_pdu);
+}
+
+static void config_node_identity_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+    uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
+    config_node_identity_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_index);
+    mesh_access_message_processed(pdu);
+}
+
+static void config_node_identity_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+}
+
 //
 
 typedef void (*mesh_operation_handler)(mesh_model_t * mesh_model, mesh_pdu_t * pdu);
@@ -2606,7 +2652,7 @@ static mesh_operation_t mesh_configuration_server_model_operations[] = {
 //    { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASEE_SET,                        3, config_key_refresh_phase_set_handler},
     { MESH_FOUNDATION_OPERATION_NODE_RESET,                                   0, config_node_reset_handler},
 //    { MESH_FOUNDATION_OPERATION_LOW_POWER_NODE_POLL_TIMEOUT_GET,              2, config_low_power_node_poll_timeout_get_handler },
-//    { MESH_FOUNDATION_OPERATION_NODE_IDENTITY_GET,                            2, config_node_identity_get_handler },
+    { MESH_FOUNDATION_OPERATION_NODE_IDENTITY_GET,                            2, config_node_identity_get_handler },
 //    { MESH_FOUNDATION_OPERATION_NODE_IDENTITY_SET,                            2, config_node_identity_set_handler },
     { 0, 0, NULL}
 };

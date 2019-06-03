@@ -75,6 +75,8 @@ typedef struct {
     // key refresth
     uint8_t key_refresh;
 
+    // subnet state
+    uint8_t node_id_advertisement_running;
 } mesh_network_key_t;
 
 typedef struct {
