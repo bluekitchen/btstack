@@ -41,8 +41,8 @@
  *  Support for console input for embedded targets
  */
 
-#ifndef __HAL_STDIN_H
-#define __HAL_STDIN_H
+#ifndef HAL_STDIN_H
+#define HAL_STDIN_H
 
 #if defined __cplusplus
 extern "C" {
@@ -57,4 +57,4 @@ void hal_stdin_setup(void (*handler)(char c));
 #if defined __cplusplus
 }
 #endif
-#endif // __HAL_STDIN_H
+#endif // HAL_STDIN_H

@@ -42,8 +42,8 @@
  *
  */
 
-#ifndef __HCI_H
-#define __HCI_H
+#ifndef HCI_H
+#define HCI_H
 
 #include "btstack_config.h"
 
@@ -496,9 +496,16 @@ typedef struct {
     uint16_t sniff_attempt;
     uint16_t sniff_timeout;
 
-    // nubmer SCO bytes sent to controller (only used without explicit SCO Flow Control)
-    uint16_t num_sco_bytes_sent;
-#endif
+    // track SCO rx event
+    uint32_t sco_rx_ms;
+    uint8_t  sco_rx_count;
+    uint8_t  sco_rx_valid;
+
+    // generate sco can send now based on received packets, using timeout below
+    uint8_t  sco_tx_ready;
+    
+    btstack_timer_source_t timeout_sco;
+#endif /* ENABLE_CLASSIC */
 
     // errands
     uint32_t authentication_flags;
@@ -751,6 +758,7 @@ typedef struct {
     uint8_t  le_acl_packets_total_num;
     uint16_t le_data_packets_length;
     uint8_t  sco_waiting_for_can_send_now;
+    uint8_t  sco_can_send_now;
 
     /* local supported features */
     uint8_t local_supported_features[8];
@@ -780,6 +788,7 @@ typedef struct {
     HCI_STATE      state;
     hci_substate_t substate;
     btstack_timer_source_t timeout;
+    btstack_chipset_result_t chipset_result;
 
     uint16_t  last_cmd_opcode;
 
@@ -1212,4 +1221,4 @@ void hci_halting_defer(void);
 }
 #endif
 
-#endif // __HCI_H
+#endif // HCI_H

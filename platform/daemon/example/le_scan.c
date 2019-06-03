@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "le_scan.c"
+#define BTSTACK_FILE__ "le_scan.c"
 
 /*
  *  le_scan.c

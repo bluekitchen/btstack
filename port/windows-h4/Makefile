@@ -1,5 +1,5 @@
 # Makefile for windows-h4 examples
-BTSTACK_ROOT = ../..
+BTSTACK_ROOT ?= ../..
 
 CORE += main.c btstack_stdin_windows.c
 

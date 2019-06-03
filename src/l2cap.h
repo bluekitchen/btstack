@@ -43,8 +43,8 @@
  *  Created by Matthias Ringwald on 5/16/09.
  */
 
-#ifndef __L2CAP_H
-#define __L2CAP_H
+#ifndef L2CAP_H
+#define L2CAP_H
 
 #include "hci.h"
 #include "l2cap_signaling.h"
@@ -661,4 +661,4 @@ uint8_t l2cap_ertm_set_ready(uint16_t local_cid);
 }
 #endif
 
-#endif // __L2CAP_H
+#endif // L2CAP_H

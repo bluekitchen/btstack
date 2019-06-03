@@ -42,8 +42,8 @@
  *  to set UART baud rate, Bluetooth Address, and similar.
  */
 
-#ifndef __BTSTACK_CHIPSET_H
-#define __BTSTACK_CHIPSET_H
+#ifndef BTSTACK_CHIPSET_H
+#define BTSTACK_CHIPSET_H
 
 #include <stdint.h>
 #include "btstack_util.h"
@@ -56,6 +56,7 @@ typedef enum {
   BTSTACK_CHIPSET_DONE = 0,
   BTSTACK_CHIPSET_VALID_COMMAND,
   BTSTACK_CHIPSET_WARMSTART_REQUIRED,
+  BTSTACK_CHIPSET_NO_INIT_SCRIPT,
 } btstack_chipset_result_t;
 
 
@@ -98,4 +99,4 @@ typedef struct {
 }
 #endif
 
-#endif // __BTSTACK_CHIPSET_H
+#endif // BTSTACK_CHIPSET_H

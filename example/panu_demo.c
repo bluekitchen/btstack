@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "panu_demo.c"
+#define BTSTACK_FILE__ "panu_demo.c"
 
 /*
  * panu_demo.c
@@ -50,12 +50,16 @@
  * service and initiates a BNEP connection.
  *
  * Note: currently supported only on Linux and Mac.
+ *
+ * To enable client mode, uncomment ENABLE_PANU_CLIENT below
  */
 
 #include <stdio.h>
 
 #include "btstack_config.h"
 #include "btstack.h"
+
+// #define ENABLE_PANU_CLIENT
 
 // network types
 #define NETWORK_TYPE_IPv4       0x0800
@@ -87,7 +91,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static const uint8_t * network_buffer;
 static uint16_t network_buffer_len;
 
-static uint8_t panu_sdpp_record[200];
+static uint8_t panu_sdp_record[220];
 
 /* @section Main application configuration
  *
@@ -105,18 +109,26 @@ static void panu_setup(void){
     // Initialize L2CAP 
     l2cap_init();
 
-    // Initialise BNEP
-    bnep_init();
-
-    // Minimum L2CAP MTU for bnep is 1691 bytes
-    bnep_register_service(packet_handler, BLUETOOTH_SERVICE_CLASS_PANU, 1691);  
 
     // init SDP, create record for PANU and register with SDP
     sdp_init();
-    memset(panu_sdpp_record, 0, sizeof(panu_sdpp_record));
+    memset(panu_sdp_record, 0, sizeof(panu_sdp_record));
     uint16_t network_packet_types[] = { NETWORK_TYPE_IPv4, NETWORK_TYPE_ARP, 0};    // 0 as end of list
-    pan_create_panu_sdp_record(panu_sdpp_record, sdp_create_service_record_handle(), network_packet_types, NULL, NULL, BNEP_SECURITY_NONE);
-    printf("SDP service record size: %u\n", de_get_len((uint8_t*) panu_sdpp_record));
+
+    // Initialise BNEP
+    bnep_init();
+    // Minimum L2CAP MTU for bnep is 1691 bytes
+#ifdef ENABLE_PANU_CLIENT
+    bnep_register_service(packet_handler, BLUETOOTH_SERVICE_CLASS_PANU, 1691);
+    // PANU
+    pan_create_panu_sdp_record(panu_sdp_record, sdp_create_service_record_handle(), network_packet_types, NULL, NULL, BNEP_SECURITY_NONE);
+#else
+    bnep_register_service(packet_handler, BLUETOOTH_SERVICE_CLASS_NAP, 1691);
+    // NAP Network Access Type: Other, 1 MB/s
+    pan_create_nap_sdp_record(panu_sdp_record, sdp_create_service_record_handle(), network_packet_types, NULL, NULL, BNEP_SECURITY_NONE, PAN_NET_ACCESS_TYPE_OTHER, 1000000, NULL, NULL);
+#endif
+    sdp_register_service(panu_sdp_record);
+    printf("SDP service record size: %u\n", de_get_len((uint8_t*) panu_sdp_record));
 
     // Initialize network interface
     btstack_network_init(&network_send_packet_callback);
@@ -126,6 +138,8 @@ static void panu_setup(void){
     hci_add_event_handler(&hci_event_callback_registration);
 }
 /* LISTING_END */
+
+#ifdef ENABLE_PANU_CLIENT
 
 // PANU client routines 
 static void get_string_from_data_element(uint8_t * element, uint16_t buffer_size, char * buffer_data){
@@ -272,6 +286,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
             break;
     }
 }
+#endif
 
 /*
  * @section Packet Handler
@@ -297,6 +312,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 		case HCI_EVENT_PACKET:
             event = hci_event_packet_get_type(packet);
             switch (event) {            
+#ifdef ENABLE_PANU_CLIENT
                 /* @text When BTSTACK_EVENT_STATE with state HCI_STATE_WORKING
                  * is received and the example is started in client mode, the remote SDP BNEP query is started.
                  */
@@ -306,7 +322,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         sdp_client_query_uuid16(&handle_sdp_client_query_result, remote_addr, BLUETOOTH_SERVICE_CLASS_NAP);
                     }
                     break;
-
+#endif
                 /* LISTING_PAUSE */
                 case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
@@ -418,7 +434,16 @@ int btstack_main(int argc, const char * argv[]){
     // parse human readable Bluetooth address
     sscanf_bd_addr(remote_addr_string, remote_addr);
 
-    // Turn on the device 
+    gap_discoverable_control(1);
+    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+#ifdef ENABLE_PANU_CLIENT
+    gap_set_local_name("PANU Client 00:00:00:00:00:00");
+#else
+    gap_set_local_name("NAP Server 00:00:00:00:00:00");
+#endif
+    gap_set_class_of_device(0x020300); // Service Class "Networking", Major Device Class "LAN / NAT"
+
+    // Turn on the device
     hci_power_control(HCI_POWER_ON);
     return 0;
 }

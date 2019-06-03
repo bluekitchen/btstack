@@ -18,6 +18,7 @@ include_directories(../../3rd-party/hxcmod-player/mod)
 include_directories(../../3rd-party/yxml)
 include_directories(../../3rd-party/tinydir)
 include_directories(../../src)
+include_directories(../../chipset/zephyr)
 include_directories(../../platform/posix)
 include_directories(../../platform/embedded)
 include_directories(.)
@@ -33,6 +34,7 @@ file(GLOB SOURCES_YXML      "../../3rd-party/yxml/yxml.c")
 file(GLOB SOURCES_HXCMOD    "../../3rd-party/hxcmod-player/*.c"  "../../3rd-party/hxcmod-player/mods/*.c")
 file(GLOB SOURCES_POSIX     "../../platform/posix/*.c")
 file(GLOB SOURCES_LIBUSB    "../../port/libusb/*.c" "../../platform/libusb/*.c")
+file(GLOB SOURCES_ZEPHYR    "../../chipset/zephyr/*.c")
 
 file(GLOB SOURCES_OFF "../../src/ble/le_device_db_memory.c" "../../src/ble/le_device_db_tlv.c")
 list(REMOVE_ITEM SOURCES_BLE ${SOURCES_OFF})
@@ -49,6 +51,7 @@ set(SOURCES
 	${SOURCES_CLASSIC} 
 	${SOURCES_UECC}
 	${SOURCES_HXCMOD}
+	${SOURCES_ZEPHYR}
 )
 list(SORT SOURCES)
 

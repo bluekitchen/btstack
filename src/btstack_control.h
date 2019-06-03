@@ -42,8 +42,8 @@
  *
  */
 
-#ifndef __BTSTACK_CONTROL_H
-#define __BTSTACK_CONTROL_H
+#ifndef BTSTACK_CONTROL_H
+#define BTSTACK_CONTROL_H
 
 #include <stdint.h>
 #include "btstack_util.h"
@@ -70,4 +70,4 @@ typedef struct {
 }
 #endif
 
-#endif // __BTSTACK_CONTROL_H
+#endif // BTSTACK_CONTROL_H

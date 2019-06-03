@@ -7,8 +7,8 @@
 # please read the ESP-IDF documents if you need to do this.
 #
 
-# micro-ecc of WICED tree used for SECP256R1 in LE Secure Connections
-COMPONENT_DEPENDS += micro-ecc
+# micro-ecc of ESP32 tree was moved into components/bootloader/micro-ecc in v3.3
+# we use our copy, but keep it private to not clash compiling the bootloader
 
 COMPONENT_ADD_INCLUDEDIRS := \
 	3rd-party/bluedroid/decoder/include \
@@ -26,11 +26,15 @@ COMPONENT_ADD_INCLUDEDIRS := \
 	platform/freertos \
 	include \
 
+COMPONENT_PRIV_INCLUDEDIRS := \
+	3rd-party/micro-ecc \
+
 COMPONENT_SRCDIRS := \
 	3rd-party/bluedroid/decoder/srce \
 	3rd-party/bluedroid/encoder/srce \
 	3rd-party/hxcmod-player \
 	3rd-party/hxcmod-player/mods \
+	3rd-party/micro-ecc \
 	3rd-party/md5 \
 	src/ble/gatt-service \
 	src/ble \

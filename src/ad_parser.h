@@ -41,8 +41,8 @@
 //
 // *****************************************************************************
 
-#ifndef __AD_PARSER_H
-#define __AD_PARSER_H
+#ifndef AD_PARSER_H
+#define AD_PARSER_H
 
 #include "btstack_config.h"
 #include <stdint.h>
@@ -78,4 +78,4 @@ int ad_data_contains_uuid128(uint8_t ad_len, const uint8_t * ad_data, const uint
 #if defined __cplusplus
 }
 #endif
-#endif // __AD_PARSER_H
+#endif // AD_PARSER_H

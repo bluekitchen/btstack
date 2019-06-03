@@ -10,6 +10,8 @@ import requests
 import sys
 import os
 
+headers = {'user-agent': 'curl/7.63.0'}
+
 program_info = '''
 BTstack GATT UUID Scraper for BTstack
 Copyright 2016, BlueKitchen GmbH
@@ -21,8 +23,8 @@ header = '''
  * {datetime}
  */
 
-#ifndef __BLUETOOTH_GATT_H
-#define __BLUETOOTH_GATT_H
+#ifndef BLUETOOTH_GATT_H
+#define BLUETOOTH_GATT_H
 '''
 
 page_info = '''
@@ -35,17 +37,23 @@ trailer = '''
 #endif
 '''
 
+def strip_non_ascii(string):
+    stripped = (c for c in string if 0 < ord(c) < 127)
+    return ''.join(stripped)
+
 def scrape_page(fout, url):
     print("Parsing %s" % url)    
     fout.write(page_info.format(page=url))
-    page = requests.get(url)
+    page = requests.get(url, headers=headers)
     tree = html.fromstring(page.content)
-    # get all <tr> elements in <table id="gattTable">
-    rows = tree.xpath('//table[@id="gattTable"]/tbody/tr')
+    # get all <tr> elements in <table>
+    rows = tree.xpath('//table/tbody/tr')
     for row in rows:
         children = row.getchildren()
-        summary = children[0].text_content()
+        summary = strip_non_ascii(children[0].text_content())
         id      = children[1].text_content()
+        # fix unexpected suffix _
+        id = id.replace('.gatt_.', '.gatt.')
         uuid    = children[2].text_content()
         if (len(id)):
             tag = id.upper().replace('.', '_').replace('-','_')

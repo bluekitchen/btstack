@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_ring_buffer.c"
+#define BTSTACK_FILE__ "btstack_ring_buffer.c"
 
 /*
  *  btstack_ring_buffer.c

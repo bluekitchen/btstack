@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __BTSTACK_RESAMPLE_H
-#define __BTSTACK_RESAMPLE_H
+#ifndef BTSTACK_RESAMPLE_H
+#define BTSTACK_RESAMPLE_H
 
 #include <stdint.h>
 

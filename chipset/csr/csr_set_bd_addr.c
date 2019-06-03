@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "csr_set_bd_addr.c"
+#define BTSTACK_FILE__ "csr_set_bd_addr.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(csr_set_bd_addr): Set BD ADDR on USB CSR modules

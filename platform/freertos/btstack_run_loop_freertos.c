@@ -43,21 +43,29 @@
  *  or Task Notifications if HAVE_FREERTOS_TASK_NOTIFICATIONS is defined
  */
 
-#define __BTSTACK_FILE__ "btstack_run_loop_freertos.c"
+#define BTSTACK_FILE__ "btstack_run_loop_freertos.c"
 
 #include <stddef.h> // NULL
 
 #include "btstack_linked_list.h"
 #include "btstack_debug.h"
 #include "btstack_run_loop_freertos.h"
+#include "hal_time_ms.h"
 
-// #include "hal_time_ms.h"
-uint32_t hal_time_ms(void);
+// some SDKs, e.g. esp-idf, place FreeRTOS headers into an 'freertos' folder to avoid name collisions (e.g. list.h, queue.h, ..)
+// wih this flag, the headers are properly found
 
+#ifdef HAVE_FREERTOS_INCLUDE_PREFIX
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "freertos/event_groups.h"
+#else
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#include "event_groups.h"
+#endif
 
 typedef struct function_call {
     void (*fn)(void * arg);

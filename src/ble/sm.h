@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __SM_H
-#define __SM_H
+#ifndef SM_H
+#define SM_H
 
  #if defined __cplusplus
 extern "C" {
@@ -200,6 +200,14 @@ void sm_cmac_signed_write_start(const sm_key_t key, uint8_t opcode, uint16_t att
 int sm_address_resolution_lookup(uint8_t addr_type, bd_addr_t addr);
 
 /**
+ * @brief Get Identity Resolving state
+ * @param con_handle
+ * @return irk_lookup_state_t
+ * @note returns IRK_LOOKUP_IDLE if connection does not exist
+ */
+irk_lookup_state_t sm_identity_resolving_state(hci_con_handle_t con_handle);
+
+/**
  * @brief Identify device in LE Device DB.
  * @param handle
  * @return index from le_device_db or -1 if not found/identified
@@ -255,4 +263,4 @@ void sm_test_set_pairing_failure(int reason);
 }
 #endif
 
-#endif // __SM_H
+#endif // SM_H

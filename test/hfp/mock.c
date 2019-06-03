@@ -51,6 +51,7 @@
 #include "classic/sdp_client_rfcomm.h"
 #include "classic/rfcomm.h"
 #include "classic/hfp_hf.h"
+#include "classic/sdp_client_rfcomm.h"
 
 #include "mock.h"
 
@@ -136,7 +137,7 @@ extern "C" void hci_add_event_handler(btstack_packet_callback_registration_t * c
 int  rfcomm_send(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
 
     // printf("mock: rfcomm send: ");
-    print_without_newlines(data, len);
+    // print_without_newlines(data, len);
 
 	int start_command_offset = 2;
     int end_command_offset = 2;
@@ -296,8 +297,9 @@ uint8_t rfcomm_register_service(btstack_packet_handler_t handler, uint8_t channe
 }
 
 
-void sdp_client_query_rfcomm_channel_and_name_for_search_pattern(bd_addr_t remote, uint8_t * des_serviceSearchPattern){
+uint8_t sdp_client_query_rfcomm_channel_and_name_for_search_pattern(btstack_packet_handler_t callback, bd_addr_t remote, const uint8_t * des_serviceSearchPattern){
 	// printf("sdp_client_query_rfcomm_channel_and_name_for_search_pattern\n");
+    return 0;
 }
 
 
@@ -322,7 +324,7 @@ void btstack_run_loop_set_timer(btstack_timer_source_t *a, uint32_t timeout_in_m
 }
 
 
-void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason){
+static void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason){
     uint8_t event[6];
     event[0] = HCI_EVENT_DISCONNECTION_COMPLETE;
     event[1] = sizeof(event) - 2;

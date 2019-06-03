@@ -41,8 +41,8 @@
 //
 // *****************************************************************************
 
-#ifndef __HFP_MSBC_H
-#define __HFP_MSBC_H
+#ifndef HFP_MSBC_H
+#define HFP_MSBC_H
 
 #include "btstack_config.h"
 

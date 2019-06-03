@@ -93,7 +93,7 @@ VPATH += $(BOARD_DIR)/Source
 IPATH += $(BOARD_DIR)/Include
 
 # BTstack
-BTSTACK_ROOT = ../../../..
+BTSTACK_ROOT ?= ../../../..
 VPATH += $(BTSTACK_ROOT)/chipset/cc256x
 VPATH += $(BTSTACK_ROOT)/example
 VPATH += $(BTSTACK_ROOT)/port/pegasus-max3263x

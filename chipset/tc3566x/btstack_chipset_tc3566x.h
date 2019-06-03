@@ -45,8 +45,8 @@
  *  - Set baud rate
  */
 
-#ifndef __BTSTACK_CHIPSET_TC3566X_H
-#define __BTSTACK_CHIPSET_TC3566X_H
+#ifndef BTSTACK_CHIPSET_TC3566X_H
+#define BTSTACK_CHIPSET_TC3566X_H
 
 #if defined __cplusplus
 extern "C" {
@@ -60,4 +60,4 @@ const btstack_chipset_t * btstack_chipset_tc3566x_instance(void);
 }
 #endif
 
-#endif // __BTSTACK_CHIPSET_TC3566X_H
+#endif // BTSTACK_CHIPSET_TC3566X_H

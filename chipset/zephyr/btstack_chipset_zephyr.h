@@ -41,8 +41,8 @@
  *  Adapter to use Zephyr-based Bluetooth Controllers with BTstack
  */
  
-#ifndef __BTSTACK_CHIPSET_ZEPHYR_H
-#define __BTSTACK_CHIPSET_ZEPHYR_H
+#ifndef BTSTACK_CHIPSET_ZEPHYR_H
+#define BTSTACK_CHIPSET_ZEPHYR_H
 
 #if defined __cplusplus
 extern "C" {
@@ -61,4 +61,4 @@ const btstack_chipset_t * btstack_chipset_zephyr_instance(void);
 }
 #endif
 
-#endif // __BTSTACK_CHIPSET_ZEPHYR_H
+#endif // BTSTACK_CHIPSET_ZEPHYR_H

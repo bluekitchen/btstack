@@ -46,10 +46,16 @@ HAVE_MBEDTLS_ECC_P256              | mbedTLS provides NIST P-256 operations e.g.
 
 Embedded platform properties:
 
-\#define                            | Description
+\#define                           | Description
 -----------------------------------|------------------------------------
 HAVE_EMBEDDED_TIME_MS              | System provides time in milliseconds
 HAVE_EMBEDDED_TICK                 | System provides tick interrupt
+
+FreeRTOS platform properties:
+
+\#define                           | Description
+-----------------------------------|------------------------------------
+HAVE_FREERTOS_INCLUDE_PREFIX       | FreeRTOS headers are in 'freertos' folder (e.g. ESP32's esp-idf)
 
 POSIX platform properties:
 
@@ -90,8 +96,12 @@ ENABLE_ATT_DELAYED_RESPONSE      | Enable support for delayed ATT operations, se
 ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE | Enable L2CAP Enhanced Retransmission Mode. Mandatory for AVRCP Browsing
 ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL | Enable HCI Controller to Host Flow Control, see below
 ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND | Enable workaround for bug in CC256x Flow Control during baud rate change, see chipset docs.
+ENABLE_CYPRESS_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND | Enable workaround for bug in CYW2070x Flow Control during baud rate change, similar to CC256x.
+ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD | Enable use of explicit delete field in TLV Flash implemenation - required when flash value cannot be overwritten with zero
+
 
 Notes:
+
 - ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS: Only some Bluetooth 4.2+ controllers (e.g., EM9304, ESP32) support the necessary HCI commands for ECC. Other reason to enable the ECC software implementations are if the Host is much faster or if the micro-ecc library is already provided (e.g., ESP32, WICED, or if the ECC HCI Commands are unreliable.
 
 ### HCI Controller to Host Flow Control

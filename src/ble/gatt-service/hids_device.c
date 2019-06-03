@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hids_device.c"
+#define BTSTACK_FILE__ "hids_device.c"
 
 /**
  * Implementation of the GATT HIDS Device
@@ -188,11 +188,11 @@ static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_hand
         return att_read_callback_handle_little_endian_16(instance->hid_report_input_client_configuration_value, offset, buffer, buffer_size);
     }
     
-    if (att_handle == instance->hid_report_input_client_configuration_handle){
+    if (att_handle == instance->hid_report_output_client_configuration_handle){
         return att_read_callback_handle_little_endian_16(instance->hid_report_output_client_configuration_value, offset, buffer, buffer_size);
     }
     
-    if (att_handle == instance->hid_report_input_client_configuration_handle){
+    if (att_handle == instance->hid_report_feature_client_configuration_handle){
         return att_read_callback_handle_little_endian_16(instance->hid_report_feature_client_configuration_value, offset, buffer, buffer_size);
     }
     

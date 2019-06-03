@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hid_keyboard_demo.c"
+#define BTSTACK_FILE__ "hid_keyboard_demo.c"
  
 // *****************************************************************************
 /* EXAMPLE_START(hid_keyboard_demo): HID Keyboard (Server) Demo

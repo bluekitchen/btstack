@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "sm_pairing_peripheral.c"
+#define BTSTACK_FILE__ "sm_pairing_peripheral.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(sm_pairing_peripheral): LE Peripheral - Test pairing combinations

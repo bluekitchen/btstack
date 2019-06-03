@@ -35,8 +35,8 @@
  *
  */
  
-#ifndef __LE_DEVICE_DB_H
-#define __LE_DEVICE_DB_H
+#ifndef LE_DEVICE_DB_H
+#define LE_DEVICE_DB_H
 
 #include "btstack_util.h"
 #include "btstack_config.h"
@@ -204,4 +204,4 @@ void le_device_db_dump(void);
 }
 #endif
 
-#endif // __LE_DEVICE_DB_H
+#endif // LE_DEVICE_DB_H

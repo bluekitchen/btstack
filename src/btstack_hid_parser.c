@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_hid_parser.c"
+#define BTSTACK_FILE__ "btstack_hid_parser.c"
 
 #include <string.h>
 

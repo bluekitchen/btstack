@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "avrcp_browsing_target.c"
+#define BTSTACK_FILE__ "avrcp_browsing_target.c"
 
 #include <stdint.h>
 #include <stdio.h>

@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "avdtp_initiator.c"
+#define BTSTACK_FILE__ "avdtp_initiator.c"
 
 #include <stdint.h>
 #include <stdio.h>

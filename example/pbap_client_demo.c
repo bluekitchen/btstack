@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "pbap_client_demo.c"
+#define BTSTACK_FILE__ "pbap_client_demo.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(pbap_client_demo): Connect to Phonebook Server and get contacts.

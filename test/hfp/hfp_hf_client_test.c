@@ -83,11 +83,11 @@ static int supported_features_with_codec_negotiation = 438;
 
 static uint16_t acl_handle = -1;
 
-char * get_next_hfp_hf_command(void){
+static char * get_next_hfp_hf_command(void){
     return get_next_hfp_command(0,2);
 }
 
-int has_more_hfp_hf_commands(void){
+static int has_more_hfp_hf_commands(void){
     return has_more_hfp_commands(0,2);
 }
 
@@ -309,7 +309,7 @@ static void user_command(char cmd){
     }
 }
 
-void simulate_test_sequence(hfp_test_item_t * test_item){
+static void simulate_test_sequence(hfp_test_item_t * test_item){
     char ** test_steps = test_item->test;
     printf("\nSimulate test sequence: \"%s\" [%d steps]\n", test_item->name, test_item->len);
 
@@ -391,7 +391,7 @@ void simulate_test_sequence(hfp_test_item_t * test_item){
     }
 }
 
-void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
     if (event[0] != HCI_EVENT_HFP_META) return;
 
     switch (event[2]) {   

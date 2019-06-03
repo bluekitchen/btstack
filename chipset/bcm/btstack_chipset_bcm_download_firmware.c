@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_chipset_bcm_download_firmware.c"
+#define BTSTACK_FILE__ "btstack_chipset_bcm_download_firmware.c"
 
 // download firmware implementation
 // requires hci_dump

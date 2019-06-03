@@ -35,6 +35,8 @@
  *
  */
 
+#define BTSTACK_FILE__ "sine_player.c"
+
 /*
  * Sine Playback to test and validate audio output with simple wave form
  *

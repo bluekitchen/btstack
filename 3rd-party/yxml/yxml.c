@@ -329,7 +329,7 @@ static inline yxml_ret_t yxml_refattrval(yxml_t *x, unsigned ch) { (void) ch; re
 void yxml_init(yxml_t *x, void *stack, size_t stacksize) {
 	memset(x, 0, sizeof(*x));
 	x->line = 1;
-	x->stack = stack;
+	x->stack = (unsigned char *) stack;
 	x->stacksize = stacksize;
 	*x->stack = 0;
 	x->elem = x->pi = x->attr = (char *)x->stack;

@@ -47,8 +47,8 @@
  *
  */
 
-#ifndef __HAL_UART_DMA_H
-#define __HAL_UART_DMA_H
+#ifndef HAL_UART_DMA_H
+#define HAL_UART_DMA_H
 
 #include <stdint.h>
 
@@ -133,4 +133,4 @@ void hal_uart_dma_set_sleep_mode(btstack_uart_sleep_mode_t sleep_mode);
 #if defined __cplusplus
 }
 #endif
-#endif // __HAL_UART_DMA_H
+#endif // HAL_UART_DMA_H

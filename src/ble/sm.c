@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "sm.c"
+#define BTSTACK_FILE__ "sm.c"
 
 #include <string.h>
 #include <inttypes.h>
@@ -297,8 +297,9 @@ typedef struct sm_setup_context {
     uint8_t   sm_keypress_notification; // bitmap: passkey started, digit entered, digit erased, passkey cleared, passkey complete, 3 bit count
 
     // defines which keys will be send after connection is encrypted - calculated during Phase 1, used Phase 3
-    int       sm_key_distribution_send_set;
-    int       sm_key_distribution_received_set;
+    uint8_t   sm_key_distribution_send_set;
+    uint8_t   sm_key_distribution_sent_set;
+    uint8_t   sm_key_distribution_received_set;
 
     // Phase 2 (Pairing over SMP)
     stk_generation_method_t sm_stk_generation_method;
@@ -356,6 +357,9 @@ typedef struct sm_setup_context {
     sm_key_t  sm_peer_csrk;
     uint8_t   sm_peer_addr_type;
     bd_addr_t sm_peer_address;
+#ifdef ENABLE_LE_SIGNED_WRITE
+    int       sm_le_device_index;
+#endif
 
 } sm_setup_context_t;
 
@@ -393,9 +397,6 @@ static const stk_generation_method_t stk_generation_method_with_secure_connectio
 #endif
 
 static void sm_run(void);
-#ifdef USE_CMAC_ENGINE
-static void sm_cmac_message_start(const sm_key_t key, uint16_t message_len, const uint8_t * message, void (*done_callback)(uint8_t * hash));
-#endif
 static void sm_done_for_handle(hci_con_handle_t con_handle);
 static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handle);
 static inline int sm_calc_actual_encryption_key_size(int other);
@@ -419,6 +420,7 @@ static void sm_handle_encryption_result_rau(void *arg);
 static void sm_handle_random_result_ph2_tk(void * arg);
 static void sm_handle_random_result_rau(void * arg);
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
+static void sm_cmac_message_start(const sm_key_t key, uint16_t message_len, const uint8_t * message, void (*done_callback)(uint8_t * hash));
 static void sm_ec_generate_new_key(void);
 static void sm_handle_random_result_sc_get_random(void * arg);
 static int sm_passkey_entry(stk_generation_method_t method);
@@ -838,6 +840,10 @@ static int sm_key_distribution_flags_for_set(uint8_t key_set){
 static void sm_setup_key_distribution(uint8_t key_set){
     setup->sm_key_distribution_received_set = 0;
     setup->sm_key_distribution_send_set = sm_key_distribution_flags_for_set(key_set);
+    setup->sm_key_distribution_sent_set = 0;
+#ifdef ENABLE_LE_SIGNED_WRITE
+    setup->sm_le_device_index = -1;
+#endif
 }
 
 // CSRK Key Lookup
@@ -890,7 +896,9 @@ static void sm_cmac_done_trampoline(void * arg){
 int sm_cmac_ready(void){
     return sm_cmac_active == 0;
 }
+#endif
 
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
 // generic cmac calculation
 static void sm_cmac_message_start(const sm_key_t key, uint16_t message_len, const uint8_t * message, void (*done_callback)(uint8_t * hash)){
     sm_cmac_active = 1;
@@ -1295,10 +1303,12 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
         if (le_db_index >= 0){
 
             sm_notify_client_index(SM_EVENT_IDENTITY_CREATED, sm_conn->sm_handle, setup->sm_peer_addr_type, setup->sm_peer_address, le_db_index);
+            sm_conn->sm_irk_lookup_state = IRK_LOOKUP_SUCCEEDED;
 
 #ifdef ENABLE_LE_SIGNED_WRITE
             // store local CSRK
-            if (setup->sm_key_distribution_send_set & SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
+            setup->sm_le_device_index = le_db_index;
+            if ((setup->sm_key_distribution_sent_set) & SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
                 log_info("sm: store local CSRK");
                 le_device_db_local_csrk_set(le_db_index, setup->sm_local_csrk);
                 le_device_db_local_counter_set(le_db_index, 0);
@@ -1675,7 +1685,10 @@ static void sm_sc_prepare_dhkey_check(sm_connection_t * sm_conn){
 }
 
 static void sm_sc_dhkey_calculated(void * arg){
-    sm_connection_t * sm_conn = (sm_connection_t *) arg;
+    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
+    if (sm_conn == NULL) return;
+
     log_info("dhkey");
     log_info_hexdump(&setup->sm_dhkey[0], 32);
     setup->sm_state_vars |= SM_STATE_VAR_DHKEY_CALCULATED;
@@ -2063,7 +2076,7 @@ static void sm_run(void){
                     sm_timeout_start(sm_connection);
                     // generate random number first, if we need to show passkey
                     if (setup->sm_stk_generation_method == PK_INIT_INPUT){
-                        btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph2_tk, sm_connection);
+                        btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph2_tk, (void *)(uintptr_t) sm_connection->sm_handle);
                         break;
                     }
                     sm_connection->sm_engine_state = SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE;
@@ -2471,7 +2484,7 @@ static void sm_run(void){
                 sm_c1_t1(setup->sm_local_random, (uint8_t*) &setup->sm_m_preq, (uint8_t*) &setup->sm_s_pres, setup->sm_m_addr_type, setup->sm_s_addr_type, sm_aes128_plaintext);
                 connection->sm_engine_state = SM_PH2_C1_W4_ENC_A;
                 sm_aes128_state = SM_AES128_ACTIVE;
-                btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, setup->sm_tk, sm_aes128_plaintext, sm_aes128_ciphertext, sm_handle_encryption_result_enc_a, connection);
+                btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, setup->sm_tk, sm_aes128_plaintext, sm_aes128_ciphertext, sm_handle_encryption_result_enc_a, (void *)(uintptr_t) connection->sm_handle);
                 break;
 
             case SM_PH2_C1_GET_ENC_C:
@@ -2481,7 +2494,7 @@ static void sm_run(void){
                 sm_c1_t1(setup->sm_peer_random, (uint8_t*) &setup->sm_m_preq, (uint8_t*) &setup->sm_s_pres, setup->sm_m_addr_type, setup->sm_s_addr_type, sm_aes128_plaintext);
                 connection->sm_engine_state = SM_PH2_C1_W4_ENC_C;
                 sm_aes128_state = SM_AES128_ACTIVE;
-                btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, setup->sm_tk, sm_aes128_plaintext, sm_aes128_ciphertext, sm_handle_encryption_result_enc_c, connection);
+                btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, setup->sm_tk, sm_aes128_plaintext, sm_aes128_ciphertext, sm_handle_encryption_result_enc_c, (void *)(uintptr_t) connection->sm_handle);
                 break;
 
             case SM_PH2_CALC_STK:
@@ -2495,7 +2508,7 @@ static void sm_run(void){
                 }
                 connection->sm_engine_state = SM_PH2_W4_STK;
                 sm_aes128_state = SM_AES128_ACTIVE;
-                btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, setup->sm_tk, sm_aes128_plaintext, setup->sm_ltk, sm_handle_encryption_result_enc_stk, connection);
+                btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, setup->sm_tk, sm_aes128_plaintext, setup->sm_ltk, sm_handle_encryption_result_enc_stk, (void *)(uintptr_t) connection->sm_handle);
                 break;
 
             case SM_PH3_Y_GET_ENC:
@@ -2506,7 +2519,7 @@ static void sm_run(void){
                 sm_dm_r_prime(setup->sm_local_rand, sm_aes128_plaintext);
                 connection->sm_engine_state = SM_PH3_Y_W4_ENC;
                 sm_aes128_state = SM_AES128_ACTIVE;
-                btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_dhk, sm_aes128_plaintext, sm_aes128_ciphertext, sm_handle_encryption_result_enc_ph3_y, connection);
+                btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_dhk, sm_aes128_plaintext, sm_aes128_ciphertext, sm_handle_encryption_result_enc_ph3_y, (void *)(uintptr_t) connection->sm_handle);
                 break;
 
             case SM_PH2_C1_SEND_PAIRING_CONFIRM: {
@@ -2546,7 +2559,7 @@ static void sm_run(void){
                 sm_dm_r_prime(setup->sm_local_rand, sm_aes128_plaintext);
                 connection->sm_engine_state = SM_RESPONDER_PH4_Y_W4_ENC;
                 sm_aes128_state = SM_AES128_ACTIVE;
-                btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_dhk, sm_aes128_plaintext, sm_aes128_ciphertext, sm_handle_encryption_result_enc_ph4_y, connection);
+                btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_dhk, sm_aes128_plaintext, sm_aes128_ciphertext, sm_handle_encryption_result_enc_ph4_y, (void *)(uintptr_t) connection->sm_handle);
                 return;
 #endif
 #ifdef ENABLE_LE_CENTRAL
@@ -2562,6 +2575,7 @@ static void sm_run(void){
             case SM_PH3_DISTRIBUTE_KEYS:
                 if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION){
                     setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
+                    setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
                     uint8_t buffer[17];
                     buffer[0] = SM_CODE_ENCRYPTION_INFORMATION;
                     reverse_128(setup->sm_ltk, &buffer[1]);
@@ -2571,6 +2585,7 @@ static void sm_run(void){
                 }
                 if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_MASTER_IDENTIFICATION){
                     setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
+                    setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
                     uint8_t buffer[11];
                     buffer[0] = SM_CODE_MASTER_IDENTIFICATION;
                     little_endian_store_16(buffer, 1, setup->sm_local_ediv);
@@ -2581,6 +2596,7 @@ static void sm_run(void){
                 }
                 if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_IDENTITY_INFORMATION){
                     setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
+                    setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
                     uint8_t buffer[17];
                     buffer[0] = SM_CODE_IDENTITY_INFORMATION;
                     reverse_128(sm_persistent_irk, &buffer[1]);
@@ -2590,6 +2606,7 @@ static void sm_run(void){
                 }
                 if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION){
                     setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
+                    setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
                     bd_addr_t local_address;
                     uint8_t buffer[8];
                     buffer[0] = SM_CODE_IDENTITY_ADDRESS_INFORMATION;
@@ -2613,11 +2630,21 @@ static void sm_run(void){
                 }
                 if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
                     setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
+                    setup->sm_key_distribution_sent_set |=  SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
 
+#ifdef ENABLE_LE_SIGNED_WRITE
                     // hack to reproduce test runs
                     if (test_use_fixed_local_csrk){
                         memset(setup->sm_local_csrk, 0xcc, 16);
                     }
+
+                    // store local CSRK
+                    if (setup->sm_le_device_index >= 0){
+                        log_info("sm: store local CSRK");
+                        le_device_db_local_csrk_set(setup->sm_le_device_index, setup->sm_local_csrk);
+                        le_device_db_local_counter_set(setup->sm_le_device_index, 0);
+                    }
+#endif
 
                     uint8_t buffer[17];
                     buffer[0] = SM_CODE_SIGNING_INFORMATION;
@@ -2657,13 +2684,19 @@ static void sm_run(void){
 
 // sm_aes128_state stays active
 static void sm_handle_encryption_result_enc_a(void *arg){
-    sm_connection_t * connection = (sm_connection_t*) arg;
+    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
+    if (connection == NULL) return;
+
     sm_c1_t3(sm_aes128_ciphertext, setup->sm_m_address, setup->sm_s_address, setup->sm_c1_t3_value);
-    btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, setup->sm_tk, setup->sm_c1_t3_value, setup->sm_local_confirm, sm_handle_encryption_result_enc_b, connection);
+    btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, setup->sm_tk, setup->sm_c1_t3_value, setup->sm_local_confirm, sm_handle_encryption_result_enc_b, (void *)(uintptr_t) connection->sm_handle);
 }
 
 static void sm_handle_encryption_result_enc_b(void *arg){
-    sm_connection_t * connection = (sm_connection_t*) arg;
+    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
+    if (connection == NULL) return;
+
     sm_aes128_state = SM_AES128_IDLE;
     log_info_key("c1!", setup->sm_local_confirm);
     connection->sm_engine_state = SM_PH2_C1_SEND_PAIRING_CONFIRM;
@@ -2672,13 +2705,19 @@ static void sm_handle_encryption_result_enc_b(void *arg){
 
 // sm_aes128_state stays active
 static void sm_handle_encryption_result_enc_c(void *arg){
-    sm_connection_t * connection = (sm_connection_t*) arg;
+    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
+    if (connection == NULL) return;
+
     sm_c1_t3(sm_aes128_ciphertext, setup->sm_m_address, setup->sm_s_address, setup->sm_c1_t3_value);
-    btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, setup->sm_tk, setup->sm_c1_t3_value, sm_aes128_ciphertext, sm_handle_encryption_result_enc_d, connection);
+    btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, setup->sm_tk, setup->sm_c1_t3_value, sm_aes128_ciphertext, sm_handle_encryption_result_enc_d, (void *)(uintptr_t) connection->sm_handle);
 }
 
 static void sm_handle_encryption_result_enc_d(void * arg){
-    sm_connection_t * connection = (sm_connection_t*) arg;
+    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
+    if (connection == NULL) return;
+
     sm_aes128_state = SM_AES128_IDLE;
     log_info_key("c1!", sm_aes128_ciphertext);
     if (memcmp(setup->sm_peer_confirm, sm_aes128_ciphertext, 16) != 0){
@@ -2693,12 +2732,15 @@ static void sm_handle_encryption_result_enc_d(void * arg){
     } else {
         sm_s1_r_prime(setup->sm_peer_random, setup->sm_local_random, sm_aes128_plaintext);
         sm_aes128_state = SM_AES128_ACTIVE;
-        btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, setup->sm_tk, sm_aes128_plaintext, setup->sm_ltk, sm_handle_encryption_result_enc_stk, connection);
+        btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, setup->sm_tk, sm_aes128_plaintext, setup->sm_ltk, sm_handle_encryption_result_enc_stk, (void *)(uintptr_t) connection->sm_handle);
     }
 }
 
 static void sm_handle_encryption_result_enc_stk(void *arg){
-    sm_connection_t * connection = (sm_connection_t*) arg;
+    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
+    if (connection == NULL) return;
+
     sm_aes128_state = SM_AES128_IDLE;
     sm_truncate_key(setup->sm_ltk, connection->sm_actual_encryption_key_size);
     log_info_key("stk", setup->sm_ltk);
@@ -2712,7 +2754,10 @@ static void sm_handle_encryption_result_enc_stk(void *arg){
 
 // sm_aes128_state stays active
 static void sm_handle_encryption_result_enc_ph3_y(void *arg){
-    sm_connection_t * connection = (sm_connection_t*) arg;
+    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
+    if (connection == NULL) return;
+
     setup->sm_local_y = big_endian_read_16(sm_aes128_ciphertext, 14);
     log_info_hex16("y", setup->sm_local_y);
     // PH3B3 - calculate EDIV
@@ -2721,13 +2766,16 @@ static void sm_handle_encryption_result_enc_ph3_y(void *arg){
     // PH3B4 - calculate LTK         - enc
     // LTK = d1(ER, DIV, 0))
     sm_d1_d_prime(setup->sm_local_div, 0, sm_aes128_plaintext);
-    btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_er, sm_aes128_plaintext, setup->sm_ltk, sm_handle_encryption_result_enc_ph3_ltk, connection);
+    btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_er, sm_aes128_plaintext, setup->sm_ltk, sm_handle_encryption_result_enc_ph3_ltk, (void *)(uintptr_t) connection->sm_handle);
 }
 
 #ifdef ENABLE_LE_PERIPHERAL
 // sm_aes128_state stays active
 static void sm_handle_encryption_result_enc_ph4_y(void *arg){
-    sm_connection_t * connection = (sm_connection_t*) arg;
+    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
+    if (connection == NULL) return;
+
     setup->sm_local_y = big_endian_read_16(sm_aes128_ciphertext, 14);
     log_info_hex16("y", setup->sm_local_y);
 
@@ -2737,21 +2785,27 @@ static void sm_handle_encryption_result_enc_ph4_y(void *arg){
     // PH3B4 - calculate LTK         - enc
     // LTK = d1(ER, DIV, 0))
     sm_d1_d_prime(setup->sm_local_div, 0, sm_aes128_plaintext);
-    btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_er, sm_aes128_plaintext, setup->sm_ltk, sm_handle_encryption_result_enc_ph4_ltk, connection);
+    btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_er, sm_aes128_plaintext, setup->sm_ltk, sm_handle_encryption_result_enc_ph4_ltk, (void *)(uintptr_t) connection->sm_handle);
 }
 #endif
 
 // sm_aes128_state stays active
 static void sm_handle_encryption_result_enc_ph3_ltk(void *arg){
-    sm_connection_t * connection = (sm_connection_t*) arg;
+    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
+    if (connection == NULL) return;
+
     log_info_key("ltk", setup->sm_ltk);
     // calc CSRK next
     sm_d1_d_prime(setup->sm_local_div, 1, sm_aes128_plaintext);
-    btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_er, sm_aes128_plaintext, setup->sm_local_csrk, sm_handle_encryption_result_enc_csrk, connection);
+    btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_er, sm_aes128_plaintext, setup->sm_local_csrk, sm_handle_encryption_result_enc_csrk, (void *)(uintptr_t) connection->sm_handle);
 }
 
 static void sm_handle_encryption_result_enc_csrk(void *arg){
-    sm_connection_t * connection = (sm_connection_t*) arg;
+    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
+    if (connection == NULL) return;
+
     sm_aes128_state = SM_AES128_IDLE;
     log_info_key("csrk", setup->sm_local_csrk);
     if (setup->sm_key_distribution_send_set){
@@ -2776,7 +2830,10 @@ static void sm_handle_encryption_result_enc_csrk(void *arg){
 
 #ifdef ENABLE_LE_PERIPHERAL
 static void sm_handle_encryption_result_enc_ph4_ltk(void *arg){
-    sm_connection_t * connection = (sm_connection_t*) arg;
+    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
+    if (connection == NULL) return;
+
     sm_aes128_state = SM_AES128_IDLE;
     sm_truncate_key(setup->sm_ltk, connection->sm_actual_encryption_key_size);
     log_info_key("ltk", setup->sm_ltk);
@@ -2849,7 +2906,9 @@ static void sm_handle_random_result_rau(void * arg){
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 static void sm_handle_random_result_sc_get_random(void * arg){
-    sm_connection_t * connection = (sm_connection_t*) arg;
+    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
+    if (connection == NULL) return;
 
     // OOB
     if (setup->sm_stk_generation_method == OOB){
@@ -2869,13 +2928,19 @@ static void sm_handle_random_result_sc_get_random(void * arg){
 #endif
 
 static void sm_handle_random_result_ph2_random(void * arg){
-    sm_connection_t * connection = (sm_connection_t*) arg;
+    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
+    if (connection == NULL) return;
+
     connection->sm_engine_state = SM_PH2_C1_GET_ENC_A;
     sm_run();
 }
 
 static void sm_handle_random_result_ph2_tk(void * arg){
-    sm_connection_t * connection = (sm_connection_t*) arg;
+    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
+    if (connection == NULL) return;
+
     sm_reset_tk();
     uint32_t tk;
     if (sm_fixed_passkey_in_display_role == 0xffffffff){
@@ -2900,7 +2965,7 @@ static void sm_handle_random_result_ph2_tk(void * arg){
             sm_trigger_user_response(connection);
             // response_idle == nothing <--> sm_trigger_user_response() did not require response
             if (setup->sm_user_response == SM_USER_RESPONSE_IDLE){
-                btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_random, 16, &sm_handle_random_result_ph2_random, connection);
+                btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_random, 16, &sm_handle_random_result_ph2_random,  (void *)(uintptr_t) connection->sm_handle);
             }
         }
     }   
@@ -2908,7 +2973,10 @@ static void sm_handle_random_result_ph2_tk(void * arg){
 }
 
 static void sm_handle_random_result_ph3_div(void * arg){
-    sm_connection_t * connection = (sm_connection_t*) arg;
+    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
+    if (connection == NULL) return;
+
     // use 16 bit from random value as div
     setup->sm_local_div = big_endian_read_16(sm_random_data, 0);
     log_info_hex16("div", setup->sm_local_div);
@@ -2917,7 +2985,10 @@ static void sm_handle_random_result_ph3_div(void * arg){
 }
 
 static void sm_handle_random_result_ph3_random(void * arg){
-    sm_connection_t * connection = (sm_connection_t*) arg;
+    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
+    if (connection == NULL) return;
+
     reverse_64(sm_random_data, setup->sm_local_rand);
     // no db for encryption size hack: encryption size is stored in lowest nibble of setup->sm_local_rand
     setup->sm_local_rand[7] = (setup->sm_local_rand[7] & 0xf0) + (connection->sm_actual_encryption_key_size - 1);
@@ -3158,14 +3229,14 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                 if (setup->sm_use_secure_connections){
                                     sm_conn->sm_engine_state = SM_PH3_DISTRIBUTE_KEYS;
                                 } else {
-                                    btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph3_random, sm_conn);
+                                    btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph3_random, (void *)(uintptr_t) sm_conn->sm_handle);
                                 }
                             } else {
                                 // master
                                 if (sm_key_distribution_all_received(sm_conn)){
                                     // skip receiving keys as there are none
                                     sm_key_distribution_handle_all_received(sm_conn);
-                                    btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph3_random, sm_conn);
+                                    btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph3_random, (void *)(uintptr_t) sm_conn->sm_handle);
                                 } else {
                                     sm_conn->sm_engine_state = SM_PH3_RECEIVE_KEYS;
                                 }
@@ -3192,7 +3263,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         case SM_PH2_W4_CONNECTION_ENCRYPTED:
                             if (IS_RESPONDER(sm_conn->sm_role)){
                                 // slave
-                                btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph3_random, sm_conn);
+                                btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph3_random, (void *)(uintptr_t) sm_conn->sm_handle);
                             } else {
                                 // master
                                 sm_conn->sm_engine_state = SM_PH3_RECEIVE_KEYS;
@@ -3435,7 +3506,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
 
             // generate random number first, if we need to show passkey
             if (setup->sm_stk_generation_method == PK_RESP_INPUT){
-                btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph2_tk, sm_conn);
+                btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph2_tk,  (void *)(uintptr_t) sm_conn->sm_handle);
                 break;
             }
 
@@ -3458,7 +3529,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             sm_trigger_user_response(sm_conn);
             // response_idle == nothing <--> sm_trigger_user_response() did not require response
             if (setup->sm_user_response == SM_USER_RESPONSE_IDLE){
-                btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_random, 16, &sm_handle_random_result_ph2_random, sm_conn);
+                btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_random, 16, &sm_handle_random_result_ph2_random, (void *)(uintptr_t) sm_conn->sm_handle);
             }
             break;
 
@@ -3528,7 +3599,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             }
 
             // start calculating dhkey
-            btstack_crypto_ecc_p256_calculate_dhkey(&sm_crypto_ecc_p256_request, setup->sm_peer_q, setup->sm_dhkey, sm_sc_dhkey_calculated, sm_conn);
+            btstack_crypto_ecc_p256_calculate_dhkey(&sm_crypto_ecc_p256_request, setup->sm_peer_q, setup->sm_dhkey, sm_sc_dhkey_calculated, (void*)(uintptr_t) sm_conn->sm_handle);
 
 
             log_info("public key received, generation method %u", setup->sm_stk_generation_method);
@@ -3558,7 +3629,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                     case OOB:
                         // generate Nx
                         log_info("Generate Na");
-                        btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_get_random, sm_conn);
+                        btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_get_random, (void*)(uintptr_t) sm_conn->sm_handle);
                         break;
                 }
             }
@@ -3592,7 +3663,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                 // initiator
                 if (sm_just_works_or_numeric_comparison(setup->sm_stk_generation_method)){
                     // sm_conn->sm_engine_state = SM_SC_W2_GET_RANDOM_A;
-                    btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_get_random, sm_conn);
+                    btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_get_random, (void*)(uintptr_t) sm_conn->sm_handle);
                 } else {
                     sm_conn->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;
                 }
@@ -3714,7 +3785,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             }
 
             // calculate and send local_confirm
-            btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_random, 16, &sm_handle_random_result_ph2_random, sm_conn);
+            btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_random, 16, &sm_handle_random_result_ph2_random, (void *)(uintptr_t) sm_conn->sm_handle);
             break;
 
         case SM_RESPONDER_PH2_W4_PAIRING_RANDOM:
@@ -3779,7 +3850,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                     if (setup->sm_use_secure_connections){
                         sm_conn->sm_engine_state = SM_PH3_DISTRIBUTE_KEYS;
                     } else {
-                        btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph3_random, sm_conn);
+                        btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 8, &sm_handle_random_result_ph3_random, (void *)(uintptr_t) sm_conn->sm_handle);
                     }
                 }
             }
@@ -3913,6 +3984,9 @@ void sm_init(void){
     // 
     btstack_crypto_init();
 
+    // init le_device_db
+    le_device_db_init();
+
     // and L2CAP PDUs + L2CAP_EVENT_CAN_SEND_NOW
     l2cap_register_fixed_channel(sm_pdu_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
 
@@ -3972,8 +4046,7 @@ void sm_request_pairing(hci_con_handle_t con_handle){
                 case IRK_LOOKUP_SUCCEEDED:
 #ifndef ENABLE_LE_CENTRAL_AUTO_ENCRYPTION
                     le_device_db_encryption_get(sm_conn->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL, NULL);
-                    int have_ltk = !sm_is_null_key(ltk);
-                    log_info("have ltk %u", have_ltk);
+                    log_info("have ltk %u", !sm_is_null_key(ltk));
                     // trigger 'pairing complete' event on encryption change
                     sm_conn->sm_pairing_requested = 1;
                     sm_conn->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
@@ -4054,7 +4127,7 @@ void sm_just_works_confirm(hci_con_handle_t con_handle){
         if (setup->sm_use_secure_connections){
             sm_conn->sm_engine_state = SM_SC_SEND_PUBLIC_KEY_COMMAND;
         } else {
-            btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_random, 16, &sm_handle_random_result_ph2_random, sm_conn);
+            btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_random, 16, &sm_handle_random_result_ph2_random, (void *)(uintptr_t) sm_conn->sm_handle);
         }
     }
 
@@ -4079,7 +4152,7 @@ void sm_passkey_input(hci_con_handle_t con_handle, uint32_t passkey){
     big_endian_store_32(setup->sm_tk, 12, passkey);
     setup->sm_user_response = SM_USER_RESPONSE_PASSKEY;
     if (sm_conn->sm_engine_state == SM_PH1_W4_USER_RESPONSE){
-        btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_random, 16, &sm_handle_random_result_ph2_random, sm_conn);
+        btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_random, 16, &sm_handle_random_result_ph2_random, (void *)(uintptr_t) sm_conn->sm_handle);
     }
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
     memcpy(setup->sm_ra, setup->sm_tk, 16);
@@ -4153,6 +4226,17 @@ uint8_t sm_generate_sc_oob_data(void (*callback)(const uint8_t * confirm_value, 
     return 0;
 }
 #endif
+
+/**
+ * @brief Get Identity Resolving state
+ * @param con_handle
+ * @return irk_lookup_state_t
+ */
+irk_lookup_state_t sm_identity_resolving_state(hci_con_handle_t con_handle){
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
+    if (!sm_conn) return IRK_LOOKUP_IDLE;
+    return sm_conn->sm_irk_lookup_state;
+}
 
 /**
  * @brief Identify device in LE Device DB

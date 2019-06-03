@@ -10,6 +10,7 @@
 #define HAVE_MALLOC
 #define HAVE_BTSTACK_STDIN
 #define HAVE_FREERTOS_TASK_NOTIFICATIONS
+#define HAVE_FREERTOS_INCLUDE_PREFIX
 
 // BTstack features that can be enabled
 #define ENABLE_BLE

@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __HAL_AUDIO_H
-#define __HAL_AUDIO_H
+#ifndef HAL_AUDIO_H
+#define HAL_AUDIO_H
 
 #include <stdint.h>
 

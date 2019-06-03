@@ -35,8 +35,8 @@
  *
  */
  
-#ifndef __LE_DEVICE_DB_TLV_H
-#define __LE_DEVICE_DB_TLV_H
+#ifndef LE_DEVICE_DB_TLV_H
+#define LE_DEVICE_DB_TLV_H
 
 #include "btstack_util.h"
 #include "btstack_tlv.h"
@@ -61,4 +61,4 @@ void le_device_db_tlv_configure(const btstack_tlv_t * btstack_tlv_impl, void * b
 }
 #endif
 
-#endif // __LE_DEVICE_DB_TLV_H
+#endif // LE_DEVICE_DB_TLV_H

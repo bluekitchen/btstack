@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hci_transport_h2_libusb.c"
+#define BTSTACK_FILE__ "hci_transport_h2_libusb.c"
 
 /*
  *  hci_transport_usb.c
@@ -193,6 +193,7 @@ static int      sco_shutdown;
 
 // dynamic SCO configuration
 static uint16_t iso_packet_size;
+static int      sco_enabled;
 
 #endif
 
@@ -584,7 +585,9 @@ static const uint16_t known_bt_devices[] = {
     // Asus BT400
     0x0b05, 0x17cb,
     // BCM20702B0 (Generic USB Detuned Class 1 @ 20 MHz)
-    0x0a5c, 0x22be
+    0x0a5c, 0x22be,
+    // Zephyr e.g nRF52840-PCA10056
+    0x2fe3, 0x0100,
 };
 
 static int num_known_devices = sizeof(known_bt_devices) / sizeof(uint16_t) / 2;
@@ -715,8 +718,8 @@ static int prepare_device(libusb_device_handle * aHandle){
     int r;
     int kernel_driver_detached = 0;
 
-    // Detach OS driver (not possible for OS X and WIN32)
-#if !defined(__APPLE__) && !defined(_WIN32)
+    // Detach OS driver (not possible for OS X, FreeBSD, and WIN32)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(__FreeBSD__)
     r = libusb_kernel_driver_active(aHandle, 0);
     if (r < 0) {
         log_error("libusb_kernel_driver_active error %d", r);
@@ -752,7 +755,7 @@ static int prepare_device(libusb_device_handle * aHandle){
     log_info("claiming interface 0...");
     r = libusb_claim_interface(aHandle, 0);
     if (r < 0) {
-        log_error("Error claiming interface %d", r);
+        log_error("Error %d claiming interface 0", r);
         if (kernel_driver_detached){
             libusb_attach_kernel_driver(aHandle, 0);
         }
@@ -764,12 +767,9 @@ static int prepare_device(libusb_device_handle * aHandle){
     log_info("claiming interface 1...");
     r = libusb_claim_interface(aHandle, 1);
     if (r < 0) {
-        log_error("Error claiming interface %d", r);
-        if (kernel_driver_detached){
-            libusb_attach_kernel_driver(aHandle, 0);
-        }
-        libusb_close(aHandle);
-        return r;
+        log_error("Error %d claiming interface 1: - disabling SCO over HCI", r);
+    } else {
+        sco_enabled = 1;
     }
 #endif
 
@@ -790,13 +790,15 @@ static libusb_device_handle * try_open_device(libusb_device * device){
 
     log_info("libusb open %d, handle %p", r, dev_handle);
 
-    // reset device
+    // reset device (Not currently possible under FreeBSD 11.x/12.x due to usb framework)
+#if !defined(__FreeBSD__)
     r = libusb_reset_device(dev_handle);
     if (r < 0) {
         log_error("libusb_reset_device failed!");
         libusb_close(dev_handle);
         return NULL;
     }
+#endif
     return dev_handle;
 }
 
@@ -1107,11 +1109,13 @@ static int usb_open(void){
  
      }
 
+ #if 0
     // Check for pollfds functionality
     doing_pollfds = libusb_pollfds_handle_timeouts(NULL);
-    
-    // NOTE: using pollfds doesn't work on Linux, so it is disable until further investigation here
+#else
+    // NOTE: using pollfds doesn't work on Linux, so it is disable until further investigation
     doing_pollfds = 0;
+#endif
 
     if (doing_pollfds) {
         log_info("Async using pollfds:");
@@ -1267,6 +1271,7 @@ static int usb_close(void){
                         break;
                     }
                 }
+                sco_enabled = 0;
 #endif
             }
 
@@ -1354,6 +1359,7 @@ static int usb_can_send_packet_now(uint8_t packet_type){
             return !usb_acl_out_active;
 #ifdef ENABLE_SCO_OVER_HCI
         case HCI_SCO_DATA_PACKET:
+            if (!sco_enabled) return 0;
             return sco_ring_have_space();
 #endif
         default:
@@ -1369,6 +1375,7 @@ static int usb_send_packet(uint8_t packet_type, uint8_t * packet, int size){
             return usb_send_acl_packet(packet, size);
 #ifdef ENABLE_SCO_OVER_HCI
         case HCI_SCO_DATA_PACKET:
+            if (!sco_enabled) return -1;
             return usb_send_sco_packet(packet, size);
 #endif
         default:
@@ -1378,6 +1385,8 @@ static int usb_send_packet(uint8_t packet_type, uint8_t * packet, int size){
 
 #ifdef ENABLE_SCO_OVER_HCI
 static void usb_set_sco_config(uint16_t voice_setting, int num_connections){
+    if (!sco_enabled) return;
+
     log_info("usb_set_sco_config: voice settings 0x%04x, num connections %u", voice_setting, num_connections);
 
     if (num_connections != sco_num_connections){

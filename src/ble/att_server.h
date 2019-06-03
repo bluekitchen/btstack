@@ -34,8 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
-#ifndef __ATT_SERVER_H
-#define __ATT_SERVER_H
+#ifndef ATT_SERVER_H
+#define ATT_SERVER_H
 
 #include <stdint.h>
 #include "ble/att_db.h"
@@ -159,4 +159,4 @@ void att_server_request_can_send_now_event(hci_con_handle_t con_handle);
 }
 #endif
 
-#endif // __ATT_SERVER_H
+#endif // ATT_SERVER_H

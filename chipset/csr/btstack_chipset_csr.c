@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_chipset_csr.c"
+#define BTSTACK_FILE__ "btstack_chipset_csr.c"
 
 /*
  *  btstack_chipset_csr.c

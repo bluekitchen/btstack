@@ -13,18 +13,17 @@ VPATH += ${BTSTACK_ROOT}/platform/posix
 
 COMMON = \
     ad_parser.c                 \
-    att_db.c     					\
-    att_dispatch.c       	    \
-    btstack_linked_list.c		    \
-    btstack_memory.c			\
+    att_db.c                    \
+    att_dispatch.c              \
+    btstack_linked_list.c       \
+    btstack_memory.c            \
+    btstack_memory_pool.c       \
+    btstack_util.c              \
     gatt_client.c               \
-    hci_cmd.c					\
-    hci_dump.c     				\
+    hci_cmd.c                   \
+    hci_dump.c                  \
     le_device_db_memory.c       \
-    btstack_memory_pool.c			    \
     mock.c                      \
-    btstack_util.c			            \
-	
 
 COMMON_OBJ = $(COMMON:.c=.o)
 

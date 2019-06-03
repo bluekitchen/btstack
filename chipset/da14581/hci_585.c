@@ -3,6 +3,8 @@
  * hci_585.c converted from hci_585.hex
  */
 
+#define BTSTACK_FILE__ "hci_585.c"
+
 #include "hci_585.h"
 
 const char *   da14581_fw_name = "hci_585";

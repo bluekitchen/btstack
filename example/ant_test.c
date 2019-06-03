@@ -35,6 +35,8 @@
  *
  */
 
+#define BTSTACK_FILE__ "ant_test.c"
+
 // *****************************************************************************
 // ANT + SPP Counter demo for TI CC2567
 // - it provides a SPP port and and sends a counter every second

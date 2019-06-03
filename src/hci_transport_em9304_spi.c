@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hci_transport_em9304_spi.c"
+#define BTSTACK_FILE__ "hci_transport_em9304_spi.c"
 
 #include "btstack_config.h"
 #include "btstack_em9304_spi.h"

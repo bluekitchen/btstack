@@ -42,8 +42,8 @@
  *
  */
 
-#ifndef __AVRCP_CONTROLLER_H
-#define __AVRCP_CONTROLLER_H
+#ifndef AVRCP_CONTROLLER_H
+#define AVRCP_CONTROLLER_H
 
 #include <stdint.h>
 #include "btstack_run_loop.h"
@@ -342,4 +342,4 @@ extern avrcp_context_t avrcp_controller_context;
 }
 #endif
 
-#endif // __AVRCP_CONTROLLER_H
+#endif // AVRCP_CONTROLLER_H

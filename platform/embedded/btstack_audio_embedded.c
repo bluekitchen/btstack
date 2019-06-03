@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_audio_embedded.c"
+#define BTSTACK_FILE__ "btstack_audio_embedded.c"
 
 /*
  *  btstack_audio_embedded.c

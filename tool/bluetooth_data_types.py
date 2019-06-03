@@ -11,6 +11,8 @@ import requests
 import sys
 import os
 
+headers = {'user-agent': 'curl/7.63.0'}
+
 program_info = '''
 BTstack Data Types Scraper for BTstack
 Copyright 2016, BlueKitchen GmbH
@@ -22,8 +24,8 @@ header = '''/**
  * {datetime}
  */
 
-#ifndef __BLUETOOTH_DATA_TYPES_H
-#define __BLUETOOTH_DATA_TYPES_H
+#ifndef BLUETOOTH_DATA_TYPES_H
+#define BLUETOOTH_DATA_TYPES_H
 
 '''
 
@@ -41,15 +43,15 @@ def clean(tag):
 
 def scrape_page(fout, url):
     print("Parsing %s" % url)    
-    page = requests.get(url)
+    page = requests.get(url, headers=headers)
     tree = html.fromstring(page.content)
 
     print('')
     print('%-48s | %s' % ("Data Type Name", "Data Type Value"))
     print('-' * 70)
 
-    # get all <tr> elements in <table id="gattTable">
-    rows = tree.xpath('//div[@class="copy-block ta-left"]/table/tbody/tr')
+    # get all <tr> elements in <table id="table3">
+    rows = tree.xpath('//table/tbody/tr')
     for row in rows:
         children = row.getchildren()
         data_type_value = children[0].text_content()

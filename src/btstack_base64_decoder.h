@@ -39,8 +39,8 @@
  *  btstack_base64_decoder.h
  */
 
-#ifndef __BTSTACK_BASE_64_DECODER_H
-#define __BTSTACK_BASE_64_DECODER_H
+#ifndef BTSTACK_BASE_64_DECODER_H
+#define BTSTACK_BASE_64_DECODER_H
 
 #include <stdint.h>
 

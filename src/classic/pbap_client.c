@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "pbap_client.c"
+#define BTSTACK_FILE__ "pbap_client.c"
  
 #include "btstack_config.h"
 
@@ -273,28 +273,28 @@ static void pbap_handle_can_send_now(void){
     if (pbap_client->abort_operation){
         pbap_client->abort_operation = 0;
         pbap_client->state = PBAP_CONNECTED;
-        goep_client_create_abort_request(pbap_client->goep_cid);
+        goep_client_request_create_abort(pbap_client->goep_cid);
         goep_client_execute(pbap_client->goep_cid);
         return;
     }
 
     switch (pbap_client->state){
         case PBAP_W2_SEND_CONNECT_REQUEST:
-            goep_client_create_connect_request(pbap_client->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
-            goep_client_add_header_target(pbap_client->goep_cid, 16, pbap_uuid);
+            goep_client_request_create_connect(pbap_client->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
+            goep_client_header_add_target(pbap_client->goep_cid, pbap_uuid, 18);
             // Mandatory if the PSE advertises a PbapSupportedFeatures attribute in its SDP record, else excluded.
             if (goep_client_get_pbap_supported_features(pbap_client->goep_cid) != PBAP_FEATURES_NOT_PRESENT){
                 application_parameters[0] = PBAP_APPLICATION_PARAMETER_PBAP_SUPPORTED_FEATURES;
                 application_parameters[1] = 4;
                 big_endian_store_32(application_parameters, 2, pbap_supported_features);
-                goep_client_add_header_application_parameters(pbap_client->goep_cid, 6, &application_parameters[0]);
+                goep_client_header_add_application_parameters(pbap_client->goep_cid, &application_parameters[0], 6);
             }
             pbap_client->state = PBAP_W4_CONNECT_RESPONSE;
             goep_client_execute(pbap_client->goep_cid);
             break;
         case PBAP_W2_SEND_AUTHENTICATED_CONNECT:
-            goep_client_create_connect_request(pbap_client->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
-            goep_client_add_header_target(pbap_client->goep_cid, 16, pbap_uuid);
+            goep_client_request_create_connect(pbap_client->goep_cid, OBEX_VERSION, 0, OBEX_MAX_PACKETLEN_DEFAULT);
+            goep_client_header_add_target(pbap_client->goep_cid, pbap_uuid, 16);
             // setup authentication challenge response
             i = 0;
             challenge_response[i++] = 0;  // Tag Digest
@@ -310,25 +310,25 @@ static void pbap_handle_can_send_now(void){
             challenge_response[i++] = 16; // Len
             memcpy(&challenge_response[i], pbap_client->authentication_nonce, 16);
             i += 16;
-            goep_client_add_header_challenge_response(pbap_client->goep_cid, i, challenge_response);
+            goep_client_header_add_challenge_response(pbap_client->goep_cid, challenge_response, i);
             pbap_client->state = PBAP_W4_CONNECT_RESPONSE;
             goep_client_execute(pbap_client->goep_cid);
             break;
         case PBAP_W2_SEND_DISCONNECT_REQUEST:
-            goep_client_create_disconnect_request(pbap_client->goep_cid);
+            goep_client_request_create_disconnect(pbap_client->goep_cid);
             pbap_client->state = PBAP_W4_DISCONNECT_RESPONSE;
             goep_client_execute(pbap_client->goep_cid);
             return;
         case PBAP_W2_PULL_PHONEBOOK:
         case PBAP_W2_GET_PHONEBOOK_SIZE:
-            goep_client_create_get_request(pbap_client->goep_cid);
+            goep_client_request_create_get(pbap_client->goep_cid);
             if (pbap_client->request_number == 0){
                 if (!pbap_client->flow_control_enabled){
-                    goep_client_add_header_srm_enable(pbap_client->goep_cid);
+                    goep_client_header_add_srm_enable(pbap_client->goep_cid);
                     pbap_client->srm_state = SRM_W4_CONFIRM;
                 }
-                goep_client_add_header_name(pbap_client->goep_cid, pbap_client->phonebook_path);
-                goep_client_add_header_type(pbap_client->goep_cid, pbap_phonebook_type);
+                goep_client_header_add_name(pbap_client->goep_cid, pbap_client->phonebook_path);
+                goep_client_header_add_type(pbap_client->goep_cid, pbap_phonebook_type);
                 i = 0;
                 if (pbap_client->vcard_selector_supported){
                     // vCard Selector
@@ -355,7 +355,7 @@ static void pbap_handle_can_send_now(void){
                     i += 2;
                 }
                 if (i){
-                    goep_client_add_header_application_parameters(pbap_client->goep_cid, i, application_parameters);
+                    goep_client_header_add_application_parameters(pbap_client->goep_cid, application_parameters, i);
                 }
             }
             if (pbap_client->state == PBAP_W2_GET_PHONEBOOK_SIZE){
@@ -370,14 +370,14 @@ static void pbap_handle_can_send_now(void){
             goep_client_execute(pbap_client->goep_cid);
             break;
         case PBAP_W2_GET_CARD_LIST:
-            goep_client_create_get_request(pbap_client->goep_cid);
+            goep_client_request_create_get(pbap_client->goep_cid);
             if (pbap_client->request_number == 0){
                 if (!pbap_client->flow_control_enabled){
-                    goep_client_add_header_srm_enable(pbap_client->goep_cid);
+                    goep_client_header_add_srm_enable(pbap_client->goep_cid);
                     pbap_client->srm_state = SRM_W4_CONFIRM;
                 }
-                goep_client_add_header_name(pbap_client->goep_cid, pbap_client->phonebook_path);
-                goep_client_add_header_type(pbap_client->goep_cid, pbap_vcard_listing_type);
+                goep_client_header_add_name(pbap_client->goep_cid, pbap_client->phonebook_path);
+                goep_client_header_add_type(pbap_client->goep_cid, pbap_vcard_listing_type);
                 i = 0;
                 if (pbap_client->vcard_selector_supported){
                     // vCard Selector
@@ -408,7 +408,7 @@ static void pbap_handle_can_send_now(void){
                     application_parameters[i++] = 0x01; // Number
                 }
                 if (i){
-                    goep_client_add_header_application_parameters(pbap_client->goep_cid, i, &application_parameters[0]);
+                    goep_client_header_add_application_parameters(pbap_client->goep_cid, &application_parameters[0], i);
                 }
             }
             // send packet
@@ -417,19 +417,19 @@ static void pbap_handle_can_send_now(void){
             goep_client_execute(pbap_client->goep_cid);
             break;
         case PBAP_W2_GET_CARD_ENTRY:
-            goep_client_create_get_request(pbap_client->goep_cid);
+            goep_client_request_create_get(pbap_client->goep_cid);
             if (pbap_client->request_number == 0){
                 if (!pbap_client->flow_control_enabled){
-                    goep_client_add_header_srm_enable(pbap_client->goep_cid);
+                    goep_client_header_add_srm_enable(pbap_client->goep_cid);
                     pbap_client->srm_state = SRM_W4_CONFIRM;
                 }
-                goep_client_add_header_name(pbap_client->goep_cid, pbap_client->vcard_name);
-                goep_client_add_header_type(pbap_client->goep_cid, pbap_vcard_entry_type);
+                goep_client_header_add_name(pbap_client->goep_cid, pbap_client->vcard_name);
+                goep_client_header_add_type(pbap_client->goep_cid, pbap_vcard_entry_type);
                 i = 0;
                 if (i){
                     // TODO: support property selector
                     // TODO: support format
-                    goep_client_add_header_application_parameters(pbap_client->goep_cid, i, &application_parameters[0]);
+                    goep_client_header_add_application_parameters(pbap_client->goep_cid, &application_parameters[0], i);
                 }
                 pbap_client->state = PBAP_W4_GET_CARD_ENTRY_COMPLETE;
             }
@@ -438,8 +438,8 @@ static void pbap_handle_can_send_now(void){
             goep_client_execute(pbap_client->goep_cid);
             break;
         case PBAP_W2_SET_PATH_ROOT:
-            goep_client_create_set_path_request(pbap_client->goep_cid, 1 << 1); // Don’t create directory
-            goep_client_add_header_name(pbap_client->goep_cid, "");
+            goep_client_request_create_set_path(pbap_client->goep_cid, 1 << 1); // Don’t create directory
+            goep_client_header_add_name(pbap_client->goep_cid, "");
             // state
             pbap_client->state = PBAP_W4_SET_PATH_ROOT_COMPLETE;
             // send packet
@@ -467,8 +467,8 @@ static void pbap_handle_can_send_now(void){
             // status
             log_info("Path element '%s', done %u", path_element, done);
 
-            goep_client_create_set_path_request(pbap_client->goep_cid, 1 << 1); // Don’t create directory
-            goep_client_add_header_name(pbap_client->goep_cid, (const char *) path_element); // next element
+            goep_client_request_create_set_path(pbap_client->goep_cid, 1 << 1); // Don’t create directory
+            goep_client_header_add_name(pbap_client->goep_cid, (const char *) path_element); // next element
             // state
             pbap_client->state = PBAP_W4_SET_PATH_ELEMENT_COMPLETE;
             // send packet

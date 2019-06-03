@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "gatt_client.c"
+#define BTSTACK_FILE__ "gatt_client.c"
 
 #include <stdint.h>
 #include <string.h>
@@ -64,7 +64,7 @@ static btstack_linked_list_t gatt_client_connections;
 static btstack_linked_list_t gatt_client_value_listeners;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-#ifdef ENABLE_GATT_CLIENT_PAIRING
+#if defined(ENABLE_GATT_CLIENT_PAIRING) || defined (ENABLE_LE_SIGNED_WRITE)
 static btstack_packet_callback_registration_t sm_event_callback_registration;
 #endif
 
@@ -94,7 +94,7 @@ void gatt_client_init(void){
     hci_event_callback_registration.callback = &gatt_client_event_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-#ifdef ENABLE_GATT_CLIENT_PAIRING
+#if defined(ENABLE_GATT_CLIENT_PAIRING) || defined (ENABLE_LE_SIGNED_WRITE)
     // register for SM Events
     sm_event_callback_registration.callback = &gatt_client_event_packet_handler;
     sm_add_event_handler(&sm_event_callback_registration);
@@ -1006,6 +1006,23 @@ static int gatt_client_run_for_peripheral( gatt_client_t * peripheral){
             return 1;
 
 #ifdef ENABLE_LE_SIGNED_WRITE
+        case P_W4_IDENTITY_RESOLVING:
+            log_info("P_W4_IDENTITY_RESOLVING - state %x", sm_identity_resolving_state(peripheral->con_handle));
+            switch (sm_identity_resolving_state(peripheral->con_handle)){
+                case IRK_LOOKUP_SUCCEEDED:
+                    peripheral->le_device_index = sm_le_device_index(peripheral->con_handle);
+                    peripheral->gatt_client_state = P_W4_CMAC_READY;
+                    break;
+                case IRK_LOOKUP_FAILED:
+                    gatt_client_handle_transaction_complete(peripheral);
+                    emit_gatt_complete_event(peripheral, ATT_ERROR_BONDING_INFORMATION_MISSING);
+                    return 0;
+                default:
+                    return 0;
+            }
+
+            /* Fall through */
+
         case P_W4_CMAC_READY:
             if (sm_cmac_ready()){
                 sm_key_t csrk;
@@ -1021,11 +1038,11 @@ static int gatt_client_run_for_peripheral( gatt_client_t * peripheral){
             // bump local signing counter
             uint32_t sign_counter = le_device_db_local_counter_get(peripheral->le_device_index);
             le_device_db_local_counter_set(peripheral->le_device_index, sign_counter + 1);
-
+            // send signed write command
             send_gatt_signed_write_request(peripheral, sign_counter);
-            peripheral->gatt_client_state = P_READY;
             // finally, notifiy client that write is complete
             gatt_client_handle_transaction_complete(peripheral);
+            emit_gatt_complete_event(peripheral, 0);
             return 1;
         }
 #endif
@@ -1113,6 +1130,12 @@ static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t chann
                     log_info("pairing success, retry operation");
                 }
             }
+            break;
+#endif
+#ifdef ENABLE_LE_SIGNED_WRITE
+        // Identity Resolving completed (no code, gatt_client_run will continue)
+        case SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED:
+        case SM_EVENT_IDENTITY_RESOLVING_FAILED:
             break;
 #endif
 
@@ -1604,14 +1627,12 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
 uint8_t gatt_client_signed_write_without_response(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t handle, uint16_t message_len, uint8_t * message){
     gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
     if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
-    peripheral->le_device_index = sm_le_device_index(con_handle);
-    if (peripheral->le_device_index < 0) return GATT_CLIENT_IN_WRONG_STATE; // device lookup not done / no stored bonding information
 
     peripheral->callback = callback;
     peripheral->attribute_handle = handle;
     peripheral->attribute_length = message_len;
     peripheral->attribute_value = message;
-    peripheral->gatt_client_state = P_W4_CMAC_READY;
+    peripheral->gatt_client_state = P_W4_IDENTITY_RESOLVING;
 
     gatt_client_run();
     return 0; 

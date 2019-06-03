@@ -35,6 +35,8 @@
  *
  */
 
+#define BTSTACK_FILE__ "audio_duplex.c"
+
 /*
  * Audio Duplex: forward audio from BTstack audio source to audio sink - test for audio interface
  *

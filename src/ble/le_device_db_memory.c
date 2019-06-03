@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "le_device_db_memory.c"
+#define BTSTACK_FILE__ "le_device_db_memory.c"
  
 #include "ble/le_device_db.h"
 
@@ -77,8 +77,6 @@ typedef struct le_device_memory_db {
 
 } le_device_memory_db_t;
 
-#define INVALID_ENTRY_ADDR_TYPE 0xff
-
 #ifndef MAX_NR_LE_DEVICE_DB_ENTRIES
 #error "MAX_NR_LE_DEVICE_DB_ENTRIES not defined, please define in btstack_config.h"
 #endif
@@ -101,7 +99,7 @@ int le_device_db_count(void){
     int i;
     int counter = 0;
     for (i=0;i<MAX_NR_LE_DEVICE_DB_ENTRIES;i++){
-        if (le_devices[i].addr_type != INVALID_ENTRY_ADDR_TYPE) counter++;
+        if (le_devices[i].addr_type != BD_ADDR_TYPE_UNKNOWN) counter++;
     }
     return counter;
 }
@@ -112,14 +110,14 @@ int le_device_db_max_count(void){
 
 // free device
 void le_device_db_remove(int index){
-    le_devices[index].addr_type = INVALID_ENTRY_ADDR_TYPE;
+    le_devices[index].addr_type = BD_ADDR_TYPE_UNKNOWN;
 }
 
 int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     int i;
     int index = -1;
     for (i=0;i<MAX_NR_LE_DEVICE_DB_ENTRIES;i++){
-         if (le_devices[i].addr_type == INVALID_ENTRY_ADDR_TYPE){
+         if (le_devices[i].addr_type == BD_ADDR_TYPE_UNKNOWN){
             index = i;
             break;
          }
@@ -234,7 +232,7 @@ void le_device_db_dump(void){
     log_info("LE Device DB dump, devices: %d", le_device_db_count());
     int i;
     for (i=0;i<MAX_NR_LE_DEVICE_DB_ENTRIES;i++){
-        if (le_devices[i].addr_type == INVALID_ENTRY_ADDR_TYPE) continue;
+        if (le_devices[i].addr_type == BD_ADDR_TYPE_UNKNOWN) continue;
         log_info("%u: %u %s", i, le_devices[i].addr_type, bd_addr_to_str(le_devices[i].addr));
         log_info_key("irk", le_devices[i].irk);
 #ifdef ENABLE_LE_SIGNED_WRITE

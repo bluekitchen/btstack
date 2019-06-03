@@ -40,8 +40,8 @@
  *  SLIP encoder/decoder
  */
 
-#ifndef __BTSTACK_SLIP_H
-#define __BTSTACK_SLIP_H
+#ifndef BTSTACK_SLIP_H
+#define BTSTACK_SLIP_H
 
 #include <stdint.h>
 

@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_link_key_db_static.c"
+#define BTSTACK_FILE__ "btstack_link_key_db_static.c"
 
 /*
  *  btstack_link_key_db_static.c

@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_chipset_zephyr.c"
+#define BTSTACK_FILE__ "btstack_chipset_zephyr.c"
 
 /*
  *  btstack_chipset_zephyr.c
@@ -65,6 +65,7 @@ static const uint16_t init_script_size = sizeof(init_script);
 static uint32_t init_script_offset  = 0;
 
 static void chipset_init(const void * config){
+    UNUSED(config);
     init_script_offset = 0;
 }
 

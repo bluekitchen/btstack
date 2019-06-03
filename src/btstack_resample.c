@@ -35,6 +35,8 @@
  *
  */
 
+#define BTSTACK_FILE__ "btstack_resample.c"
+
 #include "btstack_resample.h"
 
 void btstack_resample_init(btstack_resample_t * context, int num_channels){

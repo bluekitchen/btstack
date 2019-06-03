@@ -1,5 +1,5 @@
 # Makefile for Raspberry Pi
-BTSTACK_ROOT = ../..
+BTSTACK_ROOT ?= ../..
 
 CORE += \
 	btstack_chipset_bcm.c \

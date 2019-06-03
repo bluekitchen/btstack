@@ -41,8 +41,8 @@
  *  BTstack's Hardware Abstraction Layer for EM9304 connected via SPI with additional RDY Interrupt line
 
  */
-#ifndef __BTSTACK_EM9304_SPI_H
-#define __BTSTACK_EM9304_SPI_H
+#ifndef BTSTACK_EM9304_SPI_H
+#define BTSTACK_EM9304_SPI_H
 
 #include <stdint.h>
 
@@ -129,4 +129,4 @@ const btstack_em9304_spi_t * btstack_em9304_spi_embedded_instance(void);
 }
 #endif
 
-#endif // __BTSTACK_EM9304_SPI_H
+#endif // BTSTACK_EM9304_SPI_H

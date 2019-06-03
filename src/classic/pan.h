@@ -41,8 +41,8 @@
  *  Created by Milanka Ringwald on 10/16/14.
  */
 
-#ifndef __PAN_H
-#define __PAN_H
+#ifndef PAN_H
+#define PAN_H
 
 #include <stdint.h>
 #include "bluetooth.h"
@@ -108,4 +108,4 @@ void pan_create_nap_sdp_record(uint8_t *service, uint32_t service_record_handle,
 #if defined __cplusplus
 }
 #endif
-#endif // __PAN_H
+#endif // PAN_H

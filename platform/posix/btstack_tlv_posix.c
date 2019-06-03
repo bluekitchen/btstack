@@ -29,7 +29,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_tlv_posix.c"
+#define BTSTACK_FILE__ "btstack_tlv_posix.c"
 
 #include "btstack_tlv.h"
 #include "btstack_tlv_posix.h"
@@ -75,9 +75,11 @@ static int btstack_tlv_posix_append_tag(btstack_tlv_posix_t * self, uint32_t tag
 	big_endian_store_32(header, 4, data_size);
 	size_t written_header = fwrite(header, 1, sizeof(header), self->file);
 	if (written_header != sizeof(header)) return 1;
-	size_t written_value = fwrite(data, 1, data_size, self->file);
-	if (written_value != data_size) return 1;
-	 fflush(self->file);
+	if (data_size > 0) {
+		size_t written_value = fwrite(data, 1, data_size, self->file);
+		if (written_value != data_size) return 1;
+	}
+	fflush(self->file);
 	return 1;
 }
 

@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "att_db.c"
+#define BTSTACK_FILE__ "att_db.c"
 
 #include <string.h>
 
@@ -1090,11 +1090,7 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
 // MARK: ATT_WRITE_COMMAND 0x52
 // Core 4.0, vol 3, part F, 3.4.5.3
 // "No Error Response or Write Response shall be sent in response to this command"
-static void handle_write_command(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
-                                           uint8_t * response_buffer, uint16_t response_buffer_size){
-
-    UNUSED(response_buffer);
-    UNUSED(response_buffer_size);
+static void handle_write_command(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len, uint16_t required_flags){
 
     uint16_t handle = little_endian_read_16(request_buffer, 1);
     if (!att_write_callback) return;
@@ -1103,7 +1099,7 @@ static void handle_write_command(att_connection_t * att_connection, uint8_t * re
     int ok = att_find_handle(&it, handle);
     if (!ok) return;
     if ((it.flags & ATT_PROPERTY_DYNAMIC) == 0) return;
-    if ((it.flags & ATT_PROPERTY_WRITE_WITHOUT_RESPONSE) == 0) return;
+    if ((it.flags & required_flags) == 0) return;
     if (att_validate_security(att_connection, ATT_WRITE, &it)) return;
     att_persistent_ccc_cache(&it);
     (*att_write_callback)(att_connection->con_handle, handle, ATT_TRANSACTION_MODE_NONE, 0, request_buffer + 3, request_len - 3);
@@ -1188,11 +1184,11 @@ uint16_t att_handle_request(att_connection_t * att_connection,
             response_len = handle_execute_write_request(att_connection, request_buffer, request_len, response_buffer, response_buffer_size);
             break;
         case ATT_WRITE_COMMAND:
-            handle_write_command(att_connection, request_buffer, request_len, response_buffer, response_buffer_size);
+            handle_write_command(att_connection, request_buffer, request_len, ATT_PROPERTY_WRITE_WITHOUT_RESPONSE);
             break;
 #ifdef ENABLE_LE_SIGNED_WRITE
         case ATT_SIGNED_WRITE_COMMAND:
-            log_info("handle_signed_write_command preprocessed by att_server.c");
+            handle_write_command(att_connection, request_buffer, request_len, ATT_PROPERTY_AUTHENTICATED_SIGNED_WRITE);
             break;
 #endif
         default:

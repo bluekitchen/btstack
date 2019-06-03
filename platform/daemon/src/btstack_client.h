@@ -44,8 +44,8 @@
  *  
  */
 
-#ifndef __BTSTACK_CLIENT_H
-#define __BTSTACK_CLIENT_H
+#ifndef BTSTACK_CLIENT_H
+#define BTSTACK_CLIENT_H
 
 #include "bluetooth.h"
 #include "btstack_config.h"
@@ -99,4 +99,4 @@ void bt_send_rfcomm(uint16_t rfcom_cid, uint8_t *data, uint16_t len);
 }
 #endif
 
-#endif // __BTSTACK_H
+#endif // BTSTACK_H

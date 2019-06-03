@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "socket_connection.c"
+#define BTSTACK_FILE__ "socket_connection.c"
 
 /*
  *  SocketServer.c

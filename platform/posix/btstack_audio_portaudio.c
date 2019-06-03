@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_audio_portaudio.c"
+#define BTSTACK_FILE__ "btstack_audio_portaudio.c"
 
 
 #include <stdint.h>

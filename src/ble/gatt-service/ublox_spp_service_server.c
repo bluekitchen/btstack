@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "ublox_spp_service_server.c"
+#define BTSTACK_FILE__ "ublox_spp_service_server.c"
 
 /**
  * Implementation of the ublox SPP-like profile

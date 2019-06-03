@@ -29,7 +29,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_crypto.c"
+#define BTSTACK_FILE__ "btstack_crypto.c"
 
 /*
  * btstack_crypto.h

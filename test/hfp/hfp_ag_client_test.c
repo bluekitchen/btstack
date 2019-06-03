@@ -111,11 +111,11 @@ static hfp_generic_status_indicator_t hf_indicators[] = {
 static hci_con_handle_t acl_handle = -1;
 static int memory_1_enabled = 1;
 
-int has_more_hfp_ag_commands(void){
+static int has_more_hfp_ag_commands(void){
     return has_more_hfp_commands(2,2);
 }
 
-char * get_next_hfp_ag_command(void){
+static char * get_next_hfp_ag_command(void){
    return get_next_hfp_command(2,2);
 }
 
@@ -322,12 +322,12 @@ static void simulate_test_sequence(hfp_test_item_t * test_item){
             i++;
 
         } else {
-            printf("\n---> NEXT STEP expect from AG: %s\n", expected_cmd);
-
             while (has_more_hfp_ag_commands()){
+                printf("\n---> NEXT STEP expect from AG: %s\n", expected_cmd);
                 char * ag_cmd = get_next_hfp_ag_command();
 
                 int equal_cmds = strncmp(ag_cmd, expected_cmd, expected_cmd_len) == 0;
+                // printf("CHECK: %s == %s -> %u", ag_cmd, expected_cmd, equal_cmds);
                 if (!equal_cmds){
                     printf("\nError: Expected:'%s', but got:'%s'\n", expected_cmd, ag_cmd);
                     CHECK_EQUAL(equal_cmds,1);
@@ -347,7 +347,7 @@ static void simulate_test_sequence(hfp_test_item_t * test_item){
     }   
 }
 
-void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * event, uint16_t event_size){
 
     if (event[0] != HCI_EVENT_HFP_META) return;
 

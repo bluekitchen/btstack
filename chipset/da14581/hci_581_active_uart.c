@@ -3,6 +3,8 @@
  * hci_581_active_uart.c converted from hci_581_active_uart.hex
  */
 
+#define BTSTACK_FILE__ "hci_581_active_uart.c"
+
 #include "hci_581_active_uart.h"
 
 const char *   da14581_fw_name = "hci_581_active_uart";

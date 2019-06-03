@@ -43,8 +43,8 @@
  * AVDTP Source is a device that streames media data.
  */
 
-#ifndef __AVDTP_SOURCE_H
-#define __AVDTP_SOURCE_H
+#ifndef AVDTP_SOURCE_H
+#define AVDTP_SOURCE_H
 
 #include <stdint.h>
 #include "classic/avdtp.h"
@@ -159,4 +159,4 @@ avdtp_stream_endpoint_t * avdtp_source_create_stream_endpoint(avdtp_sep_type_t s
 }
 #endif
 
-#endif // __AVDTP_SOURCE_H
+#endif // AVDTP_SOURCE_H

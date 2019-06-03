@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "l2cap_signaling.c"
+#define BTSTACK_FILE__ "l2cap_signaling.c"
 
 /*
  *  l2cap_signaling.h

@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_network.c"
+#define BTSTACK_FILE__ "btstack_network_posix.c"
 
 /*
  * btstack_network.c
@@ -51,18 +51,16 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <ifaddrs.h>
+#include <net/if_arp.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#include <net/if_arp.h>
-
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
 #include <net/if.h>
 #include <net/if_types.h>
-
 #include <netinet/if_ether.h>
 #include <netinet/in.h>
 #endif
@@ -85,7 +83,7 @@ static uint8_t network_buffer[BNEP_MTU_MIN];
 static size_t  network_buffer_len = 0;
 static char tap_dev_name[16];
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
 // tuntaposx provides fixed set of tapX devices
 static const char * tap_dev = "/dev/tap0";
 static const char * tap_dev_name_template = "tap0";
@@ -251,7 +249,7 @@ int btstack_network_up(bd_addr_t network_address){
     btstack_run_loop_add_data_source(&tap_dev_ds);
     btstack_run_loop_enable_data_source_callbacks(&tap_dev_ds, DATA_SOURCE_CALLBACK_READ);
 
-    return 0;;
+    return 0;
 }
 
 /**
@@ -264,13 +262,16 @@ const char * btstack_network_get_name(void){
 }
 
 /**
- * @brief Bring up network interfacd
+ * @brief Bring up network interface
  * @param network_address
  * @return 0 if ok
  */
 int btstack_network_down(void){
     log_info("BNEP channel closed");
     btstack_run_loop_remove_data_source(&tap_dev_ds);
+    if (tap_fd >= 0){
+        close(tap_fd);
+    }
     tap_fd = -1;
     return 0;
 }

@@ -40,8 +40,8 @@
  *
  * BTstack definitions, events, and error codes */
 
-#ifndef __BTSTACK_DEFINES_H
-#define __BTSTACK_DEFINES_H
+#ifndef BTSTACK_DEFINES_H
+#define BTSTACK_DEFINES_H
 
 #include <stdint.h>
 #include "btstack_linked_list.h" 
@@ -113,6 +113,9 @@ typedef uint8_t sm_key_t[16];
 
 // AVRCP browsing data
 #define AVRCP_BROWSING_DATA_PACKET     0x0f
+
+// MAP data
+#define MAP_DATA_PACKET        0x10
 
  
 // debug log messages
@@ -1028,6 +1031,8 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_A2DP_META                                0xF0
 #define HCI_EVENT_HIDS_META                                0xF1
 #define HCI_EVENT_GATTSERVICE_META                         0xF2
+#define HCI_EVENT_BIP_META                                 0xF3
+#define HCI_EVENT_MAP_META                                 0xF4
 
 // Potential other meta groups
 // #define HCI_EVENT_BNEP_META                                0xxx
@@ -2228,4 +2233,63 @@ typedef uint8_t sm_key_t[16];
  * @param con_handle
 */
 #define GATTSERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_STOP                  0x03
+
+
+// MAP Meta Event Group
+
+/**
+ * @format 121BH1
+ * @param subevent_code
+ * @param map_cid
+ * @param status
+ * @param bd_addr
+ * @param con_handle
+ * @param incoming
+ */
+#define MAP_SUBEVENT_CONNECTION_OPENED                                    0x01
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param map_cid
+*/
+#define MAP_SUBEVENT_CONNECTION_CLOSED                                    0x02
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param map_cid
+ * @param status
+ */
+#define MAP_SUBEVENT_OPERATION_COMPLETED                                  0x03
+
+
+/**
+ * @format 12LV
+ * @param subevent_code
+ * @param map_cid
+ * @param name_len
+ * @param name
+ */
+#define MAP_SUBEVENT_FOLDER_LISTING_ITEM                                  0x04
+
+/**
+ * @format 12D
+ * @param subevent_code
+ * @param map_cid
+ * @param handle
+
+ */
+#define MAP_SUBEVENT_MESSAGE_LISTING_ITEM                                 0x05
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param map_cid
+ */
+#define MAP_SUBEVENT_PARSING_DONE                                         0x06
+
+
+
+
 #endif

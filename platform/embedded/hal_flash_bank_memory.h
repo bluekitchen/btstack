@@ -36,8 +36,8 @@
  *  after being erased implemented with memory
  */
 
-#ifndef __HAL_FLASH_BANK_MEMORY_H
-#define __HAL_FLASH_BANK_MEMORY_H
+#ifndef HAL_FLASH_BANK_MEMORY_H
+#define HAL_FLASH_BANK_MEMORY_H
 
 #include <stdint.h>
 #include "hal_flash_bank.h"
@@ -65,4 +65,4 @@ const hal_flash_bank_t * hal_flash_bank_memory_init_instance(hal_flash_bank_memo
 #if defined __cplusplus
 }
 #endif
-#endif // __HAL_FLASH_BANK_MEMORY_H
+#endif // HAL_FLASH_BANK_MEMORY_H

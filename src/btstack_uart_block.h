@@ -42,8 +42,8 @@
  *
  */
 
-#ifndef __BTSTACK_UART_BLOCK_H
-#define __BTSTACK_UART_BLOCK_H
+#ifndef BTSTACK_UART_BLOCK_H
+#define BTSTACK_UART_BLOCK_H
 
 #include <stdint.h>
 

@@ -35,6 +35,8 @@
  *
  */
 
+#define BTSTACK_FILE__ "btstack_audio.c"
+
 #include "btstack_audio.h"
 
 /*

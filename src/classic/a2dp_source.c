@@ -36,7 +36,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "a2dp_source.c"
+#define BTSTACK_FILE__ "a2dp_source.c"
 
 #include <stdint.h>
 #include <stdlib.h>

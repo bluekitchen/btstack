@@ -42,8 +42,8 @@
  * using of MCU crypto peripherals or the Bluetooth controller
  */
 
-#ifndef __BTSTACK_CTRYPTO_H
-#define __BTSTACK_CTRYPTO_H
+#ifndef BTSTACK_CTRYPTO_H
+#define BTSTACK_CTRYPTO_H
 
 #include "btstack_defines.h"
 
@@ -274,4 +274,4 @@ void btstack_crypto_ccm_decrypt_block(btstack_crypto_ccm_t * request, uint16_t l
 }
 #endif
 
-#endif /* __BTSTACK_CTRYPTO_H */
+#endif /* BTSTACK_CTRYPTO_H */

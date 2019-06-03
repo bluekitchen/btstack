@@ -17,7 +17,7 @@ order to be seen by a device performing the inquiry scan. To become
 discoverable, an application can call *gap_discoverable_control* with
 input parameter 1. If you want to provide a helpful name for your
 device, the application can set its local name by calling
-$gap_set_local_name$. To save energy, you may set the device as
+*gap_set_local_name*. To save energy, you may set the device as
 undiscoverable again, once a connection is established. See Listing
 [below](#lst:Discoverable) for an example.
 
@@ -109,7 +109,7 @@ device implements Bluetooth Specification 2.1 or higher, the
 *hci_write_inquiry_mode* command enables reporting of this advanced
 features (0 for standard results, 1 for RSSI, 2 for RSSI and EIR).
 
-A complete GAP inquiry example is provided [here](examples/generated/#sec:gapinquiryExample).
+A complete GAP inquiry example is provided [here](examples/examples/#sec:gapinquiryExample).
 
 ### Pairing of Devices
 
@@ -194,7 +194,7 @@ an SDP record for it and publish it with the SDP server by calling
 *sdp_register_service*. BTstack provides the
 *spp_create_sdp_record* function in that requires an empty buffer of
 approximately 200 bytes, the service channel number, and a service name.
-Have a look at the [SPP Counter example](examples/generated/#sec:sppcounterExample].
+Have a look at the [SPP Counter example](examples/examples/#sec:sppcounterExample).
 
 
 ## PAN - Personal Area Networking Profile {#sec:panProfiles}
@@ -232,7 +232,7 @@ Currently, BTstack supports only PANU.
 To access a remote PANU service, you first need perform an SDP query to
 get the L2CAP PSM for the requested PANU UUID. With these two pieces of
 information, you can connect BNEP to the remote PANU service with the
-*bnep_connect* function. The Section on [PANU Demo example](#exaples/#sec:panudemoExample)
+*bnep_connect* function. The Section on [PANU Demo example](examples/examples/#sec:panudemoExample)
 shows how this is accomplished.
 
 ### Providing a PANU service
@@ -325,7 +325,7 @@ can also provide Scan Response data, which has to be explicitly queried
 by the central device. It can be set with *gap_scan_response_set_data*.
 
 Please have a look at the [SPP and LE
-Counter example](examples/generated/#sec:sppandlecounterExample).
+Counter example](examples/examples/#sec:sppandlecounterExample).
 
 The scan parameters can be set with
 *gap_set_scan_parameters*. The scan can be started/stopped
@@ -355,28 +355,27 @@ or both GATT roles.
 
 ### GATT Client {#sec:GATTClientProfiles}
 
-The GATT Client is used to discover services, and their characteristics
-and descriptors on a peer device. It can also subscribe for
+The GATT Client is used to discover services, characteristics
+and their descriptors on a peer device. It allows to subscribe for
 notifications or indications that the characteristic on the GATT server
 has changed its value.
 
-To perform GATT queries, provides a rich interface. Before calling
+To perform GATT queries, it provides a rich interface. Before calling
 queries, the GATT client must be initialized with *gatt_client_init*
 once.
 
 To allow for modular profile implementations, GATT client can be used
 independently by multiple entities.
 
-To use it by a GATT client, you register a packet handler with
-*gatt_client_register_packet_ handler*. The return value of that is
-a GATT client ID which has to be provided in all queries.
-
 After an LE connection was created using the GAP LE API, you can query
 for the connection MTU with *gatt_client_get_mtu*.
 
-GATT queries cannot be interleaved. Therefore, you can check if you can
-perform a GATT query on a particular connection using
-*gatt_client_is_ready*. As a result to a GATT query, zero to many
+Multiple GATT queries to the same GATT Server cannot be interleaved.
+Therefore, you can either use a state machine or similar to perform the 
+queries in sequence, or you can check if you can perform a GATT query
+on a particular connection right now using
+*gatt_client_is_ready*, and retry later if it is not ready.
+As a result to a GATT query, zero to many
 *le_event*s are returned before a *GATT_EVENT_QUERY_COMPLETE* event
 completes the query.
 

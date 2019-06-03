@@ -39,8 +39,8 @@
  *  RFCOMM.h
  */
 
-#ifndef __RFCOMM_H
-#define __RFCOMM_H
+#ifndef RFCOMM_H
+#define RFCOMM_H
  
 #include "btstack_util.h"
 
@@ -434,4 +434,4 @@ void rfcomm_enable_l2cap_ertm(void request_callback(rfcomm_ertm_request_t * requ
 }
 #endif
 
-#endif // __RFCOMM_H
+#endif // RFCOMM_H

@@ -3,8 +3,8 @@
  * bluetooth_company_id.h generated from Bluetooth SIG website for BTstack
  */
 
-#ifndef __BLUETOOTH_COMPANY_ID_H
-#define __BLUETOOTH_COMPANY_ID_H
+#ifndef BLUETOOTH_COMPANY_ID_H
+#define BLUETOOTH_COMPANY_ID_H
 
 /**
  * Assigned numbers from https://www.bluetooth.com/specifications/assigned-numbers/company-identifiers
@@ -1186,5 +1186,8 @@
 #define BLUETOOTH_COMPANY_ID_POLYMORPHIC_LABS_LLC                                        0x0496
 #define BLUETOOTH_COMPANY_ID_COCHLEAR_LIMITED                                            0x0497
 #define BLUETOOTH_COMPANY_ID_METER_GROUP_INC_USA                                         0x0498
+
+// manually added
+#define BLUETOOTH_COMPANY_ID_THE_LINUX_FOUNDATION                                        0x05F1
 
 #endif

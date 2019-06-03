@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hfp_gsm_model.c"
+#define BTSTACK_FILE__ "hfp_gsm_model.c"
  
 // *****************************************************************************
 //

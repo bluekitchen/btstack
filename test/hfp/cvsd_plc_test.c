@@ -80,7 +80,7 @@ static void btstack_cvsd_plc_mark_bad_frame(btstack_cvsd_plc_state_t * state, in
 }
 
 static int phase = 0;
-void create_sine_wave_int16_data(int num_samples, int16_t * data){
+static void create_sine_wave_int16_data(int num_samples, int16_t * data){
     int i;
     for (i=0; i < num_samples; i++){
         data[i] = sine_int16[phase++] * 90/100;
@@ -111,7 +111,7 @@ void create_sine_wave_int16_data(int num_samples, int16_t * data){
 //     return count;
 // }
 
-void create_sine_wav(const char * out_filename){
+static void create_sine_wav(const char * out_filename){
     btstack_cvsd_plc_init(&plc_state);
     wav_writer_open(out_filename, 1, 8000);
     
@@ -123,7 +123,7 @@ void create_sine_wav(const char * out_filename){
     wav_writer_close();
 }
 
-int introduce_bad_frames_to_wav_file(const char * in_filename, const char * out_filename, int corruption_step){
+static int introduce_bad_frames_to_wav_file(const char * in_filename, const char * out_filename, int corruption_step){
     btstack_cvsd_plc_init(&plc_state);
     wav_writer_open(out_filename, 1, 8000);
     wav_reader_open(in_filename);
@@ -153,7 +153,7 @@ int introduce_bad_frames_to_wav_file(const char * in_filename, const char * out_
     return total_corruption_times;
 }
 
-void process_wav_file_with_plc(const char * in_filename, const char * out_filename){
+static void process_wav_file_with_plc(const char * in_filename, const char * out_filename){
     // printf("\nProcess %s -> %s\n", in_filename, out_filename);
     btstack_cvsd_plc_init(&plc_state);
     wav_writer_open(out_filename, 1, 8000);
@@ -169,6 +169,7 @@ void process_wav_file_with_plc(const char * in_filename, const char * out_filena
     btstack_cvsd_dump_statistics(&plc_state);
 }
 
+void mark_bad_frames_wav_file(const char * in_filename, const char * out_filename);
 void mark_bad_frames_wav_file(const char * in_filename, const char * out_filename){
     // printf("\nMark bad frame %s -> %s\n", in_filename, out_filename);
     btstack_cvsd_plc_init(&plc_state);

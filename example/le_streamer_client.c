@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "le_streamer_client.c"
+#define BTSTACK_FILE__ "le_streamer_client.c"
 
 /*
  * le_streamer_client.c

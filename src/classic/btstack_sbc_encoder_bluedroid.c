@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_sbc_bludroid.c"
+#define BTSTACK_FILE__ "btstack_sbc_encoder_bluedroid.c"
  
 // *****************************************************************************
 //

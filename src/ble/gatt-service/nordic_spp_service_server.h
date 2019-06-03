@@ -34,8 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
-#ifndef __NORDIC_SPP_H
-#define __NORDIC_SPP_H
+#ifndef NORDIC_SPP_H
+#define NORDIC_SPP_H
 
 #include <stdint.h>
 #include "bluetooth.h"

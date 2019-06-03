@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "le_data_channel.c"
+#define BTSTACK_FILE__ "le_data_channel_server.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(le_data_channel): LE Data Channel Server - Receive data via L2CAP

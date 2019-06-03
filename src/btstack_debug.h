@@ -41,8 +41,8 @@
  *  allow to funnel debug & error messages 
  */
 
-#ifndef __DEBUG_H
-#define __DEBUG_H
+#ifndef DEBUG_H
+#define DEBUG_H
 
 #include "btstack_config.h"
 #include "btstack_defines.h"
@@ -55,8 +55,8 @@
 #endif
 
 // fallback to __FILE__ for untagged files
-#ifndef __BTSTACK_FILE__
-#define __BTSTACK_FILE__ __FILE__
+#ifndef BTSTACK_FILE__
+#define BTSTACK_FILE__ __FILE__
 #endif
 
 // Avoid complaints of unused arguments when log levels are disabled.
@@ -74,9 +74,9 @@ static inline void __log_unused(const char *format, ...) {
 #endif
 
 #ifdef __AVR__
-#define HCI_DUMP_LOG(log_level, format, ...) hci_dump_log_P(log_level, PSTR("%s.%u: " format), __BTSTACK_FILE__, __LINE__, ## __VA_ARGS__)
+#define HCI_DUMP_LOG(log_level, format, ...) hci_dump_log_P(log_level, PSTR("%s.%u: " format), BTSTACK_FILE__, __LINE__, ## __VA_ARGS__)
 #else
-#define HCI_DUMP_LOG(log_level, format, ...) hci_dump_log(log_level, "%s.%u: " format, __BTSTACK_FILE__, __LINE__, ## __VA_ARGS__)
+#define HCI_DUMP_LOG(log_level, format, ...) hci_dump_log(log_level, "%s.%u: " format, BTSTACK_FILE__, __LINE__, ## __VA_ARGS__)
 #endif
 
 #ifdef ENABLE_LOG_DEBUG
@@ -116,4 +116,4 @@ void log_info_hexdump(const void *data, int size);
  */
 void log_debug_hexdump(const void *data, int size);
 
-#endif // __DEBUG_H
+#endif // DEBUG_H

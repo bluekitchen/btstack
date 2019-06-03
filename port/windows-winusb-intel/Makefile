@@ -1,5 +1,5 @@
 # Makefile for windows WinUSB based examples
-BTSTACK_ROOT = ../..
+BTSTACK_ROOT ?= ../..
 
 CORE += main.c btstack_stdin_windows.c
 

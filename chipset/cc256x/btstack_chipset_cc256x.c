@@ -34,7 +34,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_chipset_cc256x.c"
+#define BTSTACK_FILE__ "btstack_chipset_cc256x.c"
 
 /*
  *  btstack_chipset_cc256x.c

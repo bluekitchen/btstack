@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "inquiry.c"
+#define BTSTACK_FILE__ "inquiry.c"
 
 /*
  *  inquiry.c

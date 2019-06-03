@@ -42,8 +42,8 @@
  *
  */
 
-#ifndef __AVRCP_H
-#define __AVRCP_H
+#ifndef AVRCP_H
+#define AVRCP_H
 
 #include <stdint.h>
 #include "btstack_run_loop.h"
@@ -570,4 +570,4 @@ void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel,
 }
 #endif
 
-#endif // __AVRCP_H
+#endif // AVRCP_H

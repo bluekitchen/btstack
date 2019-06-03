@@ -41,8 +41,8 @@
  *  Created by Matthias Ringwald on 6/6/09.
  */
 
-#ifndef __btstack_run_loop_H
-#define __btstack_run_loop_H
+#ifndef btstack_run_loop_H
+#define btstack_run_loop_H
 
 #include "btstack_config.h"
 
@@ -225,4 +225,4 @@ void btstack_run_loop_execute(void);
 }
 #endif
 
-#endif // __btstack_run_loop_H
+#endif // btstack_run_loop_H

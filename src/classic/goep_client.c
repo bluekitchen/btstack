@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "goep_client.c"
+#define BTSTACK_FILE__ "goep_client.c"
  
 #include "btstack_config.h"
 
@@ -49,6 +49,7 @@
 #include "bluetooth_sdp.h"
 #include "btstack_event.h"
 #include "classic/goep_client.h"
+#include "classic/obex_message_builder.h"
 #include "classic/obex.h"
 #include "classic/obex_iterator.h"
 #include "classic/rfcomm.h"
@@ -351,13 +352,12 @@ static uint8_t * goep_client_get_outgoing_buffer(goep_client_t * context){
     }
 }
 
-static void goep_client_packet_append(const uint8_t * data, uint16_t len){
-     goep_client_t * context = goep_client;
-     uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-     uint16_t pos = big_endian_read_16(buffer, 1);
-     memcpy(&buffer[pos], data, len);
-     pos += len;
-     big_endian_store_16(buffer, 1, pos);
+static uint16_t goep_client_get_outgoing_buffer_len(goep_client_t * context){
+    if (context->l2cap_psm){
+        return sizeof(goep_packet_buffer);
+    } else {
+        return rfcomm_get_max_frame_size(context->bearer_cid);
+    }
 }
 
 static void goep_client_packet_init(uint16_t goep_cid, uint8_t opcode){
@@ -367,20 +367,8 @@ static void goep_client_packet_init(uint16_t goep_cid, uint8_t opcode){
     } else {
         rfcomm_reserve_packet_buffer();
     }
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    buffer[0] = opcode;
-    big_endian_store_16(buffer, 1, 3);
     // store opcode for parsing of response
     context->obex_opcode = opcode;
-}
-
-static void goep_client_packet_add_connection_id(uint16_t goep_cid){
-    UNUSED(goep_cid);
-    goep_client_t * context = goep_client;
-    // add connection_id header if set, must be first header if used
-    if (context->obex_connection_id != OBEX_CONNECTION_ID_INVALID){
-        goep_client_add_word_header(goep_cid, OBEX_HEADER_CONNECTION_ID, context->obex_connection_id);
-    }
 }
 
 void goep_client_init(void){
@@ -439,116 +427,157 @@ void goep_client_request_can_send_now(uint16_t goep_cid){
     }
 }
 
-void goep_client_create_connect_request(uint16_t goep_cid, uint8_t obex_version_number, uint8_t flags, uint16_t maximum_obex_packet_length){
+void goep_client_request_create_connect(uint16_t goep_cid, uint8_t obex_version_number, uint8_t flags, uint16_t maximum_obex_packet_length){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
     goep_client_packet_init(goep_cid, OBEX_OPCODE_CONNECT);
-    uint8_t fields[4];
-    fields[0] = obex_version_number;
-    fields[1] = flags;
+
     // workaround: limit OBEX packet len to L2CAP/RFCOMM MTU to avoid handling of fragemented packets
     maximum_obex_packet_length = btstack_min(maximum_obex_packet_length, context->bearer_mtu);
-    big_endian_store_16(fields, 2, maximum_obex_packet_length);
-    goep_client_packet_append(&fields[0], sizeof(fields));
+    
+    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    obex_message_builder_request_create_connect(buffer, buffer_len, obex_version_number, flags, maximum_obex_packet_length);
 }
 
-void goep_client_create_get_request(uint16_t goep_cid){
-    goep_client_packet_init(goep_cid, OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK);
-    goep_client_packet_add_connection_id(goep_cid);
-}
-
-void goep_client_create_set_path_request(uint16_t goep_cid, uint8_t flags){
-    UNUSED(goep_cid);
-    goep_client_packet_init(goep_cid, OBEX_OPCODE_SETPATH);
-    uint8_t fields[2];
-    fields[0] = flags;
-    fields[1] = 0;  // reserved
-    goep_client_packet_append(&fields[0], sizeof(fields));
-    goep_client_packet_add_connection_id(goep_cid);
-}
-
-void goep_client_create_abort_request(uint16_t goep_cid){
-    goep_client_packet_init(goep_cid, OBEX_OPCODE_ABORT);
-    goep_client_packet_add_connection_id(goep_cid);
-}
-
-void goep_client_create_disconnect_request(uint16_t goep_cid){
-    UNUSED(goep_cid);
-    goep_client_packet_init(goep_cid, OBEX_OPCODE_DISCONNECT);
-    goep_client_packet_add_connection_id(goep_cid);
-}
-
-void goep_client_add_variable_header(uint16_t goep_cid, uint8_t header_type, uint16_t header_data_length, const uint8_t * header_data){
-    UNUSED(goep_cid);
-    uint8_t header[3];
-    header[0] = header_type;
-    big_endian_store_16(header, 1, sizeof(header) + header_data_length);
-    goep_client_packet_append(&header[0], sizeof(header));
-    goep_client_packet_append(header_data, header_data_length);
-}
-
-void goep_client_add_byte_header(uint16_t goep_cid, uint8_t header_type, uint8_t value){
-    UNUSED(goep_cid);
-    uint8_t header[2];
-    header[0] = header_type;
-    header[1] = value;
-    goep_client_packet_append(&header[0], sizeof(header));
-}
-
-void goep_client_add_word_header(uint16_t goep_cid, uint8_t header_type, uint32_t value){
-    UNUSED(goep_cid);
-    uint8_t header[5];
-    header[0] = header_type;
-    big_endian_store_32(header, 1, value);
-    goep_client_packet_append(&header[0], sizeof(header));
-}
-
-void goep_client_add_header_srm_enable(uint16_t goep_cid){
-    goep_client_add_byte_header(goep_cid, OBEX_HEADER_SINGLE_RESPONSE_MODE, OBEX_SRM_ENABLE);
-}
-
-void goep_client_add_header_target(uint16_t goep_cid, uint16_t length, const uint8_t * target){
-    goep_client_add_variable_header(goep_cid, OBEX_HEADER_TARGET, length,  target);
-}
-
-void goep_client_add_header_application_parameters(uint16_t goep_cid, uint16_t length, const uint8_t * data){
-    goep_client_add_variable_header(goep_cid, OBEX_HEADER_APPLICATION_PARAMETERS, length,  data);
-}
-
-void goep_client_add_header_challenge_response(uint16_t goep_cid, uint16_t length, const uint8_t * data){
-    goep_client_add_variable_header(goep_cid, OBEX_HEADER_AUTHENTICATION_RESPONSE, length,  data);
-}
-
-void goep_client_add_header_name(uint16_t goep_cid, const char * name){
+void goep_client_request_create_get(uint16_t goep_cid){
     UNUSED(goep_cid);
     goep_client_t * context = goep_client;
-    int len = strlen(name); 
-    if (len) {
-        // empty string does not have trailing \0
-        len++;
-    }
-    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
-    uint16_t pos = big_endian_read_16(buffer, 1);
-    buffer[pos++] = OBEX_HEADER_NAME;
-    big_endian_store_16(buffer, pos, 1 + 2 + len*2);
-    pos += 2;
-    int i;
-    // @note name[len] == 0 
-    for (i = 0 ; i < len ; i++){
-        buffer[pos++] = 0;
-        buffer[pos++] = *name++;
-    }
-    big_endian_store_16(buffer, 1, pos);
- }
+    goep_client_packet_init(goep_cid, OBEX_OPCODE_GET | OBEX_OPCODE_FINAL_BIT_MASK);
 
-void goep_client_add_header_type(uint16_t goep_cid, const char * type){
+    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    obex_message_builder_request_create_get(buffer, buffer_len, context->obex_connection_id);
+}
+
+void goep_client_request_create_put(uint16_t goep_cid){
     UNUSED(goep_cid);
-    uint8_t header[3];
-    header[0] = OBEX_HEADER_TYPE;
-    int len_incl_zero = strlen(type) + 1;
-    big_endian_store_16(header, 1, 1 + 2 + len_incl_zero);
-    goep_client_packet_append(&header[0], sizeof(header));
-    goep_client_packet_append((const uint8_t*)type, len_incl_zero);
+    goep_client_t * context = goep_client;
+    goep_client_packet_init(goep_cid, OBEX_OPCODE_PUT | OBEX_OPCODE_FINAL_BIT_MASK);
+
+    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    obex_message_builder_request_create_put(buffer, buffer_len, context->obex_connection_id);
+}
+
+void goep_client_request_create_set_path(uint16_t goep_cid, uint8_t flags){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+    goep_client_packet_init(goep_cid, OBEX_OPCODE_SETPATH);
+
+    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    obex_message_builder_request_create_set_path(buffer, buffer_len, flags, context->obex_connection_id);
+}
+
+void goep_client_request_create_abort(uint16_t goep_cid){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+    goep_client_packet_init(goep_cid, OBEX_OPCODE_ABORT);
+
+    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    obex_message_builder_request_create_abort(buffer, buffer_len, context->obex_connection_id);
+}
+
+void goep_client_request_create_disconnect(uint16_t goep_cid){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+    goep_client_packet_init(goep_cid, OBEX_OPCODE_DISCONNECT);
+
+    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    obex_message_builder_request_create_disconnect(buffer, buffer_len, context->obex_connection_id);
+}
+
+void goep_client_header_add_byte(uint16_t goep_cid, uint8_t header_type, uint8_t value){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+    
+    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    obex_message_builder_header_add_byte(buffer, buffer_len, header_type, value);
+}
+
+void goep_client_header_add_word(uint16_t goep_cid, uint8_t header_type, uint32_t value){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+    
+    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    obex_message_builder_header_add_word(buffer, buffer_len, header_type, value);
+}
+
+void goep_client_header_add_variable(uint16_t goep_cid, uint8_t header_type, const uint8_t * header_data, uint16_t header_data_length){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+    
+    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    obex_message_builder_header_add_variable(buffer, buffer_len, header_type, header_data, header_data_length);
+}
+
+void goep_client_header_add_srm_enable(uint16_t goep_cid){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+    
+    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    obex_message_builder_header_add_srm_enable(buffer, buffer_len);
+}
+
+void goep_client_header_add_target(uint16_t goep_cid, const uint8_t * target, uint16_t length){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+    
+    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    obex_message_builder_header_add_target(buffer, buffer_len, target, length);
+}
+
+void goep_client_header_add_application_parameters(uint16_t goep_cid, const uint8_t * data, uint16_t length){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+    
+    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    obex_message_builder_header_add_application_parameters(buffer, buffer_len, data, length);
+}
+
+void goep_client_header_add_challenge_response(uint16_t goep_cid, const uint8_t * data, uint16_t length){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+    
+    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    obex_message_builder_header_add_challenge_response(buffer, buffer_len, data, length);
+}
+
+void goep_client_body_add_static(uint16_t goep_cid, const uint8_t * data, uint32_t length){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+    
+    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    obex_message_builder_body_add_static(buffer, buffer_len, data, length);
+}
+
+void goep_client_header_add_name(uint16_t goep_cid, const char * name){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+    
+    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    obex_message_builder_header_add_name(buffer, buffer_len, name);
+}
+
+void goep_client_header_add_type(uint16_t goep_cid, const char * type){
+    UNUSED(goep_cid);
+    goep_client_t * context = goep_client;
+    
+    uint8_t * buffer = goep_client_get_outgoing_buffer(context);
+    uint16_t buffer_len = goep_client_get_outgoing_buffer_len(context);
+    obex_message_builder_header_add_type(buffer, buffer_len, type);
 }
 
 int goep_client_execute(uint16_t goep_cid){
@@ -562,3 +591,4 @@ int goep_client_execute(uint16_t goep_cid){
         return rfcomm_send_prepared(context->bearer_cid, pos);
     }
 }
+

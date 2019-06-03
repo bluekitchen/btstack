@@ -35,7 +35,8 @@
  *
  */
 
-#ifndef __GOEP_CLIENT_H
+#ifndef PBAP_CLIENT_H
+#define PBAP_CLIENT_H
 
 #if defined __cplusplus
 extern "C" {

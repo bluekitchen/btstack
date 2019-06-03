@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hid_device.c"
+#define BTSTACK_FILE__ "hid_device.c"
 
 #include <string.h>
 
@@ -73,7 +73,8 @@ typedef struct hid_device {
     uint16_t  report_id;
     uint16_t  expected_report_size;
     uint16_t  report_size;
-    
+    uint8_t   user_request_can_send_now;
+
     hid_handshake_param_type_t report_status;
     hid_protocol_mode_t protocol_mode;
 } hid_device_t;
@@ -488,7 +489,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             break;
                     }
                     if (device->report_status != HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL){
-                        hid_device_request_can_send_now_event(channel);
+                        l2cap_request_can_send_now_event(device->control_cid);
                         break;
                     } 
                     switch (hid_report_id_status(device->cid, device->report_id)){
@@ -507,8 +508,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     } else {
                         device->report_size = btstack_min(btstack_min(l2cap_max_mtu(), report_size), sizeof(report));
                     }
-                    
-                    hid_device_request_can_send_now_event(channel);
+
+                    l2cap_request_can_send_now_event(device->control_cid);
                     break;
 
                 case HID_MESSAGE_TYPE_SET_REPORT:
@@ -546,8 +547,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             break;
                     }
                     device->report_type = (hid_report_type_t)(packet[0] & 0x03);
-                    hid_device_request_can_send_now_event(channel);
-                    // l2cap_request_can_send_now_event(device->control_cid);
+                    l2cap_request_can_send_now_event(device->control_cid);
                     break;
                 case HID_MESSAGE_TYPE_GET_PROTOCOL:
                     // printf(" HID_MESSAGE_TYPE_GET_PROTOCOL\n");
@@ -583,7 +583,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             break;
                     }
                     device->report_status = HID_HANDSHAKE_PARAM_TYPE_SUCCESSFUL;
-                    hid_device_request_can_send_now_event(channel);
+                    l2cap_request_can_send_now_event(device->control_cid);
                     break;
 
                 case HID_MESSAGE_TYPE_HID_CONTROL:
@@ -597,8 +597,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             break;
                         default:
                             device->state = HID_DEVICE_W2_SEND_UNSUPPORTED_REQUEST;
-                            hid_device_request_can_send_now_event(channel);
-                            // l2cap_request_can_send_now_event(device->control_cid);
+                            l2cap_request_can_send_now_event(device->control_cid);
                             break;
                     }
                     break;
@@ -625,10 +624,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                     (*hci_device_report_data)(device->cid, device->report_type, device->report_id, packet_size - pos, &packet[pos]);
                     break;
                 default:
-                    // printf("HID_DEVICE_W2_SEND_UNSUPPORTED_REQUEST %d  \n", message_type);
                     device->state = HID_DEVICE_W2_SEND_UNSUPPORTED_REQUEST;
-                    // l2cap_request_can_send_now_event(device->control_cid);
-                    hid_device_request_can_send_now_event(channel);
+                    l2cap_request_can_send_now_event(device->control_cid);
                     break;
             }
             break;
@@ -686,12 +683,17 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         }
                         return;
                     }
+
+                    // store con_handle
+                    if (device->con_handle == HCI_CON_HANDLE_INVALID){
+                        device->con_handle  = l2cap_event_channel_opened_get_handle(packet);
+                    }
+
+                    // store l2cap cid
                     psm = l2cap_event_channel_opened_get_psm(packet);
-                    connected_before = device->connected;
                     switch (psm){
                         case PSM_HID_CONTROL:
                             device->control_cid = l2cap_event_channel_opened_get_local_cid(packet);
-                            device->con_handle  = l2cap_event_incoming_connection_get_handle(packet);
                             break;
                         case PSM_HID_INTERRUPT:
                             device->interrupt_cid = l2cap_event_channel_opened_get_local_cid(packet);
@@ -699,13 +701,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                         default:
                             break;
                     }
-                    
+
                     // connect HID Interrupt for outgoing
                     if (device->incoming == 0 && psm == PSM_HID_CONTROL){
                         // printf("Create outgoing HID Interrupt\n");
                         status = l2cap_create_channel(packet_handler, device->bd_addr, PSM_HID_INTERRUPT, 48, &device->interrupt_cid);
                         break;
                     }
+
+                    // emit connected if both channels are open
+                    connected_before = device->connected;
                     if (!connected_before && device->control_cid && device->interrupt_cid){
                         device->connected = 1;
                         hid_device_emit_connected_event(device, 0);
@@ -817,9 +822,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             hid_device_send_control_message(device->cid, &report[0], 1);
                             break;
                         default:
-                            log_info("HID Can send now, emit event");
-                            hid_device_emit_can_send_now_event(device);
-                            // device->state = HID_DEVICE_IDLE;
+                            if (device->user_request_can_send_now){
+                                device->user_request_can_send_now = 0;
+                                hid_device_emit_can_send_now_event(device);
+                            }
                             break;
                     }
                     device->state = HID_DEVICE_IDLE;
@@ -886,11 +892,9 @@ void hid_device_register_report_data_callback(void (*callback)(uint16_t cid, hid
  */
 void hid_device_request_can_send_now_event(uint16_t hid_cid){
     hid_device_t * hid_device = hid_device_get_instance_for_hid_cid(hid_cid);
-    if (!hid_device || !hid_device->control_cid){
-         hid_device->state = HID_DEVICE_IDLE;
-         return;
-    }
-    l2cap_request_can_send_now_event(hid_device->control_cid);
+    if (!hid_device || !hid_device->interrupt_cid) return;
+    hid_device->user_request_can_send_now = 1;
+    l2cap_request_can_send_now_event(hid_device->interrupt_cid);
 }
 
 /**
@@ -901,6 +905,10 @@ void hid_device_send_interrupt_message(uint16_t hid_cid, const uint8_t * message
     hid_device_t * hid_device = hid_device_get_instance_for_hid_cid(hid_cid);
     if (!hid_device || !hid_device->interrupt_cid) return;
     l2cap_send(hid_device->interrupt_cid, (uint8_t*) message, message_len);
+    // request user can send now if pending
+    if (hid_device->interrupt_cid){
+        l2cap_request_can_send_now_event((hid_device->interrupt_cid));
+    }
 }
 
 /**
@@ -911,6 +919,10 @@ void hid_device_send_control_message(uint16_t hid_cid, const uint8_t * message, 
     hid_device_t * hid_device = hid_device_get_instance_for_hid_cid(hid_cid);
     if (!hid_device || !hid_device->control_cid) return;
     l2cap_send(hid_device->control_cid, (uint8_t*) message, message_len);
+    // request user can send now if pending
+    if (hid_device->user_request_can_send_now){
+        l2cap_request_can_send_now_event((hid_device->control_cid));
+    }
 }
 
 /*

@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hfp.c"
+#define BTSTACK_FILE__ "hfp.c"
  
 
 #include "btstack_config.h"
@@ -409,6 +409,9 @@ static hfp_connection_t * create_hfp_connection_context(void){
     hfp_connection->parser_state = HFP_PARSER_CMD_HEADER;
     hfp_connection->command = HFP_CMD_NONE;
     
+    hfp_connection->acl_handle = HCI_CON_HANDLE_INVALID;
+    hfp_connection->sco_handle = HCI_CON_HANDLE_INVALID;
+
     hfp_reset_context_flags(hfp_connection);
 
     btstack_linked_list_add(&hfp_connections, (btstack_linked_item_t*)hfp_connection);
@@ -722,24 +725,16 @@ void hfp_handle_hci_event(uint8_t packet_type, uint16_t channel, uint8_t *packet
             
             if (!hfp_connection) break;
 
-            if (hfp_connection->state != HFP_W4_SCO_DISCONNECTED){
-                log_info("Received gap disconnect in wrong hfp state");
-            }
-            log_info("Check SCO handle: incoming 0x%02x, hfp_connection 0x%02x\n", handle, hfp_connection->sco_handle);
-                
-            if (handle == hfp_connection->sco_handle){
+            hfp_connection->sco_handle = HCI_CON_HANDLE_INVALID;
+            hfp_connection->release_audio_connection = 0;
+            hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+            hfp_emit_event(hfp_connection, HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED, 0);
+
+            if (hfp_connection->release_slc_connection){
+                hfp_connection->release_slc_connection = 0;
                 log_info("SCO disconnected, w2 disconnect RFCOMM\n");
-                hfp_connection->sco_handle = 0;
-                hfp_connection->release_audio_connection = 0;
-                hfp_connection->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-                hfp_emit_event(hfp_connection, HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED, 0);
-                if (hfp_connection->release_slc_connection){
-                    hfp_connection->state = HFP_W4_RFCOMM_DISCONNECTED;
-                    hfp_connection->release_slc_connection = 0;
-                    rfcomm_disconnect(hfp_connection->rfcomm_cid);
-                }   
-                break;
-            }
+                hfp_connection->state = HFP_W2_DISCONNECT_RFCOMM;
+            }   
             break;
 
         default:
@@ -1513,6 +1508,17 @@ void hfp_release_service_level_connection(hfp_connection_t * hfp_connection){
         return;
     }
 
+    if (hfp_connection->state < HFP_W4_SCO_CONNECTED){
+        hfp_connection->state = HFP_W2_DISCONNECT_RFCOMM;
+        return;
+    }
+
+    if (hfp_connection->state < HFP_W4_SCO_DISCONNECTED){
+        hfp_connection->state = HFP_W2_DISCONNECT_SCO;
+        return;
+    }
+
+    // HFP_W4_SCO_DISCONNECTED or later 
     hfp_connection->release_slc_connection = 1;
 }
 

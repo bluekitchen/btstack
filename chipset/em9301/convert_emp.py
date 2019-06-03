@@ -14,8 +14,8 @@ header = '''/**
  * BASENAME.h converted from BASENAME.emp
  */
 
-#ifndef __BASENAME_H
-#define __BASENAME_H
+#ifndef BASENAME_H
+#define BASENAME_H
 
 #include <stdint.h>
 extern const uint8_t  container_blob_data[];

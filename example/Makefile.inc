@@ -45,6 +45,7 @@ COMMON += \
 	btstack_tlv.c               \
 	btstack_crypto.c            \
 	uECC.c                      \
+	sm.c                        \
 
 CLASSIC += \
 	btstack_link_key_db_memory.c   \
@@ -68,9 +69,6 @@ GATT_SERVER += \
 
 GATT_CLIENT += \
 	gatt_client.c        	    \
-
-SM += \
-	sm.c 				 	    \
 
 PAN += \
 	pan.c \
@@ -183,7 +181,6 @@ EXAMPLES_USING_LE =			\
 CORE_OBJ    = $(CORE:.c=.o)
 COMMON_OBJ  = $(COMMON:.c=.o)
 CLASSIC_OBJ  = $(CLASSIC:.c=.o)
-SM_OBJ = $(SM:.c=.o)
 ATT_OBJ     = $(ATT:.c=.o)
 GATT_CLIENT_OBJ = $(GATT_CLIENT:.c=.o)
 GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
@@ -207,7 +204,7 @@ ant_test: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ant_test.c
 sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${PAN_OBJ} ${SDP_CLIENT} sdp_rfcomm_query.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-pbap_client_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} md5.o obex_iterator.o goep_client.o yxml.o pbap_client.o pbap_client_demo.o
+pbap_client_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} md5.o obex_iterator.o obex_message_builder.o goep_client.o yxml.o pbap_client.o pbap_client_demo.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 sdp_general_query: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} sdp_general_query.c
@@ -219,37 +216,37 @@ sdp_bnep_query: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} sdp_bnep_
 spp_counter: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} spp_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-le_counter: le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} battery_service_server.o le_counter.c
+le_counter: le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} battery_service_server.o le_counter.c
 	${CC} $(filter-out le_counter.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-att_delayed_response: att_delayed_response.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} att_delayed_response.c
+att_delayed_response: att_delayed_response.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} att_delayed_response.c
 	${CC} $(filter-out att_delayed_response.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-hog_keyboard_demo: hog_keyboard_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} battery_service_server.o device_information_service_server.o hids_device.o btstack_ring_buffer.o hog_keyboard_demo.c
+hog_keyboard_demo: hog_keyboard_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} battery_service_server.o device_information_service_server.o hids_device.o btstack_ring_buffer.o hog_keyboard_demo.c
 	${CC} $(filter-out hog_keyboard_demo.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-hog_mouse_demo: hog_mouse_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} battery_service_server.o device_information_service_server.o hids_device.o hog_mouse_demo.c
+hog_mouse_demo: hog_mouse_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} battery_service_server.o device_information_service_server.o hids_device.o hog_mouse_demo.c
 	${CC} $(filter-out hog_mouse_demo.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-sm_pairing_peripheral: sm_pairing_peripheral.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} sm_pairing_peripheral.c
+sm_pairing_peripheral: sm_pairing_peripheral.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} sm_pairing_peripheral.c
 	${CC} $(filter-out sm_pairing_peripheral.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-sm_pairing_central: sm_pairing_central.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} sm_pairing_central.o
+sm_pairing_central: sm_pairing_central.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} sm_pairing_central.o
 	${CC} $(filter-out sm_pairing_central.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-le_streamer: le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} le_streamer.c
+le_streamer: le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} le_streamer.c
 	${CC} $(filter-out le_streamer.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-le_streamer_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ} le_streamer_client.c
+le_streamer_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} le_streamer_client.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-gatt_heart_rate_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ} gatt_heart_rate_client.c
+gatt_heart_rate_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} gatt_heart_rate_client.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-spp_and_le_counter: spp_and_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} spp_and_le_counter.c
+spp_and_le_counter: spp_and_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} spp_and_le_counter.c
 	${CC} $(filter-out spp_and_le_counter.h,$^)  ${CFLAGS} ${LDFLAGS} -o $@
 
-spp_and_le_streamer: spp_and_le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} spp_and_le_streamer.c
+spp_and_le_streamer: spp_and_le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} spp_and_le_streamer.c
 	${CC} $(filter-out spp_and_le_streamer.h,$^)  ${CFLAGS} ${LDFLAGS} -o $@
 
 spp_streamer: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} spp_streamer.c
@@ -273,19 +270,19 @@ gap_link_keys: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} gap_link_keys.c
 panu_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${PAN_OBJ} panu_demo.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-gatt_browser: gatt_browser.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} gatt_browser.c
+gatt_browser: gatt_browser.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} gatt_browser.c
 	${CC} $(filter-out gatt_browser.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-gatt_battery_query: gatt_battery_query.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} gatt_battery_query.c
+gatt_battery_query: gatt_battery_query.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${GATT_SERVER_OBJ} gatt_battery_query.c
 	${CC} $(filter-out gatt_battery_query.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-ancs_client_demo: ancs_client_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_OBJ} ancs_client.c ancs_client_demo.c
+ancs_client_demo: ancs_client_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ancs_client.c ancs_client_demo.c
 	${CC} $(filter-out ancs_client_demo.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 led_counter: ${CORE_OBJ} ${COMMON_OBJ} led_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-gap_le_advertisements: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ}  gap_le_advertisements.c
+gap_le_advertisements: ${CORE_OBJ} ${COMMON_OBJ}  gap_le_advertisements.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hsp_hs_demo: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} ${SBC_DECODER_OBJ} ${SBC_ENCODER_OBJ} ${CVSD_PLC_OBJ} wav_util.o sco_demo_util.o btstack_ring_buffer.o hsp_hs.o hsp_hs_demo.c
@@ -321,10 +318,10 @@ avrcp_browsing_client: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} av
 dut_mode_classic: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} dut_mode_classic.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-le_data_channel_client: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} le_data_channel_client.c
+le_data_channel_client: ${CORE_OBJ} ${COMMON_OBJ} le_data_channel_client.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-le_data_channel_server: le_data_channel_server.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} le_data_channel_server.c
+le_data_channel_server: le_data_channel_server.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} le_data_channel_server.c
 	${CC} $(filter-out le_data_channel_server.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 mod_player: ${CORE_OBJ} ${COMMON_OBJ} ${HXCMOD_PLAYER_OBJ} btstack_audio.o mod_player.c
@@ -336,13 +333,13 @@ sine_player: ${CORE_OBJ} ${COMMON_OBJ} btstack_audio.o sine_player.c
 audio_duplex: ${CORE_OBJ} ${COMMON_OBJ} btstack_audio.o btstack_ring_buffer.o audio_duplex.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-nordic_spp_le_counter: nordic_spp_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} nordic_spp_service_server.o nordic_spp_le_counter.c
+nordic_spp_le_counter: nordic_spp_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} nordic_spp_service_server.o nordic_spp_le_counter.c
 	${CC} $(filter-out nordic_spp_le_counter.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-nordic_spp_le_streamer: nordic_spp_le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} nordic_spp_service_server.o nordic_spp_le_streamer.c
+nordic_spp_le_streamer: nordic_spp_le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} nordic_spp_service_server.o nordic_spp_le_streamer.c
 	${CC} $(filter-out nordic_spp_le_streamer.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-ublox_spp_le_counter: ublox_spp_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} device_information_service_server.o ublox_spp_service_server.o ublox_spp_le_counter.c
+ublox_spp_le_counter: ublox_spp_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} device_information_service_server.o ublox_spp_service_server.o ublox_spp_le_counter.c
 	${CC} $(filter-out ublox_spp_le_counter.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:

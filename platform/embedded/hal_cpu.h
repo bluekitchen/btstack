@@ -42,8 +42,8 @@
  *  and then unblocked while entering low power mode atomically
  */
 
-#ifndef __HAL_CPU_H
-#define __HAL_CPU_H
+#ifndef HAL_CPU_H
+#define HAL_CPU_H
 
 #if defined __cplusplus
 extern "C" {
@@ -56,4 +56,4 @@ void hal_cpu_enable_irqs_and_sleep(void);
 #if defined __cplusplus
 }
 #endif
- #endif // __HAL_CPU_H
+ #endif // HAL_CPU_H

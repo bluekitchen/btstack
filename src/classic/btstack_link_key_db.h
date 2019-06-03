@@ -39,8 +39,8 @@
  * interface to provide link key storage
  */
 
-#ifndef __BTSTACK_LINK_KEY_DB_H
-#define __BTSTACK_LINK_KEY_DB_H
+#ifndef BTSTACK_LINK_KEY_DB_H
+#define BTSTACK_LINK_KEY_DB_H
 
 #include "bluetooth.h"
 
@@ -132,4 +132,4 @@ typedef struct {
 }
 #endif
 
-#endif // __BTSTACK_LINK_KEY_DB_H
+#endif // BTSTACK_LINK_KEY_DB_H

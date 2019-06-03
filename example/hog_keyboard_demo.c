@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hog_keyboard_demo.c"
+#define BTSTACK_FILE__ "hog_keyboard_demo.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(hog_keyboard_demo): HID-over-GATT Keyboard
@@ -176,6 +176,8 @@ const uint8_t adv_data[] = {
     0x0d, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'H', 'I', 'D', ' ', 'K', 'e', 'y', 'b', 'o', 'a', 'r', 'd',
     // 16-bit Service UUIDs
     0x03, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, ORG_BLUETOOTH_SERVICE_HUMAN_INTERFACE_DEVICE & 0xff, ORG_BLUETOOTH_SERVICE_HUMAN_INTERFACE_DEVICE >> 8,
+    // Appearance HID - Keyboard (Category 15, Sub-Category 1)
+    0x03, BLUETOOTH_DATA_TYPE_APPEARANCE, 0xC1, 0x03,
 };
 const uint8_t adv_data_len = sizeof(adv_data);
 
@@ -420,7 +422,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 #endif
                             break;
                         case HIDS_SUBEVENT_BOOT_KEYBOARD_INPUT_REPORT_ENABLE:
-                            con_handle = hids_subevent_input_report_enable_get_con_handle(packet);
+                            con_handle = hids_subevent_boot_keyboard_input_report_enable_get_con_handle(packet);
                             printf("Boot Keyboard Characteristic Subscribed %u\n", hids_subevent_boot_keyboard_input_report_enable_get_enable(packet));
                             break;
                         case HIDS_SUBEVENT_PROTOCOL_MODE:

@@ -40,8 +40,8 @@
  *
  */
 
-#ifndef __BTSTACK_SBC_PLC_H
-#define __BTSTACK_SBC_PLC_H
+#ifndef BTSTACK_SBC_PLC_H
+#define BTSTACK_SBC_PLC_H
 
 #include <stdint.h>
 
@@ -84,4 +84,4 @@ void btstack_sbc_plc_octave_set_base_name(const char * name);
 }
 #endif
 
-#endif // __BTSTACK_SBC_PLC_H
+#endif // BTSTACK_SBC_PLC_H

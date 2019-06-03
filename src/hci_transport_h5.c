@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hci_transport_h5.c"
+#define BTSTACK_FILE__ "hci_transport_h5.c"
 
 /*
  *  hci_transport_h5.c
@@ -891,6 +891,7 @@ static int hci_transport_h5_set_baudrate(uint32_t baudrate){
     int res = btstack_uart->set_baudrate(baudrate);
 
     if (res) return res;
+    uart_config.baudrate = baudrate;
     hci_transport_link_update_resend_timeout(baudrate);
     return 0;
 }

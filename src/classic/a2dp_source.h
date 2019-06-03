@@ -43,8 +43,8 @@
  * A2DP Source is a device that streames media data.
  */
 
-#ifndef __A2DP_SOURCE_H
-#define __A2DP_SOURCE_H
+#ifndef A2DP_SOURCE_H
+#define A2DP_SOURCE_H
 
 #include <stdint.h>
 #include "classic/avdtp.h"
@@ -169,4 +169,4 @@ int  	a2dp_source_stream_send_media_payload(uint16_t a2dp_cid, uint8_t local_sei
 }
 #endif
 
-#endif // __A2DP_SOURCE_H
+#endif // A2DP_SOURCE_H

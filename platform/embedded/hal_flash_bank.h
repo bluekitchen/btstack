@@ -36,8 +36,8 @@
  *  after being erased
  */
 
-#ifndef __HAL_FLASH_BANK_H
-#define __HAL_FLASH_BANK_H
+#ifndef HAL_FLASH_BANK_H
+#define HAL_FLASH_BANK_H
 
 #include <stdint.h>
 
@@ -89,4 +89,4 @@ typedef struct {
 #if defined __cplusplus
 }
 #endif
-#endif // __HAL_FLASH_BANK_H
+#endif // HAL_FLASH_BANK_H

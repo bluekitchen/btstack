@@ -2,10 +2,10 @@
 import os
 import re
 
-filetag = '#define __BTSTACK_FILE__ "%s"\n'
-filetag_re = '#define __BTSTACK_FILE__ \"(.*)\"'
+filetag = '#define BTSTACK_FILE__ "%s"\n'
+filetag_re = '#define BTSTACK_FILE__ \"(.*)\"'
 
-ignoreFolders = ["3rd-party", "pic32-harmony", "msp430", "cpputest", "test", "msp-exp430f5438-cc2564b", "msp430f5229lp-cc2564b", "ez430-rf2560", "ios", "chipset/cc256x", "docs", "mtk"]
+ignoreFolders = ["3rd-party", "pic32-harmony", "msp430", "cpputest", "test", "msp-exp430f5438-cc2564b", "msp430f5229lp-cc2564b", "ez430-rf2560", "ios", "chipset/cc256x", "docs", "mtk", "port"]
 ignoreFiles =   ["ant_cmds.h", "rijndael.c", "btstack_config.h", "btstack_version.h", "profile.h", "bluetoothdrv.h", 
 	"ancs_client_demo.h", "spp_and_le_counter.h", "bluetoothdrv-stub.c", "minimal_peripheral.c", "BTstackDaemonRespawn.c"]
 

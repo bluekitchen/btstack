@@ -51,8 +51,8 @@ single_hfile_header_begin = """
  *
  */
 
-#ifndef __BTSTACK_RTOS_H
-#define __BTSTACK_RTOS_H
+#ifndef BTSTACK_RTOS_H
+#define BTSTACK_RTOS_H
 
 #if defined __cplusplus
 extern "C" {
@@ -85,7 +85,7 @@ single_hfile_header_end = """
 }
 #endif
 
-#endif // __BTSTACK_RTOS_H
+#endif // BTSTACK_RTOS_H
 """
 
 multiple_header_begin = """

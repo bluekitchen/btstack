@@ -35,6 +35,8 @@
  *
  */
 
+#define BTSTACK_FILE__ "mod_player.c"
+
 #include "btstack.h"
 #include "hxcmod.h"
 #include "mods/mod.h"

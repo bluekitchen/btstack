@@ -35,7 +35,8 @@
  *
  */
 
-#ifndef __GOEP_CLIENT_H
+#ifndef GOEP_CLIENT_H
+#define GOEP_CLIENT_H
 
 #if defined __cplusplus
 extern "C" {
@@ -62,7 +63,7 @@ extern "C" {
 /**
  * Setup GOEP Client
  */
-void    goep_client_init(void);
+void goep_client_init(void);
 
 /*
  * @brief Create GOEP connection to a GEOP server with specified UUID on a remote deivce.
@@ -76,7 +77,7 @@ uint8_t goep_client_create_connection(btstack_packet_handler_t handler, bd_addr_
 
 /** 
  * @brief Disconnects GOEP connection with given identifier.
- * @param gope_cid
+ * @param goep_cid
  * @return status
  */
 uint8_t goep_client_disconnect(uint16_t goep_cid);
@@ -87,138 +88,148 @@ uint8_t goep_client_disconnect(uint16_t goep_cid);
  *       so packet handler should be ready to handle it
  * @param goep_cid
  */
-void    goep_client_request_can_send_now(uint16_t goep_cid);
+void goep_client_request_can_send_now(uint16_t goep_cid);
 
 /**
  * @brief Get Opcode from last created request, needed for parsing of OBEX response packet
- * @param gope_cid
+ * @param goep_cid
  * @return opcode
  */
 uint8_t goep_client_get_request_opcode(uint16_t goep_cid);
 
 /**
- * brief Get PBAP Supported Features found in SDP record during conenct
+ * brief Get PBAP Supported Features found in SDP record during connect
  */
 uint32_t goep_client_get_pbap_supported_features(uint16_t goep_cid); 
 
 /**
  * @brief Set Connection ID used for newly created requests
- * @param gope_cid
+ * @param goep_cid
  */
-void    goep_client_set_connection_id(uint16_t goep_cid, uint32_t connection_id);
+void goep_client_set_connection_id(uint16_t goep_cid, uint32_t connection_id);
 
 /**
  * @brief Start Connect request
- * @param gope_cid
+ * @param goep_cid
  * @param obex_version_number
  * @param flags
  * @param maximum_obex_packet_length
  */
-void    goep_client_create_connect_request(uint16_t goep_cid, uint8_t obex_version_number, uint8_t flags, uint16_t maximum_obex_packet_length);
+void goep_client_request_create_connect(uint16_t goep_cid, uint8_t obex_version_number, uint8_t flags, uint16_t maximum_obex_packet_length);
 
 /**
  * @brief Start Disconnect request
- * @param gope_cid
+ * @param goep_cid
  */
-void    goep_client_create_disconnect_request(uint16_t goep_cid);
+void goep_client_request_create_disconnect(uint16_t goep_cid);
 
 /**
  * @brief Create Get request
- * @param gope_cid
+ * @param goep_cid
  */
-void    goep_client_create_get_request(uint16_t goep_cid);
+void goep_client_request_create_get(uint16_t goep_cid);
 
 /**
  * @brief Create Abort request
- * @param gope_cid
+ * @param goep_cid
  */
-void    goep_client_create_abort_request(uint16_t goep_cid);
-
-/**
- * @brief Add SRM Enable
- * @param gope_cid
- */
-void    goep_client_add_header_srm_enable(uint16_t goep_cid);
+void goep_client_request_create_abort(uint16_t goep_cid);
 
 /**
  * @brief Start Set Path request
- * @param gope_cid
+ * @param goep_cid
  */
-void    goep_client_create_set_path_request(uint16_t goep_cid, uint8_t flags);
+void goep_client_request_create_set_path(uint16_t goep_cid, uint8_t flags);
 
-// not implemented yet
-// void  goep_client_create_put(uint16_t goep_cid);
+/**
+ * @brief Create Put request
+ * @param goep_cid
+ */
+void goep_client_request_create_put(uint16_t goep_cid);
+
+/**
+ * @brief Add SRM Enable
+ * @param goep_cid
+ */
+void goep_client_header_add_srm_enable(uint16_t goep_cid);
 
 /**
  * @brief Add header with single byte value (8 bit)
- * @param gope_cid
+ * @param goep_cid
  * @param header_type
  * @param value
  */
-void goep_client_add_byte_header(uint16_t goep_cid, uint8_t header_type, uint8_t value);
+void goep_client_header_add_byte(uint16_t goep_cid, uint8_t header_type, uint8_t value);
 
 /**
  * @brief Add header with word value (32 bit)
- * @param gope_cid
+ * @param goep_cid
  * @param header_type
  * @param value
  */
-void goep_client_add_word_header(uint16_t goep_cid, uint8_t header_type, uint32_t value);
+void goep_client_header_add_word(uint16_t goep_cid, uint8_t header_type, uint32_t value);
 
 /**
  * @brief Add header with variable size
- * @param gope_cid
+ * @param goep_cid
  * @param header_type
- * @param value
+ * @param header_data
+ * @param header_data_length
  */
-void goep_client_add_variable_header(uint16_t goep_cid, uint8_t header_type, uint16_t header_data_length, const uint8_t * header_data);
+void goep_client_header_add_variable(uint16_t goep_cid, uint8_t header_type, const uint8_t * header_data, uint16_t header_data_length);
 
 /**
  * @brief Add name header to current request
  * @param goep_cid
  * @param name
  */
-void    goep_client_add_header_name(uint16_t goep_cid, const char * name);
+void goep_client_header_add_name(uint16_t goep_cid, const char * name);
 
 /**
  * @brief Add target header to current request
  * @param goep_cid
  * @param target
+ * @param length of target
  */
-void    goep_client_add_header_target(uint16_t goep_cid, uint16_t length, const uint8_t * target);
+void goep_client_header_add_target(uint16_t goep_cid, const uint8_t * target, uint16_t length);
 
 /**
  * @brief Add type header to current request
  * @param goep_cid
  * @param type
  */
-void    goep_client_add_header_type(uint16_t goep_cid, const char * type);
+void goep_client_header_add_type(uint16_t goep_cid, const char * type);
 
 /**
  * @brief Add count header to current request
  * @param goep_cid
  * @param count
  */
-void    goep_client_add_header_count(uint16_t goep_cid, uint32_t count);
+void goep_client_header_add_count(uint16_t goep_cid, uint32_t count);
 
 /**
  * @brief Add application parameters header to current request
  * @param goep_cid
- * @param lenght of application parameters
  * @param data 
+ * @param lenght of application parameters
  */
-void    goep_client_add_header_application_parameters(uint16_t goep_cid, uint16_t length, const uint8_t * data);
+void goep_client_header_add_application_parameters(uint16_t goep_cid, const uint8_t * data, uint16_t length);
 
 /**
  * @brief Add application parameters header to current request
  * @param goep_cid
- * @param lenght of challenge response
  * @param data
+ * @param lenght of challenge response
  */
-void    goep_client_add_header_challenge_response(uint16_t goep_cid, uint16_t length, const uint8_t * data);
+void goep_client_header_add_challenge_response(uint16_t goep_cid, const uint8_t * data, uint16_t length);
 
-// int  goep_client_add_body_static(uint16_t goep_cid,  uint32_t length, uint8_t * data);
-// int  goep_client_add_body_dynamic(uint16_t goep_cid, uint32_t length, void (*data_callback)(uint32_t offset, uint8_t * buffer, uint32_t len));
+/**
+ * @brief Add body
+ * @param goep_cid
+ * @param data
+ * @param lenght 
+ */
+void goep_client_body_add_static(uint16_t goep_cid, const uint8_t * data, uint32_t length);
 
 /**
  * @brief Execute prepared request
@@ -228,6 +239,8 @@ void    goep_client_add_header_challenge_response(uint16_t goep_cid, uint16_t le
 int goep_client_execute(uint16_t goep_cid);
 
 /* API_END */
+
+// int goep_client_body_add_dynamic(uint16_t goep_cid, uint32_t length, void (*data_callback)(uint32_t offset, uint8_t * buffer, uint32_t len));
 
 #if defined __cplusplus
 }

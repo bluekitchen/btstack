@@ -43,8 +43,8 @@
  *  Created by Matthias Ringwald on 7/23/09.
  */
 
-#ifndef __BTSTACK_UTIL_H
-#define __BTSTACK_UTIL_H
+#ifndef BTSTACK_UTIL_H
+#define BTSTACK_UTIL_H
 
 
 #if defined __cplusplus
@@ -281,4 +281,4 @@ uint8_t btstack_crc8_calc(uint8_t *data, uint16_t len);
 }
 #endif
 		
-#endif // __BTSTACK_UTIL_H
+#endif // BTSTACK_UTIL_H

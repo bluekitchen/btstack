@@ -5,6 +5,8 @@
  * BTstack: added config for 8 connections + 251 packet len
  */
 
+#define BTSTACK_FILE__ "0000000_META_hci_patches_v7.c"
+
 #include <stdint.h>
 
 const char *   container_blob_name = "0000000_META_hci_patches_v7";
