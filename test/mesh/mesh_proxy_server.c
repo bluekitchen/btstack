@@ -351,9 +351,41 @@ static void packet_handler_for_mesh_proxy_configuration(uint8_t packet_type, uin
     }
 }
 
+static void add_network_key_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
+
+    // get key
+    mesh_network_key_t * network_key = btstack_memory_mesh_network_key_get();
+
+    // get single instance
+    memset(network_key, 0, sizeof(mesh_network_key_t));
+
+    // NetKey
+    memcpy(network_key->net_key, provisioning_data->net_key, 16);
+
+    // IdentityKey
+    memcpy(network_key->identity_key, provisioning_data->identity_key, 16);
+
+    // BeaconKey
+    memcpy(network_key->beacon_key, provisioning_data->beacon_key, 16);
+
+    // NID
+    network_key->nid = provisioning_data->nid;
+
+    // EncryptionKey
+    memcpy(network_key->encryption_key, provisioning_data->encryption_key, 16);
+
+    // PrivacyKey
+    memcpy(network_key->privacy_key, provisioning_data->privacy_key, 16);
+
+    // NetworkID
+    memcpy(network_key->network_id, provisioning_data->network_id, 8);
+
+    mesh_network_key_add(network_key);
+}
+
 static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
     // add to network key list
-    mesh_network_key_list_add_from_provisioning_data(provisioning_data);
+    add_network_key_from_provisioning_data(provisioning_data);
     // set unicast address
     mesh_network_set_primary_element_address(provisioning_data->unicast_address);
     // mesh_upper_transport_set_primary_element_address(provisioning_data->unicast_address);

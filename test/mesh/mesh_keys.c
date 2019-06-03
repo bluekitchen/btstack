@@ -114,39 +114,6 @@ mesh_network_key_t * mesh_network_key_nid_iterator_get_next(mesh_network_key_ite
     return key;
 }
 
-// ---
-
-void mesh_network_key_list_add_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
-
-    // get key
-    mesh_network_key_t * network_key = btstack_memory_mesh_network_key_get();
-
-    // get single instance
-    memset(network_key, 0, sizeof(mesh_network_key_t));
-
-    // NetKey
-    memcpy(network_key->net_key, provisioning_data->net_key, 16);
-
-    // IdentityKey
-    memcpy(network_key->identity_key, provisioning_data->identity_key, 16);
-
-    // BeaconKey
-    memcpy(network_key->beacon_key, provisioning_data->beacon_key, 16);
-
-    // NID
-    network_key->nid = provisioning_data->nid;
-
-    // EncryptionKey
-    memcpy(network_key->encryption_key, provisioning_data->encryption_key, 16);
-
-    // PrivacyKey
-    memcpy(network_key->privacy_key, provisioning_data->privacy_key, 16);
-
-    // NetworkID
-    memcpy(network_key->network_id, provisioning_data->network_id, 8);
-
-    mesh_network_key_add(network_key);
-}
 
 // application key list
 

@@ -48,6 +48,7 @@ extern "C"
 
 #include <stdint.h>
 #include "ble/mesh/mesh_network.h"
+#include "ble/mesh/adv_bearer.h"
 
 typedef struct {
     btstack_linked_item_t item;
@@ -77,6 +78,10 @@ typedef struct {
 
     // subnet state
     uint8_t node_id_advertisement_running;
+
+    // advertisement data for proxy
+    adv_bearer_connectable_advertisement_data_item_t advertisement_with_network_id;
+
 } mesh_network_key_t;
 
 typedef struct {
@@ -148,12 +153,6 @@ mesh_network_key_t * mesh_network_key_list_get(uint16_t netkey_index);
  * @returns count
  */
 int mesh_network_key_list_count(void);
-
-/**
- * @brief Initialize network key list from provisioning data
- * @param provisioning_data
- */
-void mesh_network_key_list_add_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data);
 
 /**
  * @brief Iterate over all network keys
