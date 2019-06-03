@@ -1003,6 +1003,10 @@ const mesh_access_message_t mesh_foundation_node_identity_status = {
 const mesh_access_message_t mesh_key_refresh_phase_status = {
         MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_STATUS, "121"
 };
+const mesh_access_message_t mesh_foundation_low_power_node_poll_timeout_status = {
+        MESH_FOUNDATION_OPERATION_LOW_POWER_NODE_POLL_TIMEOUT_STATUS, "23"
+};
+
 
 // message parser
 
@@ -2687,6 +2691,26 @@ static void config_node_reset_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     mesh_access_message_processed(pdu);
 }
 
+static void low_power_node_poll_timeout_status(mesh_model_t *mesh_model, uint16_t netkey_index_dest, uint16_t dest, uint8_t status){
+    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
+        &mesh_foundation_low_power_node_poll_timeout_status,
+        status,
+        0,  // The unicast address of the Low Power node
+        0); // The current value of the PollTimeout timer of the Low Power node
+    if (!transport_pdu) return;
+    printf("TODO: send unicast address of the Low Power node and the current value of the PollTimeout timer, instead of 0s\n");
+    // send as segmented access pdu
+    config_server_send_message(mesh_model, netkey_index_dest, dest, (mesh_pdu_t *) transport_pdu);
+}
+
+static void config_low_power_node_poll_timeout_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+    printf("TODO: implement get the current value of PollTimeout timer of the Low Power node within a Friend node\n");
+    low_power_node_poll_timeout_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), MESH_FOUNDATION_STATUS_SUCCESS);
+    mesh_access_message_processed(pdu);
+}
+
 static void config_node_identity_status(mesh_model_t *mesh_model, uint16_t netkey_index_dest, uint16_t dest, uint8_t status, uint16_t netkey_index, 
     mesh_node_identity_state_t node_identity_state){
     // setup message
@@ -2769,7 +2793,7 @@ typedef struct {
 } mesh_operation_t;
 
 static mesh_operation_t mesh_configuration_server_model_operations[] = {
-    { MESH_FOUNDATION_OPERATION_APPKEY_ADD,                                  19, config_appkey_add_handler   },
+    { MESH_FOUNDATION_OPERATION_APPKEY_ADD,                                  19, config_appkey_add_handler },
     { MESH_FOUNDATION_OPERATION_APPKEY_DELETE,                                3, config_appkey_delete_handler },
     { MESH_FOUNDATION_OPERATION_APPKEY_GET,                                   2, config_appkey_get_handler },
     { MESH_FOUNDATION_OPERATION_APPKEY_UPDATE,                               19, config_appkey_update_handler },
@@ -2778,45 +2802,45 @@ static mesh_operation_t mesh_configuration_server_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_NETKEY_DELETE,                                2, config_netkey_delete_handler },
     { MESH_FOUNDATION_OPERATION_NETKEY_GET,                                   0, config_netkey_get_handler },
     { MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_GET,                         1, config_composition_data_get_handler },
-    { MESH_FOUNDATION_OPERATION_BEACON_GET,                                   0, config_beacon_get_handler},
-    { MESH_FOUNDATION_OPERATION_BEACON_SET,                                   1, config_beacon_set_handler},
-    { MESH_FOUNDATION_OPERATION_DEFAULT_TTL_GET,                              0, config_default_ttl_get_handler},
-    { MESH_FOUNDATION_OPERATION_DEFAULT_TTL_SET,                              1, config_default_ttl_set_handler},
-    { MESH_FOUNDATION_OPERATION_FRIEND_GET,                                   0, config_friend_get_handler},
-    { MESH_FOUNDATION_OPERATION_FRIEND_SET,                                   1, config_friend_set_handler},
-    { MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_GET,                         0, config_model_network_transmit_get_handler},
-    { MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_SET,                         1, config_model_network_transmit_set_handler},
-    { MESH_FOUNDATION_OPERATION_GATT_PROXY_GET,                               0, config_gatt_proxy_get_handler},
-    { MESH_FOUNDATION_OPERATION_GATT_PROXY_SET,                               1, config_gatt_proxy_set_handler},
-    { MESH_FOUNDATION_OPERATION_RELAY_GET,                                    0, config_relay_get_handler},
-    { MESH_FOUNDATION_OPERATION_RELAY_SET,                                    1, config_relay_set_handler},
-    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_ADD,                       6, config_model_subscription_add_handler},
-    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_ADD,      20, config_model_subscription_virtual_address_add_handler},
-//    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DELETE,                    6, config_model_subscription_delete_handler},
-//    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_DELETE,   20, config_model_subscription_virtual_address_delete_handler},
-//    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_OVERWRITE,                 6, config_model_subscription_overwrite_handler},
-//    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_OVERWRITE,20, config_model_subscription_virtual_address_overwrite_handler},
-//    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DELETE_ALL,                4, config_model_subscription_delete_all_handler},
-//    { MESH_FOUNDATION_OPERATION_SIG_MODEL_SUBSCRIPTION_GET,                   4, config_sig_model_subscription_get_handler},
-//    { MESH_FOUNDATION_OPERATION_VENDOR_MODEL_SUBSCRIPTION_GET,                6, config_vendor_model_subscription_get_handler},
-    { MESH_FOUNDATION_OPERATION_SIG_MODEL_APP_GET,                            4, config_sig_model_app_get_handler},
-    { MESH_FOUNDATION_OPERATION_VENDOR_MODEL_APP_GET,                         6, config_vendor_model_app_get_handler},
-    { MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_SET,                       11, config_model_publication_set_handler},
-    { MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_VIRTUAL_ADDRESS_SET,       25, config_model_publication_virtual_address_set_handler},
-    { MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_GET,                        4, config_model_publication_get_handler},
-    { MESH_FOUNDATION_OPERATION_MODEL_APP_BIND,                               6, config_model_app_bind_handler},
-    { MESH_FOUNDATION_OPERATION_MODEL_APP_UNBIND,                             6, config_model_app_unbind_handler},
-    { MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_GET,                    0, config_heartbeat_publication_get_handler},
-    { MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_SET,                    9, config_heartbeat_publication_set_handler},
+    { MESH_FOUNDATION_OPERATION_BEACON_GET,                                   0, config_beacon_get_handler },
+    { MESH_FOUNDATION_OPERATION_BEACON_SET,                                   1, config_beacon_set_handler },
+    { MESH_FOUNDATION_OPERATION_DEFAULT_TTL_GET,                              0, config_default_ttl_get_handler },
+    { MESH_FOUNDATION_OPERATION_DEFAULT_TTL_SET,                              1, config_default_ttl_set_handler },
+    { MESH_FOUNDATION_OPERATION_FRIEND_GET,                                   0, config_friend_get_handler },
+    { MESH_FOUNDATION_OPERATION_FRIEND_SET,                                   1, config_friend_set_handler },
+    { MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_GET,                         0, config_model_network_transmit_get_handler },
+    { MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_SET,                         1, config_model_network_transmit_set_handler },
+    { MESH_FOUNDATION_OPERATION_GATT_PROXY_GET,                               0, config_gatt_proxy_get_handler },
+    { MESH_FOUNDATION_OPERATION_GATT_PROXY_SET,                               1, config_gatt_proxy_set_handler },
+    { MESH_FOUNDATION_OPERATION_RELAY_GET,                                    0, config_relay_get_handler },
+    { MESH_FOUNDATION_OPERATION_RELAY_SET,                                    1, config_relay_set_handler },
+    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_ADD,                       6, config_model_subscription_add_handler },
+    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_ADD,      20, config_model_subscription_virtual_address_add_handler },
+//    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DELETE,                    6, config_model_subscription_delete_handler },
+//    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_DELETE,   20, config_model_subscription_virtual_address_delete_handler },
+//    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_OVERWRITE,                 6, config_model_subscription_overwrite_handler },
+//    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_OVERWRITE,20, config_model_subscription_virtual_address_overwrite_handler },
+//    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DELETE_ALL,                4, config_model_subscription_delete_all_handler },
+//    { MESH_FOUNDATION_OPERATION_SIG_MODEL_SUBSCRIPTION_GET,                   4, config_sig_model_subscription_get_handler },
+//    { MESH_FOUNDATION_OPERATION_VENDOR_MODEL_SUBSCRIPTION_GET,                6, config_vendor_model_subscription_get_handler },
+    { MESH_FOUNDATION_OPERATION_SIG_MODEL_APP_GET,                            4, config_sig_model_app_get_handler },
+    { MESH_FOUNDATION_OPERATION_VENDOR_MODEL_APP_GET,                         6, config_vendor_model_app_get_handler },
+    { MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_SET,                       11, config_model_publication_set_handler },
+    { MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_VIRTUAL_ADDRESS_SET,       25, config_model_publication_virtual_address_set_handler },
+    { MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_GET,                        4, config_model_publication_get_handler },
+    { MESH_FOUNDATION_OPERATION_MODEL_APP_BIND,                               6, config_model_app_bind_handler },
+    { MESH_FOUNDATION_OPERATION_MODEL_APP_UNBIND,                             6, config_model_app_unbind_handler },
+    { MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_GET,                    0, config_heartbeat_publication_get_handler },
+    { MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_SET,                    9, config_heartbeat_publication_set_handler },
 //    { MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_GET,                   0, config_heartbeat_subscription_get_handler},
 //    { MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_SET,                   5, config_heartbeat_subscription_set_handler},
-    { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_GET,                        2, config_key_refresh_phase_get_handler},
-    { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_SET,                        3, config_key_refresh_phase_set_handler},
-    { MESH_FOUNDATION_OPERATION_NODE_RESET,                                   0, config_node_reset_handler},
-//    { MESH_FOUNDATION_OPERATION_LOW_POWER_NODE_POLL_TIMEOUT_GET,              2, config_low_power_node_poll_timeout_get_handler },
+    { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_GET,                        2, config_key_refresh_phase_get_handler },
+    { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_SET,                        3, config_key_refresh_phase_set_handler },
+    { MESH_FOUNDATION_OPERATION_NODE_RESET,                                   0, config_node_reset_handler },
+    { MESH_FOUNDATION_OPERATION_LOW_POWER_NODE_POLL_TIMEOUT_GET,              2, config_low_power_node_poll_timeout_get_handler },
     { MESH_FOUNDATION_OPERATION_NODE_IDENTITY_GET,                            2, config_node_identity_get_handler },
     { MESH_FOUNDATION_OPERATION_NODE_IDENTITY_SET,                            3, config_node_identity_set_handler },
-    { 0, 0, NULL}
+    { 0, 0, NULL }
 };
 
 static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
