@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Release Notes for STM32 Middleware WPAN</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      span.underline{text-decoration: underline;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <link rel="stylesheet" href="_htmresc/mini-st.css" />
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<div class="row">
+<div class="col-sm-12 col-lg-4">
+<div class="card fluid">
+<div class="sectione dark">
+<center>
+<h1 id="release-notes-for-stm32-middleware-wpan"><small>Release Notes for</small> STM32 Middleware WPAN</h1>
+<p>Copyright © 2019 STMicroelectronics<br />
+</p>
+<a href="https://www.st.com" class="logo"><img src="_htmresc/st_logo.png" alt="ST logo" /></a>
+</center>
+</div>
+</div>
+<h1 id="license">License</h1>
+<p>This software component is licensed by ST under Ultimate Liberty license SLA0044, the “License”;</p>
+<p>You may not use this file except in compliance with the License.</p>
+<p>You may obtain a copy of the License at: <a href="http://www.st.com/SLA0044">SLA0044</a></p>
+<h1 id="purpose">Purpose</h1>
+<p>STM32 Wireless Personal Area Network Middleware developed within the STM32WB framework is used to support:</p>
+<ul>
+<li><p>Bluetooth Low Energy 5 Certified Applications</p></li>
+<li><p>802.15.4 Thread Certified Applications (based on <a href="thread\openthread\Release_Notes.html">OpenThread</a> stack)</p></li>
+<li><p>802.15.4 MAC layer</p></li>
+</ul>
+<p><strong>NOTE</strong> : Depending on the kind of Application targeted, the appropriate Wireless Coprocessor Firmware needs to be loaded.</p>
+<p>All available binaries are located under/Projects/STM32_Copro_Wireless_Binaries directory.</p>
+<p>Refer to UM2237 to learn how to use/install STM32CubeProgrammer.</p>
+<p>Refer to /Projects/STM32_Copro_Wireless_Binaries/ReleaseNote.html for the detailed procedure to change the Coprocessor binary.</p>
+</div>
+<div class="col-sm-12 col-lg-8">
+<h1 id="update-history">Update History</h1>
+<div class="collapse">
+<input type="checkbox" id="collapse-section4" checked aria-hidden="true"> <label for="collapse-section4" aria-hidden="true">V1.0.0 / 31-January-2019</label>
+<div>
+<h2 id="main-changes">Main Changes</h2>
+<h3 id="first-release">First release</h3>
+</div>
+</div>
+<div class="collapse">
+<input type="checkbox" id="collapse-section4" checked aria-hidden="true"> <label for="collapse-section4" aria-hidden="true">V1.1.0 / 29-March-2019</label>
+<div>
+<h2 id="main-changes-1">Main Changes</h2>
+<p>General:</p>
+<ul>
+<li>Licenses in utilities and patterns moved from sla0044 to 3-clauses BSD</li>
+<li>Customer Key Storage APIs</li>
+<li>Get Wireless Coprocessor Firmware information using following API : SHCI_GetWirelessFwInfo()</li>
+</ul>
+<p>BLE:</p>
+<ul>
+<li>New BLE Mesh lib to fix provisioning issue</li>
+</ul>
+<p>Thread:</p>
+<ul>
+<li>802.15.4 radio driver robustness improvement with additional error checks; the application is now notified in case of radio error detected inside the wireless binary</li>
+<li>TxPower management improvement:
+<ul>
+<li>New APIs provided to control the Tx power: otPlatRadioGetTransmitPower() and otPlatRadioSetTransmitPower()</li>
+<li>The default Tx power is now set to 0dBm<br />
+</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<p>For complete documentation on STM32WBxx, visit: [<a href="http://www.st.com/stm32wb">www.st.com/stm32wb</a>]</p>
+</div>
+</div>
+</body>
+</html>

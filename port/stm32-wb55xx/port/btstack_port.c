@@ -1,53 +1,76 @@
 /*
- * Copyright (C) 2016 BlueKitchen GmbH
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the copyright holders nor the names of
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- * 4. Any redistribution, use, or modification is done solely for
- *    personal benefit and not for any commercial purpose or for
- *    monetary gain.
- *
- * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
- * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
- * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
- * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * Please inquire about commercial licensing options at
- * contact@bluekitchen-gmbh.com
- *
+ *        File: btstack_port.c
+ *  Created on: 2019
+ *      Author: ftrefou
+ * 
+ * Header is TODO
  */
 
-#define BTSTACK_FILE__ "main.c"
+#define BTSTACK_FILE__ "port.c"
 
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "main.h"
+
+
+/********************************************
+ *      system calls implementation
+ *******************************************/
+extern UART_HandleTypeDef huart_p;
+
+int _write(int file, char* ptr, int len)
+{
+    HAL_UART_Transmit(&huart_p, ptr, len, 1000);
+}
+
+int _read(int file, char* ptr, int len)
+{
+    HAL_UART_Receive(&huart_p, ptr, len, 1000);
+}
+
+/********************************************
+ *      hal_time_ms.h implementation
+ *******************************************/
+#include "hal_time_ms.h"
+uint32_t hal_time_ms(void)
+{
+	return HAL_GetTick();
+}
+
+
+/*******************************************
+ *       hal_cpu.h implementation
+ ******************************************/
+#include "hal_cpu.h"
+
+void hal_cpu_disable_irqs(void){
+    __disable_irq();
+}
+
+void hal_cpu_enable_irqs(void){
+    __enable_irq();
+}
+
+void hal_cpu_enable_irqs_and_sleep(void){
+    __enable_irq();
+    __asm__("wfe"); // go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
+}
+
+
+
+/*******************************************
+ *       transport implementation
+ ******************************************/
+
 #include "btstack.h"
 #include "btstack_config.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
-#include "btstack_run_loop_freertos.h"
+#include "btstack_run_loop_embedded.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "btstack_debug.h"
@@ -59,17 +82,10 @@
 #include "shci_tl.h"
 #include "shci.h"
 
-#include "bt_profile.h"
-
-#if 1
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
-#else
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/semphr.h"
-#endif
+
 
 #define POOL_SIZE (CFG_TLBLE_EVT_QUEUE_LENGTH * 4 * \
 		DIVC((sizeof(TL_PacketHeader_t) + TL_BLE_EVENT_FRAME_SIZE), 4))
@@ -94,11 +110,6 @@ static btstack_data_source_t transport_data_source;
 
 
 
-
-
-uint32_t hal_time_ms(void) {
-    return HAL_GetTick();
-}
 
 void shci_cmd_resp_release(uint32_t flag)
 {
@@ -167,9 +178,9 @@ static void ble_Init_and_start(void)
 	  { { 0, 0, 0 } },                     /**< Header unused */
 	  { 0,                                 /** pBleBufferAddress not used */
 	    0,                                 /** BleBufferSize not used */
-	    CFG_BLE_NUM_GATT_ATTRIBUTES,
-	    CFG_BLE_NUM_GATT_SERVICES,
-	    CFG_BLE_ATT_VALUE_ARRAY_SIZE,
+	    0,
+	    0,
+	    0,
 	    CFG_BLE_NUM_LINK,
 	    CFG_BLE_DATA_LENGTH_EXTENSION,
 	    CFG_BLE_PREPARE_WRITE_LIST_SIZE,
@@ -453,10 +464,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 
 extern int btstack_main(int argc, const char * argv[]);
-int app_main(void const* args){
+int port_thread(void const* args){
 
     // enable packet logger
-    hci_dump_open(NULL, HCI_DUMP_STDOUT);
+    //hci_dump_open(NULL, HCI_DUMP_STDOUT);
 
     /// GET STARTED with BTstack ///
     btstack_memory_init();
@@ -474,66 +485,4 @@ int app_main(void const* args){
     log_info("btstack executing run loop...");
     btstack_run_loop_execute();
     return 0;
-}
-
-
-
-
-
-
-
-
-
-
-static void         security_manager_setup              (   void
-                                                        )
-{
-    // security setup
-    sm_init();
-    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
-}
-
-static const uint8_t adv_data[] = {
-    // Flags general discoverable, BR/EDR not supported
-    0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06,
-    // Name
-    0x09, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'S','T','M','3','2','_','W','B',
-    // Incomplete List of 16-bit Service Class UUIDs -- FF10 - only valid for testing!
-    0x03, BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, 0x10, 0xff,
-};
-static uint8_t adv_data_len = sizeof(adv_data);
-
-int                 gatt_client_setup                   (   void
-                                                        )
-{
-    att_server_init(profile_data, NULL, NULL);
-    //att_server_register_packet_handler(hci_packet_handler);
-
-    // setup advertisements
-    uint16_t adv_int_min = 0x0030;
-    uint16_t adv_int_max = 0x0030;
-    uint8_t adv_type = 0;
-    bd_addr_t null_addr;
-    memset(null_addr, 0, 6);
-    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
-    gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
-
-    return 0;
-}
-
-int btstack_main(int argc, const char * argv[])
-{
-    l2cap_init();
-
-    security_manager_setup();
-
-    gatt_client_setup();
-
-    // setup battery service
-    battery_service_server_init(0);
-
-    // turn on!
-    hci_power_control(HCI_POWER_ON);
-
-    gap_advertisements_enable(1);
 }
