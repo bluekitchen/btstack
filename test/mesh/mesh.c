@@ -240,7 +240,7 @@ static void mesh_provisioning_dump(const mesh_provisioning_data_t * data){
     printf("IdentityKey:   "); printf_hexdump(data->identity_key, 16);
 }
 
-static void mesh_network_key_list_add_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
+static void mesh_network_key_add_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
 
     // get key
     mesh_network_key_t * network_key = btstack_memory_mesh_network_key_get();
@@ -269,6 +269,10 @@ static void mesh_network_key_list_add_from_provisioning_data(const mesh_provisio
     // NetworkID
     memcpy(network_key->network_id, provisioning_data->network_id, 8);
 
+    // setup advertisement with network id
+    network_key->advertisement_with_network_id.adv_length = gatt_bearer_setup_advertising_with_network_id(&network_key->advertisement_with_network_id.adv_data, network_key->network_id);
+
+    // finally add
     mesh_network_key_add(network_key);
 }
 
@@ -276,7 +280,7 @@ static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * p
     provisioned = 1;
 
     // add to network key list
-    mesh_network_key_list_add_from_provisioning_data(provisioning_data);
+    mesh_network_key_add_from_provisioning_data(provisioning_data);
     // set unicast address
     mesh_network_set_primary_element_address(provisioning_data->unicast_address);
     mesh_lower_transport_set_primary_element_address(provisioning_data->unicast_address);
@@ -1752,6 +1756,10 @@ static void config_netkey_list(mesh_model_t * mesh_model, uint16_t netkey_index,
 
 static void config_netkey_add_or_update_derived(void * arg){
     mesh_network_key_t * network_key = (mesh_network_key_t *) arg;
+
+    // setup advertisement with network id
+    network_key->advertisement_with_network_id.adv_length = gatt_bearer_setup_advertising_with_network_id(&network_key->advertisement_with_network_id.adv_data, network_key->network_id);
+
     mesh_network_key_add(network_key);
     config_netkey_status(NULL, mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), MESH_FOUNDATION_STATUS_SUCCESS, network_key->netkey_index);
     mesh_access_message_processed(access_pdu_in_process);
