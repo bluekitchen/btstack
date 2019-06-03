@@ -59,6 +59,7 @@
 
 // #define ENABLE_MESH_ADV_BEARER
 // #define ENABLE_MESH_PB_ADV
+#define ENABLE_MESH_PROXY_SERVER
 #define ENABLE_MESH_PB_GATT
 
 
@@ -2561,16 +2562,18 @@ static void config_node_reset_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
 static void config_node_identity_status(mesh_model_t *mesh_model, uint16_t netkey_index_dest, uint16_t dest, uint16_t netkey_index) {
     mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
-    mesh_foundation_node_identity_state_t state  = MESH_FOUNDATION_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED;
+    mesh_foundation_node_identity_state_t state = MESH_FOUNDATION_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED;
         
     if (network_key == NULL){
         status = MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX;
     } else {
+#ifdef ENABLE_MESH_PROXY_SERVER
         if (network_key->node_id_advertisement_running == 0){
             state = MESH_FOUNDATION_NODE_IDENTITY_STATE_ADVERTISING_STOPPED;
         } else {
             state = MESH_FOUNDATION_NODE_IDENTITY_STATE_ADVERTISING_RUNNING;
         }
+#endif
     }
 
     // setup message
