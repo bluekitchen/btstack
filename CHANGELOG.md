@@ -296,7 +296,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - em9304: upload patch containers during HCI bootup
 - Makefile for STM32-F4Discovery port
 - support for console out via SEGGER RTT
-- LE Data Channels example in BTstack and [https://github.com/bluekitchen/CBL2CAPChannel-Demo](iOS example on GitHub)
+- LE Data Channels example in BTstack and [iOS example on GitHub](https://github.com/bluekitchen/CBL2CAPChannel-Demo)
 - LE Streamer Client can send as fast as possbile as well
 - L2CAP: option to limit ATT MTU via l2cap_set_max_le_mtu
 
