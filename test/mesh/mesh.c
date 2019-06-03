@@ -212,17 +212,9 @@ static void mesh_proxy_handle_get_random(void * arg){
 }
 #endif
 
-
 #ifdef USE_ADVERTISING_WITH_NETWORK_ID
 static void setup_advertising_with_network_id(void){
-
-    // dynamically store network ID into adv data
-    memcpy(&adv_data_with_network_id[12], network_id, sizeof(network_id));
-
-    // store in advertisement item
-    memset(&connectable_advertisement_item, 0, sizeof(connectable_advertisement_item));
-    connectable_advertisement_item.adv_length = adv_data_with_network_id_len;
-    memcpy(connectable_advertisement_item.adv_data, (uint8_t*) adv_data_with_network_id,  adv_data_with_network_id_len);
+    connectable_advertisement_item.adv_length = gatt_bearer_setup_advertising_with_network_id(connectable_advertisement_item.adv_data, network_id);
 
     // setup advertisements
     bd_addr_t null_addr;

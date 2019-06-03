@@ -45,6 +45,7 @@
 #include "ble/core.h"
 #include "bluetooth.h"
 #include "bluetooth_data_types.h"
+#include "bluetooth_gatt.h"
 #include "btstack_debug.h"
 #include "btstack_util.h"
 #include "btstack_run_loop.h"
@@ -74,6 +75,17 @@ static mesh_msg_sar_field_t segmentation_state;
 static mesh_msg_type_t msg_type;
 static uint16_t gatt_bearer_mtu;
 static hci_con_handle_t gatt_bearer_con_handle;
+
+static const uint8_t adv_data_with_network_id_template[] = {
+    // Flags general discoverable, BR/EDR not supported
+    0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
+    // 16-bit Service UUIDs
+    0x03, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, ORG_BLUETOOTH_SERVICE_MESH_PROXY & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROXY >> 8,
+    // Service Data
+    0x0C, BLUETOOTH_DATA_TYPE_SERVICE_DATA, ORG_BLUETOOTH_SERVICE_MESH_PROXY & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROXY >> 8, 
+          // MESH_IDENTIFICATION_NETWORK_ID_TYPE
+          MESH_IDENTIFICATION_NETWORK_ID_TYPE 
+};
 
 // round-robin
 static void gatt_bearer_emit_can_send_now(void){
@@ -327,4 +339,10 @@ void gatt_bearer_send_mesh_beacon(const uint8_t * data, uint16_t data_len){
 void gatt_bearer_send_mesh_proxy_configuration(const uint8_t * data, uint16_t data_len){
     msg_type = MESH_MSG_TYPE_PROXY_CONFIGURATION;
     gatt_bearer_send_pdu(gatt_bearer_con_handle, data, data_len);
+}
+
+uint8_t gatt_bearer_setup_advertising_with_network_id(uint8_t * buffer, uint8_t * network_id){
+    memcpy(&buffer[0], adv_data_with_network_id_template, 12);
+    memcpy(&buffer[12], network_id, 8);
+    return 20;
 }
