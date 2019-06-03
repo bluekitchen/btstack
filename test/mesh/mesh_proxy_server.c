@@ -264,7 +264,7 @@ static void packet_handler_for_mesh_network_pdu(uint8_t packet_type, uint16_t ch
             switch (hci_event_packet_get_type(packet)){
                 case HCI_EVENT_MESH_META:
                     switch (hci_event_mesh_meta_get_subevent_code(packet)){
-                        case MESH_PB_TRANSPORT_LINK_OPEN:
+                        case MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN:
                             printf("mesh_proxy_server: MESH_PB_TRANSPORT_LINK_OPEN\n");
                             printf("+ Setup Secure Network Beacon\n");
                             mesh_secure_network_beacon[0] = BEACON_TYPE_SECURE_NETWORK;

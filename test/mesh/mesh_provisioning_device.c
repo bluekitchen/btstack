@@ -135,7 +135,7 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
     switch(packet[0]){
         case HCI_EVENT_MESH_META:
             switch(packet[2]){
-                case MESH_PB_PROV_COMPLETE:
+                case MESH_SUBEVENT_PB_PROV_COMPLETE:
                     printf("Provisioning complete\n");
 
                     network_key = provisioning_device_data_get_network_key();

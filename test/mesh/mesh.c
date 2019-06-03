@@ -447,23 +447,23 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
     switch(packet[0]){
         case HCI_EVENT_MESH_META:
             switch(packet[2]){
-                case MESH_PB_TRANSPORT_LINK_OPEN:
+                case MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN:
                     printf("Provisioner link opened");
-                    pb_transport_cid = mesh_pb_transport_link_open_event_get_pb_transport_cid(packet);
+                    pb_transport_cid = mesh_subevent_pb_transport_link_open_get_pb_transport_cid(packet);
                     break;
-                case MESH_PB_TRANSPORT_LINK_CLOSED:
+                case MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED:
                     pb_transport_cid = MESH_PB_TRANSPORT_INVALID_CID;
                     break;
-                case MESH_PB_PROV_ATTENTION_TIMER:
+                case MESH_SUBEVENT_PB_PROV_ATTENTION_TIMER:
                     printf("Attention Timer: %u\n", packet[3]);
                     break;
-                case MESH_PB_PROV_INPUT_OOB_REQUEST:
+                case MESH_SUBEVENT_PB_PROV_INPUT_OOB_REQUEST:
                     printf("Enter passphrase: ");
                     fflush(stdout);
                     ui_chars_for_pin = 1;
                     ui_pin_offset = 0;
                     break;
-                case MESH_PB_PROV_COMPLETE:
+                case MESH_SUBEVENT_PB_PROV_COMPLETE:
                     printf("Provisioning complete\n");
 
                     memcpy(provisioning_data.device_key, provisioning_device_data_get_device_key(), 16);
@@ -2765,7 +2765,7 @@ static void mesh_proxy_packet_handler_network_pdu(uint8_t packet_type, uint16_t 
                         case MESH_SUBEVENT_MESSAGE_SENT:
                             mesh_gatt_handle_event(packet_type, channel, packet, size);
                             break;
-                        case MESH_PROXY_CONNECTED:
+                        case MESH_SUBEVENT_PROXY_CONNECTED:
                             printf("mesh: MESH_PROXY_CONNECTED\n");
                             printf("+ Setup Secure Network Beacon\n");
                             mesh_secure_network_beacon[0] = BEACON_TYPE_SECURE_NETWORK;

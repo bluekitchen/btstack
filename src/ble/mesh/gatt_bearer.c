@@ -242,12 +242,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             switch (hci_event_packet_get_type(packet)) {
                 case HCI_EVENT_MESH_META:
                     switch (hci_event_mesh_meta_get_subevent_code(packet)){
-                        case MESH_PROXY_CONNECTED:
+                        case MESH_SUBEVENT_PROXY_CONNECTED:
                             gatt_bearer_mtu = ATT_DEFAULT_MTU;
-                            gatt_bearer_con_handle = mesh_proxy_connected_event_get_con_handle(packet);
+                            gatt_bearer_con_handle = mesh_subevent_proxy_connected_get_con_handle(packet);
                             gatt_bearer_emit_event_for_all(packet, size);
                             break;
-                        case MESH_PROXY_DISCONNECTED:
+                        case MESH_SUBEVENT_PROXY_DISCONNECTED:
                             gatt_bearer_con_handle = HCI_CON_HANDLE_INVALID;
                             gatt_bearer_emit_event_for_all(packet, size);
                             break;

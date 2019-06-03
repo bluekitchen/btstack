@@ -100,14 +100,14 @@ static uint8_t * pdu_data;
 static uint16_t  pdu_size;
 
 static void pb_adv_emit_link_open(uint8_t status, uint16_t pb_adv_cid){
-    uint8_t event[7] = { HCI_EVENT_MESH_META, 5, MESH_PB_TRANSPORT_LINK_OPEN, status};
+    uint8_t event[7] = { HCI_EVENT_MESH_META, 5, MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN, status};
     little_endian_store_16(event, 4, pb_adv_cid);
     event[6] = PB_TYPE_ADV;
     pb_adv_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void pb_adv_emit_pdu_sent(uint8_t status){
-    uint8_t event[] = { HCI_EVENT_MESH_META, 2, MESH_PB_TRANSPORT_PDU_SENT, status};
+    uint8_t event[] = { HCI_EVENT_MESH_META, 2, MESH_SUBEVENT_PB_TRANSPORT_PDU_SENT, status};
     pb_adv_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -189,7 +189,7 @@ static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8
     switch(packet[0]){
         case HCI_EVENT_MESH_META:
             switch(packet[2]){
-                case MESH_PB_PROV_CAPABILITIES:
+                case MESH_SUBEVENT_PB_PROV_CAPABILITIES:
                     printf("Provisioner capabilities\n");
                     provisioning_provisioner_select_authentication_method(1, 0, 0, 0, 0, 0);
                     break;

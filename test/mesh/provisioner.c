@@ -161,20 +161,20 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
     switch(packet[0]){
         case HCI_EVENT_MESH_META:
             switch(packet[2]){
-                case MESH_PB_TRANSPORT_LINK_OPEN:
+                case MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN:
                     printf("Provisioner link opened");
                     break;
-                case MESH_PB_PROV_CAPABILITIES:
+                case MESH_SUBEVENT_PB_PROV_CAPABILITIES:
                     printf("// Provisioner capabilities\n");
-                    public_oob = mesh_pb_prov_capabilities_event_get_public_key(packet);
+                    public_oob = mesh_subevent_pb_prov_capabilities_get_public_key(packet);
                     if (public_oob){
                         printf("PTS supports Public OOB, select Public OOB\n");
                     } else {
                         printf("PTS does not supports Public OOB, select No Public OOB\n");
                     }
-                    auth_static_oob        = mesh_pb_prov_capabilities_event_get_static_oob_type(packet);
-                    auth_input_oob_action  = mesh_pb_prov_capabilities_event_get_input_oob_action(packet);   
-                    auth_output_oob_action = mesh_pb_prov_capabilities_event_get_output_oob_action(packet);
+                    auth_static_oob        = mesh_subevent_pb_prov_capabilities_get_static_oob_type(packet);
+                    auth_input_oob_action  = mesh_subevent_pb_prov_capabilities_get_input_oob_action(packet);   
+                    auth_output_oob_action = mesh_subevent_pb_prov_capabilities_get_output_oob_action(packet);
                     if (auth_output_oob_action){
                         auth_method = 0x02; // Output OOB
                         // find output action
@@ -182,7 +182,7 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
                         for (i=0;i<5;i++){
                             if (auth_output_oob_action & (1<<i)){
                                 auth_action = i;
-                                auth_size   = mesh_pb_prov_capabilities_event_get_output_oob_size(packet);
+                                auth_size   = mesh_subevent_pb_prov_capabilities_get_output_oob_size(packet);
                                 printf("// - Pick Output OOB Action with index %u, size %u\n", i, auth_size);
                                 break;
                             }
@@ -194,7 +194,7 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
                         for (i=0;i<5;i++){
                             if (auth_input_oob_action & (1<<i)){
                                 auth_action = i;
-                                auth_size   = mesh_pb_prov_capabilities_event_get_input_oob_size(packet);
+                                auth_size   = mesh_subevent_pb_prov_capabilities_get_input_oob_size(packet);
                                 printf("// - Pick Input OOB Action with index %u, size %u\n", i, auth_size);
                                 break;
                             }
@@ -209,20 +209,20 @@ static void mesh_message_handler (uint8_t packet_type, uint16_t channel, uint8_t
                     }
                     provisioning_provisioner_select_authentication_method(1, 0, public_oob, auth_method, auth_action, auth_size);
                     break;
-                case MESH_PB_PROV_START_RECEIVE_PUBLIC_KEY_OOB:
+                case MESH_SUBEVENT_PB_PROV_START_RECEIVE_PUBLIC_KEY_OOB:
                     printf("Simulate Read Public Key OOB\n");
                     btstack_parse_hex(prov_public_key_string, 64, prov_public_key_data);
                     provisioning_provisioner_public_key_oob_received(pb_adv_cid, prov_public_key_data);
                     break;
-                case MESH_PB_PROV_OUTPUT_OOB_REQUEST:
+                case MESH_SUBEVENT_PB_PROV_OUTPUT_OOB_REQUEST:
                     printf("Enter passphrase: ");
                     fflush(stdout);
                     ui_chars_for_pin = 1;
                     ui_pin_offset = 0;
                     break;
-                case MESH_PB_PROV_START_EMIT_INPUT_OOB:
+                case MESH_SUBEVENT_PB_PROV_START_EMIT_INPUT_OOB:
                     break;
-                case MESH_PB_PROV_COMPLETE:
+                case MESH_SUBEVENT_PB_PROV_COMPLETE:
                     printf("Provisioning complete\n");
                     break;
                 default:

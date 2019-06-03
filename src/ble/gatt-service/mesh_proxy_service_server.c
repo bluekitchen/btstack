@@ -76,13 +76,13 @@ static mesh_proxy_t mesh_proxy;
 
 
 static void mesh_proxy_service_emit_connected(hci_con_handle_t con_handle){
-    uint8_t event[5] = { HCI_EVENT_MESH_META, 3, MESH_PROXY_CONNECTED};
+    uint8_t event[5] = { HCI_EVENT_MESH_META, 3, MESH_SUBEVENT_PROXY_CONNECTED};
     little_endian_store_16(event, 4, con_handle);
     mesh_proxy_service_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void mesh_proxy_service_emit_disconnected(hci_con_handle_t con_handle){
-    uint8_t event[5] = { HCI_EVENT_MESH_META, 3, MESH_PROXY_DISCONNECTED};
+    uint8_t event[5] = { HCI_EVENT_MESH_META, 3, MESH_SUBEVENT_PROXY_DISCONNECTED};
     little_endian_store_16(event, 4, con_handle);
     mesh_proxy_service_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }

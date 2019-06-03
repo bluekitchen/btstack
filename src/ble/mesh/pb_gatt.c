@@ -68,7 +68,7 @@ static btstack_packet_handler_t pb_gatt_packet_handler;
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void pb_gatt_emit_pdu_sent(uint8_t status){
-    uint8_t event[] = {HCI_EVENT_MESH_META, 2, MESH_PB_TRANSPORT_PDU_SENT, status};
+    uint8_t event[] = {HCI_EVENT_MESH_META, 2, MESH_SUBEVENT_PB_TRANSPORT_PDU_SENT, status};
     pb_gatt_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -132,8 +132,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             switch (hci_event_packet_get_type(packet)) {
                 case HCI_EVENT_MESH_META:
                     switch (hci_event_mesh_meta_get_subevent_code(packet)){
-                        case MESH_PB_TRANSPORT_LINK_OPEN:
-                        case MESH_PB_TRANSPORT_LINK_CLOSED:
+                        case MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN:
+                        case MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED:
                             // Forward link open/close
                             pb_gatt_mtu = ATT_DEFAULT_MTU;
                             pb_gatt_packet_handler(HCI_EVENT_PACKET, 0, packet, size);

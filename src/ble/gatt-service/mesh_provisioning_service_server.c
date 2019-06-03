@@ -76,14 +76,14 @@ static mesh_provisioning_t mesh_provisioning;
 
 
 static void mesh_provisioning_service_emit_link_open(hci_con_handle_t con_handle, uint8_t status){
-    uint8_t event[7] = { HCI_EVENT_MESH_META, 5, MESH_PB_TRANSPORT_LINK_OPEN, status};
+    uint8_t event[7] = { HCI_EVENT_MESH_META, 5, MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN, status};
     little_endian_store_16(event, 4, con_handle);
     event[6] = PB_TYPE_GATT;
     mesh_provisioning_service_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void mesh_provisioning_service_emit_link_close(hci_con_handle_t con_handle, uint8_t reason){
-    uint8_t event[5] = { HCI_EVENT_MESH_META, 3, MESH_PB_TRANSPORT_LINK_CLOSED};
+    uint8_t event[5] = { HCI_EVENT_MESH_META, 3, MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED};
     little_endian_store_16(event, 4, con_handle);
     mesh_provisioning_service_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }

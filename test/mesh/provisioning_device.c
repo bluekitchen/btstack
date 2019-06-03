@@ -182,7 +182,7 @@ static void provisioning_emit_event(uint16_t pb_adv_cid, uint8_t mesh_subevent){
 
 static void provisioning_emit_output_oob_event(uint16_t pb_adv_cid, uint32_t number){
     if (!prov_packet_handler) return;
-    uint8_t event[9] = { HCI_EVENT_MESH_META, 7, MESH_PB_PROV_START_EMIT_OUTPUT_OOB};
+    uint8_t event[9] = { HCI_EVENT_MESH_META, 7, MESH_SUBEVENT_PB_PROV_START_EMIT_OUTPUT_OOB};
     little_endian_store_16(event, 3, pb_adv_cid);
     little_endian_store_16(event, 5, number);
     prov_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -190,7 +190,7 @@ static void provisioning_emit_output_oob_event(uint16_t pb_adv_cid, uint32_t num
 
 static void provisioning_emit_attention_timer_event(uint16_t pb_adv_cid, uint8_t timer_s){
     if (!prov_packet_handler) return;
-    uint8_t event[4] = { HCI_EVENT_MESH_META, 7, MESH_PB_PROV_ATTENTION_TIMER};
+    uint8_t event[4] = { HCI_EVENT_MESH_META, 7, MESH_SUBEVENT_PB_PROV_ATTENTION_TIMER};
     event[3] = timer_s;
     prov_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -322,11 +322,11 @@ static void provisioning_send_complete(void){
 static void provisioning_done(void){
     if (prov_emit_public_key_oob_active){
         prov_emit_public_key_oob_active = 0;
-        provisioning_emit_event(1, MESH_PB_PROV_STOP_EMIT_PUBLIC_KEY_OOB);
+        provisioning_emit_event(1, MESH_SUBEVENT_PB_PROV_STOP_EMIT_PUBLIC_KEY_OOB);
     }
     if (prov_emit_output_oob_active){
         prov_emit_output_oob_active = 0;
-        provisioning_emit_event(1, MESH_PB_PROV_STOP_EMIT_OUTPUT_OOB);
+        provisioning_emit_event(1, MESH_SUBEVENT_PB_PROV_STOP_EMIT_OUTPUT_OOB);
     }
     if (prov_attention_timer_timeout){
         prov_attention_timer_timeout = 0;
@@ -373,7 +373,7 @@ static void provisioning_public_key_exchange_complete(void){
         case 0x03:
             // Input OOB
             printf("Input OOB requested\n");
-            provisioning_emit_event(1, MESH_PB_PROV_INPUT_OOB_REQUEST);
+            provisioning_emit_event(1, MESH_SUBEVENT_PB_PROV_INPUT_OOB_REQUEST);
             device_state = DEVICE_W4_INPUT_OOK;
             break;
         default:
@@ -506,7 +506,7 @@ static void provisioning_handle_start(uint8_t * packet, uint16_t size){
 
     // start emit public OOK if specified
     if (prov_public_key_oob_available && prov_public_key_oob_used){
-        provisioning_emit_event(1, MESH_PB_PROV_START_EMIT_PUBLIC_KEY_OOB);
+        provisioning_emit_event(1, MESH_SUBEVENT_PB_PROV_START_EMIT_PUBLIC_KEY_OOB);
     }
 
     printf("PublicKey:  %02x\n", prov_public_key_oob_used);
@@ -546,7 +546,7 @@ static void provisioning_handle_public_key(uint8_t *packet, uint16_t size){
 
     // stop emit public OOK if specified and send to crypto module
     if (prov_public_key_oob_available && prov_public_key_oob_used){
-        provisioning_emit_event(1, MESH_PB_PROV_STOP_EMIT_PUBLIC_KEY_OOB);
+        provisioning_emit_event(1, MESH_SUBEVENT_PB_PROV_STOP_EMIT_PUBLIC_KEY_OOB);
 
         printf("Replace generated ECC with Public Key OOB:");
         memcpy(prov_ec_q, prov_public_key_oob_q, 64);
@@ -614,7 +614,7 @@ static void provisioning_handle_confirmation(uint8_t *packet, uint16_t size){
     // 
     if (prov_emit_output_oob_active){
         prov_emit_output_oob_active = 0;
-        provisioning_emit_event(1, MESH_PB_PROV_STOP_EMIT_OUTPUT_OOB);
+        provisioning_emit_event(1, MESH_SUBEVENT_PB_PROV_STOP_EMIT_OUTPUT_OOB);
     }
 
     // CalculationInputs
@@ -684,7 +684,7 @@ static void provisioning_handle_network_dervived(void * arg){
     provisioning_timer_stop();
 
     // notify client
-    provisioning_emit_event(1, MESH_PB_PROV_COMPLETE);
+    provisioning_emit_event(1, MESH_SUBEVENT_PB_PROV_COMPLETE);
 
     device_state = DEVICE_SEND_COMPLETE;
     provisioning_run();
@@ -741,17 +741,17 @@ static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8
         case HCI_EVENT_PACKET:
             if (packet[0] != HCI_EVENT_MESH_META)  break;
             switch (packet[2]){
-                case MESH_PB_TRANSPORT_LINK_OPEN:
-                    pb_transport_cid = mesh_pb_transport_link_open_event_get_pb_transport_cid(packet);
-                    pb_type = mesh_pb_transport_link_open_event_get_pb_type(packet);
+                case MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN:
+                    pb_transport_cid = mesh_subevent_pb_transport_link_open_get_pb_transport_cid(packet);
+                    pb_type = mesh_subevent_pb_transport_link_open_get_pb_type(packet);
                     printf("Link opened, reset state, transport cid 0x%02x, PB type %d\n", pb_transport_cid, pb_type);
                     provisioning_done();
                     break;
-                case MESH_PB_TRANSPORT_PDU_SENT:
+                case MESH_SUBEVENT_PB_TRANSPORT_PDU_SENT:
                     printf("Outgoing packet acked\n");
                     prov_waiting_for_outgoing_complete = 0;
                     break;                    
-                case MESH_PB_TRANSPORT_LINK_CLOSED:
+                case MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED:
                     printf("Link close, reset state\n");
                     pb_transport_cid = MESH_PB_TRANSPORT_INVALID_CID;
                     provisioning_done();
