@@ -2633,6 +2633,52 @@ static void config_key_refresh_phase_get_handler(mesh_model_t *mesh_model, mesh_
     mesh_access_message_processed(pdu);
 }
 
+static void config_key_refresh_phase_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+    uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
+    uint8_t  key_refresh_phase_transition = mesh_access_parser_get_u8(&parser);
+    mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
+
+    uint8_t status = MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX;
+    
+    if (network_key != NULL){
+        status = MESH_FOUNDATION_STATUS_SUCCESS;
+        
+        switch (key_refresh_phase_transition){
+            case 0x02:
+                switch (network_key->key_refresh){
+                    case MESH_KEY_REFRESH_FIRST_PHASE:
+                    case MESH_KEY_REFRESH_SECOND_PHASE:
+                        network_key->key_refresh = MESH_KEY_REFRESH_SECOND_PHASE;
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case 0x03:
+                switch (network_key->key_refresh){
+                    case MESH_KEY_REFRESH_FIRST_PHASE:
+                    case MESH_KEY_REFRESH_SECOND_PHASE:
+                        // TODO:  invoke Key Refresh Phase 3, then
+                        //        set network_key->key_refresh = MESH_KEY_REFRESH_NOT_ACTIVE;
+                        printf("TODO: invoke Key Refresh Phase 3, then set key refresh phase to MESH_KEY_REFRESH_NOT_ACTIVE\n");
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            default:
+                status = MESH_FOUNDATION_STATUS_CANNOT_SET;
+                break;
+        }
+    }
+
+    config_key_refresh_phase_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, netkey_index, network_key->key_refresh);
+    mesh_access_message_processed(pdu);
+}
+
+
 static void config_node_reset_status(mesh_model_t *mesh_model, uint16_t netkey_index, uint16_t dest){
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_node_reset_status);
@@ -2772,7 +2818,7 @@ static mesh_operation_t mesh_configuration_server_model_operations[] = {
 //    { MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_GET,                   0, config_heartbeat_subscription_get_handler},
 //    { MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_SET,                   5, config_heartbeat_subscription_set_handler},
     { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_GET,                        2, config_key_refresh_phase_get_handler},
-//    { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_SET,                        3, config_key_refresh_phase_set_handler},
+    { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_SET,                        3, config_key_refresh_phase_set_handler},
     { MESH_FOUNDATION_OPERATION_NODE_RESET,                                   0, config_node_reset_handler},
 //    { MESH_FOUNDATION_OPERATION_LOW_POWER_NODE_POLL_TIMEOUT_GET,              2, config_low_power_node_poll_timeout_get_handler },
     { MESH_FOUNDATION_OPERATION_NODE_IDENTITY_GET,                            2, config_node_identity_get_handler },
