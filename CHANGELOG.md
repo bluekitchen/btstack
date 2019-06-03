@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - gatt_client: emit query complete event for signed write operation
 - btstack_tlv_flash_bank: support targets where a value cannot be overwritten with zero. When ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
   is defined, an explicit delete field is used to indicate an invalid entry.
+- FreeRTOS: use freertos/.. prefix to include FreeRTOS headers if HAVE_FREERTOS_INCLUDE_PREFIX is defined
 
 ### Fixed
 - SM: Use provided authentication requirements in slave security request

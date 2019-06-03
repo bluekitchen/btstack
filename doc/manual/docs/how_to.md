@@ -46,10 +46,16 @@ HAVE_MBEDTLS_ECC_P256              | mbedTLS provides NIST P-256 operations e.g.
 
 Embedded platform properties:
 
-\#define                            | Description
+\#define                           | Description
 -----------------------------------|------------------------------------
 HAVE_EMBEDDED_TIME_MS              | System provides time in milliseconds
 HAVE_EMBEDDED_TICK                 | System provides tick interrupt
+
+FreeRTOS platform properties:
+
+\#define                           | Description
+-----------------------------------|------------------------------------
+HAVE_FREERTOS_INCLUDE_PREFIX       | FreeRTOS headers are in 'freertos' folder (e.g. ESP32's esp-idf)
 
 POSIX platform properties:
 
