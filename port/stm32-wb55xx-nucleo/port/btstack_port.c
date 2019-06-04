@@ -69,12 +69,15 @@ void hal_cpu_enable_irqs_and_sleep(void){
  *       transport implementation
  ******************************************/
 
+#define USE_SRAM_FLASH_BANK_EMU
+
 #include "btstack.h"
 #include "btstack_config.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_freertos.h"
+#include "btstack_tlv_flash_bank.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "btstack_debug.h"
@@ -85,6 +88,11 @@ void hal_cpu_enable_irqs_and_sleep(void){
 #include "tl.h"
 #include "shci_tl.h"
 #include "shci.h"
+#ifdef USE_SRAM_FLASH_BANK_EMU
+#include "hal_flash_bank_memory.h"
+#else
+#include "hal_flash_bank_stm32wb.h"
+#endif
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -112,8 +120,22 @@ static int hci_acl_can_send_now;
 // data source for integration with BTstack Runloop
 static btstack_data_source_t transport_data_source;
 
+static btstack_tlv_flash_bank_t btstack_tlv_flash_bank_context;
 
+#ifdef USE_SRAM_FLASH_BANK_EMU
+    static hal_flash_bank_memory_t  hal_flash_bank_context;
 
+    #define STORAGE_SIZE    (1024*8)
+    static uint8_t tlvStorage_p[STORAGE_SIZE];
+#else
+    static hal_flash_bank_stm32wb_t   hal_flash_bank_context;
+
+    // Wireless BLE stack fw is starting at 0x080CC000 corresponding
+    // to page 204, taking page 202 and 203 is at end of user flash
+    #define HAL_FLASH_PAGE_SIZE     ( FLASH_PAGE_SIZE )
+    #define HAL_FLASH_PAGE_0_ID     ( 118 )
+    #define HAL_FLASH_PAGE_1_ID     ( 119 )
+#endif
 
 void shci_cmd_resp_release(uint32_t flag)
 {
@@ -455,11 +477,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
             printf("BTstack: up and running.\n");
             break;
-        case HCI_EVENT_COMMAND_COMPLETE:
-            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
-                // @TODO
-            }
-            break;
         default:
             break;
     }
@@ -478,6 +495,28 @@ void port_thread(void* args){
     // init HCI
     hci_init(transport_get_instance(), NULL);
 
+    // setup Link Key DB
+#ifdef USE_SRAM_FLASH_BANK_EMU
+    const hal_flash_bank_t * hal_flash_sector_impl = hal_flash_bank_memory_init_instance(
+            &hal_flash_bank_context,
+            tlvStorage_p,
+            STORAGE_SIZE);
+#else
+    const hal_flash_bank_t * hal_flash_sector_impl = hal_flash_bank_stm32wb_init_instance(
+            &hal_flash_bank_context,
+            HAL_FLASH_PAGE_SIZE,
+            HAL_FLASH_PAGE_0_ID,
+            HAL_FLASH_PAGE_1_ID);
+#endif
+
+    const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(
+            &btstack_tlv_flash_bank_context,
+            hal_flash_sector_impl,
+            &hal_flash_bank_context);
+
+    // setup global tlv
+    btstack_tlv_set_instance(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
+    
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);

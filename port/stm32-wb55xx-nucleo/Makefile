@@ -73,6 +73,8 @@ ${BTSTACK_ROOT}/src/hci_dump.c \
 ${BTSTACK_ROOT}/src/l2cap.c \
 ${BTSTACK_ROOT}/src/l2cap_signaling.c \
 ${BTSTACK_ROOT}/src/hci_transport_h4.c \
+${BTSTACK_ROOT}/platform/embedded/hal_flash_bank_memory.c \
+${BTSTACK_ROOT}/platform/embedded/btstack_tlv_flash_bank.c \
 $(FREERTOS_ROOT)/FreeRTOS/tasks.c \
 $(FREERTOS_ROOT)/FreeRTOS/queue.c \
 $(FREERTOS_ROOT)/FreeRTOS/list.c \
@@ -86,6 +88,7 @@ Middlewares/STM32_WPAN/interface/patterns/ble_thread/shci/shci.c \
 Middlewares/STM32_WPAN/utilities/stm_list.c \
 Middlewares/STM32_WPAN/utilities/otp.c \
 port/btstack_port.c \
+port/hal_flash_bank_stm32wb.c \
 Src/main.c \
 Src/stm32wbxx_it.c \
 Src/stm32wbxx_hal_timebase_tim.c \
