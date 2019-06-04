@@ -17,8 +17,8 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-UART_HandleTypeDef huart_p   = { 0 };
-static RTC_HandleTypeDef hrtc       = { 0 };
+UART_HandleTypeDef hTuart     = { 0 };
+static RTC_HandleTypeDef hrtc = { 0 };
 
 TaskHandle_t hbtstack_task;
 
@@ -220,17 +220,17 @@ static void Init_UART( void )
     HAL_GPIO_Init(DEBUG_USART_RX_GPIO_Port, &GPIO_InitStruct);
 
     /* USART Configuration */
-    huart_p.Instance = DEBUG_USART;
-    huart_p.Init.BaudRate = 115200;
-    huart_p.Init.WordLength = UART_WORDLENGTH_8B;
-    huart_p.Init.StopBits = UART_STOPBITS_1;
-    huart_p.Init.Parity = UART_PARITY_NONE;
-    huart_p.Init.Mode = UART_MODE_TX_RX;
-    huart_p.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-    huart_p.Init.OverSampling = UART_OVERSAMPLING_16;
-    huart_p.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-    huart_p.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-    if (HAL_UART_Init(&huart_p) != HAL_OK){
+    hTuart.Instance = DEBUG_USART;
+    hTuart.Init.BaudRate = 115200;
+    hTuart.Init.WordLength = UART_WORDLENGTH_8B;
+    hTuart.Init.StopBits = UART_STOPBITS_1;
+    hTuart.Init.Parity = UART_PARITY_NONE;
+    hTuart.Init.Mode = UART_MODE_TX_RX;
+    hTuart.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+    hTuart.Init.OverSampling = UART_OVERSAMPLING_16;
+    hTuart.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+    hTuart.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+    if (HAL_UART_Init(&hTuart) != HAL_OK){
         Error_Handler();
     }
     return;

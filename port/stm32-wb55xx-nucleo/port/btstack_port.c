@@ -19,18 +19,18 @@
 /********************************************
  *      system calls implementation
  *******************************************/
-extern UART_HandleTypeDef huart_p;
+extern UART_HandleTypeDef hTuart;
 
 int _write(int file, char* ptr, int len)
 {
-    HAL_UART_Transmit(&huart_p, (uint8_t*)ptr, len, 1000);
+    HAL_UART_Transmit(&hTuart, (uint8_t*)ptr, len, 1000);
 
     return len;
 }
 
 int _read(int file, char* ptr, int len)
 {
-    HAL_UART_Receive(&huart_p, (uint8_t*)ptr, len, 1000);
+    HAL_UART_Receive(&hTuart, (uint8_t*)ptr, len, 1000);
 
     return len;
 }
