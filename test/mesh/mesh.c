@@ -2214,7 +2214,6 @@ static void config_model_subscription_add_handler(mesh_model_t *mesh_model, mesh
     
     uint16_t element_address  = mesh_access_parser_get_u16(&parser);
     uint16_t address          = mesh_access_parser_get_u16(&parser);
-
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
@@ -2240,7 +2239,6 @@ static void config_model_subscription_delete_handler(mesh_model_t *mesh_model, m
 
     uint16_t element_address  = mesh_access_parser_get_u16(&parser);
     uint16_t address          = mesh_access_parser_get_u16(&parser);
-    
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
@@ -2299,36 +2297,30 @@ static void config_model_app_list(mesh_model_t * config_server_model, uint16_t n
 static void config_model_app_bind_handler(mesh_model_t *config_server_model, mesh_pdu_t * pdu) {
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+
     uint16_t element_address = mesh_access_parser_get_u16(&parser);
     uint16_t appkey_index    = mesh_access_parser_get_u16(&parser);
-
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
     uint8_t status;
     do {
-        // validate address
-        if (element_address != primary_element_address){
-            status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
-            break;
-        }
-        // validate model exist
-        mesh_model_t * model = mesh_model_get_by_identifier(model_identifier);
-        if (!model){
-            status = MESH_FOUNDATION_STATUS_INVALID_MODEL;
-            break;
-        }
+        // validate address and look up model
+        mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
+        if (target_model == NULL) break;
+
         // validate app key exists
         mesh_transport_key_t * app_key = mesh_transport_key_get(appkey_index);
         if (!app_key){
             status = MESH_FOUNDATION_STATUS_INVALID_APPKEY_INDEX;
             break;
         }
+
         // Configuration Server only allows device keys
         if (mesh_model_is_configuration_server(model_identifier)){
             status = MESH_FOUNDATION_STATUS_CANNOT_BIND;
             break;
         }
-        status = mesh_model_bind_appkey(model, appkey_index);
+        status = mesh_model_bind_appkey(target_model, appkey_index);
 
     } while (0);
 
@@ -2339,31 +2331,24 @@ static void config_model_app_bind_handler(mesh_model_t *config_server_model, mes
 static void config_model_app_unbind_handler(mesh_model_t *config_server_model, mesh_pdu_t * pdu) {
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+
     uint16_t element_address = mesh_access_parser_get_u16(&parser);
     uint16_t appkey_index    = mesh_access_parser_get_u16(&parser);
-    
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
     uint8_t status;
     do {
-        // validate address
-        if (element_address != primary_element_address){
-            status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
-            break;
-        }
-        // validate model exist
-        mesh_model_t * model = mesh_model_get_by_identifier(model_identifier);
-        if (!model){
-            status = MESH_FOUNDATION_STATUS_INVALID_MODEL;
-            break;
-        }
+        // validate address and look up model
+        mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
+        if (target_model == NULL) break;
+
         // validate app key exists
         mesh_transport_key_t * app_key = mesh_transport_key_get(appkey_index);
         if (!app_key){
             status = MESH_FOUNDATION_STATUS_INVALID_APPKEY_INDEX;
             break;
         }
-        mesh_model_unbind_appkey(model, appkey_index);
+        mesh_model_unbind_appkey(target_model, appkey_index);
         status = MESH_FOUNDATION_STATUS_SUCCESS;
     } while (0);
 
@@ -2374,29 +2359,13 @@ static void config_model_app_unbind_handler(mesh_model_t *config_server_model, m
 static void config_model_app_get(mesh_model_t *config_server_model, mesh_pdu_t * pdu, int sig_model){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+
     uint16_t element_address = mesh_access_parser_get_u16(&parser);
-    
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
     uint8_t status;
-    mesh_model_t * model = NULL;
-    do {
-        // validate address
-        if (element_address != primary_element_address){
-            status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
-            break;
-        }
-        // validate model exist
-        model = mesh_model_get_by_identifier(model_identifier);
-        if (!model){
-            status = MESH_FOUNDATION_STATUS_INVALID_MODEL;
-            break;
-        }
-        status = MESH_FOUNDATION_STATUS_SUCCESS;
-
-    } while (0);
-
-    config_model_app_list(config_server_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, model_identifier, model);
+    mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
+    config_model_app_list(config_server_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, model_identifier, target_model);
     mesh_access_message_processed(pdu);
 }
 
@@ -2446,8 +2415,6 @@ config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
     // ElementAddress - Address of the element - should be us
     uint16_t element_address = mesh_access_parser_get_u16(&parser);
 
-    // TODO: find model for element_address and model_identifier
-
     // TODO: validate params
     // PublishAddress, 16 bit
     publication_model.address = mesh_access_parser_get_u16(&parser);
@@ -2467,9 +2434,13 @@ config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
 
     // Model Identifier
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
+    uint8_t status;
+    mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
+
+    // TODO: use target_model
+    (void) target_model;
 
     // send status
-    uint8_t status = 0;
     config_model_publication_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, model_identifier, &publication_model);
     mesh_access_message_processed(pdu);
 }
@@ -2477,6 +2448,7 @@ config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
 static void config_model_publication_virtual_address_set_hash(void *arg){
     mesh_model_t *mesh_model = (mesh_model_t*) arg;
     printf("Virtual Address Hash: %04x\n", publication_model.address);
+    
     // TODO: find a way to get netkey_index
     uint16_t netkey_index = 0;
 
@@ -2511,9 +2483,15 @@ config_model_publication_virtual_address_set_handler(mesh_model_t *mesh_model,
     // Model Identifier
     config_model_publication_model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
-    // TODO: find model for element_address and model_identifier
+    uint8_t status;
+    mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, config_model_publication_model_identifier, &status);
 
-    // TODO: validate params
+    // on error, no need to calculate virtual address hash
+    if (status != MESH_FOUNDATION_STATUS_SUCCESS){
+        config_model_publication_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, config_model_publication_model_identifier, &publication_model);
+        mesh_access_message_processed(pdu);
+        return;
+    }
 
     access_pdu_in_process = pdu;
     mesh_virtual_address(&configuration_server_cmac_request, model_publication_label_uuid, &publication_model.address, &config_model_publication_virtual_address_set_hash, mesh_model);
@@ -2531,9 +2509,9 @@ config_model_publication_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
     // Model Identifier
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
-    // TODO: find model for element_address and model_identifier
+    uint8_t status;
+    mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
 
-    uint8_t status = 0;
     config_model_publication_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, model_identifier, &publication_model);
     mesh_access_message_processed(pdu);
 }
