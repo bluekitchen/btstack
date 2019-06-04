@@ -1416,6 +1416,8 @@ static mesh_heartbeat_publication_t mesh_heartbeat_publication;
 static mesh_model_t                 mesh_configuration_server_model;
 static mesh_model_t                 mesh_health_server_model;
 static mesh_model_t                 mesh_vendor_model;
+static uint16_t                     mesh_models_count_sig;
+static uint16_t                     mesh_models_count_vendor;
 
 static void mesh_model_reset_appkeys(mesh_model_t * mesh_model){
     int i;
@@ -1482,6 +1484,11 @@ static int mesh_model_is_configuration_server(uint32_t model_identifier){
 }
 
 static void mesh_model_add(mesh_model_t * mesh_model){
+    if (mesh_model_is_bluetooth_sig(mesh_model->model_identifier)){
+        mesh_models_count_sig++;
+    } else {
+        mesh_models_count_vendor++;
+    }
     btstack_linked_list_add_tail(&mesh_models, (btstack_linked_item_t *) mesh_model);
 }
 
@@ -1548,20 +1555,28 @@ static void config_composition_data_status(mesh_model_t * mesh_model, uint16_t n
     // Element 1
     // Loc - bottom - https://www.bluetooth.com/specifications/assigned-numbers/gatt-namespace-descriptors
     mesh_access_transport_add_uint16(transport_pdu, 0x0103);
-    // NumS - Configuration Server + Health Server + Generic On/Off Server
-    mesh_access_transport_add_uint8( transport_pdu, 3);
+    // NumS
+    mesh_access_transport_add_uint8( transport_pdu, mesh_models_count_sig);
     // NumV
-    mesh_access_transport_add_uint8( transport_pdu, 1);
-    // SIG Model: Configuration Server 0x0000
-    mesh_access_transport_add_uint16(transport_pdu, MESH_SIG_MODEL_ID_CONFIGURATION_SERVER);
-    // SIG Model: Health Server 0x0002
-    mesh_access_transport_add_uint16(transport_pdu, MESH_SIG_MODEL_ID_HEALTH_SERVER);
-    // SIG Model: Health Server 0x0002
-    mesh_access_transport_add_uint16(transport_pdu, MESH_SIG_MODEL_ID_GENERIC_ON_OFF_SERVER);
-    // Vendor Model: 0x0000
-    mesh_access_transport_add_uint16(transport_pdu, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH);
-    mesh_access_transport_add_uint16(transport_pdu, 0);
+    mesh_access_transport_add_uint8( transport_pdu, mesh_models_count_vendor);
+
+    mesh_model_iterator_t it;
     
+    // SIG Models
+    mesh_model_iterator_init(&it);
+    while (mesh_model_iterator_has_next(&it)){
+        mesh_model_t * model = mesh_model_iterator_get_next(&it);
+        if (!mesh_model_is_bluetooth_sig(model->model_identifier)) continue;
+        mesh_access_transport_add_uint16(transport_pdu, model->model_identifier);
+    }
+    // Vendor Models
+    mesh_model_iterator_init(&it);
+    while (mesh_model_iterator_has_next(&it)){
+        mesh_model_t * model = mesh_model_iterator_get_next(&it);
+        if (mesh_model_is_bluetooth_sig(model->model_identifier)) continue;
+        mesh_access_transport_add_uint32(transport_pdu, model->model_identifier);
+    }
+
     // send as segmented access pdu
     config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
