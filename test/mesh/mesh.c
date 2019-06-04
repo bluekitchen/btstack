@@ -1319,15 +1319,16 @@ static mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_acc
 // to sort
 
 // move to btstack_config.h
-#define MAX_NR_MESH_APPKEYS_PER_MODEL 3
-#define MAX_NR_MESH_SUBSCRIPTION_PER_MODEL 3
-#define MESH_APPKEY_INVALID 0xffff
-#define MESH_SIG_MODEL_ID_CONFIGURATION_SERVER 0
-#define MESH_SIG_MODEL_ID_CONFIGURATION_CLIENT 1
-#define MESH_SIG_MODEL_ID_HEALTH_SERVER 2
-#define MESH_SIG_MODEL_ID_HEALTH_CLIENT 3
+#define MAX_NR_MESH_APPKEYS_PER_MODEL           3u
+#define MAX_NR_MESH_SUBSCRIPTION_PER_MODEL      3u
+#define MESH_APPKEY_INVALID                     0xffffu
+#define MESH_SIG_MODEL_ID_CONFIGURATION_SERVER  0x0000u
+#define MESH_SIG_MODEL_ID_CONFIGURATION_CLIENT  0x0001u
+#define MESH_SIG_MODEL_ID_HEALTH_SERVER         0x0002u
+#define MESH_SIG_MODEL_ID_HEALTH_CLIENT         0x0003u
 #define MESH_SIG_MODEL_ID_GENERIC_ON_OFF_SERVER 0x1000u
 #define MESH_SIG_MODEL_ID_GENERIC_ON_OFF_CLIENT 0x1001u
+#define MESH_BLUEKITCHEN_MODEL_ID_TEST_SERVER   0x0000u
 
 typedef enum {
     MESH_NODE_IDENTITY_STATE_ADVERTISING_STOPPED = 0,
@@ -1360,9 +1361,8 @@ typedef struct {
     // linked list item
     btstack_linked_list_t item;
 
-    // model id, use BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC for SIG models
-    uint16_t vendor_id;
-    uint16_t model_id;
+    // vendor_id << 16 | model id, use BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC for SIG models
+    uint32_t model_identifier;
 
     // model operations
 
@@ -1463,25 +1463,12 @@ static mesh_model_t * mesh_model_iterator_get_next(mesh_model_iterator_t * itera
     return (mesh_model_t *) btstack_linked_list_iterator_next(&iterator->it);
 }
 
-static mesh_model_t * mesh_model_get_by_id(uint16_t vendor_id, uint16_t model_id){
-    mesh_model_iterator_t it;
-    mesh_model_iterator_init(&it);
-    while (mesh_model_iterator_has_next(&it)){
-        mesh_model_t * model = mesh_model_iterator_get_next(&it);
-        if (model->vendor_id != vendor_id) continue;
-        if (model->model_id  != model_id)  continue;
-        return model;
-    }
-    return NULL;
-}
-
 static mesh_model_t * mesh_model_get_by_identifier(uint32_t model_identifier){
     mesh_model_iterator_t it;
     mesh_model_iterator_init(&it);
     while (mesh_model_iterator_has_next(&it)){
         mesh_model_t * model = mesh_model_iterator_get_next(&it);
-        uint32_t current_identifier = (model->vendor_id << 16) | model->model_id;
-        if (current_identifier != model_identifier) continue;
+        if (model->model_identifier != model_identifier) continue;
         return model;
     }
     return NULL;
@@ -3260,18 +3247,15 @@ int btstack_main(void)
     pts_proxy_dst = mesh_virtual_address_register(label_uuid, 0x9779);
 
     // Access layer - setup models
-    mesh_configuration_server_model.vendor_id = BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC;
-    mesh_configuration_server_model.model_id  = MESH_SIG_MODEL_ID_CONFIGURATION_SERVER;
+    mesh_configuration_server_model.model_identifier = (BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC << 16 ) | MESH_SIG_MODEL_ID_CONFIGURATION_SERVER;
     mesh_model_reset_appkeys(&mesh_configuration_server_model);
     mesh_model_add(&mesh_configuration_server_model);
 
-    mesh_health_server_model.vendor_id = BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC;
-    mesh_health_server_model.model_id  = MESH_SIG_MODEL_ID_HEALTH_SERVER;
+    mesh_configuration_server_model.model_identifier = (BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC << 16 ) | MESH_SIG_MODEL_ID_HEALTH_SERVER;
     mesh_model_reset_appkeys(&mesh_health_server_model);
     mesh_model_add(&mesh_health_server_model);
 
-    mesh_vendor_model.vendor_id = BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH;
-    mesh_vendor_model.model_id  = 0;
+    mesh_configuration_server_model.model_identifier = (BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH << 16 ) | MESH_BLUEKITCHEN_MODEL_ID_TEST_SERVER;
     mesh_model_reset_appkeys(&mesh_vendor_model);
     mesh_model_add(&mesh_vendor_model);
 
