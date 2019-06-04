@@ -23,12 +23,16 @@ extern UART_HandleTypeDef huart_p;
 
 int _write(int file, char* ptr, int len)
 {
-    HAL_UART_Transmit(&huart_p, ptr, len, 1000);
+    HAL_UART_Transmit(&huart_p, (uint8_t*)ptr, len, 1000);
+
+    return len;
 }
 
 int _read(int file, char* ptr, int len)
 {
-    HAL_UART_Receive(&huart_p, ptr, len, 1000);
+    HAL_UART_Receive(&huart_p, (uint8_t*)ptr, len, 1000);
+
+    return len;
 }
 
 /********************************************
@@ -70,7 +74,7 @@ void hal_cpu_enable_irqs_and_sleep(void){
 #include "btstack_event.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
-#include "btstack_run_loop_embedded.h"
+#include "btstack_run_loop_freertos.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "btstack_debug.h"
@@ -353,8 +357,6 @@ static void transport_init(const void *transport_config){
  * open transport connection
  */
 static int transport_open(void){
-	int err;
-
     log_info("transport_open");
 
 	/* Device will let us know when it's ready */
@@ -464,7 +466,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 
 extern int btstack_main(int argc, const char * argv[]);
-int port_thread(void const* args){
+void port_thread(void* args){
 
     // enable packet logger
     //hci_dump_open(NULL, HCI_DUMP_STDOUT);
@@ -484,5 +486,4 @@ int port_thread(void const* args){
 
     log_info("btstack executing run loop...");
     btstack_run_loop_execute();
-    return 0;
 }

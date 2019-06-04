@@ -59,7 +59,7 @@ static void Reset_BackupDomain( void )
   * @brief  The application entry point.
   * @retval int
   */
-int port_thread(void const* args);
+void port_thread(void* args);
 int main(void)
 {
 	/* Reset of all peripherals, initializes the Systick. */

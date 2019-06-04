@@ -8,6 +8,8 @@
 
 #include "stm32wbxx_hal_tim.h"
 
+#include "hw.h"
+
 extern TIM_HandleTypeDef htim17;
 
 /**
