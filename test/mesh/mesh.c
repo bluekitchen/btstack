@@ -973,8 +973,11 @@ const mesh_access_message_t mesh_foundation_config_model_publication_status_sig 
 const mesh_access_message_t mesh_foundation_config_model_publication_status_vendor = {
         MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_STATUS, "12221114"
 };
-const mesh_access_message_t mesh_foundation_config_model_subscription_status = {
+const mesh_access_message_t mesh_foundation_config_model_subscription_status_sig = {
         MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_STATUS, "1222"
+};
+const mesh_access_message_t mesh_foundation_config_model_subscription_status_vendor = {
+        MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_STATUS, "1224"
 };
 const mesh_access_message_t mesh_foundation_config_netkey_status = {
         MESH_FOUNDATION_OPERATION_NETKEY_STATUS, "12"
@@ -1315,6 +1318,7 @@ static mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_acc
 
 // move to btstack_config.h
 #define MAX_NR_MESH_APPKEYS_PER_MODEL 3
+#define MAX_NR_MESH_SUBSCRIPTION_PER_MODEL 3
 #define MESH_APPKEY_INVALID 0xffff
 #define MESH_SIG_MODEL_ID_CONFIGURATION_SERVER 0
 #define MESH_SIG_MODEL_ID_CONFIGURATION_CLIENT 1
@@ -1366,6 +1370,8 @@ typedef struct {
     // bound appkeys
     uint16_t appkey_indices[MAX_NR_MESH_APPKEYS_PER_MODEL];
 
+    // subscription list
+    uint16_t subscriptions[MAX_NR_MESH_SUBSCRIPTION_PER_MODEL];
 } mesh_model_t;
 
 typedef struct {
@@ -1405,6 +1411,36 @@ static void mesh_model_unbind_appkey(mesh_model_t * mesh_model, uint16_t appkey_
     for (i=0;i<MAX_NR_MESH_APPKEYS_PER_MODEL;i++){
         if (mesh_model->appkey_indices[i] == appkey_index) {
             mesh_model->appkey_indices[i] = MESH_APPKEY_INVALID;
+        }
+    }
+}
+
+static void mesh_model_reset_subscriptions(mesh_model_t * mesh_model){
+    int i;
+    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
+        mesh_model->subscriptions[i] = MESH_ADDRESS_UNSASSIGNED;
+    }
+}
+
+static uint8_t mesh_model_add_subscription(mesh_model_t * mesh_model, uint16_t address){
+    int i;
+    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
+        if (mesh_model->subscriptions[i] == address) return MESH_FOUNDATION_STATUS_SUCCESS;
+    }
+    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
+        if (mesh_model->subscriptions[i] == MESH_ADDRESS_UNSASSIGNED) {
+            mesh_model->subscriptions[i] = address;
+            return MESH_FOUNDATION_STATUS_SUCCESS;
+        }
+    }
+    return MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
+}
+
+static void mesh_model_delete_subscription(mesh_model_t * mesh_model, uint16_t address){
+    int i;
+    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
+        if (mesh_model->subscriptions[i] == address) {
+            mesh_model->subscriptions[i] = MESH_ADDRESS_UNSASSIGNED;
         }
     }
 }
@@ -2098,32 +2134,111 @@ static void config_appkey_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     mesh_access_message_processed(pdu);
 }
 
+static uint32_t mesh_model_get_model_identifier(uint16_t vendor_id, uint16_t model_id){
+    return (vendor_id << 16) | model_id;
+}
+
+static uint16_t mesh_model_get_model_id(uint32_t model_identifier){
+    return model_identifier & 0xFFFFu;
+}
+
+static uint16_t mesh_model_get_vendor_id(uint32_t model_identifier){
+    return model_identifier >> 16;
+}
+
+static int mesh_model_is_bluetooth_sig(uint32_t model_identifier){
+    return mesh_model_get_vendor_id(model_identifier) == BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC;
+}
+
 static void config_model_subscription_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status, uint16_t element_address, uint16_t address, uint32_t model_identifier){
     // setup message
-    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
-            &mesh_foundation_config_model_subscription_status, status, element_address, address, model_identifier);
+    mesh_transport_pdu_t * transport_pdu;
+    if (mesh_model_is_bluetooth_sig(model_identifier)) {
+        transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_config_model_subscription_status_sig,
+                                                            status, element_address, address, mesh_model_get_model_id(model_identifier));
+    } else {
+        transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_config_model_subscription_status_vendor,
+                                                            status, element_address, address, model_identifier);
+    }
     if (!transport_pdu) return;
-
     // send as segmented access pdu
     config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+}
+
+static mesh_model_t * mesh_access_model_for_address_and_model_identifier(uint16_t element_address, uint32_t model_identifier, uint8_t * status){
+    if (element_address != primary_element_address){
+        *status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
+        return NULL;
+    }
+
+    mesh_model_t * model = mesh_model_get_by_id(mesh_model_get_vendor_id(model_identifier), mesh_model_get_model_id(model_identifier));
+    if (model == NULL) {
+        *status = MESH_FOUNDATION_STATUS_INVALID_MODEL;
+    } else {
+        *status = MESH_FOUNDATION_STATUS_SUCCESS;
+    }
+    return model;
 }
 
 static void config_model_subscription_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-
+    
     uint16_t element_address  = mesh_access_parser_get_u16(&parser);
     uint16_t address          = mesh_access_parser_get_u16(&parser);
-    uint16_t model_identifier = mesh_access_parser_get_u16(&parser);
 
-    config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), 0, element_address, address, model_identifier);
+    uint16_t vendor_id;
+    uint16_t model_id;
+    if (mesh_access_parser_available(&parser) == 4){
+        vendor_id = mesh_access_parser_get_u16(&parser);
+    } else {
+        vendor_id = BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC;
+    }
+    model_id = mesh_access_parser_get_u16(&parser);
+    uint32_t model_identifier = mesh_model_get_model_identifier(vendor_id, model_id);
 
+    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
+    mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
+
+    if (target_model != NULL){
+        status = mesh_model_add_subscription(target_model, address);
+    }   
+
+    config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, address, model_identifier);
     mesh_access_message_processed(pdu);
 }
 
 static void
 config_model_subscription_virtual_address_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
     // TODO: not implemented yet
+    mesh_access_message_processed(pdu);
+}
+
+static void config_model_subscription_delete_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+
+    uint16_t element_address  = mesh_access_parser_get_u16(&parser);
+    uint16_t address          = mesh_access_parser_get_u16(&parser);
+    
+    uint16_t vendor_id;
+    uint16_t model_id;
+    if (mesh_access_parser_available(&parser) == 4){
+        vendor_id = mesh_access_parser_get_u16(&parser);
+    } else {
+        vendor_id = BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC;
+    }
+    model_id = mesh_access_parser_get_u16(&parser);
+    uint32_t model_identifier = mesh_model_get_model_identifier(vendor_id, model_id);
+
+    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
+    mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
+
+    if (target_model != NULL){
+        mesh_model_delete_subscription(target_model, address);
+    }   
+
+    config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, address, model_identifier);
     mesh_access_message_processed(pdu);
 }
 
@@ -2180,6 +2295,9 @@ static void config_model_app_bind_handler(mesh_model_t *config_server_model, mes
     uint16_t element_address = mesh_access_parser_get_u16(&parser);
     uint16_t appkey_index    = mesh_access_parser_get_u16(&parser);
     // vendor or sig model?
+
+    // mesh_access_get_vendor_and_model_id(&parser, &vendor_id, &model_id);
+    // TODO: static void mesh_access_get_vendor_and_model_id(mesh_access_parser_state_t * parser, uint16_t * vendor_id, uint16_t * model_id);
     uint16_t vendor_id;
     uint16_t model_id;
     if (mesh_access_parser_available(&parser) == 4){
@@ -2816,7 +2934,7 @@ static mesh_operation_t mesh_configuration_server_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_RELAY_SET,                                    1, config_relay_set_handler },
     { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_ADD,                       6, config_model_subscription_add_handler },
     { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_ADD,      20, config_model_subscription_virtual_address_add_handler },
-//    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DELETE,                    6, config_model_subscription_delete_handler },
+    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DELETE,                    6, config_model_subscription_delete_handler },
 //    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_DELETE,   20, config_model_subscription_virtual_address_delete_handler },
 //    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_OVERWRITE,                 6, config_model_subscription_overwrite_handler },
 //    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_OVERWRITE,20, config_model_subscription_virtual_address_overwrite_handler },
