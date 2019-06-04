@@ -1388,6 +1388,15 @@ typedef struct {
 } mesh_configuration_server_model_context;
 
 typedef struct {
+    uint16_t address;
+    uint16_t appkey_index;
+    uint8_t  friendship_credential_flag;
+    uint8_t  period;
+    uint8_t  ttl;
+    uint8_t  retransmit;
+} mesh_publication_model_t;
+
+typedef struct {
     // linked list item
     btstack_linked_list_t item;
 
@@ -1395,6 +1404,9 @@ typedef struct {
     uint32_t model_identifier;
 
     // model operations
+
+    // publication model if supported
+    mesh_publication_model_t * publication_model;
 
     // data
     void * model_data;
@@ -2377,15 +2389,6 @@ static void config_vendor_model_app_get_handler(mesh_model_t *config_server_mode
     config_model_app_get(config_server_model, pdu, 0);
 }
 
-typedef struct {
-    uint16_t address;
-    uint16_t appkey_index;
-    uint8_t  friendship_credential_flag;
-    uint8_t  period;
-    uint8_t  ttl;
-    uint8_t  retransmit;
-} mesh_publication_model_t;
-
 static void
 config_model_publication_status(mesh_model_t *mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status,
                                     uint32_t model_id, mesh_publication_model_t *publication_model) {
@@ -2401,10 +2404,11 @@ config_model_publication_status(mesh_model_t *mesh_model, uint16_t netkey_index,
     config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
-// TODO: link to model
+// TODO: avoid temp storage
 static mesh_publication_model_t publication_model;
-static uint32_t config_model_publication_model_identifier;
-static uint8_t  model_publication_label_uuid[16];
+static mesh_model_t           * config_model_publication_model;
+static uint32_t                 config_model_publication_model_identifier;
+static uint8_t                  model_publication_label_uuid[16];
 
 static void
 config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
@@ -2415,30 +2419,43 @@ config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
     // ElementAddress - Address of the element - should be us
     uint16_t element_address = mesh_access_parser_get_u16(&parser);
 
-    // TODO: validate params
     // PublishAddress, 16 bit
     publication_model.address = mesh_access_parser_get_u16(&parser);
-    if (publication_model.address == MESH_ADDRESS_UNSASSIGNED){
-        memset(&publication_model, 0, sizeof(publication_model));
-        // skip data
-        mesh_access_parser_skip(&parser, 5);
-    } else {
-        // AppKeyIndex (12), CredentialFlag (1), RFU (3)
-        uint16_t temp = mesh_access_parser_get_u16(&parser);
-        publication_model.appkey_index = temp & 0x0fff;
-        publication_model.friendship_credential_flag = (temp >> 12) & 1;
-        publication_model.ttl        = mesh_access_parser_get_u8(&parser);
-        publication_model.period     = mesh_access_parser_get_u8(&parser);
-        publication_model.retransmit = mesh_access_parser_get_u8(&parser);
-    }
+
+    // AppKeyIndex (12), CredentialFlag (1), RFU (3)
+    uint16_t temp = mesh_access_parser_get_u16(&parser);
+    publication_model.appkey_index = temp & 0x0fff;
+    publication_model.friendship_credential_flag = (temp >> 12) & 1;
+
+    // TTL
+    publication_model.ttl        = mesh_access_parser_get_u8(&parser);
+
+    // Period
+    publication_model.period     = mesh_access_parser_get_u8(&parser);
+
+    // Retransmit
+    publication_model.retransmit = mesh_access_parser_get_u8(&parser);
 
     // Model Identifier
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
     uint8_t status;
     mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
 
-    // TODO: use target_model
-    (void) target_model;
+    // TODO validate params
+
+    if (target_model){
+        if (target_model->publication_model == NULL){
+            status = MESH_FOUNDATION_STATUS_CANNOT_SET;
+        } else {
+            if (publication_model.address == MESH_ADDRESS_UNSASSIGNED){
+                // unpublish
+                memset(&publication_model, 0, sizeof(publication_model));
+            }
+            memcpy(target_model->publication_model, &publication_model, sizeof(mesh_publication_model_t));
+        }
+    }
+
+    // TODO: validate params
 
     // send status
     config_model_publication_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, model_identifier, &publication_model);
@@ -2448,9 +2465,17 @@ config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
 static void config_model_publication_virtual_address_set_hash(void *arg){
     mesh_model_t *mesh_model = (mesh_model_t*) arg;
     printf("Virtual Address Hash: %04x\n", publication_model.address);
-    
+
     // TODO: find a way to get netkey_index
     uint16_t netkey_index = 0;
+
+    // update
+    if (publication_model.address == MESH_ADDRESS_UNSASSIGNED){
+        // unpublish
+        memset(&publication_model, 0, sizeof(publication_model));
+    }
+    memcpy(config_model_publication_model->publication_model, &publication_model, sizeof(mesh_publication_model_t));
+
 
     // send status
     uint8_t status = 0;
@@ -2484,13 +2509,19 @@ config_model_publication_virtual_address_set_handler(mesh_model_t *mesh_model,
     config_model_publication_model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
     uint8_t status;
-    mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, config_model_publication_model_identifier, &status);
+    config_model_publication_model = mesh_access_model_for_address_and_model_identifier(element_address, config_model_publication_model_identifier, &status);
 
     // on error, no need to calculate virtual address hash
     if (status != MESH_FOUNDATION_STATUS_SUCCESS){
         config_model_publication_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, config_model_publication_model_identifier, &publication_model);
         mesh_access_message_processed(pdu);
         return;
+    }
+
+    // model exists, but no publication model
+    if (config_model_publication_model->publication_model == NULL){
+        config_model_publication_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), MESH_FOUNDATION_STATUS_CANNOT_SET, config_model_publication_model_identifier, &publication_model);
+        mesh_access_message_processed(pdu);
     }
 
     access_pdu_in_process = pdu;
