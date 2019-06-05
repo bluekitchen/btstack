@@ -249,12 +249,16 @@ static void ble_evt_received(TL_EvtPacket_t *hcievt)
 
     xQueueSendFromISR(hciEvtQueue, (void*)&hcievt, &yield);
 
+    btstack_run_loop_freertos_trigger_from_isr();
+
     portYIELD_FROM_ISR(yield);
 }
 
 static void ble_acl_acknowledged(void)
 {
     hci_acl_can_send_now = 1;
+
+    btstack_run_loop_freertos_trigger_from_isr();
 }
 
 
@@ -275,7 +279,7 @@ static void transport_deliver_hci_packets(void){
     TL_EvtPacket_t *hcievt;
 	TL_AclDataSerial_t *acl;
 
-    while (xQueueReceive(hciEvtQueue, &hcievt, portMAX_DELAY) == pdTRUE)
+    while (xQueueReceive(hciEvtQueue, &hcievt, 0) == pdTRUE)
     {
         switch (hcievt->evtserial.type)
         {
