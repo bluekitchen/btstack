@@ -438,7 +438,9 @@ static int transport_send_packet(uint8_t packet_type, uint8_t *packet, int size)
             break;
 
         case HCI_ACL_DATA_PACKET:
-            memcpy((void *)&((TL_AclDataPacket_t *)HciAclDataBuffer)->AclDataSerial,packet, size);
+            hci_acl_can_send_now = 0;
+            ((TL_AclDataPacket_t *)HciAclDataBuffer)->AclDataSerial.type = packet_type;
+            memcpy((void *)&(((TL_AclDataPacket_t *)HciAclDataBuffer)->AclDataSerial.handle),packet, size);
             TL_BLE_SendAclData(NULL, 0);
             transport_notify_packet_send();
             break;
