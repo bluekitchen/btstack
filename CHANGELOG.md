@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - FreeRTOS: use freertos/.. prefix to include FreeRTOS headers if HAVE_FREERTOS_INCLUDE_PREFIX is defined
 
 ### Fixed
+- BNEP: Bluetooth address is stored in little-endian format for all BNEP_EVENT_*
 
 ### Added
 
