@@ -81,7 +81,6 @@ void hal_cpu_enable_irqs_and_sleep(void){
 #include "hci.h"
 #include "hci_dump.h"
 #include "btstack_debug.h"
-#include "ble/gatt-service/battery_service_server.h"
 
 #include "app_conf.h"
 #include "stm32_wpan_common.h"
