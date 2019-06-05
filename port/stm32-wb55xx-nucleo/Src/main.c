@@ -79,7 +79,7 @@ int main(void)
 
     Init_RTC();
 
-    xTaskCreate(port_thread, "btstack_thread", 512, NULL, 1, &hbtstack_task);
+    xTaskCreate(port_thread, "btstack_thread", 2048, NULL, 1, &hbtstack_task);
     
     vTaskStartScheduler();
 

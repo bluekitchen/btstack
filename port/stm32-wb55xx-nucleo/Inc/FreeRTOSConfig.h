@@ -84,7 +84,7 @@
 
 /* Debug enablement */
 #define configUSE_TRACE_FACILITY                1
-#define configMAX_TASK_NAME_LEN                 12
+#define configMAX_TASK_NAME_LEN                 20
 #define configQUEUE_REGISTRY_SIZE               10
 #define configRECORD_STACK_HIGH_ADDRESS			1
 #define configGENERATE_RUN_TIME_STATS           0
