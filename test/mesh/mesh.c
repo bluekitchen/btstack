@@ -380,12 +380,27 @@ static void mesh_load_app_key(uint16_t appkey_index){
     printf_hexdump(key->key, 16);
 }
 
+static void mesh_delete_app_key(uint16_t appkey_index){
+    uint32_t tag = mesh_transport_key_tag_for_appkey_index(appkey_index);
+    btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, tag);
+}
+
+#define MESH_APPKEY_INDEX_MAX (16)
+
 static void mesh_load_app_keys(void){
     printf("Load App Keys\n");
     // TODO: use TLV iterator
     uint16_t appkey_index;
-    for (appkey_index = 0; appkey_index < 16; appkey_index++){
+    for (appkey_index = 0; appkey_index < MESH_APPKEY_INDEX_MAX; appkey_index++){
         mesh_load_app_key(appkey_index);
+    }
+}
+static void mesh_delete_app_keys(void){
+    printf("Delete App Keys\n");
+    // TODO: use TLV iterator
+    uint16_t appkey_index;
+    for (appkey_index = 0; appkey_index < MESH_APPKEY_INDEX_MAX; appkey_index++){
+        mesh_delete_app_key(appkey_index);
     }
 }
 
@@ -519,6 +534,9 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                     memcpy(provisioning_data.privacy_key,    network_key->privacy_key, 16);
                     provisioning_data.nid = network_key->nid;
 
+                    // delete old app keys
+                    mesh_delete_app_keys();
+                    
                     // store in TLV
                     btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
 
@@ -2031,7 +2049,9 @@ static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t *
             mesh_transport_key_iterator_init(&it, netkey_index);
             while (mesh_transport_key_iterator_has_more(&it)){
                 mesh_transport_key_t * transport_key = mesh_transport_key_iterator_get_next(&it);
+                uint16_t appkey_index = transport_key->appkey_index;
                 mesh_transport_key_remove(transport_key);
+                mesh_delete_app_key(appkey_index);
             }
         } else {
             // we cannot remove the last network key
@@ -2255,6 +2275,7 @@ static void config_appkey_delete_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
     mesh_transport_key_t * transport_key = mesh_transport_key_get(appkey_index);
     if (transport_key){
         mesh_transport_key_remove(transport_key);
+        mesh_delete_app_key(appkey_index);
     }
     config_appkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_SUCCESS);
     mesh_access_message_processed(pdu);
