@@ -3274,11 +3274,11 @@ int btstack_main(void)
     mesh_model_reset_appkeys(&mesh_configuration_server_model);
     mesh_element_add_model(primary_element, &mesh_configuration_server_model);
 
-    mesh_configuration_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_HEALTH_SERVER);
+    mesh_health_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_HEALTH_SERVER);
     mesh_model_reset_appkeys(&mesh_health_server_model);
     mesh_element_add_model(primary_element, &mesh_health_server_model);
 
-    mesh_configuration_server_model.model_identifier = mesh_model_get_model_identifier(BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, MESH_BLUEKITCHEN_MODEL_ID_TEST_SERVER);
+    mesh_vendor_model.model_identifier = mesh_model_get_model_identifier(BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, MESH_BLUEKITCHEN_MODEL_ID_TEST_SERVER);
     mesh_model_reset_appkeys(&mesh_vendor_model);
     mesh_element_add_model(primary_element, &mesh_vendor_model);
     
