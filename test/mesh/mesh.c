@@ -1447,6 +1447,9 @@ typedef struct {
     // linked list item
     btstack_linked_item_t item;
 
+    // internal model enumeration
+    uint16_t mid;
+
     // vendor_id << 16 | model id, use BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC for SIG models
     uint32_t model_identifier;
 
@@ -1486,6 +1489,7 @@ typedef struct {
     btstack_linked_list_iterator_t it;
 } mesh_model_iterator_t;
 
+static uint16_t mid_counter;
 static btstack_linked_list_t elements;
 
 static mesh_heartbeat_publication_t mesh_heartbeat_publication;
@@ -1586,6 +1590,7 @@ static void mesh_element_add_model(mesh_element_t * element, mesh_model_t * mesh
     } else {
         element->models_count_vendor++;
     }
+    mesh_model->mid = mid_counter++;
     btstack_linked_list_add_tail(&element->models, (btstack_linked_item_t *) mesh_model);
 }
 
