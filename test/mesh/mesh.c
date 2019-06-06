@@ -90,6 +90,8 @@ static adv_bearer_connectable_advertisement_data_item_t connectable_advertisemen
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
+static void mesh_access_set_primary_element_address(uint16_t unicast_address);
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static uint8_t mesh_flags;
@@ -282,6 +284,7 @@ static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * p
     mesh_network_set_primary_element_address(provisioning_data->unicast_address);
     mesh_lower_transport_set_primary_element_address(provisioning_data->unicast_address);
     mesh_upper_transport_set_primary_element_address(provisioning_data->unicast_address);
+    mesh_access_set_primary_element_address(provisioning_data->unicast_address);
     primary_element_address = provisioning_data->unicast_address;
     // set iv_index
     mesh_set_iv_index(provisioning_data->iv_index);
@@ -1103,6 +1106,17 @@ static uint16_t mesh_pdu_len(mesh_pdu_t * pdu){
     }
 }
 
+static uint8_t * mesh_pdu_data(mesh_pdu_t * pdu){
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            return ((mesh_transport_pdu_t*) pdu)->data;
+        case MESH_PDU_TYPE_NETWORK:
+            return &((mesh_network_pdu_t *) pdu)->data[10];
+        default:
+            return NULL;
+    }
+}
+
 typedef struct {
     uint32_t opcode;
     uint8_t * data;
@@ -1115,18 +1129,9 @@ static void mesh_access_parser_skip(mesh_access_parser_state_t * state, uint16_t
 }
 
 static int mesh_access_parser_init(mesh_access_parser_state_t * state, mesh_pdu_t * pdu){
-    switch (pdu->pdu_type){
-        case MESH_PDU_TYPE_TRANSPORT:
-            state->data =  ((mesh_transport_pdu_t*) pdu)->data;
-            state->len  = ((mesh_transport_pdu_t*) pdu)->len;
-            break;
-        case MESH_PDU_TYPE_NETWORK:
-            state->data =  &((mesh_transport_pdu_t*) pdu)->data[10];
-            state->len  = ((mesh_network_pdu_t *) pdu)->len - 10;
-            break;
-        default:
-            return 0;
-    }
+    state->data = mesh_pdu_data(pdu);
+    state->len  = mesh_pdu_len(pdu);
+
     uint16_t opcode_size = 0;
     int ok = mesh_access_get_opcode(state->data, state->len, &state->opcode, &opcode_size);
     if (ok){
@@ -1527,6 +1532,10 @@ static btstack_linked_list_t mesh_elements;
 
 static mesh_element_t * mesh_primary_element(void){
     return &primary_element;
+}
+
+static void mesh_access_set_primary_element_address(uint16_t unicast_address){
+    primary_element.unicast_address = unicast_address;
 }
 
 static void mesh_element_add(mesh_element_t * element){
