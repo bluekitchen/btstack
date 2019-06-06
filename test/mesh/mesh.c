@@ -338,46 +338,55 @@ static void mesh_setup_without_provisiong_data(void){
 #endif
 }
 
+static uint32_t mesh_transport_key_tag_for_appkey_index(uint16_t appkey_index){
+    return ((uint32_t) 'M' << 24) | ((uint32_t) 'A' << 16) | ((uint32_t) appkey_index);
+}
 
+typedef struct {
+    uint16_t netkey_index;
+    uint16_t appkey_index;
+    uint8_t  aid;
+    uint8_t  key[16];
+} mesh_persistent_app_key_t;
 
-static mesh_transport_key_t   test_application_key;
+void mesh_store_app_key(uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, const uint8_t * application_key){
+    mesh_persistent_app_key_t data;
+    printf("Store AppKey: AppKey Index 0x%06x, AID %02x: ", appkey_index, aid);
+    printf_hexdump(application_key, 16);
+    uint32_t tag = mesh_transport_key_tag_for_appkey_index(appkey_index);
+    data.netkey_index = netkey_index;
+    data.appkey_index = appkey_index;
+    data.aid = aid;
+    memcpy(data.key, application_key, 16);
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+}
 
-static void mesh_application_key_set(uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, const uint8_t *application_key) {
-    test_application_key.netkey_index = netkey_index;
-    test_application_key.appkey_index = appkey_index;
-    test_application_key.aid   = aid;
-    test_application_key.akf   = 1;
-    memcpy(test_application_key.key, application_key, 16);
-    mesh_transport_key_add(&test_application_key);
+static void mesh_load_app_key(uint16_t appkey_index){
+    mesh_persistent_app_key_t data;
+    uint32_t tag = mesh_transport_key_tag_for_appkey_index(appkey_index);
+    int app_key_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+    if (app_key_len == 0) return;
+    
+    mesh_transport_key_t * key = btstack_memory_mesh_transport_key_get();
+    if (key == NULL) return;
+
+    key->appkey_index = data.appkey_index;
+    key->netkey_index = data.netkey_index;
+    key->aid          = data.aid;
+    key->akf          = 1;
+    memcpy(key->key, data.key, 16);
+    mesh_transport_key_add(key);
+    printf("Load AppKey: AppKey Index 0x%06x, AID %02x: ", key->appkey_index, key->aid);
+    printf_hexdump(key->key, 16);
 }
 
 static void mesh_load_app_keys(void){
-/*
-    uint8_t data[2+1+16];
-    int app_key_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, 'APPK', (uint8_t *) &data, sizeof(data));
-    if (app_key_len){
-        uint16_t appkey_index = little_endian_read_16(data, 0);
-        uint8_t  aid          = data[2];
-        uint8_t * application_key = &data[3];
-        mesh_application_key_set(0, appkey_index, aid, application_key);
-        printf("Load AppKey: AppKey Index 0x%06x, AID %02x: ", appkey_index, aid);
-        printf_hexdump(application_key, 16);
-    }  else {
-        printf("No Appkey stored\n");
+    printf("Load App Keys\n");
+    // TODO: use TLV iterator
+    uint16_t appkey_index;
+    for (appkey_index = 0; appkey_index < 16; appkey_index++){
+        mesh_load_app_key(appkey_index);
     }
-*/
-}
-
-void mesh_store_app_key(uint16_t appkey_index, uint8_t aid, const uint8_t * application_key){
-/*
-    printf("Store AppKey: AppKey Index 0x%06x, AID %02x: ", appkey_index, aid);
-    printf_hexdump(application_key, 16);
-    uint8_t data[2+1+16];
-    little_endian_store_16(data, 0, appkey_index);
-    data[2] = aid;
-    memcpy(&data[3], application_key, 16);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, 'APPK', (uint8_t *) &data, sizeof(data));
-*/
 }
 
 // helper network layer, temp
@@ -595,14 +604,15 @@ static btstack_crypto_aes128_cmac_t mesh_cmac_request;
 static uint8_t mesh_secure_network_beacon[22];
 static uint8_t mesh_secure_network_beacon_auth_value[16];
 
+static mesh_transport_key_t pts_application_key;
+
 static void load_pts_app_key(void){
     // PTS app key
-    uint8_t application_key[16];
-    const char * application_key_string = "3216D1509884B533248541792B877F98";
-    btstack_parse_hex(application_key_string, 16, application_key);
-    mesh_application_key_set(0, 0, 0x38, application_key);
+    btstack_parse_hex("3216D1509884B533248541792B877F98", 16, pts_application_key.key);
+    pts_application_key.aid = 0x38;
+    mesh_transport_key_add(&pts_application_key);
     printf("PTS Application Key (AID %02x): ", 0x38);
-    printf_hexdump(application_key, 16);
+    printf_hexdump(pts_application_key.key, 16);
 }
 
 static void send_pts_network_messsage(int type){
@@ -2075,7 +2085,7 @@ static void config_appkey_add_or_udpate_aid(void *arg){
     printf_hexdump(transport_key->key, 16);
 
     // store in TLV
-    mesh_store_app_key(transport_key->appkey_index, transport_key->aid, transport_key->key);
+    mesh_store_app_key(transport_key->netkey_index, transport_key->appkey_index, transport_key->aid, transport_key->key);
 
     // add app key
     mesh_transport_key_add(transport_key);
@@ -2153,7 +2163,7 @@ static void config_appkey_update_aid(void * arg){
     printf_hexdump(transport_key->key, 16);
 
     // store in TLV
-    mesh_store_app_key(transport_key->appkey_index, transport_key->aid, transport_key->key);
+    mesh_store_app_key(transport_key->netkey_index, transport_key->appkey_index, transport_key->aid, transport_key->key);
 
     uint32_t netkey_and_appkey_index = (transport_key->appkey_index << 12) | transport_key->netkey_index;
     config_appkey_status(NULL,  mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_SUCCESS);
