@@ -351,7 +351,12 @@ typedef struct {
     uint8_t  key[16];
 } mesh_persistent_app_key_t;
 
+#define MESH_APPKEY_INDEX_MAX (16)
+
 void mesh_store_app_key(uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, const uint8_t * application_key){
+    if (application_key >= MESH_APPKEY_INDEX_MAX){
+        printf("Warning: AppKey with AppKey Index %x (>= %u) are not persisted\n", appkey_index, MESH_APPKEY_INDEX_MAX);
+    }
     mesh_persistent_app_key_t data;
     printf("Store AppKey: AppKey Index 0x%06x, AID %02x: ", appkey_index, aid);
     printf_hexdump(application_key, 16);
@@ -386,8 +391,6 @@ static void mesh_delete_app_key(uint16_t appkey_index){
     uint32_t tag = mesh_transport_key_tag_for_appkey_index(appkey_index);
     btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, tag);
 }
-
-#define MESH_APPKEY_INDEX_MAX (16)
 
 static void mesh_load_app_keys(void){
     printf("Load App Keys\n");
@@ -463,6 +466,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     // load app keys
                     mesh_load_app_keys();
 #if defined(ENABLE_MESH_ADV_BEARER) || defined(ENABLE_MESH_PB_ADV)
+                    // load model to appkey bindings
+                    mesh_load_appkey_lists();
+                    
                     // setup scanning
                     gap_set_scan_parameters(0, 0x300, 0x300);
                     gap_start_scan();
@@ -1556,6 +1562,8 @@ static mesh_model_t * mesh_model_get_by_identifier(mesh_element_t * element, uin
 
 // model to appkey list/binding
 
+#define MESH_MODEL_INDEX_MAX (16)
+
 static uint32_t mesh_model_tag_for_index(uint16_t internal_model_id){
     return ((uint32_t) 'M' << 24) | ((uint32_t) 'B' << 16) | ((uint32_t) internal_model_id);
 }
@@ -1566,11 +1574,13 @@ static void mesh_load_appkey_list(mesh_model_t * model){
 }
 
 static void mesh_store_appkey_list(mesh_model_t * model){
+    if (model->mid >= MESH_MODEL_INDEX_MAX){
+        printf("Warning: Model with internal model id %x (>= %u) are not persisted\n", model->mid, MESH_MODEL_INDEX_MAX);
+    }
+
     uint32_t tag = mesh_model_tag_for_index(model->mid);
     btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &model->appkey_indices, sizeof(model->appkey_indices));
 }
-
-#define MESH_MODEL_INDEX_MAX (16)
 
 static void mesh_load_appkey_lists(void){
     printf("Load Appkey Lists\n");
