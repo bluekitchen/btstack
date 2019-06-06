@@ -1009,6 +1009,10 @@ static uint32_t mesh_model_get_model_identifier(uint16_t vendor_id, uint16_t mod
     return (vendor_id << 16) | model_id;
 }
 
+static uint32_t mesh_model_get_model_identifier_bluetooth_sig(uint16_t model_id){
+    return (BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC << 16) | model_id;
+}
+
 static uint16_t mesh_model_get_model_id(uint32_t model_identifier){
     return model_identifier & 0xFFFFu;
 }
@@ -1398,7 +1402,7 @@ typedef struct {
 
 typedef struct {
     // linked list item
-    btstack_linked_list_t item;
+    btstack_linked_item_t item;
 
     // vendor_id << 16 | model id, use BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC for SIG models
     uint32_t model_identifier;
@@ -1419,17 +1423,29 @@ typedef struct {
 } mesh_model_t;
 
 typedef struct {
+    // linked list item
+    btstack_linked_item_t item;
+    
+    // unicast address
+    uint16_t unicast_address;
+    
+    // LOC
+    uint16_t loc;
+    
+    // models
+    btstack_linked_list_t models;
+    uint16_t models_count_sig;
+    uint16_t models_count_vendor;
+
+} mesh_element_t;
+
+typedef struct {
     btstack_linked_list_iterator_t it;
 } mesh_model_iterator_t;
 
-static btstack_linked_list_t mesh_models;
+static btstack_linked_list_t elements;
 
 static mesh_heartbeat_publication_t mesh_heartbeat_publication;
-static mesh_model_t                 mesh_configuration_server_model;
-static mesh_model_t                 mesh_health_server_model;
-static mesh_model_t                 mesh_vendor_model;
-static uint16_t                     mesh_models_count_sig;
-static uint16_t                     mesh_models_count_vendor;
 
 static void mesh_model_reset_appkeys(mesh_model_t * mesh_model){
     int i;
@@ -1495,17 +1511,39 @@ static int mesh_model_is_configuration_server(uint32_t model_identifier){
     return mesh_model_is_bluetooth_sig(model_identifier) && (mesh_model_get_model_id(model_identifier) == MESH_SIG_MODEL_ID_CONFIGURATION_SERVER);
 }
 
-static void mesh_model_add(mesh_model_t * mesh_model){
-    if (mesh_model_is_bluetooth_sig(mesh_model->model_identifier)){
-        mesh_models_count_sig++;
-    } else {
-        mesh_models_count_vendor++;
-    }
-    btstack_linked_list_add_tail(&mesh_models, (btstack_linked_item_t *) mesh_model);
+static mesh_element_t   primary_element;
+static btstack_linked_list_t mesh_elements;
+
+static mesh_element_t * mesh_primary_element(void){
+    return &primary_element;
 }
 
-static void mesh_model_iterator_init(mesh_model_iterator_t * iterator){
-    btstack_linked_list_iterator_init(&iterator->it, &mesh_models);
+static void mesh_element_add(mesh_element_t * element){
+    btstack_linked_list_add_tail(&mesh_elements, (void*) element);
+}
+
+static mesh_element_t * mesh_element_for_unicast_address(uint16_t unicast_address){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &mesh_elements);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        mesh_element_t * element = (mesh_element_t *) btstack_linked_list_iterator_next(&it);
+        if (element->unicast_address != unicast_address) continue;
+        return element;
+    }
+    return NULL;
+}
+
+static void mesh_element_add_model(mesh_element_t * element, mesh_model_t * mesh_model){
+    if (mesh_model_is_bluetooth_sig(mesh_model->model_identifier)){
+        element->models_count_sig++;
+    } else {
+        element->models_count_vendor++;
+    }
+    btstack_linked_list_add_tail(&element->models, (btstack_linked_item_t *) mesh_model);
+}
+
+static void mesh_model_iterator_init(mesh_model_iterator_t * iterator, mesh_element_t * element){
+    btstack_linked_list_iterator_init(&iterator->it, &element->models);
 }
 
 static int mesh_model_iterator_has_next(mesh_model_iterator_t * iterator){
@@ -1516,9 +1554,9 @@ static mesh_model_t * mesh_model_iterator_get_next(mesh_model_iterator_t * itera
     return (mesh_model_t *) btstack_linked_list_iterator_next(&iterator->it);
 }
 
-static mesh_model_t * mesh_model_get_by_identifier(uint32_t model_identifier){
+static mesh_model_t * mesh_model_get_by_identifier(mesh_element_t * element, uint32_t model_identifier){
     mesh_model_iterator_t it;
-    mesh_model_iterator_init(&it);
+    mesh_model_iterator_init(&it, element);
     while (mesh_model_iterator_has_next(&it)){
         mesh_model_t * model = mesh_model_iterator_get_next(&it);
         if (model->model_identifier != model_identifier) continue;
@@ -1564,31 +1602,36 @@ static void config_composition_data_status(mesh_model_t * mesh_model, uint16_t n
     // Features - Relay, Proxy, Friend, Lower Power, ...
     mesh_access_transport_add_uint16(transport_pdu, 0);
 
-    // Element 1
-    // Loc - bottom - https://www.bluetooth.com/specifications/assigned-numbers/gatt-namespace-descriptors
-    mesh_access_transport_add_uint16(transport_pdu, 0x0103);
-    // NumS
-    mesh_access_transport_add_uint8( transport_pdu, mesh_models_count_sig);
-    // NumV
-    mesh_access_transport_add_uint8( transport_pdu, mesh_models_count_vendor);
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &mesh_elements);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        mesh_element_t * element = (mesh_element_t *) btstack_linked_list_iterator_next(&it);
 
-    mesh_model_iterator_t it;
+        // Loc
+        mesh_access_transport_add_uint16(transport_pdu, element->loc);
+        // NumS
+        mesh_access_transport_add_uint8( transport_pdu, element->models_count_sig);
+        // NumV
+        mesh_access_transport_add_uint8( transport_pdu, element->models_count_vendor);
+
+        mesh_model_iterator_t it;
+        
+        // SIG Models
+        mesh_model_iterator_init(&it, element);
+        while (mesh_model_iterator_has_next(&it)){
+            mesh_model_t * model = mesh_model_iterator_get_next(&it);
+            if (!mesh_model_is_bluetooth_sig(model->model_identifier)) continue;
+            mesh_access_transport_add_uint16(transport_pdu, model->model_identifier);
+        }
+        // Vendor Models
+        mesh_model_iterator_init(&it, element);
+        while (mesh_model_iterator_has_next(&it)){
+            mesh_model_t * model = mesh_model_iterator_get_next(&it);
+            if (mesh_model_is_bluetooth_sig(model->model_identifier)) continue;
+            mesh_access_transport_add_uint32(transport_pdu, model->model_identifier);
+        }
+    }
     
-    // SIG Models
-    mesh_model_iterator_init(&it);
-    while (mesh_model_iterator_has_next(&it)){
-        mesh_model_t * model = mesh_model_iterator_get_next(&it);
-        if (!mesh_model_is_bluetooth_sig(model->model_identifier)) continue;
-        mesh_access_transport_add_uint16(transport_pdu, model->model_identifier);
-    }
-    // Vendor Models
-    mesh_model_iterator_init(&it);
-    while (mesh_model_iterator_has_next(&it)){
-        mesh_model_t * model = mesh_model_iterator_get_next(&it);
-        if (mesh_model_is_bluetooth_sig(model->model_identifier)) continue;
-        mesh_access_transport_add_uint32(transport_pdu, model->model_identifier);
-    }
-
     // send as segmented access pdu
     config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
@@ -2210,8 +2253,8 @@ static mesh_model_t * mesh_access_model_for_address_and_model_identifier(uint16_
         *status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
         return NULL;
     }
-
-    mesh_model_t * model = mesh_model_get_by_identifier(model_identifier);
+    mesh_element_t * element = mesh_primary_element();
+    mesh_model_t * model = mesh_model_get_by_identifier(element, model_identifier);
     if (model == NULL) {
         *status = MESH_FOUNDATION_STATUS_INVALID_MODEL;
     } else {
@@ -2922,8 +2965,12 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
             break;
     }
 
+    // TODO: get element for unicast address or 'find' element for group / virtual addresses
+
+    // TODO: support other models
+    
     // find opcode in table
-    mesh_model_t * model = &mesh_configuration_server_model;
+    mesh_model_t * model = mesh_model_get_by_identifier(mesh_primary_element(), MESH_SIG_MODEL_ID_CONFIGURATION_SERVER);
     mesh_operation_t * operation;
     for (operation = mesh_configuration_server_model_operations; operation->handler != NULL ; operation++){
         if (operation->opcode != opcode) continue;
@@ -3142,6 +3189,12 @@ void proxy_configuration_message_handler(mesh_network_callback_type_t callback_t
     }
 }
 
+// Test configuration
+
+static mesh_model_t                 mesh_configuration_server_model;
+static mesh_model_t                 mesh_health_server_model;
+static mesh_model_t                 mesh_vendor_model;
+
 int btstack_main(void);
 int btstack_main(void)
 {
@@ -3206,20 +3259,29 @@ int btstack_main(void)
     // PTS Virtual Address Label UUID - without Config Model, PTS uses our device uuid
     btstack_parse_hex("001BDC0810210B0E0A0C000B0E0A0C00", 16, label_uuid);
     pts_proxy_dst = mesh_virtual_address_register(label_uuid, 0x9779);
+    
+    // Access layer - add Primary Element to list of elements - should be hid in e.g mesh_access_init()
+    mesh_element_add(mesh_primary_element());
 
-    // Access layer - setup models
-    mesh_configuration_server_model.model_identifier = (BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC << 16 ) | MESH_SIG_MODEL_ID_CONFIGURATION_SERVER;
+    // Setup Primary Element
+    mesh_element_t * primary_element = mesh_primary_element();
+
+    // Loc - bottom - https://www.bluetooth.com/specifications/assigned-numbers/gatt-namespace-descriptors
+    primary_element->loc = 0x0103;
+
+    // Setup models
+    mesh_configuration_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_CONFIGURATION_SERVER);
     mesh_model_reset_appkeys(&mesh_configuration_server_model);
-    mesh_model_add(&mesh_configuration_server_model);
+    mesh_element_add_model(primary_element, &mesh_configuration_server_model);
 
-    mesh_configuration_server_model.model_identifier = (BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC << 16 ) | MESH_SIG_MODEL_ID_HEALTH_SERVER;
+    mesh_configuration_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_HEALTH_SERVER);
     mesh_model_reset_appkeys(&mesh_health_server_model);
-    mesh_model_add(&mesh_health_server_model);
+    mesh_element_add_model(primary_element, &mesh_health_server_model);
 
-    mesh_configuration_server_model.model_identifier = (BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH << 16 ) | MESH_BLUEKITCHEN_MODEL_ID_TEST_SERVER;
+    mesh_configuration_server_model.model_identifier = mesh_model_get_model_identifier(BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, MESH_BLUEKITCHEN_MODEL_ID_TEST_SERVER);
     mesh_model_reset_appkeys(&mesh_vendor_model);
-    mesh_model_add(&mesh_vendor_model);
-
+    mesh_element_add_model(primary_element, &mesh_vendor_model);
+    
     // calc s1('vtad')7
     // btstack_crypto_aes128_cmac_zero(&salt_request, 4, (const uint8_t *) "vtad", salt_hash, salt_complete, NULL);
 
