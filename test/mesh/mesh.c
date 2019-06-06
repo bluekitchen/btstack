@@ -158,6 +158,7 @@ static void mesh_proxy_start_advertising_with_network_id(void){
         log_info("Proxy start advertising with network id, netkey index %04x", network_key->netkey_index);
         adv_bearer_advertisements_add_item(&network_key->advertisement_with_network_id);
     }
+    adv_bearer_advertisements_enable(1);
 }
 
 static void mesh_proxy_stop_advertising_with_network_id(void){  
@@ -1390,8 +1391,6 @@ typedef enum {
 static btstack_crypto_aes128_cmac_t configuration_server_cmac_request;
 
 static mesh_pdu_t * access_pdu_in_process;
-
-static mesh_transport_key_t new_app_key;
 
 typedef struct  {
     btstack_timer_source_t timer;
