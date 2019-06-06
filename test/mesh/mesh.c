@@ -2137,6 +2137,7 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     }
 
     // store data
+    app_key->akf = 1;
     app_key->appkey_index = appkey_index;
     app_key->netkey_index = netkey_index;
     memcpy(app_key->key, appkey, 16);
