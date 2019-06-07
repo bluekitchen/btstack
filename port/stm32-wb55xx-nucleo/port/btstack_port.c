@@ -481,7 +481,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     switch(hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
-            printf("BTstack: up and running.\n");
+            log_info("BTstack: up and running.");
             break;
         default:
             break;
@@ -492,8 +492,9 @@ extern int btstack_main(int argc, const char * argv[]);
 void port_thread(void* args){
 
     // enable packet logger
-    //hci_dump_open(NULL, HCI_DUMP_STDOUT);
-
+#ifdef ENABLE_HCI_DUMP
+    hci_dump_open(NULL, HCI_DUMP_STDOUT);
+#endif
     /// GET STARTED with BTstack ///
     btstack_memory_init();
     btstack_run_loop_init(btstack_run_loop_freertos_get_instance());
