@@ -35,6 +35,8 @@ VPATH += ${BTSTACK_ROOT}/platform/embedded
 
 VPATH += ${BTSTACK_ROOT}/chipset/bcm	
 
+EXAMPLES += pan_lwip_http_server
+
 # use pkg-config for portaudio
 # CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags) -DHAVE_PORTAUDIO
 # LDFLAGS += $(shell pkg-config portaudio-2.0 --libs)
