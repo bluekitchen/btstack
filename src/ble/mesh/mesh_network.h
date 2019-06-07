@@ -51,7 +51,11 @@ extern "C" {
 #define MESH_NETWORK_PAYLOAD_MAX      29
 #define MESH_ACCESS_PAYLOAD_MAX      384
 
-#define MESH_ADDRESS_UNSASSIGNED       0
+#define MESH_ADDRESS_UNSASSIGNED     0x0000u
+#define MESH_ADDRESS_ALL_PROXIES     0xFFFCu
+#define MESH_ADDRESS_ALL_FRIENDS     0xFFFDu
+#define MESH_ADDRESS_ALL_RELAYS      0xFFFEu
+#define MESH_ADDRESS_ALL_NODES       0xFFFFu
 
 typedef enum {
     MESH_NETWORK_PDU_RECEIVED,
@@ -196,6 +200,42 @@ int mesh_network_addresses_valid(uint8_t ctl, uint16_t src, uint16_t dst);
  * @returns 1 if unicast
  */
 int mesh_network_address_unicast(uint16_t addr);
+
+/**
+ * @brief Check if Unicast address
+ * @param addr
+ * @returns 1 if unicast
+ */
+int mesh_network_address_group(uint16_t addr);
+
+/**
+ * @brief Check if All Proxies address
+ * @param addr
+ * @returns 1 if all proxies
+ */
+int mesh_network_address_all_proxies(uint16_t addr);
+
+/**
+ * @brief Check if All Nodes address
+ * @param addr
+ * @returns 1 if all nodes
+ */
+int mesh_network_address_all_nodes(uint16_t addr);
+
+/**
+ * @brief Check if All Friends address
+ * @param addr
+ * @returns 1 if all friends
+ */
+int mesh_network_address_all_friends(uint16_t addr);
+
+/**
+ * @brief Check if All Relays address
+ * @param addr
+ * @returns 1 if all relays
+ */
+int mesh_network_address_all_relays(uint16_t addr);
+
 
 /**
  * @brief Check if Virtual address

@@ -156,6 +156,26 @@ int mesh_network_address_virtual(uint16_t addr){
     return (addr & 0xC000) == 0x8000;   // 0b10xx xxxx xxxx xxxx
 }
 
+int mesh_network_address_group(uint16_t addr){
+    return (addr & 0xC000) == 0xC000;   // 0b11xx xxxx xxxx xxxx
+}
+
+int mesh_network_address_all_proxies(uint16_t addr){
+    return addr == MESH_ADDRESS_ALL_PROXIES;
+}
+
+int mesh_network_address_all_nodes(uint16_t addr){
+    return addr == MESH_ADDRESS_ALL_NODES;
+}
+
+int mesh_network_address_all_friends(uint16_t addr){
+    return addr == MESH_ADDRESS_ALL_FRIENDS;
+}
+
+int mesh_network_address_all_relays(uint16_t addr){
+    return addr == MESH_ADDRESS_ALL_RELAYS;
+}
+
 int mesh_network_addresses_valid(uint8_t ctl, uint16_t src, uint16_t dst){
     // printf("CTL: %u\n", ctl);
     // printf("SRC: %04x\n", src);
