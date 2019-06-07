@@ -79,6 +79,12 @@ mesh_virtual_address_t * mesh_virtual_address_for_pseudo_dst(uint16_t pseudo_dst
     return NULL;
 }
 
+mesh_virtual_address_t * mesh_virtual_address_for_label_uuid(uint8_t * label_uuid){
+    if (memcmp(label_uuid, test_virtual_address.label_uuid, 16) == 0){
+        return &test_virtual_address;
+    }
+    return NULL;
+}
 // virtual address iterator
 
 void mesh_virtual_address_iterator_init(mesh_virtual_address_iterator_t * it, uint16_t hash){
