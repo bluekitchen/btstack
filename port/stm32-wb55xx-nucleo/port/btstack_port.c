@@ -78,6 +78,7 @@ void hal_cpu_enable_irqs_and_sleep(void){
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_freertos.h"
 #include "btstack_tlv_flash_bank.h"
+#include "le_device_db_tlv.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "btstack_debug.h"
@@ -502,12 +503,12 @@ void port_thread(void* args){
 
     // setup Link Key DB
 #ifdef USE_SRAM_FLASH_BANK_EMU
-    const hal_flash_bank_t * hal_flash_sector_impl = hal_flash_bank_memory_init_instance(
+    const hal_flash_bank_t * hal_flash_bank_impl = hal_flash_bank_memory_init_instance(
             &hal_flash_bank_context,
             tlvStorage_p,
             STORAGE_SIZE);
 #else
-    const hal_flash_bank_t * hal_flash_sector_impl = hal_flash_bank_stm32wb_init_instance(
+    const hal_flash_bank_t * hal_flash_bank_impl = hal_flash_bank_stm32wb_init_instance(
             &hal_flash_bank_context,
             HAL_FLASH_PAGE_SIZE,
             HAL_FLASH_PAGE_0_ID,
@@ -516,11 +517,11 @@ void port_thread(void* args){
 
     const btstack_tlv_t * btstack_tlv_impl = btstack_tlv_flash_bank_init_instance(
             &btstack_tlv_flash_bank_context,
-            hal_flash_sector_impl,
+            hal_flash_bank_impl,
             &hal_flash_bank_context);
 
     // setup global tlv
-    btstack_tlv_set_instance(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
+    le_device_db_tlv_configure(btstack_tlv_impl, &btstack_tlv_flash_bank_context);
     
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
