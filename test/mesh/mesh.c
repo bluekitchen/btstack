@@ -2408,10 +2408,14 @@ static void config_model_subscription_add_handler(mesh_model_t *mesh_model, mesh
     mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
 
     if (target_model != NULL){
-        status = mesh_model_add_subscription(target_model, address);
+        if (mesh_network_address_group(address) && !mesh_network_address_all_nodes(address)){
+            status = mesh_model_add_subscription(target_model, address);
+        } else {
+            status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
+        }
     }   
 
-    config_model_subscription_status(target_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, address, model_identifier);
+    config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, address, model_identifier);
     mesh_access_message_processed(pdu);
 }
 
@@ -2435,7 +2439,7 @@ static void config_model_subscription_delete_handler(mesh_model_t *mesh_model, m
         mesh_model_delete_subscription(target_model, address);
     }   
 
-    config_model_subscription_status(target_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, address, model_identifier);
+    config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, address, model_identifier);
     mesh_access_message_processed(pdu);
 }
 
@@ -2453,11 +2457,11 @@ static void config_model_subscription_delete_all_handler(mesh_model_t *mesh_mode
         mesh_model_deleteall_subscription(target_model);
     }   
 
-    config_model_subscription_status(target_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, MESH_ADDRESS_UNSASSIGNED, model_identifier);
+    config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, MESH_ADDRESS_UNSASSIGNED, model_identifier);
     mesh_access_message_processed(pdu);
 }
 
-static void config_model_subscription_list_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status, uint16_t element_address, uint32_t model_identifier){
+static void config_model_subscription_list_status(mesh_model_t * target_model, uint16_t netkey_index, uint16_t dest, uint8_t status, uint16_t element_address, uint32_t model_identifier){
     uint16_t opcode;
     if (mesh_model_is_bluetooth_sig(model_identifier)){
         opcode = MESH_FOUNDATION_OPERATION_SIG_MODEL_SUBSCRIPTION_LIST;
@@ -2473,11 +2477,11 @@ static void config_model_subscription_list_status(mesh_model_t * mesh_model, uin
     mesh_access_transport_add_uint16(transport_pdu, element_address);
     mesh_access_transport_add_model_identifier(transport_pdu, model_identifier);
 
-    if (mesh_model != NULL){
+    if (target_model != NULL){
         int i;
         for (i = 0; i < MAX_NR_MESH_SUBSCRIPTION_PER_MODEL; i++){
-            if (mesh_model->subscriptions[i] != MESH_ADDRESS_UNSASSIGNED){
-                mesh_access_transport_add_uint16(transport_pdu, mesh_model->subscriptions[i]);
+            if (target_model->subscriptions[i] != MESH_ADDRESS_UNSASSIGNED){
+                mesh_access_transport_add_uint16(transport_pdu, target_model->subscriptions[i]);
             }
         }
     }   
@@ -2510,13 +2514,11 @@ static void config_model_subscription_overwrite_handler(mesh_model_t *mesh_model
     mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
 
     if (target_model != NULL){
-        printf("TODO add check for unicast address, all-nodes address and virtual address. \n");
-        
-        if (address == MESH_ADDRESS_UNSASSIGNED){
-            status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
-        } else {
+        if (mesh_network_address_group(address) && !mesh_network_address_all_nodes(address)){
             mesh_model_overwrite_subscription(target_model, address);
-        }
+        } else {
+            status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
+        } 
     }   
 
     config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, address, model_identifier);
@@ -2743,7 +2745,7 @@ static void config_model_publication_virtual_address_set_hash(void *arg){
     mesh_access_message_processed(access_pdu_in_process);
 }
 
-static void
+static void 
 config_model_publication_virtual_address_set_handler(mesh_model_t *mesh_model,
                                                      mesh_pdu_t * pdu) {
 
@@ -2802,7 +2804,7 @@ config_model_publication_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
     uint8_t status;
     mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
 
-    config_model_publication_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, model_identifier, &publication_model);
+    config_model_publication_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, model_identifier, target_model->publication_model);
     mesh_access_message_processed(pdu);
 }
 
@@ -3132,7 +3134,7 @@ static mesh_operation_t mesh_configuration_server_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_ADD,      20, config_model_subscription_virtual_address_add_handler },
     { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DELETE,                    6, config_model_subscription_delete_handler },
 //    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_DELETE,   20, config_model_subscription_virtual_address_delete_handler },
-    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_OVERWRITE,                 6, config_model_subscription_delete_all_handler },
+    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_OVERWRITE,                 6, config_model_subscription_overwrite_handler },
 //    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_OVERWRITE,20, config_model_subscription_virtual_address_overwrite_handler },
     { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DELETE_ALL,                4, config_model_subscription_delete_all_handler },
     { MESH_FOUNDATION_OPERATION_SIG_MODEL_SUBSCRIPTION_GET,                   4, config_model_subscription_get_handler },
