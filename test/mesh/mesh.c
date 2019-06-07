@@ -354,7 +354,7 @@ typedef struct {
 #define MESH_APPKEY_INDEX_MAX (16)
 
 void mesh_store_app_key(uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, const uint8_t * application_key){
-    if (application_key >= MESH_APPKEY_INDEX_MAX){
+    if (appkey_index >= MESH_APPKEY_INDEX_MAX){
         printf("Warning: AppKey with AppKey Index %x (>= %u) are not persisted\n", appkey_index, MESH_APPKEY_INDEX_MAX);
     }
     mesh_persistent_app_key_t data;
