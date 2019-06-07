@@ -1646,7 +1646,7 @@ static void mesh_model_unbind_appkey(mesh_model_t * mesh_model, uint16_t appkey_
     }
 }
 
-static void mesh_model_reset_subscriptions(mesh_model_t * mesh_model){
+static void mesh_model_delete_all_subscriptions(mesh_model_t * mesh_model){
     int i;
     for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
         mesh_model->subscriptions[i] = MESH_ADDRESS_UNSASSIGNED;
@@ -1676,20 +1676,9 @@ static void mesh_model_delete_subscription(mesh_model_t * mesh_model, uint16_t a
     }
 }
 
-static void mesh_model_overwrite_subscription(mesh_model_t * mesh_model, uint16_t address){
-    int i;
-    mesh_model->subscriptions[0] = address;
-    
-    for (i=1;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
-        mesh_model->subscriptions[i] = MESH_ADDRESS_UNSASSIGNED;
-    }
-}
-
-static void mesh_model_deleteall_subscription(mesh_model_t * mesh_model){
-    int i;
-    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
-        mesh_model->subscriptions[i] = MESH_ADDRESS_UNSASSIGNED;
-    }
+static uint8_t mesh_model_overwrite_subscription(mesh_model_t * mesh_model, uint16_t address){
+    mesh_model_delete_all_subscriptions(mesh_model);
+    return mesh_model_add_subscription(mesh_model, address);
 }
 
 static int mesh_model_is_configuration_server(uint32_t model_identifier){
@@ -2477,6 +2466,59 @@ static void config_model_subscription_virtual_address_add_handler(mesh_model_t *
     mesh_virtual_address(&configuration_server_cmac_request, model_subscription_label_uuid, &model_subscription_hash, &config_model_subscription_virtual_address_add_hash, target_model);
 }
 
+
+static void config_model_subscription_virtual_address_overwrite_hash(void *arg){
+    mesh_model_t * target_model = (mesh_model_t*) arg;
+    printf("Virtual Address Hash: %04x\n", model_subscription_hash);
+
+    // TODO: find a way to get mesh model of Config Server Model
+    mesh_model_t * mesh_model = NULL;
+
+    // add if not exists
+    uint16_t pseudo_dst = MESH_ADDRESS_UNSASSIGNED;
+    mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_label_uuid(model_subscription_label_uuid);
+    if (virtual_address == NULL){
+        // add virtual address
+        pseudo_dst = mesh_virtual_address_register(model_subscription_label_uuid, model_subscription_hash);
+    }
+
+    uint8_t status;
+    if (pseudo_dst == MESH_ADDRESS_UNSASSIGNED){
+        status = MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
+    } else {
+        status = mesh_model_overwrite_subscription(target_model, pseudo_dst);
+    }
+
+    config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), status, model_subscription_element_address, pseudo_dst, target_model->model_identifier);
+    mesh_access_message_processed(access_pdu_in_process);
+    return;
+}
+
+static void config_model_subscription_virtual_address_overwrite_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+
+    // ElementAddress - Address of the element - should be us
+    model_subscription_element_address = mesh_access_parser_get_u16(&parser);
+
+    // store label uuid
+    mesh_access_parser_get_label_uuid(&parser, model_subscription_label_uuid);
+
+    // Model Identifier
+    uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
+
+    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
+    mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(model_subscription_element_address, model_identifier, &status);
+
+    if (target_model == NULL){
+        config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, model_subscription_element_address, MESH_ADDRESS_UNSASSIGNED, model_identifier);
+        mesh_access_message_processed(pdu);
+        return;
+    }
+    access_pdu_in_process = pdu;
+    mesh_virtual_address(&configuration_server_cmac_request, model_subscription_label_uuid, &model_subscription_hash, &config_model_subscription_virtual_address_overwrite_hash, target_model);
+}
+
 static void config_model_subscription_delete_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
@@ -2531,7 +2573,7 @@ static void config_model_subscription_delete_all_handler(mesh_model_t *mesh_mode
     mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
 
     if (target_model != NULL){
-        mesh_model_deleteall_subscription(target_model);
+        mesh_model_delete_all_subscriptions(target_model);
     }   
 
     config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, MESH_ADDRESS_UNSASSIGNED, model_identifier);
@@ -3212,7 +3254,7 @@ static mesh_operation_t mesh_configuration_server_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DELETE,                    6, config_model_subscription_delete_handler },
     { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_DELETE,   20, config_model_subscription_virtual_address_delete_handler },
     { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_OVERWRITE,                 6, config_model_subscription_overwrite_handler },
-//    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_OVERWRITE,20, config_model_subscription_virtual_address_overwrite_handler },
+    { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_OVERWRITE,20, config_model_subscription_virtual_address_overwrite_handler },
     { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DELETE_ALL,                4, config_model_subscription_delete_all_handler },
     { MESH_FOUNDATION_OPERATION_SIG_MODEL_SUBSCRIPTION_GET,                   4, config_model_subscription_get_handler },
     { MESH_FOUNDATION_OPERATION_VENDOR_MODEL_SUBSCRIPTION_GET,                6, config_model_subscription_get_handler },
