@@ -841,7 +841,9 @@ static void stdin_process(char cmd){
             break;
         case '8':
             btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, 'PROV');
-            printf("Provisioning data deleted\n");
+            mesh_delete_app_keys();
+            mesh_delete_appkey_lists();
+            printf("Provisioning data, app keys, model to app key lists deleted\n");
             setup_advertising_unprovisioned();
             break;
         case 'p':
