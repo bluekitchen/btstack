@@ -53,6 +53,7 @@
 #include "provisioning_device.h"
 #include "mesh_transport.h"
 #include "mesh_foundation.h"
+#include "mesh_virtual_addresses.h"
 #include "mesh.h"
 #include "btstack.h"
 #include "btstack_tlv.h"
@@ -114,6 +115,7 @@ static uint8_t network_id[8];
 static uint16_t primary_element_address;
 
 static int provisioned;
+static uint8_t                  model_subscription_label_uuid[16];
 
 static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len){
      printf("%-20s ", name);
@@ -2438,7 +2440,11 @@ static void config_model_subscription_delete_handler(mesh_model_t *mesh_model, m
     mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
 
     if (target_model != NULL){
-        mesh_model_delete_subscription(target_model, address);
+        if (mesh_network_address_group(address) && !mesh_network_address_all_nodes(address)){
+            mesh_model_delete_subscription(target_model, address);
+        } else {
+            status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
+        }
     }   
 
     config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, address, model_identifier);
@@ -2450,17 +2456,18 @@ static void config_model_subscription_virtual_address_delete_handler(mesh_model_
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
     uint16_t element_address  = mesh_access_parser_get_u16(&parser);
-    uint16_t address          = mesh_access_parser_get_u16(&parser);
+    mesh_access_parser_get_label_uuid(&parser, model_subscription_label_uuid);
+    mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_label_uuid(model_subscription_label_uuid);
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
     mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
 
-    if (target_model != NULL){
-        mesh_model_delete_subscription(target_model, address);
+    if ((target_model != NULL) && (virtual_address != NULL)){
+        mesh_model_delete_subscription(target_model, virtual_address->pseudo_dst);
     }   
 
-    config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, address, model_identifier);
+    config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, virtual_address->hash, model_identifier);
     mesh_access_message_processed(pdu);
 }
 
@@ -2501,9 +2508,9 @@ static void config_model_subscription_list_status(mesh_model_t * mesh_model, uin
     if (target_model != NULL){
         int i;
         for (i = 0; i < MAX_NR_MESH_SUBSCRIPTION_PER_MODEL; i++){
-            if (target_model->subscriptions[i] != MESH_ADDRESS_UNSASSIGNED){
-                mesh_access_transport_add_uint16(transport_pdu, target_model->subscriptions[i]);
-            }
+            if (target_model->subscriptions[i] == MESH_ADDRESS_UNSASSIGNED) continue;
+            if (mesh_network_address_virtual(target_model->subscriptions[i])) continue;
+            mesh_access_transport_add_uint16(transport_pdu, target_model->subscriptions[i]);
         }
     }   
     config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
