@@ -1051,7 +1051,9 @@ const mesh_access_message_t mesh_key_refresh_phase_status = {
 const mesh_access_message_t mesh_foundation_low_power_node_poll_timeout_status = {
         MESH_FOUNDATION_OPERATION_LOW_POWER_NODE_POLL_TIMEOUT_STATUS, "23"
 };
-
+const mesh_access_message_t mesh_foundation_config_heartbeat_subscription_status = {
+        MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_STATUS, "1221111"
+};
 // Model Identifier utilities
 
 static uint32_t mesh_model_get_model_identifier(uint16_t vendor_id, uint16_t model_id){
@@ -1439,12 +1441,22 @@ static mesh_pdu_t * access_pdu_in_process;
 typedef struct  {
     btstack_timer_source_t timer;
     uint16_t destination;
-    uint16_t count;
+    uint16_t count_log;
     uint8_t  period_log;
     uint8_t  ttl;
     uint16_t features;
     uint16_t netkey_index;
 } mesh_heartbeat_publication_t;
+
+typedef struct  {
+    btstack_timer_source_t timer;
+    uint16_t source;
+    uint16_t destination;
+    uint8_t  period_log;
+    uint8_t  count_log;
+    uint8_t  min_hops;
+    uint8_t  max_hops;
+} mesh_heartbeat_subscription_t;
 
 typedef struct {
     mesh_heartbeat_publication_t heartbeat_publication;
@@ -1511,7 +1523,8 @@ static btstack_linked_list_t elements;
 static mesh_element_t   primary_element;
 static btstack_linked_list_t mesh_elements;
 
-static mesh_heartbeat_publication_t mesh_heartbeat_publication;
+static mesh_heartbeat_publication_t  mesh_heartbeat_publication;
+static mesh_heartbeat_subscription_t mesh_heartbeat_subscription;
 
 static void mesh_access_set_primary_element_address(uint16_t unicast_address){
     primary_element.unicast_address = unicast_address;
@@ -2946,11 +2959,11 @@ static uint8_t heartbeat_count_log(uint16_t value){
 }
 
 static void config_heartbeat_publication_emit(btstack_timer_source_t * ts){
-    if (mesh_heartbeat_publication.count == 0) return;
+    if (mesh_heartbeat_publication.count_log == 0) return;
 
     uint32_t time_ms = heartbeat_pwr2(mesh_heartbeat_publication.period_log) * 1000;
-    printf("CONFIG_SERVER_HEARTBEAT: Emit (dest %04x, count %u, period %u ms, seq %x)\n", mesh_heartbeat_publication.destination, mesh_heartbeat_publication.count, time_ms, mesh_lower_transport_peek_seq());
-    mesh_heartbeat_publication.count--;
+    printf("CONFIG_SERVER_HEARTBEAT: Emit (dest %04x, count %u, period %u ms, seq %x)\n", mesh_heartbeat_publication.destination, mesh_heartbeat_publication.count_log, time_ms, mesh_lower_transport_peek_seq());
+    mesh_heartbeat_publication.count_log--;
 
     mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
     if (network_pdu){
@@ -2970,7 +2983,7 @@ static void config_heartbeat_publication_status(mesh_model_t *mesh_model, uint16
 
     // setup message
     uint8_t status = 0;
-    uint8_t count_log = heartbeat_count_log(mesh_heartbeat_publication.count);
+    uint8_t count_log = heartbeat_count_log(mesh_heartbeat_publication.count_log);
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
             &mesh_foundation_config_heartbeat_publication_status,
             status,
@@ -2981,7 +2994,7 @@ static void config_heartbeat_publication_status(mesh_model_t *mesh_model, uint16
             mesh_heartbeat_publication.features,
             mesh_heartbeat_publication.netkey_index);
     if (!transport_pdu) return;
-    printf("MESH config_heartbeat_publication_status count = %u => count_log = %u\n", mesh_heartbeat_publication.count, count_log);
+    printf("MESH config_heartbeat_publication_status count = %u => count_log = %u\n", mesh_heartbeat_publication.count_log, count_log);
 
     // send as segmented access pdu
     config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
@@ -2996,7 +3009,7 @@ static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, m
     // Destination address for Heartbeat messages
     mesh_heartbeat_publication.destination = mesh_access_parser_get_u16(&parser);
     // Number of Heartbeat messages to be sent
-    mesh_heartbeat_publication.count = heartbeat_pwr2(mesh_access_parser_get_u8(&parser));
+    mesh_heartbeat_publication.count_log = heartbeat_pwr2(mesh_access_parser_get_u8(&parser));
     //  Period for sending Heartbeat messages
     mesh_heartbeat_publication.period_log = mesh_access_parser_get_u8(&parser);
     //  TTL to be used when sending Heartbeat messages
@@ -3007,7 +3020,7 @@ static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, m
     mesh_heartbeat_publication.netkey_index = mesh_access_parser_get_u16(&parser);
 
     printf("MESH config_heartbeat_publication_set, destination %x, count = %x, period = %u s\n",
-            mesh_heartbeat_publication.destination, mesh_heartbeat_publication.count, heartbeat_pwr2(mesh_heartbeat_publication.period_log));
+            mesh_heartbeat_publication.destination, mesh_heartbeat_publication.count_log, heartbeat_pwr2(mesh_heartbeat_publication.period_log));
 
     config_heartbeat_publication_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 
@@ -3032,6 +3045,87 @@ static void config_heartbeat_publication_get_handler(mesh_model_t *mesh_model, m
     mesh_access_message_processed(pdu);
 }
 
+static void config_heartbeat_subscription_status(mesh_model_t *mesh_model, uint16_t netkey_index, uint16_t dest){
+    // setup message
+    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
+    uint8_t count_log = heartbeat_count_log(mesh_heartbeat_subscription.count_log);
+    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
+            &mesh_foundation_config_heartbeat_subscription_status,
+            status,
+            mesh_heartbeat_subscription.source,
+            mesh_heartbeat_subscription.destination,
+            mesh_heartbeat_subscription.period_log,
+            count_log,
+            mesh_heartbeat_subscription.min_hops,
+            mesh_heartbeat_subscription.max_hops);
+    if (!transport_pdu) return;
+    printf("MESH config_heartbeat_subscription_status count = %u => count_log = %u\n", mesh_heartbeat_subscription.count_log, count_log);
+
+    // send as segmented access pdu
+    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+}
+static int config_heartbeat_subscription_enabled(void){
+    return mesh_network_address_unicast(mesh_heartbeat_subscription.source) && mesh_heartbeat_subscription.period_log > 0 &&
+        (mesh_network_address_unicast(mesh_heartbeat_subscription.destination) || mesh_network_address_group(mesh_heartbeat_subscription.destination));
+}
+
+static void config_heartbeat_subscription_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+
+    // Destination address for Heartbeat messages
+    mesh_heartbeat_subscription.source = mesh_access_parser_get_u16(&parser);
+    // Destination address for Heartbeat messages
+    mesh_heartbeat_subscription.destination = mesh_access_parser_get_u16(&parser);
+    //  Period for sending Heartbeat messages
+    mesh_heartbeat_subscription.period_log = mesh_access_parser_get_u8(&parser);
+    
+    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
+    if (mesh_heartbeat_subscription.period_log > 0x11u){
+        status = MESH_FOUNDATION_STATUS_CANNOT_SET;
+    } else if ((mesh_heartbeat_subscription.source != MESH_ADDRESS_UNSASSIGNED)       && 
+               !mesh_network_address_unicast(mesh_heartbeat_subscription.source)){
+        status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
+    } else if ((mesh_heartbeat_subscription.destination != MESH_ADDRESS_UNSASSIGNED)  && 
+               !mesh_network_address_unicast(mesh_heartbeat_subscription.destination) &&
+               !mesh_network_address_group(mesh_heartbeat_subscription.destination)){
+        status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
+    } 
+
+    if (status != MESH_FOUNDATION_STATUS_SUCCESS){
+        config_heartbeat_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
+        mesh_access_message_processed(pdu);
+        return;
+    }
+
+    if (config_heartbeat_subscription_enabled()){
+        mesh_heartbeat_subscription.count_log  = 0u;
+        mesh_heartbeat_subscription.min_hops   = 0x7Fu;
+        mesh_heartbeat_subscription.max_hops   = 0u;
+    } else {
+        mesh_heartbeat_subscription.source = MESH_ADDRESS_UNSASSIGNED;
+        mesh_heartbeat_subscription.destination = MESH_ADDRESS_UNSASSIGNED;
+        mesh_heartbeat_subscription.period_log = 0u;
+        // TODO: check if we need to reset these three params
+        mesh_heartbeat_subscription.count_log  = 0u;
+        mesh_heartbeat_subscription.min_hops   = 0u;
+        mesh_heartbeat_subscription.max_hops   = 0u;
+    }
+    
+    printf("MESH config_heartbeat_subscription_set, destination %x, count = %x, period = %u s\n",
+            mesh_heartbeat_subscription.destination, mesh_heartbeat_subscription.count_log, heartbeat_pwr2(mesh_heartbeat_subscription.period_log));
+
+    config_heartbeat_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
+    mesh_access_message_processed(pdu);
+
+    // TODO: implement subcription behaviour
+}
+
+
+static void config_heartbeat_subscription_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
+    config_heartbeat_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
+    mesh_access_message_processed(pdu);
+}
 
 static void config_key_refresh_phase_status(mesh_model_t *mesh_model, uint16_t netkey_index_dest, uint16_t dest, uint8_t status, uint16_t netkey_index,
     mesh_key_refresh_state_t key_refresh_state){
@@ -3267,8 +3361,8 @@ static mesh_operation_t mesh_configuration_server_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_MODEL_APP_UNBIND,                             6, config_model_app_unbind_handler },
     { MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_GET,                    0, config_heartbeat_publication_get_handler },
     { MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_SET,                    9, config_heartbeat_publication_set_handler },
-//    { MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_GET,                   0, config_heartbeat_subscription_get_handler},
-//    { MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_SET,                   5, config_heartbeat_subscription_set_handler},
+    { MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_GET,                   0, config_heartbeat_subscription_get_handler},
+    { MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_SET,                   5, config_heartbeat_subscription_set_handler},
     { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_GET,                        2, config_key_refresh_phase_get_handler },
     { MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_SET,                        3, config_key_refresh_phase_set_handler },
     { MESH_FOUNDATION_OPERATION_NODE_RESET,                                   0, config_node_reset_handler },
