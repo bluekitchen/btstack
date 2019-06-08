@@ -119,7 +119,7 @@ static __inline bool is_vacant(dhcp_entry_t *entry)
 	return memcmp("\0\0\0\0\0", entry->mac, 6) == 0;
 }
 
-static dhcp_entry_t *vacant_address()
+static dhcp_entry_t *vacant_address(void)
 {
 	int i;
 	for (i = 0; i < config->num_entry; i++)

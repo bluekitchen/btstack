@@ -147,7 +147,6 @@ static enum {
 	UPLOAD_ACTIVE,
 } upload_state;
 
-#endif
 
 // CRC32 implementation using 4-bit lookup table created by pycrc v0.9.1, https://pycrc.org
 // ./pycrc.py --model crc-32 --algorithm table-driven --table-idx-width=4 --generate c
@@ -156,7 +155,7 @@ static const uint32_t crc32_table[16] = {
 	0xedb88320, 0xf00f9344, 0xd6d6a3e8, 0xcb61b38c, 0x9b64c2b0, 0x86d3d2d4, 0xa00ae278, 0xbdbdf21c
 };
 
-uint32_t btstack_crc32(const uint8_t *buf, uint16_t size){
+static uint32_t btstack_crc32(const uint8_t *buf, uint16_t size){
 	uint16_t pos;
 	uint32_t crc = 0xffffffff;
 	for (pos=0 ; pos<size ; pos++){
@@ -167,6 +166,8 @@ uint32_t btstack_crc32(const uint8_t *buf, uint16_t size){
     }
 	return ~crc;
 }
+
+#endif
 
 static void chipset_set_bd_addr_command(bd_addr_t addr, uint8_t *hci_cmd_buffer){
     little_endian_store_16(hci_cmd_buffer, 0, OPCODE(OGF_VENDOR, 0x02));
