@@ -52,6 +52,8 @@ VPATH += ${BTSTACK_ROOT}/chipset/em9301
 VPATH += ${BTSTACK_ROOT}/chipset/stlc2500d
 VPATH += ${BTSTACK_ROOT}/chipset/tc3566x
 
+EXAMPLES += pan_lwip_http_server
+
 # assume portaudio is installed in /usr/local
 # CFLAGS  += -I/usr/local/include -DHAVE_PORTAUDIO
 # LDFLAGS += -L/sw/lib -lportaudio

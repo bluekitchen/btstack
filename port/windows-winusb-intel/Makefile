@@ -25,6 +25,8 @@ VPATH += ${BTSTACK_ROOT}/platform/windows
 VPATH += ${BTSTACK_ROOT}/chipset/csr
 VPATH += ${BTSTACK_ROOT}/chipset/intel
 
+EXAMPLES += pan_lwip_http_server
+
 # use pkg-config for portaudio
 # CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags) -DHAVE_PORTAUDIO
 # LDFLAGS += $(shell pkg-config portaudio-2.0 --libs)

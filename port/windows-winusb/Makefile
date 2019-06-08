@@ -36,6 +36,8 @@ LDFLAGS += -lsetupapi -lwinusb
 # csr_set_bd_addr
 EXAMPLES += csr_set_bd_addr
 
+EXAMPLES += pan_lwip_http_server
+
 csr_set_bd_addr: ${CORE_OBJ} ${COMMON_OBJ} btstack_chipset_csr.o csr_set_bd_addr.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
