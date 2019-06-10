@@ -1132,6 +1132,17 @@ static uint16_t mesh_pdu_src(mesh_pdu_t * pdu){
     }
 }
 
+static uint16_t mesh_pdu_dst(mesh_pdu_t * pdu){
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            return mesh_transport_dst((mesh_transport_pdu_t*) pdu);
+        case MESH_PDU_TYPE_NETWORK:
+            return mesh_network_dst((mesh_network_pdu_t *) pdu);
+        default:
+            return MESH_ADDRESS_UNSASSIGNED;
+    }
+}
+
 static uint16_t mesh_pdu_netkey_index(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_TRANSPORT:
@@ -1703,6 +1714,14 @@ static void mesh_model_delete_subscription(mesh_model_t * mesh_model, uint16_t a
 static uint8_t mesh_model_overwrite_subscription(mesh_model_t * mesh_model, uint16_t address){
     mesh_model_delete_all_subscriptions(mesh_model);
     return mesh_model_add_subscription(mesh_model, address);
+}
+
+static int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address){
+    int i;
+    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
+        if (mesh_model->subscriptions[i] == address) return 1;
+    }
+    return 0;
 }
 
 static int mesh_model_is_configuration_server(uint32_t model_identifier){
@@ -3375,6 +3394,26 @@ static mesh_operation_t mesh_configuration_server_model_operations[] = {
     { 0, 0, NULL }
 };
 
+static mesh_operation_t * mesh_model_lookup_operation(mesh_model_t * model, mesh_pdu_t * pdu){
+
+    uint32_t opcode = 0;
+    uint16_t opcode_size = 0;
+    int ok = mesh_access_pdu_get_opcode( pdu, &opcode, &opcode_size);
+    if (!ok) return NULL;
+
+    uint16_t len = mesh_pdu_len(pdu);
+
+    // find opcode in table
+    mesh_operation_t * operation = model->operations;
+    if (operation == NULL) return NULL;
+    for ( ; operation->handler != NULL ; operation++){
+        if (operation->opcode != opcode) continue;
+        if ((opcode_size + operation->minimum_length) > len) continue;
+        return operation;
+    }
+    return NULL;
+}
+
 static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
     // get opcode and size
     uint32_t opcode = 0;
@@ -3399,18 +3438,44 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
             break;
     }
 
-    // TODO: get element for unicast address or 'find' element for group / virtual addresses
+    // TODO: check if used AppKey is bound to particular model
 
-    // TODO: support other models
-    
-    // find opcode in table
-    mesh_model_t * model = mesh_model_get_by_identifier(mesh_primary_element(), MESH_SIG_MODEL_ID_CONFIGURATION_SERVER);
-    mesh_operation_t * operation;
-    for (operation = model->operations; operation != NULL > operation->handler != NULL ; operation++){
-        if (operation->opcode != opcode) continue;
-        if ((opcode_size + operation->minimum_length) > len) continue;
-        operation->handler(model, pdu);
-        return;
+    uint16_t dst = mesh_pdu_dst(pdu);
+    if (mesh_network_address_unicast(dst)){
+        // loookup element by unicast address
+        mesh_element_t * element = mesh_element_for_unicast_address(dst);
+        if (element != NULL){
+            // iterate over models, look for operation
+            mesh_model_iterator_t model_it;
+            mesh_model_iterator_init(&model_it, element);
+            while (mesh_model_iterator_has_next(&model_it)){
+                mesh_model_t * model = mesh_model_iterator_get_next(&model_it);
+                // find opcode in table
+                mesh_operation_t * operation = mesh_model_lookup_operation(model, pdu);
+                if (operation == NULL) break;
+                operation->handler(model, pdu);
+                return;
+            }
+        }
+    } else {
+        // iterate over all elements / models, check subscription list
+        btstack_linked_list_iterator_t it;
+        btstack_linked_list_iterator_init(&it, &mesh_elements);
+        while (btstack_linked_list_iterator_has_next(&it)){
+            mesh_element_t * element = (mesh_element_t *) btstack_linked_list_iterator_next(&it);
+            mesh_model_iterator_t model_it;
+            mesh_model_iterator_init(&model_it, element);
+            while (mesh_model_iterator_has_next(&model_it)){
+                mesh_model_t * model = mesh_model_iterator_get_next(&model_it);
+                if (mesh_model_contains_subscription(model, dst)){
+                    // find opcode in table
+                    mesh_operation_t * operation = mesh_model_lookup_operation(model, pdu);
+                    if (operation == NULL) break;
+                    operation->handler(model, pdu);
+                    return;
+                }
+            }
+        }
     }
 
     // operation not found -> done
