@@ -236,7 +236,11 @@ static void network_setup(void){
 #endif
 
     // init lwIP stack
+#if NO_SYS
     lwip_init();
+#else
+    tcpip_init(NULL, NULL);
+#endif
 
     // start DHCP Server
     dhserv_init(&dhcp_config);

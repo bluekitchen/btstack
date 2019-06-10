@@ -50,8 +50,12 @@
 #include "lwip/ip.h"
 #include "lwip/dhcp.h"
 #include "lwip/sockets.h"
-#include "netif/etharp.h"
 #include "lwip/prot/dhcp.h"
+#include "netif/etharp.h"
+
+#if LWIP_IPV6
+#include "lwip/ethip6.h"
+#endif
 
 #include "bnep_lwip.h"
 
@@ -88,10 +92,12 @@ static btstack_ring_buffer_t bnep_lwip_outgoing_queue;
 static QueueHandle_t bnep_lwip_outgoing_queue;
 #endif
 
+#if NO_SYS
+static btstack_timer_source_t   bnep_lwip_timer;
+#endif
 
 // bnep data
 static uint16_t  bnep_cid;
-static btstack_timer_source_t   bnep_lwip_timer;
 static btstack_packet_handler_t client_handler;
 
 // next packet only modified from btstack context
@@ -281,6 +287,7 @@ static void bnep_lwip_outgoing_process(void * arg){
     bnep_request_can_send_now_event(bnep_cid);
 }
 
+#if NO_SYS
 static void bnep_lwip_timeout_handler(btstack_timer_source_t * ts){
 
     // process lwIP timers
@@ -293,10 +300,12 @@ static void bnep_lwip_timeout_handler(btstack_timer_source_t * ts){
     btstack_run_loop_set_timer(ts, LWIP_TIMER_INTERVAL_MS);
     btstack_run_loop_add_timer(ts);
 }
+#endif
 
 static void bnep_lwip_send_packet(void){
     if (bnep_lwip_outgoing_next_packet == NULL){
         log_error("CAN SEND NOW, but now packet queued");
+        return;
     }
 
     // flatten into our buffer
