@@ -1471,7 +1471,17 @@ typedef struct {
     uint8_t  retransmit;
 } mesh_publication_model_t;
 
+struct mesh_model;
+
+typedef void (*mesh_operation_handler)(struct mesh_model * mesh_model, mesh_pdu_t * pdu);
+
 typedef struct {
+    uint32_t opcode;
+    uint16_t minimum_length;
+    mesh_operation_handler handler;
+} mesh_operation_t;
+
+typedef struct mesh_model {
     // linked list item
     btstack_linked_item_t item;
 
@@ -1482,6 +1492,7 @@ typedef struct {
     uint32_t model_identifier;
 
     // model operations
+    mesh_operation_t * operations;
 
     // publication model if supported
     mesh_publication_model_t * publication_model;
@@ -3313,14 +3324,6 @@ static void config_node_identity_set_handler(mesh_model_t *mesh_model, mesh_pdu_
 
 //
 
-typedef void (*mesh_operation_handler)(mesh_model_t * mesh_model, mesh_pdu_t * pdu);
-
-typedef struct {
-    uint32_t opcode;
-    uint16_t minimum_length;
-    mesh_operation_handler handler;
-} mesh_operation_t;
-
 static mesh_operation_t mesh_configuration_server_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_APPKEY_ADD,                                  19, config_appkey_add_handler },
     { MESH_FOUNDATION_OPERATION_APPKEY_DELETE,                                3, config_appkey_delete_handler },
@@ -3403,7 +3406,7 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
     // find opcode in table
     mesh_model_t * model = mesh_model_get_by_identifier(mesh_primary_element(), MESH_SIG_MODEL_ID_CONFIGURATION_SERVER);
     mesh_operation_t * operation;
-    for (operation = mesh_configuration_server_model_operations; operation->handler != NULL ; operation++){
+    for (operation = model->operations; operation != NULL > operation->handler != NULL ; operation++){
         if (operation->opcode != opcode) continue;
         if ((opcode_size + operation->minimum_length) > len) continue;
         operation->handler(model, pdu);
@@ -3704,6 +3707,7 @@ int btstack_main(void)
     // Setup models
     mesh_configuration_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_CONFIGURATION_SERVER);
     mesh_model_reset_appkeys(&mesh_configuration_server_model);
+    mesh_configuration_server_model.operations = mesh_configuration_server_model_operations;    
     mesh_element_add_model(primary_element, &mesh_configuration_server_model);
 
     mesh_health_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_HEALTH_SERVER);
