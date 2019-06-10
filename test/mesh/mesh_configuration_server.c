@@ -1813,5 +1813,5 @@ const static mesh_operation_t mesh_configuration_server_model_operations[] = {
 };
 
 const mesh_operation_t * mesh_configuration_server_get_operations(void){
-    return &mesh_configuration_server_model_operations;
+    return mesh_configuration_server_model_operations;
 }

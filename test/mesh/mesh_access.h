@@ -52,6 +52,9 @@ extern "C"
 
 #define MESH_APPKEY_INVALID                     0xffffu
 
+struct mesh_model;
+struct mesh_element;
+
 typedef struct {
     uint16_t address;
     uint16_t appkey_index;
@@ -60,9 +63,6 @@ typedef struct {
     uint8_t  ttl;
     uint8_t  retransmit;
 } mesh_publication_model_t;
-
-
-struct mesh_model;
 
 typedef void (*mesh_operation_handler)(struct mesh_model * mesh_model, mesh_pdu_t * pdu);
 
@@ -75,6 +75,9 @@ typedef struct {
 typedef struct mesh_model {
     // linked list item
     btstack_linked_item_t item;
+
+    // element
+    struct mesh_element * element;
 
     // internal model enumeration
     uint16_t mid;
@@ -106,7 +109,7 @@ typedef struct {
     btstack_linked_list_iterator_t it;
 } mesh_element_iterator_t;
 
-typedef struct {
+typedef struct mesh_element {
     // linked list item
     btstack_linked_item_t item;
     

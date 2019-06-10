@@ -133,6 +133,7 @@ void mesh_element_add_model(mesh_element_t * element, mesh_model_t * mesh_model)
         element->models_count_vendor++;
     }
     mesh_model->mid = mid_counter++;
+    mesh_model->element = element;
     btstack_linked_list_add_tail(&element->models, (btstack_linked_item_t *) mesh_model);
 }
 
