@@ -44,6 +44,10 @@
 #include "btstack_memory.h"
 #include "btstack_debug.h"
 #include "bluetooth_company_id.h"
+#include "mesh_transport.h"
+#include "mesh_foundation.h"
+
+static void mesh_access_message_process_handler(mesh_pdu_t * pdu);
 
 static mesh_element_t primary_element;
 
@@ -54,6 +58,9 @@ static uint16_t mid_counter;
 void mesh_access_init(void){
     // Access layer - add Primary Element to list of elements
     mesh_element_add(&primary_element);
+
+    // register with upper transport
+    mesh_upper_transport_register_access_message_handler(&mesh_access_message_process_handler);
 }
 
 mesh_element_t * mesh_primary_element(void){
@@ -494,4 +501,141 @@ mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_mes
     va_end(argptr);
 
     return transport_pdu;
+}
+
+
+static mesh_operation_t * mesh_model_lookup_operation(mesh_model_t * model, mesh_pdu_t * pdu){
+
+    uint32_t opcode = 0;
+    uint16_t opcode_size = 0;
+    int ok = mesh_access_pdu_get_opcode( pdu, &opcode, &opcode_size);
+    if (!ok) return NULL;
+
+    uint16_t len = mesh_pdu_len(pdu);
+
+    // find opcode in table
+    mesh_operation_t * operation = model->operations;
+    if (operation == NULL) return NULL;
+    for ( ; operation->handler != NULL ; operation++){
+        if (operation->opcode != opcode) continue;
+        if ((opcode_size + operation->minimum_length) > len) continue;
+        return operation;
+    }
+    return NULL;
+}
+
+static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
+    // get opcode and size
+    uint32_t opcode = 0;
+    uint16_t opcode_size = 0;
+
+    int ok = mesh_access_pdu_get_opcode( pdu, &opcode, &opcode_size);
+    if (!ok) {
+        mesh_access_message_processed(pdu);
+        return;
+    }
+
+    uint16_t len = mesh_pdu_len(pdu);
+    printf("MESH Access Message, Opcode = %x: ", opcode);
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_NETWORK:
+            printf_hexdump(&((mesh_network_pdu_t *) pdu)->data[10], len);
+            break;
+        case MESH_PDU_TYPE_TRANSPORT:
+            printf_hexdump(((mesh_transport_pdu_t *) pdu)->data, len);
+            break;
+        default:
+            break;
+    }
+
+    // TODO: check if used AppKey is bound to particular model
+
+    uint16_t dst = mesh_pdu_dst(pdu);
+    if (mesh_network_address_unicast(dst)){
+        // loookup element by unicast address
+        mesh_element_t * element = mesh_element_for_unicast_address(dst);
+        if (element != NULL){
+            // iterate over models, look for operation
+            mesh_model_iterator_t model_it;
+            mesh_model_iterator_init(&model_it, element);
+            while (mesh_model_iterator_has_next(&model_it)){
+                mesh_model_t * model = mesh_model_iterator_next(&model_it);
+                // find opcode in table
+                mesh_operation_t * operation = mesh_model_lookup_operation(model, pdu);
+                if (operation == NULL) break;
+                operation->handler(model, pdu);
+                return;
+            }
+        }
+    } else {
+        // iterate over all elements / models, check subscription list
+        mesh_element_iterator_t it;
+        mesh_element_iterator_init(&it);
+        while (mesh_element_iterator_has_next(&it)){
+            mesh_element_t * element = (mesh_element_t *) mesh_element_iterator_next(&it);
+            mesh_model_iterator_t model_it;
+            mesh_model_iterator_init(&model_it, element);
+            while (mesh_model_iterator_has_next(&model_it)){
+                mesh_model_t * model = mesh_model_iterator_next(&model_it);
+                if (mesh_model_contains_subscription(model, dst)){
+                    // find opcode in table
+                    mesh_operation_t * operation = mesh_model_lookup_operation(model, pdu);
+                    if (operation == NULL) break;
+                    operation->handler(model, pdu);
+                    return;
+                }
+            }
+        }
+    }
+
+    // operation not found -> done
+    printf("Message not handled\n");
+    mesh_access_message_processed(pdu);
+}
+
+void mesh_access_message_processed(mesh_pdu_t * pdu){
+    mesh_upper_transport_message_processed_by_higher_layer(pdu);
+}
+
+uint8_t mesh_model_add_subscription(mesh_model_t * mesh_model, uint16_t address){
+    int i;
+    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
+        if (mesh_model->subscriptions[i] == address) return MESH_FOUNDATION_STATUS_SUCCESS;
+    }
+    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
+        if (mesh_model->subscriptions[i] == MESH_ADDRESS_UNSASSIGNED) {
+            mesh_model->subscriptions[i] = address;
+            return MESH_FOUNDATION_STATUS_SUCCESS;
+        }
+    }
+    return MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
+}
+
+void mesh_model_delete_subscription(mesh_model_t * mesh_model, uint16_t address){
+    int i;
+    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
+        if (mesh_model->subscriptions[i] == address) {
+            mesh_model->subscriptions[i] = MESH_ADDRESS_UNSASSIGNED;
+        }
+    }
+}
+
+uint8_t mesh_model_overwrite_subscription(mesh_model_t * mesh_model, uint16_t address){
+    mesh_model_delete_all_subscriptions(mesh_model);
+    return mesh_model_add_subscription(mesh_model, address);
+}
+
+void mesh_model_delete_all_subscriptions(mesh_model_t * mesh_model){
+    int i;
+    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
+        mesh_model->subscriptions[i] = MESH_ADDRESS_UNSASSIGNED;
+    }
+}
+
+int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address){
+    int i;
+    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
+        if (mesh_model->subscriptions[i] == address) return 1;
+    }
+    return 0;
 }

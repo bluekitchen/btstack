@@ -887,114 +887,6 @@ static void stdin_process(char cmd){
     }
 }
 
-// Foundation Model Operations
-#define MESH_FOUNDATION_OPERATION_APPKEY_ADD                                      0x00
-#define MESH_FOUNDATION_OPERATION_APPKEY_UPDATE                                   0x01
-#define MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_STATUS                         0x02
-#define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_SET                           0x03
-#define MESH_FOUNDATION_OPERATION_HEALTH_CURRENT_STATUS                           0x04
-#define MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS                             0x05
-#define MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_STATUS                    0x06
-#define MESH_FOUNDATION_OPERATION_APPKEY_DELETE                                 0x8000
-#define MESH_FOUNDATION_OPERATION_APPKEY_GET                                    0x8001
-#define MESH_FOUNDATION_OPERATION_APPKEY_LIST                                   0x8002
-#define MESH_FOUNDATION_OPERATION_APPKEY_STATUS                                 0x8003
-#define MESH_FOUNDATION_OPERATION_ATTENTION_GET                                 0x8004
-#define MESH_FOUNDATION_OPERATION_ATTENTION_SET                                 0x8005
-#define MESH_FOUNDATION_OPERATION_ATTENTION_SET_UNACKNOWLEDGED                  0x8006
-#define MESH_FOUNDATION_OPERATION_ATTENTION_STATUS                              0x8007
-#define MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_GET                          0x8008
-#define MESH_FOUNDATION_OPERATION_BEACON_GET                                    0x8009
-#define MESH_FOUNDATION_OPERATION_BEACON_SET                                    0x800a
-#define MESH_FOUNDATION_OPERATION_BEACON_STATUS                                 0x800b
-#define MESH_FOUNDATION_OPERATION_DEFAULT_TTL_GET                               0x800c
-#define MESH_FOUNDATION_OPERATION_DEFAULT_TTL_SET                               0x800d
-#define MESH_FOUNDATION_OPERATION_DEFAULT_TTL_STATUS                            0x800e
-#define MESH_FOUNDATION_OPERATION_FRIEND_GET                                    0x800f
-#define MESH_FOUNDATION_OPERATION_FRIEND_SET                                    0x8010
-#define MESH_FOUNDATION_OPERATION_FRIEND_STATUS                                 0x8011
-#define MESH_FOUNDATION_OPERATION_GATT_PROXY_GET                                0x8012
-#define MESH_FOUNDATION_OPERATION_GATT_PROXY_SET                                0x8013
-#define MESH_FOUNDATION_OPERATION_GATT_PROXY_STATUS                             0x8014
-#define MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_GET                         0x8015
-#define MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_SET                         0x8016
-#define MESH_FOUNDATION_OPERATION_KEY_REFRESH_PHASE_STATUS                      0x8017
-#define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_GET                         0x8018
-#define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_STATUS                      0x8019
-#define MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_VIRTUAL_ADDRESS_SET         0x801a
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_ADD                        0x801b
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DELETE                     0x801c
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DELETE_ALL                 0x801d
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_OVERWRITE                  0x801e
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_STATUS                     0x801f
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_ADD        0x8020
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_DELETE     0x8021
-#define MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_VIRTUAL_ADDRESS_OVERWRITE  0x8022
-#define MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_GET                          0x8023
-#define MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_SET                          0x8024
-#define MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_STATUS                       0x8025
-#define MESH_FOUNDATION_OPERATION_RELAY_GET                                     0x8026
-#define MESH_FOUNDATION_OPERATION_RELAY_SET                                     0x8027
-#define MESH_FOUNDATION_OPERATION_RELAY_STATUS                                  0x8028
-#define MESH_FOUNDATION_OPERATION_SIG_MODEL_SUBSCRIPTION_GET                    0x8029
-#define MESH_FOUNDATION_OPERATION_SIG_MODEL_SUBSCRIPTION_LIST                   0x802a
-#define MESH_FOUNDATION_OPERATION_VENDOR_MODEL_SUBSCRIPTION_GET                 0x802b
-#define MESH_FOUNDATION_OPERATION_VENDOR_MODEL_SUBSCRIPTION_LIST                0x802c
-#define MESH_FOUNDATION_OPERATION_LOW_POWER_NODE_POLL_TIMEOUT_GET               0x802d
-#define MESH_FOUNDATION_OPERATION_LOW_POWER_NODE_POLL_TIMEOUT_STATUS            0x802e
-#define MESH_FOUNDATION_OPERATION_HEALTH_FAULT_CLEAR                            0x802f
-#define MESH_FOUNDATION_OPERATION_HEALTH_FAULT_CLEAR_UNACKNOWLEDGED             0x8030
-#define MESH_FOUNDATION_OPERATION_HEALTH_FAULT_GET                              0x8031
-#define MESH_FOUNDATION_OPERATION_HEALTH_FAULT_TEST                             0x8032
-#define MESH_FOUNDATION_OPERATION_HEALTH_FAULT_TEST_UNACKNOWLEDGED              0x8033
-#define MESH_FOUNDATION_OPERATION_HEALTH_PERIOD_GET                             0x8034
-#define MESH_FOUNDATION_OPERATION_HEALTH_PERIOD_SET                             0x8035
-#define MESH_FOUNDATION_OPERATION_HEALTH_PERIOD_SET_UNACKNOWLEDGED              0x8036
-#define MESH_FOUNDATION_OPERATION_HEALTH_PERIOD_STATUS                          0x8037
-#define MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_GET                     0x8038
-#define MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_SET                     0x8039
-#define MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_GET                    0x803a
-#define MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_SET                    0x803b
-#define MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_STATUS                 0x803c
-#define MESH_FOUNDATION_OPERATION_MODEL_APP_BIND                                0x803d
-#define MESH_FOUNDATION_OPERATION_MODEL_APP_STATUS                              0x803e
-#define MESH_FOUNDATION_OPERATION_MODEL_APP_UNBIND                              0x803f
-#define MESH_FOUNDATION_OPERATION_NETKEY_ADD                                    0x8040
-#define MESH_FOUNDATION_OPERATION_NETKEY_DELETE                                 0x8041
-#define MESH_FOUNDATION_OPERATION_NETKEY_GET                                    0x8042
-#define MESH_FOUNDATION_OPERATION_NETKEY_LIST                                   0x8043
-#define MESH_FOUNDATION_OPERATION_NETKEY_STATUS                                 0x8044
-#define MESH_FOUNDATION_OPERATION_NETKEY_UPDATE                                 0x8045
-#define MESH_FOUNDATION_OPERATION_NODE_IDENTITY_GET                             0x8046
-#define MESH_FOUNDATION_OPERATION_NODE_IDENTITY_SET                             0x8047
-#define MESH_FOUNDATION_OPERATION_NODE_IDENTITY_STATUS                          0x8048
-#define MESH_FOUNDATION_OPERATION_NODE_RESET                                    0x8049
-#define MESH_FOUNDATION_OPERATION_NODE_RESET_STATUS                             0x804a
-#define MESH_FOUNDATION_OPERATION_SIG_MODEL_APP_GET                             0x804b
-#define MESH_FOUNDATION_OPERATION_SIG_MODEL_APP_LIST                            0x804c
-#define MESH_FOUNDATION_OPERATION_VENDOR_MODEL_APP_GET                          0x804d
-#define MESH_FOUNDATION_OPERATION_VENDOR_MODEL_APP_LIST                         0x804e
-
-// Foundation Models Status Codes
-#define MESH_FOUNDATION_STATUS_SUCCESS                                           0x00
-#define MESH_FOUNDATION_STATUS_INVALID_ADDRESS                                   0x01
-#define MESH_FOUNDATION_STATUS_INVALID_MODEL                                     0x02
-#define MESH_FOUNDATION_STATUS_INVALID_APPKEY_INDEX                              0x03
-#define MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX                              0x04
-#define MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES                            0x05
-#define MESH_FOUNDATION_STATUS_KEY_INDEX_ALREADY_STORED                          0x06
-#define MESH_FOUNDATION_STATUS_INVALID_PUBLISH_PARAMETER                         0x07
-#define MESH_FOUNDATION_STATUS_NOT_A_SUBSCRIPTION_MODEL                          0x08
-#define MESH_FOUNDATION_STATUS_STORAGE_FAILURE                                   0x09
-#define MESH_FOUNDATION_STATUS_FEATURE_NOT_SUPPORTED                             0x0a
-#define MESH_FOUNDATION_STATUS_CANNOT_UPDATE                                     0x0b
-#define MESH_FOUNDATION_STATUS_CANNOT_REMOVE                                     0x0c
-#define MESH_FOUNDATION_STATUS_CANNOT_BIND                                       0x0d
-#define MESH_FOUNDATION_STATUS_TEMPORARILY_UNABLE_TO_CHANGE_STATE                0x0e
-#define MESH_FOUNDATION_STATUS_CANNOT_SET                                        0x0f
-#define MESH_FOUNDATION_STATUS_UNSPECIFIED_ERROR                                 0x10
-#define MESH_FOUNDATION_STATUS_INVALID_BINDING                                   0x11
-
 // Foundatiopn Message
 
 const mesh_access_message_t mesh_foundation_config_beacon_status = {
@@ -1051,15 +943,7 @@ const mesh_access_message_t mesh_foundation_config_heartbeat_subscription_status
 
 // to sort
 
-// move to btstack_config.h
 #define MESH_APPKEY_INVALID                     0xffffu
-#define MESH_SIG_MODEL_ID_CONFIGURATION_SERVER  0x0000u
-#define MESH_SIG_MODEL_ID_CONFIGURATION_CLIENT  0x0001u
-#define MESH_SIG_MODEL_ID_HEALTH_SERVER         0x0002u
-#define MESH_SIG_MODEL_ID_HEALTH_CLIENT         0x0003u
-#define MESH_SIG_MODEL_ID_GENERIC_ON_OFF_SERVER 0x1000u
-#define MESH_SIG_MODEL_ID_GENERIC_ON_OFF_CLIENT 0x1001u
-#define MESH_BLUEKITCHEN_MODEL_ID_TEST_SERVER   0x0000u
 
 typedef enum {
     MESH_NODE_IDENTITY_STATE_ADVERTISING_STOPPED = 0,
@@ -1178,55 +1062,8 @@ static void mesh_model_unbind_appkey(mesh_model_t * mesh_model, uint16_t appkey_
     }
 }
 
-static void mesh_model_delete_all_subscriptions(mesh_model_t * mesh_model){
-    int i;
-    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
-        mesh_model->subscriptions[i] = MESH_ADDRESS_UNSASSIGNED;
-    }
-}
-
-static uint8_t mesh_model_add_subscription(mesh_model_t * mesh_model, uint16_t address){
-    int i;
-    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
-        if (mesh_model->subscriptions[i] == address) return MESH_FOUNDATION_STATUS_SUCCESS;
-    }
-    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
-        if (mesh_model->subscriptions[i] == MESH_ADDRESS_UNSASSIGNED) {
-            mesh_model->subscriptions[i] = address;
-            return MESH_FOUNDATION_STATUS_SUCCESS;
-        }
-    }
-    return MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
-}
-
-static void mesh_model_delete_subscription(mesh_model_t * mesh_model, uint16_t address){
-    int i;
-    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
-        if (mesh_model->subscriptions[i] == address) {
-            mesh_model->subscriptions[i] = MESH_ADDRESS_UNSASSIGNED;
-        }
-    }
-}
-
-static uint8_t mesh_model_overwrite_subscription(mesh_model_t * mesh_model, uint16_t address){
-    mesh_model_delete_all_subscriptions(mesh_model);
-    return mesh_model_add_subscription(mesh_model, address);
-}
-
-static int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address){
-    int i;
-    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
-        if (mesh_model->subscriptions[i] == address) return 1;
-    }
-    return 0;
-}
-
 static int mesh_model_is_configuration_server(uint32_t model_identifier){
     return mesh_model_is_bluetooth_sig(model_identifier) && (mesh_model_get_model_id(model_identifier) == MESH_SIG_MODEL_ID_CONFIGURATION_SERVER);
-}
-
-static void mesh_access_message_processed(mesh_pdu_t * pdu){
-    mesh_upper_transport_message_processed_by_higher_layer(pdu);
 }
 
 static void config_server_send_message(mesh_model_t *mesh_model, uint16_t netkey_index, uint16_t dest,
@@ -2887,95 +2724,6 @@ static mesh_operation_t mesh_configuration_server_model_operations[] = {
     { 0, 0, NULL }
 };
 
-static mesh_operation_t * mesh_model_lookup_operation(mesh_model_t * model, mesh_pdu_t * pdu){
-
-    uint32_t opcode = 0;
-    uint16_t opcode_size = 0;
-    int ok = mesh_access_pdu_get_opcode( pdu, &opcode, &opcode_size);
-    if (!ok) return NULL;
-
-    uint16_t len = mesh_pdu_len(pdu);
-
-    // find opcode in table
-    mesh_operation_t * operation = model->operations;
-    if (operation == NULL) return NULL;
-    for ( ; operation->handler != NULL ; operation++){
-        if (operation->opcode != opcode) continue;
-        if ((opcode_size + operation->minimum_length) > len) continue;
-        return operation;
-    }
-    return NULL;
-}
-
-static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
-    // get opcode and size
-    uint32_t opcode = 0;
-    uint16_t opcode_size = 0;
-
-    int ok = mesh_access_pdu_get_opcode( pdu, &opcode, &opcode_size);
-    if (!ok) {
-        mesh_access_message_processed(pdu);
-        return;
-    }
-
-    uint16_t len = mesh_pdu_len(pdu);
-    printf("MESH Access Message, Opcode = %x: ", opcode);
-    switch (pdu->pdu_type){
-        case MESH_PDU_TYPE_NETWORK:
-            printf_hexdump(&((mesh_network_pdu_t *) pdu)->data[10], len);
-            break;
-        case MESH_PDU_TYPE_TRANSPORT:
-            printf_hexdump(((mesh_transport_pdu_t *) pdu)->data, len);
-            break;
-        default:
-            break;
-    }
-
-    // TODO: check if used AppKey is bound to particular model
-
-    uint16_t dst = mesh_pdu_dst(pdu);
-    if (mesh_network_address_unicast(dst)){
-        // loookup element by unicast address
-        mesh_element_t * element = mesh_element_for_unicast_address(dst);
-        if (element != NULL){
-            // iterate over models, look for operation
-            mesh_model_iterator_t model_it;
-            mesh_model_iterator_init(&model_it, element);
-            while (mesh_model_iterator_has_next(&model_it)){
-                mesh_model_t * model = mesh_model_iterator_next(&model_it);
-                // find opcode in table
-                mesh_operation_t * operation = mesh_model_lookup_operation(model, pdu);
-                if (operation == NULL) break;
-                operation->handler(model, pdu);
-                return;
-            }
-        }
-    } else {
-        // iterate over all elements / models, check subscription list
-        mesh_element_iterator_t it;
-        mesh_element_iterator_init(&it);
-        while (mesh_element_iterator_has_next(&it)){
-            mesh_element_t * element = (mesh_element_t *) mesh_element_iterator_next(&it);
-            mesh_model_iterator_t model_it;
-            mesh_model_iterator_init(&model_it, element);
-            while (mesh_model_iterator_has_next(&model_it)){
-                mesh_model_t * model = mesh_model_iterator_next(&model_it);
-                if (mesh_model_contains_subscription(model, dst)){
-                    // find opcode in table
-                    mesh_operation_t * operation = mesh_model_lookup_operation(model, pdu);
-                    if (operation == NULL) break;
-                    operation->handler(model, pdu);
-                    return;
-                }
-            }
-        }
-    }
-
-    // operation not found -> done
-    printf("Message not handled\n");
-    mesh_access_message_processed(pdu);
-}
-
 static btstack_crypto_aes128_cmac_t salt_request;
 static uint8_t label_uuid[16];
 static uint8_t salt_hash[16];
@@ -3117,7 +2865,7 @@ typedef enum {
     MESH_PROXY_CONFIGURATION_FILTER_TYPE_BLACK_LIST
 } mesh_proxy_configuration_filter_type_t;
 
-// Used to answer configutation request
+// Used to answer configuration request
 static uint16_t proxy_configuration_filter_list_len;
 static mesh_proxy_configuration_filter_type_t proxy_configuration_filter_type;
 static uint16_t primary_element_address;
@@ -3183,6 +2931,8 @@ void proxy_configuration_message_handler(mesh_network_callback_type_t callback_t
 
 // Test configuration
 
+#define MESH_BLUEKITCHEN_MODEL_ID_TEST_SERVER   0x0000u
+
 static mesh_model_t                 mesh_configuration_server_model;
 static mesh_model_t                 mesh_health_server_model;
 static mesh_model_t                 mesh_vendor_model;
@@ -3247,7 +2997,6 @@ int btstack_main(void)
 
     // Transport layers (lower + upper))
     mesh_transport_init();
-    mesh_upper_transport_register_access_message_handler(&mesh_access_message_process_handler);
 
     // Access layer
     mesh_access_init();

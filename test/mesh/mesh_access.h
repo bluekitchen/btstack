@@ -137,6 +137,8 @@ typedef struct {
  */
 void mesh_access_init(void);
 
+void mesh_access_message_processed(mesh_pdu_t * pdu);
+
 mesh_element_t * mesh_primary_element(void);
 
 void mesh_access_set_primary_element_address(uint16_t unicast_address);
@@ -181,6 +183,13 @@ uint16_t mesh_pdu_dst(mesh_pdu_t * pdu);
 uint16_t mesh_pdu_netkey_index(mesh_pdu_t * pdu);
 uint16_t mesh_pdu_len(mesh_pdu_t * pdu);
 uint8_t * mesh_pdu_data(mesh_pdu_t * pdu);
+
+// Mesh Model Subscriptions
+uint8_t mesh_model_add_subscription(mesh_model_t * mesh_model, uint16_t address);
+void mesh_model_delete_subscription(mesh_model_t * mesh_model, uint16_t address);
+uint8_t mesh_model_overwrite_subscription(mesh_model_t * mesh_model, uint16_t address);
+void mesh_model_delete_all_subscriptions(mesh_model_t * mesh_model);
+int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address);
 
 // Mesh Access Parser
 int mesh_access_pdu_get_opcode(mesh_pdu_t * pdu, uint32_t * opcode, uint16_t * opcode_size);
