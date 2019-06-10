@@ -50,6 +50,8 @@ extern "C"
 #define MAX_NR_MESH_APPKEYS_PER_MODEL           3u
 #define MAX_NR_MESH_SUBSCRIPTION_PER_MODEL      3u
 
+#define MESH_APPKEY_INVALID                     0xffffu
+
 typedef struct {
     uint16_t address;
     uint16_t appkey_index;
@@ -190,6 +192,13 @@ void mesh_model_delete_subscription(mesh_model_t * mesh_model, uint16_t address)
 uint8_t mesh_model_overwrite_subscription(mesh_model_t * mesh_model, uint16_t address);
 void mesh_model_delete_all_subscriptions(mesh_model_t * mesh_model);
 int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address);
+
+// Mesh Model to Appkey List
+void mesh_load_appkey_lists(void);
+void mesh_delete_appkey_lists(void);
+void mesh_model_reset_appkeys(mesh_model_t * mesh_model);
+uint8_t mesh_model_bind_appkey(mesh_model_t * mesh_model, uint16_t appkey_index);
+void mesh_model_unbind_appkey(mesh_model_t * mesh_model, uint16_t appkey_index);
 
 // Mesh Access Parser
 int mesh_access_pdu_get_opcode(mesh_pdu_t * pdu, uint32_t * opcode, uint16_t * opcode_size);

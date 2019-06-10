@@ -46,6 +46,7 @@
 #include "bluetooth_company_id.h"
 #include "mesh_transport.h"
 #include "mesh_foundation.h"
+#include "btstack_tlv.h"
 
 static void mesh_access_message_process_handler(mesh_pdu_t * pdu);
 
@@ -54,6 +55,14 @@ static mesh_element_t primary_element;
 static btstack_linked_list_t mesh_elements;
 
 static uint16_t mid_counter;
+
+static const btstack_tlv_t * btstack_tlv_singleton_impl;
+static void *                btstack_tlv_singleton_context;
+
+static void mesh_access_setup_tlv(void){
+    if (btstack_tlv_singleton_impl) return;
+    btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
+}
 
 void mesh_access_init(void){
     // Access layer - add Primary Element to list of elements
@@ -639,3 +648,88 @@ int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address
     }
     return 0;
 }
+
+// Model to Appkey List
+
+#define MESH_MODEL_INDEX_MAX (16)
+
+static uint32_t mesh_model_tag_for_index(uint16_t internal_model_id){
+    return ((uint32_t) 'M' << 24) | ((uint32_t) 'B' << 16) | ((uint32_t) internal_model_id);
+}
+
+static void mesh_load_appkey_list(mesh_model_t * model){
+    mesh_access_setup_tlv();
+    uint32_t tag = mesh_model_tag_for_index(model->mid);
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &model->appkey_indices, sizeof(model->appkey_indices));
+}
+
+static void mesh_store_appkey_list(mesh_model_t * model){
+    mesh_access_setup_tlv();
+
+    if (model->mid >= MESH_MODEL_INDEX_MAX){
+        printf("Warning: Model with internal model id %x (>= %u) are not persisted\n", model->mid, MESH_MODEL_INDEX_MAX);
+    }
+
+    uint32_t tag = mesh_model_tag_for_index(model->mid);
+    btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &model->appkey_indices, sizeof(model->appkey_indices));
+}
+
+void mesh_load_appkey_lists(void){
+    printf("Load Appkey Lists\n");
+    // iterate over elements and models
+    mesh_element_iterator_t element_it;
+    mesh_element_iterator_init(&element_it);
+    while (mesh_element_iterator_has_next(&element_it)){
+        mesh_element_t * element = mesh_element_iterator_next(&element_it);
+        mesh_model_iterator_t model_it;
+        mesh_model_iterator_init(&model_it, element);
+        while (mesh_model_iterator_has_next(&model_it)){
+            mesh_model_t * model = mesh_model_iterator_next(&model_it);
+            mesh_load_appkey_list(model);
+        }
+    }
+}
+
+void mesh_delete_appkey_lists(void){
+    printf("Delete App Keys\n");
+    mesh_access_setup_tlv();
+    // iterate over elements and models
+    uint16_t internal_model_id;
+    for (internal_model_id = 0; internal_model_id < MESH_MODEL_INDEX_MAX; internal_model_id++){
+        uint32_t tag = mesh_model_tag_for_index(internal_model_id);
+        btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, tag);
+    }
+}
+
+void mesh_model_reset_appkeys(mesh_model_t * mesh_model){
+    int i;
+    for (i=0;i<MAX_NR_MESH_APPKEYS_PER_MODEL;i++){
+        mesh_model->appkey_indices[i] = MESH_APPKEY_INVALID;
+    }
+}
+
+uint8_t mesh_model_bind_appkey(mesh_model_t * mesh_model, uint16_t appkey_index){
+    int i;
+    for (i=0;i<MAX_NR_MESH_APPKEYS_PER_MODEL;i++){
+        if (mesh_model->appkey_indices[i] == appkey_index) return MESH_FOUNDATION_STATUS_SUCCESS;
+    }
+    for (i=0;i<MAX_NR_MESH_APPKEYS_PER_MODEL;i++){
+        if (mesh_model->appkey_indices[i] == MESH_APPKEY_INVALID) {
+            mesh_model->appkey_indices[i] = appkey_index;
+            mesh_store_appkey_list(mesh_model);
+            return MESH_FOUNDATION_STATUS_SUCCESS;
+        }
+    }
+    return MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
+}
+
+void mesh_model_unbind_appkey(mesh_model_t * mesh_model, uint16_t appkey_index){
+    int i;
+    for (i=0;i<MAX_NR_MESH_APPKEYS_PER_MODEL;i++){
+        if (mesh_model->appkey_indices[i] == appkey_index) {
+            mesh_model->appkey_indices[i] = MESH_APPKEY_INVALID;
+            mesh_store_appkey_list(mesh_model);
+        }
+    }
+}
+
