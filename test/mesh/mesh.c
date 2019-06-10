@@ -53,6 +53,7 @@
 #include "provisioning_device.h"
 #include "mesh_transport.h"
 #include "mesh_foundation.h"
+#include "mesh_access.h"
 #include "mesh_virtual_addresses.h"
 #include "mesh.h"
 #include "btstack.h"
@@ -90,8 +91,6 @@ const uint8_t adv_data_unprovisioned_len = sizeof(adv_data_unprovisioned);
 static adv_bearer_connectable_advertisement_data_item_t connectable_advertisement_item;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
-
-static void mesh_access_set_primary_element_address(uint16_t unicast_address);
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -1054,27 +1053,6 @@ const mesh_access_message_t mesh_foundation_low_power_node_poll_timeout_status =
 const mesh_access_message_t mesh_foundation_config_heartbeat_subscription_status = {
         MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_STATUS, "1221111"
 };
-// Model Identifier utilities
-
-static uint32_t mesh_model_get_model_identifier(uint16_t vendor_id, uint16_t model_id){
-    return (vendor_id << 16) | model_id;
-}
-
-static uint32_t mesh_model_get_model_identifier_bluetooth_sig(uint16_t model_id){
-    return (BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC << 16) | model_id;
-}
-
-static uint16_t mesh_model_get_model_id(uint32_t model_identifier){
-    return model_identifier & 0xFFFFu;
-}
-
-static uint16_t mesh_model_get_vendor_id(uint32_t model_identifier){
-    return model_identifier >> 16;
-}
-
-static int mesh_model_is_bluetooth_sig(uint32_t model_identifier){
-    return mesh_model_get_vendor_id(model_identifier) == BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC;
-}
 
 // message parser
 
@@ -1428,8 +1406,6 @@ static mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_acc
 // to sort
 
 // move to btstack_config.h
-#define MAX_NR_MESH_APPKEYS_PER_MODEL           3u
-#define MAX_NR_MESH_SUBSCRIPTION_PER_MODEL      3u
 #define MESH_APPKEY_INVALID                     0xffffu
 #define MESH_SIG_MODEL_ID_CONFIGURATION_SERVER  0x0000u
 #define MESH_SIG_MODEL_ID_CONFIGURATION_CLIENT  0x0001u
@@ -1473,133 +1449,8 @@ typedef struct {
     mesh_heartbeat_publication_t heartbeat_publication;
 } mesh_configuration_server_model_context;
 
-typedef struct {
-    uint16_t address;
-    uint16_t appkey_index;
-    uint8_t  friendship_credential_flag;
-    uint8_t  period;
-    uint8_t  ttl;
-    uint8_t  retransmit;
-} mesh_publication_model_t;
-
-struct mesh_model;
-
-typedef void (*mesh_operation_handler)(struct mesh_model * mesh_model, mesh_pdu_t * pdu);
-
-typedef struct {
-    uint32_t opcode;
-    uint16_t minimum_length;
-    mesh_operation_handler handler;
-} mesh_operation_t;
-
-typedef struct mesh_model {
-    // linked list item
-    btstack_linked_item_t item;
-
-    // internal model enumeration
-    uint16_t mid;
-
-    // vendor_id << 16 | model id, use BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC for SIG models
-    uint32_t model_identifier;
-
-    // model operations
-    mesh_operation_t * operations;
-
-    // publication model if supported
-    mesh_publication_model_t * publication_model;
-
-    // data
-    void * model_data;
-
-    // bound appkeys
-    uint16_t appkey_indices[MAX_NR_MESH_APPKEYS_PER_MODEL];
-
-    // subscription list
-    uint16_t subscriptions[MAX_NR_MESH_SUBSCRIPTION_PER_MODEL];
-} mesh_model_t;
-
-typedef struct {
-    // linked list item
-    btstack_linked_item_t item;
-    
-    // unicast address
-    uint16_t unicast_address;
-    
-    // LOC
-    uint16_t loc;
-    
-    // models
-    btstack_linked_list_t models;
-    uint16_t models_count_sig;
-    uint16_t models_count_vendor;
-
-} mesh_element_t;
-
-typedef struct {
-    btstack_linked_list_iterator_t it;
-} mesh_model_iterator_t;
-
-static uint16_t mid_counter;
-static btstack_linked_list_t elements;
-
-static mesh_element_t   primary_element;
-static btstack_linked_list_t mesh_elements;
-
 static mesh_heartbeat_publication_t  mesh_heartbeat_publication;
 static mesh_heartbeat_subscription_t mesh_heartbeat_subscription;
-
-static void mesh_access_set_primary_element_address(uint16_t unicast_address){
-    primary_element.unicast_address = unicast_address;
-}
-
-static void mesh_element_add(mesh_element_t * element){
-    btstack_linked_list_add_tail(&mesh_elements, (void*) element);
-}
-
-static mesh_element_t * mesh_element_for_unicast_address(uint16_t unicast_address){
-    btstack_linked_list_iterator_t it;
-    btstack_linked_list_iterator_init(&it, &mesh_elements);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        mesh_element_t * element = (mesh_element_t *) btstack_linked_list_iterator_next(&it);
-        if (element->unicast_address != unicast_address) continue;
-        return element;
-    }
-    return NULL;
-}
-
-static void mesh_element_add_model(mesh_element_t * element, mesh_model_t * mesh_model){
-    if (mesh_model_is_bluetooth_sig(mesh_model->model_identifier)){
-        element->models_count_sig++;
-    } else {
-        element->models_count_vendor++;
-    }
-    mesh_model->mid = mid_counter++;
-    btstack_linked_list_add_tail(&element->models, (btstack_linked_item_t *) mesh_model);
-}
-
-static void mesh_model_iterator_init(mesh_model_iterator_t * iterator, mesh_element_t * element){
-    btstack_linked_list_iterator_init(&iterator->it, &element->models);
-}
-
-static int mesh_model_iterator_has_next(mesh_model_iterator_t * iterator){
-    return btstack_linked_list_iterator_has_next(&iterator->it);
-}
-
-static mesh_model_t * mesh_model_iterator_get_next(mesh_model_iterator_t * iterator){
-    return (mesh_model_t *) btstack_linked_list_iterator_next(&iterator->it);
-}
-
-static mesh_model_t * mesh_model_get_by_identifier(mesh_element_t * element, uint32_t model_identifier){
-    mesh_model_iterator_t it;
-    mesh_model_iterator_init(&it, element);
-    while (mesh_model_iterator_has_next(&it)){
-        mesh_model_t * model = mesh_model_iterator_get_next(&it);
-        if (model->model_identifier != model_identifier) continue;
-        return model;
-    }
-    return NULL;
-}
-
 
 // model to appkey list/binding
 
@@ -1626,14 +1477,14 @@ static void mesh_store_appkey_list(mesh_model_t * model){
 static void mesh_load_appkey_lists(void){
     printf("Load Appkey Lists\n");
     // iterate over elements and models
-    btstack_linked_list_iterator_t element_it;
-    btstack_linked_list_iterator_init(&element_it, &mesh_elements);
-    while (btstack_linked_list_iterator_has_next(&element_it)){
-        mesh_element_t * element = (mesh_element_t *) btstack_linked_list_iterator_next(&element_it);
+    mesh_element_iterator_t element_it;
+    mesh_element_iterator_init(&element_it);
+    while (mesh_element_iterator_has_next(&element_it)){
+        mesh_element_t * element = mesh_element_iterator_next(&element_it);
         mesh_model_iterator_t model_it;
         mesh_model_iterator_init(&model_it, element);
         while (mesh_model_iterator_has_next(&model_it)){
-            mesh_model_t * model = mesh_model_iterator_get_next(&model_it);
+            mesh_model_t * model = mesh_model_iterator_next(&model_it);
             mesh_load_appkey_list(model);
         }
     }
@@ -1728,10 +1579,6 @@ static int mesh_model_is_configuration_server(uint32_t model_identifier){
     return mesh_model_is_bluetooth_sig(model_identifier) && (mesh_model_get_model_id(model_identifier) == MESH_SIG_MODEL_ID_CONFIGURATION_SERVER);
 }
 
-static mesh_element_t * mesh_primary_element(void){
-    return &primary_element;
-}
-
 static void mesh_access_message_processed(mesh_pdu_t * pdu){
     mesh_upper_transport_message_processed_by_higher_layer(pdu);
 }
@@ -1769,10 +1616,10 @@ static void config_composition_data_status(mesh_model_t * mesh_model, uint16_t n
     // Features - Relay, Proxy, Friend, Lower Power, ...
     mesh_access_transport_add_uint16(transport_pdu, 0);
 
-    btstack_linked_list_iterator_t it;
-    btstack_linked_list_iterator_init(&it, &mesh_elements);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        mesh_element_t * element = (mesh_element_t *) btstack_linked_list_iterator_next(&it);
+    mesh_element_iterator_t it;
+    mesh_element_iterator_init(&it);
+    while (mesh_element_iterator_has_next(&it)){
+        mesh_element_t * element = mesh_element_iterator_next(&it);
 
         // Loc
         mesh_access_transport_add_uint16(transport_pdu, element->loc);
@@ -1786,14 +1633,14 @@ static void config_composition_data_status(mesh_model_t * mesh_model, uint16_t n
         // SIG Models
         mesh_model_iterator_init(&it, element);
         while (mesh_model_iterator_has_next(&it)){
-            mesh_model_t * model = mesh_model_iterator_get_next(&it);
+            mesh_model_t * model = mesh_model_iterator_next(&it);
             if (!mesh_model_is_bluetooth_sig(model->model_identifier)) continue;
             mesh_access_transport_add_uint16(transport_pdu, model->model_identifier);
         }
         // Vendor Models
         mesh_model_iterator_init(&it, element);
         while (mesh_model_iterator_has_next(&it)){
-            mesh_model_t * model = mesh_model_iterator_get_next(&it);
+            mesh_model_t * model = mesh_model_iterator_next(&it);
             if (mesh_model_is_bluetooth_sig(model->model_identifier)) continue;
             mesh_access_transport_add_uint32(transport_pdu, model->model_identifier);
         }
@@ -3449,7 +3296,7 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
             mesh_model_iterator_t model_it;
             mesh_model_iterator_init(&model_it, element);
             while (mesh_model_iterator_has_next(&model_it)){
-                mesh_model_t * model = mesh_model_iterator_get_next(&model_it);
+                mesh_model_t * model = mesh_model_iterator_next(&model_it);
                 // find opcode in table
                 mesh_operation_t * operation = mesh_model_lookup_operation(model, pdu);
                 if (operation == NULL) break;
@@ -3459,14 +3306,14 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
         }
     } else {
         // iterate over all elements / models, check subscription list
-        btstack_linked_list_iterator_t it;
-        btstack_linked_list_iterator_init(&it, &mesh_elements);
-        while (btstack_linked_list_iterator_has_next(&it)){
-            mesh_element_t * element = (mesh_element_t *) btstack_linked_list_iterator_next(&it);
+        mesh_element_iterator_t it;
+        mesh_element_iterator_init(&it);
+        while (mesh_element_iterator_has_next(&it)){
+            mesh_element_t * element = (mesh_element_t *) mesh_element_iterator_next(&it);
             mesh_model_iterator_t model_it;
             mesh_model_iterator_init(&model_it, element);
             while (mesh_model_iterator_has_next(&model_it)){
-                mesh_model_t * model = mesh_model_iterator_get_next(&model_it);
+                mesh_model_t * model = mesh_model_iterator_next(&model_it);
                 if (mesh_model_contains_subscription(model, dst)){
                     // find opcode in table
                     mesh_operation_t * operation = mesh_model_lookup_operation(model, pdu);
@@ -3755,6 +3602,9 @@ int btstack_main(void)
     // Transport layers (lower + upper))
     mesh_transport_init();
     mesh_upper_transport_register_access_message_handler(&mesh_access_message_process_handler);
+
+    // Access layer
+    mesh_access_init();
 
     // PTS Virtual Address Label UUID - without Config Model, PTS uses our device uuid
     btstack_parse_hex("001BDC0810210B0E0A0C000B0E0A0C00", 16, label_uuid);

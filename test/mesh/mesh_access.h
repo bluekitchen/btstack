@@ -39,16 +39,129 @@
 #define __MESH_ACCESS_H
 
 #include <stdint.h>
+#include "btstack_linked_list.h"
+#include "ble/mesh/mesh_lower_transport.h"
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
+#define MAX_NR_MESH_APPKEYS_PER_MODEL           3u
+#define MAX_NR_MESH_SUBSCRIPTION_PER_MODEL      3u
+
+typedef struct {
+    uint16_t address;
+    uint16_t appkey_index;
+    uint8_t  friendship_credential_flag;
+    uint8_t  period;
+    uint8_t  ttl;
+    uint8_t  retransmit;
+} mesh_publication_model_t;
+
+
+struct mesh_model;
+
+typedef void (*mesh_operation_handler)(struct mesh_model * mesh_model, mesh_pdu_t * pdu);
+
+typedef struct {
+    uint32_t opcode;
+    uint16_t minimum_length;
+    mesh_operation_handler handler;
+} mesh_operation_t;
+
+typedef struct mesh_model {
+    // linked list item
+    btstack_linked_item_t item;
+
+    // internal model enumeration
+    uint16_t mid;
+
+    // vendor_id << 16 | model id, use BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC for SIG models
+    uint32_t model_identifier;
+
+    // model operations
+    mesh_operation_t * operations;
+
+    // publication model if supported
+    mesh_publication_model_t * publication_model;
+
+    // data
+    void * model_data;
+
+    // bound appkeys
+    uint16_t appkey_indices[MAX_NR_MESH_APPKEYS_PER_MODEL];
+
+    // subscription list
+    uint16_t subscriptions[MAX_NR_MESH_SUBSCRIPTION_PER_MODEL];
+} mesh_model_t;
+
+typedef struct {
+    btstack_linked_list_iterator_t it;
+} mesh_model_iterator_t;
+
+typedef struct {
+    btstack_linked_list_iterator_t it;
+} mesh_element_iterator_t;
+
+typedef struct {
+    // linked list item
+    btstack_linked_item_t item;
+    
+    // unicast address
+    uint16_t unicast_address;
+    
+    // LOC
+    uint16_t loc;
+    
+    // models
+    btstack_linked_list_t models;
+    uint16_t models_count_sig;
+    uint16_t models_count_vendor;
+
+} mesh_element_t;
+
+
 /**
  * @brief Init access layer
  */
 void mesh_access_init(void);
+
+mesh_element_t * mesh_primary_element(void);
+
+void mesh_access_set_primary_element_address(uint16_t unicast_address);
+
+void mesh_element_add(mesh_element_t * element);
+
+mesh_element_t * mesh_element_for_unicast_address(uint16_t unicast_address);
+
+void mesh_element_add_model(mesh_element_t * element, mesh_model_t * mesh_model);
+
+// Mesh Element Iterator
+
+void mesh_element_iterator_init(mesh_element_iterator_t * iterator);
+
+int mesh_element_iterator_has_next(mesh_element_iterator_t * iterator);
+
+mesh_element_t * mesh_element_iterator_next(mesh_element_iterator_t * iterator);
+
+// Mesh Model Iterator
+
+void mesh_model_iterator_init(mesh_model_iterator_t * iterator, mesh_element_t * element);
+
+int mesh_model_iterator_has_next(mesh_model_iterator_t * iterator);
+
+mesh_model_t * mesh_model_iterator_next(mesh_model_iterator_t * iterator);
+
+// Mesh Model Utility
+
+mesh_model_t * mesh_model_get_by_identifier(mesh_element_t * element, uint32_t model_identifier);
+
+int mesh_model_is_bluetooth_sig(uint32_t model_identifier);
+
+uint16_t mesh_model_get_model_id(uint32_t model_identifier);
+
+uint32_t mesh_model_get_model_identifier(uint16_t vendor_id, uint16_t model_id);
 
 #ifdef __cplusplus
 } /* end of extern "C" */
