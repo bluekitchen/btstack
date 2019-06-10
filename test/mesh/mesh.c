@@ -3251,37 +3251,26 @@ int btstack_main(void)
 
     // Access layer
     mesh_access_init();
-
-    // PTS Virtual Address Label UUID - without Config Model, PTS uses our device uuid
-    btstack_parse_hex("001BDC0810210B0E0A0C000B0E0A0C00", 16, label_uuid);
-    pts_proxy_dst = mesh_virtual_address_register(label_uuid, 0x9779);
-    
-    // Access layer - add Primary Element to list of elements - should be hid in e.g mesh_access_init()
-    mesh_element_add(mesh_primary_element());
-
-    // Setup Primary Element
-    mesh_element_t * primary_element = mesh_primary_element();
-
     // Loc - bottom - https://www.bluetooth.com/specifications/assigned-numbers/gatt-namespace-descriptors
-    primary_element->loc = 0x0103;
+    mesh_access_set_primary_element_location(0x103);
 
     // Setup models
     mesh_configuration_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_CONFIGURATION_SERVER);
     mesh_model_reset_appkeys(&mesh_configuration_server_model);
     mesh_configuration_server_model.operations = mesh_configuration_server_model_operations;    
-    mesh_element_add_model(primary_element, &mesh_configuration_server_model);
+    mesh_element_add_model(mesh_primary_element(), &mesh_configuration_server_model);
 
     mesh_health_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_HEALTH_SERVER);
     mesh_model_reset_appkeys(&mesh_health_server_model);
-    mesh_element_add_model(primary_element, &mesh_health_server_model);
+    mesh_element_add_model(mesh_primary_element(), &mesh_health_server_model);
 
     mesh_generic_on_off_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_GENERIC_ON_OFF_SERVER);
     mesh_model_reset_appkeys(&mesh_generic_on_off_server_model);
-    mesh_element_add_model(primary_element, &mesh_generic_on_off_server_model);
+    mesh_element_add_model(mesh_primary_element(), &mesh_generic_on_off_server_model);
 
     mesh_vendor_model.model_identifier = mesh_model_get_model_identifier(BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, MESH_BLUEKITCHEN_MODEL_ID_TEST_SERVER);
     mesh_model_reset_appkeys(&mesh_vendor_model);
-    mesh_element_add_model(primary_element, &mesh_vendor_model);
+    mesh_element_add_model(mesh_primary_element(), &mesh_vendor_model);
     
     // calc s1('vtad')7
     // btstack_crypto_aes128_cmac_zero(&salt_request, 4, (const uint8_t *) "vtad", salt_hash, salt_complete, NULL);
@@ -3296,6 +3285,11 @@ int btstack_main(void)
     // printf_hexdump(test_network_key.net_key, 16);
     // mesh_network_key_derive(&salt_request, &test_network_key, key_derived, NULL);
 
+    // PTS Virtual Address Label UUID - without Config Model, PTS uses our device uuid
+    btstack_parse_hex("001BDC0810210B0E0A0C000B0E0A0C00", 16, label_uuid);
+    pts_proxy_dst = mesh_virtual_address_register(label_uuid, 0x9779);
+
+    // PTS Device UUID
     btstack_parse_hex(pts_device_uuid_string, 16, pts_device_uuid);
     btstack_print_hex(pts_device_uuid, 16, 0);
 

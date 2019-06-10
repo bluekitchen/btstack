@@ -52,6 +52,8 @@ static btstack_linked_list_t mesh_elements;
 static uint16_t mid_counter;
 
 void mesh_access_init(void){
+    // Access layer - add Primary Element to list of elements
+    mesh_element_add(&primary_element);
 }
 
 mesh_element_t * mesh_primary_element(void){
@@ -60,6 +62,10 @@ mesh_element_t * mesh_primary_element(void){
 
 void mesh_access_set_primary_element_address(uint16_t unicast_address){
     primary_element.unicast_address = unicast_address;
+}
+
+void mesh_access_set_primary_element_location(uint16_t location){
+    primary_element.loc = location;
 }
 
 void mesh_element_add(mesh_element_t * element){

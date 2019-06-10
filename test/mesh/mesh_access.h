@@ -141,6 +141,8 @@ mesh_element_t * mesh_primary_element(void);
 
 void mesh_access_set_primary_element_address(uint16_t unicast_address);
 
+void mesh_access_set_primary_element_location(uint16_t location);
+
 void mesh_element_add(mesh_element_t * element);
 
 mesh_element_t * mesh_element_for_unicast_address(uint16_t unicast_address);
