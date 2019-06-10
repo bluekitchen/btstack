@@ -121,6 +121,16 @@ typedef struct {
 
 } mesh_element_t;
 
+typedef struct {
+    uint32_t opcode;
+    uint8_t * data;
+    uint16_t len;
+} mesh_access_parser_state_t;
+
+typedef struct {
+    uint32_t     opcode;
+    const char * format;
+} mesh_access_message_t;
 
 /**
  * @brief Init access layer
@@ -162,6 +172,49 @@ int mesh_model_is_bluetooth_sig(uint32_t model_identifier);
 uint16_t mesh_model_get_model_id(uint32_t model_identifier);
 
 uint32_t mesh_model_get_model_identifier(uint16_t vendor_id, uint16_t model_id);
+
+// Mesh PDU Getter
+uint16_t mesh_pdu_src(mesh_pdu_t * pdu);
+uint16_t mesh_pdu_dst(mesh_pdu_t * pdu);
+uint16_t mesh_pdu_netkey_index(mesh_pdu_t * pdu);
+uint16_t mesh_pdu_len(mesh_pdu_t * pdu);
+uint8_t * mesh_pdu_data(mesh_pdu_t * pdu);
+
+// Mesh Access Parser
+int mesh_access_pdu_get_opcode(mesh_pdu_t * pdu, uint32_t * opcode, uint16_t * opcode_size);
+int  mesh_access_parser_init(mesh_access_parser_state_t * state, mesh_pdu_t * pdu);
+void mesh_access_parser_skip(mesh_access_parser_state_t * state, uint16_t bytes_to_skip);
+uint16_t mesh_access_parser_available(mesh_access_parser_state_t * state);
+uint8_t mesh_access_parser_get_u8(mesh_access_parser_state_t * state);
+uint16_t mesh_access_parser_get_u16(mesh_access_parser_state_t * state);
+uint32_t mesh_access_parser_get_u24(mesh_access_parser_state_t * state);
+uint32_t mesh_access_parser_get_u32(mesh_access_parser_state_t * state);
+void mesh_access_parser_get_u128(mesh_access_parser_state_t * state, uint8_t * dest);
+void mesh_access_parser_get_label_uuid(mesh_access_parser_state_t * state, uint8_t * dest);
+void mesh_access_parser_get_key(mesh_access_parser_state_t * state, uint8_t * dest);
+uint32_t mesh_access_parser_get_model_identifier(mesh_access_parser_state_t * parser);
+
+
+// message builder transport
+mesh_transport_pdu_t * mesh_access_transport_init(uint32_t opcode);
+void mesh_access_transport_add_uint8(mesh_transport_pdu_t * pdu, uint8_t value);
+void mesh_access_transport_add_uint16(mesh_transport_pdu_t * pdu, uint16_t value);
+void mesh_access_transport_add_uint24(mesh_transport_pdu_t * pdu, uint32_t value);
+void mesh_access_transport_add_uint32(mesh_transport_pdu_t * pdu, uint32_t value);
+void mesh_access_transport_add_model_identifier(mesh_transport_pdu_t * pdu, uint32_t model_identifier);
+
+// message builder network
+mesh_network_pdu_t * mesh_access_network_init(uint32_t opcode);
+void mesh_access_network_add_uint8(mesh_network_pdu_t * pdu, uint8_t value);
+void mesh_access_network_add_uint16(mesh_network_pdu_t * pdu, uint16_t value);
+void mesh_access_network_add_uint24(mesh_network_pdu_t * pdu, uint16_t value);
+void mesh_access_network_add_uint32(mesh_network_pdu_t * pdu, uint16_t value);
+void mesh_access_network_add_model_identifier(mesh_network_pdu_t * pdu, uint32_t model_identifier);
+
+// message builder using template
+mesh_network_pdu_t * mesh_access_setup_unsegmented_message(const mesh_access_message_t *template, ...);
+mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_message_t *template, ...);
+
 
 #ifdef __cplusplus
 } /* end of extern "C" */
