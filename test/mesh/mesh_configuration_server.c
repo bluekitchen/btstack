@@ -156,9 +156,7 @@ static int mesh_model_is_configuration_server(uint32_t model_identifier){
 
 static void config_server_send_message(mesh_model_t *mesh_model, uint16_t netkey_index, uint16_t dest,
                                                  mesh_pdu_t *pdu){
-    UNUSED(mesh_model);
-    // TODO: use addr from element this model belongs to
-    uint16_t src  = mesh_access_get_primary_element_address();
+    uint16_t src  = mesh_model->element->unicast_address;
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
     uint8_t  ttl  = mesh_foundation_default_ttl_get();
     mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, 0);
