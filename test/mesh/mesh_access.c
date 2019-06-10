@@ -80,6 +80,10 @@ void mesh_access_set_primary_element_address(uint16_t unicast_address){
     primary_element.unicast_address = unicast_address;
 }
 
+uint16_t mesh_access_get_primary_element_address(void){
+    return primary_element.unicast_address;
+}
+
 void mesh_access_set_primary_element_location(uint16_t location){
     primary_element.loc = location;
 }
@@ -513,7 +517,7 @@ mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_mes
 }
 
 
-static mesh_operation_t * mesh_model_lookup_operation(mesh_model_t * model, mesh_pdu_t * pdu){
+static const mesh_operation_t * mesh_model_lookup_operation(mesh_model_t * model, mesh_pdu_t * pdu){
 
     uint32_t opcode = 0;
     uint16_t opcode_size = 0;
@@ -523,7 +527,7 @@ static mesh_operation_t * mesh_model_lookup_operation(mesh_model_t * model, mesh
     uint16_t len = mesh_pdu_len(pdu);
 
     // find opcode in table
-    mesh_operation_t * operation = model->operations;
+    const mesh_operation_t * operation = model->operations;
     if (operation == NULL) return NULL;
     for ( ; operation->handler != NULL ; operation++){
         if (operation->opcode != opcode) continue;
@@ -570,7 +574,7 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
             while (mesh_model_iterator_has_next(&model_it)){
                 mesh_model_t * model = mesh_model_iterator_next(&model_it);
                 // find opcode in table
-                mesh_operation_t * operation = mesh_model_lookup_operation(model, pdu);
+                const mesh_operation_t * operation = mesh_model_lookup_operation(model, pdu);
                 if (operation == NULL) break;
                 operation->handler(model, pdu);
                 return;
@@ -588,7 +592,7 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
                 mesh_model_t * model = mesh_model_iterator_next(&model_it);
                 if (mesh_model_contains_subscription(model, dst)){
                     // find opcode in table
-                    mesh_operation_t * operation = mesh_model_lookup_operation(model, pdu);
+                    const mesh_operation_t * operation = mesh_model_lookup_operation(model, pdu);
                     if (operation == NULL) break;
                     operation->handler(model, pdu);
                     return;
@@ -648,6 +652,85 @@ int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address
     }
     return 0;
 }
+
+static uint32_t mesh_transport_key_tag_for_appkey_index(uint16_t appkey_index){
+    return ((uint32_t) 'M' << 24) | ((uint32_t) 'A' << 16) | ((uint32_t) appkey_index);
+}
+
+// Mesh App Keys
+
+typedef struct {
+    uint16_t netkey_index;
+    uint16_t appkey_index;
+    uint8_t  aid;
+    uint8_t  key[16];
+} mesh_persistent_app_key_t;
+
+#define MESH_APPKEY_INDEX_MAX (16)
+
+void mesh_store_app_key(uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, const uint8_t * application_key){
+    mesh_access_setup_tlv();
+
+    if (appkey_index >= MESH_APPKEY_INDEX_MAX){
+        printf("Warning: AppKey with AppKey Index %x (>= %u) are not persisted\n", appkey_index, MESH_APPKEY_INDEX_MAX);
+    }
+    mesh_persistent_app_key_t data;
+    printf("Store AppKey: AppKey Index 0x%06x, AID %02x: ", appkey_index, aid);
+    printf_hexdump(application_key, 16);
+    uint32_t tag = mesh_transport_key_tag_for_appkey_index(appkey_index);
+    data.netkey_index = netkey_index;
+    data.appkey_index = appkey_index;
+    data.aid = aid;
+    memcpy(data.key, application_key, 16);
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+}
+
+void mesh_load_app_key(uint16_t appkey_index){
+    mesh_access_setup_tlv();
+
+    mesh_persistent_app_key_t data;
+    uint32_t tag = mesh_transport_key_tag_for_appkey_index(appkey_index);
+    int app_key_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+    if (app_key_len == 0) return;
+    
+    mesh_transport_key_t * key = btstack_memory_mesh_transport_key_get();
+    if (key == NULL) return;
+
+    key->appkey_index = data.appkey_index;
+    key->netkey_index = data.netkey_index;
+    key->aid          = data.aid;
+    key->akf          = 1;
+    memcpy(key->key, data.key, 16);
+    mesh_transport_key_add(key);
+    printf("Load AppKey: AppKey Index 0x%06x, AID %02x: ", key->appkey_index, key->aid);
+    printf_hexdump(key->key, 16);
+}
+
+void mesh_delete_app_key(uint16_t appkey_index){
+    mesh_access_setup_tlv();
+
+    uint32_t tag = mesh_transport_key_tag_for_appkey_index(appkey_index);
+    btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, tag);
+}
+
+void mesh_load_app_keys(void){
+    printf("Load App Keys\n");
+    // TODO: use TLV iterator
+    uint16_t appkey_index;
+    for (appkey_index = 0; appkey_index < MESH_APPKEY_INDEX_MAX; appkey_index++){
+        mesh_load_app_key(appkey_index);
+    }
+}
+
+void mesh_delete_app_keys(void){
+    printf("Delete App Keys\n");
+    // TODO: use TLV iterator
+    uint16_t appkey_index;
+    for (appkey_index = 0; appkey_index < MESH_APPKEY_INDEX_MAX; appkey_index++){
+        mesh_delete_app_key(appkey_index);
+    }
+}
+
 
 // Model to Appkey List
 

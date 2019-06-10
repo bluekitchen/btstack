@@ -83,7 +83,7 @@ typedef struct mesh_model {
     uint32_t model_identifier;
 
     // model operations
-    mesh_operation_t * operations;
+    const mesh_operation_t * operations;
 
     // publication model if supported
     mesh_publication_model_t * publication_model;
@@ -145,6 +145,8 @@ mesh_element_t * mesh_primary_element(void);
 
 void mesh_access_set_primary_element_address(uint16_t unicast_address);
 
+uint16_t mesh_access_get_primary_element_address(void);
+
 void mesh_access_set_primary_element_location(uint16_t location);
 
 void mesh_element_add(mesh_element_t * element);
@@ -173,6 +175,8 @@ mesh_model_t * mesh_model_iterator_next(mesh_model_iterator_t * iterator);
 
 mesh_model_t * mesh_model_get_by_identifier(mesh_element_t * element, uint32_t model_identifier);
 
+uint32_t mesh_model_get_model_identifier_bluetooth_sig(uint16_t model_id);
+
 int mesh_model_is_bluetooth_sig(uint32_t model_identifier);
 
 uint16_t mesh_model_get_model_id(uint32_t model_identifier);
@@ -185,6 +189,13 @@ uint16_t mesh_pdu_dst(mesh_pdu_t * pdu);
 uint16_t mesh_pdu_netkey_index(mesh_pdu_t * pdu);
 uint16_t mesh_pdu_len(mesh_pdu_t * pdu);
 uint8_t * mesh_pdu_data(mesh_pdu_t * pdu);
+
+// Mesh Appkeys
+void mesh_store_app_key(uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, const uint8_t * application_key);
+void mesh_load_app_key(uint16_t appkey_index);
+void mesh_delete_app_key(uint16_t appkey_index);
+void mesh_load_app_keys(void);
+void mesh_delete_app_keys(void);
 
 // Mesh Model Subscriptions
 uint8_t mesh_model_add_subscription(mesh_model_t * mesh_model, uint16_t address);
