@@ -19,6 +19,7 @@ VPATH += ${BTSTACK_ROOT}/3rd-party/md5
 VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
 VPATH += ${BTSTACK_ROOT}/3rd-party/yxml
 VPATH += ${BTSTACK_ROOT}/platform/lwip
+VPATH += ${BTSTACK_ROOT}/platform/lwip/port
 
 
 CFLAGS += -I.
@@ -34,6 +35,7 @@ CFLAGS += -I${BTSTACK_ROOT}/3rd-party/md5
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/yxml
 CFLAGS += -I${BTSTACK_ROOT}/platform/lwip
+CFLAGS += -I${BTSTACK_ROOT}/platform/lwip/port
 
 
 # for CVSD/SBC PLC

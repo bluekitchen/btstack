@@ -24,6 +24,7 @@ include_directories(../../chipset/zephyr)
 include_directories(../../platform/posix)
 include_directories(../../platform/embedded)
 include_directories(../../platform/lwip)
+include_directories(../../platform/lwip/port)
 include_directories(.)
 
 file(GLOB SOURCES_SRC       "../../src/*.c" "../../example/sco_demo_util.c")
@@ -75,7 +76,7 @@ set (LWIP_DHCPD
 	../../3rd-party/lwip/dhcp-server/dhserver.c
 )
 set (LWIP_PORT
-	../../platform/lwip/sys_arch.c
+	../../platform/lwip/port/sys_arch.c
 	../../platform/lwip/bnep_lwip.c
 )
 

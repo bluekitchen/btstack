@@ -146,7 +146,7 @@ ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/altcp_proxyconnect.c \
 ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/fs.c \
 ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/httpd.c \
 ${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server/dhserver.c \
-${BTSTACK_ROOT}/platform/lwip/sys_arch.c \
+${BTSTACK_ROOT}/platform/lwip/port/sys_arch.c \
 ${BTSTACK_ROOT}/platform/lwip/bnep_lwip.c \
 bluetooth_init_cc2564B_1.6_BT_Spec_4.1.c \
 bsp/audio.c \
@@ -264,6 +264,7 @@ C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/yxml
 C_INCLUDES += -I${BTSTACK_ROOT}/3rd-party/segger-rtt
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/embedded
 C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip
+C_INCLUDES += -I${BTSTACK_ROOT}/platform/lwip/port
 C_INCLUDES += -I${BTSTACK_ROOT}/chipset/cc256x
 C_INCLUDES += -I Drivers/STM32F4xx_HAL_Driver/Inc
 C_INCLUDES += -I bsp

@@ -115,6 +115,7 @@ VPATH += ${BTSTACK_ROOT}/3rd-party/yxml
 VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
 VPATH += ${BTSTACK_ROOT}/platform/embedded
 VPATH += ${BTSTACK_ROOT}/platform/lwip
+VPATH += ${BTSTACK_ROOT}/platform/lwip/port
 VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service/
 
 PROJ_CFLAGS += \
@@ -124,6 +125,7 @@ PROJ_CFLAGS += \
     -I$(BTSTACK_ROOT)/chipset/cc256x \
     -I$(BTSTACK_ROOT)/platform/embedded \
     -I$(BTSTACK_ROOT)/platform/lwip \
+    -I$(BTSTACK_ROOT)/platform/lwip/port \
     -I${BTSTACK_ROOT}/port/pegasus-max3263x \
     -I${BTSTACK_ROOT}/src/ble/gatt-service/ \
     -I${BTSTACK_ROOT}/example \
