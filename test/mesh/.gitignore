@@ -10,3 +10,4 @@ provisioner
 provisioning_device_test
 provisioning_provisioner_test
 sniffer
+mesh.h
