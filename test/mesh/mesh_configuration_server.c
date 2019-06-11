@@ -905,6 +905,7 @@ static void config_model_subscription_virtual_address_add_hash(void *arg){
     } else {
         pseudo_dst = virtual_address->pseudo_dst;
         if (!mesh_model_contains_subscription(target_model, pseudo_dst)){
+            virtual_address->ref_count++;
             status = mesh_model_add_subscription(target_model, pseudo_dst);
         }
     }
@@ -939,6 +940,20 @@ static void config_model_subscription_virtual_address_add_handler(mesh_model_t *
     mesh_virtual_address(&configuration_server_cmac_request, model_subscription_label_uuid, &model_subscription_hash, &config_model_subscription_virtual_address_add_hash, target_model);
 }
 
+static void mesh_subcription_decrease_virtual_address_ref_count(mesh_model_t *mesh_model){
+    // decrease ref counts for current virtual subscriptions
+    uint16_t i;
+    for (i = 0; i <= MAX_NR_MESH_SUBSCRIPTION_PER_MODEL ; i++){
+        uint16_t src = mesh_model->subscriptions[i];
+        if (mesh_network_address_virtual(src)){
+            mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_pseudo_dst(src);
+            if (virtual_address != NULL){
+                virtual_address->ref_count--;
+            }
+            // TODO: check if virtual address can be freed
+        }
+    }
+}
 
 static void config_model_subscription_virtual_address_overwrite_hash(void *arg){
     mesh_model_t * target_model = (mesh_model_t*) arg;
@@ -965,11 +980,14 @@ static void config_model_subscription_virtual_address_overwrite_hash(void *arg){
     if (virtual_address == NULL){
         status = MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
     } else {
+        mesh_subcription_decrease_virtual_address_ref_count(target_model);
+
         // clear subscriptions
         mesh_model_delete_all_subscriptions(target_model);
-        
+
         // add new subscription
         pseudo_dst = virtual_address->pseudo_dst;
+        virtual_address->ref_count++;
         status = mesh_model_add_subscription(target_model, pseudo_dst);
     }
 
@@ -1039,8 +1057,11 @@ static void config_model_subscription_virtual_address_delete_handler(mesh_model_
     mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
 
     if ((target_model != NULL) && (virtual_address != NULL)){
+        virtual_address->ref_count--;
         mesh_model_delete_subscription(target_model, virtual_address->pseudo_dst);
-    }   
+
+        // TODO: check if virtual address can be freed
+     }   
 
     config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, virtual_address->hash, model_identifier);
     mesh_access_message_processed(pdu);
@@ -1057,6 +1078,7 @@ static void config_model_subscription_delete_all_handler(mesh_model_t *mesh_mode
     mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
 
     if (target_model != NULL){
+        mesh_subcription_decrease_virtual_address_ref_count(target_model);
         mesh_model_delete_all_subscriptions(target_model);
     }   
 
@@ -1118,6 +1140,7 @@ static void config_model_subscription_overwrite_handler(mesh_model_t *mesh_model
 
     if (target_model != NULL){
         if (mesh_network_address_group(address) && !mesh_network_address_all_nodes(address)){
+            mesh_subcription_decrease_virtual_address_ref_count(target_model);
             mesh_model_overwrite_subscription(target_model, address);
         } else {
             status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;

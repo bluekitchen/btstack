@@ -50,6 +50,7 @@ typedef struct {
 	btstack_linked_item_t item;
     uint16_t pseudo_dst;
     uint16_t hash;
+    uint16_t ref_count;
     uint8_t  label_uuid[16];
 } mesh_virtual_address_t;
 

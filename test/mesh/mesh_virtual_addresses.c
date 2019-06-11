@@ -61,6 +61,7 @@ uint16_t mesh_virtual_addresses_get_free_pseudo_dst(void){
 
 void mesh_virtual_address_add(mesh_virtual_address_t * virtual_address){
     mesh_virtual_addresses_used[virtual_address->pseudo_dst-0x8000] = 1;
+    virtual_address->ref_count = 0;
     btstack_linked_list_add(&mesh_virtual_addresses, (void *) virtual_address);
 }
 
