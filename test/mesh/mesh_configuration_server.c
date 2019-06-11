@@ -647,7 +647,7 @@ static void config_appkey_add_or_udpate_aid(void *arg){
     printf_hexdump(transport_key->key, 16);
 
     // store in TLV
-    mesh_store_app_key(transport_key->netkey_index, transport_key->appkey_index, transport_key->aid, transport_key->key);
+    mesh_store_app_key(transport_key->internal_index, transport_key->netkey_index, transport_key->appkey_index, transport_key->aid, transport_key->key);
 
     // add app key
     mesh_transport_key_add(transport_key);
@@ -699,8 +699,12 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
         return;
     }
 
-    // create app key
-    mesh_transport_key_t * app_key = btstack_memory_mesh_transport_key_get();
+    // create app key (first get free slot in transport key table)
+    mesh_transport_key_t * app_key = NULL;
+    uint16_t internal_index = mesh_transport_key_get_free_index();
+    if (internal_index > 0){
+        app_key = btstack_memory_mesh_transport_key_get();
+    }    
     if (app_key == NULL) {
         config_appkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES);
         mesh_access_message_processed(pdu);
@@ -708,6 +712,7 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     }
 
     // store data
+    app_key->internal_index = internal_index;
     app_key->akf = 1;
     app_key->appkey_index = appkey_index;
     app_key->netkey_index = netkey_index;
@@ -716,21 +721,6 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     // calculate AID
     access_pdu_in_process = pdu;
     mesh_transport_key_calc_aid(&mesh_cmac_request, app_key, config_appkey_add_or_udpate_aid, app_key);
-}
-
-static void config_appkey_update_aid(void * arg){
-    mesh_transport_key_t * transport_key = (mesh_transport_key_t *) arg;
-
-    printf("Config Appkey Update: NetKey Index 0x%04x, AppKey Index 0x%04x, AID %02x: ", transport_key->netkey_index, transport_key->appkey_index, transport_key->aid);
-    printf_hexdump(transport_key->key, 16);
-
-    // store in TLV
-    mesh_store_app_key(transport_key->netkey_index, transport_key->appkey_index, transport_key->aid, transport_key->key);
-
-    uint32_t netkey_and_appkey_index = (transport_key->appkey_index << 12) | transport_key->netkey_index;
-    config_appkey_status(NULL,  mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_SUCCESS);
-
-    mesh_access_message_processed(access_pdu_in_process);
 }
 
 static void config_appkey_update_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
@@ -777,8 +767,14 @@ static void config_appkey_update_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
         return;
     }
 
+    // TODO: Don't create new key. We create a new app_key becaue key refresh is not implemented yet, by adding a new one, both are available
+
     // create app key
-    mesh_transport_key_t * app_key = btstack_memory_mesh_transport_key_get();
+    mesh_transport_key_t * app_key = NULL;
+    uint16_t internal_index = mesh_transport_key_get_free_index();
+    if (internal_index > 0){
+        app_key = btstack_memory_mesh_transport_key_get();
+    }    
     if (app_key == NULL) {
         config_appkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES);
         mesh_access_message_processed(pdu);
@@ -786,6 +782,7 @@ static void config_appkey_update_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
     }
 
     // store data
+    app_key->internal_index = internal_index;
     app_key->appkey_index = appkey_index;
     app_key->netkey_index = netkey_index;
     app_key->key_refresh  = 1;
@@ -816,8 +813,9 @@ static void config_appkey_delete_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
     // check if appkey already exists
     mesh_transport_key_t * transport_key = mesh_transport_key_get(appkey_index);
     if (transport_key){
+        mesh_delete_app_key(transport_key->internal_index);
         mesh_transport_key_remove(transport_key);
-        mesh_delete_app_key(appkey_index);
+        btstack_memory_mesh_transport_key_free(transport_key);
     }
     config_appkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_SUCCESS);
     mesh_access_message_processed(pdu);

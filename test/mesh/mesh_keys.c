@@ -42,7 +42,7 @@
 #include "mesh_keys.h"
 #include "btstack_util.h"
 #include "btstack_memory.h"
-
+#include "btstack_config.h"
 
 static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len){
     printf("%-20s ", name);
@@ -121,19 +121,38 @@ mesh_network_key_t * mesh_network_key_nid_iterator_get_next(mesh_network_key_ite
 static mesh_transport_key_t   mesh_transport_device_key;
 static btstack_linked_list_t  application_keys;
 
+static uint8_t mesh_transport_key_used[MAX_NR_MESH_TRANSPORT_KEYS];
+
 void mesh_transport_set_device_key(const uint8_t * device_key){
     mesh_transport_device_key.appkey_index = MESH_DEVICE_KEY_INDEX;
     mesh_transport_device_key.aid   = 0;
     mesh_transport_device_key.akf   = 0;
     mesh_transport_device_key.netkey_index = 0; // unused
     memcpy(mesh_transport_device_key.key, device_key, 16);
+
+    // use internal slot #0
+    mesh_transport_device_key.internal_index = 0;
+    mesh_transport_key_used[0] = 1;
+}
+
+uint16_t mesh_transport_key_get_free_index(void){
+    // find empty slot, skip slot #0 reserved for device key
+    uint16_t i;
+    for (i=1;i < MAX_NR_MESH_TRANSPORT_KEYS ; i++){
+        if (mesh_transport_key_used[i] == 0){
+            return i;
+        }
+    }
+    return 0;
 }
 
 void mesh_transport_key_add(mesh_transport_key_t * transport_key){
+    mesh_transport_key_used[transport_key->internal_index] = 1;
     btstack_linked_list_add_tail(&application_keys, (btstack_linked_item_t *) transport_key);
 }
 
 int mesh_transport_key_remove(mesh_transport_key_t * transport_key){
+    mesh_transport_key_used[transport_key->internal_index] = 0;
     return btstack_linked_list_remove(&application_keys, (btstack_linked_item_t *) transport_key);
 }
 

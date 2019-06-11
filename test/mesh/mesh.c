@@ -569,6 +569,7 @@ static void load_pts_app_key(void){
     // PTS app key
     btstack_parse_hex("3216D1509884B533248541792B877F98", 16, pts_application_key.key);
     pts_application_key.aid = 0x38;
+    pts_application_key.internal_index = mesh_transport_key_get_free_index();
     mesh_transport_key_add(&pts_application_key);
     printf("PTS Application Key (AID %02x): ", 0x38);
     printf_hexdump(pts_application_key.key, 16);

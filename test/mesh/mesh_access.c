@@ -657,8 +657,8 @@ int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address
     return 0;
 }
 
-static uint32_t mesh_transport_key_tag_for_appkey_index(uint16_t appkey_index){
-    return ((uint32_t) 'M' << 24) | ((uint32_t) 'A' << 16) | ((uint32_t) appkey_index);
+static uint32_t mesh_transport_key_tag_for_internal_index(uint16_t internal_index){
+    return ((uint32_t) 'M' << 24) | ((uint32_t) 'A' << 16) | ((uint32_t) internal_index);
 }
 
 // Mesh App Keys
@@ -670,18 +670,13 @@ typedef struct {
     uint8_t  key[16];
 } mesh_persistent_app_key_t;
 
-#define MESH_APPKEY_INDEX_MAX (16)
-
-void mesh_store_app_key(uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, const uint8_t * application_key){
+void mesh_store_app_key(uint16_t internal_index, uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, const uint8_t * application_key){
     mesh_access_setup_tlv();
 
-    if (appkey_index >= MESH_APPKEY_INDEX_MAX){
-        printf("Warning: AppKey with AppKey Index %x (>= %u) are not persisted\n", appkey_index, MESH_APPKEY_INDEX_MAX);
-    }
     mesh_persistent_app_key_t data;
-    printf("Store AppKey: AppKey Index 0x%06x, AID %02x: ", appkey_index, aid);
+    printf("Store AppKey: internal index 0x%x, AppKey Index 0x%06x, AID %02x: ", internal_index, appkey_index, aid);
     printf_hexdump(application_key, 16);
-    uint32_t tag = mesh_transport_key_tag_for_appkey_index(appkey_index);
+    uint32_t tag = mesh_transport_key_tag_for_internal_index(internal_index);
     data.netkey_index = netkey_index;
     data.appkey_index = appkey_index;
     data.aid = aid;
@@ -689,43 +684,44 @@ void mesh_store_app_key(uint16_t netkey_index, uint16_t appkey_index, uint8_t ai
     btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
 }
 
-void mesh_delete_app_key(uint16_t appkey_index){
+void mesh_delete_app_key(uint16_t internal_index){
     mesh_access_setup_tlv();
 
-    uint32_t tag = mesh_transport_key_tag_for_appkey_index(appkey_index);
+    uint32_t tag = mesh_transport_key_tag_for_internal_index(internal_index);
     btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, tag);
 }
 
 void mesh_load_app_keys(void){
     mesh_access_setup_tlv();
     printf("Load App Keys\n");
-    uint16_t appkey_index;
-    for (appkey_index = 0; appkey_index < MESH_APPKEY_INDEX_MAX; appkey_index++){
+    uint16_t internal_index;
+    for (internal_index = 0; internal_index < MAX_NR_MESH_TRANSPORT_KEYS; internal_index++){
         mesh_persistent_app_key_t data;
-        uint32_t tag = mesh_transport_key_tag_for_appkey_index(appkey_index);
+        uint32_t tag = mesh_transport_key_tag_for_internal_index(internal_index);
         int app_key_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
         if (app_key_len == 0) return;
         
         mesh_transport_key_t * key = btstack_memory_mesh_transport_key_get();
         if (key == NULL) return;
 
+        key->internal_index = internal_index;
         key->appkey_index = data.appkey_index;
         key->netkey_index = data.netkey_index;
         key->aid          = data.aid;
         key->akf          = 1;
         memcpy(key->key, data.key, 16);
         mesh_transport_key_add(key);
-        printf("Load AppKey: AppKey Index 0x%06x, AID %02x: ", key->appkey_index, key->aid);
+        printf("Load AppKey: internal index 0x%x, AppKey Index 0x%06x, , AID %02x: ", key->internal_index, key->appkey_index, key->aid);
         printf_hexdump(key->key, 16);
     }
 }
 
 void mesh_delete_app_keys(void){
     printf("Delete App Keys\n");
-    // TODO: use TLV iterator
-    uint16_t appkey_index;
-    for (appkey_index = 0; appkey_index < MESH_APPKEY_INDEX_MAX; appkey_index++){
-        mesh_delete_app_key(appkey_index);
+    
+    uint16_t internal_index;
+    for (internal_index = 0; internal_index < MAX_NR_MESH_TRANSPORT_KEYS; internal_index++){
+        mesh_delete_app_key(internal_index);
     }
 }
 

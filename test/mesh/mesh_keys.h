@@ -100,6 +100,9 @@ typedef struct {
 typedef struct {
     btstack_linked_item_t item;
 
+    // internal index [0..MAX_NR_MESH_TRANSPORT_KEYS-1]
+    uint16_t internal_index;
+
     // netkey_index of subnet this app key is used with
     uint16_t netkey_index;
 
@@ -211,6 +214,13 @@ mesh_network_key_t * mesh_network_key_nid_iterator_get_next(mesh_network_key_ite
  * @param device_key
  */
 void mesh_transport_set_device_key(const uint8_t * device_key);
+
+/**
+ * @brief Get internal index of free transport key storage entry
+ * @note index 0 is reserved for device key
+ * @returns index or 0u if none found
+ */
+uint16_t mesh_transport_key_get_free_index(void);
 
 /**
  * @brief Add application key to list
