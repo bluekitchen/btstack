@@ -125,6 +125,9 @@ int mesh_model_is_bluetooth_sig(uint32_t model_identifier){
     return mesh_model_get_vendor_id(model_identifier) == BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC;
 }
 
+mesh_model_t * mesh_model_get_configuration_server(void){
+    return mesh_model_get_by_identifier(primary_element, mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_CONFIGURATION_SERVER));
+}
 
 void mesh_element_add_model(mesh_element_t * element, mesh_model_t * mesh_model){
     if (mesh_model_is_bluetooth_sig(mesh_model->model_identifier)){

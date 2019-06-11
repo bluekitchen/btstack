@@ -186,6 +186,8 @@ uint16_t mesh_model_get_model_id(uint32_t model_identifier);
 
 uint32_t mesh_model_get_model_identifier(uint16_t vendor_id, uint16_t model_id);
 
+mesh_model_t * mesh_model_get_configuration_server(void);
+
 // Mesh PDU Getter
 uint16_t mesh_pdu_src(mesh_pdu_t * pdu);
 uint16_t mesh_pdu_dst(mesh_pdu_t * pdu);
