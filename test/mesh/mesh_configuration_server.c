@@ -919,6 +919,75 @@ static void mesh_virtual_address_increase_refcount(mesh_virtual_address_t * virt
 
 // Configuration Model Subscriptions (helper)
 
+// Model to Appkey List
+
+static uint32_t mesh_model_subscription_tag_for_index(uint16_t internal_model_id){
+    return ((uint32_t) 'M' << 24) | ((uint32_t) 'S' << 16) | ((uint32_t) internal_model_id);
+}
+
+static void mesh_model_load_subscriptions(mesh_model_t * mesh_model){
+    mesh_configuration_server_setup_tlv();
+    uint32_t tag = mesh_model_subscription_tag_for_index(mesh_model->mid);
+    btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &mesh_model->subscriptions, sizeof(mesh_model->subscriptions));
+    // update ref count
+
+    // decrease ref counts for current virtual subscriptions
+    uint16_t i;
+    for (i = 0; i <= MAX_NR_MESH_SUBSCRIPTION_PER_MODEL ; i++){
+        uint16_t src = mesh_model->subscriptions[i];
+        if (mesh_network_address_virtual(src)){
+            mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_pseudo_dst(src);
+            if (virtual_address == NULL) continue;
+            mesh_virtual_address_increase_refcount(virtual_address);
+        }
+    }
+}
+
+static void mesh_model_store_subscriptions(mesh_model_t * model){
+    mesh_configuration_server_setup_tlv();
+    uint32_t tag = mesh_model_subscription_tag_for_index(model->mid);
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &model->subscriptions, sizeof(model->subscriptions));
+}
+
+static void mesh_model_delete_subscriptions(mesh_model_t * model){
+    mesh_configuration_server_setup_tlv();
+    uint32_t tag = mesh_model_subscription_tag_for_index(model->mid);
+    btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, tag);
+}
+
+void mesh_load_subscriptions(void){
+    printf("Load Model Subscription Lists\n");
+    // iterate over elements and models
+    mesh_element_iterator_t element_it;
+    mesh_element_iterator_init(&element_it);
+    while (mesh_element_iterator_has_next(&element_it)){
+        mesh_element_t * element = mesh_element_iterator_next(&element_it);
+        mesh_model_iterator_t model_it;
+        mesh_model_iterator_init(&model_it, element);
+        while (mesh_model_iterator_has_next(&model_it)){
+            mesh_model_t * model = mesh_model_iterator_next(&model_it);
+            mesh_model_load_subscriptions(model);
+        }
+    }
+}
+
+void mesh_delete_subscriptions(void){
+    printf("Delete Model Subscription Lists\n");
+    mesh_configuration_server_setup_tlv();
+    // iterate over elements and models
+    mesh_element_iterator_t element_it;
+    mesh_element_iterator_init(&element_it);
+    while (mesh_element_iterator_has_next(&element_it)){
+        mesh_element_t * element = mesh_element_iterator_next(&element_it);
+        mesh_model_iterator_t model_it;
+        mesh_model_iterator_init(&model_it, element);
+        while (mesh_model_iterator_has_next(&model_it)){
+            mesh_model_t * model = mesh_model_iterator_next(&model_it);
+            mesh_model_delete_subscriptions(model);
+        }
+    }
+}
+
 static uint8_t mesh_model_add_subscription(mesh_model_t * mesh_model, uint16_t address){
     int i;
     for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
@@ -1028,6 +1097,9 @@ static void config_model_subscription_add_handler(mesh_model_t *mesh_model, mesh
     if (target_model != NULL){
         if (mesh_network_address_group(address) && !mesh_network_address_all_nodes(address)){
             status = mesh_model_add_subscription(target_model, address);
+            if (status == MESH_FOUNDATION_STATUS_SUCCESS){
+                mesh_model_store_subscriptions(target_model);
+            }
         } else {
             status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
         }
@@ -1057,6 +1129,7 @@ static void config_model_subscription_virtual_address_add_hash(void *arg){
             status = mesh_model_add_subscription(target_model, pseudo_dst);
             if (status == MESH_FOUNDATION_STATUS_SUCCESS){
                 mesh_virtual_address_increase_refcount(virtual_address);
+                mesh_model_store_subscriptions(target_model);
             }
         }
     }
@@ -1106,7 +1179,8 @@ static void config_model_subscription_overwrite_handler(mesh_model_t *mesh_model
         if (mesh_network_address_group(address) && !mesh_network_address_all_nodes(address)){
             mesh_subcription_decrease_virtual_address_ref_count(target_model);
             mesh_model_delete_all_subscriptions(mesh_model);
-            status = mesh_model_add_subscription(mesh_model, address);
+            mesh_model_add_subscription(mesh_model, address);
+            mesh_model_store_subscriptions(target_model);
         } else {
             status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
         } 
@@ -1144,6 +1218,8 @@ static void config_model_subscription_virtual_address_overwrite_hash(void *arg){
         // add new subscription (successfull if MAX_NR_MESH_SUBSCRIPTION_PER_MODEL > 0)
         pseudo_dst = virtual_address->pseudo_dst;
         mesh_model_add_subscription(target_model, pseudo_dst);
+
+        mesh_model_store_subscriptions(target_model);
     }
 
     config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), status, model_subscription_element_address, pseudo_dst, target_model->model_identifier);
@@ -1190,6 +1266,7 @@ static void config_model_subscription_delete_handler(mesh_model_t *mesh_model, m
     if (target_model != NULL){
         if (mesh_network_address_group(address) && !mesh_network_address_all_nodes(address)){
             mesh_model_delete_subscription(target_model, address);
+            mesh_model_store_subscriptions(target_model);
         } else {
             status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
         }
@@ -1214,6 +1291,7 @@ static void config_model_subscription_virtual_address_delete_handler(mesh_model_
     if ((target_model != NULL) && (virtual_address != NULL) && mesh_model_contains_subscription(target_model, virtual_address->pseudo_dst)){
         mesh_virtual_address_decrease_refcount(virtual_address);
         mesh_model_delete_subscription(target_model, virtual_address->pseudo_dst);
+        mesh_model_store_subscriptions(target_model);
      }   
 
     config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, virtual_address->hash, model_identifier);
@@ -1233,6 +1311,7 @@ static void config_model_subscription_delete_all_handler(mesh_model_t *mesh_mode
     if (target_model != NULL){
         mesh_subcription_decrease_virtual_address_ref_count(target_model);
         mesh_model_delete_all_subscriptions(target_model);
+        mesh_model_store_subscriptions(target_model);
     }   
 
     config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, MESH_ADDRESS_UNSASSIGNED, model_identifier);

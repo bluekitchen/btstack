@@ -715,13 +715,13 @@ static uint32_t mesh_model_tag_for_index(uint16_t internal_model_id){
 static void mesh_load_appkey_list(mesh_model_t * model){
     mesh_access_setup_tlv();
     uint32_t tag = mesh_model_tag_for_index(model->mid);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &model->appkey_indices, sizeof(model->appkey_indices));
+    btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &model->appkey_indices, sizeof(model->appkey_indices));
 }
 
 static void mesh_store_appkey_list(mesh_model_t * model){
     mesh_access_setup_tlv();
     uint32_t tag = mesh_model_tag_for_index(model->mid);
-    btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &model->appkey_indices, sizeof(model->appkey_indices));
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &model->appkey_indices, sizeof(model->appkey_indices));
 }
 
 static void mesh_delete_appkey_list(mesh_model_t * model){

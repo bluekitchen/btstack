@@ -400,7 +400,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     mesh_load_appkey_lists();
                     // load virtual addresses
                     mesh_load_virtual_addresses();
-                    
+                    // load model subscriptions
+                    mesh_load_subscriptions();
+
                     // setup scanning
                     gap_set_scan_parameters(0, 0x300, 0x300);
                     gap_start_scan();
@@ -777,7 +779,8 @@ static void stdin_process(char cmd){
             mesh_delete_app_keys();
             mesh_delete_appkey_lists();
             mesh_delete_virtual_addresses();
-            printf("Provisioning data, app keys, model to app key lists, virtual addresses deleted\n");
+            mesh_delete_subscriptions();
+            printf("Provisioning data, app keys, model to app key lists, virtual addresses, model subscriptions deleted\n");
             setup_advertising_unprovisioned();
             break;
         case 'p':
