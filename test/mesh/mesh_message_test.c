@@ -136,6 +136,12 @@ static void add_network_key_from_provisioning_data(const mesh_provisioning_data_
     // get single instance
     memset(network_key, 0, sizeof(mesh_network_key_t));
 
+    // NID
+    network_key->nid = provisioning_data->nid;
+
+    // PrivacyKey
+    memcpy(network_key->privacy_key, provisioning_data->privacy_key, 16);
+
     // EncryptionKey
     memcpy(network_key->encryption_key, provisioning_data->encryption_key, 16);
 
