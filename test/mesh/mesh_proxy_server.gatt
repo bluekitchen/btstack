@@ -1,4 +1,0 @@
-PRIMARY_SERVICE, GAP_SERVICE
-CHARACTERISTIC, GAP_DEVICE_NAME, READ, "Mesh Proxy Test"
-
-#import <mesh_proxy_service.gatt>

@@ -71,19 +71,8 @@ provisioning_device_test: provisioning_device_test.cpp uECC.o mesh_crypto.o prov
 provisioning_provisioner_test: provisioning_provisioner_test.cpp uECC.o mesh_crypto.o provisioning_provisioner.o btstack_crypto.o btstack_util.o btstack_linked_list.o mock.o rijndael.o hci_cmd.o hci_dump.o
 	${CC_UNIT} ${CFLAGS} ${LDFLAGS} $^ -lCppUTest -lCppUTestExt -o $@	
 
-mesh_provisioning_device.h: mesh_provisioning_device.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
-	
-mesh_provisioning_device: mesh_provisioning_device.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} pb_adv.o pb_gatt.o mesh_crypto.o provisioning_device.o  mesh_provisioning_service_server.o mesh_provisioning_device.o
-	${CC} $(filter-out mesh_provisioning_device.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-mesh_proxy_server.h: mesh_proxy_server.gatt
-	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
-	
-mesh_proxy_server: mesh_proxy_server.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} mesh_peer.o mesh_lower_transport.o mesh_transport.o mesh_virtual_addresses.o  mesh_keys.o  mesh_network.o mesh_crypto.o  mesh_proxy_server.c
-	${CC} $(filter-out mesh_proxy_server.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
-
-EXAMPLES = mesh provisioner  sniffer provisioning_device_test provisioning_provisioner_test mesh_provisioning_device mesh_proxy_server mesh_message_test
+EXAMPLES = mesh provisioner sniffer provisioning_device_test provisioning_provisioner_test mesh_message_test
 
 all: ${EXAMPLES}
 
