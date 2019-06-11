@@ -39,23 +39,24 @@
 #define __MESH_VIRTUAL_ADDRESSES_H
 
 #include <stdint.h>
+#include "btstack_linked_list.h"
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-#include <stdint.h>
-
 typedef struct {
+	btstack_linked_item_t item;
     uint16_t pseudo_dst;
     uint16_t hash;
     uint8_t  label_uuid[16];
 } mesh_virtual_address_t;
 
 typedef struct {
-    uint8_t   first;
-    uint16_t  hash;
+	btstack_linked_list_iterator_t it;
+	uint16_t hash;
+	mesh_virtual_address_t * address;
 } mesh_virtual_address_iterator_t;
 
 // virtual address management

@@ -44,26 +44,17 @@
 #include "btstack_memory.h"
 #include "mesh_virtual_addresses.h"
 
-static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len){
-    printf("%-20s ", name);
-    printf_hexdump(data, len);
-}
-// static void mesh_print_x(const char * name, uint32_t value){
-//     printf("%20s: 0x%x", name, (int) value);
-// }
-
 // virtual address management
 
-static mesh_virtual_address_t test_virtual_address;
+static btstack_linked_list_t mesh_virtual_addresses;
 
 void mesh_virtual_address_add(mesh_virtual_address_t * virtual_address){
-    // printf("TODO: implement mesh_virtual_address_add\n");
     virtual_address->pseudo_dst = 0x8000;
-    memcpy(&test_virtual_address, virtual_address, sizeof(mesh_virtual_address_t));
+    btstack_linked_list_add(&mesh_virtual_addresses, (void *) virtual_address);
 }
 
 void mesh_virtual_address_remove(mesh_virtual_address_t * virtual_address){
-    printf("TODO: implement mesh_virtual_address_remove\n");
+    btstack_linked_list_remove(&mesh_virtual_addresses, (void *) virtual_address);
 }
 
 // helper
@@ -79,32 +70,45 @@ mesh_virtual_address_t * mesh_virtual_address_register(uint8_t * label_uuid, uin
 }
 
 mesh_virtual_address_t * mesh_virtual_address_for_pseudo_dst(uint16_t pseudo_dst){
-    if (test_virtual_address.pseudo_dst == pseudo_dst){
-        return &test_virtual_address;
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &mesh_virtual_addresses);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        mesh_virtual_address_t * item = (mesh_virtual_address_t *) btstack_linked_list_iterator_next(&it);
+        if (item->pseudo_dst == pseudo_dst) return item;
     }
     return NULL;
 }
 
 mesh_virtual_address_t * mesh_virtual_address_for_label_uuid(uint8_t * label_uuid){
-    if (memcmp(label_uuid, test_virtual_address.label_uuid, 16) == 0){
-        return &test_virtual_address;
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &mesh_virtual_addresses);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        mesh_virtual_address_t * item = (mesh_virtual_address_t *) btstack_linked_list_iterator_next(&it);
+        if (memcmp(item->label_uuid, label_uuid, 16) == 0) return item;
     }
     return NULL;
 }
 // virtual address iterator
 
 void mesh_virtual_address_iterator_init(mesh_virtual_address_iterator_t * it, uint16_t hash){
-    it->first = 1;
+    btstack_linked_list_iterator_init(&it->it, &mesh_virtual_addresses);
     it->hash = hash;
+    it->address = NULL;
 }
 
 int mesh_virtual_address_iterator_has_more(mesh_virtual_address_iterator_t * it){
-    if (!it->first) return 0;
-    if (it->hash != test_virtual_address.hash) return 0;
-    return 1;
+    // find next matching key
+    while (1){
+        printf("check %p\n", it->address);
+        if (it->address && it->address->hash == it->hash) return 1;
+        if (!btstack_linked_list_iterator_has_next(&it->it)) break;
+        it->address = (mesh_virtual_address_t *) btstack_linked_list_iterator_next(&it->it);
+    }
+    return 0;
 }
 
 const mesh_virtual_address_t * mesh_virtual_address_iterator_get_next(mesh_virtual_address_iterator_t * it){
-    it->first = 0;
-    return &test_virtual_address;
+    mesh_virtual_address_t * address = it->address;
+    it->address = NULL;
+    return address;
 }
