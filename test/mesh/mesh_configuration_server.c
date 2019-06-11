@@ -1063,19 +1063,18 @@ static void config_model_subscription_virtual_address_overwrite_hash(void *arg){
         status = MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
     } else {
 
-        // decrease ref counts for virtual addresses
+        // increase refcount first to avoid flash delete + add in a row
+        mesh_virtual_address_increase_refcount(virtual_address);
+
+        // decrease ref counts for virtual addresses in subscription
         mesh_subcription_decrease_virtual_address_ref_count(target_model);
 
         // clear subscriptions
         mesh_model_delete_all_subscriptions(target_model);
 
-        // add new subscription
+        // add new subscription (successfull if MAX_NR_MESH_SUBSCRIPTION_PER_MODEL > 0)
         pseudo_dst = virtual_address->pseudo_dst;
-        virtual_address->ref_count++;
-        status = mesh_model_add_subscription(target_model, pseudo_dst);
-        if (status == MESH_FOUNDATION_STATUS_SUCCESS){
-            mesh_virtual_address_increase_refcount(virtual_address);
-        }
+        mesh_model_add_subscription(target_model, pseudo_dst);
     }
 
     config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), status, model_subscription_element_address, pseudo_dst, target_model->model_identifier);
