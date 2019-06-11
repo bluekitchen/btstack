@@ -689,27 +689,6 @@ void mesh_store_app_key(uint16_t netkey_index, uint16_t appkey_index, uint8_t ai
     btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
 }
 
-void mesh_load_app_key(uint16_t appkey_index){
-    mesh_access_setup_tlv();
-
-    mesh_persistent_app_key_t data;
-    uint32_t tag = mesh_transport_key_tag_for_appkey_index(appkey_index);
-    int app_key_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
-    if (app_key_len == 0) return;
-    
-    mesh_transport_key_t * key = btstack_memory_mesh_transport_key_get();
-    if (key == NULL) return;
-
-    key->appkey_index = data.appkey_index;
-    key->netkey_index = data.netkey_index;
-    key->aid          = data.aid;
-    key->akf          = 1;
-    memcpy(key->key, data.key, 16);
-    mesh_transport_key_add(key);
-    printf("Load AppKey: AppKey Index 0x%06x, AID %02x: ", key->appkey_index, key->aid);
-    printf_hexdump(key->key, 16);
-}
-
 void mesh_delete_app_key(uint16_t appkey_index){
     mesh_access_setup_tlv();
 
@@ -718,11 +697,26 @@ void mesh_delete_app_key(uint16_t appkey_index){
 }
 
 void mesh_load_app_keys(void){
+    mesh_access_setup_tlv();
     printf("Load App Keys\n");
-    // TODO: use TLV iterator
     uint16_t appkey_index;
     for (appkey_index = 0; appkey_index < MESH_APPKEY_INDEX_MAX; appkey_index++){
-        mesh_load_app_key(appkey_index);
+        mesh_persistent_app_key_t data;
+        uint32_t tag = mesh_transport_key_tag_for_appkey_index(appkey_index);
+        int app_key_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+        if (app_key_len == 0) return;
+        
+        mesh_transport_key_t * key = btstack_memory_mesh_transport_key_get();
+        if (key == NULL) return;
+
+        key->appkey_index = data.appkey_index;
+        key->netkey_index = data.netkey_index;
+        key->aid          = data.aid;
+        key->akf          = 1;
+        memcpy(key->key, data.key, 16);
+        mesh_transport_key_add(key);
+        printf("Load AppKey: AppKey Index 0x%06x, AID %02x: ", key->appkey_index, key->aid);
+        printf_hexdump(key->key, 16);
     }
 }
 
