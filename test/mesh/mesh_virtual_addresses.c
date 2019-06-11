@@ -47,22 +47,37 @@
 // virtual address management
 
 static btstack_linked_list_t mesh_virtual_addresses;
+static uint8_t mesh_virtual_addresses_used[MAX_NR_MESH_VIRTUAL_ADDRESSES];
+
+uint16_t mesh_virtual_addresses_get_free_pseudo_dst(void){
+    uint16_t i;
+    for (i=0;i < MAX_NR_MESH_VIRTUAL_ADDRESSES ; i++){
+        if (mesh_virtual_addresses_used[i] == 0){
+            return 0x8000+i;
+        }
+    }
+    return MESH_ADDRESS_UNSASSIGNED;
+}
 
 void mesh_virtual_address_add(mesh_virtual_address_t * virtual_address){
-    virtual_address->pseudo_dst = 0x8000;
+    mesh_virtual_addresses_used[virtual_address->pseudo_dst-0x8000] = 1;
     btstack_linked_list_add(&mesh_virtual_addresses, (void *) virtual_address);
 }
 
 void mesh_virtual_address_remove(mesh_virtual_address_t * virtual_address){
     btstack_linked_list_remove(&mesh_virtual_addresses, (void *) virtual_address);
+    mesh_virtual_addresses_used[virtual_address->pseudo_dst-0x8000] = 0;
 }
 
 // helper
 mesh_virtual_address_t * mesh_virtual_address_register(uint8_t * label_uuid, uint16_t hash){
+    uint16_t pseudo_dst = mesh_virtual_addresses_get_free_pseudo_dst();
+    if (pseudo_dst == 0) return NULL;
     mesh_virtual_address_t * virtual_address = btstack_memory_mesh_virtual_address_get();
     if (virtual_address == NULL) return NULL;
 
     virtual_address->hash = hash;
+    virtual_address->pseudo_dst = pseudo_dst;
     memcpy(virtual_address->label_uuid, label_uuid, 16);
     mesh_virtual_address_add(virtual_address);
 

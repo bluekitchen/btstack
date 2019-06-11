@@ -886,12 +886,16 @@ static void config_model_subscription_virtual_address_add_hash(void *arg){
     mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_label_uuid(model_subscription_label_uuid);
     if (virtual_address == NULL){
         // add virtual address
-        virtual_address = btstack_memory_mesh_virtual_address_get();
-        if (virtual_address != NULL){
-            virtual_address->hash = model_subscription_hash;
-            memcpy(virtual_address->label_uuid, model_subscription_label_uuid, 16);
-            mesh_virtual_address_add(virtual_address);
-        }
+        uint16_t pseudo_dst = mesh_virtual_addresses_get_free_pseudo_dst();
+        if (pseudo_dst != MESH_ADDRESS_UNSASSIGNED){
+            virtual_address = btstack_memory_mesh_virtual_address_get();
+            if (virtual_address != NULL){
+                virtual_address->hash = model_subscription_hash;
+                virtual_address->pseudo_dst = pseudo_dst;
+                memcpy(virtual_address->label_uuid, model_subscription_label_uuid, 16);
+                mesh_virtual_address_add(virtual_address);
+            }
+        }        
     }
 
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
@@ -944,12 +948,16 @@ static void config_model_subscription_virtual_address_overwrite_hash(void *arg){
     mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_label_uuid(model_subscription_label_uuid);
     if (virtual_address == NULL){
         // add virtual address
-        virtual_address = btstack_memory_mesh_virtual_address_get();
-        if (virtual_address != NULL){
-            virtual_address->hash = model_subscription_hash;
-            memcpy(virtual_address->label_uuid, model_subscription_label_uuid, 16);
-            mesh_virtual_address_add(virtual_address);
-        }
+        uint16_t pseudo_dst = mesh_virtual_addresses_get_free_pseudo_dst();
+        if (pseudo_dst != MESH_ADDRESS_UNSASSIGNED){
+            virtual_address = btstack_memory_mesh_virtual_address_get();
+            if (virtual_address != NULL){
+                virtual_address->hash = model_subscription_hash;
+                virtual_address->pseudo_dst = pseudo_dst;
+                memcpy(virtual_address->label_uuid, model_subscription_label_uuid, 16);
+                mesh_virtual_address_add(virtual_address);
+            }
+        }        
     }
 
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;

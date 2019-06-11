@@ -61,6 +61,8 @@ typedef struct {
 
 // virtual address management
 
+uint16_t mesh_virtual_addresses_get_free_pseudo_dst(void);
+
 void mesh_virtual_address_add(mesh_virtual_address_t * virtual_address);
 
 void mesh_virtual_address_remove(mesh_virtual_address_t * virtual_address);
