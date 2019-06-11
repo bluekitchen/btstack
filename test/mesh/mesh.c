@@ -398,6 +398,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 #if defined(ENABLE_MESH_ADV_BEARER) || defined(ENABLE_MESH_PB_ADV)
                     // load model to appkey bindings
                     mesh_load_appkey_lists();
+                    // load virtual addresses
+                    mesh_load_virtual_addresses();
                     
                     // setup scanning
                     gap_set_scan_parameters(0, 0x300, 0x300);
@@ -774,7 +776,8 @@ static void stdin_process(char cmd){
             btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, 'PROV');
             mesh_delete_app_keys();
             mesh_delete_appkey_lists();
-            printf("Provisioning data, app keys, model to app key lists deleted\n");
+            mesh_delete_virtual_addresses();
+            printf("Provisioning data, app keys, model to app key lists, virtual addresses deleted\n");
             setup_advertising_unprovisioned();
             break;
         case 'p':

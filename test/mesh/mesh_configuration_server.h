@@ -48,6 +48,10 @@ extern "C"
 
 const mesh_operation_t * mesh_configuration_server_get_operations(void);
 
+void mesh_load_virtual_addresses(void);
+
+void mesh_delete_virtual_addresses(void);
+
 // PTS Testing
 void config_nekey_list_set_max(uint16_t max);
 
