@@ -48,6 +48,9 @@ extern "C"
 
 const mesh_operation_t * mesh_configuration_server_get_operations(void);
 
+// PTS Testing
+void config_nekey_list_set_max(uint16_t max);
+
 #ifdef __cplusplus
 } /* end of extern "C" */
 #endif

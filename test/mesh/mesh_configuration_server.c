@@ -50,6 +50,7 @@
 #include "btstack_memory.h"
 #include "ble/mesh/mesh_crypto.h"
 #include "mesh_virtual_addresses.h"
+#include "btstack_debug.h"
 
 // Foundatiopn Message
 
@@ -439,7 +440,7 @@ static void config_model_network_transmit_set_handler(mesh_model_t * mesh_model,
 
 static int config_netkey_list_max = 0;
 
-static void config_nekey_list_set_max(uint16_t max){
+void config_nekey_list_set_max(uint16_t max){
     config_netkey_list_max = max;
 }
 
