@@ -831,6 +831,106 @@ static void config_appkey_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     mesh_access_message_processed(pdu);
 }
 
+// Configuration Model Subscriptions (Virtual Address Helper)
+
+static void mesh_virtual_address_decrease_refcount(mesh_virtual_address_t * virtual_address){
+    virtual_address->ref_count--;
+    // TODO: check if virtual address can be freed
+}
+
+static void mesh_virtual_address_increase_refcount(mesh_virtual_address_t * virtual_address){
+    virtual_address->ref_count++;
+    // TODO: check if virtual address need to be stored in TLV
+}
+
+// Configuration Model Subscriptions (helper)
+
+static uint8_t mesh_model_add_subscription(mesh_model_t * mesh_model, uint16_t address){
+    int i;
+    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
+        if (mesh_model->subscriptions[i] == address) return MESH_FOUNDATION_STATUS_SUCCESS;
+    }
+    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
+        if (mesh_model->subscriptions[i] == MESH_ADDRESS_UNSASSIGNED) {
+            mesh_model->subscriptions[i] = address;
+            return MESH_FOUNDATION_STATUS_SUCCESS;
+        }
+    }
+    return MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
+}
+
+static void mesh_model_delete_subscription(mesh_model_t * mesh_model, uint16_t address){
+    int i;
+    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
+        if (mesh_model->subscriptions[i] == address) {
+            mesh_model->subscriptions[i] = MESH_ADDRESS_UNSASSIGNED;
+        }
+    }
+}
+
+static void mesh_model_delete_all_subscriptions(mesh_model_t * mesh_model){
+    int i;
+    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
+        mesh_model->subscriptions[i] = MESH_ADDRESS_UNSASSIGNED;
+    }
+}
+
+static void mesh_subcription_decrease_virtual_address_ref_count(mesh_model_t *mesh_model){
+    // decrease ref counts for current virtual subscriptions
+    uint16_t i;
+    for (i = 0; i <= MAX_NR_MESH_SUBSCRIPTION_PER_MODEL ; i++){
+        uint16_t src = mesh_model->subscriptions[i];
+        if (mesh_network_address_virtual(src)){
+            mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_pseudo_dst(src);
+            if (virtual_address == NULL) continue;
+            mesh_virtual_address_decrease_refcount(virtual_address);
+        }
+    }
+}
+
+// Configuration Model Subscriptions (messages)
+
+static void config_model_subscription_list_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status, uint16_t element_address, uint32_t model_identifier, mesh_model_t * target_model){
+    uint16_t opcode;
+    if (mesh_model_is_bluetooth_sig(model_identifier)){
+        opcode = MESH_FOUNDATION_OPERATION_SIG_MODEL_SUBSCRIPTION_LIST;
+    } else {
+        opcode = MESH_FOUNDATION_OPERATION_VENDOR_MODEL_SUBSCRIPTION_LIST;
+    }
+
+    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(opcode);
+    if (!transport_pdu) return;
+
+    // setup segmented message
+    mesh_access_transport_add_uint8(transport_pdu, status);
+    mesh_access_transport_add_uint16(transport_pdu, element_address);
+    mesh_access_transport_add_model_identifier(transport_pdu, model_identifier);
+
+    if (target_model != NULL){
+        int i;
+        for (i = 0; i < MAX_NR_MESH_SUBSCRIPTION_PER_MODEL; i++){
+            if (target_model->subscriptions[i] == MESH_ADDRESS_UNSASSIGNED) continue;
+            if (mesh_network_address_virtual(target_model->subscriptions[i])) continue;
+            mesh_access_transport_add_uint16(transport_pdu, target_model->subscriptions[i]);
+        }
+    }   
+    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+}
+
+static void config_model_subscription_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+
+    uint16_t element_address  = mesh_access_parser_get_u16(&parser);
+    uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
+
+    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
+    mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
+
+    config_model_subscription_list_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, model_identifier, target_model);
+    mesh_access_message_processed(pdu);
+}
+
 static void config_model_subscription_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status, uint16_t element_address, uint16_t address, uint32_t model_identifier){
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_config_model_subscription_status,
@@ -838,21 +938,6 @@ static void config_model_subscription_status(mesh_model_t * mesh_model, uint16_t
     if (!transport_pdu) return;
     // send as segmented access pdu
     config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
-}
-
-static mesh_model_t * mesh_access_model_for_address_and_model_identifier(uint16_t element_address, uint32_t model_identifier, uint8_t * status){
-    mesh_element_t * element = mesh_element_for_unicast_address(element_address);
-    if (element == NULL){
-        *status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
-        return NULL;
-    }
-    mesh_model_t * model = mesh_model_get_by_identifier(element, model_identifier);
-    if (model == NULL) {
-        *status = MESH_FOUNDATION_STATUS_INVALID_MODEL;
-    } else {
-        *status = MESH_FOUNDATION_STATUS_SUCCESS;
-    }
-    return model;
 }
 
 static void config_model_subscription_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
@@ -885,17 +970,7 @@ static void config_model_subscription_virtual_address_add_hash(void *arg){
     // add if not exists
     mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_label_uuid(model_subscription_label_uuid);
     if (virtual_address == NULL){
-        // add virtual address
-        uint16_t pseudo_dst = mesh_virtual_addresses_get_free_pseudo_dst();
-        if (pseudo_dst != MESH_ADDRESS_UNSASSIGNED){
-            virtual_address = btstack_memory_mesh_virtual_address_get();
-            if (virtual_address != NULL){
-                virtual_address->hash = model_subscription_hash;
-                virtual_address->pseudo_dst = pseudo_dst;
-                memcpy(virtual_address->label_uuid, model_subscription_label_uuid, 16);
-                mesh_virtual_address_add(virtual_address);
-            }
-        }        
+        virtual_address = mesh_virtual_address_register(model_subscription_label_uuid, model_subscription_hash);
     }
 
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
@@ -905,8 +980,10 @@ static void config_model_subscription_virtual_address_add_hash(void *arg){
     } else {
         pseudo_dst = virtual_address->pseudo_dst;
         if (!mesh_model_contains_subscription(target_model, pseudo_dst)){
-            virtual_address->ref_count++;
             status = mesh_model_add_subscription(target_model, pseudo_dst);
+            if (status == MESH_FOUNDATION_STATUS_SUCCESS){
+                mesh_virtual_address_increase_refcount(virtual_address);
+            }
         }
     }
 
@@ -940,19 +1017,29 @@ static void config_model_subscription_virtual_address_add_handler(mesh_model_t *
     mesh_virtual_address(&configuration_server_cmac_request, model_subscription_label_uuid, &model_subscription_hash, &config_model_subscription_virtual_address_add_hash, target_model);
 }
 
-static void mesh_subcription_decrease_virtual_address_ref_count(mesh_model_t *mesh_model){
-    // decrease ref counts for current virtual subscriptions
-    uint16_t i;
-    for (i = 0; i <= MAX_NR_MESH_SUBSCRIPTION_PER_MODEL ; i++){
-        uint16_t src = mesh_model->subscriptions[i];
-        if (mesh_network_address_virtual(src)){
-            mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_pseudo_dst(src);
-            if (virtual_address != NULL){
-                virtual_address->ref_count--;
-            }
-            // TODO: check if virtual address can be freed
-        }
-    }
+static void config_model_subscription_overwrite_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+
+    uint16_t element_address  = mesh_access_parser_get_u16(&parser);
+    uint16_t address          = mesh_access_parser_get_u16(&parser);
+    uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
+
+    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
+    mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
+
+    if (target_model != NULL){
+        if (mesh_network_address_group(address) && !mesh_network_address_all_nodes(address)){
+            mesh_subcription_decrease_virtual_address_ref_count(target_model);
+            mesh_model_delete_all_subscriptions(mesh_model);
+            status = mesh_model_add_subscription(mesh_model, address);
+        } else {
+            status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
+        } 
+    }   
+
+    config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, address, model_identifier);
+    mesh_access_message_processed(pdu);
 }
 
 static void config_model_subscription_virtual_address_overwrite_hash(void *arg){
@@ -962,17 +1049,7 @@ static void config_model_subscription_virtual_address_overwrite_hash(void *arg){
     // add if not exists
     mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_label_uuid(model_subscription_label_uuid);
     if (virtual_address == NULL){
-        // add virtual address
-        uint16_t pseudo_dst = mesh_virtual_addresses_get_free_pseudo_dst();
-        if (pseudo_dst != MESH_ADDRESS_UNSASSIGNED){
-            virtual_address = btstack_memory_mesh_virtual_address_get();
-            if (virtual_address != NULL){
-                virtual_address->hash = model_subscription_hash;
-                virtual_address->pseudo_dst = pseudo_dst;
-                memcpy(virtual_address->label_uuid, model_subscription_label_uuid, 16);
-                mesh_virtual_address_add(virtual_address);
-            }
-        }        
+        virtual_address = mesh_virtual_address_register(model_subscription_label_uuid, model_subscription_hash);
     }
 
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
@@ -980,6 +1057,8 @@ static void config_model_subscription_virtual_address_overwrite_hash(void *arg){
     if (virtual_address == NULL){
         status = MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
     } else {
+
+        // decrease ref counts for virtual addresses
         mesh_subcription_decrease_virtual_address_ref_count(target_model);
 
         // clear subscriptions
@@ -989,6 +1068,9 @@ static void config_model_subscription_virtual_address_overwrite_hash(void *arg){
         pseudo_dst = virtual_address->pseudo_dst;
         virtual_address->ref_count++;
         status = mesh_model_add_subscription(target_model, pseudo_dst);
+        if (status == MESH_FOUNDATION_STATUS_SUCCESS){
+            mesh_virtual_address_increase_refcount(virtual_address);
+        }
     }
 
     config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), status, model_subscription_element_address, pseudo_dst, target_model->model_identifier);
@@ -1056,11 +1138,9 @@ static void config_model_subscription_virtual_address_delete_handler(mesh_model_
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
     mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
 
-    if ((target_model != NULL) && (virtual_address != NULL)){
-        virtual_address->ref_count--;
+    if ((target_model != NULL) && (virtual_address != NULL) && mesh_model_contains_subscription(target_model, virtual_address->pseudo_dst)){
+        mesh_virtual_address_decrease_refcount(virtual_address);
         mesh_model_delete_subscription(target_model, virtual_address->pseudo_dst);
-
-        // TODO: check if virtual address can be freed
      }   
 
     config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, virtual_address->hash, model_identifier);
@@ -1086,70 +1166,7 @@ static void config_model_subscription_delete_all_handler(mesh_model_t *mesh_mode
     mesh_access_message_processed(pdu);
 }
 
-static void config_model_subscription_list_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status, uint16_t element_address, uint32_t model_identifier, mesh_model_t * target_model){
-    uint16_t opcode;
-    if (mesh_model_is_bluetooth_sig(model_identifier)){
-        opcode = MESH_FOUNDATION_OPERATION_SIG_MODEL_SUBSCRIPTION_LIST;
-    } else {
-        opcode = MESH_FOUNDATION_OPERATION_VENDOR_MODEL_SUBSCRIPTION_LIST;
-    }
-
-    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(opcode);
-    if (!transport_pdu) return;
-
-    // setup segmented message
-    mesh_access_transport_add_uint8(transport_pdu, status);
-    mesh_access_transport_add_uint16(transport_pdu, element_address);
-    mesh_access_transport_add_model_identifier(transport_pdu, model_identifier);
-
-    if (target_model != NULL){
-        int i;
-        for (i = 0; i < MAX_NR_MESH_SUBSCRIPTION_PER_MODEL; i++){
-            if (target_model->subscriptions[i] == MESH_ADDRESS_UNSASSIGNED) continue;
-            if (mesh_network_address_virtual(target_model->subscriptions[i])) continue;
-            mesh_access_transport_add_uint16(transport_pdu, target_model->subscriptions[i]);
-        }
-    }   
-    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
-}
-
-static void config_model_subscription_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
-    mesh_access_parser_state_t parser;
-    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-
-    uint16_t element_address  = mesh_access_parser_get_u16(&parser);
-    uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
-
-    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
-    mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
-
-    config_model_subscription_list_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, model_identifier, target_model);
-    mesh_access_message_processed(pdu);
-}
-
-static void config_model_subscription_overwrite_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
-    mesh_access_parser_state_t parser;
-    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-
-    uint16_t element_address  = mesh_access_parser_get_u16(&parser);
-    uint16_t address          = mesh_access_parser_get_u16(&parser);
-    uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
-
-    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
-    mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
-
-    if (target_model != NULL){
-        if (mesh_network_address_group(address) && !mesh_network_address_all_nodes(address)){
-            mesh_subcription_decrease_virtual_address_ref_count(target_model);
-            mesh_model_overwrite_subscription(target_model, address);
-        } else {
-            status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
-        } 
-    }   
-
-    config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, address, model_identifier);
-    mesh_access_message_processed(pdu);
-}
+// Configuration Model to AppKey List
 
 static void config_model_app_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status, uint16_t element_address, uint16_t appkey_index, uint32_t model_identifier){
     // setup message

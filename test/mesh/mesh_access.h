@@ -188,6 +188,8 @@ uint32_t mesh_model_get_model_identifier(uint16_t vendor_id, uint16_t model_id);
 
 mesh_model_t * mesh_model_get_configuration_server(void);
 
+mesh_model_t * mesh_access_model_for_address_and_model_identifier(uint16_t element_address, uint32_t model_identifier, uint8_t * status);
+
 // Mesh PDU Getter
 uint16_t mesh_pdu_src(mesh_pdu_t * pdu);
 uint16_t mesh_pdu_dst(mesh_pdu_t * pdu);
@@ -203,10 +205,6 @@ void mesh_delete_app_keys(void);
 void mesh_load_app_keys(void);
 
 // Mesh Model Subscriptions
-uint8_t mesh_model_add_subscription(mesh_model_t * mesh_model, uint16_t address);
-void mesh_model_delete_subscription(mesh_model_t * mesh_model, uint16_t address);
-uint8_t mesh_model_overwrite_subscription(mesh_model_t * mesh_model, uint16_t address);
-void mesh_model_delete_all_subscriptions(mesh_model_t * mesh_model);
 int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address);
 
 // Mesh Model to Appkey List

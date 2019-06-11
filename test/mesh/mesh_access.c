@@ -175,6 +175,21 @@ mesh_model_t * mesh_model_get_by_identifier(mesh_element_t * element, uint32_t m
     return NULL;
 }
 
+mesh_model_t * mesh_access_model_for_address_and_model_identifier(uint16_t element_address, uint32_t model_identifier, uint8_t * status){
+    mesh_element_t * element = mesh_element_for_unicast_address(element_address);
+    if (element == NULL){
+        *status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
+        return NULL;
+    }
+    mesh_model_t * model = mesh_model_get_by_identifier(element, model_identifier);
+    if (model == NULL) {
+        *status = MESH_FOUNDATION_STATUS_INVALID_MODEL;
+    } else {
+        *status = MESH_FOUNDATION_STATUS_SUCCESS;
+    }
+    return model;
+}
+
 uint16_t mesh_pdu_src(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_TRANSPORT:
@@ -612,41 +627,6 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
 
 void mesh_access_message_processed(mesh_pdu_t * pdu){
     mesh_upper_transport_message_processed_by_higher_layer(pdu);
-}
-
-uint8_t mesh_model_add_subscription(mesh_model_t * mesh_model, uint16_t address){
-    int i;
-    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
-        if (mesh_model->subscriptions[i] == address) return MESH_FOUNDATION_STATUS_SUCCESS;
-    }
-    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
-        if (mesh_model->subscriptions[i] == MESH_ADDRESS_UNSASSIGNED) {
-            mesh_model->subscriptions[i] = address;
-            return MESH_FOUNDATION_STATUS_SUCCESS;
-        }
-    }
-    return MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
-}
-
-void mesh_model_delete_subscription(mesh_model_t * mesh_model, uint16_t address){
-    int i;
-    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
-        if (mesh_model->subscriptions[i] == address) {
-            mesh_model->subscriptions[i] = MESH_ADDRESS_UNSASSIGNED;
-        }
-    }
-}
-
-uint8_t mesh_model_overwrite_subscription(mesh_model_t * mesh_model, uint16_t address){
-    mesh_model_delete_all_subscriptions(mesh_model);
-    return mesh_model_add_subscription(mesh_model, address);
-}
-
-void mesh_model_delete_all_subscriptions(mesh_model_t * mesh_model){
-    int i;
-    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
-        mesh_model->subscriptions[i] = MESH_ADDRESS_UNSASSIGNED;
-    }
 }
 
 int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address){
