@@ -1084,6 +1084,52 @@ void btstack_memory_mesh_transport_key_free(mesh_transport_key_t *mesh_transport
 #endif
 
 
+// MARK: mesh_virtual_address_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_MESH_VIRTUAL_ADDRESSS)
+    #if defined(MAX_NO_MESH_VIRTUAL_ADDRESSS)
+        #error "Deprecated MAX_NO_MESH_VIRTUAL_ADDRESSS defined instead of MAX_NR_MESH_VIRTUAL_ADDRESSS. Please update your btstack_config.h to use MAX_NR_MESH_VIRTUAL_ADDRESSS."
+    #else
+        #define MAX_NR_MESH_VIRTUAL_ADDRESSS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_MESH_VIRTUAL_ADDRESSS
+#if MAX_NR_MESH_VIRTUAL_ADDRESSS > 0
+static mesh_virtual_address_t mesh_virtual_address_storage[MAX_NR_MESH_VIRTUAL_ADDRESSS];
+static btstack_memory_pool_t mesh_virtual_address_pool;
+mesh_virtual_address_t * btstack_memory_mesh_virtual_address_get(void){
+    void * buffer = btstack_memory_pool_get(&mesh_virtual_address_pool);
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_virtual_address_t));
+    }
+    return (mesh_virtual_address_t *) buffer;
+}
+void btstack_memory_mesh_virtual_address_free(mesh_virtual_address_t *mesh_virtual_address){
+    btstack_memory_pool_free(&mesh_virtual_address_pool, mesh_virtual_address);
+}
+#else
+mesh_virtual_address_t * btstack_memory_mesh_virtual_address_get(void){
+    return NULL;
+}
+void btstack_memory_mesh_virtual_address_free(mesh_virtual_address_t *mesh_virtual_address){
+    // silence compiler warning about unused parameter in a portable way
+    (void) mesh_virtual_address;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+mesh_virtual_address_t * btstack_memory_mesh_virtual_address_get(void){
+    void * buffer = malloc(sizeof(mesh_virtual_address_t));
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_virtual_address_t));
+    }
+    return (mesh_virtual_address_t *) buffer;
+}
+void btstack_memory_mesh_virtual_address_free(mesh_virtual_address_t *mesh_virtual_address){
+    free(mesh_virtual_address);
+}
+#endif
+
+
 #endif
 // init
 void btstack_memory_init(void){
@@ -1157,6 +1203,9 @@ void btstack_memory_init(void){
 #endif
 #if MAX_NR_MESH_TRANSPORT_KEYS > 0
     btstack_memory_pool_create(&mesh_transport_key_pool, mesh_transport_key_storage, MAX_NR_MESH_TRANSPORT_KEYS, sizeof(mesh_transport_key_t));
+#endif
+#if MAX_NR_MESH_VIRTUAL_ADDRESSS > 0
+    btstack_memory_pool_create(&mesh_virtual_address_pool, mesh_virtual_address_storage, MAX_NR_MESH_VIRTUAL_ADDRESSS, sizeof(mesh_virtual_address_t));
 #endif
 #endif
 }

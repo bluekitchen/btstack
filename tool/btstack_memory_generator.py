@@ -85,6 +85,7 @@ extern "C" {
 #ifdef ENABLE_MESH
 #include "ble/mesh/mesh_network.h"
 #include "mesh_keys.h"
+#include "mesh_virtual_addresses.h"
 #endif
 
 /* API_START */
@@ -209,7 +210,7 @@ list_of_le_structs = [
     ["gatt_client", "whitelist_entry", "sm_lookup_entry"],
 ]
 list_of_mesh_structs = [
-    ['mesh_network_pdu', 'mesh_transport_pdu', 'mesh_network_key', 'mesh_transport_key']
+    ['mesh_network_pdu', 'mesh_transport_pdu', 'mesh_network_key', 'mesh_transport_key', 'mesh_virtual_address']
 ]
 
 btstack_root = os.path.abspath(os.path.dirname(sys.argv[0]) + '/..')
