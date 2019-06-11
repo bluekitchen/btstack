@@ -156,6 +156,12 @@ static int mesh_model_is_configuration_server(uint32_t model_identifier){
 
 static void config_server_send_message(mesh_model_t *mesh_model, uint16_t netkey_index, uint16_t dest,
                                                  mesh_pdu_t *pdu){
+    if (mesh_model == NULL){
+        log_error("mesh_model == NULL"); 
+    }
+    if (mesh_model->element == NULL){
+        log_error("mesh_model->element == NULL"); 
+    }
     uint16_t src  = mesh_model->element->unicast_address;
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
     uint8_t  ttl  = mesh_foundation_default_ttl_get();
@@ -875,10 +881,8 @@ static void config_model_subscription_add_handler(mesh_model_t *mesh_model, mesh
 
 static void config_model_subscription_virtual_address_add_hash(void *arg){
     mesh_model_t * target_model = (mesh_model_t*) arg;
-    printf("Virtual Address Hash: %04x\n", model_subscription_hash);
-
-    // TODO: find a way to get mesh model of Config Server Model
-    mesh_model_t * mesh_model = NULL;
+    
+    mesh_model_t * mesh_model = mesh_model_get_configuration_server();
 
     // add if not exists
     uint16_t pseudo_dst = MESH_ADDRESS_UNSASSIGNED;
