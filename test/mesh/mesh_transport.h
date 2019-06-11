@@ -82,19 +82,6 @@ void mesh_upper_transport_send_access_pdu(mesh_pdu_t * pdu);
 // Virtual Address Management
 // 
 
-/**
- * @brief Register Virtual Address
- * @param LabelUUID (16 bytes)
- * @returns pseudo_dst that can be used as dst with all mesh_uppert_transport calls
- */
-uint16_t mesh_virtual_address_register(uint8_t * label_uuid, uint16_t hash);
-
-/**
- * @brief Unregister Virtual Address
- * @param pseudo_dst to unregister
- */
-void     mesh_virtual_address_unregister(uint16_t pseudo_dst);
-
 // test
 void mesh_lower_transport_received_message(mesh_network_callback_type_t callback_type, mesh_network_pdu_t *network_pdu);
 void mesh_lower_transport_dump(void);

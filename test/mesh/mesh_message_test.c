@@ -909,8 +909,9 @@ TEST(MessageTest, Message22Send){
     mesh_lower_transport_set_seq(seq);
     uint8_t label_uuid[16];
     btstack_parse_hex(message22_label_string, 16, label_uuid);
-    uint16_t proxy_dst = mesh_virtual_address_register(label_uuid, 0xb529);
-    test_send_access_message(netkey_index, appkey_index, ttl, src, proxy_dst, szmic, message22_upper_transport_pdu, 1, message22_lower_transport_pdus, message22_network_pdus);
+    mesh_virtual_address_t * virtual_address = mesh_virtual_address_register(label_uuid, 0xb529);
+    uint16_t pseudo_dst = virtual_address->pseudo_dst;
+    test_send_access_message(netkey_index, appkey_index, ttl, src, pseudo_dst, szmic, message22_upper_transport_pdu, 1, message22_lower_transport_pdus, message22_network_pdus);
 }
 
 // Message 23
@@ -944,8 +945,9 @@ TEST(MessageTest, Message23Send){
     mesh_lower_transport_set_seq(seq);
     uint8_t label_uuid[16];
     btstack_parse_hex(message23_label_string, 16, label_uuid);
-    uint16_t proxy_dst = mesh_virtual_address_register(label_uuid, 0x9736);
-    test_send_access_message(netkey_index, appkey_index, ttl, src, proxy_dst, szmic, message23_upper_transport_pdu, 1, message23_lower_transport_pdus, message23_network_pdus);
+    mesh_virtual_address_t * virtual_address = mesh_virtual_address_register(label_uuid, 0x9736);
+    uint16_t pseudo_dst = virtual_address->pseudo_dst;
+    test_send_access_message(netkey_index, appkey_index, ttl, src, pseudo_dst, szmic, message23_upper_transport_pdu, 1, message23_lower_transport_pdus, message23_network_pdus);
 }
 #endif
 
@@ -981,8 +983,9 @@ TEST(MessageTest, Message24Send){
     mesh_lower_transport_set_seq(seq);
     uint8_t label_uuid[16];
     btstack_parse_hex(message24_label_string, 16, label_uuid);
-    uint16_t proxy_dst = mesh_virtual_address_register(label_uuid, 0x9736);
-    test_send_access_message(netkey_index, appkey_index, ttl, src, proxy_dst, szmic, message24_upper_transport_pdu, 2, message24_lower_transport_pdus, message24_network_pdus);
+    mesh_virtual_address_t * virtual_address = mesh_virtual_address_register(label_uuid, 0x9736);
+    uint16_t pseudo_dst = virtual_address->pseudo_dst;
+    test_send_access_message(netkey_index, appkey_index, ttl, src, pseudo_dst, szmic, message24_upper_transport_pdu, 2, message24_lower_transport_pdus, message24_network_pdus);
 }
 
 // Proxy Configuration Test

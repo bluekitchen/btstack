@@ -883,18 +883,26 @@ static void config_model_subscription_virtual_address_add_hash(void *arg){
     mesh_model_t * mesh_model = mesh_model_get_configuration_server();
 
     // add if not exists
-    uint16_t pseudo_dst = MESH_ADDRESS_UNSASSIGNED;
     mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_label_uuid(model_subscription_label_uuid);
     if (virtual_address == NULL){
         // add virtual address
-        pseudo_dst = mesh_virtual_address_register(model_subscription_label_uuid, model_subscription_hash);
+        virtual_address = btstack_memory_mesh_virtual_address_get();
+        if (virtual_address != NULL){
+            virtual_address->hash = model_subscription_hash;
+            memcpy(virtual_address->label_uuid, model_subscription_label_uuid, 16);
+            mesh_virtual_address_add(virtual_address);
+        }
     }
 
-    uint8_t status;
-    if (pseudo_dst == MESH_ADDRESS_UNSASSIGNED){
+    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
+    uint16_t pseudo_dst = MESH_ADDRESS_UNSASSIGNED;
+    if (virtual_address == NULL){
         status = MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
     } else {
-        status = mesh_model_add_subscription(target_model, pseudo_dst);
+        pseudo_dst = virtual_address->pseudo_dst;
+        if (!mesh_model_contains_subscription(target_model, pseudo_dst)){
+            status = mesh_model_add_subscription(target_model, pseudo_dst);
+        }
     }
 
     config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), status, model_subscription_element_address, pseudo_dst, target_model->model_identifier);
@@ -933,18 +941,28 @@ static void config_model_subscription_virtual_address_overwrite_hash(void *arg){
     mesh_model_t * mesh_model = mesh_model_get_configuration_server();
 
     // add if not exists
-    uint16_t pseudo_dst = MESH_ADDRESS_UNSASSIGNED;
     mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_label_uuid(model_subscription_label_uuid);
     if (virtual_address == NULL){
         // add virtual address
-        pseudo_dst = mesh_virtual_address_register(model_subscription_label_uuid, model_subscription_hash);
+        virtual_address = btstack_memory_mesh_virtual_address_get();
+        if (virtual_address != NULL){
+            virtual_address->hash = model_subscription_hash;
+            memcpy(virtual_address->label_uuid, model_subscription_label_uuid, 16);
+            mesh_virtual_address_add(virtual_address);
+        }
     }
 
-    uint8_t status;
-    if (pseudo_dst == MESH_ADDRESS_UNSASSIGNED){
+    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
+    uint16_t pseudo_dst = MESH_ADDRESS_UNSASSIGNED;
+    if (virtual_address == NULL){
         status = MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
     } else {
-        status = mesh_model_overwrite_subscription(target_model, pseudo_dst);
+        // clear subscriptions
+        mesh_model_delete_all_subscriptions(target_model);
+        
+        // add new subscription
+        pseudo_dst = virtual_address->pseudo_dst;
+        status = mesh_model_add_subscription(target_model, pseudo_dst);
     }
 
     config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), status, model_subscription_element_address, pseudo_dst, target_model->model_identifier);

@@ -60,7 +60,11 @@ typedef struct {
 
 // virtual address management
 
-uint16_t mesh_virtual_address_register(uint8_t * label_uuid, uint16_t hash);
+void mesh_virtual_address_add(mesh_virtual_address_t * virtual_address);
+
+void mesh_virtual_address_remove(mesh_virtual_address_t * virtual_address);
+
+mesh_virtual_address_t * mesh_virtual_address_register(uint8_t * label_uuid, uint16_t hash);
 
 mesh_virtual_address_t * mesh_virtual_address_for_pseudo_dst(uint16_t pseudo_dst);
 

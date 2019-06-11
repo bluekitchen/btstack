@@ -56,20 +56,26 @@ static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len
 
 static mesh_virtual_address_t test_virtual_address;
 
-static void mesh_virtual_address_run(void){
+void mesh_virtual_address_add(mesh_virtual_address_t * virtual_address){
+    // printf("TODO: implement mesh_virtual_address_add\n");
+    virtual_address->pseudo_dst = 0x8000;
+    memcpy(&test_virtual_address, virtual_address, sizeof(mesh_virtual_address_t));
 }
 
-uint16_t mesh_virtual_address_register(uint8_t * label_uuid, uint16_t hash){
-    // TODO:: check if already exists
-    // TODO: calc hash
-    test_virtual_address.hash   = hash;
-    memcpy(test_virtual_address.label_uuid, label_uuid, 16);
-    test_virtual_address.pseudo_dst = 0x8000;
-    mesh_virtual_address_run();
-    return test_virtual_address.pseudo_dst;
+void mesh_virtual_address_remove(mesh_virtual_address_t * virtual_address){
+    printf("TODO: implement mesh_virtual_address_remove\n");
 }
 
-void mesh_virtual_address_unregister(uint16_t pseudo_dst){
+// helper
+mesh_virtual_address_t * mesh_virtual_address_register(uint8_t * label_uuid, uint16_t hash){
+    mesh_virtual_address_t * virtual_address = btstack_memory_mesh_virtual_address_get();
+    if (virtual_address == NULL) return NULL;
+
+    virtual_address->hash = hash;
+    memcpy(virtual_address->label_uuid, label_uuid, 16);
+    mesh_virtual_address_add(virtual_address);
+
+    return virtual_address;
 }
 
 mesh_virtual_address_t * mesh_virtual_address_for_pseudo_dst(uint16_t pseudo_dst){

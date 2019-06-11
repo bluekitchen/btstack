@@ -1127,7 +1127,8 @@ int btstack_main(void)
 
     // PTS Virtual Address Label UUID - without Config Model, PTS uses our device uuid
     btstack_parse_hex("001BDC0810210B0E0A0C000B0E0A0C00", 16, label_uuid);
-    pts_proxy_dst = mesh_virtual_address_register(label_uuid, 0x9779);
+    mesh_virtual_address_t * virtual_addresss = mesh_virtual_address_register(label_uuid, 0x9779);
+    pts_proxy_dst = virtual_addresss->pseudo_dst;
 
     // PTS Device UUID
     btstack_parse_hex(pts_device_uuid_string, 16, pts_device_uuid);
