@@ -881,7 +881,6 @@ static void config_model_subscription_add_handler(mesh_model_t *mesh_model, mesh
 
 static void config_model_subscription_virtual_address_add_hash(void *arg){
     mesh_model_t * target_model = (mesh_model_t*) arg;
-    
     mesh_model_t * mesh_model = mesh_model_get_configuration_server();
 
     // add if not exists
@@ -932,10 +931,7 @@ static void config_model_subscription_virtual_address_add_handler(mesh_model_t *
 
 static void config_model_subscription_virtual_address_overwrite_hash(void *arg){
     mesh_model_t * target_model = (mesh_model_t*) arg;
-    printf("Virtual Address Hash: %04x\n", model_subscription_hash);
-
-    // TODO: find a way to get mesh model of Config Server Model
-    mesh_model_t * mesh_model = NULL;
+    mesh_model_t * mesh_model = mesh_model_get_configuration_server();
 
     // add if not exists
     uint16_t pseudo_dst = MESH_ADDRESS_UNSASSIGNED;
