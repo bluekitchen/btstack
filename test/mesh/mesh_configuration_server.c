@@ -835,12 +835,17 @@ static void config_appkey_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
 
 static void mesh_virtual_address_decrease_refcount(mesh_virtual_address_t * virtual_address){
     virtual_address->ref_count--;
-    // TODO: check if virtual address can be freed
+    // Free virtual address if ref count reaches zero
+    if (virtual_address->ref_count > 0) return;
+    mesh_virtual_address_remove(virtual_address);
+    btstack_memory_mesh_virtual_address_free(virtual_address);
+    // TODO: delete from TLV
 }
 
 static void mesh_virtual_address_increase_refcount(mesh_virtual_address_t * virtual_address){
     virtual_address->ref_count++;
-    // TODO: check if virtual address need to be stored in TLV
+    if (virtual_address->ref_count > 1) return;
+    // TODO: store virtual address in TLV
 }
 
 // Configuration Model Subscriptions (helper)
