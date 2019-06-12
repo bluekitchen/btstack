@@ -53,6 +53,276 @@
 #include "btstack_debug.h"
 #include "btstack_tlv.h"
 
+#define MESH_HEARTBEAT_FEATURES_SUPPORTED_MASK 0x000f
+
+typedef enum {
+    MESH_NODE_IDENTITY_STATE_ADVERTISING_STOPPED = 0,
+    MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING,
+    MESH_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED
+} mesh_node_identity_state_t;
+
+typedef struct  {
+    btstack_timer_source_t timer;
+    uint16_t destination;
+    uint16_t count_log;
+    uint8_t  period_log;
+    uint8_t  ttl;
+    uint16_t features;
+    uint16_t netkey_index;
+} mesh_heartbeat_publication_t;
+
+typedef struct  {
+    btstack_timer_source_t timer;
+    uint16_t source;
+    uint16_t destination;
+    uint8_t  period_log;
+    uint8_t  count_log;
+    uint8_t  min_hops;
+    uint8_t  max_hops;
+} mesh_heartbeat_subscription_t;
+
+typedef struct {
+    mesh_heartbeat_publication_t heartbeat_publication;
+} mesh_configuration_server_model_context;
+
+typedef struct {
+    uint16_t  hash;
+    uint8_t   label_uuid[16];
+} mesh_persistent_virtual_address_t;
+
+static btstack_crypto_aes128_cmac_t configuration_server_cmac_request;
+
+static mesh_pdu_t * access_pdu_in_process;
+
+static btstack_crypto_aes128_cmac_t mesh_cmac_request;
+
+static mesh_publication_model_t publication_model;
+static mesh_model_t           * config_model_publication_model;
+static uint32_t                 config_model_publication_model_identifier;
+static uint8_t                  model_publication_label_uuid[16];
+
+
+static uint16_t                 model_subscription_hash;
+static uint8_t                  model_subscription_label_uuid[16];
+static uint16_t                 model_subscription_element_address;
+
+static mesh_heartbeat_publication_t  mesh_heartbeat_publication;
+static mesh_heartbeat_subscription_t mesh_heartbeat_subscription;
+
+static int config_netkey_list_max = 0;
+
+
+// Heartbeat (helper)
+
+static uint16_t heartbeat_pwr2(uint8_t value){
+    if (!value)                         return 0x0000;
+    if (value == 0xff || value == 0x11) return 0xffff;
+    return 1 << (value-1);
+}
+
+static uint8_t heartbeat_count_log(uint16_t value){
+    if (!value)          return 0x00;
+    if (value == 0x01)   return 0x01;
+    if (value == 0xffff) return 0xff;
+    // count leading zeros, supported by clang and gcc
+    return 32 - __builtin_clz(value - 1) + 1;
+}
+
+// TLV
+
+static const btstack_tlv_t * btstack_tlv_singleton_impl;
+static void *                btstack_tlv_singleton_context;
+
+static uint32_t mesh_virtual_address_tag_for_pseudo_dst(uint16_t pseudo_dst){
+    return ((uint32_t) 'M' << 24) | ((uint32_t) 'V' << 16) | ((uint32_t) pseudo_dst);
+}
+
+static void mesh_configuration_server_setup_tlv(void){
+    if (btstack_tlv_singleton_impl) return;
+    btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
+}
+
+static void mesh_store_virtual_address(uint16_t pseudo_dest, uint16_t hash, const uint8_t * label_uuid){
+    mesh_configuration_server_setup_tlv();
+
+    mesh_persistent_virtual_address_t data;
+    uint32_t tag = mesh_virtual_address_tag_for_pseudo_dst(pseudo_dest);
+    data.hash = hash;
+    memcpy(data.label_uuid, label_uuid, 16);
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+}
+
+static void mesh_delete_virtual_address(uint16_t pseudo_dest){
+    mesh_configuration_server_setup_tlv();
+
+    uint32_t tag = mesh_virtual_address_tag_for_pseudo_dst(pseudo_dest);
+    btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, tag);
+}
+
+void mesh_load_virtual_addresses(void){
+    mesh_configuration_server_setup_tlv();
+    uint16_t pseudo_dst;
+    for (pseudo_dst = 0x8000; pseudo_dst < (0x8000 + MAX_NR_MESH_VIRTUAL_ADDRESSES); pseudo_dst++){
+        mesh_virtual_address_tag_for_pseudo_dst(pseudo_dst);
+        mesh_persistent_virtual_address_t data;
+        uint32_t tag = mesh_virtual_address_tag_for_pseudo_dst(pseudo_dst);
+        int virtual_address_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+        if (virtual_address_len == 0) return;
+        
+        mesh_virtual_address_t * virtual_address = btstack_memory_mesh_virtual_address_get();
+        if (virtual_address == NULL) return;
+
+        virtual_address->pseudo_dst = pseudo_dst;
+        virtual_address->hash = data.hash;
+        memcpy(virtual_address->label_uuid, data.label_uuid, 16);
+        mesh_virtual_address_add(virtual_address);
+    }
+}
+
+void mesh_delete_virtual_addresses(void){
+    uint16_t pseudo_dest;
+    for (pseudo_dest = 0x8000; pseudo_dest < (0x8000 + MAX_NR_MESH_VIRTUAL_ADDRESSES); pseudo_dest++){
+        mesh_delete_virtual_address(pseudo_dest);
+    }
+}
+
+static void mesh_virtual_address_decrease_refcount(mesh_virtual_address_t * virtual_address){
+    virtual_address->ref_count--;
+    // Free virtual address if ref count reaches zero
+    if (virtual_address->ref_count > 0) return;
+    // delete from TLV
+    mesh_delete_virtual_address(virtual_address->pseudo_dst);
+    // remove from list
+    mesh_virtual_address_remove(virtual_address);
+    // free memory
+    btstack_memory_mesh_virtual_address_free(virtual_address);
+}
+
+static void mesh_virtual_address_increase_refcount(mesh_virtual_address_t * virtual_address){
+    virtual_address->ref_count++;
+    if (virtual_address->ref_count > 1) return;
+    // store in TLV
+    mesh_store_virtual_address(virtual_address->pseudo_dst, virtual_address->hash, virtual_address->label_uuid);
+}
+
+static int mesh_model_is_configuration_server(uint32_t model_identifier){
+    return mesh_model_is_bluetooth_sig(model_identifier) && (mesh_model_get_model_id(model_identifier) == MESH_SIG_MODEL_ID_CONFIGURATION_SERVER);
+}
+
+// Configuration Model Subscriptions (helper)
+
+// Model to Appkey List
+
+static uint32_t mesh_model_subscription_tag_for_index(uint16_t internal_model_id){
+    return ((uint32_t) 'M' << 24) | ((uint32_t) 'S' << 16) | ((uint32_t) internal_model_id);
+}
+
+static void mesh_model_load_subscriptions(mesh_model_t * mesh_model){
+    mesh_configuration_server_setup_tlv();
+    uint32_t tag = mesh_model_subscription_tag_for_index(mesh_model->mid);
+    btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &mesh_model->subscriptions, sizeof(mesh_model->subscriptions));
+    // update ref count
+
+    // decrease ref counts for current virtual subscriptions
+    uint16_t i;
+    for (i = 0; i <= MAX_NR_MESH_SUBSCRIPTION_PER_MODEL ; i++){
+        uint16_t src = mesh_model->subscriptions[i];
+        if (mesh_network_address_virtual(src)){
+            mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_pseudo_dst(src);
+            if (virtual_address == NULL) continue;
+            mesh_virtual_address_increase_refcount(virtual_address);
+        }
+    }
+}
+
+static void mesh_model_store_subscriptions(mesh_model_t * model){
+    mesh_configuration_server_setup_tlv();
+    uint32_t tag = mesh_model_subscription_tag_for_index(model->mid);
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &model->subscriptions, sizeof(model->subscriptions));
+}
+
+static void mesh_model_delete_subscriptions(mesh_model_t * model){
+    mesh_configuration_server_setup_tlv();
+    uint32_t tag = mesh_model_subscription_tag_for_index(model->mid);
+    btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, tag);
+}
+
+void mesh_load_subscriptions(void){
+    printf("Load Model Subscription Lists\n");
+    // iterate over elements and models
+    mesh_element_iterator_t element_it;
+    mesh_element_iterator_init(&element_it);
+    while (mesh_element_iterator_has_next(&element_it)){
+        mesh_element_t * element = mesh_element_iterator_next(&element_it);
+        mesh_model_iterator_t model_it;
+        mesh_model_iterator_init(&model_it, element);
+        while (mesh_model_iterator_has_next(&model_it)){
+            mesh_model_t * model = mesh_model_iterator_next(&model_it);
+            mesh_model_load_subscriptions(model);
+        }
+    }
+}
+
+void mesh_delete_subscriptions(void){
+    printf("Delete Model Subscription Lists\n");
+    mesh_configuration_server_setup_tlv();
+    // iterate over elements and models
+    mesh_element_iterator_t element_it;
+    mesh_element_iterator_init(&element_it);
+    while (mesh_element_iterator_has_next(&element_it)){
+        mesh_element_t * element = mesh_element_iterator_next(&element_it);
+        mesh_model_iterator_t model_it;
+        mesh_model_iterator_init(&model_it, element);
+        while (mesh_model_iterator_has_next(&model_it)){
+            mesh_model_t * model = mesh_model_iterator_next(&model_it);
+            mesh_model_delete_subscriptions(model);
+        }
+    }
+}
+
+static uint8_t mesh_model_add_subscription(mesh_model_t * mesh_model, uint16_t address){
+    int i;
+    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
+        if (mesh_model->subscriptions[i] == address) return MESH_FOUNDATION_STATUS_SUCCESS;
+    }
+    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
+        if (mesh_model->subscriptions[i] == MESH_ADDRESS_UNSASSIGNED) {
+            mesh_model->subscriptions[i] = address;
+            return MESH_FOUNDATION_STATUS_SUCCESS;
+        }
+    }
+    return MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
+}
+
+static void mesh_model_delete_subscription(mesh_model_t * mesh_model, uint16_t address){
+    int i;
+    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
+        if (mesh_model->subscriptions[i] == address) {
+            mesh_model->subscriptions[i] = MESH_ADDRESS_UNSASSIGNED;
+        }
+    }
+}
+
+static void mesh_model_delete_all_subscriptions(mesh_model_t * mesh_model){
+    int i;
+    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
+        mesh_model->subscriptions[i] = MESH_ADDRESS_UNSASSIGNED;
+    }
+}
+
+static void mesh_subcription_decrease_virtual_address_ref_count(mesh_model_t *mesh_model){
+    // decrease ref counts for current virtual subscriptions
+    uint16_t i;
+    for (i = 0; i <= MAX_NR_MESH_SUBSCRIPTION_PER_MODEL ; i++){
+        uint16_t src = mesh_model->subscriptions[i];
+        if (mesh_network_address_virtual(src)){
+            mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_pseudo_dst(src);
+            if (virtual_address == NULL) continue;
+            mesh_virtual_address_decrease_refcount(virtual_address);
+        }
+    }
+}
+
 // Foundatiopn Message
 
 const mesh_access_message_t mesh_foundation_config_beacon_status = {
@@ -106,55 +376,6 @@ const mesh_access_message_t mesh_foundation_low_power_node_poll_timeout_status =
 const mesh_access_message_t mesh_foundation_config_heartbeat_subscription_status = {
         MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_STATUS, "1221111"
 };
-
-typedef enum {
-    MESH_NODE_IDENTITY_STATE_ADVERTISING_STOPPED = 0,
-    MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING,
-    MESH_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED
-} mesh_node_identity_state_t;
-
-typedef struct  {
-    btstack_timer_source_t timer;
-    uint16_t destination;
-    uint16_t count_log;
-    uint8_t  period_log;
-    uint8_t  ttl;
-    uint16_t features;
-    uint16_t netkey_index;
-} mesh_heartbeat_publication_t;
-
-typedef struct  {
-    btstack_timer_source_t timer;
-    uint16_t source;
-    uint16_t destination;
-    uint8_t  period_log;
-    uint8_t  count_log;
-    uint8_t  min_hops;
-    uint8_t  max_hops;
-} mesh_heartbeat_subscription_t;
-
-typedef struct {
-    mesh_heartbeat_publication_t heartbeat_publication;
-} mesh_configuration_server_model_context;
-
-
-static btstack_crypto_aes128_cmac_t configuration_server_cmac_request;
-
-static mesh_pdu_t * access_pdu_in_process;
-
-static btstack_crypto_aes128_cmac_t mesh_cmac_request;
-
-static uint16_t                 model_subscription_hash;
-static uint8_t                  model_subscription_label_uuid[16];
-static uint16_t                 model_subscription_element_address;
-
-
-static mesh_heartbeat_publication_t  mesh_heartbeat_publication;
-static mesh_heartbeat_subscription_t mesh_heartbeat_subscription;
-
-static int mesh_model_is_configuration_server(uint32_t model_identifier){
-    return mesh_model_is_bluetooth_sig(model_identifier) && (mesh_model_get_model_id(model_identifier) == MESH_SIG_MODEL_ID_CONFIGURATION_SERVER);
-}
 
 static void config_server_send_message(mesh_model_t *mesh_model, uint16_t netkey_index, uint16_t dest,
                                                  mesh_pdu_t *pdu){
@@ -438,8 +659,6 @@ static void config_model_network_transmit_set_handler(mesh_model_t * mesh_model,
 }
 
 // NetKey List
-
-static int config_netkey_list_max = 0;
 
 void config_nekey_list_set_max(uint16_t max){
     config_netkey_list_max = max;
@@ -830,205 +1049,6 @@ static void config_appkey_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
 
     config_appkey_list(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_index);
     mesh_access_message_processed(pdu);
-}
-
-
-// Virtual Address - TLV
-
-typedef struct {
-    uint16_t  hash;
-    uint8_t   label_uuid[16];
-} mesh_persistent_virtual_address_t;
-
-static uint32_t mesh_virtual_address_tag_for_pseudo_dst(uint16_t pseudo_dst){
-    return ((uint32_t) 'M' << 24) | ((uint32_t) 'V' << 16) | ((uint32_t) pseudo_dst);
-}
-
-static const btstack_tlv_t * btstack_tlv_singleton_impl;
-static void *                btstack_tlv_singleton_context;
-
-static void mesh_configuration_server_setup_tlv(void){
-    if (btstack_tlv_singleton_impl) return;
-    btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
-}
-
-static void mesh_store_virtual_address(uint16_t pseudo_dest, uint16_t hash, const uint8_t * label_uuid){
-    mesh_configuration_server_setup_tlv();
-
-    mesh_persistent_virtual_address_t data;
-    uint32_t tag = mesh_virtual_address_tag_for_pseudo_dst(pseudo_dest);
-    data.hash = hash;
-    memcpy(data.label_uuid, label_uuid, 16);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
-}
-
-static void mesh_delete_virtual_address(uint16_t pseudo_dest){
-    mesh_configuration_server_setup_tlv();
-
-    uint32_t tag = mesh_virtual_address_tag_for_pseudo_dst(pseudo_dest);
-    btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, tag);
-}
-
-void mesh_load_virtual_addresses(void){
-    mesh_configuration_server_setup_tlv();
-    uint16_t pseudo_dst;
-    for (pseudo_dst = 0x8000; pseudo_dst < (0x8000 + MAX_NR_MESH_VIRTUAL_ADDRESSES); pseudo_dst++){
-        mesh_virtual_address_tag_for_pseudo_dst(pseudo_dst);
-        mesh_persistent_virtual_address_t data;
-        uint32_t tag = mesh_virtual_address_tag_for_pseudo_dst(pseudo_dst);
-        int virtual_address_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
-        if (virtual_address_len == 0) return;
-        
-        mesh_virtual_address_t * virtual_address = btstack_memory_mesh_virtual_address_get();
-        if (virtual_address == NULL) return;
-
-        virtual_address->pseudo_dst = pseudo_dst;
-        virtual_address->hash = data.hash;
-        memcpy(virtual_address->label_uuid, data.label_uuid, 16);
-        mesh_virtual_address_add(virtual_address);
-    }
-}
-
-void mesh_delete_virtual_addresses(void){
-    uint16_t pseudo_dest;
-    for (pseudo_dest = 0x8000; pseudo_dest < (0x8000 + MAX_NR_MESH_VIRTUAL_ADDRESSES); pseudo_dest++){
-        mesh_delete_virtual_address(pseudo_dest);
-    }
-}
-
-// Configuration Model Subscriptions (Virtual Address Helper)
-
-static void mesh_virtual_address_decrease_refcount(mesh_virtual_address_t * virtual_address){
-    virtual_address->ref_count--;
-    // Free virtual address if ref count reaches zero
-    if (virtual_address->ref_count > 0) return;
-    // delete from TLV
-    mesh_delete_virtual_address(virtual_address->pseudo_dst);
-    // remove from list
-    mesh_virtual_address_remove(virtual_address);
-    // free memory
-    btstack_memory_mesh_virtual_address_free(virtual_address);
-}
-
-static void mesh_virtual_address_increase_refcount(mesh_virtual_address_t * virtual_address){
-    virtual_address->ref_count++;
-    if (virtual_address->ref_count > 1) return;
-    // store in TLV
-    mesh_store_virtual_address(virtual_address->pseudo_dst, virtual_address->hash, virtual_address->label_uuid);
-}
-
-// Configuration Model Subscriptions (helper)
-
-// Model to Appkey List
-
-static uint32_t mesh_model_subscription_tag_for_index(uint16_t internal_model_id){
-    return ((uint32_t) 'M' << 24) | ((uint32_t) 'S' << 16) | ((uint32_t) internal_model_id);
-}
-
-static void mesh_model_load_subscriptions(mesh_model_t * mesh_model){
-    mesh_configuration_server_setup_tlv();
-    uint32_t tag = mesh_model_subscription_tag_for_index(mesh_model->mid);
-    btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &mesh_model->subscriptions, sizeof(mesh_model->subscriptions));
-    // update ref count
-
-    // decrease ref counts for current virtual subscriptions
-    uint16_t i;
-    for (i = 0; i <= MAX_NR_MESH_SUBSCRIPTION_PER_MODEL ; i++){
-        uint16_t src = mesh_model->subscriptions[i];
-        if (mesh_network_address_virtual(src)){
-            mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_pseudo_dst(src);
-            if (virtual_address == NULL) continue;
-            mesh_virtual_address_increase_refcount(virtual_address);
-        }
-    }
-}
-
-static void mesh_model_store_subscriptions(mesh_model_t * model){
-    mesh_configuration_server_setup_tlv();
-    uint32_t tag = mesh_model_subscription_tag_for_index(model->mid);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &model->subscriptions, sizeof(model->subscriptions));
-}
-
-static void mesh_model_delete_subscriptions(mesh_model_t * model){
-    mesh_configuration_server_setup_tlv();
-    uint32_t tag = mesh_model_subscription_tag_for_index(model->mid);
-    btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, tag);
-}
-
-void mesh_load_subscriptions(void){
-    printf("Load Model Subscription Lists\n");
-    // iterate over elements and models
-    mesh_element_iterator_t element_it;
-    mesh_element_iterator_init(&element_it);
-    while (mesh_element_iterator_has_next(&element_it)){
-        mesh_element_t * element = mesh_element_iterator_next(&element_it);
-        mesh_model_iterator_t model_it;
-        mesh_model_iterator_init(&model_it, element);
-        while (mesh_model_iterator_has_next(&model_it)){
-            mesh_model_t * model = mesh_model_iterator_next(&model_it);
-            mesh_model_load_subscriptions(model);
-        }
-    }
-}
-
-void mesh_delete_subscriptions(void){
-    printf("Delete Model Subscription Lists\n");
-    mesh_configuration_server_setup_tlv();
-    // iterate over elements and models
-    mesh_element_iterator_t element_it;
-    mesh_element_iterator_init(&element_it);
-    while (mesh_element_iterator_has_next(&element_it)){
-        mesh_element_t * element = mesh_element_iterator_next(&element_it);
-        mesh_model_iterator_t model_it;
-        mesh_model_iterator_init(&model_it, element);
-        while (mesh_model_iterator_has_next(&model_it)){
-            mesh_model_t * model = mesh_model_iterator_next(&model_it);
-            mesh_model_delete_subscriptions(model);
-        }
-    }
-}
-
-static uint8_t mesh_model_add_subscription(mesh_model_t * mesh_model, uint16_t address){
-    int i;
-    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
-        if (mesh_model->subscriptions[i] == address) return MESH_FOUNDATION_STATUS_SUCCESS;
-    }
-    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
-        if (mesh_model->subscriptions[i] == MESH_ADDRESS_UNSASSIGNED) {
-            mesh_model->subscriptions[i] = address;
-            return MESH_FOUNDATION_STATUS_SUCCESS;
-        }
-    }
-    return MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
-}
-
-static void mesh_model_delete_subscription(mesh_model_t * mesh_model, uint16_t address){
-    int i;
-    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
-        if (mesh_model->subscriptions[i] == address) {
-            mesh_model->subscriptions[i] = MESH_ADDRESS_UNSASSIGNED;
-        }
-    }
-}
-
-static void mesh_model_delete_all_subscriptions(mesh_model_t * mesh_model){
-    int i;
-    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
-        mesh_model->subscriptions[i] = MESH_ADDRESS_UNSASSIGNED;
-    }
-}
-
-static void mesh_subcription_decrease_virtual_address_ref_count(mesh_model_t *mesh_model){
-    // decrease ref counts for current virtual subscriptions
-    uint16_t i;
-    for (i = 0; i <= MAX_NR_MESH_SUBSCRIPTION_PER_MODEL ; i++){
-        uint16_t src = mesh_model->subscriptions[i];
-        if (mesh_network_address_virtual(src)){
-            mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_pseudo_dst(src);
-            if (virtual_address == NULL) continue;
-            mesh_virtual_address_decrease_refcount(virtual_address);
-        }
-    }
 }
 
 // Configuration Model Subscriptions (messages)
@@ -1460,12 +1480,6 @@ config_model_publication_status(mesh_model_t *mesh_model, uint16_t netkey_index,
     config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
-// TODO: avoid temp storage
-static mesh_publication_model_t publication_model;
-static mesh_model_t           * config_model_publication_model;
-static uint32_t                 config_model_publication_model_identifier;
-static uint8_t                  model_publication_label_uuid[16];
-
 static void
 config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
 
@@ -1605,21 +1619,6 @@ config_model_publication_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
 
 
 // Heartbeat Publication
-#define MESH_HEARTBEAT_FEATURES_SUPPORTED_MASK 0x000f
-
-static uint16_t heartbeat_pwr2(uint8_t value){
-    if (!value)                         return 0x0000;
-    if (value == 0xff || value == 0x11) return 0xffff;
-    return 1 << (value-1);
-}
-
-static uint8_t heartbeat_count_log(uint16_t value){
-    if (!value)          return 0x00;
-    if (value == 0x01)   return 0x01;
-    if (value == 0xffff) return 0xff;
-    // count leading zeros, supported by clang and gcc
-    return 32 - __builtin_clz(value - 1) + 1;
-}
 
 static void config_heartbeat_publication_emit(btstack_timer_source_t * ts){
     if (mesh_heartbeat_publication.count_log == 0) return;
