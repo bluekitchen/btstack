@@ -698,7 +698,7 @@ void mesh_load_app_keys(void){
         mesh_persistent_app_key_t data;
         uint32_t tag = mesh_transport_key_tag_for_internal_index(internal_index);
         int app_key_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
-        if (app_key_len == 0) return;
+        if (app_key_len == 0) continue;
         
         mesh_transport_key_t * key = btstack_memory_mesh_transport_key_get();
         if (key == NULL) return;
@@ -710,7 +710,7 @@ void mesh_load_app_keys(void){
         key->akf          = 1;
         memcpy(key->key, data.key, 16);
         mesh_transport_key_add(key);
-        printf("Load AppKey: internal index 0x%x, AppKey Index 0x%06x, , AID %02x: ", key->internal_index, key->appkey_index, key->aid);
+        printf("- internal index 0x%x, AppKey Index 0x%06x, , AID %02x: ", key->internal_index, key->appkey_index, key->aid);
         printf_hexdump(key->key, 16);
     }
 }
