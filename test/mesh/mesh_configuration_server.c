@@ -232,7 +232,7 @@ static void mesh_model_load_subscriptions(mesh_model_t * mesh_model){
     btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &mesh_model->subscriptions, sizeof(mesh_model->subscriptions));
     // update ref count
 
-    // decrease ref counts for current virtual subscriptions
+    // increase ref counts for virtual subscriptions
     uint16_t i;
     for (i = 0; i <= MAX_NR_MESH_SUBSCRIPTION_PER_MODEL ; i++){
         uint16_t src = mesh_model->subscriptions[i];
@@ -329,6 +329,75 @@ static void mesh_subcription_decrease_virtual_address_ref_count(mesh_model_t *me
         }
     }
 }
+
+// Model Publication
+
+static uint32_t mesh_model_publication_tag_for_index(uint16_t internal_model_id){
+    return ((uint32_t) 'M' << 24) | ((uint32_t) 'P' << 16) | ((uint32_t) internal_model_id);
+}
+
+static void mesh_model_load_publication(mesh_model_t * mesh_model){
+    mesh_configuration_server_setup_tlv();
+    if (mesh_model->publication_model == NULL) return;
+
+    uint32_t tag = mesh_model_publication_tag_for_index(mesh_model->mid);
+    btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &mesh_model->publication_model, sizeof(mesh_publication_model_t));
+
+    // increase ref counts for current virtual publicataion address
+    uint16_t src = mesh_model->publication_model->address;
+    if (mesh_network_address_virtual(src)){
+        mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_pseudo_dst(src);
+        mesh_virtual_address_increase_refcount(virtual_address);
+    }
+}
+
+static void mesh_model_store_publication(mesh_model_t * mesh_model){
+    mesh_configuration_server_setup_tlv();
+    if (mesh_model->publication_model == NULL) return;
+    uint32_t tag = mesh_model_publication_tag_for_index(mesh_model->mid);
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &mesh_model->subscriptions, sizeof(mesh_publication_model_t));
+}
+
+static void mesh_model_delete_publication(mesh_model_t * mesh_model){
+    mesh_configuration_server_setup_tlv();
+    if (mesh_model->publication_model == NULL) return;
+    uint32_t tag = mesh_model_publication_tag_for_index(mesh_model->mid);
+    btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, tag);
+}
+
+void mesh_load_publications(void){
+    printf("Load Model Publications\n");
+    // iterate over elements and models
+    mesh_element_iterator_t element_it;
+    mesh_element_iterator_init(&element_it);
+    while (mesh_element_iterator_has_next(&element_it)){
+        mesh_element_t * element = mesh_element_iterator_next(&element_it);
+        mesh_model_iterator_t model_it;
+        mesh_model_iterator_init(&model_it, element);
+        while (mesh_model_iterator_has_next(&model_it)){
+            mesh_model_t * model = mesh_model_iterator_next(&model_it);
+            mesh_model_load_publication(model);
+        }
+    }
+}
+
+void mesh_delete_publications(void){
+    printf("Delete Model Publications\n");
+    mesh_configuration_server_setup_tlv();
+    // iterate over elements and models
+    mesh_element_iterator_t element_it;
+    mesh_element_iterator_init(&element_it);
+    while (mesh_element_iterator_has_next(&element_it)){
+        mesh_element_t * element = mesh_element_iterator_next(&element_it);
+        mesh_model_iterator_t model_it;
+        mesh_model_iterator_init(&model_it, element);
+        while (mesh_model_iterator_has_next(&model_it)){
+            mesh_model_t * model = mesh_model_iterator_next(&model_it);
+            mesh_model_delete_publication(model);
+        }
+    }
+}
+
 
 // Foundatiopn Message
 
@@ -1478,10 +1547,6 @@ static void config_vendor_model_app_get_handler(mesh_model_t *config_server_mode
 
 // Model Publication
 
-static void mesh_store_publication_model(mesh_model_t *mesh_model){
-    // TODO: implement
-}
-
 static void
 config_model_publication_status(mesh_model_t *mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status,
                                     uint16_t element_address, uint32_t model_identifier, mesh_publication_model_t *publication_model) {
@@ -1539,7 +1604,7 @@ config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
         } else {
 
             // decrease ref count if old virtual address
-            if (mesh_network_virtual_address(configuration_server_publication_model.address)) {
+            if (mesh_network_address_virtual(configuration_server_publication_model.address)) {
                 mesh_virtual_address_t * current_virtual_address = mesh_virtual_address_for_pseudo_dst(configuration_server_publication_model.address);
                 mesh_virtual_address_decrease_refcount(current_virtual_address);
             }
@@ -1548,7 +1613,7 @@ config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
             memcpy(target_model->publication_model, &configuration_server_publication_model, sizeof(mesh_publication_model_t));
 
             // store
-            mesh_store_publication_model(target_model);
+            mesh_model_store_publication(target_model);
         }
     }
 
@@ -1575,7 +1640,7 @@ static void config_model_publication_virtual_address_set_hash(void *arg){
         mesh_virtual_address_increase_refcount(virtual_address);
 
         // decrease ref count if old virtual address
-        if (mesh_network_virtual_address(configuration_server_publication_model.address)) {
+        if (mesh_network_address_virtual(configuration_server_publication_model.address)) {
             mesh_virtual_address_t * current_virtual_address = mesh_virtual_address_for_pseudo_dst(configuration_server_publication_model.address);
             mesh_virtual_address_decrease_refcount(current_virtual_address);
         }
@@ -1585,7 +1650,7 @@ static void config_model_publication_virtual_address_set_hash(void *arg){
         // update model publication state
         memcpy(configuration_server_target_model->publication_model, &configuration_server_publication_model, sizeof(mesh_publication_model_t));
         // store
-        mesh_store_publication_model(configuration_server_target_model);
+        mesh_model_store_publication(configuration_server_target_model);
     }
 
     // send status

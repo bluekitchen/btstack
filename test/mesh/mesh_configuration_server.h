@@ -52,6 +52,14 @@ void mesh_load_virtual_addresses(void);
 
 void mesh_delete_virtual_addresses(void);
 
+void mesh_load_subscriptions(void);
+
+void mesh_delete_subscriptions(void);
+
+void mesh_load_publications(void);
+
+void mesh_delete_publications(void);
+
 // PTS Testing
 void config_nekey_list_set_max(uint16_t max);
 

@@ -130,7 +130,6 @@ static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len
 
 #define MESH_PROXY_NODE_ID_ADVERTISEMENT_TIMEOUT_MS 60000
 
-static adv_bearer_connectable_advertisement_data_item_t mesh_proxy_node_id_advertisement_item;
 static btstack_timer_source_t                           mesh_proxy_node_id_timer;
 static btstack_crypto_random_t                          mesh_proxy_node_id_crypto_request_random;
 static btstack_crypto_aes128_t                          mesh_proxy_node_id_crypto_request_aes128;
@@ -403,6 +402,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     mesh_load_virtual_addresses();
                     // load model subscriptions
                     mesh_load_subscriptions();
+                    // load model publications
+                    mesh_load_publications();
 
                     // setup scanning
                     gap_set_scan_parameters(0, 0x300, 0x300);
@@ -781,6 +782,7 @@ static void stdin_process(char cmd){
             mesh_delete_appkey_lists();
             mesh_delete_virtual_addresses();
             mesh_delete_subscriptions();
+            mesh_delete_publications();
             printf("Provisioning data, app keys, model to app key lists, virtual addresses, model subscriptions deleted\n");
             setup_advertising_unprovisioned();
             break;
