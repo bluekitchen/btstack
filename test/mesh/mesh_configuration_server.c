@@ -189,6 +189,10 @@ void mesh_delete_virtual_addresses(void){
 }
 
 static void mesh_virtual_address_decrease_refcount(mesh_virtual_address_t * virtual_address){
+    if (virtual_address == NULL){
+        log_error("virtual_address == NULL");
+    }
+    // decrease refcount
     virtual_address->ref_count--;
     // Free virtual address if ref count reaches zero
     if (virtual_address->ref_count > 0) return;
@@ -201,6 +205,9 @@ static void mesh_virtual_address_decrease_refcount(mesh_virtual_address_t * virt
 }
 
 static void mesh_virtual_address_increase_refcount(mesh_virtual_address_t * virtual_address){
+    if (virtual_address == NULL){
+        log_error("virtual_address == NULL");
+    }
     virtual_address->ref_count++;
     if (virtual_address->ref_count > 1) return;
     // store in TLV
@@ -231,7 +238,6 @@ static void mesh_model_load_subscriptions(mesh_model_t * mesh_model){
         uint16_t src = mesh_model->subscriptions[i];
         if (mesh_network_address_virtual(src)){
             mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_pseudo_dst(src);
-            if (virtual_address == NULL) continue;
             mesh_virtual_address_increase_refcount(virtual_address);
         }
     }
@@ -319,7 +325,6 @@ static void mesh_subcription_decrease_virtual_address_ref_count(mesh_model_t *me
         uint16_t src = mesh_model->subscriptions[i];
         if (mesh_network_address_virtual(src)){
             mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_pseudo_dst(src);
-            if (virtual_address == NULL) continue;
             mesh_virtual_address_decrease_refcount(virtual_address);
         }
     }
@@ -1532,11 +1537,16 @@ config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
         if (target_model->publication_model == NULL){
             status = MESH_FOUNDATION_STATUS_CANNOT_SET;
         } else {
-            
-            // decrease ref count if virtual address
+
+            // decrease ref count if old virtual address
+            if (mesh_network_virtual_address(configuration_server_publication_model.address)) {
+                mesh_virtual_address_t * current_virtual_address = mesh_virtual_address_for_pseudo_dst(configuration_server_publication_model.address);
+                mesh_virtual_address_decrease_refcount(current_virtual_address);
+            }
 
             // update model publication state
             memcpy(target_model->publication_model, &configuration_server_publication_model, sizeof(mesh_publication_model_t));
+
             // store
             mesh_store_publication_model(target_model);
         }
@@ -1558,13 +1568,17 @@ static void config_model_publication_virtual_address_set_hash(void *arg){
 
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
     if (virtual_address == NULL){
-        configuration_server_publication_model.address = MESH_ADDRESS_UNSASSIGNED;
         status = MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
     } else {
 
         // increase ref count if new virtual address
+        mesh_virtual_address_increase_refcount(virtual_address);
 
         // decrease ref count if old virtual address
+        if (mesh_network_virtual_address(configuration_server_publication_model.address)) {
+            mesh_virtual_address_t * current_virtual_address = mesh_virtual_address_for_pseudo_dst(configuration_server_publication_model.address);
+            mesh_virtual_address_decrease_refcount(current_virtual_address);
+        }
 
         configuration_server_publication_model.address = virtual_address->pseudo_dst;
         mesh_virtual_address_increase_refcount(virtual_address);
