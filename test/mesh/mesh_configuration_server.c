@@ -453,21 +453,14 @@ const mesh_access_message_t mesh_foundation_config_heartbeat_subscription_status
         MESH_FOUNDATION_OPERATION_HEARTBEAT_SUBSCRIPTION_STATUS, "1221111"
 };
 
-static void config_server_send_message(mesh_model_t *mesh_model, uint16_t netkey_index, uint16_t dest,
-                                                 mesh_pdu_t *pdu){
-    if (mesh_model == NULL){
-        log_error("mesh_model == NULL"); 
-    }
-    if (mesh_model->element == NULL){
-        log_error("mesh_model->element == NULL"); 
-    }
-    uint16_t src  = mesh_model->element->unicast_address;
+static void config_server_send_message(uint16_t netkey_index, uint16_t dest, mesh_pdu_t *pdu){
+    // Configuration Server is on primary element and can only use DeviceKey
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
-    uint8_t  ttl  = mesh_foundation_default_ttl_get();
+    uint16_t src          = mesh_access_get_primary_element_address();
+    uint8_t  ttl          = mesh_foundation_default_ttl_get();
     mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, 0);
     mesh_upper_transport_send_access_pdu(pdu);
 }
-
 
 static void config_composition_data_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
 
@@ -521,7 +514,7 @@ static void config_composition_data_status(mesh_model_t * mesh_model, uint16_t n
     }
     
     // send as segmented access pdu
-    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
 static void config_composition_data_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
@@ -537,7 +530,7 @@ static void config_model_beacon_status(mesh_model_t * mesh_model, uint16_t netke
     if (!transport_pdu) return;
 
     // send as segmented access pdu
-    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
 static void config_beacon_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
@@ -570,7 +563,7 @@ static void config_model_default_ttl_status(mesh_model_t * mesh_model, uint16_t 
     if (!transport_pdu) return;
 
     // send as segmented access pdu
-    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
 static void config_default_ttl_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
@@ -602,7 +595,7 @@ static void config_friend_status(mesh_model_t * mesh_model, uint16_t netkey_inde
     if (!transport_pdu) return;
 
     // send as segmented access pdu
-    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
 static void config_friend_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
@@ -638,7 +631,7 @@ static void config_model_gatt_proxy_status(mesh_model_t * mesh_model, uint16_t n
     if (!transport_pdu) return;
 
     // send as segmented access pdu
-    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
 static void config_gatt_proxy_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
@@ -671,7 +664,7 @@ static void config_model_relay_status(mesh_model_t * mesh_model, uint16_t netkey
     if (!transport_pdu) return;
 
     // send as segmented access pdu
-    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
 static void config_relay_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
@@ -711,7 +704,7 @@ static void config_model_network_transmit_status(mesh_model_t * mesh_model, uint
     if (!transport_pdu) return;
 
     // send as segmented access pdu
-    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
 static void config_model_network_transmit_get_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu){
@@ -747,7 +740,7 @@ static void config_netkey_status(mesh_model_t * mesh_model, uint16_t netkey_inde
     if (!transport_pdu) return;
 
     // send as segmented access pdu
-    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
 static void config_netkey_list(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest) {
@@ -763,7 +756,7 @@ static void config_netkey_list(mesh_model_t * mesh_model, uint16_t netkey_index,
     }
 
     // send as segmented access pdu
-    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
 static void config_netkey_add_or_update_derived(void * arg){
@@ -907,7 +900,7 @@ static void config_appkey_status(mesh_model_t * mesh_model, uint16_t netkey_inde
     if (!transport_pdu) return;
 
     // send as segmented access pdu
-    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
 static void config_appkey_list(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint32_t netkey_index_of_list){
@@ -934,7 +927,7 @@ static void config_appkey_list(mesh_model_t * mesh_model, uint16_t netkey_index,
     }
 
     // send as segmented access pdu
-    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
 static void config_appkey_add_or_udpate_aid(void *arg){
@@ -1156,7 +1149,7 @@ static void config_model_subscription_list_status(mesh_model_t * mesh_model, uin
             mesh_access_transport_add_uint16(transport_pdu, target_model->subscriptions[i]);
         }
     }   
-    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
 static void config_model_subscription_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
@@ -1179,7 +1172,7 @@ static void config_model_subscription_status(mesh_model_t * mesh_model, uint16_t
                                                                                 status, element_address, address, model_identifier);
     if (!transport_pdu) return;
     // send as segmented access pdu
-    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
 static void config_model_subscription_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
@@ -1427,7 +1420,7 @@ static void config_model_app_status(mesh_model_t * mesh_model, uint16_t netkey_i
     if (!transport_pdu) return;
 
     // send as segmented access pdu
-    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
 static void config_model_app_list(mesh_model_t * config_server_model, uint16_t netkey_index, uint16_t dest, uint8_t status, uint16_t element_address, uint32_t model_identifier, mesh_model_t * mesh_model){
@@ -1459,7 +1452,7 @@ static void config_model_app_list(mesh_model_t * config_server_model, uint16_t n
     }
 
     // send as segmented access pdu
-    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
 static void config_model_app_bind_handler(mesh_model_t *config_server_model, mesh_pdu_t * pdu) {
@@ -1559,7 +1552,7 @@ config_model_publication_status(mesh_model_t *mesh_model, uint16_t netkey_index,
     if (!transport_pdu) return;
 
     // send as segmented access pdu
-    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
 static void
@@ -1777,7 +1770,7 @@ static void config_heartbeat_publication_status(mesh_model_t *mesh_model, uint16
     printf("MESH config_heartbeat_publication_status count = %u => count_log = %u\n", mesh_heartbeat_publication.count_log, count_log);
 
     // send as segmented access pdu
-    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
 static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
@@ -1842,7 +1835,7 @@ static void config_heartbeat_subscription_status(mesh_model_t *mesh_model, uint1
     printf("MESH config_heartbeat_subscription_status count = %u => count_log = %u\n", mesh_heartbeat_subscription.count_log, count_log);
 
     // send as segmented access pdu
-    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 static int config_heartbeat_subscription_enabled(void){
     return mesh_network_address_unicast(mesh_heartbeat_subscription.source) && mesh_heartbeat_subscription.period_log > 0 &&
@@ -1918,7 +1911,7 @@ static void config_key_refresh_phase_status(mesh_model_t *mesh_model, uint16_t n
     if (!transport_pdu) return;
     
     // send as segmented access pdu
-    config_server_send_message(mesh_model, netkey_index_dest, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index_dest, dest, (mesh_pdu_t *) transport_pdu);
 }
 
 static void config_key_refresh_phase_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
@@ -1991,7 +1984,7 @@ static void config_node_reset_status(mesh_model_t *mesh_model, uint16_t netkey_i
     if (!transport_pdu) return;
 
     // send as segmented access pdu
-    config_server_send_message(mesh_model, netkey_index, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
 static void config_node_reset_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
@@ -2009,7 +2002,7 @@ static void low_power_node_poll_timeout_status(mesh_model_t *mesh_model, uint16_
     if (!transport_pdu) return;
     printf("TODO: send unicast address of the Low Power node and the current value of the PollTimeout timer, instead of 0s\n");
     // send as segmented access pdu
-    config_server_send_message(mesh_model, netkey_index_dest, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index_dest, dest, (mesh_pdu_t *) transport_pdu);
 }
 
 static void config_low_power_node_poll_timeout_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
@@ -2031,7 +2024,7 @@ static void config_node_identity_status(mesh_model_t *mesh_model, uint16_t netke
     if (!transport_pdu) return;
     
     // send as segmented access pdu
-    config_server_send_message(mesh_model, netkey_index_dest, dest, (mesh_pdu_t *) transport_pdu);
+    config_server_send_message(netkey_index_dest, dest, (mesh_pdu_t *) transport_pdu);
 }
 
 static void config_node_identity_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
