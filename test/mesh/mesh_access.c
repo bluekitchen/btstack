@@ -223,6 +223,17 @@ uint16_t mesh_pdu_netkey_index(mesh_pdu_t * pdu){
     }
 }
 
+uint16_t mesh_pdu_appkey_index(mesh_pdu_t * pdu){
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            return ((mesh_transport_pdu_t*) pdu)->appkey_index;
+        case MESH_PDU_TYPE_NETWORK:
+            return ((mesh_network_pdu_t *) pdu)->appkey_index;
+        default:
+            return 0;
+    }
+}
+
 uint16_t mesh_pdu_len(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_TRANSPORT:
@@ -556,6 +567,13 @@ static const mesh_operation_t * mesh_model_lookup_operation(mesh_model_t * model
     return NULL;
 }
 
+static int mesh_access_validate_appkey_index(mesh_model_t * model, uint16_t appkey_index){
+    // DeviceKey is valid for all models
+    if (appkey_index == MESH_DEVICE_KEY_INDEX) return 1;
+    // check if AppKey that is bound to this particular model
+    return mesh_model_contains_appkey(model, appkey_index);
+}
+
 static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
     // get opcode and size
     uint32_t opcode = 0;
@@ -580,9 +598,8 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
             break;
     }
 
-    // TODO: check if used AppKey is bound to particular model
-
     uint16_t dst = mesh_pdu_dst(pdu);
+    uint16_t appkey_index = mesh_pdu_appkey_index(pdu);
     if (mesh_network_address_unicast(dst)){
         // loookup element by unicast address
         mesh_element_t * element = mesh_element_for_unicast_address(dst);
@@ -595,6 +612,7 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
                 // find opcode in table
                 const mesh_operation_t * operation = mesh_model_lookup_operation(model, pdu);
                 if (operation == NULL) break;
+                if (mesh_access_validate_appkey_index(model, appkey_index) == 0) break;
                 operation->handler(model, pdu);
                 return;
             }
@@ -613,6 +631,7 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
                     // find opcode in table
                     const mesh_operation_t * operation = mesh_model_lookup_operation(model, pdu);
                     if (operation == NULL) break;
+                    if (mesh_access_validate_appkey_index(model, appkey_index) == 0) break;
                     operation->handler(model, pdu);
                     return;
                 }
@@ -793,5 +812,14 @@ void mesh_model_unbind_appkey(mesh_model_t * mesh_model, uint16_t appkey_index){
             mesh_store_appkey_list(mesh_model);
         }
     }
+}
+
+int mesh_model_contains_appkey(mesh_model_t * mesh_model, uint16_t appkey_index){
+    uint16_t i;
+    for (i=0;i<MAX_NR_MESH_APPKEYS_PER_MODEL;i++){
+        if (mesh_model->appkey_indices[i] == appkey_index) return 1;
+    }
+    return 0;
+
 }
 

@@ -194,6 +194,7 @@ mesh_model_t * mesh_access_model_for_address_and_model_identifier(uint16_t eleme
 uint16_t mesh_pdu_src(mesh_pdu_t * pdu);
 uint16_t mesh_pdu_dst(mesh_pdu_t * pdu);
 uint16_t mesh_pdu_netkey_index(mesh_pdu_t * pdu);
+uint16_t mesh_pdu_appkey_index(mesh_pdu_t * pdu);
 uint16_t mesh_pdu_len(mesh_pdu_t * pdu);
 uint8_t * mesh_pdu_data(mesh_pdu_t * pdu);
 
@@ -213,6 +214,7 @@ void mesh_delete_appkey_lists(void);
 void mesh_model_reset_appkeys(mesh_model_t * mesh_model);
 uint8_t mesh_model_bind_appkey(mesh_model_t * mesh_model, uint16_t appkey_index);
 void mesh_model_unbind_appkey(mesh_model_t * mesh_model, uint16_t appkey_index);
+int mesh_model_contains_appkey(mesh_model_t * mesh_model, uint16_t appkey_index);
 
 // Mesh Access Parser
 int mesh_access_pdu_get_opcode(mesh_pdu_t * pdu, uint32_t * opcode, uint16_t * opcode_size);
