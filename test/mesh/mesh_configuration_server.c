@@ -90,30 +90,32 @@ typedef struct {
     uint8_t   label_uuid[16];
 } mesh_persistent_virtual_address_t;
 
-static btstack_crypto_aes128_cmac_t configuration_server_cmac_request;
 
+// current access pdu
 static mesh_pdu_t * access_pdu_in_process;
 
-static btstack_crypto_aes128_cmac_t mesh_cmac_request;
+// data from current pdu
+static uint16_t                     configuration_server_element_address;
+static uint32_t                     configuration_server_model_identifier;
+static mesh_model_t               * configuration_server_target_model;
+static mesh_publication_model_t     configuration_server_publication_model;
 
-static mesh_publication_model_t publication_model;
-static mesh_model_t           * config_model_publication_model;
-static uint32_t                 config_model_publication_model_identifier;
-static uint8_t                  model_publication_label_uuid[16];
+// cmac for virtual address hash and netkey derive
+static btstack_crypto_aes128_cmac_t configuration_server_cmac_request;
 
+// used to setup virtual addresses
+static uint8_t                      configuration_server_label_uuid[16];
+static uint16_t                     configuration_server_hash;
 
-static uint16_t                 model_subscription_hash;
-static uint8_t                  model_subscription_label_uuid[16];
-static uint16_t                 model_subscription_element_address;
-
+// heartbeat publication and subscription state for all Configuration Server models - there is only one
 static mesh_heartbeat_publication_t  mesh_heartbeat_publication;
 static mesh_heartbeat_subscription_t mesh_heartbeat_subscription;
 
+// for PTS testing
 static int config_netkey_list_max = 0;
 
 
 // Heartbeat (helper)
-
 static uint16_t heartbeat_pwr2(uint8_t value){
     if (!value)                         return 0x0000;
     if (value == 0xff || value == 0x11) return 0xffff;
@@ -941,7 +943,7 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
 
     // calculate AID
     access_pdu_in_process = pdu;
-    mesh_transport_key_calc_aid(&mesh_cmac_request, app_key, config_appkey_add_or_udpate_aid, app_key);
+    mesh_transport_key_calc_aid(&configuration_server_cmac_request, app_key, config_appkey_add_or_udpate_aid, app_key);
 }
 
 static void config_appkey_update_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
@@ -958,6 +960,8 @@ static void config_appkey_update_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
     uint8_t  appkey[16];
     mesh_access_parser_get_key(&parser, appkey);
 
+
+// for PTS testing
     // check netkey_index is valid
     mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
     if (network_key == NULL){
@@ -1011,7 +1015,7 @@ static void config_appkey_update_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
 
     // calculate AID
     access_pdu_in_process = pdu;
-    mesh_transport_key_calc_aid(&mesh_cmac_request, app_key, config_appkey_add_or_udpate_aid, app_key);
+    mesh_transport_key_calc_aid(&configuration_server_cmac_request, app_key, config_appkey_add_or_udpate_aid, app_key);
 }
 
 static void config_appkey_delete_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
@@ -1028,12 +1032,13 @@ static void config_appkey_delete_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
     if (network_key == NULL){
         config_appkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX);
         mesh_access_message_processed(pdu);
+
+// for PTS testing
         return;
     }
 
     // check if appkey already exists
-    mesh_transport_key_t * transport_key = mesh_transport_key_get(appkey_index);
-    if (transport_key){
+    mesh_transport_key_t * transport_key = mesh_transport_key_get(appkey_index);    if (transport_key){
         mesh_delete_app_key(transport_key->internal_index);
         mesh_transport_key_remove(transport_key);
         btstack_memory_mesh_transport_key_free(transport_key);
@@ -1134,9 +1139,9 @@ static void config_model_subscription_virtual_address_add_hash(void *arg){
     mesh_model_t * mesh_model = mesh_model_get_configuration_server();
 
     // add if not exists
-    mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_label_uuid(model_subscription_label_uuid);
+    mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_label_uuid(configuration_server_label_uuid);
     if (virtual_address == NULL){
-        virtual_address = mesh_virtual_address_register(model_subscription_label_uuid, model_subscription_hash);
+        virtual_address = mesh_virtual_address_register(configuration_server_label_uuid, configuration_server_hash);
     }
 
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
@@ -1154,7 +1159,7 @@ static void config_model_subscription_virtual_address_add_hash(void *arg){
         }
     }
 
-    config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), status, model_subscription_element_address, pseudo_dst, target_model->model_identifier);
+    config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), status, configuration_server_element_address, pseudo_dst, target_model->model_identifier);
     mesh_access_message_processed(access_pdu_in_process);
     return;
 }
@@ -1164,24 +1169,24 @@ static void config_model_subscription_virtual_address_add_handler(mesh_model_t *
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
     // ElementAddress - Address of the element - should be us
-    model_subscription_element_address = mesh_access_parser_get_u16(&parser);
+    configuration_server_element_address = mesh_access_parser_get_u16(&parser);
 
     // store label uuid
-    mesh_access_parser_get_label_uuid(&parser, model_subscription_label_uuid);
+    mesh_access_parser_get_label_uuid(&parser, configuration_server_label_uuid);
 
     // Model Identifier
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
-    mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(model_subscription_element_address, model_identifier, &status);
+    mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(configuration_server_element_address, model_identifier, &status);
 
     if (target_model == NULL){
-        config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, model_subscription_element_address, MESH_ADDRESS_UNSASSIGNED, model_identifier);
+        config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, configuration_server_element_address, MESH_ADDRESS_UNSASSIGNED, model_identifier);
         mesh_access_message_processed(pdu);
         return;
     }
     access_pdu_in_process = pdu;
-    mesh_virtual_address(&configuration_server_cmac_request, model_subscription_label_uuid, &model_subscription_hash, &config_model_subscription_virtual_address_add_hash, target_model);
+    mesh_virtual_address(&configuration_server_cmac_request, configuration_server_label_uuid, &configuration_server_hash, &config_model_subscription_virtual_address_add_hash, target_model);
 }
 
 static void config_model_subscription_overwrite_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
@@ -1215,9 +1220,9 @@ static void config_model_subscription_virtual_address_overwrite_hash(void *arg){
     mesh_model_t * mesh_model = mesh_model_get_configuration_server();
 
     // add if not exists
-    mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_label_uuid(model_subscription_label_uuid);
+    mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_label_uuid(configuration_server_label_uuid);
     if (virtual_address == NULL){
-        virtual_address = mesh_virtual_address_register(model_subscription_label_uuid, model_subscription_hash);
+        virtual_address = mesh_virtual_address_register(configuration_server_label_uuid, configuration_server_hash);
     }
 
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
@@ -1242,7 +1247,7 @@ static void config_model_subscription_virtual_address_overwrite_hash(void *arg){
         mesh_model_store_subscriptions(target_model);
     }
 
-    config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), status, model_subscription_element_address, pseudo_dst, target_model->model_identifier);
+    config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), status, configuration_server_element_address, pseudo_dst, target_model->model_identifier);
     mesh_access_message_processed(access_pdu_in_process);
     return;
 }
@@ -1252,24 +1257,24 @@ static void config_model_subscription_virtual_address_overwrite_handler(mesh_mod
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
     // ElementAddress - Address of the element - should be us
-    model_subscription_element_address = mesh_access_parser_get_u16(&parser);
+    configuration_server_element_address = mesh_access_parser_get_u16(&parser);
 
     // store label uuid
-    mesh_access_parser_get_label_uuid(&parser, model_subscription_label_uuid);
+    mesh_access_parser_get_label_uuid(&parser, configuration_server_label_uuid);
 
     // Model Identifier
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
-    mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(model_subscription_element_address, model_identifier, &status);
+    mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(configuration_server_element_address, model_identifier, &status);
 
     if (target_model == NULL){
-        config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, model_subscription_element_address, MESH_ADDRESS_UNSASSIGNED, model_identifier);
+        config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, configuration_server_element_address, MESH_ADDRESS_UNSASSIGNED, model_identifier);
         mesh_access_message_processed(pdu);
         return;
     }
     access_pdu_in_process = pdu;
-    mesh_virtual_address(&configuration_server_cmac_request, model_subscription_label_uuid, &model_subscription_hash, &config_model_subscription_virtual_address_overwrite_hash, target_model);
+    mesh_virtual_address(&configuration_server_cmac_request, configuration_server_label_uuid, &configuration_server_hash, &config_model_subscription_virtual_address_overwrite_hash, target_model);
 }
 
 static void config_model_subscription_delete_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
@@ -1301,10 +1306,10 @@ static void config_model_subscription_virtual_address_delete_handler(mesh_model_
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
     uint16_t element_address  = mesh_access_parser_get_u16(&parser);
-    mesh_access_parser_get_label_uuid(&parser, model_subscription_label_uuid);
+    mesh_access_parser_get_label_uuid(&parser, configuration_server_label_uuid);
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
-    mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_label_uuid(model_subscription_label_uuid);
+    mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_label_uuid(configuration_server_label_uuid);
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
     mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
 
@@ -1490,21 +1495,21 @@ config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
     uint16_t element_address = mesh_access_parser_get_u16(&parser);
 
     // PublishAddress, 16 bit
-    publication_model.address = mesh_access_parser_get_u16(&parser);
+    configuration_server_publication_model.address = mesh_access_parser_get_u16(&parser);
 
     // AppKeyIndex (12), CredentialFlag (1), RFU (3)
     uint16_t temp = mesh_access_parser_get_u16(&parser);
-    publication_model.appkey_index = temp & 0x0fff;
-    publication_model.friendship_credential_flag = (temp >> 12) & 1;
+    configuration_server_publication_model.appkey_index = temp & 0x0fff;
+    configuration_server_publication_model.friendship_credential_flag = (temp >> 12) & 1;
 
     // TTL
-    publication_model.ttl        = mesh_access_parser_get_u8(&parser);
+    configuration_server_publication_model.ttl        = mesh_access_parser_get_u8(&parser);
 
     // Period
-    publication_model.period     = mesh_access_parser_get_u8(&parser);
+    configuration_server_publication_model.period     = mesh_access_parser_get_u8(&parser);
 
     // Retransmit
-    publication_model.retransmit = mesh_access_parser_get_u8(&parser);
+    configuration_server_publication_model.retransmit = mesh_access_parser_get_u8(&parser);
 
     // Model Identifier
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
@@ -1517,39 +1522,39 @@ config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
         if (target_model->publication_model == NULL){
             status = MESH_FOUNDATION_STATUS_CANNOT_SET;
         } else {
-            if (publication_model.address == MESH_ADDRESS_UNSASSIGNED){
+            if (configuration_server_publication_model.address == MESH_ADDRESS_UNSASSIGNED){
                 // unpublish
-                memset(&publication_model, 0, sizeof(publication_model));
+                memset(&configuration_server_publication_model, 0, sizeof(mesh_publication_model_t));
             }
-            memcpy(target_model->publication_model, &publication_model, sizeof(mesh_publication_model_t));
+            memcpy(target_model->publication_model, &configuration_server_publication_model, sizeof(mesh_publication_model_t));
         }
     }
 
     // TODO: validate params
 
     // send status
-    config_model_publication_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, model_identifier, &publication_model);
+    config_model_publication_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, model_identifier, &configuration_server_publication_model);
     mesh_access_message_processed(pdu);
 }
 
 static void config_model_publication_virtual_address_set_hash(void *arg){
     mesh_model_t *mesh_model = (mesh_model_t*) arg;
-    printf("Virtual Address Hash: %04x\n", publication_model.address);
+    printf("Virtual Address Hash: %04x\n", configuration_server_publication_model.address);
 
     // TODO: find a way to get netkey_index
     uint16_t netkey_index = 0;
 
     // update
-    if (publication_model.address == MESH_ADDRESS_UNSASSIGNED){
+    if (configuration_server_publication_model.address == MESH_ADDRESS_UNSASSIGNED){
         // unpublish
-        memset(&publication_model, 0, sizeof(publication_model));
+        memset(&configuration_server_publication_model, 0, sizeof(mesh_publication_model_t));
     }
-    memcpy(config_model_publication_model->publication_model, &publication_model, sizeof(mesh_publication_model_t));
+    memcpy(configuration_server_target_model->publication_model, &configuration_server_publication_model, sizeof(mesh_publication_model_t));
 
 
     // send status
     uint8_t status = 0;
-    config_model_publication_status(mesh_model, mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), status, config_model_publication_model_identifier, &publication_model);
+    config_model_publication_status(mesh_model, mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), status, configuration_server_model_identifier, &configuration_server_publication_model);
 
     mesh_access_message_processed(access_pdu_in_process);
 }
@@ -1565,37 +1570,37 @@ config_model_publication_virtual_address_set_handler(mesh_model_t *mesh_model,
     uint16_t element_address = mesh_access_parser_get_u16(&parser);
 
     // store label uuid
-    mesh_access_parser_get_label_uuid(&parser, model_publication_label_uuid);
+    mesh_access_parser_get_label_uuid(&parser, configuration_server_label_uuid);
 
     // AppKeyIndex (12), CredentialFlag (1), RFU (3)
     uint16_t temp = mesh_access_parser_get_u16(&parser);
-    publication_model.appkey_index = temp & 0x0fff;
-    publication_model.friendship_credential_flag = (temp >> 12) & 1;
-    publication_model.ttl        = mesh_access_parser_get_u8(&parser);
-    publication_model.period     = mesh_access_parser_get_u8(&parser);
-    publication_model.retransmit = mesh_access_parser_get_u8(&parser);
+    configuration_server_publication_model.appkey_index = temp & 0x0fff;
+    configuration_server_publication_model.friendship_credential_flag = (temp >> 12) & 1;
+    configuration_server_publication_model.ttl        = mesh_access_parser_get_u8(&parser);
+    configuration_server_publication_model.period     = mesh_access_parser_get_u8(&parser);
+    configuration_server_publication_model.retransmit = mesh_access_parser_get_u8(&parser);
 
     // Model Identifier
-    config_model_publication_model_identifier = mesh_access_parser_get_model_identifier(&parser);
+    configuration_server_model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
     uint8_t status;
-    config_model_publication_model = mesh_access_model_for_address_and_model_identifier(element_address, config_model_publication_model_identifier, &status);
+    configuration_server_target_model = mesh_access_model_for_address_and_model_identifier(element_address, configuration_server_model_identifier, &status);
 
     // on error, no need to calculate virtual address hash
     if (status != MESH_FOUNDATION_STATUS_SUCCESS){
-        config_model_publication_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, config_model_publication_model_identifier, &publication_model);
+        config_model_publication_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, configuration_server_model_identifier, &configuration_server_publication_model);
         mesh_access_message_processed(pdu);
         return;
     }
 
     // model exists, but no publication model
-    if (config_model_publication_model->publication_model == NULL){
-        config_model_publication_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), MESH_FOUNDATION_STATUS_CANNOT_SET, config_model_publication_model_identifier, &publication_model);
+    if (configuration_server_target_model->publication_model == NULL){
+        config_model_publication_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), MESH_FOUNDATION_STATUS_CANNOT_SET, configuration_server_model_identifier, &configuration_server_publication_model);
         mesh_access_message_processed(pdu);
     }
 
     access_pdu_in_process = pdu;
-    mesh_virtual_address(&configuration_server_cmac_request, model_publication_label_uuid, &publication_model.address, &config_model_publication_virtual_address_set_hash, mesh_model);
+    mesh_virtual_address(&configuration_server_cmac_request, configuration_server_label_uuid, &configuration_server_publication_model.address, &config_model_publication_virtual_address_set_hash, mesh_model);
 }
 
 static void
