@@ -363,6 +363,43 @@ static uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl
     return 0;
 }
 
+static void printf_hex(const uint8_t * data, uint16_t len){
+    while (len){
+        printf("%02x", *data);
+        data++;
+        len--;
+    }
+    printf("\n");
+}
+
+static void mesh_pts_dump_mesh_options(void){
+    printf("\nMeshOptions.ini\n");
+
+    printf("[mesh]\n");
+
+    printf("{IVindex}\n");
+    printf("%08x\n", mesh_get_iv_index());
+
+    mesh_network_key_t * network_key = mesh_network_key_list_get(0);
+    if (network_key){
+        printf("{NetKey}\n");
+        printf_hex(network_key->net_key, 16);
+    }
+
+    mesh_transport_key_t * transport_key = mesh_transport_key_get(0);
+    if (transport_key){
+        printf("{AppKey}\n");
+        printf_hex(transport_key->key, 16);
+    }
+
+    mesh_transport_key_t * device_key = mesh_transport_key_get(MESH_DEVICE_KEY_INDEX);
+    if (device_key){
+        printf("{DevKey}\n");
+        printf_hex(device_key->key, 16);
+    }
+    printf("\n");
+}
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -395,7 +432,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     }
                     // load app keys
                     mesh_load_app_keys();
-#if defined(ENABLE_MESH_ADV_BEARER) || defined(ENABLE_MESH_PB_ADV)
                     // load model to appkey bindings
                     mesh_load_appkey_lists();
                     // load virtual addresses
@@ -404,6 +440,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     mesh_load_subscriptions();
                     // load model publications
                     mesh_load_publications();
+
+                    // dump PTS MeshOptions.ini
+                    mesh_pts_dump_mesh_options();
+
+#if defined(ENABLE_MESH_ADV_BEARER) || defined(ENABLE_MESH_PB_ADV)
 
                     // setup scanning
                     gap_set_scan_parameters(0, 0x300, 0x300);
