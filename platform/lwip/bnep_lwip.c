@@ -133,8 +133,7 @@ static void bnep_lwip_outgoing_reset_queue(void){
 static void bnep_lwip_outgoing_queue_packet(struct pbuf *p){
 #if NO_SYS
     // queue up
-    void * pointer = (void * ) p;
-    btstack_ring_buffer_write(&bnep_lwip_outgoing_queue, (uint8_t *) &pointer, sizeof(struct pbuf *));
+    btstack_ring_buffer_write(&bnep_lwip_outgoing_queue, (uint8_t *) &p, sizeof(struct pbuf *));
 #else
     // queue up
     xQueueSendToBack(bnep_lwip_outgoing_queue, &p, portMAX_DELAY);
@@ -145,7 +144,7 @@ static struct pbuf * bnep_lwip_outgoing_pop_packet(void){
     struct pbuf * p = NULL;
 #if NO_SYS
     uint32_t bytes_read = 0;
-    btstack_ring_buffer_read(&bnep_lwip_outgoing_queue, (uint8_t *) &pointer, sizeof(struct pbuf *), &bytes_read);
+    btstack_ring_buffer_read(&bnep_lwip_outgoing_queue, (uint8_t *) &p, sizeof(struct pbuf *), &bytes_read);
     (void) bytes_read;
 #else
     xQueueReceive(bnep_lwip_outgoing_queue, &p, portMAX_DELAY);
