@@ -45,6 +45,7 @@ dirs_to_copy = [
 '3rd-party/yxml',
 'platform/freertos',
 'platform/embedded',
+'platform/lwip',
 'tool'
 ]
 
