@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_stdin_esp32.c"
+#define BTSTACK_FILE__ "btstack_stdin_esp32.c"
 
 /*
  *  btstack_stdin_esp32.c
