@@ -445,6 +445,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     mesh_load_subscriptions();
                     // load model publications
                     mesh_load_publications();
+                    // load foundation state
+                    mesh_foundation_state_load();
 
                     // dump PTS MeshOptions.ini
                     mesh_pts_dump_mesh_options();

@@ -64,7 +64,7 @@ void mesh_foundation_beacon_set(uint8_t ttl){
     mesh_foundation_beacon = ttl;
     printf("MESH: Secure Network Beacon %x\n", mesh_foundation_beacon);
 }
-uint8_t mesh_foundation_becaon_get(void){
+uint8_t mesh_foundation_beacon_get(void){
     return mesh_foundation_beacon;
 }
 

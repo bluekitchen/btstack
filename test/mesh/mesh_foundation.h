@@ -190,7 +190,7 @@ void mesh_foundation_beacon_set(uint8_t ttl);
  *
  * @return
  */
-uint8_t mesh_foundation_becaon_get(void);
+uint8_t mesh_foundation_beacon_get(void);
 
 /**
  *

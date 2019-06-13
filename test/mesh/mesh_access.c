@@ -674,6 +674,49 @@ static uint32_t mesh_network_key_tag_for_internal_index(uint16_t internal_index)
     return ((uint32_t) 'M' << 24) | ((uint32_t) 'N' << 16) | ((uint32_t) internal_index);
 }
 
+// Foundation state
+
+static const uint32_t mesh_foundation_state_tag = ((uint32_t) 'M' << 24) | ((uint32_t) 'F' << 16)  | ((uint32_t) 'N' << 8) | ((uint32_t) 'D' << 8);
+
+typedef struct {
+    uint8_t gatt_proxy;
+    uint8_t beacon;
+    uint8_t default_ttl;
+    uint8_t network_transmit;
+    uint8_t relay;
+    uint8_t relay_retransmit;
+    uint8_t friend;
+} mesh_persistent_foundation_t;
+
+void mesh_foundation_state_load(void){
+    mesh_access_setup_tlv();
+    mesh_persistent_foundation_t data;
+
+    int app_key_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, mesh_foundation_state_tag, (uint8_t *) &data, sizeof(data));
+    if (app_key_len == 0) return;
+
+    mesh_foundation_gatt_proxy_set(data.gatt_proxy);
+    mesh_foundation_beacon_set(data.gatt_proxy);
+    mesh_foundation_default_ttl_set(data.default_ttl);
+    mesh_foundation_friend_set(data.friend);
+    mesh_foundation_network_transmit_set(data.network_transmit);
+    mesh_foundation_relay_set(data.relay);
+    mesh_foundation_relay_retransmit_set(data.relay_retransmit);
+}
+
+void mesh_foundation_state_store(void){
+    mesh_access_setup_tlv();
+    mesh_persistent_foundation_t data;
+    data.gatt_proxy       = mesh_foundation_gatt_proxy_get();
+    data.gatt_proxy       = mesh_foundation_beacon_get();
+    data.default_ttl      = mesh_foundation_default_ttl_get();
+    data.friend           = mesh_foundation_friend_get();
+    data.network_transmit = mesh_foundation_network_transmit_get();
+    data.relay            = mesh_foundation_relay_get();
+    data.relay_retransmit = mesh_foundation_relay_retransmit_get();
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_foundation_state_tag, (uint8_t *) &data, sizeof(data));
+}
+
 // Mesh Network Keys
 typedef struct {
     uint16_t netkey_index;

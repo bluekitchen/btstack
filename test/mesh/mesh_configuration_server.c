@@ -526,7 +526,7 @@ static void config_composition_data_get_handler(mesh_model_t *mesh_model, mesh_p
 static void config_model_beacon_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_config_beacon_status,
-                                                                               mesh_foundation_becaon_get());
+                                                                               mesh_foundation_beacon_get());
     if (!transport_pdu) return;
 
     // send as segmented access pdu
@@ -550,6 +550,8 @@ static void config_beacon_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
 
     // store
     mesh_foundation_beacon_set(beacon_enabled);
+    mesh_foundation_state_store();
+
     //
     config_model_beacon_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 
@@ -582,6 +584,8 @@ static void config_default_ttl_set_handler(mesh_model_t *mesh_model, mesh_pdu_t 
     if (new_ttl > 0x7f || new_ttl == 0x01) return;
     // store
     mesh_foundation_default_ttl_set(new_ttl);
+    mesh_foundation_state_store();
+
     //
     config_model_default_ttl_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 
@@ -616,6 +620,7 @@ static void config_friend_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     // store if supported
     if (mesh_foundation_friend_get() != MESH_FOUNDATION_STATE_NOT_SUPPORTED){
         mesh_foundation_friend_set(new_friend_state);
+        mesh_foundation_state_store();
     }
 
     //
@@ -650,6 +655,8 @@ static void config_gatt_proxy_set_handler(mesh_model_t *mesh_model, mesh_pdu_t *
     if (enabled > 1) return;
     // store
     mesh_foundation_gatt_proxy_set(enabled);
+    mesh_foundation_state_store();
+
     //
     config_model_gatt_proxy_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 
@@ -689,6 +696,7 @@ static void config_relay_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
     if (mesh_foundation_relay_get() != MESH_FOUNDATION_STATE_NOT_SUPPORTED){
         mesh_foundation_relay_set(relay);
         mesh_foundation_relay_retransmit_set(relay_retransmit);
+        mesh_foundation_state_store();
     }
 
     //
@@ -721,6 +729,8 @@ static void config_model_network_transmit_set_handler(mesh_model_t * mesh_model,
 
     // store
     mesh_foundation_network_transmit_set(new_ttl);
+    mesh_foundation_state_store();
+
     //
     config_model_network_transmit_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 
