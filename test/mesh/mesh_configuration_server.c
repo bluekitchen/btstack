@@ -805,7 +805,8 @@ static void config_netkey_add_handler(mesh_model_t * mesh_model, mesh_pdu_t * pd
         }
     } else {
         // check limit for pts
-        if (config_netkey_list_max && mesh_network_key_list_count() >= config_netkey_list_max){
+        uint16_t internal_index = mesh_network_key_get_free_index();
+        if (internal_index == 0 || (config_netkey_list_max && mesh_network_key_list_count() >= config_netkey_list_max)){
             status = MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
         } else {
             // setup new key
@@ -814,7 +815,8 @@ static void config_netkey_add_handler(mesh_model_t * mesh_model, mesh_pdu_t * pd
                 status = MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
             } else {
                 access_pdu_in_process = pdu;
-                new_network_key->netkey_index = new_netkey_index;
+                new_network_key->internal_index = internal_index;
+                new_network_key->netkey_index   = new_netkey_index;
                 memcpy(new_network_key->net_key, new_netkey, 16);
                 mesh_network_key_derive(&configuration_server_cmac_request, new_network_key, config_netkey_add_or_update_derived, new_network_key);
                 return;
@@ -848,16 +850,18 @@ static void config_netkey_update_handler(mesh_model_t * mesh_model, mesh_pdu_t *
     }
 
     // setup new key
+    uint16_t internal_index = mesh_network_key_get_free_index();
     mesh_network_key_t * new_network_key = btstack_memory_mesh_network_key_get();
-    if (new_network_key == NULL){
+    if (internal_index == 0 || new_network_key == NULL){
         config_netkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES, netkey_index);
         mesh_access_message_processed(access_pdu_in_process);
         return;
     }
 
     access_pdu_in_process = pdu;
-    new_network_key->netkey_index = netkey_index;
-    new_network_key->key_refresh  = 1;
+    new_network_key->internal_index = internal_index;
+    new_network_key->netkey_index   = netkey_index;
+    new_network_key->key_refresh    = 1;
     memcpy(new_network_key->net_key, new_netkey, 16);
     mesh_network_key_derive(&configuration_server_cmac_request, new_network_key, config_netkey_add_or_update_derived, new_network_key);
 }

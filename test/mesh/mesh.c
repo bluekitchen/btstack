@@ -433,6 +433,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     } else {
                         mesh_setup_without_provisiong_data();
                     }
+                    // load network keys
+                    mesh_load_network_keys();
                     // load app keys
                     mesh_load_app_keys();
                     // load model to appkey bindings
@@ -845,12 +847,13 @@ static void stdin_process(char cmd){
             break;
         case '8':
             btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, 'PROV');
+            mesh_delete_network_keys();
             mesh_delete_app_keys();
             mesh_delete_appkey_lists();
             mesh_delete_virtual_addresses();
             mesh_delete_subscriptions();
             mesh_delete_publications();
-            printf("Provisioning data, app keys, model to app key lists, virtual addresses, model subscriptions deleted\n");
+            printf("Provisioning data, net keys, app keys, model to app key lists, virtual addresses, model subscriptions deleted\n");
             setup_advertising_unprovisioned();
             break;
         case 'p':

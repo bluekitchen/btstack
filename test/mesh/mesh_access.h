@@ -41,6 +41,7 @@
 #include <stdint.h>
 #include "btstack_linked_list.h"
 #include "ble/mesh/mesh_lower_transport.h"
+#include "mesh_keys.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -200,11 +201,16 @@ uint16_t mesh_pdu_appkey_index(mesh_pdu_t * pdu);
 uint16_t mesh_pdu_len(mesh_pdu_t * pdu);
 uint8_t * mesh_pdu_data(mesh_pdu_t * pdu);
 
+// Mesh NetKey List
+void mesh_store_network_key(mesh_network_key_t * network_key);
+void mesh_delete_network_key(uint16_t internal_index);
+void mesh_delete_net_keys(void);
+void mesh_load_net_keys(void);
+
 // Mesh Appkeys
 void mesh_store_app_key(uint16_t internal_index, uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, const uint8_t * application_key);
 void mesh_delete_app_key(uint16_t internal_index);
 void mesh_delete_app_keys(void);
-
 void mesh_load_app_keys(void);
 
 // Mesh Model Subscriptions

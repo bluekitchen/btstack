@@ -670,9 +670,93 @@ int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address
     return 0;
 }
 
-static uint32_t mesh_transport_key_tag_for_internal_index(uint16_t internal_index){
-    return ((uint32_t) 'M' << 24) | ((uint32_t) 'A' << 16) | ((uint32_t) internal_index);
+static uint32_t mesh_network_key_tag_for_internal_index(uint16_t internal_index){
+    return ((uint32_t) 'M' << 24) | ((uint32_t) 'N' << 16) | ((uint32_t) internal_index);
 }
+
+// Mesh Network Keys
+typedef struct {
+    uint16_t netkey_index;
+
+    // net_key from provisioner or Config Model Client
+    uint8_t net_key[16];
+
+    // derivative data
+
+    // k1
+    uint8_t identity_key[16];
+    uint8_t beacon_key[16];
+
+    // k3
+    uint8_t network_id[8];
+
+    // k2
+    uint8_t nid;
+    uint8_t encryption_key[16];
+    uint8_t privacy_key[16];
+} mesh_persistent_net_key_t;
+
+void mesh_store_network_key(mesh_network_key_t * network_key){
+    mesh_access_setup_tlv();
+    mesh_persistent_net_key_t data;
+    printf("Store NetKey: internal index 0x%x, NetKey Index 0x%06x, NID %02x: ", network_key->internal_index, network_key->netkey_index, network_key->nid);
+    printf_hexdump(network_key->net_key, 16);
+    uint32_t tag = mesh_network_key_tag_for_internal_index(network_key->internal_index);
+    data.netkey_index = network_key->netkey_index;
+    memcpy(data.net_key, network_key->net_key, 16);
+    memcpy(data.identity_key, network_key->identity_key, 16);
+    memcpy(data.beacon_key, network_key->beacon_key, 16);
+    memcpy(data.network_id, network_key->network_id, 8);
+    data.nid = network_key->nid;
+    memcpy(data.encryption_key, network_key->encryption_key, 16);
+    memcpy(data.privacy_key, network_key->privacy_key, 16);
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+}
+
+void mesh_delete_network_key(uint16_t internal_index){
+    mesh_access_setup_tlv();
+    uint32_t tag = mesh_network_key_tag_for_internal_index(internal_index);
+    btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, tag);
+}
+
+
+void mesh_load_network_keys(void){
+    mesh_access_setup_tlv();
+    printf("Load Network Keys\n");
+    uint16_t internal_index;
+    for (internal_index = 0; internal_index < MAX_NR_MESH_NETWORK_KEYS; internal_index++){
+        mesh_persistent_net_key_t data;
+        uint32_t tag = mesh_network_key_tag_for_internal_index(internal_index);
+        int app_key_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+        if (app_key_len == 0) continue;
+        
+        mesh_network_key_t * network_key = btstack_memory_mesh_network_key_get();
+        if (network_key == NULL) return;
+
+        network_key->netkey_index = data.netkey_index;
+        memcpy(network_key->net_key, data.net_key, 16);
+        memcpy(network_key->identity_key, data.identity_key, 16);
+        memcpy(network_key->beacon_key, data.beacon_key, 16);
+        memcpy(network_key->network_id, data.network_id, 8);
+        network_key->nid = data.nid;
+        memcpy(network_key->encryption_key, data.encryption_key, 16);
+        memcpy(network_key->privacy_key, data.privacy_key, 16);
+
+        mesh_network_key_add(network_key);
+        printf("- internal index 0x%x, NetKey Index 0x%06x, NID %02x: ", network_key->internal_index, network_key->netkey_index, network_key->nid);
+        printf_hexdump(network_key->net_key, 16);
+    }
+}
+
+void mesh_delete_network_keys(void){
+    printf("Delete Network Keys\n");
+    
+    uint16_t internal_index;
+    for (internal_index = 0; internal_index < MAX_NR_MESH_TRANSPORT_KEYS; internal_index++){
+        mesh_delete_network_key(internal_index);
+    }
+}
+
 
 // Mesh App Keys
 
@@ -682,6 +766,10 @@ typedef struct {
     uint8_t  aid;
     uint8_t  key[16];
 } mesh_persistent_app_key_t;
+
+static uint32_t mesh_transport_key_tag_for_internal_index(uint16_t internal_index){
+    return ((uint32_t) 'M' << 24) | ((uint32_t) 'N' << 16) | ((uint32_t) internal_index);
+}
 
 void mesh_store_app_key(uint16_t internal_index, uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, const uint8_t * application_key){
     mesh_access_setup_tlv();
