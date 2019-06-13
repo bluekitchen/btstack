@@ -550,7 +550,11 @@ static void mesh_state_update_message_handler(uint8_t packet_type, uint16_t chan
         case HCI_EVENT_MESH_META:
             switch(packet[2]){
                 case MESH_SUBEVENT_STATE_UPDATE_BOOL:
-                    printf("state update\n");
+                    printf("state update: model identifier 0x%08x, state identifier 0x%08x, reason %u, state %u\n",
+                        mesh_subevent_state_update_bool_get_model_identifier(packet),
+                        mesh_subevent_state_update_bool_get_state_identifier(packet),
+                        mesh_subevent_state_update_bool_get_reason(packet),
+                        mesh_subevent_state_update_bool_get_value(packet));
                     break;
                 default:
                     break;
