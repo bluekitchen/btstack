@@ -80,6 +80,7 @@
 #define LWIP_TIMER_INTERVAL_MS 25
 
 static void bnep_lwip_outgoing_process(void * arg);
+static int bnep_lwip_outgoing_packets_empty(void);
 
 // lwip data
 static struct netif btstack_netif;
@@ -106,6 +107,85 @@ static struct pbuf * bnep_lwip_outgoing_next_packet;
 // temp buffer to unchain buffer
 static uint8_t btstack_network_outgoing_buffer[HCI_ACL_PAYLOAD_SIZE];
 
+// helper functions to hide NO_SYS vs. FreeRTOS implementations
+
+static int bnep_lwip_outgoing_init_queue(void){
+#if NO_SYS
+    btstack_ring_buffer_init(&bnep_lwip_outgoing_queue, bnep_lwip_outgoing_queue_storage, sizeof(bnep_lwip_outgoing_queue_storage));
+#else
+    bnep_lwip_outgoing_queue = xQueueCreate(TCP_SND_QUEUELEN, sizeof(struct pbuf *));
+    if (bnep_lwip_outgoing_queue == NULL){
+        log_error("cannot allocate outgoing queue");
+        return 1;
+    }
+#endif
+    return 0;
+}
+
+static void bnep_lwip_outgoing_reset_queue(void){
+#if NO_SYS
+    btstack_ring_buffer_init(&bnep_lwip_outgoing_queue, bnep_lwip_outgoing_queue_storage, sizeof(bnep_lwip_outgoing_queue_storage));
+#else
+    xQueueReset(bnep_lwip_outgoing_queue);
+#endif
+}
+
+static void bnep_lwip_outgoing_queue_packet(struct pbuf *p){
+#if NO_SYS
+    // queue up
+    void * pointer = (void * ) p;
+    btstack_ring_buffer_write(&bnep_lwip_outgoing_queue, (uint8_t *) &pointer, sizeof(struct pbuf *));
+#else
+    // queue up
+    xQueueSendToBack(bnep_lwip_outgoing_queue, &p, portMAX_DELAY);
+#endif
+}
+
+static struct pbuf * bnep_lwip_outgoing_pop_packet(void){
+    struct pbuf * p = NULL;
+#if NO_SYS
+    uint32_t bytes_read = 0;
+    btstack_ring_buffer_read(&bnep_lwip_outgoing_queue, (uint8_t *) &pointer, sizeof(struct pbuf *), &bytes_read);
+    (void) bytes_read;
+#else
+    xQueueReceive(bnep_lwip_outgoing_queue, &p, portMAX_DELAY);
+#endif
+    return p;
+}
+
+static int bnep_lwip_outgoing_packets_empty(void){
+#if NO_SYS
+    return btstack_ring_buffer_empty(&bnep_lwip_outgoing_queue);
+ #else
+    return uxQueueMessagesWaiting(bnep_lwip_outgoing_queue) == 0;
+#endif
+}
+
+static void bnep_lwip_free_pbuf(struct pbuf * p){
+#if NO_SYS
+    // release buffer / decrease refcount
+    pbuf_free(p);
+ #else
+    // release buffer / decrease refcount
+    pbuf_free_callback(p);
+#endif
+}
+
+static void bnep_lwip_outgoing_packet_processed(void){
+    // free pbuf 
+    bnep_lwip_free_pbuf(bnep_lwip_outgoing_next_packet);
+    // mark as done
+    bnep_lwip_outgoing_next_packet = NULL;
+}
+
+static void bnep_lwip_trigger_outgoing_process(void){
+#if NO_SYS
+    bnep_lwip_outgoing_process(NULL);
+#else
+    btstack_run_loop_freertos_execute_code_on_main_thread(&bnep_lwip_outgoing_process, NULL);
+#endif
+}
+
 /// lwIP functions
 
 /**
@@ -123,11 +203,11 @@ static uint8_t btstack_network_outgoing_buffer[HCI_ACL_PAYLOAD_SIZE];
  *       to become availale since the stack doesn't retry to send a packet
  *       dropped because of memory failure (except for the TCP timers).
  */
+
 static err_t low_level_output( struct netif *netif, struct pbuf *p ){
     UNUSED(netif);
     
-    log_info("low_level_output: queue %p, len %u, total len %u", p, p->len, p->tot_len);
-
+    log_info("low_level_output: packet %p, len %u, total len %u ", p, p->len, p->tot_len);
 
     // bnep up?
     if (bnep_cid == 0) return ERR_OK;
@@ -135,23 +215,18 @@ static err_t low_level_output( struct netif *netif, struct pbuf *p ){
     // inc refcount
     pbuf_ref( p );
 
-#if NO_SYS
+    // queue empty now?
+    int queue_empty = bnep_lwip_outgoing_packets_empty();
+
     // queue up
-    void * pointer = (void * ) p;
-    btstack_ring_buffer_write(&bnep_lwip_outgoing_queue, (uint8_t *) &pointer, sizeof(struct pbuf *));
+    bnep_lwip_outgoing_queue_packet(p);
 
-    // trigger (might be new packet)
-    bnep_lwip_outgoing_process(NULL);
+    // trigger processing if queue was empty (might be new packet)
+    if (queue_empty){
+        bnep_lwip_trigger_outgoing_process();
+    }
 
-#else
-    // queue up
-    xQueueSendToBack(bnep_lwip_outgoing_queue, &p, portMAX_DELAY);
-
-    // trigger (might be new packet)
-    btstack_run_loop_freertos_execute_code_on_main_thread(&bnep_lwip_outgoing_process, NULL);
-#endif
-
-    return (err_t) ERR_OK;
+    return ERR_OK;
 }
 
 /**
@@ -248,44 +323,21 @@ static void bnep_lwip_netif_process_packet(const uint8_t * packet, uint16_t size
 
     if (size != 0){
         log_error("failed to copy data into pbuf");
-        pbuf_free(p);
+        bnep_lwip_free_pbuf(p);
         return;
     }
 
     /* pass all packets to ethernet_input, which decides what packets it supports */
-    if (btstack_netif.input(p, &btstack_netif) != ERR_OK){
+    int res = btstack_netif.input(p, &btstack_netif);
+    if (res != ERR_OK){
         log_error("bnep_lwip_netif_process_packet: IP input error\n");
-        pbuf_free(p);
+        bnep_lwip_free_pbuf(p);
         p = NULL;
     }
 }
 
 
-
 // BNEP Functions & Handler
-
-static void bnep_lwip_outgoing_process(void * arg){
-    UNUSED(arg);
-
-    // previous packet not sent yet
-    if (bnep_lwip_outgoing_next_packet) return;
-
-    // get new pbuf to send
-#if NO_SYS
-    uint32_t bytes_read = 0;
-    void * pointer = NULL;
-    btstack_ring_buffer_read(&bnep_lwip_outgoing_queue, (uint8_t *) &pointer, sizeof(struct pbuf *), &bytes_read);
-    (void) bytes_read;
-    bnep_lwip_outgoing_next_packet = pointer;
-#else
-    xQueueReceive(bnep_lwip_outgoing_queue, &bnep_lwip_outgoing_next_packet, portMAX_DELAY);
-#endif
-
-    log_info("bnep_lwip_outgoing_process send %p", bnep_lwip_outgoing_next_packet);
-
-    // request can send now
-    bnep_request_can_send_now_event(bnep_cid);
-}
 
 #if NO_SYS
 static void bnep_lwip_timeout_handler(btstack_timer_source_t * ts){
@@ -302,6 +354,18 @@ static void bnep_lwip_timeout_handler(btstack_timer_source_t * ts){
 }
 #endif
 
+static void bnep_lwip_outgoing_process(void * arg){
+    UNUSED(arg);
+
+    // previous packet not sent yet
+    if (bnep_lwip_outgoing_next_packet) return;
+
+    bnep_lwip_outgoing_next_packet = bnep_lwip_outgoing_pop_packet();
+
+    // request can send now
+    bnep_request_can_send_now_event(bnep_cid);
+}
+
 static void bnep_lwip_send_packet(void){
     if (bnep_lwip_outgoing_next_packet == NULL){
         log_error("CAN SEND NOW, but now packet queued");
@@ -312,34 +376,6 @@ static void bnep_lwip_send_packet(void){
     uint32_t len = btstack_min(sizeof(btstack_network_outgoing_buffer), bnep_lwip_outgoing_next_packet->tot_len);
     pbuf_copy_partial(bnep_lwip_outgoing_next_packet, btstack_network_outgoing_buffer, len, 0);
     bnep_send(bnep_cid, (uint8_t*) btstack_network_outgoing_buffer, len);
-}
-
-static void bnep_lwip_outgoing_packet_processed(void){
-#if NO_SYS
-    // release buffer / decrease refcount
-    pbuf_free(bnep_lwip_outgoing_next_packet);
- #else
-    // release buffer / decrease refcount
-    pbuf_free_callback(bnep_lwip_outgoing_next_packet);
-#endif
-    // mark as done
-    bnep_lwip_outgoing_next_packet = NULL;
-}
-
-static int bnep_lwip_outgoing_packets_empty(void){
-#if NO_SYS
-    return btstack_ring_buffer_empty(&bnep_lwip_outgoing_queue);
- #else
-    return uxQueueMessagesWaiting(bnep_lwip_outgoing_queue) == 0;
-#endif
-}
-
-static void bnep_lwip_trigger_outgoing_process(void){
-#if NO_SYS
-    bnep_lwip_outgoing_process(NULL);
-#else
-    btstack_run_loop_freertos_execute_code_on_main_thread(&bnep_lwip_outgoing_process, NULL);
-#endif
 }
 
 static void bnep_lwip_packet_sent(void){
@@ -360,11 +396,7 @@ static void bnep_lwip_discard_packets(void){
     }
 
     // reset queue
-#if NO_SYS
-    btstack_ring_buffer_init(&bnep_lwip_outgoing_queue, bnep_lwip_outgoing_queue_storage, sizeof(bnep_lwip_outgoing_queue_storage));
-#else
-    xQueueReset(bnep_lwip_outgoing_queue);
-#endif
+    bnep_lwip_outgoing_reset_queue();
 }
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
@@ -454,18 +486,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 void bnep_lwip_init(void){
 
     // set up outgoing queue
-#if NO_SYS
-    btstack_ring_buffer_init(&bnep_lwip_outgoing_queue, bnep_lwip_outgoing_queue_storage, sizeof(bnep_lwip_outgoing_queue_storage));
-#else
-    bnep_lwip_outgoing_queue = xQueueCreate(TCP_SND_QUEUELEN, sizeof(struct pbuf *));
-    if (bnep_lwip_outgoing_queue == NULL){
-        log_error("cannot allocate outgoing queue");
-        return;
-    }
-#endif
+    int error = bnep_lwip_outgoing_init_queue();
+    if (error) return;
 
     ip4_addr_t fsl_netif0_ipaddr, fsl_netif0_netmask, fsl_netif0_gw;
-
 #if 0
     // when using DHCP Client, no address
     IP4_ADDR(&fsl_netif0_ipaddr, 0U, 0U, 0U, 0U);
