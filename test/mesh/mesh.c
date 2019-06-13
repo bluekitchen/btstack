@@ -543,6 +543,25 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
     }
 }
 
+static void mesh_state_update_message_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    if (packet_type != HCI_EVENT_PACKET) return;
+   
+    switch(packet[0]){
+        case HCI_EVENT_MESH_META:
+            switch(packet[2]){
+                case MESH_SUBEVENT_STATE_UPDATE_BOOL:
+                    printf("state update\n");
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+
 static void mesh_unprovisioned_beacon_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != MESH_BEACON_PACKET) return;
     uint8_t  device_uuid[16];
@@ -1162,6 +1181,7 @@ int btstack_main(void)
     mesh_generic_on_off_server_model.operations = mesh_generic_on_off_server_get_operations();    
     mesh_element_add_model(mesh_primary_element(), &mesh_generic_on_off_server_model);
     mesh_generic_on_off_server_model.model_data = (void *) &mesh_generic_on_off_state;
+    mesh_generic_on_off_server_register_packet_handler(&mesh_state_update_message_handler);
 
     mesh_vendor_model.model_identifier = mesh_model_get_model_identifier(BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, MESH_BLUEKITCHEN_MODEL_ID_TEST_SERVER);
     mesh_model_reset_appkeys(&mesh_vendor_model);

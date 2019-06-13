@@ -51,15 +51,30 @@ extern "C"
 #define MESH_GENERIC_ON_OFF_SET_UNACKNOWLEDGED      0x8203u
 #define MESH_GENERIC_ON_OFF_STATUS                  0x8204u
 
+typedef enum {
+    MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_100ms = 0x00u,
+    MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_1s,
+    MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_10s,
+    MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_10min
+} mesh_default_transition_step_resolution_t;
+
 typedef struct {
-    uint8_t current_on_off_value;
+    uint8_t  current_on_off_value;
+    uint8_t  transaction_identifier;
+    uint32_t transition_time_ms;      
+    uint16_t delay_ms;                
 
     // transition data
-    uint8_t target_on_off_value;
-    uint8_t remaining_time;
+    uint8_t  target_on_off_value;
+    uint32_t remaining_time_ms;
 } mesh_generic_on_off_state_t;
 
 const mesh_operation_t * mesh_generic_on_off_server_get_operations(void);
+/**
+ * @brief Register packet handler
+ * @param packet_handler
+ */
+void mesh_generic_on_off_server_register_packet_handler(btstack_packet_handler_t packet_handler);
 
 #ifdef __cplusplus
 } /* end of extern "C" */
