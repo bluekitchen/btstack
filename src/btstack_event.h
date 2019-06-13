@@ -7553,6 +7553,52 @@ static inline hci_con_handle_t mesh_subevent_message_sent_get_con_handle(const u
     return little_endian_read_16(event, 3);
 }
 
+/**
+ * @brief Get field element_index from event MESH_SUBEVENT_STATE_UPDATE_BOOL
+ * @param event packet
+ * @return element_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_state_update_bool_get_element_index(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field model_identifier from event MESH_SUBEVENT_STATE_UPDATE_BOOL
+ * @param event packet
+ * @return model_identifier
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_state_update_bool_get_model_identifier(const uint8_t * event){
+    return little_endian_read_32(event, 4);
+}
+/**
+ * @brief Get field state_identifier from event MESH_SUBEVENT_STATE_UPDATE_BOOL
+ * @param event packet
+ * @return state_identifier
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_state_update_bool_get_state_identifier(const uint8_t * event){
+    return little_endian_read_32(event, 8);
+}
+/**
+ * @brief Get field reason from event MESH_SUBEVENT_STATE_UPDATE_BOOL
+ * @param event packet
+ * @return reason
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_state_update_bool_get_reason(const uint8_t * event){
+    return event[12];
+}
+/**
+ * @brief Get field value from event MESH_SUBEVENT_STATE_UPDATE_BOOL
+ * @param event packet
+ * @return value
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_state_update_bool_get_value(const uint8_t * event){
+    return event[13];
+}
+
 
 
 /* API_END */

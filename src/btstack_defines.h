@@ -2489,6 +2489,17 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param con_handle
  */
-#define MESH_SUBEVENT_MESSAGE_SENT                                          0x23
+#define MESH_SUBEVENT_MESSAGE_SENT                                                   0x23
+
+/**
+ * @format 114411
+ * @param subevent_code
+ * @param element_index
+ * @param model_identifier
+ * @param state_identifier
+ * @param reason
+ * @param value
+ */
+#define MESH_SUBEVENT_STATE_UPDATE_BOOL                                              0x24
 
 #endif
