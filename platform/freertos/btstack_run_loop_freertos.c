@@ -75,9 +75,9 @@ typedef struct function_call {
 static const btstack_run_loop_t btstack_run_loop_freertos;
 
 static QueueHandle_t        btstack_run_loop_queue;
-#ifdef HAVE_FREERTOS_TASK_NOTIFICATIONS
-static TaskHandle_t    		btstack_run_loop_task;
-#else
+static TaskHandle_t         btstack_run_loop_task;
+
+#ifndef HAVE_FREERTOS_TASK_NOTIFICATIONS
 static EventGroupHandle_t   btstack_run_loop_event_group;
 #endif
 
@@ -144,6 +144,13 @@ void btstack_run_loop_freertos_trigger(void){
 }
 
 void btstack_run_loop_freertos_execute_code_on_main_thread(void (*fn)(void *arg), void * arg){
+
+    // directly call function if already on btstack task
+    if (xTaskGetCurrentTaskHandle() == btstack_run_loop_task){
+        (*fn)(arg);
+        return;
+    }
+
     function_call_t message;
     message.fn  = fn;
     message.arg = arg;
@@ -263,12 +270,10 @@ static void btstack_run_loop_freertos_init(void){
     btstack_run_loop_event_group = xEventGroupCreate();
 #endif
 
-#ifdef HAVE_FREERTOS_TASK_NOTIFICATIONS
+    // task to handle to optimize 'run on main thread'
     btstack_run_loop_task = xTaskGetCurrentTaskHandle();
-    log_info("run loop task %p", btstack_run_loop_task);
-#endif
 
-    log_info("run loop init, queue item size %u", (int) sizeof(function_call_t));
+    log_info("run loop init, task %p, queue item size %u", btstack_run_loop_task, (int) sizeof(function_call_t));
 }
 
 /**
