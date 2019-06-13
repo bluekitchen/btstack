@@ -186,7 +186,7 @@ static void generic_on_off_set_handler(mesh_model_t *generic_on_off_server_model
     uint8_t value = on_off_value;
     uint8_t element_index = 0; // TODO generic_on_off_server_model->element_index?
     uint32_t state_identifier = 0; // TODO
-    mesh_access_emit_state_update_bool(&mesh_packet_handler, element_index, generic_on_off_server_model->model_identifier, state_identifier, reason, value);
+    mesh_access_emit_state_update_bool(mesh_packet_handler, element_index, generic_on_off_server_model->model_identifier, state_identifier, reason, value);
 }
 
 // static void generic_on_off_set_unacknowledged_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
