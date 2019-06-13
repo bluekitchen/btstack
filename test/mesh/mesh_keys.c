@@ -51,16 +51,30 @@ static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len
 
 // network key list
 static btstack_linked_list_t network_keys;
+static uint8_t mesh_network_key_used[MAX_NR_MESH_NETWORK_KEYS];
 
 void mesh_network_key_init(void){
     network_keys = NULL;
 }
 
+uint16_t mesh_network_key_get_free_index(void){
+    // find empty slot, skip slot #0 reserved for primary network key
+    uint16_t i;
+    for (i=1;i < MAX_NR_MESH_NETWORK_KEYS ; i++){
+        if (mesh_network_key_used[i] == 0){
+            return i;
+        }
+    }
+    return 0;
+}
+
 void mesh_network_key_add(mesh_network_key_t * network_key){
+    mesh_network_key_used[network_key->internal_index] = 1;
     btstack_linked_list_add_tail(&network_keys, (btstack_linked_item_t *) network_key);
 }
 
 int mesh_network_key_remove(mesh_network_key_t * network_key){
+    mesh_network_key_used[network_key->internal_index] = 1;
     return btstack_linked_list_remove(&network_keys, (btstack_linked_item_t *) network_key);
 }
 

@@ -60,6 +60,9 @@ typedef enum {
 typedef struct {
     btstack_linked_item_t item;
 
+    // internal index [0..MAX_NR_MESH_NETWORK_KEYS-1]
+    uint16_t internal_index;
+
     // index into shared global key list
     uint16_t netkey_index;
 
@@ -135,6 +138,13 @@ typedef struct {
  * @brief Init network key storage
  */
 void mesh_network_key_init(void);
+
+/**
+ * @brief Get internal index of free network key storage entry
+ * @note index 0 is reserved for primary network key
+ * @returns index or 0u if none found
+ */
+uint16_t mesh_network_key_get_free_index(void);
 
 /**
  * @brief Add network key to list

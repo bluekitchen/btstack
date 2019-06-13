@@ -246,6 +246,9 @@ static void mesh_network_key_add_from_provisioning_data(const mesh_provisioning_
     // get key
     mesh_network_key_t * network_key = btstack_memory_mesh_network_key_get();
 
+    // internal index 0 for primary network key
+    network_key->internal_index = 0;
+
     // get single instance
     memset(network_key, 0, sizeof(mesh_network_key_t));
 
