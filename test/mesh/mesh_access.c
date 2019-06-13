@@ -72,6 +72,20 @@ void mesh_access_init(void){
     mesh_upper_transport_register_access_message_handler(&mesh_access_message_process_handler);
 }
 
+void mesh_access_emit_state_update_bool(btstack_packet_handler_t handler, uint8_t element_index, uint32_t model_identifier, uint32_t state_identifier, uint8_t reason, uint8_t value){
+    if (!handler) return;
+    uint8_t event[14] = {HCI_EVENT_MESH_META, 13, MESH_SUBEVENT_STATE_UPDATE_BOOL};
+    int pos = 3;
+    event[pos++] = element_index;
+    little_endian_store_32(event, 3, model_identifier);
+    pos += 4;
+    little_endian_store_32(event, 3, state_identifier);
+    pos += 4;
+    event[pos++] = reason;
+    event[pos++] = value;
+    handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 mesh_element_t * mesh_primary_element(void){
     return &primary_element;
 }

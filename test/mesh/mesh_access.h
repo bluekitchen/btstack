@@ -190,6 +190,8 @@ mesh_model_t * mesh_model_get_configuration_server(void);
 
 mesh_model_t * mesh_access_model_for_address_and_model_identifier(uint16_t element_address, uint32_t model_identifier, uint8_t * status);
 
+void mesh_access_emit_state_update_bool(btstack_packet_handler_t handler, uint8_t element_index, uint32_t model_identifier, uint32_t state_identifier, uint8_t reason, uint8_t value);
+
 // Mesh PDU Getter
 uint16_t mesh_pdu_src(mesh_pdu_t * pdu);
 uint16_t mesh_pdu_dst(mesh_pdu_t * pdu);
