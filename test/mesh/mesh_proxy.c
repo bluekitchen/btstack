@@ -145,7 +145,6 @@ void mesh_proxy_stop_advertising_with_node_id(uint16_t netkey_index){
 }
 
 uint8_t mesh_proxy_get_advertising_with_node_id_status(uint16_t netkey_index, mesh_node_identity_state_t * out_state ){
-
     mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
     if (network_key == NULL){
         *out_state = MESH_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED;
@@ -163,6 +162,28 @@ uint8_t mesh_proxy_get_advertising_with_node_id_status(uint16_t netkey_index, me
 #endif
 
     return MESH_FOUNDATION_STATUS_SUCCESS;
+}
+
+uint8_t mesh_proxy_set_advertising_with_node_id(uint16_t netkey_index, mesh_node_identity_state_t state){
+    mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
+    if (network_key == NULL){
+        return  MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX;
+    }
+
+#ifdef ENABLE_MESH_PROXY_SERVER
+    switch (state){
+        case MESH_NODE_IDENTITY_STATE_ADVERTISING_STOPPED:
+            mesh_proxy_stop_advertising_with_node_id(netkey_index);
+            return MESH_FOUNDATION_STATUS_SUCCESS;
+        case MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING:
+            mesh_proxy_start_advertising_with_node_id(netkey_index);
+            return MESH_FOUNDATION_STATUS_SUCCESS;
+        default:
+            break;
+    }
+#endif
+
+    return MESH_FOUNDATION_STATUS_FEATURE_NOT_SUPPORTED;
 }
 
 

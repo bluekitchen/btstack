@@ -2054,28 +2054,8 @@ static void config_node_identity_set_handler(mesh_model_t *mesh_model, mesh_pdu_
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
     mesh_node_identity_state_t node_identity_state = (mesh_node_identity_state_t) mesh_access_parser_get_u8(&parser);
-    
-    uint8_t status = MESH_FOUNDATION_STATUS_FEATURE_NOT_SUPPORTED;
-    
-    mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
-    if (network_key == NULL){
-        status = MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX;
-    } else {
-#ifdef ENABLE_MESH_PROXY_SERVER
-        switch (node_identity_state){
-            case MESH_NODE_IDENTITY_STATE_ADVERTISING_STOPPED:
-                mesh_proxy_stop_advertising_with_node_id(netkey_index);
-                status = MESH_FOUNDATION_STATUS_SUCCESS;
-                break;
-            case MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING:
-                mesh_proxy_start_advertising_with_node_id(netkey_index);
-                status = MESH_FOUNDATION_STATUS_SUCCESS;
-                break;
-            default:
-                break;
-        }
-#endif
-    }
+
+    uint8_t status = mesh_proxy_set_advertising_with_node_id(netkey_index, node_identity_state);
 
     config_node_identity_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, netkey_index, node_identity_state);
     mesh_access_message_processed(pdu);
