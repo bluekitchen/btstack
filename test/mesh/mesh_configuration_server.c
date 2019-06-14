@@ -61,9 +61,10 @@ typedef struct  {
     btstack_timer_source_t timer;
     uint16_t active_features;
     uint32_t period_ms;
+    uint16_t count;
     //
     uint16_t destination;
-    uint16_t count_log;
+    // uint16_t count_log;
     uint8_t  period_log;
     uint8_t  ttl;
     uint16_t features;
@@ -1746,18 +1747,12 @@ config_model_publication_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
 
 static void config_heartbeat_publication_emit(btstack_timer_source_t * ts){
 
-    if (mesh_heartbeat_publication.count_log == 0) return;
-
-    if (mesh_heartbeat_publication.destination == MESH_ADDRESS_UNSASSIGNED) return;
-
-    printf("CONFIG_SERVER_HEARTBEAT: Emit (dest %04x, count log %u, period %u ms, seq %x)\n",
+    printf("CONFIG_SERVER_HEARTBEAT: Emit (dest %04x, count %u, period %u ms, seq %x)\n",
         mesh_heartbeat_publication.destination, 
-        mesh_heartbeat_publication.count_log, 
+        mesh_heartbeat_publication.count, 
         mesh_heartbeat_publication.period_ms, 
         mesh_lower_transport_peek_seq());
     
-    mesh_heartbeat_publication.count_log--;
-
     // active features
     mesh_heartbeat_publication.active_features = mesh_foundation_get_features();
 
@@ -1772,6 +1767,9 @@ static void config_heartbeat_publication_emit(btstack_timer_source_t * ts){
         mesh_upper_transport_send_control_pdu((mesh_pdu_t *) network_pdu);
     }
 
+    mesh_heartbeat_publication.count--;
+    if (mesh_heartbeat_publication.count == 0) return;
+
     // periodic publication?
     if (mesh_heartbeat_publication.period_ms   == 0) return;
 
@@ -1783,7 +1781,7 @@ static void config_heartbeat_publication_status(mesh_model_t *mesh_model, uint16
 
     // setup message
     uint8_t status = 0;
-    uint8_t count_log = heartbeat_count_log(mesh_heartbeat_publication.count_log);
+    uint8_t count_log = heartbeat_count_log(mesh_heartbeat_publication.count);
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
             &mesh_foundation_config_heartbeat_publication_status,
             status,
@@ -1794,7 +1792,7 @@ static void config_heartbeat_publication_status(mesh_model_t *mesh_model, uint16
             mesh_heartbeat_publication.features,
             mesh_heartbeat_publication.netkey_index);
     if (!transport_pdu) return;
-    printf("MESH config_heartbeat_publication_status count = %u => count_log = %u\n", mesh_heartbeat_publication.count_log, count_log);
+    printf("MESH config_heartbeat_publication_status count = %u => count_log = %u\n", mesh_heartbeat_publication.count, count_log);
 
     // send as segmented access pdu
     config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
@@ -1809,7 +1807,7 @@ static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, m
     // Destination address for Heartbeat messages
     mesh_heartbeat_publication.destination = mesh_access_parser_get_u16(&parser);
     // Number of Heartbeat messages to be sent
-    mesh_heartbeat_publication.count_log = heartbeat_pwr2(mesh_access_parser_get_u8(&parser));
+    mesh_heartbeat_publication.count = heartbeat_pwr2(mesh_access_parser_get_u8(&parser));
     //  Period for sending Heartbeat messages
     mesh_heartbeat_publication.period_log = mesh_access_parser_get_u8(&parser);
     //  TTL to be used when sending Heartbeat messages
@@ -1823,7 +1821,7 @@ static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, m
     mesh_heartbeat_publication.period_ms = heartbeat_pwr2(mesh_heartbeat_publication.period_log) * 1000;
 
     printf("MESH config_heartbeat_publication_set, destination %x, count = %x, period = %u s\n",
-            mesh_heartbeat_publication.destination, mesh_heartbeat_publication.count_log, mesh_heartbeat_publication.period_ms);
+            mesh_heartbeat_publication.destination, mesh_heartbeat_publication.count, mesh_heartbeat_publication.period_ms);
 
     config_heartbeat_publication_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 
