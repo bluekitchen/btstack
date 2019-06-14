@@ -42,6 +42,7 @@
 #include "btstack_linked_list.h"
 #include "ble/mesh/mesh_lower_transport.h"
 #include "mesh_keys.h"
+#include "bluetooth_company_id.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -55,6 +56,19 @@ extern "C"
 
 struct mesh_model;
 struct mesh_element;
+
+typedef enum {
+    MODEL_STATE_UPDATE_REASON_SET = 0x00u, 
+    // MODEL_STATE_UPDATE_REASON_TRANSITION_START, 
+    // MODEL_STATE_UPDATE_REASON_TRANSITION_ACTIVE, 
+    // MODEL_STATE_UPDATE_REASON_TRANSITION_END, 
+    // MODEL_STATE_UPDATE_REASON_BOUND_STATE, 
+    MODEL_STATE_UPDATE_REASON_APPLICATION_CHANGE
+ } model_state_update_reason_t;
+
+typedef enum {
+    MODEL_STATE_ID_GENERIC_ON_OFF = (BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC << 16) | 0u,
+} model_state_id_t;
 
 typedef struct {
     uint16_t address;
@@ -155,6 +169,8 @@ void mesh_access_set_primary_element_location(uint16_t location);
 
 void mesh_element_add(mesh_element_t * element);
 
+uint8_t mesh_access_get_element_index(mesh_model_t * mesh_model);
+
 mesh_element_t * mesh_element_for_unicast_address(uint16_t unicast_address);
 
 void mesh_element_add_model(mesh_element_t * element, mesh_model_t * mesh_model);
@@ -191,7 +207,8 @@ mesh_model_t * mesh_model_get_configuration_server(void);
 
 mesh_model_t * mesh_access_model_for_address_and_model_identifier(uint16_t element_address, uint32_t model_identifier, uint8_t * status);
 
-void mesh_access_emit_state_update_bool(btstack_packet_handler_t handler, uint8_t element_index, uint32_t model_identifier, uint32_t state_identifier, uint8_t reason, uint8_t value);
+void mesh_access_emit_state_update_bool(btstack_packet_handler_t handler, uint8_t element_index, uint32_t model_identifier, 
+    model_state_id_t state_identifier, model_state_update_reason_t reason, uint8_t value);
 
 // Mesh PDU Getter
 uint16_t mesh_pdu_src(mesh_pdu_t * pdu);

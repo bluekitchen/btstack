@@ -176,12 +176,13 @@ static void generic_on_off_set_handler(mesh_model_t *generic_on_off_server_model
     generic_on_off_server_state->delay_ms = 0;
     mesh_generic_on_off_status_message(generic_on_off_server_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), mesh_pdu_appkey_index(pdu));
     mesh_access_message_processed(pdu);
-    // TODO
-    uint8_t reason = 0;
-    uint8_t value = on_off_value;
-    uint8_t element_index = 0; // TODO generic_on_off_server_model->element_index?
-    uint32_t state_identifier = 0; // TODO
-    mesh_access_emit_state_update_bool(mesh_packet_handler, element_index, generic_on_off_server_model->model_identifier, state_identifier, reason, value);
+    
+    mesh_access_emit_state_update_bool(mesh_packet_handler, 
+        mesh_access_get_element_index(generic_on_off_server_model), 
+        generic_on_off_server_model->model_identifier, 
+        MODEL_STATE_ID_GENERIC_ON_OFF, 
+        MODEL_STATE_UPDATE_REASON_SET, 
+        generic_on_off_server_state->current_on_off_value);
 }
 
 // static void generic_on_off_set_unacknowledged_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){

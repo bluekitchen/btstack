@@ -43,7 +43,6 @@
 #include "mesh_access.h"
 #include "btstack_memory.h"
 #include "btstack_debug.h"
-#include "bluetooth_company_id.h"
 #include "mesh_transport.h"
 #include "mesh_foundation.h"
 #include "btstack_tlv.h"
@@ -72,16 +71,17 @@ void mesh_access_init(void){
     mesh_upper_transport_register_access_message_handler(&mesh_access_message_process_handler);
 }
 
-void mesh_access_emit_state_update_bool(btstack_packet_handler_t handler, uint8_t element_index, uint32_t model_identifier, uint32_t state_identifier, uint8_t reason, uint8_t value){
+void mesh_access_emit_state_update_bool(btstack_packet_handler_t handler, uint8_t element_index, uint32_t model_identifier, 
+    model_state_id_t state_identifier, model_state_update_reason_t reason, uint8_t value){
     if (!handler) return;
     uint8_t event[14] = {HCI_EVENT_MESH_META, 13, MESH_SUBEVENT_STATE_UPDATE_BOOL};
     int pos = 3;
     event[pos++] = element_index;
     little_endian_store_32(event, 3, model_identifier);
     pos += 4;
-    little_endian_store_32(event, 3, state_identifier);
+    little_endian_store_32(event, 3, (uint32_t)state_identifier);
     pos += 4;
-    event[pos++] = reason;
+    event[pos++] = (uint8_t)reason;
     event[pos++] = value;
     handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
@@ -96,6 +96,10 @@ void mesh_access_set_primary_element_address(uint16_t unicast_address){
 
 uint16_t mesh_access_get_primary_element_address(void){
     return primary_element.unicast_address;
+}
+
+uint8_t mesh_access_get_element_index(mesh_model_t * mesh_model){
+    return mesh_model->element->unicast_address - mesh_access_get_primary_element_address();
 }
 
 void mesh_access_set_primary_element_location(uint16_t location){
