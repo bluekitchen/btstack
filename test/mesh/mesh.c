@@ -760,14 +760,8 @@ static void stdin_process(char cmd){
             load_pts_app_key();
             break;
         case '8':
-            btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, 'PROV');
-            mesh_delete_network_keys();
-            mesh_delete_app_keys();
-            mesh_delete_appkey_lists();
-            mesh_delete_virtual_addresses();
-            mesh_delete_subscriptions();
-            mesh_delete_publications();
-            printf("Provisioning data, net keys, app keys, model to app key lists, virtual addresses, model subscriptions deleted\n");
+            mesh_node_reset();
+            printf("Mesh Node Reset!\n");
             setup_advertising_unprovisioned();
             break;
         case 'p':

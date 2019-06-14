@@ -109,7 +109,3 @@ void mesh_foundation_relay_retransmit_set(uint8_t relay_retransmit){
 uint8_t mesh_foundation_relay_retransmit_get(void){
     return mesh_foundation_relay_retransmit;
 }
-
-void mesh_foundation_node_reset(void){
-    printf("MESH: NODE RESET\n");
-}

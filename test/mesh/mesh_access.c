@@ -984,4 +984,3 @@ int mesh_model_contains_appkey(mesh_model_t * mesh_model, uint16_t appkey_index)
     return 0;
 
 }
-

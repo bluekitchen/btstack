@@ -1998,7 +1998,7 @@ static void config_node_reset_status(mesh_model_t *mesh_model, uint16_t netkey_i
 }
 
 static void config_node_reset_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
-    mesh_foundation_node_reset();
+    mesh_node_reset();
     config_node_reset_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
     mesh_access_message_processed(pdu);
 }
@@ -2117,3 +2117,18 @@ const static mesh_operation_t mesh_configuration_server_model_operations[] = {
 const mesh_operation_t * mesh_configuration_server_get_operations(void){
     return mesh_configuration_server_model_operations;
 }
+
+void mesh_node_reset(void){
+    mesh_configuration_server_setup_tlv();
+
+    // PROV
+    btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, 'PROV');
+    // everything else
+    mesh_delete_network_keys();
+    mesh_delete_app_keys();
+    mesh_delete_appkey_lists();
+    mesh_delete_virtual_addresses();
+    mesh_delete_subscriptions();
+    mesh_delete_publications();
+}
+

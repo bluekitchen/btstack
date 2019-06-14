@@ -225,7 +225,7 @@ uint8_t * mesh_pdu_data(mesh_pdu_t * pdu);
 // Mesh NetKey List
 void mesh_store_network_key(mesh_network_key_t * network_key);
 void mesh_delete_network_key(uint16_t internal_index);
-void mesh_delete_networ_keys(void);
+void mesh_delete_network_keys(void);
 void mesh_load_network_keys(void);
 
 // Mesh Appkeys
@@ -282,7 +282,6 @@ void mesh_access_network_add_model_identifier(mesh_network_pdu_t * pdu, uint32_t
 // message builder using template
 mesh_network_pdu_t * mesh_access_setup_unsegmented_message(const mesh_access_message_t *template, ...);
 mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_message_t *template, ...);
-
 
 #ifdef __cplusplus
 } /* end of extern "C" */
