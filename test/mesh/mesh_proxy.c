@@ -84,9 +84,6 @@ static const uint8_t adv_data_with_node_identity_template[] = {
           // Random - 8 bytes
 };
 
-
-
-
 static void mesh_proxy_stop_all_advertising_with_node_id(void){
     mesh_network_key_iterator_t it;
     mesh_network_key_iterator_init(&it);
@@ -129,20 +126,20 @@ static void mesh_proxy_node_id_handle_random(void * arg){
     btstack_crypto_aes128_encrypt(&mesh_proxy_node_id_crypto_request_aes128, proxy_identity_key, mesh_proxy_node_id_plaintext, mesh_proxy_node_id_hash, mesh_proxy_node_id_handle_get_aes128, NULL);
 }
 
-// Public API
-
-void mesh_proxy_start_advertising_with_node_id(uint16_t netkey_index){
+static void mesh_proxy_start_advertising_with_node_id(uint16_t netkey_index){
     mesh_proxy_stop_all_advertising_with_node_id();
     log_info("Proxy start advertising with node id, netkey index %04x", netkey_index);
     // setup node id
     btstack_crypto_random_generate(&mesh_proxy_node_id_crypto_request_random, mesh_proxy_node_id_random_value, sizeof(mesh_proxy_node_id_random_value), mesh_proxy_node_id_handle_random, NULL);
 }
 
-void mesh_proxy_stop_advertising_with_node_id(uint16_t netkey_index){
+static void mesh_proxy_stop_advertising_with_node_id(uint16_t netkey_index){
     UNUSED(netkey_index);
     log_info("Proxy stop advertising with node id, netkey index %04x", netkey_index);
     mesh_proxy_stop_all_advertising_with_node_id();
 }
+
+// Public API
 
 uint8_t mesh_proxy_get_advertising_with_node_id_status(uint16_t netkey_index, mesh_node_identity_state_t * out_state ){
     mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);

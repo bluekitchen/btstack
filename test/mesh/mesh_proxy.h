@@ -57,22 +57,10 @@ typedef enum {
 void mesh_proxy_init(uint16_t primary_unicast_address, const uint8_t * identity_key);
 
 /**
- * @brief Start Advertising with Node ID on given subnet
- * @param netkey_index of subnet
- * @note Node ID is only advertised on one subnet at a time and it is limited to 60 seconds
- */
-void mesh_proxy_start_advertising_with_node_id(uint16_t netkey_index);
-
-/**
- * @brief Stop Advertising with Node ID on given subnet
- * @param netkey_index of subnet
- */
-void mesh_proxy_stop_advertising_with_node_id(uint16_t netkey_index);
-
-/**
  * @brief Set Advertising with Node ID on given subnet
  * @param netkey_index of subnet
  * @returns MESH_FOUNDATION_STATUS_SUCCESS, MESH_FOUNDATION_STATUS_FEATURE_NOT_SUPPORTED, or MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX
+ * @note Node ID is only advertised on one subnet at a time and it is limited to 60 seconds
  */
 uint8_t mesh_proxy_set_advertising_with_node_id(uint16_t netkey_index, mesh_node_identity_state_t state);
 

@@ -444,7 +444,7 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                     mesh_setup_from_provisioning_data(&provisioning_data);
 
                     // start advertising with node id after provisioning
-                    mesh_proxy_start_advertising_with_node_id(network_key->netkey_index);
+                    mesh_proxy_set_advertising_with_node_id(network_key->netkey_index, MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING);
                     break;
                 default:
                     break;
