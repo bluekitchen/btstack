@@ -110,6 +110,17 @@ static uint16_t primary_element_address;
 
 static int provisioned;
 
+// Test configuration
+
+#define MESH_BLUEKITCHEN_MODEL_ID_TEST_SERVER   0x0000u
+
+static mesh_model_t                 mesh_configuration_server_model;
+static mesh_model_t                 mesh_health_server_model;
+static mesh_model_t                 mesh_vendor_model;
+
+static mesh_model_t                 mesh_generic_on_off_server_model;
+static mesh_generic_on_off_state_t  mesh_generic_on_off_state;
+
 static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len){
      printf("%-20s ", name);
      printf_hexdump(data, len);
@@ -451,7 +462,7 @@ static void mesh_state_update_message_handler(uint8_t packet_type, uint16_t chan
         case HCI_EVENT_MESH_META:
             switch(packet[2]){
                 case MESH_SUBEVENT_STATE_UPDATE_BOOL:
-                    printf("state update: model identifier 0x%08x, state identifier 0x%08x, reason %u, state %u\n",
+                    printf("State update: model identifier 0x%08x, state identifier 0x%08x, reason %u, state %u\n",
                         mesh_subevent_state_update_bool_get_model_identifier(packet),
                         mesh_subevent_state_update_bool_get_state_identifier(packet),
                         mesh_subevent_state_update_bool_get_reason(packet),
@@ -695,13 +706,20 @@ static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth Mesh Console at %s ---\n", bd_addr_to_str(iut_address));
+    printf("0      - Send Network Message\n");
     printf("1      - Send Unsegmented Access Message\n");
-    printf("2      - Send   Segmented Access Message - Unicast\n");
-    printf("3      - Send   Segmented Access Message - Group   D000\n");
-    printf("4      - Send   Segmented Access Message - Virtual 9779\n");
+    printf("2      - Send Segmented Access Message - Unicast\n");
+    printf("3      - Send Segmented Access Message - Group   D000\n");
+    printf("4      - Send Segmented Access Message - Virtual 9779\n");
     printf("6      - Clear Replay Protection List\n");
     printf("7      - Load PTS App key\n");
     printf("8      - Delete provisioning data\n");
+    printf("p      - Enable Public Key OOB \n");
+    printf("o      - Enable Output OOB \n");
+    printf("i      - Input  Output OOB \n");
+    printf("s      - Static Output OOB \n");
+    printf("b      - Setup Secure Network Beacon \n");
+    printf("g      - Generic ON/OFF Server Toggle Value\n");
     printf("\n");
 }
 
@@ -779,6 +797,10 @@ static void stdin_process(char cmd){
             big_endian_store_32(mesh_secure_network_beacon, 10, mesh_get_iv_index());
             btstack_crypto_aes128_cmac_message(&mesh_cmac_request, beacon_key, 13,
                 &mesh_secure_network_beacon[1], mesh_secure_network_beacon_auth_value, &mesh_secure_network_beacon_auth_value_calculated, NULL);
+            break;
+        case 'g':
+            printf("Generic ON/OFF Server Toggle Value\n");
+            mesh_generic_on_off_server_update_value(&mesh_generic_on_off_server_model, 1-mesh_generic_on_off_state.current_on_off_value, 0, 0);
             break;
         case ' ':
             show_usage();
@@ -994,18 +1016,6 @@ void proxy_configuration_message_handler(mesh_network_callback_type_t callback_t
             break;
     }
 }
-
-// Test configuration
-
-#define MESH_BLUEKITCHEN_MODEL_ID_TEST_SERVER   0x0000u
-
-static mesh_model_t                 mesh_configuration_server_model;
-static mesh_model_t                 mesh_health_server_model;
-static mesh_model_t                 mesh_vendor_model;
-
-static mesh_model_t                 mesh_generic_on_off_server_model;
-static mesh_generic_on_off_state_t  mesh_generic_on_off_state;
-
 
 int btstack_main(void);
 int btstack_main(void)

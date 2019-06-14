@@ -199,3 +199,20 @@ const static mesh_operation_t mesh_generic_on_off_model_operations[] = {
 const mesh_operation_t * mesh_generic_on_off_server_get_operations(void){
     return mesh_generic_on_off_model_operations;
 }
+
+void mesh_generic_on_off_server_update_value(mesh_model_t *generic_on_off_server_model, uint8_t on_off_value, uint32_t transition_time_ms, uint16_t delay_ms){
+    mesh_generic_on_off_state_t * generic_on_off_server_state = (mesh_generic_on_off_state_t *)generic_on_off_server_model->model_data;
+    
+    generic_on_off_server_state->current_on_off_value = on_off_value;
+    generic_on_off_server_state->transition_time_ms = transition_time_ms;
+    generic_on_off_server_state->delay_ms = delay_ms;
+    
+    // TODO implement transition 
+    // TODO implement publication
+    mesh_access_emit_state_update_bool(mesh_packet_handler, 
+        mesh_access_get_element_index(generic_on_off_server_model), 
+        generic_on_off_server_model->model_identifier, 
+        MODEL_STATE_ID_GENERIC_ON_OFF, 
+        MODEL_STATE_UPDATE_REASON_APPLICATION_CHANGE, 
+        generic_on_off_server_state->current_on_off_value);
+}

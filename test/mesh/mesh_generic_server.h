@@ -76,6 +76,15 @@ const mesh_operation_t * mesh_generic_on_off_server_get_operations(void);
  */
 void mesh_generic_on_off_server_register_packet_handler(btstack_packet_handler_t packet_handler);
 
+/**
+ * @brief Set ON/OFF value
+ * @param generic_on_off_server_model
+ * @param on_off_value
+ * @param transition_time_ms
+ * @param delay_ms
+ */
+void mesh_generic_on_off_server_update_value(mesh_model_t *generic_on_off_server_model, uint8_t on_off_value, uint32_t transition_time_ms, uint16_t delay_ms);
+
 #ifdef __cplusplus
 } /* end of extern "C" */
 #endif
