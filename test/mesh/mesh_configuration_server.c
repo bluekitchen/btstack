@@ -1745,7 +1745,7 @@ config_model_publication_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
 
 // Heartbeat Publication
 
-static void config_heartbeat_publication_emit(btstack_timer_source_t * ts){
+static void config_heartbeat_publication_emit(void){
 
     printf("CONFIG_SERVER_HEARTBEAT: Emit (dest %04x, count %u, period %u ms, seq %x)\n",
         mesh_heartbeat_publication.destination, 
@@ -1767,11 +1767,21 @@ static void config_heartbeat_publication_emit(btstack_timer_source_t * ts){
         mesh_upper_transport_send_control_pdu((mesh_pdu_t *) network_pdu);
     }
 
-    mesh_heartbeat_publication.count--;
+    // forever
+    if (mesh_heartbeat_publication.count < 0xffffu) {
+        mesh_heartbeat_publication.count--;
+    }
+}
+
+static void config_heartbeat_publication_timeout_handler(btstack_timer_source_t * ts){
+    // emit beat
+    config_heartbeat_publication_emit();
+
+    // all sent?
     if (mesh_heartbeat_publication.count == 0) return;
 
     // periodic publication?
-    if (mesh_heartbeat_publication.period_ms   == 0) return;
+    if (mesh_heartbeat_publication.period_ms == 0) return;
 
     btstack_run_loop_set_timer(ts, mesh_heartbeat_publication.period_ms);
     btstack_run_loop_add_timer(ts);
@@ -1836,7 +1846,7 @@ static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, m
 
     // NOTE: defer first heartbeat to allow config status getting sent first
     // TODO: check if heartbeat was off before
-    btstack_run_loop_set_timer_handler(&mesh_heartbeat_publication.timer, config_heartbeat_publication_emit);
+    btstack_run_loop_set_timer_handler(&mesh_heartbeat_publication.timer, config_heartbeat_publication_timeout_handler);
     btstack_run_loop_set_timer(&mesh_heartbeat_publication.timer, 2000);
     btstack_run_loop_add_timer(&mesh_heartbeat_publication.timer);
 }
