@@ -49,7 +49,10 @@
 
 static void mesh_access_message_process_handler(mesh_pdu_t * pdu);
 
+static uint16_t primary_element_address;
+
 static mesh_element_t primary_element;
+static uint16_t mesh_element_index_next;
 
 static btstack_linked_list_t mesh_elements;
 
@@ -91,15 +94,15 @@ mesh_element_t * mesh_primary_element(void){
 }
 
 void mesh_access_set_primary_element_address(uint16_t unicast_address){
-    primary_element.unicast_address = unicast_address;
+    primary_element_address = unicast_address;
 }
 
 uint16_t mesh_access_get_primary_element_address(void){
-    return primary_element.unicast_address;
+    return primary_element_address;
 }
 
 uint8_t mesh_access_get_element_index(mesh_model_t * mesh_model){
-    return mesh_model->element->unicast_address - mesh_access_get_primary_element_address();
+    return mesh_model->element->element_index;
 }
 
 void mesh_access_set_primary_element_location(uint16_t location){
@@ -107,18 +110,28 @@ void mesh_access_set_primary_element_location(uint16_t location){
 }
 
 void mesh_element_add(mesh_element_t * element){
+    element->element_index = mesh_element_index_next++;
     btstack_linked_list_add_tail(&mesh_elements, (void*) element);
 }
 
 mesh_element_t * mesh_element_for_unicast_address(uint16_t unicast_address){
+    uint16_t element_index = unicast_address - primary_element_address;
+    return mesh_element_for_index(element_index);
+}
+
+mesh_element_t * mesh_element_for_index(uint16_t element_index){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &mesh_elements);
     while (btstack_linked_list_iterator_has_next(&it)){
         mesh_element_t * element = (mesh_element_t *) btstack_linked_list_iterator_next(&it);
-        if (element->unicast_address != unicast_address) continue;
+        if (element->element_index != element_index) continue;
         return element;
     }
     return NULL;
+}
+
+uint16_t mesh_access_get_element_address(mesh_model_t * mesh_model){
+    return primary_element_address + mesh_model->element->element_index;
 }
 
 // Model Identifier utilities

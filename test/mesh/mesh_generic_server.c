@@ -94,7 +94,7 @@ static void mesh_generic_on_off_status_message(mesh_model_t *generic_on_off_serv
     if (!transport_pdu) return;
 
     // send as segmented access pdu
-    generic_server_send_message(generic_on_off_server_model->element->unicast_address, dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);
+    generic_server_send_message(mesh_access_get_element_address(generic_on_off_server_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);
 }
 
 static void generic_on_off_get_handler(mesh_model_t *generic_on_off_server_model, mesh_pdu_t * pdu){

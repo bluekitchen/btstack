@@ -128,9 +128,9 @@ typedef struct mesh_element {
     // linked list item
     btstack_linked_item_t item;
     
-    // unicast address
-    uint16_t unicast_address;
-    
+    // element index
+    uint16_t element_index;
+
     // LOC
     uint16_t loc;
     
@@ -171,7 +171,11 @@ void mesh_element_add(mesh_element_t * element);
 
 uint8_t mesh_access_get_element_index(mesh_model_t * mesh_model);
 
+uint16_t mesh_access_get_element_address(mesh_model_t * mesh_model);
+
 mesh_element_t * mesh_element_for_unicast_address(uint16_t unicast_address);
+
+mesh_element_t * mesh_element_for_index(uint16_t element_index);
 
 void mesh_element_add_model(mesh_element_t * element, mesh_model_t * mesh_model);
 
