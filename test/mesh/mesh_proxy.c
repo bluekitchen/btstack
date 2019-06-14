@@ -50,25 +50,7 @@
 #include "btstack_run_loop.h"
 #include "btstack_util.h"
 #include "mesh_proxy.h"
-
-#if 0
-#include <stdio.h>
-#include <stdlib.h>
-#include "ble/mesh/gatt_bearer.h"
-#include "ble/mesh/beacon.h"
-#include "ble/mesh/mesh_lower_transport.h"
-#include "ble/mesh/pb_adv.h"
-#include "ble/mesh/pb_gatt.h"
-#include "provisioning.h"
-#include "provisioning_device.h"
-#include "mesh_transport.h"
 #include "mesh_foundation.h"
-#include "mesh_access.h"
-#include "mesh_virtual_addresses.h"
-#include "mesh.h"
-#include "btstack.h"
-#include "btstack_tlv.h"
-#endif
 
 #ifdef ENABLE_MESH_PROXY_SERVER
 
@@ -161,6 +143,28 @@ void mesh_proxy_stop_advertising_with_node_id(uint16_t netkey_index){
     log_info("Proxy stop advertising with node id, netkey index %04x", netkey_index);
     mesh_proxy_stop_all_advertising_with_node_id();
 }
+
+uint8_t mesh_proxy_get_advertising_with_node_id_status(uint16_t netkey_index, mesh_node_identity_state_t * out_state ){
+
+    mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
+    if (network_key == NULL){
+        *out_state = MESH_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED;
+        return MESH_FOUNDATION_STATUS_SUCCESS;
+    }
+
+#ifdef ENABLE_MESH_PROXY_SERVER
+    if (network_key->node_id_advertisement_running == 0){
+        *out_state = MESH_NODE_IDENTITY_STATE_ADVERTISING_STOPPED;
+    } else {
+        *out_state = MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING;
+    }
+#else
+    *out_state = MESH_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED;
+#endif
+
+    return MESH_FOUNDATION_STATUS_SUCCESS;
+}
+
 
 void mesh_proxy_start_advertising_with_network_id(void){
     mesh_network_key_iterator_t it;

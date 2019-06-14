@@ -45,6 +45,12 @@ extern "C"
 {
 #endif
 
+typedef enum {
+    MESH_NODE_IDENTITY_STATE_ADVERTISING_STOPPED = 0,
+    MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING,
+    MESH_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED
+} mesh_node_identity_state_t;
+
 /**
  * @brief Init Mesh Proxy
  */
@@ -62,6 +68,14 @@ void mesh_proxy_start_advertising_with_node_id(uint16_t netkey_index);
  * @param netkey_index of subnet
  */
 void mesh_proxy_stop_advertising_with_node_id(uint16_t netkey_index);
+
+/**
+ * @brief Check if Advertising with Node ID is active
+ * @param netey_index of subnet
+ * @param out_state current state
+ * @returns MESH_FOUNDATION_STATUS_SUCCESS or MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX
+ */
+uint8_t mesh_proxy_get_advertising_with_node_id_status(uint16_t netkey_index, mesh_node_identity_state_t * out_state );
 
 /**
  * @brief Start Advertising with Network ID (on all subnets)
