@@ -170,9 +170,9 @@ extern "C"
 
 /**
  *
- * @param ttl
+ * @param value on/off
  */
-void mesh_foundation_gatt_proxy_set(uint8_t ttl);
+void mesh_foundation_gatt_proxy_set(uint8_t value);
 
 /**
  *
@@ -182,9 +182,9 @@ uint8_t mesh_foundation_gatt_proxy_get(void);
 
 /**
  *
- * @param ttl
+ * @param value on/off
  */
-void mesh_foundation_beacon_set(uint8_t ttl);
+void mesh_foundation_beacon_set(uint8_t value);
 
 /**
  *
@@ -203,17 +203,30 @@ void mesh_foundation_default_ttl_set(uint8_t ttl);
  * @return
  */
 uint8_t mesh_foundation_default_ttl_get(void);
+
 /**
  *
- * @param ttl
+ * @param value on/off
  */
-void mesh_foundation_friend_set(uint8_t ttl);
+void mesh_foundation_friend_set(uint8_t value);
 
 /**
  *
  * @return
  */
 uint8_t mesh_foundation_friend_get(void);
+
+/**
+ *
+ * @param value on/off
+ */
+void mesh_foundation_low_power_set(uint8_t value);
+
+/**
+ *
+ * @return
+ */
+uint8_t mesh_foundation_low_power_get(void);
 
 /**
  *
@@ -249,6 +262,11 @@ void mesh_foundation_relay_retransmit_set(uint8_t relay_retransmit);
  * @return
  */
 uint8_t mesh_foundation_relay_retransmit_get(void);
+
+/**
+ * @brief Get Features map (Relay, Proxy, Friend, Low Power)
+ */
+uint16_t mesh_foundation_get_features(void);
 
 #ifdef __cplusplus
 } /* end of extern "C" */

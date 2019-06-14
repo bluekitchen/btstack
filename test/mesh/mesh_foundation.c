@@ -50,18 +50,27 @@ static uint8_t mesh_foundation_default_ttl = 7;
 static uint8_t mesh_foundation_network_transmit = (10 << 3) | 2; // step 300 ms, send 3 times
 static uint8_t mesh_foundation_relay = MESH_FOUNDATION_STATE_NOT_SUPPORTED;
 static uint8_t mesh_foundation_relay_retransmit = 0;
-static uint8_t mesh_foundation_friend = MESH_FOUNDATION_STATE_NOT_SUPPORTED; // not supported
+static uint8_t mesh_foundation_friend    = MESH_FOUNDATION_STATE_NOT_SUPPORTED; // not supported
+static uint8_t mesh_foundation_low_power = MESH_FOUNDATION_STATE_NOT_SUPPORTED;
 
-void mesh_foundation_gatt_proxy_set(uint8_t ttl){
-    mesh_foundation_gatt_proxy = ttl;
+void mesh_foundation_gatt_proxy_set(uint8_t value){
+    mesh_foundation_gatt_proxy = value;
     printf("MESH: GATT PROXY %x\n", mesh_foundation_gatt_proxy);
 }
 uint8_t mesh_foundation_gatt_proxy_get(void){
     return mesh_foundation_gatt_proxy;
 }
 
-void mesh_foundation_beacon_set(uint8_t ttl){
-    mesh_foundation_beacon = ttl;
+void mesh_foundation_low_power_set(uint8_t value){
+    mesh_foundation_low_power = value;
+    printf("MESH: LOW POWER %x\n", mesh_foundation_low_power);
+}
+uint8_t mesh_foundation_low_power_get(void){
+    return mesh_foundation_low_power;
+}
+
+void mesh_foundation_beacon_set(uint8_t value){
+    mesh_foundation_beacon = value;
     printf("MESH: Secure Network Beacon %x\n", mesh_foundation_beacon);
 }
 uint8_t mesh_foundation_beacon_get(void){
@@ -76,8 +85,8 @@ uint8_t mesh_foundation_default_ttl_get(void){
     return mesh_foundation_default_ttl;
 }
 
-void mesh_foundation_friend_set(uint8_t ttl){
-    mesh_foundation_friend = ttl;
+void mesh_foundation_friend_set(uint8_t value){
+    mesh_foundation_friend = value;
     printf("MESH: Friend = 0x%x\n", mesh_foundation_friend);
 }
 uint8_t mesh_foundation_friend_get(void){
@@ -108,4 +117,21 @@ void mesh_foundation_relay_retransmit_set(uint8_t relay_retransmit){
 }
 uint8_t mesh_foundation_relay_retransmit_get(void){
     return mesh_foundation_relay_retransmit;
+}
+
+uint16_t mesh_foundation_get_features(void){
+    uint16_t active_features = 0;
+    if (mesh_foundation_low_power_get() == 1){
+        active_features |= 1 << 3;
+    }
+    if (mesh_foundation_friend_get() == 1){
+        active_features |= 1 << 2;
+    }
+    if (mesh_foundation_gatt_proxy_get() == 1){
+        active_features |= 1 << 1;
+    }
+    if (mesh_foundation_relay_get() == 1){
+        active_features |= 1 << 0;
+    }
+    return active_features;
 }

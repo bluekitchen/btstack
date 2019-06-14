@@ -59,6 +59,8 @@
 
 typedef struct  {
     btstack_timer_source_t timer;
+    uint16_t active_features;
+    //
     uint16_t destination;
     uint16_t count_log;
     uint8_t  period_log;
@@ -1748,11 +1750,14 @@ static void config_heartbeat_publication_emit(btstack_timer_source_t * ts){
     printf("CONFIG_SERVER_HEARTBEAT: Emit (dest %04x, count %u, period %u ms, seq %x)\n", mesh_heartbeat_publication.destination, mesh_heartbeat_publication.count_log, time_ms, mesh_lower_transport_peek_seq());
     mesh_heartbeat_publication.count_log--;
 
+    // active features
+    mesh_heartbeat_publication.active_features = mesh_foundation_get_features();
+
     mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
     if (network_pdu){
         uint8_t data[3];
         data[0] = mesh_heartbeat_publication.ttl;
-        big_endian_store_16(data, 1, mesh_heartbeat_publication.features);
+        big_endian_store_16(data, 1, mesh_heartbeat_publication.active_features);
         mesh_upper_transport_setup_control_pdu((mesh_pdu_t *) network_pdu, mesh_heartbeat_publication.netkey_index,
                 mesh_heartbeat_publication.ttl, mesh_access_get_primary_element_address(), mesh_heartbeat_publication.destination,
                 MESH_TRANSPORT_OPCODE_HEARTBEAT, data, sizeof(data));
