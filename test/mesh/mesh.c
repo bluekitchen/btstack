@@ -104,7 +104,6 @@ static const btstack_tlv_t * btstack_tlv_singleton_impl;
 static void *                btstack_tlv_singleton_context;
 
 static uint8_t beacon_key[16];
-static uint8_t identity_key[16];
 static uint8_t network_id[8];
 static uint16_t primary_element_address;
 
@@ -135,6 +134,7 @@ static void mesh_provisioning_dump(const mesh_provisioning_data_t * data){
     printf("IV Index:      0x%08x\n", data->iv_index);
     printf("DevKey:        "); printf_hexdump(data->device_key, 16);
     printf("NetKey:        "); printf_hexdump(data->net_key, 16);
+    printf("-- Derived from NetKey --\n");
     printf("NID:           0x%02x\n", data->nid);
     printf("NetworkID:     "); printf_hexdump(data->network_id, 8);
     printf("BeaconKey:     "); printf_hexdump(data->beacon_key, 16);
@@ -198,7 +198,7 @@ static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * p
     // set device_key
     mesh_transport_set_device_key(provisioning_data->device_key);
     // copy beacon key and network id
-    memcpy(identity_key, provisioning_data->identity_key, 16);
+    // memcpy(identity_key, provisioning_data->identity_key, 16);
     memcpy(beacon_key, provisioning_data->beacon_key, 16);
     memcpy(network_id, provisioning_data->network_id, 8);
     // for secure beacon
@@ -209,7 +209,7 @@ static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * p
     // Mesh Proxy
 #ifdef ENABLE_MESH_PROXY_SERVER
     // Setup Proxy
-    mesh_proxy_init(provisioning_data->unicast_address, provisioning_data->identity_key);
+    mesh_proxy_init(provisioning_data->unicast_address);
 
     printf("Advertise Mesh Proxy Service with Network ID\n");
     mesh_proxy_start_advertising_with_network_id();

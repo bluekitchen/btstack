@@ -65,7 +65,6 @@ static uint8_t                                          mesh_proxy_node_id_plain
 static uint8_t                                          mesh_proxy_node_id_hash[16];
 static uint8_t                                          mesh_proxy_node_id_random_value[8];
 
-static uint8_t proxy_identity_key[16];
 static uint16_t primary_element_address;
 
 // Mesh Proxy, advertise with node id
@@ -103,7 +102,8 @@ static void mesh_proxy_node_id_timeout_handler(btstack_timer_source_t * ts){
 }
 
 static void mesh_proxy_node_id_handle_get_aes128(void * arg){
-    UNUSED(arg);
+    mesh_network_key_t * network_key = (mesh_network_key_t *) arg;
+
     memcpy(connectable_advertisement_item.adv_data, adv_data_with_node_identity_template, 12);
     memcpy(&connectable_advertisement_item.adv_data[12], &mesh_proxy_node_id_hash[8], 8);
     memcpy(&connectable_advertisement_item.adv_data[20], mesh_proxy_node_id_random_value, 8);
@@ -116,21 +116,29 @@ static void mesh_proxy_node_id_handle_get_aes128(void * arg){
     btstack_run_loop_set_timer_handler(&mesh_proxy_node_id_timer, mesh_proxy_node_id_timeout_handler);
     btstack_run_loop_set_timer(&mesh_proxy_node_id_timer, MESH_PROXY_NODE_ID_ADVERTISEMENT_TIMEOUT_MS);
     btstack_run_loop_add_timer(&mesh_proxy_node_id_timer);
+
+    // mark as active
+    network_key->node_id_advertisement_running = 1;
 }
 
 static void mesh_proxy_node_id_handle_random(void * arg){
+    mesh_network_key_t * network_key = (mesh_network_key_t *) arg;
+
     // Hash = e(IdentityKey, Padding | Random | Address) mod 2^64
     memset(mesh_proxy_node_id_plaintext, 0, sizeof(mesh_proxy_node_id_plaintext));
     memcpy(&mesh_proxy_node_id_plaintext[6] , mesh_proxy_node_id_random_value, 8);
     big_endian_store_16(mesh_proxy_node_id_plaintext, 14, primary_element_address);
-    btstack_crypto_aes128_encrypt(&mesh_proxy_node_id_crypto_request_aes128, proxy_identity_key, mesh_proxy_node_id_plaintext, mesh_proxy_node_id_hash, mesh_proxy_node_id_handle_get_aes128, NULL);
+    btstack_crypto_aes128_encrypt(&mesh_proxy_node_id_crypto_request_aes128, network_key->identity_key, mesh_proxy_node_id_plaintext, mesh_proxy_node_id_hash, mesh_proxy_node_id_handle_get_aes128, network_key);
 }
 
 static void mesh_proxy_start_advertising_with_node_id(uint16_t netkey_index){
     mesh_proxy_stop_all_advertising_with_node_id();
+    // get network key
+    mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
+    if (network_key == NULL) return;
     log_info("Proxy start advertising with node id, netkey index %04x", netkey_index);
     // setup node id
-    btstack_crypto_random_generate(&mesh_proxy_node_id_crypto_request_random, mesh_proxy_node_id_random_value, sizeof(mesh_proxy_node_id_random_value), mesh_proxy_node_id_handle_random, NULL);
+    btstack_crypto_random_generate(&mesh_proxy_node_id_crypto_request_random, mesh_proxy_node_id_random_value, sizeof(mesh_proxy_node_id_random_value), mesh_proxy_node_id_handle_random, network_key);
 }
 
 static void mesh_proxy_stop_advertising_with_node_id(uint16_t netkey_index){
@@ -205,9 +213,8 @@ void mesh_proxy_stop_advertising_with_network_id(void){
     }
 }
 
-void mesh_proxy_init(uint16_t primary_unicast_address, const uint8_t * identity_key){
+void mesh_proxy_init(uint16_t primary_unicast_address){
     primary_element_address = primary_unicast_address;
-    memcpy(proxy_identity_key, identity_key, 16);
 }
 
 #endif

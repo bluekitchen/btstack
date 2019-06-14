@@ -54,7 +54,7 @@ typedef enum {
 /**
  * @brief Init Mesh Proxy
  */
-void mesh_proxy_init(uint16_t primary_unicast_address, const uint8_t * identity_key);
+void mesh_proxy_init(uint16_t primary_unicast_address);
 
 /**
  * @brief Set Advertising with Node ID on given subnet
