@@ -45,6 +45,35 @@ extern "C"
 {
 #endif
 
+/**
+ * @brief Init Mesh Proxy
+ */
+void mesh_proxy_init(uint16_t primary_unicast_address, const uint8_t * identity_key);
+
+/**
+ * @brief Start Advertising with Node ID on given subnet
+ * @param netkey_index of subnet
+ * @note Node ID is only advertised on one subnet at a time and it is limited to 60 seconds
+ */
+void mesh_proxy_start_advertising_with_node_id(uint16_t netkey_index);
+
+/**
+ * @brief Stop Advertising with Node ID on given subnet
+ * @param netkey_index of subnet
+ */
+void mesh_proxy_stop_advertising_with_node_id(uint16_t netkey_index);
+
+/**
+ * @brief Start Advertising with Network ID (on all subnets)
+ */
+void mesh_proxy_start_advertising_with_network_id(void);
+
+/**
+ * @brief Stop Advertising with Network ID (on all subnets)
+ */
+void mesh_proxy_stop_advertising_with_network_id(void);
+
+
 #ifdef __cplusplus
 } /* end of extern "C" */
 #endif
