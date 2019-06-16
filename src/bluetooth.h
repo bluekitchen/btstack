@@ -781,8 +781,8 @@ typedef enum {
 // @TODO: scrape PSMs Bluetooth SIG site and put in bluetooth_psm.h or bluetooth_l2cap.h
 #define PSM_HID_CONTROL   0x11
 #define PSM_HID_INTERRUPT 0x13
+#define PSM_ATT           0x1f
 #define PSM_IPSP          0x23
-
 /**
  * SDP Protocol
  */
