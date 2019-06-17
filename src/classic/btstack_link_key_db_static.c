@@ -151,7 +151,7 @@ static int  link_key_db_tlv_iterator_get_next(btstack_link_key_iterator_t * it, 
     sscanf_bd_addr(link_key_db[i].bd_addr, bd_addr);
 
     // next
-    it->context = (void*) i+1;
+    it->context = (void*) (i+1);
     return 1;
 }
 
