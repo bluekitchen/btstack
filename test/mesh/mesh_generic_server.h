@@ -58,15 +58,26 @@ typedef enum {
     MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_10min
 } mesh_default_transition_step_resolution_t;
 
-typedef struct {
-    uint8_t  current_on_off_value;
-    uint8_t  transaction_identifier;
-    uint32_t transition_time_ms;      
-    uint16_t delay_ms;                
 
-    // transition data
-    uint8_t  target_on_off_value;
-    uint32_t remaining_time_ms;
+typedef enum {
+    MESH_TRANSITION_STATE_IDLE,
+    MESH_TRANSITION_STATE_DELAYED,
+    MESH_TRANSITION_STATE_ACTIVE
+} mesh_transition_state_t;
+
+typedef struct {
+    mesh_transition_state_t state;
+    uint8_t  current_value;
+    uint8_t  target_value;
+    
+    uint32_t phase_start_ms;
+    uint32_t remaining_delay_time_ms;  
+    uint32_t remaining_transition_time_ms;                
+} mesh_transition_bool_t;
+
+typedef struct {
+    mesh_transition_bool_t transition_data;       
+    uint8_t  transaction_identifier;    
 } mesh_generic_on_off_state_t;
 
 const mesh_operation_t * mesh_generic_on_off_server_get_operations(void);
@@ -83,7 +94,22 @@ void mesh_generic_on_off_server_register_packet_handler(btstack_packet_handler_t
  * @param transition_time_ms
  * @param delay_ms
  */
-void mesh_generic_on_off_server_update_value(mesh_model_t *generic_on_off_server_model, uint8_t on_off_value, uint32_t transition_time_ms, uint16_t delay_ms);
+void mesh_generic_on_off_server_set_value(mesh_model_t *generic_on_off_server_model, uint8_t on_off_value, uint32_t transition_time_ms, uint16_t delay_ms);
+
+/**
+ * @brief  Get present ON/OFF value
+ * @param  generic_on_off_server_model
+ * @return on_off_value
+ */
+uint8_t mesh_generic_on_off_server_get_value(mesh_model_t *generic_on_off_server_model);
+
+/**
+ * @brief  Call tu update transition step
+ * @param  generic_on_off_server_model
+ * @param  transition
+ * @param  current_time_ms
+ */
+// void mesh_server_transition_step_bool(mesh_model_t *mesh_model, mesh_transition_bool_t * transition, uint32_t current_time_ms);
 
 #ifdef __cplusplus
 } /* end of extern "C" */
