@@ -92,6 +92,10 @@ typedef struct {
     // advertisement data for proxy
     adv_bearer_connectable_advertisement_data_item_t advertisement_with_network_id;
 
+    // secure network beacons
+    btstack_timer_source_t beacon_timer;
+    uint32_t beacon_interval_ms;
+
 } mesh_network_key_t;
 
 typedef struct {

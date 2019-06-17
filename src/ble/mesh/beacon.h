@@ -41,6 +41,7 @@
 
 #include <stdint.h>
 #include "btstack_defines.h"
+#include "mesh_keys.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -61,6 +62,12 @@ void beacon_unprovisioned_device_start(const uint8_t * device_uuid, uint16_t oob
  * Stop Unprovisioned Device Beacon
  */
 void beacon_unprovisioned_device_stop(void);
+
+/**
+ * Start sending Secure Network Beacons on given subnet
+ * @param mesh_network_key subnet
+ */
+void beacon_secure_network_start(mesh_network_key_t * mesh_network_key);
 
 /**
  * Register Beacon handler for unprovisioned device beacons

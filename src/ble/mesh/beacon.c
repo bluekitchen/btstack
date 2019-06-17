@@ -39,6 +39,7 @@
 
 #include <string.h>
 
+#include "ble/mesh/beacon.h"
 #include "ble/mesh/adv_bearer.h"
 #include "ble/core.h"
 #include "bluetooth.h"
@@ -136,7 +137,22 @@ void beacon_unprovisioned_device_stop(void){
     btstack_run_loop_remove_timer(&beacon_timer);
 }
 
+// secure network beacons
 
+// crypto context 
+static void beacon_secure_network_timer_handler(btstack_timer_source_t * ts){
+
+}
+
+void beacon_secure_network_start(mesh_network_key_t * mesh_network_key){
+    // start with default interval
+    mesh_network_key->beacon_interval_ms = 10 * 1000;  // 10 seconds
+    // set timer for next one
+
+    // 
+}
+
+// register handler
 void beacon_register_for_unprovisioned_device_beacons(btstack_packet_handler_t packet_handler){
     unprovisioned_device_beacon_handler = packet_handler;
 }
@@ -144,4 +160,3 @@ void beacon_register_for_unprovisioned_device_beacons(btstack_packet_handler_t p
 void beacon_register_for_secure_network_beacons(btstack_packet_handler_t packet_handler){
     secure_network_beacon_handler = packet_handler;
 }
-
