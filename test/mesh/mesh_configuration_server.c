@@ -1744,6 +1744,15 @@ static void config_heartbeat_publication_emit(mesh_heartbeat_publication_t * mes
         mesh_heartbeat_publication->count--;
     }
 }
+void mesh_configuration_server_feature_changed(void){
+    mesh_model_t * mesh_model = mesh_model_get_configuration_server();
+    mesh_heartbeat_publication_t * mesh_heartbeat_publication = &((mesh_configuration_server_model_context_t*) mesh_model->model_data)->heartbeat_publication;
+
+    // active features
+    uint16_t active_features = mesh_foundation_get_features();
+    if (mesh_heartbeat_publication->active_features == active_features) return;
+    config_heartbeat_publication_emit(mesh_heartbeat_publication);
+}
 
 static void config_heartbeat_publication_timeout_handler(btstack_timer_source_t * ts){
 

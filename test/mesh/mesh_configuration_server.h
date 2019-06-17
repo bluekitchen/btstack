@@ -74,12 +74,14 @@ typedef struct  {
 typedef struct {
     mesh_heartbeat_publication_t   heartbeat_publication;
     mesh_heartbeat_subscription_t  heartbeat_subscription;
-    
+
 } mesh_configuration_server_model_context_t;
 
 // API
 
 const mesh_operation_t * mesh_configuration_server_get_operations(void);
+
+void mesh_configuration_server_feature_changed(void);
 
 void mesh_load_virtual_addresses(void);
 
