@@ -632,6 +632,9 @@ static void config_gatt_proxy_set_handler(mesh_model_t *mesh_model, mesh_pdu_t *
     config_model_gatt_proxy_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 
     mesh_access_message_processed(pdu);
+
+    // trigger heartbeat emit on change
+    mesh_configuration_server_feature_changed();
 }
 
 static void config_model_relay_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
@@ -674,6 +677,9 @@ static void config_relay_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
     config_model_relay_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 
     mesh_access_message_processed(pdu);
+
+    // trigger heartbeat emit on change
+    mesh_configuration_server_feature_changed();
 }
 
 static void config_model_network_transmit_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
