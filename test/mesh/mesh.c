@@ -113,6 +113,8 @@ static int provisioned;
 
 #define MESH_BLUEKITCHEN_MODEL_ID_TEST_SERVER   0x0000u
 
+static mesh_heartbeat_publication_t  mesh_heartbeat_publication;
+
 static mesh_model_t                 mesh_configuration_server_model;
 static mesh_model_t                 mesh_health_server_model;
 static mesh_model_t                 mesh_vendor_model;
@@ -1079,6 +1081,7 @@ int btstack_main(void)
     // Setup models
     mesh_configuration_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_CONFIGURATION_SERVER);
     mesh_model_reset_appkeys(&mesh_configuration_server_model);
+    mesh_configuration_server_model.model_data = &mesh_heartbeat_publication;
     mesh_configuration_server_model.operations = mesh_configuration_server_get_operations();    
     mesh_element_add_model(mesh_primary_element(), &mesh_configuration_server_model);
 
