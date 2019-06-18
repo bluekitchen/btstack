@@ -72,7 +72,10 @@ typedef struct {
     
     uint32_t phase_start_ms;
     uint32_t remaining_delay_time_ms;  
-    uint32_t remaining_transition_time_ms;                
+    uint32_t remaining_transition_time_ms;  
+
+    // to send events and/or publish changes
+    mesh_model_t * mesh_model;              
 } mesh_transition_bool_t;
 
 typedef struct {
@@ -106,11 +109,11 @@ uint8_t mesh_generic_on_off_server_get_value(mesh_model_t *generic_on_off_server
 
 /**
  * @brief  Call tu update transition step
- * @param  generic_on_off_server_model
  * @param  transition
- * @param  current_time_ms
+ * @param  event
+ * @param  current_timestamp
  */
-// void mesh_server_transition_step_bool(mesh_model_t *mesh_model, mesh_transition_bool_t * transition, uint32_t current_time_ms);
+void mesh_server_transition_step_bool(mesh_transition_bool_t * transition, transition_event_t event, uint32_t current_timestamp);
 
 #ifdef __cplusplus
 } /* end of extern "C" */

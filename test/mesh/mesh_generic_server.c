@@ -235,18 +235,11 @@ static void mesh_server_transition_bool_init(mesh_transition_bool_t * transition
     transition->state = MESH_TRANSITION_STATE_IDLE;
     transition->remaining_transition_time_ms = 0;
     transition->remaining_delay_time_ms = 0;
-    transition->target_value = 0;
-    transition->current_value = 0;
+    transition->phase_start_ms = 0;
+    transition->target_value = transition->current_value;
 }
 
-typedef enum {
-    TRANSITION_START,
-    TRANSITION_UPDATE
-} transition_event_t;
-
-static void mesh_server_transition_state_update(mesh_model_t * mesh_model, mesh_transition_bool_t * transition, uint32_t current_timestamp_ms){
-    UNUSED(mesh_model);
-
+static void mesh_server_transition_state_update(mesh_transition_bool_t * transition, uint32_t current_timestamp_ms){
     if (transition->remaining_delay_time_ms != 0){
         transition->state = MESH_TRANSITION_STATE_DELAYED;
         transition->remaining_delay_time_ms = 0;
@@ -260,27 +253,28 @@ static void mesh_server_transition_state_update(mesh_model_t * mesh_model, mesh_
         if (transition->target_value == 1){
             transition->current_value = 1;
             // TODO: emit event
+            mesh_server_transition_bool_init(transition);
         }
         return;
     }
     transition->current_value = transition->target_value;
     transition->remaining_transition_time_ms = 0;
     // TODO: emit event
+    mesh_server_transition_bool_init(transition);
 }
 
-static void mesh_server_transition_step_bool(mesh_model_t * mesh_model, mesh_transition_bool_t * transition, transition_event_t event, uint32_t current_timestamp){
-    UNUSED(mesh_model);
+void mesh_server_transition_step_bool(mesh_transition_bool_t * transition, transition_event_t event, uint32_t current_timestamp){
     uint32_t time_step_ms;
 
     switch (transition->state){
         case MESH_TRANSITION_STATE_IDLE:
             if (event != TRANSITION_START) break;
-            mesh_server_transition_state_update(mesh_model, transition, current_timestamp);
+            mesh_server_transition_state_update(transition, current_timestamp);
             break;
         case MESH_TRANSITION_STATE_DELAYED:
             switch (event){
                 case TRANSITION_START:
-                    mesh_server_transition_state_update(mesh_model, transition, current_timestamp);
+                    mesh_server_transition_state_update(transition, current_timestamp);
                     break;
                 case TRANSITION_UPDATE:
                     time_step_ms = current_timestamp - transition->phase_start_ms;
@@ -288,7 +282,7 @@ static void mesh_server_transition_step_bool(mesh_model_t * mesh_model, mesh_tra
                         transition->remaining_delay_time_ms -= time_step_ms;
                     } else {
                         transition->remaining_delay_time_ms = 0;
-                        mesh_server_transition_state_update(mesh_model, transition, current_timestamp);
+                        mesh_server_transition_state_update(transition, current_timestamp);
                     }
                     break;
                 default:
@@ -298,7 +292,7 @@ static void mesh_server_transition_step_bool(mesh_model_t * mesh_model, mesh_tra
         case MESH_TRANSITION_STATE_ACTIVE:
             switch (event){
                 case TRANSITION_START:
-                    mesh_server_transition_state_update(mesh_model, transition, current_timestamp);
+                    mesh_server_transition_state_update(transition, current_timestamp);
                     break;
                 case TRANSITION_UPDATE:
                     time_step_ms = current_timestamp - transition->phase_start_ms;
@@ -306,7 +300,7 @@ static void mesh_server_transition_step_bool(mesh_model_t * mesh_model, mesh_tra
                         transition->remaining_transition_time_ms -= time_step_ms;
                     } else {
                         transition->remaining_transition_time_ms = 0;
-                        mesh_server_transition_state_update(mesh_model, transition, current_timestamp);
+                        mesh_server_transition_state_update(transition, current_timestamp);
                     }
                     break;
                 default:

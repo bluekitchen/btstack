@@ -67,6 +67,11 @@ typedef enum {
  } model_state_update_reason_t;
 
 typedef enum {
+    TRANSITION_START,
+    TRANSITION_UPDATE
+} transition_event_t;
+
+typedef enum {
     MODEL_STATE_ID_GENERIC_ON_OFF = (BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC << 16) | 0u,
 } model_state_id_t;
 
