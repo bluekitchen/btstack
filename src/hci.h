@@ -432,6 +432,10 @@ typedef struct {
     btstack_linked_list_t   notification_requests;
     btstack_linked_list_t   indication_requests;
 
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    uint16_t                l2cap_cid;
+#endif
+
     uint16_t                request_size;
     uint8_t                 request_buffer[ATT_REQUEST_BUFFER_SIZE];
 
