@@ -74,6 +74,7 @@
 static void att_run_for_context(att_server_t * att_server);
 static att_write_callback_t att_server_write_callback_for_handle(uint16_t handle);
 static btstack_packet_handler_t att_server_packet_handler_for_handle(uint16_t handle);
+static void att_server_handle_can_send_now(void);
 static void att_server_persistent_ccc_restore(att_server_t * att_server);
 static void att_server_persistent_ccc_clear(att_server_t * att_server);
 static void att_server_handle_att_pdu(att_server_t * att_server, uint8_t * packet, uint16_t size);
@@ -296,6 +297,10 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     att_server->pairing_active = 0;
                     printf("Connection opened %s, l2cap cid %04x, \n", bd_addr_to_str(address), att_server->l2cap_cid);
                     break;
+                case L2CAP_EVENT_CAN_SEND_NOW:
+                    att_server_handle_can_send_now();
+                    break;
+
 #endif
                 case HCI_EVENT_LE_META:
                     switch (packet[2]) {
@@ -537,7 +542,14 @@ static int att_server_process_validated_request(att_server_t * att_server){
         return 0;
     }
 
-    l2cap_send_prepared_connectionless(att_server->connection.con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, att_response_size);
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    if (att_server->l2cap_cid != 0){
+        l2cap_send_prepared(att_server->l2cap_cid, att_response_size);
+    } else
+#endif
+    {
+        l2cap_send_prepared_connectionless(att_server->connection.con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, att_response_size);
+    }
 
     // notify client about MTU exchange result
     if (att_response_buffer[0] == ATT_EXCHANGE_MTU_RESPONSE){
@@ -562,8 +574,15 @@ static void att_run_for_context(att_server_t * att_server){
     switch (att_server->state){
         case ATT_SERVER_REQUEST_RECEIVED:
 
-            // wait until re-encryption as central is complete
-            if (gap_reconnect_security_setup_active(att_server->connection.con_handle)) break;
+#ifdef ENABLE_GATT_OVER_CLASSIC
+            if (att_server->l2cap_cid != 0){
+                // ok
+            } else
+#endif
+            {
+                // wait until re-encryption as central is complete
+                if (gap_reconnect_security_setup_active(att_server->connection.con_handle)) break;
+            }
 
             // wait until pairing is complete
             if (att_server->pairing_active) break;
