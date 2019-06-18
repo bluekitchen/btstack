@@ -65,17 +65,28 @@ typedef enum {
     MESH_TRANSITION_STATE_ACTIVE
 } mesh_transition_state_t;
 
-typedef struct {
+typedef struct mesh_transition {
+    btstack_linked_item_t item;
+
     mesh_transition_state_t state;
-    uint8_t  current_value;
-    uint8_t  target_value;
-    
+
     uint32_t phase_start_ms;
     uint32_t remaining_delay_time_ms;  
-    uint32_t remaining_transition_time_ms;  
+    uint32_t remaining_transition_time_ms;      
 
     // to send events and/or publish changes
-    mesh_model_t * mesh_model;              
+    mesh_model_t * mesh_model;
+
+    // to execute transition
+    void (* transition_callback)(struct mesh_transition * transition, transition_event_t event, uint32_t current_timestamp);
+
+} mesh_transition_t;
+
+typedef struct {
+    mesh_transition_t base_transition;
+
+    uint8_t  current_value;
+    uint8_t  target_value;
 } mesh_transition_bool_t;
 
 typedef struct {
