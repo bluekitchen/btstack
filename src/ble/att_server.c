@@ -147,6 +147,15 @@ static void att_server_request_can_send_now(att_server_t * att_server){
     att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
 }
 
+static int att_server_can_send_packet(att_server_t * att_server){
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    if (att_server->l2cap_cid != 0){
+        return l2cap_can_send_packet_now(att_server->l2cap_cid);
+    }
+#endif
+    return att_dispatch_server_can_send_now(att_server->connection.con_handle);
+}
+
 static void att_handle_value_indication_notify_client(uint8_t status, uint16_t client_handle, uint16_t attribute_handle){
     btstack_packet_handler_t packet_handler = att_server_packet_handler_for_handle(attribute_handle);
     if (!packet_handler) return;
@@ -680,7 +689,7 @@ static void att_server_handle_can_send_now(void){
                     if (can_send_now){
                         att_server_trigger_send_for_phase(att_server, phase);
                         last_send_con_handle = att_server->connection.con_handle;
-                        can_send_now = att_dispatch_server_can_send_now(att_server->connection.con_handle);
+                        can_send_now = att_server_can_send_packet(att_server);
                         data_ready = att_server_data_ready_for_phase(att_server, phase);
                         if (data_ready && request_att_server == NULL){
                             request_att_server = att_server;
@@ -1079,7 +1088,9 @@ void att_server_register_packet_handler(btstack_packet_handler_t handler){
 
 // to be deprecated
 int  att_server_can_send_packet_now(hci_con_handle_t con_handle){
-    return att_dispatch_server_can_send_now(con_handle);
+    att_server_t * att_server = att_server_for_handle(con_handle);
+    if (!att_server) return 0;
+    return att_server_can_send_packet(att_server);
 }
 
 int att_server_register_can_send_now_callback(btstack_context_callback_registration_t * callback_registration, hci_con_handle_t con_handle){
@@ -1111,8 +1122,7 @@ int att_server_request_to_send_indication(btstack_context_callback_registration_
 int att_server_notify(hci_con_handle_t con_handle, uint16_t attribute_handle, const uint8_t *value, uint16_t value_len){
     att_server_t * att_server = att_server_for_handle(con_handle);
     if (!att_server) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
-
-    if (!att_dispatch_server_can_send_now(con_handle)) return BTSTACK_ACL_BUFFERS_FULL;
+    if (!att_server_can_send_packet(att_server)) return BTSTACK_ACL_BUFFERS_FULL;
 
     l2cap_reserve_packet_buffer();
     uint8_t * packet_buffer = l2cap_get_outgoing_buffer();
@@ -1125,7 +1135,7 @@ int att_server_indicate(hci_con_handle_t con_handle, uint16_t attribute_handle, 
     if (!att_server) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 
     if (att_server->value_indication_handle) return ATT_HANDLE_VALUE_INDICATION_IN_PROGRESS;
-    if (!att_dispatch_server_can_send_now(con_handle)) return BTSTACK_ACL_BUFFERS_FULL;
+    if (!att_server_can_send_packet(att_server)) return BTSTACK_ACL_BUFFERS_FULL;
 
     // track indication
     att_server->value_indication_handle = attribute_handle;
