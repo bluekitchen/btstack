@@ -648,6 +648,7 @@ static void att_server_handle_can_send_now(void){
 
     hci_con_handle_t request_con_handle   = HCI_CON_HANDLE_INVALID;
     hci_con_handle_t last_send_con_handle = HCI_CON_HANDLE_INVALID;
+    att_server_t *   request_att_server   = NULL;
     int can_send_now = 1;
     int phase_index;
 
@@ -669,6 +670,7 @@ static void att_server_handle_can_send_now(void){
                 if (skip_connections_until != HCI_CON_HANDLE_INVALID){
                     if (data_ready && request_con_handle == HCI_CON_HANDLE_INVALID){
                         request_con_handle = att_server->connection.con_handle;
+                        request_att_server = att_server;
                     }
                     if (skip_connections_until == att_server->connection.con_handle){
                         skip_connections_until = HCI_CON_HANDLE_INVALID;
@@ -684,9 +686,11 @@ static void att_server_handle_can_send_now(void){
                         data_ready = att_server_data_ready_for_phase(att_server, phase);
                         if (data_ready && request_con_handle == HCI_CON_HANDLE_INVALID){
                             request_con_handle = att_server->connection.con_handle;
+                            request_att_server = att_server;
                         }
                     } else {
                         request_con_handle = att_server->connection.con_handle;
+                        request_att_server = att_server;
                         break;
                     }
                 }
@@ -703,6 +707,7 @@ static void att_server_handle_can_send_now(void){
 
             // Finally, if we still can send and there are requests, just try again
             request_con_handle = HCI_CON_HANDLE_INVALID;
+            request_att_server = NULL;
         }
         // update last send con handle for round robin
         if (last_send_con_handle != HCI_CON_HANDLE_INVALID){
@@ -711,7 +716,7 @@ static void att_server_handle_can_send_now(void){
     }
 
     if (request_con_handle == HCI_CON_HANDLE_INVALID) return;
-    att_dispatch_server_request_can_send_now_event(request_con_handle);
+    att_server_request_can_send_now(request_att_server);
 }
 
 static void att_server_handle_att_pdu(att_server_t * att_server, uint8_t * packet, uint16_t size){
