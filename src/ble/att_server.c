@@ -668,7 +668,7 @@ static void att_server_handle_can_send_now(void){
 
                 // skip until last sender found (which is also skipped)
                 if (skip_connections_until != HCI_CON_HANDLE_INVALID){
-                    if (data_ready && request_con_handle == HCI_CON_HANDLE_INVALID){
+                    if (data_ready && request_att_server == NULL){
                         request_con_handle = att_server->connection.con_handle;
                         request_att_server = att_server;
                     }
@@ -684,7 +684,7 @@ static void att_server_handle_can_send_now(void){
                         last_send_con_handle = att_server->connection.con_handle;
                         can_send_now = att_dispatch_server_can_send_now(att_server->connection.con_handle);
                         data_ready = att_server_data_ready_for_phase(att_server, phase);
-                        if (data_ready && request_con_handle == HCI_CON_HANDLE_INVALID){
+                        if (data_ready && request_att_server == NULL){
                             request_con_handle = att_server->connection.con_handle;
                             request_att_server = att_server;
                         }
@@ -703,7 +703,7 @@ static void att_server_handle_can_send_now(void){
             if (!can_send_now) break;
 
             // Exit loop, if we can send but there are also no further request
-            if (request_con_handle == HCI_CON_HANDLE_INVALID) break;
+            if (request_att_server == NULL) break;
 
             // Finally, if we still can send and there are requests, just try again
             request_con_handle = HCI_CON_HANDLE_INVALID;
@@ -715,7 +715,7 @@ static void att_server_handle_can_send_now(void){
         }
     }
 
-    if (request_con_handle == HCI_CON_HANDLE_INVALID) return;
+    if (request_att_server == NULL) return;
     att_server_request_can_send_now(request_att_server);
 }
 
