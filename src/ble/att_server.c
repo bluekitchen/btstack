@@ -300,6 +300,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
 		                	att_server->connection.authorized = 0;
                             // workaround: identity resolving can already be complete, at least store result
                             att_server->ir_le_device_db_index = sm_le_device_index(con_handle);
+                            att_server->ir_lookup_active = 0;
                             att_server->pairing_active = 0;
                             // notify all - old
                             att_emit_event_to_all(packet, size);
@@ -538,6 +539,16 @@ int att_server_response_ready(hci_con_handle_t con_handle){
 }
 #endif
 
+static void att_server_request_can_send_now(att_server_t * att_server){
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    if (att_server->l2cap_cid != 0){
+        l2cap_request_can_send_now_event(att_server->l2cap_cid);
+        return;
+    }
+#endif
+    att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
+}
+
 static void att_run_for_context(att_server_t * att_server){
     switch (att_server->state){
         case ATT_SERVER_REQUEST_RECEIVED:
@@ -593,7 +604,7 @@ static void att_run_for_context(att_server_t * att_server){
 #endif
             // move on
             att_server->state = ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED;
-            att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
+            att_server_request_can_send_now(att_server);
             break;
 
         default:
@@ -701,16 +712,6 @@ static void att_server_handle_can_send_now(void){
 
     if (request_con_handle == HCI_CON_HANDLE_INVALID) return;
     att_dispatch_server_request_can_send_now_event(request_con_handle);
-}
-
-static void att_server_request_can_send_now(att_server_t * att_server){
-#ifdef ENABLE_GATT_OVER_CLASSIC
-    if (att_server->l2cap_cid != 0){
-        l2cap_request_can_send_now_event(att_server->l2cap_cid);
-        return;
-    }
-#endif
-    att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
 }
 
 static void att_server_handle_att_pdu(att_server_t * att_server, uint8_t * packet, uint16_t size){
