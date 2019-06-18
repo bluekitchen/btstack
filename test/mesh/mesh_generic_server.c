@@ -50,6 +50,9 @@
 #include "btstack_memory.h"
 #include "btstack_debug.h"
 
+static mesh_transition_t generic_server_on_off_value_transition;
+static void mesh_server_transition_step_bool(mesh_transition_bool_t * transition, transition_event_t event, uint32_t current_timestamp);
+
 static void generic_server_send_message(uint16_t src, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, mesh_pdu_t *pdu){
     uint8_t  ttl  = mesh_foundation_default_ttl_get();
     mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, 0);
@@ -108,35 +111,6 @@ static void generic_on_off_get_handler(mesh_model_t *generic_on_off_server_model
     mesh_access_message_processed(pdu);
 }
 
-static uint8_t mesh_get_num_steps_from_gdtt(uint8_t transition_time_gdtt){
-    return transition_time_gdtt >> 2;
-}
-
-static uint32_t mesh_get_time_ms_from_gdtt(uint8_t transition_time_gdtt){
-    uint32_t step_resolution_ms = 0;
-    uint8_t num_steps  = mesh_get_num_steps_from_gdtt(transition_time_gdtt);
-    
-    mesh_default_transition_step_resolution_t step_resolution = (mesh_default_transition_step_resolution_t) (transition_time_gdtt & 0x03u);
-    switch (step_resolution){
-        case MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_100ms:
-            step_resolution_ms = 100;
-            break;
-        case MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_1s:
-            step_resolution_ms = 1000;
-            break;
-        case MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_10s:
-            step_resolution_ms = 10000;
-            break;
-        case MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_10min:
-            step_resolution_ms = 600000;
-            break;
-        default:
-            break;
-
-    }
-    return num_steps * step_resolution_ms;
-}
-
 static void generic_on_off_set_handler(mesh_model_t *generic_on_off_server_model, mesh_pdu_t * pdu){
     if (generic_on_off_server_model == NULL){
         log_error("generic_on_off_server_model == NULL");
@@ -162,17 +136,11 @@ static void generic_on_off_set_handler(mesh_model_t *generic_on_off_server_model
     if (mesh_access_parser_available(&parser) == 2){
         //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits) 
         uint8_t  transition_time_gdtt = mesh_access_parser_get_u8(&parser);
-        //  Only values of 0x00 through 0x3E shall be used to specify the value of the Transition Number of Steps field
-        uint8_t num_steps  = mesh_get_num_steps_from_gdtt(transition_time_gdtt);
-        if (num_steps > 0x3E){
-
-        }
-
-        uint32_t transition_time_ms = mesh_get_time_ms_from_gdtt(transition_time_gdtt);
-        // Delay is given in 5 millisecond steps 
-        uint16_t  delay_ms = mesh_access_parser_get_u8(&parser) * 5;
-        printf("todo check/set transition timer transition_time %d ms, delay %d ms", transition_time_ms, delay_ms);
-        //TODO: return;
+        uint8_t  delay_time_gdtt = mesh_access_parser_get_u8(&parser);
+        
+        generic_server_on_off_value_transition.transition_callback = (void (*)(mesh_transition_t *, transition_event_t, uint32_t)) &mesh_server_transition_step_bool;
+        mesh_access_transitions_add(&generic_server_on_off_value_transition, transition_time_gdtt, delay_time_gdtt);
+        return;
     }
 
     // Instantanious update
@@ -231,12 +199,13 @@ uint8_t mesh_generic_on_off_server_get_value(mesh_model_t *generic_on_off_server
     return generic_on_off_server_state->transition_data.current_value;
 }
 
-static void mesh_server_transition_bool_init(mesh_transition_bool_t * transition){
+static void mesh_server_transition_bool_reset(mesh_transition_bool_t * transition){
     transition->base_transition.state = MESH_TRANSITION_STATE_IDLE;
     transition->base_transition.remaining_transition_time_ms = 0;
     transition->base_transition.remaining_delay_time_ms = 0;
     transition->base_transition.phase_start_ms = 0;
     transition->target_value = transition->current_value;
+    mesh_access_transitions_remove(&generic_server_on_off_value_transition);
 }
 
 static void mesh_server_transition_state_update(mesh_transition_bool_t * transition, uint32_t current_timestamp_ms){
@@ -253,17 +222,17 @@ static void mesh_server_transition_state_update(mesh_transition_bool_t * transit
         if (transition->target_value == 1){
             transition->current_value = 1;
             // TODO: emit event
-            mesh_server_transition_bool_init(transition);
+            mesh_server_transition_bool_reset(transition);
         }
         return;
     }
     transition->current_value = transition->target_value;
     transition->base_transition.remaining_transition_time_ms = 0;
     // TODO: emit event
-    mesh_server_transition_bool_init(transition);
+    mesh_server_transition_bool_reset(transition);
 }
 
-void mesh_server_transition_step_bool(mesh_transition_bool_t * transition, transition_event_t event, uint32_t current_timestamp){
+static void mesh_server_transition_step_bool(mesh_transition_bool_t * transition, transition_event_t event, uint32_t current_timestamp){
     uint32_t time_step_ms;
 
     switch (transition->base_transition.state){
@@ -272,39 +241,23 @@ void mesh_server_transition_step_bool(mesh_transition_bool_t * transition, trans
             mesh_server_transition_state_update(transition, current_timestamp);
             break;
         case MESH_TRANSITION_STATE_DELAYED:
-            switch (event){
-                case TRANSITION_START:
-                    mesh_server_transition_state_update(transition, current_timestamp);
-                    break;
-                case TRANSITION_UPDATE:
-                    time_step_ms = current_timestamp - transition->base_transition.phase_start_ms;
-                    if (transition->base_transition.remaining_delay_time_ms >= time_step_ms){
-                        transition->base_transition.remaining_delay_time_ms -= time_step_ms;
-                    } else {
-                        transition->base_transition.remaining_delay_time_ms = 0;
-                        mesh_server_transition_state_update(transition, current_timestamp);
-                    }
-                    break;
-                default:
-                    break;
+            if (event != TRANSITION_UPDATE) break;
+            time_step_ms = current_timestamp - transition->base_transition.phase_start_ms;
+            if (transition->base_transition.remaining_delay_time_ms >= time_step_ms){
+                transition->base_transition.remaining_delay_time_ms -= time_step_ms;
+            } else {
+                transition->base_transition.remaining_delay_time_ms = 0;
+                mesh_server_transition_state_update(transition, current_timestamp);
             }
             break;
         case MESH_TRANSITION_STATE_ACTIVE:
-            switch (event){
-                case TRANSITION_START:
-                    mesh_server_transition_state_update(transition, current_timestamp);
-                    break;
-                case TRANSITION_UPDATE:
-                    time_step_ms = current_timestamp - transition->base_transition.phase_start_ms;
-                    if (transition->base_transition.remaining_transition_time_ms >= time_step_ms){
-                        transition->base_transition.remaining_transition_time_ms -= time_step_ms;
-                    } else {
-                        transition->base_transition.remaining_transition_time_ms = 0;
-                        mesh_server_transition_state_update(transition, current_timestamp);
-                    }
-                    break;
-                default:
-                    break;
+            if (event != TRANSITION_UPDATE) break;
+            time_step_ms = current_timestamp - transition->base_transition.phase_start_ms;
+            if (transition->base_transition.remaining_transition_time_ms >= time_step_ms){
+                transition->base_transition.remaining_transition_time_ms -= time_step_ms;
+            } else {
+                transition->base_transition.remaining_transition_time_ms = 0;
+                mesh_server_transition_state_update(transition, current_timestamp);
             }
             break;
         default:

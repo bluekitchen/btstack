@@ -58,6 +58,13 @@ struct mesh_model;
 struct mesh_element;
 
 typedef enum {
+    MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_100ms = 0x00u,
+    MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_1s,
+    MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_10s,
+    MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_10min
+} mesh_default_transition_step_resolution_t;
+
+typedef enum {
     MODEL_STATE_UPDATE_REASON_SET = 0x00u, 
     // MODEL_STATE_UPDATE_REASON_TRANSITION_START, 
     // MODEL_STATE_UPDATE_REASON_TRANSITION_ACTIVE, 
@@ -70,6 +77,12 @@ typedef enum {
     TRANSITION_START,
     TRANSITION_UPDATE
 } transition_event_t;
+
+typedef enum {
+    MESH_TRANSITION_STATE_IDLE,
+    MESH_TRANSITION_STATE_DELAYED,
+    MESH_TRANSITION_STATE_ACTIVE
+} mesh_transition_state_t;
 
 typedef enum {
     MODEL_STATE_ID_GENERIC_ON_OFF = (BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC << 16) | 0u,
@@ -160,6 +173,23 @@ typedef struct {
     const char * format;
 } mesh_access_message_t;
 
+typedef struct mesh_transition {
+    btstack_linked_item_t item;
+
+    mesh_transition_state_t state;
+
+    mesh_default_transition_step_resolution_t step;
+    uint32_t phase_start_ms;
+    uint32_t remaining_delay_time_ms;  
+    uint32_t remaining_transition_time_ms;      
+
+    // to send events and/or publish changes
+    mesh_model_t * mesh_model;
+
+    // to execute transition
+    void (* transition_callback)(struct mesh_transition * transition, transition_event_t event, uint32_t current_timestamp);
+} mesh_transition_t;
+
 /**
  * @brief Init access layer
  */
@@ -221,6 +251,9 @@ mesh_model_t * mesh_access_model_for_address_and_model_identifier(uint16_t eleme
 
 void mesh_access_emit_state_update_bool(btstack_packet_handler_t * event_handler, uint8_t element_index, uint32_t model_identifier, 
     model_state_id_t state_identifier, model_state_update_reason_t reason, uint8_t value);
+  
+void mesh_access_transitions_add(mesh_transition_t * transition, uint8_t transition_time_gdtt, uint8_t delay_gdtt);
+void mesh_access_transitions_remove(mesh_transition_t * transition);
 
 // Mesh PDU Getter
 uint16_t mesh_pdu_src(mesh_pdu_t * pdu);

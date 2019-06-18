@@ -51,37 +51,6 @@ extern "C"
 #define MESH_GENERIC_ON_OFF_SET_UNACKNOWLEDGED      0x8203u
 #define MESH_GENERIC_ON_OFF_STATUS                  0x8204u
 
-typedef enum {
-    MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_100ms = 0x00u,
-    MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_1s,
-    MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_10s,
-    MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_10min
-} mesh_default_transition_step_resolution_t;
-
-
-typedef enum {
-    MESH_TRANSITION_STATE_IDLE,
-    MESH_TRANSITION_STATE_DELAYED,
-    MESH_TRANSITION_STATE_ACTIVE
-} mesh_transition_state_t;
-
-typedef struct mesh_transition {
-    btstack_linked_item_t item;
-
-    mesh_transition_state_t state;
-
-    uint32_t phase_start_ms;
-    uint32_t remaining_delay_time_ms;  
-    uint32_t remaining_transition_time_ms;      
-
-    // to send events and/or publish changes
-    mesh_model_t * mesh_model;
-
-    // to execute transition
-    void (* transition_callback)(struct mesh_transition * transition, transition_event_t event, uint32_t current_timestamp);
-
-} mesh_transition_t;
-
 typedef struct {
     mesh_transition_t base_transition;
 
@@ -118,13 +87,6 @@ void mesh_generic_on_off_server_set_value(mesh_model_t *generic_on_off_server_mo
  */
 uint8_t mesh_generic_on_off_server_get_value(mesh_model_t *generic_on_off_server_model);
 
-/**
- * @brief  Call tu update transition step
- * @param  transition
- * @param  event
- * @param  current_timestamp
- */
-void mesh_server_transition_step_bool(mesh_transition_bool_t * transition, transition_event_t event, uint32_t current_timestamp);
 
 #ifdef __cplusplus
 } /* end of extern "C" */
