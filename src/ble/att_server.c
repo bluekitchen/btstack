@@ -137,6 +137,16 @@ static att_server_t * att_server_for_state(att_server_state_t state){
 }
 #endif
 
+static void att_server_request_can_send_now(att_server_t * att_server){
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    if (att_server->l2cap_cid != 0){
+        l2cap_request_can_send_now_event(att_server->l2cap_cid);
+        return;
+    }
+#endif
+    att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
+}
+
 static void att_handle_value_indication_notify_client(uint8_t status, uint16_t client_handle, uint16_t attribute_handle){
     btstack_packet_handler_t packet_handler = att_server_packet_handler_for_handle(attribute_handle);
     if (!packet_handler) return;
@@ -424,7 +434,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     att_server = att_server_for_handle(con_handle);
                     if (!att_server) break;
                     att_server->connection.authorized = sm_event_authorization_result_get_authorization_result(packet);
-                    att_dispatch_server_request_can_send_now_event(con_handle);
+                    att_server_request_can_send_now(att_server);
                 	break;
                 }
                 default:
@@ -464,7 +474,7 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     uint32_t counter_packet = little_endian_read_32(att_server->request_buffer, att_server->request_size-12);
     le_device_db_remote_counter_set(att_server->ir_le_device_db_index, counter_packet+1);
     att_server->state = ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED;
-    att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
+    att_server_request_can_send_now(att_server);
 }
 #endif
 
@@ -534,20 +544,10 @@ int att_server_response_ready(hci_con_handle_t con_handle){
     if (att_server->state != ATT_SERVER_RESPONSE_PENDING)   return ERROR_CODE_COMMAND_DISALLOWED;
 
     att_server->state = ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED;
-    att_dispatch_server_request_can_send_now_event(con_handle);
+    att_server_request_can_send_now(att_server);
     return ERROR_CODE_SUCCESS;
 }
 #endif
-
-static void att_server_request_can_send_now(att_server_t * att_server){
-#ifdef ENABLE_GATT_OVER_CLASSIC
-    if (att_server->l2cap_cid != 0){
-        l2cap_request_can_send_now_event(att_server->l2cap_cid);
-        return;
-    }
-#endif
-    att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
-}
 
 static void att_run_for_context(att_server_t * att_server){
     switch (att_server->state){
@@ -1096,7 +1096,7 @@ int att_server_request_to_send_notification(btstack_context_callback_registratio
     att_server_t * att_server = att_server_for_handle(con_handle);
     if (!att_server) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     btstack_linked_list_add_tail(&att_server->notification_requests, (btstack_linked_item_t*) callback_registration);
-    att_dispatch_server_request_can_send_now_event(con_handle);
+    att_server_request_can_send_now(att_server);
     return ERROR_CODE_SUCCESS;
 }
 
@@ -1104,7 +1104,7 @@ int att_server_request_to_send_indication(btstack_context_callback_registration_
     att_server_t * att_server = att_server_for_handle(con_handle);
     if (!att_server) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
     btstack_linked_list_add_tail(&att_server->indication_requests, (btstack_linked_item_t*) callback_registration);
-    att_dispatch_server_request_can_send_now_event(con_handle);
+    att_server_request_can_send_now(att_server);
     return ERROR_CODE_SUCCESS;
 }
 
