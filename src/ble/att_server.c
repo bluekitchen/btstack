@@ -76,6 +76,7 @@ static att_write_callback_t att_server_write_callback_for_handle(uint16_t handle
 static btstack_packet_handler_t att_server_packet_handler_for_handle(uint16_t handle);
 static void att_server_persistent_ccc_restore(att_server_t * att_server);
 static void att_server_persistent_ccc_clear(att_server_t * att_server);
+static void att_server_handle_att_pdu(att_server_t * att_server, uint8_t * packet, uint16_t size);
 
 typedef enum {
     ATT_SERVER_RUN_PHASE_1_REQUESTS,
@@ -433,10 +434,11 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
         case L2CAP_DATA_PACKET:
             att_server = att_server_for_l2cap_cid(channel);
             if (!att_server) break;
-            printf("ATT request (server %p): ", att_server);
-            printf_hexdump(packet, size);
+
+            att_server_handle_att_pdu(att_server, packet, size);
             break;
 #endif
+
         default:
             break;
     }
@@ -701,6 +703,67 @@ static void att_server_handle_can_send_now(void){
     att_dispatch_server_request_can_send_now_event(request_con_handle);
 }
 
+static void att_server_request_can_send_now(att_server_t * att_server){
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    if (att_server->l2cap_cid != 0){
+        l2cap_request_can_send_now_event(att_server->l2cap_cid);
+        return;
+    }
+#endif
+    att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
+}
+
+static void att_server_handle_att_pdu(att_server_t * att_server, uint8_t * packet, uint16_t size){
+
+    // handle value indication confirms
+    if (packet[0] == ATT_HANDLE_VALUE_CONFIRMATION && att_server->value_indication_handle){
+        btstack_run_loop_remove_timer(&att_server->value_indication_timer);
+        uint16_t att_handle = att_server->value_indication_handle;
+        att_server->value_indication_handle = 0;    
+        att_handle_value_indication_notify_client(0, att_server->connection.con_handle, att_handle);
+        att_server_request_can_send_now(att_server);
+        return;
+    }
+
+    // directly process command
+    // note: signed write cannot be handled directly as authentication needs to be verified
+    if (packet[0] == ATT_WRITE_COMMAND){
+        att_handle_request(&att_server->connection, packet, size, 0);
+        return;
+    }
+
+    // check size
+    if (size > sizeof(att_server->request_buffer)) {
+        log_info("drop att pdu 0x%02x as size %u > att_server->request_buffer %u", packet[0], size, (int) sizeof(att_server->request_buffer));
+        return;
+    }
+
+#ifdef ENABLE_LE_SIGNED_WRITE
+    // abort signed write validation if a new request comes in (but finish previous signed write if possible)
+    if (att_server->state == ATT_SERVER_W4_SIGNED_WRITE_VALIDATION){
+        if (packet[0] == ATT_SIGNED_WRITE_COMMAND){
+            log_info("skip new signed write request as previous is in validation");
+            return;
+        } else {
+            log_info("abort signed write validation to process new request");
+            att_server->state = ATT_SERVER_IDLE;
+        }
+    }
+#endif
+    // last request still in processing?
+    if (att_server->state != ATT_SERVER_IDLE){
+        log_info("skip att pdu 0x%02x as server not idle (state %u)", packet[0], att_server->state);
+        return;
+    }
+
+    // store request
+    att_server->state = ATT_SERVER_REQUEST_RECEIVED;
+    att_server->request_size = size;
+    memcpy(att_server->request_buffer, packet, size);
+
+    att_run_for_context(att_server);
+}
+
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
     att_server_t * att_server;
 
@@ -726,53 +789,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             att_server = att_server_for_handle(handle);
             if (!att_server) break;
 
-            // handle value indication confirms
-            if (packet[0] == ATT_HANDLE_VALUE_CONFIRMATION && att_server->value_indication_handle){
-                btstack_run_loop_remove_timer(&att_server->value_indication_timer);
-                uint16_t att_handle = att_server->value_indication_handle;
-                att_server->value_indication_handle = 0;    
-                att_handle_value_indication_notify_client(0, att_server->connection.con_handle, att_handle);
-                att_dispatch_server_request_can_send_now_event(att_server->connection.con_handle);
-                return;
-            }
-
-            // directly process command
-            // note: signed write cannot be handled directly as authentication needs to be verified
-            if (packet[0] == ATT_WRITE_COMMAND){
-                att_handle_request(&att_server->connection, packet, size, 0);
-                return;
-            }
-
-            // check size
-            if (size > sizeof(att_server->request_buffer)) {
-                log_info("drop att pdu 0x%02x as size %u > att_server->request_buffer %u", packet[0], size, (int) sizeof(att_server->request_buffer));
-                return;
-            }
-
-#ifdef ENABLE_LE_SIGNED_WRITE
-            // abort signed write validation if a new request comes in (but finish previous signed write if possible)
-            if (att_server->state == ATT_SERVER_W4_SIGNED_WRITE_VALIDATION){
-                if (packet[0] == ATT_SIGNED_WRITE_COMMAND){
-                    log_info("skip new signed write request as previous is in validation");
-                    return;
-                } else {
-                    log_info("abort signed write validation to process new request");
-                    att_server->state = ATT_SERVER_IDLE;
-                }
-            }
-#endif
-            // last request still in processing?
-            if (att_server->state != ATT_SERVER_IDLE){
-                log_info("skip att pdu 0x%02x as server not idle (state %u)", packet[0], att_server->state);
-                return;
-            }
-
-            // store request
-            att_server->state = ATT_SERVER_REQUEST_RECEIVED;
-            att_server->request_size = size;
-            memcpy(att_server->request_buffer, packet, size);
-        
-            att_run_for_context(att_server);
+            att_server_handle_att_pdu(att_server, packet, size);
             break;
     }
 }
