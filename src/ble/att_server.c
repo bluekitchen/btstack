@@ -253,11 +253,28 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     printf("Accept incoming connection from %s\n", bd_addr_to_str(address));
                     break;
                 case L2CAP_EVENT_CHANNEL_OPENED:
-                    l2cap_event_channel_opened_get_address(packet, address);
-                    att_server = att_server_for_handle(l2cap_event_channel_opened_get_handle(packet));
+                    con_handle = l2cap_event_channel_opened_get_handle(packet);
+                    att_server = att_server_for_handle(con_handle);
                     if (!att_server) break;
+                    // store connection info
+                    att_server->peer_addr_type = BD_ADDR_TYPE_CLASSIC;
+                    l2cap_event_channel_opened_get_address(packet, att_server->peer_address);
+                    att_server->connection.con_handle = con_handle;
                     att_server->l2cap_cid = l2cap_event_channel_opened_get_local_cid(packet);
-                    printf("Connection opened %s, l2cap cid %04x\n", bd_addr_to_str(address), att_server->l2cap_cid);
+                    // reset connection properties
+                    att_server->state = ATT_SERVER_IDLE;
+                    att_server->connection.mtu = l2cap_event_channel_opened_get_remote_mtu(packet);
+                    att_server->connection.max_mtu = l2cap_max_mtu();
+                    if (att_server->connection.max_mtu > ATT_REQUEST_BUFFER_SIZE){
+                        att_server->connection.max_mtu = ATT_REQUEST_BUFFER_SIZE;
+                    }
+                    // TODO: use security level from underlying HCI connection
+                    att_server->connection.encryption_key_size = 0;
+                    att_server->connection.authenticated = 0;
+                    att_server->connection.authorized = 0;
+                    // TODO: what to do about le device db?
+                    att_server->pairing_active = 0;
+                    printf("Connection opened %s, l2cap cid %04x, \n", bd_addr_to_str(address), att_server->l2cap_cid);
                     break;
 #endif
                 case HCI_EVENT_LE_META:
