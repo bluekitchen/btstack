@@ -50,9 +50,6 @@
 #include "btstack_memory.h"
 #include "btstack_debug.h"
 
-// TODO handler in model?
-static btstack_packet_handler_t mesh_packet_handler;
-
 static void generic_server_send_message(uint16_t src, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, mesh_pdu_t *pdu){
     uint8_t  ttl  = mesh_foundation_default_ttl_get();
     mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, 0);
@@ -61,8 +58,16 @@ static void generic_server_send_message(uint16_t src, uint16_t dest, uint16_t ne
 
 // Generic On Off State
 
-void mesh_generic_on_off_server_register_packet_handler(btstack_packet_handler_t packet_handler){
-    mesh_packet_handler = packet_handler;
+void mesh_generic_on_off_server_register_packet_handler(mesh_model_t *generic_on_off_server_model, btstack_packet_handler_t transition_events_packet_handler){
+    if (transition_events_packet_handler == NULL){
+        log_error("mesh_generic_on_off_server_register_packet_handler called with NULL callback");
+        return;
+    }
+    if (generic_on_off_server_model == NULL){
+        log_error("mesh_generic_on_off_server_register_packet_handler called with NULL generic_on_off_server_model");
+        return;
+    }
+    generic_on_off_server_model->transition_events_packet_handler = &transition_events_packet_handler;
 }
 
 const mesh_access_message_t mesh_generic_on_off_status_transition = {
@@ -179,7 +184,7 @@ static void generic_on_off_set_handler(mesh_model_t *generic_on_off_server_model
     mesh_generic_on_off_status_message(generic_on_off_server_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), mesh_pdu_appkey_index(pdu));
     mesh_access_message_processed(pdu);
     
-    mesh_access_emit_state_update_bool(mesh_packet_handler, 
+    mesh_access_emit_state_update_bool(generic_on_off_server_model->transition_events_packet_handler, 
         mesh_access_get_element_index(generic_on_off_server_model), 
         generic_on_off_server_model->model_identifier, 
         MODEL_STATE_ID_GENERIC_ON_OFF, 
@@ -213,7 +218,7 @@ void mesh_generic_on_off_server_set_value(mesh_model_t *generic_on_off_server_mo
     // TODO implement publication
     generic_on_off_server_state->transition_data.current_value = on_off_value;
     
-    mesh_access_emit_state_update_bool(mesh_packet_handler, 
+    mesh_access_emit_state_update_bool(generic_on_off_server_model->transition_events_packet_handler, 
         mesh_access_get_element_index(generic_on_off_server_model), 
         generic_on_off_server_model->model_identifier, 
         MODEL_STATE_ID_GENERIC_ON_OFF, 
@@ -312,3 +317,5 @@ static void mesh_server_transition_step_bool(mesh_model_t * mesh_model, mesh_tra
             break;
     }
 }
+
+

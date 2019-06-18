@@ -83,9 +83,10 @@ typedef struct {
 const mesh_operation_t * mesh_generic_on_off_server_get_operations(void);
 /**
  * @brief Register packet handler
- * @param packet_handler
+ * @param generic_on_off_server_model
+ * @param transition_events_packet_handler
  */
-void mesh_generic_on_off_server_register_packet_handler(btstack_packet_handler_t packet_handler);
+void mesh_generic_on_off_server_register_packet_handler(mesh_model_t *generic_on_off_server_model, btstack_packet_handler_t transition_events_packet_handler);
 
 /**
  * @brief Set ON/OFF value

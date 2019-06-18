@@ -114,6 +114,9 @@ typedef struct mesh_model {
 
     // subscription list
     uint16_t subscriptions[MAX_NR_MESH_SUBSCRIPTION_PER_MODEL];
+
+    // packet handler for transition events
+    btstack_packet_handler_t * transition_events_packet_handler;
 } mesh_model_t;
 
 typedef struct {
@@ -211,7 +214,7 @@ mesh_model_t * mesh_model_get_configuration_server(void);
 
 mesh_model_t * mesh_access_model_for_address_and_model_identifier(uint16_t element_address, uint32_t model_identifier, uint8_t * status);
 
-void mesh_access_emit_state_update_bool(btstack_packet_handler_t handler, uint8_t element_index, uint32_t model_identifier, 
+void mesh_access_emit_state_update_bool(btstack_packet_handler_t * event_handler, uint8_t element_index, uint32_t model_identifier, 
     model_state_id_t state_identifier, model_state_update_reason_t reason, uint8_t value);
 
 // Mesh PDU Getter

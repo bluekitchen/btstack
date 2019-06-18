@@ -1094,7 +1094,7 @@ int btstack_main(void)
     mesh_generic_on_off_server_model.operations = mesh_generic_on_off_server_get_operations();    
     mesh_element_add_model(mesh_primary_element(), &mesh_generic_on_off_server_model);
     mesh_generic_on_off_server_model.model_data = (void *) &mesh_generic_on_off_state;
-    mesh_generic_on_off_server_register_packet_handler(&mesh_state_update_message_handler);
+    mesh_generic_on_off_server_register_packet_handler(&mesh_generic_on_off_server_model, &mesh_state_update_message_handler);
 
     mesh_vendor_model.model_identifier = mesh_model_get_model_identifier(BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, MESH_BLUEKITCHEN_MODEL_ID_TEST_SERVER);
     mesh_model_reset_appkeys(&mesh_vendor_model);
