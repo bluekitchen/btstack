@@ -754,6 +754,21 @@ typedef uint8_t sm_key_t[16];
 #define GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE                    0xAC
 
 /** 
+ * @format 1BH2
+ * @param address_type
+ * @param address
+ * @param handle
+ * @param l2cap_cid if BR/EDR bearer
+ */    
+#define ATT_EVENT_CONNECTED                                      0xB3
+
+/** 
+ * @format H
+ * @param handle
+ */    
+#define ATT_EVENT_DISCONNECTED                                   0xB4
+
+/** 
  * @format H2
  * @param handle
  * @param MTU
