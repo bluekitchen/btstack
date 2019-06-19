@@ -168,6 +168,8 @@ void mesh_access_transitions_timeout_handler(btstack_timer_source_t * timer){
                 break;
         }
     }
+    if (btstack_linked_list_empty(&transitions)) return;
+    
     btstack_run_loop_set_timer(timer, mesh_access_get_min_transitions_timeout_ms()); 
     btstack_run_loop_add_timer(timer);
 }
