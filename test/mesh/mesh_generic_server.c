@@ -50,7 +50,7 @@
 #include "btstack_memory.h"
 #include "btstack_debug.h"
 
-static void mesh_server_transition_step_bool(mesh_transition_bool_t * transition, transition_event_t event, uint32_t current_timestamp);
+static void mesh_server_transition_step_bool(mesh_transition_t * transition, transition_event_t event, uint32_t current_timestamp);
 
 static void generic_server_send_message(uint16_t src, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, mesh_pdu_t *pdu){
     uint8_t  ttl  = mesh_foundation_default_ttl_get();
@@ -142,7 +142,7 @@ static void generic_on_off_set_handler(mesh_model_t *generic_on_off_server_model
 
         if (transition_time_gdtt != 0 || delay_time_gdtt != 0) {
             generic_server_on_off_value_transition.mesh_model = (mesh_model_t *) generic_on_off_server_model;
-            generic_server_on_off_value_transition.transition_callback = (void (*)(mesh_transition_t *, transition_event_t, uint32_t)) &mesh_server_transition_step_bool;
+            generic_server_on_off_value_transition.transition_callback = &mesh_server_transition_step_bool;
             mesh_access_transitions_add(&generic_server_on_off_value_transition, transition_time_gdtt, delay_time_gdtt);
             return;
         }
@@ -229,7 +229,8 @@ static void mesh_server_transition_state_update(mesh_transition_bool_t * transit
     }
     transition->current_value = transition->target_value;
     transition->base_transition.remaining_transition_time_ms = 0;
-    // TODO: emit event
+
+    // emit event
     mesh_access_emit_state_update_bool(generic_on_off_server_model->transition_events_packet_handler, 
         mesh_access_get_element_index(generic_on_off_server_model), 
         generic_on_off_server_model->model_identifier, 
@@ -237,11 +238,14 @@ static void mesh_server_transition_state_update(mesh_transition_bool_t * transit
         MODEL_STATE_UPDATE_REASON_TRANSITION_END, 
         transition->current_value);
     
+    // done, stop transition
     mesh_access_transitions_remove((mesh_transition_t *)transition);
 }
 
-static void mesh_server_transition_step_bool(mesh_transition_bool_t * transition, transition_event_t event, uint32_t current_timestamp){
+static void mesh_server_transition_step_bool(mesh_transition_t * base_transition, transition_event_t event, uint32_t current_timestamp){
     uint32_t time_step_ms;
+
+    mesh_transition_bool_t * transition = (mesh_transition_bool_t*) base_transition;
 
     switch (transition->base_transition.state){
         case MESH_TRANSITION_STATE_IDLE:
