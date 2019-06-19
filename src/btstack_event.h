@@ -2233,15 +2233,6 @@ static inline void att_event_connected_get_address(const uint8_t * event, bd_add
 static inline hci_con_handle_t att_event_connected_get_handle(const uint8_t * event){
     return little_endian_read_16(event, 9);
 }
-/**
- * @brief Get field l2cap_cid from event ATT_EVENT_CONNECTED
- * @param event packet
- * @return l2cap_cid
- * @note: btstack_type 2
- */
-static inline uint16_t att_event_connected_get_l2cap_cid(const uint8_t * event){
-    return little_endian_read_16(event, 11);
-}
 
 /**
  * @brief Get field handle from event ATT_EVENT_DISCONNECTED
