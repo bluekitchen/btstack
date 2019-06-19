@@ -114,10 +114,12 @@ static uint32_t mesh_get_transition_step_ms_from_gdtt(uint8_t transition_time_gd
 }
 
 void mesh_access_transitions_add(mesh_transition_t * transition, uint8_t transition_time_gdtt, uint8_t delay_gdtt){
+    if (transition_time_gdtt == 0 && delay_gdtt == 0) return;
+
     //  Only values of 0x00 through 0x3E shall be used to specify the value of the Transition Number of Steps field
     uint8_t num_steps  = mesh_get_num_steps_from_gdtt(transition_time_gdtt);
     if (num_steps > 0x3E) return;
-
+    
     transition->remaining_delay_time_ms = delay_gdtt * 5;
     transition->remaining_transition_time_ms = num_steps * mesh_get_transition_step_ms_from_gdtt(transition_time_gdtt);
     transition->phase_start_ms = 0;
