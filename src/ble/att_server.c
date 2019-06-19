@@ -194,12 +194,12 @@ static void att_emit_connected_event(att_server_t * att_server){
 }
 
 
-static void att_emit_disconnected_event(att_server_t * att_server){
+static void att_emit_disconnected_event(uint16_t con_handle){
     uint8_t event[4];
     int pos = 0;
     event[pos++] = ATT_EVENT_DISCONNECTED;
     event[pos++] = sizeof(event) - 2;
-    little_endian_store_16(event, pos, att_server->connection.con_handle);
+    little_endian_store_16(event, pos, con_handle);
     pos += 2;
 
     // dispatch to app level handler and service handlers
@@ -300,7 +300,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                         att_handle_value_indication_notify_client(ATT_HANDLE_VALUE_INDICATION_DISCONNECT, att_server->connection.con_handle, att_handle);
                     }
                     // notify all - new
-                    att_emit_disconnected_event(att_server);
+                    att_emit_disconnected_event(con_handle);
                     // notify all - old
                     att_emit_event_to_all(packet, size);
                     break;
