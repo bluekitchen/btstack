@@ -178,6 +178,34 @@ static void att_emit_can_send_now_event(void * context){
     (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 
+static void att_emit_connected_event(att_server_t * att_server){
+    uint8_t event[11];
+    int pos = 0;
+    event[pos++] = ATT_EVENT_CONNECTED;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = att_server->peer_addr_type;
+    reverse_bd_addr(att_server->peer_address, &event[pos]);
+    pos += 6;
+    little_endian_store_16(event, pos, att_server->connection.con_handle);
+    pos += 2;
+
+    // dispatch to app level handler and service handlers
+    att_emit_event_to_all(&event[0], sizeof(event));
+}
+
+
+static void att_emit_disconnected_event(att_server_t * att_server){
+    uint8_t event[4];
+    int pos = 0;
+    event[pos++] = ATT_EVENT_DISCONNECTED;
+    event[pos++] = sizeof(event) - 2;
+    little_endian_store_16(event, pos, att_server->connection.con_handle);
+    pos += 2;
+
+    // dispatch to app level handler and service handlers
+    att_emit_event_to_all(&event[0], sizeof(event));
+}
+
 static void att_handle_value_indication_timeout(btstack_timer_source_t *ts){
     void * context = btstack_run_loop_get_timer_context(ts);
     hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) context;
@@ -225,8 +253,10 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                             // workaround: identity resolving can already be complete, at least store result
                             att_server->ir_le_device_db_index = sm_le_device_index(con_handle);
                             att_server->pairing_active = 0;
-                            // notify all
+                            // notify all - old
                             att_emit_event_to_all(packet, size);
+                            // notify all - new
+                            att_emit_connected_event(att_server);
                             break;
 
                         default:
@@ -269,7 +299,9 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                         att_server->value_indication_handle = 0; // reset error state
                         att_handle_value_indication_notify_client(ATT_HANDLE_VALUE_INDICATION_DISCONNECT, att_server->connection.con_handle, att_handle);
                     }
-                    // notify all
+                    // notify all - new
+                    att_emit_disconnected_event(att_server);
+                    // notify all - old
                     att_emit_event_to_all(packet, size);
                     break;
                     
