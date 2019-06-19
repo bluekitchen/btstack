@@ -177,6 +177,8 @@ static void test_track_data(le_data_channel_connection_t * context, int bytes_tr
  /* LISTING_START(streamer): Streaming code */
 static void streamer(void){
 
+    if (le_data_channel_connection.cid == 0) return;
+
     // create test data
     le_data_channel_connection.counter++;
     if (le_data_channel_connection.counter > 'Z') le_data_channel_connection.counter = 'A';
@@ -230,10 +232,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_EVENT_LE_META:
                     switch (hci_event_le_meta_get_subevent_code(packet)) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                            // setup new 
-                            le_data_channel_connection.counter = 'A';
-                            le_data_channel_connection.test_data_len = ATT_DEFAULT_MTU - 3;
-                            le_data_channel_connection.connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
                             // print connection parameters (without using float operations)
                             conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
                             printf("%c: Connection Interval: %u.%02u ms\n", le_data_channel_connection.name, conn_interval * 125 / 100, 25 * (conn_interval & 3));
@@ -278,6 +276,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     if (packet[2] == 0) {
                         printf("L2CAP: LE Data Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
                                bd_addr_to_str(event_address), handle, psm, cid,  little_endian_read_16(packet, 15));
+                        // setup new 
+                        le_data_channel_connection.counter = 'A';
                         le_data_channel_connection.cid = cid;
                         le_data_channel_connection.connection_handle = handle;
                         le_data_channel_connection.test_data_len = btstack_min(l2cap_event_le_channel_opened_get_remote_mtu(packet), sizeof(le_data_channel_connection.test_data));
@@ -292,8 +292,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     break;
 
                 case L2CAP_EVENT_LE_CHANNEL_CLOSED:
-                    cid = l2cap_event_le_channel_closed_get_local_cid(packet);
-                    printf("L2CAP: LE Data Channel closed 0x%02x\n", cid); 
+                    printf("L2CAP: LE Data Channel closed\n"); 
+                    le_data_channel_connection.cid = 0;
                     break;
 
 #ifdef TEST_STREAM_DATA
