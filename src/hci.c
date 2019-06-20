@@ -4258,7 +4258,6 @@ static void hci_emit_discoverable_enabled(uint8_t enabled){
     hci_emit_event(event, sizeof(event), 1);
 }
 
-#ifdef ENABLE_CLASSIC
 // query if remote side supports eSCO
 int hci_remote_esco_supported(hci_con_handle_t con_handle){
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
@@ -4276,7 +4275,6 @@ int hci_remote_ssp_supported(hci_con_handle_t con_handle){
 int gap_ssp_supported_on_both_sides(hci_con_handle_t handle){
     return hci_local_ssp_activated() && hci_remote_ssp_supported(handle);
 }
-#endif
 
 // GAP API
 /**
@@ -5103,9 +5101,11 @@ int gap_authenticated(hci_con_handle_t con_handle){
         case BD_ADDR_TYPE_LE_RANDOM:
             if (hci_connnection->sm_connection.sm_connection_encrypted == 0) return 0; // unencrypted connection cannot be authenticated
             return hci_connnection->sm_connection.sm_connection_authenticated;
+#ifdef ENABLE_CLASSIC
         case BD_ADDR_TYPE_SCO:
         case BD_ADDR_TYPE_CLASSIC:
             return gap_authenticated_for_link_key_type(hci_connnection->link_key_type);
+#endif
         default:
             return 0;
     }
@@ -5120,9 +5120,11 @@ int gap_secure_connection(hci_con_handle_t con_handle){
         case BD_ADDR_TYPE_LE_RANDOM:
             if (hci_connnection->sm_connection.sm_connection_encrypted == 0) return 0; // unencrypted connection cannot be authenticated
             return hci_connnection->sm_connection.sm_connection_sc;
+#ifdef ENABLE_CLASSIC
         case BD_ADDR_TYPE_SCO:
         case BD_ADDR_TYPE_CLASSIC:
             return gap_secure_connection_for_link_key_type(hci_connnection->link_key_type);
+#endif
         default:
             return 0;
     }
