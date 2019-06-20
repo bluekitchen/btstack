@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - example: pan_lwip_http_server using lwIP as network stack to implement PAN NAP service
 - platform/lwip/bnep_lwip.c: BNEP lwIP adapter that forwards packets between BNEP service and lwIP
+- ENABLE_GATT_OVER_CLASSIC enables support for GATT over BR/EDR in att_server
 
 ---
 
