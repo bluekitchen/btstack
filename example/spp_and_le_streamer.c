@@ -191,21 +191,22 @@ static void le_streamer(void){
 } 
 
 /* 
- * @section Packet Handler
+ * @section HCI Packet Handler
  * 
  * @text The packet handler of the combined example is just the combination of the individual packet handlers.
  */
 
-static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
+    UNUSED(size);
 
     bd_addr_t event_addr;
-    uint8_t   rfcomm_channel_nr;
     uint16_t  conn_interval;
-    
-	switch (packet_type) {
-		case HCI_EVENT_PACKET:
-			switch (hci_event_packet_get_type(packet)) {
+    hci_con_handle_t con_handle;
+
+    switch (packet_type) {
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)) {
 
                 case HCI_EVENT_PIN_CODE_REQUEST:
                     // inform about pin code request
@@ -220,6 +221,33 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     printf("SSP User Confirmation Auto accept\n");
                     break;
 
+                case HCI_EVENT_LE_META:
+                    switch (hci_event_le_meta_get_subevent_code(packet)) {
+                        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                            // print connection parameters (without using float operations)
+                            con_handle    = hci_subevent_le_connection_complete_get_connection_handle(packet);
+                            conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
+                            printf("LE Connection - Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
+                            printf("LE Connection - Connection Latency: %u\n", hci_subevent_le_connection_complete_get_conn_latency(packet));
+
+                            // request min con interval 15 ms for iOS 11+ 
+                            printf("LE Connection - Request 15 ms connection interval\n");
+                            gap_request_connection_parameter_update(con_handle, 12, 12, 0, 0x0048);
+                            break;
+
+                        case HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE:
+                            // print connection parameters (without using float operations)
+                            con_handle    = hci_subevent_le_connection_update_complete_get_connection_handle(packet);
+                            conn_interval = hci_subevent_le_connection_update_complete_get_conn_interval(packet);
+                            printf("LE Connection - Connection Param update - connection interval %u.%02u ms, latency %u\n", conn_interval * 125 / 100,
+                                25 * (conn_interval & 3), hci_subevent_le_connection_update_complete_get_conn_latency(packet));
+                            break;
+
+                        default:
+                            break;
+                    }
+                    break;  
+
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     // re-enable page/inquiry scan again
                     gap_discoverable_control(1);
@@ -229,43 +257,44 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     le_notification_enabled = 0;
                     break;
 
-                case HCI_EVENT_LE_META:
-                    switch (hci_event_le_meta_get_subevent_code(packet)) {
-                        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                            le_test_data_len = ATT_DEFAULT_MTU - 3;
-                            le_connection_handle = hci_subevent_le_connection_complete_get_connection_handle(packet);
-                            // print connection parameters (without using float operations)
-                            conn_interval = hci_subevent_le_connection_complete_get_conn_interval(packet);
-                            printf("Connection Interval: %u.%02u ms\n", conn_interval * 125 / 100, 25 * (conn_interval & 3));
-                            printf("Connection Latency: %u\n", hci_subevent_le_connection_complete_get_conn_latency(packet));                            break;
-                    }
-                    break;  
-
-                case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
-                    att_mtu = att_event_mtu_exchange_complete_get_MTU(packet);
-                    printf("ATT MTU = %u\n", att_mtu);
-                    le_test_data_len = att_mtu - 3;
-                    if (le_test_data_len > sizeof(test_data)){
-                        le_test_data_len = sizeof(test_data);
-                    }
+                default:
                     break;
+            }
+            break;
+                        
+        default:
+            break;
+    }
+}
 
-                case ATT_EVENT_CAN_SEND_NOW:
-                    le_streamer();
-                    break;
+/* 
+ * @section RFCOMM Packet Handler
+ * 
+ * @text The RFCOMM packet handler accepts incoming connection and triggers sending of RFCOMM data on RFCOMM_EVENT_CAN_SEND_NOW
+ */
+
+static void rfcomm_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+
+    bd_addr_t event_addr;
+    uint8_t   rfcomm_channel_nr;
+    
+    switch (packet_type) {
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)) {
 
                 case RFCOMM_EVENT_INCOMING_CONNECTION:
-					// data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
+                    // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
                     rfcomm_event_incoming_connection_get_bd_addr(packet, event_addr); 
                     rfcomm_channel_nr = rfcomm_event_incoming_connection_get_server_channel(packet);
                     rfcomm_cid = rfcomm_event_incoming_connection_get_rfcomm_cid(packet);
                     printf("RFCOMM channel %u requested for %s\n", rfcomm_channel_nr, bd_addr_to_str(event_addr));
                     rfcomm_accept_connection(rfcomm_cid);
-					break;
-					
-				case RFCOMM_EVENT_CHANNEL_OPENED:
-					// data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
-					if (rfcomm_event_channel_opened_get_status(packet)) {
+                    break;
+                    
+                case RFCOMM_EVENT_CHANNEL_OPENED:
+                    // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
+                    if (rfcomm_event_channel_opened_get_status(packet)) {
                         printf("RFCOMM channel open failed, status %u\n", rfcomm_event_channel_opened_get_status(packet));
                     } else {
                         rfcomm_cid = rfcomm_event_channel_opened_get_rfcomm_cid(packet);
@@ -286,7 +315,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         test_reset();
                         rfcomm_request_can_send_now_event(rfcomm_cid);
                     }
-					break;
+                    break;
 
                 case RFCOMM_EVENT_CAN_SEND_NOW:
                     spp_send_packet();
@@ -299,7 +328,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
                 default:
                     break;
-			}
+            }
             break;
                         
         case RFCOMM_DATA_PACKET:
@@ -315,7 +344,47 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
         default:
             break;
-	}
+    }
+}
+
+/* 
+ * @section ATT Packet Handler
+ *
+ * @text The packet handler is used to track the ATT MTU Exchange and trigger ATT send
+ */
+
+/* LISTING_START(attPacketHandler): Packet Handler */
+static void att_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    switch (packet_type) {
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)) {
+                case ATT_EVENT_CONNECTED:
+                    le_test_data_len = ATT_DEFAULT_MTU - 3;
+                    le_connection_handle = att_event_connected_get_handle(packet);
+                    break;
+
+                case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
+                    att_mtu = att_event_mtu_exchange_complete_get_MTU(packet);
+                    printf("ATT MTU = %u\n", att_mtu);
+                    le_test_data_len = att_mtu - 3;
+                    if (le_test_data_len > sizeof(test_data)){
+                        le_test_data_len = sizeof(test_data);
+                    }
+                    break;
+
+                case ATT_EVENT_CAN_SEND_NOW:
+                    le_streamer();
+                    break;
+
+                case ATT_EVENT_DISCONNECTED:
+                    le_notification_enabled = 0;
+                    le_connection_handle = HCI_CON_HANDLE_INVALID;
+                    break;
+            }
+    }
 }
 
 // ATT Client Read Callback for Dynamic Data
@@ -375,7 +444,7 @@ int btstack_main(int argc, const char * argv[])
     l2cap_init();
 
     rfcomm_init();
-    rfcomm_register_service(packet_handler, RFCOMM_SERVER_CHANNEL, 0xffff);
+    rfcomm_register_service(rfcomm_packet_handler, RFCOMM_SERVER_CHANNEL, 0xffff);
 
     // init SDP, create record for SPP and register with SDP
     sdp_init();
@@ -402,11 +471,11 @@ int btstack_main(int argc, const char * argv[])
     att_server_init(profile_data, att_read_callback, att_write_callback);    
 
     // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
+    hci_event_callback_registration.callback = &hci_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     // register for ATT events
-    att_server_register_packet_handler(packet_handler);
+    att_server_register_packet_handler(att_packet_handler);
 
     // setup advertisements
     uint16_t adv_int_min = 0x0030;
@@ -421,8 +490,8 @@ int btstack_main(int argc, const char * argv[])
     spp_create_test_data();
 
     // turn on!
-	hci_power_control(HCI_POWER_ON);
-	    
+    hci_power_control(HCI_POWER_ON);
+        
     return 0;
 }
 /* LISTING_END */
