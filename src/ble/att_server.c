@@ -289,19 +289,25 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     if (att_server->connection.max_mtu > ATT_REQUEST_BUFFER_SIZE){
                         att_server->connection.max_mtu = ATT_REQUEST_BUFFER_SIZE;
                     }
+
+                    log_info("Connection opened %s, l2cap cid %04x, mtu %u", bd_addr_to_str(address), att_server->l2cap_cid, att_server->connection.mtu);
+
                     // update security params
                     att_server->connection.encryption_key_size = gap_encryption_key_size(con_handle);
                     att_server->connection.authenticated = gap_authenticated(con_handle);
                     att_server->connection.secure_connection = gap_secure_connection(con_handle);
                     log_info("encrypted key size %u, authenticated %u, secure connection %u",
                         att_server->connection.encryption_key_size, att_server->connection.authenticated, att_server->connection.secure_connection);
+
+                    // notify connection opened
+                    att_emit_connected_event(att_server);
+
                     // restore persisten ccc if encrypted
                     if ( gap_security_level(con_handle) >= LEVEL_2){
                         att_server_persistent_ccc_restore(att_server);
                     }
                     // TODO: what to do about le device db?
                     att_server->pairing_active = 0;
-                    log_info("Connection opened %s, l2cap cid %04x", bd_addr_to_str(address), att_server->l2cap_cid);
                     break;
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     att_server_handle_can_send_now();
