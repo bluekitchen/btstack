@@ -77,6 +77,10 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static hci_con_handle_t con_handle;
 static uint8_t battery = 100;
 
+#ifdef ENABLE_GATT_OVER_CLASSIC
+static uint8_t gatt_service_buffer[70];
+#endif
+
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static uint16_t att_read_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
 static int att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
@@ -102,6 +106,20 @@ static void le_counter_setup(void){
 
     // setup SM: Display only
     sm_init();
+
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    // init SDP, create record for GATT and register with SDP
+    sdp_init();
+    memset(gatt_service_buffer, 0, sizeof(gatt_service_buffer));
+    gatt_create_sdp_record(gatt_service_buffer, 0x10001, ATT_SERVICE_GATT_SERVICE_START_HANDLE, ATT_SERVICE_GATT_SERVICE_END_HANDLE);
+    sdp_register_service(gatt_service_buffer);
+    printf("SDP service record size: %u\n", de_get_len(gatt_service_buffer));
+
+    // configure Classic GAP
+    gap_set_local_name("GATT Counter BR/EDR 00:00:00:00:00:00");
+    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+    gap_discoverable_control(1);
+#endif
 
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);    
