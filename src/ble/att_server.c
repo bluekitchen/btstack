@@ -271,7 +271,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                 case L2CAP_EVENT_INCOMING_CONNECTION:
                     l2cap_event_incoming_connection_get_address(packet, address); 
                     l2cap_accept_connection(channel);
-                    printf("Accept incoming connection from %s\n", bd_addr_to_str(address));
+                    log_info("Accept incoming connection from %s", bd_addr_to_str(address));
                     break;
                 case L2CAP_EVENT_CHANNEL_OPENED:
                     con_handle = l2cap_event_channel_opened_get_handle(packet);
@@ -301,7 +301,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     }
                     // TODO: what to do about le device db?
                     att_server->pairing_active = 0;
-                    printf("Connection opened %s, l2cap cid %04x, \n", bd_addr_to_str(address), att_server->l2cap_cid);
+                    log_info("Connection opened %s, l2cap cid %04x", bd_addr_to_str(address), att_server->l2cap_cid);
                     break;
                 case L2CAP_EVENT_CAN_SEND_NOW:
                     att_server_handle_can_send_now();
