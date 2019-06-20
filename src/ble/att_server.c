@@ -110,6 +110,19 @@ static att_server_t * att_server_for_handle(hci_con_handle_t con_handle){
     return &hci_connection->att_server;
 }
 
+#ifdef ENABLE_GATT_OVER_CLASSIC
+static att_server_t * att_server_for_l2cap_cid(uint16_t l2cap_cid){
+    btstack_linked_list_iterator_t it;
+    hci_connections_get_iterator(&it);
+    while(btstack_linked_list_iterator_has_next(&it)){
+        hci_connection_t * connection = (hci_connection_t *) btstack_linked_list_iterator_next(&it);
+        att_server_t * att_server = &connection->att_server;
+        if (att_server->l2cap_cid == l2cap_cid) return att_server;
+    }
+    return NULL;
+}
+#endif
+
 #ifdef ENABLE_LE_SIGNED_WRITE
 static att_server_t * att_server_for_state(att_server_state_t state){
     btstack_linked_list_iterator_t it;
@@ -224,12 +237,29 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
     
     att_server_t * att_server;
     hci_con_handle_t con_handle;
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    bd_addr_t address;
+#endif
 
     switch (packet_type) {
             
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
                 
+#ifdef ENABLE_GATT_OVER_CLASSIC
+                case L2CAP_EVENT_INCOMING_CONNECTION:
+                    l2cap_event_incoming_connection_get_address(packet, address); 
+                    l2cap_accept_connection(channel);
+                    printf("Accept incoming connection from %s\n", bd_addr_to_str(address));
+                    break;
+                case L2CAP_EVENT_CHANNEL_OPENED:
+                    l2cap_event_channel_opened_get_address(packet, address);
+                    att_server = att_server_for_handle(l2cap_event_channel_opened_get_handle(packet));
+                    if (!att_server) break;
+                    att_server->l2cap_cid = l2cap_event_channel_opened_get_local_cid(packet);
+                    printf("Connection opened %s, l2cap cid %04x\n", bd_addr_to_str(address), att_server->l2cap_cid);
+                    break;
+#endif
                 case HCI_EVENT_LE_META:
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
@@ -382,6 +412,14 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     break;
             }
             break;
+#ifdef ENABLE_GATT_OVER_CLASSIC
+        case L2CAP_DATA_PACKET:
+            att_server = att_server_for_l2cap_cid(channel);
+            if (!att_server) break;
+            printf("ATT request (server %p): ", att_server);
+            printf_hexdump(packet, size);
+            break;
+#endif
         default:
             break;
     }
@@ -989,10 +1027,14 @@ void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_
     // and L2CAP ATT Server PDUs
     att_dispatch_register_server(att_packet_handler);
 
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    // setup l2cap service
+    l2cap_register_service(&att_event_packet_handler, PSM_ATT, 0xffff, LEVEL_2);
+#endif
+
     att_set_db(db);
     att_set_read_callback(att_server_read_callback);
     att_set_write_callback(att_server_write_callback);
-
 }
 
 void att_server_register_packet_handler(btstack_packet_handler_t handler){
