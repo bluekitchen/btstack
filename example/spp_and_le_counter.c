@@ -77,6 +77,10 @@ static int  counter_string_len;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
+#ifdef ENABLE_GATT_OVER_CLASSIC
+static uint8_t gatt_service_buffer[70];
+#endif
+
 /*
  * @section Advertisements 
  *
@@ -272,6 +276,14 @@ int btstack_main(void)
     spp_create_sdp_record(spp_service_buffer, 0x10001, RFCOMM_SERVER_CHANNEL, "SPP Counter");
     sdp_register_service(spp_service_buffer);
     printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
+
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    // init SDP, create record for GATT and register with SDP
+    memset(gatt_service_buffer, 0, sizeof(gatt_service_buffer));
+    gatt_create_sdp_record(gatt_service_buffer, 0x10001, ATT_SERVICE_GATT_SERVICE_START_HANDLE, ATT_SERVICE_GATT_SERVICE_END_HANDLE);
+    sdp_register_service(gatt_service_buffer);
+    printf("SDP service record size: %u\n", de_get_len(gatt_service_buffer));
+#endif
 
     gap_set_local_name("SPP and LE Counter 00:00:00:00:00:00");
     gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
