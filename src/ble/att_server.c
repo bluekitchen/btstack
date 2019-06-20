@@ -289,10 +289,16 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     if (att_server->connection.max_mtu > ATT_REQUEST_BUFFER_SIZE){
                         att_server->connection.max_mtu = ATT_REQUEST_BUFFER_SIZE;
                     }
-                    // TODO: use security level from underlying HCI connection
-                    att_server->connection.encryption_key_size = 0;
-                    att_server->connection.authenticated = 0;
-                    att_server->connection.authorized = 0;
+                    // update security params
+                    att_server->connection.encryption_key_size = gap_encryption_key_size(con_handle);
+                    att_server->connection.authenticated = gap_authenticated(con_handle);
+                    att_server->connection.secure_connection = gap_secure_connection(con_handle);
+                    log_info("encrypted key size %u, authenticated %u, secure connection %u",
+                        att_server->connection.encryption_key_size, att_server->connection.authenticated, att_server->connection.secure_connection);
+                    // restore persisten ccc if encrypted
+                    if ( gap_security_level(con_handle) >= LEVEL_2){
+                        att_server_persistent_ccc_restore(att_server);
+                    }
                     // TODO: what to do about le device db?
                     att_server->pairing_active = 0;
                     printf("Connection opened %s, l2cap cid %04x, \n", bd_addr_to_str(address), att_server->l2cap_cid);
@@ -343,12 +349,14 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     con_handle = little_endian_read_16(packet, 3);
                     att_server = att_server_for_handle(con_handle);
                     if (!att_server) break;
+                    if (gap_get_connection_type(con_handle) != GAP_CONNECTION_LE) break;
+                    // update security params
                     att_server->connection.encryption_key_size = gap_encryption_key_size(con_handle);
                     att_server->connection.authenticated = gap_authenticated(con_handle);
                     att_server->connection.secure_connection = gap_secure_connection(con_handle);
-                    log_info("encrypted key size %u, authenticated %u, secure connectipon %u",
+                    log_info("encrypted key size %u, authenticated %u, secure connection %u",
                         att_server->connection.encryption_key_size, att_server->connection.authenticated, att_server->connection.secure_connection);
-                    if (hci_event_packet_get_type(packet) == HCI_EVENT_ENCRYPTION_CHANGE && att_server->peer_addr_type != BD_ADDR_TYPE_CLASSIC){
+                    if (hci_event_packet_get_type(packet) == HCI_EVENT_ENCRYPTION_CHANGE){
                         // restore CCC values when encrypted for LE Connections
                         if (hci_event_encryption_change_get_encryption_enabled(packet)){
                             att_server_persistent_ccc_restore(att_server);
