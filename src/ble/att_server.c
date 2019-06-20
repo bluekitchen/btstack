@@ -348,8 +348,8 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     att_server->connection.secure_connection = gap_secure_connection(con_handle);
                     log_info("encrypted key size %u, authenticated %u, secure connectipon %u",
                         att_server->connection.encryption_key_size, att_server->connection.authenticated, att_server->connection.secure_connection);
-                    if (hci_event_packet_get_type(packet) == HCI_EVENT_ENCRYPTION_CHANGE){
-                        // restore CCC values when encrypted
+                    if (hci_event_packet_get_type(packet) == HCI_EVENT_ENCRYPTION_CHANGE && att_server->peer_addr_type != BD_ADDR_TYPE_CLASSIC){
+                        // restore CCC values when encrypted for LE Connections
                         if (hci_event_encryption_change_get_encryption_enabled(packet)){
                             att_server_persistent_ccc_restore(att_server);
                         } 
