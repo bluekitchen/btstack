@@ -178,7 +178,7 @@ typedef struct mesh_transition {
 
     mesh_transition_state_t state;
 
-    mesh_default_transition_step_resolution_t step;
+    mesh_default_transition_step_resolution_t step_duration_ms;
     uint32_t phase_start_ms;
     uint32_t remaining_delay_time_ms;  
     uint32_t remaining_transition_time_ms;      
@@ -251,8 +251,13 @@ mesh_model_t * mesh_access_model_for_address_and_model_identifier(uint16_t eleme
 
 void mesh_access_emit_state_update_bool(btstack_packet_handler_t * event_handler, uint8_t element_index, uint32_t model_identifier, 
     model_state_id_t state_identifier, model_state_update_reason_t reason, uint8_t value);
-  
-void mesh_access_transitions_add(mesh_transition_t * transition, uint8_t transition_time_gdtt, uint8_t delay_gdtt);
+
+// Mesh Model Transitions
+void mesh_access_transitions_setup(mesh_transition_t * transition, mesh_model_t * mesh_model, 
+    uint8_t transition_time_gdtt, uint8_t delay_gdtt,
+    void (* transition_callback)(struct mesh_transition * transition, transition_event_t event, uint32_t current_timestamp));
+
+void mesh_access_transitions_add(mesh_transition_t * transition);
 void mesh_access_transitions_remove(mesh_transition_t * transition);
 
 // Mesh PDU Getter

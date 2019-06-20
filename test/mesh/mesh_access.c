@@ -63,6 +63,7 @@ static void *                btstack_tlv_singleton_context;
 
 static btstack_linked_list_t  transitions;
 static btstack_timer_source_t transitions_timer;
+static int transition_step_min_ms;
 
 static void mesh_access_setup_tlv(void){
     if (btstack_tlv_singleton_impl) return;
@@ -92,11 +93,13 @@ void mesh_access_emit_state_update_bool(btstack_packet_handler_t * event_handler
     (*event_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static uint8_t mesh_get_num_steps_from_gdtt(uint8_t transition_time_gdtt){
+// Mesh Model Transitions
+
+static uint8_t mesh_access_transitions_num_steps_from_gdtt(uint8_t transition_time_gdtt){
     return transition_time_gdtt >> 2;
 }
 
-static uint32_t mesh_get_transition_step_ms_from_gdtt(uint8_t transition_time_gdtt){
+static uint32_t mesh_access_transitions_step_ms_from_gdtt(uint8_t transition_time_gdtt){
     mesh_default_transition_step_resolution_t step_resolution = (mesh_default_transition_step_resolution_t) (transition_time_gdtt & 0x03u);
     switch (step_resolution){
         case MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_100ms:
@@ -113,77 +116,85 @@ static uint32_t mesh_get_transition_step_ms_from_gdtt(uint8_t transition_time_gd
     }
 }
 
-void mesh_access_transitions_add(mesh_transition_t * transition, uint8_t transition_time_gdtt, uint8_t delay_gdtt){
-    if (transition_time_gdtt == 0 && delay_gdtt == 0) return;
-
-    //  Only values of 0x00 through 0x3E shall be used to specify the value of the Transition Number of Steps field
-    uint8_t num_steps  = mesh_get_num_steps_from_gdtt(transition_time_gdtt);
-    if (num_steps > 0x3E) return;
-    
-    transition->remaining_delay_time_ms = delay_gdtt * 5;
-    transition->remaining_transition_time_ms = num_steps * mesh_get_transition_step_ms_from_gdtt(transition_time_gdtt);
-    transition->phase_start_ms = 0;
-    transition->state = MESH_TRANSITION_STATE_IDLE;
-
-    int transition_already_registered = 0;
-
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &transitions);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        mesh_transition_t * transition_item = (mesh_transition_t *)btstack_linked_list_iterator_next(&it);
-        if (transition_item == transition){
-            transition_already_registered = 1;
-            break;
-        } 
-    }
-    if (transition_already_registered != 0){
-        btstack_linked_list_add(&transitions, (btstack_linked_item_t *) transition);
-    }
-}
-
-void mesh_access_transitions_remove(mesh_transition_t * transition){
-    transition->remaining_delay_time_ms = 0;
-    transition->remaining_transition_time_ms = 0;
-    transition->phase_start_ms = 0;
-    transition->state = MESH_TRANSITION_STATE_IDLE;
-    btstack_linked_list_remove(&transitions, (btstack_linked_item_t *) transition);
-}
-
-int mesh_access_get_min_transitions_timeout_ms(void){
-    // TODO go through transitions and pickup update step
-    return 100;
-}
-
-void mesh_access_transitions_timeout_handler(btstack_timer_source_t * timer){
+static void mesh_access_transitions_timeout_handler(btstack_timer_source_t * timer){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &transitions);
     while (btstack_linked_list_iterator_has_next(&it)){
         mesh_transition_t * transition = (mesh_transition_t *)btstack_linked_list_iterator_next(&it);
-        switch (transition->state){
-            case MESH_TRANSITION_STATE_IDLE:
-                (transition->transition_callback)(transition, TRANSITION_START, btstack_run_loop_get_time_ms());
-                break;
-            default:
-                (transition->transition_callback)(transition, TRANSITION_UPDATE, btstack_run_loop_get_time_ms());
-                break;
-        }
+        (transition->transition_callback)(transition, TRANSITION_UPDATE, btstack_run_loop_get_time_ms());
     }
     if (btstack_linked_list_empty(&transitions)) return;
     
-    btstack_run_loop_set_timer(timer, mesh_access_get_min_transitions_timeout_ms()); 
+    btstack_run_loop_set_timer(timer, transition_step_min_ms); 
     btstack_run_loop_add_timer(timer);
 }
 
-void mesh_access_transitions_timer_start(void){
+static void mesh_access_transitions_timer_start(void){
     btstack_run_loop_remove_timer(&transitions_timer);
     btstack_run_loop_set_timer_handler(&transitions_timer, mesh_access_transitions_timeout_handler);
-    btstack_run_loop_set_timer(&transitions_timer, mesh_access_get_min_transitions_timeout_ms()); 
+    btstack_run_loop_set_timer(&transitions_timer, transition_step_min_ms); 
     btstack_run_loop_add_timer(&transitions_timer);
 }
 
-void mesh_access_transitions_timer_stop(void){
+static void mesh_access_transitions_timer_stop(void){
     btstack_run_loop_remove_timer(&transitions_timer);
 } 
+
+static uint32_t mesh_access_transitions_get_step_min_ms(void){
+    uint32_t min_timeout_ms = 0;
+
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, &transitions);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        mesh_transition_t * transition = (mesh_transition_t *)btstack_linked_list_iterator_next(&it);
+        if (min_timeout_ms == 0 || transition->step_duration_ms < min_timeout_ms){
+            min_timeout_ms = transition->step_duration_ms;
+        }
+    }
+    return min_timeout_ms;
+}
+
+void mesh_access_transitions_setup(mesh_transition_t * transition, mesh_model_t * mesh_model, 
+    uint8_t transition_time_gdtt, uint8_t delay_gdtt,
+    void (* transition_callback)(struct mesh_transition * transition, transition_event_t event, uint32_t current_timestamp)){
+
+    //  Only values of 0x00 through 0x3E shall be used to specify the value of the Transition Number of Steps field
+    uint8_t num_steps  = mesh_access_transitions_num_steps_from_gdtt(transition_time_gdtt);
+    if (num_steps > 0x3E) return;
+
+    transition->state = MESH_TRANSITION_STATE_IDLE;
+    transition->phase_start_ms = 0;
+
+    transition->mesh_model = mesh_model;
+    transition->transition_callback = transition_callback;
+    transition->step_duration_ms = mesh_access_transitions_step_ms_from_gdtt(transition_time_gdtt);
+    transition->remaining_delay_time_ms = delay_gdtt * 5;
+    transition->remaining_transition_time_ms = num_steps * transition->step_duration_ms;
+}
+
+void mesh_access_transitions_add(mesh_transition_t * transition){
+    if (transition->step_duration_ms == 0) return;
+    
+    if (btstack_linked_list_empty(&transitions) || transition->step_duration_ms < transition_step_min_ms){
+        transition_step_min_ms = transition->step_duration_ms;
+    }
+    mesh_access_transitions_timer_start();
+    btstack_linked_list_add(&transitions, (btstack_linked_item_t *) transition);
+    (transition->transition_callback)(transition, TRANSITION_START, btstack_run_loop_get_time_ms());
+}
+
+void mesh_access_transitions_remove(mesh_transition_t * transition){
+    mesh_access_transitions_setup(transition, NULL, 0, 0, NULL);
+    btstack_linked_list_remove(&transitions, (btstack_linked_item_t *) transition);
+
+    if (btstack_linked_list_empty(&transitions)){
+        mesh_access_transitions_timer_stop();
+    } else {
+        transition_step_min_ms = mesh_access_transitions_get_step_min_ms();        
+    }
+}
+
+// Mesh Node Element functions
 
 mesh_element_t * mesh_primary_element(void){
     return &primary_element;

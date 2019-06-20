@@ -75,10 +75,10 @@ void mesh_generic_on_off_server_register_packet_handler(mesh_model_t *generic_on
  * @brief Set ON/OFF value
  * @param generic_on_off_server_model
  * @param on_off_value
- * @param transition_time_ms
- * @param delay_ms
+ * @param transition_time_gdtt
+ * @param delay_time_gdtt
  */
-void mesh_generic_on_off_server_set_value(mesh_model_t *generic_on_off_server_model, uint8_t on_off_value, uint32_t transition_time_ms, uint16_t delay_ms);
+void mesh_generic_on_off_server_set_value(mesh_model_t *generic_on_off_server_model, uint8_t on_off_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt);
 
 /**
  * @brief  Get present ON/OFF value

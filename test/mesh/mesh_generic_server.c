@@ -105,104 +105,6 @@ static void mesh_generic_on_off_status_message(mesh_model_t *generic_on_off_serv
     generic_server_send_message(mesh_access_get_element_address(generic_on_off_server_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);
 }
 
-static void generic_on_off_get_handler(mesh_model_t *generic_on_off_server_model, mesh_pdu_t * pdu){
-    mesh_generic_on_off_status_message(generic_on_off_server_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), mesh_pdu_appkey_index(pdu));
-    mesh_access_message_processed(pdu);
-}
-
-static void generic_on_off_set_handler(mesh_model_t *generic_on_off_server_model, mesh_pdu_t * pdu){
-    if (generic_on_off_server_model == NULL){
-        log_error("generic_on_off_server_model == NULL");
-    }
-    mesh_generic_on_off_state_t * generic_on_off_server_state = (mesh_generic_on_off_state_t *)generic_on_off_server_model->model_data;
-    
-    if (generic_on_off_server_state == NULL){
-        log_error("generic_on_off_server_state == NULL");
-    }
-    
-    mesh_access_parser_state_t parser;
-    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    uint8_t on_off_value = mesh_access_parser_get_u8(&parser);
-    // The TID field is a transaction identifier indicating whether the message is 
-    // a new message or a retransmission of a previously sent message
-    uint8_t tid = mesh_access_parser_get_u8(&parser); 
-
-    if (tid == generic_on_off_server_state->transaction_identifier){
-        printf("retransmission\n");
-        return;
-    }
-
-    generic_on_off_server_state->transition_data.target_value = on_off_value;
-    
-    if (mesh_access_parser_available(&parser) == 2){
-        //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits) 
-        uint8_t  transition_time_gdtt = mesh_access_parser_get_u8(&parser);
-        uint8_t  delay_time_gdtt = mesh_access_parser_get_u8(&parser);
-        mesh_transition_t generic_server_on_off_value_transition = generic_on_off_server_state->transition_data.base_transition;
-
-        if (transition_time_gdtt != 0 || delay_time_gdtt != 0) {
-            generic_server_on_off_value_transition.mesh_model = (mesh_model_t *) generic_on_off_server_model;
-            generic_server_on_off_value_transition.transition_callback = &mesh_server_transition_step_bool;
-            mesh_access_transitions_add(&generic_server_on_off_value_transition, transition_time_gdtt, delay_time_gdtt);
-            return;
-        }
-    }
-
-    // Instantanious update
-    generic_on_off_server_state->transition_data.current_value = on_off_value;
-    generic_on_off_server_state->transaction_identifier = tid;
-    generic_on_off_server_state->transition_data.base_transition.remaining_transition_time_ms = 0;
-    generic_on_off_server_state->transition_data.base_transition.remaining_delay_time_ms = 0;
-    mesh_generic_on_off_status_message(generic_on_off_server_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), mesh_pdu_appkey_index(pdu));
-    mesh_access_message_processed(pdu);
-    
-    mesh_access_emit_state_update_bool(generic_on_off_server_model->transition_events_packet_handler, 
-        mesh_access_get_element_index(generic_on_off_server_model), 
-        generic_on_off_server_model->model_identifier, 
-        MODEL_STATE_ID_GENERIC_ON_OFF, 
-        MODEL_STATE_UPDATE_REASON_SET, 
-        generic_on_off_server_state->transition_data.current_value);
-}
-
-// static void generic_on_off_set_unacknowledged_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
-// }
-
-// Generic On Off Message
-const static mesh_operation_t mesh_generic_on_off_model_operations[] = {
-    { MESH_GENERIC_ON_OFF_GET,                                   0, generic_on_off_get_handler },
-    { MESH_GENERIC_ON_OFF_SET,                                   2, generic_on_off_set_handler },
-    // { MESH_GENERIC_ON_OFF_SET_UNACKNOWLEDGED,                    4, generic_on_off_set_unacknowledged_handler },
-    { 0, 0, NULL }
-};
-
-const mesh_operation_t * mesh_generic_on_off_server_get_operations(void){
-    return mesh_generic_on_off_model_operations;
-}
-
-void mesh_generic_on_off_server_set_value(mesh_model_t *generic_on_off_server_model, uint8_t on_off_value, uint32_t transition_time_ms, uint16_t delay_ms){
-    mesh_generic_on_off_state_t * generic_on_off_server_state = (mesh_generic_on_off_state_t *)generic_on_off_server_model->model_data;
-    
-    generic_on_off_server_state->transition_data.target_value = on_off_value;
-    generic_on_off_server_state->transition_data.base_transition.remaining_transition_time_ms = transition_time_ms;
-    generic_on_off_server_state->transition_data.base_transition.remaining_delay_time_ms = delay_ms;
-    
-    // TODO implement transition 
-    // TODO implement publication
-    generic_on_off_server_state->transition_data.current_value = on_off_value;
-    
-    mesh_access_emit_state_update_bool(generic_on_off_server_model->transition_events_packet_handler, 
-        mesh_access_get_element_index(generic_on_off_server_model), 
-        generic_on_off_server_model->model_identifier, 
-        MODEL_STATE_ID_GENERIC_ON_OFF, 
-        MODEL_STATE_UPDATE_REASON_APPLICATION_CHANGE, 
-        generic_on_off_server_state->transition_data.current_value);
-}
-
-uint8_t mesh_generic_on_off_server_get_value(mesh_model_t *generic_on_off_server_model){
-    mesh_generic_on_off_state_t * generic_on_off_server_state = (mesh_generic_on_off_state_t *)generic_on_off_server_model->model_data;
-    return generic_on_off_server_state->transition_data.current_value;
-}
-
 static void mesh_server_transition_state_update(mesh_transition_bool_t * transition, uint32_t current_timestamp_ms){
     if (transition->base_transition.remaining_delay_time_ms != 0){
         transition->base_transition.state = MESH_TRANSITION_STATE_DELAYED;
@@ -276,5 +178,105 @@ static void mesh_server_transition_step_bool(mesh_transition_t * base_transition
             break;
     }
 }
+
+static void mesh_server_transition_setup_transition_or_instantaneous_update(mesh_model_t *generic_on_off_server_model, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, model_state_update_reason_t reason){
+    mesh_generic_on_off_state_t * generic_on_off_server_state = (mesh_generic_on_off_state_t *)generic_on_off_server_model->model_data;
+    mesh_transition_t transition = generic_on_off_server_state->transition_data.base_transition;
+
+    if (transition_time_gdtt != 0 || delay_time_gdtt != 0) {
+        mesh_access_transitions_setup(&transition, (mesh_model_t *) generic_on_off_server_model, 
+            transition_time_gdtt, delay_time_gdtt, &mesh_server_transition_step_bool);
+        mesh_access_transitions_add(&transition);
+    } else {
+        generic_on_off_server_state->transition_data.current_value = generic_on_off_server_state->transition_data.target_value;
+        transition.phase_start_ms = 0;
+        transition.remaining_delay_time_ms = 0;
+        transition.remaining_transition_time_ms = 0;
+        transition.state = MESH_TRANSITION_STATE_IDLE;
+        
+        mesh_access_emit_state_update_bool(generic_on_off_server_model->transition_events_packet_handler, 
+            mesh_access_get_element_index(generic_on_off_server_model), 
+            generic_on_off_server_model->model_identifier, 
+            MODEL_STATE_ID_GENERIC_ON_OFF, 
+            reason, 
+            generic_on_off_server_state->transition_data.current_value);
+    }
+}
+
+
+static void generic_on_off_get_handler(mesh_model_t *generic_on_off_server_model, mesh_pdu_t * pdu){
+    mesh_generic_on_off_status_message(generic_on_off_server_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), mesh_pdu_appkey_index(pdu));
+    mesh_access_message_processed(pdu);
+}
+
+static void generic_on_off_set_handler(mesh_model_t *generic_on_off_server_model, mesh_pdu_t * pdu){
+    if (generic_on_off_server_model == NULL){
+        log_error("generic_on_off_server_model == NULL");
+    }
+    mesh_generic_on_off_state_t * generic_on_off_server_state = (mesh_generic_on_off_state_t *)generic_on_off_server_model->model_data;
+    
+    if (generic_on_off_server_state == NULL){
+        log_error("generic_on_off_server_state == NULL");
+    }
+    
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+    uint8_t on_off_value = mesh_access_parser_get_u8(&parser);
+    // The TID field is a transaction identifier indicating whether the message is 
+    // a new message or a retransmission of a previously sent message
+    uint8_t tid = mesh_access_parser_get_u8(&parser); 
+
+    if (tid == generic_on_off_server_state->transaction_identifier){
+        printf("retransmission\n");
+        return;
+    }
+
+    generic_on_off_server_state->transition_data.target_value = on_off_value;
+    generic_on_off_server_state->transaction_identifier = tid;
+
+    uint8_t transition_time_gdtt = 0;
+    uint8_t delay_time_gdtt = 0;
+
+    if (mesh_access_parser_available(&parser) == 2){
+        //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits) 
+        transition_time_gdtt = mesh_access_parser_get_u8(&parser);
+        delay_time_gdtt = mesh_access_parser_get_u8(&parser);
+    } 
+
+    mesh_server_transition_setup_transition_or_instantaneous_update(generic_on_off_server_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_SET);
+
+    mesh_generic_on_off_status_message(generic_on_off_server_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), mesh_pdu_appkey_index(pdu));
+    mesh_access_message_processed(pdu);
+}
+
+// static void generic_on_off_set_unacknowledged_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+// }
+
+// Generic On Off Message
+const static mesh_operation_t mesh_generic_on_off_model_operations[] = {
+    { MESH_GENERIC_ON_OFF_GET,                                   0, generic_on_off_get_handler },
+    { MESH_GENERIC_ON_OFF_SET,                                   2, generic_on_off_set_handler },
+    // { MESH_GENERIC_ON_OFF_SET_UNACKNOWLEDGED,                    4, generic_on_off_set_unacknowledged_handler },
+    { 0, 0, NULL }
+};
+
+const mesh_operation_t * mesh_generic_on_off_server_get_operations(void){
+    return mesh_generic_on_off_model_operations;
+}
+
+void mesh_generic_on_off_server_set_value(mesh_model_t * generic_on_off_server_model, uint8_t on_off_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt){
+    mesh_generic_on_off_state_t * generic_on_off_server_state = (mesh_generic_on_off_state_t *)generic_on_off_server_model->model_data;
+    generic_on_off_server_state->transition_data.target_value = on_off_value;
+    
+    mesh_server_transition_setup_transition_or_instantaneous_update(generic_on_off_server_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_APPLICATION_CHANGE);
+
+    // TODO implement publication
+}
+
+uint8_t mesh_generic_on_off_server_get_value(mesh_model_t *generic_on_off_server_model){
+    mesh_generic_on_off_state_t * generic_on_off_server_state = (mesh_generic_on_off_state_t *)generic_on_off_server_model->model_data;
+    return generic_on_off_server_state->transition_data.current_value;
+}
+
 
 
