@@ -110,6 +110,10 @@ static int              le_notification_enabled;
 static uint16_t         le_test_data_len;
 static hci_con_handle_t le_connection_handle;
 
+#ifdef ENABLE_GATT_OVER_CLASSIC
+static uint8_t gatt_service_buffer[70];
+#endif
+
 /*
  * @section Track throughput
  * @text We calculate the throughput by setting a start time and measuring the amount of 
@@ -362,17 +366,16 @@ static void att_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)) {
                 case ATT_EVENT_CONNECTED:
-                    le_test_data_len = ATT_DEFAULT_MTU - 3;
                     le_connection_handle = att_event_connected_get_handle(packet);
+                    att_mtu = att_server_get_mtu(le_connection_handle);
+                    le_test_data_len = btstack_min(att_server_get_mtu(le_connection_handle) - 3, sizeof(test_data));
+                    printf("ATT MTU = %u\n", att_mtu);
                     break;
 
                 case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
                     att_mtu = att_event_mtu_exchange_complete_get_MTU(packet);
+                    le_test_data_len = btstack_min(att_mtu - 3, sizeof(test_data));
                     printf("ATT MTU = %u\n", att_mtu);
-                    le_test_data_len = att_mtu - 3;
-                    if (le_test_data_len > sizeof(test_data)){
-                        le_test_data_len = sizeof(test_data);
-                    }
                     break;
 
                 case ATT_EVENT_CAN_SEND_NOW:
@@ -451,7 +454,13 @@ int btstack_main(int argc, const char * argv[])
     memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
     spp_create_sdp_record(spp_service_buffer, 0x10001, RFCOMM_SERVER_CHANNEL, "SPP Streamer");
     sdp_register_service(spp_service_buffer);
-    // printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
+
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    // init SDP, create record for GATT and register with SDP
+    memset(gatt_service_buffer, 0, sizeof(gatt_service_buffer));
+    gatt_create_sdp_record(gatt_service_buffer, 0x10001, ATT_SERVICE_GATT_SERVICE_START_HANDLE, ATT_SERVICE_GATT_SERVICE_END_HANDLE);
+    sdp_register_service(gatt_service_buffer);
+#endif
 
     gap_set_local_name("SPP and LE Streamer 00:00:00:00:00:00");
     gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
