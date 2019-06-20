@@ -71,6 +71,7 @@
 #define REPORT_INTERVAL_MS 3000
 #define MAX_NR_CONNECTIONS 3 
 
+
 static void  hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void  att_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static int   att_write_callback(hci_con_handle_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
@@ -104,6 +105,10 @@ static le_streamer_connection_t le_streamer_connections[MAX_NR_CONNECTIONS];
 
 // round robin sending
 static int connection_index;
+
+#ifdef ENABLE_GATT_OVER_CLASSIC
+static uint8_t gatt_service_buffer[70];
+#endif
 
 static void init_connections(void){
     // track connections
@@ -148,6 +153,20 @@ static void le_streamer_setup(void){
 
     // setup SM: Display only
     sm_init();
+
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    // init SDP, create record for GATT and register with SDP
+    sdp_init();
+    memset(gatt_service_buffer, 0, sizeof(gatt_service_buffer));
+    gatt_create_sdp_record(gatt_service_buffer, 0x10001, ATT_SERVICE_GATT_SERVICE_START_HANDLE, ATT_SERVICE_GATT_SERVICE_END_HANDLE);
+    sdp_register_service(gatt_service_buffer);
+    printf("SDP service record size: %u\n", de_get_len(gatt_service_buffer));
+
+    // configure Classic GAP
+    gap_set_local_name("GATT Streamer BR/EDR 00:00:00:00:00:00");
+    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+    gap_discoverable_control(1);
+#endif
 
     // setup ATT server
     att_server_init(profile_data, NULL, att_write_callback);    
@@ -285,8 +304,8 @@ static void att_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     context = connection_for_conn_handle(HCI_CON_HANDLE_INVALID);
                     if (!context) break;
                     context->counter = 'A';
-                    context->test_data_len = ATT_DEFAULT_MTU - 3;
                     context->connection_handle = att_event_connected_get_handle(packet);
+                    context->test_data_len = btstack_min(att_server_get_mtu(context->connection_handle) - 3, sizeof(context->test_data));
                     printf("%c: ATT connected, handle %04x, test data len %u\n", context->name, context->connection_handle, context->test_data_len);
                     break;
                 case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
