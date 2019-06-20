@@ -5069,10 +5069,20 @@ int gap_encryption_key_size(hci_con_handle_t con_handle){
 }
 
 int gap_authenticated(hci_con_handle_t con_handle){
-    sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
-    if (!sm_conn) return 0;     // wrong connection
-    if (!sm_conn->sm_connection_encrypted) return 0; // unencrypted connection cannot be authenticated
-    return sm_conn->sm_connection_authenticated;
+    hci_connection_t * hci_connnection = hci_connection_for_handle(con_handle);
+    if (hci_connnection == NULL) return 0;
+
+    switch (hci_connnection->address_type){
+        case BD_ADDR_TYPE_LE_PUBLIC:
+        case BD_ADDR_TYPE_LE_RANDOM:
+            if (hci_connnection->sm_connection.sm_connection_encrypted == 0) return 0; // unencrypted connection cannot be authenticated
+            return hci_connnection->sm_connection.sm_connection_authenticated;
+        case BD_ADDR_TYPE_SCO:
+        case BD_ADDR_TYPE_CLASSIC:
+            return gap_security_level_for_connection(hci_connnection) >= LEVEL_3;
+        default:
+            return 0;
+    }
 }
 
 int gap_secure_connection(hci_con_handle_t con_handle){
