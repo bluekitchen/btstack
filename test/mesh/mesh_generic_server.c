@@ -209,7 +209,7 @@ static void generic_on_off_get_handler(mesh_model_t *generic_on_off_server_model
     mesh_access_message_processed(pdu);
 }
 
-static void generic_on_off_set_handler(mesh_model_t *generic_on_off_server_model, mesh_pdu_t * pdu){
+static void generic_on_off_handle_set_message(mesh_model_t *generic_on_off_server_model, mesh_pdu_t * pdu){
     if (generic_on_off_server_model == NULL){
         log_error("generic_on_off_server_model == NULL");
     }
@@ -236,7 +236,6 @@ static void generic_on_off_set_handler(mesh_model_t *generic_on_off_server_model
 
     uint8_t transition_time_gdtt = 0;
     uint8_t delay_time_gdtt = 0;
-
     if (mesh_access_parser_available(&parser) == 2){
         //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits) 
         transition_time_gdtt = mesh_access_parser_get_u8(&parser);
@@ -244,19 +243,24 @@ static void generic_on_off_set_handler(mesh_model_t *generic_on_off_server_model
     } 
 
     mesh_server_transition_setup_transition_or_instantaneous_update(generic_on_off_server_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_SET);
+}
+
+static void generic_on_off_set_handler(mesh_model_t *generic_on_off_server_model, mesh_pdu_t * pdu){
+    generic_on_off_handle_set_message(generic_on_off_server_model, pdu);
 
     mesh_generic_on_off_status_message(generic_on_off_server_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), mesh_pdu_appkey_index(pdu));
     mesh_access_message_processed(pdu);
 }
 
-// static void generic_on_off_set_unacknowledged_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
-// }
+static void generic_on_off_set_unacknowledged_handler(mesh_model_t *generic_on_off_server_model, mesh_pdu_t * pdu){
+    generic_on_off_handle_set_message(generic_on_off_server_model, pdu);
+}
 
 // Generic On Off Message
 const static mesh_operation_t mesh_generic_on_off_model_operations[] = {
     { MESH_GENERIC_ON_OFF_GET,                                   0, generic_on_off_get_handler },
     { MESH_GENERIC_ON_OFF_SET,                                   2, generic_on_off_set_handler },
-    // { MESH_GENERIC_ON_OFF_SET_UNACKNOWLEDGED,                    4, generic_on_off_set_unacknowledged_handler },
+    { MESH_GENERIC_ON_OFF_SET_UNACKNOWLEDGED,                    2, generic_on_off_set_unacknowledged_handler },
     { 0, 0, NULL }
 };
 
