@@ -28,4 +28,6 @@ VPATH += ${BTSTACK_ROOT}/platform/windows
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/chipset/zephyr
 
-all: ${EXAMPLES_USING_LE}
+EXAMPLES = ${EXAMPLES_GENERAL} ${EXAMPLES_LE_ONLY}
+
+all: ${EXAMPLES}

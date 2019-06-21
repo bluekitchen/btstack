@@ -102,7 +102,7 @@ all: led_counter.hex
 include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 
 # compiling requires a 20-bit mspgcc version
-# spp_and_le_counter.hex spp_accel.hex spp_flowcontrol.hex spp_counter.hex
+# spp_and_gatt_counter.hex spp_accel.hex spp_flowcontrol.hex spp_counter.hex
 # sdp_rfcomm_query.hex sdp_general_query.hex 
 # gap_inquiry.hex 
 
@@ -129,7 +129,7 @@ hid_demo.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} ${SPP_OBJ} ${CC2560B} hid_dem
 spp_accel.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_accel.o sdp_server.o hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-spp_and_le_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${BLE_OBJ} spp_and_le_counter.h spp_and_le_counter.o sdp_server.o
+spp_and_gatt_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${BLE_OBJ} spp_and_gatt_counter.h spp_and_gatt_counter.o sdp_server.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 spp_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_counter.o sdp_server.o
@@ -148,7 +148,7 @@ sdp_general_query.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${SDP_CLIENT} ${CC25
 	${CC} $^ ${LDFLAGS} -o $@
 
 clean:
-	rm -f $ *.o *.out *.hex profile.h spp_and_le_counter.h bluetooth*.c BLE*.c *.bts
+	rm -f $ *.o *.out *.hex profile.h spp_and_gatt_counter.h bluetooth*.c BLE*.c *.bts
 
 size: all
 	msp430-size *.o

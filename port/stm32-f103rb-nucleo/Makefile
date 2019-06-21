@@ -3,7 +3,7 @@
 #
 
 # BINARY=led_counter
-BINARY=spp_and_le_counter
+BINARY=spp_and_gatt_counter
 OPENCM3_DIR = libopencm3
 LDSCRIPT = stm32f1-nucleo.ld
 
@@ -64,7 +64,7 @@ CFLAGS = -I. \
 		 -I$(BTSTACK_ROOT)/src \
 		 -I$(BTSTACK_ROOT)/chipset/cc256x
 
-examples: libopencm3/lib/libopencm3_stm32f1.a spp_and_le_counter.h spp_and_le_counter.elf
+examples: libopencm3/lib/libopencm3_stm32f1.a spp_and_gatt_counter.h spp_and_gatt_counter.elf
 
 include libopencm3.stm32f1.mk
 
@@ -84,6 +84,6 @@ libopencm3/lib/libopencm3_stm32f1.a:
 	make -C libopencm3
 
 # compile GATT database
-spp_and_le_counter.h: spp_and_le_counter.gatt
+spp_and_gatt_counter.h: spp_and_gatt_counter.gatt
 	python ${BTSTACK_ROOT}/tool/compile_gatt.py $< $@ 
 

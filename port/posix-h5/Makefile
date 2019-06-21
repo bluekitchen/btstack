@@ -46,6 +46,7 @@ VPATH += ${BTSTACK_ROOT}/chipset/em9301
 VPATH += ${BTSTACK_ROOT}/chipset/stlc2500d
 VPATH += ${BTSTACK_ROOT}/chipset/tc3566x
 
+EXAMPLES = ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY} ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE}
 EXAMPLES += pan_lwip_http_server
 
 # use pkg-config for portaudio

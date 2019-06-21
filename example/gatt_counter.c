@@ -35,7 +35,7 @@
  *
  */
 
-#define BTSTACK_FILE__ "le_counter.c"
+#define BTSTACK_FILE__ "gatt_counter.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(le_counter): LE Peripheral - Heartbeat Counter over GATT
@@ -52,7 +52,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "le_counter.h"
+#include "gatt_counter.h"
 #include "btstack.h"
 #include "ble/gatt-service/battery_service_server.h"
 

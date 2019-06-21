@@ -35,7 +35,7 @@
  *
  */
 
-#define BTSTACK_FILE__ "spp_and_le_streamer.c"
+#define BTSTACK_FILE__ "spp_and_gatt_streamer.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(spp_and_le_streamer): Dual mode example
@@ -60,7 +60,7 @@
 #include <inttypes.h>
  
 #include "btstack.h"
-#include "spp_and_le_streamer.h"
+#include "spp_and_gatt_streamer.h"
 
 int btstack_main(int argc, const char * argv[]);
 

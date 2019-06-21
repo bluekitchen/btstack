@@ -35,7 +35,7 @@
  *
  */
 
-#define BTSTACK_FILE__ "spp_and_le_counter.c"
+#define BTSTACK_FILE__ "spp_and_gatt_counter.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(spp_and_le_counter): Dual mode example
@@ -59,7 +59,7 @@
 #include <inttypes.h>
  
 #include "btstack.h"
-#include "spp_and_le_counter.h"
+#include "spp_and_gatt_counter.h"
 
 #define RFCOMM_SERVER_CHANNEL 1
 #define HEARTBEAT_PERIOD_MS 1000

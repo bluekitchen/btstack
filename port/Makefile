@@ -12,16 +12,25 @@
 
 SUBDIRS =  \
 			arduino \
-			deamon \
+			daemon \
 			ez430-rf2560 \
 			libusb \
+			libusb-intel \
+			max32630-fthr \
 			msp-exp430f5438-cc2564b \
 			msp430f5229lp-cc2564b \
 			mtk \
 			posix-h4 \
+			posix-h4-atwilc3000 \
+			posix-h4-da14581 \
+			posix-h4-da14585 \
+			posix-h4-zephyr \
 			posix-h5 \
+			posix-h5-bcm \
+			samv71-xplained-atwilc3000 \
 			stm32-f103rb-nucleo \
-			max32630-fthr \
+			stm32-f4discovery-cc256x \
+			stm32-l073rz-nucleo-em9304 \
 
 EXCLUDED = \
 			pic32-harmony/app.X \

@@ -30,14 +30,7 @@ CFLAGS  += -g -Wall -Werror \
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/chipset/atwilc3000
 
-ifeq ($(OS),Windows_NT)
-LDFLAGS += -lws2_32
-endif
-
-# Command Line examples require porting to win32, so only build on other unix-ish hosts
-ifneq ($(OS),Windows_NT)
-EXAMPLES += ${EXAMPLES_CLI}
-endif
+EXAMPLES = ${EXAMPLES_GENERAL} ${EXAMPLES_LE_ONLY}
 
 # use pkg-config for portaudio
 # CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags) -DHAVE_PORTAUDIO

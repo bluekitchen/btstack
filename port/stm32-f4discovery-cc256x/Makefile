@@ -309,6 +309,8 @@ EXAMPLES = 					\
 	gap_le_advertisements   \
 	gatt_battery_query		\
 	gatt_browser            \
+	gatt_counter            \
+	gatt_streamer           \
 	hfp_ag_demo             \
 	hfp_hf_demo             \
 	hid_host_demo           \
@@ -319,8 +321,6 @@ EXAMPLES = 					\
 	hsp_ag_demo             \
 	hsp_hs_demo             \
 	mod_player              \
-	le_counter              \
-	le_streamer				\
 	le_streamer_client      \
 	pan_lwip_http_server    \
 	pbap_client_demo		\
@@ -330,7 +330,7 @@ EXAMPLES = 					\
 	sine_player             \
 	sm_pairing_central      \
 	sm_pairing_peripheral   \
-	spp_and_le_counter 		\
+	spp_and_gatt_counter 		\
 	spp_and_le_streamer     \
 	spp_counter 			\
 	spp_streamer			\
@@ -338,16 +338,16 @@ EXAMPLES = 					\
 
 GATT_FILES = \
 	ancs_client_demo.gatt \
-	le_counter.gatt \
-	le_streamer.gatt \
+	gatt_counter.gatt \
+	gatt_streamer_server.gatt \
 	gatt_browser.gatt \
 	gatt_battery_query.gatt \
 	hog_keyboard_demo.gatt \
 	hog_mouse_demo.gatt \
 	sm_pairing_peripheral.gatt \
 	sm_pairing_central.gatt \
-	spp_and_le_counter.gatt \
-	spp_and_le_streamer.gatt \
+	spp_and_gatt_counter.gatt \
+	spp_and_gatt_streamer_server.gatt \
 
 # SBC codec
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
