@@ -47,6 +47,8 @@
 #include "mesh_foundation.h"
 #include "btstack_tlv.h"
 
+#define MEST_TRANSACTION_TIMEOUT_MS  6000
+
 static void mesh_access_message_process_handler(mesh_pdu_t * pdu);
 
 static uint16_t primary_element_address;
@@ -110,6 +112,31 @@ void mesh_access_emit_state_update_int16(btstack_packet_handler_t * event_handle
 }
 
 // Mesh Model Transitions
+
+void mesh_access_transitions_setup_transaction(mesh_transition_t * transition, uint8_t transaction_identifier, uint16_t src_address, uint16_t dst_address){
+    transition->transaction_timestamp_ms = btstack_run_loop_get_time_ms();
+    transition->transaction_identifier = transaction_identifier;
+    transition->src_address = src_address;
+    transition->dst_address = dst_address;
+}
+
+void mesh_access_transitions_abort_transaction(mesh_transition_t * transition){
+    mesh_access_transitions_remove(transition);
+}
+
+
+static int mesh_access_transitions_transaction_is_expired(mesh_transition_t * transition){
+    return (btstack_run_loop_get_time_ms() - transition->transaction_timestamp_ms) > MEST_TRANSACTION_TIMEOUT_MS;
+}
+
+mesh_transaction_status_t mesh_access_transitions_transaction_status(mesh_transition_t * transition, uint8_t transaction_identifier, uint16_t src_address, uint16_t dst_address){
+    if (transition->src_address != src_address || transition->dst_address != dst_address) return MESH_TRANSACTION_STATUS_DIFFERENT_DST_OR_SRC; 
+
+    if (transition->transaction_identifier == transaction_identifier && !mesh_access_transitions_transaction_is_expired(transition)){
+            return MESH_TRANSACTION_STATUS_RETRANSMISSION;
+    }
+    return MESH_TRANSACTION_STATUS_NEW;
+}
 
 uint8_t mesh_access_transitions_num_steps_from_gdtt(uint8_t transition_time_gdtt){
     return transition_time_gdtt >> 2;

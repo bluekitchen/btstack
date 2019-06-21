@@ -59,19 +59,16 @@ extern "C"
 typedef struct {
     mesh_transition_t base_transition;
 
+    int16_t initial_value;
     int16_t current_value;
     int16_t target_value;
     int16_t stepwise_value_increment;
-    
     int16_t delta_from_initial_value;
     int16_t transition_speed;
-} mesh_transition_uint16_t;
+} mesh_transition_int16_t;
 
 typedef struct {
-    mesh_transition_uint16_t transition_data;       
-    uint8_t  transaction_identifier; 
-    uint16_t src_address;
-    uint16_t dst_address;   
+    mesh_transition_int16_t transition_data;       
 } mesh_generic_level_state_t;
 
 const mesh_operation_t * mesh_generic_level_server_get_operations(void);

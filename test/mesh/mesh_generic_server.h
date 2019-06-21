@@ -59,8 +59,7 @@ typedef struct {
 } mesh_transition_bool_t;
 
 typedef struct {
-    mesh_transition_bool_t transition_data;       
-    uint8_t  transaction_identifier;    
+    mesh_transition_bool_t transition_data;          
 } mesh_generic_on_off_state_t;
 
 const mesh_operation_t * mesh_generic_on_off_server_get_operations(void);

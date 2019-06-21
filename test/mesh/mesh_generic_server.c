@@ -58,51 +58,11 @@ static void generic_server_send_message(uint16_t src, uint16_t dest, uint16_t ne
     mesh_upper_transport_send_access_pdu(pdu);
 }
 
-// Generic On Off State
+// Transaction management
 
-void mesh_generic_on_off_server_register_packet_handler(mesh_model_t *generic_on_off_server_model, btstack_packet_handler_t transition_events_packet_handler){
-    if (transition_events_packet_handler == NULL){
-        log_error("mesh_generic_on_off_server_register_packet_handler called with NULL callback");
-        return;
-    }
-    if (generic_on_off_server_model == NULL){
-        log_error("mesh_generic_on_off_server_register_packet_handler called with NULL generic_on_off_server_model");
-        return;
-    }
-    generic_on_off_server_model->transition_events_packet_handler = &transition_events_packet_handler;
-}
-
-const mesh_access_message_t mesh_generic_on_off_status_transition = {
-        MESH_GENERIC_ON_OFF_STATUS, "111"
-};
-
-const mesh_access_message_t mesh_generic_on_off_status_instantaneous = {
-        MESH_GENERIC_ON_OFF_STATUS, "1"
-};
-
-static void mesh_generic_on_off_status_message(mesh_model_t *generic_on_off_server_model, uint16_t netkey_index, uint16_t dest, uint16_t appkey_index){
-    if (generic_on_off_server_model->element == NULL){
-        log_error("generic_on_off_server_model->element == NULL"); 
-    }
-
-    mesh_generic_on_off_state_t * state = (mesh_generic_on_off_state_t *) generic_on_off_server_model->model_data;
-    if (state == NULL){
-        log_error("generic_on_off_status ==  NULL");
-    }
-    // setup message
-    mesh_transport_pdu_t * transport_pdu = NULL; 
-
-
-    if (state->transition_data.base_transition.remaining_transition_time_ms != 0) {
-        transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_on_off_status_transition, state->transition_data.current_value, 
-            state->transition_data.target_value, state->transition_data.base_transition.remaining_transition_time_ms);
-    } else {
-        transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_on_off_status_instantaneous, state->transition_data.current_value);
-    }
-    if (!transport_pdu) return;
-
-    // send as segmented access pdu
-    generic_server_send_message(mesh_access_get_element_address(generic_on_off_server_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);
+static mesh_transition_t * generic_on_off_server_get_base_transition(mesh_model_t * mesh_model) {
+    mesh_generic_on_off_state_t * generic_on_off_server_state = (mesh_generic_on_off_state_t *)mesh_model->model_data;
+    return &generic_on_off_server_state->transition_data.base_transition;
 }
 
 static void mesh_server_transition_state_update(mesh_transition_bool_t * transition, uint32_t current_timestamp_ms){
@@ -204,16 +164,63 @@ static void mesh_server_transition_setup_transition_or_instantaneous_update(mesh
 }
 
 
+// Generic On Off State
+
+void mesh_generic_on_off_server_register_packet_handler(mesh_model_t *generic_on_off_server_model, btstack_packet_handler_t transition_events_packet_handler){
+    if (transition_events_packet_handler == NULL){
+        log_error("mesh_generic_on_off_server_register_packet_handler called with NULL callback");
+        return;
+    }
+    if (generic_on_off_server_model == NULL){
+        log_error("mesh_generic_on_off_server_register_packet_handler called with NULL generic_on_off_server_model");
+        return;
+    }
+    generic_on_off_server_model->transition_events_packet_handler = &transition_events_packet_handler;
+}
+
+const mesh_access_message_t mesh_generic_on_off_status_transition = {
+        MESH_GENERIC_ON_OFF_STATUS, "111"
+};
+
+const mesh_access_message_t mesh_generic_on_off_status_instantaneous = {
+        MESH_GENERIC_ON_OFF_STATUS, "1"
+};
+
+static void mesh_generic_on_off_status_message(mesh_model_t *generic_on_off_server_model, uint16_t netkey_index, uint16_t dest, uint16_t appkey_index){
+    if (generic_on_off_server_model->element == NULL){
+        log_error("generic_on_off_server_model->element == NULL"); 
+    }
+
+    mesh_generic_on_off_state_t * state = (mesh_generic_on_off_state_t *) generic_on_off_server_model->model_data;
+    if (state == NULL){
+        log_error("generic_on_off_status ==  NULL");
+    }
+    // setup message
+    mesh_transport_pdu_t * transport_pdu = NULL; 
+
+
+    if (state->transition_data.base_transition.remaining_transition_time_ms != 0) {
+        transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_on_off_status_transition, state->transition_data.current_value, 
+            state->transition_data.target_value, state->transition_data.base_transition.remaining_transition_time_ms);
+    } else {
+        transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_on_off_status_instantaneous, state->transition_data.current_value);
+    }
+    if (!transport_pdu) return;
+
+    // send as segmented access pdu
+    generic_server_send_message(mesh_access_get_element_address(generic_on_off_server_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);
+}
+
 static void generic_on_off_get_handler(mesh_model_t *generic_on_off_server_model, mesh_pdu_t * pdu){
     mesh_generic_on_off_status_message(generic_on_off_server_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), mesh_pdu_appkey_index(pdu));
     mesh_access_message_processed(pdu);
 }
 
-static void generic_on_off_handle_set_message(mesh_model_t *generic_on_off_server_model, mesh_pdu_t * pdu){
-    if (generic_on_off_server_model == NULL){
-        log_error("generic_on_off_server_model == NULL");
+static void generic_on_off_handle_set_message(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    if (mesh_model == NULL){
+        log_error("mesh_model == NULL");
     }
-    mesh_generic_on_off_state_t * generic_on_off_server_state = (mesh_generic_on_off_state_t *)generic_on_off_server_model->model_data;
+    mesh_generic_on_off_state_t * generic_on_off_server_state = (mesh_generic_on_off_state_t *)mesh_model->model_data;
     
     if (generic_on_off_server_state == NULL){
         log_error("generic_on_off_server_state == NULL");
@@ -222,27 +229,31 @@ static void generic_on_off_handle_set_message(mesh_model_t *generic_on_off_serve
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     uint8_t on_off_value = mesh_access_parser_get_u8(&parser);
+
     // The TID field is a transaction identifier indicating whether the message is 
     // a new message or a retransmission of a previously sent message
     uint8_t tid = mesh_access_parser_get_u8(&parser); 
-
-    if (tid == generic_on_off_server_state->transaction_identifier){
-        printf("retransmission\n");
-        return;
-    }
-
-    generic_on_off_server_state->transition_data.target_value = on_off_value;
-    generic_on_off_server_state->transaction_identifier = tid;
-
     uint8_t transition_time_gdtt = 0;
     uint8_t delay_time_gdtt = 0;
-    if (mesh_access_parser_available(&parser) == 2){
-        //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits) 
-        transition_time_gdtt = mesh_access_parser_get_u8(&parser);
-        delay_time_gdtt = mesh_access_parser_get_u8(&parser);
-    } 
-
-    mesh_server_transition_setup_transition_or_instantaneous_update(generic_on_off_server_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_SET);
+            
+    mesh_transition_t * base_transition = generic_on_off_server_get_base_transition(mesh_model);
+    
+    switch (mesh_access_transitions_transaction_status(base_transition, tid, mesh_pdu_src(pdu), mesh_pdu_dst(pdu))){
+        case MESH_TRANSACTION_STATUS_RETRANSMISSION:
+            // ignore on retransmission
+            break;
+        default:
+            mesh_access_transitions_setup_transaction(base_transition, tid, mesh_pdu_src(pdu), mesh_pdu_dst(pdu));
+            generic_on_off_server_state->transition_data.target_value = on_off_value;
+            
+            if (mesh_access_parser_available(&parser) == 2){
+                //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits) 
+                transition_time_gdtt = mesh_access_parser_get_u8(&parser);
+                delay_time_gdtt = mesh_access_parser_get_u8(&parser);
+            } 
+            mesh_server_transition_setup_transition_or_instantaneous_update(mesh_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_SET);
+            break;
+    }
 }
 
 static void generic_on_off_set_handler(mesh_model_t *generic_on_off_server_model, mesh_pdu_t * pdu){

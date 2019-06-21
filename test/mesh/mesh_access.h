@@ -173,16 +173,26 @@ typedef struct {
     const char * format;
 } mesh_access_message_t;
 
+typedef enum {
+    MESH_TRANSACTION_STATUS_NEW = 0,
+    MESH_TRANSACTION_STATUS_RETRANSMISSION,
+    MESH_TRANSACTION_STATUS_DIFFERENT_DST_OR_SRC
+} mesh_transaction_status_t;
+
 typedef struct mesh_transition {
     btstack_linked_item_t item;
 
     mesh_transition_state_t state;
 
+    uint8_t  transaction_identifier; 
+    uint32_t transaction_timestamp_ms;
+    uint16_t src_address;
+    uint16_t dst_address; 
+
     mesh_default_transition_step_resolution_t step_duration_ms;
     uint32_t phase_start_ms;
     uint32_t remaining_delay_time_ms;  
     uint32_t remaining_transition_time_ms;      
-
     // to send events and/or publish changes
     mesh_model_t * mesh_model;
 
@@ -257,6 +267,10 @@ void mesh_access_emit_state_update_int16(btstack_packet_handler_t * event_handle
     model_state_id_t state_identifier, model_state_update_reason_t reason, int16_t value);
 
 // Mesh Model Transitions
+void mesh_access_transitions_setup_transaction(mesh_transition_t * transition, uint8_t transaction_identifier, uint16_t src_address, uint16_t dst_address);
+void mesh_access_transitions_abort_transaction(mesh_transition_t * transition);
+mesh_transaction_status_t mesh_access_transitions_transaction_status(mesh_transition_t * transition, uint8_t transaction_identifier, uint16_t src_address, uint16_t dst_address);
+
 void mesh_access_transitions_setup(mesh_transition_t * transition, mesh_model_t * mesh_model, 
     uint8_t transition_time_gdtt, uint8_t delay_gdtt,
     void (* transition_callback)(struct mesh_transition * transition, transition_event_t event, uint32_t current_timestamp));
