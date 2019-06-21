@@ -76,7 +76,11 @@ static mesh_transition_t * generic_level_server_get_base_transition(mesh_model_t
 static void mesh_server_transition_state_update_stepwise_value(mesh_transition_int16_t * transition){
     mesh_model_t * generic_level_server_model = transition->base_transition.mesh_model;
     
-    transition->current_value = add_and_clip_int16(transition->current_value, transition->stepwise_value_increment);
+    if (transition->stepwise_value_increment){
+        transition->current_value = add_and_clip_int16(transition->current_value, transition->stepwise_value_increment);
+    } else if (transition->delta_from_initial_value){
+        transition->current_value = add_and_clip_int16(transition->initial_value, transition->delta_from_initial_value);
+    }
     // emit event
     mesh_access_emit_state_update_int16(generic_level_server_model->transition_events_packet_handler, 
         mesh_access_get_element_index(generic_level_server_model), 
@@ -162,12 +166,13 @@ static void mesh_server_transition_setup_transition_or_instantaneous_update_int1
         mesh_access_transitions_setup(&transition, mesh_model, transition_time_gdtt, delay_time_gdtt, &mesh_server_transition_step);
         mesh_access_transitions_add(&transition);
     } else {
+        // instantaneous update
         generic_level_server_state->transition_data.current_value = generic_level_server_state->transition_data.target_value;
-        transition.phase_start_ms = 0;
-        transition.remaining_delay_time_ms = 0;
-        transition.remaining_transition_time_ms = 0;
-        transition.state = MESH_TRANSITION_STATE_IDLE;
-        
+        generic_level_server_state->transition_data.stepwise_value_increment = 0;
+        generic_level_server_state->transition_data.delta_from_initial_value = 0;
+        generic_level_server_state->transition_data.transition_speed = 0;
+        mesh_access_transitions_setup(&transition, mesh_model, 0, 0, NULL);
+
         mesh_access_emit_state_update_int16(mesh_model->transition_events_packet_handler, 
             mesh_access_get_element_index(mesh_model), 
             mesh_model->model_identifier, 
@@ -210,7 +215,6 @@ static void mesh_generic_level_status_message(mesh_model_t *generic_level_server
     // setup message
     mesh_transport_pdu_t * transport_pdu = NULL; 
 
-
     if (state->transition_data.base_transition.remaining_transition_time_ms != 0) {
         transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_level_status_transition, state->transition_data.current_value, 
             state->transition_data.target_value, state->transition_data.base_transition.remaining_transition_time_ms);
@@ -252,9 +256,11 @@ static void generic_level_handle_set_target_level_message(mesh_model_t *mesh_mod
         default:
             mesh_access_transitions_setup_transaction(base_transition, tid, mesh_pdu_src(pdu), mesh_pdu_dst(pdu));
     
+            generic_level_server_state->transition_data.initial_value = generic_level_server_state->transition_data.current_value;
             generic_level_server_state->transition_data.target_value = level_value;
             generic_level_server_state->transition_data.stepwise_value_increment = 0;
-            
+            generic_level_server_state->transition_data.delta_from_initial_value = 0;
+
             if (mesh_access_parser_available(&parser) == 2){
                 //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits) 
                 transition_time_gdtt = mesh_access_parser_get_u8(&parser);
@@ -300,9 +306,11 @@ static void generic_level_handle_set_move_message(mesh_model_t *mesh_model, mesh
         default:
             mesh_access_transitions_setup_transaction(base_transition, tid, mesh_pdu_src(pdu), mesh_pdu_dst(pdu));
 
+            generic_level_server_state->transition_data.initial_value = generic_level_server_state->transition_data.current_value;
             generic_level_server_state->transition_data.target_value = add_and_clip_int16(generic_level_server_state->transition_data.current_value, increment_value);
             generic_level_server_state->transition_data.stepwise_value_increment = increment_value;
-            
+            generic_level_server_state->transition_data.delta_from_initial_value = 0;
+
             if (mesh_access_parser_available(&parser) == 2){
                 //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits) 
                 transition_time_gdtt = mesh_access_parser_get_u8(&parser);
@@ -345,6 +353,8 @@ static void generic_level_handle_set_delta_message(mesh_model_t *mesh_model, mes
         case MESH_TRANSACTION_STATUS_DIFFERENT_DST_OR_SRC:
             // abort transaction
             mesh_access_transitions_abort_transaction(base_transition);
+            transition->current_value = transition->initial_value;
+            mesh_server_transition_setup_transition_or_instantaneous_update_int16(mesh_model, 0, 0, MODEL_STATE_UPDATE_REASON_TRANSITION_ABORT);       
             break;
         case MESH_TRANSACTION_STATUS_RETRANSMISSION:
             // ignore
@@ -352,8 +362,10 @@ static void generic_level_handle_set_delta_message(mesh_model_t *mesh_model, mes
         case MESH_TRANSACTION_STATUS_NEW:
             mesh_access_transitions_setup_transaction(base_transition, tid, mesh_pdu_src(pdu), mesh_pdu_dst(pdu));
 
+            generic_level_server_state->transition_data.initial_value = generic_level_server_state->transition_data.current_value;
             generic_level_server_state->transition_data.target_value = add_and_clip_int16(generic_level_server_state->transition_data.current_value, delta_value);
-            generic_level_server_state->transition_data.stepwise_value_increment = delta_value;
+            generic_level_server_state->transition_data.delta_from_initial_value = delta_value;
+            generic_level_server_state->transition_data.stepwise_value_increment = 0;
             
             if (mesh_access_parser_available(&parser) == 2){
                 //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits) 
