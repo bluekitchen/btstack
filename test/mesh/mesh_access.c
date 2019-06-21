@@ -93,8 +93,8 @@ void mesh_access_emit_state_update_bool(btstack_packet_handler_t * event_handler
     (*event_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void mesh_access_emit_state_update_uint16(btstack_packet_handler_t * event_handler, uint8_t element_index, uint32_t model_identifier, 
-    model_state_id_t state_identifier, model_state_update_reason_t reason, uint16_t value){
+void mesh_access_emit_state_update_int16(btstack_packet_handler_t * event_handler, uint8_t element_index, uint32_t model_identifier, 
+    model_state_id_t state_identifier, model_state_update_reason_t reason, int16_t value){
     if (event_handler == NULL) return;
     uint8_t event[14] = {HCI_EVENT_MESH_META, 13, MESH_SUBEVENT_STATE_UPDATE_BOOL};
     int pos = 3;
@@ -104,7 +104,7 @@ void mesh_access_emit_state_update_uint16(btstack_packet_handler_t * event_handl
     little_endian_store_32(event, pos, (uint32_t)state_identifier);
     pos += 4;
     event[pos++] = (uint8_t)reason;
-    little_endian_store_16(event, pos, value);
+    little_endian_store_16(event, pos, (uint16_t) value);
     pos += 2;
     (*event_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }

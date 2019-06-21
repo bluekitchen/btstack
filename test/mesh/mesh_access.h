@@ -253,8 +253,8 @@ uint8_t mesh_access_transitions_num_steps_from_gdtt(uint8_t transition_time_gdtt
 
 void mesh_access_emit_state_update_bool(btstack_packet_handler_t * event_handler, uint8_t element_index, uint32_t model_identifier, 
     model_state_id_t state_identifier, model_state_update_reason_t reason, uint8_t value);
-void mesh_access_emit_state_update_uint16(btstack_packet_handler_t * event_handler, uint8_t element_index, uint32_t model_identifier, 
-    model_state_id_t state_identifier, model_state_update_reason_t reason, uint16_t value);
+void mesh_access_emit_state_update_int16(btstack_packet_handler_t * event_handler, uint8_t element_index, uint32_t model_identifier, 
+    model_state_id_t state_identifier, model_state_update_reason_t reason, int16_t value);
 
 // Mesh Model Transitions
 void mesh_access_transitions_setup(mesh_transition_t * transition, mesh_model_t * mesh_model, 

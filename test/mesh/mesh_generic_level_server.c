@@ -57,7 +57,121 @@ static void generic_server_send_message(uint16_t src, uint16_t dest, uint16_t ne
     mesh_upper_transport_send_access_pdu(pdu);
 }
 
-// Generic On Off State
+// Transition 
+static int16_t add_and_clip_int16(int16_t current_value, int16_t increment){
+    int32_t value = current_value + increment;
+    if (value < 0x8000){
+        value = 0x8000;
+    } else if (value > 0x7FFF){
+        value = 0x7FFF;
+    }
+   return (int16_t) value;
+}
+
+static void mesh_server_transition_state_update_stepwise_value(mesh_transition_uint16_t * transition){
+    mesh_model_t * generic_level_server_model = transition->base_transition.mesh_model;
+    
+    transition->current_value = add_and_clip_int16(transition->current_value, transition->stepwise_value_increment);
+    // emit event
+    mesh_access_emit_state_update_int16(generic_level_server_model->transition_events_packet_handler, 
+        mesh_access_get_element_index(generic_level_server_model), 
+        generic_level_server_model->model_identifier, 
+        MODEL_STATE_ID_GENERIC_ON_OFF, 
+        MODEL_STATE_UPDATE_REASON_TRANSITION_END, 
+        transition->current_value);
+}
+
+static void mesh_server_transition_state_update(mesh_transition_uint16_t * transition, uint32_t current_timestamp_ms){
+    if (transition->base_transition.remaining_delay_time_ms != 0){
+        transition->base_transition.state = MESH_TRANSITION_STATE_DELAYED;
+        transition->base_transition.remaining_delay_time_ms = 0;
+        transition->base_transition.phase_start_ms = current_timestamp_ms;
+        return;
+    }
+
+    mesh_model_t * generic_level_server_model = transition->base_transition.mesh_model;
+    
+    if (transition->base_transition.remaining_transition_time_ms != 0){
+        transition->base_transition.state = MESH_TRANSITION_STATE_ACTIVE;
+        transition->base_transition.phase_start_ms = current_timestamp_ms;
+        return;
+    }
+    
+    transition->current_value = transition->target_value;
+    transition->base_transition.remaining_transition_time_ms = 0;
+
+    // emit event
+    mesh_access_emit_state_update_int16(generic_level_server_model->transition_events_packet_handler, 
+        mesh_access_get_element_index(generic_level_server_model), 
+        generic_level_server_model->model_identifier, 
+        MODEL_STATE_ID_GENERIC_ON_OFF, 
+        MODEL_STATE_UPDATE_REASON_TRANSITION_END, 
+        transition->current_value);
+    
+    // done, stop transition
+    mesh_access_transitions_remove((mesh_transition_t *)transition);
+}
+
+static void mesh_server_transition_step(mesh_transition_t * base_transition, transition_event_t event, uint32_t current_timestamp){
+    uint32_t time_step_ms;
+
+    mesh_transition_uint16_t * transition = (mesh_transition_uint16_t*) base_transition;
+
+    switch (transition->base_transition.state){
+        case MESH_TRANSITION_STATE_IDLE:
+            if (event != TRANSITION_START) break;
+            mesh_server_transition_state_update(transition, current_timestamp);
+            break;
+        case MESH_TRANSITION_STATE_DELAYED:
+            if (event != TRANSITION_UPDATE) break;
+            time_step_ms = current_timestamp - transition->base_transition.phase_start_ms;
+            if (transition->base_transition.remaining_delay_time_ms >= time_step_ms){
+                transition->base_transition.remaining_delay_time_ms -= time_step_ms;
+            } else {
+                transition->base_transition.remaining_delay_time_ms = 0;
+                mesh_server_transition_state_update(transition, current_timestamp);
+            }
+            break;
+        case MESH_TRANSITION_STATE_ACTIVE:
+            if (event != TRANSITION_UPDATE) break;
+            time_step_ms = current_timestamp - transition->base_transition.phase_start_ms;
+            if (transition->base_transition.remaining_transition_time_ms >= time_step_ms){
+                transition->base_transition.remaining_transition_time_ms -= time_step_ms;
+                mesh_server_transition_state_update_stepwise_value(transition);
+            } else {
+                transition->base_transition.remaining_transition_time_ms = 0;
+                mesh_server_transition_state_update(transition, current_timestamp);
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+
+static void mesh_server_transition_setup_transition_or_instantaneous_update_int16(mesh_model_t *mesh_model, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, model_state_update_reason_t reason){
+    mesh_generic_level_state_t * generic_level_server_state = (mesh_generic_level_state_t *)mesh_model->model_data;
+    mesh_transition_t transition = generic_level_server_state->transition_data.base_transition;
+
+    if (transition_time_gdtt != 0 || delay_time_gdtt != 0) {
+        mesh_access_transitions_setup(&transition, mesh_model, transition_time_gdtt, delay_time_gdtt, &mesh_server_transition_step);
+        mesh_access_transitions_add(&transition);
+    } else {
+        generic_level_server_state->transition_data.current_value = generic_level_server_state->transition_data.target_value;
+        transition.phase_start_ms = 0;
+        transition.remaining_delay_time_ms = 0;
+        transition.remaining_transition_time_ms = 0;
+        transition.state = MESH_TRANSITION_STATE_IDLE;
+        
+        mesh_access_emit_state_update_int16(mesh_model->transition_events_packet_handler, 
+            mesh_access_get_element_index(mesh_model), 
+            mesh_model->model_identifier, 
+            MODEL_STATE_ID_GENERIC_ON_OFF, 
+            reason, 
+            generic_level_server_state->transition_data.current_value);
+    }
+}
+// Generic Level State
 
 void mesh_generic_level_server_register_packet_handler(mesh_model_t *generic_level_server_model, btstack_packet_handler_t transition_events_packet_handler){
     if (transition_events_packet_handler == NULL){
@@ -104,117 +218,8 @@ static void mesh_generic_level_status_message(mesh_model_t *generic_level_server
     generic_server_send_message(mesh_access_get_element_address(generic_level_server_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);
 }
 
-static void generic_level_get_handler(mesh_model_t *generic_level_server_model, mesh_pdu_t * pdu){
-    mesh_generic_level_status_message(generic_level_server_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), mesh_pdu_appkey_index(pdu));
-    mesh_access_message_processed(pdu);
-}
 
-static void mesh_server_transition_state_update(mesh_transition_uint16_t * transition, uint32_t current_timestamp_ms){
-    if (transition->base_transition.remaining_delay_time_ms != 0){
-        transition->base_transition.state = MESH_TRANSITION_STATE_DELAYED;
-        transition->base_transition.remaining_delay_time_ms = 0;
-        transition->base_transition.phase_start_ms = current_timestamp_ms;
-        return;
-    }
-
-    mesh_model_t * generic_level_server_model = transition->base_transition.mesh_model;
-    
-    if (transition->base_transition.remaining_transition_time_ms != 0){
-        transition->base_transition.state = MESH_TRANSITION_STATE_ACTIVE;
-        transition->base_transition.phase_start_ms = current_timestamp_ms;
-        return;
-    }
-    
-    transition->current_value = transition->target_value;
-    transition->base_transition.remaining_transition_time_ms = 0;
-
-    // emit event
-    mesh_access_emit_state_update_uint16(generic_level_server_model->transition_events_packet_handler, 
-        mesh_access_get_element_index(generic_level_server_model), 
-        generic_level_server_model->model_identifier, 
-        MODEL_STATE_ID_GENERIC_ON_OFF, 
-        MODEL_STATE_UPDATE_REASON_TRANSITION_END, 
-        transition->current_value);
-    
-    // done, stop transition
-    mesh_access_transitions_remove((mesh_transition_t *)transition);
-}
-
-static void mesh_server_transition_state_update_stepwise_value(mesh_transition_uint16_t * transition){
-    mesh_model_t * generic_level_server_model = transition->base_transition.mesh_model;
-    
-    transition->current_value += transition->stepwise_value_increment;
-    
-    // emit event
-    mesh_access_emit_state_update_uint16(generic_level_server_model->transition_events_packet_handler, 
-        mesh_access_get_element_index(generic_level_server_model), 
-        generic_level_server_model->model_identifier, 
-        MODEL_STATE_ID_GENERIC_ON_OFF, 
-        MODEL_STATE_UPDATE_REASON_TRANSITION_END, 
-        transition->current_value);
-}
-
-static void mesh_server_transition_step_uint16(mesh_transition_t * base_transition, transition_event_t event, uint32_t current_timestamp){
-    uint32_t time_step_ms;
-
-    mesh_transition_uint16_t * transition = (mesh_transition_uint16_t*) base_transition;
-
-    switch (transition->base_transition.state){
-        case MESH_TRANSITION_STATE_IDLE:
-            if (event != TRANSITION_START) break;
-            mesh_server_transition_state_update(transition, current_timestamp);
-            break;
-        case MESH_TRANSITION_STATE_DELAYED:
-            if (event != TRANSITION_UPDATE) break;
-            time_step_ms = current_timestamp - transition->base_transition.phase_start_ms;
-            if (transition->base_transition.remaining_delay_time_ms >= time_step_ms){
-                transition->base_transition.remaining_delay_time_ms -= time_step_ms;
-            } else {
-                transition->base_transition.remaining_delay_time_ms = 0;
-                mesh_server_transition_state_update(transition, current_timestamp);
-            }
-            break;
-        case MESH_TRANSITION_STATE_ACTIVE:
-            if (event != TRANSITION_UPDATE) break;
-            time_step_ms = current_timestamp - transition->base_transition.phase_start_ms;
-            if (transition->base_transition.remaining_transition_time_ms >= time_step_ms){
-                transition->base_transition.remaining_transition_time_ms -= time_step_ms;
-                mesh_server_transition_state_update_stepwise_value(transition);
-            } else {
-                transition->base_transition.remaining_transition_time_ms = 0;
-                mesh_server_transition_state_update(transition, current_timestamp);
-            }
-            break;
-        default:
-            break;
-    }
-}
-
-static void mesh_server_transition_setup_transition_or_instantaneous_update(mesh_model_t *generic_level_server_model, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, model_state_update_reason_t reason){
-    mesh_generic_level_state_t * generic_level_server_state = (mesh_generic_level_state_t *)generic_level_server_model->model_data;
-    mesh_transition_t transition = generic_level_server_state->transition_data.base_transition;
-
-    if (transition_time_gdtt != 0 || delay_time_gdtt != 0) {
-        mesh_access_transitions_setup(&transition, (mesh_model_t *) generic_level_server_model, 
-            transition_time_gdtt, delay_time_gdtt, &mesh_server_transition_step_uint16);
-        mesh_access_transitions_add(&transition);
-    } else {
-        generic_level_server_state->transition_data.current_value = generic_level_server_state->transition_data.target_value;
-        transition.phase_start_ms = 0;
-        transition.remaining_delay_time_ms = 0;
-        transition.remaining_transition_time_ms = 0;
-        transition.state = MESH_TRANSITION_STATE_IDLE;
-        
-        mesh_access_emit_state_update_uint16(generic_level_server_model->transition_events_packet_handler, 
-            mesh_access_get_element_index(generic_level_server_model), 
-            generic_level_server_model->model_identifier, 
-            MODEL_STATE_ID_GENERIC_ON_OFF, 
-            reason, 
-            generic_level_server_state->transition_data.current_value);
-    }
-}
-
-static void generic_level_handle_set_message(mesh_model_t *generic_level_server_model, mesh_pdu_t * pdu){
+static void generic_level_handle_set_target_level_message(mesh_model_t *generic_level_server_model, mesh_pdu_t * pdu){
     if (generic_level_server_model == NULL){
         log_error("generic_level_server_model == NULL");
     }
@@ -226,7 +231,7 @@ static void generic_level_handle_set_message(mesh_model_t *generic_level_server_
     
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    uint16_t level_value = mesh_access_parser_get_u16(&parser);
+    int16_t level_value = (int16_t)mesh_access_parser_get_u16(&parser);
     // The TID field is a transaction identifier indicating whether the message is 
     // a new message or a retransmission of a previously sent message
     uint8_t tid = mesh_access_parser_get_u8(&parser); 
@@ -246,25 +251,134 @@ static void generic_level_handle_set_message(mesh_model_t *generic_level_server_
         //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits) 
         transition_time_gdtt = mesh_access_parser_get_u8(&parser);
         delay_time_gdtt = mesh_access_parser_get_u8(&parser);
-        uint8_t num_steps = mesh_access_transitions_num_steps_from_gdtt(transition_time_gdtt);
+        int num_steps = mesh_access_transitions_num_steps_from_gdtt(transition_time_gdtt);
         if (num_steps > 0){
             // TODO: remove division
             generic_level_server_state->transition_data.stepwise_value_increment = (level_value - generic_level_server_state->transition_data.current_value)/num_steps;
         }
     } 
 
-    mesh_server_transition_setup_transition_or_instantaneous_update(generic_level_server_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_SET);
+    mesh_server_transition_setup_transition_or_instantaneous_update_int16(generic_level_server_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_SET);
+}
+
+
+static void generic_level_handle_set_move_message(mesh_model_t *generic_level_server_model, mesh_pdu_t * pdu){
+    if (generic_level_server_model == NULL){
+        log_error("generic_level_server_model == NULL");
+    }
+    mesh_generic_level_state_t * generic_level_server_state = (mesh_generic_level_state_t *)generic_level_server_model->model_data;
+    
+    if (generic_level_server_state == NULL){
+        log_error("generic_level_server_state == NULL");
+    }
+    
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+    int16_t increment_value = (int16_t)mesh_access_parser_get_u16(&parser);
+    // The TID field is a transaction identifier indicating whether the message is 
+    // a new message or a retransmission of a previously sent message
+    uint8_t tid = mesh_access_parser_get_u8(&parser); 
+    // uint16_t src = mesh_pdu_src(pdu);
+    // uint16_t dst = mesh_pdu_dst(pdu);
+
+    if (tid == generic_level_server_state->transaction_identifier){
+        printf("retransmission\n");
+        return;
+    }
+
+    generic_level_server_state->transition_data.target_value = add_and_clip_int16(generic_level_server_state->transition_data.current_value, increment_value);
+    generic_level_server_state->transition_data.stepwise_value_increment = increment_value;
+    generic_level_server_state->transaction_identifier = tid;
+
+    uint8_t transition_time_gdtt = 0;
+    uint8_t delay_time_gdtt = 0;
+    if (mesh_access_parser_available(&parser) == 2){
+        //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits) 
+        transition_time_gdtt = mesh_access_parser_get_u8(&parser);
+        delay_time_gdtt = mesh_access_parser_get_u8(&parser);
+        int num_steps = mesh_access_transitions_num_steps_from_gdtt(transition_time_gdtt);
+        if (num_steps > 0){
+            // TODO: remove division
+            generic_level_server_state->transition_data.target_value = add_and_clip_int16(generic_level_server_state->transition_data.current_value, increment_value * num_steps);
+        }
+    } 
+    mesh_server_transition_setup_transition_or_instantaneous_update_int16(generic_level_server_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_SET);
+}
+
+
+static void generic_level_handle_set_delta_message(mesh_model_t *generic_level_server_model, mesh_pdu_t * pdu){
+    if (generic_level_server_model == NULL){
+        log_error("generic_level_server_model == NULL");
+    }
+    mesh_generic_level_state_t * generic_level_server_state = (mesh_generic_level_state_t *)generic_level_server_model->model_data;
+    
+    if (generic_level_server_state == NULL){
+        log_error("generic_level_server_state == NULL");
+    }
+    
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+    int16_t delta_value = (int16_t) mesh_access_parser_get_u16(&parser);
+    // The TID field is a transaction identifier indicating whether the message is 
+    // a new message or a retransmission of a previously sent message
+    uint8_t tid = mesh_access_parser_get_u8(&parser); 
+
+    if (tid != generic_level_server_state->transaction_identifier){
+        printf("retransmission\n");
+        return;
+    }
+
+    generic_level_server_state->transition_data.target_value = add_and_clip_int16(generic_level_server_state->transition_data.current_value, delta_value);
+    generic_level_server_state->transition_data.stepwise_value_increment = delta_value;
+    generic_level_server_state->transaction_identifier = tid;
+
+    uint8_t transition_time_gdtt = 0;
+    uint8_t delay_time_gdtt = 0;
+    if (mesh_access_parser_available(&parser) == 2){
+        //  Generic Default Transition Time format - num_steps (higher 6 bits), step_resolution (lower 2 bits) 
+        transition_time_gdtt = mesh_access_parser_get_u8(&parser);
+        delay_time_gdtt = mesh_access_parser_get_u8(&parser);
+    } 
+    mesh_server_transition_setup_transition_or_instantaneous_update_int16(generic_level_server_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_SET);
+}
+
+
+static void generic_level_get_handler(mesh_model_t *generic_level_server_model, mesh_pdu_t * pdu){
+    mesh_generic_level_status_message(generic_level_server_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), mesh_pdu_appkey_index(pdu));
+    mesh_access_message_processed(pdu);
 }
 
 static void generic_level_set_handler(mesh_model_t *generic_level_server_model, mesh_pdu_t * pdu){
-    generic_level_handle_set_message(generic_level_server_model, pdu);
+    generic_level_handle_set_target_level_message(generic_level_server_model, pdu);
 
     mesh_generic_level_status_message(generic_level_server_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), mesh_pdu_appkey_index(pdu));
     mesh_access_message_processed(pdu);
 }
 
 static void generic_level_set_unacknowledged_handler(mesh_model_t *generic_level_server_model, mesh_pdu_t * pdu){
-    generic_level_handle_set_message(generic_level_server_model, pdu);
+    generic_level_handle_set_target_level_message(generic_level_server_model, pdu);
+}
+
+static void generic_delta_set_handler(mesh_model_t *generic_level_server_model, mesh_pdu_t * pdu){
+    generic_level_handle_set_delta_message(generic_level_server_model, pdu);
+
+    mesh_generic_level_status_message(generic_level_server_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), mesh_pdu_appkey_index(pdu));
+    mesh_access_message_processed(pdu);
+}
+
+static void generic_delta_set_unacknowledged_handler(mesh_model_t *generic_level_server_model, mesh_pdu_t * pdu){
+    generic_level_handle_set_delta_message(generic_level_server_model, pdu);
+}
+
+static void generic_move_get_handler(mesh_model_t *generic_level_server_model, mesh_pdu_t * pdu){
+    generic_level_handle_set_move_message(generic_level_server_model, pdu);
+
+    mesh_generic_level_status_message(generic_level_server_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), mesh_pdu_appkey_index(pdu));
+    mesh_access_message_processed(pdu);
+}
+
+static void generic_move_set_unacknowledged_handler(mesh_model_t *generic_level_server_model, mesh_pdu_t * pdu){
+    generic_level_handle_set_move_message(generic_level_server_model, pdu);
 }
 
 // Generic On Off Message
@@ -272,10 +386,10 @@ const static mesh_operation_t mesh_generic_level_model_operations[] = {
     { MESH_GENERIC_LEVEL_GET,                                   0, generic_level_get_handler },
     { MESH_GENERIC_LEVEL_SET,                                   3, generic_level_set_handler },
     { MESH_GENERIC_LEVEL_SET_UNACKNOWLEDGED,                    3, generic_level_set_unacknowledged_handler },
-    // { MESH_GENERIC_DELTA_GET,                                   0, generic_delta_get_handler },
-    // { MESH_GENERIC_DELTA_SET,                                   3, generic_delta_set_handler },
-    // { MESH_GENERIC_MOVE_GET,                                    0, generic_move_get_handler },
-    // { MESH_GENERIC_MOVE_SET,                                    3, generic_move_set_handler },
+    { MESH_GENERIC_DELTA_SET,                                   3, generic_delta_set_handler },
+    { MESH_GENERIC_DELTA_SET_UNACKNOWLEDGED,                    3, generic_delta_set_unacknowledged_handler },
+    { MESH_GENERIC_MOVE_SET,                                    3, generic_move_get_handler },
+    { MESH_GENERIC_MOVE_SET_UNACKNOWLEDGED,                     3, generic_move_set_unacknowledged_handler },
     { 0, 0, NULL }
 };
 
