@@ -61,10 +61,11 @@ typedef struct {
 
     uint16_t  current_value;
     uint16_t  target_value;
-} mesh_transition_uin16_t;
+    int16_t   stepwise_value_increment;
+} mesh_transition_uint16_t;
 
 typedef struct {
-    mesh_transition_uin16_t transition_data;       
+    mesh_transition_uint16_t transition_data;       
     uint8_t  transaction_identifier;    
 } mesh_generic_level_state_t;
 

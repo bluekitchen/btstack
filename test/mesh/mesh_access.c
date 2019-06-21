@@ -84,18 +84,34 @@ void mesh_access_emit_state_update_bool(btstack_packet_handler_t * event_handler
     uint8_t event[14] = {HCI_EVENT_MESH_META, 13, MESH_SUBEVENT_STATE_UPDATE_BOOL};
     int pos = 3;
     event[pos++] = element_index;
-    little_endian_store_32(event, 3, model_identifier);
+    little_endian_store_32(event, pos, model_identifier);
     pos += 4;
-    little_endian_store_32(event, 3, (uint32_t)state_identifier);
+    little_endian_store_32(event, pos, (uint32_t)state_identifier);
     pos += 4;
     event[pos++] = (uint8_t)reason;
     event[pos++] = value;
     (*event_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+void mesh_access_emit_state_update_uint16(btstack_packet_handler_t * event_handler, uint8_t element_index, uint32_t model_identifier, 
+    model_state_id_t state_identifier, model_state_update_reason_t reason, uint16_t value){
+    if (event_handler == NULL) return;
+    uint8_t event[14] = {HCI_EVENT_MESH_META, 13, MESH_SUBEVENT_STATE_UPDATE_BOOL};
+    int pos = 3;
+    event[pos++] = element_index;
+    little_endian_store_32(event, pos, model_identifier);
+    pos += 4;
+    little_endian_store_32(event, pos, (uint32_t)state_identifier);
+    pos += 4;
+    event[pos++] = (uint8_t)reason;
+    little_endian_store_16(event, pos, value);
+    pos += 2;
+    (*event_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 // Mesh Model Transitions
 
-static uint8_t mesh_access_transitions_num_steps_from_gdtt(uint8_t transition_time_gdtt){
+uint8_t mesh_access_transitions_num_steps_from_gdtt(uint8_t transition_time_gdtt){
     return transition_time_gdtt >> 2;
 }
 
