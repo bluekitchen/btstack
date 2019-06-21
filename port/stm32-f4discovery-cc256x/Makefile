@@ -347,7 +347,7 @@ GATT_FILES = \
 	sm_pairing_peripheral.gatt \
 	sm_pairing_central.gatt \
 	spp_and_gatt_counter.gatt \
-	spp_and_gatt_streamer_server.gatt \
+	spp_and_gatt_streamer.gatt \
 
 # SBC codec
 include ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/Makefile.inc
