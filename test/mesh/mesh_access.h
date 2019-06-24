@@ -87,6 +87,7 @@ typedef enum {
 
 typedef enum {
     MODEL_STATE_ID_GENERIC_ON_OFF = (BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC << 16) | 0u,
+    MODEL_STATE_ID_GENERIC_LEVEL  = (BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC << 16) | 1u,
 } model_state_id_t;
 
 typedef struct {
@@ -134,8 +135,8 @@ typedef struct mesh_model {
     // subscription list
     uint16_t subscriptions[MAX_NR_MESH_SUBSCRIPTION_PER_MODEL];
 
-    // packet handler for transition events
-    btstack_packet_handler_t * transition_events_packet_handler;
+    // packet handler for transition events in server, event callback handler in client
+    btstack_packet_handler_t * model_packet_handler;
 } mesh_model_t;
 
 typedef struct {

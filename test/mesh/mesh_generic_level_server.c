@@ -82,10 +82,10 @@ static void mesh_server_transition_state_update_stepwise_value(mesh_transition_i
         transition->current_value = add_and_clip_int16(transition->initial_value, transition->delta_from_initial_value);
     }
     // emit event
-    mesh_access_emit_state_update_int16(generic_level_server_model->transition_events_packet_handler, 
+    mesh_access_emit_state_update_int16(generic_level_server_model->model_packet_handler, 
         mesh_access_get_element_index(generic_level_server_model), 
         generic_level_server_model->model_identifier, 
-        MODEL_STATE_ID_GENERIC_ON_OFF, 
+        MODEL_STATE_ID_GENERIC_LEVEL, 
         MODEL_STATE_UPDATE_REASON_TRANSITION_END, 
         transition->current_value);
 }
@@ -110,10 +110,10 @@ static void mesh_server_transition_state_update(mesh_transition_int16_t * transi
     transition->base_transition.remaining_transition_time_ms = 0;
 
     // emit event
-    mesh_access_emit_state_update_int16(generic_level_server_model->transition_events_packet_handler, 
+    mesh_access_emit_state_update_int16(generic_level_server_model->model_packet_handler, 
         mesh_access_get_element_index(generic_level_server_model), 
         generic_level_server_model->model_identifier, 
-        MODEL_STATE_ID_GENERIC_ON_OFF, 
+        MODEL_STATE_ID_GENERIC_LEVEL, 
         MODEL_STATE_UPDATE_REASON_TRANSITION_END, 
         transition->current_value);
     
@@ -173,10 +173,10 @@ static void mesh_server_transition_setup_transition_or_instantaneous_update_int1
         generic_level_server_state->transition_data.transition_speed = 0;
         mesh_access_transitions_setup(&transition, mesh_model, 0, 0, NULL);
 
-        mesh_access_emit_state_update_int16(mesh_model->transition_events_packet_handler, 
+        mesh_access_emit_state_update_int16(mesh_model->model_packet_handler, 
             mesh_access_get_element_index(mesh_model), 
             mesh_model->model_identifier, 
-            MODEL_STATE_ID_GENERIC_ON_OFF, 
+            MODEL_STATE_ID_GENERIC_LEVEL, 
             reason, 
             generic_level_server_state->transition_data.current_value);
     }
@@ -192,7 +192,7 @@ void mesh_generic_level_server_register_packet_handler(mesh_model_t *generic_lev
         log_error("mesh_generic_level_server_register_packet_handler called with NULL generic_level_server_model");
         return;
     }
-    generic_level_server_model->transition_events_packet_handler = &transition_events_packet_handler;
+    generic_level_server_model->model_packet_handler = &transition_events_packet_handler;
 }
 
 const mesh_access_message_t mesh_generic_level_status_transition = {
@@ -353,7 +353,7 @@ static void generic_level_handle_set_delta_message(mesh_model_t *mesh_model, mes
         case MESH_TRANSACTION_STATUS_DIFFERENT_DST_OR_SRC:
             // abort transaction
             mesh_access_transitions_abort_transaction(base_transition);
-            transition->current_value = transition->initial_value;
+            generic_level_server_state->transition_data.current_value = generic_level_server_state->transition_data.initial_value;
             mesh_server_transition_setup_transition_or_instantaneous_update_int16(mesh_model, 0, 0, MODEL_STATE_UPDATE_REASON_TRANSITION_ABORT);       
             break;
         case MESH_TRANSACTION_STATUS_RETRANSMISSION:
