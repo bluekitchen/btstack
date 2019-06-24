@@ -274,6 +274,10 @@ static void stdin_process(char cmd){
     }
 }
 
+uint32_t mesh_get_iv_index(void){
+    return 0;
+}
+
 int btstack_main(void);
 int btstack_main(void)
 {

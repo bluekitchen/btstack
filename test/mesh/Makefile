@@ -56,13 +56,13 @@ LDFLAGS += -lCppUTest -lCppUTestExt
 mesh: mesh.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} pb_adv.o pb_gatt.o mesh_foundation.o mesh_provisioning_service_server.o mesh_crypto.o provisioning_device.o mesh_network.o mesh_peer.o mesh_lower_transport.o mesh_transport.o mesh_virtual_addresses.o mesh_keys.o mesh_proxy.o mesh_access.o mesh_configuration_server.o mesh_generic_server.o mesh_generic_level_server.o mesh.o
 	${CC} $(filter-out mesh.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-provisioner: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} pb_adv.o mesh_crypto.o provisioning_provisioner.o provisioner.o
+provisioner: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} pb_adv.o mesh_crypto.o provisioning_provisioner.o mesh_keys.o provisioner.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 mesh_message_test: mesh_message_test.c mesh_network.o mesh_peer.o mesh_lower_transport.o mesh_transport.o mesh_virtual_addresses.o  mesh_keys.o  mesh_crypto.o btstack_memory.o btstack_memory_pool.o btstack_util.o btstack_crypto.o btstack_linked_list.o hci_dump.o uECC.o mock.o rijndael.o hci_cmd.o
 	g++ $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-sniffer: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} sniffer.c 
+sniffer: ${CORE_OBJ} ${COMMON_OBJ} ${SM_OBJ} mesh_keys.o sniffer.c 
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 provisioning_device_test: provisioning_device_test.cpp uECC.o mesh_crypto.o provisioning_device.o btstack_crypto.o btstack_util.o btstack_linked_list.o mock.o rijndael.o hci_cmd.o hci_dump.o
