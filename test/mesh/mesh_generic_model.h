@@ -35,52 +35,27 @@
  *
  */
 
-#ifndef __MESH_GENERIC_SERVER_H
-#define __MESH_GENERIC_SERVER_H
-
-#include <stdint.h>
-#include "mesh_access.h"
+#ifndef __MESH_GENERIC_MODEL_H
+#define __MESH_GENERIC_MODEL_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-typedef struct {
-    mesh_transition_t base_transition;
+#define MESH_GENERIC_ON_OFF_GET                     0x8201u    
+#define MESH_GENERIC_ON_OFF_SET                     0x8202u
+#define MESH_GENERIC_ON_OFF_SET_UNACKNOWLEDGED      0x8203u
+#define MESH_GENERIC_ON_OFF_STATUS                  0x8204u
 
-    uint8_t  current_value;
-    uint8_t  target_value;
-} mesh_transition_bool_t;
-
-typedef struct {
-    mesh_transition_bool_t transition_data;          
-} mesh_generic_on_off_state_t;
-
-const mesh_operation_t * mesh_generic_on_off_server_get_operations(void);
-/**
- * @brief Register packet handler
- * @param generic_on_off_server_model
- * @param transition_events_packet_handler
- */
-void mesh_generic_on_off_server_register_packet_handler(mesh_model_t *generic_on_off_server_model, btstack_packet_handler_t transition_events_packet_handler);
-
-/**
- * @brief Set ON/OFF value
- * @param generic_on_off_server_model
- * @param on_off_value
- * @param transition_time_gdtt
- * @param delay_time_gdtt
- */
-void mesh_generic_on_off_server_set_value(mesh_model_t *generic_on_off_server_model, uint8_t on_off_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt);
-
-/**
- * @brief  Get present ON/OFF value
- * @param  generic_on_off_server_model
- * @return on_off_value
- */
-uint8_t mesh_generic_on_off_server_get_value(mesh_model_t *generic_on_off_server_model);
-
+#define MESH_GENERIC_LEVEL_GET                      0x8205u    
+#define MESH_GENERIC_LEVEL_SET                      0x8206u
+#define MESH_GENERIC_LEVEL_SET_UNACKNOWLEDGED       0x8207u
+#define MESH_GENERIC_LEVEL_STATUS                   0x8208u
+#define MESH_GENERIC_DELTA_SET                      0x8209u
+#define MESH_GENERIC_DELTA_SET_UNACKNOWLEDGED       0x820Au
+#define MESH_GENERIC_MOVE_SET                       0x820Bu
+#define MESH_GENERIC_MOVE_SET_UNACKNOWLEDGED        0x820Cu
 
 #ifdef __cplusplus
 } /* end of extern "C" */

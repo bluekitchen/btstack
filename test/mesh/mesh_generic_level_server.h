@@ -46,16 +46,6 @@ extern "C"
 {
 #endif
 
-#define MESH_GENERIC_LEVEL_GET                     0x8205u    
-#define MESH_GENERIC_LEVEL_SET                     0x8206u
-#define MESH_GENERIC_LEVEL_SET_UNACKNOWLEDGED      0x8207u
-#define MESH_GENERIC_LEVEL_STATUS                  0x8208u
-#define MESH_GENERIC_DELTA_SET                     0x8209u
-#define MESH_GENERIC_DELTA_SET_UNACKNOWLEDGED      0x820Au
-#define MESH_GENERIC_MOVE_SET                      0x820Bu
-#define MESH_GENERIC_MOVE_SET_UNACKNOWLEDGED       0x820Cu
-
-
 typedef struct {
     mesh_transition_t base_transition;
 

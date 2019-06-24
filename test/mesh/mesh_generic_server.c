@@ -41,6 +41,7 @@
 #include <stdio.h>
 #include "mesh_generic_server.h"
 #include "btstack_util.h"
+#include "mesh_generic_model.h"
 #include "ble/mesh/mesh_network.h"
 #include "mesh_keys.h"
 #include "mesh_transport.h"
