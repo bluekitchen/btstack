@@ -57,6 +57,15 @@ typedef enum {
     MESH_KEY_REFRESH_SECOND_PHASE
 } mesh_key_refresh_state_t;
 
+typedef enum {
+    MESH_SECURE_NETWORK_BEACON_W2_AUTH_VALUE,
+    MESH_SECURE_NETWORK_BEACON_W4_AUTH_VALUE,
+    MESH_SECURE_NETWORK_BEACON_W2_SEND_ADV,
+    MESH_SECURE_NETWORK_BEACON_W2_SEND_GATT,
+    MESH_SECURE_NETWORK_BEACON_SENT,
+    MESH_SECURE_NETWORK_BEACON_W4_INTERVAL
+} mesh_secure_network_beacon_state_t;
+
 typedef struct {
     btstack_linked_item_t item;
 
@@ -93,8 +102,10 @@ typedef struct {
     adv_bearer_connectable_advertisement_data_item_t advertisement_with_network_id;
 
     // secure network beacons
-    btstack_timer_source_t beacon_timer;
-    uint32_t beacon_interval_ms;
+    mesh_secure_network_beacon_state_t beacon_state;
+    uint32_t                           beacon_interval_ms;
+    uint32_t                           beacon_observation_start_ms;
+    uint16_t                           beacon_observation_counter;
 
 } mesh_network_key_t;
 
