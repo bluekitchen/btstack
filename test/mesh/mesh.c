@@ -695,13 +695,22 @@ static void send_pts_segmented_access_messsage_virtual(void){
     mesh_upper_transport_send_access_pdu((mesh_pdu_t*) transport_pdu);
 }
 
-static void mesh_secure_network_beacon_auth_value_calculated(void * arg){
+static void mesh_secure_network_beacon_send_adv_auth_value_calculated(void * arg){
     UNUSED(arg);
     memcpy(&mesh_secure_network_beacon[14], mesh_secure_network_beacon_auth_value, 8);
     printf("Secure Network Beacon\n");
     printf("- ");
     printf_hexdump(mesh_secure_network_beacon, sizeof(mesh_secure_network_beacon));
     adv_bearer_send_mesh_beacon(mesh_secure_network_beacon, sizeof(mesh_secure_network_beacon));
+}
+
+static void mesh_secure_network_beacon_send_adv(void){
+    mesh_secure_network_beacon[0] = BEACON_TYPE_SECURE_NETWORK;
+    mesh_secure_network_beacon[1] = mesh_flags;
+    memcpy(&mesh_secure_network_beacon[2], network_id, 8);
+    big_endian_store_32(mesh_secure_network_beacon, 10, mesh_get_iv_index());
+    btstack_crypto_aes128_cmac_message(&mesh_cmac_request, beacon_key, 13,
+        &mesh_secure_network_beacon[1], mesh_secure_network_beacon_auth_value, &mesh_secure_network_beacon_send_adv_auth_value_calculated, NULL);
 }
 
 static void show_usage(void){
@@ -787,12 +796,7 @@ static void stdin_process(char cmd){
             break;
         case 'b':
             printf("+ Setup Secure Network Beacon\n");
-            mesh_secure_network_beacon[0] = BEACON_TYPE_SECURE_NETWORK;
-            mesh_secure_network_beacon[1] = mesh_flags;
-            memcpy(&mesh_secure_network_beacon[2], network_id, 8);
-            big_endian_store_32(mesh_secure_network_beacon, 10, mesh_get_iv_index());
-            btstack_crypto_aes128_cmac_message(&mesh_cmac_request, beacon_key, 13,
-                &mesh_secure_network_beacon[1], mesh_secure_network_beacon_auth_value, &mesh_secure_network_beacon_auth_value_calculated, NULL);
+            mesh_secure_network_beacon_send_adv();
             break;
         case 'g':
             printf("Generic ON/OFF Server Toggle Value\n");
@@ -879,13 +883,7 @@ static void mesh_proxy_packet_handler_network_pdu(uint8_t packet_type, uint16_t 
                             break;
                         case MESH_SUBEVENT_PROXY_CONNECTED:
                             printf("mesh: MESH_PROXY_CONNECTED\n");
-                            printf("+ Setup Secure Network Beacon\n");
-                            mesh_secure_network_beacon[0] = BEACON_TYPE_SECURE_NETWORK;
-                            mesh_secure_network_beacon[1] = mesh_flags;
-                            memcpy(&mesh_secure_network_beacon[2], network_id, 8);
-                            big_endian_store_32(mesh_secure_network_beacon, 10, mesh_get_iv_index());
-                            btstack_crypto_aes128_cmac_message(&mesh_cmac_request, beacon_key, 13,
-                                &mesh_secure_network_beacon[1], mesh_secure_network_beacon_auth_value, &mesh_secure_network_beacon_auth_value_calculated, NULL);
+                            printf("TODO: send Secure Network Beacon\n");
                             break;
                         default:
                             break;
