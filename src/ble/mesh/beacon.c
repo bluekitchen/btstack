@@ -139,6 +139,28 @@ void beacon_unprovisioned_device_stop(void){
 
 // secure network beacons
 
+static btstack_crypto_aes128_cmac_t mesh_secure_network_beacon_cmac_request;
+static uint8_t mesh_secure_network_beacon[22];
+static uint8_t mesh_secure_network_beacon_auth_value[16];
+
+static void mesh_secure_network_beacon_send_adv_auth_value_calculated(void * arg){
+    UNUSED(arg);
+    memcpy(&mesh_secure_network_beacon[14], mesh_secure_network_beacon_auth_value, 8);
+    printf("Secure Network Beacon\n");
+    printf("- ");
+    printf_hexdump(mesh_secure_network_beacon, sizeof(mesh_secure_network_beacon));
+    adv_bearer_send_mesh_beacon(mesh_secure_network_beacon, sizeof(mesh_secure_network_beacon));
+}
+
+static void mesh_secure_network_beacon_send_adv(const char * network_id, const char * beacon_key, int8_t mesh_flags){
+    mesh_secure_network_beacon[0] = BEACON_TYPE_SECURE_NETWORK;
+    mesh_secure_network_beacon[1] = mesh_flags;
+    memcpy(&mesh_secure_network_beacon[2], network_id, 8);
+    big_endian_store_32(mesh_secure_network_beacon, 10, mesh_get_iv_index());
+    btstack_crypto_aes128_cmac_message(&mesh_secure_network_beacon_cmac_request, beacon_key, 13,
+        &mesh_secure_network_beacon[1], mesh_secure_network_beacon_auth_value, &mesh_secure_network_beacon_send_adv_auth_value_calculated, NULL);
+}
+
 // crypto context 
 static void beacon_secure_network_timer_handler(btstack_timer_source_t * ts){
 

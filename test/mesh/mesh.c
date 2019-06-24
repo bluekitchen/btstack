@@ -543,10 +543,6 @@ static const char * prov_public_key_string = "F465E43FF23D3F1B9DC7DFC04DA8758184
 static uint8_t      prov_private_key_data[32];
 static const char * prov_private_key_string = "529AA0670D72CD6497502ED473502B037E8803B5C60829A5A3CAA219505530BA";
 
-static btstack_crypto_aes128_cmac_t mesh_cmac_request;
-static uint8_t mesh_secure_network_beacon[22];
-static uint8_t mesh_secure_network_beacon_auth_value[16];
-
 static mesh_transport_key_t pts_application_key;
 
 static void load_pts_app_key(void){
@@ -695,24 +691,6 @@ static void send_pts_segmented_access_messsage_virtual(void){
     mesh_upper_transport_send_access_pdu((mesh_pdu_t*) transport_pdu);
 }
 
-static void mesh_secure_network_beacon_send_adv_auth_value_calculated(void * arg){
-    UNUSED(arg);
-    memcpy(&mesh_secure_network_beacon[14], mesh_secure_network_beacon_auth_value, 8);
-    printf("Secure Network Beacon\n");
-    printf("- ");
-    printf_hexdump(mesh_secure_network_beacon, sizeof(mesh_secure_network_beacon));
-    adv_bearer_send_mesh_beacon(mesh_secure_network_beacon, sizeof(mesh_secure_network_beacon));
-}
-
-static void mesh_secure_network_beacon_send_adv(void){
-    mesh_secure_network_beacon[0] = BEACON_TYPE_SECURE_NETWORK;
-    mesh_secure_network_beacon[1] = mesh_flags;
-    memcpy(&mesh_secure_network_beacon[2], network_id, 8);
-    big_endian_store_32(mesh_secure_network_beacon, 10, mesh_get_iv_index());
-    btstack_crypto_aes128_cmac_message(&mesh_cmac_request, beacon_key, 13,
-        &mesh_secure_network_beacon[1], mesh_secure_network_beacon_auth_value, &mesh_secure_network_beacon_send_adv_auth_value_calculated, NULL);
-}
-
 static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
@@ -729,7 +707,6 @@ static void show_usage(void){
     printf("o      - Enable Output OOB \n");
     printf("i      - Input  Output OOB \n");
     printf("s      - Static Output OOB \n");
-    printf("b      - Setup Secure Network Beacon \n");
     printf("g      - Generic ON/OFF Server Toggle Value\n");
     printf("\n");
 }
@@ -794,10 +771,6 @@ static void stdin_process(char cmd){
             btstack_parse_hex(prov_static_oob_string, 16, prov_static_oob_data);
             provisioning_device_set_static_oob(16, prov_static_oob_data);
             break;
-        case 'b':
-            printf("+ Setup Secure Network Beacon\n");
-            mesh_secure_network_beacon_send_adv();
-            break;
         case 'g':
             printf("Generic ON/OFF Server Toggle Value\n");
             mesh_generic_on_off_server_set_value(&mesh_generic_on_off_server_model, 1-mesh_generic_on_off_server_get_value(&mesh_generic_on_off_server_model), 0, 0);
@@ -843,21 +816,6 @@ static void mesh_proxy_packet_handler_beacon(uint8_t packet_type, uint16_t chann
         case MESH_PROXY_DATA_PACKET:
             printf("Received beacon\n");
             printf_hexdump(packet, size);
-            break;
-        case HCI_EVENT_PACKET:
-            switch (hci_event_packet_get_type(packet)){
-                case HCI_EVENT_MESH_META:
-                    switch (hci_event_mesh_meta_get_subevent_code(packet)){
-                        case MESH_SUBEVENT_CAN_SEND_NOW:
-                            gatt_bearer_send_mesh_beacon(mesh_secure_network_beacon, sizeof(mesh_secure_network_beacon));
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
             break;
         default:
             break;
@@ -1050,7 +1008,6 @@ int btstack_main(void)
     // Setup GATT bearer
     gatt_bearer_init();
     gatt_bearer_register_for_mesh_network_pdu(&mesh_proxy_packet_handler_network_pdu);
-    gatt_bearer_register_for_mesh_beacon(&mesh_proxy_packet_handler_beacon);
 
     gatt_bearer_register_for_mesh_proxy_configuration(&packet_handler_for_mesh_proxy_configuration);
     mesh_network_set_proxy_message_handler(proxy_configuration_message_handler);
