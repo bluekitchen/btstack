@@ -46,7 +46,6 @@ extern "C"
 {
 #endif
 
-
 const mesh_operation_t * mesh_generic_on_off_client_get_operations(void);
 /**
  * @brief Register packet handler
@@ -89,6 +88,7 @@ uint8_t mesh_generic_on_off_client_set_value_unacknowledged(mesh_model_t * mesh_
  * @param appkey_index
  */
 void mesh_generic_on_off_client_get_value(mesh_model_t *mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index);
+
 
 #ifdef __cplusplus
 } /* end of extern "C" */
