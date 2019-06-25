@@ -57,8 +57,9 @@
 #define UNPROVISIONED_BEACON_INTERVAL_MS 5000
 #define UNPROVISIONED_BEACON_LEN      23
 
-#define SECURE_NETWORK_BEACON_INTERVAL_MIN_MS 10000
-#define SECURE_NETWORK_BEACON_LEN             22
+#define SECURE_NETWORK_BEACON_INTERVAL_MIN_MS  10000
+#define SECURE_NETWORK_BEACON_INTERVAL_MAX_MS 600000
+#define SECURE_NETWORK_BEACON_LEN                 22
 
 // beacon
 static uint8_t mesh_beacon_data[29];
@@ -130,6 +131,29 @@ static void mesh_secure_network_beacon_setup(mesh_network_key_t * mesh_network_k
         &mesh_beacon_data[1], mesh_secure_network_beacon_auth_value, &mesh_secure_network_beacon_auth_value_calculated, mesh_network_key);
 }
 
+static void mesh_secure_network_beacon_update_interval(mesh_network_key_t * subnet){
+    uint32_t min_observation_period_ms = 2 * subnet->beacon_interval_ms;
+    uint32_t actual_observation_period = btstack_time_delta(btstack_run_loop_get_time_ms(), subnet->beacon_observation_start_ms);
+    
+    // The Observation Period in seconds should typically be double the typical Beacon Interval.
+    if (actual_observation_period < min_observation_period_ms) return;
+
+    // Expected Number of Beacons (1 beacon per 10 seconds)
+    uint16_t expected_number_of_beacons = actual_observation_period / SECURE_NETWORK_BEACON_INTERVAL_MIN_MS;
+
+    // Beacon Interval = Observation Period * (Observed Number of Beacons + 1) / Expected Number of Beacons
+    uint32_t new_beacon_interval  =  actual_observation_period * (subnet->beacon_observation_counter + 1) / expected_number_of_beacons;
+
+    if (new_beacon_interval > SECURE_NETWORK_BEACON_INTERVAL_MAX_MS){
+        new_beacon_interval = SECURE_NETWORK_BEACON_INTERVAL_MAX_MS;
+    }
+    else if (new_beacon_interval < SECURE_NETWORK_BEACON_INTERVAL_MIN_MS){
+        new_beacon_interval = SECURE_NETWORK_BEACON_INTERVAL_MAX_MS;
+    }
+    subnet->beacon_interval_ms = new_beacon_interval;
+    log_info("New beacon interval %u seconds", (int) (subnet->beacon_interval_ms / 1000));
+}
+
 static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts){
     UNUSED(ts);
 
@@ -142,7 +166,8 @@ static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts){
         mesh_network_key_t * subnet = mesh_network_key_iterator_get_next(&it);
         switch (subnet->beacon_state){
             case MESH_SECURE_NETWORK_BEACON_W4_INTERVAL:
-                // TODO: calculate beacon interval
+                // update beacon interval
+                mesh_secure_network_beacon_update_interval(subnet);
 
                 // send new beacon
                 subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_W2_AUTH_VALUE;
