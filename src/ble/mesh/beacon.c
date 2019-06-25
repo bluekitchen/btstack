@@ -41,6 +41,7 @@
 
 #include "ble/mesh/beacon.h"
 #include "ble/mesh/adv_bearer.h"
+#include "ble/mesh/gatt_bearer.h"
 #include "ble/core.h"
 #include "bluetooth.h"
 #include "bluetooth_data_types.h"
@@ -61,6 +62,9 @@
 #define SECURE_NETWORK_BEACON_INTERVAL_MAX_MS 600000
 #define SECURE_NETWORK_BEACON_LEN                 22
 
+// prototypes
+static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts);
+
 // beacon
 static uint8_t mesh_beacon_data[29];
 static uint8_t mesh_beacon_len;
@@ -70,6 +74,7 @@ static btstack_timer_source_t   beacon_timer;
 static const uint8_t * beacon_device_uuid;
 static       uint16_t  beacon_oob_information;
 static       uint32_t  beacon_uri_hash;
+static int             beacon_send_device_beacon;
 
 static btstack_packet_handler_t unprovisioned_device_beacon_handler;
 
@@ -93,6 +98,7 @@ static void beacon_timer_handler(btstack_timer_source_t * ts){
     big_endian_store_32(mesh_beacon_data, 19, beacon_uri_hash);
 
     // request to send
+    beacon_send_device_beacon = 1;
     adv_bearer_request_can_send_now_for_mesh_beacon();
 }
 
@@ -106,8 +112,9 @@ static void mesh_secure_network_beacon_auth_value_calculated(void * arg){
     printf("- ");
     printf_hexdump(mesh_beacon_data, mesh_beacon_len);
 
-    mesh_network_key->beacon_state = MESH_SECURE_NETWORK_BEACON_W2_SEND_ADV;
-    adv_bearer_request_can_send_now_for_mesh_beacon();
+    mesh_network_key->beacon_state = MESH_SECURE_NETWORK_BEACON_AUTH_VALUE;
+
+    mesh_secure_network_beacon_run(NULL);
 }
 
 static uint8_t mesh_secure_network_beacon_get_flags(mesh_network_key_t * mesh_network_key){
@@ -184,7 +191,26 @@ static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts){
                 mesh_secure_network_beacon_setup(subnet);
                 break;
 
-            case MESH_SECURE_NETWORK_BEACON_SENT:
+            case MESH_SECURE_NETWORK_BEACON_AUTH_VALUE:
+
+#ifdef ENABLE_MESH_ADV_BEARER
+                subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_W2_SEND_ADV;
+                adv_bearer_request_can_send_now_for_mesh_beacon();
+                break;
+#endif
+
+                /** Explict Fall-through */
+
+            case MESH_SECURE_NETWORK_BEACON_ADV_SENT:
+
+#ifdef ENABLE_MESH_GATT_BEARER
+                subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_W2_SEND_GATT;
+                gatt_bearer_request_can_send_now_for_mesh_beacon();
+#endif 
+
+                /** Explict Fall-through */
+
+            case MESH_SECURE_NETWORK_BEACON_GATT_SENT:
                 // now, start listening for beacons
                 subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_W4_INTERVAL;
                 // and request timeout
@@ -255,35 +281,49 @@ static void beacon_handle_secure_beacon(uint8_t * packet, uint16_t size){
         &mesh_secure_network_beacon_validate_buffer[1], mesh_secure_network_beacon_auth_value, &beacon_handle_secure_beacon_auth_value_calculated, subnet);
 }                    
 
-static void beacon_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void beacon_handle_beacon_packet(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    log_info("beacon type %u", packet[0]);
+    switch (packet[0]){
+        case BEACON_TYPE_UNPROVISIONED_DEVICE:
+            if (unprovisioned_device_beacon_handler){
+                (*unprovisioned_device_beacon_handler)(packet_type, channel, packet, size);
+            }
+            break;
+        case BEACON_TYPE_SECURE_NETWORK:
+            beacon_handle_secure_beacon(packet, size);
+            break;
+        default:
+            break;
+    }
+}
+
+static void beacon_adv_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     mesh_network_key_iterator_t it;
-    int secure_beacon_run = 0;
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch(packet[0]){
                 case HCI_EVENT_MESH_META:
                     switch(packet[2]){
                         case MESH_SUBEVENT_CAN_SEND_NOW:
-                            adv_bearer_send_mesh_beacon(mesh_beacon_data, mesh_beacon_len);
-                            mesh_secure_network_beacon_active = 0;
-
+                            if (beacon_send_device_beacon){
+                                beacon_send_device_beacon = 0;
+                                adv_bearer_send_mesh_beacon(mesh_beacon_data, mesh_beacon_len);
+                                break;
+                            }
                             // secure beacon state machine
                             mesh_network_key_iterator_init(&it);
                             while (mesh_network_key_iterator_has_more(&it)){
                                 mesh_network_key_t * subnet = mesh_network_key_iterator_get_next(&it);
                                 switch (subnet->beacon_state){
                                     case MESH_SECURE_NETWORK_BEACON_W2_SEND_ADV:
-                                        // send 
-                                        subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_SENT;
-                                        secure_beacon_run = 1;
+                                        adv_bearer_send_mesh_beacon(mesh_beacon_data, mesh_beacon_len);
+                                        subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_ADV_SENT;
+                                        mesh_secure_network_beacon_run(NULL);
                                         break;
                                     default:
                                         break;
                                 }
                             }
-
-                            if (!secure_beacon_run) break;
-                            mesh_secure_network_beacon_run(NULL);
                             break;
                         default:
                             break;
@@ -294,27 +334,60 @@ static void beacon_packet_handler (uint8_t packet_type, uint16_t channel, uint8_
             }
             break;
         case MESH_BEACON_PACKET:
-            log_info("beacon type %u", packet[0]);
-            switch (packet[0]){
-                case BEACON_TYPE_UNPROVISIONED_DEVICE:
-                    if (unprovisioned_device_beacon_handler){
-                        (*unprovisioned_device_beacon_handler)(packet_type, channel, packet, size);
-                    }
-                    break;
-                case BEACON_TYPE_SECURE_NETWORK:
-                    beacon_handle_secure_beacon(packet, size);
-                    break;
-                default:
-                    break;
-            }
+            beacon_handle_beacon_packet(packet_type, channel, packet, size);
             break;
         default:
             break;
     }
 }
 
+#ifdef ENABLE_MESH_GATT_BEARER
+static void beacon_gatt_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    mesh_network_key_iterator_t it;
+    int secure_beacon_run = 0;
+    switch (packet_type){
+        case HCI_EVENT_PACKET:
+            switch(packet[0]){
+                case HCI_EVENT_MESH_META:
+                    switch(packet[2]){
+                        case MESH_SUBEVENT_CAN_SEND_NOW:
+                            // secure beacon state machine
+                            mesh_network_key_iterator_init(&it);
+                            while (mesh_network_key_iterator_has_more(&it)){
+                                mesh_network_key_t * subnet = mesh_network_key_iterator_get_next(&it);
+                                switch (subnet->beacon_state){
+                                    case MESH_SECURE_NETWORK_BEACON_W2_SEND_GATT:
+                                        gatt_bearer_send_mesh_beacon(mesh_beacon_data, mesh_beacon_len);
+                                        subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_GATT_SENT;
+                                        mesh_secure_network_beacon_run(NULL);
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case MESH_BEACON_PACKET:
+            beacon_handle_beacon_packet(packet_type, channel, packet, size);
+            break;
+        default:
+            break;
+    }
+}
+#endif
+
 void beacon_init(void){
-    adv_bearer_register_for_mesh_beacon(&beacon_packet_handler);
+    adv_bearer_register_for_mesh_beacon(&beacon_adv_packet_handler);
+#ifdef ENABLE_MESH_GATT_BEARER    
+    gatt_bearer_register_for_mesh_beacon(&beacon_gatt_packet_handler);
+#endif
 }
 
 /**
