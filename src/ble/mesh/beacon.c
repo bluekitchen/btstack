@@ -51,13 +51,14 @@
 #include "gap.h"
 #include "mesh_keys.h"
 
-#define UNPROVISIONED_BEACON_INTERVAL_MS 5000
-
 #define BEACON_TYPE_UNPROVISIONED_DEVICE 0
 #define BEACON_TYPE_SECURE_NETWORK 1
 
-#define SECURE_BEACON_INTERVAL_MIN_MS 10000
+#define UNPROVISIONED_BEACON_INTERVAL_MS 5000
+#define UNPROVISIONED_BEACON_LEN      23
 
+#define SECURE_NETWORK_BEACON_INTERVAL_MIN_MS 10000
+#define SECURE_NETWORK_BEACON_LEN             22
 
 // beacon
 static uint8_t mesh_beacon_data[29];
@@ -76,6 +77,7 @@ static btstack_crypto_aes128_cmac_t        mesh_secure_network_beacon_cmac_reque
 static uint8_t                             mesh_secure_network_beacon_auth_value[16];
 static btstack_packet_handler_t            mesh_secure_network_beacon_handler;
 static int                                 mesh_secure_network_beacon_active;
+static uint8_t                             mesh_secure_network_beacon_validate_buffer[SECURE_NETWORK_BEACON_LEN];
 
 static void beacon_timer_handler(btstack_timer_source_t * ts){
     // restart timer
@@ -83,7 +85,7 @@ static void beacon_timer_handler(btstack_timer_source_t * ts){
     btstack_run_loop_add_timer(ts);
 
     // setup beacon
-    mesh_beacon_len = 23;
+    mesh_beacon_len = UNPROVISIONED_BEACON_LEN;
     mesh_beacon_data[0] = BEACON_TYPE_UNPROVISIONED_DEVICE;
     memcpy(&mesh_beacon_data[1], beacon_device_uuid, 16);
     big_endian_store_16(mesh_beacon_data, 17, beacon_oob_information);
@@ -97,29 +99,31 @@ static void mesh_secure_network_beacon_auth_value_calculated(void * arg){
     mesh_network_key_t * mesh_network_key = (mesh_network_key_t *) arg;
 
     memcpy(&mesh_beacon_data[14], mesh_secure_network_beacon_auth_value, 8);
-    mesh_beacon_len = 22;
+    mesh_beacon_len = SECURE_NETWORK_BEACON_LEN;
 
     printf("Secure Network Beacon\n");
     printf("- ");
-    printf_hexdump(mesh_beacon_data, sizeof(mesh_beacon_len));
+    printf_hexdump(mesh_beacon_data, mesh_beacon_len);
 
     mesh_network_key->beacon_state = MESH_SECURE_NETWORK_BEACON_W2_SEND_ADV;
     adv_bearer_request_can_send_now_for_mesh_beacon();
 }
 
-static void mesh_secure_network_beacon_setup(mesh_network_key_t * mesh_network_key){
-    mesh_network_key->beacon_state  = MESH_SECURE_NETWORK_BEACON_W4_AUTH_VALUE;
-
-    // calculate mesh flags
+static uint8_t mesh_secure_network_beacon_get_flags(mesh_network_key_t * mesh_network_key){
     uint8_t mesh_flags = 0;
     if (mesh_network_key->key_refresh != MESH_KEY_REFRESH_NOT_ACTIVE){
         mesh_flags |= 1;
     }
 
     // TODO: set bit 1 if IV Update is active
+    return mesh_flags;    
+}
+
+static void mesh_secure_network_beacon_setup(mesh_network_key_t * mesh_network_key){
+    mesh_network_key->beacon_state  = MESH_SECURE_NETWORK_BEACON_W4_AUTH_VALUE;
 
     mesh_beacon_data[0] = BEACON_TYPE_SECURE_NETWORK;
-    mesh_beacon_data[1] = mesh_flags;
+    mesh_beacon_data[1] = mesh_secure_network_beacon_get_flags(mesh_network_key);
     memcpy(&mesh_beacon_data[2], mesh_network_key->network_id, 8);
     big_endian_store_32(mesh_beacon_data, 10, mesh_get_iv_index());
     btstack_crypto_aes128_cmac_message(&mesh_secure_network_beacon_cmac_request, mesh_network_key->beacon_key, 13,
@@ -176,6 +180,56 @@ static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts){
     btstack_run_loop_add_timer(&beacon_timer);
 }
 
+static void beacon_handle_secure_beacon_auth_value_calculated(void * arg){
+    UNUSED(arg);
+
+    // pass on, if auth value checks out
+    if (memcmp(&mesh_secure_network_beacon_validate_buffer[14], mesh_secure_network_beacon_auth_value, 8) == 0) {
+        if (mesh_secure_network_beacon_handler){
+            (*mesh_secure_network_beacon_handler)(MESH_BEACON_PACKET, 0, mesh_secure_network_beacon_validate_buffer, SECURE_NETWORK_BEACON_LEN);
+        }
+    }
+
+    // done
+    mesh_secure_network_beacon_active = 0;
+    mesh_secure_network_beacon_run(NULL);
+}
+
+static void beacon_handle_secure_beacon(uint8_t * packet, uint16_t size){
+    if (size != SECURE_NETWORK_BEACON_LEN) return;
+    
+    // lookup subnet by network id
+    uint8_t * beacon_network_id = &packet[2];
+    mesh_network_key_iterator_t it;
+    mesh_network_key_iterator_init(&it);
+    mesh_network_key_t * subnet = NULL;
+    while (mesh_network_key_iterator_has_more(&it)){
+        mesh_network_key_t * item = mesh_network_key_iterator_get_next(&it);
+        if (memcmp(item->network_id, beacon_network_id, 8) != 0 ) continue;
+        subnet = item;
+        break;
+    }
+    if (subnet == NULL) return;
+
+    // count beacon
+    subnet->beacon_observation_counter++;
+
+    // check if new flags are set
+    uint8_t current_flags = mesh_secure_network_beacon_get_flags(subnet);
+    uint8_t new_flags = packet[1] & (~current_flags);
+
+    if (new_flags == 0) return;
+
+    // validate beacon - if crytpo ready
+    if (mesh_secure_network_beacon_active) return;
+
+    mesh_secure_network_beacon_active = 1;
+    memcpy(mesh_secure_network_beacon_validate_buffer, &packet[0], SECURE_NETWORK_BEACON_LEN);
+
+    btstack_crypto_aes128_cmac_message(&mesh_secure_network_beacon_cmac_request, subnet->beacon_key, 13,
+        &mesh_secure_network_beacon_validate_buffer[1], mesh_secure_network_beacon_auth_value, &beacon_handle_secure_beacon_auth_value_calculated, subnet);
+}                    
+
 static void beacon_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     mesh_network_key_iterator_t it;
     int secure_beacon_run = 0;
@@ -223,9 +277,7 @@ static void beacon_packet_handler (uint8_t packet_type, uint16_t channel, uint8_
                     }
                     break;
                 case BEACON_TYPE_SECURE_NETWORK:
-                    if (mesh_secure_network_beacon_handler){
-                        (*mesh_secure_network_beacon_handler)(packet_type, channel, packet, size);
-                    }
+                    beacon_handle_secure_beacon(packet, size);
                     break;
                 default:
                     break;
@@ -263,7 +315,7 @@ void beacon_unprovisioned_device_stop(void){
 
 void beacon_secure_network_start(mesh_network_key_t * mesh_network_key){
     // default interval
-    mesh_network_key->beacon_interval_ms = SECURE_BEACON_INTERVAL_MIN_MS;
+    mesh_network_key->beacon_interval_ms = SECURE_NETWORK_BEACON_INTERVAL_MIN_MS;
     mesh_network_key->beacon_state = MESH_SECURE_NETWORK_BEACON_W2_AUTH_VALUE;
     mesh_network_key->beacon_observation_start_ms = btstack_run_loop_get_time_ms();
     mesh_network_key->beacon_observation_counter = 0;
