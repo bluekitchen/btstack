@@ -41,10 +41,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ble/mesh/beacon.h"
-#include "mesh_transport.h"
+#include "ble/mesh/mesh_lower_transport.h"
+#include "ble/mesh/mesh_upper_transport.h"
 #include "btstack_util.h"
 #include "btstack_memory.h"
-#include "ble/mesh/mesh_lower_transport.h"
 #include "mesh_peer.h"
 #include "mesh_keys.h"
 #include "mesh_virtual_addresses.h"

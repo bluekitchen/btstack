@@ -5,7 +5,7 @@
 #include "btstack_memory.h"
 #include "btstack_util.h"
 #include "ble/mesh/beacon.h"
-#include "ble/mesh/mesh_transport.h"
+#include "ble/mesh/mesh_upper_transport.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>

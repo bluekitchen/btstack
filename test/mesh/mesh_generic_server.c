@@ -43,7 +43,7 @@
 #include "btstack_util.h"
 #include "mesh_generic_model.h"
 #include "ble/mesh/mesh_network.h"
-#include "ble/mesh/mesh_transport.h"
+#include "ble/mesh/mesh_upper_transport.h"
 #include "mesh_keys.h"
 #include "mesh_access.h"
 #include "mesh_foundation.h"

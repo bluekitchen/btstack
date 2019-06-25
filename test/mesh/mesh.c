@@ -46,7 +46,7 @@
 #include "ble/mesh/beacon.h"
 #include "ble/mesh/mesh_crypto.h"
 #include "ble/mesh/mesh_lower_transport.h"
-#include "ble/mesh/mesh_transport.h"
+#include "ble/mesh/mesh_upper_transport.h"
 #include "ble/mesh/pb_adv.h"
 #include "ble/mesh/pb_gatt.h"
 #include "ble/gatt-service/mesh_provisioning_service_server.h"
