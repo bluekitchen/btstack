@@ -198,8 +198,6 @@ static void mesh_generic_on_off_status_message(mesh_model_t *generic_on_off_serv
     }
     // setup message
     mesh_transport_pdu_t * transport_pdu = NULL; 
-
-
     if (state->transition_data.base_transition.remaining_transition_time_ms != 0) {
         transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_on_off_status_transition, state->transition_data.current_value, 
             state->transition_data.target_value, state->transition_data.base_transition.remaining_transition_time_ms);
@@ -238,7 +236,6 @@ static void generic_on_off_handle_set_message(mesh_model_t *mesh_model, mesh_pdu
     uint8_t delay_time_gdtt = 0;
             
     mesh_transition_t * base_transition = generic_on_off_server_get_base_transition(mesh_model);
-    
     switch (mesh_access_transitions_transaction_status(base_transition, tid, mesh_pdu_src(pdu), mesh_pdu_dst(pdu))){
         case MESH_TRANSACTION_STATUS_RETRANSMISSION:
             // ignore on retransmission

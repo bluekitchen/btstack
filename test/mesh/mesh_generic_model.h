@@ -57,6 +57,17 @@ extern "C"
 #define MESH_GENERIC_MOVE_SET                       0x820Bu
 #define MESH_GENERIC_MOVE_SET_UNACKNOWLEDGED        0x820Cu
 
+typedef struct {
+    mesh_transition_t base_transition;
+
+    uint8_t  current_value;
+    uint8_t  target_value;
+} mesh_transition_bool_t;
+
+typedef struct {
+    mesh_transition_bool_t transition_data;          
+} mesh_generic_on_off_state_t;
+
 #ifdef __cplusplus
 } /* end of extern "C" */
 #endif

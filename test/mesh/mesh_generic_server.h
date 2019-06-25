@@ -46,17 +46,6 @@ extern "C"
 {
 #endif
 
-typedef struct {
-    mesh_transition_t base_transition;
-
-    uint8_t  current_value;
-    uint8_t  target_value;
-} mesh_transition_bool_t;
-
-typedef struct {
-    mesh_transition_bool_t transition_data;          
-} mesh_generic_on_off_state_t;
-
 const mesh_operation_t * mesh_generic_on_off_server_get_operations(void);
 /**
  * @brief Register packet handler
