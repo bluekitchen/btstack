@@ -107,6 +107,7 @@ static void mesh_proxy_node_id_handle_get_aes128(void * arg){
     memcpy(connectable_advertisement_with_node_id.adv_data, adv_data_with_node_identity_template, 12);
     memcpy(&connectable_advertisement_with_node_id.adv_data[12], &mesh_proxy_node_id_hash[8], 8);
     memcpy(&connectable_advertisement_with_node_id.adv_data[20], mesh_proxy_node_id_random_value, 8);
+    connectable_advertisement_with_node_id.adv_length = 28;
     
     // setup advertisements
     adv_bearer_advertisements_add_item(&connectable_advertisement_with_node_id);
