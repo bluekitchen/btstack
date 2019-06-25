@@ -63,9 +63,11 @@ static uint16_t mid_counter;
 static const btstack_tlv_t * btstack_tlv_singleton_impl;
 static void *                btstack_tlv_singleton_context;
 
+// Transitions
 static btstack_linked_list_t  transitions;
 static btstack_timer_source_t transitions_timer;
 static int transition_step_min_ms;
+static uint8_t mesh_transaction_id_counter = 0;
 
 static void mesh_access_setup_tlv(void){
     if (btstack_tlv_singleton_impl) return;
@@ -138,12 +140,12 @@ mesh_transaction_status_t mesh_access_transitions_transaction_status(mesh_transi
     return MESH_TRANSACTION_STATUS_NEW;
 }
 
-uint8_t mesh_access_transitions_num_steps_from_gdtt(uint8_t transition_time_gdtt){
-    return transition_time_gdtt >> 2;
+uint8_t mesh_access_transitions_num_steps_from_gdtt(uint8_t time_gdtt){
+    return time_gdtt >> 2;
 }
 
-static uint32_t mesh_access_transitions_step_ms_from_gdtt(uint8_t transition_time_gdtt){
-    mesh_default_transition_step_resolution_t step_resolution = (mesh_default_transition_step_resolution_t) (transition_time_gdtt & 0x03u);
+static uint32_t mesh_access_transitions_step_ms_from_gdtt(uint8_t time_gdtt){
+    mesh_default_transition_step_resolution_t step_resolution = (mesh_default_transition_step_resolution_t) (time_gdtt & 0x03u);
     switch (step_resolution){
         case MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_100ms:
             return 100;
@@ -155,8 +157,14 @@ static uint32_t mesh_access_transitions_step_ms_from_gdtt(uint8_t transition_tim
             return 600000;
         default:
             return 0;
-
     }
+}
+
+uint32_t mesh_access_time_gdtt2ms(uint8_t time_gdtt){
+    uint8_t num_steps  = mesh_access_transitions_num_steps_from_gdtt(time_gdtt);
+    if (num_steps > 0x3E) return 0;
+
+    return mesh_access_transitions_step_ms_from_gdtt(time_gdtt) * num_steps;
 }
 
 static void mesh_access_transitions_timeout_handler(btstack_timer_source_t * timer){
@@ -237,8 +245,15 @@ void mesh_access_transitions_remove(mesh_transition_t * transition){
     }
 }
 
-// Mesh Node Element functions
+uint8_t mesh_access_transactions_get_next_transaction_id(void){
+    mesh_transaction_id_counter++;
+    if (mesh_transaction_id_counter == 0){
+        mesh_transaction_id_counter = 1;
+    }
+    return mesh_transaction_id_counter;
+}   
 
+// Mesh Node Element functions
 mesh_element_t * mesh_primary_element(void){
     return &primary_element;
 }

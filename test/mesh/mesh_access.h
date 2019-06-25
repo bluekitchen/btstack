@@ -261,7 +261,8 @@ mesh_model_t * mesh_model_get_configuration_server(void);
 
 mesh_model_t * mesh_access_model_for_address_and_model_identifier(uint16_t element_address, uint32_t model_identifier, uint8_t * status);
 
-uint8_t mesh_access_transitions_num_steps_from_gdtt(uint8_t transition_time_gdtt);
+uint8_t mesh_access_transitions_num_steps_from_gdtt(uint8_t time_gdtt);
+uint32_t mesh_access_time_gdtt2ms(uint8_t time_gdtt);
 
 void mesh_access_emit_state_update_bool(btstack_packet_handler_t * event_handler, uint8_t element_index, uint32_t model_identifier, 
     model_state_id_t state_identifier, model_state_update_reason_t reason, uint8_t value);
@@ -279,6 +280,7 @@ void mesh_access_transitions_setup(mesh_transition_t * transition, mesh_model_t 
 
 void mesh_access_transitions_add(mesh_transition_t * transition);
 void mesh_access_transitions_remove(mesh_transition_t * transition);
+uint8_t mesh_access_transactions_get_next_transaction_id(void);
 
 // Mesh PDU Getter
 uint16_t mesh_pdu_src(mesh_pdu_t * pdu);
