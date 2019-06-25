@@ -360,6 +360,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 
 #if defined(ENABLE_MESH_ADV_BEARER) || defined(ENABLE_MESH_PB_ADV)
 
+                    // start sending Secure Network Beacon
+                    mesh_network_key_t * network_key = mesh_network_key_list_get(0);
+                    if (network_key){
+                        beacon_secure_network_start(network_key);
+                    }
+
                     // setup scanning
                     gap_set_scan_parameters(0, 0x300, 0x300);
                     gap_start_scan();
@@ -447,6 +453,10 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
 
                     // start advertising with node id after provisioning
                     mesh_proxy_set_advertising_with_node_id(network_key->netkey_index, MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING);
+
+                    // start sending Secure Network Beacons
+                    beacon_secure_network_start(network_key);
+
                     break;
                 default:
                     break;
@@ -841,7 +851,6 @@ static void mesh_proxy_packet_handler_network_pdu(uint8_t packet_type, uint16_t 
                             break;
                         case MESH_SUBEVENT_PROXY_CONNECTED:
                             printf("mesh: MESH_PROXY_CONNECTED\n");
-                            printf("TODO: send Secure Network Beacon\n");
                             break;
                         default:
                             break;
