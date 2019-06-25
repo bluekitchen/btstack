@@ -78,16 +78,6 @@ uint8_t mesh_upper_transport_setup_access_pdu(mesh_pdu_t * pdu, uint16_t netkey_
 
 void mesh_upper_transport_send_access_pdu(mesh_pdu_t * pdu);
 
-//
-// Virtual Address Management
-// 
-
-// test
-void mesh_lower_transport_received_message(mesh_network_callback_type_t callback_type, mesh_network_pdu_t *network_pdu);
-void mesh_lower_transport_dump(void);
-void mesh_lower_transport_reset(void);
-void mesh_seq_auth_reset(void);
-
 // allocator
 mesh_transport_pdu_t * mesh_transport_pdu_get(void);
 void mesh_transport_pdu_free(mesh_transport_pdu_t * transport_pdu);

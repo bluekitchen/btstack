@@ -57,6 +57,7 @@
 #include "mesh_generic_server.h"
 #include "mesh_access.h"
 #include "mesh_virtual_addresses.h"
+#include "mesh_peer.h"
 #include "mesh_proxy.h"
 #include "mesh.h"
 #include "btstack.h"
