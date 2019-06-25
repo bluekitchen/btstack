@@ -59,6 +59,7 @@
 #include "mesh_virtual_addresses.h"
 #include "mesh_peer.h"
 #include "mesh_proxy.h"
+#include "mesh_generic_model.h"
 #include "mesh.h"
 #include "btstack.h"
 #include "btstack_tlv.h"
