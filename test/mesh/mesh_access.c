@@ -40,10 +40,10 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include "ble/mesh/mesh_transport.h"
 #include "mesh_access.h"
 #include "btstack_memory.h"
 #include "btstack_debug.h"
-#include "mesh_transport.h"
 #include "mesh_foundation.h"
 #include "btstack_tlv.h"
 

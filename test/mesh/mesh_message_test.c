@@ -10,7 +10,7 @@
 #include "ble/mesh/mesh_crypto.h"
 #include "ble/mesh/mesh_network.h"
 #include "ble/mesh/mesh_lower_transport.h"
-#include "mesh_transport.h"
+#include "ble/mesh/mesh_transport.h"
 #include "btstack_util.h"
 #include "provisioning.h"
 #include "btstack_memory.h"
