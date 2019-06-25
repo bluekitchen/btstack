@@ -68,7 +68,7 @@ static uint8_t                                          mesh_proxy_node_id_rando
 static uint16_t primary_element_address;
 
 // Mesh Proxy, advertise with node id
-static adv_bearer_connectable_advertisement_data_item_t connectable_advertisement_item;
+static adv_bearer_connectable_advertisement_data_item_t connectable_advertisement_with_node_id;
 
 static const uint8_t adv_data_with_node_identity_template[] = {
     // Flags general discoverable, BR/EDR not supported
@@ -84,12 +84,12 @@ static const uint8_t adv_data_with_node_identity_template[] = {
 };
 
 static void mesh_proxy_stop_all_advertising_with_node_id(void){
+    adv_bearer_advertisements_remove_item(&connectable_advertisement_with_node_id);
     mesh_network_key_iterator_t it;
     mesh_network_key_iterator_init(&it);
     while (mesh_network_key_iterator_has_more(&it)){
         mesh_network_key_t * network_key = mesh_network_key_iterator_get_next(&it);
         if (network_key->node_id_advertisement_running != 0){
-            adv_bearer_advertisements_remove_item(&network_key->advertisement_with_network_id);
             btstack_run_loop_remove_timer(&mesh_proxy_node_id_timer);
             network_key->node_id_advertisement_running = 0;
         }
@@ -104,12 +104,12 @@ static void mesh_proxy_node_id_timeout_handler(btstack_timer_source_t * ts){
 static void mesh_proxy_node_id_handle_get_aes128(void * arg){
     mesh_network_key_t * network_key = (mesh_network_key_t *) arg;
 
-    memcpy(connectable_advertisement_item.adv_data, adv_data_with_node_identity_template, 12);
-    memcpy(&connectable_advertisement_item.adv_data[12], &mesh_proxy_node_id_hash[8], 8);
-    memcpy(&connectable_advertisement_item.adv_data[20], mesh_proxy_node_id_random_value, 8);
+    memcpy(connectable_advertisement_with_node_id.adv_data, adv_data_with_node_identity_template, 12);
+    memcpy(&connectable_advertisement_with_node_id.adv_data[12], &mesh_proxy_node_id_hash[8], 8);
+    memcpy(&connectable_advertisement_with_node_id.adv_data[20], mesh_proxy_node_id_random_value, 8);
     
     // setup advertisements
-    adv_bearer_advertisements_add_item(&connectable_advertisement_item);
+    adv_bearer_advertisements_add_item(&connectable_advertisement_with_node_id);
     adv_bearer_advertisements_enable(1);
 
     // set timer
