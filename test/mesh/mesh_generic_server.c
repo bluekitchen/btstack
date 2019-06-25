@@ -180,11 +180,11 @@ void mesh_generic_on_off_server_register_packet_handler(mesh_model_t *generic_on
 }
 
 const mesh_access_message_t mesh_generic_on_off_status_transition = {
-        MESH_GENERIC_ON_OFF_STATUS, "111"
+        MESH_GENERIC_ON_OFF_SET, "111"
 };
 
 const mesh_access_message_t mesh_generic_on_off_status_instantaneous = {
-        MESH_GENERIC_ON_OFF_STATUS, "1"
+        MESH_GENERIC_ON_OFF_SET, "1"
 };
 
 static void mesh_generic_on_off_status_message(mesh_model_t *generic_on_off_server_model, uint16_t netkey_index, uint16_t dest, uint16_t appkey_index){
