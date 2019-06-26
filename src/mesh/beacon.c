@@ -137,8 +137,6 @@ static uint8_t mesh_secure_network_beacon_get_flags(mesh_network_key_t * mesh_ne
 }
 
 static void mesh_secure_network_beacon_setup(mesh_network_key_t * mesh_network_key){
-    mesh_network_key->beacon_state  = MESH_SECURE_NETWORK_BEACON_W4_AUTH_VALUE;
-
     mesh_beacon_data[0] = BEACON_TYPE_SECURE_NETWORK;
     mesh_beacon_data[1] = mesh_secure_network_beacon_get_flags(mesh_network_key);
     memcpy(&mesh_beacon_data[2], mesh_network_key->network_id, 8);
@@ -196,6 +194,7 @@ static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts){
                     next_timeout_ms = 10;
                     break;
                 }
+                mesh_network_key->beacon_state  = MESH_SECURE_NETWORK_BEACON_W4_AUTH_VALUE;
                 mesh_secure_network_beacon_active = 1;
                 mesh_secure_network_beacon_setup(subnet);
                 break;
@@ -213,8 +212,11 @@ static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts){
             case MESH_SECURE_NETWORK_BEACON_ADV_SENT:
 
 #ifdef ENABLE_MESH_GATT_BEARER
-                subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_W2_SEND_GATT;
-                gatt_bearer_request_can_send_now_for_mesh_beacon();
+                if (gatt_bearer_con_handle != HCI_CON_HANDLE_INVALID){
+                    subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_W2_SEND_GATT;
+                    gatt_bearer_request_can_send_now_for_mesh_beacon();
+                    break;
+                }
 #endif 
 
                 /** Explict Fall-through */
@@ -227,6 +229,7 @@ static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts){
                     next_timeout_ms = subnet->beacon_interval_ms;
                 }
                 break;
+                
             default:
                 break;
         }
