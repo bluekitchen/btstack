@@ -194,7 +194,7 @@ static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts){
                     next_timeout_ms = 10;
                     break;
                 }
-                mesh_network_key->beacon_state  = MESH_SECURE_NETWORK_BEACON_W4_AUTH_VALUE;
+                subnet->beacon_state  = MESH_SECURE_NETWORK_BEACON_W4_AUTH_VALUE;
                 mesh_secure_network_beacon_active = 1;
                 mesh_secure_network_beacon_setup(subnet);
                 break;
@@ -229,7 +229,7 @@ static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts){
                     next_timeout_ms = subnet->beacon_interval_ms;
                 }
                 break;
-                
+
             default:
                 break;
         }
@@ -356,34 +356,45 @@ static void beacon_adv_packet_handler (uint8_t packet_type, uint16_t channel, ui
 #endif
 
 #ifdef ENABLE_MESH_GATT_BEARER
-static void beacon_gatt_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+// handle MESH_SUBEVENT_PROXY_DISCONNECTED and MESH_SUBEVENT_CAN_SEND_NOW
+static void beacon_gatt_handle_mesh_event(uint8_t mesh_subevent){
     mesh_network_key_iterator_t it;
+    mesh_network_key_iterator_init(&it);
+    while (mesh_network_key_iterator_has_more(&it)){
+        mesh_network_key_t * subnet = mesh_network_key_iterator_get_next(&it);
+        switch (subnet->beacon_state){
+            case MESH_SECURE_NETWORK_BEACON_W2_SEND_GATT:
+                // skip send on MESH_SUBEVENT_PROXY_DISCONNECTED 
+                if (mesh_subevent == MESH_SUBEVENT_CAN_SEND_NOW){
+                    gatt_bearer_send_mesh_beacon(mesh_beacon_data, mesh_beacon_len);
+                }
+                subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_GATT_SENT;
+                mesh_secure_network_beacon_run(NULL);
+                break;
+            default:
+                break;
+        }
+    }
+
+}
+
+static void beacon_gatt_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    uint8_t mesh_subevent;
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch(packet[0]){
                 case HCI_EVENT_MESH_META:
-                    switch(packet[2]){
+                    mesh_subevent = packet[2];
+                    switch(mesh_subevent){
                         case MESH_SUBEVENT_PROXY_CONNECTED:
                             gatt_bearer_con_handle = mesh_subevent_proxy_connected_get_con_handle(packet);
                             break;
                         case MESH_SUBEVENT_PROXY_DISCONNECTED:
                             gatt_bearer_con_handle = HCI_CON_HANDLE_INVALID;
+                            beacon_gatt_handle_mesh_event(mesh_subevent);
                             break;
                         case MESH_SUBEVENT_CAN_SEND_NOW:
-                            // secure beacon state machine
-                            mesh_network_key_iterator_init(&it);
-                            while (mesh_network_key_iterator_has_more(&it)){
-                                mesh_network_key_t * subnet = mesh_network_key_iterator_get_next(&it);
-                                switch (subnet->beacon_state){
-                                    case MESH_SECURE_NETWORK_BEACON_W2_SEND_GATT:
-                                        gatt_bearer_send_mesh_beacon(mesh_beacon_data, mesh_beacon_len);
-                                        subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_GATT_SENT;
-                                        mesh_secure_network_beacon_run(NULL);
-                                        break;
-                                    default:
-                                        break;
-                                }
-                            }
+                            beacon_gatt_handle_mesh_event(mesh_subevent);
                             break;
                         default:
                             break;
