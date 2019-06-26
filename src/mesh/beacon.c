@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "adv_bearer.c"
+#define __BTSTACK_FILE__ "beacon.c"
 
 #include <string.h>
 
@@ -65,16 +65,23 @@
 // prototypes
 static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts);
 
+// bearers
+#ifdef ENABLE_MESH_GATT_BEARER
+static hci_con_handle_t gatt_bearer_con_handle;
+#endif
+
 // beacon
 static uint8_t mesh_beacon_data[29];
 static uint8_t mesh_beacon_len;
 static btstack_timer_source_t   beacon_timer;
 
 // unprovisioned device beacon
+#ifdef ENABLE_MESH_ADV_BEARER
 static const uint8_t * beacon_device_uuid;
 static       uint16_t  beacon_oob_information;
 static       uint32_t  beacon_uri_hash;
 static int             beacon_send_device_beacon;
+#endif
 
 static btstack_packet_handler_t unprovisioned_device_beacon_handler;
 
@@ -85,6 +92,7 @@ static btstack_packet_handler_t            mesh_secure_network_beacon_handler;
 static int                                 mesh_secure_network_beacon_active;
 static uint8_t                             mesh_secure_network_beacon_validate_buffer[SECURE_NETWORK_BEACON_LEN];
 
+#ifdef ENABLE_MESH_ADV_BEARER
 static void beacon_timer_handler(btstack_timer_source_t * ts){
     // restart timer
     btstack_run_loop_set_timer(ts, UNPROVISIONED_BEACON_INTERVAL_MS);
@@ -101,6 +109,7 @@ static void beacon_timer_handler(btstack_timer_source_t * ts){
     beacon_send_device_beacon = 1;
     adv_bearer_request_can_send_now_for_mesh_beacon();
 }
+#endif
 
 static void mesh_secure_network_beacon_auth_value_calculated(void * arg){
     mesh_network_key_t * mesh_network_key = (mesh_network_key_t *) arg;
@@ -297,6 +306,7 @@ static void beacon_handle_beacon_packet(uint8_t packet_type, uint16_t channel, u
     }
 }
 
+#ifdef ENABLE_MESH_ADV_BEARER
 static void beacon_adv_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     mesh_network_key_iterator_t it;
     switch (packet_type){
@@ -340,16 +350,22 @@ static void beacon_adv_packet_handler (uint8_t packet_type, uint16_t channel, ui
             break;
     }
 }
+#endif
 
 #ifdef ENABLE_MESH_GATT_BEARER
 static void beacon_gatt_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     mesh_network_key_iterator_t it;
-    int secure_beacon_run = 0;
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch(packet[0]){
                 case HCI_EVENT_MESH_META:
                     switch(packet[2]){
+                        case MESH_SUBEVENT_PROXY_CONNECTED:
+                            gatt_bearer_con_handle = mesh_subevent_proxy_connected_get_con_handle(packet);
+                            break;
+                        case MESH_SUBEVENT_PROXY_DISCONNECTED:
+                            gatt_bearer_con_handle = HCI_CON_HANDLE_INVALID;
+                            break;
                         case MESH_SUBEVENT_CAN_SEND_NOW:
                             // secure beacon state machine
                             mesh_network_key_iterator_init(&it);
@@ -384,8 +400,11 @@ static void beacon_gatt_packet_handler (uint8_t packet_type, uint16_t channel, u
 #endif
 
 void beacon_init(void){
+#ifdef ENABLE_MESH_ADV_BEARER
     adv_bearer_register_for_mesh_beacon(&beacon_adv_packet_handler);
+#endif
 #ifdef ENABLE_MESH_GATT_BEARER    
+    gatt_bearer_con_handle = HCI_CON_HANDLE_INVALID;
     gatt_bearer_register_for_mesh_beacon(&beacon_gatt_packet_handler);
 #endif
 }
@@ -394,19 +413,23 @@ void beacon_init(void){
  * Start Unprovisioned Device Beacon
  */
 void beacon_unprovisioned_device_start(const uint8_t * device_uuid, uint16_t oob_information){
+#ifdef ENABLE_MESH_ADV_BEARER
     beacon_oob_information = oob_information;
     if (device_uuid){
         beacon_device_uuid = device_uuid;
         beacon_timer.process = &beacon_timer_handler;
         beacon_timer_handler(&beacon_timer);
     }
+#endif
 }
 
 /**
  * Stop Unprovisioned Device Beacon
  */
 void beacon_unprovisioned_device_stop(void){
+#ifdef ENABLE_MESH_ADV_BEARER
     btstack_run_loop_remove_timer(&beacon_timer);
+#endif
 }
 
 // secure network beacons
