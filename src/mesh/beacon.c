@@ -206,18 +206,20 @@ static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts){
                 adv_bearer_request_can_send_now_for_mesh_beacon();
                 break;
 #endif
+                subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_ADV_SENT;
 
                 /** Explict Fall-through */
 
             case MESH_SECURE_NETWORK_BEACON_ADV_SENT:
 
 #ifdef ENABLE_MESH_GATT_BEARER
-                if (gatt_bearer_con_handle != HCI_CON_HANDLE_INVALID){
+                if (gatt_bearer_con_handle != HCI_CON_HANDLE_INVALID && mesh_foundation_gatt_proxy_get() != 0){
                     subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_W2_SEND_GATT;
                     gatt_bearer_request_can_send_now_for_mesh_beacon();
                     break;
                 }
 #endif 
+                subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_GATT_SENT;
 
                 /** Explict Fall-through */
 
