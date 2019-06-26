@@ -41,7 +41,7 @@
 
 #include <string.h>
 
-#include "ble/mesh/adv_bearer.h"
+#include "mesh/adv_bearer.h"
 #include "ble/core.h"
 #include "bluetooth.h"
 #include "bluetooth_data_types.h"

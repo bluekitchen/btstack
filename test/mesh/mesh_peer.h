@@ -38,7 +38,11 @@
 #ifndef __MESH_PEER_H
 #define __MESH_PEER_H
 
-#include "ble/mesh/mesh_network.h"
+#if defined __cplusplus
+extern "C" {
+#endif
+
+#include "mesh/mesh_network.h"
 
 // mesh seq auth validation
 typedef struct {
@@ -61,6 +65,10 @@ typedef struct {
 mesh_peer_t * mesh_peer_for_addr(uint16_t address);
 
 // reset seq auth == replay protection
-void mesh_seq_auth_reset();
+void mesh_seq_auth_reset(void);
+
+#if defined __cplusplus
+}
+#endif
 
 #endif //__MESH_PEER_H

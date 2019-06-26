@@ -75,7 +75,7 @@ extern "C" {
 #endif
 
 #ifdef ENABLE_MESH
-#include "ble/mesh/mesh_network.h"
+#include "mesh/mesh_network.h"
 #include "mesh_keys.h"
 #include "mesh_virtual_addresses.h"
 #endif

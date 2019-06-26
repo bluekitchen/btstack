@@ -35,7 +35,7 @@ CFLAGS  += -g -DUNIT_TEST -Wall \
 	-I$(BTSTACK_ROOT)/test/rijndael \
 
 VPATH += ${BTSTACK_ROOT}/test/rijndael
-VPATH += ${BTSTACK_ROOT}/src/ble/mesh
+VPATH += ${BTSTACK_ROOT}/src/mesh
 VPATH += ${BTSTACK_ROOT}/src/classic
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/embedded

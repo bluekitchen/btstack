@@ -41,7 +41,7 @@
 
 #include "ble/gatt-service/mesh_proxy_service_server.h"
 #include "ble/att_server.h"
-#include "ble/mesh/gatt_bearer.h"
+#include "mesh/gatt_bearer.h"
 #include "ble/core.h"
 #include "bluetooth.h"
 #include "bluetooth_data_types.h"

@@ -39,9 +39,9 @@
 
 #include <string.h>
 
-#include "ble/mesh/beacon.h"
-#include "ble/mesh/adv_bearer.h"
-#include "ble/mesh/gatt_bearer.h"
+#include "mesh/beacon.h"
+#include "mesh/adv_bearer.h"
+#include "mesh/gatt_bearer.h"
 #include "ble/core.h"
 #include "bluetooth.h"
 #include "bluetooth_data_types.h"

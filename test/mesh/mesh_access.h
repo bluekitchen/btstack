@@ -40,7 +40,7 @@
 
 #include <stdint.h>
 #include "btstack_linked_list.h"
-#include "ble/mesh/mesh_lower_transport.h"
+#include "mesh/mesh_lower_transport.h"
 #include "mesh_keys.h"
 #include "bluetooth_company_id.h"
 

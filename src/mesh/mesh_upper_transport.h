@@ -47,7 +47,7 @@ extern "C"
 
 
 #include <stdint.h>
-#include "ble/mesh/mesh_network.h"
+#include "mesh/mesh_network.h"
 
 void mesh_transport_init();
 

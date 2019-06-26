@@ -47,7 +47,7 @@ extern "C"
 
 
 #include <stdint.h>
-#include "ble/mesh/mesh_network.h"
+#include "mesh/mesh_network.h"
 
 #define MESH_TTL_MAX 0x7f
 #define MESH_FOUNDATION_STATE_NOT_SUPPORTED 2

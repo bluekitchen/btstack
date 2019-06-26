@@ -41,8 +41,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "ble/mesh/adv_bearer.h"
-#include "ble/mesh/beacon.h"
+#include "mesh/adv_bearer.h"
+#include "mesh/beacon.h"
 #include "provisioning.h"
 #include "btstack_util.h"
 #include "btstack_debug.h"

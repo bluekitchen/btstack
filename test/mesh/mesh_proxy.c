@@ -39,8 +39,8 @@
 
 #include <string.h>
 
-#include "ble/mesh/adv_bearer.h"
-#include "ble/mesh/mesh_crypto.h"
+#include "mesh/adv_bearer.h"
+#include "mesh/mesh_crypto.h"
 #include "bluetooth_company_id.h"
 #include "bluetooth_data_types.h"
 #include "bluetooth_gatt.h"

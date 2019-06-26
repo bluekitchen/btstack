@@ -47,8 +47,8 @@ extern "C"
 
 
 #include <stdint.h>
-#include "ble/mesh/mesh_network.h"
-#include "ble/mesh/adv_bearer.h"
+#include "mesh/mesh_network.h"
+#include "mesh/adv_bearer.h"
 
 
 typedef enum {

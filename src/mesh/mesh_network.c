@@ -41,9 +41,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "ble/mesh/adv_bearer.h"
-#include "ble/mesh/pb_adv.h"
-#include "ble/mesh/beacon.h"
+#include "mesh/adv_bearer.h"
+#include "mesh/pb_adv.h"
+#include "mesh/beacon.h"
 #include "provisioning.h"
 #include "provisioning_device.h"
 #include "mesh_keys.h"
@@ -51,7 +51,7 @@
 #include "btstack_memory.h"
 
 #ifdef ENABLE_MESH_GATT_BEARER
-#include "ble/mesh/gatt_bearer.h"
+#include "mesh/gatt_bearer.h"
 #endif
 
 // configuration

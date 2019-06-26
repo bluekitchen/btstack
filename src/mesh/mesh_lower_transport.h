@@ -46,7 +46,7 @@ extern "C"
 #endif
 
 #include <stdint.h>
-#include "ble/mesh/mesh_network.h"
+#include "mesh/mesh_network.h"
 
 typedef enum {
     MESH_TRANSPORT_OPCODE_ACK = 0,

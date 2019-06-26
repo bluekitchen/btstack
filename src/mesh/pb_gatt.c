@@ -42,7 +42,7 @@
 #include "btstack_util.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
-#include "ble/mesh/pb_gatt.h"
+#include "mesh/pb_gatt.h"
 #include "ble/gatt-service/mesh_provisioning_service_server.h"
 #include "provisioning.h"
 #include "ble/att_server.h"
