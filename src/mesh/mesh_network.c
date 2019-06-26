@@ -41,14 +41,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "mesh/adv_bearer.h"
-#include "mesh/pb_adv.h"
 #include "mesh/beacon.h"
 #include "provisioning.h"
 #include "provisioning_device.h"
 #include "mesh_keys.h"
 #include "btstack_util.h"
 #include "btstack_memory.h"
+
+#ifdef ENABLE_MESH_ADV_BEARER
+#include "mesh/adv_bearer.h"
+#endif
 
 #ifdef ENABLE_MESH_GATT_BEARER
 #include "mesh/gatt_bearer.h"
@@ -566,13 +568,24 @@ static void mesh_network_run(void){
     if (!btstack_linked_list_empty(&network_pdus_outgoing)){
         actual_bearer_network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing);
 
+        int send_to_next_bearer = 1;
 #ifdef ENABLE_MESH_GATT_BEARER
         // request to send via gatt
-        gatt_bearer_request_can_send_now_for_mesh_network_pdu();
-#else
-         // request to send via adv 
-        adv_bearer_request_can_send_now_for_mesh_message();
+        if (send_to_next_bearer){
+            send_to_next_bearer = 0;
+            gatt_bearer_request_can_send_now_for_mesh_network_pdu();
+        }
 #endif
+#ifdef ENABLE_MESH_ADV_BEARER        
+         // request to send via adv
+        if (send_to_next_bearer){
+            send_to_next_bearer = 0;
+            adv_bearer_request_can_send_now_for_mesh_message();
+        }
+#endif
+        if (send_to_next_bearer == 1){
+            // TODO: notify done
+        }
     }
 
     if (mesh_crypto_active) return;
@@ -595,6 +608,7 @@ static void mesh_network_run(void){
     }
 }
 
+#ifdef ENABLE_MESH_ADV_BEARER
 static void mesh_adv_message_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     mesh_network_pdu_t * network_pdu;
 
@@ -640,6 +654,7 @@ static void mesh_adv_message_handler(uint8_t packet_type, uint16_t channel, uint
             break;
     }
 }
+#endif
 
 void mesh_gatt_handle_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 #ifdef ENABLE_MESH_GATT_BEARER
@@ -659,8 +674,12 @@ void mesh_gatt_handle_event(uint8_t packet_type, uint16_t channel, uint8_t *pack
 
                         case MESH_SUBEVENT_MESSAGE_SENT:
                             if (actual_bearer_network_pdu == NULL) break;
-                            // notify upper layer
+#ifdef ENABLE_MESH_ADV_BEARER
+                            // request to send via adv bearer
                             adv_bearer_request_can_send_now_for_mesh_message();
+                            break;
+#endif
+                            // TODO: notify done
                             break;
                         default:
                             break;
@@ -675,7 +694,9 @@ void mesh_gatt_handle_event(uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 
 void mesh_network_init(void){
+#ifdef ENABLE_MESH_ADV_BEARER
     adv_bearer_register_for_mesh_message(&mesh_adv_message_handler);
+#endif
 }
 
 void mesh_network_set_higher_layer_handler(void (*packet_handler)(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu)){
