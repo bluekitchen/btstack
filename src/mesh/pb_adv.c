@@ -168,14 +168,14 @@ static void pb_adv_handle_bearer_control(uint32_t link_id, uint8_t transaction_n
                     log_info("link open, id %08x", pb_adv_link_id);
                     printf("PB-ADV: Link Open %08x\n", pb_adv_link_id);
                     link_state = LINK_STATE_W2_SEND_ACK;
-                    adv_bearer_request_can_send_now_for_pb_adv();
+                    adv_bearer_request_can_send_now_for_provisioning_pdu();
                     pb_adv_emit_link_open(0, pb_adv_cid);
                     break;
                 case LINK_STATE_OPEN:
                     if (pb_adv_link_id != link_id) break;
                     log_info("link open, resend ACK");
                     link_state = LINK_STATE_W2_SEND_ACK;
-                    adv_bearer_request_can_send_now_for_pb_adv();
+                    adv_bearer_request_can_send_now_for_provisioning_pdu();
                     break;
                 default:
                     break;
@@ -367,7 +367,7 @@ static int pb_adv_packet_to_send(void){
 static void pb_adv_timer_handler(btstack_timer_source_t * ts){
     pb_adv_random_delay_active = 0;
     if (!pb_adv_packet_to_send()) return;
-    adv_bearer_request_can_send_now_for_pb_adv();  
+    adv_bearer_request_can_send_now_for_provisioning_pdu();  
 }
 
 static void pb_adv_run(void){
@@ -440,7 +440,7 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         buffer[4] = 0;            // Transaction ID = 0
                         buffer[5] = (0 << 2) | 3; // Link Open | Provisioning Bearer Control
                         memcpy(&buffer[6], pb_adv_peer_device_uuid, 16);
-                        adv_bearer_send_pb_adv(buffer, sizeof(buffer));
+                        adv_bearer_send_provisioning_pdu(buffer, sizeof(buffer));
                         log_info("link open %08x", pb_adv_link_id);
                         printf("PB-ADV: Sending Link Open for device uuid: ");
                         printf_hexdump(pb_adv_peer_device_uuid, 16);
@@ -458,10 +458,10 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         buffer[4] = 0;            // Transaction ID = 0
                         buffer[5] = (2 << 2) | 3; // Link Close | Provisioning Bearer Control
                         buffer[6] = pb_adv_link_close_reason;
-                        adv_bearer_send_pb_adv(buffer, sizeof(buffer));
+                        adv_bearer_send_provisioning_pdu(buffer, sizeof(buffer));
                         pb_adv_link_close_countdown--;
                         if (pb_adv_link_close_countdown) {
-                            adv_bearer_request_can_send_now_for_pb_adv();  
+                            adv_bearer_request_can_send_now_for_provisioning_pdu();  
                         } else {
                             link_state = LINK_STATE_W4_OPEN;
                         }
@@ -475,7 +475,7 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         big_endian_store_32(buffer, 0, pb_adv_link_id);
                         buffer[4] = 0;
                         buffer[5] = (1 << 2) | 3; // Link Ack | Provisioning Bearer Control
-                        adv_bearer_send_pb_adv(buffer, sizeof(buffer));
+                        adv_bearer_send_provisioning_pdu(buffer, sizeof(buffer));
                         log_info("link ack %08x", pb_adv_link_id);
                         printf("PB-ADV: Sending Link Open Ack\n");
                         break;
@@ -486,7 +486,7 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         big_endian_store_32(buffer, 0, pb_adv_link_id);
                         buffer[4] = pb_adv_msg_in_transaction_nr_prev;
                         buffer[5] = MESH_GPCF_TRANSACTION_ACK;
-                        adv_bearer_send_pb_adv(buffer, sizeof(buffer));
+                        adv_bearer_send_provisioning_pdu(buffer, sizeof(buffer));
                         log_info("transaction ack %08x", pb_adv_link_id);
                         printf("PB-ADV: %02x sending ACK\n", pb_adv_msg_in_transaction_nr_prev);
                         pb_adv_run();
@@ -537,7 +537,7 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             // done
                             pb_adv_msg_out_pos = 0;
                         }
-                        adv_bearer_send_pb_adv(buffer, pos);
+                        adv_bearer_send_provisioning_pdu(buffer, pos);
                         pb_adv_run();
                         break;
                     }
@@ -552,7 +552,7 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 void pb_adv_init(uint8_t * device_uuid){
     pb_adv_own_device_uuid = device_uuid;
-    adv_bearer_register_for_pb_adv(&pb_adv_handler);
+    adv_bearer_register_for_provisioning_pdu(&pb_adv_handler);
     pb_adv_lfsr = 0x12345678;
     pb_adv_random();
 }
@@ -586,7 +586,7 @@ void pb_adv_close_link(uint16_t pb_adv_cid, uint8_t reason){
             link_state = LINK_STATE_CLOSING;
             pb_adv_link_close_countdown = 3;
             pb_adv_link_close_reason = reason;
-            adv_bearer_request_can_send_now_for_pb_adv();
+            adv_bearer_request_can_send_now_for_provisioning_pdu();
             break;
         case LINK_STATE_W4_OPEN:
         case LINK_STATE_CLOSING:
@@ -609,7 +609,7 @@ uint16_t pb_adv_create_link(const uint8_t * device_uuid){
     link_state = LINK_STATE_W4_ACK;
 
     // request outgoing
-    adv_bearer_request_can_send_now_for_pb_adv();
+    adv_bearer_request_can_send_now_for_provisioning_pdu();
 
     // dummy pb_adv_cid
     return pb_adv_cid;

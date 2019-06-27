@@ -42,6 +42,7 @@
 #include "mesh/beacon.h"
 #include "mesh/adv_bearer.h"
 #include "mesh/gatt_bearer.h"
+#include "mesh_foundation.h"
 #include "ble/core.h"
 #include "bluetooth.h"
 #include "bluetooth_data_types.h"
@@ -107,7 +108,7 @@ static void beacon_timer_handler(btstack_timer_source_t * ts){
 
     // request to send
     beacon_send_device_beacon = 1;
-    adv_bearer_request_can_send_now_for_mesh_beacon();
+    adv_bearer_request_can_send_now_for_beacon();
 }
 #endif
 
@@ -203,7 +204,7 @@ static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts){
 
 #ifdef ENABLE_MESH_ADV_BEARER
                 subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_W2_SEND_ADV;
-                adv_bearer_request_can_send_now_for_mesh_beacon();
+                adv_bearer_request_can_send_now_for_beacon();
                 break;
 #endif
                 subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_ADV_SENT;
@@ -215,7 +216,7 @@ static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts){
 #ifdef ENABLE_MESH_GATT_BEARER
                 if (gatt_bearer_con_handle != HCI_CON_HANDLE_INVALID && mesh_foundation_gatt_proxy_get() != 0){
                     subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_W2_SEND_GATT;
-                    gatt_bearer_request_can_send_now_for_mesh_beacon();
+                    gatt_bearer_request_can_send_now_for_beacon();
                     break;
                 }
 #endif 
@@ -322,7 +323,7 @@ static void beacon_adv_packet_handler (uint8_t packet_type, uint16_t channel, ui
                         case MESH_SUBEVENT_CAN_SEND_NOW:
                             if (beacon_send_device_beacon){
                                 beacon_send_device_beacon = 0;
-                                adv_bearer_send_mesh_beacon(mesh_beacon_data, mesh_beacon_len);
+                                adv_bearer_send_beacon(mesh_beacon_data, mesh_beacon_len);
                                 break;
                             }
                             // secure beacon state machine
@@ -331,7 +332,7 @@ static void beacon_adv_packet_handler (uint8_t packet_type, uint16_t channel, ui
                                 mesh_network_key_t * subnet = mesh_network_key_iterator_get_next(&it);
                                 switch (subnet->beacon_state){
                                     case MESH_SECURE_NETWORK_BEACON_W2_SEND_ADV:
-                                        adv_bearer_send_mesh_beacon(mesh_beacon_data, mesh_beacon_len);
+                                        adv_bearer_send_beacon(mesh_beacon_data, mesh_beacon_len);
                                         subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_ADV_SENT;
                                         mesh_secure_network_beacon_run(NULL);
                                         break;
@@ -368,7 +369,7 @@ static void beacon_gatt_handle_mesh_event(uint8_t mesh_subevent){
             case MESH_SECURE_NETWORK_BEACON_W2_SEND_GATT:
                 // skip send on MESH_SUBEVENT_PROXY_DISCONNECTED 
                 if (mesh_subevent == MESH_SUBEVENT_CAN_SEND_NOW){
-                    gatt_bearer_send_mesh_beacon(mesh_beacon_data, mesh_beacon_len);
+                    gatt_bearer_send_beacon(mesh_beacon_data, mesh_beacon_len);
                 }
                 subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_GATT_SENT;
                 mesh_secure_network_beacon_run(NULL);
@@ -417,11 +418,11 @@ static void beacon_gatt_packet_handler (uint8_t packet_type, uint16_t channel, u
 
 void beacon_init(void){
 #ifdef ENABLE_MESH_ADV_BEARER
-    adv_bearer_register_for_mesh_beacon(&beacon_adv_packet_handler);
+    adv_bearer_register_for_beacon(&beacon_adv_packet_handler);
 #endif
 #ifdef ENABLE_MESH_GATT_BEARER    
     gatt_bearer_con_handle = HCI_CON_HANDLE_INVALID;
-    gatt_bearer_register_for_mesh_beacon(&beacon_gatt_packet_handler);
+    gatt_bearer_register_for_beacon(&beacon_gatt_packet_handler);
 #endif
 }
 

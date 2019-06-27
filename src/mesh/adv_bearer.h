@@ -102,25 +102,25 @@ void adv_bearer_advertisements_enable(int enabled);
 /**
  * Register listener for particular message types: Mesh Message, Mesh Beacon, PB-ADV
  */
-void adv_bearer_register_for_mesh_message(btstack_packet_handler_t packet_handler);
-void adv_bearer_register_for_mesh_beacon(btstack_packet_handler_t packet_handler);
-void adv_bearer_register_for_pb_adv(btstack_packet_handler_t packet_handler);
+void adv_bearer_register_for_network_pdu(btstack_packet_handler_t packet_handler);
+void adv_bearer_register_for_beacon(btstack_packet_handler_t packet_handler);
+void adv_bearer_register_for_provisioning_pdu(btstack_packet_handler_t packet_handler);
 
 /**
  * Request can send now event for particular message type: Mesh Message, Mesh Beacon, PB-ADV
  */
-void adv_bearer_request_can_send_now_for_mesh_message(void);
-void adv_bearer_request_can_send_now_for_mesh_beacon(void);
-void adv_bearer_request_can_send_now_for_pb_adv(void);
+void adv_bearer_request_can_send_now_for_network_pdu(void);
+void adv_bearer_request_can_send_now_for_beacon(void);
+void adv_bearer_request_can_send_now_for_provisioning_pdu(void);
 
 /**
  * Send particular message type: Mesh Message, Mesh Beacon, PB-ADV
  * @param data to send 
  * @param data_len max 29 bytes
  */
-void adv_bearer_send_mesh_message(const uint8_t * network_pdu, uint16_t size); 
-void adv_bearer_send_mesh_beacon(const uint8_t * beacon_update, uint16_t size); 
-void adv_bearer_send_pb_adv(const uint8_t * pb_adv_pdu, uint16_t size); 
+void adv_bearer_send_network_pdu(const uint8_t * network_pdu, uint16_t size); 
+void adv_bearer_send_beacon(const uint8_t * beacon_update, uint16_t size); 
+void adv_bearer_send_provisioning_pdu(const uint8_t * pb_adv_pdu, uint16_t size); 
  
 
 #if defined __cplusplus

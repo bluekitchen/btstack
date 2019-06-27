@@ -310,39 +310,39 @@ void adv_bearer_init(void){
 
 // adv bearer packet handler regisration
 
-void adv_bearer_register_for_mesh_message(btstack_packet_handler_t packet_handler){
+void adv_bearer_register_for_network_pdu(btstack_packet_handler_t packet_handler){
     client_callbacks[MESH_NETWORK_ID] = packet_handler;
 }
-void adv_bearer_register_for_mesh_beacon(btstack_packet_handler_t packet_handler){
+void adv_bearer_register_for_beacon(btstack_packet_handler_t packet_handler){
     client_callbacks[MESH_BEACON_ID] = packet_handler;
 }
-void adv_bearer_register_for_pb_adv(btstack_packet_handler_t packet_handler){
+void adv_bearer_register_for_provisioning_pdu(btstack_packet_handler_t packet_handler){
     client_callbacks[PB_ADV_ID] = packet_handler;
 }
 
 // adv bearer request to send
 
-void adv_bearer_request_can_send_now_for_mesh_message(void){
+void adv_bearer_request_can_send_now_for_network_pdu(void){
     adv_bearer_request(MESH_NETWORK_ID);
 }
-void adv_bearer_request_can_send_now_for_mesh_beacon(void){
+void adv_bearer_request_can_send_now_for_beacon(void){
     adv_bearer_request(MESH_BEACON_ID);
 }
-void adv_bearer_request_can_send_now_for_pb_adv(void){
+void adv_bearer_request_can_send_now_for_provisioning_pdu(void){
     adv_bearer_request(PB_ADV_ID);
 }
 
 // adv bearer send message
 
-void adv_bearer_send_mesh_message(const uint8_t * data, uint16_t data_len){
+void adv_bearer_send_network_pdu(const uint8_t * data, uint16_t data_len){
     adv_bearer_prepare_message(data, data_len, BLUETOOTH_DATA_TYPE_MESH_MESSAGE);
     adv_bearer_run();
 }
-void adv_bearer_send_mesh_beacon(const uint8_t * data, uint16_t data_len){
+void adv_bearer_send_beacon(const uint8_t * data, uint16_t data_len){
     adv_bearer_prepare_message(data, data_len, BLUETOOTH_DATA_TYPE_MESH_BEACON);
     adv_bearer_run();
 }
-void adv_bearer_send_pb_adv(const uint8_t * data, uint16_t data_len){
+void adv_bearer_send_provisioning_pdu(const uint8_t * data, uint16_t data_len){
     adv_bearer_prepare_message(data, data_len, BLUETOOTH_DATA_TYPE_PB_ADV);
     adv_bearer_run();
 }
