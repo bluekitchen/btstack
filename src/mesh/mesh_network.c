@@ -658,6 +658,7 @@ static void mesh_adv_message_handler(uint8_t packet_type, uint16_t channel, uint
 
 void mesh_gatt_handle_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 #ifdef ENABLE_MESH_GATT_BEARER
+    mesh_network_pdu_t * network_pdu;
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch(packet[0]){
@@ -678,8 +679,12 @@ void mesh_gatt_handle_event(uint8_t packet_type, uint16_t channel, uint8_t *pack
                             // request to send via adv bearer
                             adv_bearer_request_can_send_now_for_mesh_message();
                             break;
+#else
+                            // notify upper layer
+                            network_pdu = actual_bearer_network_pdu;
+                            actual_bearer_network_pdu = NULL;
+                            (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_SENT, network_pdu);
 #endif
-                            // TODO: notify done
                             break;
                         default:
                             break;
