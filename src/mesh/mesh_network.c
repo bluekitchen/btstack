@@ -355,7 +355,7 @@ static void mesh_network_relay_message(mesh_network_pdu_t * network_pdu){
     // prepare pdu for resending
     network_pdu->len    -= net_mic_len;
     network_pdu->data[1] = (ctl << 7) | (ttl - 1);
-
+    network_pdu->flags |= MESH_NETWORK_PDU_FLAGS_RELAY;
     // queue up
     network_pdu->callback = &mesh_network_send_d;
     btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);

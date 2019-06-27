@@ -76,7 +76,8 @@ typedef struct mesh_pdu {
 
 // 
 #define MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION 1
-#define MESH_NETWORK_PDU_FLAGS_GATT_BEARER   2
+#define MESH_NETWORK_PDU_FLAGS_GATT_BEARER         2
+#define MESH_NETWORK_PDU_FLAGS_RELAY               4
 
 typedef struct mesh_network_pdu {
     mesh_pdu_t pdu_header;
