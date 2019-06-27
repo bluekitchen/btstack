@@ -822,18 +822,26 @@ static void virtual_address_complete(void * arg){
 static void key_derived(void * arg){
 }
 
-static void mesh_proxy_packet_handler_beacon(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    switch (packet_type){
-        case MESH_PROXY_DATA_PACKET:
-            printf("Received beacon\n");
-            printf_hexdump(packet, size);
-            break;
-        default:
-            break;
-    }
-}
+// Mesh Proxy Configuration
+
+typedef enum {
+    MESH_PROXY_CONFIGURATION_MESSAGE_OPCODE_SET_FILTER_TYPE = 0,
+    MESH_PROXY_CONFIGURATION_MESSAGE_OPCODE_ADD_ADDRESSES,
+    MESH_PROXY_CONFIGURATION_MESSAGE_OPCODE_REMOVE_ADDRESSES,
+    MESH_PROXY_CONFIGURATION_MESSAGE_OPCODE_FILTER_STATUS
+} mesh_proxy_configuration_message_opcode_t;
+
+typedef enum {
+    MESH_PROXY_CONFIGURATION_FILTER_TYPE_SET_WHITE_LIST = 0,
+    MESH_PROXY_CONFIGURATION_FILTER_TYPE_BLACK_LIST
+} mesh_proxy_configuration_filter_type_t;
 
 static mesh_network_pdu_t * encrypted_proxy_configuration_ready_to_send;
+
+// Used to answer configuration request
+static uint16_t proxy_configuration_filter_list_len;
+static mesh_proxy_configuration_filter_type_t proxy_configuration_filter_type;
+static uint16_t primary_element_address;
 
 static void request_can_send_now_proxy_configuration_callback_handler(mesh_network_pdu_t * network_pdu){
     encrypted_proxy_configuration_ready_to_send = network_pdu;
@@ -870,24 +878,7 @@ static void packet_handler_for_mesh_proxy_configuration(uint8_t packet_type, uin
     }
 }
 
-typedef enum {
-    MESH_PROXY_CONFIGURATION_MESSAGE_OPCODE_SET_FILTER_TYPE = 0,
-    MESH_PROXY_CONFIGURATION_MESSAGE_OPCODE_ADD_ADDRESSES,
-    MESH_PROXY_CONFIGURATION_MESSAGE_OPCODE_REMOVE_ADDRESSES,
-    MESH_PROXY_CONFIGURATION_MESSAGE_OPCODE_FILTER_STATUS
-} mesh_proxy_configuration_message_opcode_t;
-
-typedef enum {
-    MESH_PROXY_CONFIGURATION_FILTER_TYPE_SET_WHITE_LIST = 0,
-    MESH_PROXY_CONFIGURATION_FILTER_TYPE_BLACK_LIST
-} mesh_proxy_configuration_filter_type_t;
-
-// Used to answer configuration request
-static uint16_t proxy_configuration_filter_list_len;
-static mesh_proxy_configuration_filter_type_t proxy_configuration_filter_type;
-static uint16_t primary_element_address;
-
-void proxy_configuration_message_handler(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * received_network_pdu){
+static void proxy_configuration_message_handler(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * received_network_pdu){
     mesh_proxy_configuration_message_opcode_t opcode;
     uint8_t data[4];
     mesh_network_pdu_t * network_pdu;
