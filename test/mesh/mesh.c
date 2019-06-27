@@ -846,7 +846,7 @@ static void packet_handler_for_mesh_proxy_configuration(uint8_t packet_type, uin
         case MESH_PROXY_DATA_PACKET:
             printf("Received proxy configuration\n");
             printf_hexdump(packet, size);
-            mesh_network_process_proxy_message(packet, size);
+            mesh_network_process_proxy_configuration_message(packet, size);
             break;
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)){
@@ -926,7 +926,7 @@ void proxy_configuration_message_handler(mesh_network_callback_type_t callback_t
                     big_endian_store_16(data, pos, proxy_configuration_filter_list_len);
 
                     mesh_network_setup_pdu(network_pdu, netkey_index, nid, ctl, ttl, seq, src, dest, data, sizeof(data));
-                    mesh_network_encrypt_proxy_message(network_pdu, &request_can_send_now_proxy_configuration_callback_handler);
+                    mesh_network_encrypt_proxy_configuration_message(network_pdu, &request_can_send_now_proxy_configuration_callback_handler);
                     
                     // received_network_pdu is processed
                     btstack_memory_mesh_network_pdu_free(received_network_pdu);

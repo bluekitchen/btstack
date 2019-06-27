@@ -74,7 +74,9 @@ typedef struct mesh_pdu {
     mesh_pdu_type_t pdu_type;
 } mesh_pdu_t;
 
-#define MESH_NETWORK_PDU_FLAGS_PROXY_MESSAGE 1
+// 
+#define MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION 1
+#define MESH_NETWORK_PDU_FLAGS_GATT_BEARER   2
 
 typedef struct mesh_network_pdu {
     mesh_pdu_t pdu_header;
@@ -266,8 +268,8 @@ uint32_t mesh_get_iv_index(void);
 
 // Testing only
 void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len);
-void mesh_network_process_proxy_message(const uint8_t * pdu_data, uint8_t pdu_len);
-void mesh_network_encrypt_proxy_message(mesh_network_pdu_t * network_pdu, void (* callback)(mesh_network_pdu_t * callback));
+void mesh_network_process_proxy_configuration_message(const uint8_t * pdu_data, uint8_t pdu_len);
+void mesh_network_encrypt_proxy_configuration_message(mesh_network_pdu_t * network_pdu, void (* callback)(mesh_network_pdu_t * callback));
 void mesh_network_dump(void);
 void mesh_network_reset(void);
 

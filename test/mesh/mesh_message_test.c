@@ -1029,7 +1029,7 @@ TEST(MessageTest, ProxyConfigReceive){
     char ** network_pdus = proxy_config_pdus;
     test_network_pdu_len = strlen(network_pdus[i]) / 2;
     btstack_parse_hex(network_pdus[i], test_network_pdu_len, test_network_pdu_data);
-    mesh_network_process_proxy_message(&test_network_pdu_data[1], test_network_pdu_len-1);
+    mesh_network_process_proxy_configuration_message(&test_network_pdu_data[1], test_network_pdu_len-1);
     while (received_proxy_pdu == NULL) {
         mock_process_hci_cmd();
     }
@@ -1068,7 +1068,7 @@ TEST(MessageTest, ProxyConfigSend){
     mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
     uint8_t data[] = { 0 , 0 };
     mesh_network_setup_pdu(network_pdu, netkey_index, nid, ctl, ttl, seq, src, dest, data, sizeof(data));
-    mesh_network_encrypt_proxy_message(network_pdu, &test_proxy_callback_handler);
+    mesh_network_encrypt_proxy_configuration_message(network_pdu, &test_proxy_callback_handler);
     while (received_proxy_pdu == NULL) {
         mock_process_hci_cmd();
     }

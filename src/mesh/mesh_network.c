@@ -322,7 +322,7 @@ static void mesh_network_send_a(mesh_network_pdu_t * network_pdu){
     }
 
     // get network nonce
-    if (network_pdu->flags & MESH_NETWORK_PDU_FLAGS_PROXY_MESSAGE){
+    if (network_pdu->flags & MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION){
         mesh_proxy_create_nonce(network_nonce, network_pdu, global_iv_index); 
 #ifdef LOG_NETWORK
         printf("TX-ProxyNonce:  ");
@@ -431,7 +431,7 @@ static void process_network_pdu_validate_d(void * arg){
     // set netkey_index
     network_pdu->netkey_index = current_network_key->netkey_index;
 
-    if (network_pdu->flags & MESH_NETWORK_PDU_FLAGS_PROXY_MESSAGE){
+    if (network_pdu->flags & MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION){
 
         // no additional checks for proxy messages
         (*mesh_network_proxy_message_handler)(MESH_NETWORK_PDU_RECEIVED, network_pdu);
@@ -504,7 +504,7 @@ static void process_network_pdu_validate_b(void * arg){
 
     uint32_t iv_index = iv_index_for_pdu(network_pdu);
 
-    if (network_pdu->flags & MESH_NETWORK_PDU_FLAGS_PROXY_MESSAGE){
+    if (network_pdu->flags & MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION){
         // create network nonce
         mesh_proxy_create_nonce(network_nonce, network_pdu, iv_index);
 #ifdef LOG_NETWORK
@@ -780,7 +780,7 @@ void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len){
 
 }
 
-void mesh_network_process_proxy_message(const uint8_t * pdu_data, uint8_t pdu_len){
+void mesh_network_process_proxy_configuration_message(const uint8_t * pdu_data, uint8_t pdu_len){
     // verify len
     if (pdu_len > 29) return;
 
@@ -791,7 +791,7 @@ void mesh_network_process_proxy_message(const uint8_t * pdu_data, uint8_t pdu_le
     // store data
     memcpy(network_pdu->data, pdu_data, pdu_len);
     network_pdu->len = pdu_len;
-    network_pdu->flags = MESH_NETWORK_PDU_FLAGS_PROXY_MESSAGE; // Network PDU
+    network_pdu->flags = MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION; // Network PDU
 
     // add to list and go
     btstack_linked_list_add_tail(&network_pdus_received, (btstack_linked_item_t *) network_pdu);
@@ -820,13 +820,13 @@ void mesh_network_send_pdu(mesh_network_pdu_t * network_pdu){
     mesh_network_run();
 }
 
-void mesh_network_encrypt_proxy_message(mesh_network_pdu_t * network_pdu, void (* callback)(mesh_network_pdu_t * callback)){
+void mesh_network_encrypt_proxy_configuration_message(mesh_network_pdu_t * network_pdu, void (* callback)(mesh_network_pdu_t * callback)){
     printf("ProxyPDU(unencrypted): ");
     printf_hexdump(network_pdu->data, network_pdu->len);
 
     // setup callback
     network_pdu->callback = callback;
-    network_pdu->flags    = MESH_NETWORK_PDU_FLAGS_PROXY_MESSAGE;
+    network_pdu->flags    = MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION;
 
     // queue up
     btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);
