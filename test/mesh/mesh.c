@@ -1031,6 +1031,9 @@ int btstack_main(void)
     mesh_model_reset_appkeys(&mesh_vendor_model);
     mesh_element_add_model(mesh_primary_element(), &mesh_vendor_model);
     
+    // Enable PROXY
+    mesh_foundation_gatt_proxy_set(1);
+    
     // calc s1('vtad')7
     // btstack_crypto_aes128_cmac_zero(&salt_request, 4, (const uint8_t *) "vtad", salt_hash, salt_complete, NULL);
 

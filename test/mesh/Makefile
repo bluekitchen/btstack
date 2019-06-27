@@ -59,7 +59,7 @@ mesh: mesh.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} p
 provisioner: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_OBJ} pb_adv.o mesh_crypto.o provisioning_provisioner.o mesh_keys.o mesh_foundation.o provisioner.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-mesh_message_test: mesh_message_test.c mesh_network.o mesh_peer.o mesh_lower_transport.o mesh_upper_transport.o mesh_virtual_addresses.o  mesh_keys.o  mesh_crypto.o btstack_memory.o btstack_memory_pool.o btstack_util.o btstack_crypto.o btstack_linked_list.o hci_dump.o uECC.o mock.o rijndael.o hci_cmd.o
+mesh_message_test: mesh_foundation.o mesh_message_test.c mesh_network.o mesh_peer.o mesh_lower_transport.o mesh_upper_transport.o mesh_virtual_addresses.o  mesh_keys.o  mesh_crypto.o btstack_memory.o btstack_memory_pool.o btstack_util.o btstack_crypto.o btstack_linked_list.o hci_dump.o uECC.o mock.o rijndael.o hci_cmd.o
 	g++ $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 sniffer: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_OBJ} mesh_keys.o mesh_foundation.o sniffer.c 
