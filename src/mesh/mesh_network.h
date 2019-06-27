@@ -74,6 +74,8 @@ typedef struct mesh_pdu {
     mesh_pdu_type_t pdu_type;
 } mesh_pdu_t;
 
+#define MESH_NETWORK_PDU_FLAGS_PROXY_MESSAGE 1
+
 typedef struct mesh_network_pdu {
     mesh_pdu_t pdu_header;
 
