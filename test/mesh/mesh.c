@@ -833,39 +833,6 @@ static void mesh_proxy_packet_handler_beacon(uint8_t packet_type, uint16_t chann
     }
 }
 
-static void mesh_proxy_packet_handler_network_pdu(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    switch (packet_type){
-        case MESH_PROXY_DATA_PACKET:
-            printf("mesh: Received network PDU (proxy)\n");
-            printf_hexdump(packet, size);
-            mesh_network_received_message(packet, size);
-            break;
-        case HCI_EVENT_PACKET:
-            switch (hci_event_packet_get_type(packet)){
-                case HCI_EVENT_MESH_META:
-                    switch (hci_event_mesh_meta_get_subevent_code(packet)){
-                        case MESH_SUBEVENT_CAN_SEND_NOW:  
-                            mesh_gatt_handle_event(packet_type, channel, packet, size);
-                            break;
-                        case MESH_SUBEVENT_MESSAGE_SENT:
-                            mesh_gatt_handle_event(packet_type, channel, packet, size);
-                            break;
-                        case MESH_SUBEVENT_PROXY_CONNECTED:
-                            printf("mesh: MESH_PROXY_CONNECTED\n");
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
-        default:
-            break;
-    }
-}
-
 static mesh_network_pdu_t * encrypted_proxy_configuration_ready_to_send;
 
 static void request_can_send_now_proxy_configuration_callback_handler(mesh_network_pdu_t * network_pdu){
@@ -1017,8 +984,6 @@ int btstack_main(void)
 
     // Setup GATT bearer
     gatt_bearer_init();
-    gatt_bearer_register_for_mesh_network_pdu(&mesh_proxy_packet_handler_network_pdu);
-    gatt_bearer_register_for_mesh_beacon(&mesh_proxy_packet_handler_network_pdu);
 
     gatt_bearer_register_for_mesh_proxy_configuration(&packet_handler_for_mesh_proxy_configuration);
     mesh_network_set_proxy_message_handler(proxy_configuration_message_handler);

@@ -269,8 +269,6 @@ void mesh_network_encrypt_proxy_message(mesh_network_pdu_t * network_pdu, void (
 void mesh_network_dump(void);
 void mesh_network_reset(void);
 
-void mesh_gatt_handle_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-
 #if defined __cplusplus
 }
 #endif

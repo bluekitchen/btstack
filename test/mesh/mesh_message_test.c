@@ -57,9 +57,9 @@ void adv_bearer_emit_sent(void){
 #endif
 
 #ifdef ENABLE_MESH_GATT_BEARER
-// static btstack_packet_handler_t gatt_packet_handler;
-void adv_bearer_register_for_mesh_message(btstack_packet_handler_t packet_handler){
-    // gatt_packet_handler = packet_handler;
+static btstack_packet_handler_t gatt_packet_handler;
+void gatt_bearer_register_for_mesh_network_pdu(btstack_packet_handler_t packet_handler){
+    gatt_packet_handler = packet_handler;
 }
 void gatt_bearer_request_can_send_now_for_mesh_network_pdu(void){
     printf("gatt_bearer_request_can_send_now_for_mesh_network_pdu\n");
@@ -68,7 +68,7 @@ void gatt_bearer_request_can_send_now_for_mesh_network_pdu(void){
     event[0] = HCI_EVENT_MESH_META;
     event[1] = 1;
     event[2] = MESH_SUBEVENT_CAN_SEND_NOW;
-    mesh_gatt_handle_event(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
+    (*gatt_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 void gatt_bearer_send_mesh_network_pdu(const uint8_t * network_pdu, uint16_t size){
     printf("gatt_bearer_send_mesh_network_pdu: \n");
@@ -81,7 +81,7 @@ void gatt_bearer_emit_sent(void){
     event[0] = HCI_EVENT_MESH_META;
     event[1] = 1;
     event[2] = MESH_SUBEVENT_MESSAGE_SENT;
-    mesh_gatt_handle_event(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
+    (*gatt_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 #endif
 

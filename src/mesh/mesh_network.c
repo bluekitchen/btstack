@@ -47,6 +47,7 @@
 #include "mesh_keys.h"
 #include "btstack_util.h"
 #include "btstack_memory.h"
+#include "btstack_event.h"
 
 #ifdef ENABLE_MESH_ADV_BEARER
 #include "mesh/adv_bearer.h"
@@ -656,8 +657,8 @@ static void mesh_adv_message_handler(uint8_t packet_type, uint16_t channel, uint
 }
 #endif
 
-void mesh_gatt_handle_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 #ifdef ENABLE_MESH_GATT_BEARER
+void mesh_gatt_handle_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     mesh_network_pdu_t * network_pdu;
     switch (packet_type){
         case HCI_EVENT_PACKET:
@@ -695,12 +696,49 @@ void mesh_gatt_handle_event(uint8_t packet_type, uint16_t channel, uint8_t *pack
             }
             break;
     }
-#endif
 }
+
+
+static void mesh_proxy_packet_handler_network_pdu(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    switch (packet_type){
+        case MESH_PROXY_DATA_PACKET:
+            printf("mesh: Received network PDU (proxy)\n");
+            printf_hexdump(packet, size);
+            mesh_network_received_message(packet, size);
+            break;
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)){
+                case HCI_EVENT_MESH_META:
+                    switch (hci_event_mesh_meta_get_subevent_code(packet)){
+                        case MESH_SUBEVENT_CAN_SEND_NOW:  
+                            mesh_gatt_handle_event(packet_type, channel, packet, size);
+                            break;
+                        case MESH_SUBEVENT_MESSAGE_SENT:
+                            mesh_gatt_handle_event(packet_type, channel, packet, size);
+                            break;
+                        case MESH_SUBEVENT_PROXY_CONNECTED:
+                            printf("mesh: MESH_PROXY_CONNECTED\n");
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+}
+#endif
 
 void mesh_network_init(void){
 #ifdef ENABLE_MESH_ADV_BEARER
     adv_bearer_register_for_mesh_message(&mesh_adv_message_handler);
+#endif
+#ifdef ENABLE_MESH_GATT_BEARER
+    gatt_bearer_register_for_mesh_network_pdu(&mesh_proxy_packet_handler_network_pdu);
 #endif
 }
 
