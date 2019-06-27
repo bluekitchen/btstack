@@ -372,8 +372,39 @@ void mesh_delete_publications(void){
 // AppKeys Helper
 static void mesh_configuration_server_delete_appkey(mesh_transport_key_t * transport_key){
     uint16_t appkey_index = transport_key->appkey_index;
-    mesh_delete_app_key(appkey_index);
+
+    // iterate over elements and models
+    mesh_element_iterator_t element_it;
+    mesh_element_iterator_init(&element_it);
+    while (mesh_element_iterator_has_next(&element_it)){
+        mesh_element_t * element = mesh_element_iterator_next(&element_it);
+        mesh_model_iterator_t model_it;
+        mesh_model_iterator_init(&model_it, element);
+        while (mesh_model_iterator_has_next(&model_it)){
+            mesh_model_t * mesh_model = mesh_model_iterator_next(&model_it);
+
+            // remove from Model to AppKey List
+            mesh_model_unbind_appkey(mesh_model, appkey_index);
+
+            // stop publishing if this AppKey was used
+            if (mesh_model->publication_model != NULL){
+                mesh_publication_model_t * publication_model = mesh_model->publication_model;
+                if (publication_model->appkey_index == appkey_index){
+                    publication_model->address = MESH_ADDRESS_UNSASSIGNED;
+                    publication_model->appkey_index = MESH_APPKEY_INVALID;
+                    mesh_model_store_publication(mesh_model);
+                }
+            }
+        }
+    }
+
+    // remove from list
     mesh_transport_key_remove(transport_key);
+
+    // delete from TLV
+    mesh_delete_app_key(appkey_index);
+
+    // free memory
     btstack_memory_mesh_transport_key_free(transport_key);
 }
 
