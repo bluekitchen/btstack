@@ -1018,6 +1018,7 @@ int btstack_main(void)
     // Setup GATT bearer
     gatt_bearer_init();
     gatt_bearer_register_for_mesh_network_pdu(&mesh_proxy_packet_handler_network_pdu);
+    gatt_bearer_register_for_mesh_beacon(&mesh_proxy_packet_handler_network_pdu);
 
     gatt_bearer_register_for_mesh_proxy_configuration(&packet_handler_for_mesh_proxy_configuration);
     mesh_network_set_proxy_message_handler(proxy_configuration_message_handler);
