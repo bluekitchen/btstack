@@ -12,6 +12,7 @@
 #include "mesh/mesh_network.h"
 #include "mesh/mesh_lower_transport.h"
 #include "mesh/mesh_upper_transport.h"
+#include "mesh_foundation.h"
 #include "btstack_util.h"
 #include "provisioning.h"
 #include "btstack_memory.h"
@@ -45,7 +46,7 @@ void adv_bearer_send_network_pdu(const uint8_t * network_pdu, uint16_t size){
     memcpy(sent_network_pdu_data, network_pdu, size);
     sent_network_pdu_len = size;
 }
-void adv_bearer_emit_sent(void){
+static void adv_bearer_emit_sent(void){
     uint8_t event[3];
     event[0] = HCI_EVENT_MESH_META;
     event[1] = 1;
@@ -72,11 +73,19 @@ void gatt_bearer_send_network_pdu(const uint8_t * network_pdu, uint16_t size){
     memcpy(sent_network_pdu_data, network_pdu, size);
     sent_network_pdu_len = size;
 }
-void gatt_bearer_emit_sent(void){
+static void gatt_bearer_emit_sent(void){
     uint8_t event[3];
     event[0] = HCI_EVENT_MESH_META;
     event[1] = 1;
     event[2] = MESH_SUBEVENT_MESSAGE_SENT;
+    (*gatt_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
+}
+static void gatt_bearer_emit_connected(void){
+    uint8_t event[5];
+    event[0] = HCI_EVENT_MESH_META;
+    event[1] = 1;
+    event[2] = MESH_SUBEVENT_PROXY_CONNECTED;
+    little_endian_store_16(event, 3, 0x1234);
     (*gatt_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 #endif
@@ -285,6 +294,10 @@ TEST_GROUP(MessageTest){
         mesh_upper_transport_register_access_message_handler(&test_upper_transport_access_message_handler);
         mesh_upper_transport_register_control_message_handler(&test_upper_transport_control_message_handler);
         mesh_seq_auth_reset();
+#ifdef ENABLE_MESH_GATT_BEARER
+        mesh_foundation_gatt_proxy_set(1);
+        gatt_bearer_emit_connected();
+#endif
         received_network_pdu = NULL;
         recv_upper_transport_pdu_len =0;
         sent_network_pdu_len = 0;
@@ -351,6 +364,7 @@ void test_receive_network_pdus(int count, char ** network_pdus, char ** lower_tr
     CHECK_EQUAL( transport_pdu_len, recv_upper_transport_pdu_len);
     CHECK_EQUAL_ARRAY(transport_pdu_data, recv_upper_transport_pdu_data, transport_pdu_len);
 }
+
 static void get_next_network_pdu(void){
         while (sent_network_pdu_len == 0) {
             mock_process_hci_cmd();
@@ -390,11 +404,13 @@ void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uin
         btstack_parse_hex(network_pdus[i], test_network_pdu_len, test_network_pdu_data);
 
 #ifdef ENABLE_MESH_GATT_BEARER
+        printf("Wait for gatt pdu\n");
         get_next_network_pdu();
         gatt_bearer_emit_sent();
 #endif
 
 #ifdef ENABLE_MESH_ADV_BEARER
+        printf("Wait for adv pdu\n");
         get_next_network_pdu();
         adv_bearer_emit_sent();
 #endif
