@@ -637,7 +637,7 @@ static void mesh_adv_bearer_handle_network_event(uint8_t packet_type, uint16_t c
             printf("received network pdu from adv (len %u): ", size);
             printf_hexdump(packet, size);
 #endif
-            mesh_network_received_message(packet, size);
+            mesh_network_received_message(packet, size, 0);
             break;
 
         case HCI_EVENT_PACKET:
@@ -699,7 +699,7 @@ static void mesh_network_gatt_bearer_handle_network_event(uint8_t packet_type, u
             printf("received network pdu from gatt (len %u): ", size);
             printf_hexdump(packet, size);
 #endif
-            mesh_network_received_message(packet, size);
+            mesh_network_received_message(packet, size, MESH_NETWORK_PDU_FLAGS_GATT_BEARER);
             break;
         case HCI_EVENT_PACKET:
             switch (hci_event_packet_get_type(packet)){
@@ -761,7 +761,7 @@ void mesh_network_set_primary_element_address(uint16_t addr){
     mesh_network_num_elements = 1;
 }
 
-void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len){
+void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len, uint8_t flags){
     // verify len
     if (pdu_len > 29) return;
 
@@ -772,7 +772,7 @@ void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len){
     // store data
     memcpy(network_pdu->data, pdu_data, pdu_len);
     network_pdu->len = pdu_len;
-    network_pdu->flags = 0; // regular Network PDU
+    network_pdu->flags = flags;
 
     // add to list and go
     btstack_linked_list_add_tail(&network_pdus_received, (btstack_linked_item_t *) network_pdu);

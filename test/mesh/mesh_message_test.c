@@ -327,7 +327,7 @@ void test_receive_network_pdus(int count, char ** network_pdus, char ** lower_tr
         test_network_pdu_len = strlen(network_pdus[i]) / 2;
         btstack_parse_hex(network_pdus[i], test_network_pdu_len, test_network_pdu_data);
     
-        mesh_network_received_message(test_network_pdu_data, test_network_pdu_len);
+        mesh_network_received_message(test_network_pdu_data, test_network_pdu_len, 0);
 
         while (received_network_pdu == NULL) {
             mock_process_hci_cmd();
