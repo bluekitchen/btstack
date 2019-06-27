@@ -348,6 +348,20 @@ static void mesh_network_send_a(mesh_network_pdu_t * network_pdu){
     btstack_crypto_ccm_encrypt_block(&mesh_network_crypto_request.ccm, cypher_len, &network_pdu->data[7], &network_pdu->data[7], &mesh_network_send_b, network_pdu);
 }
 
+#ifdef ENABLE_MESH_RELAY
+static void mesh_network_relay_message(mesh_network_pdu_t * network_pdu){
+    uint8_t ctl     = ctl_ttl >> 7;
+    uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
+    // prepare pdu for resending
+    network_pdu->len    -= net_mic_len;
+    network_pdu->data[1] = (ctl << 7) | (ttl - 1);
+
+    // queue up
+    network_pdu->callback = &mesh_network_send_d;
+    btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);
+}
+#endif
+
 void mesh_network_message_processed_by_higher_layer(mesh_network_pdu_t * network_pdu){
 #ifdef ENABLE_MESH_RELAY
     if (mesh_foundation_relay_get() != 0){
@@ -357,15 +371,7 @@ void mesh_network_message_processed_by_higher_layer(mesh_network_pdu_t * network
 
         // check if address matches elements on our node and TTL >= 2
         if (((src < mesh_network_primary_address) || (src > (mesh_network_primary_address + mesh_network_num_elements))) && (ttl >= 2)){
-            uint8_t ctl     = ctl_ttl >> 7;
-            uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
-            // prepare pdu for resending
-            network_pdu->len    -= net_mic_len;
-            network_pdu->data[1] = (ctl << 7) | (ttl - 1);
-
-            // queue up
-            network_pdu->callback = &mesh_network_send_d;
-            btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);
+            mesh_network_relay_message(network_pdu);
 
             // go
             mesh_network_run();
