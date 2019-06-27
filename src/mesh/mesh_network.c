@@ -387,7 +387,7 @@ void mesh_network_message_processed_by_higher_layer(mesh_network_pdu_t * network
                 return;
             }
 #endif
-            
+
 #ifdef ENABLE_MESH_PROXY_SERVER
             if (mesh_foundation_gatt_proxy_get() != 0){
                 // - to GATT bearer, if Proxy supported and enabled
@@ -623,9 +623,15 @@ static void mesh_network_run(void){
         mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing);
 
 #ifdef ENABLE_MESH_GATT_BEARER
-        // request to send via gatt
+        // request to send via gatt if:
+        // proxy active and connected
+        // packet wasn't received via gatt bearer
         printf("mesh_network_run: pdu %p, proxy %u, con handle %4x\n", network_pdu, mesh_foundation_gatt_proxy_get(), gatt_bearer_con_handle);
-        if (network_pdu != NULL && mesh_foundation_gatt_proxy_get() != 0 && gatt_bearer_con_handle != HCI_CON_HANDLE_INVALID){
+        if (network_pdu != NULL &&
+            (mesh_foundation_gatt_proxy_get() != 0) &&
+            (gatt_bearer_con_handle != HCI_CON_HANDLE_INVALID) &&
+            ((network_pdu->flags & MESH_NETWORK_PDU_FLAGS_GATT_BEARER) == 0)
+        ){
             gatt_bearer_network_pdu = network_pdu;
             network_pdu = NULL;
             gatt_bearer_request_can_send_now_for_network_pdu();
