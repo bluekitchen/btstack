@@ -348,14 +348,18 @@ static void mesh_network_send_a(mesh_network_pdu_t * network_pdu){
     btstack_crypto_ccm_encrypt_block(&mesh_network_crypto_request.ccm, cypher_len, &network_pdu->data[7], &network_pdu->data[7], &mesh_network_send_b, network_pdu);
 }
 
-#ifdef ENABLE_MESH_RELAY
+#if defined(ENABLE_MESH_RELAY) || defined (ENABLE_MESH_PROXY_SERVER)
 static void mesh_network_relay_message(mesh_network_pdu_t * network_pdu){
-    uint8_t ctl     = ctl_ttl >> 7;
-    uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
+    uint8_t ctl_ttl     = network_pdu->data[1];
+    uint8_t ctl         = ctl_ttl & 0x80;
+    uint8_t ttl         = ctl_ttl & 0x7f;
+    uint8_t net_mic_len = ctl ? 8 : 4;
+
     // prepare pdu for resending
     network_pdu->len    -= net_mic_len;
     network_pdu->data[1] = (ctl << 7) | (ttl - 1);
     network_pdu->flags |= MESH_NETWORK_PDU_FLAGS_RELAY;
+
     // queue up
     network_pdu->callback = &mesh_network_send_d;
     btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);
@@ -363,23 +367,54 @@ static void mesh_network_relay_message(mesh_network_pdu_t * network_pdu){
 #endif
 
 void mesh_network_message_processed_by_higher_layer(mesh_network_pdu_t * network_pdu){
+
+#if defined(ENABLE_MESH_RELAY) || defined (ENABLE_MESH_PROXY_SERVER)
+
+    // check if address does not matches elements on our node and TTL >= 2
+    uint16_t src     = mesh_network_src(network_pdu);
+    uint8_t  ttl     = mesh_network_ttl(network_pdu);
+    if (((src < mesh_network_primary_address) || (src > (mesh_network_primary_address + mesh_network_num_elements))) && (ttl >= 2)){
+
+        if ((network_pdu->flags & MESH_NETWORK_PDU_FLAGS_GATT_BEARER) == 0){
+
+            // message received via ADV bearer are relayed:
+
 #ifdef ENABLE_MESH_RELAY
-    if (mesh_foundation_relay_get() != 0){
-        uint8_t ctl_ttl = network_pdu->data[1];
-        uint8_t ttl     = ctl_ttl & 0x7f;
-        uint16_t src    = big_endian_read_16(network_pdu->data, 5);
+            if (mesh_foundation_relay_get() != 0){
+                // - to ADV bearer, if Relay supported and enabled
+                mesh_network_relay_message(network_pdu);
+                mesh_network_run();
+                return;
+            }
+#endif
+            
+#ifdef ENABLE_MESH_PROXY_SERVER
+            if (mesh_foundation_gatt_proxy_get() != 0){
+                // - to GATT bearer, if Proxy supported and enabled
+                mesh_network_relay_message(network_pdu);
+                mesh_network_run();
+                return;
+            }
+#endif
 
-        // check if address matches elements on our node and TTL >= 2
-        if (((src < mesh_network_primary_address) || (src > (mesh_network_primary_address + mesh_network_num_elements))) && (ttl >= 2)){
-            mesh_network_relay_message(network_pdu);
+        } else {
 
-            // go
-            mesh_network_run();
+            // messages received via GATT bearer are relayed:
 
-            return;
+#ifdef ENABLE_MESH_PROXY_SERVER
+            if (mesh_foundation_gatt_proxy_get() != 0){
+                // - to ADV bearer, if Proxy supported and enabled
+                mesh_network_relay_message(network_pdu);
+                mesh_network_run();
+                return;
+            }
+#endif
+
         }
     }
 #endif
+
+    // otherwise, we're done
     btstack_memory_mesh_network_pdu_free(network_pdu);
 }
 
