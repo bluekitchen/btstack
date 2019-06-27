@@ -350,26 +350,28 @@ static void mesh_network_send_a(mesh_network_pdu_t * network_pdu){
 
 void mesh_network_message_processed_by_higher_layer(mesh_network_pdu_t * network_pdu){
 #ifdef ENABLE_MESH_RELAY
-    uint8_t ctl_ttl = network_pdu->data[1];
-    uint8_t ctl     = ctl_ttl >> 7;
-    uint8_t ttl     = ctl_ttl & 0x7f;
-    uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
-    uint16_t src    = big_endian_read_16(network_pdu->data, 5);
+    if (mesh_foundation_relay_get() != 0){
+        uint8_t ctl_ttl = network_pdu->data[1];
+        uint8_t ttl     = ctl_ttl & 0x7f;
+        uint16_t src    = big_endian_read_16(network_pdu->data, 5);
 
-    // check if address matches elements on our node and TTL >= 2
-    if (((src < mesh_network_primary_address) || (src > (mesh_network_primary_address + mesh_network_num_elements))) && (ttl >= 2)){
-        // prepare pdu for resending
-        network_pdu->len    -= net_mic_len;
-        network_pdu->data[1] = (ctl << 7) | (ttl - 1);
+        // check if address matches elements on our node and TTL >= 2
+        if (((src < mesh_network_primary_address) || (src > (mesh_network_primary_address + mesh_network_num_elements))) && (ttl >= 2)){
+            uint8_t ctl     = ctl_ttl >> 7;
+            uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
+            // prepare pdu for resending
+            network_pdu->len    -= net_mic_len;
+            network_pdu->data[1] = (ctl << 7) | (ttl - 1);
 
-        // queue up
-        network_pdu->callback = &mesh_network_send_d;
-        btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);
+            // queue up
+            network_pdu->callback = &mesh_network_send_d;
+            btstack_linked_list_add_tail(&network_pdus_queued, (btstack_linked_item_t *) network_pdu);
 
-        // go
-        mesh_network_run();
+            // go
+            mesh_network_run();
 
-        return;
+            return;
+        }
     }
 #endif
     btstack_memory_mesh_network_pdu_free(network_pdu);
