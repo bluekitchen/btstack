@@ -94,7 +94,6 @@ void mesh_delete_subscriptions(void);
 void mesh_load_publications(void);
 
 void mesh_delete_publications(void);
-
 //
 void mesh_node_reset(void);
 

@@ -369,6 +369,13 @@ void mesh_delete_publications(void){
     }
 }
 
+// AppKeys Helper
+static void mesh_configuration_server_delete_appkey(mesh_transport_key_t * transport_key){
+    uint16_t appkey_index = transport_key->appkey_index;
+    mesh_delete_app_key(appkey_index);
+    mesh_transport_key_remove(transport_key);
+    btstack_memory_mesh_transport_key_free(transport_key);
+}
 
 // Foundatiopn Message
 
@@ -872,9 +879,7 @@ static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t *
             mesh_transport_key_iterator_init(&it, netkey_index);
             while (mesh_transport_key_iterator_has_more(&it)){
                 mesh_transport_key_t * transport_key = mesh_transport_key_iterator_get_next(&it);
-                uint16_t appkey_index = transport_key->appkey_index;
-                mesh_transport_key_remove(transport_key);
-                mesh_delete_app_key(appkey_index);
+                mesh_configuration_server_delete_appkey(transport_key);
             }
         } else {
             // we cannot remove the last network key
@@ -1092,17 +1097,15 @@ static void config_appkey_delete_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
     if (network_key == NULL){
         config_appkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX);
         mesh_access_message_processed(pdu);
-
-// for PTS testing
         return;
     }
 
     // check if appkey already exists
-    mesh_transport_key_t * transport_key = mesh_transport_key_get(appkey_index);    if (transport_key){
-        mesh_delete_app_key(transport_key->internal_index);
-        mesh_transport_key_remove(transport_key);
-        btstack_memory_mesh_transport_key_free(transport_key);
+    mesh_transport_key_t * transport_key = mesh_transport_key_get(appkey_index);
+    if (transport_key){
+        mesh_configuration_server_delete_appkey(transport_key);
     }
+
     config_appkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_SUCCESS);
     mesh_access_message_processed(pdu);
 }
