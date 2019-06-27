@@ -27,10 +27,10 @@ static uint8_t sent_network_pdu_len;
 static uint8_t  recv_upper_transport_pdu_data[100];
 static uint16_t recv_upper_transport_pdu_len;
 
-static btstack_packet_handler_t mesh_packet_handler;
-
+#ifdef ENABLE_MESH_ADV_BEARER
+static btstack_packet_handler_t adv_packet_handler;
 void adv_bearer_register_for_mesh_message(btstack_packet_handler_t packet_handler){
-    mesh_packet_handler = packet_handler;
+    adv_packet_handler = packet_handler;
 }
 void adv_bearer_request_can_send_now_for_mesh_message(void){
     printf("adv_bearer_request_can_send_now_for_mesh_message\n");
@@ -39,7 +39,7 @@ void adv_bearer_request_can_send_now_for_mesh_message(void){
     event[0] = HCI_EVENT_MESH_META;
     event[1] = 1;
     event[2] = MESH_SUBEVENT_CAN_SEND_NOW;
-    (*mesh_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
+    (*adv_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 void adv_bearer_send_mesh_message(const uint8_t * network_pdu, uint16_t size){
     printf("adv_bearer_send_mesh_message: \n");
@@ -48,14 +48,19 @@ void adv_bearer_send_mesh_message(const uint8_t * network_pdu, uint16_t size){
     sent_network_pdu_len = size;
 }
 void adv_bearer_emit_sent(void){
-    printf("adv_bearer_emit_sent\n");
     uint8_t event[3];
     event[0] = HCI_EVENT_MESH_META;
     event[1] = 1;
-    event[2] = MESH_SUBEVENT_CAN_SEND_NOW;
-    (*mesh_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
+    event[2] = MESH_SUBEVENT_MESSAGE_SENT;
+    (*adv_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
-//
+#endif
+
+#ifdef ENABLE_MESH_GATT_BEARER
+// static btstack_packet_handler_t gatt_packet_handler;
+void adv_bearer_register_for_mesh_message(btstack_packet_handler_t packet_handler){
+    // gatt_packet_handler = packet_handler;
+}
 void gatt_bearer_request_can_send_now_for_mesh_network_pdu(void){
     printf("gatt_bearer_request_can_send_now_for_mesh_network_pdu\n");
     // simulate can send now
@@ -68,13 +73,17 @@ void gatt_bearer_request_can_send_now_for_mesh_network_pdu(void){
 void gatt_bearer_send_mesh_network_pdu(const uint8_t * network_pdu, uint16_t size){
     printf("gatt_bearer_send_mesh_network_pdu: \n");
     printf_hexdump(network_pdu, size);
-    // stored by adv bearer
+    memcpy(sent_network_pdu_data, network_pdu, size);
+    sent_network_pdu_len = size;
+}
+void gatt_bearer_emit_sent(void){
     uint8_t event[3];
     event[0] = HCI_EVENT_MESH_META;
     event[1] = 1;
     event[2] = MESH_SUBEVENT_MESSAGE_SENT;
     mesh_gatt_handle_event(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
+#endif
 
 void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
     int i;
@@ -346,6 +355,20 @@ void test_receive_network_pdus(int count, char ** network_pdus, char ** lower_tr
     CHECK_EQUAL( transport_pdu_len, recv_upper_transport_pdu_len);
     CHECK_EQUAL_ARRAY(transport_pdu_data, recv_upper_transport_pdu_data, transport_pdu_len);
 }
+static void get_next_network_pdu(void){
+        while (sent_network_pdu_len == 0) {
+            mock_process_hci_cmd();
+        }
+
+        if (sent_network_pdu_len != test_network_pdu_len){
+            printf("Test Network PDU (%u): ", sent_network_pdu_len); printf_hexdump(sent_network_pdu_data, sent_network_pdu_len);
+            printf("Expected     PDU (%u): ", test_network_pdu_len); printf_hexdump(test_network_pdu_data, test_network_pdu_len);
+        }
+        CHECK_EQUAL( sent_network_pdu_len, test_network_pdu_len);
+        CHECK_EQUAL_ARRAY(test_network_pdu_data, sent_network_pdu_data, test_network_pdu_len);
+
+        sent_network_pdu_len = 0;
+}
 
 void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uint8_t ttl, uint16_t src, uint16_t dest, uint8_t szmic, char * control_pdu, int count, char ** lower_transport_pdus, char ** network_pdus){
 
@@ -370,21 +393,16 @@ void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uin
         test_network_pdu_len = strlen(network_pdus[i]) / 2;
         btstack_parse_hex(network_pdus[i], test_network_pdu_len, test_network_pdu_data);
 
-        while (sent_network_pdu_len == 0) {
-            mock_process_hci_cmd();
-        }
+#ifdef ENABLE_MESH_GATT_BEARER
+        get_next_network_pdu();
+        gatt_bearer_emit_sent();
+#endif
 
-        if (sent_network_pdu_len != test_network_pdu_len){
-            printf("Test Network PDU (%u): ", sent_network_pdu_len); printf_hexdump(sent_network_pdu_data, sent_network_pdu_len);
-            printf("Expected     PDU (%u): ", test_network_pdu_len); printf_hexdump(test_network_pdu_data, test_network_pdu_len);
-        }
-        CHECK_EQUAL( sent_network_pdu_len, test_network_pdu_len);
-        CHECK_EQUAL_ARRAY(test_network_pdu_data, sent_network_pdu_data, test_network_pdu_len);
-
-        sent_network_pdu_len = 0;
-
-        // trigger next
+#ifdef ENABLE_MESH_ADV_BEARER
+        get_next_network_pdu();
         adv_bearer_emit_sent();
+#endif
+
     }
 }
 
@@ -415,21 +433,16 @@ void test_send_control_message(uint16_t netkey_index, uint8_t ttl, uint16_t src,
         test_network_pdu_len = strlen(network_pdus[i]) / 2;
         btstack_parse_hex(network_pdus[i], test_network_pdu_len, test_network_pdu_data);
 
-        while (sent_network_pdu_len == 0) {
-            mock_process_hci_cmd();
-        }
+#ifdef ENABLE_MESH_GATT_BEARER
+        get_next_network_pdu();
+        gatt_bearer_emit_sent();
+#endif
 
-        if (sent_network_pdu_len != test_network_pdu_len){
-            printf("Test Network PDU (%u): ", sent_network_pdu_len); printf_hexdump(sent_network_pdu_data, sent_network_pdu_len);
-            printf("Expected     PDU (%u): ", test_network_pdu_len); printf_hexdump(test_network_pdu_data, test_network_pdu_len);
-        }
-        CHECK_EQUAL( sent_network_pdu_len, test_network_pdu_len);
-        CHECK_EQUAL_ARRAY(test_network_pdu_data, sent_network_pdu_data, test_network_pdu_len);
-
-        sent_network_pdu_len = 0;
-
-        // trigger next
+#ifdef ENABLE_MESH_ADV_BEARER
+        get_next_network_pdu();
         adv_bearer_emit_sent();
+#endif
+
     }
 }
 #if 1
