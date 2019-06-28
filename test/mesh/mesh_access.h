@@ -57,6 +57,14 @@ extern "C"
 struct mesh_model;
 struct mesh_element;
 
+// function to handle model operation message
+typedef void (*mesh_operation_handler)(struct mesh_model * mesh_model, mesh_pdu_t * pdu);
+
+// function to publish the current state of a model
+// @param mesh_model to publish
+// @returns mesh_pdu with status message
+typedef mesh_pdu_t * (*mesh_publish_state_t)(struct mesh_model * mesh_model);
+
 typedef enum {
     MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_100ms = 0x00u,
     MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_1s,
@@ -91,6 +99,8 @@ typedef enum {
 } model_state_id_t;
 
 typedef struct {
+    mesh_publish_state_t publish_state_fn;
+
     uint16_t address;
     uint16_t appkey_index;
     uint8_t  friendship_credential_flag;
@@ -99,7 +109,6 @@ typedef struct {
     uint8_t  retransmit;
 } mesh_publication_model_t;
 
-typedef void (*mesh_operation_handler)(struct mesh_model * mesh_model, mesh_pdu_t * pdu);
 
 typedef struct {
     uint32_t opcode;
@@ -281,6 +290,13 @@ void mesh_access_transitions_setup(mesh_transition_t * transition, mesh_model_t 
 void mesh_access_transitions_add(mesh_transition_t * transition);
 void mesh_access_transitions_remove(mesh_transition_t * transition);
 uint8_t mesh_access_transactions_get_next_transaction_id(void);
+
+// Mesh Model Publicaation
+
+/**
+ * Inform Mesh Access that the state of a model has changed. may trigger state publication
+ */
+void mesh_access_state_changed(mesh_model_t * mesh_model);
 
 // Mesh PDU Getter
 uint16_t mesh_pdu_src(mesh_pdu_t * pdu);

@@ -1149,3 +1149,28 @@ int mesh_model_contains_appkey(mesh_model_t * mesh_model, uint16_t appkey_index)
     return 0;
 
 }
+
+// Mesh Model Publication
+static void mesh_access_publish_model(mesh_model_t * mesh_model){
+    mesh_publication_model_t * publication_model = mesh_model->publication_model;
+    if (publication_model == NULL) return;
+    if (publication_model->publish_state_fn == NULL) return;
+    uint16_t dest = publication_model->address;
+    if (dest == MESH_ADDRESS_UNSASSIGNED) return;
+    uint16_t appkey_index = publication_model->appkey_index;
+    mesh_transport_key_t * app_key = mesh_transport_key_get(appkey_index);
+    if (app_key == NULL) return;
+
+
+    // compose message
+    mesh_pdu_t * pdu = (*publication_model->publish_state_fn)(mesh_model);
+    if (pdu == NULL) return;
+
+    mesh_upper_transport_setup_access_pdu_header(pdu, app_key->netkey_index, appkey_index, publication_model->ttl, mesh_access_get_element_address(mesh_model), dest, 0);
+    mesh_upper_transport_send_access_pdu(pdu);
+}
+
+void mesh_access_state_changed(mesh_model_t * mesh_model){
+    // TODO: schedule publication - for now just send right away
+    mesh_access_publish_model(mesh_model);
+}
