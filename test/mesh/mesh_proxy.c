@@ -214,8 +214,101 @@ void mesh_proxy_stop_advertising_with_network_id(void){
     }
 }
 
+// Mesh Proxy Configuration
+
+typedef enum {
+    MESH_PROXY_CONFIGURATION_MESSAGE_OPCODE_SET_FILTER_TYPE = 0,
+    MESH_PROXY_CONFIGURATION_MESSAGE_OPCODE_ADD_ADDRESSES,
+    MESH_PROXY_CONFIGURATION_MESSAGE_OPCODE_REMOVE_ADDRESSES,
+    MESH_PROXY_CONFIGURATION_MESSAGE_OPCODE_FILTER_STATUS
+} mesh_proxy_configuration_message_opcode_t;
+
+typedef enum {
+    MESH_PROXY_CONFIGURATION_FILTER_TYPE_SET_WHITE_LIST = 0,
+    MESH_PROXY_CONFIGURATION_FILTER_TYPE_BLACK_LIST
+} mesh_proxy_configuration_filter_type_t;
+
+static mesh_network_pdu_t * encrypted_proxy_configuration_ready_to_send;
+
+// Used to answer configuration request
+static uint16_t proxy_configuration_filter_list_len;
+static mesh_proxy_configuration_filter_type_t proxy_configuration_filter_type;
+static uint16_t primary_element_address;
+
+static void request_can_send_now_proxy_configuration_callback_handler(mesh_network_pdu_t * network_pdu){
+    encrypted_proxy_configuration_ready_to_send = network_pdu;
+    gatt_bearer_request_can_send_now_for_mesh_proxy_configuration();
+}
+
+static void proxy_configuration_message_handler(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * received_network_pdu){
+    mesh_proxy_configuration_message_opcode_t opcode;
+    uint8_t data[4];
+    mesh_network_pdu_t * network_pdu;
+    uint8_t * network_pdu_data;
+    uint8_t   network_pdu_len;
+
+    switch (callback_type){
+        case MESH_NETWORK_PDU_RECEIVED:
+            printf("proxy_configuration_message_handler: MESH_PROXY_PDU_RECEIVED\n");
+            network_pdu_len = mesh_network_pdu_len(received_network_pdu);
+            network_pdu_data = mesh_network_pdu_data(received_network_pdu);
+            // printf_hexdump(network_pdu_data, network_pdu_len);
+            opcode = network_pdu_data[0];
+            switch (opcode){
+                case MESH_PROXY_CONFIGURATION_MESSAGE_OPCODE_SET_FILTER_TYPE:{
+                    switch (network_pdu_data[1]){
+                        case MESH_PROXY_CONFIGURATION_FILTER_TYPE_SET_WHITE_LIST:
+                        case MESH_PROXY_CONFIGURATION_FILTER_TYPE_BLACK_LIST:
+                            proxy_configuration_filter_type = network_pdu_data[1];
+                            break;
+                    }
+                    
+                    uint8_t  ctl          = 1;
+                    uint8_t  ttl          = 0;
+                    uint16_t src          = primary_element_address;
+                    uint16_t dest         = 0; // unassigned address
+                    uint32_t seq          = mesh_lower_transport_next_seq();
+                    uint8_t  nid          = mesh_network_nid(received_network_pdu);
+                    uint16_t netkey_index = received_network_pdu->netkey_index; 
+                    printf("netkey index 0x%02x\n", netkey_index);
+
+                    network_pdu = btstack_memory_mesh_network_pdu_get();
+                    int pos = 0;
+                    data[pos++] = MESH_PROXY_CONFIGURATION_MESSAGE_OPCODE_FILTER_STATUS;
+                    data[pos++] = proxy_configuration_filter_type;
+                    big_endian_store_16(data, pos, proxy_configuration_filter_list_len);
+
+                    mesh_network_setup_pdu(network_pdu, netkey_index, nid, ctl, ttl, seq, src, dest, data, sizeof(data));
+                    mesh_network_encrypt_proxy_configuration_message(network_pdu, &request_can_send_now_proxy_configuration_callback_handler);
+                    
+                    // received_network_pdu is processed
+                    btstack_memory_mesh_network_pdu_free(received_network_pdu);
+                    break;
+                }
+                default:
+                    printf("proxy config not implemented, opcode %d\n", opcode);
+                    break;
+            }
+            break;
+        case MESH_NETWORK_CAN_SEND_NOW:
+            printf("MESH_SUBEVENT_CAN_SEND_NOW mesh_netework_gatt_bearer_handle_proxy_configuration len %d\n", encrypted_proxy_configuration_ready_to_send->len);
+            printf_hexdump(encrypted_proxy_configuration_ready_to_send->data, encrypted_proxy_configuration_ready_to_send->len);
+            gatt_bearer_send_mesh_proxy_configuration(encrypted_proxy_configuration_ready_to_send->data, encrypted_proxy_configuration_ready_to_send->len); 
+            break;
+        case MESH_NETWORK_PDU_SENT:
+            // printf("test MESH_PROXY_PDU_SENT\n");
+            // mesh_lower_transport_received_mesage(MESH_NETWORK_PDU_SENT, network_pdu);
+            break;
+        default:
+            break;
+    }
+}
+
 void mesh_proxy_init(uint16_t primary_unicast_address){
     primary_element_address = primary_unicast_address;
+
+    // mesh proxy configuration
+    mesh_network_set_proxy_message_handler(proxy_configuration_message_handler);
 }
 
 #endif
