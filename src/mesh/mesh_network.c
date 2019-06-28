@@ -785,13 +785,42 @@ static void mesh_network_gatt_bearer_handle_network_event(uint8_t packet_type, u
 }
 #endif
 
+#ifdef ENABLE_MESH_GATT_BEARER
+static void mesh_netework_gatt_bearer_handle_proxy_configuration(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    switch (packet_type){
+        case MESH_PROXY_DATA_PACKET:
+            mesh_network_process_proxy_configuration_message(packet, size);
+            break;
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)){
+                case HCI_EVENT_MESH_META:
+                    switch (hci_event_mesh_meta_get_subevent_code(packet)){
+                        case MESH_SUBEVENT_CAN_SEND_NOW:
+                            // forward to higher layer
+                            (*mesh_network_proxy_message_handler)(MESH_NETWORK_CAN_SEND_NOW, NULL);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+}
+#endif
+
 void mesh_network_init(void){
 #ifdef ENABLE_MESH_ADV_BEARER
     adv_bearer_register_for_network_pdu(&mesh_adv_bearer_handle_network_event);
 #endif
 #ifdef ENABLE_MESH_GATT_BEARER
-    gatt_bearer_register_for_network_pdu(&mesh_network_gatt_bearer_handle_network_event);
     gatt_bearer_con_handle = HCI_CON_HANDLE_INVALID;
+    gatt_bearer_register_for_network_pdu(&mesh_network_gatt_bearer_handle_network_event);
+    gatt_bearer_register_for_mesh_proxy_configuration(&mesh_netework_gatt_bearer_handle_proxy_configuration);
 #endif
 }
 

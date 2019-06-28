@@ -60,6 +60,8 @@ static btstack_packet_handler_t gatt_packet_handler;
 void gatt_bearer_register_for_network_pdu(btstack_packet_handler_t packet_handler){
     gatt_packet_handler = packet_handler;
 }
+void gatt_bearer_register_for_mesh_proxy_configuration(btstack_packet_handler_t packet_handler){
+}
 void gatt_bearer_request_can_send_now_for_network_pdu(void){
     // simulate can send now
     uint8_t event[3];

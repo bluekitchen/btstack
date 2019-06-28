@@ -848,36 +848,6 @@ static void request_can_send_now_proxy_configuration_callback_handler(mesh_netwo
     gatt_bearer_request_can_send_now_for_mesh_proxy_configuration();
 }
 
-static void packet_handler_for_mesh_proxy_configuration(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    printf("packet_handler_for_mesh_proxy_configuration\n");
-    switch (packet_type){
-        case MESH_PROXY_DATA_PACKET:
-            printf("Received proxy configuration\n");
-            printf_hexdump(packet, size);
-            mesh_network_process_proxy_configuration_message(packet, size);
-            break;
-        case HCI_EVENT_PACKET:
-            switch (hci_event_packet_get_type(packet)){
-                case HCI_EVENT_MESH_META:
-                    switch (hci_event_mesh_meta_get_subevent_code(packet)){
-                        case MESH_SUBEVENT_CAN_SEND_NOW:
-                            printf("MESH_SUBEVENT_CAN_SEND_NOW packet_handler_for_mesh_proxy_configuration len %d\n", encrypted_proxy_configuration_ready_to_send->len);
-                            printf_hexdump(encrypted_proxy_configuration_ready_to_send->data, encrypted_proxy_configuration_ready_to_send->len);
-                            gatt_bearer_send_mesh_proxy_configuration(encrypted_proxy_configuration_ready_to_send->data, encrypted_proxy_configuration_ready_to_send->len); 
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-            break;
-        default:
-            break;
-    }
-}
-
 static void proxy_configuration_message_handler(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * received_network_pdu){
     mesh_proxy_configuration_message_opcode_t opcode;
     uint8_t data[4];
@@ -928,6 +898,11 @@ static void proxy_configuration_message_handler(mesh_network_callback_type_t cal
                     break;
             }
             break;
+        case MESH_NETWORK_CAN_SEND_NOW:
+            printf("MESH_SUBEVENT_CAN_SEND_NOW mesh_netework_gatt_bearer_handle_proxy_configuration len %d\n", encrypted_proxy_configuration_ready_to_send->len);
+            printf_hexdump(encrypted_proxy_configuration_ready_to_send->data, encrypted_proxy_configuration_ready_to_send->len);
+            gatt_bearer_send_mesh_proxy_configuration(encrypted_proxy_configuration_ready_to_send->data, encrypted_proxy_configuration_ready_to_send->len); 
+            break;
         case MESH_NETWORK_PDU_SENT:
             // printf("test MESH_PROXY_PDU_SENT\n");
             // mesh_lower_transport_received_mesage(MESH_NETWORK_PDU_SENT, network_pdu);
@@ -976,12 +951,13 @@ int btstack_main(void)
     // Setup GATT bearer
     gatt_bearer_init();
 
-    gatt_bearer_register_for_mesh_proxy_configuration(&packet_handler_for_mesh_proxy_configuration);
+    // mesh proxy configuration
     mesh_network_set_proxy_message_handler(proxy_configuration_message_handler);
 
 #ifdef ENABLE_MESH_ADV_BEARER
     // Setup Unprovisioned Device Beacon
     beacon_init();
+    // Register for Unprovisioned Device Beacons provisioner
     beacon_register_for_unprovisioned_device_beacons(&mesh_unprovisioned_beacon_handler);
 #endif
 

@@ -60,6 +60,7 @@ extern "C" {
 typedef enum {
     MESH_NETWORK_PDU_RECEIVED,
     MESH_NETWORK_PDU_SENT,
+    MESH_NETWORK_CAN_SEND_NOW,
 } mesh_network_callback_type_t;
 
 typedef enum {
