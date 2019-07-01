@@ -1151,7 +1151,47 @@ int mesh_model_contains_appkey(mesh_model_t * mesh_model, uint16_t appkey_index)
 }
 
 // Mesh Model Publication
-// static btstack_timer_source_t mesh_access_publication_timer;
+static btstack_timer_source_t mesh_access_publication_timer;
+
+static uint32_t mesh_model_publication_retransmit_count(uint8_t retransmit){
+    return retransmit & 0x07u;
+}
+
+static uint32_t mesh_model_publication_retransmission_period_ms(uint8_t retransmit){
+    return ((uint32_t)((retransmit >> 3) + 1)) * 50;
+}
+
+static void mesh_model_publication_setup_publication(mesh_publication_model_t * publication_model, uint32_t now){
+
+    // set retransmit counter
+    publication_model->retransmit_count = mesh_model_publication_retransmit_count(publication_model->retransmit);
+
+    // schedule next publication or retransmission
+    uint32_t publication_period_ms = mesh_access_transitions_step_ms_from_gdtt(publication_model->period);
+
+    // set next publication
+    if (publication_period_ms != 0){
+        publication_model->next_publication_ms = now + publication_period_ms;
+        publication_model->state = MESH_MODEL_PUBLICATION_STATE_W4_PUBLICATION_MS;
+    }
+}
+
+static void mesh_model_publication_setup_retransmission(mesh_publication_model_t * publication_model, uint32_t now){
+    uint8_t num_retransmits = mesh_model_publication_retransmit_count(publication_model->retransmit);
+    if (num_retransmits == 0) return;
+
+    // calc next retransmit time
+    uint32_t retransmission_ms = now + mesh_model_publication_retransmission_period_ms(publication_model->retransmit);
+
+    // ignore if retransmission would be after next publication timeout
+    if (publication_model->state == MESH_MODEL_PUBLICATION_STATE_W4_PUBLICATION_MS){
+        if (btstack_time_delta(retransmission_ms, publication_model->next_publication_ms) > 0) return;   
+    }
+
+    // schedule next retransmission
+    publication_model->next_retransmit_ms = retransmission_ms;
+    publication_model->state = MESH_MODEL_PUBLICATION_STATE_W4_RETRANSMIT_MS;
+}
 
 static void mesh_model_publication_publish_now_model(mesh_model_t * mesh_model){
     mesh_publication_model_t * publication_model = mesh_model->publication_model;
@@ -1174,9 +1214,9 @@ static void mesh_model_publication_publish_now_model(mesh_model_t * mesh_model){
 static void mesh_model_publication_run(btstack_timer_source_t * ts){
     UNUSED(ts);
 
-    // uint32_t next_timeout_ms = 0;
+    uint32_t now = btstack_run_loop_get_time_ms();
 
-    // iterate over elements and models
+    // iterate over elements and models and handle time-based transitions
     mesh_element_iterator_t element_it;
     mesh_element_iterator_init(&element_it);
     while (mesh_element_iterator_has_next(&element_it)){
@@ -1187,17 +1227,95 @@ static void mesh_model_publication_run(btstack_timer_source_t * ts){
             mesh_model_t * mesh_model = mesh_model_iterator_next(&model_it);
             mesh_publication_model_t * publication_model = mesh_model->publication_model;
             if (publication_model == NULL) continue;
-            if (publication_model->publish_now == 0) return;
+
+            // schedule next
+            switch (publication_model->state){
+                case MESH_MODEL_PUBLICATION_STATE_W4_PUBLICATION_MS:
+                    if (btstack_time_delta(publication_model->next_publication_ms, now) > 0) break;
+                    // timeout
+                    publication_model->publish_now = 1;
+                    // schedule next publication and retransmission
+                    mesh_model_publication_setup_publication(publication_model, now);
+                    mesh_model_publication_setup_retransmission(publication_model, now);
+                    break;
+                case MESH_MODEL_PUBLICATION_STATE_W4_RETRANSMIT_MS:
+                    if (btstack_time_delta(publication_model->next_retransmit_ms, now) > 0) break;
+                    // timeout
+                    publication_model->publish_now = 1;
+                    publication_model->retransmit_count--;
+                    // schedule next retransmission
+                    mesh_model_publication_setup_retransmission(publication_model, now);
+                    break;
+                default:
+                    break;
+            }
+
+            if (publication_model->publish_now == 0) continue;
 
             publication_model->publish_now = 0;
             mesh_model_publication_publish_now_model(mesh_model);
         }
     }
+
+    int32_t next_timeout_ms = 0;
+    mesh_element_iterator_init(&element_it);
+    while (mesh_element_iterator_has_next(&element_it)){
+        mesh_element_t * element = mesh_element_iterator_next(&element_it);
+        mesh_model_iterator_t model_it;
+        mesh_model_iterator_init(&model_it, element);
+        while (mesh_model_iterator_has_next(&model_it)){
+            mesh_model_t * mesh_model = mesh_model_iterator_next(&model_it);
+            mesh_publication_model_t * publication_model = mesh_model->publication_model;
+            if (publication_model == NULL) continue;
+
+            // schedule next
+            int32_t timeout_delta_ms;
+            switch (publication_model->state){
+                case MESH_MODEL_PUBLICATION_STATE_W4_PUBLICATION_MS:
+                    timeout_delta_ms = btstack_time_delta(publication_model->next_publication_ms, now);
+                    if (next_timeout_ms == 0 || timeout_delta_ms < next_timeout_ms){
+                        next_timeout_ms = timeout_delta_ms;
+                    }
+                    break;
+                case MESH_MODEL_PUBLICATION_STATE_W4_RETRANSMIT_MS:
+                    timeout_delta_ms = btstack_time_delta(publication_model->next_retransmit_ms, now);
+                    if (next_timeout_ms == 0 || timeout_delta_ms < next_timeout_ms){
+                        next_timeout_ms = timeout_delta_ms;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    // set timer
+    if (next_timeout_ms == 0) return;
+
+    btstack_run_loop_set_timer(&mesh_access_publication_timer, next_timeout_ms);
+    btstack_run_loop_set_timer_handler(&mesh_access_publication_timer, mesh_model_publication_run);
+    btstack_run_loop_add_timer(&mesh_access_publication_timer);
 }
 
+void mesh_model_publication_start(mesh_model_t * mesh_model){
+    mesh_publication_model_t * publication_model = mesh_model->publication_model;
+    if (publication_model == NULL) return;
+
+    // reset state
+    publication_model->state = MESH_MODEL_PUBLICATION_STATE_IDLE;
+
+    // publish right away
+    publication_model->publish_now = 1;
+
+    // setup next publication and retransmission
+    uint32_t now = btstack_run_loop_get_time_ms();
+    mesh_model_publication_setup_publication(publication_model, now);
+    mesh_model_publication_setup_retransmission(publication_model, now);
+
+    mesh_model_publication_run(NULL);
+}
 
 void mesh_access_state_changed(mesh_model_t * mesh_model){
-    // TODO: schedule publication - for now just send right away
     mesh_publication_model_t * publication_model = mesh_model->publication_model;
     if (publication_model == NULL) return;
     publication_model->publish_now = 1;

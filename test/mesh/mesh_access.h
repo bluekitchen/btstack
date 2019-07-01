@@ -98,10 +98,20 @@ typedef enum {
     MODEL_STATE_ID_GENERIC_LEVEL  = (BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC << 16) | 1u,
 } model_state_id_t;
 
+typedef enum {
+    MESH_MODEL_PUBLICATION_STATE_IDLE,
+    MESH_MODEL_PUBLICATION_STATE_W4_PUBLICATION_MS,
+    MESH_MODEL_PUBLICATION_STATE_W4_RETRANSMIT_MS,
+} mesh_model_publication_state_t;
+
 typedef struct {
     mesh_publish_state_t publish_state_fn;
+    mesh_model_publication_state_t state;
+    uint32_t next_publication_ms;
+    uint32_t next_retransmit_ms;
+    uint8_t  retransmit_count;
     uint8_t  publish_now;
-    
+
     uint16_t address;
     uint16_t appkey_index;
     uint8_t  friendship_credential_flag;
@@ -296,8 +306,15 @@ uint8_t mesh_access_transactions_get_next_transaction_id(void);
 
 /**
  * Inform Mesh Access that the state of a model has changed. may trigger state publication
+ * @param mesh_model
  */
 void mesh_access_state_changed(mesh_model_t * mesh_model);
+
+/**
+ * Start Model Publcation
+ * @param mesh_model
+ */
+void mesh_model_publication_start(mesh_model_t * mesh_model);
 
 // Mesh PDU Getter
 uint16_t mesh_pdu_src(mesh_pdu_t * pdu);
