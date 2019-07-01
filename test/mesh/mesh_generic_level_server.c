@@ -61,10 +61,10 @@ static void generic_server_send_message(uint16_t src, uint16_t dest, uint16_t ne
 // Transition 
 static int16_t add_and_clip_int16(int16_t current_value, int16_t increment){
     int32_t value = current_value + increment;
-    if (value < 0x8000){
-        value = 0x8000;
-    } else if (value > 0x7FFF){
-        value = 0x7FFF;
+    if (value < -32768){
+        value = -32768;
+    } else if (value > 32767){
+        value = 32767;
     }
    return (int16_t) value;
 }
