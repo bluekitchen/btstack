@@ -1151,6 +1151,8 @@ int mesh_model_contains_appkey(mesh_model_t * mesh_model, uint16_t appkey_index)
 }
 
 // Mesh Model Publication
+// static btstack_timer_source_t mesh_access_publication_timer;
+
 static void mesh_model_publication_publish_now_model(mesh_model_t * mesh_model){
     mesh_publication_model_t * publication_model = mesh_model->publication_model;
     if (publication_model == NULL) return;
@@ -1161,7 +1163,6 @@ static void mesh_model_publication_publish_now_model(mesh_model_t * mesh_model){
     mesh_transport_key_t * app_key = mesh_transport_key_get(appkey_index);
     if (app_key == NULL) return;
 
-
     // compose message
     mesh_pdu_t * pdu = (*publication_model->publish_state_fn)(mesh_model);
     if (pdu == NULL) return;
@@ -1170,17 +1171,35 @@ static void mesh_model_publication_publish_now_model(mesh_model_t * mesh_model){
     mesh_upper_transport_send_access_pdu(pdu);
 }
 
-// @assume mesh_model->pulication_model != NULL
-static void mesh_model_publication_run_for_model(mesh_model_t * mesh_model){
-    mesh_publication_model_t * publication_model = mesh_model->publication_model;
-    publication_model->publish_now = 0;
-    mesh_model_publication_publish_now_model(mesh_model);
+static void mesh_model_publication_run(btstack_timer_source_t * ts){
+    UNUSED(ts);
+
+    // uint32_t next_timeout_ms = 0;
+
+    // iterate over elements and models
+    mesh_element_iterator_t element_it;
+    mesh_element_iterator_init(&element_it);
+    while (mesh_element_iterator_has_next(&element_it)){
+        mesh_element_t * element = mesh_element_iterator_next(&element_it);
+        mesh_model_iterator_t model_it;
+        mesh_model_iterator_init(&model_it, element);
+        while (mesh_model_iterator_has_next(&model_it)){
+            mesh_model_t * mesh_model = mesh_model_iterator_next(&model_it);
+            mesh_publication_model_t * publication_model = mesh_model->publication_model;
+            if (publication_model == NULL) continue;
+            if (publication_model->publish_now == 0) return;
+
+            publication_model->publish_now = 0;
+            mesh_model_publication_publish_now_model(mesh_model);
+        }
+    }
 }
+
 
 void mesh_access_state_changed(mesh_model_t * mesh_model){
     // TODO: schedule publication - for now just send right away
     mesh_publication_model_t * publication_model = mesh_model->publication_model;
     if (publication_model == NULL) return;
     publication_model->publish_now = 1;
-    mesh_model_publication_run_for_model(mesh_model);
+    mesh_model_publication_run(NULL);
 }
