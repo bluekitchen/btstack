@@ -320,6 +320,8 @@ static void mesh_model_load_publication(mesh_model_t * mesh_model){
         mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_pseudo_dst(src);
         mesh_virtual_address_increase_refcount(virtual_address);
     }
+
+    mesh_model_publication_start(mesh_model);
 }
 
 static void mesh_model_store_publication(mesh_model_t * mesh_model){
@@ -1567,6 +1569,25 @@ static void config_vendor_model_app_get_handler(mesh_model_t *config_server_mode
 
 // Model Publication
 
+static void config_model_publication_changed(mesh_model_t *mesh_model, mesh_publication_model_t * new_publication_model){
+
+    // stop publication
+    mesh_model_publication_stop(mesh_model);
+
+    // update model publication state
+    memcpy(mesh_model->publication_model, &configuration_server_publication_model, sizeof(mesh_publication_model_t));
+
+    // store
+    mesh_model_store_publication(mesh_model);
+
+    // start publication if address is set (nothing happens if period = 0 and retransmit = 0)
+    if (new_publication_model->address == MESH_ADDRESS_UNSASSIGNED) return;
+
+    // start to publish
+    mesh_model_publication_start(mesh_model);
+}
+
+
 static void
 config_model_publication_status(mesh_model_t *mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status,
                                     uint16_t element_address, uint32_t model_identifier, mesh_publication_model_t *publication_model) {
@@ -1629,11 +1650,8 @@ config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
                 mesh_virtual_address_decrease_refcount(current_virtual_address);
             }
 
-            // update model publication state
-            memcpy(target_model->publication_model, &configuration_server_publication_model, sizeof(mesh_publication_model_t));
-
-            // store
-            mesh_model_store_publication(target_model);
+            // restart publication
+            config_model_publication_changed(target_model, &configuration_server_publication_model);
         }
     }
 
@@ -1667,10 +1685,9 @@ static void config_model_publication_virtual_address_set_hash(void *arg){
 
         configuration_server_publication_model.address = virtual_address->pseudo_dst;
         mesh_virtual_address_increase_refcount(virtual_address);
-        // update model publication state
-        memcpy(configuration_server_target_model->publication_model, &configuration_server_publication_model, sizeof(mesh_publication_model_t));
-        // store
-        mesh_model_store_publication(configuration_server_target_model);
+
+        // restart publication
+        config_model_publication_changed(configuration_server_target_model, &configuration_server_publication_model);
     }
 
     // send status
