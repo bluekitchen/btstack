@@ -1315,6 +1315,14 @@ void mesh_model_publication_start(mesh_model_t * mesh_model){
     mesh_model_publication_run(NULL);
 }
 
+void mesh_model_publication_stop(mesh_model_t * mesh_model){
+    mesh_publication_model_t * publication_model = mesh_model->publication_model;
+    if (publication_model == NULL) return;
+
+    // reset state
+    publication_model->state = MESH_MODEL_PUBLICATION_STATE_IDLE;
+}
+
 void mesh_access_state_changed(mesh_model_t * mesh_model){
     mesh_publication_model_t * publication_model = mesh_model->publication_model;
     if (publication_model == NULL) return;

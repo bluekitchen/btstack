@@ -311,10 +311,16 @@ uint8_t mesh_access_transactions_get_next_transaction_id(void);
 void mesh_access_state_changed(mesh_model_t * mesh_model);
 
 /**
- * Start Model Publcation
+ * Start Model Publication
  * @param mesh_model
  */
 void mesh_model_publication_start(mesh_model_t * mesh_model);
+
+/**
+ * Stop Model Publication
+ * @param mesh_model
+ */
+void mesh_model_publication_stop(mesh_model_t * mesh_model);
 
 // Mesh PDU Getter
 uint16_t mesh_pdu_src(mesh_pdu_t * pdu);
