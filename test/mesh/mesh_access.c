@@ -1151,7 +1151,7 @@ int mesh_model_contains_appkey(mesh_model_t * mesh_model, uint16_t appkey_index)
 }
 
 // Mesh Model Publication
-static void mesh_access_publish_model(mesh_model_t * mesh_model){
+static void mesh_model_publication_publish_now_model(mesh_model_t * mesh_model){
     mesh_publication_model_t * publication_model = mesh_model->publication_model;
     if (publication_model == NULL) return;
     if (publication_model->publish_state_fn == NULL) return;
@@ -1170,7 +1170,17 @@ static void mesh_access_publish_model(mesh_model_t * mesh_model){
     mesh_upper_transport_send_access_pdu(pdu);
 }
 
+// @assume mesh_model->pulication_model != NULL
+static void mesh_model_publication_run_for_model(mesh_model_t * mesh_model){
+    mesh_publication_model_t * publication_model = mesh_model->publication_model;
+    publication_model->publish_now = 0;
+    mesh_model_publication_publish_now_model(mesh_model);
+}
+
 void mesh_access_state_changed(mesh_model_t * mesh_model){
     // TODO: schedule publication - for now just send right away
-    mesh_access_publish_model(mesh_model);
+    mesh_publication_model_t * publication_model = mesh_model->publication_model;
+    if (publication_model == NULL) return;
+    publication_model->publish_now = 1;
+    mesh_model_publication_run_for_model(mesh_model);
 }

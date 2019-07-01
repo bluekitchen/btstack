@@ -100,7 +100,8 @@ typedef enum {
 
 typedef struct {
     mesh_publish_state_t publish_state_fn;
-
+    uint8_t  publish_now;
+    
     uint16_t address;
     uint16_t appkey_index;
     uint8_t  friendship_credential_flag;
