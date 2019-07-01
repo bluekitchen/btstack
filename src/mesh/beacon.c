@@ -241,7 +241,7 @@ static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts){
     // setup next run
     if (next_timeout_ms == 0) return;
 
-    btstack_run_loop_set_timer(&beacon_timer, 10);
+    btstack_run_loop_set_timer(&beacon_timer, next_timeout_ms);
     btstack_run_loop_set_timer_handler(&beacon_timer, mesh_secure_network_beacon_run);
     btstack_run_loop_add_timer(&beacon_timer);
 }
