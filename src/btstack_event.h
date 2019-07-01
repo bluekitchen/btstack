@@ -7655,13 +7655,22 @@ static inline uint8_t mesh_subevent_generic_on_off_status_get_element_index(cons
     return event[3];
 }
 /**
+ * @brief Get field model_identifier from event MESH_SUBEVENT_GENERIC_ON_OFF_STATUS
+ * @param event packet
+ * @return model_identifier
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_generic_on_off_status_get_model_identifier(const uint8_t * event){
+    return little_endian_read_32(event, 4);
+}
+/**
  * @brief Get field present_value from event MESH_SUBEVENT_GENERIC_ON_OFF_STATUS
  * @param event packet
  * @return present_value
- * @note: btstack_type 4
+ * @note: btstack_type 1
  */
-static inline uint32_t mesh_subevent_generic_on_off_status_get_present_value(const uint8_t * event){
-    return little_endian_read_32(event, 4);
+static inline uint8_t mesh_subevent_generic_on_off_status_get_present_value(const uint8_t * event){
+    return event[8];
 }
 /**
  * @brief Get field target_value from event MESH_SUBEVENT_GENERIC_ON_OFF_STATUS
@@ -7670,16 +7679,62 @@ static inline uint32_t mesh_subevent_generic_on_off_status_get_present_value(con
  * @note: btstack_type 1
  */
 static inline uint8_t mesh_subevent_generic_on_off_status_get_target_value(const uint8_t * event){
-    return event[8];
+    return event[9];
 }
 /**
  * @brief Get field remaining_time_ms from event MESH_SUBEVENT_GENERIC_ON_OFF_STATUS
  * @param event packet
  * @return remaining_time_ms
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_generic_on_off_status_get_remaining_time_ms(const uint8_t * event){
+    return little_endian_read_32(event, 10);
+}
+
+/**
+ * @brief Get field element_index from event MESH_SUBEVENT_GENERIC_LEVEL_STATUS
+ * @param event packet
+ * @return element_index
  * @note: btstack_type 1
  */
-static inline uint8_t mesh_subevent_generic_on_off_status_get_remaining_time_ms(const uint8_t * event){
-    return event[9];
+static inline uint8_t mesh_subevent_generic_level_status_get_element_index(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field model_identifier from event MESH_SUBEVENT_GENERIC_LEVEL_STATUS
+ * @param event packet
+ * @return model_identifier
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_generic_level_status_get_model_identifier(const uint8_t * event){
+    return little_endian_read_32(event, 4);
+}
+/**
+ * @brief Get field present_value from event MESH_SUBEVENT_GENERIC_LEVEL_STATUS
+ * @param event packet
+ * @return present_value
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_generic_level_status_get_present_value(const uint8_t * event){
+    return little_endian_read_16(event, 8);
+}
+/**
+ * @brief Get field target_value from event MESH_SUBEVENT_GENERIC_LEVEL_STATUS
+ * @param event packet
+ * @return target_value
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_generic_level_status_get_target_value(const uint8_t * event){
+    return little_endian_read_16(event, 10);
+}
+/**
+ * @brief Get field remaining_time_ms from event MESH_SUBEVENT_GENERIC_LEVEL_STATUS
+ * @param event packet
+ * @return remaining_time_ms
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_generic_level_status_get_remaining_time_ms(const uint8_t * event){
+    return little_endian_read_32(event, 12);
 }
 
 

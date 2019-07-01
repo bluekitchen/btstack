@@ -2525,5 +2525,15 @@ typedef uint8_t sm_key_t[16];
  */
 #define MESH_SUBEVENT_GENERIC_ON_OFF_STATUS                                           0x30
 
+/**
+ * @format 114224
+ * @param subevent_code
+ * @param element_index
+ * @param model_identifier
+ * @param present_value
+ * @param target_value       // optinal, if value > 0, than remaining_time_ms must be read
+ * @param remaining_time_ms  
+ */
+#define MESH_SUBEVENT_GENERIC_LEVEL_STATUS                                           0x31
 
 #endif
