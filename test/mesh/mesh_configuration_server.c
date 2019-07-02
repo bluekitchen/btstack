@@ -794,11 +794,6 @@ static void config_netkey_add_or_update_derived(void * arg){
 
     mesh_network_key_t * network_key = (mesh_network_key_t *) arg;
 
-#ifdef ENABLE_MESH_PROXY_SERVER
-    // setup advertisement with network id
-    network_key->advertisement_with_network_id.adv_length = gatt_bearer_setup_advertising_with_network_id(network_key->advertisement_with_network_id.adv_data, network_key->network_id);
-#endif
-
     // store network key
     mesh_store_network_key(network_key);
 

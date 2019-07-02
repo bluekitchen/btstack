@@ -973,7 +973,7 @@ void mesh_load_network_keys(void){
 
 #ifdef ENABLE_GATT_BEARER
         // setup advertisement with network id
-        network_key->advertisement_with_network_id.adv_length = gatt_bearer_setup_advertising_with_network_id(network_key->advertisement_with_network_id.adv_data, network_key->network_id);
+        network_key->advertisement_with_network_id.adv_length = mesh_proxy_setup_advertising_with_network_id(network_key->advertisement_with_network_id.adv_data, network_key->network_id);
 #endif
 
         mesh_network_key_add(network_key);

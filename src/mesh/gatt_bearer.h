@@ -74,14 +74,6 @@ void gatt_bearer_send_network_pdu(const uint8_t * network_pdu, uint16_t size);
 void gatt_bearer_send_beacon(const uint8_t * beacon_update, uint16_t size); 
 void gatt_bearer_send_mesh_proxy_configuration(const uint8_t * proxy_configuration, uint16_t size); 
 
-/* Utility functions */
-/**
- * Setup Proxy Advertisement for given network id
- * @param buffer (20 bytes)
- * @param network_id (8 bytes)
- */
-uint8_t gatt_bearer_setup_advertising_with_network_id(uint8_t * buffer, uint8_t * network_id);
-
 #if defined __cplusplus
 }
 #endif

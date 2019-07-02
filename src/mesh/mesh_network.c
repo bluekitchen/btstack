@@ -1139,8 +1139,6 @@ void mesh_subnet_update_for_netkey_index(uint16_t netkey_index){
         }
     }
 
-
     // TODO: advertisement using node id active
-    // TODO: advertisement using network id (used by proxy)
     // TODO: secure network beacons
 }

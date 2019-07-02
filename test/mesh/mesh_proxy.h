@@ -82,7 +82,6 @@ void mesh_proxy_start_advertising_with_network_id(void);
  */
 void mesh_proxy_stop_advertising_with_network_id(void);
 
-
 #ifdef __cplusplus
 } /* end of extern "C" */
 #endif

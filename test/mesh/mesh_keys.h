@@ -73,17 +73,16 @@ typedef struct {
     // internal index [0..MAX_NR_MESH_NETWORK_KEYS-1]
     uint16_t internal_index;
 
-
     // index into shared global key list
     uint16_t netkey_index;
 
-    // internal version - allows for newer relation between keys with same netkey_index
+    // internal version - allows for newer-than relation between keys with same netkey_index
     uint8_t version;
 
     // net_key from provisioner or Config Model Client
     uint8_t net_key[16];
 
-    // derivative data
+    // derived data
 
     // k1
     uint8_t identity_key[16];
@@ -96,9 +95,6 @@ typedef struct {
     uint8_t nid;
     uint8_t encryption_key[16];
     uint8_t privacy_key[16];
-
-    // advertisement data for proxy
-    adv_bearer_connectable_advertisement_data_item_t advertisement_with_network_id;
 
 } mesh_network_key_t;
 

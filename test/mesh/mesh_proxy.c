@@ -87,6 +87,23 @@ static const uint8_t adv_data_with_node_identity_template[] = {
           // Random - 8 bytes
 };
 
+static const uint8_t adv_data_with_network_id_template[] = {
+    // Flags general discoverable, BR/EDR not supported
+    0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
+    // 16-bit Service UUIDs
+    0x03, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, ORG_BLUETOOTH_SERVICE_MESH_PROXY & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROXY >> 8,
+    // Service Data
+    0x0C, BLUETOOTH_DATA_TYPE_SERVICE_DATA, ORG_BLUETOOTH_SERVICE_MESH_PROXY & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROXY >> 8, 
+          // MESH_IDENTIFICATION_NETWORK_ID_TYPE
+          MESH_IDENTIFICATION_NETWORK_ID_TYPE 
+};
+
+static uint8_t mesh_proxy_setup_advertising_with_network_id(uint8_t * buffer, uint8_t * network_id){
+    memcpy(&buffer[0], adv_data_with_network_id_template, 12);
+    memcpy(&buffer[12], network_id, 8);
+    return 20;
+}
+
 static void mesh_proxy_stop_all_advertising_with_node_id(void){
     adv_bearer_advertisements_remove_item(&connectable_advertisement_with_node_id);
     mesh_subnet_iterator_t it;
@@ -202,9 +219,11 @@ void mesh_proxy_start_advertising_with_network_id(void){
     mesh_subnet_iterator_t it;
     mesh_subnet_iterator_init(&it);
     while (mesh_subnet_iterator_has_more(&it)){
-        mesh_subnet_t * network_key = mesh_subnet_iterator_get_next(&it);
-        log_info("Proxy start advertising with network id, netkey index %04x", network_key->netkey_index);
-        adv_bearer_advertisements_add_item(&network_key->advertisement_with_network_id);
+        mesh_subnet_t * subnet = mesh_subnet_iterator_get_next(&it);
+        log_info("Proxy start advertising with network id, netkey index %04x", subnet->netkey_index);
+        // setup advertisement with network id (used by proxy)
+        subnet->advertisement_with_network_id.adv_length = mesh_proxy_setup_advertising_with_network_id(subnet->advertisement_with_network_id.adv_data, subnet->old_key->network_id);
+        adv_bearer_advertisements_add_item(&subnet->advertisement_with_network_id);
     }
     adv_bearer_advertisements_enable(1);
 }
@@ -315,6 +334,5 @@ void mesh_proxy_init(uint16_t primary_unicast_address){
     // mesh proxy configuration
     mesh_network_set_proxy_message_handler(proxy_configuration_message_handler);
 }
-
 #endif
 
