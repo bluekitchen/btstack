@@ -35,9 +35,12 @@
 #define HCI_INCOMING_PRE_BUFFER_SIZE 4
 
 #define MAX_NR_LE_DEVICE_DB_ENTRIES    4
-#define MAX_NR_MESH_NETWORK_KEYS       4
 #define MAX_NR_MESH_TRANSPORT_KEYS    16
 #define MAX_NR_MESH_VIRTUAL_ADDRESSES 16
+#define MAX_NR_MESH_SUBNETS            2
+
+// allow for one NetKey update
+#define MAX_NR_MESH_NETWORK_KEYS      (MAX_NR_MESH_SUBNETS+1)
 
 #define NVM_NUM_LINK_KEYS 2
 

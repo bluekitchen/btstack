@@ -1130,6 +1130,52 @@ void btstack_memory_mesh_virtual_address_free(mesh_virtual_address_t *mesh_virtu
 #endif
 
 
+// MARK: mesh_subnet_t
+#if !defined(HAVE_MALLOC) && !defined(MAX_NR_MESH_SUBNETS)
+    #if defined(MAX_NO_MESH_SUBNETS)
+        #error "Deprecated MAX_NO_MESH_SUBNETS defined instead of MAX_NR_MESH_SUBNETS. Please update your btstack_config.h to use MAX_NR_MESH_SUBNETS."
+    #else
+        #define MAX_NR_MESH_SUBNETS 0
+    #endif
+#endif
+
+#ifdef MAX_NR_MESH_SUBNETS
+#if MAX_NR_MESH_SUBNETS > 0
+static mesh_subnet_t mesh_subnet_storage[MAX_NR_MESH_SUBNETS];
+static btstack_memory_pool_t mesh_subnet_pool;
+mesh_subnet_t * btstack_memory_mesh_subnet_get(void){
+    void * buffer = btstack_memory_pool_get(&mesh_subnet_pool);
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_subnet_t));
+    }
+    return (mesh_subnet_t *) buffer;
+}
+void btstack_memory_mesh_subnet_free(mesh_subnet_t *mesh_subnet){
+    btstack_memory_pool_free(&mesh_subnet_pool, mesh_subnet);
+}
+#else
+mesh_subnet_t * btstack_memory_mesh_subnet_get(void){
+    return NULL;
+}
+void btstack_memory_mesh_subnet_free(mesh_subnet_t *mesh_subnet){
+    // silence compiler warning about unused parameter in a portable way
+    (void) mesh_subnet;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+mesh_subnet_t * btstack_memory_mesh_subnet_get(void){
+    void * buffer = malloc(sizeof(mesh_subnet_t));
+    if (buffer){
+        memset(buffer, 0, sizeof(mesh_subnet_t));
+    }
+    return (mesh_subnet_t *) buffer;
+}
+void btstack_memory_mesh_subnet_free(mesh_subnet_t *mesh_subnet){
+    free(mesh_subnet);
+}
+#endif
+
+
 #endif
 // init
 void btstack_memory_init(void){
@@ -1206,6 +1252,9 @@ void btstack_memory_init(void){
 #endif
 #if MAX_NR_MESH_VIRTUAL_ADDRESSS > 0
     btstack_memory_pool_create(&mesh_virtual_address_pool, mesh_virtual_address_storage, MAX_NR_MESH_VIRTUAL_ADDRESSS, sizeof(mesh_virtual_address_t));
+#endif
+#if MAX_NR_MESH_SUBNETS > 0
+    btstack_memory_pool_create(&mesh_subnet_pool, mesh_subnet_storage, MAX_NR_MESH_SUBNETS, sizeof(mesh_subnet_t));
 #endif
 #endif
 }

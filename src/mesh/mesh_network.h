@@ -130,6 +130,31 @@ typedef struct {
     uint8_t               data[MESH_ACCESS_PAYLOAD_MAX];
 } mesh_transport_pdu_t;
 
+typedef struct {
+    btstack_linked_item_t item;
+
+    // current / old key
+    mesh_network_key_t * old_key;
+
+    // new key (only set during key refresh)
+    mesh_network_key_t * new_key;
+
+    // key refresh state
+    mesh_key_refresh_state_t key_refresh;
+
+    // advertisement using node id active
+    uint8_t node_id_advertisement_running;
+
+    // advertisement using network id (used by proxy)
+    adv_bearer_connectable_advertisement_data_item_t advertisement_with_network_id;
+
+    // secure network beacons
+    mesh_secure_network_beacon_state_t beacon_state;
+    uint32_t                           beacon_interval_ms;
+    uint32_t                           beacon_observation_start_ms;
+    uint16_t                           beacon_observation_counter;
+
+} mesh_subnet_t;
 
 /**
  * @brief Init Mesh Network Layer
