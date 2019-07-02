@@ -222,7 +222,8 @@ void mesh_proxy_start_advertising_with_network_id(void){
         mesh_subnet_t * subnet = mesh_subnet_iterator_get_next(&it);
         log_info("Proxy start advertising with network id, netkey index %04x", subnet->netkey_index);
         // setup advertisement with network id (used by proxy)
-        subnet->advertisement_with_network_id.adv_length = mesh_proxy_setup_advertising_with_network_id(subnet->advertisement_with_network_id.adv_data, subnet->old_key->network_id);
+        mesh_network_key_t * network_key = mesh_subnet_get_outgoing_network_key(subnet);
+        subnet->advertisement_with_network_id.adv_length = mesh_proxy_setup_advertising_with_network_id(subnet->advertisement_with_network_id.adv_data, network_key->network_id);
         adv_bearer_advertisements_add_item(&subnet->advertisement_with_network_id);
     }
     adv_bearer_advertisements_enable(1);

@@ -1153,7 +1153,4 @@ void mesh_subnet_update_for_netkey_index(uint16_t netkey_index){
             subnet->key_refresh = MESH_KEY_REFRESH_FIRST_PHASE;
         }
     }
-
-    // TODO: advertisement using node id active
-    // TODO: secure network beacons
 }
