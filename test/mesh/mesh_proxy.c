@@ -40,12 +40,15 @@
 #include <string.h>
 
 #include "mesh/adv_bearer.h"
+#include "mesh/gatt_bearer.h"
 #include "mesh/mesh_crypto.h"
+#include "mesh/mesh_lower_transport.h"
 #include "bluetooth_company_id.h"
 #include "bluetooth_data_types.h"
 #include "bluetooth_gatt.h"
 #include "btstack_config.h"
 #include "btstack_crypto.h"
+#include "btstack_memory.h"
 #include "btstack_debug.h"
 #include "btstack_run_loop.h"
 #include "btstack_util.h"
