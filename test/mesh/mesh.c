@@ -402,10 +402,13 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                     // get primary netkey
                     primary_network_key = provisioning_device_data_get_network_key();
                     mesh_network_key_dump(primary_network_key);
-                    
+
                     // add to network keys
                     mesh_network_key_add(primary_network_key);
                     
+                    // setup primary network
+                    mesh_subnet_update_for_netkey_index(primary_network_key->netkey_index);
+
                     // store provisioning data and primary network key in TLV
                     btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
                     mesh_store_network_key(primary_network_key);

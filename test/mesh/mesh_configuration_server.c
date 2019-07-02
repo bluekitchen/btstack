@@ -805,6 +805,9 @@ static void config_netkey_add_or_update_derived(void * arg){
     // add key to NetKey List
     mesh_network_key_add(network_key);
 
+    // update subnet
+    mesh_subnet_update_for_netkey_index(network_key->netkey_index);
+
 #ifdef ENABLE_MESH_PROXY_SERVER
     mesh_proxy_start_advertising_with_network_id();
 #endif

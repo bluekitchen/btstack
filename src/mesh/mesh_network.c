@@ -1054,7 +1054,7 @@ void mesh_subnet_remove(mesh_subnet_t * subnet){
     btstack_linked_list_remove(&subnets, (btstack_linked_item_t *) subnet);
 }
 
-mesh_subnet_t * mesh_subnet_list_get(uint16_t netkey_index){
+mesh_subnet_t * mesh_subnet_get_by_netkey_index(uint16_t netkey_index){
     btstack_linked_list_iterator_t it;
     btstack_linked_list_iterator_init(&it, &subnets);
     while (btstack_linked_list_iterator_has_next(&it)){
@@ -1079,4 +1079,57 @@ int mesh_subnet_iterator_has_more(mesh_subnet_iterator_t *it){
 
 mesh_subnet_t * mesh_subnet_iterator_get_next(mesh_subnet_iterator_t *it){
     return (mesh_subnet_t *) btstack_linked_list_iterator_next(&it->it);
+}
+
+/**
+ * @brief Update subnet for given netkey index
+ */
+void mesh_subnet_update_for_netkey_index(uint16_t netkey_index){
+    // find old / new keys
+    mesh_network_key_t * old_key = NULL;
+    mesh_network_key_t * new_key = NULL;
+    mesh_network_key_iterator_t it;
+    mesh_network_key_iterator_init(&it);
+    while (mesh_network_key_iterator_has_more(&it)){
+        mesh_network_key_t * network_key = mesh_network_key_iterator_get_next(&it);
+        if (network_key->netkey_index != netkey_index) continue;
+        if (old_key == NULL){
+            old_key = network_key;
+            continue;
+        }
+        // assign current key depending on key version
+        if (((int8_t) (network_key->version - new_key->version)) > 0) {
+            new_key = network_key;
+        } else {
+            new_key = old_key;
+            old_key = network_key;
+        }
+    }
+
+    // no keys?
+    if (old_key == NULL) return;
+
+    // get/create subnet for netkey index
+    mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(netkey_index);
+    if (subnet == NULL){
+        subnet = btstack_memory_mesh_subnet_get();
+        if (subnet == NULL) return;
+        subnet->netkey_index = netkey_index;
+    }
+
+    // set keys
+    subnet->old_key = old_key;
+    subnet->new_key = new_key;
+
+    // key refresh
+    if (new_key != NULL){
+        if (subnet->key_refresh == MESH_KEY_REFRESH_NOT_ACTIVE){
+            // approximation: at least phase 1
+            subnet->key_refresh = MESH_KEY_REFRESH_FIRST_PHASE;
+        }
+    }
+
+    // TODO: advertisement using node id active
+    // TODO: advertisement using network id (used by proxy)
+    // TODO: secure network beacons
 }
