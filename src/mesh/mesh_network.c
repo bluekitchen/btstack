@@ -1135,6 +1135,7 @@ void mesh_subnet_update_for_netkey_index(uint16_t netkey_index){
         subnet = btstack_memory_mesh_subnet_get();
         if (subnet == NULL) return;
         subnet->netkey_index = netkey_index;
+        mesh_subnet_add(subnet);
     }
 
     // set keys
