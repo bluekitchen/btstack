@@ -1106,11 +1106,17 @@ void mesh_subnet_update_for_netkey_index(uint16_t netkey_index){
         }
     }
 
-    // no keys?
-    if (old_key == NULL) return;
-
-    // get/create subnet for netkey index
+    // get subnet
     mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(netkey_index);
+
+    // no keys -> no subnet
+    if (old_key == NULL) {
+        if (subnet == NULL) return;
+        mesh_subnet_remove(subnet);
+        return;
+    }
+
+    // create subnet for netkey index if needed
     if (subnet == NULL){
         subnet = btstack_memory_mesh_subnet_get();
         if (subnet == NULL) return;
@@ -1122,12 +1128,17 @@ void mesh_subnet_update_for_netkey_index(uint16_t netkey_index){
     subnet->new_key = new_key;
 
     // key refresh
-    if (new_key != NULL){
+    if (new_key == NULL){
+        // single key -> key refresh not active
+        subnet->key_refresh = MESH_KEY_REFRESH_NOT_ACTIVE;
+    }
+    else {
+        // two keys -> at least phase 1
         if (subnet->key_refresh == MESH_KEY_REFRESH_NOT_ACTIVE){
-            // approximation: at least phase 1
             subnet->key_refresh = MESH_KEY_REFRESH_FIRST_PHASE;
         }
     }
+
 
     // TODO: advertisement using node id active
     // TODO: advertisement using network id (used by proxy)
