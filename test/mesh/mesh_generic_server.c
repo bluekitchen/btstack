@@ -187,7 +187,7 @@ const mesh_access_message_t mesh_generic_on_off_status_instantaneous = {
         MESH_GENERIC_ON_OFF_SET, "1"
 };
 
-static mesh_transport_pdu_t * mesh_generic_on_off_status_message(mesh_model_t *generic_on_off_server_model){
+static mesh_pdu_t * mesh_generic_on_off_status_message(mesh_model_t *generic_on_off_server_model){
     if (generic_on_off_server_model->element == NULL){
         log_error("generic_on_off_server_model->element == NULL"); 
     }
@@ -204,11 +204,11 @@ static mesh_transport_pdu_t * mesh_generic_on_off_status_message(mesh_model_t *g
     } else {
         transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_on_off_status_instantaneous, state->transition_data.current_value);
     }
-    return transport_pdu;
+    return (mesh_pdu_t *) transport_pdu;
 }
 
 static void generic_on_off_get_handler(mesh_model_t *generic_on_off_server_model, mesh_pdu_t * pdu){
-    mesh_transport_pdu_t * transport_pdu = mesh_generic_on_off_status_message(generic_on_off_server_model);
+    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) mesh_generic_on_off_status_message(generic_on_off_server_model);
     if (!transport_pdu) return;
     generic_server_send_message(mesh_access_get_element_address(generic_on_off_server_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu);
     mesh_access_message_processed(pdu);
@@ -257,7 +257,7 @@ static void generic_on_off_handle_set_message(mesh_model_t *mesh_model, mesh_pdu
 static void generic_on_off_set_handler(mesh_model_t *generic_on_off_server_model, mesh_pdu_t * pdu){
     generic_on_off_handle_set_message(generic_on_off_server_model, pdu);
 
-    mesh_transport_pdu_t * transport_pdu = mesh_generic_on_off_status_message(generic_on_off_server_model);
+    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) mesh_generic_on_off_status_message(generic_on_off_server_model);
     if (!transport_pdu) return;
     generic_server_send_message(mesh_access_get_element_address(generic_on_off_server_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu);
     mesh_access_message_processed(pdu);
@@ -293,5 +293,10 @@ uint8_t mesh_generic_on_off_server_get_value(mesh_model_t *generic_on_off_server
     return generic_on_off_server_state->transition_data.current_value;
 }
 
-
+void mesh_generic_on_off_server_set_publication_model(mesh_model_t *generic_on_off_server_model, mesh_publication_model_t * publication_model){
+    if (generic_on_off_server_model == NULL) return;
+    if (publication_model == NULL) return;
+    publication_model->publish_state_fn = &mesh_generic_on_off_status_message;
+    generic_on_off_server_model->publication_model = publication_model;
+}
 
