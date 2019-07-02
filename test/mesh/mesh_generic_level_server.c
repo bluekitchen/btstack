@@ -273,6 +273,7 @@ static void generic_level_handle_set_target_level_message(mesh_model_t *mesh_mod
                 }
             } 
             mesh_server_transition_setup_transition_or_instantaneous_update_int16(mesh_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_SET);
+            mesh_access_state_changed();
             break;
     }
    
@@ -374,6 +375,7 @@ static void generic_level_handle_set_delta_message(mesh_model_t *mesh_model, mes
                 delay_time_gdtt = mesh_access_parser_get_u8(&parser);
             } 
             mesh_server_transition_setup_transition_or_instantaneous_update_int16(mesh_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_SET);       
+            mesh_access_state_changed();
             break;
         default:
             break;

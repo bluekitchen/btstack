@@ -250,6 +250,7 @@ static void generic_on_off_handle_set_message(mesh_model_t *mesh_model, mesh_pdu
                 delay_time_gdtt = mesh_access_parser_get_u8(&parser);
             } 
             mesh_server_transition_setup_transition_or_instantaneous_update(mesh_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_SET);
+            mesh_access_state_changed();
             break;
     }
 }
@@ -282,7 +283,7 @@ void mesh_generic_on_off_server_set_value(mesh_model_t * generic_on_off_server_m
     generic_on_off_server_state->transition_data.target_value = on_off_value;
     
     mesh_server_transition_setup_transition_or_instantaneous_update(generic_on_off_server_model, transition_time_gdtt, delay_time_gdtt, MODEL_STATE_UPDATE_REASON_APPLICATION_CHANGE);
-
+    mesh_access_state_changed();
     // TODO implement publication
 }
 
