@@ -799,6 +799,10 @@ static void config_netkey_add_or_update_derived(void * arg){
     network_key->advertisement_with_network_id.adv_length = gatt_bearer_setup_advertising_with_network_id(network_key->advertisement_with_network_id.adv_data, network_key->network_id);
 #endif
 
+    // store network key
+    mesh_store_network_key(network_key);
+
+    // add key to NetKey List
     mesh_network_key_add(network_key);
 
 #ifdef ENABLE_MESH_PROXY_SERVER
@@ -910,6 +914,9 @@ static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t *
     mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
     if (network_key){
         if (mesh_network_key_list_count() > 1){
+            // delete
+            mesh_delete_network_key(network_key->internal_index);
+
             // remove netkey
             mesh_network_key_remove(network_key);
             // remove all appkeys for this netkey
