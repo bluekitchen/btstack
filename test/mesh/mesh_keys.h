@@ -97,9 +97,6 @@ typedef struct {
     uint8_t encryption_key[16];
     uint8_t privacy_key[16];
 
-    // subnet state
-    uint8_t node_id_advertisement_running;
-
     // advertisement data for proxy
     adv_bearer_connectable_advertisement_data_item_t advertisement_with_network_id;
 

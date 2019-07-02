@@ -42,6 +42,7 @@
 #include "mesh/adv_bearer.h"
 #include "mesh/gatt_bearer.h"
 #include "mesh/mesh_crypto.h"
+#include "mesh/mesh_network.h"
 #include "mesh/mesh_lower_transport.h"
 #include "bluetooth_company_id.h"
 #include "bluetooth_data_types.h"
@@ -88,10 +89,10 @@ static const uint8_t adv_data_with_node_identity_template[] = {
 
 static void mesh_proxy_stop_all_advertising_with_node_id(void){
     adv_bearer_advertisements_remove_item(&connectable_advertisement_with_node_id);
-    mesh_network_key_iterator_t it;
-    mesh_network_key_iterator_init(&it);
-    while (mesh_network_key_iterator_has_more(&it)){
-        mesh_network_key_t * network_key = mesh_network_key_iterator_get_next(&it);
+    mesh_subnet_iterator_t it;
+    mesh_subnet_iterator_init(&it);
+    while (mesh_subnet_iterator_has_more(&it)){
+        mesh_subnet_t * network_key = mesh_subnet_iterator_get_next(&it);
         if (network_key->node_id_advertisement_running != 0){
             btstack_run_loop_remove_timer(&mesh_proxy_node_id_timer);
             network_key->node_id_advertisement_running = 0;
@@ -105,7 +106,7 @@ static void mesh_proxy_node_id_timeout_handler(btstack_timer_source_t * ts){
 }
 
 static void mesh_proxy_node_id_handle_get_aes128(void * arg){
-    mesh_network_key_t * network_key = (mesh_network_key_t *) arg;
+    mesh_subnet_t * network_key = (mesh_subnet_t *) arg;
 
     memcpy(connectable_advertisement_with_node_id.adv_data, adv_data_with_node_identity_template, 12);
     memcpy(&connectable_advertisement_with_node_id.adv_data[12], &mesh_proxy_node_id_hash[8], 8);
@@ -126,19 +127,20 @@ static void mesh_proxy_node_id_handle_get_aes128(void * arg){
 }
 
 static void mesh_proxy_node_id_handle_random(void * arg){
-    mesh_network_key_t * network_key = (mesh_network_key_t *) arg;
+    mesh_subnet_t * network_key = (mesh_subnet_t *) arg;
 
     // Hash = e(IdentityKey, Padding | Random | Address) mod 2^64
     memset(mesh_proxy_node_id_plaintext, 0, sizeof(mesh_proxy_node_id_plaintext));
     memcpy(&mesh_proxy_node_id_plaintext[6] , mesh_proxy_node_id_random_value, 8);
     big_endian_store_16(mesh_proxy_node_id_plaintext, 14, primary_element_address);
-    btstack_crypto_aes128_encrypt(&mesh_proxy_node_id_crypto_request_aes128, network_key->identity_key, mesh_proxy_node_id_plaintext, mesh_proxy_node_id_hash, mesh_proxy_node_id_handle_get_aes128, network_key);
+    // TODO: old vs. new key
+    btstack_crypto_aes128_encrypt(&mesh_proxy_node_id_crypto_request_aes128, network_key->old_key->identity_key, mesh_proxy_node_id_plaintext, mesh_proxy_node_id_hash, mesh_proxy_node_id_handle_get_aes128, network_key);
 }
 
 static void mesh_proxy_start_advertising_with_node_id(uint16_t netkey_index){
     mesh_proxy_stop_all_advertising_with_node_id();
     // get network key
-    mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
+    mesh_subnet_t * network_key = mesh_subnet_get_by_netkey_index(netkey_index);
     if (network_key == NULL) return;
     log_info("Proxy start advertising with node id, netkey index %04x", netkey_index);
     // setup node id
@@ -154,7 +156,7 @@ static void mesh_proxy_stop_advertising_with_node_id(uint16_t netkey_index){
 // Public API
 
 uint8_t mesh_proxy_get_advertising_with_node_id_status(uint16_t netkey_index, mesh_node_identity_state_t * out_state ){
-    mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
+    mesh_subnet_t * network_key = mesh_subnet_get_by_netkey_index(netkey_index);
     if (network_key == NULL){
         *out_state = MESH_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED;
         return MESH_FOUNDATION_STATUS_SUCCESS;
@@ -174,7 +176,7 @@ uint8_t mesh_proxy_get_advertising_with_node_id_status(uint16_t netkey_index, me
 }
 
 uint8_t mesh_proxy_set_advertising_with_node_id(uint16_t netkey_index, mesh_node_identity_state_t state){
-    mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
+    mesh_subnet_t * network_key = mesh_subnet_get_by_netkey_index(netkey_index);
     if (network_key == NULL){
         return  MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX;
     }
@@ -197,10 +199,10 @@ uint8_t mesh_proxy_set_advertising_with_node_id(uint16_t netkey_index, mesh_node
 
 
 void mesh_proxy_start_advertising_with_network_id(void){
-    mesh_network_key_iterator_t it;
-    mesh_network_key_iterator_init(&it);
-    while (mesh_network_key_iterator_has_more(&it)){
-        mesh_network_key_t * network_key = mesh_network_key_iterator_get_next(&it);
+    mesh_subnet_iterator_t it;
+    mesh_subnet_iterator_init(&it);
+    while (mesh_subnet_iterator_has_more(&it)){
+        mesh_subnet_t * network_key = mesh_subnet_iterator_get_next(&it);
         log_info("Proxy start advertising with network id, netkey index %04x", network_key->netkey_index);
         adv_bearer_advertisements_add_item(&network_key->advertisement_with_network_id);
     }
@@ -208,10 +210,10 @@ void mesh_proxy_start_advertising_with_network_id(void){
 }
 
 void mesh_proxy_stop_advertising_with_network_id(void){  
-    mesh_network_key_iterator_t it;
-    mesh_network_key_iterator_init(&it);
-    while (mesh_network_key_iterator_has_more(&it)){
-        mesh_network_key_t * network_key = mesh_network_key_iterator_get_next(&it);
+    mesh_subnet_iterator_t it;
+    mesh_subnet_iterator_init(&it);
+    while (mesh_subnet_iterator_has_more(&it)){
+        mesh_subnet_t * network_key = mesh_subnet_iterator_get_next(&it);
         log_info("Proxy stop advertising with network id, netkey index %04x", network_key->netkey_index);
         adv_bearer_advertisements_remove_item(&network_key->advertisement_with_network_id);
     }
