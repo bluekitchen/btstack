@@ -845,6 +845,11 @@ static void config_netkey_add_handler(mesh_model_t * mesh_model, mesh_pdu_t * pd
                 new_network_key->internal_index = internal_index;
                 new_network_key->netkey_index   = new_netkey_index;
                 memcpy(new_network_key->net_key, new_netkey, 16);
+                // update version if key with same netkey index exists
+                mesh_network_key_t * old_key = mesh_network_key_list_get(new_netkey_index);
+                if (old_key){
+                    new_network_key->version = (uint8_t) (old_key->version + 1);
+                }
                 mesh_network_key_derive(&configuration_server_cmac_request, new_network_key, config_netkey_add_or_update_derived, new_network_key);
                 return;
             }
