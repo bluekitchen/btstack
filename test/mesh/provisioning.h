@@ -125,22 +125,18 @@ typedef enum {
 } mesh_identification_type_t;
 
 typedef struct {
+    // DevKey = k1(ECDHSecret, ProvisioningSalt, “prdk”)
     uint8_t  device_key[16];
-    uint8_t  flags;
-    uint32_t iv_index;
+
+    // Unicast Address
     uint16_t unicast_address;
 
-    // net_key and derived data
-    uint8_t  net_key[16];
-    // k1
-    uint8_t  identity_key[16];
-    uint8_t  beacon_key[16];
-    // k2
-    uint8_t  nid;
-    uint8_t  encryption_key[16];
-    uint8_t  privacy_key[16];
-    // k3
-    uint8_t  network_id[8];
+    // Key Refresh Phase 0 vs. 2, IV Update Active
+    uint8_t  flags;
+
+    // IV Index
+    uint32_t iv_index;
+
 } mesh_provisioning_data_t;
 
 #ifdef __cplusplus

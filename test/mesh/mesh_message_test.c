@@ -145,26 +145,6 @@ static void btstack_print_hex(const uint8_t * data, uint16_t len, char separator
 }
 #endif
 
-static void add_network_key_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
-
-    // get key
-    mesh_network_key_t * network_key = btstack_memory_mesh_network_key_get();
-
-    // get single instance
-    memset(network_key, 0, sizeof(mesh_network_key_t));
-
-    // NID
-    network_key->nid = provisioning_data->nid;
-
-    // PrivacyKey
-    memcpy(network_key->privacy_key, provisioning_data->privacy_key, 16);
-
-    // EncryptionKey
-    memcpy(network_key->encryption_key, provisioning_data->encryption_key, 16);
-
-    mesh_network_key_add(network_key);
-}
-
 static mesh_transport_key_t   test_application_key;
 static void mesh_application_key_set(uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, const uint8_t *application_key) {
     test_application_key.netkey_index = netkey_index;
@@ -176,27 +156,27 @@ static void mesh_application_key_set(uint16_t netkey_index, uint16_t appkey_inde
 }
 
 static void load_network_key_nid_68(void){
-    mesh_provisioning_data_t provisioning_data;
-    provisioning_data.nid = 0x68;
-    btstack_parse_hex("0953fa93e7caac9638f58820220a398e", 16, provisioning_data.encryption_key);
-    btstack_parse_hex("8b84eedec100067d670971dd2aa700cf", 16, provisioning_data.privacy_key);
-    add_network_key_from_provisioning_data(&provisioning_data);
+    mesh_network_key_t * network_key = btstack_memory_mesh_network_key_get();
+    network_key->nid = 0x68;
+    btstack_parse_hex("0953fa93e7caac9638f58820220a398e", 16, network_key->encryption_key);
+    btstack_parse_hex("8b84eedec100067d670971dd2aa700cf", 16, network_key->privacy_key);
+    mesh_network_key_add(network_key);
 }
 
 static void load_network_key_nid_5e(void){
-    mesh_provisioning_data_t provisioning_data;
-    provisioning_data.nid = 0x5e;
-    btstack_parse_hex("be635105434859f484fc798e043ce40e", 16, provisioning_data.encryption_key);
-    btstack_parse_hex("5d396d4b54d3cbafe943e051fe9a4eb8", 16, provisioning_data.privacy_key);
-    add_network_key_from_provisioning_data(&provisioning_data);
+    mesh_network_key_t * network_key = btstack_memory_mesh_network_key_get();
+    network_key->nid = 0x5e;
+    btstack_parse_hex("be635105434859f484fc798e043ce40e", 16, network_key->encryption_key);
+    btstack_parse_hex("5d396d4b54d3cbafe943e051fe9a4eb8", 16, network_key->privacy_key);
+    mesh_network_key_add(network_key);
 }
 
 static void load_network_key_nid_10(void){
-    mesh_provisioning_data_t provisioning_data;
-    provisioning_data.nid = 0x10;
-    btstack_parse_hex("3a4fe84a6cc2c6a766ea93f1084d4039", 16, provisioning_data.encryption_key);
-    btstack_parse_hex("f695fcce709ccface4d8b7a1e6e39d25", 16, provisioning_data.privacy_key);
-    add_network_key_from_provisioning_data(&provisioning_data);
+    mesh_network_key_t * network_key = btstack_memory_mesh_network_key_get();
+    network_key->nid = 0x10;
+    btstack_parse_hex("3a4fe84a6cc2c6a766ea93f1084d4039", 16, network_key->encryption_key);
+    btstack_parse_hex("f695fcce709ccface4d8b7a1e6e39d25", 16, network_key->privacy_key);
+    mesh_network_key_add(network_key);
 }
 
 static void load_provisioning_data_test_message(void){

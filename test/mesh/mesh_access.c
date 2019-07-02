@@ -938,7 +938,7 @@ void mesh_store_network_key(mesh_network_key_t * network_key){
     data.version = network_key->version;
     memcpy(data.encryption_key, network_key->encryption_key, 16);
     memcpy(data.privacy_key, network_key->privacy_key, 16);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(mesh_persistent_net_key_t));
 }
 
 void mesh_delete_network_key(uint16_t internal_index){
@@ -955,8 +955,8 @@ void mesh_load_network_keys(void){
     for (internal_index = 0; internal_index < MAX_NR_MESH_NETWORK_KEYS; internal_index++){
         mesh_persistent_net_key_t data;
         uint32_t tag = mesh_network_key_tag_for_internal_index(internal_index);
-        int app_key_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
-        if (app_key_len == 0) continue;
+        int netkey_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+        if (netkey_len != sizeof(mesh_persistent_net_key_t)) continue;
         
         mesh_network_key_t * network_key = btstack_memory_mesh_network_key_get();
         if (network_key == NULL) return;
@@ -971,6 +971,11 @@ void mesh_load_network_keys(void){
         memcpy(network_key->encryption_key, data.encryption_key, 16);
         memcpy(network_key->privacy_key, data.privacy_key, 16);
 
+#ifdef ENABLE_GATT_BEARER
+        // setup advertisement with network id
+        network_key->advertisement_with_network_id.adv_length = gatt_bearer_setup_advertising_with_network_id(network_key->advertisement_with_network_id.adv_data, network_key->network_id);
+#endif
+
         mesh_network_key_add(network_key);
         printf("- internal index 0x%x, NetKey Index 0x%06x, NID %02x: ", network_key->internal_index, network_key->netkey_index, network_key->nid);
         printf_hexdump(network_key->net_key, 16);
@@ -981,7 +986,7 @@ void mesh_delete_network_keys(void){
     printf("Delete Network Keys\n");
     
     uint16_t internal_index;
-    for (internal_index = 0; internal_index < MAX_NR_MESH_TRANSPORT_KEYS; internal_index++){
+    for (internal_index = 0; internal_index < MAX_NR_MESH_NETWORK_KEYS; internal_index++){
         mesh_delete_network_key(internal_index);
     }
 }
@@ -997,7 +1002,7 @@ typedef struct {
 } mesh_persistent_app_key_t;
 
 static uint32_t mesh_transport_key_tag_for_internal_index(uint16_t internal_index){
-    return ((uint32_t) 'M' << 24) | ((uint32_t) 'N' << 16) | ((uint32_t) internal_index);
+    return ((uint32_t) 'M' << 24) | ((uint32_t) 'A' << 16) | ((uint32_t) internal_index);
 }
 
 void mesh_store_app_key(uint16_t internal_index, uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, const uint8_t * application_key){
@@ -1041,7 +1046,7 @@ void mesh_load_app_keys(void){
         key->akf          = 1;
         memcpy(key->key, data.key, 16);
         mesh_transport_key_add(key);
-        printf("- internal index 0x%x, AppKey Index 0x%06x, , AID %02x: ", key->internal_index, key->appkey_index, key->aid);
+        printf("- internal index 0x%x, AppKey Index 0x%06x, AID %02x: ", key->internal_index, key->appkey_index, key->aid);
         printf_hexdump(key->key, 16);
     }
 }

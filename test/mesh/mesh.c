@@ -105,8 +105,6 @@ static int ui_pin_offset;
 static const btstack_tlv_t * btstack_tlv_singleton_impl;
 static void *                btstack_tlv_singleton_context;
 
-static uint8_t beacon_key[16];
-static uint8_t network_id[8];
 static uint16_t primary_element_address;
 
 static int provisioned;
@@ -133,64 +131,28 @@ static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len
 //     printf("%20s: 0x%x", name, (int) value);
 // }
 
+static void mesh_network_key_dump(const mesh_network_key_t * key){
+    printf("NetKey:        "); printf_hexdump(key->net_key, 16);
+    printf("-- Derived from NetKey --\n");
+    printf("NID:           0x%02x\n", key->nid);
+    printf("NetworkID:     "); printf_hexdump(key->network_id, 8);
+    printf("BeaconKey:     "); printf_hexdump(key->beacon_key, 16);
+    printf("EncryptionKey: "); printf_hexdump(key->encryption_key, 16);
+    printf("PrivacyKey:    "); printf_hexdump(key->privacy_key, 16);
+    printf("IdentityKey:   "); printf_hexdump(key->identity_key, 16);
+}
+
 static void mesh_provisioning_dump(const mesh_provisioning_data_t * data){
     printf("UnicastAddr:   0x%02x\n", data->unicast_address);
     printf("IV Index:      0x%08x\n", data->iv_index);
     printf("DevKey:        "); printf_hexdump(data->device_key, 16);
-    printf("NetKey:        "); printf_hexdump(data->net_key, 16);
-    printf("-- Derived from NetKey --\n");
-    printf("NID:           0x%02x\n", data->nid);
-    printf("NetworkID:     "); printf_hexdump(data->network_id, 8);
-    printf("BeaconKey:     "); printf_hexdump(data->beacon_key, 16);
-    printf("EncryptionKey: "); printf_hexdump(data->encryption_key, 16);
-    printf("PrivacyKey:    "); printf_hexdump(data->privacy_key, 16);
-    printf("IdentityKey:   "); printf_hexdump(data->identity_key, 16);
-}
+    printf("Flags:               0x%02x\n", data->flags);
 
-static void mesh_network_key_add_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
-
-    // get key
-    mesh_network_key_t * network_key = btstack_memory_mesh_network_key_get();
-
-    // internal index 0 for primary network key
-    network_key->internal_index = 0;
-
-    // get single instance
-    memset(network_key, 0, sizeof(mesh_network_key_t));
-
-    // NetKey
-    memcpy(network_key->net_key, provisioning_data->net_key, 16);
-
-    // IdentityKey
-    memcpy(network_key->identity_key, provisioning_data->identity_key, 16);
-
-    // BeaconKey
-    memcpy(network_key->beacon_key, provisioning_data->beacon_key, 16);
-
-    // NID
-    network_key->nid = provisioning_data->nid;
-
-    // EncryptionKey
-    memcpy(network_key->encryption_key, provisioning_data->encryption_key, 16);
-
-    // PrivacyKey
-    memcpy(network_key->privacy_key, provisioning_data->privacy_key, 16);
-
-    // NetworkID
-    memcpy(network_key->network_id, provisioning_data->network_id, 8);
-
-    // setup advertisement with network id
-    network_key->advertisement_with_network_id.adv_length = gatt_bearer_setup_advertising_with_network_id(network_key->advertisement_with_network_id.adv_data, network_key->network_id);
-
-    // finally add
-    mesh_network_key_add(network_key);
 }
 
 static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
     provisioned = 1;
 
-    // add to network key list
-    mesh_network_key_add_from_provisioning_data(provisioning_data);
     // set unicast address
     mesh_network_set_primary_element_address(provisioning_data->unicast_address);
     mesh_lower_transport_set_primary_element_address(provisioning_data->unicast_address);
@@ -201,12 +163,10 @@ static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * p
     mesh_set_iv_index(provisioning_data->iv_index);
     // set device_key
     mesh_transport_set_device_key(provisioning_data->device_key);
-    // copy beacon key and network id
-    // memcpy(identity_key, provisioning_data->identity_key, 16);
-    memcpy(beacon_key, provisioning_data->beacon_key, 16);
-    memcpy(network_id, provisioning_data->network_id, 8);
+
     // for secure beacon
     mesh_flags = provisioning_data->flags;
+
     // dump data
     mesh_provisioning_dump(provisioning_data);
     
@@ -339,26 +299,27 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     printf("Provisioning data available: %u\n", prov_len ? 1 : 0);
                     if (prov_len){
                         mesh_setup_from_provisioning_data(&provisioning_data);
+                        // load network keys
+                        mesh_load_network_keys();
+                        // load app keys
+                        mesh_load_app_keys();
+                        // load model to appkey bindings
+                        mesh_load_appkey_lists();
+                        // load virtual addresses
+                        mesh_load_virtual_addresses();
+                        // load model subscriptions
+                        mesh_load_subscriptions();
+                        // load model publications
+                        mesh_load_publications();
+                        // load foundation state
+                        mesh_foundation_state_load();
+
+                        // dump PTS MeshOptions.ini
+                        mesh_pts_dump_mesh_options();
+
                     } else {
                         mesh_setup_without_provisiong_data();
                     }
-                    // load network keys
-                    mesh_load_network_keys();
-                    // load app keys
-                    mesh_load_app_keys();
-                    // load model to appkey bindings
-                    mesh_load_appkey_lists();
-                    // load virtual addresses
-                    mesh_load_virtual_addresses();
-                    // load model subscriptions
-                    mesh_load_subscriptions();
-                    // load model publications
-                    mesh_load_publications();
-                    // load foundation state
-                    mesh_foundation_state_load();
-
-                    // dump PTS MeshOptions.ini
-                    mesh_pts_dump_mesh_options();
 
 #if defined(ENABLE_MESH_ADV_BEARER) || defined(ENABLE_MESH_PB_ADV)
 
@@ -404,7 +365,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     mesh_provisioning_data_t provisioning_data;
-    mesh_network_key_t * network_key;
+    mesh_network_key_t * primary_network_key;
     switch(packet[0]){
         case HCI_EVENT_MESH_META:
             switch(packet[2]){
@@ -427,37 +388,36 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                 case MESH_SUBEVENT_PB_PROV_COMPLETE:
                     printf("Provisioning complete\n");
 
+                    // delete old data
+                    mesh_delete_network_keys();
+                    mesh_delete_app_keys();
+                    mesh_delete_appkey_lists();
+
+                    // get provisioning data
                     memcpy(provisioning_data.device_key, provisioning_device_data_get_device_key(), 16);
                     provisioning_data.iv_index = provisioning_device_data_get_iv_index();
                     provisioning_data.flags = provisioning_device_data_get_flags();
                     provisioning_data.unicast_address = provisioning_device_data_get_unicast_address();
 
-                    network_key = provisioning_device_data_get_network_key();
-                    memcpy(provisioning_data.net_key,        network_key->net_key, 16);
-                    memcpy(provisioning_data.network_id,     network_key->network_id, 8);
-                    memcpy(provisioning_data.identity_key,   network_key->identity_key, 16);
-                    memcpy(provisioning_data.beacon_key,     network_key->beacon_key, 16);
-                    memcpy(provisioning_data.encryption_key, network_key->encryption_key, 16);
-                    memcpy(provisioning_data.privacy_key,    network_key->privacy_key, 16);
-                    provisioning_data.nid = network_key->nid;
-
-                    // delete old app keys
-                    mesh_delete_app_keys();
+                    // get primary netkey
+                    primary_network_key = provisioning_device_data_get_network_key();
+                    mesh_network_key_dump(primary_network_key);
                     
-                    // delete old model to appkey bindings
-                    mesh_delete_appkey_lists();
+                    // add to network keys
+                    mesh_network_key_add(primary_network_key);
                     
-                    // store in TLV
+                    // store provisioning data and primary network key in TLV
                     btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
+                    mesh_store_network_key(primary_network_key);
 
                     // setup after provisioned
                     mesh_setup_from_provisioning_data(&provisioning_data);
 
                     // start advertising with node id after provisioning
-                    mesh_proxy_set_advertising_with_node_id(network_key->netkey_index, MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING);
+                    mesh_proxy_set_advertising_with_node_id(primary_network_key->netkey_index, MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING);
 
                     // start sending Secure Network Beacons
-                    beacon_secure_network_start(network_key);
+                    beacon_secure_network_start(primary_network_key);
 
                     break;
                 default:
@@ -617,7 +577,6 @@ static void send_pts_network_messsage(int type){
     memset(lower_transport_pdu_data, 0x55, lower_transport_pdu_len);
     mesh_network_send(0, ctl, ttl, seq, src, dst, lower_transport_pdu_data, lower_transport_pdu_len);
 }
-
 
 static void send_pts_unsegmented_access_messsage(void){
     uint8_t access_pdu_data[16];
