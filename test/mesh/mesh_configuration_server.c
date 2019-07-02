@@ -922,6 +922,7 @@ static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t *
 
             // remove netkey
             mesh_network_key_remove(network_key);
+
             // remove all appkeys for this netkey
             mesh_transport_key_iterator_t it;
             mesh_transport_key_iterator_init(&it, netkey_index);
@@ -929,6 +930,10 @@ static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t *
                 mesh_transport_key_t * transport_key = mesh_transport_key_iterator_get_next(&it);
                 mesh_configuration_server_delete_appkey(transport_key);
             }
+
+            // update subnet
+            mesh_subnet_update_for_netkey_index(netkey_index);
+            
         } else {
             // we cannot remove the last network key
             status = MESH_FOUNDATION_STATUS_CANNOT_REMOVE;
