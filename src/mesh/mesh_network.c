@@ -133,7 +133,6 @@ static int      mesh_network_cache_index;
 
 static void mesh_network_run(void);
 static void process_network_pdu_validate(mesh_network_pdu_t * network_pdu);
-static mesh_network_key_t * mesh_subnet_get_outgoing_network_key(mesh_subnet_t * subnet);
 
 // network caching
 static uint32_t mesh_network_cache_hash(mesh_network_pdu_t * network_pdu){
@@ -1085,9 +1084,15 @@ mesh_subnet_t * mesh_subnet_iterator_get_next(mesh_subnet_iterator_t *it){
     return (mesh_subnet_t *) btstack_linked_list_iterator_next(&it->it);
 }
 
-static mesh_network_key_t * mesh_subnet_get_outgoing_network_key(mesh_subnet_t * subnet){
-    // TODO: old vs. new depends on key resfresh
-    return subnet->old_key;
+mesh_network_key_t * mesh_subnet_get_outgoing_network_key(mesh_subnet_t * subnet){
+    switch (subnet->key_refresh){
+        case MESH_KEY_REFRESH_SECOND_PHASE:
+            return subnet->new_key;
+        case MESH_KEY_REFRESH_NOT_ACTIVE:
+        case MESH_KEY_REFRESH_FIRST_PHASE:
+        default:
+            return subnet->old_key;
+    }
 }
 
 /**

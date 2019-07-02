@@ -335,6 +335,11 @@ mesh_subnet_t * mesh_subnet_iterator_get_next(mesh_subnet_iterator_t *it);
 void mesh_subnet_update_for_netkey_index(uint16_t netkey_index);
 
 
+/**
+ * @brief Get outgoing network key for subnet based on key refresh phase
+ */
+mesh_network_key_t * mesh_subnet_get_outgoing_network_key(mesh_subnet_t * subnet);
+
 // buffer pool
 mesh_network_pdu_t * mesh_network_pdu_get(void);
 void mesh_network_pdu_free(mesh_network_pdu_t * network_pdu);
