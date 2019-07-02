@@ -94,6 +94,9 @@ static const mesh_network_key_t *  current_network_key;
 static uint8_t encryption_block[16];
 static uint8_t obfuscation_block[16];
 
+// Subnets
+static btstack_linked_list_t subnets;
+
 // Network Nonce
 static uint8_t network_nonce[13];
 
@@ -1039,4 +1042,41 @@ mesh_network_pdu_t * mesh_network_pdu_get(void){
 
 void mesh_network_pdu_free(mesh_network_pdu_t * network_pdu){
     btstack_memory_mesh_network_pdu_free(network_pdu);
+}
+
+// Mesh Subnet Management
+
+void mesh_subnet_add(mesh_subnet_t * subnet){
+    btstack_linked_list_add_tail(&subnets, (btstack_linked_item_t *) subnet);
+}
+
+void mesh_subnet_remove(mesh_subnet_t * subnet){
+    btstack_linked_list_remove(&subnets, (btstack_linked_item_t *) subnet);
+}
+
+mesh_subnet_t * mesh_subnet_list_get(uint16_t netkey_index){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &subnets);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        mesh_subnet_t * item = (mesh_subnet_t *) btstack_linked_list_iterator_next(&it);
+        if (item->netkey_index == netkey_index) return item;
+    }
+    return NULL;
+}
+
+int mesh_subnet_list_count(void){
+    return btstack_linked_list_count(&subnets);
+}
+
+// mesh network key iterator over all keys
+void mesh_subnet_iterator_init(mesh_subnet_iterator_t *it){
+    btstack_linked_list_iterator_init(&it->it, &subnets);
+}
+
+int mesh_subnet_iterator_has_more(mesh_subnet_iterator_t *it){
+    return btstack_linked_list_iterator_has_next(&it->it);
+}
+
+mesh_subnet_t * mesh_subnet_iterator_get_next(mesh_subnet_iterator_t *it){
+    return (mesh_subnet_t *) btstack_linked_list_iterator_next(&it->it);
 }

@@ -47,7 +47,6 @@ extern "C"
 
 
 #include <stdint.h>
-#include "mesh/mesh_network.h"
 #include "mesh/adv_bearer.h"
 
 

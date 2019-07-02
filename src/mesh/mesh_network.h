@@ -41,6 +41,7 @@
 #include "btstack_linked_list.h"
 #include "provisioning.h"
 #include "btstack_run_loop.h"
+#include "mesh_keys.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -133,6 +134,9 @@ typedef struct {
 typedef struct {
     btstack_linked_item_t item;
 
+    // netkey index
+    uint16_t              netkey_index;
+
     // current / old key
     mesh_network_key_t * old_key;
 
@@ -155,6 +159,10 @@ typedef struct {
     uint16_t                           beacon_observation_counter;
 
 } mesh_subnet_t;
+
+typedef struct {
+    btstack_linked_list_iterator_t it;
+} mesh_subnet_iterator_t;
 
 /**
  * @brief Init Mesh Network Layer
@@ -274,6 +282,54 @@ int mesh_network_address_all_relays(uint16_t addr);
  * @returns 1 if virtual
  */
 int mesh_network_address_virtual(uint16_t addr);
+
+
+/**
+ * @brief Add subnet to list
+ * @param subnet
+ */
+void mesh_subnet_add(mesh_subnet_t * subnet);
+
+/**
+ * @brief Remove subnet from list
+ * @param subnet
+ */
+void mesh_subnet_remove(mesh_subnet_t * subnet);
+
+/**
+ * @brief Get subnet for netkey_index
+ * @param netkey_index
+ * @returns mesh_subnet_t or NULL
+ */
+mesh_subnet_t * mesh_subnet_get_by_netkey_index(uint16_t netkey_index);
+
+/**
+ * @brief Get number of stored subnets
+ * @returns count
+ */
+int mesh_subnet_list_count(void);
+
+/**
+ * @brief Iterate over all subnets
+ * @param it
+ */
+void mesh_subnet_iterator_init(mesh_subnet_iterator_t *it);
+
+/**
+ * @brief Check if another subnet is available
+ * @param it
+ * @return
+ */
+int mesh_subnet_iterator_has_more(mesh_subnet_iterator_t *it);
+
+/**
+ * @brief Get next subnet
+ * @param it
+ * @return
+ */
+mesh_subnet_t * mesh_subnet_iterator_get_next(mesh_subnet_iterator_t *it);
+
+
 
 // buffer pool
 mesh_network_pdu_t * mesh_network_pdu_get(void);
