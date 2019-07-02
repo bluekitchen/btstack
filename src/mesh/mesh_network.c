@@ -133,6 +133,7 @@ static int      mesh_network_cache_index;
 
 static void mesh_network_run(void);
 static void process_network_pdu_validate(mesh_network_pdu_t * network_pdu);
+static mesh_network_key_t * mesh_subnet_get_outgoing_network_key(mesh_subnet_t * subnet);
 
 // network caching
 static uint32_t mesh_network_cache_hash(mesh_network_pdu_t * network_pdu){
@@ -313,9 +314,9 @@ static void mesh_network_send_a(mesh_network_pdu_t * network_pdu){
 
     mesh_crypto_active = 1;
 
-    // lookup network by netkey_index
-    current_network_key = mesh_network_key_list_get(network_pdu->netkey_index);
-    if (!current_network_key) {
+    // lookup subnet by netkey_index
+    mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(network_pdu->netkey_index);
+    if (!subnet) {
         mesh_crypto_active = 0;
         // notify upper layer
         (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_SENT, network_pdu);
@@ -323,6 +324,9 @@ static void mesh_network_send_a(mesh_network_pdu_t * network_pdu){
         mesh_network_run();
         return;
     }
+
+    // get network key to use for sending
+    current_network_key = mesh_subnet_get_outgoing_network_key(subnet);
 
     // get network nonce
     if (network_pdu->flags & MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION){
@@ -1079,6 +1083,11 @@ int mesh_subnet_iterator_has_more(mesh_subnet_iterator_t *it){
 
 mesh_subnet_t * mesh_subnet_iterator_get_next(mesh_subnet_iterator_t *it){
     return (mesh_subnet_t *) btstack_linked_list_iterator_next(&it->it);
+}
+
+static mesh_network_key_t * mesh_subnet_get_outgoing_network_key(mesh_subnet_t * subnet){
+    // TODO: old vs. new depends on key resfresh
+    return subnet->old_key;
 }
 
 /**
