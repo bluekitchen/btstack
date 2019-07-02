@@ -843,11 +843,13 @@ static void config_netkey_add_handler(mesh_model_t * mesh_model, mesh_pdu_t * pd
         if (internal_index == 0 || (config_netkey_list_max && mesh_network_key_list_count() >= config_netkey_list_max)){
             status = MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
         } else {
+
             // setup new key
             mesh_network_key_t * new_network_key = btstack_memory_mesh_network_key_get();
             if (new_network_key == NULL){
                 status = MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
             } else {
+                // TODO: check if subnet could get created
                 access_pdu_in_process = pdu;
                 new_network_key->internal_index = internal_index;
                 new_network_key->netkey_index   = new_netkey_index;
@@ -900,7 +902,6 @@ static void config_netkey_update_handler(mesh_model_t * mesh_model, mesh_pdu_t *
     access_pdu_in_process = pdu;
     new_network_key->internal_index = internal_index;
     new_network_key->netkey_index   = netkey_index;
-    new_network_key->key_refresh    = 1;
     memcpy(new_network_key->net_key, new_netkey, 16);
     mesh_network_key_derive(&configuration_server_cmac_request, new_network_key, config_netkey_add_or_update_derived, new_network_key);
 }
@@ -2041,14 +2042,14 @@ static void config_key_refresh_phase_get_handler(mesh_model_t *mesh_model, mesh_
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
-    mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
+    mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(netkey_index);
 
     uint8_t status = MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX;
     mesh_key_refresh_state_t key_refresh_state = MESH_KEY_REFRESH_NOT_ACTIVE;
     
-    if (network_key != NULL){
+    if (subnet != NULL){
         status = MESH_FOUNDATION_STATUS_SUCCESS;
-        key_refresh_state = network_key->key_refresh;
+        key_refresh_state = subnet->key_refresh;
     }
 
     config_key_refresh_phase_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, netkey_index, key_refresh_state);
@@ -2060,30 +2061,30 @@ static void config_key_refresh_phase_set_handler(mesh_model_t *mesh_model, mesh_
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
     uint8_t  key_refresh_phase_transition = mesh_access_parser_get_u8(&parser);
-    mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
+    mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(netkey_index);
 
     uint8_t status = MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX;
     
-    if (network_key != NULL){
+    if (subnet != NULL){
         status = MESH_FOUNDATION_STATUS_SUCCESS;
         
         switch (key_refresh_phase_transition){
             case 0x02:
-                switch (network_key->key_refresh){
+                switch (subnet->key_refresh){
                     case MESH_KEY_REFRESH_FIRST_PHASE:
                     case MESH_KEY_REFRESH_SECOND_PHASE:
-                        network_key->key_refresh = MESH_KEY_REFRESH_SECOND_PHASE;
+                        subnet->key_refresh = MESH_KEY_REFRESH_SECOND_PHASE;
                         break;
                     default:
                         break;
                 }
                 break;
             case 0x03:
-                switch (network_key->key_refresh){
+                switch (subnet->key_refresh){
                     case MESH_KEY_REFRESH_FIRST_PHASE:
                     case MESH_KEY_REFRESH_SECOND_PHASE:
                         // TODO:  invoke Key Refresh Phase 3, then
-                        //        set network_key->key_refresh = MESH_KEY_REFRESH_NOT_ACTIVE;
+                        //        set subnet->key_refresh = MESH_KEY_REFRESH_NOT_ACTIVE;
                         printf("TODO: invoke Key Refresh Phase 3, then set key refresh phase to MESH_KEY_REFRESH_NOT_ACTIVE\n");
                         break;
                     default:
@@ -2096,7 +2097,7 @@ static void config_key_refresh_phase_set_handler(mesh_model_t *mesh_model, mesh_
         }
     }
 
-    config_key_refresh_phase_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, netkey_index, network_key->key_refresh);
+    config_key_refresh_phase_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, netkey_index, subnet->key_refresh);
     mesh_access_message_processed(pdu);
 }
 

@@ -324,9 +324,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 #if defined(ENABLE_MESH_ADV_BEARER) || defined(ENABLE_MESH_PB_ADV)
 
                     // start sending Secure Network Beacon
-                    mesh_network_key_t * network_key = mesh_network_key_list_get(0);
-                    if (network_key){
-                        beacon_secure_network_start(network_key);
+                    mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(0);
+                    if (subnet){
+                        beacon_secure_network_start(subnet);
                     }
 
                     // setup scanning
@@ -366,6 +366,8 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
     if (packet_type != HCI_EVENT_PACKET) return;
     mesh_provisioning_data_t provisioning_data;
     mesh_network_key_t * primary_network_key;
+    mesh_subnet_t      * primary_subnet;
+
     switch(packet[0]){
         case HCI_EVENT_MESH_META:
             switch(packet[2]){
@@ -420,7 +422,8 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                     mesh_proxy_set_advertising_with_node_id(primary_network_key->netkey_index, MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING);
 
                     // start sending Secure Network Beacons
-                    beacon_secure_network_start(primary_network_key);
+                    primary_subnet = mesh_subnet_get_by_netkey_index(0);
+                    beacon_secure_network_start(primary_subnet);
 
                     break;
                 default:

@@ -282,10 +282,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 }
 /* LISTING_END */
 
-uint32_t mesh_get_iv_index(void){
-    return 0;
-}
-
 int btstack_main(void);
 int btstack_main(void)
 {

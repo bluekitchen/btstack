@@ -97,20 +97,11 @@ typedef struct {
     uint8_t encryption_key[16];
     uint8_t privacy_key[16];
 
-    // key refresh 
-    mesh_key_refresh_state_t key_refresh;
-
     // subnet state
     uint8_t node_id_advertisement_running;
 
     // advertisement data for proxy
     adv_bearer_connectable_advertisement_data_item_t advertisement_with_network_id;
-
-    // secure network beacons
-    mesh_secure_network_beacon_state_t beacon_state;
-    uint32_t                           beacon_interval_ms;
-    uint32_t                           beacon_observation_start_ms;
-    uint16_t                           beacon_observation_counter;
 
 } mesh_network_key_t;
 
