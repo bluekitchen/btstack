@@ -903,10 +903,12 @@ void mesh_foundation_state_store(void){
 typedef struct {
     uint16_t netkey_index;
 
+    uint8_t  version;
+
     // net_key from provisioner or Config Model Client
     uint8_t net_key[16];
 
-    // derivative data
+    // derived data
 
     // k1
     uint8_t identity_key[16];
@@ -933,6 +935,7 @@ void mesh_store_network_key(mesh_network_key_t * network_key){
     memcpy(data.beacon_key, network_key->beacon_key, 16);
     memcpy(data.network_id, network_key->network_id, 8);
     data.nid = network_key->nid;
+    data.version = network_key->version;
     memcpy(data.encryption_key, network_key->encryption_key, 16);
     memcpy(data.privacy_key, network_key->privacy_key, 16);
     btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
@@ -964,6 +967,7 @@ void mesh_load_network_keys(void){
         memcpy(network_key->beacon_key, data.beacon_key, 16);
         memcpy(network_key->network_id, data.network_id, 8);
         network_key->nid = data.nid;
+        network_key->version = data.version;
         memcpy(network_key->encryption_key, data.encryption_key, 16);
         memcpy(network_key->privacy_key, data.privacy_key, 16);
 

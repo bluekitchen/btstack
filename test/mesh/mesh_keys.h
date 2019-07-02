@@ -74,8 +74,12 @@ typedef struct {
     // internal index [0..MAX_NR_MESH_NETWORK_KEYS-1]
     uint16_t internal_index;
 
+
     // index into shared global key list
     uint16_t netkey_index;
+
+    // internal version - allows for newer relation between keys with same netkey_index
+    uint8_t version;
 
     // net_key from provisioner or Config Model Client
     uint8_t net_key[16];
