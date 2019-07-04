@@ -302,6 +302,9 @@ void mesh_access_transitions_add(mesh_transition_t * transition);
 void mesh_access_transitions_remove(mesh_transition_t * transition);
 uint8_t mesh_access_transactions_get_next_transaction_id(void);
 
+// Key Refresh
+void mesh_access_key_refresh_revoke_keys(mesh_subnet_t * subnet);
+
 // Mesh Model Publicaation
 
 /**

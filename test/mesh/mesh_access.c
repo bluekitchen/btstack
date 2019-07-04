@@ -1356,6 +1356,12 @@ void mesh_access_netkey_finalize(mesh_network_key_t * network_key){
     btstack_memory_mesh_network_key_free(network_key);
 }
 
+void mesh_access_key_refresh_revoke_keys(mesh_subnet_t * subnet){
+    mesh_access_netkey_finalize(subnet->old_key);
+    subnet->old_key = subnet->new_key;
+    subnet->new_key = NULL;
+}
+
 static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
     UNUSED(channel);
     if (packet_type != MESH_BEACON_PACKET) return;
@@ -1391,11 +1397,7 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
             switch (subnet->key_refresh){
                 case MESH_KEY_REFRESH_FIRST_PHASE:
                 case MESH_KEY_REFRESH_SECOND_PHASE:
-                    // -- revoke old key
-                    mesh_access_netkey_finalize(subnet->old_key);
-                    subnet->old_key = subnet->new_key;
-                    subnet->new_key = NULL;
-                    // -- update state
+                    mesh_access_key_refresh_revoke_keys(subnet);
                     subnet->key_refresh = MESH_KEY_REFRESH_NOT_ACTIVE;
                     break;
                 default:

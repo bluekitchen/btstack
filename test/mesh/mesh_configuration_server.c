@@ -2123,11 +2123,7 @@ static void config_key_refresh_phase_set_handler(mesh_model_t *mesh_model, mesh_
                     case MESH_KEY_REFRESH_FIRST_PHASE:
                     case MESH_KEY_REFRESH_SECOND_PHASE:
                         // key refresh phase 3 entered
-                        // -- revoke old key
-                        mesh_access_netkey_finalize(subnet->old_key);
-                        subnet->old_key = subnet->new_key;
-                        subnet->new_key = NULL;
-                        // -- update state
+                        mesh_access_key_refresh_revoke_keys(subnet);
                         subnet->key_refresh = MESH_KEY_REFRESH_NOT_ACTIVE;
                         break;
                     default:
