@@ -729,6 +729,42 @@ static void mesh_upper_transport_send_unsegmented_access_pdu_digest(void * arg){
     btstack_crypto_ccm_encrypt_block(&ccm, access_pdu_len, access_pdu_data, access_pdu_data, &mesh_upper_transport_send_unsegmented_access_pdu_ccm, network_pdu);
 }
 
+static mesh_transport_key_t * mesh_upper_transport_get_outgoing_appkey(uint16_t netkey_index, uint16_t appkey_index){
+    // Device Key is fixed
+    if (appkey_index == MESH_DEVICE_KEY_INDEX) {
+        return mesh_transport_key_get(appkey_index);
+    }
+
+    // Get key refresh state from subnet
+    mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(netkey_index);
+    if (subnet == NULL) return NULL;
+
+    // identify old and new app keys for given appkey_index
+    mesh_transport_key_t * old_key = NULL;
+    mesh_transport_key_t * new_key = NULL;
+    mesh_transport_key_iterator_t it;
+    mesh_transport_key_iterator_init(&it, netkey_index);
+    while (mesh_transport_key_iterator_has_more(&it)){
+        mesh_transport_key_t * transport_key = mesh_transport_key_iterator_get_next(&it);
+        if (transport_key->appkey_index != appkey_index) continue;
+        if (transport_key->old_key == 0) {
+            new_key = transport_key;
+        } else {
+            old_key = transport_key;
+        }
+    }
+
+    // if no key is marked as old, just use the current one
+    if (old_key == NULL) return new_key;
+
+    // use new key if it exists in phase two
+    if ((subnet->key_refresh == MESH_KEY_REFRESH_SECOND_PHASE) && (new_key != NULL)){
+        return new_key;
+    } else {
+        return old_key;
+    }
+}
+
 static void mesh_upper_transport_send_unsegmented_access_pdu(mesh_network_pdu_t * network_pdu){
 
     // if dst is virtual address, lookup label uuid and hash
@@ -755,7 +791,7 @@ static void mesh_upper_transport_send_unsegmented_access_pdu(mesh_network_pdu_t 
     }
 
     // get app or device key
-    const mesh_transport_key_t * appkey = mesh_transport_key_get(appkey_index);
+    const mesh_transport_key_t * appkey = mesh_upper_transport_get_outgoing_appkey(network_pdu->netkey_index, appkey_index);
     mesh_print_hex("AppOrDevKey", appkey->key, 16);
 
     // encrypt ccm
@@ -807,7 +843,7 @@ static void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t 
     }
 
     // get app or device key
-    const mesh_transport_key_t * appkey = mesh_transport_key_get(appkey_index);
+    const mesh_transport_key_t * appkey = mesh_upper_transport_get_outgoing_appkey(transport_pdu->netkey_index, appkey_index);
     mesh_print_hex("AppOrDevKey", appkey->key, 16);
 
     // encrypt ccm
