@@ -811,6 +811,26 @@ static void config_netkey_add_or_update_derived(void * arg){
     mesh_access_message_processed(access_pdu_in_process);
 }
 
+static void config_netkey_add_derived(void * arg){
+    mesh_subnet_t * subnet = (mesh_subnet_t *) arg;
+
+    // store network key
+    mesh_store_network_key(subnet->old_key);
+
+    // add key to NetKey List
+    mesh_network_key_add(subnet->old_key);
+
+    // add subnet
+    mesh_subnet_add(subnet);
+
+#ifdef ENABLE_MESH_PROXY_SERVER
+    mesh_proxy_start_advertising_with_network_id();
+#endif
+
+    config_netkey_status(mesh_model_get_configuration_server(), mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), MESH_FOUNDATION_STATUS_SUCCESS, subnet->netkey_index);
+    mesh_access_message_processed(access_pdu_in_process);
+}
+
 static void config_netkey_add_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
@@ -822,43 +842,58 @@ static void config_netkey_add_handler(mesh_model_t * mesh_model, mesh_pdu_t * pd
 
     uint8_t status;
 
-    const mesh_network_key_t * existing_network_key = mesh_network_key_list_get(new_netkey_index);
-    if (existing_network_key){
-        // network key for netkey index already exists
-        if (memcmp(existing_network_key->net_key, new_netkey, 16) == 0){
-            // same netkey
-            status = MESH_FOUNDATION_STATUS_SUCCESS;
-        } else {
-            // different netkey
-            status = MESH_FOUNDATION_STATUS_KEY_INDEX_ALREADY_STORED;
-        }
-    } else {
+    const mesh_subnet_t * existing_subnet = mesh_subnet_get_by_netkey_index(new_netkey_index);
+    if (existing_subnet == NULL){
+
         // check limit for pts
         uint16_t internal_index = mesh_network_key_get_free_index();
         if (internal_index == 0 || (config_netkey_list_max && mesh_network_key_list_count() >= config_netkey_list_max)){
             status = MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
         } else {
 
-            // setup new key
+            // allocate new key and subnet
             mesh_network_key_t * new_network_key = btstack_memory_mesh_network_key_get();
-            if (new_network_key == NULL){
+            mesh_subnet_t * new_subnet = btstack_memory_mesh_subnet_get();
+
+            if (new_network_key == NULL || new_subnet == NULL){
+                if (new_network_key != NULL){
+                    btstack_memory_mesh_network_key_free(new_network_key);
+                }
+                if (new_subnet != NULL){
+                    btstack_memory_mesh_subnet_free(new_subnet);
+                }
                 status = MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
+
             } else {
-                // TODO: check if subnet could get created
-                access_pdu_in_process = pdu;
+
+                // setup key
                 new_network_key->internal_index = internal_index;
                 new_network_key->netkey_index   = new_netkey_index;
                 memcpy(new_network_key->net_key, new_netkey, 16);
-                // update version if key with same netkey index exists
-                mesh_network_key_t * old_key = mesh_network_key_list_get(new_netkey_index);
-                if (old_key){
-                    new_network_key->version = (uint8_t) (old_key->version + 1);
-                }
-                mesh_network_key_derive(&configuration_server_cmac_request, new_network_key, config_netkey_add_or_update_derived, new_network_key);
+
+                // setup subnet
+                new_subnet->old_key = new_network_key;
+                new_subnet->netkey_index = new_netkey_index;
+                new_subnet->key_refresh = MESH_KEY_REFRESH_NOT_ACTIVE;
+
+                // derive other keys
+                access_pdu_in_process = pdu;
+                mesh_network_key_derive(&configuration_server_cmac_request, new_network_key, config_netkey_add_derived, new_network_key);
                 return;
             }
         }
+
+    } else {
+        // network key for netkey index already exists
+        if (memcmp(existing_subnet->old_key->net_key, new_netkey, 16) == 0){
+            // same netkey
+            status = MESH_FOUNDATION_STATUS_SUCCESS;
+        } else {
+            // different netkey
+            status = MESH_FOUNDATION_STATUS_KEY_INDEX_ALREADY_STORED;
+        }
     }
+
     config_netkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, new_netkey_index);
     mesh_access_message_processed(access_pdu_in_process);
 }
@@ -941,7 +976,7 @@ static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t *
             // remove subnet
             mesh_subnet_remove(subnet);
             btstack_memory_mesh_subnet_free(subnet);
-            
+
         } else {
             // we cannot remove the last network key
             status = MESH_FOUNDATION_STATUS_CANNOT_REMOVE;
