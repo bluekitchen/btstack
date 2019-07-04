@@ -291,3 +291,9 @@ void mesh_generic_level_client_get_value(mesh_model_t *mesh_model, uint16_t dest
 // }
 
 
+void mesh_generic_level_client_publish_value(mesh_model_t * mesh_model, int16_t level_value){
+    mesh_publication_model_t * publication_model = mesh_model->publication_model;
+    uint16_t appkey_index = publication_model->appkey_index;
+    mesh_transport_key_t * app_key = mesh_transport_key_get(appkey_index);
+    mesh_generic_level_client_set_value_unacknowledged(mesh_model, publication_model->address, app_key->netkey_index, appkey_index, level_value, 0, 0);
+}

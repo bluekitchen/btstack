@@ -198,3 +198,12 @@ void mesh_generic_on_off_client_get_value(mesh_model_t *mesh_model, uint16_t des
     // send as segmented access pdu
     generic_client_send_message(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);
 }
+
+void mesh_generic_on_off_client_publish_value(mesh_model_t * mesh_model, uint8_t on_off_value){
+    mesh_publication_model_t * publication_model = mesh_model->publication_model;
+    uint16_t appkey_index = publication_model->appkey_index;
+    mesh_transport_key_t * app_key = mesh_transport_key_get(appkey_index);
+    if (app_key == NULL) return;
+
+    mesh_generic_on_off_client_set_value_unacknowledged(mesh_model, publication_model->address, app_key->netkey_index, appkey_index, on_off_value, 0, 0);
+}

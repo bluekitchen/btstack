@@ -89,6 +89,12 @@ uint8_t mesh_generic_level_client_set_value_unacknowledged(mesh_model_t * mesh_m
  */
 void mesh_generic_level_client_get_value(mesh_model_t *mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index);
 
+/**
+ * @brief Publish level value by sending an unacknowledged set message to the publish destination
+ * @param mesh_model
+ * @param level_value
+ */
+void mesh_generic_level_client_publish_value(mesh_model_t * mesh_model, int16_t level_value);
 
 #ifdef __cplusplus
 } /* end of extern "C" */
