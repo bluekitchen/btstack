@@ -930,6 +930,12 @@ static void config_netkey_update_handler(mesh_model_t * mesh_model, mesh_pdu_t *
     mesh_network_key_derive(&configuration_server_cmac_request, new_network_key, config_netkey_update_derived, subnet);
 }
 
+static void config_netkey_finalize(mesh_network_key_t * network_key){
+    mesh_network_key_remove(network_key);
+    mesh_delete_network_key(network_key->internal_index);
+    btstack_memory_mesh_network_key_free(network_key);
+}
+
 static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu) {
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t *) pdu);
@@ -954,16 +960,12 @@ static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t *
             }
 
             // delete old/current key
-            mesh_network_key_remove(subnet->old_key);
-            mesh_delete_network_key(subnet->old_key->internal_index);
-            btstack_memory_mesh_network_key_free(subnet->old_key);
+            config_netkey_finalize(subnet->old_key);
             subnet->old_key = NULL;
 
             // delete new key
             if (subnet->new_key != NULL){
-                mesh_network_key_remove(subnet->new_key);
-                mesh_delete_network_key(subnet->new_key->internal_index);
-                btstack_memory_mesh_network_key_free(subnet->new_key);
+                config_netkey_finalize(subnet->new_key);
                 subnet->new_key = NULL;
             }
 
@@ -2124,9 +2126,13 @@ static void config_key_refresh_phase_set_handler(mesh_model_t *mesh_model, mesh_
                 switch (subnet->key_refresh){
                     case MESH_KEY_REFRESH_FIRST_PHASE:
                     case MESH_KEY_REFRESH_SECOND_PHASE:
-                        // TODO:  invoke Key Refresh Phase 3, then
-                        //        set subnet->key_refresh = MESH_KEY_REFRESH_NOT_ACTIVE;
-                        printf("TODO: invoke Key Refresh Phase 3, then set key refresh phase to MESH_KEY_REFRESH_NOT_ACTIVE\n");
+                        // key refresh phase 3 entered
+                        // -- revoke old key
+                        config_netkey_finalize(subnet->old_key);
+                        subnet->old_key = subnet->new_key;
+                        subnet->new_key = NULL;
+                        // -- update state
+                        subnet->key_refresh = MESH_KEY_REFRESH_NOT_ACTIVE;
                         break;
                     default:
                         break;
