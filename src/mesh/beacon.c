@@ -274,9 +274,12 @@ static void beacon_handle_secure_beacon(uint8_t * packet, uint16_t size){
     mesh_subnet_t * subnet = NULL;
     while (mesh_subnet_iterator_has_more(&it)){
         mesh_subnet_t * item = mesh_subnet_iterator_get_next(&it);
-        // TODO: handle old/new keys
-        if (memcmp(item->old_key->network_id, beacon_network_id, 8) != 0 ) continue;
-        subnet = item;
+        if (memcmp(item->old_key->network_id, beacon_network_id, 8) == 0 ) {
+            subnet = item;
+        }
+        if (item->new_key != NULL && memcmp(item->new_key->network_id, beacon_network_id, 8) == 0 ) {
+            subnet = item;
+        }
         break;
     }
     if (subnet == NULL) return;
