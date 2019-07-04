@@ -161,7 +161,7 @@ static void load_network_key_nid_68(void){
     btstack_parse_hex("0953fa93e7caac9638f58820220a398e", 16, network_key->encryption_key);
     btstack_parse_hex("8b84eedec100067d670971dd2aa700cf", 16, network_key->privacy_key);
     mesh_network_key_add(network_key);
-    mesh_subnet_update_for_netkey_index(network_key->netkey_index);
+    mesh_subnet_setup_for_netkey_index(network_key->netkey_index);
 }
 
 static void load_network_key_nid_5e(void){
@@ -170,7 +170,7 @@ static void load_network_key_nid_5e(void){
     btstack_parse_hex("be635105434859f484fc798e043ce40e", 16, network_key->encryption_key);
     btstack_parse_hex("5d396d4b54d3cbafe943e051fe9a4eb8", 16, network_key->privacy_key);
     mesh_network_key_add(network_key);
-    mesh_subnet_update_for_netkey_index(network_key->netkey_index);
+    mesh_subnet_setup_for_netkey_index(network_key->netkey_index);
 }
 
 static void load_network_key_nid_10(void){
@@ -179,7 +179,7 @@ static void load_network_key_nid_10(void){
     btstack_parse_hex("3a4fe84a6cc2c6a766ea93f1084d4039", 16, network_key->encryption_key);
     btstack_parse_hex("f695fcce709ccface4d8b7a1e6e39d25", 16, network_key->privacy_key);
     mesh_network_key_add(network_key);
-    mesh_subnet_update_for_netkey_index(network_key->netkey_index);
+    mesh_subnet_setup_for_netkey_index(network_key->netkey_index);
 }
 
 static void load_provisioning_data_test_message(void){

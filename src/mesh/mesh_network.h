@@ -330,9 +330,9 @@ int mesh_subnet_iterator_has_more(mesh_subnet_iterator_t *it);
 mesh_subnet_t * mesh_subnet_iterator_get_next(mesh_subnet_iterator_t *it);
 
 /**
- * @brief Update subnet for given netkey index
+ * @brief Setup subnet for given netkey index
  */
-void mesh_subnet_update_for_netkey_index(uint16_t netkey_index);
+void mesh_subnet_setup_for_netkey_index(uint16_t netkey_index);
 
 
 /**

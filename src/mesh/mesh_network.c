@@ -1096,9 +1096,12 @@ mesh_network_key_t * mesh_subnet_get_outgoing_network_key(mesh_subnet_t * subnet
 }
 
 /**
- * @brief Update subnet for given netkey index
+ * @brief Setup subnet for given netkey index
  */
-void mesh_subnet_update_for_netkey_index(uint16_t netkey_index){
+void mesh_subnet_setup_for_netkey_index(uint16_t netkey_index){
+    mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(netkey_index);
+    if (subnet != NULL) return;
+
     // find old / new keys
     mesh_network_key_t * old_key = NULL;
     mesh_network_key_t * new_key = NULL;
@@ -1120,20 +1123,11 @@ void mesh_subnet_update_for_netkey_index(uint16_t netkey_index){
         }
     }
 
-    // get subnet
-    mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(netkey_index);
-
-    // ignore if no key or no subnet
-    if (old_key == NULL) return;
+    // create subnet for netkey index
+    subnet = btstack_memory_mesh_subnet_get();
     if (subnet == NULL) return;
-
-    // create subnet for netkey index if needed
-    if (subnet == NULL){
-        subnet = btstack_memory_mesh_subnet_get();
-        if (subnet == NULL) return;
-        subnet->netkey_index = netkey_index;
-        mesh_subnet_add(subnet);
-    }
+    subnet->netkey_index = netkey_index;
+    mesh_subnet_add(subnet);
 
     // set keys
     subnet->old_key = old_key;
@@ -1146,8 +1140,6 @@ void mesh_subnet_update_for_netkey_index(uint16_t netkey_index){
     }
     else {
         // two keys -> at least phase 1
-        if (subnet->key_refresh == MESH_KEY_REFRESH_NOT_ACTIVE){
-            subnet->key_refresh = MESH_KEY_REFRESH_FIRST_PHASE;
-        }
+        subnet->key_refresh = MESH_KEY_REFRESH_FIRST_PHASE;
     }
 }

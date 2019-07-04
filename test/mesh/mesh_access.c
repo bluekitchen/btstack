@@ -978,7 +978,7 @@ void mesh_load_network_keys(void){
 
         mesh_network_key_add(network_key);
 
-        mesh_subnet_update_for_netkey_index(network_key->netkey_index);
+        mesh_subnet_setup_for_netkey_index(network_key->netkey_index);
 
         printf("- internal index 0x%x, NetKey Index 0x%06x, NID %02x: ", network_key->internal_index, network_key->netkey_index, network_key->nid);
         printf_hexdump(network_key->net_key, 16);

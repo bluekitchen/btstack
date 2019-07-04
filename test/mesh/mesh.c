@@ -409,7 +409,7 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                     mesh_network_key_add(primary_network_key);
                     
                     // setup primary network
-                    mesh_subnet_update_for_netkey_index(primary_network_key->netkey_index);
+                    mesh_subnet_setup_for_netkey_index(primary_network_key->netkey_index);
 
                     // store provisioning data and primary network key in TLV
                     btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
