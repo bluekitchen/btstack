@@ -187,6 +187,7 @@ mesh_transport_key_t * mesh_transport_key_get(uint16_t appkey_index){
 void mesh_transport_key_iterator_init(mesh_transport_key_iterator_t *it, uint16_t netkey_index){
     btstack_linked_list_iterator_init(&it->it, &application_keys);
     it->netkey_index = netkey_index;
+    it->key = NULL;
 }
 
 int mesh_transport_key_iterator_has_more(mesh_transport_key_iterator_t *it){
