@@ -400,14 +400,7 @@ static void mesh_configuration_server_delete_appkey(mesh_transport_key_t * trans
         }
     }
 
-    // remove from list
-    mesh_transport_key_remove(transport_key);
-
-    // delete from TLV
-    mesh_delete_app_key(appkey_index);
-
-    // free memory
-    btstack_memory_mesh_transport_key_free(transport_key);
+    mesh_access_appkey_finalize(transport_key);
 }
 
 // Foundatiopn Message
@@ -1098,6 +1091,8 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     app_key->appkey_index = appkey_index;
     app_key->netkey_index = netkey_index;
     app_key->version = 0;
+    app_key->old_key = 0;
+
     memcpy(app_key->key, appkey, 16);
 
     // calculate AID
@@ -1170,6 +1165,9 @@ static void config_appkey_update_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
     new_app_key->key_refresh  = 1;
     new_app_key->version = (uint8_t)(existing_app_key + 1);
     memcpy(new_app_key->key, appkey, 16);
+
+    // mark old key
+    existing_app_key->old_key = 1;
 
     // calculate AID
     access_pdu_in_process = pdu;

@@ -347,6 +347,8 @@ void mesh_delete_app_key(uint16_t internal_index);
 void mesh_delete_app_keys(void);
 void mesh_load_app_keys(void);
 
+void mesh_access_appkey_finalize(mesh_transport_key_t * transport_key);
+
 // Mesh Model Subscriptions
 int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address);
 

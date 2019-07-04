@@ -108,6 +108,9 @@ typedef struct {
     // internal version - allows for newer-than relation between keys with same appkey_index
     uint8_t version;
 
+    // old key - mark key as 'older' in app key update or startup
+    uint8_t old_key;
+
     // application key flag, 0 for device key
     uint8_t akf;
 

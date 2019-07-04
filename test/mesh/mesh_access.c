@@ -1356,10 +1356,26 @@ void mesh_access_netkey_finalize(mesh_network_key_t * network_key){
     btstack_memory_mesh_network_key_free(network_key);
 }
 
+void mesh_access_appkey_finalize(mesh_transport_key_t * transport_key){
+    mesh_transport_key_remove(transport_key);
+    mesh_delete_app_key(transport_key->appkey_index);
+    btstack_memory_mesh_transport_key_free(transport_key);
+}
+
 void mesh_access_key_refresh_revoke_keys(mesh_subnet_t * subnet){
+    // delete old netkey index
     mesh_access_netkey_finalize(subnet->old_key);
     subnet->old_key = subnet->new_key;
     subnet->new_key = NULL;
+
+    // delete old appkeys, if any
+    mesh_transport_key_iterator_t it;
+    mesh_transport_key_iterator_init(&it, subnet->netkey_index);
+    while (mesh_transport_key_iterator_has_more(&it)){
+        mesh_transport_key_t * transport_key = mesh_transport_key_iterator_get_next(&it);
+        if (transport_key->old_key == 0) continue;
+        mesh_access_appkey_finalize(transport_key);
+    }
 }
 
 static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
