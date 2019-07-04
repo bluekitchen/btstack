@@ -41,6 +41,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include "mesh/mesh_upper_transport.h"
+#include "mesh/beacon.h"
 #include "mesh_access.h"
 #include "btstack_memory.h"
 #include "btstack_debug.h"
@@ -50,6 +51,7 @@
 #define MEST_TRANSACTION_TIMEOUT_MS  6000
 
 static void mesh_access_message_process_handler(mesh_pdu_t * pdu);
+static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size);
 
 static uint16_t primary_element_address;
 
@@ -80,6 +82,9 @@ void mesh_access_init(void){
 
     // register with upper transport
     mesh_upper_transport_register_access_message_handler(&mesh_access_message_process_handler);
+
+    // register for secure network beacons
+    beacon_register_for_secure_network_beacons(&mesh_access_secure_network_beacon_handler);
 }
 
 void mesh_access_emit_state_update_bool(btstack_packet_handler_t * event_handler, uint8_t element_index, uint32_t model_identifier, 
@@ -1340,4 +1345,71 @@ void mesh_access_state_changed(mesh_model_t * mesh_model){
     if (publication_model == NULL) return;
     publication_model->publish_now = 1;
     mesh_model_publication_run(NULL);
+}
+
+void mesh_access_netkey_finalize(mesh_network_key_t * network_key){
+    mesh_network_key_remove(network_key);
+    mesh_delete_network_key(network_key->internal_index);
+    btstack_memory_mesh_network_key_free(network_key);
+}
+
+static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
+    UNUSED(channel);
+    if (packet_type != MESH_BEACON_PACKET) return;
+
+    // lookup subnet and netkey by network id
+    uint8_t * beacon_network_id = &packet[2];
+    mesh_subnet_iterator_t it;
+    mesh_subnet_iterator_init(&it);
+    mesh_subnet_t * subnet = NULL;
+    mesh_network_key_t * network_key = NULL;
+    uint8_t new_key = 0;
+    while (mesh_subnet_iterator_has_more(&it)){
+        mesh_subnet_t * item = mesh_subnet_iterator_get_next(&it);
+        if (memcmp(item->old_key->network_id, beacon_network_id, 8) == 0 ) {
+            subnet = item;
+            network_key = item->old_key;
+        }
+        if (item->new_key != NULL && memcmp(item->new_key->network_id, beacon_network_id, 8) == 0 ) {
+            subnet = item;
+            network_key = item->new_key;
+            new_key = 1;
+        }
+        break;
+    }
+    if (subnet == NULL) return;
+
+    // Key refresh via secure network beacons that are authenticated with new netkey
+    if (new_key){
+        // either first or second phase (in phase 0, new key is not set)
+        int key_refresh_flag = packet[1] & 1;
+        if (key_refresh_flag){
+            //  transition to phase 3 from either phase 1 or 2
+            switch (subnet->key_refresh){
+                case MESH_KEY_REFRESH_FIRST_PHASE:
+                case MESH_KEY_REFRESH_SECOND_PHASE:
+                    // -- revoke old key
+                    mesh_access_netkey_finalize(subnet->old_key);
+                    subnet->old_key = subnet->new_key;
+                    subnet->new_key = NULL;
+                    // -- update state
+                    subnet->key_refresh = MESH_KEY_REFRESH_NOT_ACTIVE;
+                    break;
+                default:
+                    break;
+            }
+        } else {
+            //  transition to phase 2 from either phase 1
+            switch (subnet->key_refresh){
+                case MESH_KEY_REFRESH_FIRST_PHASE:
+                    // -- update state
+                    subnet->key_refresh = MESH_KEY_REFRESH_SECOND_PHASE;
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    // TODO: IV Update
 }
