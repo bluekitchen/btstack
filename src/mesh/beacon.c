@@ -296,7 +296,7 @@ static void beacon_handle_secure_beacon(uint8_t * packet, uint16_t size){
     mesh_secure_network_beacon_active = 1;
     memcpy(mesh_secure_network_beacon_validate_buffer, &packet[0], SECURE_NETWORK_BEACON_LEN);
 
-    mesh_network_key_t * network_key = mesh_subnet_get_outgoing_network_key(mesh_subnet);
+    mesh_network_key_t * network_key = mesh_subnet_get_outgoing_network_key(subnet);
     btstack_crypto_aes128_cmac_message(&mesh_secure_network_beacon_cmac_request, network_key->beacon_key, 13,
         &mesh_secure_network_beacon_validate_buffer[1], mesh_secure_network_beacon_auth_value, &beacon_handle_secure_beacon_auth_value_calculated, subnet);
 }                    
