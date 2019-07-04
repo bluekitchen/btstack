@@ -43,6 +43,8 @@ extern "C"
 {
 #endif
 
+#include "mesh_access.h"
+
 #define MESH_GENERIC_ON_OFF_GET                     0x8201u    
 #define MESH_GENERIC_ON_OFF_SET                     0x8202u
 #define MESH_GENERIC_ON_OFF_SET_UNACKNOWLEDGED      0x8203u

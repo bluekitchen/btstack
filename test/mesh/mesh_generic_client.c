@@ -152,15 +152,8 @@ static uint8_t mesh_generic_on_off_client_set_with_transition_message(mesh_model
     uint8_t transaction_id = mesh_access_transactions_get_next_transaction_id();
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(message_template, on_off_value, transaction_id, transition_time_gdtt, delay_time_gdtt);
     if (!transport_pdu) return 0;
-    mesh_generic_on_off_state_t * state = (mesh_generic_on_off_state_t *)mesh_model->model_data;
-    state->transition_data.target_value = on_off_value;
 
-    mesh_transition_t transition = state->transition_data.base_transition;
-    transition.remaining_delay_time_ms = mesh_access_time_gdtt2ms(delay_time_gdtt);
-    transition.remaining_transition_time_ms = mesh_access_time_gdtt2ms(transition_time_gdtt);
-    transition.transaction_identifier = transaction_id;
-
-        // send as segmented access pdu
+    // send as segmented access pdu
     generic_client_send_message(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);
     return transaction_id;
 }
@@ -174,14 +167,6 @@ static uint8_t mesh_generic_on_off_client_set_instantaneous_message(mesh_model_t
     uint8_t transaction_id = mesh_access_transactions_get_next_transaction_id();
     mesh_transport_pdu_t *  transport_pdu = mesh_access_setup_segmented_message(message_template, on_off_value, transaction_id);
     if (!transport_pdu) return 0;
-    // send as segmented access pdu
-    mesh_generic_on_off_state_t * state = (mesh_generic_on_off_state_t *)mesh_model->model_data;
-    state->transition_data.target_value = on_off_value;
-
-    mesh_transition_t transition = state->transition_data.base_transition;
-    transition.remaining_delay_time_ms = 0;
-    transition.remaining_transition_time_ms = 0;
-    transition.transaction_identifier = transaction_id;
 
     generic_client_send_message(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);
     return transaction_id;
@@ -213,6 +198,3 @@ void mesh_generic_on_off_client_get_value(mesh_model_t *mesh_model, uint16_t des
     // send as segmented access pdu
     generic_client_send_message(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);
 }
-
-
-
