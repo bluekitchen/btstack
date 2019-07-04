@@ -1020,10 +1020,10 @@ static void config_appkey_list(mesh_model_t * mesh_model, uint16_t netkey_index,
     config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
-static void config_appkey_add_aid(void *arg){
+static void config_appkey_add_or_update_aid(void *arg){
     mesh_transport_key_t * transport_key = (mesh_transport_key_t *) arg;
 
-    printf("Config Appkey Add: NetKey Index 0x%04x, AppKey Index 0x%04x, AID %02x: ", transport_key->netkey_index, transport_key->appkey_index, transport_key->aid);
+    printf("Config Appkey Add/Update: NetKey Index 0x%04x, AppKey Index 0x%04x, AID %02x: ", transport_key->netkey_index, transport_key->appkey_index, transport_key->aid);
     printf_hexdump(transport_key->key, 16);
 
     // store in TLV
@@ -1096,29 +1096,12 @@ static void config_appkey_add_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     app_key->akf = 1;
     app_key->appkey_index = appkey_index;
     app_key->netkey_index = netkey_index;
+    app_key->version = 0;
     memcpy(app_key->key, appkey, 16);
 
     // calculate AID
     access_pdu_in_process = pdu;
-    mesh_transport_key_calc_aid(&configuration_server_cmac_request, app_key, config_appkey_add_aid, app_key);
-}
-
-static void config_appkey_update_aid(void *arg){
-    mesh_transport_key_t * transport_key = (mesh_transport_key_t *) arg;
-
-    printf("Config Appkey Update: NetKey Index 0x%04x, AppKey Index 0x%04x, AID %02x: ", transport_key->netkey_index, transport_key->appkey_index, transport_key->aid);
-    printf_hexdump(transport_key->key, 16);
-
-    // store in TLV
-    mesh_store_app_key(transport_key);
-
-    // add app key
-    mesh_transport_key_add(transport_key);
-
-    uint32_t netkey_and_appkey_index = (transport_key->appkey_index << 12) | transport_key->netkey_index;
-    config_appkey_status(mesh_model_get_configuration_server(),  mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_SUCCESS);
-
-    mesh_access_message_processed(access_pdu_in_process);
+    mesh_transport_key_calc_aid(&configuration_server_cmac_request, app_key, config_appkey_add_or_update_aid, app_key);
 }
 
 static void config_appkey_update_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
@@ -1146,51 +1129,50 @@ static void config_appkey_update_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
     }
 
     // check if appkey already exists
-    mesh_transport_key_t * transport_key = mesh_transport_key_get(appkey_index);
-    if (!transport_key) {
+    mesh_transport_key_t * existing_app_key = mesh_transport_key_get(appkey_index);
+    if (!existing_app_key) {
         config_appkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_INVALID_APPKEY_INDEX);
         mesh_access_message_processed(pdu);
         return;
     }
 
-    if (transport_key->netkey_index != netkey_index){
+    if (existing_app_key->netkey_index != netkey_index){
         // already stored but with different netkey
         config_appkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_INVALID_BINDING);
         mesh_access_message_processed(pdu);
         return;
     }
 
-    if (memcmp(transport_key->key, appkey, 16) == 0){
+    if (memcmp(existing_app_key->key, appkey, 16) == 0){
         // key identical
         config_appkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_SUCCESS);
         mesh_access_message_processed(pdu);
         return;
     }
 
-    // TODO: Don't create new key. We create a new app_key becaue key refresh is not implemented yet, by adding a new one, both are available
-
     // create app key
-    mesh_transport_key_t * app_key = NULL;
+    mesh_transport_key_t * new_app_key = NULL;
     uint16_t internal_index = mesh_transport_key_get_free_index();
     if (internal_index > 0){
-        app_key = btstack_memory_mesh_transport_key_get();
+        new_app_key = btstack_memory_mesh_transport_key_get();
     }    
-    if (app_key == NULL) {
+    if (new_app_key == NULL) {
         config_appkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES);
         mesh_access_message_processed(pdu);
         return;
     }
 
     // store data
-    app_key->internal_index = internal_index;
-    app_key->appkey_index = appkey_index;
-    app_key->netkey_index = netkey_index;
-    app_key->key_refresh  = 1;
-    memcpy(app_key->key, appkey, 16);
+    new_app_key->internal_index = internal_index;
+    new_app_key->appkey_index = appkey_index;
+    new_app_key->netkey_index = netkey_index;
+    new_app_key->key_refresh  = 1;
+    new_app_key->version = (uint8_t)(existing_app_key + 1);
+    memcpy(new_app_key->key, appkey, 16);
 
     // calculate AID
     access_pdu_in_process = pdu;
-    mesh_transport_key_calc_aid(&configuration_server_cmac_request, app_key, config_appkey_update_aid, app_key);
+    mesh_transport_key_calc_aid(&configuration_server_cmac_request, new_app_key, config_appkey_add_or_update_aid, new_app_key);
 }
 
 static void config_appkey_delete_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
