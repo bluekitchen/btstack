@@ -910,14 +910,11 @@ static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t *
 
     // get existing network_key
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
-    mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
-    if (network_key){
-        if (mesh_network_key_list_count() > 1){
-            // delete
-            mesh_delete_network_key(network_key->internal_index);
 
-            // remove netkey
-            mesh_network_key_remove(network_key);
+    // remove subnet
+    mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(netkey_index);
+    if (subnet != NULL){
+        if (mesh_subnet_list_count() > 1){
 
             // remove all appkeys for this netkey
             mesh_transport_key_iterator_t it;
@@ -927,8 +924,23 @@ static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t *
                 mesh_configuration_server_delete_appkey(transport_key);
             }
 
-            // update subnet
-            mesh_subnet_update_for_netkey_index(netkey_index);
+            // delete old/current key
+            mesh_network_key_remove(subnet->old_key);
+            mesh_delete_network_key(subnet->old_key->internal_index);
+            btstack_memory_mesh_network_key_free(subnet->old_key);
+            subnet->old_key = NULL;
+
+            // delete new key
+            if (subnet->new_key != NULL){
+                mesh_network_key_remove(subnet->new_key);
+                mesh_delete_network_key(subnet->new_key->internal_index);
+                btstack_memory_mesh_network_key_free(subnet->new_key);
+                subnet->new_key = NULL;
+            }
+
+            // remove subnet
+            mesh_subnet_remove(subnet);
+            btstack_memory_mesh_subnet_free(subnet);
             
         } else {
             // we cannot remove the last network key

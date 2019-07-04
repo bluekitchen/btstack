@@ -1123,12 +1123,9 @@ void mesh_subnet_update_for_netkey_index(uint16_t netkey_index){
     // get subnet
     mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(netkey_index);
 
-    // no keys -> no subnet
-    if (old_key == NULL) {
-        if (subnet == NULL) return;
-        mesh_subnet_remove(subnet);
-        return;
-    }
+    // ignore if no key or no subnet
+    if (old_key == NULL) return;
+    if (subnet == NULL) return;
 
     // create subnet for netkey index if needed
     if (subnet == NULL){
