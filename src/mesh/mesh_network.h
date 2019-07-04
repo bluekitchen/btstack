@@ -131,6 +131,23 @@ typedef struct {
     uint8_t               data[MESH_ACCESS_PAYLOAD_MAX];
 } mesh_transport_pdu_t;
 
+typedef enum {
+    MESH_KEY_REFRESH_NOT_ACTIVE = 0,
+    MESH_KEY_REFRESH_FIRST_PHASE,
+    MESH_KEY_REFRESH_SECOND_PHASE
+} mesh_key_refresh_state_t;
+
+typedef enum {
+    MESH_SECURE_NETWORK_BEACON_W2_AUTH_VALUE,
+    MESH_SECURE_NETWORK_BEACON_W4_AUTH_VALUE,
+    MESH_SECURE_NETWORK_BEACON_AUTH_VALUE,
+    MESH_SECURE_NETWORK_BEACON_W2_SEND_ADV,
+    MESH_SECURE_NETWORK_BEACON_ADV_SENT,
+    MESH_SECURE_NETWORK_BEACON_W2_SEND_GATT,
+    MESH_SECURE_NETWORK_BEACON_GATT_SENT,
+    MESH_SECURE_NETWORK_BEACON_W4_INTERVAL
+} mesh_secure_network_beacon_state_t;
+
 typedef struct {
     btstack_linked_item_t item;
 
