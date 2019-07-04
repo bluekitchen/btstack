@@ -182,7 +182,7 @@ const mesh_operation_t * mesh_generic_level_client_get_operations(void){
 
 static uint8_t mesh_generic_level_client_set_with_transition_message(mesh_model_t *mesh_model, const mesh_access_message_t * message_template, 
     uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
-    uint16_t level_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt){
+    int16_t level_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt){
     if (mesh_model->element == NULL){
         log_error("mesh_model->element == NULL"); 
     }
@@ -204,7 +204,7 @@ static uint8_t mesh_generic_level_client_set_with_transition_message(mesh_model_
 }
 
 static uint8_t mesh_generic_level_client_set_instantaneous_message(mesh_model_t *mesh_model, const mesh_access_message_t * message_template, 
-    uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t level_value){
+    uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, int16_t level_value){
     if (mesh_model->element == NULL){
         log_error("mesh_model->element == NULL"); 
         return 0;
@@ -226,7 +226,7 @@ static uint8_t mesh_generic_level_client_set_instantaneous_message(mesh_model_t 
     return transaction_id;
 }
 
-uint8_t mesh_generic_level_client_set_value(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t level_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt){
+uint8_t mesh_generic_level_client_set_value(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, int16_t level_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt){
     if (transition_time_gdtt != 0) {
         return mesh_generic_level_client_set_with_transition_message(mesh_model, &mesh_generic_level_set_with_transition, dest, netkey_index, appkey_index, level_value, transition_time_gdtt, delay_time_gdtt);
     } else {
@@ -234,7 +234,7 @@ uint8_t mesh_generic_level_client_set_value(mesh_model_t * mesh_model, uint16_t 
     }
 }
 
-uint8_t mesh_generic_level_client_set_value_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint16_t level_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt){
+uint8_t mesh_generic_level_client_set_value_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, int16_t level_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt){
     if (transition_time_gdtt != 0) {
         return mesh_generic_level_client_set_with_transition_message(mesh_model, &mesh_generic_level_set_unacknowledged_with_transition, dest, netkey_index, appkey_index, level_value, transition_time_gdtt, delay_time_gdtt);
     } else {

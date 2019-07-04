@@ -65,7 +65,7 @@ void mesh_generic_level_client_register_packet_handler(mesh_model_t *mesh_model,
  * @param delay_time_gdtt
  * @return transaction_id    if transaction_id == 0, it is invalid
  */
-uint8_t mesh_generic_level_client_set_value(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t level_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt);
+uint8_t mesh_generic_level_client_set_value(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, int16_t level_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt);
 
 /**
  * @brief  Get present Level value
@@ -78,7 +78,7 @@ uint8_t mesh_generic_level_client_set_value(mesh_model_t * mesh_model, uint16_t 
  * @param delay_time_gdtt
  * @return transaction_id    if transaction_id == 0, it is invalid
  */
-uint8_t mesh_generic_level_client_set_value_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t level_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt);
+uint8_t mesh_generic_level_client_set_value_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, int16_t level_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt);
 
 /**
  * @brief  Get present Level value
@@ -88,6 +88,15 @@ uint8_t mesh_generic_level_client_set_value_unacknowledged(mesh_model_t * mesh_m
  * @param appkey_index
  */
 void mesh_generic_level_client_get_value(mesh_model_t *mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index);
+
+/**
+ * @brief Publish level value
+ * @param mesh_model
+ * @param level_value
+ * @param transition_time_gdtt
+ * @param delay_time_gdtt
+ */
+void mesh_generic_level_client_publish_value(mesh_model_t * mesh_model, int16_t level_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt);
 
 
 #ifdef __cplusplus
