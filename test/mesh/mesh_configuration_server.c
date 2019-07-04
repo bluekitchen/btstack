@@ -1027,7 +1027,7 @@ static void config_appkey_add_or_udpate_aid(void *arg){
     printf_hexdump(transport_key->key, 16);
 
     // store in TLV
-    mesh_store_app_key(transport_key->internal_index, transport_key->netkey_index, transport_key->appkey_index, transport_key->aid, transport_key->version, transport_key->key);
+    mesh_store_app_key(transport_key);
 
     // add app key
     mesh_transport_key_add(transport_key);
