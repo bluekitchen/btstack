@@ -786,31 +786,6 @@ static void config_netkey_list(mesh_model_t * mesh_model, uint16_t netkey_index,
     config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
 }
 
-static void config_netkey_add_or_update_derived(void * arg){
-
-#ifdef ENABLE_MESH_PROXY_SERVER
-    mesh_proxy_stop_advertising_with_network_id();
-#endif
-
-    mesh_network_key_t * network_key = (mesh_network_key_t *) arg;
-
-    // store network key
-    mesh_store_network_key(network_key);
-
-    // add key to NetKey List
-    mesh_network_key_add(network_key);
-
-    // update subnet
-    mesh_subnet_update_for_netkey_index(network_key->netkey_index);
-
-#ifdef ENABLE_MESH_PROXY_SERVER
-    mesh_proxy_start_advertising_with_network_id();
-#endif
-    
-    config_netkey_status(mesh_model_get_configuration_server(), mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), MESH_FOUNDATION_STATUS_SUCCESS, network_key->netkey_index);
-    mesh_access_message_processed(access_pdu_in_process);
-}
-
 static void config_netkey_add_derived(void * arg){
     mesh_subnet_t * subnet = (mesh_subnet_t *) arg;
 
@@ -894,13 +869,26 @@ static void config_netkey_add_handler(mesh_model_t * mesh_model, mesh_pdu_t * pd
         }
     }
 
+    // report status    
     config_netkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, new_netkey_index);
     mesh_access_message_processed(access_pdu_in_process);
 }
 
-static void config_netkey_get_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu){
-    config_netkey_list(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
-    mesh_access_message_processed(pdu);
+static void config_netkey_update_derived(void * arg){
+    mesh_subnet_t * subnet = (mesh_subnet_t *) arg;
+
+    // store network key
+    mesh_store_network_key(subnet->new_key);
+
+    // add key to NetKey List
+    mesh_network_key_add(subnet->new_key);
+
+    // update subnet - Key Refresh Phase 1
+    subnet->key_refresh = MESH_KEY_REFRESH_FIRST_PHASE;
+
+    // report status    
+    config_netkey_status(mesh_model_get_configuration_server(), mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), MESH_FOUNDATION_STATUS_SUCCESS, subnet->netkey_index);
+    mesh_access_message_processed(access_pdu_in_process);
 }
 
 static void config_netkey_update_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu) {
@@ -912,9 +900,9 @@ static void config_netkey_update_handler(mesh_model_t * mesh_model, mesh_pdu_t *
     uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
     mesh_access_parser_get_key(&parser, new_netkey);
 
-    // get existing network_key
-    mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
-    if (network_key == NULL){
+    // get existing subnet
+    mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(netkey_index);
+    if (subnet == NULL){
         config_netkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX, netkey_index);
         mesh_access_message_processed(access_pdu_in_process);
         return;
@@ -929,11 +917,17 @@ static void config_netkey_update_handler(mesh_model_t * mesh_model, mesh_pdu_t *
         return;
     }
 
-    access_pdu_in_process = pdu;
+    // setup new key
     new_network_key->internal_index = internal_index;
     new_network_key->netkey_index   = netkey_index;
     memcpy(new_network_key->net_key, new_netkey, 16);
-    mesh_network_key_derive(&configuration_server_cmac_request, new_network_key, config_netkey_add_or_update_derived, new_network_key);
+
+    // store in subnet (not active yet)
+    subnet->new_key = new_network_key;    
+
+    // derive other keys
+    access_pdu_in_process = pdu;
+    mesh_network_key_derive(&configuration_server_cmac_request, new_network_key, config_netkey_update_derived, subnet);
 }
 
 static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu) {
@@ -983,6 +977,11 @@ static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t *
         }
     }
     config_netkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, netkey_index);
+}
+
+static void config_netkey_get_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu){
+    config_netkey_list(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
+    mesh_access_message_processed(pdu);
 }
 
 // AppKey List
