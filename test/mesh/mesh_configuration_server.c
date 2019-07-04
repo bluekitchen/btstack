@@ -920,6 +920,7 @@ static void config_netkey_update_handler(mesh_model_t * mesh_model, mesh_pdu_t *
     // setup new key
     new_network_key->internal_index = internal_index;
     new_network_key->netkey_index   = netkey_index;
+    new_network_key->version        = (uint8_t)(subnet->old_key->version + 1);
     memcpy(new_network_key->net_key, new_netkey, 16);
 
     // store in subnet (not active yet)
