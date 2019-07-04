@@ -1006,6 +1006,7 @@ typedef struct {
     uint16_t netkey_index;
     uint16_t appkey_index;
     uint8_t  aid;
+    uint8_t  version;
     uint8_t  key[16];
 } mesh_persistent_app_key_t;
 
@@ -1013,7 +1014,7 @@ static uint32_t mesh_transport_key_tag_for_internal_index(uint16_t internal_inde
     return ((uint32_t) 'M' << 24) | ((uint32_t) 'A' << 16) | ((uint32_t) internal_index);
 }
 
-void mesh_store_app_key(uint16_t internal_index, uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, const uint8_t * application_key){
+void mesh_store_app_key(uint16_t internal_index, uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, uint8_t version, const uint8_t * application_key){
     mesh_access_setup_tlv();
 
     mesh_persistent_app_key_t data;
@@ -1023,6 +1024,7 @@ void mesh_store_app_key(uint16_t internal_index, uint16_t netkey_index, uint16_t
     data.netkey_index = netkey_index;
     data.appkey_index = appkey_index;
     data.aid = aid;
+    data.version = version;
     memcpy(data.key, application_key, 16);
     btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
 }
@@ -1052,6 +1054,7 @@ void mesh_load_app_keys(void){
         key->netkey_index = data.netkey_index;
         key->aid          = data.aid;
         key->akf          = 1;
+        key->version      = data.version;
         memcpy(key->key, data.key, 16);
         mesh_transport_key_add(key);
         printf("- internal index 0x%x, AppKey Index 0x%06x, AID %02x: ", key->internal_index, key->appkey_index, key->aid);

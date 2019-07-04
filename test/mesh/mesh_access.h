@@ -339,7 +339,7 @@ void mesh_load_network_keys(void);
 void mesh_access_netkey_finalize(mesh_network_key_t * network_key);
 
 // Mesh Appkeys
-void mesh_store_app_key(uint16_t internal_index, uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, const uint8_t * application_key);
+void mesh_store_app_key(uint16_t internal_index, uint16_t netkey_index, uint16_t appkey_index, uint8_t aid, uint8_t version, const uint8_t * application_key);
 void mesh_delete_app_key(uint16_t internal_index);
 void mesh_delete_app_keys(void);
 void mesh_load_app_keys(void);
