@@ -267,18 +267,21 @@ static void beacon_handle_secure_beacon_auth_value_calculated(void * arg){
 static void beacon_handle_secure_beacon(uint8_t * packet, uint16_t size){
     if (size != SECURE_NETWORK_BEACON_LEN) return;
     
-    // lookup subnet by network id
+    // lookup subnet and netkey by network id
     uint8_t * beacon_network_id = &packet[2];
     mesh_subnet_iterator_t it;
     mesh_subnet_iterator_init(&it);
     mesh_subnet_t * subnet = NULL;
+    mesh_network_key_t * network_key = NULL;
     while (mesh_subnet_iterator_has_more(&it)){
         mesh_subnet_t * item = mesh_subnet_iterator_get_next(&it);
         if (memcmp(item->old_key->network_id, beacon_network_id, 8) == 0 ) {
             subnet = item;
+            network_key = item->old_key;
         }
         if (item->new_key != NULL && memcmp(item->new_key->network_id, beacon_network_id, 8) == 0 ) {
             subnet = item;
+            network_key = item->new_key;
         }
         break;
     }
@@ -299,7 +302,6 @@ static void beacon_handle_secure_beacon(uint8_t * packet, uint16_t size){
     mesh_secure_network_beacon_active = 1;
     memcpy(mesh_secure_network_beacon_validate_buffer, &packet[0], SECURE_NETWORK_BEACON_LEN);
 
-    mesh_network_key_t * network_key = mesh_subnet_get_outgoing_network_key(subnet);
     btstack_crypto_aes128_cmac_message(&mesh_secure_network_beacon_cmac_request, network_key->beacon_key, 13,
         &mesh_secure_network_beacon_validate_buffer[1], mesh_secure_network_beacon_auth_value, &beacon_handle_secure_beacon_auth_value_calculated, subnet);
 }                    
