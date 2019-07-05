@@ -375,6 +375,8 @@ uint8_t   mesh_network_pdu_len(mesh_network_pdu_t * network_pdu);
 void     mesh_set_iv_index(uint32_t iv_index);
 uint32_t mesh_get_iv_index(void);
 
+uint32_t mesh_get_iv_index_for_tx(void);
+
 int mesh_iv_update_active(void);
 void mesh_trigger_iv_update(void);
 

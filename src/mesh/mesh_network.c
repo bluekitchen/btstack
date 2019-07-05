@@ -287,7 +287,7 @@ static void mesh_network_send_c(void *arg){
 static void mesh_network_send_b(void *arg){
     mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
 
-    uint32_t iv_index = global_iv_index;
+    uint32_t iv_index = mesh_get_iv_index_for_tx();
 
     // store NetMIC
     uint8_t net_mic[8];
@@ -314,6 +314,8 @@ static void mesh_network_send_a(mesh_network_pdu_t * network_pdu){
 
     mesh_crypto_active = 1;
 
+    uint32_t iv_index = mesh_get_iv_index_for_tx();
+
     // lookup subnet by netkey_index
     mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(network_pdu->netkey_index);
     if (!subnet) {
@@ -330,13 +332,13 @@ static void mesh_network_send_a(mesh_network_pdu_t * network_pdu){
 
     // get network nonce
     if (network_pdu->flags & MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION){
-        mesh_proxy_create_nonce(network_nonce, network_pdu, global_iv_index); 
+        mesh_proxy_create_nonce(network_nonce, network_pdu, iv_index); 
 #ifdef LOG_NETWORK
         printf("TX-ProxyNonce:  ");
         printf_hexdump(network_nonce, 13);
 #endif
     } else {
-        mesh_network_create_nonce(network_nonce, network_pdu, global_iv_index); 
+        mesh_network_create_nonce(network_nonce, network_pdu, iv_index); 
 #ifdef LOG_NETWORK
         printf("TX-NetworkNonce:  ");
         printf_hexdump(network_nonce, 13);
@@ -931,7 +933,7 @@ void mesh_network_setup_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_in
     // set netkey_index
     network_pdu->netkey_index = netkey_index;
     // setup header
-    network_pdu->data[network_pdu->len++] = (global_iv_index << 7) |  nid;
+    network_pdu->data[network_pdu->len++] = (mesh_get_iv_index_for_tx() << 7) |  nid;
     uint8_t ctl_ttl = (ctl << 7) | (ttl & 0x7f);
     network_pdu->data[network_pdu->len++] = ctl_ttl;
     big_endian_store_24(network_pdu->data, 2, seq);
@@ -956,7 +958,7 @@ void mesh_network_setup_pdu_header(mesh_network_pdu_t * network_pdu, uint16_t ne
     // set netkey_index
     network_pdu->netkey_index = netkey_index;
     // setup header
-    network_pdu->data[0] = (global_iv_index << 7) |  nid;
+    network_pdu->data[0] = (mesh_get_iv_index_for_tx() << 7) |  nid;
     uint8_t ctl_ttl = (ctl << 7) | (ttl & 0x7f);
     network_pdu->data[1] = ctl_ttl;
     big_endian_store_24(network_pdu->data, 2, seq);
@@ -970,6 +972,14 @@ void mesh_set_iv_index(uint32_t iv_index){
 
 uint32_t mesh_get_iv_index(void){
     return  global_iv_index;
+}
+
+uint32_t mesh_get_iv_index_for_tx(void){
+    if (global_iv_update_active){
+        return global_iv_index - 1;
+    } else {
+        return  global_iv_index;
+    }
 }
 
 int mesh_iv_update_active(void){
