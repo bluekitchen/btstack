@@ -132,8 +132,10 @@ static uint8_t mesh_secure_network_beacon_get_flags(mesh_subnet_t * mesh_subnet)
     if (mesh_subnet->key_refresh != MESH_KEY_REFRESH_NOT_ACTIVE){
         mesh_flags |= 1;
     }
+    if (mesh_iv_update_active()){
+        mesh_flags |= 2;
+    }
 
-    // TODO: set bit 1 if IV Update is active
     return mesh_flags;    
 }
 

@@ -70,6 +70,7 @@
 // globals
 
 static uint32_t global_iv_index;
+static int global_iv_update_active;
 static uint16_t mesh_network_primary_address;
 static uint16_t mesh_network_num_elements;
 static void (*mesh_network_higher_layer_handler)(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu);
@@ -969,6 +970,10 @@ void mesh_set_iv_index(uint32_t iv_index){
 
 uint32_t mesh_get_iv_index(void){
     return  global_iv_index;
+}
+
+int mesh_iv_update_active(void){
+    return global_iv_update_active;
 }
 
 // Network PDU Getter

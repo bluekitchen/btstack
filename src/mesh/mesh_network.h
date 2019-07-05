@@ -375,6 +375,8 @@ uint8_t   mesh_network_pdu_len(mesh_network_pdu_t * network_pdu);
 void     mesh_set_iv_index(uint32_t iv_index);
 uint32_t mesh_get_iv_index(void);
 
+int mesh_iv_update_active(void);
+
 // Testing only
 void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len, uint8_t flags);
 void mesh_network_process_proxy_configuration_message(const uint8_t * pdu_data, uint8_t pdu_len);
