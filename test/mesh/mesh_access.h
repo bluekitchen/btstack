@@ -167,6 +167,21 @@ typedef struct {
     btstack_linked_list_iterator_t it;
 } mesh_element_iterator_t;
 
+#define MESH_MAX_NUM_FAULTS 3
+
+typedef struct {
+    // linked list item
+    btstack_linked_item_t item;
+    uint8_t  test_id;
+    uint16_t company_id;
+    uint16_t num_faults;
+    uint8_t  faults[MESH_MAX_NUM_FAULTS];
+} mesh_fault_t;
+
+typedef struct {
+    btstack_linked_list_t faults;
+} mesh_health_state_t;
+
 typedef struct mesh_element {
     // linked list item
     btstack_linked_item_t item;

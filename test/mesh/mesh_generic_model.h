@@ -58,7 +58,7 @@ extern "C"
 #define MESH_GENERIC_DELTA_SET_UNACKNOWLEDGED       0x820Au
 #define MESH_GENERIC_MOVE_SET                       0x820Bu
 #define MESH_GENERIC_MOVE_SET_UNACKNOWLEDGED        0x820Cu
-
+ 
 typedef struct {
     mesh_transition_t base_transition;
 
