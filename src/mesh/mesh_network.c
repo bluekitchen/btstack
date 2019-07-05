@@ -976,6 +976,14 @@ int mesh_iv_update_active(void){
     return global_iv_update_active;
 }
 
+void mesh_trigger_iv_update(void){
+    if (global_iv_update_active) return;
+    // set IV Update in Progress
+    global_iv_update_active = 1;
+    // increase IV index
+    global_iv_index++;
+}
+
 // Network PDU Getter
 uint8_t  mesh_network_nid(mesh_network_pdu_t * network_pdu){
     return network_pdu->data[0] & 0x7f;
