@@ -1436,16 +1436,52 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
 
     // IV Update
 
+    int     beacon_iv_update_active = flags & 2;
+    int     local_iv_update_active = mesh_iv_update_active();
+    uint32_t beacon_iv_index = big_endian_read_32(packet, 10);
+    uint32_t local_iv_index = mesh_get_iv_index();
+
+    int32_t iv_index_delta = (int32_t)(beacon_iv_index - local_iv_update_active);
+
+    // "If a node in Normal Operation receives a Secure Network beacon with an IV index greater than the last known IV Index + 1..."
+    if (local_iv_update_active == 0 && iv_index_delta > 1){
+        // "... it may initiate an IV Index Recovery procedure, see Section 3.10.6."
+        // TODO: initiate IV Index Recovery procedure
+        return;
+    }
+
+    // "If a node in Normal Operation receives a Secure Network beacon with an IV index equal to the last known IV index+1 and
+    //  the IV Update Flag set to 0, the node may update its IV without going to the IV Update in Progress state, or it may initiate
+    //  an IV Index Recovery procedure (Section 3.10.6), or it may ignore the Secure Network beacon. The node makes the choice depending
+    //  on the time since last IV update and the likelihood that the node has missed the Secure Network beacons with the IV update Flag set to 1.""
+    if (local_iv_update_active == 0 && beacon_iv_update_active == 0 && iv_index_delta == 1){
+        // instant iv update
+        mesh_set_iv_index( beacon_iv_index );
+        return;
+    }
+
+    // "If a node in Normal Operation receives a Secure Network beacon with an IV index less than the last known IV Index or greater than
+    //  the last known IV Index + 42, the Secure Network beacon shall be ignored."
+    if (iv_index_delta < 0 || iv_index_delta > 42){
+        return;
+    }
+
+    // "If this node is a member of a primary subnet and receives a Secure Network beacon on a secondary subnet with an IV Index greater than
+    //  the last known IV Index of the primary subnet, the Secure Network beacon shall be ignored."
+    int member_of_primary_subnet = mesh_subnet_get_by_netkey_index(0) != NULL;
+    int beacon_on_secondary_subnet = subnet->netkey_index != 0;
+    if (member_of_primary_subnet && beacon_on_secondary_subnet && iv_index_delta > 0){
+        return;
+    }
+
     // TODO: validate IV index w.r.t. local index
 
-    int iv_update_active_flag = flags & 2;
-
     if (mesh_iv_update_active()){
-        if (iv_update_active_flag){
+        if (beacon_iv_update_active){
             mesh_trigger_iv_update();
         }
     } else {
-        if (iv_update_active_flag == 0){
+        if (beacon_iv_update_active == 0){
             mesh_iv_update_completed();
         }
     }

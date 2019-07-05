@@ -988,6 +988,18 @@ int mesh_iv_update_active(void){
 
 void mesh_trigger_iv_update(void){
     if (global_iv_update_active) return;
+
+    // "A node shall not start an IV Update procedure more often than once every 192 hours."
+    // Unless triggered by user application, it will automatically triggered if sequene numbers are about to roll over
+
+    // "A node shall defer state change from IV Update in Progress to Normal Operation, as defined by this procedure,
+    //  when the node has transmitted a Segmented Access message or a Segmented Control message without receiving the
+    //  corresponding Segment Acknowledgment messages. The deferred change of the state shall be executed when the appropriate
+    //  Segment Acknowledgment message is received or timeout for the delivery of this message is reached.
+    //  
+    //  Note: This requirement is necessary because upon completing the IV Update procedure the sequence number is reset
+    //  to 0x000000 and the SeqAuth value would not be valid."
+
     // set IV Update in Progress
     global_iv_update_active = 1;
     // increase IV index
