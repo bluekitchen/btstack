@@ -1404,10 +1404,12 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
     }
     if (subnet == NULL) return;
 
+    uint8_t flags = packet[1];
+
     // Key refresh via secure network beacons that are authenticated with new netkey
     if (new_key){
         // either first or second phase (in phase 0, new key is not set)
-        int key_refresh_flag = packet[1] & 1;
+        int key_refresh_flag = flags & 1;
         if (key_refresh_flag){
             //  transition to phase 3 from either phase 1 or 2
             switch (subnet->key_refresh){
@@ -1432,5 +1434,19 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
         }
     }
 
-    // TODO: IV Update
+    // IV Update
+
+    // TODO: validate IV index w.r.t. local index
+
+    int iv_update_active_flag = flags & 2;
+
+    if (mesh_iv_update_active()){
+        if (iv_update_active_flag){
+            mesh_trigger_iv_update();
+        }
+    } else {
+        if (iv_update_active_flag == 0){
+            mesh_iv_update_completed();
+        }
+    }
 }

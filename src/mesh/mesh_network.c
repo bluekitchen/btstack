@@ -994,6 +994,12 @@ void mesh_trigger_iv_update(void){
     global_iv_index++;
 }
 
+void mesh_iv_update_completed(void){
+    if (!global_iv_update_active) return;
+    // set Normal mode
+    global_iv_update_active = 0;
+}
+
 // Network PDU Getter
 uint8_t  mesh_network_nid(mesh_network_pdu_t * network_pdu){
     return network_pdu->data[0] & 0x7f;

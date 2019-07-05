@@ -379,6 +379,7 @@ uint32_t mesh_get_iv_index_for_tx(void);
 
 int mesh_iv_update_active(void);
 void mesh_trigger_iv_update(void);
+void mesh_iv_update_completed(void);
 
 // Testing only
 void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len, uint8_t flags);
