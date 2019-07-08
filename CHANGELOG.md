@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - SM: Fixed regression introduced in f3582630
 
+### Changed
+- SM: Start encryption upon receiving slave securiy request if bonded
+
 ## Changes June 2019
 
 ### Changed

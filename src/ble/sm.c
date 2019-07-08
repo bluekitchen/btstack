@@ -3459,10 +3459,21 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             }
 
             // IRK complete?
+            int have_ltk;
+            uint8_t ltk[16];
             switch (sm_conn->sm_irk_lookup_state){
                 case IRK_LOOKUP_FAILED:
-                case IRK_LOOKUP_SUCCEEDED:
                     sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
+                    break;
+                case IRK_LOOKUP_SUCCEEDED:
+                    le_device_db_encryption_get(sm_conn->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL, NULL);
+                    have_ltk = !sm_is_null_key(ltk);
+                    log_info("central: security request - have_ltk %u", have_ltk);
+                    if (have_ltk){
+                        sm_conn->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
+                    } else {
+                        sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
+                    }
                     break;
                 default:
                     break;
