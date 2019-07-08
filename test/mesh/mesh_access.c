@@ -122,11 +122,11 @@ void mesh_access_emit_state_update_int16(btstack_packet_handler_t * event_handle
     (*event_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-uint8_t mesh_access_retransmission_get(void){
+uint8_t mesh_access_acknowledged_message_retransmissions(void){
     return 3;
 }
 
-uint32_t mesh_access_retransmission_period(void){
+uint32_t mesh_access_acknowledged_message_timeout_ms(void){
     return 30000;
 }
 
@@ -156,7 +156,7 @@ static void mesh_access_upper_transport_handler(mesh_transport_callback_type_t c
                 break;
             }
             // setup timeout
-            pdu->retransmit_timeout_ms = btstack_run_loop_get_time_ms() + mesh_access_retransmission_period();
+            pdu->retransmit_timeout_ms = btstack_run_loop_get_time_ms() + mesh_access_acknowledged_message_timeout_ms();
             // add to mesh_access_acknowledged_messages
             btstack_linked_list_add(&mesh_access_acknowledged_messages, (btstack_linked_item_t *) pdu);
             // update timer

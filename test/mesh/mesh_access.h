@@ -236,12 +236,12 @@ void mesh_access_message_processed(mesh_pdu_t * pdu);
 /**
  * @brief Get number of retransmissions used by default
  */
-uint8_t mesh_access_retransmission_count_get(void);
+uint8_t mesh_access_acknowledged_message_retransmissions(void);
 
 /**
  * @brief Get retransmission timeout
  */
-uint8_t mesh_access_retransmission_period_get(void);
+uint32_t mesh_access_acknowledged_message_timeout_ms(void);
 
 /**
  * @brief Send unacknowledged message
