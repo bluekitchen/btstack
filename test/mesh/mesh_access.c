@@ -118,6 +118,20 @@ void mesh_access_emit_state_update_int16(btstack_packet_handler_t * event_handle
     (*event_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+uint8_t mesh_access_retransmissions_get(void){
+    return 3;
+}
+
+void mesh_access_send_unacknowledged_pdu(mesh_pdu_t * pdu){
+    mesh_upper_transport_send_access_pdu(pdu);
+}
+
+void mesh_access_send_acknowledged_pdu(mesh_pdu_t * pdu, uint8_t retransmissions, uint32_t ack_opcode){
+    UNUSED(retransmissions);
+    UNUSED(ack_opcode);
+    mesh_upper_transport_send_access_pdu(pdu);
+}
+
 // Mesh Model Transitions
 
 void mesh_access_transitions_setup_transaction(mesh_transition_t * transition, uint8_t transaction_identifier, uint16_t src_address, uint16_t dst_address){

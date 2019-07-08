@@ -227,26 +227,89 @@ typedef struct mesh_transition {
  */
 void mesh_access_init(void);
 
+/**
+ * @brief Inform access layer that access message was processed by higher layer
+ * @param pdu
+ */
 void mesh_access_message_processed(mesh_pdu_t * pdu);
 
+/**
+ * @brief Get number of retransmissions used by default
+ */
+uint8_t mesh_access_retransmissions_get(void);
+
+/**
+ * @brief Send unacknowledged message
+ * @param pdu
+ */
+void mesh_access_send_unacknowledged_pdu(mesh_pdu_t * pdu);
+
+/**
+ * @brief Send acknowledged message. Retransmits message if no acknowledgement with expected opcode is received
+ * @param pdu
+ * @param retransmissions
+ * @param ack_opcode opcode of acknowledgement
+ */
+void mesh_access_send_acknowledged_pdu(mesh_pdu_t * pdu, uint8_t retransmissions, uint32_t ack_opcode);
+
+/**
+ * @brief Get Primary Element of this node
+ */
 mesh_element_t * mesh_primary_element(void);
 
+/**
+ *  @brief Set unicast address of primary element. Secondary eleemnts use subsequent addresses
+ *  @param unicast_address;
+ */
 void mesh_access_set_primary_element_address(uint16_t unicast_address);
 
+/**
+ * @brief Get unicast address of primary element
+ */
 uint16_t mesh_access_get_primary_element_address(void);
 
+/**
+ * @brief Set location of primary element
+ * @note Returned by Configuration Server Composite Data
+ * @param location
+ */
 void mesh_access_set_primary_element_location(uint16_t location);
 
+/**
+ * @brief Add secondary element
+ * @param element
+ */
 void mesh_element_add(mesh_element_t * element);
 
+/**
+ * @brief Get element index for give model
+ * @param mesh_model
+ */
 uint8_t mesh_access_get_element_index(mesh_model_t * mesh_model);
 
+/**
+ * @brief Get unicast address for give model
+ * @param mesh_model
+ */
 uint16_t mesh_access_get_element_address(mesh_model_t * mesh_model);
 
+/**
+ * @brief Get element for given unicast address
+ * @param unicast_address
+ */
 mesh_element_t * mesh_element_for_unicast_address(uint16_t unicast_address);
 
+/**
+ * @brief Get element by index
+ * @param element_index
+ */
 mesh_element_t * mesh_element_for_index(uint16_t element_index);
 
+/**
+ * @brief Add model to element
+ * @param element
+ * @param mesh_model
+ */
 void mesh_element_add_model(mesh_element_t * element, mesh_model_t * mesh_model);
 
 // Mesh Element Iterator
