@@ -74,6 +74,12 @@ typedef struct mesh_pdu {
     btstack_linked_item_t item;
     // type
     mesh_pdu_type_t pdu_type;
+
+    // access acknowledged message
+    uint16_t retransmit_count;
+    uint32_t retransmit_timeout_ms;
+    uint32_t ack_opcode;
+
 } mesh_pdu_t;
 
 // 

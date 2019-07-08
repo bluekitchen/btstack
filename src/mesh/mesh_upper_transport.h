@@ -49,7 +49,7 @@ extern "C"
 #include <stdint.h>
 #include "mesh/mesh_network.h"
 #include "mesh/mesh_lower_transport.h"
-	
+
 void mesh_upper_transport_init();
 
 void mesh_upper_transport_set_primary_element_address(uint16_t primary_element_address);
@@ -80,6 +80,8 @@ uint8_t mesh_upper_transport_setup_access_pdu(mesh_pdu_t * pdu, uint16_t netkey_
                                                           const uint8_t * access_pdu_data, uint8_t access_pdu_len);
 
 void mesh_upper_transport_send_access_pdu(mesh_pdu_t * pdu);
+
+void mesh_upper_transport_pdu_free(mesh_pdu_t * pdu);
 
 // allocator
 mesh_transport_pdu_t * mesh_transport_pdu_get(void);

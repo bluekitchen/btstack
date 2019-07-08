@@ -52,6 +52,7 @@
 
 static void mesh_access_message_process_handler(mesh_pdu_t * pdu);
 static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size);
+static void mesh_access_upper_transport_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
 
 static uint16_t primary_element_address;
 
@@ -82,6 +83,7 @@ void mesh_access_init(void){
 
     // register with upper transport
     mesh_upper_transport_register_access_message_handler(&mesh_access_message_process_handler);
+    mesh_upper_transport_set_higher_layer_handler(&mesh_access_upper_transport_handler);
 
     // register for secure network beacons
     beacon_register_for_secure_network_beacons(&mesh_access_secure_network_beacon_handler);
@@ -118,18 +120,43 @@ void mesh_access_emit_state_update_int16(btstack_packet_handler_t * event_handle
     (*event_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-uint8_t mesh_access_retransmissions_get(void){
+uint8_t mesh_access_retransmission_get(void){
     return 3;
 }
 
+uint32_t mesh_access_retransmission_period(void){
+    return 30000;
+}
+
+#define MESH_ACCESS_OPCODE_INVALID 0xFFFFFFFFu
+
 void mesh_access_send_unacknowledged_pdu(mesh_pdu_t * pdu){
+    pdu->ack_opcode = MESH_ACCESS_OPCODE_INVALID;;
     mesh_upper_transport_send_access_pdu(pdu);
 }
 
 void mesh_access_send_acknowledged_pdu(mesh_pdu_t * pdu, uint8_t retransmissions, uint32_t ack_opcode){
-    UNUSED(retransmissions);
-    UNUSED(ack_opcode);
+    pdu->retransmit_count = retransmissions;
+    pdu->retransmit_timeout_ms = btstack_run_loop_get_time_ms() + mesh_access_retransmission_period();
+    pdu->ack_opcode = ack_opcode;
+
     mesh_upper_transport_send_access_pdu(pdu);
+}
+
+static void mesh_access_upper_transport_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
+    switch (callback_type){
+        case MESH_TRANSPORT_PDU_SENT:
+            // unacknowledged -> free
+            if (pdu->ack_opcode == MESH_ACCESS_OPCODE_INVALID){
+                mesh_upper_transport_pdu_free(pdu);
+                break;
+            }
+            // free acknowledged for now, too
+            mesh_upper_transport_pdu_free(pdu);
+            break;
+        default:
+            break;
+    }
 }
 
 // Mesh Model Transitions
