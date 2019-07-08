@@ -7646,6 +7646,43 @@ static inline uint16_t mesh_subevent_state_update_int16_get_value(const uint8_t 
 }
 
 /**
+ * @brief Get field element_index from event MESH_SUBEVENT_MESSAGE_NOT_ACKNOWLEDGED
+ * @param event packet
+ * @return element_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_message_not_acknowledged_get_element_index(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field model_identifier from event MESH_SUBEVENT_MESSAGE_NOT_ACKNOWLEDGED
+ * @param event packet
+ * @return model_identifier
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_message_not_acknowledged_get_model_identifier(const uint8_t * event){
+    return little_endian_read_32(event, 4);
+}
+/**
+ * @brief Get field opcode from event MESH_SUBEVENT_MESSAGE_NOT_ACKNOWLEDGED
+ * @param event packet
+ * @return opcode
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_message_not_acknowledged_get_opcode(const uint8_t * event){
+    return little_endian_read_32(event, 8);
+}
+/**
+ * @brief Get field dest from event MESH_SUBEVENT_MESSAGE_NOT_ACKNOWLEDGED
+ * @param event packet
+ * @return dest
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_message_not_acknowledged_get_dest(const uint8_t * event){
+    return little_endian_read_16(event, 12);
+}
+
+/**
  * @brief Get field element_index from event MESH_SUBEVENT_GENERIC_ON_OFF_STATUS
  * @param event packet
  * @return element_index

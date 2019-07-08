@@ -2515,6 +2515,16 @@ typedef uint8_t sm_key_t[16];
 
 // Mesh Client Events
 /**
+ * @format 11442
+ * @param subevent_code
+ * @param element_index
+ * @param model_identifier
+ * @param opcode
+ * @param dest
+ */
+#define MESH_SUBEVENT_MESSAGE_NOT_ACKNOWLEDGED                                        0x30
+
+/**
  * @format 114114
  * @param subevent_code
  * @param element_index
@@ -2523,7 +2533,7 @@ typedef uint8_t sm_key_t[16];
  * @param target_value       // optinal, if value > 0, than remaining_time_ms must be read
  * @param remaining_time_ms  
  */
-#define MESH_SUBEVENT_GENERIC_ON_OFF_STATUS                                           0x30
+#define MESH_SUBEVENT_GENERIC_ON_OFF_STATUS                                           0x31
 
 /**
  * @format 114224
@@ -2534,6 +2544,6 @@ typedef uint8_t sm_key_t[16];
  * @param target_value       // optinal, if value > 0, than remaining_time_ms must be read
  * @param remaining_time_ms  
  */
-#define MESH_SUBEVENT_GENERIC_LEVEL_STATUS                                           0x31
+#define MESH_SUBEVENT_GENERIC_LEVEL_STATUS                                           0x32
 
 #endif
