@@ -144,66 +144,67 @@ const mesh_operation_t * mesh_generic_on_off_client_get_operations(void){
 
 static uint8_t mesh_generic_on_off_client_set_with_transition_message(mesh_model_t *mesh_model, const mesh_access_message_t * message_template, 
     uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
-    uint8_t on_off_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt){
+    uint8_t on_off_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
     if (mesh_model->element == NULL){
         log_error("mesh_model->element == NULL"); 
     }
     // setup message
-    uint8_t transaction_id = mesh_access_transactions_get_next_transaction_id();
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(message_template, on_off_value, transaction_id, transition_time_gdtt, delay_time_gdtt);
-    if (!transport_pdu) return 0;
+    if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     // send as segmented access pdu
     generic_client_send_message(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);
-    return transaction_id;
+    return ERROR_CODE_SUCCESS;
 }
 
 static uint8_t mesh_generic_on_off_client_set_instantaneous_message(mesh_model_t *mesh_model, const mesh_access_message_t * message_template, 
-    uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t on_off_value){
+    uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t on_off_value, uint8_t transaction_id){
     if (mesh_model->element == NULL){
         log_error("mesh_model->element == NULL"); 
     }
     // setup message
-    uint8_t transaction_id = mesh_access_transactions_get_next_transaction_id();
     mesh_transport_pdu_t *  transport_pdu = mesh_access_setup_segmented_message(message_template, on_off_value, transaction_id);
-    if (!transport_pdu) return 0;
+    if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
 
     generic_client_send_message(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);
-    return transaction_id;
+    return ERROR_CODE_SUCCESS;
 }
 
-uint8_t mesh_generic_on_off_client_set_value(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t on_off_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt){
+uint8_t mesh_generic_on_off_client_set_value(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+    uint8_t on_off_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
     if (transition_time_gdtt != 0) {
-        return mesh_generic_on_off_client_set_with_transition_message(mesh_model, &mesh_generic_on_off_set_with_transition, dest, netkey_index, appkey_index, on_off_value, transition_time_gdtt, delay_time_gdtt);
+        return mesh_generic_on_off_client_set_with_transition_message(mesh_model, &mesh_generic_on_off_set_with_transition, dest, netkey_index, appkey_index, on_off_value, transition_time_gdtt, delay_time_gdtt, transaction_id);
     } else {
-        return mesh_generic_on_off_client_set_instantaneous_message(mesh_model, &mesh_generic_on_off_set_instantaneous, dest, netkey_index, appkey_index, on_off_value);
+        return mesh_generic_on_off_client_set_instantaneous_message(mesh_model, &mesh_generic_on_off_set_instantaneous, dest, netkey_index, appkey_index, on_off_value, transaction_id);
     }
 }
 
-uint8_t mesh_generic_on_off_client_set_value_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t on_off_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt){
+uint8_t mesh_generic_on_off_client_set_value_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+    uint8_t on_off_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
     if (transition_time_gdtt != 0) {
-        return mesh_generic_on_off_client_set_with_transition_message(mesh_model, &mesh_generic_on_off_set_unacknowledged_with_transition, dest, netkey_index, appkey_index, on_off_value, transition_time_gdtt, delay_time_gdtt);
+        return mesh_generic_on_off_client_set_with_transition_message(mesh_model, &mesh_generic_on_off_set_unacknowledged_with_transition, dest, netkey_index, appkey_index, on_off_value, transition_time_gdtt, delay_time_gdtt, transaction_id);
     } else {
-        return mesh_generic_on_off_client_set_instantaneous_message(mesh_model, &mesh_generic_on_off_set_unacknowledged_instantaneous, dest, netkey_index, appkey_index, on_off_value);
+        return mesh_generic_on_off_client_set_instantaneous_message(mesh_model, &mesh_generic_on_off_set_unacknowledged_instantaneous, dest, netkey_index, appkey_index, on_off_value, transaction_id);
     }
 }
 
-void mesh_generic_on_off_client_get_value(mesh_model_t *mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index){
+uint8_t mesh_generic_on_off_client_get_value(mesh_model_t *mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index){
     if (mesh_model->element == NULL){
         log_error("mesh_model->element == NULL"); 
     }
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_on_off_get);
-    if (!transport_pdu) return;
+    if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
     // send as segmented access pdu
     generic_client_send_message(mesh_access_get_element_address(mesh_model), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);
+    return ERROR_CODE_SUCCESS;
 }
 
-void mesh_generic_on_off_client_publish_value(mesh_model_t * mesh_model, uint8_t on_off_value){
+uint8_t mesh_generic_on_off_client_publish_value(mesh_model_t * mesh_model, uint8_t on_off_value, uint8_t transaction_id){
     mesh_publication_model_t * publication_model = mesh_model->publication_model;
     uint16_t appkey_index = publication_model->appkey_index;
     mesh_transport_key_t * app_key = mesh_transport_key_get(appkey_index);
-    if (app_key == NULL) return;
+    if (app_key == NULL) return MESH_ERROR_APPKEY_INDEX_INVALID;
 
-    mesh_generic_on_off_client_set_value_unacknowledged(mesh_model, publication_model->address, app_key->netkey_index, appkey_index, on_off_value, 0, 0);
+    return mesh_generic_on_off_client_set_value_unacknowledged(mesh_model, publication_model->address, app_key->netkey_index, appkey_index, on_off_value, 0, 0, transaction_id);
 }
