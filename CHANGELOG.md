@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- SM: Fixed regression introduced in f3582630
+
+## Changes June 2019
+
 ### Changed
 - FreeRTOS: use freertos/.. prefix to include FreeRTOS headers if HAVE_FREERTOS_INCLUDE_PREFIX is defined
 - BNEP: add Connection Handle to BNEP_EVENT_CHANNEL_OPENED
@@ -29,8 +34,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - ESP32: Configure SCO over HCI after power up
 - btstack_tlv_flash_bank: support targets where a value cannot be overwritten with zero. When ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
   is defined, an explicit delete field is used to indicate an invalid entry.
+
 ### Fixed
 - SM: Avoid potential use-after-free on immediate disconnect (lookup connection via con handle instead of storing pointer)
+
 ### Added
 - gatt_client: emit query complete event for signed write operation
 - hci_transport_h4: add workaround for flow control bug in CYW2070x, enable with ENABLE_CYPRESS_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND 
