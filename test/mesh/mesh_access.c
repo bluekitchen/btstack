@@ -61,6 +61,8 @@ static uint16_t mesh_element_index_next;
 
 static btstack_linked_list_t mesh_elements;
 
+static btstack_linked_list_t mesh_access_acknowledged_messages;
+
 static uint16_t mid_counter;
 
 static const btstack_tlv_t * btstack_tlv_singleton_impl;
@@ -137,10 +139,12 @@ void mesh_access_send_unacknowledged_pdu(mesh_pdu_t * pdu){
 
 void mesh_access_send_acknowledged_pdu(mesh_pdu_t * pdu, uint8_t retransmissions, uint32_t ack_opcode){
     pdu->retransmit_count = retransmissions;
-    pdu->retransmit_timeout_ms = btstack_run_loop_get_time_ms() + mesh_access_retransmission_period();
     pdu->ack_opcode = ack_opcode;
 
     mesh_upper_transport_send_access_pdu(pdu);
+}
+static void mesh_access_acknowledged_run(void){
+
 }
 
 static void mesh_access_upper_transport_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
@@ -151,8 +155,12 @@ static void mesh_access_upper_transport_handler(mesh_transport_callback_type_t c
                 mesh_upper_transport_pdu_free(pdu);
                 break;
             }
-            // free acknowledged for now, too
-            mesh_upper_transport_pdu_free(pdu);
+            // setup timeout
+            pdu->retransmit_timeout_ms = btstack_run_loop_get_time_ms() + mesh_access_retransmission_period();
+            // add to mesh_access_acknowledged_messages
+            btstack_linked_list_add(&mesh_access_acknowledged_messages, (btstack_linked_item_t *) pdu);
+            // update timer
+            mesh_access_acknowledged_run();
             break;
         default:
             break;
@@ -816,10 +824,28 @@ static int mesh_access_validate_appkey_index(mesh_model_t * model, uint16_t appk
     return mesh_model_contains_appkey(model, appkey_index);
 }
 
+static void mesh_access_acknowledged_received(uint16_t rx_src, uint32_t opcode){
+    // check if received src matches our dest
+    // free acknowledged messages if we were waiting for this message
+
+    btstack_linked_list_iterator_t ack_it;
+    btstack_linked_list_iterator_init(&ack_it, &mesh_access_acknowledged_messages);
+    while (btstack_linked_list_iterator_has_next(&ack_it)){
+        mesh_pdu_t * tx_pdu = (mesh_pdu_t *) btstack_linked_list_iterator_next(&ack_it);
+        uint16_t tx_dest = mesh_pdu_dst(tx_pdu);
+        if (tx_dest != rx_src) continue;
+        if (tx_pdu->ack_opcode != opcode) continue;
+        // got expected response from dest, remove from outgoing messages
+        mesh_upper_transport_pdu_free(tx_pdu);
+        return;
+    }
+}
+
 static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
     // get opcode and size
     uint32_t opcode = 0;
     uint16_t opcode_size = 0;
+
 
     int ok = mesh_access_pdu_get_opcode( pdu, &opcode, &opcode_size);
     if (!ok) {
@@ -840,6 +866,7 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
             break;
     }
 
+    uint16_t src = mesh_pdu_src(pdu);
     uint16_t dst = mesh_pdu_dst(pdu);
     uint16_t appkey_index = mesh_pdu_appkey_index(pdu);
     if (mesh_network_address_unicast(dst)){
@@ -855,6 +882,7 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
                 const mesh_operation_t * operation = mesh_model_lookup_operation(model, pdu);
                 if (operation == NULL) break;
                 if (mesh_access_validate_appkey_index(model, appkey_index) == 0) break;
+                mesh_access_acknowledged_received(src, opcode);
                 operation->handler(model, pdu);
                 return;
             }
@@ -894,6 +922,7 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
                     const mesh_operation_t * operation = mesh_model_lookup_operation(model, pdu);
                     if (operation == NULL) continue;
                     if (mesh_access_validate_appkey_index(model, appkey_index) == 0) continue;
+                    mesh_access_acknowledged_received(src, opcode);
                     operation->handler(model, pdu);
                     return;
                 }
@@ -914,6 +943,7 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
                         const mesh_operation_t * operation = mesh_model_lookup_operation(model, pdu);
                         if (operation == NULL) continue;
                         if (mesh_access_validate_appkey_index(model, appkey_index) == 0) continue;
+                        mesh_access_acknowledged_received(src, opcode);
                         operation->handler(model, pdu);
                         return;
                     }
