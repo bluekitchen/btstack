@@ -842,7 +842,8 @@ int btstack_main(void)
     mesh_network_init();
 
     // Transport layers (lower + upper))
-    mesh_transport_init();
+    mesh_lower_transport_init();
+    mesh_upper_transport_init();
 
     // Access layer
     mesh_access_init();

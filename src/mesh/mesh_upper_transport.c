@@ -876,7 +876,6 @@ void mesh_upper_transport_set_primary_element_address(uint16_t unicast_address){
     primary_element_address = unicast_address;
 }
 
-
 void mesh_upper_transport_register_access_message_handler(void (*callback)(mesh_pdu_t *pdu)){
     mesh_access_message_handler = callback;
 }
@@ -889,7 +888,7 @@ void mesh_upper_transport_set_higher_layer_handler(void (*pdu_handler)( mesh_tra
     higher_layer_handler = pdu_handler;
 }
 
-void mesh_transport_init(){
+void mesh_upper_transport_init(){
     mesh_lower_transport_init();
     mesh_lower_transport_set_higher_layer_handler(&mesh_upper_transport_pdu_handler);
 }

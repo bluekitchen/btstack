@@ -270,7 +270,8 @@ TEST_GROUP(MessageTest){
         btstack_crypto_init();
         load_provisioning_data_test_message();
         mesh_network_init();
-        mesh_transport_init();
+        mesh_lower_transport_init();
+        mesh_upper_transport_init();
         mesh_network_key_init();
         // intercept messages between network and lower layer
         mesh_network_set_higher_layer_handler(&test_lower_transport_callback_handler);
