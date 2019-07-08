@@ -489,9 +489,24 @@ void mesh_upper_transport_message_received(mesh_pdu_t * pdu){
     mesh_transport_run();
 }
 
-void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
+void mesh_upper_transport_pdu_free(mesh_pdu_t * pdu){
     mesh_network_pdu_t * network_pdu;
     mesh_transport_pdu_t * transport_pdu;
+    switch (pdu->pdu_type) {
+        case MESH_PDU_TYPE_NETWORK:
+            network_pdu = (mesh_network_pdu_t *) pdu;
+            mesh_network_pdu_free(network_pdu);
+            break;
+        case MESH_PDU_TYPE_TRANSPORT:
+            transport_pdu = (mesh_transport_pdu_t *) pdu;
+            mesh_transport_pdu_free(transport_pdu);
+            break;
+        default:
+            break;
+    }
+}
+
+void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
     switch (callback_type){
         case MESH_TRANSPORT_PDU_RECEIVED:
             mesh_upper_transport_message_received(pdu);
@@ -501,18 +516,7 @@ void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t callback_ty
             if (higher_layer_handler){
                 higher_layer_handler(callback_type, status, pdu);
             } else {
-                switch (pdu->pdu_type) {
-                    case MESH_PDU_TYPE_NETWORK:
-                        network_pdu = (mesh_network_pdu_t *) pdu;
-                        mesh_network_pdu_free(network_pdu);
-                        break;
-                    case MESH_PDU_TYPE_TRANSPORT:
-                        transport_pdu = (mesh_transport_pdu_t *) pdu;
-                        mesh_transport_pdu_free(transport_pdu);
-                        break;
-                    default:
-                        break;
-                }
+                mesh_upper_transport_pdu_free(pdu);
             }
             break;
         default:

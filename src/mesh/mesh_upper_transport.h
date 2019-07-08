@@ -48,7 +48,8 @@ extern "C"
 
 #include <stdint.h>
 #include "mesh/mesh_network.h"
-
+#include "mesh/mesh_lower_transport.h"
+	
 void mesh_upper_transport_init();
 
 void mesh_upper_transport_set_primary_element_address(uint16_t primary_element_address);
