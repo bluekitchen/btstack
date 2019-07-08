@@ -166,7 +166,7 @@ static void mesh_network_cache_add(uint32_t hash){
 
 // common helper
 int mesh_network_address_unicast(uint16_t addr){
-    return addr < 0x8000;
+    return addr != MESH_ADDRESS_UNSASSIGNED && (addr < 0x8000);
 }
 
 int mesh_network_address_virtual(uint16_t addr){
