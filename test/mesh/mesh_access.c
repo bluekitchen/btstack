@@ -818,23 +818,64 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
                 return;
             }
         }
-    } else {
-        // iterate over all elements / models, check subscription list
-        mesh_element_iterator_t it;
-        mesh_element_iterator_init(&it);
-        while (mesh_element_iterator_has_next(&it)){
-            mesh_element_t * element = (mesh_element_t *) mesh_element_iterator_next(&it);
-            mesh_model_iterator_t model_it;
-            mesh_model_iterator_init(&model_it, element);
-            while (mesh_model_iterator_has_next(&model_it)){
-                mesh_model_t * model = mesh_model_iterator_next(&model_it);
-                if (mesh_model_contains_subscription(model, dst)){
+    }
+    else if (mesh_network_address_group(dst)){
+
+        // handle fixed group address
+        if (dst >= 0xff00){
+            int deliver_to_primary_element = 1;
+            switch (dst){
+                case MESH_ADDRESS_ALL_PROXIES:
+                    if (mesh_foundation_gatt_proxy_get() == 1){
+                        deliver_to_primary_element = 1;                        
+                    } 
+                    break;
+                case MESH_ADDRESS_ALL_FRIENDS:
+                    // TODO: not implemented
+                    break;
+                case MESH_ADDRESS_ALL_RELAYS:
+                    if (mesh_foundation_relay_get() == 1){
+                        deliver_to_primary_element =1;
+                    }
+                    break;
+                case MESH_ADDRESS_ALL_NODES:
+                    deliver_to_primary_element = 1;
+                    break;
+                default:
+                    break;
+            }
+            if (deliver_to_primary_element){
+                mesh_model_iterator_t model_it;
+                mesh_model_iterator_init(&model_it, &primary_element);
+                while (mesh_model_iterator_has_next(&model_it)){
+                    mesh_model_t * model = mesh_model_iterator_next(&model_it);
                     // find opcode in table
                     const mesh_operation_t * operation = mesh_model_lookup_operation(model, pdu);
-                    if (operation == NULL) break;
-                    if (mesh_access_validate_appkey_index(model, appkey_index) == 0) break;
+                    if (operation == NULL) continue;
+                    if (mesh_access_validate_appkey_index(model, appkey_index) == 0) continue;
                     operation->handler(model, pdu);
                     return;
+                }
+            }
+        }
+        else {
+            // iterate over all elements / models, check subscription list
+            mesh_element_iterator_t it;
+            mesh_element_iterator_init(&it);
+            while (mesh_element_iterator_has_next(&it)){
+                mesh_element_t * element = (mesh_element_t *) mesh_element_iterator_next(&it);
+                mesh_model_iterator_t model_it;
+                mesh_model_iterator_init(&model_it, element);
+                while (mesh_model_iterator_has_next(&model_it)){
+                    mesh_model_t * model = mesh_model_iterator_next(&model_it);
+                    if (mesh_model_contains_subscription(model, dst)){
+                        // find opcode in table
+                        const mesh_operation_t * operation = mesh_model_lookup_operation(model, pdu);
+                        if (operation == NULL) continue;
+                        if (mesh_access_validate_appkey_index(model, appkey_index) == 0) continue;
+                        operation->handler(model, pdu);
+                        return;
+                    }
                 }
             }
         }
