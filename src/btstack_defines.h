@@ -206,6 +206,8 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE               0xC3
 #define AVDTP_STREAM_ENDPOINT_DOES_NOT_EXIST               0xC4
 #define AVDTP_MEDIA_CONNECTION_DOES_NOT_EXIST              0xC5 
+
+#define MESH_ERROR_APPKEY_INDEX_INVALID                    0xD0
 /* ENUM_END */
 
 // DAEMON COMMANDS
