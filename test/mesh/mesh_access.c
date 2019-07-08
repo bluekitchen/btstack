@@ -53,6 +53,7 @@
 static void mesh_access_message_process_handler(mesh_pdu_t * pdu);
 static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size);
 static void mesh_access_upper_transport_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
+static const mesh_operation_t * mesh_model_lookup_operation_by_opcode(mesh_model_t * model, uint32_t opcode);
 
 static uint16_t primary_element_address;
 
@@ -61,7 +62,9 @@ static uint16_t mesh_element_index_next;
 
 static btstack_linked_list_t mesh_elements;
 
-static btstack_linked_list_t mesh_access_acknowledged_messages;
+// acknowledged messages
+static btstack_linked_list_t  mesh_access_acknowledged_messages;
+static btstack_timer_source_t mesh_access_acknowledged_timer;
 
 static uint16_t mid_counter;
 
@@ -143,8 +146,81 @@ void mesh_access_send_acknowledged_pdu(mesh_pdu_t * pdu, uint8_t retransmissions
 
     mesh_upper_transport_send_access_pdu(pdu);
 }
-static void mesh_access_acknowledged_run(void){
+static void mesh_access_acknowledged_run(btstack_timer_source_t * ts){
+    UNUSED(ts);
 
+    uint32_t now = btstack_run_loop_get_time_ms();
+
+    // handle timeouts
+    btstack_linked_list_iterator_t ack_it;
+    btstack_linked_list_iterator_init(&ack_it, &mesh_access_acknowledged_messages);
+    while (btstack_linked_list_iterator_has_next(&ack_it)){
+        mesh_pdu_t * pdu = (mesh_pdu_t *) btstack_linked_list_iterator_next(&ack_it);
+        if (btstack_time_delta(now, pdu->retransmit_timeout_ms) >= 0) {
+            // remove from list
+            btstack_linked_list_remove(&mesh_access_acknowledged_messages, (btstack_linked_item_t*) pdu);
+            // retransmit or report failure
+            if (pdu->retransmit_count){
+                pdu->retransmit_count--;
+                mesh_upper_transport_send_access_pdu(pdu);
+            } else {
+                // find correct model and emit error
+                uint16_t src = mesh_pdu_src(pdu);
+                mesh_element_t * element = mesh_element_for_unicast_address(src);
+                if (element){
+                    // find
+                    mesh_model_iterator_t model_it;
+                    mesh_model_iterator_init(&model_it, element);
+                    while (mesh_model_iterator_has_next(&model_it)){
+                        mesh_model_t * model = mesh_model_iterator_next(&model_it);
+                        // find opcode in table
+                        const mesh_operation_t * operation = mesh_model_lookup_operation_by_opcode(model, pdu->ack_opcode);
+                        if (operation == NULL) continue;
+                        // emit event
+                        // TODO: 
+                    }
+                }
+
+                // free
+                mesh_upper_transport_pdu_free(pdu);
+            }
+        }
+    }
+
+    // find earliest timeout and set timer
+    btstack_linked_list_iterator_init(&ack_it, &mesh_access_acknowledged_messages);
+    int32_t next_timeout_ms = 0;
+    while (btstack_linked_list_iterator_has_next(&ack_it)){
+        mesh_pdu_t * pdu = (mesh_pdu_t *) btstack_linked_list_iterator_next(&ack_it);
+        int32_t timeout_delta_ms = btstack_time_delta(pdu->retransmit_timeout_ms, now);
+        if (next_timeout_ms == 0 || timeout_delta_ms < next_timeout_ms){
+            next_timeout_ms = timeout_delta_ms;
+        }
+    }
+
+    // set timer
+    if (next_timeout_ms == 0) return;
+
+    btstack_run_loop_set_timer(&mesh_access_acknowledged_timer, next_timeout_ms);
+    btstack_run_loop_set_timer_handler(&mesh_access_acknowledged_timer, mesh_access_acknowledged_run);
+    btstack_run_loop_add_timer(&mesh_access_acknowledged_timer);
+}
+
+static void mesh_access_acknowledged_received(uint16_t rx_src, uint32_t opcode){
+    // check if received src matches our dest
+    // free acknowledged messages if we were waiting for this message
+
+    btstack_linked_list_iterator_t ack_it;
+    btstack_linked_list_iterator_init(&ack_it, &mesh_access_acknowledged_messages);
+    while (btstack_linked_list_iterator_has_next(&ack_it)){
+        mesh_pdu_t * tx_pdu = (mesh_pdu_t *) btstack_linked_list_iterator_next(&ack_it);
+        uint16_t tx_dest = mesh_pdu_dst(tx_pdu);
+        if (tx_dest != rx_src) continue;
+        if (tx_pdu->ack_opcode != opcode) continue;
+        // got expected response from dest, remove from outgoing messages
+        mesh_upper_transport_pdu_free(tx_pdu);
+        return;
+    }
 }
 
 static void mesh_access_upper_transport_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
@@ -160,7 +236,7 @@ static void mesh_access_upper_transport_handler(mesh_transport_callback_type_t c
             // add to mesh_access_acknowledged_messages
             btstack_linked_list_add(&mesh_access_acknowledged_messages, (btstack_linked_item_t *) pdu);
             // update timer
-            mesh_access_acknowledged_run();
+            mesh_access_acknowledged_run(NULL);
             break;
         default:
             break;
@@ -796,6 +872,16 @@ mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_mes
     return transport_pdu;
 }
 
+static const mesh_operation_t * mesh_model_lookup_operation_by_opcode(mesh_model_t * model, uint32_t opcode){
+    // find opcode in table
+    const mesh_operation_t * operation = model->operations;
+    if (operation == NULL) return NULL;
+    for ( ; operation->handler != NULL ; operation++){
+        if (operation->opcode != opcode) continue;
+        return operation;
+    }
+    return NULL;
+}
 
 static const mesh_operation_t * mesh_model_lookup_operation(mesh_model_t * model, mesh_pdu_t * pdu){
 
@@ -822,23 +908,6 @@ static int mesh_access_validate_appkey_index(mesh_model_t * model, uint16_t appk
     if (appkey_index == MESH_DEVICE_KEY_INDEX) return 1;
     // check if AppKey that is bound to this particular model
     return mesh_model_contains_appkey(model, appkey_index);
-}
-
-static void mesh_access_acknowledged_received(uint16_t rx_src, uint32_t opcode){
-    // check if received src matches our dest
-    // free acknowledged messages if we were waiting for this message
-
-    btstack_linked_list_iterator_t ack_it;
-    btstack_linked_list_iterator_init(&ack_it, &mesh_access_acknowledged_messages);
-    while (btstack_linked_list_iterator_has_next(&ack_it)){
-        mesh_pdu_t * tx_pdu = (mesh_pdu_t *) btstack_linked_list_iterator_next(&ack_it);
-        uint16_t tx_dest = mesh_pdu_dst(tx_pdu);
-        if (tx_dest != rx_src) continue;
-        if (tx_pdu->ack_opcode != opcode) continue;
-        // got expected response from dest, remove from outgoing messages
-        mesh_upper_transport_pdu_free(tx_pdu);
-        return;
-    }
 }
 
 static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
