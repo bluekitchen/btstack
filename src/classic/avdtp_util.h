@@ -67,7 +67,7 @@ static inline uint8_t avdtp_header(uint8_t tr_label, avdtp_packet_type_t packet_
 
 int     avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, uint8_t * packet, uint16_t size);
 
-uint8_t store_bit16(uint16_t bitmap, int position, uint8_t value);
+uint16_t store_bit16(uint16_t bitmap, int position, uint8_t value);
 int     get_bit16(uint16_t bitmap, int position);
 
 int avdtp_pack_service_capabilities(uint8_t * buffer, int size, avdtp_capabilities_t caps, avdtp_service_category_t category, uint8_t pack_all_capabilities);

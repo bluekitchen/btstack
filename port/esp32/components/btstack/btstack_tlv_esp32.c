@@ -29,7 +29,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_tlv_esp32.c"
+#define BTSTACK_FILE__ "btstack_tlv_esp32.c"
 
 #include "btstack_tlv.h"
 #include "btstack_util.h"

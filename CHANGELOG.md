@@ -8,12 +8,29 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-### Changed
-- FreeRTOS: use freertos/.. prefix to include FreeRTOS headers if HAVE_FREERTOS_INCLUDE_PREFIX is defined
-
 ### Fixed
+- SM: Fixed regression introduced in f3582630
+
+### Changed
+- SM: Start encryption upon receiving slave securiy request if bonded
 
 ### Added
+
+## Changes June 2019
+
+### Changed
+- FreeRTOS: use freertos/.. prefix to include FreeRTOS headers if HAVE_FREERTOS_INCLUDE_PREFIX is defined
+- BNEP: add Connection Handle to BNEP_EVENT_CHANNEL_OPENED
+- Examples: renamed le_counter to gatt_counter and le_streamer to le_streamer_server to indicate suppport for GATT over BR/EDR
+- libusb: avoid use-after-free for SCO packets on disconnect
+
+### Fixed
+- BNEP: Bluetooth address is stored in little-endian format for all BNEP_EVENT_*
+
+### Added
+- example: pan_lwip_http_server using lwIP as network stack to implement PAN NAP service
+- platform/lwip/bnep_lwip.c: BNEP lwIP adapter that forwards packets between BNEP service and lwIP
+- ENABLE_GATT_OVER_CLASSIC enables support for GATT over BR/EDR in att_server
 
 ---
 
@@ -23,8 +40,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - ESP32: Configure SCO over HCI after power up
 - btstack_tlv_flash_bank: support targets where a value cannot be overwritten with zero. When ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD
   is defined, an explicit delete field is used to indicate an invalid entry.
+
 ### Fixed
 - SM: Avoid potential use-after-free on immediate disconnect (lookup connection via con handle instead of storing pointer)
+
 ### Added
 - gatt_client: emit query complete event for signed write operation
 - hci_transport_h4: add workaround for flow control bug in CYW2070x, enable with ENABLE_CYPRESS_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND 

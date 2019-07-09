@@ -39,11 +39,13 @@ dirs_to_copy = [
 'src',
 '3rd-party/bluedroid',
 '3rd-party/hxcmod-player',
+'3rd-party/lwip/dhcp-server',
 '3rd-party/micro-ecc',
 '3rd-party/md5',
 '3rd-party/yxml',
 'platform/freertos',
 'platform/embedded',
+'platform/lwip',
 'tool'
 ]
 

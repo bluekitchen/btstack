@@ -754,6 +754,20 @@ typedef uint8_t sm_key_t[16];
 #define GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE                    0xAC
 
 /** 
+ * @format 1BH
+ * @param address_type
+ * @param address
+ * @param handle
+ */    
+#define ATT_EVENT_CONNECTED                                      0xB3
+
+/** 
+ * @format H
+ * @param handle
+ */    
+#define ATT_EVENT_DISCONNECTED                                   0xB4
+
+/** 
  * @format H2
  * @param handle
  * @param MTU
@@ -783,13 +797,14 @@ typedef uint8_t sm_key_t[16];
  #define BNEP_EVENT_SERVICE_REGISTERED                      0xC0
 
 /**
- * @format 12222B
+ * @format 12222BH
  * @param status
  * @param bnep_cid
  * @param source_uuid
  * @param destination_uuid
  * @param mtu
  * @param remote_address
+ * @param con_handle
  */
  #define BNEP_EVENT_CHANNEL_OPENED                   0xC1
 

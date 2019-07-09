@@ -445,11 +445,11 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
     int signal_done = 0;
 
     if (transfer->endpoint == event_in_addr) {
-        packet_handler(HCI_EVENT_PACKET, transfer-> buffer, transfer->actual_length);
+        packet_handler(HCI_EVENT_PACKET, transfer->buffer, transfer->actual_length);
         resubmit = 1;
     } else if (transfer->endpoint == acl_in_addr) {
         // log_info("-> acl");
-        packet_handler(HCI_ACL_DATA_PACKET, transfer-> buffer, transfer->actual_length);
+        packet_handler(HCI_ACL_DATA_PACKET, transfer->buffer, transfer->actual_length);
         resubmit = 1;
     } else if (transfer->endpoint == 0){
         // log_info("command done, size %u", transfer->actual_length);
@@ -536,17 +536,16 @@ static void usb_process_ds(btstack_data_source_t *ds, btstack_data_source_callba
     // Handle any packet in the order that they were received
     while (handle_packet) {
         // log_info("handle packet %p, endpoint %x, status %x", handle_packet, handle_packet->endpoint, handle_packet->status);
-        void * next = handle_packet->user_data;
-        handle_completed_transfer(handle_packet);
+
+        // pop next transfer
+        struct libusb_transfer * transfer = handle_packet;
+        handle_packet = (struct libusb_transfer*) handle_packet->user_data;
+
+        // handle transfer
+        handle_completed_transfer(transfer);
+
         // handle case where libusb_close might be called by hci packet handler        
         if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return;
-
-        // Move to next in the list of packets to handle
-        if (next) {
-            handle_packet = (struct libusb_transfer*)next;
-        } else {
-            handle_packet = NULL;
-        }
     }
     // log_info("end usb_process_ds");
 }

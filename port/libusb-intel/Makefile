@@ -33,6 +33,9 @@ VPATH += ${BTSTACK_ROOT}/chipset/intel
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 
+EXAMPLES = ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY} ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE}
+EXAMPLES += pan_lwip_http_server
+
 # use pkg-config for portaudio
 # CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags) -DHAVE_PORTAUDIO
 # LDFLAGS += $(shell pkg-config portaudio-2.0 --libs)

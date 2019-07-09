@@ -208,6 +208,17 @@ void gap_ssp_set_auto_accept(int auto_accept);
 int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required);
 
 gap_security_level_t gap_security_level_for_link_key_type(link_key_type_t link_key_type);
+
+/**
+ * @brief map link keys to secure connection yes/no
+ */
+int gap_secure_connection_for_link_key_type(link_key_type_t link_key_type);
+
+/**
+ * @brief map link keys to authenticated
+ */
+int gap_authenticated_for_link_key_type(link_key_type_t link_key_type);
+
 gap_security_level_t gap_security_level(hci_con_handle_t con_handle);
 
 void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_t level);

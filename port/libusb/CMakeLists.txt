@@ -15,12 +15,16 @@ include_directories(../../3rd-party/bluedroid/encoder/include)
 include_directories(../../3rd-party/md5)
 include_directories(../../3rd-party/hxcmod-player)
 include_directories(../../3rd-party/hxcmod-player/mod)
+include_directories(../../3rd-party/lwip/core/src/include)
+include_directories(../../3rd-party/lwip/dhcp-server)
 include_directories(../../3rd-party/yxml)
 include_directories(../../3rd-party/tinydir)
 include_directories(../../src)
 include_directories(../../chipset/zephyr)
 include_directories(../../platform/posix)
 include_directories(../../platform/embedded)
+include_directories(../../platform/lwip)
+include_directories(../../platform/lwip/port)
 include_directories(.)
 
 file(GLOB SOURCES_SRC       "../../src/*.c" "../../example/sco_demo_util.c")
@@ -35,6 +39,48 @@ file(GLOB SOURCES_HXCMOD    "../../3rd-party/hxcmod-player/*.c"  "../../3rd-part
 file(GLOB SOURCES_POSIX     "../../platform/posix/*.c")
 file(GLOB SOURCES_LIBUSB    "../../port/libusb/*.c" "../../platform/libusb/*.c")
 file(GLOB SOURCES_ZEPHYR    "../../chipset/zephyr/*.c")
+
+set(LWIP_CORE_SRC 
+	../../3rd-party/lwip/core/src/core/def.c
+	../../3rd-party/lwip/core/src/core/inet_chksum.c
+	../../3rd-party/lwip/core/src/core/init.c
+	../../3rd-party/lwip/core/src/core/ip.c
+	../../3rd-party/lwip/core/src/core/mem.c
+	../../3rd-party/lwip/core/src/core/memp.c
+	../../3rd-party/lwip/core/src/core/netif.c
+	../../3rd-party/lwip/core/src/core/pbuf.c
+	../../3rd-party/lwip/core/src/core/tcp.c
+	../../3rd-party/lwip/core/src/core/tcp_in.c
+	../../3rd-party/lwip/core/src/core/tcp_out.c
+	../../3rd-party/lwip/core/src/core/timeouts.c
+	../../3rd-party/lwip/core/src/core/udp.c
+)
+set (LWIP_IPV4_SRC
+	../../3rd-party/lwip/core/src/core/ipv4/acd.c
+	../../3rd-party/lwip/core/src/core/ipv4/dhcp.c
+	../../3rd-party/lwip/core/src/core/ipv4/etharp.c
+	../../3rd-party/lwip/core/src/core/ipv4/icmp.c
+	../../3rd-party/lwip/core/src/core/ipv4/ip4.c
+	../../3rd-party/lwip/core/src/core/ipv4/ip4_addr.c
+	../../3rd-party/lwip/core/src/core/ipv4/ip4_frag.c
+)
+set (LWIP_NETIF_SRC
+	../../3rd-party/lwip/core/src/netif/ethernet.c
+)
+set (LWIP_HTTPD
+	../../3rd-party/lwip/core/src/apps/http/altcp_proxyconnect.c
+	../../3rd-party/lwip/core/src/apps/http/fs.c
+	../../3rd-party/lwip/core/src/apps/http/httpd.c
+)
+set (LWIP_DHCPD
+	../../3rd-party/lwip/dhcp-server/dhserver.c
+)
+set (LWIP_PORT
+	../../platform/lwip/port/sys_arch.c
+	../../platform/lwip/bnep_lwip.c
+)
+
+set (SOURCES_LWIP ${LWIP_CORE_SRC} ${LWIP_IPV4_SRC} ${LWIP_NETIF_SRC} ${LWIP_HTTPD} ${LWIP_DHCPD} ${LWIP_PORT})
 
 file(GLOB SOURCES_OFF "../../src/ble/le_device_db_memory.c" "../../src/ble/le_device_db_tlv.c")
 list(REMOVE_ITEM SOURCES_BLE ${SOURCES_OFF})
@@ -67,19 +113,31 @@ file(GLOB EXAMPLES_GATT "../../example/*.gatt")
 file(GLOB EXAMPLES_OFF  "../../example/sco_demo_util.c" "../../example/ant_test.c" "../../example/avrcp_browsing_client.c")
 list(REMOVE_ITEM EXAMPLES_C ${EXAMPLES_OFF})
 
+# on Mac 10.14, adding lwip to libstack results in a yet not understood link error
+# workaround: add lwip sources only to lwip_examples
+set (LWIP_EXAMPLES pan_lwip_http_server)
+
 # create targets
 foreach(EXAMPLE_FILE ${EXAMPLES_C})
 	get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
+	set (SOURCE_FILES ${EXAMPLE_FILE})
+
+	# add lwip sources for lwip examples
+	if ( "${LWIP_EXAMPLES}" MATCHES ${EXAMPLE} )
+		list(APPEND SOURCE_FILES ${SOURCES_LWIP})
+	endif()
+
+	# add GATT DB creation
 	if ( "${EXAMPLES_GATT}" MATCHES ${EXAMPLE} )
 		message("example ${EXAMPLE} -- with GATT DB")
 		add_custom_command(
 		    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
     		COMMAND ${CMAKE_SOURCE_DIR}/../../tool/compile_gatt.py ${CMAKE_SOURCE_DIR}/../../example/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h > /dev/null
 		)
-		add_executable(${EXAMPLE} ${EXAMPLE_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
+		list(APPEND SOURCE_FILES${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
 	else()
 		message("example ${EXAMPLE}")
-		add_executable(${EXAMPLE} ${EXAMPLE_FILE})
 	endif()
+	add_executable(${EXAMPLE} ${SOURCE_FILES} )
 	target_link_libraries(${EXAMPLE} btstack)
 endforeach(EXAMPLE_FILE)

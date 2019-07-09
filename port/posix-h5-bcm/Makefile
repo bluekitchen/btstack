@@ -32,14 +32,8 @@ VPATH += ${BTSTACK_ROOT}/platform/embedded
 
 VPATH += ${BTSTACK_ROOT}/chipset/bcm	
 
-ifeq ($(OS),Windows_NT)
-LDFLAGS += -lws2_32
-endif
-
-# Command Line examples require porting to win32, so only build on other unix-ish hosts
-ifneq ($(OS),Windows_NT)
-EXAMPLES += ${EXAMPLES_CLI}
-endif
+EXAMPLES = ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY} ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE}
+EXAMPLES += pan_lwip_http_server
 
 # use pkg-config for portaudio
 # CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags) -DHAVE_PORTAUDIO

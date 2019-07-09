@@ -83,4 +83,5 @@ spp_counter
 spp_streamer
 spp_streamer_client
 ublox_spp_le_counter
-ublox_spp_le_counter.h
+ublox_spp_le_counter.hpan_lwip_http_server
+pan_lwip_http_server

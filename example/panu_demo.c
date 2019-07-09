@@ -356,8 +356,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         uuid_source = bnep_event_channel_opened_get_source_uuid(packet);
                         uuid_dest   = bnep_event_channel_opened_get_destination_uuid(packet);
                         mtu         = bnep_event_channel_opened_get_mtu(packet);
-                        memcpy(&event_addr, &packet[11], sizeof(bd_addr_t));
+                        bnep_event_channel_opened_get_remote_address(packet, event_addr);
                         printf("BNEP connection open succeeded to %s source UUID 0x%04x dest UUID: 0x%04x, max frame size %u\n", bd_addr_to_str(event_addr), uuid_source, uuid_dest, mtu);
+
                         /* Setup network interface */
                         gap_local_bd_addr(local_addr);
                         btstack_network_up(local_addr);

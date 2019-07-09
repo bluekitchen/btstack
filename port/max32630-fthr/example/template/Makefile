@@ -104,10 +104,18 @@ VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce
 VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player
 VPATH += ${BTSTACK_ROOT}/3rd-party/hxcmod-player/mods
+VPATH += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/
+VPATH += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv4
+VPATH += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/core/ipv6
+VPATH += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/netif
+VPATH += ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http
+VPATH += ${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server
 VPATH += ${BTSTACK_ROOT}/3rd-party/md5
 VPATH += ${BTSTACK_ROOT}/3rd-party/yxml
 VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
 VPATH += ${BTSTACK_ROOT}/platform/embedded
+VPATH += ${BTSTACK_ROOT}/platform/lwip
+VPATH += ${BTSTACK_ROOT}/platform/lwip/port
 VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service/
 
 PROJ_CFLAGS += \
@@ -116,6 +124,8 @@ PROJ_CFLAGS += \
     -I$(BTSTACK_ROOT)/src/classic \
     -I$(BTSTACK_ROOT)/chipset/cc256x \
     -I$(BTSTACK_ROOT)/platform/embedded \
+    -I$(BTSTACK_ROOT)/platform/lwip \
+    -I$(BTSTACK_ROOT)/platform/lwip/port \
     -I${BTSTACK_ROOT}/port/pegasus-max3263x \
     -I${BTSTACK_ROOT}/src/ble/gatt-service/ \
     -I${BTSTACK_ROOT}/example \
@@ -125,6 +135,8 @@ PROJ_CFLAGS += \
     -I${BTSTACK_ROOT}/3rd-party/yxml \
 	-I${BTSTACK_ROOT}/3rd-party/micro-ecc \
 	-I${BTSTACK_ROOT}/3rd-party/hxcmod-player \
+	-I${BTSTACK_ROOT}/3rd-party/lwip/core/src/include \
+	-I${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server \
 
 
 CORE = \
@@ -207,6 +219,11 @@ HXCMOD_PLAYER = \
 	hxcmod.c 						\
 	nao-deceased_by_disease.c 	\
 
+LWIP_CORE_SRC  = init.c mem.c memp.c netif.c udp.c ip.c pbuf.c inet_chksum.c def.c tcp.c tcp_in.c tcp_out.c timeouts.c sys_arch.c
+LWIP_IPV4_SRC  = acd.c dhcp.c etharp.c icmp.c ip4.c ip4_frag.c ip4_addr.c
+LWIP_NETIF_SRC = ethernet.c
+LWIP_HTTPD = altcp_proxyconnect.c fs.c httpd.c
+LWIP_SRC = ${LWIP_CORE_SRC} ${LWIP_IPV4_SRC} ${LWIP_NETIF_SRC} ${LWIP_HTTPD} dhserver.c
 
 ADDITION =
 
@@ -232,6 +249,8 @@ SRCS += $(HXCMOD_PLAYER_OBJ)
 SRCS += $(HFP_OBJ)
 SRCS += hsp_hs.o hsp_ag.o 
 SRCS += obex_iterator.o goep_client.o pbap_client.o md5.o yxml.o
+SRCS +=  pan.c bnep.c bnep_lwip.c
+SRCS += ${LWIP_SRC}
 
 # Enable assertion checking for development
 PROJ_CFLAGS+=-DMXC_ASSERT_ENABLE

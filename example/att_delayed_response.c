@@ -70,7 +70,7 @@
  *
  * @text Listing MainConfiguration shows main application code.
  * It initializes L2CAP, the Security Manager and configures the ATT Server with the pre-compiled
- * ATT Database generated from $le_counter.gatt$. 
+ * ATT Database generated from $att_delayed_response.gatt$. 
  * Additionally, it enables the Battery Service Server with the current battery level.
  * Finally, it configures the advertisements and boots the Bluetooth stack. 
  * In this example, the Advertisement contains the Flags attribute and the device name.

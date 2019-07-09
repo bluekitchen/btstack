@@ -2207,6 +2207,44 @@ static inline hci_con_handle_t gatt_event_can_write_without_response_get_handle(
 #endif
 
 /**
+ * @brief Get field address_type from event ATT_EVENT_CONNECTED
+ * @param event packet
+ * @return address_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t att_event_connected_get_address_type(const uint8_t * event){
+    return event[2];
+}
+/**
+ * @brief Get field address from event ATT_EVENT_CONNECTED
+ * @param event packet
+ * @param Pointer to storage for address
+ * @note: btstack_type B
+ */
+static inline void att_event_connected_get_address(const uint8_t * event, bd_addr_t address){
+    reverse_bd_addr(&event[3], address);
+}
+/**
+ * @brief Get field handle from event ATT_EVENT_CONNECTED
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t att_event_connected_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 9);
+}
+
+/**
+ * @brief Get field handle from event ATT_EVENT_DISCONNECTED
+ * @param event packet
+ * @return handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t att_event_disconnected_get_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+
+/**
  * @brief Get field handle from event ATT_EVENT_MTU_EXCHANGE_COMPLETE
  * @param event packet
  * @return handle
@@ -2326,6 +2364,15 @@ static inline uint16_t bnep_event_channel_opened_get_mtu(const uint8_t * event){
  */
 static inline void bnep_event_channel_opened_get_remote_address(const uint8_t * event, bd_addr_t remote_address){
     reverse_bd_addr(&event[11], remote_address);
+}
+/**
+ * @brief Get field con_handle from event BNEP_EVENT_CHANNEL_OPENED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t bnep_event_channel_opened_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 17);
 }
 
 /**

@@ -1365,7 +1365,7 @@ static int sm_just_works_or_numeric_comparison(stk_generation_method_t method);
 static void sm_sc_start_calculating_local_confirm(sm_connection_t * sm_conn){
     if (sm_passkey_used(setup->sm_stk_generation_method)){
         // sm_conn->sm_engine_state = SM_SC_W2_GET_RANDOM_A;
-        btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_get_random, sm_conn);
+        btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_get_random, (void *)(uintptr_t) sm_conn->sm_handle);
     } else {
         sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CONFIRMATION;
     }
@@ -1378,7 +1378,7 @@ static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
             // generate Nb
             log_info("Generate Nb");
             // sm_conn->sm_engine_state = SM_SC_W2_GET_RANDOM_A;
-            btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_get_random, sm_conn);
+            btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_get_random, (void *)(uintptr_t) sm_conn->sm_handle);
         } else {
             sm_conn->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;
         }
@@ -2965,7 +2965,7 @@ static void sm_handle_random_result_ph2_tk(void * arg){
             sm_trigger_user_response(connection);
             // response_idle == nothing <--> sm_trigger_user_response() did not require response
             if (setup->sm_user_response == SM_USER_RESPONSE_IDLE){
-                btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_random, 16, &sm_handle_random_result_ph2_random,  (void *)(uintptr_t) connection->sm_handle);
+                btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_random, 16, &sm_handle_random_result_ph2_random, (void *)(uintptr_t) connection->sm_handle);
             }
         }
     }   
@@ -2994,7 +2994,7 @@ static void sm_handle_random_result_ph3_random(void * arg){
     setup->sm_local_rand[7] = (setup->sm_local_rand[7] & 0xf0) + (connection->sm_actual_encryption_key_size - 1);
     // no db for authenticated flag hack: store flag in bit 4 of LSB
     setup->sm_local_rand[7] = (setup->sm_local_rand[7] & 0xef) + (connection->sm_connection_authenticated << 4);
-    btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 2, &sm_handle_random_result_ph3_div, connection);
+    btstack_crypto_random_generate(&sm_crypto_random_request, sm_random_data, 2, &sm_handle_random_result_ph3_div, (void *)(uintptr_t) connection->sm_handle);
 }
 static void sm_validate_er_ir(void){
     // warn about default ER/IR
@@ -3459,10 +3459,21 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             }
 
             // IRK complete?
+            int have_ltk;
+            uint8_t ltk[16];
             switch (sm_conn->sm_irk_lookup_state){
                 case IRK_LOOKUP_FAILED:
-                case IRK_LOOKUP_SUCCEEDED:
                     sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
+                    break;
+                case IRK_LOOKUP_SUCCEEDED:
+                    le_device_db_encryption_get(sm_conn->sm_le_db_index, NULL, NULL, ltk, NULL, NULL, NULL, NULL);
+                    have_ltk = !sm_is_null_key(ltk);
+                    log_info("central: security request - have_ltk %u", have_ltk);
+                    if (have_ltk){
+                        sm_conn->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
+                    } else {
+                        sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
+                    }
                     break;
                 default:
                     break;

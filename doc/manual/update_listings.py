@@ -15,15 +15,15 @@ list_of_examples = {
     "HFP"         : [["hfp_hf_demo"],["hfp_ag_demo"]],
     "Low Energy"  : [["gap_le_advertisements"],
                      ["gatt_browser"],
-                     ["le_counter"],
-                     ["le_streamer"]],
-    "Dual Mode" : [["spp_and_le_counter"]],
+                     ["gatt_counter"],
+                     ["gatt_streamer_server"]],
+    "Dual Mode" : [["spp_and_gatt_counter"]],
     "Audio"     : [["a2dp_sink_demo"],["a2dp_source_demo"]],
 
     "HID"       : [["hid_keyboard_demo"], ["hid_mouse_demo"], ["hog_keyboard_demo"], ["hog_mouse_demo"]],
     "LE Pairing": [["sm_pairing_central"], ["sm_pairing_peripheral"]],
     "Phone Book Access" : [["pbap_client_demo"]],
-    "Performance" : [["le_streamer"], ["le_streamer_client"], ["spp_streamer"], ["spp_streamer_client"]],
+    "Performance" : [["gatt_streamer_server"], ["le_streamer_client"], ["spp_streamer"], ["spp_streamer_client"]],
     "Testing"     : [["dut_mode_classic"]]
 }
 
