@@ -647,7 +647,7 @@ static void stdin_process(char cmd){
             break;
         case 'g':
             printf("Generic ON/OFF Server Toggle Value\n");
-            mesh_generic_on_off_server_set_value(&mesh_generic_on_off_server_model, 1-mesh_generic_on_off_server_get_value(&mesh_generic_on_off_server_model), 0, 0);
+            mesh_generic_on_off_server_set(&mesh_generic_on_off_server_model, 1-mesh_generic_on_off_server_get(&mesh_generic_on_off_server_model), 0, 0);
             break;
         case ' ':
             show_usage();

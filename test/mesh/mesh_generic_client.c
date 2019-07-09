@@ -88,7 +88,7 @@ static void generic_client_send_message_acknowledged(uint16_t src, uint16_t dest
     mesh_access_send_acknowledged_pdu(pdu, mesh_access_acknowledged_message_retransmissions(), ack_opcode);
 }
 
-uint8_t mesh_generic_on_off_client_get_value(mesh_model_t *mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index){
+uint8_t mesh_generic_on_off_client_get(mesh_model_t *mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index){
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_on_off_get);
     if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;
@@ -97,7 +97,7 @@ uint8_t mesh_generic_on_off_client_get_value(mesh_model_t *mesh_model, uint16_t 
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t mesh_generic_on_off_client_set_value(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+uint8_t mesh_generic_on_off_client_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
     uint8_t on_off_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
     
     mesh_transport_pdu_t *  transport_pdu;
@@ -112,7 +112,7 @@ uint8_t mesh_generic_on_off_client_set_value(mesh_model_t * mesh_model, uint16_t
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t mesh_generic_on_off_client_set_value_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
+uint8_t mesh_generic_on_off_client_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
     uint8_t on_off_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
     mesh_transport_pdu_t *  transport_pdu;
     if (transition_time_gdtt != 0) {
@@ -125,12 +125,12 @@ uint8_t mesh_generic_on_off_client_set_value_unacknowledged(mesh_model_t * mesh_
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t mesh_generic_on_off_client_publish_value(mesh_model_t * mesh_model, uint8_t on_off_value, uint8_t transaction_id){
+uint8_t mesh_generic_on_off_client_publish(mesh_model_t * mesh_model, uint8_t on_off_value, uint8_t transaction_id){
     mesh_publication_model_t * publication_model = mesh_model->publication_model;
     uint16_t appkey_index = publication_model->appkey_index;
     mesh_transport_key_t * app_key = mesh_transport_key_get(appkey_index);
     if (app_key == NULL) return MESH_ERROR_APPKEY_INDEX_INVALID;
-    return mesh_generic_on_off_client_set_value_unacknowledged(mesh_model, publication_model->address, app_key->netkey_index, appkey_index, on_off_value, 0, 0, transaction_id);
+    return mesh_generic_on_off_client_set_unacknowledged(mesh_model, publication_model->address, app_key->netkey_index, appkey_index, on_off_value, 0, 0, transaction_id);
 }
 
 // Model Operations

@@ -68,14 +68,14 @@ void mesh_generic_on_off_server_set_publication_model(mesh_model_t *generic_on_o
  * @param transition_time_gdtt
  * @param delay_time_gdtt
  */
-void mesh_generic_on_off_server_set_value(mesh_model_t *generic_on_off_server_model, uint8_t on_off_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt);
+void mesh_generic_on_off_server_set(mesh_model_t *generic_on_off_server_model, uint8_t on_off_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt);
 
 /**
  * @brief  Get present ON/OFF value
  * @param  generic_on_off_server_model
  * @return on_off_value
  */
-uint8_t mesh_generic_on_off_server_get_value(mesh_model_t *generic_on_off_server_model);
+uint8_t mesh_generic_on_off_server_get(mesh_model_t *generic_on_off_server_model);
 
 
 #ifdef __cplusplus
