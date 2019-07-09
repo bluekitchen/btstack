@@ -1363,6 +1363,25 @@ int mesh_model_contains_appkey(mesh_model_t * mesh_model, uint16_t appkey_index)
 
 }
 
+// Mesh IV Index
+static uint32_t mesh_tag_for_iv_index(void){
+    return ((uint32_t) 'I' << 24) | ((uint32_t) 'V' << 16) | ((uint32_t) 'I' << 9) | ((uint32_t) 'D');
+}
+void mesh_store_iv_index(void){
+    mesh_access_setup_tlv();
+    uint32_t tag = mesh_tag_for_iv_index();
+    uint32_t iv_index = mesh_get_iv_index();
+    btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &iv_index, 4);
+}
+void mesh_load_iv_index(void){
+    mesh_access_setup_tlv();
+    uint32_t tag = mesh_tag_for_iv_index();
+    uint32_t iv_index = 0;
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &iv_index, 4);
+    mesh_set_iv_index(iv_index);
+}
+
+
 // Mesh Model Publication
 static btstack_timer_source_t mesh_access_publication_timer;
 
