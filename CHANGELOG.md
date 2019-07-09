@@ -14,12 +14,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - SM: Start encryption upon receiving slave securiy request if bonded
 
+### Added
+
 ## Changes June 2019
 
 ### Changed
 - FreeRTOS: use freertos/.. prefix to include FreeRTOS headers if HAVE_FREERTOS_INCLUDE_PREFIX is defined
 - BNEP: add Connection Handle to BNEP_EVENT_CHANNEL_OPENED
 - Examples: renamed le_counter to gatt_counter and le_streamer to le_streamer_server to indicate suppport for GATT over BR/EDR
+- libusb: avoid use-after-free for SCO packets on disconnect
 
 ### Fixed
 - BNEP: Bluetooth address is stored in little-endian format for all BNEP_EVENT_*
