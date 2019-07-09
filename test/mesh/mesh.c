@@ -144,7 +144,6 @@ static void mesh_network_key_dump(const mesh_network_key_t * key){
 
 static void mesh_provisioning_dump(const mesh_provisioning_data_t * data){
     printf("UnicastAddr:   0x%02x\n", data->unicast_address);
-    printf("IV Index:      0x%08x\n", data->iv_index);
     printf("DevKey:        "); printf_hexdump(data->device_key, 16);
     printf("Flags:               0x%02x\n", data->flags);
 
@@ -159,8 +158,6 @@ static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * p
     mesh_upper_transport_set_primary_element_address(provisioning_data->unicast_address);
     mesh_access_set_primary_element_address(provisioning_data->unicast_address);
     primary_element_address = provisioning_data->unicast_address;
-    // set iv_index
-    mesh_set_iv_index(provisioning_data->iv_index);
     // set device_key
     mesh_transport_set_device_key(provisioning_data->device_key);
 
@@ -299,6 +296,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     printf("Provisioning data available: %u\n", prov_len ? 1 : 0);
                     if (prov_len){
                         mesh_setup_from_provisioning_data(&provisioning_data);
+                        // load iv index
+                        mesh_load_iv_index();
                         // load network keys
                         mesh_load_network_keys();
                         // load app keys
@@ -397,9 +396,11 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
 
                     // get provisioning data
                     memcpy(provisioning_data.device_key, provisioning_device_data_get_device_key(), 16);
-                    provisioning_data.iv_index = provisioning_device_data_get_iv_index();
                     provisioning_data.flags = provisioning_device_data_get_flags();
                     provisioning_data.unicast_address = provisioning_device_data_get_unicast_address();
+
+                    // get iv_index
+                    mesh_set_iv_index(provisioning_device_data_get_iv_index());
 
                     // get primary netkey
                     primary_network_key = provisioning_device_data_get_network_key();
@@ -414,6 +415,9 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                     // store provisioning data and primary network key in TLV
                     btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
                     mesh_store_network_key(primary_network_key);
+
+                    // store IV Index
+                    mesh_store_iv_index();
 
                     // setup after provisioned
                     mesh_setup_from_provisioning_data(&provisioning_data);
