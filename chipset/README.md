@@ -59,6 +59,7 @@ Broadcom USB Dongles | Dual mode | USB            | Yes          | Yes          
 CSR UART             | Dual mode | H4, H5, BCSP   | Rarely       | Partially (2)    | No     |         No           | csr            |
 CSR USB Dongles      | Dual mode | USB            | Mostly       | Yes              | No     |         No           | csr            |
 Cypress CYW20704/7   | Dual mode | H4, H5, USB    | Don't know   | Partially (2)    | Yes    |        Yes           | bcm            |
+Cypress CYW20819     | Dual mode | H4, H5, USB    | Don't know   | Partially (2)    | Yes    |        Yes           | bcm            | Keep CTS high during power cycle
 Cypress PSoC 4       | LE        | H4             | Don't know   | n.a.             | Yes    |    Don't know        |                | HCI Firmware part of PSoC Creator kits examples
 Dialog DA14581       | LE        | H4, SPI        | No           | n.a.             | No     |         No           | da14581        | Official HCI firmware included in BTstack
 Dialog DA14585       | LE        | H4, SPI        | No           | n.a.             | Yes    |        Yes           | da14581        | Official HCI firmware included in BTstack
@@ -105,6 +106,8 @@ The best source for documentation on vendor specific commands so far has been th
 Broadcom USB dongles do not require special configuration, however SCO data is not routed over USB by default.
 
 The PSoC 4 SoCs can be programmed with the "BLE DTM" HCI Firmware from the PSoC Creator Kit Examples. The UART baudrate is set to 115200. For higher baud rates, the clocks probably need to be configured differently, as the IDE gives a warning about this.
+
+The CYW20819 can be used as a SoC with Cypress' Bluetooth stack. To use it as a regular Bluetooth Controller over HCI H4, CTS must be asserted during Power-Up / Reset. 
 
 **Init scripts**: For UART connected chipsets, an init script has to be uploaded after power on. For Bluetooth chipsets that are used in Broadcom Wifi+Bluetooth combos, this file often can be found as a binary file in Linux distributions with the ending *'.hcd'* or as part of the WICED SDK as C source file that contains the init script as a data array for use without a file system.
 
