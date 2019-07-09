@@ -310,7 +310,7 @@ EXAMPLES = 					\
 	gatt_battery_query		\
 	gatt_browser            \
 	gatt_counter            \
-	gatt_streamer           \
+	gatt_streamer_server    \
 	hfp_ag_demo             \
 	hfp_hf_demo             \
 	hid_host_demo           \
@@ -331,7 +331,7 @@ EXAMPLES = 					\
 	sm_pairing_central      \
 	sm_pairing_peripheral   \
 	spp_and_gatt_counter 		\
-	spp_and_le_streamer     \
+	spp_and_gatt_streamer     \
 	spp_counter 			\
 	spp_streamer			\
 	spp_streamer_client     \
