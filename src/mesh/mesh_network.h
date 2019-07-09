@@ -383,9 +383,27 @@ uint32_t mesh_get_iv_index(void);
 
 uint32_t mesh_get_iv_index_for_tx(void);
 
+/**
+ * @brief Get IV Update state
+ */
 int mesh_iv_update_active(void);
+
+/**
+ * @brief Trigger IV Update
+ */
 void mesh_trigger_iv_update(void);
+
+/**
+ * @breif IV update was completed
+ */
 void mesh_iv_update_completed(void);
+
+/** 
+ * @brief IV Index was recovered
+ * @param iv_update_active
+ * @param iv_index
+ */
+void mesh_iv_index_recovered(uint8_t iv_update_active, uint32_t iv_index);
 
 // Testing only
 void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len, uint8_t flags);

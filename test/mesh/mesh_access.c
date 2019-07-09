@@ -1634,12 +1634,11 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
     uint32_t beacon_iv_index = big_endian_read_32(packet, 10);
     uint32_t local_iv_index = mesh_get_iv_index();
 
-    int32_t iv_index_delta = (int32_t)(beacon_iv_index - local_iv_update_active);
+    int32_t iv_index_delta = (int32_t)(beacon_iv_index - local_iv_index);
 
-    // "If a node in Normal Operation receives a Secure Network beacon with an IV index greater than the last known IV Index + 1..."
-    if (local_iv_update_active == 0 && iv_index_delta > 1){
-        // "... it may initiate an IV Index Recovery procedure, see Section 3.10.6."
-        // TODO: initiate IV Index Recovery procedure
+    // "If a node in Normal Operation receives a Secure Network beacon with an IV index less than the last known IV Index or greater than
+    //  the last known IV Index + 42, the Secure Network beacon shall be ignored."
+    if (iv_index_delta < 0 || iv_index_delta > 42){
         return;
     }
 
@@ -1653,12 +1652,6 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
         return;
     }
 
-    // "If a node in Normal Operation receives a Secure Network beacon with an IV index less than the last known IV Index or greater than
-    //  the last known IV Index + 42, the Secure Network beacon shall be ignored."
-    if (iv_index_delta < 0 || iv_index_delta > 42){
-        return;
-    }
-
     // "If this node is a member of a primary subnet and receives a Secure Network beacon on a secondary subnet with an IV Index greater than
     //  the last known IV Index of the primary subnet, the Secure Network beacon shall be ignored."
     int member_of_primary_subnet = mesh_subnet_get_by_netkey_index(0) != NULL;
@@ -1667,9 +1660,19 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
         return;
     }
 
-    // TODO: validate IV index w.r.t. local index
+    // "If a node in Normal Operation receives a Secure Network beacon with an IV index greater than the last known IV Index + 1..."
+    // "... it may initiate an IV Index Recovery procedure, see Section 3.10.6."
+    if (local_iv_update_active == 0 && iv_index_delta > 1){
+        // "Upon receiving and successfully authenticating a Secure Network beacon for a primary subnet... "
+        int beacon_on_primary_subnet = subnet->netkey_index == 0;
+        if (!beacon_on_primary_subnet) return;
+        // "... whose IV Index is 1 or more higher than the current known IV Index, the node shall "
+        // " set its current IV Index and its current IV Update procedure state from the values in this Secure Network beacon."
+        mesh_iv_index_recovered(beacon_iv_update_active, beacon_iv_index);
+        return;
+    }
 
-    if (mesh_iv_update_active()){
+    if (local_iv_update_active == 0){
         if (beacon_iv_update_active){
             mesh_trigger_iv_update();
         }

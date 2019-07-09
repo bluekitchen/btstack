@@ -47,8 +47,9 @@
 #include "mesh_keys.h"
 #include "mesh_foundation.h"
 #include "btstack_util.h"
-#include "btstack_memory.h"
+#include "btstack_debug.h"
 #include "btstack_event.h"
+#include "btstack_memory.h"
 
 #ifdef ENABLE_MESH_ADV_BEARER
 #include "mesh/adv_bearer.h"
@@ -1010,6 +1011,12 @@ void mesh_iv_update_completed(void){
     if (!global_iv_update_active) return;
     // set Normal mode
     global_iv_update_active = 0;
+}
+
+void mesh_iv_index_recovered(uint8_t iv_update_active, uint32_t iv_index){
+    log_info("mesh_iv_index_recovered: active %u, index %u", iv_update_active, (int) iv_index);
+    global_iv_index = iv_index;
+    global_iv_update_active = iv_update_active;
 }
 
 // Network PDU Getter
