@@ -146,6 +146,9 @@ void mesh_access_send_acknowledged_pdu(mesh_pdu_t * pdu, uint8_t retransmissions
 
     mesh_upper_transport_send_access_pdu(pdu);
 }
+
+#define MESH_SUBEVENT_MESSAGE_NOT_ACKNOWLEDGED                                        0x30
+
 static void mesh_access_acknowledged_run(btstack_timer_source_t * ts){
     UNUSED(ts);
 
@@ -166,6 +169,7 @@ static void mesh_access_acknowledged_run(btstack_timer_source_t * ts){
             } else {
                 // find correct model and emit error
                 uint16_t src = mesh_pdu_src(pdu);
+                uint16_t dst = mesh_pdu_dst(pdu);
                 mesh_element_t * element = mesh_element_for_unicast_address(src);
                 if (element){
                     // find
@@ -176,8 +180,16 @@ static void mesh_access_acknowledged_run(btstack_timer_source_t * ts){
                         // find opcode in table
                         const mesh_operation_t * operation = mesh_model_lookup_operation_by_opcode(model, pdu->ack_opcode);
                         if (operation == NULL) continue;
+                        if (model->model_packet_handler == NULL) continue;
                         // emit event
-                        // TODO: 
+                        uint8_t event[13];
+                        event[0] = HCI_EVENT_MESH_META;
+                        event[1] = sizeof(event) - 2;
+                        event[2] = element->element_index;
+                        little_endian_store_32(event, 3, model->model_identifier);
+                        little_endian_store_32(event, 7, pdu->ack_opcode);
+                        little_endian_store_16(event, 11, dst);
+                        (*model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
                     }
                 }
 
