@@ -1668,6 +1668,8 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
     if (local_iv_update_active == 0 && beacon_iv_update_active == 0 && iv_index_delta == 1){
         // instant iv update
         mesh_set_iv_index( beacon_iv_index );
+        // store updated iv index
+        mesh_store_iv_index();
         return;
     }
 
@@ -1688,6 +1690,10 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
         // "... whose IV Index is 1 or more higher than the current known IV Index, the node shall "
         // " set its current IV Index and its current IV Update procedure state from the values in this Secure Network beacon."
         mesh_iv_index_recovered(beacon_iv_update_active, beacon_iv_index);
+        // store updated iv index if in normal mode
+        if (beacon_iv_update_active == 0){
+            mesh_store_iv_index();
+        }
         return;
     }
 
@@ -1700,6 +1706,8 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
             // " At the point of transition, the node shall reset the sequence number to 0x000000."
             mesh_lower_transport_set_seq(0);
             mesh_iv_update_completed();
+            // store updated iv index 
+            mesh_store_iv_index();
         }
     }
 }
