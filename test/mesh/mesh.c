@@ -76,8 +76,6 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-static uint8_t mesh_flags;
-
 static uint16_t pb_transport_cid = MESH_PB_TRANSPORT_INVALID_CID;
 
 // pin entry
@@ -124,48 +122,6 @@ static void mesh_provisioning_dump(const mesh_provisioning_data_t * data){
     printf("UnicastAddr:   0x%02x\n", data->unicast_address);
     printf("DevKey:        "); printf_hexdump(data->device_key, 16);
     printf("Flags:               0x%02x\n", data->flags);
-
-}
-
-static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
-    provisioned = 1;
-
-    // set unicast address
-    mesh_network_set_primary_element_address(provisioning_data->unicast_address);
-    mesh_lower_transport_set_primary_element_address(provisioning_data->unicast_address);
-    mesh_upper_transport_set_primary_element_address(provisioning_data->unicast_address);
-    mesh_access_set_primary_element_address(provisioning_data->unicast_address);
-    primary_element_address = provisioning_data->unicast_address;
-    // set device_key
-    mesh_transport_set_device_key(provisioning_data->device_key);
-
-    // for secure beacon
-    mesh_flags = provisioning_data->flags;
-
-    // dump data
-    mesh_provisioning_dump(provisioning_data);
-    
-    // Mesh Proxy
-#ifdef ENABLE_MESH_PROXY_SERVER
-    // Setup Proxy
-    mesh_proxy_init(provisioning_data->unicast_address);
-
-    printf("Advertise Mesh Proxy Service with Network ID\n");
-    mesh_proxy_start_advertising_with_network_id();
-#endif
-}
-
-static void mesh_setup_without_provisiong_data(void){
-    provisioned = 0;
-
-#ifdef ENABLE_MESH_PB_ADV
-    // PB-ADV    
-    printf("Starting Unprovisioned Device Beacon\n");
-    beacon_unprovisioned_device_start(device_uuid, 0);
-#endif
-#ifdef ENABLE_MESH_PB_GATT
-    mesh_proxy_start_advertising_unprovisioned_device(test_device_uuid);
-#endif
 }
 
 // helper network layer, temp
@@ -255,7 +211,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     prov_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
                     printf("Provisioning data available: %u\n", prov_len ? 1 : 0);
                     if (prov_len){
-                        mesh_setup_from_provisioning_data(&provisioning_data);
+                        provisioned = 1;
+
+                        mesh_access_setup_from_provisioning_data(&provisioning_data);
                         // load iv index
                         mesh_restore_iv_index_and_sequence_number();
                         // load network keys
@@ -273,11 +231,16 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         // load foundation state
                         mesh_foundation_state_load();
 
+                        // dump data
+                        mesh_provisioning_dump(&provisioning_data);
+
                         // dump PTS MeshOptions.ini
                         mesh_pts_dump_mesh_options();
 
                     } else {
-                        mesh_setup_without_provisiong_data();
+                        provisioned = 0;
+
+                        mesh_access_setup_without_provisiong_data(test_device_uuid);
                     }
 
 #if defined(ENABLE_MESH_ADV_BEARER) || defined(ENABLE_MESH_PB_ADV)
@@ -380,7 +343,12 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                     mesh_store_iv_index_and_sequence_number();
 
                     // setup after provisioned
-                    mesh_setup_from_provisioning_data(&provisioning_data);
+                    mesh_access_setup_from_provisioning_data(&provisioning_data);
+
+                    provisioned = 1;
+
+                    // dump data
+                    mesh_provisioning_dump(&provisioning_data);
 
                     // start advertising with node id after provisioning
                     mesh_proxy_set_advertising_with_node_id(primary_network_key->netkey_index, MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING);

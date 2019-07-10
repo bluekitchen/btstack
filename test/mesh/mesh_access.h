@@ -485,6 +485,9 @@ void mesh_access_network_add_model_identifier(mesh_network_pdu_t * pdu, uint32_t
 mesh_network_pdu_t * mesh_access_setup_unsegmented_message(const mesh_access_message_t *template, ...);
 mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_message_t *template, ...);
 
+// setup
+void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data);
+void mesh_access_setup_without_provisiong_data(const uint8_t * device_uuid);
 
 #ifdef __cplusplus
 } /* end of extern "C" */
