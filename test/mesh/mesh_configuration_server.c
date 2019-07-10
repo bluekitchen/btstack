@@ -55,6 +55,7 @@
 #include "mesh_proxy.h"
 #include "mesh/gatt_bearer.h"
 #include "mesh_iv_index_seq_number.h"
+#include "mesh/beacon.h"
 
 #define MESH_HEARTBEAT_FEATURES_SUPPORTED_MASK 0x000f
 
@@ -2283,22 +2284,44 @@ void mesh_node_reset(void){
     mesh_delete_publications();
 }
 
-void mesh_node_startup_from_tlv(void){
-    // load iv index
-    mesh_restore_iv_index_and_sequence_number();
-    // load network keys
-    mesh_load_network_keys();
-    // load app keys
-    mesh_load_app_keys();
-    // load model to appkey bindings
-    mesh_load_appkey_lists();
-    // load virtual addresses
-    mesh_load_virtual_addresses();
-    // load model subscriptions
-    mesh_load_subscriptions();
-    // load model publications
-    mesh_load_publications();
-    // load foundation state
-    mesh_foundation_state_load();
+int mesh_node_startup_from_tlv(void){
+
+    mesh_provisioning_data_t provisioning_data;
+    btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
+    // load provisioning data
+    uint32_t prov_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
+    printf("Provisioning data available: %u\n", prov_len ? 1 : 0);
+    if (prov_len){
+
+        mesh_access_setup_from_provisioning_data(&provisioning_data);
+
+        // load iv index
+        mesh_restore_iv_index_and_sequence_number();
+        // load network keys
+        mesh_load_network_keys();
+        // load app keys
+        mesh_load_app_keys();
+        // load model to appkey bindings
+        mesh_load_appkey_lists();
+        // load virtual addresses
+        mesh_load_virtual_addresses();
+        // load model subscriptions
+        mesh_load_subscriptions();
+        // load model publications
+        mesh_load_publications();
+        // load foundation state
+        mesh_foundation_state_load();
+
+#if defined(ENABLE_MESH_ADV_BEARER) || defined(ENABLE_MESH_PB_ADV)
+        // start sending Secure Network Beacon
+        mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(0);
+        if (subnet){
+            beacon_secure_network_start(subnet);
+        }
+#endif
+        return 1;
+    } else {
+        return 0;
+    }
 }
 

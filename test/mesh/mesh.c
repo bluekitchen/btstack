@@ -190,8 +190,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     UNUSED(size);
     bd_addr_t addr;
     int i;
-    int prov_len;
-    mesh_provisioning_data_t provisioning_data;
 
     switch (packet_type) {
         case HCI_EVENT_PACKET:
@@ -205,35 +203,18 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         printf("%02x", addr[i]);
                     }
                     printf("\n");
-                    // get tlv
-                    btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
-                    // load provisioning data
-                    prov_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
-                    printf("Provisioning data available: %u\n", prov_len ? 1 : 0);
-                    if (prov_len){
-                        provisioned = 1;
 
-                        mesh_access_setup_from_provisioning_data(&provisioning_data);
+                    // startup from provisioning data stored in TLV
+                    provisioned = mesh_node_startup_from_tlv();
 
-                        mesh_node_startup_from_tlv();
-
+                    if (provisioned){
                         // dump PTS MeshOptions.ini
                         mesh_pts_dump_mesh_options();
-
                     } else {
-                        provisioned = 0;
-
                         mesh_access_setup_without_provisiong_data(test_device_uuid);
                     }
 
 #if defined(ENABLE_MESH_ADV_BEARER) || defined(ENABLE_MESH_PB_ADV)
-
-                    // start sending Secure Network Beacon
-                    mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(0);
-                    if (subnet){
-                        beacon_secure_network_start(subnet);
-                    }
-
                     // setup scanning
                     gap_set_scan_parameters(0, 0x300, 0x300);
                     gap_start_scan();
