@@ -99,6 +99,8 @@ void mesh_node_reset(void);
 
 int mesh_node_startup_from_tlv(void);
 
+void mesh_node_store_provisioning_data(void);
+
 // PTS Testing
 void config_nekey_list_set_max(uint16_t max);
 

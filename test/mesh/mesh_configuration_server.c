@@ -2284,10 +2284,22 @@ void mesh_node_reset(void){
     mesh_delete_publications();
 }
 
+void mesh_node_store_provisioning_data(void){
+    // fill prov data
+    mesh_provisioning_data_t provisioning_data;
+    provisioning_data.unicast_address = mesh_access_get_primary_element_address();
+    memcpy(provisioning_data.device_key, mesh_transport_key_get(MESH_DEVICE_KEY_INDEX), 16);
+
+    // store in tlv
+    btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
+}
+
 int mesh_node_startup_from_tlv(void){
 
     mesh_provisioning_data_t provisioning_data;
     btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
+
     // load provisioning data
     uint32_t prov_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
     printf("Provisioning data available: %u\n", prov_len ? 1 : 0);

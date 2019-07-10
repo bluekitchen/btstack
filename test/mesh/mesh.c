@@ -65,7 +65,6 @@
 #include "btstack.h"
 #include "btstack_tlv.h"
 
-#define BEACON_TYPE_SECURE_NETWORK 1
 #define PTS_DEFAULT_TTL 10
 
 static void show_usage(void);
@@ -82,9 +81,6 @@ static uint16_t pb_transport_cid = MESH_PB_TRANSPORT_INVALID_CID;
 static int ui_chars_for_pin; 
 static uint8_t ui_pin[17];
 static int ui_pin_offset;
-
-static const btstack_tlv_t * btstack_tlv_singleton_impl;
-static void *                btstack_tlv_singleton_context;
 
 static uint16_t primary_element_address;
 
@@ -287,7 +283,7 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                     provisioning_data.flags = provisioning_device_data_get_flags();
                     provisioning_data.unicast_address = provisioning_device_data_get_unicast_address();
 
-                    // get iv_index
+                    // set iv_index
                     mesh_set_iv_index(provisioning_device_data_get_iv_index());
 
                     // get primary netkey
@@ -300,20 +296,24 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                     // setup primary network
                     mesh_subnet_setup_for_netkey_index(primary_network_key->netkey_index);
 
+                    // setup after provisioned
+                    mesh_access_setup_from_provisioning_data(&provisioning_data);
+
+
                     // store provisioning data and primary network key in TLV
-                    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
-                    mesh_store_network_key(primary_network_key);
+                    mesh_node_store_provisioning_data();
 
                     // store IV Index and sequence number
                     mesh_store_iv_index_and_sequence_number();
 
-                    // setup after provisioned
-                    mesh_access_setup_from_provisioning_data(&provisioning_data);
+                    // store primary network key
+                    mesh_store_network_key(primary_network_key);
 
-                    provisioned = 1;
 
                     // dump data
                     mesh_provisioning_dump(&provisioning_data);
+
+                    provisioned = 1;
 
                     // start advertising with node id after provisioning
                     mesh_proxy_set_advertising_with_node_id(primary_network_key->netkey_index, MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING);
