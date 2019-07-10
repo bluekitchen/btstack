@@ -47,6 +47,7 @@
 #include "btstack_debug.h"
 #include "mesh_foundation.h"
 #include "btstack_tlv.h"
+#include "mesh_iv_index_seq_number.h"
 
 #define MEST_TRANSACTION_TIMEOUT_MS  6000
 
@@ -1378,7 +1379,7 @@ void mesh_store_iv_index_and_sequence_number(void){
     mesh_access_setup_tlv();
     uint32_t tag = mesh_tag_for_iv_index_and_seq_number();
     data.iv_index   = mesh_get_iv_index();
-    data.seq_number = mesh_lower_transport_peek_seq();
+    data.seq_number = mesh_sequence_number_peek();
     btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
 }
 void mesh_load_iv_index_and_sequence_number(void){
@@ -1387,7 +1388,7 @@ void mesh_load_iv_index_and_sequence_number(void){
     uint32_t tag = mesh_tag_for_iv_index_and_seq_number();
     btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
     mesh_set_iv_index(data.iv_index);
-    mesh_lower_transport_set_seq(data.seq_number);
+    mesh_sequence_number_set(data.seq_number);
 }
 
 
@@ -1713,7 +1714,7 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
     } else {
         if (beacon_iv_update_active == 0){
             // " At the point of transition, the node shall reset the sequence number to 0x000000."
-            mesh_lower_transport_set_seq(0);
+            mesh_sequence_number_set(0);
             mesh_iv_update_completed();
             // store updated iv index 
             mesh_store_iv_index_and_sequence_number();

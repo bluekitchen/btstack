@@ -569,7 +569,7 @@ static uint8_t mesh_upper_transport_setup_unsegmented_control_pdu(mesh_network_p
 
     mesh_print_hex("LowerTransportPDU", transport_pdu_data, transport_pdu_len);
     // setup network_pdu
-    mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, 1, ttl, mesh_lower_transport_next_seq(), src, dest, transport_pdu_data, transport_pdu_len);
+    mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, 1, ttl, mesh_sequence_number_next(), src, dest, transport_pdu_data, transport_pdu_len);
 
     return 0;
 }
@@ -585,7 +585,7 @@ static uint8_t mesh_upper_transport_setup_segmented_control_pdu(mesh_transport_p
     const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
     if (!network_key) return 1;
 
-    uint32_t seq = mesh_lower_transport_peek_seq();
+    uint32_t seq = mesh_sequence_number_peek();
 
     memcpy(transport_pdu->data, control_pdu_data, control_pdu_len);
     transport_pdu->len = control_pdu_len;
@@ -631,7 +631,7 @@ static uint8_t mesh_upper_transport_setup_unsegmented_access_pdu_header(mesh_net
 
     network_pdu->data[9] = akf_aid;
     // setup network_pdu
-    mesh_network_setup_pdu_header(network_pdu, netkey_index, network_key->nid, 0, ttl, mesh_lower_transport_next_seq(), src, dest);
+    mesh_network_setup_pdu_header(network_pdu, netkey_index, network_key->nid, 0, ttl, mesh_sequence_number_next(), src, dest);
     network_pdu->appkey_index = appkey_index;
     return 0;
 }
@@ -653,7 +653,7 @@ static uint8_t mesh_upper_transport_setup_unsegmented_access_pdu(mesh_network_pd
 
 static uint8_t mesh_upper_transport_setup_segmented_access_pdu_header(mesh_transport_pdu_t * transport_pdu, uint16_t netkey_index, uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest,
                                                         uint8_t szmic){
-    uint32_t seq = mesh_lower_transport_peek_seq();
+    uint32_t seq = mesh_sequence_number_peek();
 
     printf("[+] Upper transport, setup segmented Access PDU - seq %06x, szmic %u, iv_index %08x\n", seq, szmic,
            mesh_get_iv_index_for_tx());

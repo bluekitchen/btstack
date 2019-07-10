@@ -39,17 +39,18 @@
 
 #include "mesh_iv_index_seq_number.h"
 
-static uint32_t               lower_transport_seq;
+static uint32_t  sequence_number_current;
 
-uint32_t mesh_lower_transport_next_seq(void){
-    return lower_transport_seq++;
+void mesh_sequence_number_set(uint32_t seq){
+    sequence_number_current = seq;
 }
 
-uint32_t mesh_lower_transport_peek_seq(void){
-    return lower_transport_seq;
+uint32_t mesh_sequence_number_next(void){
+    return sequence_number_current++;
 }
 
-void mesh_lower_transport_set_seq(uint32_t seq){
-    lower_transport_seq = seq;
+uint32_t mesh_sequence_number_peek(void){
+    return sequence_number_current;
 }
+
 

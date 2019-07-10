@@ -47,9 +47,9 @@ extern "C"
 
 #include <stdint.h>
 
-void     mesh_lower_transport_set_seq(uint32_t seq);
-uint32_t mesh_lower_transport_next_seq(void);;
-uint32_t mesh_lower_transport_peek_seq(void);
+void     mesh_sequence_number_set(uint32_t seq);
+uint32_t mesh_sequence_number_peek(void);
+uint32_t mesh_sequence_number_next(void);
 
 #ifdef __cplusplus
 } /* end of extern "C" */

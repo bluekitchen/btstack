@@ -54,6 +54,7 @@
 #include "btstack_tlv.h"
 #include "mesh_proxy.h"
 #include "mesh/gatt_bearer.h"
+#include "mesh_iv_index_seq_number.h"
 
 #define MESH_HEARTBEAT_FEATURES_SUPPORTED_MASK 0x000f
 
@@ -1838,7 +1839,7 @@ static void config_heartbeat_publication_emit(mesh_heartbeat_publication_t * mes
         mesh_heartbeat_publication->destination, 
         mesh_heartbeat_publication->count, 
         mesh_heartbeat_publication->period_ms, 
-        mesh_lower_transport_peek_seq());
+        mesh_sequence_number_peek());
     
     // active features
     mesh_heartbeat_publication->active_features = mesh_foundation_get_features();
