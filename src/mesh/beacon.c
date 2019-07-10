@@ -52,6 +52,7 @@
 #include "btstack_event.h"
 #include "gap.h"
 #include "mesh_keys.h"
+#include "mesh_iv_index_seq_number.h"
 
 #define BEACON_TYPE_UNPROVISIONED_DEVICE 0
 #define BEACON_TYPE_SECURE_NETWORK 1

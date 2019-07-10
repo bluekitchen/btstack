@@ -63,7 +63,6 @@ static uint8_t  prov_buffer_out[MESH_PROV_MAX_PROXY_PDU];
 // ConfirmationInputs = ProvisioningInvitePDUValue || ProvisioningCapabilitiesPDUValue || ProvisioningStartPDUValue || PublicKeyProvisioner || PublicKeyDevice
 static uint8_t  prov_confirmation_inputs[1 + 11 + 5 + 64 + 64];
 static uint8_t  prov_authentication_method;
-static uint8_t  prov_authentication_action;
 static uint8_t  prov_public_key_oob_used;
 static uint8_t  prov_emit_public_key_oob_active;
 static uint8_t  prov_emit_output_oob_active;

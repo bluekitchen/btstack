@@ -44,11 +44,6 @@
 #include "btstack_memory.h"
 #include "btstack_config.h"
 
-static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len){
-    printf("%-20s ", name);
-    printf_hexdump(data, len);
-}
-
 // network key list
 static btstack_linked_list_t network_keys;
 static uint8_t mesh_network_key_used[MAX_NR_MESH_NETWORK_KEYS];

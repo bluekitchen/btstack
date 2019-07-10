@@ -108,8 +108,6 @@ static void mesh_lower_transport_abort_transmission(void);
 // state
 static int                    lower_transport_retry_count;
 
-static uint32_t               lower_transport_seq;
-
 // lower transport incoming
 static btstack_linked_list_t  lower_transport_incoming;
 
