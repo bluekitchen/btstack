@@ -1835,11 +1835,10 @@ config_model_publication_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
 
 static void config_heartbeat_publication_emit(mesh_heartbeat_publication_t * mesh_heartbeat_publication){
 
-    printf("CONFIG_SERVER_HEARTBEAT: Emit (dest %04x, count %u, period %u ms, seq %x)\n",
+    printf("CONFIG_SERVER_HEARTBEAT: Emit (dest %04x, count %u, period %u ms)\n",
         mesh_heartbeat_publication->destination, 
         mesh_heartbeat_publication->count, 
-        mesh_heartbeat_publication->period_ms, 
-        mesh_sequence_number_peek());
+        mesh_heartbeat_publication->period_ms);
     
     // active features
     mesh_heartbeat_publication->active_features = mesh_foundation_get_features();
