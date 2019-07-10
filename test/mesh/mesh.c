@@ -214,25 +214,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         provisioned = 1;
 
                         mesh_access_setup_from_provisioning_data(&provisioning_data);
-                        // load iv index
-                        mesh_restore_iv_index_and_sequence_number();
-                        // load network keys
-                        mesh_load_network_keys();
-                        // load app keys
-                        mesh_load_app_keys();
-                        // load model to appkey bindings
-                        mesh_load_appkey_lists();
-                        // load virtual addresses
-                        mesh_load_virtual_addresses();
-                        // load model subscriptions
-                        mesh_load_subscriptions();
-                        // load model publications
-                        mesh_load_publications();
-                        // load foundation state
-                        mesh_foundation_state_load();
 
-                        // dump data
-                        mesh_provisioning_dump(&provisioning_data);
+                        mesh_node_startup_from_tlv();
 
                         // dump PTS MeshOptions.ini
                         mesh_pts_dump_mesh_options();
@@ -262,6 +245,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     // enable PB_GATT
                     if (provisioned == 0){
+                        printf("Advertise Mesh Provisiong Service with Device UUID\n");
                         mesh_proxy_start_advertising_unprovisioned_device(test_device_uuid);
                     } else {
 #ifdef ENABLE_MESH_PROXY_SERVER

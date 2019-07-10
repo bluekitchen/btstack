@@ -2283,3 +2283,22 @@ void mesh_node_reset(void){
     mesh_delete_publications();
 }
 
+void mesh_node_startup_from_tlv(void){
+    // load iv index
+    mesh_restore_iv_index_and_sequence_number();
+    // load network keys
+    mesh_load_network_keys();
+    // load app keys
+    mesh_load_app_keys();
+    // load model to appkey bindings
+    mesh_load_appkey_lists();
+    // load virtual addresses
+    mesh_load_virtual_addresses();
+    // load model subscriptions
+    mesh_load_subscriptions();
+    // load model publications
+    mesh_load_publications();
+    // load foundation state
+    mesh_foundation_state_load();
+}
+

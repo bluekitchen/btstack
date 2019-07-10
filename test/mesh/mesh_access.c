@@ -1781,3 +1781,4 @@ void mesh_access_setup_without_provisiong_data(const uint8_t * device_uuid){
     mesh_proxy_start_advertising_unprovisioned_device(device_uuid);
 #endif
 }
+
