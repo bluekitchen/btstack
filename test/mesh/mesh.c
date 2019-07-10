@@ -53,6 +53,7 @@
 #include "provisioning.h"
 #include "provisioning_device.h"
 #include "mesh_foundation.h"
+#include "mesh_iv_index_seq_number.h"
 #include "mesh_configuration_server.h"
 #include "mesh_generic_server.h"
 #include "mesh_access.h"
@@ -121,11 +122,6 @@ static mesh_model_t                 mesh_vendor_model;
 
 static mesh_model_t                 mesh_generic_on_off_server_model;
 static mesh_generic_on_off_state_t  mesh_generic_on_off_state;
-
-static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len){
-     printf("%-20s ", name);
-     printf_hexdump(data, len);
-}
 
 // static void mesh_print_x(const char * name, uint32_t value){
 //     printf("%20s: 0x%x", name, (int) value);
@@ -766,32 +762,6 @@ static void stdin_process(char cmd){
     }
 }
 
-static btstack_crypto_aes128_cmac_t salt_request;
-static uint8_t label_uuid[16];
-static uint8_t salt_hash[16];
-static uint16_t virtual_address_hash;
-static mesh_network_key_t test_network_key;
-
-static void salt_complete(void * arg){
-    int i;
-    printf("uint8_t salt[16] = { ");
-    for (i=0;i<16;i++){
-        printf("0x%02x, ", salt_hash[i]);
-    }
-    printf("};\n");
-}
-
-static uint8_t mesh_salt_vtad[] = { 0xce, 0xf7, 0xfa, 0x9d, 0xc4, 0x7b, 0xaf, 0x5d, 0xaa, 0xee, 0xd1, 0x94, 0x06, 0x09, 0x4f, 0x37, };
-
-static void virtual_address_complete(void * arg){
-    printf("Label UUID: ");
-    printf_hexdump(label_uuid, 16);
-    printf("Virtual Address %04x\n", virtual_address_hash);
-}
-
-static void key_derived(void * arg){
-}
-
 int btstack_main(void);
 int btstack_main(void)
 {
@@ -879,20 +849,9 @@ int btstack_main(void)
     // Enable PROXY
     mesh_foundation_gatt_proxy_set(1);
     
-    // calc s1('vtad')7
-    // btstack_crypto_aes128_cmac_zero(&salt_request, 4, (const uint8_t *) "vtad", salt_hash, salt_complete, NULL);
-
-    // calc virtual address hash
-    // mesh_virtual_address(&salt_request, label_uuid, &virtual_address_hash, virtual_address_complete, NULL);
-
-    // calc network key derivative
-    // btstack_parse_hex("7dd7364cd842ad18c17c2b820c84c3d6", 16, test_network_key.net_key); // spec sample data
-    // btstack_parse_hex("B72892443F28F28FD61F4B63FF86F695", 16, test_network_key.net_key);
-    // printf("NetKey: ");
-    // printf_hexdump(test_network_key.net_key, 16);
-    // mesh_network_key_derive(&salt_request, &test_network_key, key_derived, NULL);
 
     // PTS Virtual Address Label UUID - without Config Model, PTS uses our device uuid
+    uint8_t label_uuid[16];
     btstack_parse_hex("001BDC0810210B0E0A0C000B0E0A0C00", 16, label_uuid);
     mesh_virtual_address_t * virtual_addresss = mesh_virtual_address_register(label_uuid, 0x9779);
     pts_proxy_dst = virtual_addresss->pseudo_dst;
