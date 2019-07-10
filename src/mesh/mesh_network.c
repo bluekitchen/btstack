@@ -50,6 +50,7 @@
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
+#include "mesh_iv_index_seq_number.h"
 
 #ifdef ENABLE_MESH_ADV_BEARER
 #include "mesh/adv_bearer.h"
@@ -70,8 +71,6 @@
 
 // globals
 
-static uint32_t global_iv_index;
-static int global_iv_update_active;
 static uint16_t mesh_network_primary_address;
 static uint16_t mesh_network_num_elements;
 static void (*mesh_network_higher_layer_handler)(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu);
@@ -526,7 +525,7 @@ static void process_network_pdu_validate_d(void * arg){
 
 static uint32_t iv_index_for_pdu(const mesh_network_pdu_t * network_pdu){
     // get IV Index and IVI
-    uint32_t iv_index = global_iv_index;
+    uint32_t iv_index = mesh_get_iv_index();
     int ivi = network_pdu->data[0] >> 7;
 
     // if least significant bit differs, use previous IV Index
@@ -965,58 +964,6 @@ void mesh_network_setup_pdu_header(mesh_network_pdu_t * network_pdu, uint16_t ne
     big_endian_store_24(network_pdu->data, 2, seq);
     big_endian_store_16(network_pdu->data, 5, src);
     big_endian_store_16(network_pdu->data, 7, dest);
-}
-
-void mesh_set_iv_index(uint32_t iv_index){
-    global_iv_index = iv_index;
-}
-
-uint32_t mesh_get_iv_index(void){
-    return  global_iv_index;
-}
-
-uint32_t mesh_get_iv_index_for_tx(void){
-    if (global_iv_update_active){
-        return global_iv_index - 1;
-    } else {
-        return  global_iv_index;
-    }
-}
-
-int mesh_iv_update_active(void){
-    return global_iv_update_active;
-}
-
-void mesh_trigger_iv_update(void){
-    if (global_iv_update_active) return;
-
-    // "A node shall not start an IV Update procedure more often than once every 192 hours."
-    // Unless triggered by user application, it will automatically triggered if sequene numbers are about to roll over
-
-    // "A node shall defer state change from IV Update in Progress to Normal Operation, as defined by this procedure,
-    //  when the node has transmitted a Segmented Access message or a Segmented Control message without receiving the
-    //  corresponding Segment Acknowledgment messages. The deferred change of the state shall be executed when the appropriate
-    //  Segment Acknowledgment message is received or timeout for the delivery of this message is reached.
-    //  
-    //  Note: This requirement is necessary because upon completing the IV Update procedure the sequence number is reset
-    //  to 0x000000 and the SeqAuth value would not be valid."
-
-    // set IV Update in Progress
-    global_iv_update_active = 1;
-    // increase IV index
-    global_iv_index++;
-}
-
-void mesh_iv_update_completed(void){
-    if (!global_iv_update_active) return;
-    // set Normal mode
-    global_iv_update_active = 0;
-}
-
-void mesh_iv_index_recovered(uint8_t iv_update_active, uint32_t iv_index){
-    log_info("mesh_iv_index_recovered: active %u, index %u", iv_update_active, (int) iv_index);
-    global_iv_index = iv_index;
-    global_iv_update_active = iv_update_active;
 }
 
 // Network PDU Getter
