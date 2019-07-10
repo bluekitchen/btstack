@@ -16,6 +16,7 @@
 #include "btstack_util.h"
 #include "provisioning.h"
 #include "btstack_memory.h"
+#include "mesh_iv_index_seq_number.h"
 
 extern "C" int mock_process_hci_cmd(void);
 

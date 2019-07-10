@@ -48,6 +48,7 @@
 #include "mesh_peer.h"
 #include "mesh_keys.h"
 #include "mesh_virtual_addresses.h"
+#include "mesh_iv_index_seq_number.h"
 
 static uint16_t primary_element_address;
 

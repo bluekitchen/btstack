@@ -45,6 +45,7 @@
 #include "btstack_memory.h"
 #include "mesh_peer.h"
 #include "mesh_lower_transport.h"
+#include "mesh_iv_index_seq_number.h"
 
 static uint16_t primary_element_address;
 static void (*higher_layer_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
@@ -668,18 +669,6 @@ static void mesh_lower_transport_run(void){
                 break;
         }
     }
-}
-
-uint32_t mesh_lower_transport_next_seq(void){
-    return lower_transport_seq++;
-}
-
-uint32_t mesh_lower_transport_peek_seq(void){
-    return lower_transport_seq;
-}
-
-void mesh_lower_transport_set_seq(uint32_t seq){
-    lower_transport_seq = seq;
 }
 
 static void mesh_lower_transport_dump_network_pdus(const char *name, btstack_linked_list_t *list){

@@ -97,10 +97,6 @@ void mesh_lower_transport_init();
 void mesh_lower_transport_set_primary_element_address(uint16_t unicast_address);
 void mesh_lower_transport_set_higher_layer_handler(void (*pdu_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu));
 
-void     mesh_lower_transport_set_seq(uint32_t seq);
-uint32_t mesh_lower_transport_next_seq(void);;
-uint32_t mesh_lower_transport_peek_seq(void);
-
 void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu);
 
 void mesh_lower_transport_send_pdu(mesh_pdu_t * pdu);
