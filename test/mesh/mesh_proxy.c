@@ -73,7 +73,7 @@ static uint8_t                                          mesh_proxy_node_id_rando
 static uint16_t primary_element_address;
 
 // Mesh Proxy, advertise with node id
-static adv_bearer_connectable_advertisement_data_item_t connectable_advertisement_with_node_id;
+static adv_bearer_connectable_advertisement_data_item_t connectable_advertisement;
 
 static const uint8_t adv_data_with_node_identity_template[] = {
     // Flags general discoverable, BR/EDR not supported
@@ -114,7 +114,7 @@ static const uint8_t adv_data_unprovisioned_template[] = {
 };
 const uint8_t adv_data_unprovisioned_template_len = sizeof(adv_data_unprovisioned_template);
 
-void mesh_proxy_setup_advertising_unprovisioned(adv_bearer_connectable_advertisement_data_item_t * advertisement_item, const uint8_t * device_uuid) {
+static void mesh_proxy_setup_advertising_unprovisioned(adv_bearer_connectable_advertisement_data_item_t * advertisement_item, const uint8_t * device_uuid) {
     // store in advertisement item
     memset(advertisement_item, 0, sizeof(adv_bearer_connectable_advertisement_data_item_t));
     advertisement_item->adv_length = adv_data_unprovisioned_template_len + 18;
@@ -123,6 +123,22 @@ void mesh_proxy_setup_advertising_unprovisioned(adv_bearer_connectable_advertise
     memcpy(&advertisement_item->adv_data[11], device_uuid, 16);
     little_endian_store_16(advertisement_item->adv_data, 27, 0);
 }
+
+void mesh_proxy_start_advertising_unprovisioned_device(const uint8_t * device_uuid){
+    mesh_proxy_setup_advertising_unprovisioned(&connectable_advertisement, device_uuid);
+    // setup advertisements
+    adv_bearer_advertisements_add_item(&connectable_advertisement);
+    adv_bearer_advertisements_enable(1);
+}
+
+/**
+ * @brief Start Advertising Unprovisioned Device with Device ID
+ * @param device_uuid
+ */
+void mesh_proxy_stop_advertising_unprovisioned_device(void){
+    adv_bearer_advertisements_remove_item(&connectable_advertisement);
+}
+
 #endif
 
 static uint8_t mesh_proxy_setup_advertising_with_network_id(uint8_t * buffer, uint8_t * network_id){
@@ -132,7 +148,7 @@ static uint8_t mesh_proxy_setup_advertising_with_network_id(uint8_t * buffer, ui
 }
 
 static void mesh_proxy_stop_all_advertising_with_node_id(void){
-    adv_bearer_advertisements_remove_item(&connectable_advertisement_with_node_id);
+    adv_bearer_advertisements_remove_item(&connectable_advertisement);
     mesh_subnet_iterator_t it;
     mesh_subnet_iterator_init(&it);
     while (mesh_subnet_iterator_has_more(&it)){
@@ -152,13 +168,13 @@ static void mesh_proxy_node_id_timeout_handler(btstack_timer_source_t * ts){
 static void mesh_proxy_node_id_handle_get_aes128(void * arg){
     mesh_subnet_t * network_key = (mesh_subnet_t *) arg;
 
-    memcpy(connectable_advertisement_with_node_id.adv_data, adv_data_with_node_identity_template, 12);
-    memcpy(&connectable_advertisement_with_node_id.adv_data[12], &mesh_proxy_node_id_hash[8], 8);
-    memcpy(&connectable_advertisement_with_node_id.adv_data[20], mesh_proxy_node_id_random_value, 8);
-    connectable_advertisement_with_node_id.adv_length = 28;
+    memcpy(connectable_advertisement.adv_data, adv_data_with_node_identity_template, 12);
+    memcpy(&connectable_advertisement.adv_data[12], &mesh_proxy_node_id_hash[8], 8);
+    memcpy(&connectable_advertisement.adv_data[20], mesh_proxy_node_id_random_value, 8);
+    connectable_advertisement.adv_length = 28;
     
     // setup advertisements
-    adv_bearer_advertisements_add_item(&connectable_advertisement_with_node_id);
+    adv_bearer_advertisements_add_item(&connectable_advertisement);
     adv_bearer_advertisements_enable(1);
 
     // set timer

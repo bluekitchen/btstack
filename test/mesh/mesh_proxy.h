@@ -59,9 +59,16 @@ typedef enum {
 void mesh_proxy_init(uint16_t primary_unicast_address);
 
 /**
+ * @brief Start Advertising Unprovisioned Device with Device ID
+ * @param device_uuid
  */
+void mesh_proxy_start_advertising_unprovisioned_device(const uint8_t * device_uuid);
 
-void mesh_proxy_setup_advertising_unprovisioned(adv_bearer_connectable_advertisement_data_item_t * advertisement_item, const uint8_t * device_uuid);
+/**
+ * @brief Start Advertising Unprovisioned Device with Device ID
+ * @param device_uuid
+ */
+void mesh_proxy_stop_advertising_unprovisioned_device(void);
 
 /**
  * @brief Set Advertising with Node ID on given subnet

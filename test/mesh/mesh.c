@@ -72,9 +72,6 @@ static void show_usage(void);
 
 const static uint8_t test_device_uuid[] = { 0x00, 0x1B, 0xDC, 0x08, 0x10, 0x21, 0x0B, 0x0E, 0x0A, 0x0C, 0x00, 0x0B, 0x0E, 0x0A, 0x0C, 0x00 };
 
-// Mesh Proxy, advertise with node id
-static adv_bearer_connectable_advertisement_data_item_t connectable_advertisement_item;
-
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -167,11 +164,7 @@ static void mesh_setup_without_provisiong_data(void){
     beacon_unprovisioned_device_start(device_uuid, 0);
 #endif
 #ifdef ENABLE_MESH_PB_GATT
-    // PB_GATT
-    mesh_proxy_setup_advertising_unprovisioned(&connectable_advertisement_item, test_device_uuid);
-    // start advertisements
-    adv_bearer_advertisements_add_item(&connectable_advertisement_item);
-    adv_bearer_advertisements_enable(1);
+    mesh_proxy_start_advertising_unprovisioned_device(test_device_uuid);
 #endif
 }
 
@@ -306,10 +299,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     // enable PB_GATT
                     if (provisioned == 0){
-                         mesh_proxy_setup_advertising_unprovisioned(&connectable_advertisement_item, test_device_uuid);
-                        // setup advertisements
-                        adv_bearer_advertisements_add_item(&connectable_advertisement_item);
-                        adv_bearer_advertisements_enable(1);
+                        mesh_proxy_start_advertising_unprovisioned_device(test_device_uuid);
                     } else {
 #ifdef ENABLE_MESH_PROXY_SERVER
                         printf("Advertise Mesh Proxy Service with Network ID\n");
@@ -321,8 +311,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_EVENT_LE_META:
                     if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
                     // disable PB_GATT
-                    printf("Connected, stop advertising gatt service\n");
-                    adv_bearer_advertisements_remove_item(&connectable_advertisement_item);
+                    printf("Connected, stop advertising GATT service\n");
+                    mesh_proxy_stop_advertising_unprovisioned_device();
                     break;
                 default:
                     break;
@@ -701,10 +691,7 @@ static void stdin_process(char cmd){
         case '8':
             mesh_node_reset();
             printf("Mesh Node Reset!\n");
-            mesh_proxy_setup_advertising_unprovisioned(&connectable_advertisement_item, test_device_uuid);
-            // setup advertisements
-            adv_bearer_advertisements_add_item(&connectable_advertisement_item);
-            adv_bearer_advertisements_enable(1);
+            mesh_proxy_start_advertising_unprovisioned_device(test_device_uuid);
             break;
         case 'p':
             printf("+ Public Key OOB Enabled\n");
