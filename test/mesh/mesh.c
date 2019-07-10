@@ -297,7 +297,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     if (prov_len){
                         mesh_setup_from_provisioning_data(&provisioning_data);
                         // load iv index
-                        mesh_load_iv_index();
+                        mesh_load_iv_index_and_sequence_number();
                         // load network keys
                         mesh_load_network_keys();
                         // load app keys
@@ -416,8 +416,8 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                     btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &provisioning_data, sizeof(mesh_provisioning_data_t));
                     mesh_store_network_key(primary_network_key);
 
-                    // store IV Index
-                    mesh_store_iv_index();
+                    // store IV Index and sequence number
+                    mesh_store_iv_index_and_sequence_number();
 
                     // setup after provisioned
                     mesh_setup_from_provisioning_data(&provisioning_data);

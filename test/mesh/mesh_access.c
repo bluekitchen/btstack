@@ -1364,21 +1364,30 @@ int mesh_model_contains_appkey(mesh_model_t * mesh_model, uint16_t appkey_index)
 }
 
 // Mesh IV Index
-static uint32_t mesh_tag_for_iv_index(void){
-    return ((uint32_t) 'I' << 24) | ((uint32_t) 'V' << 16) | ((uint32_t) 'I' << 9) | ((uint32_t) 'D');
+static uint32_t mesh_tag_for_iv_index_and_seq_number(void){
+    return ((uint32_t) 'M' << 24) | ((uint32_t) 'F' << 16) | ((uint32_t) 'I' << 9) | ((uint32_t) 'S');
 }
-void mesh_store_iv_index(void){
+
+typedef struct {
+    uint32_t iv_index;
+    uint32_t seq_number;
+} iv_index_and_sequence_number_t;
+
+void mesh_store_iv_index_and_sequence_number(void){
+    iv_index_and_sequence_number_t data;
     mesh_access_setup_tlv();
-    uint32_t tag = mesh_tag_for_iv_index();
-    uint32_t iv_index = mesh_get_iv_index();
-    btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &iv_index, 4);
+    uint32_t tag = mesh_tag_for_iv_index_and_seq_number();
+    data.iv_index   = mesh_get_iv_index();
+    data.seq_number = mesh_lower_transport_peek_seq();
+    btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
 }
-void mesh_load_iv_index(void){
+void mesh_load_iv_index_and_sequence_number(void){
+    iv_index_and_sequence_number_t data;
     mesh_access_setup_tlv();
-    uint32_t tag = mesh_tag_for_iv_index();
-    uint32_t iv_index = 0;
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &iv_index, 4);
-    mesh_set_iv_index(iv_index);
+    uint32_t tag = mesh_tag_for_iv_index_and_seq_number();
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+    mesh_set_iv_index(data.iv_index);
+    mesh_lower_transport_set_seq(data.seq_number);
 }
 
 
@@ -1669,7 +1678,7 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
         // instant iv update
         mesh_set_iv_index( beacon_iv_index );
         // store updated iv index
-        mesh_store_iv_index();
+        mesh_store_iv_index_and_sequence_number();
         return;
     }
 
@@ -1692,7 +1701,7 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
         mesh_iv_index_recovered(beacon_iv_update_active, beacon_iv_index);
         // store updated iv index if in normal mode
         if (beacon_iv_update_active == 0){
-            mesh_store_iv_index();
+            mesh_store_iv_index_and_sequence_number();
         }
         return;
     }
@@ -1707,7 +1716,7 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
             mesh_lower_transport_set_seq(0);
             mesh_iv_update_completed();
             // store updated iv index 
-            mesh_store_iv_index();
+            mesh_store_iv_index_and_sequence_number();
         }
     }
 }
