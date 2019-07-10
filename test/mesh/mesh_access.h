@@ -445,7 +445,8 @@ int mesh_model_contains_appkey(mesh_model_t * mesh_model, uint16_t appkey_index)
 
 // Mesh IV Index and sequence number
 void mesh_store_iv_index_and_sequence_number(void);
-void mesh_load_iv_index_and_sequence_number(void);
+void mesh_persist_iv_index_and_sequence_number(void);
+void mesh_restore_iv_index_and_sequence_number(void);
 
 // Mesh Access Parser
 int mesh_access_pdu_get_opcode(mesh_pdu_t * pdu, uint32_t * opcode, uint16_t * opcode_size);
@@ -484,6 +485,7 @@ void mesh_access_network_add_model_identifier(mesh_network_pdu_t * pdu, uint32_t
 // message builder using template
 mesh_network_pdu_t * mesh_access_setup_unsegmented_message(const mesh_access_message_t *template, ...);
 mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_message_t *template, ...);
+
 
 #ifdef __cplusplus
 } /* end of extern "C" */

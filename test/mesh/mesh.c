@@ -297,7 +297,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     if (prov_len){
                         mesh_setup_from_provisioning_data(&provisioning_data);
                         // load iv index
-                        mesh_load_iv_index_and_sequence_number();
+                        mesh_restore_iv_index_and_sequence_number();
                         // load network keys
                         mesh_load_network_keys();
                         // load app keys
