@@ -1417,6 +1417,9 @@ void mesh_restore_iv_index_and_sequence_number(void){
 
 // higher layer
 static void mesh_persist_iv_index_and_sequence_number(void){
+    if (mesh_sequence_number_peek() >= sequence_number_storage_trigger){
+        mesh_store_iv_index_and_sequence_number();
+    }
 }
 
 
