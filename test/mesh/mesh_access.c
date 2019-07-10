@@ -1389,7 +1389,7 @@ void mesh_store_iv_index_and_sequence_number(void){
     uint32_t tag = mesh_tag_for_iv_index_and_seq_number();
     data.iv_index   = mesh_get_iv_index();
     data.seq_number = mesh_sequence_number_peek();
-    btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
 
     sequence_number_last_stored = data.seq_number;
     sequence_number_storage_trigger = sequence_number_last_stored + MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
@@ -1399,7 +1399,7 @@ static void mesh_load_iv_index_and_sequence_number(void){
     iv_index_and_sequence_number_t data;
     mesh_access_setup_tlv();
     uint32_t tag = mesh_tag_for_iv_index_and_seq_number();
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+    btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
     mesh_set_iv_index(data.iv_index);
     mesh_sequence_number_set(data.seq_number);
 }
