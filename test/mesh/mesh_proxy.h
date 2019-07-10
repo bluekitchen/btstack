@@ -45,6 +45,8 @@ extern "C"
 {
 #endif
 
+#include "mesh/adv_bearer.h"
+
 typedef enum {
     MESH_NODE_IDENTITY_STATE_ADVERTISING_STOPPED = 0,
     MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING,
@@ -55,6 +57,11 @@ typedef enum {
  * @brief Init Mesh Proxy
  */
 void mesh_proxy_init(uint16_t primary_unicast_address);
+
+/**
+ */
+
+void mesh_proxy_setup_advertising_unprovisioned(adv_bearer_connectable_advertisement_data_item_t * advertisement_item, const uint8_t * device_uuid);
 
 /**
  * @brief Set Advertising with Node ID on given subnet

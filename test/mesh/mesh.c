@@ -158,33 +158,6 @@ static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * p
 #endif
 }
 
-#ifdef ENABLE_MESH_PB_GATT
-
-// Mesh Provisioning
-static const uint8_t adv_data_unprovisioned_template[] = {
-    // Flags general discoverable, BR/EDR not supported
-    0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
-    // 16-bit Service UUIDs
-    0x03, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, ORG_BLUETOOTH_SERVICE_MESH_PROVISIONING & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROVISIONING >> 8,
-    // Service Data (22)
-    0x15, BLUETOOTH_DATA_TYPE_SERVICE_DATA, ORG_BLUETOOTH_SERVICE_MESH_PROVISIONING & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROVISIONING >> 8, 
-          // UUID - 16 bytes
-          // OOB information - 2 bytes
-};
-const uint8_t adv_data_unprovisioned_template_len = sizeof(adv_data_unprovisioned_template);
-
-static void setup_advertising_unprovisioned(adv_bearer_connectable_advertisement_data_item_t * advertisement_item, const uint8_t * device_uuid) {
-    printf("Advertise Mesh Provisioning Service\n");
-    // store in advertisement item
-    memset(advertisement_item, 0, sizeof(adv_bearer_connectable_advertisement_data_item_t));
-    advertisement_item->adv_length = adv_data_unprovisioned_template_len + 18;
-    memcpy(advertisement_item->adv_data, (uint8_t*) adv_data_unprovisioned_template, adv_data_unprovisioned_template_len);
-    // dynamically store device uuid into adv data
-    memcpy(&advertisement_item->adv_data[11], device_uuid, 16);
-    little_endian_store_16(advertisement_item->adv_data, 27, 0);
-}
-#endif
-
 static void mesh_setup_without_provisiong_data(void){
     provisioned = 0;
 
@@ -195,7 +168,7 @@ static void mesh_setup_without_provisiong_data(void){
 #endif
 #ifdef ENABLE_MESH_PB_GATT
     // PB_GATT
-    setup_advertising_unprovisioned(&connectable_advertisement_item, test_device_uuid);
+    mesh_proxy_setup_advertising_unprovisioned(&connectable_advertisement_item, test_device_uuid);
     // start advertisements
     adv_bearer_advertisements_add_item(&connectable_advertisement_item);
     adv_bearer_advertisements_enable(1);
@@ -333,7 +306,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     // enable PB_GATT
                     if (provisioned == 0){
-                         setup_advertising_unprovisioned(&connectable_advertisement_item, test_device_uuid);
+                         mesh_proxy_setup_advertising_unprovisioned(&connectable_advertisement_item, test_device_uuid);
                         // setup advertisements
                         adv_bearer_advertisements_add_item(&connectable_advertisement_item);
                         adv_bearer_advertisements_enable(1);
@@ -728,7 +701,7 @@ static void stdin_process(char cmd){
         case '8':
             mesh_node_reset();
             printf("Mesh Node Reset!\n");
-            setup_advertising_unprovisioned(&connectable_advertisement_item, test_device_uuid);
+            mesh_proxy_setup_advertising_unprovisioned(&connectable_advertisement_item, test_device_uuid);
             // setup advertisements
             adv_bearer_advertisements_add_item(&connectable_advertisement_item);
             adv_bearer_advertisements_enable(1);

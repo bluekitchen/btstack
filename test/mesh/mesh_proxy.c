@@ -55,6 +55,7 @@
 #include "btstack_util.h"
 #include "mesh_proxy.h"
 #include "mesh_foundation.h"
+#include "mesh_iv_index_seq_number.h"
 
 #ifdef ENABLE_MESH_PROXY_SERVER
 
@@ -97,6 +98,32 @@ static const uint8_t adv_data_with_network_id_template[] = {
           // MESH_IDENTIFICATION_NETWORK_ID_TYPE
           MESH_IDENTIFICATION_NETWORK_ID_TYPE 
 };
+
+#ifdef ENABLE_MESH_PB_GATT
+
+// Mesh Provisioning
+static const uint8_t adv_data_unprovisioned_template[] = {
+    // Flags general discoverable, BR/EDR not supported
+    0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
+    // 16-bit Service UUIDs
+    0x03, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, ORG_BLUETOOTH_SERVICE_MESH_PROVISIONING & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROVISIONING >> 8,
+    // Service Data (22)
+    0x15, BLUETOOTH_DATA_TYPE_SERVICE_DATA, ORG_BLUETOOTH_SERVICE_MESH_PROVISIONING & 0xff, ORG_BLUETOOTH_SERVICE_MESH_PROVISIONING >> 8, 
+          // UUID - 16 bytes
+          // OOB information - 2 bytes
+};
+const uint8_t adv_data_unprovisioned_template_len = sizeof(adv_data_unprovisioned_template);
+
+void mesh_proxy_setup_advertising_unprovisioned(adv_bearer_connectable_advertisement_data_item_t * advertisement_item, const uint8_t * device_uuid) {
+    // store in advertisement item
+    memset(advertisement_item, 0, sizeof(adv_bearer_connectable_advertisement_data_item_t));
+    advertisement_item->adv_length = adv_data_unprovisioned_template_len + 18;
+    memcpy(advertisement_item->adv_data, (uint8_t*) adv_data_unprovisioned_template, adv_data_unprovisioned_template_len);
+    // dynamically store device uuid into adv data
+    memcpy(&advertisement_item->adv_data[11], device_uuid, 16);
+    little_endian_store_16(advertisement_item->adv_data, 27, 0);
+}
+#endif
 
 static uint8_t mesh_proxy_setup_advertising_with_network_id(uint8_t * buffer, uint8_t * network_id){
     memcpy(&buffer[0], adv_data_with_network_id_template, 12);
