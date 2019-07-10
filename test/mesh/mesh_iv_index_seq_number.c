@@ -97,12 +97,26 @@ void mesh_iv_index_recovered(uint8_t iv_update_active, uint32_t iv_index){
     global_iv_update_active = iv_update_active;
 }
 
+//
+
+static void (*seq_num_callback)(void);
+
+void mesh_sequence_number_set_update_callback(void (*callback)(void)){
+	seq_num_callback = callback;
+}
+
 void mesh_sequence_number_set(uint32_t seq){
     sequence_number_current = seq;
 }
 
 uint32_t mesh_sequence_number_next(void){
-    return sequence_number_current++;
+	uint32_t seq_number = sequence_number_current++;
+
+	if (seq_num_callback){
+		(*seq_num_callback)();
+	}
+
+    return seq_number;
 }
 
 uint32_t mesh_sequence_number_peek(void){

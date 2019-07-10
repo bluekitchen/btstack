@@ -79,6 +79,11 @@ void mesh_iv_update_completed(void);
 void mesh_iv_index_recovered(uint8_t iv_update_active, uint32_t iv_index);
 
 /**
+ * @brief Set callback for sequence number update
+ */
+void mesh_sequence_number_set_update_callback(void (*callback)(void));
+
+/**
  * Sequence Number
  */
 void     mesh_sequence_number_set(uint32_t seq);

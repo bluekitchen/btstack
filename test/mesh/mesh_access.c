@@ -55,6 +55,7 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu);
 static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size);
 static void mesh_access_upper_transport_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
 static const mesh_operation_t * mesh_model_lookup_operation_by_opcode(mesh_model_t * model, uint32_t opcode);
+static void mesh_persist_iv_index_and_sequence_number(void);
 
 static uint16_t primary_element_address;
 
@@ -93,6 +94,9 @@ void mesh_access_init(void){
 
     // register for secure network beacons
     beacon_register_for_secure_network_beacons(&mesh_access_secure_network_beacon_handler);
+
+    // register for seq number updates
+    mesh_sequence_number_set_update_callback(&mesh_persist_iv_index_and_sequence_number);
 }
 
 void mesh_access_emit_state_update_bool(btstack_packet_handler_t * event_handler, uint8_t element_index, uint32_t model_identifier, 
@@ -1412,7 +1416,7 @@ void mesh_restore_iv_index_and_sequence_number(void){
 }
 
 // higher layer
-void mesh_persist_iv_index_and_sequence_number(void){
+static void mesh_persist_iv_index_and_sequence_number(void){
 }
 
 
