@@ -273,11 +273,6 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                 case MESH_SUBEVENT_PB_PROV_COMPLETE:
                     printf("Provisioning complete\n");
 
-                    // delete old data
-                    mesh_delete_network_keys();
-                    mesh_delete_app_keys();
-                    mesh_delete_appkey_lists();
-
                     // get provisioning data
                     memcpy(provisioning_data.device_key, provisioning_device_data_get_device_key(), 16);
                     provisioning_data.flags = provisioning_device_data_get_flags();
@@ -286,14 +281,9 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                     // set iv_index
                     mesh_set_iv_index(provisioning_device_data_get_iv_index());
 
-                    // get primary netkey
+                    // setup primary network with provisioned netkey
                     primary_network_key = provisioning_device_data_get_network_key();
-                    mesh_network_key_dump(primary_network_key);
-
-                    // add to network keys
                     mesh_network_key_add(primary_network_key);
-                    
-                    // setup primary network
                     mesh_subnet_setup_for_netkey_index(primary_network_key->netkey_index);
 
                     // setup after provisioned
@@ -312,6 +302,7 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
 
                     // dump data
                     mesh_provisioning_dump(&provisioning_data);
+                    mesh_network_key_dump(primary_network_key);
 
                     provisioned = 1;
 
@@ -721,7 +712,7 @@ int btstack_main(void)
 
     // Node Configuration
     mesh_node_init();
-    
+
     // Loc - bottom - https://www.bluetooth.com/specifications/assigned-numbers/gatt-namespace-descriptors
     mesh_node_set_primary_element_location(0x103);
 
