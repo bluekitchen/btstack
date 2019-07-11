@@ -720,7 +720,8 @@ int btstack_main(void)
     mesh_access_init();
 
     // Node Configuration
-
+    mesh_node_init();
+    
     // Loc - bottom - https://www.bluetooth.com/specifications/assigned-numbers/gatt-namespace-descriptors
     mesh_node_set_primary_element_location(0x103);
 
