@@ -49,6 +49,7 @@
 #include "btstack_tlv.h"
 #include "mesh_iv_index_seq_number.h"
 #include "mesh_proxy.h"
+#include "mesh_node.h"
 
 #define MEST_TRANSACTION_TIMEOUT_MS  6000
 
@@ -1755,12 +1756,15 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
 }
 
 void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
-    // set unicast address
+    // set unicast address - old
     mesh_network_set_primary_element_address(provisioning_data->unicast_address);
     mesh_lower_transport_set_primary_element_address(provisioning_data->unicast_address);
     mesh_upper_transport_set_primary_element_address(provisioning_data->unicast_address);
     mesh_access_set_primary_element_address(provisioning_data->unicast_address);
     primary_element_address = provisioning_data->unicast_address;
+    // set unicast address - new
+    mesh_node_primary_element_address_set(provisioning_data->unicast_address);
+
     // set device_key
     mesh_transport_set_device_key(provisioning_data->device_key);
     

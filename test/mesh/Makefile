@@ -19,6 +19,7 @@ CORE += \
 	hci_transport_h4.c \
 	btstack_tlv_posix.c \
 	mesh_iv_index_seq_number.c \
+	mesh_node.c \
 	le_device_db_fs.c \
 	l2cap.c \
 	uECC.c \
