@@ -75,8 +75,6 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-static uint16_t pb_transport_cid = MESH_PB_TRANSPORT_INVALID_CID;
-
 // pin entry
 static int ui_chars_for_pin; 
 static uint8_t ui_pin[17];
@@ -103,7 +101,11 @@ static mesh_generic_on_off_state_t  mesh_generic_on_off_state;
 //     printf("%20s: 0x%x", name, (int) value);
 // }
 
-static void mesh_network_key_dump(const mesh_network_key_t * key){
+static void mesh_provisioning_dump(const mesh_provisioning_data_t * data){
+    mesh_network_key_t * key = data->network_key;
+    printf("UnicastAddr:   0x%02x\n", data->unicast_address);
+    printf("DevKey:        "); printf_hexdump(data->device_key, 16);
+    printf("Flags:               0x%02x\n", data->flags);
     printf("NetKey:        "); printf_hexdump(key->net_key, 16);
     printf("-- Derived from NetKey --\n");
     printf("NID:           0x%02x\n", key->nid);
@@ -112,12 +114,6 @@ static void mesh_network_key_dump(const mesh_network_key_t * key){
     printf("EncryptionKey: "); printf_hexdump(key->encryption_key, 16);
     printf("PrivacyKey:    "); printf_hexdump(key->privacy_key, 16);
     printf("IdentityKey:   "); printf_hexdump(key->identity_key, 16);
-}
-
-static void mesh_provisioning_dump(const mesh_provisioning_data_t * data){
-    printf("UnicastAddr:   0x%02x\n", data->unicast_address);
-    printf("DevKey:        "); printf_hexdump(data->device_key, 16);
-    printf("Flags:               0x%02x\n", data->flags);
 }
 
 // helper network layer, temp
@@ -248,18 +244,15 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     mesh_provisioning_data_t provisioning_data;
-    mesh_network_key_t * primary_network_key;
-    mesh_subnet_t      * primary_subnet;
 
     switch(packet[0]){
         case HCI_EVENT_MESH_META:
             switch(packet[2]){
                 case MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN:
                     printf("Provisioner link opened");
-                    pb_transport_cid = mesh_subevent_pb_transport_link_open_get_pb_transport_cid(packet);
                     break;
                 case MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED:
-                    pb_transport_cid = MESH_PB_TRANSPORT_INVALID_CID;
+                    printf("Provisioner link close");
                     break;
                 case MESH_SUBEVENT_PB_PROV_ATTENTION_TIMER:
                     printf("Attention Timer: %u\n", packet[3]);
@@ -276,35 +269,19 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                     // get provisioning data
                     provisioning_device_data_get(&provisioning_data);
 
+                    // and store in TLV
+                    mesh_node_store_provisioning_data(&provisioning_data);
 
-                    // setup after provisioned
+                    // setup node after provisioned
                     mesh_access_setup_from_provisioning_data(&provisioning_data);
 
+                    // start advertising with node id after provisioning
+                    mesh_proxy_set_advertising_with_node_id(provisioning_data.network_key->netkey_index, MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING);
 
-                    // store provisioning data and primary network key in TLV
-                    mesh_node_store_provisioning_data();
-
-                    // store IV Index and sequence number
-                    mesh_store_iv_index_and_sequence_number();
-
-                    // store primary network key
-                    primary_network_key = provisioning_device_data_get_network_key();
-                    mesh_store_network_key(primary_network_key);
-
-
-                    // dump data
+                    // dump provisioning data
                     mesh_provisioning_dump(&provisioning_data);
-                    mesh_network_key_dump(primary_network_key);
 
                     provisioned = 1;
-
-                    // start advertising with node id after provisioning
-                    mesh_proxy_set_advertising_with_node_id(primary_network_key->netkey_index, MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING);
-
-                    // start sending Secure Network Beacons
-                    primary_subnet = mesh_subnet_get_by_netkey_index(0);
-                    beacon_secure_network_start(primary_subnet);
-
                     break;
                 default:
                     break;

@@ -371,6 +371,7 @@ void mesh_model_unbind_appkey(mesh_model_t * mesh_model, uint16_t appkey_index);
 int mesh_model_contains_appkey(mesh_model_t * mesh_model, uint16_t appkey_index);
 
 // Mesh IV Index and sequence number
+void mesh_store_iv_index_after_provisioning(uint32_t iv_index);
 void mesh_store_iv_index_and_sequence_number(void);
 void mesh_restore_iv_index_and_sequence_number(void);
 

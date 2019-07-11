@@ -1326,6 +1326,18 @@ static uint32_t sequence_number_storage_trigger;
 
 #define MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL 1000
 
+void mesh_store_iv_index_after_provisioning(uint32_t iv_index){
+    iv_index_and_sequence_number_t data;
+    mesh_access_setup_tlv();
+    uint32_t tag = mesh_tag_for_iv_index_and_seq_number();
+    data.iv_index   = iv_index;
+    data.seq_number = 0;
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+
+    sequence_number_last_stored = data.seq_number;
+    sequence_number_storage_trigger = sequence_number_last_stored + MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
+}
+
 void mesh_store_iv_index_and_sequence_number(void){
     iv_index_and_sequence_number_t data;
     mesh_access_setup_tlv();
@@ -1713,6 +1725,10 @@ void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * p
 
     // setup primary network
     mesh_subnet_setup_for_netkey_index(provisioning_data->network_key->netkey_index);
+
+    // start sending Secure Network Beacons
+    mesh_subnet_t * provisioned_subnet = mesh_subnet_get_by_netkey_index(provisioning_data->network_key->netkey_index);
+    beacon_secure_network_start(provisioned_subnet);
 
     // Mesh Proxy
 #ifdef ENABLE_MESH_PROXY_SERVER
