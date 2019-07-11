@@ -40,6 +40,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "mesh_generic_server.h"
+#include "mesh_generic_model.h"
 #include "btstack_util.h"
 #include "mesh_health_server.h"
 #include "mesh/mesh_network.h"
@@ -51,10 +52,10 @@
 #include "btstack_memory.h"
 #include "btstack_debug.h"
 
-static void health_server_send_message(uint16_t src, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, mesh_pdu_t *pdu){
+static void health_server_send_message(uint16_t src, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, mesh_pdu_t *pdu, uint32_t ack_opcode){
     uint8_t  ttl  = mesh_foundation_default_ttl_get();
     mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, 0);
-    mesh_upper_transport_send_access_pdu(pdu);
+    mesh_access_send_acknowledged_pdu(pdu, mesh_access_acknowledged_message_retransmissions(), ack_opcode);
 }
 // Health State
 const mesh_access_message_t mesh_foundation_health_period_status = {
@@ -64,15 +65,6 @@ const mesh_access_message_t mesh_foundation_health_period_status = {
 const mesh_access_message_t mesh_foundation_health_attention_status = {
         MESH_FOUNDATION_OPERATION_ATTENTION_STATUS, "1"
 };
-
-// typedef struct {
-//     // linked list item
-//     btstack_linked_item_t item;
-//     uint8_t  test_id;
-//     uint16_t company_id;
-//     uint16_t num_faults;
-//     uint8_t  faults[MESH_MAX_NUM_FAULTS];
-// } mesh_fault_t;
 
 static mesh_pdu_t * health_status(mesh_model_t * mesh_model, uint32_t opcode, uint16_t company_id){
     if (mesh_model->element == NULL){
@@ -88,7 +80,7 @@ static mesh_pdu_t * health_status(mesh_model_t * mesh_model, uint32_t opcode, ui
     if (!transport_pdu) return NULL;
 
     btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &state->faults);
+    btstack_linked_list_iterator_init(&it, &state->registered_faults);
     while (btstack_linked_list_iterator_has_next(&it)){
         mesh_fault_t * fault = (mesh_fault_t *) btstack_linked_list_iterator_next(&it);
         if (fault->company_id != company_id) continue;
@@ -106,22 +98,14 @@ static mesh_pdu_t * health_status(mesh_model_t * mesh_model, uint32_t opcode, ui
     return (mesh_pdu_t *) transport_pdu;
 }
 
-// static mesh_pdu_t * health_current_status(mesh_model_t * mesh_model){
-//     return health_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_CURRENT_STATUS);
-// }
-
-static mesh_pdu_t * mesh_health_fault_status_message(mesh_model_t * mesh_model, uint16_t cid){
-    return health_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS, cid);
-}
-
 static void health_fault_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     uint16_t cid = mesh_access_parser_get_u16(&parser);
 
-    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) mesh_health_fault_status_message(mesh_model, cid);
+    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS, cid);
     if (!transport_pdu) return;
-    health_server_send_message(mesh_access_get_element_address(mesh_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu);
+    health_server_send_message(mesh_access_get_element_address(mesh_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS);
     mesh_access_message_processed(pdu);
 }
 

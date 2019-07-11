@@ -178,10 +178,6 @@ typedef struct {
     uint8_t  faults[MESH_MAX_NUM_FAULTS];
 } mesh_fault_t;
 
-typedef struct {
-    btstack_linked_list_t faults;
-} mesh_health_state_t;
-
 typedef struct mesh_element {
     // linked list item
     btstack_linked_item_t item;

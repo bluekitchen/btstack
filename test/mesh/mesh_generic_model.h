@@ -85,6 +85,11 @@ typedef struct {
     mesh_transition_int16_t transition_data;       
 } mesh_generic_level_state_t;
 
+typedef struct {
+    btstack_linked_list_t current_faults;
+    btstack_linked_list_t registered_faults;
+} mesh_health_state_t;
+
 #ifdef __cplusplus
 } /* end of extern "C" */
 #endif
