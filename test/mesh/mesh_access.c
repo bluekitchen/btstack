@@ -1697,12 +1697,18 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
 }
 
 void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
+
+    // set iv_index and iv index update active
+    int iv_index_update_active = (provisioning_data->flags & 2) >> 1;
+    mesh_iv_index_recovered(iv_index_update_active, provisioning_data->iv_index);
+
     // set unicast address
     mesh_node_primary_element_address_set(provisioning_data->unicast_address);
 
     // set device_key
     mesh_transport_set_device_key(provisioning_data->device_key);
     
+
     // Mesh Proxy
 #ifdef ENABLE_MESH_PROXY_SERVER
     // Setup Proxy

@@ -276,9 +276,6 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                     // get provisioning data
                     provisioning_device_data_get(&provisioning_data);
 
-                    // set iv_index
-                    mesh_set_iv_index(provisioning_device_data_get_iv_index());
-
                     // setup primary network with provisioned netkey
                     primary_network_key = provisioning_device_data_get_network_key();
                     mesh_network_key_add(primary_network_key);

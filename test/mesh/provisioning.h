@@ -134,6 +134,9 @@ typedef struct {
     // Key Refresh Phase 0 vs. 2, IV Update Active
     uint8_t  flags;
 
+    // IV Index
+    uint32_t iv_index;
+
 } mesh_provisioning_data_t;
 
 #ifdef __cplusplus
