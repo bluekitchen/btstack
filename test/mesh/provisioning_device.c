@@ -900,3 +900,9 @@ uint32_t provisioning_device_data_get_iv_index(void){
 mesh_network_key_t * provisioning_device_data_get_network_key(void){
     return &network_key;
 }
+
+void provisioning_device_data_get(mesh_provisioning_data_t * provisioning_data){
+    provisioning_data->unicast_address = unicast_address;
+    provisioning_data->flags = flags;
+    memcpy(provisioning_data->device_key, device_key, 16);
+}

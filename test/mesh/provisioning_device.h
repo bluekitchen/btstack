@@ -108,7 +108,12 @@ void provisioning_device_input_oob_complete_numeric(uint16_t pb_adv_cid, uint32_
  */
 void provisioning_device_input_oob_complete_alphanumeric(uint16_t pb_adv_cid, const uint8_t * input_oob_data, uint16_t input_oob_len);
 
-// Query provisioning data
+/**
+ * @brief Get provisioning data after provisioning completed
+ * @param provisioning_data 
+ */
+void provisioning_device_data_get(mesh_provisioning_data_t * provisioning_data);
+
 uint16_t        provisioning_device_data_get_unicast_address(void);
 uint8_t         provisioning_device_data_get_flags(void);
 const uint8_t * provisioning_device_data_get_device_key(void);
