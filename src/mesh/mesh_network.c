@@ -72,7 +72,6 @@
 
 // globals
 
-static uint16_t mesh_network_num_elements;
 static void (*mesh_network_higher_layer_handler)(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu);
 static void (*mesh_network_proxy_message_handler)(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu);
 
@@ -385,7 +384,7 @@ void mesh_network_message_processed_by_higher_layer(mesh_network_pdu_t * network
     
     uint16_t mesh_network_primary_address = mesh_node_primary_element_address_get();
 
-    if (((src < mesh_network_primary_address) || (src > (mesh_network_primary_address + mesh_network_num_elements))) && (ttl >= 2)){
+    if (((src < mesh_network_primary_address) || (src > (mesh_network_primary_address + mesh_element_count()))) && (ttl >= 2)){
 
         if ((network_pdu->flags & MESH_NETWORK_PDU_FLAGS_GATT_BEARER) == 0){
 
@@ -834,7 +833,6 @@ void mesh_network_init(void){
     gatt_bearer_register_for_network_pdu(&mesh_network_gatt_bearer_handle_network_event);
     gatt_bearer_register_for_mesh_proxy_configuration(&mesh_netework_gatt_bearer_handle_proxy_configuration);
 #endif
-    mesh_network_num_elements = 1;
 }
 
 void mesh_network_set_higher_layer_handler(void (*packet_handler)(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu)){

@@ -99,6 +99,12 @@ mesh_element_t * mesh_primary_element(void);
 void mesh_element_add(mesh_element_t * element);
 
 /**
+ * @brief Get number elements
+ * @returns number of elements on this node
+ */
+uint16_t mesh_element_count(void);
+
+/**
  * @brief Get element for given unicast address
  * @param unicast_address
  */

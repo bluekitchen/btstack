@@ -67,6 +67,10 @@ void mesh_element_add(mesh_element_t * element){
     btstack_linked_list_add_tail(&mesh_elements, (void*) element);
 }
 
+uint16_t mesh_element_count(void){
+	return (uint16_t) btstack_linked_list_count(&mesh_elements);
+}
+
 mesh_element_t * mesh_primary_element(void){
     return &primary_element;
 }
