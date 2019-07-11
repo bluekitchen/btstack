@@ -45,6 +45,7 @@
 #include <stdint.h>
 #include "btstack_defines.h"
 #include "btstack_crypto.h"
+#include "mesh_keys.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -136,6 +137,9 @@ typedef struct {
 
     // IV Index
     uint32_t iv_index;
+
+    // Network Key (pass by reference)
+    mesh_network_key_t * network_key;
 
 } mesh_provisioning_data_t;
 

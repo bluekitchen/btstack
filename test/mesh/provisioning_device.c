@@ -119,7 +119,7 @@ static uint8_t enc_provisioning_data[25];
 static uint8_t provisioning_data[25];
 
 // received network_key
-static mesh_network_key_t network_key;
+static mesh_network_key_t * network_key;
 
 // DeviceKey
 static uint8_t device_key[16];
@@ -692,22 +692,25 @@ static void provisioning_handle_network_dervived(void * arg){
 
 static void provisioning_handle_data_device_key(void * arg){
     // derive full network key
-    mesh_network_key_derive(&prov_cmac_request, &network_key, &provisioning_handle_network_dervived, NULL);
+    mesh_network_key_derive(&prov_cmac_request, network_key, &provisioning_handle_network_dervived, NULL);
 }
 
 static void provisioning_handle_data_ccm(void * arg){
 
     UNUSED(arg);
 
-    // validate MIC?
+    // TODO: validate MIC?
     uint8_t mic[8];
     btstack_crypto_ccm_get_authentication_value(&prov_ccm_request, mic);
     printf("MIC: ");
     printf_hexdump(mic, 8);
 
+    // allocate network key
+    network_key = btstack_memory_mesh_network_key_get();
+
     // sort provisoning data
-    memcpy(network_key.net_key, provisioning_data, 16);
-    network_key.netkey_index = big_endian_read_16(provisioning_data, 16);
+    memcpy(network_key->net_key, provisioning_data, 16);
+    network_key->netkey_index = big_endian_read_16(provisioning_data, 16);
     flags = provisioning_data[18];
     iv_index = big_endian_read_32(provisioning_data, 19);
     unicast_address = big_endian_read_16(provisioning_data, 23);
@@ -898,7 +901,7 @@ uint32_t provisioning_device_data_get_iv_index(void){
     return iv_index;
 }
 mesh_network_key_t * provisioning_device_data_get_network_key(void){
-    return &network_key;
+    return network_key;
 }
 
 void provisioning_device_data_get(mesh_provisioning_data_t * provisioning_data){
@@ -906,4 +909,5 @@ void provisioning_device_data_get(mesh_provisioning_data_t * provisioning_data){
     provisioning_data->iv_index = iv_index;
     provisioning_data->flags = flags;
     memcpy(provisioning_data->device_key, device_key, 16);
+    provisioning_data->network_key = network_key;
 }

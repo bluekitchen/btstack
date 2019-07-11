@@ -139,6 +139,11 @@ void pb_adv_send_pdu(uint16_t pb_transport_cid, const uint8_t * pdu, uint16_t si
 }
 void pb_gatt_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t pdu_size){}
  
+static mesh_network_key_t network_key; 
+mesh_network_key_t * btstack_memory_mesh_network_key_get(void){
+    return &network_key;
+}
+
 static void perform_crypto_operations(void){
     int more = 1;
     while (more){

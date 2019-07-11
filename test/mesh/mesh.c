@@ -276,10 +276,6 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                     // get provisioning data
                     provisioning_device_data_get(&provisioning_data);
 
-                    // setup primary network with provisioned netkey
-                    primary_network_key = provisioning_device_data_get_network_key();
-                    mesh_network_key_add(primary_network_key);
-                    mesh_subnet_setup_for_netkey_index(primary_network_key->netkey_index);
 
                     // setup after provisioned
                     mesh_access_setup_from_provisioning_data(&provisioning_data);
@@ -292,6 +288,7 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                     mesh_store_iv_index_and_sequence_number();
 
                     // store primary network key
+                    primary_network_key = provisioning_device_data_get_network_key();
                     mesh_store_network_key(primary_network_key);
 
 
