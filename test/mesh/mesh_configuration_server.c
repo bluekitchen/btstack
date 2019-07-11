@@ -2292,17 +2292,23 @@ typedef struct {
 
 } mesh_persistent_provisioning_data_t;
 
-void mesh_node_store_provisioning_data(void){
+void mesh_node_store_provisioning_data(mesh_provisioning_data_t * provisioning_data){
 
-    // fill prov data
+    // fill persistent prov data
     mesh_persistent_provisioning_data_t persistent_provisioning_data;
 
-    persistent_provisioning_data.unicast_address = mesh_node_get_primary_element_address();
-    memcpy(persistent_provisioning_data.device_key, mesh_transport_key_get(MESH_DEVICE_KEY_INDEX), 16);
+    persistent_provisioning_data.unicast_address = provisioning_data->unicast_address;
+    memcpy(persistent_provisioning_data.device_key, provisioning_data->device_key, 16);
 
     // store in tlv
     btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
     btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &persistent_provisioning_data, sizeof(mesh_persistent_provisioning_data_t));
+
+    // store IV Index and sequence number
+    mesh_store_iv_index_after_provisioning(provisioning_data->iv_index);
+
+    // store primary network key
+    mesh_store_network_key(provisioning_data->network_key);
 }
 
 int mesh_node_startup_from_tlv(void){
