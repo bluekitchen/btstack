@@ -80,41 +80,42 @@ void mesh_node_primary_element_address_set(uint16_t unicast_address);
  * @note Returned by Configuration Server Composite Data
  * @param location
  */
-void mesh_access_set_primary_element_location(uint16_t location);
+void mesh_node_set_primary_element_location(uint16_t location);
 
 /**
  * @brief Get unicast address of primary element
  */
-uint16_t mesh_node_primary_element_address_get(void);
+uint16_t mesh_node_get_primary_element_address(void);
 
 /**
  * @brief Get Primary Element of this node
  */
-mesh_element_t * mesh_primary_element(void);
+mesh_element_t * mesh_node_get_primary_element(void);
 
 /**
  * @brief Add secondary element
  * @param element
  */
-void mesh_element_add(mesh_element_t * element);
+void mesh_node_add_element(mesh_element_t * element);
 
 /**
  * @brief Get number elements
  * @returns number of elements on this node
  */
-uint16_t mesh_element_count(void);
+uint16_t mesh_node_element_count(void);
 
 /**
  * @brief Get element for given unicast address
  * @param unicast_address
  */
-mesh_element_t * mesh_element_for_unicast_address(uint16_t unicast_address);
+mesh_element_t * mesh_node_element_for_unicast_address(uint16_t unicast_address);
 
 /**
  * @brief Get element by index
  * @param element_index
  */
-mesh_element_t * mesh_element_for_index(uint16_t element_index);
+mesh_element_t * mesh_node_element_for_index(uint16_t element_index);
+
 
 // Mesh Element Iterator
 

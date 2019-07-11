@@ -382,9 +382,9 @@ void mesh_network_message_processed_by_higher_layer(mesh_network_pdu_t * network
     uint16_t src     = mesh_network_src(network_pdu);
     uint8_t  ttl     = mesh_network_ttl(network_pdu);
     
-    uint16_t mesh_network_primary_address = mesh_node_primary_element_address_get();
+    uint16_t mesh_network_primary_address = mesh_node_get_primary_element_address();
 
-    if (((src < mesh_network_primary_address) || (src > (mesh_network_primary_address + mesh_element_count()))) && (ttl >= 2)){
+    if (((src < mesh_network_primary_address) || (src > (mesh_network_primary_address + mesh_node_element_count()))) && (ttl >= 2)){
 
         if ((network_pdu->flags & MESH_NETWORK_PDU_FLAGS_GATT_BEARER) == 0){
 

@@ -167,7 +167,7 @@ static void mesh_access_acknowledged_run(btstack_timer_source_t * ts){
                 // find correct model and emit error
                 uint16_t src = mesh_pdu_src(pdu);
                 uint16_t dst = mesh_pdu_dst(pdu);
-                mesh_element_t * element = mesh_element_for_unicast_address(src);
+                mesh_element_t * element = mesh_node_element_for_unicast_address(src);
                 if (element){
                     // find
                     mesh_model_iterator_t model_it;
@@ -398,7 +398,7 @@ uint8_t mesh_access_get_element_index(mesh_model_t * mesh_model){
 }
 
 uint16_t mesh_access_get_element_address(mesh_model_t * mesh_model){
-    return mesh_node_primary_element_address_get() + mesh_model->element->element_index;
+    return mesh_node_get_primary_element_address() + mesh_model->element->element_index;
 }
 
 // Model Identifier utilities
@@ -424,7 +424,7 @@ int mesh_model_is_bluetooth_sig(uint32_t model_identifier){
 }
 
 mesh_model_t * mesh_model_get_configuration_server(void){
-    return mesh_model_get_by_identifier(mesh_primary_element(), mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_CONFIGURATION_SERVER));
+    return mesh_model_get_by_identifier(mesh_node_get_primary_element(), mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_CONFIGURATION_SERVER));
 }
 
 void mesh_element_add_model(mesh_element_t * element, mesh_model_t * mesh_model){
@@ -462,7 +462,7 @@ mesh_model_t * mesh_model_get_by_identifier(mesh_element_t * element, uint32_t m
 }
 
 mesh_model_t * mesh_access_model_for_address_and_model_identifier(uint16_t element_address, uint32_t model_identifier, uint8_t * status){
-    mesh_element_t * element = mesh_element_for_unicast_address(element_address);
+    mesh_element_t * element = mesh_node_element_for_unicast_address(element_address);
     if (element == NULL){
         *status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
         return NULL;
@@ -900,7 +900,7 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
     uint16_t appkey_index = mesh_pdu_appkey_index(pdu);
     if (mesh_network_address_unicast(dst)){
         // loookup element by unicast address
-        mesh_element_t * element = mesh_element_for_unicast_address(dst);
+        mesh_element_t * element = mesh_node_element_for_unicast_address(dst);
         if (element != NULL){
             // iterate over models, look for operation
             mesh_model_iterator_t model_it;
@@ -944,7 +944,7 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
             }
             if (deliver_to_primary_element){
                 mesh_model_iterator_t model_it;
-                mesh_model_iterator_init(&model_it, mesh_primary_element());
+                mesh_model_iterator_init(&model_it, mesh_node_get_primary_element());
                 while (mesh_model_iterator_has_next(&model_it)){
                     mesh_model_t * model = mesh_model_iterator_next(&model_it);
                     // find opcode in table

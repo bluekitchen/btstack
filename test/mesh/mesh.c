@@ -718,30 +718,33 @@ int btstack_main(void)
 
     // Access layer
     mesh_access_init();
+
+    // Node Configuration
+
     // Loc - bottom - https://www.bluetooth.com/specifications/assigned-numbers/gatt-namespace-descriptors
-    mesh_access_set_primary_element_location(0x103);
+    mesh_node_set_primary_element_location(0x103);
 
     // Setup models
     mesh_configuration_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_CONFIGURATION_SERVER);
     mesh_model_reset_appkeys(&mesh_configuration_server_model);
     mesh_configuration_server_model.model_data = &mesh_configuration_server_model_context;
     mesh_configuration_server_model.operations = mesh_configuration_server_get_operations();    
-    mesh_element_add_model(mesh_primary_element(), &mesh_configuration_server_model);
+    mesh_element_add_model(mesh_node_get_primary_element(), &mesh_configuration_server_model);
 
     mesh_health_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_HEALTH_SERVER);
     mesh_model_reset_appkeys(&mesh_health_server_model);
-    mesh_element_add_model(mesh_primary_element(), &mesh_health_server_model);
+    mesh_element_add_model(mesh_node_get_primary_element(), &mesh_health_server_model);
 
     mesh_generic_on_off_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_GENERIC_ON_OFF_SERVER);
     mesh_model_reset_appkeys(&mesh_generic_on_off_server_model);
     mesh_generic_on_off_server_model.operations = mesh_generic_on_off_server_get_operations();    
-    mesh_element_add_model(mesh_primary_element(), &mesh_generic_on_off_server_model);
+    mesh_element_add_model(mesh_node_get_primary_element(), &mesh_generic_on_off_server_model);
     mesh_generic_on_off_server_model.model_data = (void *) &mesh_generic_on_off_state;
     mesh_generic_on_off_server_register_packet_handler(&mesh_generic_on_off_server_model, &mesh_state_update_message_handler);
 
     mesh_vendor_model.model_identifier = mesh_model_get_model_identifier(BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, MESH_BLUEKITCHEN_MODEL_ID_TEST_SERVER);
     mesh_model_reset_appkeys(&mesh_vendor_model);
-    mesh_element_add_model(mesh_primary_element(), &mesh_vendor_model);
+    mesh_element_add_model(mesh_node_get_primary_element(), &mesh_vendor_model);
     
     // Enable PROXY
     mesh_foundation_gatt_proxy_set(1);

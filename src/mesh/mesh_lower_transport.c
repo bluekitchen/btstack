@@ -188,7 +188,7 @@ static void mesh_lower_transport_send_ack(uint16_t netkey_index, uint8_t ttl, ui
     if (!network_pdu) return;
 
     // setup network_pdu
-    mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, 1, ttl, mesh_sequence_number_next(), mesh_node_primary_element_address_get(), dest, ack_msg, sizeof(ack_msg));
+    mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, 1, ttl, mesh_sequence_number_next(), mesh_node_get_primary_element_address(), dest, ack_msg, sizeof(ack_msg));
 
     // send network_pdu
     mesh_network_send_pdu(network_pdu);
@@ -200,7 +200,7 @@ static void mesh_lower_transport_send_ack_for_transport_pdu(mesh_transport_pdu_t
     uint16_t dest = mesh_transport_src(transport_pdu);
     uint16_t netkey_index = transport_pdu->netkey_index;
     printf("mesh_transport_send_ack_for_transport_pdu %p with netkey_index %x, TTL = %u, SeqZero = %x, SRC = %x, DST = %x\n",
-           transport_pdu, netkey_index, ttl, seq_zero, mesh_node_primary_element_address_get(), dest);
+           transport_pdu, netkey_index, ttl, seq_zero, mesh_node_get_primary_element_address(), dest);
     mesh_lower_transport_send_ack(netkey_index, ttl, dest, seq_zero, transport_pdu->block_ack);
 }
 
@@ -209,7 +209,7 @@ static void mesh_lower_transport_send_ack_for_network_pdu(mesh_network_pdu_t *ne
     uint16_t dest = mesh_network_src(network_pdu);
     uint16_t netkey_index = network_pdu->netkey_index;
     printf("mesh_transport_send_ack_for_network_pdu %p with netkey_index %x, TTL = %u, SeqZero = %x, SRC = %x, DST = %x\n",
-           network_pdu, netkey_index, ttl, seq_zero, mesh_node_primary_element_address_get(), dest);
+           network_pdu, netkey_index, ttl, seq_zero, mesh_node_get_primary_element_address(), dest);
     mesh_lower_transport_send_ack(netkey_index, ttl, dest, seq_zero, block_ack);
 }
 

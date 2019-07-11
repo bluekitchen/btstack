@@ -43,6 +43,7 @@
 #include "mesh/mesh_lower_transport.h"
 #include "mesh_keys.h"
 #include "bluetooth_company_id.h"
+#include "mesh/mesh_node.h"
 
 #ifdef __cplusplus
 extern "C"
