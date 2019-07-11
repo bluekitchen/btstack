@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "gap_dedicated_bonding.c"
+#define BTSTACK_FILE__ "gap_dedicated_bonding.c"
 
 #include <stdint.h>
 #include <stdio.h>

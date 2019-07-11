@@ -42,8 +42,8 @@
  *
  */
 
-#ifndef __HAL_TICK_H
-#define __HAL_TICK_H
+#ifndef HAL_TICK_H
+#define HAL_TICK_H
 
 #include <stdint.h>
 
@@ -58,4 +58,4 @@ int  hal_tick_get_tick_period_in_ms(void);
 #if defined __cplusplus
 }
 #endif
-#endif // __HAL_TICK_H
+#endif // HAL_TICK_H

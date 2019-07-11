@@ -3,8 +3,8 @@
  * https://www.bluetooth.com/specifications/assigned-numbers/generic-access-profile
  */
 
-#ifndef __BLUETOOTH_DATA_TYPES_H
-#define __BLUETOOTH_DATA_TYPES_H
+#ifndef BLUETOOTH_DATA_TYPES_H
+#define BLUETOOTH_DATA_TYPES_H
 
 #define BLUETOOTH_DATA_TYPE_FLAGS                                              0x01 // Flags
 #define BLUETOOTH_DATA_TYPE_INCOMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS      0x02 // Incomplete List of 16-bit Service Class UUIDs

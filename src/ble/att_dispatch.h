@@ -40,8 +40,8 @@
  * Dispatcher for independent implementation of ATT client and server
  */
 
-#ifndef __ATT_DISPATCH_H
-#define __ATT_DISPATCH_H
+#ifndef ATT_DISPATCH_H
+#define ATT_DISPATCH_H
 
 #include "btstack_util.h"
 
@@ -107,4 +107,4 @@ void att_dispatch_client_mtu_exchanged(hci_con_handle_t con_handle, uint16_t new
 }
 #endif
 
-#endif // __ATT_DISPATCH_H
+#endif // ATT_DISPATCH_H

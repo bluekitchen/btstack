@@ -35,14 +35,13 @@
  *
  */
 
-#define __BTSTACK_FILE__ "le_device_db_tlv.c"
+#define BTSTACK_FILE__ "le_device_db_tlv.c"
  
 #include "ble/le_device_db.h"
 #include "ble/le_device_db_tlv.h"
 
 #include "ble/core.h"
 
-#include <stdio.h>
 #include <string.h>
 #include "btstack_debug.h"
 
@@ -67,9 +66,11 @@ typedef struct le_device_db_entry_t {
     sm_key_t ltk;
     uint16_t ediv;
     uint8_t  rand[8];
+
     uint8_t  key_size;
     uint8_t  authenticated;
     uint8_t  authorized;
+    uint8_t  secure_connection;
 
 #ifdef ENABLE_LE_SIGNED_WRITE
     // Signed Writes by remote
@@ -110,6 +111,7 @@ static uint32_t le_device_db_tlv_tag_for_index(uint8_t index){
 // @returns success
 // @param index = entry_pos
 static int le_device_db_tlv_fetch(int index, le_device_db_entry_t * entry){
+    if (!le_device_db_tlv_btstack_tlv_impl) return 0;
     if (index < 0 || index >= NVM_NUM_DEVICE_DB_ENTRIES){
 	    log_error("le_device_db_tlv_fetch called with invalid index %d", index);
 	    return 0;
@@ -122,6 +124,7 @@ static int le_device_db_tlv_fetch(int index, le_device_db_entry_t * entry){
 // @returns success
 // @param index = entry_pos
 static int le_device_db_tlv_store(int index, le_device_db_entry_t * entry){
+    if (!le_device_db_tlv_btstack_tlv_impl) return 0;
     if (index < 0 || index >= NVM_NUM_DEVICE_DB_ENTRIES){
 	    log_error("le_device_db_tlv_store called with invalid index %d", index);
 	    return 0;
@@ -133,6 +136,7 @@ static int le_device_db_tlv_store(int index, le_device_db_entry_t * entry){
 
 // @param index = entry_pos
 static int le_device_db_tlv_delete(int index){
+    if (!le_device_db_tlv_btstack_tlv_impl) return 0;
     if (index < 0 || index >= NVM_NUM_DEVICE_DB_ENTRIES){
 	    log_error("le_device_db_tlv_delete called with invalid index %d", index);
 	    return 0;
@@ -158,6 +162,9 @@ static void le_device_db_tlv_scan(void){
 }
 
 void le_device_db_init(void){
+    if (!le_device_db_tlv_btstack_tlv_impl) {
+        log_error("btstack_tlv not initialized");
+    }
 }
 
 // not used
@@ -191,7 +198,7 @@ void le_device_db_remove(int index){
 int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
 
     uint32_t highest_seq_nr = 0;
-    uint32_t lowest_seq_nr  = 0;
+    uint32_t lowest_seq_nr  = 0xFFFFFFFF;
     int index_for_lowest_seq_nr = -1;
     int index_for_addr  = -1;
     int index_for_empty = -1;
@@ -211,7 +218,7 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
                 highest_seq_nr = entry.seq_nr;
             }
             // find entry with lowest seq nr
-            if ((index_for_lowest_seq_nr == 0) || (entry.seq_nr < lowest_seq_nr)){
+            if ((index_for_lowest_seq_nr == -1) || (entry.seq_nr < lowest_seq_nr)){
                 index_for_lowest_seq_nr = i;
                 lowest_seq_nr = entry.seq_nr;
             }
@@ -246,7 +253,8 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     entry.addr_type = addr_type;
     memcpy(entry.addr, addr, 6);
     memcpy(entry.irk, irk, 16);
-#ifdef ENABLE_LE_SIGNED_WRITE
+    entry.seq_nr = highest_seq_nr + 1;
+ #ifdef ENABLE_LE_SIGNED_WRITE
     entry.remote_counter = 0; 
 #endif
 
@@ -269,16 +277,22 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
 void le_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t irk){
 
 	// fetch entry
-	le_device_db_entry_t entry;
-	int ok = le_device_db_tlv_fetch(index, &entry);
-	if (!ok) return;
+    le_device_db_entry_t entry;
+    int ok = le_device_db_tlv_fetch(index, &entry);
 
+    // set defaults if not found
+    if (!ok) {
+        memset(&entry, 0, sizeof(le_device_db_entry_t));
+        entry.addr_type = BD_ADDR_TYPE_UNKNOWN;
+    }
+
+    // setup return values
     if (addr_type) *addr_type = entry.addr_type;
     if (addr) memcpy(addr, entry.addr, 6);
     if (irk) memcpy(irk, entry.irk, 16);
 }
 
-void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_key_t ltk, int key_size, int authenticated, int authorized){
+void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_key_t ltk, int key_size, int authenticated, int authorized, int secure_connection){
 
 	// fetch entry
 	le_device_db_entry_t entry;
@@ -286,20 +300,21 @@ void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_k
 	if (!ok) return;
 
 	// update
-    log_info("LE Device DB set encryption for %u, ediv x%04x, key size %u, authenticated %u, authorized %u",
-        index, ediv, key_size, authenticated, authorized);
+    log_info("LE Device DB set encryption for %u, ediv x%04x, key size %u, authenticated %u, authorized %u, secure connection %u",
+        index, ediv, key_size, authenticated, authorized, secure_connection);
     entry.ediv = ediv;
     if (rand) memcpy(entry.rand, rand, 8);
     if (ltk) memcpy(entry.ltk, ltk, 16);
     entry.key_size = key_size;
     entry.authenticated = authenticated;
     entry.authorized = authorized;
+    entry.secure_connection = secure_connection;
 
     // store
     le_device_db_tlv_store(index, &entry);
 }
 
-void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk, int * key_size, int * authenticated, int * authorized){
+void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk, int * key_size, int * authenticated, int * authorized, int * secure_connection){
 
 	// fetch entry
 	le_device_db_entry_t entry;
@@ -307,14 +322,15 @@ void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm
 	if (!ok) return;
 
 	// update user fields
-    log_info("LE Device DB encryption for %u, ediv x%04x, keysize %u, authenticated %u, authorized %u",
-        index, entry.ediv, entry.key_size, entry.authenticated, entry.authorized);
+    log_info("LE Device DB encryption for %u, ediv x%04x, keysize %u, authenticated %u, authorized %u, secure connection %u",
+        index, entry.ediv, entry.key_size, entry.authenticated, entry.authorized, entry.secure_connection);
     if (ediv) *ediv = entry.ediv;
     if (rand) memcpy(rand, entry.rand, 8);
     if (ltk)  memcpy(ltk, entry.ltk, 16);    
     if (key_size) *key_size = entry.key_size;
     if (authenticated) *authenticated = entry.authenticated;
     if (authorized) *authorized = entry.authorized;
+    if (secure_connection) *secure_connection = entry.secure_connection;
 }
 
 #ifdef ENABLE_LE_SIGNED_WRITE

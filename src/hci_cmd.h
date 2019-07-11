@@ -41,8 +41,8 @@
  *  Created by Matthias Ringwald on 7/23/09.
  */
 
-#ifndef __HCI_CMDS_H
-#define __HCI_CMDS_H
+#ifndef HCI_CMDS_H
+#define HCI_CMDS_H
 
 #include "bluetooth.h"
 #include "btstack_defines.h"
@@ -97,6 +97,7 @@ extern const hci_cmd_t hci_disconnect;
 extern const hci_cmd_t hci_enable_device_under_test_mode;
 extern const hci_cmd_t hci_enhanced_accept_synchronous_connection;
 extern const hci_cmd_t hci_enhanced_setup_synchronous_connection;
+extern const hci_cmd_t hci_exit_sniff_mode;
 extern const hci_cmd_t hci_flush;
 extern const hci_cmd_t hci_host_buffer_size;
 extern const hci_cmd_t hci_inquiry;
@@ -123,6 +124,7 @@ extern const hci_cmd_t hci_read_local_version_information;
 extern const hci_cmd_t hci_read_loopback_mode;
 extern const hci_cmd_t hci_read_num_broadcast_retransmissions;
 extern const hci_cmd_t hci_read_remote_supported_features_command;
+extern const hci_cmd_t hci_read_remote_version_information;
 extern const hci_cmd_t hci_read_rssi;
 extern const hci_cmd_t hci_reject_connection_request;
 extern const hci_cmd_t hci_remote_name_request;
@@ -143,12 +145,13 @@ extern const hci_cmd_t hci_user_passkey_request_negative_reply;
 extern const hci_cmd_t hci_user_passkey_request_reply;
 extern const hci_cmd_t hci_write_authentication_enable;
 extern const hci_cmd_t hci_write_class_of_device;
+extern const hci_cmd_t hci_write_current_iac_lap_two_iacs;
 extern const hci_cmd_t hci_write_default_erroneous_data_reporting;
+extern const hci_cmd_t hci_write_default_link_policy_setting;
 extern const hci_cmd_t hci_write_extended_inquiry_response;
 extern const hci_cmd_t hci_write_inquiry_mode;
 extern const hci_cmd_t hci_write_le_host_supported;
 extern const hci_cmd_t hci_write_link_policy_settings;
-extern const hci_cmd_t hci_write_default_link_policy_setup;
 extern const hci_cmd_t hci_write_link_supervision_timeout;
 extern const hci_cmd_t hci_write_local_name;
 extern const hci_cmd_t hci_write_loopback_mode;
@@ -175,21 +178,24 @@ extern const hci_cmd_t hci_le_read_buffer_size ;
 extern const hci_cmd_t hci_le_read_channel_map;
 extern const hci_cmd_t hci_le_read_local_p256_public_key;
 extern const hci_cmd_t hci_le_read_maximum_data_length;
+extern const hci_cmd_t hci_le_read_phy;
 extern const hci_cmd_t hci_le_read_remote_used_features;
 extern const hci_cmd_t hci_le_read_suggested_default_data_length;
 extern const hci_cmd_t hci_le_read_supported_features;
 extern const hci_cmd_t hci_le_read_supported_states;
 extern const hci_cmd_t hci_le_read_white_list_size;
 extern const hci_cmd_t hci_le_receiver_test;
-extern const hci_cmd_t hci_le_remote_connection_parameter_request_reply;
 extern const hci_cmd_t hci_le_remote_connection_parameter_request_negative_reply;
+extern const hci_cmd_t hci_le_remote_connection_parameter_request_reply;
 extern const hci_cmd_t hci_le_remove_device_from_white_list;
 extern const hci_cmd_t hci_le_set_advertise_enable;
 extern const hci_cmd_t hci_le_set_advertising_data;
 extern const hci_cmd_t hci_le_set_advertising_parameters;
 extern const hci_cmd_t hci_le_set_data_length;
+extern const hci_cmd_t hci_le_set_default_phy;
 extern const hci_cmd_t hci_le_set_event_mask;
 extern const hci_cmd_t hci_le_set_host_channel_classification;
+extern const hci_cmd_t hci_le_set_phy;
 extern const hci_cmd_t hci_le_set_random_address;
 extern const hci_cmd_t hci_le_set_scan_enable;
 extern const hci_cmd_t hci_le_set_scan_parameters;
@@ -201,6 +207,7 @@ extern const hci_cmd_t hci_le_write_suggested_default_data_length;
 
 // Broadcom / Cypress specific HCI commands
 extern const hci_cmd_t hci_bcm_write_sco_pcm_int;
+extern const hci_cmd_t hci_bcm_set_sleep_mode;
 
 /**
  * construct HCI Command based on template
@@ -223,4 +230,4 @@ extern const hci_cmd_t hci_bcm_write_sco_pcm_int;
 }
 #endif
 
-#endif // __HCI_CMDS_H
+#endif // HCI_CMDS_H

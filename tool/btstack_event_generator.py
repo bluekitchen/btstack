@@ -9,31 +9,33 @@ import os
 import btstack_parser as parser
 
 meta_events = [
+    'A2DP',
     'ANCS',
     'AVDTP',
-    'A2DP',
     'AVRCP',
+    'GATTSERVICE',
     'GOEP',
     'HFP',
-    'HSP',
-    'PBAP',
-    'LE',
     'HID',
     'HIDS',
+    'HSP',
+    'LE',
+    'MAP',
+    'PBAP',
 ]
 
 supported_event_groups = meta_events + [
+    'ATT',
+    'BNEP',
     'BTSTACK',
     'GAP',
+    'GATT',
     'HCI',
-    'SDP',
-    'SM',
+    'HID',
     'L2CAP',
     'RFCOMM',
-    'GATT',
-    'BNEP',
-    'ATT',
-    'HID',
+    'SDP',
+    'SM'
 ]
 
 program_info = '''
@@ -89,8 +91,8 @@ hfile_header_begin = """
  *
  */
 
-#ifndef __BTSTACK_EVENT_H
-#define __BTSTACK_EVENT_H
+#ifndef BTSTACK_EVENT_H
+#define BTSTACK_EVENT_H
 
 #if defined __cplusplus
 extern "C" {
@@ -124,7 +126,7 @@ hfile_header_end = """
 }
 #endif
 
-#endif // __BTSTACK_EVENT_H
+#endif // BTSTACK_EVENT_H
 """
 
 c_prototoype_simple_return = '''/**
@@ -201,7 +203,7 @@ def c_type_for_btstack_type(type):
     param_types = { '1' : 'uint8_t', '2' : 'uint16_t', '3' : 'uint32_t', '4' : 'uint32_t', 'H' : 'hci_con_handle_t', 'B' : 'bd_addr_t',
                     'D' : 'const uint8_t *', 'E' : 'const uint8_t * ', 'N' : 'const char *' , 'P' : 'const uint8_t *', 'A' : 'const uint8_t *',
                     'R' : 'const uint8_t *', 'S' : 'const uint8_t *',
-                    'J' : 'int', 'L' : 'int', 'V' : 'const uint8_t *', 'U' : 'BT_UUID',
+                    'J' : 'uint8_t', 'L' : 'uint16_t', 'V' : 'const uint8_t *', 'U' : 'BT_UUID',
                     'Q' : 'uint8_t *',
                     'X' : 'gatt_client_service_t *', 'Y' : 'gatt_client_characteristic_t *', 'Z' : 'gatt_client_characteristic_descriptor_t *',
                     'T' : 'const char *'}

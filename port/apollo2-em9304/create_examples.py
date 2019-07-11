@@ -43,7 +43,7 @@ apps_btstack = am_root + "/boards/apollo2_evb_am_ble/examples/"
 
 print("Creating examples in /boards/apollo2_evb_am_ble/examples:")
 
-LE_EXAMPLES = ["ancs_client_demo", "gap_le_advertisements", "gatt_battery_query", "gatt_browser", "le_counter", "le_streamer", "le_streamer_client", "sm_pairing_peripheral", "sm_pairing_central"]
+LE_EXAMPLES = ["ancs_client_demo", "gap_le_advertisements", "gatt_battery_query", "gatt_browser", "gatt_counter", "gatt_streamer", "le_streamer_client", "sm_pairing_peripheral", "sm_pairing_central"]
 
 # iterate over btstack examples
 for example in LE_EXAMPLES:

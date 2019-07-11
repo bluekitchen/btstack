@@ -41,8 +41,8 @@
  */
 
 
-#ifndef __BTSTACK_H
-#define __BTSTACK_H
+#ifndef BTSTACK_H
+#define BTSTACK_H
 
 #include "btstack_config.h"
 
@@ -52,6 +52,7 @@
 #include "bluetooth_data_types.h"
 #include "bluetooth_gatt.h"
 #include "bluetooth_sdp.h"
+#include "btstack_audio.h"
 #include "btstack_control.h"
 #include "btstack_debug.h"
 #include "btstack_defines.h"
@@ -78,12 +79,18 @@
 #include "ble/att_db_util.h"
 #include "ble/att_dispatch.h"
 #include "ble/att_server.h"
+#include "ble/gatt-service/battery_service_server.h"
+#include "ble/gatt-service/cycling_power_service_server.h"
+#include "ble/gatt-service/cycling_speed_and_cadence_service_server.h"
+#include "ble/gatt-service/device_information_service_server.h"
+#include "ble/gatt-service/heart_rate_service_server.h"
+#include "ble/gatt-service/hids_device.h"
 #include "ble/gatt_client.h"
 #include "ble/le_device_db.h"
 #include "ble/sm.h"
 #endif
 
-// #ifdef ENABLE_CLASSIC
+#ifdef ENABLE_CLASSIC
 #include "classic/a2dp_sink.h"
 #include "classic/a2dp_source.h"
 #include "classic/avdtp.h"
@@ -102,6 +109,7 @@
 #include "classic/btstack_link_key_db.h"
 #include "classic/btstack_sbc.h"
 #include "classic/device_id_server.h"
+#include "classic/gatt_sdp.h"
 #include "classic/hfp.h"
 #include "classic/hfp_ag.h"
 #include "classic/hfp_hf.h"
@@ -115,7 +123,7 @@
 #include "classic/sdp_server.h"
 #include "classic/sdp_util.h"
 #include "classic/spp_server.h"
-// #endif
+#endif
 
-#endif  // __BTSTACK_H
+#endif  // BTSTACK_H
  

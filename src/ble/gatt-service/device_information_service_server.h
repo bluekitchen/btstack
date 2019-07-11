@@ -34,8 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
-#ifndef __DEVICE_INFORMATION_SERVICE_SERVER_H
-#define __DEVICE_INFORMATION_SERVICE_SERVER_H
+#ifndef DEVICE_INFORMATION_SERVICE_SERVER_H
+#define DEVICE_INFORMATION_SERVICE_SERVER_H
 
 #include <stdint.h>
 

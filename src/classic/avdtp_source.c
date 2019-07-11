@@ -36,7 +36,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "avdtp_source.c"
+#define BTSTACK_FILE__ "avdtp_source.c"
 
 
 #include <stdint.h>

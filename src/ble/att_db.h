@@ -36,12 +36,13 @@
  */
 
 
-#ifndef __ATT_H
-#define __ATT_H
+#ifndef ATT_H
+#define ATT_H
 
 #include <stdint.h>
 #include "bluetooth.h"
 #include "btstack_linked_list.h"
+#include "btstack_defines.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -53,9 +54,13 @@ extern "C" {
 // custom BTstack ATT error codes
 #define ATT_ERROR_DATA_MISMATCH                   0x7e
 #define ATT_ERROR_TIMEOUT                         0x7F
+#define ATT_ERROR_WRITE_RESPONSE_PENDING         0x100
 
-// custom BTstack ATT Response Pending 
+// custom BTstack ATT Response Pending for att_read_callback
 #define ATT_READ_RESPONSE_PENDING                 0xffff
+
+// internally used to signal write response pending
+#define ATT_INTERNAL_WRITE_RESPONSE_PENDING       0xfffe
 
 typedef struct att_connection {
     hci_con_handle_t con_handle;
@@ -64,6 +69,7 @@ typedef struct att_connection {
     uint8_t  encryption_key_size;
     uint8_t  authenticated;
     uint8_t  authorized;
+    uint8_t  secure_connection;
 } att_connection_t;
 
 // ATT Client Read Callback for Dynamic Data
@@ -98,11 +104,12 @@ typedef int (*att_write_callback_t)(hci_con_handle_t con_handle, uint16_t attrib
 
 // Read & Write Callbacks for handle range
 typedef struct att_service_handler {
-  btstack_linked_item_t * item;
-  uint16_t start_handle;
-  uint16_t end_handle;
-  att_read_callback_t read_callback;
-  att_write_callback_t write_callback;
+    btstack_linked_item_t * item;
+    uint16_t start_handle;
+    uint16_t end_handle;
+    att_read_callback_t read_callback;
+    att_write_callback_t write_callback;
+    btstack_packet_handler_t packet_handler;
 } att_service_handler_t;
 
 // MARK: ATT Operations
@@ -152,7 +159,7 @@ uint16_t att_handle_request(att_connection_t * att_connection,
  */
 uint16_t att_prepare_handle_value_notification(att_connection_t * att_connection,
                                                uint16_t attribute_handle,
-                                               uint8_t *value,
+                                               const uint8_t *value,
                                                uint16_t value_len, 
                                                uint8_t * response_buffer);
 
@@ -166,7 +173,7 @@ uint16_t att_prepare_handle_value_notification(att_connection_t * att_connection
  */
 uint16_t att_prepare_handle_value_indication(att_connection_t * att_connection,
                                              uint16_t attribute_handle,
-                                             uint8_t *value,
+                                             const uint8_t *value,
                                              uint16_t value_len, 
                                              uint8_t * response_buffer);
 
@@ -233,7 +240,9 @@ int gatt_server_get_get_handle_range_for_service_with_uuid16(uint16_t uuid16, ui
 uint16_t gatt_server_get_value_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
 
 // returns 0 if not found
-uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
+uint16_t gatt_server_get_descriptor_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t characteristic_uuid16, uint16_t descriptor_uuid16);
+uint16_t gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t characteristic_uuid16);
+uint16_t gatt_server_get_server_configuration_handle_for_characteristic_with_uuid16(uint16_t start_handle, uint16_t end_handle, uint16_t characteristic_uuid16);
 
 
 // returns 1 if service found. only primary service.
@@ -259,4 +268,4 @@ int att_is_persistent_ccc(uint16_t handle);
 }
 #endif
 
-#endif // __ATT_H
+#endif // ATT_H

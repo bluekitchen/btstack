@@ -39,8 +39,8 @@
  *  sdp_util.h
  */
 
-#ifndef __SDP_UTIL_H
-#define __SDP_UTIL_H
+#ifndef SDP_UTIL_H
+#define SDP_UTIL_H
 
 #include <stdint.h>
 
@@ -142,4 +142,4 @@ uint8_t* sdp_service_search_pattern_for_uuid128(const uint8_t * uuid128);
 }
 #endif
 
-#endif // __SDP_UTIL_H
+#endif // SDP_UTIL_H

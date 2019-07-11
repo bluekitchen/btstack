@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "main.c"
+#define BTSTACK_FILE__ "main.c"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -57,6 +57,7 @@
 #include "hci_dump.h"
 #include "esp_bt.h"
 #include "btstack_debug.h"
+#include "btstack_audio.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -85,7 +86,11 @@ static uint8_t hci_ringbuffer_storage[HCI_HOST_ACL_PACKET_NUM   * (2 + 1 + HCI_A
                                       MAX_NR_HOST_EVENT_PACKETS * (2 + 1 + HCI_EVENT_BUFFER_SIZE)];
 
 static btstack_ring_buffer_t hci_ringbuffer;
-static uint8_t hci_receive_buffer[1 + HCI_PACKET_BUFFER_SIZE];
+
+// incoming packet buffer
+static uint8_t hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + HCI_INCOMING_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
+static uint8_t * hci_receive_buffer = &hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE];
+
 static SemaphoreHandle_t ring_buffer_mutex;
 
 // data source for integration with BTstack Runloop
@@ -334,8 +339,15 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     if (packet_type != HCI_EVENT_PACKET) return;
     switch(hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
-            if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
-            printf("BTstack: up and running.\n");
+            if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING) {
+#ifdef ENABLE_SCO_OVER_HCI
+                esp_err_t ret = esp_bredr_sco_datapath_set(ESP_SCO_DATA_PATH_HCI);
+                log_info("transport: configure SCO over HCI, result 0x%04x", ret);
+#endif
+                bd_addr_t addr;
+                gap_local_bd_addr(addr);
+                printf("BTstack up and running at %s\n",  bd_addr_to_str(addr));
+            }
             break;
         case HCI_EVENT_COMMAND_COMPLETE:
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_local_version_information)){
@@ -378,6 +390,9 @@ int app_main(void){
     // inform about BTstack state
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
+
+    // setup i2s audio sink
+    btstack_audio_sink_set_instance(btstack_audio_esp32_sink_get_instance());
 
     btstack_main(0, NULL);
 

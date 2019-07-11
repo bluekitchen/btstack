@@ -45,11 +45,12 @@
 #include "btstack.h"
 #include "btstack_stdin_pts.h"
 
-#define AVRCP_BROWSING_ENABLED 1
-#define AVRCP_BROWSING_MAX_PLAYERS          10
-#define AVRCP_BROWSING_MAX_FOLDERS          10
+#define AVRCP_BROWSING_ENABLED
+
+#define AVRCP_BROWSING_MAX_PLAYERS                  10
+#define AVRCP_BROWSING_MAX_FOLDERS                  10
 #define AVRCP_BROWSING_MAX_BROWSABLE_ITEM_NAME_LEN  30
-#define AVRCP_BROWSING_MAX_MEDIA_ITEMS      10
+#define AVRCP_BROWSING_MAX_MEDIA_ITEMS              10
 
 #ifdef HAVE_BTSTACK_STDIN
 #include "btstack_stdin_pts.h"
@@ -57,8 +58,9 @@
 
 #ifdef HAVE_BTSTACK_STDIN
 // mac 2011:    static const char * device_addr_string = "04:0C:CE:E4:85:D3";
-// pts:         
-static const char * device_addr_string = "00:1B:DC:07:32:EF";
+// pts:         static const char * device_addr_string = "00:1B:DC:07:32:EF";
+// iPod 5G-C:   
+static const char * device_addr_string = "B0:34:95:CB:97:C4";
 // mac 2013:    static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:  static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
 // minijambox:  static const char * device_addr_string = "00:21:3C:AC:F7:38";
@@ -283,8 +285,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         uint16_t attr_charset       = avrcp_media_item_iterator_get_attr_charset(&media_item_context);
                         uint16_t attr_value_length  = avrcp_media_item_iterator_get_attr_value_len(&media_item_context);
                         const uint8_t * attr_value  = avrcp_media_item_iterator_get_attr_value(&media_item_context);
-                    
-                        printf("    - attr ID 0x%08" PRIx32 ", charset 0x%02x, actual len %d, name %s\n", attr_id, attr_charset, attr_value_length, attr_value);
+                        
+                        memset(value, 0, AVRCP_BROWSING_MAX_BROWSABLE_ITEM_NAME_LEN);
+                        value_len = btstack_min(attr_value_length, AVRCP_BROWSING_MAX_BROWSABLE_ITEM_NAME_LEN - 1); 
+                        memcpy(value, attr_value, value_len);
+                        
+                        printf("    - attr ID 0x%08" PRIx32 ", charset 0x%02x, actual len %d, name %s\n", attr_id, attr_charset, value_len, value);
                     }
                     break;
                 }
@@ -1143,7 +1149,12 @@ int btstack_main(int argc, const char * argv[]){
     
     // setup AVRCP
     memset(sdp_avrcp_controller_service_buffer, 0, sizeof(sdp_avrcp_controller_service_buffer));
-    avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10001, AVRCP_BROWSING_ENABLED, 1, NULL, NULL);
+    
+    uint16_t supported_features = (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER);
+#ifdef AVRCP_BROWSING_ENABLED
+    supported_features |= (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_BROWSING);
+#endif
+    avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10001, supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_controller_service_buffer);
 
     gap_set_local_name("BTstack AVRCP Controller PTS 00:00:00:00:00:00");

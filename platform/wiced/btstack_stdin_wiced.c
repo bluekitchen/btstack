@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_stdin_wiced.c"
+#define BTSTACK_FILE__ "btstack_stdin_wiced.c"
 
 #include <stdio.h>
 

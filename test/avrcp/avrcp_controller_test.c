@@ -42,7 +42,8 @@
 
 #include "btstack.h"
 
-#define AVRCP_BROWSING_ENABLED 0
+//#define AVRCP_BROWSING_ENABLED
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static bd_addr_t device_addr;
@@ -352,7 +353,12 @@ int btstack_main(int argc, const char * argv[]){
     // Initialize SDP 
     sdp_init();
     memset(sdp_avrcp_controller_service_buffer, 0, sizeof(sdp_avrcp_controller_service_buffer));
-    avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10001, AVRCP_BROWSING_ENABLED, 1, NULL, NULL);
+
+    uint16_t supported_features = (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER);
+#ifdef AVRCP_BROWSING_ENABLED
+    supported_features |= (1 << AVRCP_CONTROLLER_SUPPORTED_FEATURE_BROWSING);
+#endif
+    avrcp_controller_create_sdp_record(sdp_avrcp_controller_service_buffer, 0x10001, supported_features, NULL, NULL);
     sdp_register_service(sdp_avrcp_controller_service_buffer);
     
     gap_set_local_name("BTstack AVRCP Test");

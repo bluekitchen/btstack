@@ -1,11 +1,12 @@
 # Makefile for libusb based examples
-BTSTACK_ROOT = ../..
+BTSTACK_ROOT ?= ../..
 
 CORE += \
 	btstack_chipset_da14581.c \
 	hci_581_active_uart.c \
 	btstack_link_key_db_fs.c \
 	btstack_run_loop_posix.c \
+	btstack_tlv_posix.c \
 	btstack_uart_block_posix.c \
 	hci_transport_h4.c \
 	le_device_db_fs.c \
@@ -25,14 +26,7 @@ CFLAGS  += -g -Wall -Werror \
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/chipset/da14581
 
-ifeq ($(OS),Windows_NT)
-LDFLAGS += -lws2_32
-endif
-
-# Command Line examples require porting to win32, so only build on other unix-ish hosts
-ifneq ($(OS),Windows_NT)
-EXAMPLES += ${EXAMPLES_CLI}
-endif
+EXAMPLES = ${EXAMPLES_GENERAL} ${EXAMPLES_LE_ONLY}
 
 # use pkg-config for portaudio
 # CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags) -DHAVE_PORTAUDIO

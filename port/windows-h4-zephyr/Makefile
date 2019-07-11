@@ -1,5 +1,5 @@
 # Makefile for windows-h4 examples
-BTSTACK_ROOT = ../..
+BTSTACK_ROOT ?= ../..
 
 CORE += main.c btstack_stdin_windows.c
 
@@ -28,4 +28,6 @@ VPATH += ${BTSTACK_ROOT}/platform/windows
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/chipset/zephyr
 
-all: ${EXAMPLES_USING_LE}
+EXAMPLES = ${EXAMPLES_GENERAL} ${EXAMPLES_LE_ONLY}
+
+all: ${EXAMPLES}

@@ -788,7 +788,6 @@ int btstack_main(int argc, const char * argv[]){
     gap_set_local_name("BTstack AVDTP Source PTS 00:00:00:00:00:00");
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);
-    sscanf_bd_addr(device_addr_string, device_addr);
 
 #ifdef HAVE_BTSTACK_STDIN
     // parse human readable Bluetooth address

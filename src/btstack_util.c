@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_util.c"
+#define BTSTACK_FILE__ "btstack_util.c"
 
 /*
  *  btstack_util.c
@@ -84,6 +84,12 @@ uint32_t little_endian_read_32(const uint8_t * buffer, int pos){
 void little_endian_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
     buffer[pos++] = (uint8_t)value;
     buffer[pos++] = (uint8_t)(value >> 8);
+}
+
+void little_endian_store_24(uint8_t *buffer, uint16_t pos, uint32_t value){
+    buffer[pos++] = (uint8_t)(value);
+    buffer[pos++] = (uint8_t)(value >> 8);
+    buffer[pos++] = (uint8_t)(value >> 16);
 }
 
 void little_endian_store_32(uint8_t *buffer, uint16_t pos, uint32_t value){
@@ -160,11 +166,14 @@ uint32_t btstack_max(uint32_t a, uint32_t b){
     return a > b ? a : b;
 }
 
+static const char * char_to_nibble = "0123456789ABCDEF";
+
 char char_for_nibble(int nibble){
-    if (nibble < 10) return (char)('0' + nibble);
-    nibble -= 10;
-    if (nibble < 6) return (char)('A' + nibble);
-    return '?';
+    if (nibble < 16){
+        return char_to_nibble[nibble];
+    } else {
+        return '?';
+    }
 }
 
 static inline char char_for_high_nibble(int value){
@@ -175,6 +184,7 @@ static inline char char_for_low_nibble(int value){
     return char_for_nibble(value & 0x0f);
 }
 
+
 int nibble_for_char(char c){
     if (c >= '0' && c <= '9') return c - '0';
     if (c >= 'a' && c <= 'f') return c - 'a' + 10;
@@ -183,10 +193,16 @@ int nibble_for_char(char c){
 }
 
 void printf_hexdump(const void *data, int size){
-    if (size <= 0) return;
-    int i;
-    for (i=0; i<size;i++){
-        printf("%02X ", ((uint8_t *)data)[i]);
+    char buffer[4];
+    buffer[2] = ' ';
+    buffer[3] =  0;
+    const uint8_t * ptr = (const uint8_t *) data;
+    while (size > 0){
+        uint8_t byte = *ptr++;
+        buffer[0] = char_for_high_nibble(byte);
+        buffer[1] = char_for_low_nibble(byte);
+        printf("%s", buffer);
+        size--;
     }
     printf("\n");
 }
@@ -229,7 +245,7 @@ static void log_hexdump(int level, const void * data, int size){
 
 void log_debug_hexdump(const void *data, int size){
 #ifdef ENABLE_LOG_DEBUG
-    log_hexdump(LOG_LEVEL_DEBUG, data, size);
+    log_hexdump(HCI_DUMP_LOG_LEVEL_DEBUG, data, size);
 #else
     UNUSED(data);   // ok: no code
     UNUSED(size);   // ok: no code
@@ -238,7 +254,7 @@ void log_debug_hexdump(const void *data, int size){
 
 void log_info_hexdump(const void *data, int size){
 #ifdef ENABLE_LOG_INFO
-    log_hexdump(LOG_LEVEL_INFO, data, size);
+    log_hexdump(HCI_DUMP_LOG_LEVEL_INFO, data, size);
 #else
     UNUSED(data);   // ok: no code
     UNUSED(size);   // ok: no code
@@ -334,8 +350,11 @@ int sscanf_bd_addr(const char * addr_string, bd_addr_t addr){
             result = 1;
             break;
         }
-        char separator = *addr_string++;
-        if (separator != ':' && separator != '-' && separator != ' ') break;
+        // skip supported separators
+        char next_char = *addr_string;
+        if (next_char == ':' || next_char == '-' || next_char == ' ') {
+            addr_string++;
+        }
     }
 
     if (result){

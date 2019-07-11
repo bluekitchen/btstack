@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "led_counter.c"
+#define BTSTACK_FILE__ "led_counter.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(led_counter): Hello World: blinking LED without Bluetooth

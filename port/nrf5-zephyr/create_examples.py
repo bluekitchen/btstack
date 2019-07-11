@@ -62,9 +62,9 @@ for file in os.listdir(examples_embedded):
 
     # filter LE-only applications
     if not os.path.exists(gatt_path) and not example in [
-        "ancs_client_demo","gap_le_advertisements", "gatt_battery_query","gatt_browser","sm_pairing_central",'le_streamer_client']:
+        "ancs_client_demo","gap_le_advertisements", "gatt_battery_query", "gatt_browser", "sm_pairing_central", 'le_streamer_client']:
         continue
-    if example == "spp_and_le_counter":
+    if example == "spp_and_gatt_counter":
         continue
 
     # create folder

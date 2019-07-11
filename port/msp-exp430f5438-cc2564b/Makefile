@@ -8,7 +8,7 @@ CC2560B = bluetooth_init_cc2560B_1.6_BT_Spec_4.1.o
 CC2564B = bluetooth_init_cc2564B_1.6_BT_Spec_4.1.o
 CC2567  = CC256x_BT_Service_Pack_2.8_ANT_1.16.o
 
-BTSTACK_ROOT = ../..
+BTSTACK_ROOT ?= ../..
 VPATH += example
 VPATH += firmware
 VPATH += src
@@ -103,7 +103,7 @@ include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 
 # compiling requires a 20-bit mspgcc version
 # hid_demo.hex 
-# spp_and_le_counter.hex
+# spp_and_gatt_counter.hex
 # spp_accel.hex
 # ble_server.hex
 # spp_counter.hex
@@ -135,7 +135,7 @@ hid_demo.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} ${SPP_OBJ} ${CC2560B} hid_dem
 spp_accel.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_accel.o sdp_server.o hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-spp_and_le_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${BLE_OBJ} spp_and_le_counter.h spp_and_le_counter.o sdp_server.o 
+spp_and_gatt_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${BLE_OBJ} spp_and_gatt_counter.h spp_and_gatt_counter.o sdp_server.o 
 	${CC} $^ ${LDFLAGS} -o $@
 
 spp_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_counter.o sdp_server.o  
@@ -154,7 +154,7 @@ sdp_general_query.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${SDP_CLIENT} ${CC25
 	${CC} $^ ${LDFLAGS} -o $@
 
 clean:
-	rm -f $ *.o *.out *.hex profile.h spp_and_le_counter.h
+	rm -f $ *.o *.out *.hex profile.h spp_and_gatt_counter.h
 
 size: all
 	msp430-size *.o

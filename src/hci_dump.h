@@ -43,8 +43,8 @@
  *  Created by Matthias Ringwald on 5/26/09.
  */
 
-#ifndef __HCI_DUMP_H
-#define __HCI_DUMP_H
+#ifndef HCI_DUMP_H
+#define HCI_DUMP_H
 
 #include <stdint.h>
 #include <stdarg.h>       // for va_list
@@ -57,9 +57,9 @@
 extern "C" {
 #endif
 
-#define LOG_LEVEL_DEBUG 0
-#define LOG_LEVEL_INFO  1
-#define LOG_LEVEL_ERROR 2
+#define HCI_DUMP_LOG_LEVEL_DEBUG 0
+#define HCI_DUMP_LOG_LEVEL_INFO  1
+#define HCI_DUMP_LOG_LEVEL_ERROR 2
 
 /* API_START */
 
@@ -89,7 +89,7 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
  */
 void hci_dump_log(int log_level, const char * format, ...)
 #ifdef __GNUC__
-__attribute__ ((format (__printf__, 2, 3)));
+__attribute__ ((format (__printf__, 2, 3)))
 #endif
 ;
 
@@ -114,4 +114,4 @@ void hci_dump_log_P(int log_level, PGM_P format, ...);
 #if defined __cplusplus
 }
 #endif
-#endif // __HCI_DUMP_H
+#endif // HCI_DUMP_H

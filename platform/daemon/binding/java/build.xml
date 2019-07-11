@@ -8,7 +8,7 @@
     <property name="classes.dir" value="${build.dir}/classes"/>
     <property name="jar.dir"     value="${build.dir}/jar"/>
 
-    <property name="test-class"  value="com.bluekitchen.GATTClientTest"/>
+    <property name="test-class"  value="com.bluekitchen.LEStreamerClient"/>
 
     <target name="clean">
         <delete dir="${build.dir}"/>
@@ -22,7 +22,8 @@
 
     <target name="compile" depends="generate">
         <mkdir dir="${classes.dir}"/>
-        <javac destdir="${classes.dir}">
+        <javac destdir="${classes.dir}"
+               classpath="jna-4.5.1.jar">
             <src path="${src.dir}" />
             <src path="${gen.dir}" />
             <src path="${example.dir}" />
@@ -42,6 +43,7 @@
        <java fork="true" classname="${test-class}">
           <classpath>
              <path location="${jar.dir}/${ant.project.name}.jar"/>
+             <path location="jna-4.5.1.jar"/>
           </classpath>
         </java>
     </target>

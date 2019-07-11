@@ -46,10 +46,16 @@ HAVE_MBEDTLS_ECC_P256              | mbedTLS provides NIST P-256 operations e.g.
 
 Embedded platform properties:
 
-\#define                            | Description
+\#define                           | Description
 -----------------------------------|------------------------------------
 HAVE_EMBEDDED_TIME_MS              | System provides time in milliseconds
 HAVE_EMBEDDED_TICK                 | System provides tick interrupt
+
+FreeRTOS platform properties:
+
+\#define                           | Description
+-----------------------------------|------------------------------------
+HAVE_FREERTOS_INCLUDE_PREFIX       | FreeRTOS headers are in 'freertos' folder (e.g. ESP32's esp-idf)
 
 POSIX platform properties:
 
@@ -75,22 +81,28 @@ ENABLE_EHCILL                    | Enable eHCILL low power mode on TI CC256x/WL1
 ENABLE_LOG_DEBUG                 | Enable log_debug messages
 ENABLE_LOG_ERROR                 | Enable log_error messages
 ENABLE_LOG_INFO                  | Enable log_info messages
-ENABLE_SCO_OVER_HCI              | Enable SCO over HCI for chipsets (only TI CC256x/WL18xx, CSR + Broadcom H2/USB))
+ENABLE_SCO_OVER_HCI              | Enable SCO over HCI for chipsets (if supported)
 ENABLE_HFP_WIDE_BAND_SPEECH      | Enable support for mSBC codec used in HFP profile for Wide-Band Speech
 ENBALE_LE_PERIPHERAL             | Enable support for LE Peripheral Role in HCI and Security Manager
 ENBALE_LE_CENTRAL                | Enable support for LE Central Role in HCI and Security Manager
 ENABLE_LE_SECURE_CONNECTIONS     | Enable LE Secure Connections
+ENABLE_LE_CENTRAL_AUTO_ENCRYPTION | Enable automatic encryption for bonded devices on re-connect
+ENABLE_GATT_CLIENT_PAIRING       | Enable GATT Client to start pairing and retry operation on security error
 ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS | Use [micro-ecc library](https://github.com/kmackay/micro-ecc) for ECC operations
 ENABLE_LE_DATA_CHANNELS          | Enable LE Data Channels in credit-based flow control mode
 ENABLE_LE_DATA_LENGTH_EXTENSION  | Enable LE Data Length Extension support
 ENABLE_LE_SIGNED_WRITE           | Enable LE Signed Writes in ATT/GATT
-ENABLE_ATT_DELAYED_READ_RESPONSE | Enable support for delayed ATT Read operations, see [GATT Server](profiles/#sec:GATTServerProfile)
+ENABLE_ATT_DELAYED_RESPONSE      | Enable support for delayed ATT operations, see [GATT Server](profiles/#sec:GATTServerProfile)
 ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE | Enable L2CAP Enhanced Retransmission Mode. Mandatory for AVRCP Browsing
 ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL | Enable HCI Controller to Host Flow Control, see below
 ENABLE_CC256X_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND | Enable workaround for bug in CC256x Flow Control during baud rate change, see chipset docs.
+ENABLE_CYPRESS_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND | Enable workaround for bug in CYW2070x Flow Control during baud rate change, similar to CC256x.
+ENABLE_TLV_FLASH_EXPLICIT_DELETE_FIELD | Enable use of explicit delete field in TLV Flash implemenation - required when flash value cannot be overwritten with zero
+
 
 Notes:
-- ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS: Only some Bluetooth 4.2+ controllers (e.g., EM9304, ESP32) support the necessary HCI commands. Others reasons to enable the ECC software implementations are if the Host is much faster or if the micro-ecc library is already provided (e.g., ESP32, WICED)
+
+- ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS: Only some Bluetooth 4.2+ controllers (e.g., EM9304, ESP32) support the necessary HCI commands for ECC. Other reason to enable the ECC software implementations are if the Host is much faster or if the micro-ecc library is already provided (e.g., ESP32, WICED, or if the ECC HCI Commands are unreliable.
 
 ### HCI Controller to Host Flow Control
 In general, BTstack relies on flow control of the HCI transport, either via Hardware CTS/RTS flow control for UART or regular USB flow control. If this is not possible, e.g on an SoC, BTstack can use HCI Controller to Host Flow Control by defining ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL. If enabled, the HCI Transport implementation must be able to buffer the specified packets. In addition, it also need to be able to buffer a few HCI Events. Using a low number of host buffers might result in less throughput.

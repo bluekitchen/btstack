@@ -1,10 +1,11 @@
 # Makefile for libusb based examples
-BTSTACK_ROOT = ../..
+BTSTACK_ROOT ?= ../..
 
 CORE += \
 	btstack_chipset_atwilc3000.c \
 	btstack_link_key_db_fs.c \
 	btstack_run_loop_posix.c \
+	btstack_tlv_posix.c \
 	btstack_uart_block_posix.c \
 	hci_transport_h4.c \
 	le_device_db_fs.c \
@@ -18,6 +19,8 @@ include ${BTSTACK_ROOT}/example/Makefile.inc
 # firmware
 include ${BTSTACK_ROOT}/chipset/atwilc3000/Makefile.inc
 
+all: wilc3000_ble_firmware.h
+
 CFLAGS  += -g -Wall -Werror \
 	-I$(BTSTACK_ROOT)/platform/posix \
 	-I$(BTSTACK_ROOT)/chipset/atwilc3000 \
@@ -27,14 +30,7 @@ CFLAGS  += -g -Wall -Werror \
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/chipset/atwilc3000
 
-ifeq ($(OS),Windows_NT)
-LDFLAGS += -lws2_32
-endif
-
-# Command Line examples require porting to win32, so only build on other unix-ish hosts
-ifneq ($(OS),Windows_NT)
-EXAMPLES += ${EXAMPLES_CLI}
-endif
+EXAMPLES = ${EXAMPLES_GENERAL} ${EXAMPLES_LE_ONLY}
 
 # use pkg-config for portaudio
 # CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags) -DHAVE_PORTAUDIO

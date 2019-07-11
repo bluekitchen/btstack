@@ -285,7 +285,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 					if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING){
 						printLine("Inquiry");
 						state = inquiry;
-						hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
+						gap_inquiry_start(INQUIRY_INTERVAL);
 						break;
 					}
 					break;

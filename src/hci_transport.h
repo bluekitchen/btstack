@@ -43,8 +43,8 @@
  *  Created by Matthias Ringwald on 4/29/09.
  *
  */
-#ifndef __HCI_TRANSPORT_H
-#define __HCI_TRANSPORT_H
+#ifndef HCI_TRANSPORT_H
+#define HCI_TRANSPORT_H
 
 #include <stdint.h>
 #include "btstack_uart_block.h"
@@ -177,4 +177,4 @@ void hci_transport_usb_set_path(int len, uint8_t * port_numbers);
 }
 #endif
 
-#endif // __HCI_TRANSPORT_H
+#endif // HCI_TRANSPORT_H

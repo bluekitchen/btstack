@@ -1,0 +1,5 @@
+PRIMARY_SERVICE, GAP_SERVICE
+CHARACTERISTIC, GAP_DEVICE_NAME, READ, "Heart Rate Server"
+
+// add Heart Rate Service
+#import <heart_rate_service.gatt>

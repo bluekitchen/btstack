@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "sdp_util.c"
+#define BTSTACK_FILE__ "sdp_util.c"
 
 /*
  *  sdp_util.c

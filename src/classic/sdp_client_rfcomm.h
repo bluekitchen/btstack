@@ -39,8 +39,8 @@
  *  sdp_rfcomm_query.h
  */
 
-#ifndef __SDP_QUERY_RFCOMM_H
-#define __SDP_QUERY_RFCOMM_H
+#ifndef SDP_QUERY_RFCOMM_H
+#define SDP_QUERY_RFCOMM_H
 
 #include "btstack_util.h"
 
@@ -75,4 +75,4 @@ uint8_t sdp_client_query_rfcomm_channel_and_name_for_search_pattern(btstack_pack
 }
 #endif
 
-#endif // __SDP_QUERY_RFCOMM_H
+#endif // SDP_QUERY_RFCOMM_H

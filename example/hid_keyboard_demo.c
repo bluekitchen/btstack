@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hid_keyboard_demo.c"
+#define BTSTACK_FILE__ "hid_keyboard_demo.c"
  
 // *****************************************************************************
 /* EXAMPLE_START(hid_keyboard_demo): HID Keyboard (Server) Demo
@@ -63,12 +63,6 @@
 
 // to enable demo text on POSIX systems
 // #undef HAVE_BTSTACK_STDIN
-
-static uint8_t hid_service_buffer[250];
-static uint8_t device_id_sdp_service_buffer[100];
-static const char hid_device_name[] = "BTstack HID Keyboard";
-static btstack_packet_callback_registration_t hci_event_callback_registration;
-static uint16_t hid_cid;
 
 // from USB HID Specification 1.1, Appendix B.1
 const uint8_t hid_descriptor_keyboard_boot_mode[] = {
@@ -171,6 +165,28 @@ static const uint8_t keytable_us_shift[] = {
     '6', '7', '8', '9', '0', '.', 0xb1,                                 /* 97-100 */
 }; 
 
+// STATE
+
+static uint8_t hid_service_buffer[250];
+static uint8_t device_id_sdp_service_buffer[100];
+static const char hid_device_name[] = "BTstack HID Keyboard";
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+static uint16_t hid_cid;
+static bd_addr_t device_addr;
+static uint8_t hid_boot_device = 0;
+
+#ifdef HAVE_BTSTACK_STDIN
+static const char * device_addr_string = "BC:EC:5D:E6:15:03";
+#endif
+
+static enum {
+    APP_BOOTING,
+    APP_NOT_CONNECTED,
+    APP_CONNECTING,
+    APP_CONNECTED
+} app_state = APP_BOOTING;
+
+
 // HID Keyboard lookup
 static int lookup_keycode(uint8_t character, const uint8_t * table, int size, uint8_t * keycode){
     int i;
@@ -221,10 +237,26 @@ static void send_report(int modifier, int keycode){
 static void stdin_process(char character){
     uint8_t modifier;
     uint8_t keycode;
-    int found = keycode_and_modifer_us_for_character(character, &keycode, &modifier);
-    if (found){
-        send_key(modifier, keycode);
-        return;
+    int found;
+
+    switch (app_state){
+        case APP_BOOTING:
+        case APP_CONNECTING:
+            // ignore
+            break;
+
+        case APP_CONNECTED:
+            // send keyu
+            found = keycode_and_modifer_us_for_character(character, &keycode, &modifier);
+            if (found){
+                send_key(modifier, keycode);
+                return;
+            }
+            break;
+        case APP_NOT_CONNECTED:
+            printf("Connecting to %s...\n", bd_addr_to_str(device_addr));
+            hid_device_connect(device_addr, &hid_cid);
+            break;
     }
 }
 #else
@@ -274,9 +306,15 @@ static void hid_embedded_start_typing(void){
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t packet_size){
     UNUSED(channel);
     UNUSED(packet_size);
+    uint8_t status;
     switch (packet_type){
         case HCI_EVENT_PACKET:
             switch (packet[0]){
+                case BTSTACK_EVENT_STATE:
+                    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
+                    app_state = APP_NOT_CONNECTED;
+                    break;
+
                 case HCI_EVENT_USER_CONFIRMATION_REQUEST:
                     // ssp: inform about user confirmation request
                     log_info("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n", hci_event_user_confirmation_request_get_numeric_value(packet));
@@ -286,7 +324,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                 case HCI_EVENT_HID_META:
                     switch (hci_event_hid_meta_get_subevent_code(packet)){
                         case HID_SUBEVENT_CONNECTION_OPENED:
-                            if (hid_subevent_connection_opened_get_status(packet)) return;
+                            status = hid_subevent_connection_opened_get_status(packet);
+                            if (status) {
+                                // outgoing connection failed
+                                printf("Connection failed, status 0x%x\n", status);
+                                app_state = APP_NOT_CONNECTED;
+                                hid_cid = 0;
+                                return;
+                            }
+                            app_state = APP_CONNECTED;
                             hid_cid = hid_subevent_connection_opened_get_hid_cid(packet);
 #ifdef HAVE_BTSTACK_STDIN                        
                             printf("HID Connected, please start typing...\n");
@@ -297,6 +343,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
                             break;
                         case HID_SUBEVENT_CONNECTION_CLOSED:
                             printf("HID Disconnected\n");
+                            app_state = APP_NOT_CONNECTED;
                             hid_cid = 0;
                             break;
                         case HID_SUBEVENT_CAN_SEND_NOW:
@@ -336,11 +383,6 @@ int btstack_main(int argc, const char * argv[]){
     (void)argc;
     (void)argv;
 
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-    hci_register_sco_packet_handler(&packet_handler);
-
     gap_discoverable_control(1);
     gap_set_class_of_device(0x2540);
     gap_set_local_name("HID Keyboard Demo 00:00:00:00:00:00");
@@ -352,7 +394,7 @@ int btstack_main(int argc, const char * argv[]){
     sdp_init();
     memset(hid_service_buffer, 0, sizeof(hid_service_buffer));
     // hid sevice subclass 2540 Keyboard, hid counntry code 33 US, hid virtual cable off, hid reconnect initiate off, hid boot device off 
-    hid_create_sdp_record(hid_service_buffer, 0x10001, 0x2540, 33, 0, 0, 0, hid_descriptor_keyboard_boot_mode, sizeof(hid_descriptor_keyboard_boot_mode), hid_device_name);
+    hid_create_sdp_record(hid_service_buffer, 0x10001, 0x2540, 33, 0, 0, hid_boot_device, hid_descriptor_keyboard_boot_mode, sizeof(hid_descriptor_keyboard_boot_mode), hid_device_name);
     printf("HID service record size: %u\n", de_get_len( hid_service_buffer));
     sdp_register_service(hid_service_buffer);
 
@@ -362,12 +404,18 @@ int btstack_main(int argc, const char * argv[]){
     printf("Device ID SDP service record size: %u\n", de_get_len((uint8_t*)device_id_sdp_service_buffer));
     sdp_register_service(device_id_sdp_service_buffer);
 
-    
     // HID Device
-    hid_device_init();
+    hid_device_init(hid_boot_device, sizeof(hid_descriptor_keyboard_boot_mode), hid_descriptor_keyboard_boot_mode);
+       
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
+    // register for HID events
     hid_device_register_packet_handler(&packet_handler);
 
 #ifdef HAVE_BTSTACK_STDIN
+    sscanf_bd_addr(device_addr_string, device_addr);
     btstack_stdin_setup(stdin_process);
 #endif  
     // turn on!

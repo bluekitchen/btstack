@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "ad_parser.c"
+#define BTSTACK_FILE__ "ad_parser.c"
 
 
 // *****************************************************************************
@@ -64,17 +64,23 @@ void ad_iterator_init(ad_context_t *context, uint8_t ad_len, const uint8_t * ad_
 }
 
 int  ad_iterator_has_more(const ad_context_t * context){
-    return context->offset < context->length;
+    // assert chunk_len and chunk_type are withing buffer
+    if ((context->offset+1) >= context->length) return 0;
+
+    // assert chunk_len > 0
+    int chunk_len = context->data[context->offset];
+    if (chunk_len == 0)                                    return 0;
+
+    // assert complete chunk fits into buffer
+    if (context->offset + 1 + chunk_len > context->length) return 0;
+
+    return 1;
 }
 
+// pre: ad_iterator_has_more() == 1
 void ad_iterator_next(ad_context_t * context){
     int chunk_len = context->data[context->offset];
-    int new_offset = context->offset + 1 + chunk_len;
-    // avoid uint8_t overrun
-    if (new_offset > 0xff){
-        new_offset = 0xff;
-    }
-    context->offset = new_offset;
+    context->offset += 1 + chunk_len;
 }
 
 uint8_t   ad_iterator_get_data_len(const ad_context_t * context){

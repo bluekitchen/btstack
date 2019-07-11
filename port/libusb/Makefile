@@ -1,28 +1,39 @@
 # Makefile for libusb based examples
-BTSTACK_ROOT = ../..
+BTSTACK_ROOT ?= ../..
 
 CORE += main.c btstack_stdin_posix.c btstack_tlv_posix.c
 
-COMMON  += hci_transport_h2_libusb.c btstack_run_loop_posix.c le_device_db_fs.c btstack_link_key_db_fs.c wav_util.c btstack_network_posix.c
+COMMON += hci_transport_h2_libusb.c btstack_run_loop_posix.c le_device_db_fs.c btstack_link_key_db_fs.c wav_util.c btstack_network_posix.c
+COMMON += btstack_audio_portaudio.c btstack_chipset_zephyr.c
 
 include ${BTSTACK_ROOT}/example/Makefile.inc
 
-CFLAGS  += -g -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Werror -Wunused-parameter -Wredundant-decls -Wsign-compare
+CFLAGS  += -g -std=c99 -Wall -Wmissing-prototypes -Wstrict-prototypes -Wshadow -Wunused-parameter -Wredundant-decls -Wsign-compare
 # CFLAGS += -Werror
+# CFLAGS += -pedantic
 
-CFLAGS += -I${BTSTACK_ROOT}/platform/posix \
+# only LLVM
+# CFLAGS += -Wnewline-eof
+# CFLAGS += -Wc11-extensions
+# CFLAGS += -Wgnu-empty-initializer
+
+CFLAGS += -I${BTSTACK_ROOT}/platform/posix    \
 		  -I${BTSTACK_ROOT}/platform/embedded \
-		  -I${BTSTACK_ROOT}/3rd-party/tinydir
+		  -I${BTSTACK_ROOT}/3rd-party/tinydir \
+		  -I${BTSTACK_ROOT}/chipset/zephyr
 
 VPATH += ${BTSTACK_ROOT}/platform/embedded
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/libusb
 VPATH += ${BTSTACK_ROOT}/chipset/csr
+VPATH += ${BTSTACK_ROOT}/chipset/zephyr
 
 # use pkg-config
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 
+EXAMPLES = ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY} ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE}
+EXAMPLES += pan_lwip_http_server
 EXAMPLES += csr_set_bd_addr
 
 csr_set_bd_addr: ${CORE_OBJ} ${COMMON_OBJ} btstack_chipset_csr.o csr_set_bd_addr.o

@@ -4,3 +4,4 @@ hfp_hf_parser_test
 hfp_ag_parser_test
 cvsd_plc_test
 results/*
+pklg_cvsd_test

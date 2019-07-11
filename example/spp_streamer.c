@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "spp_streamer.c"
+#define BTSTACK_FILE__ "spp_streamer.c"
 
 /*
  * spp_streamer.c
@@ -81,6 +81,37 @@ static uint16_t  spp_test_data_len;
 static uint16_t  rfcomm_mtu;
 static uint16_t  rfcomm_cid = 0;
 // static uint32_t  data_to_send =  DATA_VOLUME;
+
+/**
+ * RFCOMM can make use for ERTM. Due to the need to re-transmit packets,
+ * a large buffer is needed to still get high throughput
+ */
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE_FOR_RFCOMM
+static uint8_t ertm_buffer[20000];
+static l2cap_ertm_config_t ertm_config = {
+    0,       // ertm mandatory
+    8,       // max transmit
+    2000,
+    12000,
+    1000,    // l2cap ertm mtu
+    8,
+    8,
+    0,       // No FCS
+};
+static int ertm_buffer_in_use;
+static void rfcomm_ertm_request_handler(rfcomm_ertm_request_t * ertm_request){
+    printf("ERTM Buffer requested, buffer in use %u\n", ertm_buffer_in_use);
+    if (ertm_buffer_in_use) return;
+    ertm_buffer_in_use = 1;
+    ertm_request->ertm_config      = &ertm_config;
+    ertm_request->ertm_buffer      = ertm_buffer;
+    ertm_request->ertm_buffer_size = sizeof(ertm_buffer);
+}
+static void rfcomm_ertm_released_handler(uint16_t ertm_id){
+    printf("ERTM Buffer released, buffer in use  %u, ertm_id %x\n", ertm_buffer_in_use, ertm_id);
+    ertm_buffer_in_use = 0;
+}
+#endif
 
 /*
  * @section Track throughput
@@ -251,14 +282,15 @@ int btstack_main(int argc, const char * argv[])
     (void)argc;
     (void)argv;
 
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     l2cap_init();
 
     rfcomm_init();
     rfcomm_register_service(packet_handler, RFCOMM_SERVER_CHANNEL, 0xffff);
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE_FOR_RFCOMM
+    // setup ERTM management
+    rfcomm_enable_l2cap_ertm(&rfcomm_ertm_request_handler, &rfcomm_ertm_released_handler);
+#endif
 
     // init SDP, create record for SPP and register with SDP
     sdp_init();
@@ -266,6 +298,10 @@ int btstack_main(int argc, const char * argv[])
     spp_create_sdp_record(spp_service_buffer, 0x10001, RFCOMM_SERVER_CHANNEL, "SPP Streamer");
     sdp_register_service(spp_service_buffer);
     // printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     // short-cut to find other SPP Streamer
     gap_set_class_of_device(TEST_COD);

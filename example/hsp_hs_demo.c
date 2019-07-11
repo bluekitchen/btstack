@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hsp_hs_demo.c"
+#define BTSTACK_FILE__ "hsp_hs_demo.c"
 
 /*
  * hsp_hs_demo.c
@@ -69,7 +69,7 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 static uint8_t hsp_service_buffer[150]; 
 static const uint8_t rfcomm_channel_nr = 1;
 static const char    hsp_hs_service_name[] = "Headset Test";
-static hci_con_handle_t sco_handle = 0;
+static hci_con_handle_t sco_handle = HCI_CON_HANDLE_INVALID;
 
 static char hs_cmd_buffer[100];
 // mac 2013: 
@@ -189,6 +189,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                     show_usage();
                     break;
                 case HCI_EVENT_SCO_CAN_SEND_NOW:
+                    if (READ_SCO_CONNECTION_HANDLE(event) != sco_handle) break;
                     sco_demo_send(sco_handle);
                     break;
                 case HCI_EVENT_HSP_META:
@@ -210,7 +211,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                         case HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE:
                             if (hsp_subevent_audio_connection_complete_get_status(event)){
                                 printf("Audio connection establishment failed with status %u\n", hsp_subevent_audio_connection_complete_get_status(event));
-                                sco_handle = 0;
                             } else {
                                 sco_handle = hsp_subevent_audio_connection_complete_get_handle(event);
                                 printf("Audio connection established with SCO handle 0x%04x.\n", sco_handle);
@@ -218,12 +218,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             } 
                             break;
                         case HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE:
-                            if (hsp_subevent_audio_disconnection_complete_get_status(event)){
-                                printf("Audio connection releasing failed with status %u\n", hsp_subevent_audio_disconnection_complete_get_status(event));
-                            } else {
-                                printf("Audio connection released.\n\n");
-                                sco_handle = 0;    
-                            }
+                            printf("Audio connection released.\n\n");
+                            sco_handle = HCI_CON_HANDLE_INVALID;
                             break;
                         case HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED:
                             printf("Received microphone gain change %d\n", hsp_subevent_microphone_gain_changed_get_gain(event));
@@ -279,11 +275,7 @@ int btstack_main(int argc, const char * argv[]){
     (void)argv;
 
     sco_demo_init();
-
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-    hci_register_sco_packet_handler(&packet_handler);
+    sco_demo_set_codec(HFP_CODEC_CVSD);
 
     l2cap_init();
 
@@ -295,6 +287,13 @@ int btstack_main(int argc, const char * argv[]){
     rfcomm_init();
 
     hsp_hs_init(rfcomm_channel_nr);
+
+    // register for HCI events and SCO packets
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+    hci_register_sco_packet_handler(&packet_handler);
+
+    // register for HSP events
     hsp_hs_register_packet_handler(packet_handler);
 
 #ifdef HAVE_BTSTACK_STDIN

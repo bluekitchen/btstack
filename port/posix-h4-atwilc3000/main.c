@@ -60,6 +60,7 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "btstack_stdin.h"
+#include "btstack_tlv_posix.h"
 
 #include "btstack_chipset_atwilc3000.h"
 // #include "wilc3000_bt_firmware.h"
@@ -69,6 +70,12 @@ static int main_argc;
 static const char ** main_argv;
 static const btstack_uart_block_t * uart_driver;
 static btstack_uart_config_t uart_config;
+
+#define TLV_DB_PATH_PREFIX "/tmp/btstack_"
+#define TLV_DB_PATH_POSTFIX ".tlv"
+static char tlv_db_path[100];
+static const btstack_tlv_t * tlv_impl;
+static btstack_tlv_posix_t   tlv_context;
 
 int btstack_main(int argc, const char * argv[]);
 
@@ -83,11 +90,19 @@ static hci_transport_config_uart_t transport_config = {
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    bd_addr_t addr;
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (hci_event_packet_get_type(packet)){
         case BTSTACK_EVENT_STATE:
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
-            printf("BTstack up and running.\n");
+            gap_local_bd_addr(addr);
+            printf("BTstack up and running at %s\n",  bd_addr_to_str(addr));
+            // setup TLV
+            strcpy(tlv_db_path, TLV_DB_PATH_PREFIX);
+            strcat(tlv_db_path, bd_addr_to_str(addr));
+            strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
+            tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
+            btstack_tlv_set_instance(tlv_impl, &tlv_context);
             break;
         default:
             break;

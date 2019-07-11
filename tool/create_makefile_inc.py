@@ -28,11 +28,11 @@ def create_makefile_inc(path):
 
     # write makefile based on header and list
     with open(folder_path + "Makefile.inc", "wt") as fout:
-        var_name = path.upper().replace('/','_')+'_FILES'
+        var_name = path.upper().replace('/','_').replace('-','_')+'_FILES'
         fout.write(makefile_inc_header.format(var_name=var_name,folder=path))
 
         # get all .c files in folder
-        for file in os.listdir(folder_path):
+        for file in sorted(os.listdir(folder_path)):
             if not file.endswith(".c"):
                 continue
             fout.write('    %s \\\n' % file)

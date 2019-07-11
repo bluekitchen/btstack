@@ -33,6 +33,9 @@ To add an udev rule, please create `/etc/udev/rules.d/btstack.rules` and add thi
 	# Match Asus BT400
 	SUBSYSTEM=="usb", ATTRS{idVendor}=="0b05", ATTRS{device}=="17cb", MODE="0666"
 
+	# Match Laird BT860 / Cypress Semiconductor CYW20704A2
+	SUBSYSTEM=="usb", ATTRS{idVendor}=="04b4", ATTRS{device}=="f901", MODE="0666"
+
 
 On macOS, the OS will try to use a plugged-in Bluetooth Controller if one is available. 
 It's best to to tell the OS to always use the internal Bluetooth Contoller. 

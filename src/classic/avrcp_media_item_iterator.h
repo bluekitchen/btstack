@@ -41,8 +41,8 @@
 //
 // *****************************************************************************
 
-#ifndef __AVRCP_MEDIA_ITEM_ITERATOR_H
-#define __AVRCP_MEDIA_ITEM_ITERATOR_H
+#ifndef AVRCP_MEDIA_ITEM_ITERATOR_H
+#define AVRCP_MEDIA_ITEM_ITERATOR_H
 
 #include "btstack_config.h"
 #include <stdint.h>
@@ -75,4 +75,4 @@ const uint8_t *  avrcp_media_item_iterator_get_attr_value(const avrcp_media_item
 #if defined __cplusplus
 }
 #endif
-#endif // __AVRCP_MEDIA_ITEM_ITERATOR_H
+#endif // AVRCP_MEDIA_ITEM_ITERATOR_H

@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __BTSTACK_DEVICE_NAME_DB_COCOA_H
-#define __BTSTACK_DEVICE_NAME_DB_COCOA_H
+#ifndef BTSTACK_DEVICE_NAME_DB_COCOA_H
+#define BTSTACK_DEVICE_NAME_DB_COCOA_H
 
 #include "btstack_device_name_db.h"
 
@@ -54,4 +54,4 @@ const btstack_device_name_db_t * btstack_device_name_db_corefoundation_instance(
 }
 #endif
 
-#endif // __BTSTACK_DEVICE_NAME_DB_COCOA_H
+#endif // BTSTACK_DEVICE_NAME_DB_COCOA_H

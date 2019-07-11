@@ -43,8 +43,8 @@
  *  Created by Matthias Ringwald on 5/16/09.
  */
 
-#ifndef __L2CAP_H
-#define __L2CAP_H
+#ifndef L2CAP_H
+#define L2CAP_H
 
 #include "hci.h"
 #include "l2cap_signaling.h"
@@ -158,6 +158,9 @@ typedef struct {
 
     // Number of packets that can be received out of order (-> our tx_window size)
     uint8_t num_rx_buffers;
+
+    // Frame Check Sequence (FCS) Option
+    uint8_t fcs_option;
 
 } l2cap_ertm_config_t;
 
@@ -291,6 +294,9 @@ typedef struct {
 
     // sender: max num of stored outgoing frames
     uint8_t num_tx_buffers;
+
+    // sender: num stored outgoing frames
+    uint8_t num_stored_tx_frames;
 
     // sender: number of unacknowledeged I-Frames - frames have been sent, but not acknowledged yet
     uint8_t unacked_frames;
@@ -655,4 +661,4 @@ uint8_t l2cap_ertm_set_ready(uint16_t local_cid);
 }
 #endif
 
-#endif // __L2CAP_H
+#endif // L2CAP_H

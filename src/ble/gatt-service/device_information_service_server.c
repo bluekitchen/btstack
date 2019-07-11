@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "device_information_service_server.c"
+#define BTSTACK_FILE__ "device_information_service_server.c"
 
 /**
  * Implementation of the Device Information Service Server 

@@ -9,7 +9,7 @@
 #define HAVE_MALLOC
 #define HAVE_POSIX_FILE_IO
 #define HAVE_POSIX_TIME
-
+#define HAVE_UNIX_SOCKETS
 // BTstack features that can be enabled
 #define ENABLE_BLE
 #define ENABLE_CLASSIC
@@ -22,6 +22,8 @@
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 1021
 #define MAX_NR_LE_DEVICE_DB_ENTRIES 1
+
+#define NVM_NUM_DEVICE_DB_ENTRIES 16
 
 // Daemon configuration
 #define ENABLE_SDP

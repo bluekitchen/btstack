@@ -42,8 +42,8 @@
  *
  */
 
-#ifndef __HAL_TIME_MS_H
-#define __HAL_TIME_MS_H
+#ifndef HAL_TIME_MS_H
+#define HAL_TIME_MS_H
 
 #include <stdint.h>
 
@@ -56,4 +56,4 @@ uint32_t hal_time_ms(void);
 #if defined __cplusplus
 }
 #endif
-#endif // __HAL_TIME_MS_H
+#endif // HAL_TIME_MS_H

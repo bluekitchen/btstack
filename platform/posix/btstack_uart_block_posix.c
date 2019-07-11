@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_uart_block_posix.c"
+#define BTSTACK_FILE__ "btstack_uart_block_posix.c"
 
 /*
  *  btstack_uart_block_posix.c
@@ -89,7 +89,7 @@ static void btstack_uart_posix_process_write(btstack_data_source_t *ds) {
     uint32_t start = btstack_run_loop_get_time_ms();
 
     // write up to write_bytes_len to fd
-    int bytes_written = (int) write(ds->fd, write_bytes_data, write_bytes_len);
+    int bytes_written = (int) write(ds->source.fd, write_bytes_data, write_bytes_len);
     uint32_t end = btstack_run_loop_get_time_ms();
     if (end - start > 10){
         log_info("write took %u ms", end - start);
@@ -130,7 +130,7 @@ static void btstack_uart_posix_process_read(btstack_data_source_t *ds) {
     uint32_t start = btstack_run_loop_get_time_ms();
     
     // read up to bytes_to_read data in
-    ssize_t bytes_read = read(ds->fd, read_bytes_data, read_bytes_len);
+    ssize_t bytes_read = read(ds->source.fd, read_bytes_data, read_bytes_len);
     // log_info("btstack_uart_posix_process_read need %u bytes, got %d", read_bytes_len, (int) bytes_read);
     uint32_t end = btstack_run_loop_get_time_ms();
     if (end - start > 10){
@@ -157,7 +157,7 @@ static void btstack_uart_posix_process_read(btstack_data_source_t *ds) {
 }
 
 static void hci_uart_posix_process(btstack_data_source_t *ds, btstack_data_source_callback_type_t callback_type) {
-    if (ds->fd < 0) return;
+    if (ds->source.fd < 0) return;
     switch (callback_type){
         case DATA_SOURCE_CALLBACK_READ:
             btstack_uart_posix_process_read(ds);
@@ -172,7 +172,7 @@ static void hci_uart_posix_process(btstack_data_source_t *ds, btstack_data_sourc
 
 static int btstack_uart_posix_set_baudrate(uint32_t baudrate){
 
-    int fd = transport_data_source.fd;
+    int fd = transport_data_source.source.fd;
 
     log_info("h4_set_baudrate %u", baudrate);
 
@@ -201,46 +201,59 @@ static int btstack_uart_posix_set_baudrate(uint32_t baudrate){
     
     speed_t brate = baudrate; // let you override switch below if needed
     switch(baudrate) {
-        case 57600:  brate=B57600;  break;
-        case 115200: brate=B115200; break;
+        case    9600: brate=B9600;    break;
+        case   19200: brate=B19200;   break;
+        case   38400: brate=B38400;   break;
+        case   57600: brate=B57600;   break;
+        case  115200: brate=B115200;  break;
 #ifdef B230400
-        case 230400: brate=B230400; break;
+        case  230400: brate=B230400;  break;
 #endif
 #ifdef B460800
-        case 460800: brate=B460800; break;
+        case  460800: brate=B460800;  break;
+#endif
+#ifdef B500000
+        case  500000: brate=B500000;  break;
+#endif
+#ifdef B576000
+        case  576000: brate=B576000;  break;
 #endif
 #ifdef B921600
-        case 921600: brate=B921600; break;
+        case  921600: brate=B921600;  break;
 #endif
-
-// Hacks to switch to 2/3 mbps on FTDI FT232 chipsets
-// requires special config in Info.plist or Registry
-        case 2000000: 
-#if defined(HAVE_POSIX_B300_MAPPED_TO_2000000)
-            log_info("hci_transport_posix: using B300 for 2 mbps");
-            brate=B300; 
-#elif defined(HAVE_POSIX_B1200_MAPPED_TO_2000000)
-           log_info("hci_transport_posix: using B1200 for 2 mbps");
-            brate=B1200;
+#ifdef B1000000
+        case 1000000: brate=B1000000; break;
 #endif
-            break;
-        case 3000000:
-#if defined(HAVE_POSIX_B600_MAPPED_TO_3000000)
-            log_info("hci_transport_posix: using B600 for 3 mbps");
-            brate=B600;
-#elif defined(HAVE_POSIX_B2400_MAPPED_TO_3000000)
-            log_info("hci_transport_posix: using B2400 for 3 mbps");
-            brate=B2400;
+#ifdef B1152000
+        case 1152000: brate=B1152000; break;
 #endif
-            break;
+#ifdef B1500000
+        case 1500000: brate=B1500000; break;
+#endif
+#ifdef B2000000
+        case 2000000: brate=B2000000; break;
+#endif
+#ifdef B2500000
+        case 2500000: brate=B2500000; break;
+#endif
+#ifdef B3000000
+        case 3000000: brate=B3000000; break;
+#endif
+#ifdef B3500000
+        case 3500000: brate=B3500000; break;
+#endif
+#ifdef B400000
+        case 4000000: brate=B4000000; break;
+#endif
         default:
-            break;
+            log_error("can't set baudrate %dn", baudrate );
+            return -1;
     }
     cfsetospeed(&toptions, brate);
     cfsetispeed(&toptions, brate);
 
     if( tcsetattr(fd, TCSANOW, &toptions) < 0) {
-        log_error("btstack_uart_posix_set_baudrate: Couldn't set term attributes");
+        log_error("Couldn't set term attributes");
         return -1;
     }
 #endif
@@ -269,15 +282,15 @@ static void btstack_uart_posix_set_flowcontrol_option(struct termios * toptions,
 }
 
 static int btstack_uart_posix_set_parity(int parity){
-    int fd = transport_data_source.fd;
+    int fd = transport_data_source.source.fd;
     struct termios toptions;
     if (tcgetattr(fd, &toptions) < 0) {
-        log_error("btstack_uart_posix_set_parity: Couldn't get term attributes");
+        log_error("Couldn't get term attributes");
         return -1;
     }
     btstack_uart_posix_set_parity_option(&toptions, parity);
     if(tcsetattr(fd, TCSANOW, &toptions) < 0) {
-        log_error("posix_set_parity: Couldn't set term attributes");
+        log_error("Couldn't set term attributes");
         return -1;
     }
     return 0;
@@ -285,15 +298,15 @@ static int btstack_uart_posix_set_parity(int parity){
 
 
 static int btstack_uart_posix_set_flowcontrol(int flowcontrol){
-    int fd = transport_data_source.fd;
+    int fd = transport_data_source.source.fd;
     struct termios toptions;
     if (tcgetattr(fd, &toptions) < 0) {
-        log_error("btstack_uart_posix_set_parity: Couldn't get term attributes");
+        log_error("Couldn't get term attributes");
         return -1;
     }
     btstack_uart_posix_set_flowcontrol_option(&toptions, flowcontrol);
     if(tcsetattr(fd, TCSANOW, &toptions) < 0) {
-        log_error("posix_set_flowcontrol: Couldn't set term attributes");
+        log_error("Couldn't set term attributes");
         return -1;
     }
     return 0;
@@ -309,12 +322,12 @@ static int btstack_uart_posix_open(void){
     int flags = O_RDWR | O_NOCTTY | O_NONBLOCK;
     int fd = open(device_name, flags);
     if (fd == -1)  {
-        log_error("posix_open: Unable to open port %s", device_name);
+        log_error("Unable to open port %s", device_name);
         return -1;
     }
     
     if (tcgetattr(fd, &toptions) < 0) {
-        log_error("posix_open: Couldn't get term attributes");
+        log_error("Couldn't get term attributes");
         return -1;
     }
     
@@ -338,12 +351,12 @@ static int btstack_uart_posix_open(void){
     btstack_uart_posix_set_flowcontrol_option(&toptions, flowcontrol);
 
     if(tcsetattr(fd, TCSANOW, &toptions) < 0) {
-        log_error("posix_open: Couldn't set term attributes");
+        log_error("Couldn't set term attributes");
         return -1;
     }
 
     // store fd in data source
-    transport_data_source.fd = fd;
+    transport_data_source.source.fd = fd;
     
     // also set baudrate
     if (btstack_uart_posix_set_baudrate(baudrate) < 0){
@@ -367,8 +380,8 @@ static int btstack_uart_posix_close_new(void){
     btstack_run_loop_remove_data_source(&transport_data_source);
     
     // then close device 
-    close(transport_data_source.fd);
-    transport_data_source.fd = -1;
+    close(transport_data_source.source.fd);
+    transport_data_source.source.fd = -1;
     return 0;
 }
 

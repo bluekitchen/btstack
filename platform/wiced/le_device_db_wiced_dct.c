@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "le_device_db_wiced_dct.c"
+#define BTSTACK_FILE__ "le_device_db_wiced_dct.c"
 
 /*
  *  le_device_db_wiced_dct.c
@@ -58,8 +58,6 @@
 // Link Key Magic
 #define LE_DEVICE_MAGIC ((uint32_t) 'L' << 24 | 'E' << 16 | 'D' << 8 | 'B')
 
-#define INVALID_ENTRY_ADDR_TYPE 0xff
-
 typedef struct le_device_nvm {
 	uint32_t magic;
 	uint32_t seq_nr;	// used for "last recently stored" eviction strategy
@@ -73,6 +71,8 @@ typedef struct le_device_nvm {
     uint8_t  key_size;
     uint8_t  authenticated;
     uint8_t  authorized;
+    uint8_t  secure_connection;
+
     sm_key_t ltk;
 
     // Stored pairing information allows to re-establish an enncrypted connection
@@ -199,7 +199,14 @@ int le_device_db_max_count(void){
 void le_device_db_info(int device_index, int * addr_type, bd_addr_t addr, sm_key_t irk){
 	int absolute_index = le_device_db_get_absolute_index_for_device_index(device_index);
     le_device_nvm_t entry;
-	le_device_db_entry_read(absolute_index, &entry);
+    int valid = le_device_db_entry_read(absolute_index, &entry);
+
+    // set defaults if not found
+    if (!valid) {
+        memset(&entry, 0, sizeof(le_device_nvm_t));
+        entry.addr_type = BD_ADDR_TYPE_UNKNOWN;
+    }
+
     if (addr_type) *addr_type = entry.addr_type;
     if (addr) memcpy(addr, entry.addr, 6);
     if (irk) memcpy(irk, entry.irk, 16);
@@ -243,14 +250,14 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     return absolute_index;
 }
 
-void le_device_db_encryption_set(int device_index, uint16_t ediv, uint8_t rand[8], sm_key_t ltk, int key_size, int authenticated, int authorized){
+void le_device_db_encryption_set(int device_index, uint16_t ediv, uint8_t rand[8], sm_key_t ltk, int key_size, int authenticated, int authorized, int secure_connection){
 
 	int absolute_index = le_device_db_get_absolute_index_for_device_index(device_index);
     le_device_nvm_t entry;
 	le_device_db_entry_read(absolute_index, &entry);
 
-    log_info("set encryption for #%u, ediv 0x%04x, key size %u, authenticated %u, authorized %u",
-    	absolute_index, ediv, key_size, authenticated, authorized);
+    log_info("LE Device DB set encryption for %u, ediv x%04x, key size %u, authenticated %u, authorized %u, secure connection %u",
+        device_index, ediv, key_size, authenticated, authorized, secure_connection);
 
     entry.ediv = ediv;
     if (rand) memcpy(entry.rand, rand, 8);
@@ -258,18 +265,19 @@ void le_device_db_encryption_set(int device_index, uint16_t ediv, uint8_t rand[8
     entry.key_size = key_size;
     entry.authenticated = authenticated;
     entry.authorized = authorized;
+    entry.secure_connection = secure_connection;
 
     le_device_db_entry_write(absolute_index, &entry);
 }
 
-void le_device_db_encryption_get(int device_index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk, int * key_size, int * authenticated, int * authorized){
+void le_device_db_encryption_get(int device_index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk, int * key_size, int * authenticated, int * authorized, int * secure_connection){
 
 	int absolute_index = le_device_db_get_absolute_index_for_device_index(device_index);
     le_device_nvm_t entry;
 	le_device_db_entry_read(absolute_index, &entry);
 
-    log_info("encryption for #%u, ediv x%04x, keysize %u, authenticated %u, authorized %u",
-        absolute_index, entry.ediv, entry.key_size, entry.authenticated, entry.authorized);
+    log_info("LE Device DB encryption for %u, ediv x%04x, keysize %u, authenticated %u, authorized %u, secure connection %u",
+        device_index, entry.ediv, entry.key_size, entry.authenticated, entry.authorized, entry.secure_connection);
 
     if (ediv) *ediv = entry.ediv;
     if (rand) memcpy(rand, entry.rand, 8);
@@ -277,6 +285,7 @@ void le_device_db_encryption_get(int device_index, uint16_t * ediv, uint8_t rand
     if (key_size) *key_size = entry.key_size;
     if (authenticated) *authenticated = entry.authenticated;
     if (authorized) *authorized = entry.authorized;
+    if (secure_connection) *secure_connection = entry.secure_connection;
 }
 
 void le_device_db_dump(void){

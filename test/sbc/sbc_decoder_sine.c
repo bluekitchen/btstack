@@ -52,10 +52,6 @@
 #include "classic/btstack_sbc.h"
 #include "data_sine_stereo_sbc.h"
 
-#ifdef HAVE_AUDIO_DMA
-#include "hal_audio_dma.h"
-#endif
-
 #define SAMPLE_RATE 44100
 
 static int total_num_samples = 0;
@@ -69,22 +65,7 @@ static uint16_t audio_samples0[NUM_SAMPLES*2];
 static uint16_t audio_samples1[NUM_SAMPLES*2];
 static volatile int playback_buffer;
 
-#ifdef HAVE_AUDIO_DMA
-void hal_audio_dma_done(void){
-	uint16_t bytes_to_copy = sizeof(audio_samples1);
-	playback_buffer = 1 - playback_buffer;
-//	printf("Play %u\n", playback_buffer);
-	hal_audio_dma_play(playback_buffer ? audio_samples1 : audio_samples0, NUM_SAMPLES * NUM_CHANNELS * BYTES_PER_SAMPLE);
-}
-#endif
-
 static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, int sample_rate, void * context){
-#ifdef HAVE_AUDIO_DMA
-//	printf("Write %u (%u, %u)\n", playback_buffer, num_samples, num_channels);
-	int write_buffer = 1 - playback_buffer;
-	playback_buffer ? audio_samples0 : audio_samples1;
-	memcpy(write_buffer ? audio_samples1 : audio_samples0, data, NUM_SAMPLES * NUM_CHANNELS * BYTES_PER_SAMPLE);
-#else
 	printf("Samples: num_samples %u, num_channels %u, sample_rate %u\n", num_samples, num_channels, sample_rate);
 	// printf_hexdump(data, num_samples * num_channels * 2);
     int i;
@@ -93,7 +74,7 @@ static void handle_pcm_data(int16_t * data, int num_samples, int num_channels, i
         printf ("%12d ", data[i]);
     }
     printf("\n");
-#endif
+
     total_num_samples+=num_samples*num_channels;
     frame_count++;
 }
@@ -106,7 +87,7 @@ int btstack_main (int argc, const char * argv[]){
     btstack_sbc_mode_t mode = SBC_MODE_STANDARD;
     btstack_sbc_decoder_state_t state;
     btstack_sbc_decoder_init(&state, mode, &handle_pcm_data, NULL);
-    btstack_sbc_decoder_test_disable_plc();
+    btstack_sbc_decoder_test_set_plc_enabled(0);
     uint32_t t_start = btstack_run_loop_get_time_ms();
     playback_buffer = 1;
     uint32_t offset = 0;
@@ -116,12 +97,6 @@ int btstack_main (int argc, const char * argv[]){
 
     btstack_sbc_decoder_process_data(&state, 0, &sbc_data[offset], 74);
     offset += 74;
-
-#ifdef HAVE_AUDIO_DMA
-	hal_audio_dma_init(SAMPLE_RATE);
-	hal_audio_dma_set_audio_played(&hal_audio_dma_done);
-    hal_audio_dma_done();
-#endif
 
     while (1){
 

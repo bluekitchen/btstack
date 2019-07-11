@@ -175,7 +175,7 @@ def convert_bts(output_file, main_bts_file, bts_add_on, aka, lmp_subversion):
                                 part_size += append_power_vector_edr2(additions, str_list, data_indent)
                                 have_power_vector_edr2 = True;                            
                             if not have_power_vector_edr3:
-                                part_size += append_power_vector_edr2(additions, str_list, data_indent)
+                                part_size += append_power_vector_edr3(additions, str_list, data_indent)
                                 have_power_vector_edr3 = True;                            
                             if not have_class2_single_power:
                                 part_size += append_class2_single_power(additions, str_list, data_indent)

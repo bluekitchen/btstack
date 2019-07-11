@@ -10,6 +10,7 @@
 #define HAVE_MALLOC
 #define HAVE_BTSTACK_STDIN
 #define HAVE_FREERTOS_TASK_NOTIFICATIONS
+#define HAVE_FREERTOS_INCLUDE_PREFIX
 
 // BTstack features that can be enabled
 #define ENABLE_BLE
@@ -19,8 +20,10 @@
 #define ENABLE_LE_DATA_CHANNELS
 #define ENABLE_LE_DATA_LENGTH_EXTENSION
 #define ENABLE_LE_SECURE_CONNECTIONS
+#define ENABLE_ATT_DELAYED_RESPONSE
 // ESP32 supports ECDH HCI Commands, but micro-ecc lib is already provided anyway
 #define ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS
+#define ENABLE_SCO_OVER_HCI
 #define ENABLE_LOG_ERROR
 #define ENABLE_LOG_INFO
 // #define ENABLE_LOG_DEBUG

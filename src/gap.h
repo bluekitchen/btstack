@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __GAP_H
-#define __GAP_H
+#ifndef GAP_H
+#define GAP_H
 
 #if defined __cplusplus
 extern "C" {
@@ -157,6 +157,14 @@ void gap_set_extended_inquiry_response(const uint8_t * data);
 void gap_set_class_of_device(uint32_t class_of_device);
 
 /**
+ * @brief Set default link policy settings for all classic ACL links
+ * @param default_link_policy_settings - see LM_LINK_POLICY_* in bluetooth.h
+ * @note common value: LM_LINK_POLICY_ENABLE_ROLE_SWITCH | LM_LINK_POLICY_ENABLE_SNIFF_MODE to enable role switch and sniff mode
+ * @note has to be done before stack starts up
+ */
+void gap_set_default_link_policy_settings(uint16_t default_link_policy_settings);
+
+/**
  * @brief Enable/disable bonding. Default is enabled.
  * @param enabled
  */
@@ -200,6 +208,17 @@ void gap_ssp_set_auto_accept(int auto_accept);
 int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required);
 
 gap_security_level_t gap_security_level_for_link_key_type(link_key_type_t link_key_type);
+
+/**
+ * @brief map link keys to secure connection yes/no
+ */
+int gap_secure_connection_for_link_key_type(link_key_type_t link_key_type);
+
+/**
+ * @brief map link keys to authenticated
+ */
+int gap_authenticated_for_link_key_type(link_key_type_t link_key_type);
+
 gap_security_level_t gap_security_level(hci_con_handle_t con_handle);
 
 void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_t level);
@@ -389,6 +408,23 @@ int gap_auto_connection_stop(bd_addr_type_t address_typ, bd_addr_t address);
 void gap_auto_connection_stop_all(void);
 
 /**
+ * @brief Set LE PHY
+ * @param con_handle
+ * @param all_phys 0 = set rx/tx, 1 = set only rx, 2 = set only tx
+ * @param tx_phys 1 = 1M, 2 = 2M, 4 = Coded
+ * @param rx_phys 1 = 1M, 2 = 2M, 4 = Coded
+ * @param phy_options 0 = no preferred coding for Coded, 1 = S=2 coding (500 kbit), 2 = S=8 coding (125 kbit)
+ * @returns 0 if ok
+ */
+uint8_t gap_le_set_phy(hci_con_handle_t con_handle, uint8_t all_phys, uint8_t tx_phys, uint8_t rx_phys, uint8_t phy_options);
+
+/**
+ * @brief Get connection interval
+ * @return connection interval, otherwise 0 if error 
+ */
+uint16_t gap_le_connection_interval(hci_con_handle_t connection_handle);
+
+/**
  *
  * @brief Get encryption key size.
  * @param con_handle
@@ -402,6 +438,13 @@ int gap_encryption_key_size(hci_con_handle_t con_handle);
  * @return 1 if bonded with OOB/Passkey (AND MITM protection)
  */
 int gap_authenticated(hci_con_handle_t con_handle);
+
+/**
+ * @brief Get secure connection property
+ * @param con_handle
+ * @return 1 if bonded usiung LE Secure Connections
+ */
+int gap_secure_connection(hci_con_handle_t con_handle);
 
 /**
  * @brief Queries authorization state.
@@ -545,7 +588,23 @@ int gap_ssp_confirmation_response(bd_addr_t addr);
  */
 int gap_ssp_confirmation_negative(bd_addr_t addr);
 
+/**
+ * @brief Enter Sniff mode
+ * @param con_handle
+ * @param sniff_min_interval range: 0x0002 to 0xFFFE; only even values are valid, Time = N * 0.625 ms
+ * @param sniff_max_interval range: 0x0002 to 0xFFFE; only even values are valid, Time = N * 0.625 ms
+ * @param sniff_attempt Number of Baseband receive slots for sniff attempt.
+ * @param sniff_timeout Number of Baseband receive slots for sniff timeout.
+ @ @return 0 if ok
+ */
+uint8_t gap_sniff_mode_enter(hci_con_handle_t con_handle, uint16_t sniff_min_interval, uint16_t sniff_max_interval, uint16_t sniff_attempt, uint16_t sniff_timeout);
 
+/**
+ * @brief Exit Sniff mode
+ * @param con_handle
+ @ @return 0 if ok
+ */
+uint8_t gap_sniff_mode_exit(hci_con_handle_t con_handle);
 
 // LE
 
@@ -555,10 +614,19 @@ int gap_ssp_confirmation_negative(bd_addr_t addr);
 void gap_le_get_own_address(uint8_t * addr_type, bd_addr_t addr);
 
 
+/**
+ * @brief Get state of connection re-encryptiong for bonded devices when in central role
+ * @note used by gatt_client and att_server to wait for re-encryption
+ * @param con_handle
+ * @return 1 if security setup is active
+ */
+int gap_reconnect_security_setup_active(hci_con_handle_t con_handle);
+
+
 /* API_END*/
 
 #if defined __cplusplus
 }
 #endif
 
-#endif // __GAP_H
+#endif // GAP_H

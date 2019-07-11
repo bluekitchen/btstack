@@ -43,8 +43,8 @@
  *  Created by Matthias Ringwald on 7/23/09.
  */
 
-#ifndef __BTSTACK_UTIL_H
-#define __BTSTACK_UTIL_H
+#ifndef BTSTACK_UTIL_H
+#define BTSTACK_UTIL_H
 
 
 #if defined __cplusplus
@@ -108,6 +108,7 @@ uint32_t little_endian_read_32(const uint8_t * buffer, int position);
  * @param value
  */
 void little_endian_store_16(uint8_t *buffer, uint16_t position, uint16_t value);
+void little_endian_store_24(uint8_t *buffer, uint16_t position, uint32_t value);
 void little_endian_store_32(uint8_t *buffer, uint16_t position, uint32_t value);
 
 /** 
@@ -280,4 +281,4 @@ uint8_t btstack_crc8_calc(uint8_t *data, uint16_t len);
 }
 #endif
 		
-#endif // __BTSTACK_UTIL_H
+#endif // BTSTACK_UTIL_H

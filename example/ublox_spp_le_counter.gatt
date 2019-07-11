@@ -1,0 +1,5 @@
+PRIMARY_SERVICE, GAP_SERVICE
+CHARACTERISTIC, GAP_DEVICE_NAME, READ, "uBlox SPP Counter"
+
+#import <device_information_service.gatt>
+#import <ublox_spp_service.gatt>

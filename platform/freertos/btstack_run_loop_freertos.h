@@ -41,8 +41,8 @@
  * Functions relevant for BTstack WICED port 
  */
 
-#ifndef __BTSTACK_RUN_LOOP_FREERTOS_H
-#define __BTSTACK_RUN_LOOP_FREERTOS_H
+#ifndef BTSTACK_RUN_LOOP_FREERTOS_H
+#define BTSTACK_RUN_LOOP_FREERTOS_H
 
 #include "btstack_config.h"
 #include "btstack_run_loop.h"
@@ -84,4 +84,4 @@ void btstack_run_loop_freertos_trigger_from_isr(void);
 }
 #endif
 
-#endif // __btstack_run_loop_WICED_H
+#endif // btstack_run_loop_WICED_H

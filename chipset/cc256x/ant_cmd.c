@@ -29,7 +29,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "ant_cmd.c"
+#define BTSTACK_FILE__ "ant_cmd.c"
 
 /*
  *  ant_cmds.c

@@ -104,13 +104,26 @@ cc256xc_bt_sp_v1.0.zip:
 	@echo "Downloading $@"
 	@curl -sS -O $(BLUEKITCHEN_URL)/cc256xc_bt_sp_v1.0.zip
 
-initscripts-TIInit_6.12.26.bts: cc256xc_bt_sp_v1.0.zip
+initscripts-TIInit_6.12.26_v1.0.bts: cc256xc_bt_sp_v1.0.zip
 	@echo "Extracting $@"
-	@unzip -q -j -o cc256xc_bt_sp_v1.0.zip CC256XC_BT_SP/v1.0/initscripts-TIInit_6.12.26.bts
+	@unzip -q -p cc256xc_bt_sp_v1.0.zip CC256XC_BT_SP/v1.0/initscripts-TIInit_6.12.26.bts > $@
 
-initscripts-TIInit_6.12.26_ble_add-on.bts: cc256xc_bt_sp_v1.0.zip
+initscripts-TIInit_6.12.26_ble_add-on_v1.0.bts: cc256xc_bt_sp_v1.0.zip
 	@echo "Extracting $@"
-	@unzip -q -j -o cc256xc_bt_sp_v1.0.zip CC256XC_BT_SP/v1.0/initscripts-TIInit_6.12.26_ble_add-on.bts
+	@unzip -q -p cc256xc_bt_sp_v1.0.zip CC256XC_BT_SP/v1.0/initscripts-TIInit_6.12.26_ble_add-on.bts > $@
+
+# v1.1 - unversioned files from BlueKitchen website, original: http://www.ti.com/tool/cc256xc-bt-sp
+cc256xc_bt_sp_v1.1.zip:
+	@echo "Downloading $@"
+	@curl -sS -O $(BLUEKITCHEN_URL)/cc256xc_bt_sp_v1.1.zip
+
+initscripts-TIInit_6.12.26_v1.1.bts: cc256xc_bt_sp_v1.1.zip
+	@echo "Extracting $@"
+	@unzip -q -p cc256xc_bt_sp_v1.1.zip CC256XC_BT_SP/v1.1/initscripts-TIInit_6.12.26.bts > $@
+
+initscripts-TIInit_6.12.26_ble_add-on_v1.1.bts: cc256xc_bt_sp_v1.1.zip
+	@echo "Extracting $@"
+	@unzip -q -p cc256xc_bt_sp_v1.1.zip CC256XC_BT_SP/v1.1/initscripts-TIInit_6.12.26_ble_add-on.bts > $@
 
 
 # Various scripts for WL chipsets
@@ -184,11 +197,19 @@ bluetooth_init_cc2564B_1.6_BT_Spec_4.1.c: cc256xb_bt_sp_v1.6/initscripts-TIInit_
 	@echo "Creating $@"
 	@$(CONVERSION_SCRIPT) $^ $@
 
-bluetooth_init_cc2560C_1.0.c: initscripts-TIInit_6.12.26.bts
+bluetooth_init_cc2560C_1.0.c: initscripts-TIInit_6.12.26_v1.0.bts
 	@echo "Creating $@"
 	@$(CONVERSION_SCRIPT) $^ $@
 
-bluetooth_init_cc2564C_1.0.c: initscripts-TIInit_6.12.26.bts initscripts-TIInit_6.12.26_ble_add-on.bts
+bluetooth_init_cc2564C_1.0.c: initscripts-TIInit_6.12.26_v1.0.bts initscripts-TIInit_6.12.26_ble_add-on_v1.0.bts
+	@echo "Creating $@"
+	@$(CONVERSION_SCRIPT) $^ $@
+
+bluetooth_init_cc2560C_1.1.c: initscripts-TIInit_6.12.26_v1.1.bts
+	@echo "Creating $@"
+	@$(CONVERSION_SCRIPT) $^ $@
+
+bluetooth_init_cc2564C_1.1.c: initscripts-TIInit_6.12.26_v1.1.bts initscripts-TIInit_6.12.26_ble_add-on_v1.1.bts
 	@echo "Creating $@"
 	@$(CONVERSION_SCRIPT) $^ $@
 
@@ -213,7 +234,9 @@ all-scripts: \
 	bluetooth_init_cc2560B_1.5_BT_Spec_4.1.c \
 	bluetooth_init_cc2564B_1.5_BT_Spec_4.1.c \
 	bluetooth_init_cc2560C_1.0.c \
+	bluetooth_init_cc2560C_1.1.c \
 	bluetooth_init_cc2564C_1.0.c \
+	bluetooth_init_cc2564C_1.1.c \
 	TIInit_11.8.32.c \
 	TIInit_12.10.28.c \
 	TIInit_12.8.32.c \

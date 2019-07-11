@@ -35,8 +35,8 @@
  *  Support for hello world embedded tests
  */
 
-#ifndef __HAL_LED_H
-#define __HAL_LED_H
+#ifndef HAL_LED_H
+#define HAL_LED_H
 
 #if defined __cplusplus
 extern "C" {
@@ -47,4 +47,4 @@ void hal_led_toggle(void);
 #if defined __cplusplus
 }
 #endif
- #endif // __HAL_LED_H
+ #endif // HAL_LED_H

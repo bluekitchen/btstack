@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hci_transport_h2_libusb.c"
+#define BTSTACK_FILE__ "hci_transport_h2_libusb.c"
 
 /*
  *  hci_transport_usb.c
@@ -66,6 +66,14 @@
 #include "btstack_debug.h"
 #include "hci.h"
 #include "hci_transport.h"
+
+// deal with changes in libusb API:
+#ifdef LIBUSB_API_VERSION
+#if LIBUSB_API_VERSION >= 0x01000106
+// since 1.0.22, libusb_set_option replaces libusb_set_debug
+#define libusb_set_debug(context,level) libusb_set_option(context, LIBUSB_OPTION_LOG_LEVEL, level)
+#endif
+#endif
 
 #if (USB_VENDOR_ID != 0) && (USB_PRODUCT_ID != 0)
 #define HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
@@ -149,7 +157,6 @@ static void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t siz
 // libusb
 #ifndef HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
 static struct libusb_device_descriptor desc;
-static libusb_device        * dev;
 #endif
 static libusb_device_handle * handle;
 
@@ -186,6 +193,7 @@ static int      sco_shutdown;
 
 // dynamic SCO configuration
 static uint16_t iso_packet_size;
+static int      sco_enabled;
 
 #endif
 
@@ -218,6 +226,9 @@ static int sco_out_addr;
 // device path
 static int usb_path_len;
 static uint8_t usb_path[USB_MAX_PATH_LEN];
+
+// transport interface state
+static int usb_transport_open;
 
 
 #ifdef ENABLE_SCO_OVER_HCI
@@ -434,11 +445,11 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
     int signal_done = 0;
 
     if (transfer->endpoint == event_in_addr) {
-        packet_handler(HCI_EVENT_PACKET, transfer-> buffer, transfer->actual_length);
+        packet_handler(HCI_EVENT_PACKET, transfer->buffer, transfer->actual_length);
         resubmit = 1;
     } else if (transfer->endpoint == acl_in_addr) {
         // log_info("-> acl");
-        packet_handler(HCI_ACL_DATA_PACKET, transfer-> buffer, transfer->actual_length);
+        packet_handler(HCI_ACL_DATA_PACKET, transfer->buffer, transfer->actual_length);
         resubmit = 1;
     } else if (transfer->endpoint == 0){
         // log_info("command done, size %u", transfer->actual_length);
@@ -525,17 +536,16 @@ static void usb_process_ds(btstack_data_source_t *ds, btstack_data_source_callba
     // Handle any packet in the order that they were received
     while (handle_packet) {
         // log_info("handle packet %p, endpoint %x, status %x", handle_packet, handle_packet->endpoint, handle_packet->status);
-        void * next = handle_packet->user_data;
-        handle_completed_transfer(handle_packet);
+
+        // pop next transfer
+        struct libusb_transfer * transfer = handle_packet;
+        handle_packet = (struct libusb_transfer*) handle_packet->user_data;
+
+        // handle transfer
+        handle_completed_transfer(transfer);
+
         // handle case where libusb_close might be called by hci packet handler        
         if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return;
-
-        // Move to next in the list of packets to handle
-        if (next) {
-            handle_packet = (struct libusb_transfer*)next;
-        } else {
-            handle_packet = NULL;
-        }
     }
     // log_info("end usb_process_ds");
 }
@@ -573,8 +583,10 @@ static const uint16_t known_bt_devices[] = {
     0x0a5c, 0x21e8,
     // Asus BT400
     0x0b05, 0x17cb,
-    //BCM20702B0 Generic USB Detuned Class 1 @ 20 MHz
-    0x0a5c, 0x22be
+    // BCM20702B0 (Generic USB Detuned Class 1 @ 20 MHz)
+    0x0a5c, 0x22be,
+    // Zephyr e.g nRF52840-PCA10056
+    0x2fe3, 0x0100,
 };
 
 static int num_known_devices = sizeof(known_bt_devices) / sizeof(uint16_t) / 2;
@@ -589,7 +601,7 @@ static int is_known_bt_device(uint16_t vendor_id, uint16_t product_id){
     return 0;
 }
 
-static void scan_for_bt_endpoints(void) {
+static int scan_for_bt_endpoints(libusb_device *dev) {
     int r;
 
     event_in_addr = 0;
@@ -601,6 +613,7 @@ static void scan_for_bt_endpoints(void) {
     // get endpoints from interface descriptor
     struct libusb_config_descriptor *config_descriptor;
     r = libusb_get_active_config_descriptor(dev, &config_descriptor);
+    if (r < 0) return r;
 
     int num_interfaces = config_descriptor->bNumInterfaces;
     log_info("active configuration has %u interfaces", num_interfaces);
@@ -650,13 +663,14 @@ static void scan_for_bt_endpoints(void) {
         }
     }
     libusb_free_config_descriptor(config_descriptor);
+    return 0;
 }
 
 // returns index of found device or -1
 static int scan_for_bt_device(libusb_device **devs, int start_index) {
     int i;
     for (i = start_index; devs[i] ; i++){
-        dev = devs[i];
+        libusb_device * dev = devs[i];
         int r = libusb_get_device_descriptor(dev, &desc);
         if (r < 0) {
             log_error("failed to get device descriptor");
@@ -703,8 +717,8 @@ static int prepare_device(libusb_device_handle * aHandle){
     int r;
     int kernel_driver_detached = 0;
 
-    // Detach OS driver (not possible for OS X and WIN32)
-#if !defined(__APPLE__) && !defined(_WIN32)
+    // Detach OS driver (not possible for OS X, FreeBSD, and WIN32)
+#if !defined(__APPLE__) && !defined(_WIN32) && !defined(__FreeBSD__)
     r = libusb_kernel_driver_active(aHandle, 0);
     if (r < 0) {
         log_error("libusb_kernel_driver_active error %d", r);
@@ -740,7 +754,7 @@ static int prepare_device(libusb_device_handle * aHandle){
     log_info("claiming interface 0...");
     r = libusb_claim_interface(aHandle, 0);
     if (r < 0) {
-        log_error("Error claiming interface %d", r);
+        log_error("Error %d claiming interface 0", r);
         if (kernel_driver_detached){
             libusb_attach_kernel_driver(aHandle, 0);
         }
@@ -752,12 +766,9 @@ static int prepare_device(libusb_device_handle * aHandle){
     log_info("claiming interface 1...");
     r = libusb_claim_interface(aHandle, 1);
     if (r < 0) {
-        log_error("Error claiming interface %d", r);
-        if (kernel_driver_detached){
-            libusb_attach_kernel_driver(aHandle, 0);
-        }
-        libusb_close(aHandle);
-        return r;
+        log_error("Error %d claiming interface 1: - disabling SCO over HCI", r);
+    } else {
+        sco_enabled = 1;
     }
 #endif
 
@@ -778,13 +789,15 @@ static libusb_device_handle * try_open_device(libusb_device * device){
 
     log_info("libusb open %d, handle %p", r, dev_handle);
 
-    // reset device
-    libusb_reset_device(dev_handle);
+    // reset device (Not currently possible under FreeBSD 11.x/12.x due to usb framework)
+#if !defined(__FreeBSD__)
+    r = libusb_reset_device(dev_handle);
     if (r < 0) {
         log_error("libusb_reset_device failed!");
         libusb_close(dev_handle);
         return NULL;
     }
+#endif
     return dev_handle;
 }
 
@@ -913,6 +926,8 @@ static void usb_sco_stop(void){
 static int usb_open(void){
     int r;
 
+    if (usb_transport_open) return 0;
+
     handle_packet = NULL;
 
     // default endpoint addresses
@@ -931,6 +946,8 @@ static int usb_open(void){
     // configure debug level
     libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_WARNING);
     
+    libusb_device * dev = NULL;
+
 #ifdef HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
 
     // Use a specified device
@@ -950,6 +967,13 @@ static int usb_open(void){
         return -1;
     }
 
+    dev = libusb_get_device(aHandle);
+    r = scan_for_bt_endpoints(dev);
+    if (r < 0){
+        usb_close();
+        return -1;
+    }
+
 #else
     // Scan system for an appropriate devices
     libusb_device **devs;
@@ -961,8 +985,6 @@ static int usb_open(void){
         usb_close();
         return -1;
     }
-
-    dev = NULL;
 
     if (usb_path_len){
         int i;
@@ -976,9 +998,18 @@ static int usb_open(void){
                 if (!handle) continue;
 
                 r = prepare_device(handle);
-                if (r < 0) continue;
+                if (r < 0) {
+                    handle = NULL;
+                    continue;
+                }
 
                 dev = devs[i];
+                r = scan_for_bt_endpoints(dev);
+                if (r < 0) {
+                    handle = NULL;
+                    continue;
+                }
+
                 libusb_state = LIB_USB_INTERFACE_CLAIMED;
                 break;
             };
@@ -1002,9 +1033,18 @@ static int usb_open(void){
             if (!handle) continue;
 
             r = prepare_device(handle);
-            if (r < 0) continue;
+            if (r < 0) {
+                handle = NULL;
+                continue;
+            }
 
             dev = devs[deviceIndex];
+            r = scan_for_bt_endpoints(dev);
+            if (r < 0) {
+                handle = NULL;
+                continue;
+            }
+
             libusb_state = LIB_USB_INTERFACE_CLAIMED;
             break;
         }
@@ -1016,8 +1056,6 @@ static int usb_open(void){
         log_error("No USB Bluetooth device found");
         return -1;
     }
-
-    scan_for_bt_endpoints();
 
 #endif
     
@@ -1070,11 +1108,13 @@ static int usb_open(void){
  
      }
 
+ #if 0
     // Check for pollfds functionality
     doing_pollfds = libusb_pollfds_handle_timeouts(NULL);
-    
-    // NOTE: using pollfds doesn't work on Linux, so it is disable until further investigation here
+#else
+    // NOTE: using pollfds doesn't work on Linux, so it is disable until further investigation
     doing_pollfds = 0;
+#endif
 
     if (doing_pollfds) {
         log_info("Async using pollfds:");
@@ -1087,6 +1127,7 @@ static int usb_open(void){
             usb_close();
             return 1;            
         }
+        memset(pollfd_data_sources, 0, sizeof(btstack_data_source_t) * num_pollfds);
         for (r = 0 ; r < num_pollfds ; r++) {
             btstack_data_source_t *ds = &pollfd_data_sources[r];
             btstack_run_loop_set_data_source_fd(ds, pollfd[r]->fd);
@@ -1105,12 +1146,16 @@ static int usb_open(void){
         usb_timer_active = 1;
     }
 
+    usb_transport_open = 1;
+
     return 0;
 }
 
 static int usb_close(void){
     int c;
     int completed = 0;
+
+    if (!usb_transport_open) return 0;
 
     log_info("usb_close");
 
@@ -1225,6 +1270,7 @@ static int usb_close(void){
                         break;
                     }
                 }
+                sco_enabled = 0;
 #endif
             }
 
@@ -1244,6 +1290,7 @@ static int usb_close(void){
 
     libusb_state = LIB_USB_CLOSED;
     handle = NULL;
+    usb_transport_open = 0;
 
     return 0;
 }
@@ -1311,6 +1358,7 @@ static int usb_can_send_packet_now(uint8_t packet_type){
             return !usb_acl_out_active;
 #ifdef ENABLE_SCO_OVER_HCI
         case HCI_SCO_DATA_PACKET:
+            if (!sco_enabled) return 0;
             return sco_ring_have_space();
 #endif
         default:
@@ -1326,6 +1374,7 @@ static int usb_send_packet(uint8_t packet_type, uint8_t * packet, int size){
             return usb_send_acl_packet(packet, size);
 #ifdef ENABLE_SCO_OVER_HCI
         case HCI_SCO_DATA_PACKET:
+            if (!sco_enabled) return -1;
             return usb_send_sco_packet(packet, size);
 #endif
         default:
@@ -1335,6 +1384,8 @@ static int usb_send_packet(uint8_t packet_type, uint8_t * packet, int size){
 
 #ifdef ENABLE_SCO_OVER_HCI
 static void usb_set_sco_config(uint16_t voice_setting, int num_connections){
+    if (!sco_enabled) return;
+
     log_info("usb_set_sco_config: voice settings 0x%04x, num connections %u", voice_setting, num_connections);
 
     if (num_connections != sco_num_connections){

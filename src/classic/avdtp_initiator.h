@@ -42,10 +42,11 @@
  *
  */
 
-#ifndef __AVDTP_INT_H
-#define __AVDTP_INT_H
+#ifndef AVDTP_INT_H
+#define AVDTP_INT_H
 
 #include <stdint.h>
+#include "classic/avdtp.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -58,4 +59,4 @@ void avdtp_initiator_stream_config_subsm_run(avdtp_connection_t * connection, av
 }
 #endif
 
-#endif // __AVDTP_INT_H
+#endif // AVDTP_INT_H

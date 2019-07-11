@@ -41,7 +41,7 @@
  *  HCI Transport API implementation for basic H4 protocol for use with btstack_run_loop_wiced.c
  */
 
-#define __BTSTACK_FILE__ "hci_transport_h4_wiced.c"
+#define BTSTACK_FILE__ "btstack_uart_block_wiced.c"
 
 #include "btstack_config.h"
 #include "btstack_run_loop_wiced.h"
@@ -291,7 +291,7 @@ static void btstack_uart_block_wiced_set_block_sent( void (*block_handler)(void)
 
 static int btstack_uart_block_wiced_set_baudrate(uint32_t baudrate){
 
-#if defined(_STM32F205RGT6_) || defined(STM32F40_41xxx)
+#if defined(_STM32F205RGT6_) || defined(STM32F40_41xxx) || defined(STM32F411xE) || (STM32F412xG)
 
     // directly use STM peripheral functions to change baud rate dynamically
     

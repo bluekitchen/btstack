@@ -50,6 +50,20 @@ The sdkconfig of the example template disables the original Bluedroid stack by d
 
 There are different issues in the Bluetooth Controller of the ESP32 that is provided in binary. We've submitted appropriate issues on the GitHub Issues page here: https://github.com/espressif/esp-idf/issues/created_by/mringwal
 
+### Audio playback
+
+Audio playback is implemented by `btstack_audio_esp32.c`. It assumes an I2S Codec connected as follows:
+	
+ESP32 pin | I2S Pin
+----------|---------
+GPIO25    | LRCK
+GPIO26    | BCLK
+GPIO22    | DATA
+
+We've used the MAX98357A on the [Adafruit breakout board](https://www.adafruit.com/product/3006). The simplest example is the mod_player, which plays back an 8 kB sound file and the a2dp_sink_demo implements a basic Bluetooth loudspeaker.
+
+Audio input via I2S or ADC is not supported yet. We might have a look at it when [HFP/SCO via VHCI](https://github.com/espressif/esp-idf/issues/1118) is working on the ESP32.
+
 ### Multi-Threading
 
 BTstack is not thread-safe, but you're using a multi-threading OS. Any function that is called from BTstack, e.g. packet handlers, can directly call into BTstack without issues. For other situations, you need to provide some general 'do BTstack tasks' function and trigger BTstack to execute it on its own thread.

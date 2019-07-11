@@ -40,8 +40,8 @@
  *  Adapter to use cc256x-based chipsets with BTstack
  */
  
-#ifndef __BTSTACK_CHIPSET_CC256X_H
-#define __BTSTACK_CHIPSET_CC256X_H
+#ifndef BTSTACK_CHIPSET_CC256X_H
+#define BTSTACK_CHIPSET_CC256X_H
 
 #if defined __cplusplus
 extern "C" {
@@ -80,4 +80,4 @@ void btstack_chipset_cc256x_set_init_script(uint8_t * data, uint32_t size);
 }
 #endif
 
-#endif // __BTSTACK_CHIPSET_CC256X_H
+#endif // BTSTACK_CHIPSET_CC256X_H

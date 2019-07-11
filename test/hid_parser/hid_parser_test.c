@@ -218,6 +218,8 @@ const uint8_t keyboard_report1[] = { 0x01, 0x00, 0x04, 0x05, 0x06, 0x00, 0x00, 0
 const uint8_t combo_report1[]    = { 0x01, 0x03, 0x02, 0x03 };
 const uint8_t combo_report2[]    = { 0x02, 0x01, 0x00,  0x04, 0x05, 0x06, 0x00, 0x00, 0x00 };
 
+
+
 static void expect_field(btstack_hid_parser_t * parser, uint16_t expected_usage_page, uint16_t expected_usage, int32_t expected_value){
     // printf("expected - usage page %02x, usage %04x, value %02x (bit pos %u)\n", expected_usage_page, expected_usage, expected_value, parser->report_pos_in_bit);
     CHECK_EQUAL(1, btstack_hid_parser_has_more(parser));
@@ -325,6 +327,22 @@ TEST(HID, Combo2){
     CHECK_EQUAL(72, hid_parser.report_pos_in_bit);
     CHECK_EQUAL(0, btstack_hid_parser_has_more(&hid_parser));
 }
+
+TEST(HID, GetReportSize){
+    int report_size = 0;
+    const uint8_t * hid_descriptor =  combo_descriptor_with_report_ids;
+    uint16_t hid_descriptor_len = sizeof(combo_descriptor_with_report_ids);
+    report_size = btstack_hid_get_report_size_for_id(1, BTSTACK_HID_REPORT_TYPE_INPUT, hid_descriptor_len, hid_descriptor);
+    CHECK_EQUAL(3, report_size);
+
+    hid_descriptor = hid_descriptor_keyboard_boot_mode;
+    hid_descriptor_len = sizeof(hid_descriptor_keyboard_boot_mode);
+    report_size = btstack_hid_get_report_size_for_id(0, BTSTACK_HID_REPORT_TYPE_OUTPUT, hid_descriptor_len, hid_descriptor);
+    CHECK_EQUAL(1, report_size);
+    report_size = btstack_hid_get_report_size_for_id(0, BTSTACK_HID_REPORT_TYPE_INPUT, hid_descriptor_len, hid_descriptor);
+    CHECK_EQUAL(8, report_size);
+}
+
 
 int main (int argc, const char * argv[]){
     // hci_dump_open("hci_dump.pklg", HCI_DUMP_PACKETLOGGER);

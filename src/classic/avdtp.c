@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "avdtp.c"
+#define BTSTACK_FILE__ "avdtp.c"
 
 
 #include <stdint.h>
@@ -316,7 +316,6 @@ avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, avdtp_contex
         log_error("Not enough memory to create connection");
         return NULL;
     }
-    memset(connection, 0, sizeof(avdtp_connection_t));
     connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
     connection->initiator_transaction_label = avdtp_get_next_initiator_transaction_label(context);
     connection->avdtp_cid = avdtp_get_next_avdtp_cid();
@@ -332,7 +331,6 @@ avdtp_stream_endpoint_t * avdtp_create_stream_endpoint(avdtp_sep_type_t sep_type
         log_error("Not enough memory to create stream endpoint");
         return NULL;
     }
-    memset(stream_endpoint, 0, sizeof(avdtp_stream_endpoint_t));
     stream_endpoint->sep.seid = avdtp_get_next_local_seid(context);
     stream_endpoint->sep.media_type = media_type;
     stream_endpoint->sep.type = sep_type;
@@ -428,15 +426,14 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
                                     if (de_get_element_type(element) != DE_UUID) continue;
                                     
                                     uuid = de_get_uuid32(element);
+                                    des_iterator_next(&prot_it);
                                     switch (uuid){
                                         case BLUETOOTH_PROTOCOL_L2CAP:
                                             if (!des_iterator_has_more(&prot_it)) continue;
-                                            des_iterator_next(&prot_it);
                                             de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_query_context->avdtp_l2cap_psm);
                                             break;
                                         case BLUETOOTH_PROTOCOL_AVDTP:
                                             if (!des_iterator_has_more(&prot_it)) continue;
-                                            des_iterator_next(&prot_it);
                                             de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_query_context->avdtp_version);
                                             break;
                                         default:
@@ -455,6 +452,10 @@ static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t c
             break;
             
         case SDP_EVENT_QUERY_COMPLETE:
+            if (connection->state != AVDTP_SIGNALING_W4_SDP_QUERY_COMPLETE){
+                // bail out, we must have had an incoming connection in the meantime;
+                break;
+            }
             status = sdp_event_query_complete_get_status(packet);
             if (status != ERROR_CODE_SUCCESS){
                 avdtp_signaling_emit_connection_established(sdp_query_context->avdtp_callback, sdp_query_context->avdtp_cid, connection->remote_addr, status);
@@ -489,6 +490,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
     uint16_t psm;
     uint16_t local_cid;
     uint8_t  status;
+    int accept_signaling_connection;
     avdtp_stream_endpoint_t * stream_endpoint = NULL;
     avdtp_connection_t * connection = NULL;
     btstack_linked_list_t * avdtp_connections = &context->connections;
@@ -547,22 +549,56 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     local_cid = l2cap_event_incoming_connection_get_local_cid(packet);
                     connection = avdtp_connection_for_bd_addr(event_addr, context);
                     log_info("L2CAP_EVENT_INCOMING_CONNECTION, local cid 0x%02x ", local_cid);
-                    if (connection){
-                        log_info("Connection state %d", connection->state);
-                    }
-                    if (!connection || connection->state == AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED){
+                    if (!connection){
+                        // create connection struct for regular inconming connection request
                         connection = avdtp_create_connection(event_addr, context);
+                        if (!connection){
+                            log_error("Could not create connection, reject");
+                            l2cap_decline_connection(local_cid);
+                            break;                            
+                        }
+                        connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
+                    }
+
+                    // connection exists, check states
+                    log_info("Connection state %d", connection->state);
+                    accept_signaling_connection = 0;
+                    switch (connection->state){
+                        case AVDTP_SIGNALING_CONNECTION_IDLE:
+                            // regular incoming connection
+                            accept_signaling_connection = 1;
+                            break;
+                        case AVDTP_SIGNALING_W4_SDP_QUERY_COMPLETE:
+                            // incoming connection during sdp query, just accept it
+                            accept_signaling_connection = 1;
+                            break;
+                        case AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED:
+                            log_info("Reject incoming connection after creating outgoing");
+                            l2cap_decline_connection(local_cid);
+                            return;
+                        case AVDTP_SIGNALING_CONNECTION_OPENED:
+                            // handled below
+                            break;
+                        case AVDTP_SIGNALING_CONNECTION_W4_L2CAP_DISCONNECTED:
+                            log_info("Reject incoming connection during disconnect");
+                            l2cap_decline_connection(local_cid);
+                            return;
+                    }
+
+                    if (accept_signaling_connection){
                         connection->is_initiator = 0;
-                        log_info("L2CAP_EVENT_INCOMING_CONNECTION: role is_initiator %d", connection->is_initiator);
                         connection->state = AVDTP_SIGNALING_CONNECTION_W4_L2CAP_CONNECTED;
+                        log_info("L2CAP_EVENT_INCOMING_CONNECTION: role is_initiator %d", connection->is_initiator);
                         log_info("L2CAP_EVENT_INCOMING_CONNECTION, connection %p, state connection %d, avdtp cid 0x%02x", connection, connection->state, connection->avdtp_cid);
                         l2cap_accept_connection(local_cid);
                         break;
                     }
-                    
+
+                    // now, we're only dealing with media connections
                     stream_endpoint = avdtp_stream_endpoint_for_seid(connection->local_seid, context);
                     if (!stream_endpoint) {
                         log_info("L2CAP_EVENT_INCOMING_CONNECTION no streamendpoint found for seid %d", connection->local_seid);
+                        l2cap_decline_connection(local_cid);
                         break;
                     }
 
@@ -1029,31 +1065,8 @@ uint8_t avdtp_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t remote
     return avdtp_request_can_send_now_initiator(connection, connection->l2cap_signaling_cid);
 }
 
-void avdtp_initialize_sbc_configuration_storage(avdtp_stream_endpoint_t * stream_endpoint, uint8_t * config_storage, uint16_t storage_size, uint8_t * packet, uint16_t packet_size){
-    UNUSED(packet_size);
-    if (storage_size < 4) {
-        log_error("storage must have 4 bytes");
-        return;
-    }
-    uint8_t sampling_frequency = avdtp_choose_sbc_sampling_frequency(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_sampling_frequency_bitmap(packet));
-    uint8_t channel_mode = avdtp_choose_sbc_channel_mode(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_channel_mode_bitmap(packet));
-    uint8_t block_length = avdtp_choose_sbc_block_length(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_block_length_bitmap(packet));
-    uint8_t subbands = avdtp_choose_sbc_subbands(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_subbands_bitmap(packet));
-    
-    uint8_t allocation_method = avdtp_choose_sbc_allocation_method(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_allocation_method_bitmap(packet));
-    uint8_t max_bitpool_value = avdtp_choose_sbc_max_bitpool_value(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(packet));
-    uint8_t min_bitpool_value = avdtp_choose_sbc_min_bitpool_value(stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(packet));
-
-    config_storage[0] = (sampling_frequency << 4) | channel_mode;
-    config_storage[1] = (block_length << 4) | (subbands << 2) | allocation_method;
-    config_storage[2] = min_bitpool_value;
-    config_storage[3] = max_bitpool_value;
-
-    stream_endpoint->remote_configuration_bitmap = store_bit16(stream_endpoint->remote_configuration_bitmap, AVDTP_MEDIA_CODEC, 1);
-    stream_endpoint->remote_configuration.media_codec.media_type = AVDTP_AUDIO;
-    stream_endpoint->remote_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
-    stream_endpoint->remote_configuration.media_codec.media_codec_information_len = storage_size;
-    stream_endpoint->remote_configuration.media_codec.media_codec_information = config_storage;
+void    avdtp_set_preferred_sampling_frequeny(avdtp_stream_endpoint_t * stream_endpoint, uint32_t sampling_frequency){
+    stream_endpoint->preferred_sampling_frequency = sampling_frequency;
 }
 
 uint8_t avdtp_choose_sbc_channel_mode(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_channel_mode_bitmap){
@@ -1125,16 +1138,27 @@ uint8_t avdtp_choose_sbc_block_length(avdtp_stream_endpoint_t * stream_endpoint,
 uint8_t avdtp_choose_sbc_sampling_frequency(avdtp_stream_endpoint_t * stream_endpoint, uint8_t remote_sampling_frequency_bitmap){
     if (!stream_endpoint) return 0;
     uint8_t * media_codec = stream_endpoint->sep.capabilities.media_codec.media_codec_information;
-    uint8_t sampling_frequency_bitmap = (media_codec[0] >> 4) & remote_sampling_frequency_bitmap;
+    uint8_t supported_sampling_frequency_bitmap = (media_codec[0] >> 4) & remote_sampling_frequency_bitmap;
+    uint8_t sampling_frequency = AVDTP_SBC_44100;   // some default
 
-    uint8_t sampling_frequency = AVDTP_SBC_44100;
-    if (sampling_frequency_bitmap & AVDTP_SBC_48000){
+    // use preferred sampling frequency if possible
+    if        ((stream_endpoint->preferred_sampling_frequency == 48000) && (supported_sampling_frequency_bitmap & AVDTP_SBC_48000)){
         sampling_frequency = AVDTP_SBC_48000;
-    } else if (sampling_frequency_bitmap & AVDTP_SBC_44100){
+    } else if ((stream_endpoint->preferred_sampling_frequency == 44100) && (supported_sampling_frequency_bitmap & AVDTP_SBC_44100)){
         sampling_frequency = AVDTP_SBC_44100;
-    } else if (sampling_frequency_bitmap & AVDTP_SBC_32000){
+    } else if ((stream_endpoint->preferred_sampling_frequency == 32000) && (supported_sampling_frequency_bitmap & AVDTP_SBC_32000)){
         sampling_frequency = AVDTP_SBC_32000;
-    } else if (sampling_frequency_bitmap & AVDTP_SBC_16000){
+    } else if ((stream_endpoint->preferred_sampling_frequency == 16000) && (supported_sampling_frequency_bitmap & AVDTP_SBC_16000)){
+        sampling_frequency = AVDTP_SBC_16000;
+    }
+    // otherwise, use highest available
+    else if (supported_sampling_frequency_bitmap & AVDTP_SBC_48000){
+        sampling_frequency = AVDTP_SBC_48000;
+    } else if (supported_sampling_frequency_bitmap & AVDTP_SBC_44100){
+        sampling_frequency = AVDTP_SBC_44100;
+    } else if (supported_sampling_frequency_bitmap & AVDTP_SBC_32000){
+        sampling_frequency = AVDTP_SBC_32000;
+    } else if (supported_sampling_frequency_bitmap & AVDTP_SBC_16000){
         sampling_frequency = AVDTP_SBC_16000;
     } 
     return sampling_frequency;

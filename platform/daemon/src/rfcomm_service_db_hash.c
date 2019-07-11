@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "rfcomm_service_db_hash.c"
+#define BTSTACK_FILE__ "rfcomm_service_db_hash.c"
 
 #include <string.h>
 #include <stdlib.h>

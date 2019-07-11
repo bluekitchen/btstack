@@ -34,7 +34,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hal_flash_bank_memory.c"
+#define BTSTACK_FILE__ "hal_flash_bank_memory.c"
 
 #include "hal_flash_bank.h"
 #include "hal_flash_bank_memory.h"
@@ -92,11 +92,10 @@ static void hal_flash_bank_memory_write(void * context, int bank, uint32_t offse
 		if (data[i] == 0xff) continue;
 		// writing something other than 0x00 is only allowed once
 		if (self->banks[bank][offset] != 0xff && data[i] != 0x00){
-			printf("Error: offset %u written twice. Data: 0x%02x!\n", offset+i, data[i]);
-			exit(10);
-			return;			
+			log_error("Error: offset %u written twice. Data: 0x%02x!", offset+i, data[i]);
+		} else {
+			self->banks[bank][offset++] = data[i];
 		}
-		self->banks[bank][offset++] = data[i];
 	}
 }
 

@@ -41,8 +41,8 @@
  *
  */
 
-#ifndef __BNEP_H
-#define __BNEP_H
+#ifndef BNEP_H
+#define BNEP_H
  
 #include "btstack_util.h"
 #include "btstack_run_loop.h"
@@ -222,4 +222,4 @@ void bnep_unregister_service(uint16_t service_uuid);
 }
 #endif
 
-#endif // __BNEP_H
+#endif // BNEP_H

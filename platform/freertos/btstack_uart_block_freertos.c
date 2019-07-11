@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_uart_block_freertos.c"
+#define BTSTACK_FILE__ "btstack_uart_block_freertos.c"
 
 /*
  *  btstack_uart_block_freertos.c

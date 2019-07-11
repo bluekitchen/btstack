@@ -34,8 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
-#ifndef __SDP_H
-#define __SDP_H
+#ifndef SDP_H
+#define SDP_H
 
 #include <stdint.h>
 #include "btstack_linked_list.h"
@@ -105,4 +105,4 @@ uint32_t sdp_get_service_record_handle(const uint8_t * record);
 #if defined __cplusplus
 }
 #endif
-#endif // __SDP_H
+#endif // SDP_H

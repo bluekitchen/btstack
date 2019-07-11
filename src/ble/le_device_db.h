@@ -35,8 +35,8 @@
  *
  */
  
-#ifndef __LE_DEVICE_DB_H
-#define __LE_DEVICE_DB_H
+#ifndef LE_DEVICE_DB_H
+#define LE_DEVICE_DB_H
 
 #include "btstack_util.h"
 #include "btstack_config.h"
@@ -113,8 +113,9 @@ void le_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t irk)
  * @brief key size
  * @brief authenticated
  * @brief authorized
+ * @breif secure_connection
  */
-void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_key_t ltk, int key_size, int authenticated, int authorized);
+void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_key_t ltk, int key_size, int authenticated, int authorized, int secure_connection);
 
 /**
  * @brief get remote encryption info
@@ -125,8 +126,9 @@ void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_k
  * @brief key size
  * @brief authenticated
  * @brief authorized
+ * @breif secure_connection
  */
-void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk,  int * key_size, int * authenticated, int * authorized);
+void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk,  int * key_size, int * authenticated, int * authorized, int * secure_connection);
 
 #ifdef ENABLE_LE_SIGNED_WRITE
 
@@ -202,4 +204,4 @@ void le_device_db_dump(void);
 }
 #endif
 
-#endif // __LE_DEVICE_DB_H
+#endif // LE_DEVICE_DB_H

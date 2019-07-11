@@ -43,8 +43,8 @@
  *  Allows to set public BD ADDR
  */
 
-#ifndef __BTSTACK_CHIPSET_STLC2550D_H
-#define __BTSTACK_CHIPSET_STLC2550D_H
+#ifndef BTSTACK_CHIPSET_STLC2550D_H
+#define BTSTACK_CHIPSET_STLC2550D_H
 
 #if defined __cplusplus
 extern "C" {
@@ -58,4 +58,4 @@ const btstack_chipset_t * btstack_chipset_stlc2500d_instance(void);
 }
 #endif
 
-#endif // __BTSTACK_CHIPSET_STLC2550D_H
+#endif // BTSTACK_CHIPSET_STLC2550D_H

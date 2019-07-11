@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2013-2017, tinydir authors:
+Copyright (c) 2013-2018, tinydir authors:
 - Cong Xu
 - Lautis Sun
 - Baudouin Feildel
@@ -89,7 +89,10 @@ extern "C" {
 # define _TINYDIR_PATH_MAX MAX_PATH
 #elif defined  __linux__
 # include <limits.h>
-# define _TINYDIR_PATH_MAX PATH_MAX
+/* BK - only use PATH_MAX if defined */
+# if defined(PATH_MAX)
+#  define _TINYDIR_PATH_MAX PATH_MAX
+# endif
 #elif defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 # include <sys/param.h>
 # if defined(BSD)
@@ -365,7 +368,7 @@ int tinydir_open_sorted(tinydir_dir *dir, const _tinydir_char_t *path)
 	}
 	tinydir_close(dir);
 
-	if (tinydir_open(dir, path) == -1)
+	if (n_files == 0 || tinydir_open(dir, path) == -1)
 	{
 		return -1;
 	}
@@ -658,7 +661,7 @@ int tinydir_file_open(tinydir_file *file, const _tinydir_char_t *path)
 	/* Get the parent path */
 #if (defined _MSC_VER || defined __MINGW32__)
 #if ((defined _MSC_VER) && (_MSC_VER >= 1400))
-		_tsplitpath_s(
+		errno = _tsplitpath_s(
 			path,
 			drive_buf, _TINYDIR_DRIVE_MAX,
 			dir_name_buf, _TINYDIR_FILENAME_MAX,
@@ -673,6 +676,11 @@ int tinydir_file_open(tinydir_file *file, const _tinydir_char_t *path)
 			ext_buf);
 #endif
 
+if (errno)
+{
+	return -1;
+}
+
 /* _splitpath_s not work fine with only filename and widechar support */
 #ifdef _UNICODE
 		if (drive_buf[0] == L'\xFEFE')
@@ -681,11 +689,6 @@ int tinydir_file_open(tinydir_file *file, const _tinydir_char_t *path)
 			dir_name_buf[0] = '\0';
 #endif
 
-	if (errno)
-	{
-		errno = EINVAL;
-		return -1;
-	}
 	/* Emulate the behavior of dirname by returning "." for dir name if it's
 	empty */
 	if (drive_buf[0] == '\0' && dir_name_buf[0] == '\0')

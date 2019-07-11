@@ -42,8 +42,8 @@
  *  
  */
 
-#ifndef __BTSTACK_CHIPSET_ATWILC3000_H
-#define __BTSTACK_CHIPSET_ATWILC3000_H
+#ifndef BTSTACK_CHIPSET_ATWILC3000_H
+#define BTSTACK_CHIPSET_ATWILC3000_H
 
 #if defined __cplusplus
 extern "C" {
@@ -72,4 +72,4 @@ void btstack_chipset_atwilc3000_download_firmware(const btstack_uart_block_t * u
 }
 #endif
 
-#endif // __BTSTACK_CHIPSET_ATWILC3000_H
+#endif // BTSTACK_CHIPSET_ATWILC3000_H

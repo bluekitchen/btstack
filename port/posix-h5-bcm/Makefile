@@ -1,11 +1,12 @@
 # Makefile for libusb based examples
-BTSTACK_ROOT = ../..
+BTSTACK_ROOT ?= ../..
 
 CORE += \
 	btstack_chipset_bcm.c \
 	btstack_chipset_bcm_download_firmware.c \
 	btstack_link_key_db_fs.c \
 	btstack_run_loop_posix.c \
+	btstack_tlv_posix.c \
 	btstack_uart_block_posix.c \
 	btstack_slip.c \
 	hci_transport_h5.c \
@@ -31,14 +32,8 @@ VPATH += ${BTSTACK_ROOT}/platform/embedded
 
 VPATH += ${BTSTACK_ROOT}/chipset/bcm	
 
-ifeq ($(OS),Windows_NT)
-LDFLAGS += -lws2_32
-endif
-
-# Command Line examples require porting to win32, so only build on other unix-ish hosts
-ifneq ($(OS),Windows_NT)
-EXAMPLES += ${EXAMPLES_CLI}
-endif
+EXAMPLES = ${EXAMPLES_GENERAL} ${EXAMPLES_CLASSIC_ONLY} ${EXAMPLES_LE_ONLY} ${EXAMPLES_DUAL_MODE}
+EXAMPLES += pan_lwip_http_server
 
 # use pkg-config for portaudio
 # CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags) -DHAVE_PORTAUDIO

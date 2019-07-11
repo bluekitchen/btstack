@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hid_host_demo.c"
+#define BTSTACK_FILE__ "hid_host_demo.c"
 
 /*
  * hid_host_demo.c
@@ -138,12 +138,12 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
 
 static void hid_host_setup(void){
 
+    // Initialize L2CAP 
+    l2cap_init();
+
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-
-    // Initialize L2CAP 
-    l2cap_init();
 
     // Disable stdout buffering
     setbuf(stdout, NULL);
@@ -182,12 +182,13 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                                 des_element = des_iterator_get_element(&attribute_list_it);
                                 des_iterator_init(&prot_it, des_element);
                                 element = des_iterator_get_element(&prot_it);
+                                if (!element) continue;
                                 if (de_get_element_type(element) != DE_UUID) continue;
                                 uuid = de_get_uuid32(element);
+                                des_iterator_next(&prot_it);
                                 switch (uuid){
                                     case BLUETOOTH_PROTOCOL_L2CAP:
                                         if (!des_iterator_has_more(&prot_it)) continue;
-                                        des_iterator_next(&prot_it);
                                         de_element_get_uint16(des_iterator_get_element(&prot_it), &hid_control_psm);
                                         printf("HID Control PSM: 0x%04x\n", (int) hid_control_psm);
                                         break;
@@ -205,12 +206,13 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                                     des_element = des_iterator_get_element(&additional_des_it);
                                     des_iterator_init(&prot_it, des_element);
                                     element = des_iterator_get_element(&prot_it);
+                                    if (!element) continue;
                                     if (de_get_element_type(element) != DE_UUID) continue;
                                     uuid = de_get_uuid32(element);
+                                    des_iterator_next(&prot_it);
                                     switch (uuid){
                                         case BLUETOOTH_PROTOCOL_L2CAP:
                                             if (!des_iterator_has_more(&prot_it)) continue;
-                                            des_iterator_next(&prot_it);
                                             de_element_get_uint16(des_iterator_get_element(&prot_it), &hid_interrupt_psm);
                                             printf("HID Interrupt PSM: 0x%04x\n", (int) hid_interrupt_psm);
                                             break;
@@ -279,7 +281,7 @@ static void hid_host_handle_interrupt_report(const uint8_t * report, uint16_t re
     report++;
     report_len--;
     btstack_hid_parser_t parser;
-    btstack_hid_parser_init(&parser, hid_descriptor, hid_descriptor_len, BTSTACK_HID_REPORT_TYPE_INPUT, report, report_len);
+    btstack_hid_parser_init(&parser, hid_descriptor, hid_descriptor_len, HID_REPORT_TYPE_INPUT, report, report_len);
     int shift = 0;
     uint8_t new_keys[NUM_KEYS];
     memset(new_keys, 0, sizeof(new_keys));

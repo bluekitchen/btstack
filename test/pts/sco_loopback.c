@@ -76,6 +76,9 @@ static void try_send_sco(void){
 }
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t event_size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(event_size);
     switch (packet[0]) {
         case BTSTACK_EVENT_STATE:
             if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
@@ -96,7 +99,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * pack
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
-
+    UNUSED(argc);
+    (void)argv;
+    
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 

@@ -34,6 +34,8 @@
  *
  */
 
+#define __BTSTACK_FILE__ "btstack_run_loop_corefoundation.c"
+
 /*
  *  btstack_run_loop_corefoundation.c
  *
@@ -75,11 +77,11 @@ static void socketDataCallback (
     btstack_data_source_t * ds = (btstack_data_source_t *) info;
 
     if ((callbackType == kCFSocketReadCallBack) && (ds->flags & DATA_SOURCE_CALLBACK_READ)){
-        // printf("btstack_run_loop_corefoundation_ds %x - fd %u, CFSocket %x, CFRunLoopSource %x\n", (int) ds, ds->fd, (int) s, (int) ds->item.next);
+        // printf("btstack_run_loop_corefoundation_ds %x - fd %u, CFSocket %x, CFRunLoopSource %x\n", (int) ds, ds->source.fd, (int) s, (int) ds->item.next);
         ds->process(ds, DATA_SOURCE_CALLBACK_READ);
     }
     if ((callbackType == kCFSocketWriteCallBack) && (ds->flags & DATA_SOURCE_CALLBACK_WRITE)){
-        // printf("btstack_run_loop_corefoundation_ds %x - fd %u, CFSocket %x, CFRunLoopSource %x\n", (int) ds, ds->fd, (int) s, (int) ds->item.next);
+        // printf("btstack_run_loop_corefoundation_ds %x - fd %u, CFSocket %x, CFRunLoopSource %x\n", (int) ds, ds->source.fd, (int) s, (int) ds->item.next);
         ds->process(ds, DATA_SOURCE_CALLBACK_WRITE);
     }
 }
@@ -115,7 +117,7 @@ static void btstack_run_loop_corefoundation_add_data_source(btstack_data_source_
     uint16_t callback_types = btstack_run_loop_corefoundation_option_flags_for_callback_types(data_source->flags);
 	CFSocketRef socket = CFSocketCreateWithNative (
 										  kCFAllocatorDefault,
-										  data_source->fd,
+										  data_source->source.fd,
 										  callback_types,
 										  socketDataCallback,
 										  &socketContext
@@ -131,6 +133,7 @@ static void btstack_run_loop_corefoundation_add_data_source(btstack_data_source_
 	CFRunLoopSourceRef socket_run_loop = CFSocketCreateRunLoopSource ( kCFAllocatorDefault, socket, 0);
     
     // store CFSocketRef and CFRunLoopSource in struct on heap
+    memset(references, 0, sizeof(btstack_corefoundation_data_source_helper_t));
     references->socket = socket;
     references->socket_run_loop = socket_run_loop;
 
@@ -139,7 +142,7 @@ static void btstack_run_loop_corefoundation_add_data_source(btstack_data_source_
 
     // add to run loop
 	CFRunLoopAddSource( CFRunLoopGetCurrent(), socket_run_loop, kCFRunLoopCommonModes);
-    // printf("btstack_run_loop_corefoundation_add_data_source    %x - fd %u - CFSocket %x, CFRunLoopSource %x\n", (int) dataSource, dataSource->fd, (int) socket, (int) socket_run_loop);
+    // printf("btstack_run_loop_corefoundation_add_data_source    %x - fd %u - CFSocket %x, CFRunLoopSource %x\n", (int) dataSource, dataSource->source.fd, (int) socket, (int) socket_run_loop);
     
 }
 
@@ -157,7 +160,7 @@ static void btstack_run_loop_embedded_disable_data_source_callbacks(btstack_data
 
 static int  btstack_run_loop_corefoundation_remove_data_source(btstack_data_source_t *ds){
     btstack_corefoundation_data_source_helper_t * references = (btstack_corefoundation_data_source_helper_t *) ds->item.next;
-    // printf("btstack_run_loop_corefoundation_remove_data_source %x - fd %u, CFSocket %x, CFRunLoopSource %x\n", (int) dataSource, dataSource->fd, (int) dataSource->item.next, (int) dataSource->item.user_data);
+    // printf("btstack_run_loop_corefoundation_remove_data_source %x - fd %u, CFSocket %x, CFRunLoopSource %x\n", (int) dataSource, dataSource->source.fd, (int) dataSource->item.next, (int) dataSource->item.user_data);
     CFRunLoopRemoveSource( CFRunLoopGetCurrent(), references->socket_run_loop, kCFRunLoopCommonModes);
     CFRelease(references->socket_run_loop);
 

@@ -40,8 +40,8 @@
  *
  */
 
-#ifndef __BTSTACK_SBC_H
-#define __BTSTACK_SBC_H
+#ifndef BTSTACK_SBC_H
+#define BTSTACK_SBC_H
 
 #include <stdint.h>
 #include "btstack_sbc_plc.h"
@@ -203,11 +203,11 @@ int btstack_sbc_encoder_num_audio_frames(btstack_sbc_encoder_state_t* state);
 /* API_END */
 
 // testing only
-void btstack_sbc_decoder_test_disable_plc(void);
+void btstack_sbc_decoder_test_set_plc_enabled(int plc_enabled);
 void btstack_sbc_decoder_test_simulate_corrupt_frames(int period);
 
 #if defined __cplusplus
 }
 #endif
 
-#endif // __BTSTACK_SBC_H
+#endif // BTSTACK_SBC_H

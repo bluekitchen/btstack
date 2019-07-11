@@ -40,8 +40,8 @@
  *
  * BTstack definitions, events, and error codes */
 
-#ifndef __BTSTACK_DEFINES_H
-#define __BTSTACK_DEFINES_H
+#ifndef BTSTACK_DEFINES_H
+#define BTSTACK_DEFINES_H
 
 #include <stdint.h>
 #include "btstack_linked_list.h" 
@@ -114,6 +114,9 @@ typedef uint8_t sm_key_t[16];
 // AVRCP browsing data
 #define AVRCP_BROWSING_DATA_PACKET     0x0f
 
+// MAP data
+#define MAP_DATA_PACKET        0x10
+
  
 // debug log messages
 #define LOG_MESSAGE_PACKET      0xfc
@@ -165,6 +168,7 @@ typedef uint8_t sm_key_t[16];
 
 #define ATT_HANDLE_VALUE_INDICATION_IN_PROGRESS            0x90 
 #define ATT_HANDLE_VALUE_INDICATION_TIMEOUT                0x91
+#define ATT_HANDLE_VALUE_INDICATION_DISCONNECT             0x92
 
 #define GATT_CLIENT_NOT_CONNECTED                          0x93
 #define GATT_CLIENT_BUSY                                   0x94
@@ -183,6 +187,7 @@ typedef uint8_t sm_key_t[16];
 #define OBEX_CONNECT_FAILED                                0xB1
 #define OBEX_DISCONNECTED                                  0xB2
 #define OBEX_NOT_FOUND                                     0xB3
+#define OBEX_NOT_ACCEPTABLE                                0xB4
 
 #define AVDTP_SEID_DOES_NOT_EXIST                          0xC0
 #define AVDTP_CONNECTION_DOES_NOT_EXIST                    0xC1
@@ -296,6 +301,14 @@ typedef uint8_t sm_key_t[16];
 #define GATT_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR                0X80
 #define GATT_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION           0X81
 #define GATT_GET_MTU                                             0x82
+
+// SM 0x90
+#define SM_SET_AUTHENTICATION_REQUIREMENTS 0x90
+#define SM_SET_IO_CAPABILITIES             0x92
+#define SM_BONDING_DECLINE                 0x93
+#define SM_JUST_WORKS_CONFIRM              0x94
+#define SM_NUMERIC_COMPARISON_CONFIRM      0x95
+#define SM_PASSKEY_INPUT                   0x96
 
 // ATT
 
@@ -425,7 +438,7 @@ typedef uint8_t sm_key_t[16];
 // L2CAP EVENTS
     
 /**
- * @format 1BH2222221
+ * @format 1BH222222111
  * @param status
  * @param address
  * @param handle
@@ -436,6 +449,8 @@ typedef uint8_t sm_key_t[16];
  * @param remote_mtu
  * @param flush_timeout
  * @param incoming
+ * @param mode
+ * @param fcs
  */
 #define L2CAP_EVENT_CHANNEL_OPENED                         0x70
 
@@ -529,6 +544,12 @@ typedef uint8_t sm_key_t[16];
  * @param local_cid
  */
 #define L2CAP_EVENT_LE_PACKET_SENT                         0x7d
+
+/*
+ * @format 2
+ * @param local_cid
+ */
+#define L2CAP_EVENT_ERTM_BUFFER_RELEASED                   0x7e
 
 
 // RFCOMM EVENTS
@@ -733,6 +754,20 @@ typedef uint8_t sm_key_t[16];
 #define GATT_EVENT_CAN_WRITE_WITHOUT_RESPONSE                    0xAC
 
 /** 
+ * @format 1BH
+ * @param address_type
+ * @param address
+ * @param handle
+ */    
+#define ATT_EVENT_CONNECTED                                      0xB3
+
+/** 
+ * @format H
+ * @param handle
+ */    
+#define ATT_EVENT_DISCONNECTED                                   0xB4
+
+/** 
  * @format H2
  * @param handle
  * @param MTU
@@ -762,13 +797,14 @@ typedef uint8_t sm_key_t[16];
  #define BNEP_EVENT_SERVICE_REGISTERED                      0xC0
 
 /**
- * @format 12222B
+ * @format 12222BH
  * @param status
  * @param bnep_cid
  * @param source_uuid
  * @param destination_uuid
  * @param mtu
  * @param remote_address
+ * @param con_handle
  */
  #define BNEP_EVENT_CHANNEL_OPENED                   0xC1
 
@@ -923,7 +959,7 @@ typedef uint8_t sm_key_t[16];
  /**
   * @brief Emitted during pairing to inform app about address used as identity
   *
-  * @format H1B1B1
+  * @format H1B1B2
   * @param handle
   * @param addr_type
   * @param address
@@ -1009,6 +1045,9 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_HID_META                                 0xEF
 #define HCI_EVENT_A2DP_META                                0xF0
 #define HCI_EVENT_HIDS_META                                0xF1
+#define HCI_EVENT_GATTSERVICE_META                         0xF2
+#define HCI_EVENT_BIP_META                                 0xF3
+#define HCI_EVENT_MAP_META                                 0xF4
 
 // Potential other meta groups
 // #define HCI_EVENT_BNEP_META                                0xxx
@@ -1129,10 +1168,15 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_COMPLETE                              0x05
 
 /**
- * @format 111T
+ * @format 11111111T
  * @param subevent_code
  * @param indicator_index
  * @param indicator_status
+ * @param indicator_min_range
+ * @param indicator_max_range
+ * @param indicator_mandatory
+ * @param indicator_enabled
+ * @param indicator_status_changed
  * @param indicator_name
  */
 #define HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED           0x06
@@ -1249,11 +1293,12 @@ typedef uint8_t sm_key_t[16];
 #define HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION 0x17
 
 /**
- * @format 111111T
+ * @format 1111111T
  * @param subevent_code
  * @param clcc_idx
  * @param clcc_dir
  * @param clcc_status
+ * @param clcc_mode
  * @param clcc_mpty
  * @param bnip_type
  * @param bnip_number
@@ -1685,6 +1730,14 @@ typedef uint8_t sm_key_t[16];
  */
 #define A2DP_SUBEVENT_SIGNALING_CONNECTION_RELEASED                  0x0C
 
+/**
+ * @format 1211          Stream was reconfigured
+ * @param subevent_code
+ * @param a2dp_cid
+ * @param local_seid
+ * @param status
+ */
+#define A2DP_SUBEVENT_STREAM_RECONFIGURED                            0x0D
 
 /** AVRCP Subevent */
 
@@ -1940,7 +1993,7 @@ typedef uint8_t sm_key_t[16];
  * @param subevent_code
  * @param browsing_cid
  */
-#define AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED                            0x1D
+#define AVRCP_SUBEVENT_BROWSING_CONNECTION_RELEASED                           0x1D
 
 /**
  * @format 12211
@@ -1959,7 +2012,7 @@ typedef uint8_t sm_key_t[16];
  * @param scope
  * @param attr_bitmap
  */
-#define AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS                             0x1F
+#define AVRCP_SUBEVENT_BROWSING_GET_FOLDER_ITEMS                              0x1F
 
 /**
  * @format 121
@@ -1967,7 +2020,17 @@ typedef uint8_t sm_key_t[16];
  * @param browsing_cid
  * @param scope
  */
-#define AVRCP_SUBEVENT_BROWSING_GET_TOTAL_NUM_ITEMS                             0x20
+#define AVRCP_SUBEVENT_BROWSING_GET_TOTAL_NUM_ITEMS                           0x20
+
+/**
+ * @format 1214
+ * @param subevent_code
+ * @param avrcp_cid
+ * @param command_type
+ * @param playback_position_ms
+ */
+#define AVRCP_SUBEVENT_NOTIFICATION_PLAYBACK_POS_CHANGED                      0x21
+
 
 /**
  * @format 121BH1
@@ -2020,6 +2083,36 @@ typedef uint8_t sm_key_t[16];
  */
 #define PBAP_SUBEVENT_OPERATION_COMPLETED                                  0x03
 
+/**
+ * @format 1212
+ * @param subevent_code
+ * @param goep_cid
+ * @param status
+ * @param phoneboook_size
+ */
+#define PBAP_SUBEVENT_PHONEBOOK_SIZE                                       0x04
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param goep_cid
+ * @param user_id_required
+ * @param full_access 
+ */
+#define PBAP_SUBEVENT_AUTHENTICATION_REQUEST                               0x05
+
+/**
+ * @format 12JVJV
+ * @param subevent_code
+ * @param goep_cid
+ * @param name_len
+ * @param name 
+ * @param handle_len
+ * @param handle 
+ */
+#define PBAP_SUBEVENT_CARD_RESULT                                          0x06
+
+
 // HID Meta Event Group
 
 /**
@@ -2046,6 +2139,21 @@ typedef uint8_t sm_key_t[16];
  * @param hid_cid
 */
 #define HID_SUBEVENT_CAN_SEND_NOW                                          0x03
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param con_handle
+*/
+#define HID_SUBEVENT_SUSPEND                                               0x04
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param con_handle
+*/
+#define HID_SUBEVENT_EXIT_SUSPEND                                          0x05
+
 
 // HIDS Meta Event Group
 
@@ -2087,5 +2195,116 @@ typedef uint8_t sm_key_t[16];
  * @param enable
 */
 #define HIDS_SUBEVENT_INPUT_REPORT_ENABLE                                   0x05
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param con_handle
+ * @param enable
+*/
+#define HIDS_SUBEVENT_OUTPUT_REPORT_ENABLE                                  0x06
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param con_handle
+ * @param enable
+*/
+#define HIDS_SUBEVENT_FEATURE_REPORT_ENABLE                                 0x07
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param con_handle
+*/
+#define HIDS_SUBEVENT_SUSPEND                                               0x08
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param con_handle
+*/
+#define HIDS_SUBEVENT_EXIT_SUSPEND                                          0x09
+
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param con_handle
+ * @param measurement_type  // 0 - force magnitude, 1 - torque magnitude, see cycling_power_sensor_measurement_context_t
+ * @param is_enhanced
+*/
+#define GATTSERVICE_SUBEVENT_CYCLING_POWER_START_CALIBRATION               0x01
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param con_handle
+*/
+#define GATTSERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_START                 0x02
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param con_handle
+*/
+#define GATTSERVICE_SUBEVENT_CYCLING_POWER_BROADCAST_STOP                  0x03
+
+
+// MAP Meta Event Group
+
+/**
+ * @format 121BH1
+ * @param subevent_code
+ * @param map_cid
+ * @param status
+ * @param bd_addr
+ * @param con_handle
+ * @param incoming
+ */
+#define MAP_SUBEVENT_CONNECTION_OPENED                                    0x01
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param map_cid
+*/
+#define MAP_SUBEVENT_CONNECTION_CLOSED                                    0x02
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param map_cid
+ * @param status
+ */
+#define MAP_SUBEVENT_OPERATION_COMPLETED                                  0x03
+
+
+/**
+ * @format 12LV
+ * @param subevent_code
+ * @param map_cid
+ * @param name_len
+ * @param name
+ */
+#define MAP_SUBEVENT_FOLDER_LISTING_ITEM                                  0x04
+
+/**
+ * @format 12D
+ * @param subevent_code
+ * @param map_cid
+ * @param handle
+
+ */
+#define MAP_SUBEVENT_MESSAGE_LISTING_ITEM                                 0x05
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param map_cid
+ */
+#define MAP_SUBEVENT_PARSING_DONE                                         0x06
+
+
+
 
 #endif

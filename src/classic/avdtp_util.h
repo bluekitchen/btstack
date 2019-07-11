@@ -42,11 +42,11 @@
  *
  */
 
-#ifndef __AVDTP_UITL_H
-#define __AVDTP_UITL_H
+#ifndef AVDTP_UITL_H
+#define AVDTP_UITL_H
 
 #include <stdint.h>
-#include "avdtp.h"
+#include "classic/avdtp.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -67,7 +67,7 @@ static inline uint8_t avdtp_header(uint8_t tr_label, avdtp_packet_type_t packet_
 
 int     avdtp_read_signaling_header(avdtp_signaling_packet_t * signaling_header, uint8_t * packet, uint16_t size);
 
-uint8_t store_bit16(uint16_t bitmap, int position, uint8_t value);
+uint16_t store_bit16(uint16_t bitmap, int position, uint8_t value);
 int     get_bit16(uint16_t bitmap, int position);
 
 int avdtp_pack_service_capabilities(uint8_t * buffer, int size, avdtp_capabilities_t caps, avdtp_service_category_t category, uint8_t pack_all_capabilities);
@@ -115,4 +115,4 @@ void a2dp_streaming_emit_connection_established(btstack_packet_handler_t callbac
 }
 #endif
 
-#endif // __AVDTP_UITL_H
+#endif // AVDTP_UITL_H

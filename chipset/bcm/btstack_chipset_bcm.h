@@ -40,8 +40,8 @@
  *  Adapter to use Broadcom-based chipsets with BTstack
  */
  
-#ifndef __BTSTACK_CHIPSET_BCM_H
-#define __BTSTACK_CHIPSET_BCM_H
+#ifndef BTSTACK_CHIPSET_BCM_H
+#define BTSTACK_CHIPSET_BCM_H
 
 #if defined __cplusplus
 extern "C" {
@@ -83,4 +83,4 @@ void btstack_chipset_bcm_enable_init_script(int enabled);
 }
 #endif
 
-#endif // __BTSTACK_CHIPSET_BCM_H
+#endif // BTSTACK_CHIPSET_BCM_H

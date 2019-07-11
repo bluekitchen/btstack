@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "rfcomm_service_db_memory.c"
+#define BTSTACK_FILE__ "rfcomm_service_db_memory.c"
 
 #include <string.h>
 #include <stdlib.h>
@@ -78,6 +78,7 @@ uint8_t rfcomm_service_db_channel_for_service(const char *serviceName){
 
     if (!newItem) return 0;
     
+    memset(newItem, 0, sizeof(db_mem_service_t));
     strncpy(newItem->service_name, serviceName, MAX_NAME_LEN);
     newItem->service_name[MAX_NAME_LEN] = 0;
     newItem->channel = max_channel;

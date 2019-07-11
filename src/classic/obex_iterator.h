@@ -35,7 +35,8 @@
  *
  */
  
-#ifndef __OBEX_ITERATOR_H
+#ifndef OBEX_ITERATOR_H
+#define OBEX_ITERATOR_H
 
 #if defined __cplusplus
 extern "C" {
@@ -46,9 +47,9 @@ extern "C" {
 /* API_START */
 
 typedef struct obex_iterator {
-     const uint8_t * data;
-     uint8_t   offset;
-     uint8_t   length;
+    const uint8_t * data;
+    uint16_t  offset;
+    uint16_t  length;
 } obex_iterator_t;
 
 // OBEX packet header iterator

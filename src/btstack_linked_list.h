@@ -39,8 +39,8 @@
  *  btstack_linked_list.h
  */
 
-#ifndef __BTSTACK_LINKED_LIST_H
-#define __BTSTACK_LINKED_LIST_H
+#ifndef BTSTACK_LINKED_LIST_H
+#define BTSTACK_LINKED_LIST_H
 
 #if defined __cplusplus
 extern "C" {
@@ -100,4 +100,4 @@ void test_linked_list(void);
 }
 #endif
 
-#endif // __BTSTACK_LINKED_LIST_H
+#endif // BTSTACK_LINKED_LIST_H

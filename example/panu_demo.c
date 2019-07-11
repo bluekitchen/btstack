@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "panu_demo.c"
+#define BTSTACK_FILE__ "panu_demo.c"
 
 /*
  * panu_demo.c
@@ -50,12 +50,21 @@
  * service and initiates a BNEP connection.
  *
  * Note: currently supported only on Linux and Mac.
+ *
+ * To enable client mode, uncomment ENABLE_PANU_CLIENT below
  */
 
 #include <stdio.h>
 
 #include "btstack_config.h"
 #include "btstack.h"
+
+// #define ENABLE_PANU_CLIENT
+
+// network types
+#define NETWORK_TYPE_IPv4       0x0800
+#define NETWORK_TYPE_ARP        0x0806
+#define NETWORK_TYPE_IPv6       0x86DD
 
 static int record_id = -1;
 static uint16_t bnep_l2cap_psm      = 0;
@@ -71,7 +80,7 @@ static uint8_t   attribute_value[1000];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
 // MBP 2016
-static const char * remote_addr_string = "F4-0F-24-3B-1B-E1";
+static const char * remote_addr_string = "78:4F:43:8C:B2:5D";
 // Wiko Sunny static const char * remote_addr_string = "A0:4C:5B:0F:B2:42";
 
 static bd_addr_t remote_addr;
@@ -81,6 +90,8 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 // outgoing network packet
 static const uint8_t * network_buffer;
 static uint16_t network_buffer_len;
+
+static uint8_t panu_sdp_record[220];
 
 /* @section Main application configuration
  *
@@ -95,26 +106,43 @@ static void network_send_packet_callback(const uint8_t * packet, uint16_t size);
 
 static void panu_setup(void){
 
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     // Initialize L2CAP 
     l2cap_init();
 
+
+    // init SDP, create record for PANU and register with SDP
+    sdp_init();
+    memset(panu_sdp_record, 0, sizeof(panu_sdp_record));
+    uint16_t network_packet_types[] = { NETWORK_TYPE_IPv4, NETWORK_TYPE_ARP, 0};    // 0 as end of list
+
     // Initialise BNEP
     bnep_init();
-
     // Minimum L2CAP MTU for bnep is 1691 bytes
-    bnep_register_service(packet_handler, BLUETOOTH_SERVICE_CLASS_PANU, 1691);  
+#ifdef ENABLE_PANU_CLIENT
+    bnep_register_service(packet_handler, BLUETOOTH_SERVICE_CLASS_PANU, 1691);
+    // PANU
+    pan_create_panu_sdp_record(panu_sdp_record, sdp_create_service_record_handle(), network_packet_types, NULL, NULL, BNEP_SECURITY_NONE);
+#else
+    bnep_register_service(packet_handler, BLUETOOTH_SERVICE_CLASS_NAP, 1691);
+    // NAP Network Access Type: Other, 1 MB/s
+    pan_create_nap_sdp_record(panu_sdp_record, sdp_create_service_record_handle(), network_packet_types, NULL, NULL, BNEP_SECURITY_NONE, PAN_NET_ACCESS_TYPE_OTHER, 1000000, NULL, NULL);
+#endif
+    sdp_register_service(panu_sdp_record);
+    printf("SDP service record size: %u\n", de_get_len((uint8_t*) panu_sdp_record));
 
     // Initialize network interface
     btstack_network_init(&network_send_packet_callback);
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 }
 /* LISTING_END */
 
+#ifdef ENABLE_PANU_CLIENT
+
 // PANU client routines 
-static char * get_string_from_data_element(uint8_t * element){
+static void get_string_from_data_element(uint8_t * element, uint16_t buffer_size, char * buffer_data){
     de_size_t de_size = de_get_size_type(element);
     int pos     = de_get_header_size(element);
     int len = 0;
@@ -128,10 +156,9 @@ static char * get_string_from_data_element(uint8_t * element){
         default:
             break;
     }
-    char * str = (char*)malloc(len+1);
-    memcpy(str, &element[pos], len);
-    str[len] ='\0';
-    return str; 
+    uint16_t bytes_to_copy = btstack_min(buffer_size-1,len);
+    memcpy(buffer_data, &element[pos], bytes_to_copy);
+    buffer_data[bytes_to_copy] ='\0';
 }
 
 
@@ -160,7 +187,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
 
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
-    char *str;
+    char str[20];
 
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
@@ -198,9 +225,8 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                             break;
                         case 0x0100:
                         case 0x0101:
-                            str = get_string_from_data_element(attribute_value);
+                            get_string_from_data_element(attribute_value, sizeof(str), str);
                             printf("SDP Attribute: 0x%04x: %s\n", sdp_event_query_attribute_byte_get_attribute_id(packet), str);
-                            free(str);
                             break;
                         case BLUETOOTH_ATTRIBUTE_PROTOCOL_DESCRIPTOR_LIST: {
                                 printf("SDP Attribute: 0x%04x\n", sdp_event_query_attribute_byte_get_attribute_id(packet));
@@ -216,18 +242,18 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                                     des_iterator_init(&prot_it, des_element);
                                     element = des_iterator_get_element(&prot_it);
                                     
+                                    if (!element) continue;
                                     if (de_get_element_type(element) != DE_UUID) continue;
                                     
                                     uuid = de_get_uuid32(element);
+                                    des_iterator_next(&prot_it);
                                     switch (uuid){
                                         case BLUETOOTH_PROTOCOL_L2CAP:
                                             if (!des_iterator_has_more(&prot_it)) continue;
-                                            des_iterator_next(&prot_it);
                                             de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_bnep_l2cap_psm);
                                             break;
                                         case BLUETOOTH_PROTOCOL_BNEP:
                                             if (!des_iterator_has_more(&prot_it)) continue;
-                                            des_iterator_next(&prot_it);
                                             de_element_get_uint16(des_iterator_get_element(&prot_it), &sdp_bnep_version);
                                             break;
                                         default:
@@ -260,6 +286,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
             break;
     }
 }
+#endif
 
 /*
  * @section Packet Handler
@@ -285,6 +312,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 		case HCI_EVENT_PACKET:
             event = hci_event_packet_get_type(packet);
             switch (event) {            
+#ifdef ENABLE_PANU_CLIENT
                 /* @text When BTSTACK_EVENT_STATE with state HCI_STATE_WORKING
                  * is received and the example is started in client mode, the remote SDP BNEP query is started.
                  */
@@ -294,7 +322,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         sdp_client_query_uuid16(&handle_sdp_client_query_result, remote_addr, BLUETOOTH_SERVICE_CLASS_NAP);
                     }
                     break;
-
+#endif
                 /* LISTING_PAUSE */
                 case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
@@ -328,8 +356,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         uuid_source = bnep_event_channel_opened_get_source_uuid(packet);
                         uuid_dest   = bnep_event_channel_opened_get_destination_uuid(packet);
                         mtu         = bnep_event_channel_opened_get_mtu(packet);
-                        memcpy(&event_addr, &packet[11], sizeof(bd_addr_t));
+                        bnep_event_channel_opened_get_remote_address(packet, event_addr);
                         printf("BNEP connection open succeeded to %s source UUID 0x%04x dest UUID: 0x%04x, max frame size %u\n", bd_addr_to_str(event_addr), uuid_source, uuid_dest, mtu);
+
                         /* Setup network interface */
                         gap_local_bd_addr(local_addr);
                         btstack_network_up(local_addr);
@@ -406,7 +435,16 @@ int btstack_main(int argc, const char * argv[]){
     // parse human readable Bluetooth address
     sscanf_bd_addr(remote_addr_string, remote_addr);
 
-    // Turn on the device 
+    gap_discoverable_control(1);
+    gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
+#ifdef ENABLE_PANU_CLIENT
+    gap_set_local_name("PANU Client 00:00:00:00:00:00");
+#else
+    gap_set_local_name("NAP Server 00:00:00:00:00:00");
+#endif
+    gap_set_class_of_device(0x020300); // Service Class "Networking", Major Device Class "LAN / NAT"
+
+    // Turn on the device
     hci_power_control(HCI_POWER_ON);
     return 0;
 }

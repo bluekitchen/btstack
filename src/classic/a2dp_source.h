@@ -43,10 +43,11 @@
  * A2DP Source is a device that streames media data.
  */
 
-#ifndef __A2DP_SOURCE_H
-#define __A2DP_SOURCE_H
+#ifndef A2DP_SOURCE_H
+#define A2DP_SOURCE_H
 
 #include <stdint.h>
+#include "classic/avdtp.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -108,6 +109,13 @@ void a2dp_source_register_packet_handler(btstack_packet_handler_t callback);
  */
 uint8_t a2dp_source_establish_stream(bd_addr_t remote, uint8_t local_seid, uint16_t * out_a2dp_cid);
 
+    /**
+     * @brief Reconfigure stream.
+     * @param local_seid	 	  ID assigned to a local stream endpoint
+     * @param sampling_frequency  New sampling frequency to use. Cannot be called while stream is active
+     */
+uint8_t a2dp_source_reconfigure_stream_sampling_frequency(uint16_t a2dp_cid, uint32_t sampling_frequency);
+
 /**
  * @brief Start stream.
  * @param a2dp_cid 			A2DP channel identifyer.
@@ -161,4 +169,4 @@ int  	a2dp_source_stream_send_media_payload(uint16_t a2dp_cid, uint8_t local_sei
 }
 #endif
 
-#endif // __A2DP_SOURCE_H
+#endif // A2DP_SOURCE_H

@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "le_device_db_fs.c"
+#define BTSTACK_FILE__ "le_device_db_fs.c"
  
 #include <stdio.h>
 #include <string.h>
@@ -61,6 +61,7 @@ typedef struct le_device_memory_db {
     uint8_t  key_size;
     uint8_t  authenticated;
     uint8_t  authorized;
+    uint8_t  secure_connection;
 
 #ifdef ENABLE_LE_SIGNED_WRITE
     // Signed Writes by remote
@@ -75,7 +76,6 @@ typedef struct le_device_memory_db {
 } le_device_memory_db_t;
 
 #define LE_DEVICE_MEMORY_SIZE 20
-#define INVALID_ENTRY_ADDR_TYPE 0xff
 
 #ifndef LE_DEVICE_DB_PATH
 #ifdef _WIN32
@@ -87,7 +87,12 @@ typedef struct le_device_memory_db {
 
 #define DB_PATH_TEMPLATE (LE_DEVICE_DB_PATH "btstack_at_%s_le_device_db.txt")
 
-const  char * csv_header = "# addr_type, addr, irk, ltk, ediv, rand[8], key_size, authenticated, authorized, remote_csrk, remote_counter, local_csrk, local_counter";
+#ifdef ENABLE_LE_SIGNED_WRITE
+const  char * csv_header = "# addr_type, addr, irk, ltk, ediv, rand[8], key_size, authenticated, authorized, remote_csrk, remote_counter, local_csrk, local_counter, secure_connection";
+#else
+const  char * csv_header = "# addr_type, addr, irk, ltk, ediv, rand[8], key_size, authenticated, authorized, secure_connection";
+#endif
+
 static char db_path[sizeof(DB_PATH_TEMPLATE) - 2 + 17 + 1];
 
 static le_device_memory_db_t le_devices[LE_DEVICE_MEMORY_SIZE];
@@ -149,7 +154,7 @@ static void le_device_db_store(void) {
     fwrite(csv_header, strlen(csv_header), 1, wFile);
     fwrite("\n", 1, 1, wFile);
     for (i=0;i<LE_DEVICE_MEMORY_SIZE;i++){
-        if (le_devices[i].addr_type == INVALID_ENTRY_ADDR_TYPE) continue;
+        if (le_devices[i].addr_type == BD_ADDR_TYPE_UNKNOWN) continue;
         write_value(wFile, le_devices[i].addr_type, 1);
         write_str(wFile,   bd_addr_to_str(le_devices[i].addr));
         write_hex(wFile,   le_devices[i].irk, 16);
@@ -165,6 +170,7 @@ static void le_device_db_store(void) {
         write_hex(wFile,   le_devices[i].local_csrk, 16);
         write_value(wFile, le_devices[i].local_counter, 2);
 #endif
+        write_value(wFile, le_devices[i].secure_connection, 1);
         fwrite("\n", 1, 1, wFile);
     }
     fclose(wFile);
@@ -212,8 +218,13 @@ static void le_device_db_read(void){
     }
     // read entries
     int i;
-    for (i=0;i<LE_DEVICE_MEMORY_SIZE && !feof(wFile);i++){
+    for (i=0 ; i<LE_DEVICE_MEMORY_SIZE ; i++){
+        memset(&le_devices[i], 0, sizeof(le_device_memory_db_t));
         le_devices[i].addr_type = read_value(wFile, 1);
+        if (feof(wFile)){
+            le_devices[i].addr_type = BD_ADDR_TYPE_UNKNOWN;
+            break;
+        }
         read_hex(wFile,   le_devices[i].addr, 6);
         read_hex(wFile,   le_devices[i].irk, 16);
         read_hex(wFile,   le_devices[i].ltk, 16);
@@ -228,8 +239,14 @@ static void le_device_db_read(void){
         read_hex(wFile,   le_devices[i].local_csrk, 16);
         le_devices[i].local_counter = read_value(wFile, 2);
 #endif
-        // read newling
-        fgetc(wFile);
+        // read next character and secure connection field if hex nibble follows
+        int c = fgetc(wFile);
+        if (nibble_for_char(c) >= 0){
+            int d = fgetc(wFile);
+            le_devices[i].secure_connection = nibble_for_char(c) << 4 | nibble_for_char(d);
+            // read newline
+            fgetc(wFile);
+        }
     }
 exit:
     fclose(wFile);
@@ -238,7 +255,7 @@ exit:
 void le_device_db_init(void){
     int i;
     for (i=0;i<LE_DEVICE_MEMORY_SIZE;i++){
-        le_devices[i].addr_type = INVALID_ENTRY_ADDR_TYPE;
+        le_devices[i].addr_type = BD_ADDR_TYPE_UNKNOWN;
     }
     sprintf(db_path, DB_PATH_TEMPLATE, "00-00-00-00-00-00");
 }
@@ -255,7 +272,7 @@ int le_device_db_count(void){
     int i;
     int counter = 0;
     for (i=0;i<LE_DEVICE_MEMORY_SIZE;i++){
-        if (le_devices[i].addr_type != INVALID_ENTRY_ADDR_TYPE) counter++;
+        if (le_devices[i].addr_type != BD_ADDR_TYPE_UNKNOWN) counter++;
     }
     return counter;
 }
@@ -266,7 +283,7 @@ int le_device_db_max_count(void){
 
 // free device
 void le_device_db_remove(int index){
-    le_devices[index].addr_type = INVALID_ENTRY_ADDR_TYPE;
+    le_devices[index].addr_type = BD_ADDR_TYPE_UNKNOWN;
     le_device_db_store();
 }
 
@@ -274,7 +291,7 @@ int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     int i;
     int index = -1;
     for (i=0;i<LE_DEVICE_MEMORY_SIZE;i++){
-         if (le_devices[i].addr_type == INVALID_ENTRY_ADDR_TYPE){
+         if (le_devices[i].addr_type == BD_ADDR_TYPE_UNKNOWN){
             index = i;
             break;
          }
@@ -306,9 +323,9 @@ void le_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t irk)
     if (irk) memcpy(irk, le_devices[index].irk, 16);
 }
 
-void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_key_t ltk, int key_size, int authenticated, int authorized){
-    log_info("Central Device DB set encryption for %u, ediv x%04x, key size %u, authenticated %u, authorized %u",
-        index, ediv, key_size, authenticated, authorized);
+void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_key_t ltk, int key_size, int authenticated, int authorized, int secure_connection){
+    log_info("LE Device DB set encryption for %u, ediv x%04x, key size %u, authenticated %u, authorized %u, secure connection %u",
+        index, ediv, key_size, authenticated, authorized, secure_connection);
     le_device_memory_db_t * device = &le_devices[index];
     device->ediv = ediv;
     if (rand) memcpy(device->rand, rand, 8);
@@ -316,20 +333,22 @@ void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_k
     device->key_size = key_size;
     device->authenticated = authenticated;
     device->authorized = authorized;
+    device->secure_connection = secure_connection;
 
     le_device_db_store();
 }
 
-void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk, int * key_size, int * authenticated, int * authorized){
+void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk, int * key_size, int * authenticated, int * authorized, int * secure_connection){
     le_device_memory_db_t * device = &le_devices[index];
-    log_info("Central Device DB encryption for %u, ediv x%04x, keysize %u, authenticated %u, authorized %u",
-        index, device->ediv, device->key_size, device->authenticated, device->authorized);
+    log_info("LE Device DB encryption for %u, ediv x%04x, keysize %u, authenticated %u, authorized %u, secure connection %u",
+        index, device->ediv, device->key_size, device->authenticated, device->authorized, device->secure_connection);
     if (ediv) *ediv = device->ediv;
     if (rand) memcpy(rand, device->rand, 8);
     if (ltk)  memcpy(ltk, device->ltk, 16);    
     if (key_size) *key_size = device->key_size;
     if (authenticated) *authenticated = device->authenticated;
     if (authorized) *authorized = device->authorized;
+    if (secure_connection) *secure_connection = device->secure_connection;
 }
 
 #ifdef ENABLE_LE_SIGNED_WRITE
@@ -400,7 +419,7 @@ void le_device_db_dump(void){
     log_info("Central Device DB dump, devices: %d", le_device_db_count());
     int i;
     for (i=0;i<LE_DEVICE_MEMORY_SIZE;i++){
-        if (le_devices[i].addr_type == INVALID_ENTRY_ADDR_TYPE) continue;
+        if (le_devices[i].addr_type == BD_ADDR_TYPE_UNKNOWN) continue;
         log_info("%u: %u %s", i, le_devices[i].addr_type, bd_addr_to_str(le_devices[i].addr));
         log_info_key("ltk", le_devices[i].ltk);
         log_info_key("irk", le_devices[i].irk);

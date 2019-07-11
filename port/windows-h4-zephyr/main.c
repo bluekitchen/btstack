@@ -138,7 +138,7 @@ int main(int argc, const char * argv[]){
     if (argc >= 3 && strcmp(argv[1], "-u") == 0){
         config.device_name = argv[2];
         argc -= 2;
-        memmove(&argv[0], &argv[2], argc * sizeof(char *));
+        memmove(&argv[1], &argv[3], (argc-1) * sizeof(char *));
     }
     printf("H4 device: %s\n", config.device_name);
 

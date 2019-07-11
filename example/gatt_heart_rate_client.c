@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "gatt_heart_rate_client.c"
+#define BTSTACK_FILE__ "gatt_heart_rate_client.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(gatt_heart_rate_client): Connects for Heart Rate Sensor and reports measurements */
@@ -72,7 +72,7 @@ static const char * sensor_contact_string[] = {
     "good contact"
 };
 
-static bd_addr_t cmdline_addr = { };
+static bd_addr_t cmdline_addr;
 static int cmdline_addr_found = 0;
 
 // addr and type of device with correct name
@@ -364,16 +364,15 @@ int btstack_main(int argc, const char * argv[]){
     (void)argc;
     (void)argv;
 #endif
-
-    hci_event_callback_registration.callback = &hci_event_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     l2cap_init();
 
     gatt_client_init();
 
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+
+    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "le_streamer_client.c"
+#define BTSTACK_FILE__ "le_streamer_client.c"
 
 /*
  * le_streamer_client.c
@@ -69,7 +69,7 @@ typedef enum {
     TC_W4_TEST_DATA
 } gc_state_t;
 
-static bd_addr_t cmdline_addr = { };
+static bd_addr_t cmdline_addr;
 static int cmdline_addr_found = 0;
 
 // addr and type of device with correct name
@@ -293,6 +293,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
             switch(hci_event_packet_get_type(packet)){
                 case GATT_EVENT_QUERY_COMPLETE:
                     printf("Notifications enabled, status %02x\n", gatt_event_query_complete_get_status(packet));
+                    if ( gatt_event_query_complete_get_status(packet)) break;
                     state = TC_W4_TEST_DATA;
 #if (TEST_MODE & TEST_MODE_WRITE_WITHOUT_RESPONSE)
                     printf("Start streaming - request can send now.\n");
@@ -436,16 +437,16 @@ int btstack_main(int argc, const char * argv[]){
     (void)argc;
     (void)argv;
 #endif
-
-    hci_event_callback_registration.callback = &hci_event_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     l2cap_init();
-
-    gatt_client_init();
 
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+
+    // sm_init needed before gatt_client_init
+    gatt_client_init();
+
+    hci_event_callback_registration.callback = &hci_event_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     // use different connection parameters: conn interval min/max (* 1.25 ms), slave latency, supervision timeout, CE len min/max (* 0.6125 ms) 
     // gap_set_connection_parameters(0x06, 0x06, 4, 1000, 0x01, 0x06 * 2);

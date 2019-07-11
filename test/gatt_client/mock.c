@@ -54,6 +54,11 @@ uint8_t gap_connect(bd_addr_t addr, bd_addr_type_t addr_type){
 void gap_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window){
 }
 
+int gap_reconnect_security_setup_active(hci_con_handle_t con_handle){
+	UNUSED(con_handle);
+	return 0;
+}
+
 static void att_init_connection(att_connection_t * att_connection){
     att_connection->mtu = 23;
     att_connection->max_mtu = 23;
@@ -119,6 +124,9 @@ int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t l
 	return 0;
 }
 
+void sm_add_event_handler(btstack_packet_callback_registration_t * callback_handler){
+}
+
 int  sm_cmac_ready(void){
 	return 1;
 }
@@ -129,6 +137,9 @@ int sm_le_device_index(uint16_t handle ){
 	return -1;
 }
 
+irk_lookup_state_t sm_identity_resolving_state(hci_con_handle_t con_handle){
+	return IRK_LOOKUP_SUCCEEDED;
+}
 void btstack_run_loop_set_timer(btstack_timer_source_t *a, uint32_t timeout_in_ms){
 }
 

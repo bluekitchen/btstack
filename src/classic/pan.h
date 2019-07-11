@@ -41,8 +41,8 @@
  *  Created by Milanka Ringwald on 10/16/14.
  */
 
-#ifndef __PAN_H
-#define __PAN_H
+#ifndef PAN_H
+#define PAN_H
 
 #include <stdint.h>
 #include "bluetooth.h"
@@ -80,7 +80,7 @@ void pan_create_panu_sdp_record(uint8_t *service, uint32_t service_record_handle
  * @param IPv4Subnet is optional subnet definition, e.g. "10.0.0.0/8"
  * @param IPv6Subnet is optional subnet definition given in the standard IETF format with the absolute attribute IDs
  */
-void pan_create_gn_sdp_service(uint8_t *service, uint32_t service_record_handle, uint16_t * network_packet_types, const char *name,
+void pan_create_gn_sdp_record(uint8_t *service, uint32_t service_record_handle, uint16_t * network_packet_types, const char *name,
 	const char *description, security_description_t security_desc, const char *IPv4Subnet,
 	const char *IPv6Subnet);
 
@@ -108,4 +108,4 @@ void pan_create_nap_sdp_record(uint8_t *service, uint32_t service_record_handle,
 #if defined __cplusplus
 }
 #endif
-#endif // __PAN_H
+#endif // PAN_H

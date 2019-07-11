@@ -33,6 +33,9 @@
  * Please inquire about commercial licensing options at contact@bluekitchen-gmbh.com
  *
  */
+
+#define __BTSTACK_FILE__ "btstack_device_name_db_corefoundation.c"
+
 #include "btstack_device_name_db_corefoundation.h"
 #include "btstack_debug.h"
 

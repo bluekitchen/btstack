@@ -40,8 +40,8 @@
  *
  */
 
-#ifndef __FILE_H
-#define __FILE_H
+#ifndef FILE_H
+#define FILE_H
 
 #include <stdint.h>
 
@@ -55,4 +55,4 @@ extern "C" {
 }
 #endif
 
-#endif // __FILE_H
+#endif // FILE_H

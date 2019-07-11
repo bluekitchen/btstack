@@ -42,29 +42,39 @@
  *
  */
 
-#ifndef __AVRCP_CONTROLLER_H
-#define __AVRCP_CONTROLLER_H
+#ifndef AVRCP_CONTROLLER_H
+#define AVRCP_CONTROLLER_H
 
 #include <stdint.h>
 #include "btstack_run_loop.h"
 #include "btstack_linked_list.h"
-#include "avrcp.h"
+#include "classic/avrcp.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
 /* API_START */
+
+typedef enum {
+    AVRCP_CONTROLLER_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER = 0,
+    AVRCP_CONTROLLER_SUPPORTED_FEATURE_CATEGORY_MONITOR_OR_AMPLIFIER,
+    AVRCP_CONTROLLER_SUPPORTED_FEATURE_CATEGORY_TUNER,
+    AVRCP_CONTROLLER_SUPPORTED_FEATURE_CATEGORY_MENU,
+    AVRCP_CONTROLLER_SUPPORTED_FEATURE_RESERVED_4,
+    AVRCP_CONTROLLER_SUPPORTED_FEATURE_RESERVED_5,
+    AVRCP_CONTROLLER_SUPPORTED_FEATURE_BROWSING
+} avrcp_controller_supported_feature_t;
+
 /**
  * @brief AVRCP Controller service record. 
  * @param service
  * @param service_record_handle
- * @param browsing  1 - supported, 0 - not supported
- * @param supported_features 16-bit bitmap, see AVDTP_SINK_SF_* values in avdtp.h
+ * @param supported_features 16-bit bitmap, see avrcp_controller_supported_feature_t
  * @param service_name
  * @param service_provider_name
  */
-void avrcp_controller_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name);
+void avrcp_controller_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name);
 
 /**
  * @brief Set up AVRCP Controller device.
@@ -332,4 +342,4 @@ extern avrcp_context_t avrcp_controller_context;
 }
 #endif
 
-#endif // __AVRCP_CONTROLLER_H
+#endif // AVRCP_CONTROLLER_H

@@ -42,8 +42,8 @@
  *
  */
 
-#ifndef __HCI_H
-#define __HCI_H
+#ifndef HCI_H
+#define HCI_H
 
 #include "btstack_config.h"
 
@@ -91,28 +91,45 @@ extern "C" {
 
 #define HCI_ACL_BUFFER_SIZE        (HCI_ACL_HEADER_SIZE   + HCI_ACL_PAYLOAD_SIZE)
     
-// size of hci buffers, big enough for command, event, or acl packet without H4 packet type
-// @note cmd buffer is bigger than event buffer
-#ifdef HCI_PACKET_BUFFER_SIZE
-    #if HCI_PACKET_BUFFER_SIZE < HCI_ACL_BUFFER_SIZE
-        #error HCI_PACKET_BUFFER_SIZE must be equal or larger than HCI_ACL_BUFFER_SIZE
+// size of hci incoming buffer, big enough for event or acl packet without H4 packet type
+#ifdef HCI_INCOMING_PACKET_BUFFER_SIZE
+    #if HCI_INCOMING_PACKET_BUFFER_SIZE < HCI_ACL_BUFFER_SIZE
+        #error HCI_INCOMING_PACKET_BUFFER_SIZE must be equal or larger than HCI_ACL_BUFFER_SIZE
     #endif
-    #if HCI_PACKET_BUFFER_SIZE < HCI_CMD_BUFFER_SIZE
-        #error HCI_PACKET_BUFFER_SIZE must be equal or larger than HCI_CMD_BUFFER_SIZE
+    #if HCI_INCOMING_PACKET_BUFFER_SIZE < HCI_EVENT_BUFFER_SIZE
+        #error HCI_INCOMING_PACKET_BUFFER_SIZE must be equal or larger than HCI_EVENT_BUFFER_SIZE
+    #endif
+#else
+    #if HCI_ACL_BUFFER_SIZE > HCI_EVENT_BUFFER_SIZE
+        #define HCI_INCOMING_PACKET_BUFFER_SIZE HCI_ACL_BUFFER_SIZE
+    #else
+        #define HCI_INCOMING_PACKET_BUFFER_SIZE HCI_EVENT_BUFFER_SIZE
+    #endif
+#endif
+
+// size of hci outgoing buffer, big enough for command or acl packet without H4 packet type
+#ifdef HCI_OUTGOING_PACKET_BUFFER_SIZE
+    #if HCI_OUTGOING_PACKET_BUFFER_SIZE < HCI_ACL_BUFFER_SIZE
+        #error HCI_OUTGOING_PACKET_BUFFER_SIZE must be equal or larger than HCI_ACL_BUFFER_SIZE
+    #endif
+    #if HCI_OUTGOING_PACKET_BUFFER_SIZE < HCI_CMD_BUFFER_SIZE
+        #error HCI_OUTGOING_PACKET_BUFFER_SIZE must be equal or larger than HCI_CMD_BUFFER_SIZE
     #endif
 #else
     #if HCI_ACL_BUFFER_SIZE > HCI_CMD_BUFFER_SIZE
-        #define HCI_PACKET_BUFFER_SIZE HCI_ACL_BUFFER_SIZE
+        #define HCI_OUTGOING_PACKET_BUFFER_SIZE HCI_ACL_BUFFER_SIZE
     #else
-        #define HCI_PACKET_BUFFER_SIZE HCI_CMD_BUFFER_SIZE
+        #define HCI_OUTGOING_PACKET_BUFFER_SIZE HCI_CMD_BUFFER_SIZE
     #endif
 #endif
 
 // additional pre-buffer space for packets to Bluetooth module, for now, used for HCI Transport H4 DMA
+#ifndef HCI_OUTGOING_PRE_BUFFER_SIZE
 #ifdef HAVE_HOST_CONTROLLER_API
 #define HCI_OUTGOING_PRE_BUFFER_SIZE 0
 #else
 #define HCI_OUTGOING_PRE_BUFFER_SIZE 1
+#endif
 #endif
 
 // BNEP may uncompress the IP Header by 16 bytes
@@ -371,6 +388,7 @@ typedef struct sm_connection {
     irk_lookup_state_t      sm_irk_lookup_state;
     uint8_t                  sm_connection_encrypted;
     uint8_t                  sm_connection_authenticated;   // [0..1]
+    uint8_t                  sm_connection_sc;
     uint8_t                  sm_actual_encryption_key_size;
     sm_pairing_packet_t      sm_m_preq;  // only used during c1
     authorization_state_t    sm_connection_authorization_state;
@@ -393,7 +411,7 @@ typedef enum {
     ATT_SERVER_REQUEST_RECEIVED,
     ATT_SERVER_W4_SIGNED_WRITE_VALIDATION,
     ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED,
-    ATT_SERVER_READ_RESPONSE_PENDING,
+    ATT_SERVER_RESPONSE_PENDING,
 } att_server_state_t;
 
 typedef struct {
@@ -410,6 +428,13 @@ typedef struct {
     btstack_timer_source_t  value_indication_timer;
 
     att_connection_t        connection;
+
+    btstack_linked_list_t   notification_requests;
+    btstack_linked_list_t   indication_requests;
+
+#ifdef ENABLE_GATT_OVER_CLASSIC
+    uint16_t                l2cap_cid;
+#endif
 
     uint16_t                request_size;
     uint8_t                 request_buffer[ATT_REQUEST_BUFFER_SIZE];
@@ -455,6 +480,7 @@ typedef struct {
     // bonding
     uint16_t bonding_flags;
     uint8_t  bonding_status;
+
     // requested security level
     gap_security_level_t requested_security_level;
 
@@ -463,6 +489,27 @@ typedef struct {
 
     // remote supported features
     uint8_t remote_supported_feature_eSCO;
+
+#ifdef ENABLE_CLASSIC
+    // connection mode, default ACL_CONNECTION_MODE_ACTIVE
+    uint8_t connection_mode;
+
+    // enter/exit sniff mode requests
+    uint16_t sniff_min_interval;    // 0: idle, 0xffff exit sniff, else enter sniff
+    uint16_t sniff_max_interval;
+    uint16_t sniff_attempt;
+    uint16_t sniff_timeout;
+
+    // track SCO rx event
+    uint32_t sco_rx_ms;
+    uint8_t  sco_rx_count;
+    uint8_t  sco_rx_valid;
+
+    // generate sco can send now based on received packets, using timeout below
+    uint8_t  sco_tx_ready;
+    
+    btstack_timer_source_t timeout_sco;
+#endif /* ENABLE_CLASSIC */
 
     // errands
     uint32_t authentication_flags;
@@ -477,9 +524,9 @@ typedef struct {
     uint16_t acl_recombination_pos;
     uint16_t acl_recombination_length;
     
+
     // number packets sent to controller
-    uint8_t num_acl_packets_sent;
-    uint8_t num_sco_packets_sent;
+    uint8_t num_packets_sent;
 
 #ifdef ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
     uint8_t num_packets_completed;
@@ -494,6 +541,14 @@ typedef struct {
     uint16_t le_supervision_timeout;
 
 #ifdef ENABLE_BLE
+    uint16_t le_connection_interval;
+
+    // LE PHY Update via set phy command
+    uint8_t le_phy_update_all_phys;      // 0xff for idle
+    uint8_t le_phy_update_tx_phys;
+    uint8_t le_phy_update_rx_phys;
+    int8_t  le_phy_update_phy_options;
+
     // LE Security Manager
     sm_connection_t sm_connection;
 
@@ -562,6 +617,8 @@ typedef enum hci_init_state{
     HCI_INIT_W4_WRITE_SIMPLE_PAIRING_MODE,
     HCI_INIT_WRITE_PAGE_TIMEOUT,
     HCI_INIT_W4_WRITE_PAGE_TIMEOUT,
+    HCI_INIT_WRITE_DEFAULT_LINK_POLICY_SETTING,
+    HCI_INIT_W4_WRITE_DEFAULT_LINK_POLICY_SETTING,
     HCI_INIT_WRITE_CLASS_OF_DEVICE,
     HCI_INIT_W4_WRITE_CLASS_OF_DEVICE,
     HCI_INIT_WRITE_LOCAL_NAME,
@@ -613,7 +670,12 @@ typedef enum hci_init_state{
     HCI_FALLING_ASLEEP_W4_WRITE_SCAN_ENABLE,
     HCI_FALLING_ASLEEP_COMPLETE,
 
-    HCI_INIT_AFTER_SLEEP
+    HCI_INIT_AFTER_SLEEP,
+
+    HCI_HALTING_DISCONNECT_ALL_NO_TIMER,
+    HCI_HALTING_DISCONNECT_ALL_TIMER,
+    HCI_HALTING_W4_TIMER,
+    HCI_HALTING_CLOSE,
 
 } hci_substate_t;
 
@@ -675,6 +737,7 @@ typedef struct {
     const uint8_t *    eir_data;
     uint32_t           class_of_device;
     bd_addr_t          local_bd_addr;
+    uint8_t            default_link_policy_settings;
     uint8_t            ssp_enable;
     uint8_t            ssp_io_capability;
     uint8_t            ssp_authentication_requirement;
@@ -683,10 +746,11 @@ typedef struct {
 
     // single buffer for HCI packet assembly + additional prebuffer for H4 drivers
     uint8_t   * hci_packet_buffer;
-    uint8_t   hci_packet_buffer_data[HCI_OUTGOING_PRE_BUFFER_SIZE + HCI_PACKET_BUFFER_SIZE];
+    uint8_t   hci_packet_buffer_data[HCI_OUTGOING_PRE_BUFFER_SIZE + HCI_OUTGOING_PACKET_BUFFER_SIZE];
     uint8_t   hci_packet_buffer_reserved;
     uint16_t  acl_fragmentation_pos;
     uint16_t  acl_fragmentation_total_size;
+    uint8_t   acl_fragmentation_tx_active;
      
     /* host to controller flow control */
     uint8_t  num_cmd_packets;
@@ -698,17 +762,19 @@ typedef struct {
     uint8_t  le_acl_packets_total_num;
     uint16_t le_data_packets_length;
     uint8_t  sco_waiting_for_can_send_now;
+    uint8_t  sco_can_send_now;
 
     /* local supported features */
     uint8_t local_supported_features[8];
 
     /* local supported commands summary - complete info is 64 bytes */
-    /* 0 - Read Buffer Size */
-    /* 1 - Write Le Host Supported */
-    /* 2 - Write Synchronous Flow Control Enable (Octet 10/bit 4) */
-    /* 3 - Write Default Erroneous Data Reporting (Octet 18/bit 3) */
-    /* 4 - LE Write Suggested Default Data Length (Octet 34/bit 0) */
-    /* 5 - LE Read Maximum Data Length (Octet 35/bit 3) */
+    /* 0 - Read Buffer Size                        (Octet 14/bit 7) */
+    /* 1 - Write Le Host Supported                 (Octet 24/bit 6) */
+    /* 2 - Write Synchronous Flow Control Enable   (Octet 10/bit 4) */
+    /* 3 - Write Default Erroneous Data Reporting  (Octet 18/bit 3) */
+    /* 4 - LE Write Suggested Default Data Length  (Octet 34/bit 0) */
+    /* 5 - LE Read Maximum Data Length             (Octet 35/bit 3) */
+    /* 6 - LE Set Default PHY                      (Octet 35/bit 5) */ 
     uint8_t local_supported_commands[1];
 
     /* bluetooth device information from hci read local version information */
@@ -726,6 +792,7 @@ typedef struct {
     HCI_STATE      state;
     hci_substate_t substate;
     btstack_timer_source_t timeout;
+    btstack_chipset_result_t chipset_result;
 
     uint16_t  last_cmd_opcode;
 
@@ -750,7 +817,7 @@ typedef struct {
     union {
         const char * gap_pairing_pin;
         uint32_t     gap_pairing_passkey;
-    };
+    } gap_pairing_input;
     
     uint16_t  sco_voice_setting;
     uint16_t  sco_voice_setting_active;
@@ -834,6 +901,10 @@ typedef struct {
 #ifdef ENABLE_CLASSIC
     uint8_t master_slave_policy;
 #endif
+
+    // address and address_type of active create connection command (ACL, SCO, LE)
+    bd_addr_t      outgoing_addr;
+    bd_addr_type_t outgoing_addr_type;
 
 } hci_stack_t;
 
@@ -995,7 +1066,7 @@ void hci_set_master_slave_policy(uint8_t policy);
 
 
 /**
- * va_list version of hci_send_cmd
+ * va_list version of hci_send_cmd, call hci_send_cmd_packet
  */
 int hci_send_cmd_va_arg(const hci_cmd_t *cmd, va_list argtr);
 
@@ -1091,7 +1162,8 @@ int hci_remote_esco_supported(hci_con_handle_t con_handle);
 void hci_emit_state(void);
 
 /** 
- * Send complete CMD packet. Called by daemon
+ * Send complete CMD packet. Called by daemon and hci_send_cmd_va_arg
+ * @returns 0 if command was successfully sent to HCI Transport layer
  */
 int hci_send_cmd_packet(uint8_t *packet, int size);
 
@@ -1144,8 +1216,13 @@ void hci_disable_l2cap_timeout_check(void);
  */
 HCI_STATE hci_get_state(void);
 
+/**
+ * Defer halt. Used by btstack_crypto to allow current HCI operation to complete
+ */
+void hci_halting_defer(void);
+
 #if defined __cplusplus
 }
 #endif
 
-#endif // __HCI_H
+#endif // HCI_H

@@ -41,8 +41,8 @@
  *  Hardware Abstraction Layer for EM9304 connected via SPI with additional RDY Interrupt line
  *
  */
-#ifndef __HAL_EM9304_SPI_H
-#define __HAL_EM9304_SPI_H
+#ifndef HAL_EM9304_SPI_H
+#define HAL_EM9304_SPI_H
 
 #include <stdint.h>
 
@@ -128,4 +128,4 @@ void hal_em9304_spi_receive(uint8_t * rx_data, uint16_t len);
 }
 #endif
 
-#endif // __HAL_EM9304_SPI_H
+#endif // HAL_EM9304_SPI_H

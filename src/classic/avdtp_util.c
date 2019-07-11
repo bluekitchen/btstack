@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "avdtp_util.c"
+#define BTSTACK_FILE__ "avdtp_util.c"
 
 
 #include <stdint.h>
@@ -204,7 +204,7 @@ int get_bit16(uint16_t bitmap, int position){
     return (bitmap >> position) & 1;
 }
 
-uint8_t store_bit16(uint16_t bitmap, int position, uint8_t value){
+uint16_t store_bit16(uint16_t bitmap, int position, uint8_t value){
     if (value){
         bitmap |= 1 << position;
     } else {

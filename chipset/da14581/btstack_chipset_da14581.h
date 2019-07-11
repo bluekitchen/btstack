@@ -42,8 +42,8 @@
  *  
  */
 
-#ifndef __BTSTACK_CHIPSET_DA14581_H
-#define __BTSTACK_CHIPSET_DA14581_H
+#ifndef BTSTACK_CHIPSET_DA14581_H
+#define BTSTACK_CHIPSET_DA14581_H
 
 #if defined __cplusplus
 extern "C" {
@@ -68,4 +68,4 @@ void btstack_chipset_da14581_download_firmware(const btstack_uart_block_t * uart
 }
 #endif
 
-#endif // __BTSTACK_CHIPSET_DA14581_H
+#endif // BTSTACK_CHIPSET_DA14581_H

@@ -36,8 +36,8 @@
  *  used to store pairing/bonding data
  */
 
-#ifndef __BTSTACK_TLV_H
-#define __BTSTACK_TLV_H
+#ifndef BTSTACK_TLV_H
+#define BTSTACK_TLV_H
 
 #include <stdint.h>
 
@@ -94,4 +94,4 @@ void btstack_tlv_get_instance(const btstack_tlv_t ** tlv_impl, void ** tlv_conte
 #if defined __cplusplus
 }
 #endif
-#endif // __BTSTACK_TLV_H
+#endif // BTSTACK_TLV_H

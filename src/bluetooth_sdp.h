@@ -3,8 +3,8 @@
  * https://www.bluetooth.com/specifications/assigned-numbers/service-discovery
  */
 
-#ifndef __BLUETOOTH_SDP_H
-#define __BLUETOOTH_SDP_H
+#ifndef BLUETOOTH_SDP_H
+#define BLUETOOTH_SDP_H
 
 /**
  * Protocol Identifiers

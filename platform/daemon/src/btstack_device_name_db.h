@@ -39,8 +39,8 @@
  * interface to provide link key and remote name storage
  */
 
-#ifndef __BTSTACK_DEVICE_NAME_DB_H
-#define __BTSTACK_DEVICE_NAME_DB_H
+#ifndef BTSTACK_DEVICE_NAME_DB_H
+#define BTSTACK_DEVICE_NAME_DB_H
 
 #include "btstack_util.h"
 #include "gap.h"
@@ -70,4 +70,4 @@ typedef struct {
 }
 #endif
 
-#endif // __BTSTACK_DEVICE_NAME_DB_H
+#endif // BTSTACK_DEVICE_NAME_DB_H

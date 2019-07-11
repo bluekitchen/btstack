@@ -29,7 +29,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_tlv.c"
+#define BTSTACK_FILE__ "btstack_tlv.c"
 
 /*
  *  btstack_tlv.c

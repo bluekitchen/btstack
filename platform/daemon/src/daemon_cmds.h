@@ -39,8 +39,8 @@
  *  daemon_cmds.h
  */
 
-#ifndef __DAEMON_CMDS_H
-#define __DAEMON_CMDS_H
+#ifndef DAEMON_CMDS_H
+#define DAEMON_CMDS_H
 
 #include <stdint.h>
 
@@ -120,9 +120,15 @@ extern const hci_cmd_t gatt_write_long_characteristic_descriptor_cmd;
 extern const hci_cmd_t gatt_write_client_characteristic_configuration_cmd;
 extern const hci_cmd_t gatt_get_mtu;
 
+extern const hci_cmd_t sm_set_authentication_requirements_cmd;
+extern const hci_cmd_t sm_set_io_capabilities_cmd;
+extern const hci_cmd_t sm_bonding_decline_cmd;
+extern const hci_cmd_t sm_just_works_confirm_cmd;
+extern const hci_cmd_t sm_numeric_comparison_confirm_cmd;
+extern const hci_cmd_t sm_passkey_input_cmd;
 
 #if defined __cplusplus
 }
 #endif
 
-#endif // __DAEMON_CMDS_H
+#endif // DAEMON_CMDS_H

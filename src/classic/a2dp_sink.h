@@ -43,8 +43,8 @@
  * A2DP Sink is a device that accepts streamed media data.  
  */
 
-#ifndef __A2DP_SINK_H
-#define __A2DP_SINK_H
+#ifndef A2DP_SINK_H
+#define A2DP_SINK_H
 
 #include <stdint.h>
 #include "classic/avdtp.h"
@@ -130,4 +130,4 @@ void a2dp_sink_disconnect(uint16_t a2dp_cid);
 }
 #endif
 
-#endif // __A2DP_SINK_H
+#endif // A2DP_SINK_H

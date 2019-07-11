@@ -42,11 +42,11 @@
  *
  */
 
-#ifndef __AVRCP_TARGET_H
-#define __AVRCP_TARGET_H
+#ifndef AVRCP_TARGET_H
+#define AVRCP_TARGET_H
 
 #include <stdint.h>
-#include "avrcp.h"
+#include "classic/avrcp.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -54,17 +54,26 @@ extern "C" {
 
 /* API_START */
 
+typedef enum {
+    AVRCP_TARGET_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER = 0,
+    AVRCP_TARGET_SUPPORTED_FEATURE_CATEGORY_MONITOR_OR_AMPLIFIER,
+    AVRCP_TARGET_SUPPORTED_FEATURE_CATEGORY_TUNER,
+    AVRCP_TARGET_SUPPORTED_FEATURE_CATEGORY_MENU,
+    AVRCP_TARGET_SUPPORTED_FEATURE_PLAYER_APPLICATION_SETTINGS, // AVRCP_TARGET_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER must be 1 for this feature to be set
+    AVRCP_TARGET_SUPPORTED_FEATURE_RESERVED_GROUP_NAVIGATION,   // AVRCP_TARGET_SUPPORTED_FEATURE_CATEGORY_PLAYER_OR_RECORDER must be 1 for this feature to be set
+    AVRCP_TARGET_SUPPORTED_FEATURE_BROWSING,
+    AVRCP_TARGET_SUPPORTED_FEATURE_MULTIPLE_MEDIA_PLAYE_APPLICATIONS
+} avrcp_target_supported_feature_t;
 
 /**
  * @brief AVRCP Target service record. 
  * @param service
  * @param service_record_handle
- * @param browsing  1 - supported, 0 - not supported
- * @param supported_features 16-bit bitmap, see AVDTP_SINK_SF_* values in avdtp.h
+ * @param supported_features 16-bit bitmap, see avrcp_target_supported_feature_t
  * @param service_name
  * @param service_provider_name
  */
-void    avrcp_target_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint8_t browsing, uint16_t supported_features, const char * service_name, const char * service_provider_name);
+void    avrcp_target_create_sdp_record(uint8_t * service, uint32_t service_record_handle, uint16_t supported_features, const char * service_name, const char * service_provider_name);
 
 void    avrcp_target_init(void);
 
@@ -107,4 +116,4 @@ extern avrcp_context_t avrcp_target_context;
 }
 #endif
 
-#endif // __AVRCP_TARGET_H
+#endif // AVRCP_TARGET_H

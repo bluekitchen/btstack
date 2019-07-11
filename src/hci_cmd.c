@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hci_cmd.c"
+#define BTSTACK_FILE__ "hci_cmd.c"
 
 /*
  *  hci_cmd.c
@@ -317,11 +317,18 @@ const hci_cmd_t hci_remote_name_request_cancel = {
 OPCODE(OGF_LINK_CONTROL, 0x1A), "B"
 };
 
-/**
+ /**
  * @param handle
  */
 const hci_cmd_t hci_read_remote_supported_features_command = {
 OPCODE(OGF_LINK_CONTROL, 0x1B), "H"
+};
+
+/**
+ * @param handle
+ */
+const hci_cmd_t hci_read_remote_version_information = {
+OPCODE(OGF_LINK_CONTROL, 0x1D), "H"
 };
 
 /** 
@@ -506,6 +513,13 @@ OPCODE(OGF_LINK_POLICY, 0x03), "H2222"
 
 /**
  * @param handle
+ */
+const hci_cmd_t hci_exit_sniff_mode = {
+OPCODE(OGF_LINK_POLICY, 0x04), "H"
+};
+
+/**
+ * @param handle
  * @param flags
  * @param service_type
  * @param token_rate (bytes/s)
@@ -550,7 +564,7 @@ OPCODE(OGF_LINK_POLICY, 0x0d), "H2"
 /**
  * @param policy
  */
-const hci_cmd_t hci_write_default_link_policy_setup = {
+const hci_cmd_t hci_write_default_link_policy_setting = {
     OPCODE(OGF_LINK_POLICY, 0x0F), "2"
 };
 
@@ -558,6 +572,7 @@ const hci_cmd_t hci_write_default_link_policy_setup = {
 /**
  *  Controller & Baseband Commands 
  */
+
 
 /**
  * @param event_mask_lover_octets
@@ -670,6 +685,7 @@ const hci_cmd_t hci_host_buffer_size = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x33), "2122"
 };
 
+
 #if 0
 //
 // command sent manually sent by hci_host_num_completed_packets
@@ -700,6 +716,15 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x36), "H"
  */
 const hci_cmd_t hci_write_link_supervision_timeout = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x37), "H2"
+};
+
+/**
+ * @param num_current_iac must be 2
+ * @param iac_lap1
+ * @param iac_lap2
+ */
+const hci_cmd_t hci_write_current_iac_lap_two_iacs = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x3A), "133"
 };
 
 /**
@@ -1180,6 +1205,37 @@ OPCODE(OGF_LE_CONTROLLER, 0x2F), ""
 // return: status, supported max tx octets, supported max tx time, supported max rx octets, supported max rx time
 };
 
+/**
+ * @param con_handle
+ */
+const hci_cmd_t hci_le_read_phy = {
+OPCODE(OGF_LE_CONTROLLER, 0x30), "H"
+// return: status, connection handler, tx phy, rx phy
+};
+
+/**
+ * @param all_phys
+ * @param tx_phys
+ * @param rx_phys
+ */
+const hci_cmd_t hci_le_set_default_phy = {
+OPCODE(OGF_LE_CONTROLLER, 0x31), "111"
+// return: status
+};
+
+/**
+ * @param con_handle
+ * @param all_phys
+ * @param tx_phys
+ * @param rx_phys
+ * @param phy_options
+ */
+const hci_cmd_t hci_le_set_phy = {
+OPCODE(OGF_LE_CONTROLLER, 0x32), "H1111"
+// LE PHY Update Complete is generated on completion
+};
+
+
 #endif
 
 // Broadcom / Cypress specific HCI commands
@@ -1195,4 +1251,23 @@ OPCODE(OGF_LE_CONTROLLER, 0x2F), ""
 const hci_cmd_t hci_bcm_write_sco_pcm_int = {
 OPCODE(0x3f, 0x1c), "11111"
 // return: status
+};
+
+/**
+ * @brief Activates selected Sleep Mode
+ * @param sleep_mode: 0=no sleep, 1=UART, 2=UART with Messaging, 3=USB, 4=H4IBSS, USB with Host Wake, 6=SDIO, 7=UART CS-N, 8=SPI, 9=H5, 10=H4DS, 12=UART with BREAK 
+ * @param idle_threshold_host (modes 1,2,5,7) time until considered idle, unit roughly 300 ms
+ * @param idle_threshold_controller (modes 1-7,9) time until considered idle, unit roughly 300 ms
+ * @param bt_wake_active_mode (modes 1,2,7) 0 = BT_WAKE line is active high, 1 = BT_WAKE is active low
+ * @param host_wake_active_mode (modes 1,2,5,7) 0 = HOST_WAKE line is active high, 1 = HOST_WAKE is active low
+ * @param allow_host_sleep_during_sco (modes 1,2,3,5,7)
+ * @param combine_sleep_mode_and_lpm  (modes 1,2,3,5,7)
+ * @param enable_tristate_control_of_uart_tx_line (modes 1,2,7)
+ * @param active_connection_handling_on_suspend (modes 3,5)
+ * @param resume_timeout (modes 3,5)
+ * @param enable_break_to_host (mode 12)
+ * @param pulsed_host_wake (modes 1,12)
+ */
+const hci_cmd_t hci_bcm_set_sleep_mode = {
+OPCODE(0x3f, 0x0027), "111111111111"
 };

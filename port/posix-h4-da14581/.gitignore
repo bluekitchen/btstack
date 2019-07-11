@@ -47,4 +47,5 @@ le_streamer_client
 pbap_client_demo
 sm_pairing_central
 sm_pairing_peripheral
-
+att_delayed_read_response
+att_delayed_read_response.h

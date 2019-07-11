@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_link_key_db_tlv.c"
+#define BTSTACK_FILE__ "btstack_link_key_db_tlv.c"
 
 #include <string.h>
 #include <stdlib.h>

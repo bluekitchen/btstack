@@ -34,8 +34,8 @@
  * contact@bluekitchen-gmbh.com
  *
  */
-#ifndef __BATTERY_SERVICE_SERVER_H
-#define __BATTERY_SERVICE_SERVER_H
+#ifndef BATTERY_SERVICE_SERVER_H
+#define BATTERY_SERVICE_SERVER_H
 
 #include <stdint.h>
 

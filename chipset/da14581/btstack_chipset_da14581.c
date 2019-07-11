@@ -35,6 +35,8 @@
  *
  */
 
+#define BTSTACK_FILE__ "btstack_chipset_da14581.c"
+
 /*
  *  btstack_chipset_da14581.c
  *

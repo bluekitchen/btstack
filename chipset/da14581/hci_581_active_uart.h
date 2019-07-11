@@ -3,8 +3,8 @@
  * hci_581_active_uart.h converted from hci_581_active_uart.hex 
  */
 
-#ifndef __hci_581_active_uart_H
-#define __hci_581_active_uart_H
+#ifndef HCI_581_ACTIVE_UART_H
+#define HCI_581_ACTIVE_UART_H
 
 #include <stdint.h>
 

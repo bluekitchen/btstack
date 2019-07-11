@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "l2cap_throughput.c"
+#define BTSTACK_FILE__ "l2cap_throughput.c"
 
 /*
  *  l2cap_throughput.c 
@@ -49,8 +49,13 @@
 #include <string.h>
 
 #include "btstack_client.h"
-#include "btstack_run_loop_posix.h"
 #include "hci_cmd.h"
+
+#ifdef _WIN32
+#include "btstack_run_loop_windows.h"
+#else
+#include "btstack_run_loop_posix.h"
+#endif
 
 #define PSM_TEST 0xdead
 #define PACKET_SIZE 1000
@@ -145,7 +150,9 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 				case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
 					printf("Please enter PIN here: ");
-					fgets(pin, 20, stdin);
+					// avoid -Wunused-result
+					char* res = fgets(pin, 20, stdin);
+					UNUSED(res);
 					i = strlen(pin);
 					if( pin[i-1] == '\n' || pin[i-1] == '\r') { 
 						pin[i-1] = '\0';
@@ -207,7 +214,11 @@ int main (int argc, const char * argv[]){
         }
     }
 
+#ifdef _WIN32
+	btstack_run_loop_init(btstack_run_loop_windows_get_instance());
+#else
 	btstack_run_loop_init(btstack_run_loop_posix_get_instance());
+#endif
 	int err = bt_open();
 	if (err) {
 		printf("Failed to open connection to BTdaemon\n");

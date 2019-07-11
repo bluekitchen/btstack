@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "battery_service_server.c"
+#define BTSTACK_FILE__ "battery_service_server.c"
 
 /**
  * Implementation of the GATT Battery Service Server 

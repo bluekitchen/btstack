@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_run_loop.c"
+#define BTSTACK_FILE__ "btstack_run_loop.c"
 
 /*
  *  run_loop.c
@@ -74,11 +74,19 @@ void btstack_run_loop_set_data_source_handler(btstack_data_source_t *ds, void (*
 };
 
 void btstack_run_loop_set_data_source_fd(btstack_data_source_t *ds, int fd){
-    ds->fd = fd;
+    ds->source.fd = fd;
 }
 
 int btstack_run_loop_get_data_source_fd(btstack_data_source_t *ds){
-    return ds->fd;
+    return ds->source.fd;
+}
+
+void btstack_run_loop_set_data_source_handle(btstack_data_source_t *ds, void * handle){
+    ds->source.handle = handle;
+}
+
+void * btstack_run_loop_get_data_source_handle(btstack_data_source_t *ds){
+    return ds->source.handle;
 }
 
 void btstack_run_loop_enable_data_source_callbacks(btstack_data_source_t *ds, uint16_t callbacks){

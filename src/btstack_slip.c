@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "btstack_slip.c"
+#define BTSTACK_FILE__ "btstack_slip.c"
 
 /*
  *  btstack_slip.c
@@ -113,9 +113,9 @@ uint8_t btstack_slip_encoder_get_byte(void){
 					encoder_state = SLIP_ENCODER_SEND_DD;
 					return 0xdb;
 				default:
-					return next_byte;
+                    break;
 			}
-			break;
+			return next_byte;
 		case SLIP_ENCODER_SEND_DC:
 			encoder_state = SLIP_ENCODER_DEFAULT;
 			return 0x0dc;

@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "gap_link_keys.c"
+#define BTSTACK_FILE__ "gap_link_keys.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(gap_link_keys): GAP Link Key Management Example

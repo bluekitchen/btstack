@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "bnep.c"
+#define BTSTACK_FILE__ "bnep.c"
 
 /*
  * bnep.c
@@ -79,7 +79,7 @@ static void bnep_emit_open_channel_complete(bnep_channel_t *channel, uint8_t sta
     log_info("BNEP_EVENT_CHANNEL_OPENED status 0x%02x bd_addr: %s, handler %p", status, bd_addr_to_str(channel->remote_addr), channel->packet_handler);
     if (!channel->packet_handler) return;
 
-    uint8_t event[3 + sizeof(bd_addr_t) + 4 * sizeof(uint16_t)];
+    uint8_t event[3 + sizeof(bd_addr_t) + 4 * sizeof(uint16_t) + 2];
     event[0] = BNEP_EVENT_CHANNEL_OPENED;
     event[1] = sizeof(event) - 2;
     event[2] = status;
@@ -87,7 +87,8 @@ static void bnep_emit_open_channel_complete(bnep_channel_t *channel, uint8_t sta
     little_endian_store_16(event, 5, channel->uuid_source);
     little_endian_store_16(event, 7, channel->uuid_dest);
     little_endian_store_16(event, 9, channel->max_frame_size);
-    bd_addr_copy(&event[11], channel->remote_addr);
+    reverse_bd_addr(channel->remote_addr, &event[11]);
+    little_endian_store_16(event, 17, channel->con_handle);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
 	(*channel->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
@@ -103,7 +104,7 @@ static void bnep_emit_channel_timeout(bnep_channel_t *channel)
     little_endian_store_16(event, 2, channel->l2cap_cid);
     little_endian_store_16(event, 4, channel->uuid_source);
     little_endian_store_16(event, 6, channel->uuid_dest);
-    bd_addr_copy(&event[8], channel->remote_addr);
+    reverse_bd_addr(channel->remote_addr, &event[8]);
     event[14] = channel->state; 
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
 	(*channel->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
@@ -120,7 +121,7 @@ static void bnep_emit_channel_closed(bnep_channel_t *channel)
     little_endian_store_16(event, 2, channel->l2cap_cid);
     little_endian_store_16(event, 4, channel->uuid_source);
     little_endian_store_16(event, 6, channel->uuid_dest);
-    bd_addr_copy(&event[8], channel->remote_addr);
+    reverse_bd_addr(channel->remote_addr, &event[8]);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
 	(*channel->packet_handler)(HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
@@ -702,9 +703,6 @@ static bnep_channel_t * bnep_channel_create_for_addr(bd_addr_t addr)
     if (!channel) {
         return NULL;
     }
-
-    /* Initialize the channel struct */
-    memset(channel, 0, sizeof(bnep_channel_t));
 
     channel->state = BNEP_CHANNEL_STATE_CLOSED;
     channel->max_frame_size = bnep_max_frame_size_for_l2cap_mtu(l2cap_max_mtu());
@@ -1600,7 +1598,6 @@ uint8_t bnep_register_service(btstack_packet_handler_t packet_handler, uint16_t 
     if (!service) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
-    memset(service, 0, sizeof(bnep_service_t));
 
     /* register with l2cap if not registered before, max MTU */
     l2cap_register_service(bnep_packet_handler, BLUETOOTH_PROTOCOL_BNEP, 0xffff, bnep_security_level);

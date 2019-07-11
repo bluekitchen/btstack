@@ -35,8 +35,8 @@
  *
  */
 
-#ifndef __LE_DEVICE_DB_FS_H
-#define __LE_DEVICE_DB_FS_H
+#ifndef LE_DEVICE_DB_FS_H
+#define LE_DEVICE_DB_FS_H
 
 #include "ble/le_device_db.h"
 
@@ -55,4 +55,4 @@ const le_device_db_t * le_device_db_fs_instance(void);
 }
 #endif
 
-#endif // __LE_DEVICE_DB_FS_H
+#endif // LE_DEVICE_DB_FS_H

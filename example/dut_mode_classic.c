@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "dut_mode_classic.c"
+#define BTSTACK_FILE__ "dut_mode_classic.c"
 
 // *****************************************************************************
 /* EXAMPLE_START(dut_mode_classic): Enable Device Under Test (DUT) Mode for BR/EDR
@@ -110,8 +110,8 @@ int btstack_main(int argc, const char * argv[]) {
     (void)argc;
     (void)argv;
 
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
+    // disable Secure Simple Pairinng
+    gap_ssp_set_enable(0);
 
     // make device connectable
     // @note: gap_connectable_control will be enabled when an L2CAP service 
@@ -120,6 +120,9 @@ int btstack_main(int argc, const char * argv[]) {
 
     // make device discoverable
     gap_discoverable_control(1);
+
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

@@ -12,6 +12,8 @@ import os
 import codecs
 import re
 
+headers = {'user-agent': 'curl/7.63.0'}
+
 program_info = '''
 BTstack SDP UUID Scraper for BTstack
 Copyright 2017, BlueKitchen GmbH
@@ -23,8 +25,8 @@ header = '''/**
  * {datetime}
  */
 
-#ifndef __BLUETOOTH_SDP_H
-#define __BLUETOOTH_SDP_H
+#ifndef BLUETOOTH_SDP_H
+#define BLUETOOTH_SDP_H
 
 '''
 
@@ -52,18 +54,19 @@ def create_pretty_define(name):
     name = name.replace('(','_')
     name = name.replace(')','')
     name = name.replace('-','_')
+    name = name.replace('.','_')
     name = name.replace('PnP', 'PNP')
     name = name.replace('IPv', 'IPV')
     name = name.replace('ServiceDiscoveryServerServiceClassID', 'ServiceDiscoveryServer')
     name = name.replace('BrowseGroupDescriptorServiceClassID', 'BrowseGroupDescriptor')
     name = name.replace('&','and')
+    name = name.replace('__','_')
     return camel_to_underscore(name).replace('__','_').replace('3_D','3D').replace('L2_CAP','L2CAP')
 
 def remove_newlines(remark):
     return " ".join(remark.split())
 
-def process_table(fout, tbody, pattern):
-    rows = tbody.getchildren()
+def process_rows(fout, rows, pattern):
     for row in rows:
         columns = row.getchildren()
         name = columns[0].text_content().encode('ascii','ignore')
@@ -87,17 +90,12 @@ def process_table(fout, tbody, pattern):
         fout.write(pattern % (name, value, remark))
         defines.append(name)
 
-def scrape_attributes(fout, tree, table_name):
-    tables = tree.xpath("//table[preceding-sibling::h3 = '" + table_name +"']")
-    tbody = tables[0].getchildren()[0]
-    process_table(fout, tbody, '#define BLUETOOTH_ATTRIBUTE_%-54s %s // %s\n')
-
 def scrape_page(fout, url):
     print("Parsing %s" % url)    
     fout.write(header.format(page=url,datetime=str(datetime.datetime.now())))
 
     # get from web
-    r = requests.get(url)
+    r = requests.get(url, headers=headers)
     content = r.text
 
     # test: fetch from local file 'service-discovery.html'
@@ -106,22 +104,20 @@ def scrape_page(fout, url):
 
     tree = html.fromstring(content)
 
-    # # Protocol Identifiers
+    # Protocol Identifiers
     fout.write('/**\n')
     fout.write(' * Protocol Identifiers\n')
     fout.write(' */\n')
-    tables = tree.xpath("//table[preceding-sibling::h3 = 'Protocol Identifiers']")
-    tbody = tables[0].getchildren()[0]
-    process_table(fout, tbody, '#define BLUETOOTH_PROTOCOL_%-55s %s // %s\n')
+    rows = tree.xpath("//table[2]/tbody/tr")
+    process_rows(fout, rows, '#define BLUETOOTH_PROTOCOL_%-55s %s // %s\n')
     fout.write('\n')
 
-    # # Service Classes
+    # Service Classes
     fout.write('/**\n')
     fout.write(' * Service Classes\n')
     fout.write(' */\n')
-    tables = tree.xpath("//table[preceding-sibling::h3 = 'Protocol Identifiers']")
-    tbody = tables[1].getchildren()[0]
-    process_table(fout, tbody, '#define BLUETOOTH_SERVICE_CLASS_%-50s %s // %s\n')
+    rows = tree.xpath("//table[3]/tr")
+    process_rows(fout, rows, '#define BLUETOOTH_SERVICE_CLASS_%-50s %s // %s\n')
     fout.write('\n')
 
     # Attributes
@@ -161,7 +157,9 @@ def scrape_page(fout, url):
         'Calendar Tasks and Notes',
     ]
     for table_name in table_names:
-        scrape_attributes(fout, tree, table_name)
+        rows = tree.xpath("//table[preceding-sibling::h3 = '" + table_name +"']/tr")
+        process_rows(fout, rows, '#define BLUETOOTH_ATTRIBUTE_%-54s %s // %s\n')
+        # scrape_attributes(fout, tree, table_name)
     # see above
     fout.write('#define BLUETOOTH_ATTRIBUTE_GNSS_SUPPORTED_FEATURES                                0x0200\n');
     

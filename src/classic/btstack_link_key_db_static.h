@@ -41,8 +41,8 @@
  *  + Link keys are preserved on reflash in constrast to the program flash based link key store
  */
 
-#ifndef __BTSTACK_LINK_KEY_DB_STATIC_H
-#define __BTSTACK_LINK_KEY_DB_STATIC_H
+#ifndef BTSTACK_LINK_KEY_DB_STATIC_H
+#define BTSTACK_LINK_KEY_DB_STATIC_H
 
 #include "btstack_link_key_db.h"
 
@@ -61,4 +61,4 @@ const btstack_link_key_db_t * btstack_link_key_db_static_instance(void);
 }
 #endif
 
-#endif // __BTSTACK_LINK_KEY_DB_STATIC_H
+#endif // BTSTACK_LINK_KEY_DB_STATIC_H

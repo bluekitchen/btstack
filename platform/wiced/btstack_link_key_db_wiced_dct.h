@@ -41,8 +41,8 @@
  *  Persistent Link Key implemenetation for WICED using DCT mechanism
  */
 
-#ifndef __BTSTACK_LINK_KEY_WICED_DCT_H
-#define __BTSTACK_LINK_KEY_WICED_DCT_H
+#ifndef BTSTACK_LINK_KEY_WICED_DCT_H
+#define BTSTACK_LINK_KEY_WICED_DCT_H
 
 #include "btstack_config.h"
 #include "classic/btstack_link_key_db.h"
@@ -72,4 +72,4 @@ int btstack_link_key_db_wiced_dct_get_storage_size(void);
 }
 #endif
 
-#endif // __BTSTACK_LINK_KEY_DB_MEMORY_H
+#endif // BTSTACK_LINK_KEY_DB_MEMORY_H

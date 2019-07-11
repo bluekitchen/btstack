@@ -35,8 +35,8 @@
  */
 
 
-#ifndef __RFCOMM_SERVICE_DB_COCOA_H
-#define __RFCOMM_SERVICE_DB_COCOA_H
+#ifndef RFCOMM_SERVICE_DB_COCOA_H
+#define RFCOMM_SERVICE_DB_COCOA_H
 
 #include <stdint.h>
 

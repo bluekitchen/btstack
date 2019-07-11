@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "sdp_bnep_query.c"
+#define BTSTACK_FILE__ "sdp_bnep_query.c"
  
 // *****************************************************************************
 /* EXAMPLE_START(sdp_bnep_query): Dump remote BNEP PAN protocol UUID and L2CAP PSM
@@ -84,13 +84,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void sdp_client_init(void){
+    // init L2CAP
+    l2cap_init();
 
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
-
-    // init L2CAP
-    l2cap_init();
 }
 /* LISTING_END */
 
@@ -125,7 +124,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 /* LISTING_END */
 
-static char * get_string_from_data_element(uint8_t * element){
+static void get_string_from_data_element(uint8_t * element, uint16_t buffer_size, char * buffer_data){
     de_size_t de_size = de_get_size_type(element);
     int pos     = de_get_header_size(element);
     int len = 0;
@@ -139,10 +138,9 @@ static char * get_string_from_data_element(uint8_t * element){
         default:
             break;
     }
-    char * str = (char*)malloc(len+1);
-    memcpy(str, &element[pos], len);
-    str[len] ='\0';
-    return str; 
+    uint16_t bytes_to_copy = btstack_min(buffer_size-1,len);
+    memcpy(buffer_data, &element[pos], bytes_to_copy);
+    buffer_data[bytes_to_copy] ='\0';
 }
 
 
@@ -164,7 +162,7 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
     /* LISTING_PAUSE */
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
-    char *str;
+    char str[20];
 
     switch (hci_event_packet_get_type(packet)){
         case SDP_EVENT_QUERY_ATTRIBUTE_VALUE:
@@ -208,9 +206,8 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                     case 0x0100:
                     // 0x0101 "Service Description"
                     case 0x0101:
-                        str = get_string_from_data_element(attribute_value);
+                        get_string_from_data_element(attribute_value, sizeof(str), str);
                         printf(" ** Attribute 0x%04x: %s\n", sdp_event_query_attribute_byte_get_attribute_id(packet), str);
-                        free(str);
                         break;
                     
                     /* LISTING_RESUME */
@@ -232,15 +229,14 @@ static void handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel
                                 
                                 if (de_get_element_type(element) != DE_UUID) continue;
                                 uint32_t uuid = de_get_uuid32(element);
+                                des_iterator_next(&prot_it);
                                 switch (uuid){
                                     case BLUETOOTH_PROTOCOL_L2CAP:
                                         if (!des_iterator_has_more(&prot_it)) continue;
-                                        des_iterator_next(&prot_it);
                                         de_element_get_uint16(des_iterator_get_element(&prot_it), &l2cap_psm);
                                         break;
                                     case BLUETOOTH_PROTOCOL_BNEP:
                                         if (!des_iterator_has_more(&prot_it)) continue;
-                                        des_iterator_next(&prot_it);
                                         de_element_get_uint16(des_iterator_get_element(&prot_it), &bnep_version);
                                         break;
                                     default:

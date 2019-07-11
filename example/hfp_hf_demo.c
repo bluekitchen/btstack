@@ -36,7 +36,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "hfp_hf_demo.c"
+#define BTSTACK_FILE__ "hfp_hf_demo.c"
 
 /*
  * hfp_hs_demo.c
@@ -67,7 +67,8 @@ const uint8_t   rfcomm_channel_nr = 1;
 const char hfp_hf_service_name[] = "HFP HF Demo";
 
 #ifdef HAVE_BTSTACK_STDIN
-static const char * device_addr_string = "00:1B:DC:08:0A:A5";
+// static const char * device_addr_string = "6C:72:E7:10:22:EE";
+static const char * device_addr_string = "54:E4:3A:26:A2:39";
 #endif
 
 static bd_addr_t device_addr;
@@ -77,8 +78,8 @@ static bd_addr_t device_addr;
 // prototypes
 static void show_usage(void);
 #endif
-static hci_con_handle_t acl_handle = -1;
-static hci_con_handle_t sco_handle;
+static hci_con_handle_t acl_handle = HCI_CON_HANDLE_INVALID;
+static hci_con_handle_t sco_handle = HCI_CON_HANDLE_INVALID;
 #ifdef ENABLE_HFP_WIDE_BAND_SPEECH
 static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
 #else
@@ -441,6 +442,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
     switch (packet_type){
 
         case HCI_SCO_DATA_PACKET:
+            if (READ_SCO_CONNECTION_HANDLE(event) != sco_handle) break;
             sco_demo_receive(event, event_size);
             break;
 
@@ -464,11 +466,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             printf("Service level connection established %s.\n\n", bd_addr_to_str(device_addr));
                             break;
                         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
+                            acl_handle = HCI_CON_HANDLE_INVALID;
                             printf("Service level connection released.\n\n");
                             break;
                         case HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED:
                             if (hfp_subevent_audio_connection_established_get_status(event)){
-                                sco_handle = 0;
                                 printf("Audio connection establishment failed with status %u\n", hfp_subevent_audio_connection_established_get_status(event));
                             } else {
                                 sco_handle = hfp_subevent_audio_connection_established_get_handle(event);
@@ -490,7 +492,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             }
                             break;
                         case HFP_SUBEVENT_AUDIO_CONNECTION_RELEASED:
-                            sco_handle = 0;
+                            sco_handle = HCI_CON_HANDLE_INVALID;
                             printf("Audio connection released\n");
                             sco_demo_close();
                             break;
@@ -507,28 +509,52 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t * even
                             }
                             break;
                         case HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED:
-                            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator '%s' (index: %d) to: %d\n", (const char*) &event[5], event[3], event[4]);
+                            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator (index: %d) to: %d of range [%d, %d], name '%s'\n", 
+                                hfp_subevent_ag_indicator_status_changed_get_indicator_index(event), 
+                                hfp_subevent_ag_indicator_status_changed_get_indicator_status(event),
+                                hfp_subevent_ag_indicator_status_changed_get_indicator_min_range(event),
+                                hfp_subevent_ag_indicator_status_changed_get_indicator_max_range(event),
+                                (const char*) hfp_subevent_ag_indicator_status_changed_get_indicator_name(event));
                             break;
                         case HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED:
-                            printf("NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", event[3], event[4], (char *) &event[5]);
+                            printf("NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", 
+                                hfp_subevent_network_operator_changed_get_network_operator_mode(event), 
+                                hfp_subevent_network_operator_changed_get_network_operator_format(event), 
+                                (char *) hfp_subevent_network_operator_changed_get_network_operator_name(event));          
                             break;
                         case HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR:
-                            printf("EXTENDED_AUDIO_GATEWAY_ERROR_REPORT, status : %d\n", event[3]);
+                            printf("EXTENDED_AUDIO_GATEWAY_ERROR_REPORT, status : %d\n", 
+                                hfp_subevent_extended_audio_gateway_error_get_error(event));
                             break;
                         case HFP_SUBEVENT_RING:
                             printf("** Ring **\n");
                             break;
                         case HFP_SUBEVENT_NUMBER_FOR_VOICE_TAG:
-                            printf("Phone number for voice tag: %s\n", (const char *) &event[3]);
+                            printf("Phone number for voice tag: %s\n", 
+                                (const char *) hfp_subevent_number_for_voice_tag_get_number(event));
                             break;
                         case HFP_SUBEVENT_SPEAKER_VOLUME:
-                            printf("Speaker volume: %u\n", event[3]);
+                            printf("Speaker volume: status %u, gain %u\n", 
+                                hfp_subevent_speaker_volume_get_status(event),
+                                hfp_subevent_speaker_volume_get_gain(event));
                             break;
                         case HFP_SUBEVENT_MICROPHONE_VOLUME:
-                            printf("Microphone volume: %u\n", event[3]);
+                            printf("Microphone volume: status %u, gain %u\n", 
+                                hfp_subevent_microphone_volume_get_status(event),
+                                hfp_subevent_microphone_volume_get_gain(event));
                             break;
                         case HFP_SUBEVENT_CALLING_LINE_IDENTIFICATION_NOTIFICATION:
                             printf("Caller ID, number %s\n", hfp_subevent_calling_line_identification_notification_get_number(event));
+                            break;
+                        case HFP_SUBEVENT_ENHANCED_CALL_STATUS:
+                            printf("Enhanced call status:\n");
+                            printf("  - call index: %d \n", hfp_subevent_enhanced_call_status_get_clcc_idx(event));
+                            printf("  - direction : %s \n", hfp_enhanced_call_dir2str(hfp_subevent_enhanced_call_status_get_clcc_dir(event)));
+                            printf("  - status    : %s \n", hfp_enhanced_call_status2str(hfp_subevent_enhanced_call_status_get_clcc_status(event)));
+                            printf("  - mode      : %s \n", hfp_enhanced_call_mode2str(hfp_subevent_enhanced_call_status_get_clcc_mode(event)));
+                            printf("  - multipart : %s \n", hfp_enhanced_call_mpty2str(hfp_subevent_enhanced_call_status_get_clcc_mpty(event)));
+                            printf("  - type      : %d \n", hfp_subevent_enhanced_call_status_get_bnip_type(event));
+                            printf("  - number    : %s \n", hfp_subevent_enhanced_call_status_get_bnip_number(event));
                             break;
                         default:
                             printf("event not handled %u\n", event[2]);
@@ -564,11 +590,6 @@ int btstack_main(int argc, const char * argv[]){
 
     sco_demo_init();
 
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-    hci_register_sco_packet_handler(&packet_handler);
-
     gap_discoverable_control(1);
     gap_set_class_of_device(0x200408);   
     gap_set_local_name("HFP HF Demo 00:00:00:00:00:00");
@@ -591,14 +612,20 @@ int btstack_main(int argc, const char * argv[]){
     hfp_hf_init_hf_indicators(sizeof(indicators)/sizeof(uint16_t), indicators);
     hfp_hf_init_codecs(sizeof(codecs), codecs);
     
-    hfp_hf_register_packet_handler(packet_handler);
-    hci_register_sco_packet_handler(&packet_handler);
-
     sdp_init();    
     memset(hfp_service_buffer, 0, sizeof(hfp_service_buffer));
     hfp_hf_create_sdp_record(hfp_service_buffer, 0x10001, rfcomm_channel_nr, hfp_hf_service_name, hf_supported_features, wide_band_speech);
     printf("SDP service record size: %u\n", de_get_len(hfp_service_buffer));
     sdp_register_service(hfp_service_buffer);
+
+    // register for HCI events and SCO packets
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+    hci_register_sco_packet_handler(&packet_handler);
+    hci_register_sco_packet_handler(&packet_handler);
+
+    // register for HFP events
+    hfp_hf_register_packet_handler(packet_handler);
 
 #ifdef HAVE_BTSTACK_STDIN
     // parse human readable Bluetooth address
