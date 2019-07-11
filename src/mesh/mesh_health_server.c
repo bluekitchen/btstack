@@ -69,7 +69,7 @@ const mesh_access_message_t mesh_foundation_health_attention_status = {
         MESH_FOUNDATION_OPERATION_ATTENTION_STATUS, "1"
 };
 
-static mesh_pdu_t * health_status(mesh_model_t * mesh_model, uint32_t opcode, uint16_t company_id){
+static mesh_pdu_t * health_status_regitered_faults(mesh_model_t * mesh_model, uint32_t opcode, uint16_t company_id){
     if (mesh_model->element == NULL){
         log_error("mesh_model->element == NULL"); 
     }
@@ -104,19 +104,60 @@ static mesh_pdu_t * health_status(mesh_model_t * mesh_model, uint32_t opcode, ui
 static void health_fault_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
-    uint16_t cid = mesh_access_parser_get_u16(&parser);
+    uint16_t company_id = mesh_access_parser_get_u16(&parser);
 
-    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS, cid);
+    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_status_regitered_faults(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS, company_id);
     if (!transport_pdu) return;
     health_server_send_message(mesh_access_get_element_address(mesh_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS);
+    mesh_access_message_processed(pdu);
+}
+
+static void clear_faults(btstack_linked_list_t * faults, uint16_t company_id){
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, faults);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        mesh_fault_t * fault = (mesh_fault_t *) btstack_linked_list_iterator_next(&it);
+        if (fault->company_id != company_id) continue;
+        memset(fault->faults, 0, sizeof(fault->faults));
+        return;    
+    }
+}
+
+static void health_fault_clear_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+    uint16_t company_id = mesh_access_parser_get_u16(&parser);
+    
+    mesh_health_state_t * state = (mesh_health_state_t *) mesh_model->model_data;
+    if (state == NULL){
+        log_error("mesh_health_state ==  NULL");
+    }
+    clear_faults(&state->registered_faults, company_id);
+    
+    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_status_regitered_faults(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS, company_id);
+    if (!transport_pdu) return;
+    health_server_send_message(mesh_access_get_element_address(mesh_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS);
+    mesh_access_message_processed(pdu);
+}
+
+static void health_fault_clear_unacknowledged_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    mesh_access_parser_state_t parser;
+    mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
+    uint16_t company_id = mesh_access_parser_get_u16(&parser);
+
+    mesh_health_state_t * state = (mesh_health_state_t *) mesh_model->model_data;
+    if (state == NULL){
+        log_error("mesh_health_state ==  NULL");
+    }
+    clear_faults(&state->registered_faults, company_id);
     mesh_access_message_processed(pdu);
 }
 
 // Health Message
 const static mesh_operation_t mesh_health_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_HEALTH_FAULT_GET,                                   2, health_fault_get_handler },
-    // { MESH_FOUNDATION_OPERATION_HEALTH_FAULT_CLEAR,                                 2, health_fault_clear_handler },
-    // { MESH_FOUNDATION_OPERATION_HEALTH_FAULT_CLEAR_UNACKNOWLEDGED,                  2, health_fault_clear_unacknowledged_handler },
+    { MESH_FOUNDATION_OPERATION_HEALTH_FAULT_CLEAR,                                 2, health_fault_clear_handler },
+    { MESH_FOUNDATION_OPERATION_HEALTH_FAULT_CLEAR_UNACKNOWLEDGED,                  2, health_fault_clear_unacknowledged_handler },
     // { MESH_FOUNDATION_OPERATION_HEALTH_FAULT_TEST,                                  3, health_fault_test_handler },
     // { MESH_FOUNDATION_OPERATION_HEALTH_FAULT_TEST_UNACKNOWLEDGED,                   3, health_fault_test_unacknowledged_handler },
     // { MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS_UNACKNOWLEDGED,                 3, health_fault_test_status_unacknowledged_handler },
