@@ -274,9 +274,7 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                     printf("Provisioning complete\n");
 
                     // get provisioning data
-                    memcpy(provisioning_data.device_key, provisioning_device_data_get_device_key(), 16);
-                    provisioning_data.flags = provisioning_device_data_get_flags();
-                    provisioning_data.unicast_address = provisioning_device_data_get_unicast_address();
+                    provisioning_device_data_get(&provisioning_data);
 
                     // set iv_index
                     mesh_set_iv_index(provisioning_device_data_get_iv_index());
