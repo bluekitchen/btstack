@@ -37,9 +37,17 @@
 
 #define __BTSTACK_FILE__ "mesh_node.c"
 
+#include <stddef.h>
+
 #include "mesh/mesh_node.h"
 
 static uint16_t primary_element_address;
+
+static mesh_element_t primary_element;
+
+static uint16_t mesh_element_index_next;
+
+static btstack_linked_list_t mesh_elements;
 
 void mesh_node_primary_element_address_set(uint16_t unicast_address){
     primary_element_address = unicast_address;
@@ -47,4 +55,50 @@ void mesh_node_primary_element_address_set(uint16_t unicast_address){
 
 uint16_t mesh_node_primary_element_address_get(void){
     return primary_element_address; 
+}
+
+void mesh_node_init(void){
+    // dd Primary Element to list of elements
+    mesh_element_add(&primary_element);
+}
+
+void mesh_element_add(mesh_element_t * element){
+    element->element_index = mesh_element_index_next++;
+    btstack_linked_list_add_tail(&mesh_elements, (void*) element);
+}
+
+mesh_element_t * mesh_primary_element(void){
+    return &primary_element;
+}
+
+void mesh_access_set_primary_element_location(uint16_t location){
+    primary_element.loc = location;
+}
+
+mesh_element_t * mesh_element_for_index(uint16_t element_index){
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &mesh_elements);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        mesh_element_t * element = (mesh_element_t *) btstack_linked_list_iterator_next(&it);
+        if (element->element_index != element_index) continue;
+        return element;
+    }
+    return NULL;
+}
+
+mesh_element_t * mesh_element_for_unicast_address(uint16_t unicast_address){
+    uint16_t element_index = unicast_address - mesh_node_primary_element_address_get();
+    return mesh_element_for_index(element_index);
+}
+
+void mesh_element_iterator_init(mesh_element_iterator_t * iterator){
+    btstack_linked_list_iterator_init(&iterator->it, &mesh_elements);
+}
+
+int mesh_element_iterator_has_next(mesh_element_iterator_t * iterator){
+    return btstack_linked_list_iterator_has_next(&iterator->it);
+}
+
+mesh_element_t * mesh_element_iterator_next(mesh_element_iterator_t * iterator){
+    return (mesh_element_t *) btstack_linked_list_iterator_next(&iterator->it);
 }

@@ -59,11 +59,6 @@ static void mesh_access_upper_transport_handler(mesh_transport_callback_type_t c
 static const mesh_operation_t * mesh_model_lookup_operation_by_opcode(mesh_model_t * model, uint32_t opcode);
 static void mesh_persist_iv_index_and_sequence_number(void);
 
-static mesh_element_t primary_element;
-static uint16_t mesh_element_index_next;
-
-static btstack_linked_list_t mesh_elements;
-
 // acknowledged messages
 static btstack_linked_list_t  mesh_access_acknowledged_messages;
 static btstack_timer_source_t mesh_access_acknowledged_timer;
@@ -85,9 +80,6 @@ static void mesh_access_setup_tlv(void){
 }
 
 void mesh_access_init(void){
-    // Access layer - add Primary Element to list of elements
-    mesh_element_add(&primary_element);
-
     // register with upper transport
     mesh_upper_transport_register_access_message_handler(&mesh_access_message_process_handler);
     mesh_upper_transport_set_higher_layer_handler(&mesh_access_upper_transport_handler);
@@ -401,37 +393,8 @@ uint8_t mesh_access_transactions_get_next_transaction_id(void){
 }   
 
 // Mesh Node Element functions
-mesh_element_t * mesh_primary_element(void){
-    return &primary_element;
-}
-
 uint8_t mesh_access_get_element_index(mesh_model_t * mesh_model){
     return mesh_model->element->element_index;
-}
-
-void mesh_access_set_primary_element_location(uint16_t location){
-    primary_element.loc = location;
-}
-
-void mesh_element_add(mesh_element_t * element){
-    element->element_index = mesh_element_index_next++;
-    btstack_linked_list_add_tail(&mesh_elements, (void*) element);
-}
-
-mesh_element_t * mesh_element_for_unicast_address(uint16_t unicast_address){
-    uint16_t element_index = unicast_address - mesh_node_primary_element_address_get();
-    return mesh_element_for_index(element_index);
-}
-
-mesh_element_t * mesh_element_for_index(uint16_t element_index){
-    btstack_linked_list_iterator_t it;
-    btstack_linked_list_iterator_init(&it, &mesh_elements);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        mesh_element_t * element = (mesh_element_t *) btstack_linked_list_iterator_next(&it);
-        if (element->element_index != element_index) continue;
-        return element;
-    }
-    return NULL;
 }
 
 uint16_t mesh_access_get_element_address(mesh_model_t * mesh_model){
@@ -461,7 +424,7 @@ int mesh_model_is_bluetooth_sig(uint32_t model_identifier){
 }
 
 mesh_model_t * mesh_model_get_configuration_server(void){
-    return mesh_model_get_by_identifier(&primary_element, mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_CONFIGURATION_SERVER));
+    return mesh_model_get_by_identifier(mesh_primary_element(), mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_CONFIGURATION_SERVER));
 }
 
 void mesh_element_add_model(mesh_element_t * element, mesh_model_t * mesh_model){
@@ -485,18 +448,6 @@ int mesh_model_iterator_has_next(mesh_model_iterator_t * iterator){
 
 mesh_model_t * mesh_model_iterator_next(mesh_model_iterator_t * iterator){
     return (mesh_model_t *) btstack_linked_list_iterator_next(&iterator->it);
-}
-
-void mesh_element_iterator_init(mesh_element_iterator_t * iterator){
-    btstack_linked_list_iterator_init(&iterator->it, &mesh_elements);
-}
-
-int mesh_element_iterator_has_next(mesh_element_iterator_t * iterator){
-    return btstack_linked_list_iterator_has_next(&iterator->it);
-}
-
-mesh_element_t * mesh_element_iterator_next(mesh_element_iterator_t * iterator){
-    return (mesh_element_t *) btstack_linked_list_iterator_next(&iterator->it);
 }
 
 mesh_model_t * mesh_model_get_by_identifier(mesh_element_t * element, uint32_t model_identifier){
@@ -993,7 +944,7 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
             }
             if (deliver_to_primary_element){
                 mesh_model_iterator_t model_it;
-                mesh_model_iterator_init(&model_it, &primary_element);
+                mesh_model_iterator_init(&model_it, mesh_primary_element());
                 while (mesh_model_iterator_has_next(&model_it)){
                     mesh_model_t * model = mesh_model_iterator_next(&model_it);
                     // find opcode in table

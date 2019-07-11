@@ -163,10 +163,6 @@ typedef struct {
     btstack_linked_list_iterator_t it;
 } mesh_model_iterator_t;
 
-typedef struct {
-    btstack_linked_list_iterator_t it;
-} mesh_element_iterator_t;
-
 #define MESH_MAX_NUM_FAULTS 3
 
 typedef struct {
@@ -177,23 +173,6 @@ typedef struct {
     uint16_t num_faults;
     uint8_t  faults[MESH_MAX_NUM_FAULTS];
 } mesh_fault_t;
-
-typedef struct mesh_element {
-    // linked list item
-    btstack_linked_item_t item;
-    
-    // element index
-    uint16_t element_index;
-
-    // LOC
-    uint16_t loc;
-    
-    // models
-    btstack_linked_list_t models;
-    uint16_t models_count_sig;
-    uint16_t models_count_vendor;
-
-} mesh_element_t;
 
 typedef struct {
     uint32_t opcode;
@@ -269,24 +248,6 @@ void mesh_access_send_unacknowledged_pdu(mesh_pdu_t * pdu);
 void mesh_access_send_acknowledged_pdu(mesh_pdu_t * pdu, uint8_t retransmissions, uint32_t ack_opcode);
 
 /**
- * @brief Get Primary Element of this node
- */
-mesh_element_t * mesh_primary_element(void);
-
-/**
- * @brief Set location of primary element
- * @note Returned by Configuration Server Composite Data
- * @param location
- */
-void mesh_access_set_primary_element_location(uint16_t location);
-
-/**
- * @brief Add secondary element
- * @param element
- */
-void mesh_element_add(mesh_element_t * element);
-
-/**
  * @brief Get element index for give model
  * @param mesh_model
  */
@@ -299,31 +260,11 @@ uint8_t mesh_access_get_element_index(mesh_model_t * mesh_model);
 uint16_t mesh_access_get_element_address(mesh_model_t * mesh_model);
 
 /**
- * @brief Get element for given unicast address
- * @param unicast_address
- */
-mesh_element_t * mesh_element_for_unicast_address(uint16_t unicast_address);
-
-/**
- * @brief Get element by index
- * @param element_index
- */
-mesh_element_t * mesh_element_for_index(uint16_t element_index);
-
-/**
  * @brief Add model to element
  * @param element
  * @param mesh_model
  */
 void mesh_element_add_model(mesh_element_t * element, mesh_model_t * mesh_model);
-
-// Mesh Element Iterator
-
-void mesh_element_iterator_init(mesh_element_iterator_t * iterator);
-
-int mesh_element_iterator_has_next(mesh_element_iterator_t * iterator);
-
-mesh_element_t * mesh_element_iterator_next(mesh_element_iterator_t * iterator);
 
 // Mesh Model Iterator
 
