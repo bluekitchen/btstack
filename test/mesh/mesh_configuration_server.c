@@ -56,6 +56,7 @@
 #include "mesh/gatt_bearer.h"
 #include "mesh_iv_index_seq_number.h"
 #include "mesh/beacon.h"
+#include "mesh_node.h"
 
 #define MESH_HEARTBEAT_FEATURES_SUPPORTED_MASK 0x000f
 
@@ -462,7 +463,7 @@ const mesh_access_message_t mesh_foundation_config_heartbeat_subscription_status
 static void config_server_send_message(uint16_t netkey_index, uint16_t dest, mesh_pdu_t *pdu){
     // Configuration Server is on primary element and can only use DeviceKey
     uint16_t appkey_index = MESH_DEVICE_KEY_INDEX;
-    uint16_t src          = mesh_access_get_primary_element_address();
+    uint16_t src          = mesh_node_primary_element_address_get();
     uint8_t  ttl          = mesh_foundation_default_ttl_get();
     mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, 0);
     mesh_upper_transport_send_access_pdu(pdu);
@@ -1850,7 +1851,7 @@ static void config_heartbeat_publication_emit(mesh_heartbeat_publication_t * mes
         data[0] = mesh_heartbeat_publication->ttl;
         big_endian_store_16(data, 1, mesh_heartbeat_publication->active_features);
         mesh_upper_transport_setup_control_pdu((mesh_pdu_t *) network_pdu, mesh_heartbeat_publication->netkey_index,
-                mesh_heartbeat_publication->ttl, mesh_access_get_primary_element_address(), mesh_heartbeat_publication->destination,
+                mesh_heartbeat_publication->ttl, mesh_node_primary_element_address_get(), mesh_heartbeat_publication->destination,
                 MESH_TRANSPORT_OPCODE_HEARTBEAT, data, sizeof(data));
         mesh_upper_transport_send_control_pdu((mesh_pdu_t *) network_pdu);
     }
@@ -2287,7 +2288,7 @@ void mesh_node_reset(void){
 void mesh_node_store_provisioning_data(void){
     // fill prov data
     mesh_provisioning_data_t provisioning_data;
-    provisioning_data.unicast_address = mesh_access_get_primary_element_address();
+    provisioning_data.unicast_address = mesh_node_primary_element_address_get();
     memcpy(provisioning_data.device_key, mesh_transport_key_get(MESH_DEVICE_KEY_INDEX), 16);
 
     // store in tlv

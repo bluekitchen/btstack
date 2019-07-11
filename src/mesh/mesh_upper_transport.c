@@ -50,8 +50,6 @@
 #include "mesh_virtual_addresses.h"
 #include "mesh_iv_index_seq_number.h"
 
-static uint16_t primary_element_address;
-
 static void (*higher_layer_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
 
 static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len){
@@ -875,10 +873,6 @@ void mesh_upper_transport_send_access_pdu(mesh_pdu_t * pdu){
         default:
             break;
     }
-}
-
-void mesh_upper_transport_set_primary_element_address(uint16_t unicast_address){
-    primary_element_address = unicast_address;
 }
 
 void mesh_upper_transport_register_access_message_handler(void (*callback)(mesh_pdu_t *pdu)){

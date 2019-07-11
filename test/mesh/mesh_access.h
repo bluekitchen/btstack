@@ -274,17 +274,6 @@ void mesh_access_send_acknowledged_pdu(mesh_pdu_t * pdu, uint8_t retransmissions
 mesh_element_t * mesh_primary_element(void);
 
 /**
- *  @brief Set unicast address of primary element. Secondary eleemnts use subsequent addresses
- *  @param unicast_address;
- */
-void mesh_access_set_primary_element_address(uint16_t unicast_address);
-
-/**
- * @brief Get unicast address of primary element
- */
-uint16_t mesh_access_get_primary_element_address(void);
-
-/**
  * @brief Set location of primary element
  * @note Returned by Configuration Server Composite Data
  * @param location

@@ -46,8 +46,8 @@
 #include "mesh_peer.h"
 #include "mesh_lower_transport.h"
 #include "mesh_iv_index_seq_number.h"
+#include "mesh_node.h"
 
-static uint16_t primary_element_address;
 static void (*higher_layer_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
 
 static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len){
@@ -188,7 +188,7 @@ static void mesh_lower_transport_send_ack(uint16_t netkey_index, uint8_t ttl, ui
     if (!network_pdu) return;
 
     // setup network_pdu
-    mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, 1, ttl, mesh_sequence_number_next(), primary_element_address, dest, ack_msg, sizeof(ack_msg));
+    mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, 1, ttl, mesh_sequence_number_next(), mesh_node_primary_element_address_get(), dest, ack_msg, sizeof(ack_msg));
 
     // send network_pdu
     mesh_network_send_pdu(network_pdu);
@@ -200,7 +200,7 @@ static void mesh_lower_transport_send_ack_for_transport_pdu(mesh_transport_pdu_t
     uint16_t dest = mesh_transport_src(transport_pdu);
     uint16_t netkey_index = transport_pdu->netkey_index;
     printf("mesh_transport_send_ack_for_transport_pdu %p with netkey_index %x, TTL = %u, SeqZero = %x, SRC = %x, DST = %x\n",
-           transport_pdu, netkey_index, ttl, seq_zero, primary_element_address, dest);
+           transport_pdu, netkey_index, ttl, seq_zero, mesh_node_primary_element_address_get(), dest);
     mesh_lower_transport_send_ack(netkey_index, ttl, dest, seq_zero, transport_pdu->block_ack);
 }
 
@@ -209,7 +209,7 @@ static void mesh_lower_transport_send_ack_for_network_pdu(mesh_network_pdu_t *ne
     uint16_t dest = mesh_network_src(network_pdu);
     uint16_t netkey_index = network_pdu->netkey_index;
     printf("mesh_transport_send_ack_for_network_pdu %p with netkey_index %x, TTL = %u, SeqZero = %x, SRC = %x, DST = %x\n",
-           network_pdu, netkey_index, ttl, seq_zero, primary_element_address, dest);
+           network_pdu, netkey_index, ttl, seq_zero, mesh_node_primary_element_address_get(), dest);
     mesh_lower_transport_send_ack(netkey_index, ttl, dest, seq_zero, block_ack);
 }
 
@@ -706,10 +706,6 @@ void mesh_lower_transport_init(){
     mesh_network_set_higher_layer_handler(&mesh_lower_transport_received_message);
     // allocate network_pdu for segmentation
     lower_transport_outgoing_segment = mesh_network_pdu_get();
-}
-
-void mesh_lower_transport_set_primary_element_address(uint16_t unicast_address){
-    primary_element_address = unicast_address;
 }
 
 void mesh_lower_transport_set_higher_layer_handler(void (*pdu_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu)){

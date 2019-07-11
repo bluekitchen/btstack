@@ -211,11 +211,6 @@ void mesh_network_set_proxy_message_handler(void (*packet_handler)(mesh_network_
 void mesh_network_message_processed_by_higher_layer(mesh_network_pdu_t * network_pdu);
 
 /**
- * @brief Configure address filter
- */
-void mesh_network_set_primary_element_address(uint16_t addr);
-
-/**
  * @brief Send network_pdu after encryption
  * @param network_pdu
  */

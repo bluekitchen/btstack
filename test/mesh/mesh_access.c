@@ -59,8 +59,6 @@ static void mesh_access_upper_transport_handler(mesh_transport_callback_type_t c
 static const mesh_operation_t * mesh_model_lookup_operation_by_opcode(mesh_model_t * model, uint32_t opcode);
 static void mesh_persist_iv_index_and_sequence_number(void);
 
-static uint16_t primary_element_address;
-
 static mesh_element_t primary_element;
 static uint16_t mesh_element_index_next;
 
@@ -407,14 +405,6 @@ mesh_element_t * mesh_primary_element(void){
     return &primary_element;
 }
 
-void mesh_access_set_primary_element_address(uint16_t unicast_address){
-    primary_element_address = unicast_address;
-}
-
-uint16_t mesh_access_get_primary_element_address(void){
-    return primary_element_address;
-}
-
 uint8_t mesh_access_get_element_index(mesh_model_t * mesh_model){
     return mesh_model->element->element_index;
 }
@@ -429,7 +419,7 @@ void mesh_element_add(mesh_element_t * element){
 }
 
 mesh_element_t * mesh_element_for_unicast_address(uint16_t unicast_address){
-    uint16_t element_index = unicast_address - primary_element_address;
+    uint16_t element_index = unicast_address - mesh_node_primary_element_address_get();
     return mesh_element_for_index(element_index);
 }
 
@@ -445,7 +435,7 @@ mesh_element_t * mesh_element_for_index(uint16_t element_index){
 }
 
 uint16_t mesh_access_get_element_address(mesh_model_t * mesh_model){
-    return primary_element_address + mesh_model->element->element_index;
+    return mesh_node_primary_element_address_get() + mesh_model->element->element_index;
 }
 
 // Model Identifier utilities
@@ -1756,13 +1746,7 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
 }
 
 void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
-    // set unicast address - old
-    mesh_network_set_primary_element_address(provisioning_data->unicast_address);
-    mesh_lower_transport_set_primary_element_address(provisioning_data->unicast_address);
-    mesh_upper_transport_set_primary_element_address(provisioning_data->unicast_address);
-    mesh_access_set_primary_element_address(provisioning_data->unicast_address);
-    primary_element_address = provisioning_data->unicast_address;
-    // set unicast address - new
+    // set unicast address
     mesh_node_primary_element_address_set(provisioning_data->unicast_address);
 
     // set device_key

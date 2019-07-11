@@ -51,6 +51,7 @@
 #include "btstack_event.h"
 #include "btstack_memory.h"
 #include "mesh_iv_index_seq_number.h"
+#include "mesh_node.h"
 
 #ifdef ENABLE_MESH_ADV_BEARER
 #include "mesh/adv_bearer.h"
@@ -71,7 +72,6 @@
 
 // globals
 
-static uint16_t mesh_network_primary_address;
 static uint16_t mesh_network_num_elements;
 static void (*mesh_network_higher_layer_handler)(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu);
 static void (*mesh_network_proxy_message_handler)(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu);
@@ -382,6 +382,9 @@ void mesh_network_message_processed_by_higher_layer(mesh_network_pdu_t * network
     // check if address does not matches elements on our node and TTL >= 2
     uint16_t src     = mesh_network_src(network_pdu);
     uint8_t  ttl     = mesh_network_ttl(network_pdu);
+    
+    uint16_t mesh_network_primary_address = mesh_node_primary_element_address_get();
+
     if (((src < mesh_network_primary_address) || (src > (mesh_network_primary_address + mesh_network_num_elements))) && (ttl >= 2)){
 
         if ((network_pdu->flags & MESH_NETWORK_PDU_FLAGS_GATT_BEARER) == 0){
@@ -831,6 +834,7 @@ void mesh_network_init(void){
     gatt_bearer_register_for_network_pdu(&mesh_network_gatt_bearer_handle_network_event);
     gatt_bearer_register_for_mesh_proxy_configuration(&mesh_netework_gatt_bearer_handle_proxy_configuration);
 #endif
+    mesh_network_num_elements = 1;
 }
 
 void mesh_network_set_higher_layer_handler(void (*packet_handler)(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu)){
@@ -839,11 +843,6 @@ void mesh_network_set_higher_layer_handler(void (*packet_handler)(mesh_network_c
 
 void mesh_network_set_proxy_message_handler(void (*packet_handler)(mesh_network_callback_type_t callback_type, mesh_network_pdu_t * network_pdu)){
     mesh_network_proxy_message_handler = packet_handler;
-}
-
-void mesh_network_set_primary_element_address(uint16_t addr){
-    mesh_network_primary_address = addr;
-    mesh_network_num_elements = 1;
 }
 
 void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len, uint8_t flags){
