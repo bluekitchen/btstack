@@ -40,6 +40,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include "mesh/mesh_node.h"
 #include "mesh/mesh_upper_transport.h"
 #include "mesh/beacon.h"
 #include "mesh_access.h"
@@ -49,7 +50,6 @@
 #include "btstack_tlv.h"
 #include "mesh_iv_index_seq_number.h"
 #include "mesh_proxy.h"
-#include "mesh_node.h"
 
 #define MEST_TRANSACTION_TIMEOUT_MS  6000
 

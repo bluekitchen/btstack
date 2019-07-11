@@ -39,24 +39,24 @@
 
 #include <string.h>
 #include <stdio.h>
-#include "mesh_configuration_server.h"
-#include "btstack_util.h"
-#include "mesh/mesh_network.h"
-#include "mesh/mesh_upper_transport.h"
-#include "mesh_keys.h"
-#include "mesh_access.h"
-#include "mesh_foundation.h"
 #include "bluetooth_company_id.h"
-#include "btstack_memory.h"
-#include "mesh/mesh_crypto.h"
-#include "mesh_virtual_addresses.h"
 #include "btstack_debug.h"
+#include "btstack_memory.h"
 #include "btstack_tlv.h"
-#include "mesh_proxy.h"
-#include "mesh/gatt_bearer.h"
-#include "mesh_iv_index_seq_number.h"
+#include "btstack_util.h"
 #include "mesh/beacon.h"
-#include "mesh_node.h"
+#include "mesh/gatt_bearer.h"
+#include "mesh/mesh_crypto.h"
+#include "mesh/mesh_network.h"
+#include "mesh/mesh_node.h"
+#include "mesh/mesh_upper_transport.h"
+#include "mesh_access.h"
+#include "mesh_configuration_server.h"
+#include "mesh_foundation.h"
+#include "mesh_iv_index_seq_number.h"
+#include "mesh_keys.h"
+#include "mesh_proxy.h"
+#include "mesh_virtual_addresses.h"
 
 #define MESH_HEARTBEAT_FEATURES_SUPPORTED_MASK 0x000f
 

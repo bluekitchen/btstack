@@ -40,13 +40,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "mesh/beacon.h"
 #include "btstack_util.h"
 #include "btstack_memory.h"
+#include "mesh/beacon.h"
+#include "mesh/mesh_node.h"
 #include "mesh_peer.h"
 #include "mesh_lower_transport.h"
 #include "mesh_iv_index_seq_number.h"
-#include "mesh_node.h"
 
 static void (*higher_layer_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
 

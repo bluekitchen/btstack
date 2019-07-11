@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "mesh/beacon.h"
+#include "mesh/mesh_node.h"
 #include "provisioning.h"
 #include "provisioning_device.h"
 #include "mesh_keys.h"
@@ -51,7 +52,6 @@
 #include "btstack_event.h"
 #include "btstack_memory.h"
 #include "mesh_iv_index_seq_number.h"
-#include "mesh_node.h"
 
 #ifdef ENABLE_MESH_ADV_BEARER
 #include "mesh/adv_bearer.h"
