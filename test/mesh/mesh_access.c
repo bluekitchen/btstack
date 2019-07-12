@@ -1745,7 +1745,7 @@ void mesh_access_setup_without_provisiong_data(void){
     beacon_unprovisioned_device_start(device_uuid, 0);
 #endif
 #ifdef ENABLE_MESH_PB_GATT
-    mesh_proxy_start_advertising_unprovisioned_device(device_uuid);
+    mesh_proxy_start_advertising_unprovisioned_device();
 #endif
 }
 

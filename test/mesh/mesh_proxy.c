@@ -124,7 +124,8 @@ static void mesh_proxy_setup_advertising_unprovisioned(adv_bearer_connectable_ad
     little_endian_store_16(advertisement_item->adv_data, 27, 0);
 }
 
-void mesh_proxy_start_advertising_unprovisioned_device(const uint8_t * device_uuid){
+void mesh_proxy_start_advertising_unprovisioned_device(void){
+    const uint8_t * device_uuid = mesh_node_get_device_uuid();
     mesh_proxy_setup_advertising_unprovisioned(&connectable_advertisement, device_uuid);
     // setup advertisements
     adv_bearer_advertisements_add_item(&connectable_advertisement);

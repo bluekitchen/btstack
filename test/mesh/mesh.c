@@ -160,7 +160,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     // enable PB_GATT
                     if (provisioned == 0){
                         printf("Advertise Mesh Provisiong Service with Device UUID\n");
-                        mesh_proxy_start_advertising_unprovisioned_device(mesh_node_get_device_uuid());
+                        mesh_proxy_start_advertising_unprovisioned_device();
                     } else {
 #ifdef ENABLE_MESH_PROXY_SERVER
                         printf("Advertise Mesh Proxy Service with Network ID\n");
@@ -572,7 +572,7 @@ static void stdin_process(char cmd){
         case '8':
             mesh_node_reset();
             printf("Mesh Node Reset!\n");
-            mesh_proxy_start_advertising_unprovisioned_device(mesh_node_get_device_uuid());
+            mesh_proxy_start_advertising_unprovisioned_device();
             break;
         case 'p':
             printf("+ Public Key OOB Enabled\n");

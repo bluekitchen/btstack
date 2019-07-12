@@ -60,9 +60,8 @@ void mesh_proxy_init(uint16_t primary_unicast_address);
 
 /**
  * @brief Start Advertising Unprovisioned Device with Device ID
- * @param device_uuid
  */
-void mesh_proxy_start_advertising_unprovisioned_device(const uint8_t * device_uuid);
+void mesh_proxy_start_advertising_unprovisioned_device(void);
 
 /**
  * @brief Start Advertising Unprovisioned Device with Device ID
