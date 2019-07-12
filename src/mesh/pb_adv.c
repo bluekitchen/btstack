@@ -43,6 +43,7 @@
 #include <string.h>
 #include "mesh/adv_bearer.h"
 #include "mesh/beacon.h"
+#include "mesh/mesh_node.h"
 #include "provisioning.h"
 #include "btstack_util.h"
 #include "btstack_debug.h"
@@ -83,8 +84,6 @@ typedef enum {
     LINK_STATE_CLOSING,
 } link_state_t;
 static link_state_t link_state;
-
-static const uint8_t * pb_adv_own_device_uuid;
 
 #ifdef ENABLE_MESH_PROVISIONER
 static const uint8_t * pb_adv_peer_device_uuid;
@@ -154,11 +153,13 @@ static void pb_adv_emit_link_close(uint16_t pb_adv_cid, uint8_t reason){
 static void pb_adv_handle_bearer_control(uint32_t link_id, uint8_t transaction_nr, const uint8_t * pdu, uint16_t size){
     uint8_t bearer_opcode = pdu[0] >> 2;
     uint8_t reason;
+    const uint8_t * own_device_uuid;
     switch (bearer_opcode){
         case MESH_GENERIC_PROVISIONING_LINK_OPEN: // Open a session on a bearer with a device
             // does it match our device_uuid?
-            if (!pb_adv_own_device_uuid) break;
-            if (memcmp(&pdu[1], pb_adv_own_device_uuid, 16) != 0) break;
+            own_device_uuid = mesh_node_get_device_uuid();
+            if (!own_device_uuid) break;
+            if (memcmp(&pdu[1], own_device_uuid, 16) != 0) break;
             switch(link_state){
                 case LINK_STATE_W4_OPEN:
                     pb_adv_link_id = link_id;
@@ -550,8 +551,7 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     }
 }
 
-void pb_adv_init(uint8_t * device_uuid){
-    pb_adv_own_device_uuid = device_uuid;
+void pb_adv_init(void){
     adv_bearer_register_for_provisioning_pdu(&pb_adv_handler);
     pb_adv_lfsr = 0x12345678;
     pb_adv_random();

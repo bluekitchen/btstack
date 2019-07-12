@@ -49,9 +49,8 @@ extern "C" {
 
 /**
  * Initialize Provisioning Bearer using Advertisement Bearer
- * @param DeviceUUID
  */
-void pb_adv_init(const uint8_t * device_uuid);
+void pb_adv_init(void);
 
 /**
  * Register listener for Provisioning PDUs and MESH_PBV_ADV_SEND_COMPLETE

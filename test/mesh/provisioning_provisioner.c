@@ -711,7 +711,7 @@ static void prov_key_generated(void * arg){
 
 void provisioning_provisioner_init(void){
     pb_adv_cid = MESH_PB_TRANSPORT_INVALID_CID;
-    pb_adv_init(NULL);
+    pb_adv_init();
     pb_adv_register_packet_handler(&provisioning_handle_pdu);
 }
 

@@ -821,9 +821,9 @@ static void prov_key_generated(void * arg){
     }
 }
 
-void provisioning_device_init(const uint8_t * device_uuid){
+void provisioning_device_init(void){
     // setup PB ADV
-    pb_adv_init(device_uuid);
+    pb_adv_init();
     pb_adv_register_packet_handler(&provisioning_handle_pdu);
     // setup PB GATT
     pb_gatt_init();

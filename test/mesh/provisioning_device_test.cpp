@@ -41,6 +41,7 @@
 #include <string.h>
 #include "mesh/pb_adv.h"
 #include "mesh/pb_gatt.h"
+#include "mesh/mesh_node.h"
 #include "ble/gatt-service/mesh_provisioning_service_server.h"
 #include "provisioning.h"
 #include "provisioning_device.h"
@@ -105,7 +106,7 @@ static uint16_t  pdu_size;
  * Initialize Provisioning Bearer using Advertisement Bearer
  * @param DeviceUUID
  */
-void pb_adv_init(const uint8_t * device_uuid){}
+void pb_adv_init(void){}
 void pb_gatt_init(void){}
 
 /**
@@ -198,7 +199,8 @@ static const char * prov_static_oob_string = "00000000000000000102030405060708";
 TEST_GROUP(Provisioning){
     void setup(void){
         btstack_crypto_init();
-        provisioning_device_init(device_uuid);
+        provisioning_device_init();
+        mesh_node_set_device_uuid(device_uuid);
         btstack_parse_hex(prov_static_oob_string, 16, prov_static_oob_data);
         provisioning_device_set_static_oob(16, prov_static_oob_data);
         provisioning_device_set_output_oob_actions(0x08, 0x08);

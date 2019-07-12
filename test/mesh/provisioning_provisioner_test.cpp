@@ -111,8 +111,8 @@ static void pb_adv_emit_pdu_sent(uint8_t status){
     pb_adv_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void pb_adv_init(const uint8_t * device_uuid){}
-void pb_gatt_init(const uint8_t * device_uuid){}
+void pb_adv_init(void){}
+void pb_gatt_init(void){}
 
 void pb_adv_close_link(uint16_t pb_adv_cid, uint8_t reason){}
 

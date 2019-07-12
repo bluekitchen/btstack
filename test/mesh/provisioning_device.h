@@ -53,9 +53,8 @@ extern "C"
 
 /**
  * @brief Init Provisioning in Device Role with device UUID
- * @param device_uuid
  */
-void provisioning_device_init(const uint8_t * device_uuid);
+void provisioning_device_init(void);
 
 
 /**

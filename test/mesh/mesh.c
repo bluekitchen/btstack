@@ -660,7 +660,7 @@ int btstack_main(void)
     btstack_print_hex(pts_device_uuid, 16, 0);
 
     // Provisioning in device role
-    provisioning_device_init(mesh_node_get_device_uuid());
+    provisioning_device_init();
     provisioning_device_register_packet_handler(&mesh_provisioning_message_handler);
 
     // Network layer
