@@ -675,7 +675,7 @@ int btstack_main(void)
     mesh_node_init();
 
     // Loc - bottom - https://www.bluetooth.com/specifications/assigned-numbers/gatt-namespace-descriptors
-    mesh_node_set_primary_element_location(0x103);
+    mesh_node_set_element_location(mesh_node_get_primary_element(), 0x103);
 
     // Setup models
     mesh_configuration_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_CONFIGURATION_SERVER);

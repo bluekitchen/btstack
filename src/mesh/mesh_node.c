@@ -78,8 +78,13 @@ mesh_element_t * mesh_node_get_primary_element(void){
     return &primary_element;
 }
 
+
+void mesh_node_set_element_location(mesh_element_t * element, uint16_t location){
+    element->loc = location;
+}
+
 void mesh_node_set_primary_element_location(uint16_t location){
-    primary_element.loc = location;
+    mesh_node_set_element_location(&primary_element, location);
 }
 
 mesh_element_t * mesh_node_element_for_index(uint16_t element_index){

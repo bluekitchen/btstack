@@ -83,6 +83,13 @@ void mesh_node_primary_element_address_set(uint16_t unicast_address);
 void mesh_node_set_primary_element_location(uint16_t location);
 
 /**
+ * @brief Set location of element
+ * @param element
+ * @param location
+ */
+void mesh_node_set_element_location(mesh_element_t * element, uint16_t location);
+
+/**
  * @brief Get unicast address of primary element
  */
 uint16_t mesh_node_get_primary_element_address(void);
