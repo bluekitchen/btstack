@@ -1720,15 +1720,18 @@ void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * p
     // set device_key
     mesh_transport_set_device_key(provisioning_data->device_key);
 
-    // setup primary network with provisioned netkey
-    mesh_network_key_add(provisioning_data->network_key);
+    if (provisioning_data->network_key){
 
-    // setup primary network
-    mesh_subnet_setup_for_netkey_index(provisioning_data->network_key->netkey_index);
+        // setup primary network with provisioned netkey
+        mesh_network_key_add(provisioning_data->network_key);
 
-    // start sending Secure Network Beacons
-    mesh_subnet_t * provisioned_subnet = mesh_subnet_get_by_netkey_index(provisioning_data->network_key->netkey_index);
-    beacon_secure_network_start(provisioned_subnet);
+        // setup primary network
+        mesh_subnet_setup_for_netkey_index(provisioning_data->network_key->netkey_index);
+
+        // start sending Secure Network Beacons
+        mesh_subnet_t * provisioned_subnet = mesh_subnet_get_by_netkey_index(provisioning_data->network_key->netkey_index);
+        beacon_secure_network_start(provisioned_subnet);
+    }
 
     // Mesh Proxy
 #ifdef ENABLE_MESH_PROXY_SERVER

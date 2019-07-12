@@ -2326,9 +2326,8 @@ int mesh_node_startup_from_tlv(void){
         memcpy(provisioning_data.device_key, persistent_provisioning_data.device_key, 16);
         provisioning_data.unicast_address = persistent_provisioning_data.unicast_address;
         provisioning_data.flags = persistent_provisioning_data.flags;
-
-        mesh_access_setup_from_provisioning_data(&provisioning_data);
-
+        provisioning_data.network_key = NULL;
+        
         // load iv index
         mesh_restore_iv_index_and_sequence_number();
         // load network keys
@@ -2345,6 +2344,8 @@ int mesh_node_startup_from_tlv(void){
         mesh_load_publications();
         // load foundation state
         mesh_foundation_state_load();
+
+        mesh_access_setup_from_provisioning_data(&provisioning_data);
 
 #if defined(ENABLE_MESH_ADV_BEARER) || defined(ENABLE_MESH_PB_ADV)
         // start sending Secure Network Beacon
