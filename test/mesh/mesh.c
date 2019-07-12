@@ -149,8 +149,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     if (provisioned){
                         // dump PTS MeshOptions.ini
                         mesh_pts_dump_mesh_options();
-                    } else {
-                        mesh_access_setup_without_provisiong_data();
                     }
 
                     show_usage();

@@ -2355,6 +2355,7 @@ int mesh_node_startup_from_tlv(void){
 #endif
         return 1;
     } else {
+        mesh_access_setup_without_provisiong_data();
         return 0;
     }
 }
