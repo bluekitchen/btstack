@@ -157,7 +157,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 
 static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    if (packet_type != HCI_EVENT_PACKET) return;
     mesh_provisioning_data_t provisioning_data;
 
     switch(packet[0]){
@@ -180,22 +179,9 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                     break;
                 case MESH_SUBEVENT_PB_PROV_COMPLETE:
                     printf("Provisioning complete\n");
-
-                    // get provisioning data
-                    provisioning_device_data_get(&provisioning_data);
-
-                    // and store in TLV
-                    mesh_node_store_provisioning_data(&provisioning_data);
-
-                    // setup node after provisioned
-                    mesh_access_setup_from_provisioning_data(&provisioning_data);
-
-                    // start advertising with node id after provisioning
-                    mesh_proxy_set_advertising_with_node_id(provisioning_data.network_key->netkey_index, MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING);
-
                     // dump provisioning data
+                    provisioning_device_data_get(&provisioning_data);
                     mesh_provisioning_dump(&provisioning_data);
-
                     provisioned = 1;
                     break;
                 default:
@@ -636,7 +622,7 @@ int btstack_main(void)
     adv_bearer_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
 
     // Provisioning in device role
-    provisioning_device_register_packet_handler(&mesh_provisioning_message_handler);
+    mesh_register_provisioning_device_packet_handler(&mesh_provisioning_message_handler);
 
     // Setup default models on primary element
     mesh_node_setup_default_models();
