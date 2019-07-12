@@ -118,36 +118,8 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         printf("%02x", addr[i]);
                     }
                     printf("\n");
-
-                    // startup from provisioning data stored in TLV
-                    provisioned = mesh_node_startup_from_tlv();
-
-                    if (provisioned){
-                        // dump PTS MeshOptions.ini
-                        mesh_pts_dump_mesh_options();
-                    }
-
-                    show_usage();
-                    break;
-                
-                case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    // enable PB_GATT
-                    if (provisioned == 0){
-                        printf("Advertise Mesh Provisiong Service with Device UUID\n");
-                        mesh_proxy_start_advertising_unprovisioned_device();
-                    } else {
-#ifdef ENABLE_MESH_PROXY_SERVER
-                        printf("Advertise Mesh Proxy Service with Network ID\n");
-                        mesh_proxy_start_advertising_with_network_id();
-#endif
-                    }
-                    break;
-                    
-                case HCI_EVENT_LE_META:
-                    if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
-                    // disable PB_GATT
-                    printf("Connected, stop advertising GATT service\n");
-                    mesh_proxy_stop_advertising_unprovisioned_device();
+                    // dump PTS MeshOptions.ini
+                    mesh_pts_dump_mesh_options();
                     break;
                 default:
                     break;
@@ -587,10 +559,6 @@ static void mesh_node_setup_default_models(void){
 int btstack_main(void);
 int btstack_main(void)
 {
-    // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
-    hci_add_event_handler(&hci_event_callback_registration);
-
     // console
     btstack_stdin_setup(stdin_process);
 
@@ -644,6 +612,10 @@ int btstack_main(void)
     // Enable PROXY
     mesh_foundation_gatt_proxy_set(1);
     
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
 #if defined(ENABLE_MESH_ADV_BEARER)
     // setup scanning when supporting ADV Bearer
     gap_set_scan_parameters(0, 0x300, 0x300);

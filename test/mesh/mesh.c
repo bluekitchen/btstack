@@ -43,6 +43,7 @@
 #include "mesh.h"
 #include "btstack_util.h"
 #include "btstack_config.h"
+#include "btstack_event.h"
 
 #include "mesh/adv_bearer.h"
 #include "mesh/beacon.h"
@@ -64,6 +65,7 @@
 #include "provisioning_device.h"
 
 static btstack_packet_handler_t provisioning_device_packet_handler;
+static btstack_packet_callback_registration_t hci_event_callback_registration;
 static int provisioned;
 
 static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -100,8 +102,49 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
     (*provisioning_device_packet_handler)(packet_type, channel, packet, size);
 }
 
+static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+
+    switch (packet_type) {
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)) {
+                case BTSTACK_EVENT_STATE:
+                    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
+                    // startup from provisioning data stored in TLV
+                    provisioned = mesh_node_startup_from_tlv();
+                    break;
+                
+                case HCI_EVENT_DISCONNECTION_COMPLETE:
+                    // enable PB_GATT
+                    if (provisioned == 0){
+                        mesh_proxy_start_advertising_unprovisioned_device();
+                    } else {
+#ifdef ENABLE_MESH_PROXY_SERVER
+                        mesh_proxy_start_advertising_with_network_id();
+#endif
+                    }
+                    break;
+                    
+                case HCI_EVENT_LE_META:
+                    if (hci_event_le_meta_get_subevent_code(packet) !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+                    // disable PB_GATT
+                    mesh_proxy_stop_advertising_unprovisioned_device();
+                    break;
+                default:
+                    break;
+            }
+            break;
+    }
+}
+
 
 void mesh_init(void){
+
+    // register for HCI events
+    hci_event_callback_registration.callback = &hci_packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
+
     // ADV Bearer also used for GATT Proxy Advertisements and PB-GATT
     adv_bearer_init();
 
