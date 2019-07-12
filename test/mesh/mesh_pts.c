@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh.c"
+#define __BTSTACK_FILE__ "mesh_pts.c"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -43,7 +43,7 @@
 #include <string.h>
 
 #include "btstack.h"
-#include "mesh.h"
+#include "mesh_pts.h"
 
 // general
 static void show_usage(void);
