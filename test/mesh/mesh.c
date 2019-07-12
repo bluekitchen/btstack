@@ -86,10 +86,11 @@ static mesh_generic_on_off_state_t  mesh_generic_on_off_state;
 
 // pts add-on
 #define PTS_DEFAULT_TTL 10
-const static uint8_t test_device_uuid[] = { 0x00, 0x1B, 0xDC, 0x08, 0x10, 0x21, 0x0B, 0x0E, 0x0A, 0x0C, 0x00, 0x0B, 0x0E, 0x0A, 0x0C, 0x00 };
 
 static uint16_t pts_proxy_dst;
 static int      pts_type;
+
+const char * pts_device_uuid_string = "001BDC0810210B0E0A0C000B0E0A0C00";
 
 static uint8_t      prov_static_oob_data[16];
 static const char * prov_static_oob_string = "00000000000000000102030405060708";
@@ -149,7 +150,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         // dump PTS MeshOptions.ini
                         mesh_pts_dump_mesh_options();
                     } else {
-                        mesh_access_setup_without_provisiong_data(test_device_uuid);
+                        mesh_access_setup_without_provisiong_data(mesh_node_get_device_uuid());
                     }
 
                     show_usage();
@@ -159,7 +160,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     // enable PB_GATT
                     if (provisioned == 0){
                         printf("Advertise Mesh Provisiong Service with Device UUID\n");
-                        mesh_proxy_start_advertising_unprovisioned_device(test_device_uuid);
+                        mesh_proxy_start_advertising_unprovisioned_device(mesh_node_get_device_uuid());
                     } else {
 #ifdef ENABLE_MESH_PROXY_SERVER
                         printf("Advertise Mesh Proxy Service with Network ID\n");
@@ -327,9 +328,6 @@ static void mesh_unprovisioned_beacon_handler(uint8_t packet_type, uint16_t chan
     printf_hexdump(device_uuid, 16);
     pb_adv_create_link(device_uuid);
 }
-
-uint8_t      pts_device_uuid[16];
-const char * pts_device_uuid_string = "001BDC0810210B0E0A0C000B0E0A0C00";
 
 static int scan_hex_byte(const char * byte_string){
     int upper_nibble = nibble_for_char(*byte_string++);
@@ -574,7 +572,7 @@ static void stdin_process(char cmd){
         case '8':
             mesh_node_reset();
             printf("Mesh Node Reset!\n");
-            mesh_proxy_start_advertising_unprovisioned_device(test_device_uuid);
+            mesh_proxy_start_advertising_unprovisioned_device(mesh_node_get_device_uuid());
             break;
         case 'p':
             printf("+ Public Key OOB Enabled\n");
@@ -655,8 +653,14 @@ int btstack_main(void)
     beacon_register_for_unprovisioned_device_beacons(&mesh_unprovisioned_beacon_handler);
 #endif
 
+    // Parse PTS Device UUID
+    uint8_t pts_device_uuid[16];
+    btstack_parse_hex(pts_device_uuid_string, 16, pts_device_uuid);
+    mesh_node_set_device_uuid(pts_device_uuid);
+    btstack_print_hex(pts_device_uuid, 16, 0);
+
     // Provisioning in device role
-    provisioning_device_init(test_device_uuid);
+    provisioning_device_init(mesh_node_get_device_uuid());
     provisioning_device_register_packet_handler(&mesh_provisioning_message_handler);
 
     // Network layer
@@ -706,10 +710,6 @@ int btstack_main(void)
     btstack_parse_hex("001BDC0810210B0E0A0C000B0E0A0C00", 16, label_uuid);
     mesh_virtual_address_t * virtual_addresss = mesh_virtual_address_register(label_uuid, 0x9779);
     pts_proxy_dst = virtual_addresss->pseudo_dst;
-
-    // PTS Device UUID
-    btstack_parse_hex(pts_device_uuid_string, 16, pts_device_uuid);
-    btstack_print_hex(pts_device_uuid, 16, 0);
 
 #if defined(ENABLE_MESH_ADV_BEARER)
     // setup scanning when supporting ADV Bearer

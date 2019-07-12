@@ -38,6 +38,7 @@
 #define __BTSTACK_FILE__ "mesh_node.c"
 
 #include <stddef.h>
+#include <string.h>
 
 #include "mesh/mesh_node.h"
 
@@ -48,6 +49,8 @@ static mesh_element_t primary_element;
 static uint16_t mesh_element_index_next;
 
 static btstack_linked_list_t mesh_elements;
+
+static uint8_t mesh_node_device_uuid[16];
 
 void mesh_node_primary_element_address_set(uint16_t unicast_address){
     primary_element_address = unicast_address;
@@ -106,3 +109,15 @@ int mesh_element_iterator_has_next(mesh_element_iterator_t * iterator){
 mesh_element_t * mesh_element_iterator_next(mesh_element_iterator_t * iterator){
     return (mesh_element_t *) btstack_linked_list_iterator_next(&iterator->it);
 }
+
+void mesh_node_set_device_uuid(const uint8_t * device_uuid){
+    memcpy(mesh_node_get_device_uuid, device_uuid, 16);
+}
+
+/**
+ * @brief Get Device UUID
+ */
+const uint8_t * mesh_node_get_device_uuid(void){
+    return &mesh_node_get_device_uuid;
+}
+
