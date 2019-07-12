@@ -117,7 +117,7 @@ mesh_element_t * mesh_element_iterator_next(mesh_element_iterator_t * iterator){
 }
 
 void mesh_node_set_device_uuid(const uint8_t * device_uuid){
-    memcpy(mesh_node_get_device_uuid, device_uuid, 16);
+    memcpy(mesh_node_device_uuid, device_uuid, 16);
     mesh_node_have_device_uuid = 1;
 }
 

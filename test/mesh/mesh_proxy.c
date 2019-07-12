@@ -43,6 +43,7 @@
 #include "mesh/gatt_bearer.h"
 #include "mesh/mesh_crypto.h"
 #include "mesh/mesh_network.h"
+#include "mesh/mesh_node.h"
 #include "mesh/mesh_lower_transport.h"
 #include "bluetooth_company_id.h"
 #include "bluetooth_data_types.h"
