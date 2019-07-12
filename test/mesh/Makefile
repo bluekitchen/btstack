@@ -55,8 +55,8 @@ LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 LDFLAGS += -lCppUTest -lCppUTestExt
 
 
-mesh: mesh.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} pb_adv.o pb_gatt.o mesh_foundation.o mesh_provisioning_service_server.o mesh_crypto.o provisioning_device.o mesh_network.o mesh_peer.o mesh_lower_transport.o mesh_upper_transport.o mesh_virtual_addresses.o mesh_keys.o mesh_proxy.o mesh_access.o mesh_configuration_server.o mesh_generic_server.o mesh_generic_level_server.o mesh_generic_client.o mesh_generic_level_client.o mesh_health_server.o mesh.o
-	${CC} $(filter-out mesh.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+mesh_pts: mesh_pts.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} pb_adv.o pb_gatt.o mesh_foundation.o mesh_provisioning_service_server.o mesh_crypto.o provisioning_device.o mesh_network.o mesh_peer.o mesh_lower_transport.o mesh_upper_transport.o mesh_virtual_addresses.o mesh_keys.o mesh_proxy.o mesh_access.o mesh_configuration_server.o mesh_generic_server.o mesh_generic_level_server.o mesh_generic_client.o mesh_generic_level_client.o mesh_health_server.o mesh_pts.o
+	${CC} $(filter-out mesh_pts.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 provisioner: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_OBJ} pb_adv.o mesh_crypto.o provisioning_provisioner.o mesh_keys.o mesh_foundation.o mesh_network.o provisioner.o
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
