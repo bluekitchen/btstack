@@ -50,9 +50,8 @@ extern "C" {
 
 /**
  * Setup mesh provisioning service
- * @param device_uuid
  */
-void pb_gatt_init(const uint8_t * device_uuid);
+void pb_gatt_init(void);
 
 /**
  * Register listener for Provisioning PDUs and events: MESH_PB_TRANSPORT_LINK_OPEN, MESH_PB_TRANSPORT_LINK_CLOSED, MESH_SUBEVENT_CAN_SEND_NOW

@@ -55,7 +55,6 @@ static union {
     uint8_t  segmentation_buffer[MESH_PROV_MAX_PROXY_PDU];
 } sar_buffer;
 
-static const uint8_t * pb_gatt_own_device_uuid;
 static const uint8_t * proxy_pdu;
 static uint16_t proxy_pdu_size;
 
@@ -179,8 +178,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
  * Setup mesh provisioning service
  * @param device_uuid
  */
-void pb_gatt_init(const uint8_t * device_uuid){
-    pb_gatt_own_device_uuid = device_uuid;
+void pb_gatt_init(void){
     // setup mesh provisioning service
     mesh_provisioning_service_server_init();
     mesh_provisioning_service_server_register_packet_handler(packet_handler);

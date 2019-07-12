@@ -106,7 +106,7 @@ static uint16_t  pdu_size;
  * @param DeviceUUID
  */
 void pb_adv_init(const uint8_t * device_uuid){}
-void pb_gatt_init(const uint8_t * device_uuid){}
+void pb_gatt_init(void){}
 
 /**
  * Close Link
