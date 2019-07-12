@@ -1,0 +1,5 @@
+PRIMARY_SERVICE, GAP_SERVICE
+CHARACTERISTIC, GAP_DEVICE_NAME, READ, "Mesh Provisioning Test"
+
+#import <mesh_provisioning_service.gatt>
+#import <mesh_proxy_service.gatt>
