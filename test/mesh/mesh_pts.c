@@ -539,23 +539,6 @@ static void stdin_process(char cmd){
     }
 }
 
-static mesh_model_t                 mesh_configuration_server_model;
-static mesh_model_t                 mesh_health_server_model;
-
-static mesh_configuration_server_model_context_t mesh_configuration_server_model_context;
-
-static void mesh_node_setup_default_models(void){
-    // configure Config Server
-    mesh_configuration_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_CONFIGURATION_SERVER);
-    mesh_configuration_server_model.model_data       = &mesh_configuration_server_model_context;
-    mesh_configuration_server_model.operations       = mesh_configuration_server_get_operations();    
-    mesh_element_add_model(mesh_node_get_primary_element(), &mesh_configuration_server_model);
-
-    // Config Health Server
-    mesh_health_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_HEALTH_SERVER);
-    mesh_element_add_model(mesh_node_get_primary_element(), &mesh_health_server_model);
-}
-
 int btstack_main(void);
 int btstack_main(void)
 {
@@ -591,9 +574,6 @@ int btstack_main(void)
 
     // Provisioning in device role
     mesh_register_provisioning_device_packet_handler(&mesh_provisioning_message_handler);
-
-    // Setup default models on primary element
-    mesh_node_setup_default_models();
 
     // Loc - bottom - https://www.bluetooth.com/specifications/assigned-numbers/gatt-namespace-descriptors
     mesh_node_set_element_location(mesh_node_get_primary_element(), 0x103);

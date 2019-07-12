@@ -138,6 +138,22 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     }
 }
 
+static mesh_model_t                 mesh_configuration_server_model;
+static mesh_model_t                 mesh_health_server_model;
+
+static mesh_configuration_server_model_context_t mesh_configuration_server_model_context;
+
+static void mesh_node_setup_default_models(void){
+    // configure Config Server
+    mesh_configuration_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_CONFIGURATION_SERVER);
+    mesh_configuration_server_model.model_data       = &mesh_configuration_server_model_context;
+    mesh_configuration_server_model.operations       = mesh_configuration_server_get_operations();    
+    mesh_element_add_model(mesh_node_get_primary_element(), &mesh_configuration_server_model);
+
+    // Config Health Server
+    mesh_health_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_HEALTH_SERVER);
+    mesh_element_add_model(mesh_node_get_primary_element(), &mesh_health_server_model);
+}
 
 void mesh_init(void){
 
@@ -172,6 +188,8 @@ void mesh_init(void){
 
     // Access layer
     mesh_access_init();
+
+    mesh_node_setup_default_models();
 }
 
 /**
