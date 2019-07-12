@@ -51,6 +51,7 @@ static uint16_t mesh_element_index_next;
 static btstack_linked_list_t mesh_elements;
 
 static uint8_t mesh_node_device_uuid[16];
+static int     mesh_node_have_device_uuid;
 
 void mesh_node_primary_element_address_set(uint16_t unicast_address){
     primary_element_address = unicast_address;
@@ -117,12 +118,14 @@ mesh_element_t * mesh_element_iterator_next(mesh_element_iterator_t * iterator){
 
 void mesh_node_set_device_uuid(const uint8_t * device_uuid){
     memcpy(mesh_node_get_device_uuid, device_uuid, 16);
+    mesh_node_have_device_uuid = 1;
 }
 
 /**
  * @brief Get Device UUID
  */
 const uint8_t * mesh_node_get_device_uuid(void){
+    if (mesh_node_have_device_uuid == 0) return NULL;
     return mesh_node_device_uuid;
 }
 

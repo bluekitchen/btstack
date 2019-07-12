@@ -140,6 +140,7 @@ void mesh_node_set_device_uuid(const uint8_t * device_uuid);
 
 /**
  * @brief Get Device UUID
+ * @returns device_uuid if set, NULL otherwise
  */
 const uint8_t * mesh_node_get_device_uuid(void);
 
