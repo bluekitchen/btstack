@@ -415,7 +415,7 @@ mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_mes
 
 // setup
 void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data);
-void mesh_access_setup_without_provisiong_data(const uint8_t * device_uuid);
+void mesh_access_setup_without_provisiong_data(void);
 
 #ifdef __cplusplus
 } /* end of extern "C" */

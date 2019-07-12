@@ -1738,7 +1738,8 @@ void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * p
 #endif
 }
 
-void mesh_access_setup_without_provisiong_data(const uint8_t * device_uuid){
+void mesh_access_setup_without_provisiong_data(void){
+    const uint8_t * device_uuid = mesh_node_get_device_uuid();
 #ifdef ENABLE_MESH_PB_ADV
     // PB-ADV    
     beacon_unprovisioned_device_start(device_uuid, 0);
