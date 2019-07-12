@@ -65,28 +65,15 @@
 #include "btstack.h"
 #include "btstack_tlv.h"
 
-#define PTS_DEFAULT_TTL 10
-
+// general
 static void show_usage(void);
-
-const static uint8_t test_device_uuid[] = { 0x00, 0x1B, 0xDC, 0x08, 0x10, 0x21, 0x0B, 0x0E, 0x0A, 0x0C, 0x00, 0x0B, 0x0E, 0x0A, 0x0C, 0x00 };
-
-static btstack_packet_callback_registration_t hci_event_callback_registration;
-
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-
-// pin entry
-static int ui_chars_for_pin; 
-static uint8_t ui_pin[17];
-static int ui_pin_offset;
-
-static uint16_t primary_element_address;
-
-static int provisioned;
-
-// Test configuration
+static void mesh_pts_dump_mesh_options(void);
 
 #define MESH_BLUEKITCHEN_MODEL_ID_TEST_SERVER   0x0000u
+
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+static int provisioned;
 
 static mesh_configuration_server_model_context_t mesh_configuration_server_model_context;
 
@@ -97,9 +84,28 @@ static mesh_model_t                 mesh_vendor_model;
 static mesh_model_t                 mesh_generic_on_off_server_model;
 static mesh_generic_on_off_state_t  mesh_generic_on_off_state;
 
-// static void mesh_print_x(const char * name, uint32_t value){
-//     printf("%20s: 0x%x", name, (int) value);
-// }
+// pts add-on
+#define PTS_DEFAULT_TTL 10
+const static uint8_t test_device_uuid[] = { 0x00, 0x1B, 0xDC, 0x08, 0x10, 0x21, 0x0B, 0x0E, 0x0A, 0x0C, 0x00, 0x0B, 0x0E, 0x0A, 0x0C, 0x00 };
+
+static uint16_t pts_proxy_dst;
+static int      pts_type;
+
+static uint8_t      prov_static_oob_data[16];
+static const char * prov_static_oob_string = "00000000000000000102030405060708";
+
+static uint8_t      prov_public_key_data[64];
+static const char * prov_public_key_string = "F465E43FF23D3F1B9DC7DFC04DA8758184DBC966204796ECCF0D6CF5E16500CC0201D048BCBBD899EEEFC424164E33C201C2B010CA6B4D43A8A155CAD8ECB279";
+static uint8_t      prov_private_key_data[32];
+static const char * prov_private_key_string = "529AA0670D72CD6497502ED473502B037E8803B5C60829A5A3CAA219505530BA";
+
+static mesh_transport_key_t pts_application_key;
+
+// pin entry (pts)
+static int ui_chars_for_pin; 
+static uint8_t ui_pin[17];
+static int ui_pin_offset;
+
 
 static void mesh_provisioning_dump(const mesh_provisioning_data_t * data){
     mesh_network_key_t * key = data->network_key;
@@ -116,66 +122,6 @@ static void mesh_provisioning_dump(const mesh_provisioning_data_t * data){
     printf("IdentityKey:   "); printf_hexdump(key->identity_key, 16);
 }
 
-// helper network layer, temp
-static uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len){
-
-    // "3.4.5.2: The output filter of the interface connected to advertising or GATT bearers shall drop all messages with TTL value set to 1."
-    // if (ttl <= 1) return 0;
-
-    // TODO: check transport_pdu_len depending on ctl
-
-    // lookup network by netkey_index
-    const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
-    if (!network_key) return 0;
-
-    // allocate network_pdu
-    mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
-    if (!network_pdu) return 0;
-
-    // setup network_pdu
-    mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, ctl, ttl, seq, src, dest, transport_pdu_data, transport_pdu_len);
-
-    // send network_pdu
-    mesh_lower_transport_send_pdu((mesh_pdu_t *) network_pdu);
-    return 0;
-}
-
-static void printf_hex(const uint8_t * data, uint16_t len){
-    while (len){
-        printf("%02x", *data);
-        data++;
-        len--;
-    }
-    printf("\n");
-}
-
-static void mesh_pts_dump_mesh_options(void){
-    printf("\nMeshOptions.ini\n");
-
-    printf("[mesh]\n");
-
-    printf("{IVindex}\n");
-    printf("%08x\n", mesh_get_iv_index());
-
-    mesh_network_key_t * network_key = mesh_network_key_list_get(0);
-    if (network_key){
-        printf("{NetKey}\n");
-        printf_hex(network_key->net_key, 16);
-    }
-
-    mesh_transport_key_t * transport_key = mesh_transport_key_get(0);
-    if (transport_key){
-        printf("{AppKey}\n");
-        printf_hex(transport_key->key, 16);
-    }
-
-    mesh_transport_key_t * device_key = mesh_transport_key_get(MESH_DEVICE_KEY_INDEX);
-    if (device_key){
-        printf("{DevKey}\n");
-        printf_hex(device_key->key, 16);
-    }
-    printf("\n");
-}
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
@@ -314,6 +260,68 @@ static void mesh_state_update_message_handler(uint8_t packet_type, uint16_t chan
     }
 }
 
+// PTS
+
+// helper network layer, temp
+static uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len){
+
+    // "3.4.5.2: The output filter of the interface connected to advertising or GATT bearers shall drop all messages with TTL value set to 1."
+    // if (ttl <= 1) return 0;
+
+    // TODO: check transport_pdu_len depending on ctl
+
+    // lookup network by netkey_index
+    const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
+    if (!network_key) return 0;
+
+    // allocate network_pdu
+    mesh_network_pdu_t * network_pdu = mesh_network_pdu_get();
+    if (!network_pdu) return 0;
+
+    // setup network_pdu
+    mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, ctl, ttl, seq, src, dest, transport_pdu_data, transport_pdu_len);
+
+    // send network_pdu
+    mesh_lower_transport_send_pdu((mesh_pdu_t *) network_pdu);
+    return 0;
+}
+
+static void printf_hex(const uint8_t * data, uint16_t len){
+    while (len){
+        printf("%02x", *data);
+        data++;
+        len--;
+    }
+    printf("\n");
+}
+
+static void mesh_pts_dump_mesh_options(void){
+    printf("\nMeshOptions.ini\n");
+
+    printf("[mesh]\n");
+
+    printf("{IVindex}\n");
+    printf("%08x\n", mesh_get_iv_index());
+
+    mesh_network_key_t * network_key = mesh_network_key_list_get(0);
+    if (network_key){
+        printf("{NetKey}\n");
+        printf_hex(network_key->net_key, 16);
+    }
+
+    mesh_transport_key_t * transport_key = mesh_transport_key_get(0);
+    if (transport_key){
+        printf("{AppKey}\n");
+        printf_hex(transport_key->key, 16);
+    }
+
+    mesh_transport_key_t * device_key = mesh_transport_key_get(MESH_DEVICE_KEY_INDEX);
+    if (device_key){
+        printf("{DevKey}\n");
+        printf_hex(device_key->key, 16);
+    }
+    printf("\n");
+}
 
 static void mesh_unprovisioned_beacon_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != MESH_BEACON_PACKET) return;
@@ -367,18 +375,6 @@ static void btstack_print_hex(const uint8_t * data, uint16_t len, char separator
     }
     printf("\n");
 }
-static uint16_t pts_proxy_dst;
-static int      pts_type;
-
-static uint8_t      prov_static_oob_data[16];
-static const char * prov_static_oob_string = "00000000000000000102030405060708";
-
-static uint8_t      prov_public_key_data[64];
-static const char * prov_public_key_string = "F465E43FF23D3F1B9DC7DFC04DA8758184DBC966204796ECCF0D6CF5E16500CC0201D048BCBBD899EEEFC424164E33C201C2B010CA6B4D43A8A155CAD8ECB279";
-static uint8_t      prov_private_key_data[32];
-static const char * prov_private_key_string = "529AA0670D72CD6497502ED473502B037E8803B5C60829A5A3CAA219505530BA";
-
-static mesh_transport_key_t pts_application_key;
 
 static void load_pts_app_key(void){
     // PTS app key
@@ -446,7 +442,7 @@ static void send_pts_unsegmented_access_messsage(void){
 
     load_pts_app_key();
 
-    uint16_t src = primary_element_address;
+    uint16_t src = mesh_node_get_primary_element_address();
     uint16_t dest = 0x0001;
     uint8_t  ttl = PTS_DEFAULT_TTL;
 
@@ -467,7 +463,7 @@ static void send_pts_segmented_access_messsage_unicast(void){
 
     load_pts_app_key();
 
-    uint16_t src = primary_element_address;
+    uint16_t src = mesh_node_get_primary_element_address();
     uint16_t dest = 0x0001;
     uint8_t  ttl = PTS_DEFAULT_TTL;
 
@@ -488,7 +484,7 @@ static void send_pts_segmented_access_messsage_group(void){
 
     load_pts_app_key();
 
-    uint16_t src = primary_element_address;
+    uint16_t src = mesh_node_get_primary_element_address();
     uint16_t dest = 0xd000;
     uint8_t  ttl = PTS_DEFAULT_TTL;
 
@@ -509,7 +505,7 @@ static void send_pts_segmented_access_messsage_virtual(void){
 
     load_pts_app_key();
 
-    uint16_t src = primary_element_address;
+    uint16_t src = mesh_node_get_primary_element_address();
     uint16_t dest = pts_proxy_dst;
     uint8_t  ttl = PTS_DEFAULT_TTL;
 
