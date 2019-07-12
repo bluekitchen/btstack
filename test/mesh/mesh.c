@@ -152,12 +152,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         mesh_access_setup_without_provisiong_data(test_device_uuid);
                     }
 
-#if defined(ENABLE_MESH_ADV_BEARER) || defined(ENABLE_MESH_PB_ADV)
-                    // setup scanning
-                    gap_set_scan_parameters(0, 0x300, 0x300);
-                    gap_start_scan();
-#endif
-                    //
                     show_usage();
                     break;
                 
@@ -716,6 +710,12 @@ int btstack_main(void)
     // PTS Device UUID
     btstack_parse_hex(pts_device_uuid_string, 16, pts_device_uuid);
     btstack_print_hex(pts_device_uuid, 16, 0);
+
+#if defined(ENABLE_MESH_ADV_BEARER)
+    // setup scanning when supporting ADV Bearer
+    gap_set_scan_parameters(0, 0x300, 0x300);
+    gap_start_scan();
+#endif
 
     // turn on!
 	hci_power_control(HCI_POWER_ON);
