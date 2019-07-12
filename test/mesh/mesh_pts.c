@@ -617,11 +617,15 @@ int btstack_main(void)
     // setup le device db
     le_device_db_init();
 
+    // setup ATT server
+    att_server_init(profile_data, NULL, NULL);    
+
     // 
     sm_init();
 
+
     // mesh
-    adv_bearer_init();
+    mesh_init();
 
     // setup connectable advertisments
     bd_addr_t null_addr;
@@ -631,41 +635,8 @@ int btstack_main(void)
     uint16_t adv_int_max = 0x0030;
     adv_bearer_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
 
-    // setup ATT server
-    att_server_init(profile_data, NULL, NULL);    
-
-    // Setup GATT bearer
-    gatt_bearer_init();
-
-#ifdef ENABLE_MESH_ADV_BEARER
-    // Setup Unprovisioned Device Beacon
-    beacon_init();
-    // Register for Unprovisioned Device Beacons provisioner
-    beacon_register_for_unprovisioned_device_beacons(&mesh_unprovisioned_beacon_handler);
-#endif
-
-    // Parse PTS Device UUID
-    uint8_t pts_device_uuid[16];
-    btstack_parse_hex(pts_device_uuid_string, 16, pts_device_uuid);
-    mesh_node_set_device_uuid(pts_device_uuid);
-    btstack_print_hex(pts_device_uuid, 16, 0);
-
     // Provisioning in device role
-    provisioning_device_init();
     provisioning_device_register_packet_handler(&mesh_provisioning_message_handler);
-
-    // Network layer
-    mesh_network_init();
-
-    // Transport layers (lower + upper))
-    mesh_lower_transport_init();
-    mesh_upper_transport_init();
-
-    // Access layer
-    mesh_access_init();
-
-    // Node Configuration
-    mesh_node_init();
 
     // Setup default models on primary element
     mesh_node_setup_default_models();
@@ -687,18 +658,30 @@ int btstack_main(void)
     // Enable PROXY
     mesh_foundation_gatt_proxy_set(1);
     
+#if defined(ENABLE_MESH_ADV_BEARER)
+    // setup scanning when supporting ADV Bearer
+    gap_set_scan_parameters(0, 0x300, 0x300);
+    gap_start_scan();
+#endif
+
+    //  PTS add-on
+
+#ifdef ENABLE_MESH_ADV_BEARER
+    // Register for Unprovisioned Device Beacons provisioner
+    beacon_register_for_unprovisioned_device_beacons(&mesh_unprovisioned_beacon_handler);
+#endif
+
+    // Set PTS Device UUID
+    uint8_t pts_device_uuid[16];
+    btstack_parse_hex(pts_device_uuid_string, 16, pts_device_uuid);
+    mesh_node_set_device_uuid(pts_device_uuid);
+    btstack_print_hex(pts_device_uuid, 16, 0);
 
     // PTS Virtual Address Label UUID - without Config Model, PTS uses our device uuid
     uint8_t label_uuid[16];
     btstack_parse_hex("001BDC0810210B0E0A0C000B0E0A0C00", 16, label_uuid);
     mesh_virtual_address_t * virtual_addresss = mesh_virtual_address_register(label_uuid, 0x9779);
     pts_proxy_dst = virtual_addresss->pseudo_dst;
-
-#if defined(ENABLE_MESH_ADV_BEARER)
-    // setup scanning when supporting ADV Bearer
-    gap_set_scan_parameters(0, 0x300, 0x300);
-    gap_start_scan();
-#endif
 
     // turn on!
 	hci_power_control(HCI_POWER_ON);

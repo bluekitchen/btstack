@@ -139,6 +139,7 @@
 #include "mesh/mesh_upper_transport.h"
 #include "mesh/pb_adv.h"
 #include "mesh/pb_gatt.h"
+#include "mesh.h"
 #include "mesh_access.h"
 #include "mesh_configuration_server.h"
 #include "mesh_foundation.h"
