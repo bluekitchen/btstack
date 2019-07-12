@@ -45,7 +45,7 @@
 #include "ble/gatt-service/mesh_provisioning_service_server.h"
 #include "provisioning.h"
 #include "provisioning_device.h"
-#include "btstack.h"
+#include "hci_dump.h"
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
@@ -140,8 +140,9 @@ void pb_adv_send_pdu(uint16_t pb_transport_cid, const uint8_t * pdu, uint16_t si
 }
 void pb_gatt_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t pdu_size){}
  
+
 static mesh_network_key_t network_key; 
-mesh_network_key_t * btstack_memory_mesh_network_key_get(void){
+extern "C" mesh_network_key_t * btstack_memory_mesh_network_key_get(void){
     return &network_key;
 }
 

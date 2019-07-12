@@ -44,7 +44,7 @@
 #include "ble/gatt-service/mesh_provisioning_service_server.h"
 #include "provisioning.h"
 #include "provisioning_provisioner.h"
-#include "btstack.h"
+#include "hci_dump.h"
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"

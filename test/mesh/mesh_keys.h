@@ -40,18 +40,13 @@
 
 #include <stdint.h>
 
+#include "btstack_linked_list.h"
+#include "mesh/adv_bearer.h"
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-
-
-#include <stdint.h>
-
-#include "btstack_linked_list.h"
-
-#include "mesh/adv_bearer.h"
-
 
 typedef struct {
     btstack_linked_item_t item;

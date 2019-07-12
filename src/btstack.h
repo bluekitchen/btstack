@@ -86,6 +86,10 @@
 #include "ble/gatt-service/device_information_service_server.h"
 #include "ble/gatt-service/heart_rate_service_server.h"
 #include "ble/gatt-service/hids_device.h"
+#ifdef ENABLE_MESH
+#include "ble/gatt-service/mesh_provisioning_service_server.h"
+#include "ble/gatt-service/mesh_proxy_service_server.h"
+#endif
 #include "ble/gatt_client.h"
 #include "ble/le_device_db.h"
 #include "ble/sm.h"
@@ -126,5 +130,26 @@
 #include "classic/spp_server.h"
 #endif
 
-#endif  // BTSTACK_H
- 
+#ifdef ENABLE_MESH
+#include "mesh/adv_bearer.h"
+#include "mesh/beacon.h"
+#include "mesh/gatt_bearer.h"
+#include "mesh/mesh_crypto.h"
+#include "mesh/mesh_lower_transport.h"
+#include "mesh/mesh_upper_transport.h"
+#include "mesh/pb_adv.h"
+#include "mesh/pb_gatt.h"
+#include "mesh_access.h"
+#include "mesh_configuration_server.h"
+#include "mesh_foundation.h"
+#include "mesh_generic_model.h"
+#include "mesh_generic_server.h"
+#include "mesh_iv_index_seq_number.h"
+#include "mesh_peer.h"
+#include "mesh_proxy.h"
+#include "mesh_virtual_addresses.h"
+#include "provisioning.h"
+#include "provisioning_device.h"
+#endif
+
+#endif  // __BTSTACK_H 

@@ -44,6 +44,7 @@
 
 #include "mesh/pb_adv.h"
 #include "mesh/pb_gatt.h"
+#include "btstack_memory.h"
 
 #include "mesh/mesh_crypto.h"
 #include "classic/rfcomm.h" // for crc8

@@ -39,6 +39,7 @@
 #define __MESH_ACCESS_H
 
 #include <stdint.h>
+#include <stdarg.h>
 #include "btstack_linked_list.h"
 #include "mesh/mesh_lower_transport.h"
 #include "mesh_keys.h"
