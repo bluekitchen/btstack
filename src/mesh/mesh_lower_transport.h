@@ -93,7 +93,7 @@ void mesh_transport_set_src(mesh_transport_pdu_t * transport_pdu, uint16_t src);
 void mesh_transport_set_dest(mesh_transport_pdu_t * transport_pdu, uint16_t dest);
 
 
-void mesh_lower_transport_init();
+void mesh_lower_transport_init(void);
 void mesh_lower_transport_set_higher_layer_handler(void (*pdu_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu));
 
 void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu);

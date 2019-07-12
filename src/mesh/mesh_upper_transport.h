@@ -50,7 +50,7 @@ extern "C"
 #include "mesh/mesh_network.h"
 #include "mesh/mesh_lower_transport.h"
 
-void mesh_upper_transport_init();
+void mesh_upper_transport_init(void);
 
 void mesh_upper_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu);
 
