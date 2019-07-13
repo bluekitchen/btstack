@@ -437,8 +437,8 @@ static void hci_transport_em9304_spi_block_read(void){
             
         case H4_W4_EVENT_HEADER:
             hci_transport_em9304_spi_bytes_to_read = hci_packet[2];
-            // check ACL length
-            if (HCI_EVENT_HEADER_SIZE + hci_transport_em9304_spi_bytes_to_read >  HCI_INCOMING_PACKET_BUFFER_SIZE){
+            // check Event length
+            if (bytes_to_read > (HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_EVENT_HEADER_SIZE)){
                 log_error("invalid Event len %d - only space for %u", hci_transport_em9304_spi_bytes_to_read, HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_EVENT_HEADER_SIZE);
                 hci_transport_em9304_spi_reset_statemachine();
                 break;
@@ -449,7 +449,7 @@ static void hci_transport_em9304_spi_block_read(void){
         case H4_W4_ACL_HEADER:
             hci_transport_em9304_spi_bytes_to_read = little_endian_read_16( hci_packet, 3);
             // check ACL length
-            if (HCI_ACL_HEADER_SIZE + hci_transport_em9304_spi_bytes_to_read >  HCI_INCOMING_PACKET_BUFFER_SIZE){
+            if (bytes_to_read > (HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_ACL_HEADER_SIZE)){
                 log_error("invalid ACL payload len %d - only space for %u", hci_transport_em9304_spi_bytes_to_read, HCI_INCOMING_PACKET_BUFFER_SIZE - HCI_ACL_HEADER_SIZE);
                 hci_transport_em9304_spi_reset_statemachine();
                 break;
