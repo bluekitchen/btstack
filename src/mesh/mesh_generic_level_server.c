@@ -42,10 +42,10 @@
 
 #include "mesh/mesh_generic_level_server.h"
 
-#include "btstack_util.h"
-#include "btstack_memory.h"
-#include "btstack_debug.h"
 #include "bluetooth_company_id.h"
+#include "btstack_debug.h"
+#include "btstack_memory.h"
+#include "btstack_util.h"
 
 #include "mesh/mesh_access.h"
 #include "mesh/mesh_foundation.h"
@@ -58,7 +58,7 @@
 static void generic_server_send_message(uint16_t src, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, mesh_pdu_t *pdu){
     uint8_t  ttl  = mesh_foundation_default_ttl_get();
     mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, 0);
-    mesh_upper_transport_send_access_pdu(pdu);
+    mesh_access_send_unacknowledged_pdu(pdu);
 }
 
 // Transition 

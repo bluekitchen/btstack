@@ -469,7 +469,7 @@ static void config_server_send_message(uint16_t netkey_index, uint16_t dest, mes
     uint16_t src          = mesh_node_get_primary_element_address();
     uint8_t  ttl          = mesh_foundation_default_ttl_get();
     mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, 0);
-    mesh_upper_transport_send_access_pdu(pdu);
+    mesh_access_send_unacknowledged_pdu(pdu);
 }
 
 static void config_composition_data_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){

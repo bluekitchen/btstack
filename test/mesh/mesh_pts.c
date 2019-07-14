@@ -379,7 +379,7 @@ static void send_pts_unsegmented_access_messsage(void){
     mesh_pdu_t * pdu = (mesh_pdu_t*) mesh_network_pdu_get();
     int status = mesh_upper_transport_setup_access_pdu(pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
     if (status) return;
-    mesh_upper_transport_send_access_pdu(pdu);
+    mesh_access_send_unacknowledged_pdu(pdu);
 }
 
 static void send_pts_segmented_access_messsage_unicast(void){
@@ -400,7 +400,7 @@ static void send_pts_segmented_access_messsage_unicast(void){
     mesh_pdu_t * pdu = (mesh_pdu_t *) mesh_transport_pdu_get();
     int status = mesh_upper_transport_setup_access_pdu(pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
     if (status) return;
-    mesh_upper_transport_send_access_pdu(pdu);
+    mesh_access_send_unacknowledged_pdu(pdu);
 }
 
 static void send_pts_segmented_access_messsage_group(void){
@@ -421,7 +421,7 @@ static void send_pts_segmented_access_messsage_group(void){
     mesh_pdu_t * pdu = (mesh_pdu_t *) mesh_transport_pdu_get();
     int status = mesh_upper_transport_setup_access_pdu(pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
     if (status) return;
-    mesh_upper_transport_send_access_pdu(pdu);
+    mesh_access_send_unacknowledged_pdu(pdu);
 }
 
 static void send_pts_segmented_access_messsage_virtual(void){
@@ -442,7 +442,7 @@ static void send_pts_segmented_access_messsage_virtual(void){
     mesh_transport_pdu_t * transport_pdu = mesh_transport_pdu_get();
     int status = mesh_upper_transport_setup_access_pdu((mesh_pdu_t*) transport_pdu, netkey_index, appkey_index, ttl, src, dest, 0, access_pdu_data, access_pdu_len);
     if (status) return;
-    mesh_upper_transport_send_access_pdu((mesh_pdu_t*) transport_pdu);
+    mesh_access_send_unacknowledged_pdu((mesh_pdu_t*) transport_pdu);
 }
 
 static void show_usage(void){
