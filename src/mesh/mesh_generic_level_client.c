@@ -274,5 +274,5 @@ void mesh_generic_level_client_register_packet_handler(mesh_model_t *mesh_model,
         log_error("mesh_generic_level_client_register_packet_handler called with NULL mesh_model");
         return;
     }
-    mesh_model->model_packet_handler = &transition_events_packet_handler;
+    mesh_model->model_packet_handler = transition_events_packet_handler;
 }
