@@ -431,6 +431,9 @@ mesh_model_t * mesh_model_get_configuration_server(void){
 }
 
 void mesh_element_add_model(mesh_element_t * element, mesh_model_t * mesh_model){
+    // reset app keys
+    mesh_model_reset_appkeys(mesh_model);
+
     if (mesh_model_is_bluetooth_sig(mesh_model->model_identifier)){
         element->models_count_sig++;
     } else {
