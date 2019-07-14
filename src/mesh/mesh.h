@@ -39,6 +39,7 @@
 #define __MESH_H
 
 #include "btstack_defines.h"
+#include "mesh/provisioning.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -54,6 +55,10 @@ void mesh_init(void);
  * @param packet_handler
  */
 void mesh_register_provisioning_device_packet_handler(btstack_packet_handler_t packet_handler);
+
+// temp
+void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data);
+void mesh_access_setup_without_provisiong_data(void);
 
 #if defined __cplusplus
 }

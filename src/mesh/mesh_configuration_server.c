@@ -50,6 +50,7 @@
 
 #include "mesh/beacon.h"
 #include "mesh/gatt_bearer.h"
+#include "mesh/mesh.h"
 #include "mesh/mesh_access.h"
 #include "mesh/mesh_crypto.h"
 #include "mesh/mesh_foundation.h"
