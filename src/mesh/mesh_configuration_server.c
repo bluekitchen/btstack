@@ -211,7 +211,7 @@ static void mesh_model_load_subscriptions(mesh_model_t * mesh_model){
 
     // increase ref counts for virtual subscriptions
     uint16_t i;
-    for (i = 0; i <= MAX_NR_MESH_SUBSCRIPTION_PER_MODEL ; i++){
+    for (i = 0; i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL ; i++){
         uint16_t src = mesh_model->subscriptions[i];
         if (mesh_network_address_virtual(src)){
             mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_pseudo_dst(src);
@@ -298,7 +298,7 @@ static void mesh_model_delete_all_subscriptions(mesh_model_t * mesh_model){
 static void mesh_subcription_decrease_virtual_address_ref_count(mesh_model_t *mesh_model){
     // decrease ref counts for current virtual subscriptions
     uint16_t i;
-    for (i = 0; i <= MAX_NR_MESH_SUBSCRIPTION_PER_MODEL ; i++){
+    for (i = 0; i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL ; i++){
         uint16_t src = mesh_model->subscriptions[i];
         if (mesh_network_address_virtual(src)){
             mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_pseudo_dst(src);
@@ -1187,7 +1187,7 @@ static void config_appkey_update_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
     new_app_key->appkey_index = appkey_index;
     new_app_key->netkey_index = netkey_index;
     new_app_key->key_refresh  = 1;
-    new_app_key->version = (uint8_t)(existing_app_key + 1);
+    new_app_key->version = (uint8_t)(existing_app_key->version + 1);
     memcpy(new_app_key->key, appkey, 16);
 
     // mark old key
@@ -2304,11 +2304,15 @@ const mesh_operation_t * mesh_configuration_server_get_operations(void){
     return mesh_configuration_server_model_operations;
 }
 
+static uint32_t mesh_tag_for_prov_data(void){
+    return ((uint32_t) 'P' << 24) | ((uint32_t) 'R' << 16) | ((uint32_t) 'O' <<  8) | (uint32_t)'V';
+}
+
 void mesh_node_reset(void){
     mesh_configuration_server_setup_tlv();
 
     // PROV
-    btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, 'PROV');
+    btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, mesh_tag_for_prov_data());
     // everything else
     mesh_delete_network_keys();
     mesh_delete_app_keys();
@@ -2335,7 +2339,7 @@ void mesh_node_store_provisioning_data(mesh_provisioning_data_t * provisioning_d
 
     // store in tlv
     btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &persistent_provisioning_data, sizeof(mesh_persistent_provisioning_data_t));
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_tag_for_prov_data(), (uint8_t *) &persistent_provisioning_data, sizeof(mesh_persistent_provisioning_data_t));
 
     // store IV Index and sequence number
     mesh_store_iv_index_after_provisioning(provisioning_data->iv_index);
@@ -2350,7 +2354,7 @@ int mesh_node_startup_from_tlv(void){
     btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
 
     // load provisioning data
-    uint32_t prov_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, 'PROV', (uint8_t *) &persistent_provisioning_data, sizeof(mesh_persistent_provisioning_data_t));
+    uint32_t prov_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, mesh_tag_for_prov_data(), (uint8_t *) &persistent_provisioning_data, sizeof(mesh_persistent_provisioning_data_t));
     printf("Provisioning data available: %u\n", prov_len ? 1 : 0);
     if (prov_len){
 
