@@ -69,6 +69,74 @@ static btstack_packet_handler_t provisioning_device_packet_handler;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static int provisioned;
 
+// Mandatory Confiuration Server 
+static mesh_model_t                 mesh_configuration_server_model;
+
+// Mandatory Health Server
+static mesh_model_t                 mesh_health_server_model;
+static mesh_configuration_server_model_context_t mesh_configuration_server_model_context;
+
+// Random UUID on start
+static btstack_crypto_random_t mesh_access_crypto_random;
+static uint8_t random_device_uuid[16];
+
+void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
+
+    // set iv_index and iv index update active
+    int iv_index_update_active = (provisioning_data->flags & 2) >> 1;
+    mesh_iv_index_recovered(iv_index_update_active, provisioning_data->iv_index);
+
+    // set unicast address
+    mesh_node_primary_element_address_set(provisioning_data->unicast_address);
+
+    // set device_key
+    mesh_transport_set_device_key(provisioning_data->device_key);
+
+    if (provisioning_data->network_key){
+
+        // setup primary network with provisioned netkey
+        mesh_network_key_add(provisioning_data->network_key);
+
+        // setup primary network
+        mesh_subnet_setup_for_netkey_index(provisioning_data->network_key->netkey_index);
+
+        // start sending Secure Network Beacons
+        mesh_subnet_t * provisioned_subnet = mesh_subnet_get_by_netkey_index(provisioning_data->network_key->netkey_index);
+        beacon_secure_network_start(provisioned_subnet);
+    }
+
+    // Mesh Proxy
+#ifdef ENABLE_MESH_PROXY_SERVER
+    // Setup Proxy
+    mesh_proxy_init(provisioning_data->unicast_address);
+    mesh_proxy_start_advertising_with_network_id();
+#endif
+}
+
+static void mesh_access_setup_unprovisioned_device(void * arg){
+    // set random value
+    if (arg == NULL){
+        mesh_node_set_device_uuid(random_device_uuid);
+    }
+
+#ifdef ENABLE_MESH_PB_ADV
+    // PB-ADV    
+    beacon_unprovisioned_device_start(mesh_node_get_device_uuid(), 0);
+#endif
+#ifdef ENABLE_MESH_PB_GATT
+    mesh_proxy_start_advertising_unprovisioned_device();
+#endif
+}
+
+void mesh_access_setup_without_provisiong_data(void){
+    const uint8_t * device_uuid = mesh_node_get_device_uuid();
+    if (device_uuid){
+        mesh_access_setup_unprovisioned_device((void *)device_uuid);
+    } else{
+        btstack_crypto_random_generate(&mesh_access_crypto_random, random_device_uuid, 16, &mesh_access_setup_unprovisioned_device, NULL);
+    }
+}
+
 static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     mesh_provisioning_data_t provisioning_data;
 
@@ -138,11 +206,6 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
             break;
     }
 }
-
-static mesh_model_t                 mesh_configuration_server_model;
-static mesh_model_t                 mesh_health_server_model;
-
-static mesh_configuration_server_model_context_t mesh_configuration_server_model_context;
 
 static void mesh_node_setup_default_models(void){
     // configure Config Server
