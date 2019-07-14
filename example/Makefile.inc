@@ -21,7 +21,7 @@ VPATH += ${BTSTACK_ROOT}/3rd-party/micro-ecc
 VPATH += ${BTSTACK_ROOT}/3rd-party/yxml
 VPATH += ${BTSTACK_ROOT}/platform/lwip
 VPATH += ${BTSTACK_ROOT}/platform/lwip/port
-VPATH += ${BTSTACK_ROOT}/test/mesh
+
 
 CFLAGS += -I.
 CFLAGS += -I${BTSTACK_ROOT}/src/ble
@@ -38,7 +38,6 @@ CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/yxml
 CFLAGS += -I${BTSTACK_ROOT}/platform/lwip
 CFLAGS += -I${BTSTACK_ROOT}/platform/lwip/port
-CFLAGS += -I${BTSTACK_ROOT}/test/mesh
 
 # for CVSD/SBC PLC
 LDFLAGS += -lm
