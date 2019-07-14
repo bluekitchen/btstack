@@ -183,14 +183,15 @@ static void provisioning_emit_output_oob_event(uint16_t pb_adv_cid, uint32_t num
     if (!prov_packet_handler) return;
     uint8_t event[9] = { HCI_EVENT_MESH_META, 7, MESH_SUBEVENT_PB_PROV_START_EMIT_OUTPUT_OOB};
     little_endian_store_16(event, 3, pb_adv_cid);
-    little_endian_store_16(event, 5, number);
+    little_endian_store_32(event, 5, number);
     prov_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 static void provisioning_emit_attention_timer_event(uint16_t pb_adv_cid, uint8_t timer_s){
     if (!prov_packet_handler) return;
-    uint8_t event[4] = { HCI_EVENT_MESH_META, 7, MESH_SUBEVENT_PB_PROV_ATTENTION_TIMER};
-    event[3] = timer_s;
+    uint8_t event[6] = { HCI_EVENT_MESH_META, 4, MESH_SUBEVENT_PB_PROV_ATTENTION_TIMER};
+    little_endian_store_16(event, 3, pb_adv_cid);
+    event[5] = timer_s;
     prov_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
