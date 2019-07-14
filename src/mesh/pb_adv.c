@@ -141,16 +141,17 @@ static void pb_adv_emit_pdu_sent(uint8_t status){
     pb_adv_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void pb_adv_emit_link_open(uint8_t status, uint16_t the_pb_adv_cid){
+static void pb_adv_emit_link_open(uint8_t status, uint16_t pb_transport_cid){
     uint8_t event[7] = { HCI_EVENT_MESH_META, 5, MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN, status};
-    little_endian_store_16(event, 4, the_pb_adv_cid);
+    little_endian_store_16(event, 4, pb_transport_cid);
     event[6] = PB_TYPE_ADV;
     pb_adv_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void pb_adv_emit_link_close(uint16_t the_pb_adv_cid, uint8_t reason){
-    uint8_t event[5] = { HCI_EVENT_MESH_META, 3, MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED};
-    little_endian_store_16(event, 4, the_pb_adv_cid);
+static void pb_adv_emit_link_close(uint16_t pb_transport_cid, uint8_t reason){
+    uint8_t event[6] = { HCI_EVENT_MESH_META, 3, MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED};
+    little_endian_store_16(event, 3, pb_transport_cid);
+    event[5] = reason;
     pb_adv_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -568,8 +569,8 @@ void pb_adv_register_packet_handler(btstack_packet_handler_t packet_handler){
     pb_adv_packet_handler = packet_handler;
 }
 
-void pb_adv_send_pdu(uint16_t the_pb_adv_cid, const uint8_t * pdu, uint16_t size){
-    UNUSED(the_pb_adv_cid);
+void pb_adv_send_pdu(uint16_t pb_transport_cid, const uint8_t * pdu, uint16_t size){
+    UNUSED(pb_transport_cid);
     printf("PB-ADV: Send packet ");
     printf_hexdump(pdu, size);
     pb_adv_msg_out_buffer = pdu;
@@ -582,14 +583,14 @@ void pb_adv_send_pdu(uint16_t the_pb_adv_cid, const uint8_t * pdu, uint16_t size
 
 /**
  * Close Link
- * @param the_pb_adv_cid
+ * @param pb_transport_cid
  */
-void pb_adv_close_link(uint16_t the_pb_adv_cid, uint8_t reason){
+void pb_adv_close_link(uint16_t pb_transport_cid, uint8_t reason){
     switch (link_state){
         case LINK_STATE_W4_ACK:
         case LINK_STATE_OPEN:
         case LINK_STATE_W2_SEND_ACK:
-            pb_adv_emit_link_close(the_pb_adv_cid, 0);
+            pb_adv_emit_link_close(pb_transport_cid, 0);
             link_state = LINK_STATE_CLOSING;
             pb_adv_link_close_countdown = 3;
             pb_adv_link_close_reason = reason;

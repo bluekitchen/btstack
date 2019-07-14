@@ -7257,21 +7257,21 @@ static inline uint8_t mesh_subevent_pb_transport_link_open_get_pb_type(const uin
 }
 
 /**
- * @brief Get field status from event MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED
- * @param event packet
- * @return status
- * @note: btstack_type 1
- */
-static inline uint8_t mesh_subevent_pb_transport_link_closed_get_status(const uint8_t * event){
-    return event[3];
-}
-/**
  * @brief Get field pb_transport_cid from event MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED
  * @param event packet
  * @return pb_transport_cid
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_pb_transport_link_closed_get_pb_transport_cid(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field reason from event MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED
+ * @param event packet
+ * @return reason
  * @note: btstack_type 2
  */
-static inline uint16_t mesh_subevent_pb_transport_link_closed_get_pb_transport_cid(const uint8_t * event){
+static inline uint16_t mesh_subevent_pb_transport_link_closed_get_reason(const uint8_t * event){
     return little_endian_read_16(event, 4);
 }
 

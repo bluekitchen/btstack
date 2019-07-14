@@ -2346,8 +2346,8 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 112
  * @param subevent_code
- * @param status
  * @param pb_transport_cid
+ * @param reason
  */
 #define MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED                                       0x04
 
