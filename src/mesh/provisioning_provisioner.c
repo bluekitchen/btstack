@@ -44,7 +44,6 @@
 #include <string.h>
 
 #include "btstack.h"
-#include "classic/rfcomm.h" // for crc8
 
 #include "mesh/mesh_crypto.h"
 #include "mesh/pb_adv.h"
