@@ -40,15 +40,13 @@
 
 #include <stdint.h>
 
+#include "mesh/mesh_network.h"
+#include "mesh/mesh_lower_transport.h"
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-
-
-#include <stdint.h>
-#include "mesh/mesh_network.h"
-#include "mesh/mesh_lower_transport.h"
 
 void mesh_upper_transport_init(void);
 

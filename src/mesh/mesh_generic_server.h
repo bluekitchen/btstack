@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 BlueKitchen GmbH
+ * Copyright (C) 2019 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,56 +35,52 @@
  *
  */
 
-
-#ifndef __PB_GATT_H
-#define __PB_GATT_H
+#ifndef __MESH_GENERIC_SERVER_H
+#define __MESH_GENERIC_SERVER_H
 
 #include <stdint.h>
 
-#include "btstack_defines.h"
-#include "btstack_config.h"
-#include "hci.h"
+#include "mesh/mesh_access.h"
 
-#if defined __cplusplus
-extern "C" {
+#ifdef __cplusplus
+extern "C"
+{
 #endif
 
+const mesh_operation_t * mesh_generic_on_off_server_get_operations(void);
 /**
- * Setup mesh provisioning service
+ * @brief Register packet handler
+ * @param generic_on_off_server_model
+ * @param transition_events_packet_handler
  */
-void pb_gatt_init(void);
-
-/**
- * Register listener for Provisioning PDUs and events: MESH_PB_TRANSPORT_LINK_OPEN, MESH_PB_TRANSPORT_LINK_CLOSED, MESH_SUBEVENT_CAN_SEND_NOW
- * @param packet_handler
- */
-void pb_gatt_register_packet_handler(btstack_packet_handler_t packet_handler);
+void mesh_generic_on_off_server_register_packet_handler(mesh_model_t *generic_on_off_server_model, btstack_packet_handler_t transition_events_packet_handler);
 
 /**
- * Send PDU
- * @param con_handle
- * @param pdu
- * @param pdu_size
+ * @brief Set publication model
+ * @param generic_on_off_server_model
+ * @param publication_model
  */
-void pb_gatt_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t pdu_size);
+void mesh_generic_on_off_server_set_publication_model(mesh_model_t *generic_on_off_server_model, mesh_publication_model_t * publication_model);
 
 /**
- * Setup Link with unprovisioned device
- * @param   device_uuid
- * @return  con_handle or HCI_CON_HANDLE_INVALID
+ * @brief Set ON/OFF value
+ * @param generic_on_off_server_model
+ * @param on_off_value
+ * @param transition_time_gdtt
+ * @param delay_time_gdtt
  */
-hci_con_handle_t pb_gatt_create_link(const uint8_t * device_uuid);
+void mesh_generic_on_off_server_set(mesh_model_t *generic_on_off_server_model, uint8_t on_off_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt);
 
 /**
- * Close Link
- * @param con_handle
- * @param reason 0 = success, 1 = timeout, 2 = fail
+ * @brief  Get present ON/OFF value
+ * @param  generic_on_off_server_model
+ * @return on_off_value
  */
-void pb_gatt_close_link(hci_con_handle_t con_handle, uint8_t reason);
+uint8_t mesh_generic_on_off_server_get(mesh_model_t *generic_on_off_server_model);
 
 
-#if defined __cplusplus
-}
+#ifdef __cplusplus
+} /* end of extern "C" */
 #endif
 
-#endif // __PB_GATT_H
+#endif

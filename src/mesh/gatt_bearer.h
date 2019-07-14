@@ -40,6 +40,7 @@
 #define __GATT_BEARER_H
 
 #include <stdint.h>
+
 #include "btstack_defines.h"
 
 #if defined __cplusplus

@@ -40,6 +40,7 @@
 #define __PB_ADV_H
 
 #include <stdint.h>
+
 #include "btstack_defines.h"
 #include "btstack_config.h"
 

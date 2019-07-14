@@ -40,13 +40,13 @@
 
 #include <stdint.h>
 
+#include "mesh/mesh_network.h"
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-#include <stdint.h>
-#include "mesh/mesh_network.h"
 
 typedef enum {
     MESH_TRANSPORT_OPCODE_ACK = 0,

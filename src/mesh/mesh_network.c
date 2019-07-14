@@ -37,21 +37,22 @@
 
 #define __BTSTACK_FILE__ "mesh_network.c"
 
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "mesh/beacon.h"
-#include "mesh/mesh_node.h"
-#include "provisioning.h"
-#include "provisioning_device.h"
-#include "mesh_keys.h"
-#include "mesh_foundation.h"
-#include "btstack_util.h"
+
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
-#include "mesh_iv_index_seq_number.h"
+#include "btstack_util.h"
+
+#include "mesh/beacon.h"
+#include "mesh/mesh_foundation.h"
+#include "mesh/mesh_iv_index_seq_number.h"
+#include "mesh/mesh_keys.h"
+#include "mesh/mesh_node.h"
+#include "mesh/provisioning.h"
+#include "mesh/provisioning_device.h"
 
 #ifdef ENABLE_MESH_ADV_BEARER
 #include "mesh/adv_bearer.h"

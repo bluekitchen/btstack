@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 BlueKitchen GmbH
+ * Copyright (C) 2019 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,56 +35,64 @@
  *
  */
 
+#ifndef __MESH_GENERIC_MODEL_H
+#define __MESH_GENERIC_MODEL_H
 
-#ifndef __PB_GATT_H
-#define __PB_GATT_H
+#include "mesh/mesh_access.h"
 
-#include <stdint.h>
-
-#include "btstack_defines.h"
-#include "btstack_config.h"
-#include "hci.h"
-
-#if defined __cplusplus
-extern "C" {
+#ifdef __cplusplus
+extern "C"
+{
 #endif
 
-/**
- * Setup mesh provisioning service
- */
-void pb_gatt_init(void);
 
-/**
- * Register listener for Provisioning PDUs and events: MESH_PB_TRANSPORT_LINK_OPEN, MESH_PB_TRANSPORT_LINK_CLOSED, MESH_SUBEVENT_CAN_SEND_NOW
- * @param packet_handler
- */
-void pb_gatt_register_packet_handler(btstack_packet_handler_t packet_handler);
+#define MESH_GENERIC_ON_OFF_GET                     0x8201u    
+#define MESH_GENERIC_ON_OFF_SET                     0x8202u
+#define MESH_GENERIC_ON_OFF_SET_UNACKNOWLEDGED      0x8203u
+#define MESH_GENERIC_ON_OFF_STATUS                  0x8204u
 
-/**
- * Send PDU
- * @param con_handle
- * @param pdu
- * @param pdu_size
- */
-void pb_gatt_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t pdu_size);
+#define MESH_GENERIC_LEVEL_GET                      0x8205u    
+#define MESH_GENERIC_LEVEL_SET                      0x8206u
+#define MESH_GENERIC_LEVEL_SET_UNACKNOWLEDGED       0x8207u
+#define MESH_GENERIC_LEVEL_STATUS                   0x8208u
+#define MESH_GENERIC_DELTA_SET                      0x8209u
+#define MESH_GENERIC_DELTA_SET_UNACKNOWLEDGED       0x820Au
+#define MESH_GENERIC_MOVE_SET                       0x820Bu
+#define MESH_GENERIC_MOVE_SET_UNACKNOWLEDGED        0x820Cu
+ 
+typedef struct {
+    mesh_transition_t base_transition;
 
-/**
- * Setup Link with unprovisioned device
- * @param   device_uuid
- * @return  con_handle or HCI_CON_HANDLE_INVALID
- */
-hci_con_handle_t pb_gatt_create_link(const uint8_t * device_uuid);
+    uint8_t  current_value;
+    uint8_t  target_value;
+} mesh_transition_bool_t;
 
-/**
- * Close Link
- * @param con_handle
- * @param reason 0 = success, 1 = timeout, 2 = fail
- */
-void pb_gatt_close_link(hci_con_handle_t con_handle, uint8_t reason);
+typedef struct {
+    mesh_transition_t base_transition;
 
+    int16_t current_value;
+    int16_t initial_value;
+    int16_t target_value;
+    int16_t stepwise_value_increment;
+    int16_t delta_from_initial_value;
+    int16_t transition_speed;
+} mesh_transition_int16_t;
 
-#if defined __cplusplus
-}
+typedef struct {
+    mesh_transition_bool_t transition_data;          
+} mesh_generic_on_off_state_t;
+
+typedef struct {
+    mesh_transition_int16_t transition_data;       
+} mesh_generic_level_state_t;
+
+typedef struct {
+    btstack_linked_list_t current_faults;
+    btstack_linked_list_t registered_faults;
+} mesh_health_state_t;
+
+#ifdef __cplusplus
+} /* end of extern "C" */
 #endif
 
-#endif // __PB_GATT_H
+#endif

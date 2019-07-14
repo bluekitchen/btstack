@@ -39,9 +39,10 @@
 #define __MESH_NETWORK
 
 #include "btstack_linked_list.h"
-#include "provisioning.h"
 #include "btstack_run_loop.h"
-#include "mesh_keys.h"
+
+#include "mesh/provisioning.h"
+#include "mesh/mesh_keys.h"
 
 #if defined __cplusplus
 extern "C" {

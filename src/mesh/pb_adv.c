@@ -37,17 +37,21 @@
 
 #define __BTSTACK_FILE__ "pb_adv.c"
 
+#include "pb_adv.h"
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "btstack_debug.h"
+#include "btstack_event.h"
+#include "btstack_util.h"
+
 #include "mesh/adv_bearer.h"
 #include "mesh/beacon.h"
 #include "mesh/mesh_node.h"
-#include "provisioning.h"
-#include "btstack_util.h"
-#include "btstack_debug.h"
-#include "btstack_event.h"
+#include "mesh/provisioning.h"
 
 #define PB_ADV_LINK_OPEN_RETRANSMIT_MS 1000
 

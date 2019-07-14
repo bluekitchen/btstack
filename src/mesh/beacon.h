@@ -40,8 +40,10 @@
 #define __BEACON_H
 
 #include <stdint.h>
+
 #include "btstack_defines.h"
-#include "mesh_keys.h"
+
+#include "mesh/mesh_keys.h"
 #include "mesh/mesh_network.h"
 
 #if defined __cplusplus

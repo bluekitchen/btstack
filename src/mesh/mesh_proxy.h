@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 BlueKitchen GmbH
+ * Copyright (C) 2018 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,56 +35,69 @@
  *
  */
 
-
-#ifndef __PB_GATT_H
-#define __PB_GATT_H
+#ifndef __MESH_PROXY_H
+#define __MESH_PROXY_H
 
 #include <stdint.h>
 
-#include "btstack_defines.h"
-#include "btstack_config.h"
-#include "hci.h"
+#include "mesh/adv_bearer.h"
 
-#if defined __cplusplus
-extern "C" {
+#ifdef __cplusplus
+extern "C"
+{
 #endif
 
-/**
- * Setup mesh provisioning service
- */
-void pb_gatt_init(void);
+
+typedef enum {
+    MESH_NODE_IDENTITY_STATE_ADVERTISING_STOPPED = 0,
+    MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING,
+    MESH_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED
+} mesh_node_identity_state_t;
 
 /**
- * Register listener for Provisioning PDUs and events: MESH_PB_TRANSPORT_LINK_OPEN, MESH_PB_TRANSPORT_LINK_CLOSED, MESH_SUBEVENT_CAN_SEND_NOW
- * @param packet_handler
+ * @brief Init Mesh Proxy
  */
-void pb_gatt_register_packet_handler(btstack_packet_handler_t packet_handler);
+void mesh_proxy_init(uint16_t primary_unicast_address);
 
 /**
- * Send PDU
- * @param con_handle
- * @param pdu
- * @param pdu_size
+ * @brief Start Advertising Unprovisioned Device with Device ID
  */
-void pb_gatt_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t pdu_size);
+void mesh_proxy_start_advertising_unprovisioned_device(void);
 
 /**
- * Setup Link with unprovisioned device
- * @param   device_uuid
- * @return  con_handle or HCI_CON_HANDLE_INVALID
+ * @brief Start Advertising Unprovisioned Device with Device ID
+ * @param device_uuid
  */
-hci_con_handle_t pb_gatt_create_link(const uint8_t * device_uuid);
+void mesh_proxy_stop_advertising_unprovisioned_device(void);
 
 /**
- * Close Link
- * @param con_handle
- * @param reason 0 = success, 1 = timeout, 2 = fail
+ * @brief Set Advertising with Node ID on given subnet
+ * @param netkey_index of subnet
+ * @returns MESH_FOUNDATION_STATUS_SUCCESS, MESH_FOUNDATION_STATUS_FEATURE_NOT_SUPPORTED, or MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX
+ * @note Node ID is only advertised on one subnet at a time and it is limited to 60 seconds
  */
-void pb_gatt_close_link(hci_con_handle_t con_handle, uint8_t reason);
+uint8_t mesh_proxy_set_advertising_with_node_id(uint16_t netkey_index, mesh_node_identity_state_t state);
 
+/**
+ * @brief Check if Advertising with Node ID is active
+ * @param netey_index of subnet
+ * @param out_state current state
+ * @returns MESH_FOUNDATION_STATUS_SUCCESS or MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX
+ */
+uint8_t mesh_proxy_get_advertising_with_node_id_status(uint16_t netkey_index, mesh_node_identity_state_t * out_state );
 
-#if defined __cplusplus
-}
+/**
+ * @brief Start Advertising with Network ID (on all subnets)
+ */
+void mesh_proxy_start_advertising_with_network_id(void);
+
+/**
+ * @brief Stop Advertising with Network ID (on all subnets)
+ */
+void mesh_proxy_stop_advertising_with_network_id(void);
+
+#ifdef __cplusplus
+} /* end of extern "C" */
 #endif
 
-#endif // __PB_GATT_H
+#endif

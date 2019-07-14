@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 BlueKitchen GmbH
+ * Copyright (C) 2019 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,56 +35,57 @@
  *
  */
 
-
-#ifndef __PB_GATT_H
-#define __PB_GATT_H
+#ifndef __MESH_VIRTUAL_ADDRESSES_H
+#define __MESH_VIRTUAL_ADDRESSES_H
 
 #include <stdint.h>
 
-#include "btstack_defines.h"
-#include "btstack_config.h"
-#include "hci.h"
+#include "btstack_linked_list.h"
 
-#if defined __cplusplus
-extern "C" {
+#ifdef __cplusplus
+extern "C"
+{
 #endif
 
-/**
- * Setup mesh provisioning service
- */
-void pb_gatt_init(void);
+typedef struct {
+	btstack_linked_item_t item;
+    uint16_t pseudo_dst;
+    uint16_t hash;
+    uint16_t ref_count;
+    uint8_t  label_uuid[16];
+} mesh_virtual_address_t;
 
-/**
- * Register listener for Provisioning PDUs and events: MESH_PB_TRANSPORT_LINK_OPEN, MESH_PB_TRANSPORT_LINK_CLOSED, MESH_SUBEVENT_CAN_SEND_NOW
- * @param packet_handler
- */
-void pb_gatt_register_packet_handler(btstack_packet_handler_t packet_handler);
+typedef struct {
+	btstack_linked_list_iterator_t it;
+	uint16_t hash;
+	mesh_virtual_address_t * address;
+} mesh_virtual_address_iterator_t;
 
-/**
- * Send PDU
- * @param con_handle
- * @param pdu
- * @param pdu_size
- */
-void pb_gatt_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t pdu_size);
+// virtual address management
 
-/**
- * Setup Link with unprovisioned device
- * @param   device_uuid
- * @return  con_handle or HCI_CON_HANDLE_INVALID
- */
-hci_con_handle_t pb_gatt_create_link(const uint8_t * device_uuid);
+uint16_t mesh_virtual_addresses_get_free_pseudo_dst(void);
 
-/**
- * Close Link
- * @param con_handle
- * @param reason 0 = success, 1 = timeout, 2 = fail
- */
-void pb_gatt_close_link(hci_con_handle_t con_handle, uint8_t reason);
+void mesh_virtual_address_add(mesh_virtual_address_t * virtual_address);
+
+void mesh_virtual_address_remove(mesh_virtual_address_t * virtual_address);
+
+mesh_virtual_address_t * mesh_virtual_address_register(uint8_t * label_uuid, uint16_t hash);
+
+mesh_virtual_address_t * mesh_virtual_address_for_pseudo_dst(uint16_t pseudo_dst);
+
+mesh_virtual_address_t * mesh_virtual_address_for_label_uuid(uint8_t * label_uuid);
+
+// virtual address iterator
+
+void mesh_virtual_address_iterator_init(mesh_virtual_address_iterator_t * it, uint16_t hash);
+
+int mesh_virtual_address_iterator_has_more(mesh_virtual_address_iterator_t * it);
+
+const mesh_virtual_address_t * mesh_virtual_address_iterator_get_next(mesh_virtual_address_iterator_t * it);
 
 
-#if defined __cplusplus
-}
+#ifdef __cplusplus
+} /* end of extern "C" */
 #endif
 
-#endif // __PB_GATT_H
+#endif

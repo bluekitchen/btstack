@@ -38,12 +38,13 @@
 #ifndef __MESH_NODE_H
 #define __MESH_NODE_H
 
+#include <stdint.h>
+
+#include "btstack_linked_list.h"
+
 #if defined __cplusplus
 extern "C" {
 #endif
-
-#include <stdint.h>
-#include "btstack_linked_list.h"
 
 typedef struct mesh_element {
     // linked list item

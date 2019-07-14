@@ -5,18 +5,18 @@
 
 #include "bluetooth_data_types.h"
 #include "bluetooth_gatt.h"
-#include "mesh_peer.h"
+#include "btstack_memory.h"
+#include "btstack_util.h"
 #include "mesh/adv_bearer.h"
 #include "mesh/gatt_bearer.h"
 #include "mesh/mesh_crypto.h"
-#include "mesh/mesh_network.h"
+#include "mesh/mesh_foundation.h"
+#include "mesh/mesh_iv_index_seq_number.h"
 #include "mesh/mesh_lower_transport.h"
+#include "mesh/mesh_network.h"
 #include "mesh/mesh_upper_transport.h"
-#include "mesh_foundation.h"
-#include "btstack_util.h"
-#include "provisioning.h"
-#include "btstack_memory.h"
-#include "mesh_iv_index_seq_number.h"
+#include "mesh/provisioning.h"
+#include "mesh_peer.h"
 
 extern "C" int mock_process_hci_cmd(void);
 

@@ -37,11 +37,12 @@
 
 #define __BTSTACK_FILE__ "mesh_crypto.c"
 
-#include <stdint.h>
 #include <string.h>
+
 #include "btstack_debug.h"
 #include "btstack_util.h"
-#include "mesh_crypto.h"
+
+#include "mesh/mesh_crypto.h"
 
 // mesh k1 - might get moved to btstack_crypto and all vars go into btstack_crypto_mesh_k1_t struct
 static uint8_t         mesh_k1_temp[16];

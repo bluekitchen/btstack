@@ -37,15 +37,19 @@
 
 #define __BTSTACK_FILE__ "pb_gatt.c"
 
+#include "mesh/pb_gatt.h"
+
 #include <stdlib.h>
 #include <string.h>
-#include "btstack_util.h"
+
+#include "ble/att_server.h"
+#include "ble/gatt-service/mesh_provisioning_service_server.h"
+
 #include "btstack_debug.h"
 #include "btstack_event.h"
-#include "mesh/pb_gatt.h"
-#include "ble/gatt-service/mesh_provisioning_service_server.h"
-#include "provisioning.h"
-#include "ble/att_server.h"
+#include "btstack_util.h"
+
+#include "mesh/provisioning.h"
 
 /************** PB GATT Mesh Provisioning ********************/
 

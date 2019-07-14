@@ -37,22 +37,24 @@
 
 #define __BTSTACK_FILE__ "beacon.c"
 
+#include "mesh/beacon.h"
+
 #include <string.h>
 
-#include "mesh/beacon.h"
-#include "mesh/adv_bearer.h"
-#include "mesh/gatt_bearer.h"
-#include "mesh_foundation.h"
 #include "ble/core.h"
 #include "bluetooth.h"
 #include "bluetooth_data_types.h"
 #include "btstack_debug.h"
-#include "btstack_util.h"
-#include "btstack_run_loop.h"
 #include "btstack_event.h"
+#include "btstack_run_loop.h"
+#include "btstack_util.h"
 #include "gap.h"
-#include "mesh_keys.h"
-#include "mesh_iv_index_seq_number.h"
+
+#include "mesh/adv_bearer.h"
+#include "mesh/gatt_bearer.h"
+#include "mesh/mesh_foundation.h"
+#include "mesh/mesh_iv_index_seq_number.h"
+#include "mesh/mesh_keys.h"
 
 #define BEACON_TYPE_UNPROVISIONED_DEVICE 0
 #define BEACON_TYPE_SECURE_NETWORK 1

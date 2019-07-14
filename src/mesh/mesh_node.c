@@ -37,10 +37,10 @@
 
 #define __BTSTACK_FILE__ "mesh_node.c"
 
+#include "mesh/mesh_node.h"
+
 #include <stddef.h>
 #include <string.h>
-
-#include "mesh/mesh_node.h"
 
 static uint16_t primary_element_address;
 

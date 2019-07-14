@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 BlueKitchen GmbH
+ * Copyright (C) 2018 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,56 +35,78 @@
  *
  */
 
-
-#ifndef __PB_GATT_H
-#define __PB_GATT_H
+#ifndef __MESH_CONFIGURATION_SERVER_H
+#define __MESH_CONFIGURATION_SERVER_H
 
 #include <stdint.h>
 
-#include "btstack_defines.h"
-#include "btstack_config.h"
-#include "hci.h"
+#include "mesh/mesh_access.h"
 
-#if defined __cplusplus
-extern "C" {
+#ifdef __cplusplus
+extern "C"
+{
 #endif
 
-/**
- * Setup mesh provisioning service
- */
-void pb_gatt_init(void);
+// typedefs
 
-/**
- * Register listener for Provisioning PDUs and events: MESH_PB_TRANSPORT_LINK_OPEN, MESH_PB_TRANSPORT_LINK_CLOSED, MESH_SUBEVENT_CAN_SEND_NOW
- * @param packet_handler
- */
-void pb_gatt_register_packet_handler(btstack_packet_handler_t packet_handler);
+typedef struct  {
+    btstack_timer_source_t timer;
+    uint16_t active_features;
+    uint32_t period_ms;
+    uint16_t count;
+    //
+    uint16_t destination;
+    // uint16_t count_log;
+    uint8_t  period_log;
+    uint8_t  ttl;
+    uint16_t features;
+    uint16_t netkey_index;
+} mesh_heartbeat_publication_t;
 
-/**
- * Send PDU
- * @param con_handle
- * @param pdu
- * @param pdu_size
- */
-void pb_gatt_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t pdu_size);
+typedef struct  {
+    uint16_t source;
+    uint16_t destination;
+    uint8_t  period_log;
+    uint8_t  count_log;
+    uint8_t  min_hops;
+    uint8_t  max_hops;
+} mesh_heartbeat_subscription_t;
 
-/**
- * Setup Link with unprovisioned device
- * @param   device_uuid
- * @return  con_handle or HCI_CON_HANDLE_INVALID
- */
-hci_con_handle_t pb_gatt_create_link(const uint8_t * device_uuid);
+typedef struct {
+    mesh_heartbeat_publication_t   heartbeat_publication;
+    mesh_heartbeat_subscription_t  heartbeat_subscription;
 
-/**
- * Close Link
- * @param con_handle
- * @param reason 0 = success, 1 = timeout, 2 = fail
- */
-void pb_gatt_close_link(hci_con_handle_t con_handle, uint8_t reason);
+} mesh_configuration_server_model_context_t;
 
+// API
 
-#if defined __cplusplus
-}
+const mesh_operation_t * mesh_configuration_server_get_operations(void);
+
+void mesh_configuration_server_feature_changed(void);
+
+void mesh_load_virtual_addresses(void);
+
+void mesh_delete_virtual_addresses(void);
+
+void mesh_load_subscriptions(void);
+
+void mesh_delete_subscriptions(void);
+
+void mesh_load_publications(void);
+
+void mesh_delete_publications(void);
+//
+void mesh_node_reset(void);
+
+int mesh_node_startup_from_tlv(void);
+
+void mesh_node_store_provisioning_data(mesh_provisioning_data_t * provisioning_data);
+
+// PTS Testing
+void config_nekey_list_set_max(uint16_t max);
+
+#ifdef __cplusplus
+} /* end of extern "C" */
 #endif
 
-#endif // __PB_GATT_H
+#endif

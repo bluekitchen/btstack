@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 BlueKitchen GmbH
+ * Copyright (C) 2019 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,56 +35,62 @@
  *
  */
 
-
-#ifndef __PB_GATT_H
-#define __PB_GATT_H
+#ifndef __MESH_IV_INDEX_SEQ_NUMBER_H
+#define __MESH_IV_INDEX_SEQ_NUMBER_H
 
 #include <stdint.h>
 
-#include "btstack_defines.h"
-#include "btstack_config.h"
-#include "hci.h"
-
-#if defined __cplusplus
-extern "C" {
+#ifdef __cplusplus
+extern "C"
+{
 #endif
 
 /**
- * Setup mesh provisioning service
+ * IV Index
  */
-void pb_gatt_init(void);
+
+void     mesh_set_iv_index(uint32_t iv_index);
+uint32_t mesh_get_iv_index(void);
+
+uint32_t mesh_get_iv_index_for_tx(void);
 
 /**
- * Register listener for Provisioning PDUs and events: MESH_PB_TRANSPORT_LINK_OPEN, MESH_PB_TRANSPORT_LINK_CLOSED, MESH_SUBEVENT_CAN_SEND_NOW
- * @param packet_handler
+ * @brief Get IV Update state
  */
-void pb_gatt_register_packet_handler(btstack_packet_handler_t packet_handler);
+int mesh_iv_update_active(void);
 
 /**
- * Send PDU
- * @param con_handle
- * @param pdu
- * @param pdu_size
+ * @brief Trigger IV Update
  */
-void pb_gatt_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t pdu_size);
+void mesh_trigger_iv_update(void);
 
 /**
- * Setup Link with unprovisioned device
- * @param   device_uuid
- * @return  con_handle or HCI_CON_HANDLE_INVALID
+ * @breif IV update was completed
  */
-hci_con_handle_t pb_gatt_create_link(const uint8_t * device_uuid);
+void mesh_iv_update_completed(void);
+
+/** 
+ * @brief IV Index was recovered
+ * @param iv_update_active
+ * @param iv_index
+ */
+void mesh_iv_index_recovered(uint8_t iv_update_active, uint32_t iv_index);
 
 /**
- * Close Link
- * @param con_handle
- * @param reason 0 = success, 1 = timeout, 2 = fail
+ * @brief Set callback for sequence number update
  */
-void pb_gatt_close_link(hci_con_handle_t con_handle, uint8_t reason);
+void mesh_sequence_number_set_update_callback(void (*callback)(void));
+
+/**
+ * Sequence Number
+ */
+void     mesh_sequence_number_set(uint32_t seq);
+uint32_t mesh_sequence_number_peek(void);
+uint32_t mesh_sequence_number_next(void);
 
 
-#if defined __cplusplus
-}
+#ifdef __cplusplus
+} /* end of extern "C" */
 #endif
 
-#endif // __PB_GATT_H
+#endif

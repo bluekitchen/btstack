@@ -39,13 +39,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "ble/gatt-service/mesh_provisioning_service_server.h"
+#include "hci_dump.h"
+#include "mesh/mesh_node.h"
 #include "mesh/pb_adv.h"
 #include "mesh/pb_gatt.h"
-#include "mesh/mesh_node.h"
-#include "ble/gatt-service/mesh_provisioning_service_server.h"
-#include "provisioning.h"
-#include "provisioning_device.h"
-#include "hci_dump.h"
+#include "mesh/provisioning.h"
+#include "mesh/provisioning_device.h"
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"

@@ -35,20 +35,23 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_transport.c"
+#define __BTSTACK_FILE__ "mesh_upper_transport.c"
+
+#include "mesh/mesh_upper_transport.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "mesh/beacon.h"
-#include "mesh/mesh_lower_transport.h"
-#include "mesh/mesh_upper_transport.h"
+
 #include "btstack_util.h"
 #include "btstack_memory.h"
-#include "mesh_peer.h"
-#include "mesh_keys.h"
-#include "mesh_virtual_addresses.h"
-#include "mesh_iv_index_seq_number.h"
+
+#include "mesh/beacon.h"
+#include "mesh/mesh_iv_index_seq_number.h"
+#include "mesh/mesh_keys.h"
+#include "mesh/mesh_lower_transport.h"
+#include "mesh/mesh_peer.h"
+#include "mesh/mesh_virtual_addresses.h"
 
 static void (*higher_layer_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
 
