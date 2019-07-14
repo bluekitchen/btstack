@@ -197,6 +197,7 @@ static uint16_t * mesh_virtual_address_hash;
 static uint8_t mesh_virtual_address_temp[16];
 
 static void mesh_virtual_address_temp_callback(void * arg){
+    UNUSED(arg);
     uint16_t addr = (big_endian_read_16(mesh_virtual_address_temp, 14) & 0x3fff) | 0x8000;
     *mesh_virtual_address_hash = addr;
     (*mesh_virtual_address_callback)(mesh_virtual_address_arg);
@@ -228,6 +229,7 @@ static const uint8_t id128_tag[] = { 'i', 'd', '1', '2', '8', 0x01};
 static uint8_t k2_result[33];
 
 static void mesh_network_key_derive_network_id_calculated(void * arg) {
+    UNUSED(arg);
     // done
     (*mesh_network_key_derive_callback)(mesh_network_key_derive_arg);
 }

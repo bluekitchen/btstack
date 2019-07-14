@@ -290,6 +290,8 @@ uint16_t mesh_model_get_model_id(uint32_t model_identifier);
 
 uint32_t mesh_model_get_model_identifier(uint16_t vendor_id, uint16_t model_id);
 
+uint16_t mesh_model_get_vendor_id(uint32_t model_identifier);
+
 mesh_model_t * mesh_model_get_configuration_server(void);
 
 mesh_model_t * mesh_access_model_for_address_and_model_identifier(uint16_t element_address, uint32_t model_identifier, uint8_t * status);

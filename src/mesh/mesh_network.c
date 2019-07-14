@@ -685,6 +685,7 @@ static void mesh_network_run(void){
 
 #ifdef ENABLE_MESH_ADV_BEARER
 static void mesh_adv_bearer_handle_network_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
     mesh_network_pdu_t * network_pdu;
 
     switch (packet_type){
@@ -751,6 +752,7 @@ static void mesh_network_gatt_bearer_outgoing_complete(void){
 }
 
 static void mesh_network_gatt_bearer_handle_network_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
     switch (packet_type){
         case MESH_PROXY_DATA_PACKET:
             if (mesh_foundation_gatt_proxy_get() == 0) break;
@@ -799,6 +801,7 @@ static void mesh_network_gatt_bearer_handle_network_event(uint8_t packet_type, u
 
 #ifdef ENABLE_MESH_GATT_BEARER
 static void mesh_netework_gatt_bearer_handle_proxy_configuration(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
     switch (packet_type){
         case MESH_PROXY_DATA_PACKET:
             mesh_network_process_proxy_configuration_message(packet, size);

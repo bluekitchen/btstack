@@ -159,8 +159,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(size);
     mesh_msg_sar_field_t msg_sar_field;
     
-    int pdu_segment_len;
-    int pos;
+    uint16_t pdu_segment_len;
+    uint16_t pos;
     hci_con_handle_t con_handle;
     int send_to_mesh_network;
 

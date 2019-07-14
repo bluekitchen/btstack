@@ -198,6 +198,7 @@ static void adv_bearer_emit_can_send_now(void){
 }
 
 static void adv_bearer_timeout_handler(btstack_timer_source_t * ts){
+    UNUSED(ts);
     uint32_t now = btstack_run_loop_get_time_ms();
     switch (adv_bearer_state){
         case STATE_GAP:

@@ -142,18 +142,18 @@ static void provisioning_attention_timer_set(void){
 }
 #endif 
 
-static void provisioning_emit_output_oob_event(uint16_t pb_adv_cid, uint32_t number){
+static void provisioning_emit_output_oob_event(uint16_t the_pb_adv_cid, uint32_t number){
     if (!prov_packet_handler) return;
     uint8_t event[9] = { HCI_EVENT_MESH_META, 7, MESH_SUBEVENT_PB_PROV_START_EMIT_OUTPUT_OOB};
-    little_endian_store_16(event, 3, pb_adv_cid);
+    little_endian_store_16(event, 3, the_pb_adv_cid);
     little_endian_store_16(event, 5, number);
     prov_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-static void provisioning_emit_event(uint8_t mesh_subevent, uint16_t pb_adv_cid){
+static void provisioning_emit_event(uint8_t mesh_subevent, uint16_t the_pb_adv_cid){
     if (!prov_packet_handler) return;
     uint8_t event[5] = { HCI_EVENT_MESH_META, 3, mesh_subevent};
-    little_endian_store_16(event, 3, pb_adv_cid);
+    little_endian_store_16(event, 3, the_pb_adv_cid);
     prov_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -179,57 +179,57 @@ static void provisioning_timer_stop(void){
 
 // Outgoing Provisioning PDUs
 
-static void provisioning_send_invite(uint16_t pb_adv_cid){
+static void provisioning_send_invite(uint16_t the_pb_adv_cid){
     prov_buffer_out[0] = MESH_PROV_INVITE;
     prov_buffer_out[1] = prov_attention_timer;
-    pb_adv_send_pdu(pb_adv_cid, prov_buffer_out, 2);
+    pb_adv_send_pdu(the_pb_adv_cid, prov_buffer_out, 2);
     // collect confirmation_inputs
     memcpy(&prov_confirmation_inputs[0], &prov_buffer_out[1], 1);
 }
 
-static void provisioning_send_start(uint16_t pb_adv_cid){
+static void provisioning_send_start(uint16_t the_pb_adv_cid){
     prov_buffer_out[0] = MESH_PROV_START;
     prov_buffer_out[1] = prov_start_algorithm;
     prov_buffer_out[2] = prov_start_public_key_used;
     prov_buffer_out[3] = prov_start_authentication_method;
     prov_buffer_out[4] = prov_start_authentication_action;
     prov_buffer_out[5] = prov_start_authentication_size;
-    pb_adv_send_pdu(pb_adv_cid, prov_buffer_out, 6);
+    pb_adv_send_pdu(the_pb_adv_cid, prov_buffer_out, 6);
     // store for confirmation inputs: len 5
     memcpy(&prov_confirmation_inputs[12], &prov_buffer_out[1], 5);
 }
 
-static void provisioning_send_provisioning_error(void){
+static void provisioning_send_provisioning_error(uint16_t the_pb_adv_cid){
     prov_buffer_out[0] = MESH_PROV_FAILED;
     prov_buffer_out[1] = prov_error_code;
-    pb_adv_send_pdu(pb_adv_cid, prov_buffer_out, 2);
+    pb_adv_send_pdu(the_pb_adv_cid, prov_buffer_out, 2);
 }
 
-static void provisioning_send_public_key(void){
+static void provisioning_send_public_key(uint16_t the_pb_adv_cid){
     prov_buffer_out[0] = MESH_PROV_PUB_KEY;
     memcpy(&prov_buffer_out[1], prov_ec_q, 64);
-    pb_adv_send_pdu(pb_adv_cid, prov_buffer_out, 65);
+    pb_adv_send_pdu(the_pb_adv_cid, prov_buffer_out, 65);
     // store for confirmation inputs: len 64
     memcpy(&prov_confirmation_inputs[17], &prov_buffer_out[1], 64);
 }
 
-static void provisioning_send_confirm(void){
+static void provisioning_send_confirm(uint16_t the_pb_adv_cid){
     prov_buffer_out[0] = MESH_PROV_CONFIRM;
     memcpy(&prov_buffer_out[1], confirmation_provisioner, 16);
-    pb_adv_send_pdu(pb_adv_cid, prov_buffer_out, 17);
+    pb_adv_send_pdu(the_pb_adv_cid, prov_buffer_out, 17);
 }
 
-static void provisioning_send_random(void){
+static void provisioning_send_random(uint16_t the_pb_adv_cid){
     prov_buffer_out[0] = MESH_PROV_RANDOM;
     memcpy(&prov_buffer_out[1], random_provisioner, 16);
-    pb_adv_send_pdu(pb_adv_cid, prov_buffer_out, 17);
+    pb_adv_send_pdu(the_pb_adv_cid, prov_buffer_out, 17);
 }
 
-static void provisioning_send_data(void){
+static void provisioning_send_data(uint16_t the_pb_adv_cid){
     prov_buffer_out[0] = MESH_PROV_DATA;
     memcpy(&prov_buffer_out[1], enc_provisioning_data, 25);
     memcpy(&prov_buffer_out[26], provisioning_data_mic, 8);
-    pb_adv_send_pdu(pb_adv_cid, prov_buffer_out, 34);
+    pb_adv_send_pdu(the_pb_adv_cid, prov_buffer_out, 34);
 }
 
 typedef enum {
@@ -261,7 +261,7 @@ static void provisioning_run(void){
     switch (provisioner_state){
         case PROVISIONER_SEND_ERROR:
             start_timer = 0;    // game over
-            provisioning_send_provisioning_error();
+            provisioning_send_provisioning_error(pb_adv_cid);
             break;
         case PROVISIONER_SEND_INVITE:
             provisioning_send_invite(pb_adv_cid);
@@ -281,7 +281,7 @@ static void provisioning_run(void){
             provisioning_emit_event(MESH_SUBEVENT_PB_PROV_START_RECEIVE_PUBLIC_KEY_OOB, 1);
             break;
         case PROVISIONER_SEND_PUB_KEY:
-            provisioning_send_public_key();
+            provisioning_send_public_key(pb_adv_cid);
             if (prov_start_public_key_used){
                 provisioning_public_key_ready();
             } else {
@@ -289,15 +289,15 @@ static void provisioning_run(void){
             }
             break;
         case PROVISIONER_SEND_CONFIRM:
-            provisioning_send_confirm();
+            provisioning_send_confirm(pb_adv_cid);
             provisioner_state = PROVISIONER_W4_CONFIRM;
             break;
         case PROVISIONER_SEND_RANDOM:
-            provisioning_send_random();
+            provisioning_send_random(pb_adv_cid);
             provisioner_state = PROVISIONER_W4_RANDOM;
             break;
         case PROVISIONER_SEND_DATA:
-            provisioning_send_data();
+            provisioning_send_data(pb_adv_cid);
             provisioner_state = PROVISIONER_W4_COMPLETE;
             break;
         default:
@@ -331,11 +331,12 @@ static void provisioning_handle_provisioning_error(uint8_t error_code){
     provisioning_run();
 }
 
-static void provisioning_handle_link_opened(uint16_t pb_adv_cid){
+static void provisioning_handle_link_opened(uint16_t the_pb_adv_cid){
+    UNUSED(the_pb_adv_cid);
     provisioner_state = PROVISIONER_SEND_INVITE;
 }
 
-static void provisioning_handle_capabilities(uint16_t pb_adv_cid, const uint8_t * packet_data, uint16_t packet_len){
+static void provisioning_handle_capabilities(uint16_t the_pb_adv_cid, const uint8_t * packet_data, uint16_t packet_len){
     
     if (packet_len != 11) return;
 
@@ -346,7 +347,7 @@ static void provisioning_handle_capabilities(uint16_t pb_adv_cid, const uint8_t 
 
     // notify client and wait for auth method selection
     uint8_t event[16] = { HCI_EVENT_MESH_META, 3, MESH_SUBEVENT_PB_PROV_CAPABILITIES};
-    little_endian_store_16(event, 3, pb_adv_cid);
+    little_endian_store_16(event, 3, the_pb_adv_cid);
     event[5] = packet_data[0];
     little_endian_store_16(event, 6, big_endian_read_16(packet_data, 1));
     event[8] = packet_data[3];
@@ -369,6 +370,8 @@ static void provisioning_handle_confirmation_provisioner_calculated(void * arg){
 }
 
 static void provisioning_handle_random_provisioner(void * arg){
+    UNUSED(arg);
+
     printf("RandomProvisioner:   ");
     printf_hexdump(random_provisioner, sizeof(random_provisioner));
 
@@ -381,6 +384,8 @@ static void provisioning_handle_random_provisioner(void * arg){
 }
 
 static void provisioning_handle_confirmation_k1_calculated(void * arg){
+    UNUSED(arg);
+
     printf("ConfirmationKey:   ");
     printf_hexdump(confirmation_key, sizeof(confirmation_key));
 
@@ -409,6 +414,7 @@ static void provisioning_handle_auth_value_ready(void){
 }
 
 static void provisioning_handle_auth_value_input_oob(void * arg){
+    UNUSED(arg);
 
     // limit auth value to single digit
     auth_value[15] = auth_value[15] % 9 + 1;
@@ -430,7 +436,8 @@ static void provisioning_handle_auth_value_input_oob(void * arg){
     provisioner_state = PROVISIONER_W4_INPUT_COMPLETE;
 }
 
-static void provisioning_handle_input_complete(uint16_t pb_adv_cid){
+static void provisioning_handle_input_complete(uint16_t the_pb_adv_cid){
+    UNUSED(the_pb_adv_cid);
     provisioning_handle_auth_value_ready();
 }
 
@@ -493,14 +500,13 @@ static void provisioning_public_key_ready(void){
     btstack_crypto_ecc_p256_calculate_dhkey(&prov_ecc_p256_request, remote_ec_q, dhkey, provisioning_handle_public_key_dhkey, NULL);
 }
 
-static void provisioning_handle_public_key(uint16_t pb_adv_cid, const uint8_t *packet_data, uint16_t packet_len){
-
+static void provisioning_handle_public_key(uint16_t the_pb_adv_cid, const uint8_t *packet_data, uint16_t packet_len){
     // validate public key
     if (packet_len != sizeof(remote_ec_q) || btstack_crypto_ecc_p256_validate_public_key(packet_data) != 0){
         printf("Public Key invalid, abort provisioning\n");
         
         // disconnect provisioning link 
-        pb_adv_close_link(pb_adv_cid, 0x02);    // reason: fail
+        pb_adv_close_link(the_pb_adv_cid, 0x02);    // reason: fail
         provisioning_timer_stop();
         return;
     }
@@ -526,8 +532,9 @@ static void provisioning_handle_public_key(uint16_t pb_adv_cid, const uint8_t *p
     provisioning_public_key_ready();
 }
 
-static void provisioning_handle_confirmation(uint16_t pb_adv_cid, const uint8_t *packet_data, uint16_t packet_len){
+static void provisioning_handle_confirmation(uint16_t the_pb_adv_cid, const uint8_t *packet_data, uint16_t packet_len){
 
+    UNUSED(the_pb_adv_cid);
     UNUSED(packet_data);
     UNUSED(packet_len);
 
@@ -610,9 +617,9 @@ static void provisioning_handle_provisioning_salt_calculated(void * arg){
     mesh_k1(&prov_cmac_request, dhkey, sizeof(dhkey), provisioning_salt, (const uint8_t*) "prsk", 4, session_key, &provisioning_handle_session_key_calculated, NULL);
 }
 
-static void provisioning_handle_random(uint16_t pb_adv_cid, const uint8_t *packet_data, uint16_t packet_len){
+static void provisioning_handle_random(uint16_t the_pb_adv_cid, const uint8_t *packet_data, uint16_t packet_len){
 
-    UNUSED(packet_data);
+    UNUSED(the_pb_adv_cid);
     UNUSED(packet_len);
 
     // TODO: validate Confirmation
@@ -624,10 +631,12 @@ static void provisioning_handle_random(uint16_t pb_adv_cid, const uint8_t *packe
     btstack_crypto_aes128_cmac_zero(&prov_cmac_request, 48, prov_confirmation_inputs, provisioning_salt, &provisioning_handle_provisioning_salt_calculated, NULL);
 }
 
-static void provisioning_handle_complete(uint16_t pb_adv_cid){
+static void provisioning_handle_complete(uint16_t the_pb_adv_cid){
+    UNUSED(the_pb_adv_cid);
 }
 
 static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
 
     if (size < 1) return;
 
@@ -731,13 +740,14 @@ uint16_t provisioning_provisioner_start_provisioning(const uint8_t * device_uuid
     return pb_adv_cid;
 }
 
-void provisioning_provisioner_set_static_oob(uint16_t pb_adv_cid, uint16_t static_oob_len, const uint8_t * static_oob_data){
-    UNUSED(pb_adv_cid);
+void provisioning_provisioner_set_static_oob(uint16_t the_pb_adv_cid, uint16_t static_oob_len, const uint8_t * static_oob_data){
+    UNUSED(the_pb_adv_cid);
     prov_static_oob_data = static_oob_data;
     prov_static_oob_len  = btstack_min(static_oob_len, 16);
 }
 
-uint8_t provisioning_provisioner_select_authentication_method(uint16_t pb_adv_cid, uint8_t algorithm, uint8_t public_key_used, uint8_t authentication_method, uint8_t authentication_action, uint8_t authentication_size){
+uint8_t provisioning_provisioner_select_authentication_method(uint16_t the_pb_adv_cid, uint8_t algorithm, uint8_t public_key_used, uint8_t authentication_method, uint8_t authentication_action, uint8_t authentication_size){
+    UNUSED(the_pb_adv_cid);
 
     if (provisioner_state != PROVISIONER_W4_AUTH_CONFIGURATION) return ERROR_CODE_COMMAND_DISALLOWED;
 
@@ -751,7 +761,8 @@ uint8_t provisioning_provisioner_select_authentication_method(uint16_t pb_adv_ci
     return ERROR_CODE_SUCCESS;
 }
 
-uint8_t provisioning_provisioner_public_key_oob_received(uint16_t pb_adv_cid, const uint8_t * public_key){
+uint8_t provisioning_provisioner_public_key_oob_received(uint16_t the_pb_adv_cid, const uint8_t * public_key){
+    UNUSED(the_pb_adv_cid);
 
     if (provisioner_state != PROVISIONER_W4_PUB_KEY_OOB) return ERROR_CODE_COMMAND_DISALLOWED;
 
@@ -768,8 +779,8 @@ uint8_t provisioning_provisioner_public_key_oob_received(uint16_t pb_adv_cid, co
     return ERROR_CODE_SUCCESS;
 }
 
-void provisioning_provisioner_input_oob_complete_numeric(uint16_t pb_adv_cid, uint32_t input_oob){
-    UNUSED(pb_adv_cid);
+void provisioning_provisioner_input_oob_complete_numeric(uint16_t the_pb_adv_cid, uint32_t input_oob){
+    UNUSED(the_pb_adv_cid);
     if (provisioner_state != PROVISIONER_W4_INPUT_OOK) return;
 
     // store input_oob as auth value
@@ -777,8 +788,8 @@ void provisioning_provisioner_input_oob_complete_numeric(uint16_t pb_adv_cid, ui
     provisioning_handle_auth_value_ready();
 }
 
-void provisioning_provisioner_input_oob_complete_alphanumeric(uint16_t pb_adv_cid, const uint8_t * input_oob_data, uint16_t input_oob_len){
-    UNUSED(pb_adv_cid);
+void provisioning_provisioner_input_oob_complete_alphanumeric(uint16_t the_pb_adv_cid, const uint8_t * input_oob_data, uint16_t input_oob_len){
+    UNUSED(the_pb_adv_cid);
     if (provisioner_state != PROVISIONER_W4_INPUT_OOK) return;
 
     // store input_oob and fillup with zeros

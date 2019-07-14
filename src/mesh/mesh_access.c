@@ -74,7 +74,7 @@ static void *                btstack_tlv_singleton_context;
 // Transitions
 static btstack_linked_list_t  transitions;
 static btstack_timer_source_t transitions_timer;
-static int transition_step_min_ms;
+static uint32_t transition_step_min_ms;
 static uint8_t mesh_transaction_id_counter = 0;
 
 static void mesh_access_setup_tlv(void){
@@ -994,7 +994,7 @@ void mesh_access_message_processed(mesh_pdu_t * pdu){
 }
 
 int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address){
-    int i;
+    uint16_t i;
     for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
         if (mesh_model->subscriptions[i] == address) return 1;
     }
@@ -1274,14 +1274,14 @@ void mesh_delete_appkey_lists(void){
 }
 
 void mesh_model_reset_appkeys(mesh_model_t * mesh_model){
-    int i;
+    uint16_t i;
     for (i=0;i<MAX_NR_MESH_APPKEYS_PER_MODEL;i++){
         mesh_model->appkey_indices[i] = MESH_APPKEY_INVALID;
     }
 }
 
 uint8_t mesh_model_bind_appkey(mesh_model_t * mesh_model, uint16_t appkey_index){
-    int i;
+    uint16_t i;
     for (i=0;i<MAX_NR_MESH_APPKEYS_PER_MODEL;i++){
         if (mesh_model->appkey_indices[i] == appkey_index) return MESH_FOUNDATION_STATUS_SUCCESS;
     }
@@ -1296,7 +1296,7 @@ uint8_t mesh_model_bind_appkey(mesh_model_t * mesh_model, uint16_t appkey_index)
 }
 
 void mesh_model_unbind_appkey(mesh_model_t * mesh_model, uint16_t appkey_index){
-    int i;
+    uint16_t i;
     for (i=0;i<MAX_NR_MESH_APPKEYS_PER_MODEL;i++){
         if (mesh_model->appkey_indices[i] == appkey_index) {
             mesh_model->appkey_indices[i] = MESH_APPKEY_INVALID;
@@ -1591,6 +1591,8 @@ void mesh_access_key_refresh_revoke_keys(mesh_subnet_t * subnet){
 
 static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
     UNUSED(channel);
+    UNUSED(size);
+
     if (packet_type != MESH_BEACON_PACKET) return;
 
     // lookup subnet and netkey by network id

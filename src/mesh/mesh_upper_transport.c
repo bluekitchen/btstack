@@ -147,7 +147,7 @@ static void (*mesh_control_message_handler)(mesh_pdu_t * pdu);
 static btstack_linked_list_t upper_transport_incoming;
 
 
-void mesh_upper_unsegmented_control_message_received(mesh_network_pdu_t * network_pdu){
+static void mesh_upper_unsegmented_control_message_received(mesh_network_pdu_t * network_pdu){
     uint8_t * lower_transport_pdu     = mesh_network_pdu_data(network_pdu);
     uint8_t  opcode = lower_transport_pdu[0];
     if (mesh_control_message_handler){
@@ -486,7 +486,7 @@ static void mesh_upper_transport_process_message(mesh_transport_pdu_t * transpor
     mesh_upper_transport_validate_segmented_message(transport_pdu);
 }
 
-void mesh_upper_transport_message_received(mesh_pdu_t * pdu){
+static void mesh_upper_transport_message_received(mesh_pdu_t * pdu){
     btstack_linked_list_add_tail(&upper_transport_incoming, (btstack_linked_item_t*) pdu);
     mesh_transport_run();
 }
@@ -508,7 +508,7 @@ void mesh_upper_transport_pdu_free(mesh_pdu_t * pdu){
     }
 }
 
-void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
+static void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
     switch (callback_type){
         case MESH_TRANSPORT_PDU_RECEIVED:
             mesh_upper_transport_message_received(pdu);

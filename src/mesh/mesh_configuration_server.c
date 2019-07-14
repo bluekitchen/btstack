@@ -266,7 +266,7 @@ void mesh_delete_subscriptions(void){
 }
 
 static uint8_t mesh_model_add_subscription(mesh_model_t * mesh_model, uint16_t address){
-    int i;
+    uint16_t i;
     for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
         if (mesh_model->subscriptions[i] == address) return MESH_FOUNDATION_STATUS_SUCCESS;
     }
@@ -280,7 +280,7 @@ static uint8_t mesh_model_add_subscription(mesh_model_t * mesh_model, uint16_t a
 }
 
 static void mesh_model_delete_subscription(mesh_model_t * mesh_model, uint16_t address){
-    int i;
+    uint16_t i;
     for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
         if (mesh_model->subscriptions[i] == address) {
             mesh_model->subscriptions[i] = MESH_ADDRESS_UNSASSIGNED;
@@ -289,7 +289,7 @@ static void mesh_model_delete_subscription(mesh_model_t * mesh_model, uint16_t a
 }
 
 static void mesh_model_delete_all_subscriptions(mesh_model_t * mesh_model){
-    int i;
+    uint16_t i;
     for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
         mesh_model->subscriptions[i] = MESH_ADDRESS_UNSASSIGNED;
     }
@@ -472,7 +472,7 @@ static void config_server_send_message(uint16_t netkey_index, uint16_t dest, mes
     mesh_access_send_unacknowledged_pdu(pdu);
 }
 
-static void config_composition_data_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
+static void config_composition_data_status(uint16_t netkey_index, uint16_t dest){
 
     printf("Received Config Composition Data Get -> send Config Composition Data Status\n");
 
@@ -493,10 +493,10 @@ static void config_composition_data_status(mesh_model_t * mesh_model, uint16_t n
     // Features - Relay, Proxy, Friend, Lower Power, ...
     mesh_access_transport_add_uint16(transport_pdu, 0);
 
-    mesh_element_iterator_t it;
-    mesh_element_iterator_init(&it);
-    while (mesh_element_iterator_has_next(&it)){
-        mesh_element_t * element = mesh_element_iterator_next(&it);
+    mesh_element_iterator_t element_it;
+    mesh_element_iterator_init(&element_it);
+    while (mesh_element_iterator_has_next(&element_it)){
+        mesh_element_t * element = mesh_element_iterator_next(&element_it);
 
         // Loc
         mesh_access_transport_add_uint16(transport_pdu, element->loc);
@@ -505,19 +505,19 @@ static void config_composition_data_status(mesh_model_t * mesh_model, uint16_t n
         // NumV
         mesh_access_transport_add_uint8( transport_pdu, element->models_count_vendor);
 
-        mesh_model_iterator_t it;
+        mesh_model_iterator_t model_it;
         
         // SIG Models
-        mesh_model_iterator_init(&it, element);
-        while (mesh_model_iterator_has_next(&it)){
-            mesh_model_t * model = mesh_model_iterator_next(&it);
+        mesh_model_iterator_init(&model_it, element);
+        while (mesh_model_iterator_has_next(&model_it)){
+            mesh_model_t * model = mesh_model_iterator_next(&model_it);
             if (!mesh_model_is_bluetooth_sig(model->model_identifier)) continue;
             mesh_access_transport_add_uint16(transport_pdu, model->model_identifier);
         }
         // Vendor Models
-        mesh_model_iterator_init(&it, element);
-        while (mesh_model_iterator_has_next(&it)){
-            mesh_model_t * model = mesh_model_iterator_next(&it);
+        mesh_model_iterator_init(&model_it, element);
+        while (mesh_model_iterator_has_next(&model_it)){
+            mesh_model_t * model = mesh_model_iterator_next(&model_it);
             if (mesh_model_is_bluetooth_sig(model->model_identifier)) continue;
             mesh_access_transport_add_uint32(transport_pdu, model->model_identifier);
         }
@@ -528,12 +528,14 @@ static void config_composition_data_status(mesh_model_t * mesh_model, uint16_t n
 }
 
 static void config_composition_data_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
-    config_composition_data_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
+    UNUSED(mesh_model);
+    config_composition_data_status(mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 
     mesh_access_message_processed(pdu);
 }
 
 static void config_model_beacon_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
+    UNUSED(mesh_model);
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_config_beacon_status,
                                                                                mesh_foundation_beacon_get());
@@ -569,6 +571,7 @@ static void config_beacon_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
 }
 
 static void config_model_default_ttl_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
+    UNUSED(mesh_model);
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
             &mesh_foundation_config_default_ttl_status, mesh_foundation_default_ttl_get());
@@ -603,6 +606,8 @@ static void config_default_ttl_set_handler(mesh_model_t *mesh_model, mesh_pdu_t 
 }
 
 static void config_friend_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
+    UNUSED(mesh_model);
+
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
             &mesh_foundation_config_friend_status, mesh_foundation_friend_get());
@@ -640,6 +645,7 @@ static void config_friend_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
 }
 
 static void config_model_gatt_proxy_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
+    UNUSED(mesh_model);
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
             &mesh_foundation_config_gatt_proxy_status, mesh_foundation_gatt_proxy_get());
@@ -677,6 +683,8 @@ static void config_gatt_proxy_set_handler(mesh_model_t *mesh_model, mesh_pdu_t *
 }
 
 static void config_model_relay_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
+    UNUSED(mesh_model);
+
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_config_relay_status,
                                                                                mesh_foundation_relay_get(),
@@ -722,6 +730,8 @@ static void config_relay_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
 }
 
 static void config_model_network_transmit_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
+    UNUSED(mesh_model);
+
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
             &mesh_foundation_config_network_transmit_status, mesh_foundation_network_transmit_get());
@@ -760,6 +770,8 @@ void config_nekey_list_set_max(uint16_t max){
 }
 
 static void config_netkey_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status, uint16_t new_netkey_index){
+    UNUSED(mesh_model);
+
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
             &mesh_foundation_config_netkey_status, status, new_netkey_index);
@@ -770,6 +782,8 @@ static void config_netkey_status(mesh_model_t * mesh_model, uint16_t netkey_inde
 }
 
 static void config_netkey_list(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest) {
+    UNUSED(mesh_model);
+
     mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_NETKEY_LIST);
     if (!transport_pdu) return;
 
@@ -984,6 +998,8 @@ static void config_netkey_get_handler(mesh_model_t * mesh_model, mesh_pdu_t * pd
 // AppKey List
 
 static void config_appkey_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint32_t netkey_and_appkey_index, uint8_t status){
+    UNUSED(mesh_model);
+
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_config_appkey_status,
                                                                                status, netkey_and_appkey_index);
@@ -994,6 +1010,8 @@ static void config_appkey_status(mesh_model_t * mesh_model, uint16_t netkey_inde
 }
 
 static void config_appkey_list(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint32_t netkey_index_of_list){
+    UNUSED(mesh_model);
+
     mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(MESH_FOUNDATION_OPERATION_APPKEY_LIST);
     if (!transport_pdu) return;
 
@@ -1219,6 +1237,8 @@ static void config_appkey_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
 // Configuration Model Subscriptions (messages)
 
 static void config_model_subscription_list_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status, uint16_t element_address, uint32_t model_identifier, mesh_model_t * target_model){
+    UNUSED(mesh_model);
+
     uint16_t opcode;
     if (mesh_model_is_bluetooth_sig(model_identifier)){
         opcode = MESH_FOUNDATION_OPERATION_SIG_MODEL_SUBSCRIPTION_LIST;
@@ -1235,7 +1255,7 @@ static void config_model_subscription_list_status(mesh_model_t * mesh_model, uin
     mesh_access_transport_add_model_identifier(transport_pdu, model_identifier);
 
     if (target_model != NULL){
-        int i;
+        uint16_t i;
         for (i = 0; i < MAX_NR_MESH_SUBSCRIPTION_PER_MODEL; i++){
             if (target_model->subscriptions[i] == MESH_ADDRESS_UNSASSIGNED) continue;
             if (mesh_network_address_virtual(target_model->subscriptions[i])) continue;
@@ -1260,6 +1280,8 @@ static void config_model_subscription_get_handler(mesh_model_t *mesh_model, mesh
 }
 
 static void config_model_subscription_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status, uint16_t element_address, uint16_t address, uint32_t model_identifier){
+    UNUSED(mesh_model);
+
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_config_model_subscription_status,
                                                                                 status, element_address, address, model_identifier);
@@ -1507,6 +1529,8 @@ static void config_model_subscription_delete_all_handler(mesh_model_t *mesh_mode
 // Configuration Model to AppKey List
 
 static void config_model_app_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status, uint16_t element_address, uint16_t appkey_index, uint32_t model_identifier){
+    UNUSED(mesh_model);
+
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_config_model_app_status,
                                                             status, element_address, appkey_index, model_identifier);
@@ -1517,6 +1541,8 @@ static void config_model_app_status(mesh_model_t * mesh_model, uint16_t netkey_i
 }
 
 static void config_model_app_list(mesh_model_t * config_server_model, uint16_t netkey_index, uint16_t dest, uint8_t status, uint16_t element_address, uint32_t model_identifier, mesh_model_t * mesh_model){
+    UNUSED(config_server_model);
+
     uint16_t opcode;
     if (mesh_model_is_bluetooth_sig(model_identifier)){
         opcode = MESH_FOUNDATION_OPERATION_SIG_MODEL_APP_LIST;
@@ -1536,7 +1562,7 @@ static void config_model_app_list(mesh_model_t * config_server_model, uint16_t n
     
     // add list of appkey indexes
     if (mesh_model){
-        int i;
+        uint16_t i;
         for (i=0;i<MAX_NR_MESH_APPKEYS_PER_MODEL;i++){
             uint16_t appkey_index = mesh_model->appkey_indices[i];
             if (appkey_index == MESH_APPKEY_INVALID) continue;
@@ -1610,7 +1636,7 @@ static void config_model_app_unbind_handler(mesh_model_t *config_server_model, m
     mesh_access_message_processed(pdu);
 }
 
-static void config_model_app_get(mesh_model_t *config_server_model, mesh_pdu_t * pdu, int sig_model){
+static void config_model_app_get_handler(mesh_model_t *config_server_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
@@ -1621,14 +1647,6 @@ static void config_model_app_get(mesh_model_t *config_server_model, mesh_pdu_t *
     mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
     config_model_app_list(config_server_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, element_address, model_identifier, target_model);
     mesh_access_message_processed(pdu);
-}
-
-static void config_sig_model_app_get_handler(mesh_model_t *config_server_model, mesh_pdu_t * pdu) {
-    config_model_app_get(config_server_model, pdu, 1);
-}
-
-static void config_vendor_model_app_get_handler(mesh_model_t *config_server_model, mesh_pdu_t * pdu) {
-    config_model_app_get(config_server_model, pdu, 0);
 }
 
 // Model Publication
@@ -1655,6 +1673,8 @@ static void config_model_publication_changed(mesh_model_t *mesh_model, mesh_publ
 static void
 config_model_publication_status(mesh_model_t *mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status,
                                     uint16_t element_address, uint32_t model_identifier, mesh_publication_model_t *publication_model) {
+    UNUSED(mesh_model);
+
     // setup message
     uint16_t app_key_index_and_credential_flag = (publication_model->friendship_credential_flag << 12) | publication_model->appkey_index;
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
@@ -1892,6 +1912,7 @@ static void config_heartbeat_publication_timeout_handler(btstack_timer_source_t 
 }
 
 static void config_heartbeat_publication_status(mesh_model_t *mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status, mesh_heartbeat_publication_t * mesh_heartbeat_publication){
+    UNUSED(mesh_model);
 
     // setup message
     uint8_t count_log = heartbeat_count_log(mesh_heartbeat_publication->count);
@@ -1978,6 +1999,7 @@ static void config_heartbeat_publication_get_handler(mesh_model_t *mesh_model, m
 // Heartbeat Subscription
 
 static void config_heartbeat_subscription_status(mesh_model_t *mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status, mesh_heartbeat_subscription_t * mesh_heartbeat_subscription){
+    UNUSED(mesh_model);
 
     // setup message
     uint8_t count_log = heartbeat_count_log(mesh_heartbeat_subscription->count_log);
@@ -2068,11 +2090,13 @@ static void config_heartbeat_subscription_get_handler(mesh_model_t *mesh_model, 
 
 static void config_key_refresh_phase_status(mesh_model_t *mesh_model, uint16_t netkey_index_dest, uint16_t dest, uint8_t status, uint16_t netkey_index,
     mesh_key_refresh_state_t key_refresh_state){
+    UNUSED(mesh_model);
+
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
         &mesh_key_refresh_phase_status,
         status,
-        netkey_index_dest,
+        netkey_index,
         key_refresh_state);
     if (!transport_pdu) return;
     
@@ -2145,6 +2169,8 @@ static void config_key_refresh_phase_set_handler(mesh_model_t *mesh_model, mesh_
 
 
 static void config_node_reset_status(mesh_model_t *mesh_model, uint16_t netkey_index, uint16_t dest){
+    UNUSED(mesh_model);
+
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_node_reset_status);
     if (!transport_pdu) return;
@@ -2160,6 +2186,8 @@ static void config_node_reset_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
 }
 
 static void low_power_node_poll_timeout_status(mesh_model_t *mesh_model, uint16_t netkey_index_dest, uint16_t dest, uint8_t status){
+    UNUSED(mesh_model);
+
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
         &mesh_foundation_low_power_node_poll_timeout_status,
         status,
@@ -2181,11 +2209,13 @@ static void config_low_power_node_poll_timeout_get_handler(mesh_model_t *mesh_mo
 
 static void config_node_identity_status(mesh_model_t *mesh_model, uint16_t netkey_index_dest, uint16_t dest, uint8_t status, uint16_t netkey_index, 
     mesh_node_identity_state_t node_identity_state){
+    UNUSED(mesh_model);
+
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
         &mesh_foundation_node_identity_status,
         status,
-        netkey_index_dest,
+        netkey_index,
         node_identity_state);
     if (!transport_pdu) return;
     
@@ -2250,8 +2280,8 @@ const static mesh_operation_t mesh_configuration_server_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_MODEL_SUBSCRIPTION_DELETE_ALL,                4, config_model_subscription_delete_all_handler },
     { MESH_FOUNDATION_OPERATION_SIG_MODEL_SUBSCRIPTION_GET,                   4, config_model_subscription_get_handler },
     { MESH_FOUNDATION_OPERATION_VENDOR_MODEL_SUBSCRIPTION_GET,                6, config_model_subscription_get_handler },
-    { MESH_FOUNDATION_OPERATION_SIG_MODEL_APP_GET,                            4, config_sig_model_app_get_handler },
-    { MESH_FOUNDATION_OPERATION_VENDOR_MODEL_APP_GET,                         6, config_vendor_model_app_get_handler },
+    { MESH_FOUNDATION_OPERATION_SIG_MODEL_APP_GET,                            4, config_model_app_get_handler },
+    { MESH_FOUNDATION_OPERATION_VENDOR_MODEL_APP_GET,                         6, config_model_app_get_handler },
     { MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_SET,                       11, config_model_publication_set_handler },
     { MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_VIRTUAL_ADDRESS_SET,       25, config_model_publication_virtual_address_set_handler },
     { MESH_FOUNDATION_OPERATION_MODEL_PUBLICATION_GET,                        4, config_model_publication_get_handler },

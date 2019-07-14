@@ -80,8 +80,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     UNUSED(size);
     mesh_msg_sar_field_t msg_sar_field;
     mesh_msg_type_t msg_type;
-    int pdu_segment_len;
-    int pos;
+    uint16_t pdu_segment_len;
+    uint16_t pos;
     hci_con_handle_t con_handle;
 
     switch (packet_type) {
@@ -223,6 +223,8 @@ void pb_gatt_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t size){
  * @param reason 0 = success, 1 = timeout, 2 = fail
  */
 void pb_gatt_close_link(hci_con_handle_t con_handle, uint8_t reason){
+    UNUSED(con_handle);
+    UNUSED(reason);
 }
 
 /**
@@ -231,5 +233,6 @@ void pb_gatt_close_link(hci_con_handle_t con_handle, uint8_t reason){
  * @returns con_handle or HCI_CON_HANDLE_INVALID
  */
 uint16_t pb_gatt_create_link(const uint8_t * device_uuid){
+    UNUSED(device_uuid);
     return HCI_CON_HANDLE_INVALID;
 }

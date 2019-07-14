@@ -339,6 +339,7 @@ static void provisioning_done(void){
 }
 
 static void provisioning_handle_auth_value_output_oob(void * arg){
+    UNUSED(arg);
     // limit auth value to single digit
     auth_value[15] = auth_value[15] % 9 + 1;
 
@@ -564,7 +565,6 @@ static void provisioning_handle_public_key(uint8_t *packet, uint16_t size){
 }
 
 static void provisioning_handle_confirmation_device_calculated(void * arg){
-
     UNUSED(arg);
 
     printf("ConfirmationDevice: ");
@@ -575,6 +575,8 @@ static void provisioning_handle_confirmation_device_calculated(void * arg){
 }
 
 static void provisioning_handle_confirmation_random_device(void * arg){
+    UNUSED(arg);
+
     // re-use prov_confirmation_inputs buffer
     memcpy(&prov_confirmation_inputs[0],  random_device, 16);
     memcpy(&prov_confirmation_inputs[16], auth_value, 16);
@@ -584,6 +586,8 @@ static void provisioning_handle_confirmation_random_device(void * arg){
 }
 
 static void provisioning_handle_confirmation_k1_calculated(void * arg){
+    UNUSED(arg);
+
     printf("ConfirmationKey:   ");
     printf_hexdump(confirmation_key, sizeof(confirmation_key));
 
@@ -606,7 +610,6 @@ static void provisioning_handle_confirmation_s1_calculated(void * arg){
 }
 
 static void provisioning_handle_confirmation(uint8_t *packet, uint16_t size){
-
     UNUSED(size);
     UNUSED(packet);
 
@@ -680,6 +683,8 @@ static void provisioning_handle_random(uint8_t *packet, uint16_t size){
 
 // PROV_DATA
 static void provisioning_handle_network_dervived(void * arg){
+    UNUSED(arg);
+
     provisioning_timer_stop();
 
     // notify client
@@ -691,6 +696,8 @@ static void provisioning_handle_network_dervived(void * arg){
 }
 
 static void provisioning_handle_data_device_key(void * arg){
+    UNUSED(arg);
+
     // derive full network key
     mesh_network_key_derive(&prov_cmac_request, network_key, &provisioning_handle_network_dervived, NULL);
 }
@@ -732,11 +739,13 @@ static void provisioning_handle_data(uint8_t *packet, uint16_t size){
 }
 
 static void provisioning_handle_unexpected_pdu(uint8_t *packet, uint16_t size){
+    UNUSED(size);
     printf("Unexpected PDU #%u in state #%u\n", packet[0], (int) device_state);
     provisioning_handle_provisioning_error(0x03);    
 }
 
 static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
 
     if (size < 1) return;
 
@@ -905,10 +914,10 @@ mesh_network_key_t * provisioning_device_data_get_network_key(void){
     return network_key;
 }
 
-void provisioning_device_data_get(mesh_provisioning_data_t * provisioning_data){
-    provisioning_data->unicast_address = unicast_address;
-    provisioning_data->iv_index = iv_index;
-    provisioning_data->flags = flags;
-    memcpy(provisioning_data->device_key, device_key, 16);
-    provisioning_data->network_key = network_key;
+void provisioning_device_data_get(mesh_provisioning_data_t * the_provisioning_data){
+    the_provisioning_data->unicast_address = unicast_address;
+    the_provisioning_data->iv_index = iv_index;
+    the_provisioning_data->flags = flags;
+    memcpy(the_provisioning_data->device_key, device_key, 16);
+    the_provisioning_data->network_key = network_key;
 }
