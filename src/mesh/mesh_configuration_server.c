@@ -2366,7 +2366,18 @@ int mesh_node_startup_from_tlv(void){
         provisioning_data.network_key = NULL;
         
         // load iv index
-        mesh_restore_iv_index_and_sequence_number();
+        uint32_t iv_index;
+        uint32_t sequence_number;
+        int ok = mesh_load_iv_index_and_sequence_number(&iv_index, &sequence_number);
+        if (ok){
+            // bump sequence number to account for interval updates
+            sequence_number += MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
+            mesh_sequence_number_set(sequence_number);
+            mesh_store_iv_index_and_sequence_number();
+            log_info("IV Index: %08x, Sequence Number %08x", (int) iv_index, (int) sequence_number);
+            provisioning_data.iv_index = iv_index;
+        }
+
         // load network keys
         mesh_load_network_keys();
         // load app keys
