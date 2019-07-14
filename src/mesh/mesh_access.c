@@ -1600,17 +1600,14 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
     mesh_subnet_iterator_t it;
     mesh_subnet_iterator_init(&it);
     mesh_subnet_t * subnet = NULL;
-    mesh_network_key_t * network_key = NULL;
     uint8_t new_key = 0;
     while (mesh_subnet_iterator_has_more(&it)){
         mesh_subnet_t * item = mesh_subnet_iterator_get_next(&it);
         if (memcmp(item->old_key->network_id, beacon_network_id, 8) == 0 ) {
             subnet = item;
-            network_key = item->old_key;
         }
         if (item->new_key != NULL && memcmp(item->new_key->network_id, beacon_network_id, 8) == 0 ) {
             subnet = item;
-            network_key = item->new_key;
             new_key = 1;
         }
         break;
