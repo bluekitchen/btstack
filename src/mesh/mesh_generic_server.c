@@ -178,7 +178,7 @@ void mesh_generic_on_off_server_register_packet_handler(mesh_model_t *generic_on
         log_error("mesh_generic_on_off_server_register_packet_handler called with NULL generic_on_off_server_model");
         return;
     }
-    generic_on_off_server_model->model_packet_handler = &transition_events_packet_handler;
+    generic_on_off_server_model->model_packet_handler = transition_events_packet_handler;
 }
 
 const mesh_access_message_t mesh_generic_on_off_status_transition = {

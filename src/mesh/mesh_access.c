@@ -94,10 +94,10 @@ void mesh_access_init(void){
     mesh_sequence_number_set_update_callback(&mesh_persist_iv_index_and_sequence_number);
 }
 
-void mesh_access_emit_state_update_bool(btstack_packet_handler_t * event_handler, uint8_t element_index, uint32_t model_identifier, 
+void mesh_access_emit_state_update_bool(btstack_packet_handler_t event_handler, uint8_t element_index, uint32_t model_identifier,
     model_state_id_t state_identifier, model_state_update_reason_t reason, uint8_t value){
     if (event_handler == NULL) return;
-    uint8_t event[14] = {HCI_EVENT_MESH_META, 13, MESH_SUBEVENT_STATE_UPDATE_BOOL};
+    uint8_t event[14] = {HCI_EVENT_MESH_META, 12, MESH_SUBEVENT_STATE_UPDATE_BOOL};
     int pos = 3;
     event[pos++] = element_index;
     little_endian_store_32(event, pos, model_identifier);
@@ -109,10 +109,10 @@ void mesh_access_emit_state_update_bool(btstack_packet_handler_t * event_handler
     (*event_handler)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void mesh_access_emit_state_update_int16(btstack_packet_handler_t * event_handler, uint8_t element_index, uint32_t model_identifier, 
+void mesh_access_emit_state_update_int16(btstack_packet_handler_t event_handler, uint8_t element_index, uint32_t model_identifier,
     model_state_id_t state_identifier, model_state_update_reason_t reason, int16_t value){
     if (event_handler == NULL) return;
-    uint8_t event[14] = {HCI_EVENT_MESH_META, 13, MESH_SUBEVENT_STATE_UPDATE_BOOL};
+    uint8_t event[15] = {HCI_EVENT_MESH_META, 13, MESH_SUBEVENT_STATE_UPDATE_BOOL};
     int pos = 3;
     event[pos++] = element_index;
     little_endian_store_32(event, pos, model_identifier);
@@ -887,16 +887,7 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
 
     uint16_t len = mesh_pdu_len(pdu);
     printf("MESH Access Message, Opcode = %x: ", opcode);
-    switch (pdu->pdu_type){
-        case MESH_PDU_TYPE_NETWORK:
-            printf_hexdump(&((mesh_network_pdu_t *) pdu)->data[10], len);
-            break;
-        case MESH_PDU_TYPE_TRANSPORT:
-            printf_hexdump(((mesh_transport_pdu_t *) pdu)->data, len);
-            break;
-        default:
-            break;
-    }
+    printf_hexdump(mesh_pdu_data(pdu), len);
 
     uint16_t src = mesh_pdu_src(pdu);
     uint16_t dst = mesh_pdu_dst(pdu);
@@ -912,8 +903,8 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
                 mesh_model_t * model = mesh_model_iterator_next(&model_it);
                 // find opcode in table
                 const mesh_operation_t * operation = mesh_model_lookup_operation(model, pdu);
-                if (operation == NULL) break;
-                if (mesh_access_validate_appkey_index(model, appkey_index) == 0) break;
+                if (operation == NULL) continue;
+                if (mesh_access_validate_appkey_index(model, appkey_index) == 0) continue;
                 mesh_access_acknowledged_received(src, opcode);
                 operation->handler(model, pdu);
                 return;
