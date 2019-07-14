@@ -84,8 +84,8 @@ extern "C" {
 
 #ifdef ENABLE_MESH
 #include "mesh/mesh_network.h"
-#include "mesh_keys.h"
-#include "mesh_virtual_addresses.h"
+#include "mesh/mesh_keys.h"
+#include "mesh/mesh_virtual_addresses.h"
 #endif
 
 /* API_START */

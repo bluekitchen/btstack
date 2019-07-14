@@ -38,6 +38,7 @@
 #define __MESH_PROXY_SERVICE_SERVER_H
 
 #include <stdint.h>
+
 #include "hci.h"
 
 #if defined __cplusplus

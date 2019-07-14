@@ -37,19 +37,19 @@
 
 #define __BTSTACK_FILE__ "mesh_proxy_service_server.c"
 
-#include "bluetooth.h"
-#include "btstack_defines.h"
+#include "ble/gatt-service/mesh_proxy_service_server.h"
+
 #include "ble/att_db.h"
 #include "ble/att_server.h"
-#include "btstack_util.h"
+#include "bluetooth.h"
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
-#include "l2cap.h"
-#include "hci.h"
+#include "btstack_defines.h"
 #include "btstack_event.h"
+#include "btstack_util.h"
+#include "hci.h"
 
-#include "ble/gatt-service/mesh_proxy_service_server.h"
-#include "provisioning.h"
+#include "mesh/provisioning.h"
 
 typedef struct {
     hci_con_handle_t con_handle;
