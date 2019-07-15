@@ -83,12 +83,6 @@ typedef struct {
 const mesh_operation_t * mesh_configuration_server_get_operations(void);
 
 void mesh_configuration_server_feature_changed(void);
-//
-void mesh_node_reset(void);
-
-int mesh_node_startup_from_tlv(void);
-
-void mesh_node_store_provisioning_data(mesh_provisioning_data_t * provisioning_data);
 
 // PTS Testing
 void config_nekey_list_set_max(uint16_t max);

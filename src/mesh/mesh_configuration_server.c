@@ -104,16 +104,6 @@ static uint8_t heartbeat_count_log(uint16_t value){
 
 // TLV
 
-static const btstack_tlv_t * btstack_tlv_singleton_impl;
-static void *                btstack_tlv_singleton_context;
-
-
-static void mesh_configuration_server_setup_tlv(void){
-    if (btstack_tlv_singleton_impl) return;
-    btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
-}
-
-
 static int mesh_model_is_configuration_server(uint32_t model_identifier){
     return mesh_model_is_bluetooth_sig(model_identifier) && (mesh_model_get_model_id(model_identifier) == MESH_SIG_MODEL_ID_CONFIGURATION_SERVER);
 }
@@ -2089,110 +2079,5 @@ const static mesh_operation_t mesh_configuration_server_model_operations[] = {
 
 const mesh_operation_t * mesh_configuration_server_get_operations(void){
     return mesh_configuration_server_model_operations;
-}
-
-static uint32_t mesh_tag_for_prov_data(void){
-    return ((uint32_t) 'P' << 24) | ((uint32_t) 'R' << 16) | ((uint32_t) 'O' <<  8) | (uint32_t)'V';
-}
-
-void mesh_node_reset(void){
-    mesh_configuration_server_setup_tlv();
-
-    // PROV
-    btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, mesh_tag_for_prov_data());
-    // everything else
-    mesh_delete_network_keys();
-    mesh_delete_app_keys();
-    mesh_delete_appkey_lists();
-    mesh_delete_virtual_addresses();
-    mesh_delete_subscriptions();
-    mesh_delete_publications();
-}
-
-typedef struct {
-    uint16_t unicast_address;
-    uint8_t  flags;
-    uint8_t  device_key[16];
-
-} mesh_persistent_provisioning_data_t;
-
-void mesh_node_store_provisioning_data(mesh_provisioning_data_t * provisioning_data){
-
-    // fill persistent prov data
-    mesh_persistent_provisioning_data_t persistent_provisioning_data;
-
-    persistent_provisioning_data.unicast_address = provisioning_data->unicast_address;
-    memcpy(persistent_provisioning_data.device_key, provisioning_data->device_key, 16);
-
-    // store in tlv
-    btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_tag_for_prov_data(), (uint8_t *) &persistent_provisioning_data, sizeof(mesh_persistent_provisioning_data_t));
-
-    // store IV Index and sequence number
-    mesh_store_iv_index_after_provisioning(provisioning_data->iv_index);
-
-    // store primary network key
-    mesh_store_network_key(provisioning_data->network_key);
-}
-
-int mesh_node_startup_from_tlv(void){
-
-    mesh_persistent_provisioning_data_t persistent_provisioning_data;
-    btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
-
-    // load provisioning data
-    uint32_t prov_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, mesh_tag_for_prov_data(), (uint8_t *) &persistent_provisioning_data, sizeof(mesh_persistent_provisioning_data_t));
-    printf("Provisioning data available: %u\n", prov_len ? 1 : 0);
-    if (prov_len){
-
-        // copy into mesh_provisioning_data
-        mesh_provisioning_data_t provisioning_data;
-        memcpy(provisioning_data.device_key, persistent_provisioning_data.device_key, 16);
-        provisioning_data.unicast_address = persistent_provisioning_data.unicast_address;
-        provisioning_data.flags = persistent_provisioning_data.flags;
-        provisioning_data.network_key = NULL;
-        
-        // load iv index
-        uint32_t iv_index;
-        uint32_t sequence_number;
-        int ok = mesh_load_iv_index_and_sequence_number(&iv_index, &sequence_number);
-        if (ok){
-            // bump sequence number to account for interval updates
-            sequence_number += MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
-            mesh_sequence_number_set(sequence_number);
-            mesh_store_iv_index_and_sequence_number();
-            log_info("IV Index: %08x, Sequence Number %08x", (int) iv_index, (int) sequence_number);
-            provisioning_data.iv_index = iv_index;
-        }
-
-        // load network keys
-        mesh_load_network_keys();
-        // load app keys
-        mesh_load_app_keys();
-        // load model to appkey bindings
-        mesh_load_appkey_lists();
-        // load virtual addresses
-        mesh_load_virtual_addresses();
-        // load model subscriptions
-        mesh_load_subscriptions();
-        // load model publications
-        mesh_load_publications();
-        // load foundation state
-        mesh_foundation_state_load();
-
-        mesh_access_setup_from_provisioning_data(&provisioning_data);
-
-#if defined(ENABLE_MESH_ADV_BEARER) || defined(ENABLE_MESH_PB_ADV)
-        // start sending Secure Network Beacon
-        mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(0);
-        if (subnet){
-            beacon_secure_network_start(subnet);
-        }
-#endif
-        return 1;
-    } else {
-        mesh_access_setup_without_provisiong_data();
-        return 0;
-    }
 }
 
