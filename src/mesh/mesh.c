@@ -552,6 +552,15 @@ void mesh_access_key_refresh_revoke_keys(mesh_subnet_t * subnet){
     }
 }
 
+// Mesh Model Subscription
+int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address){
+    uint16_t i;
+    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
+        if (mesh_model->subscriptions[i] == address) return 1;
+    }
+    return 0;
+}
+
 // Mesh IV Index
 static uint32_t mesh_tag_for_iv_index_and_seq_number(void){
     return ((uint32_t) 'M' << 24) | ((uint32_t) 'F' << 16) | ((uint32_t) 'I' << 9) | ((uint32_t) 'S');

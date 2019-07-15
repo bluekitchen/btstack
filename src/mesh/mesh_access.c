@@ -976,14 +976,6 @@ void mesh_access_message_processed(mesh_pdu_t * pdu){
     mesh_upper_transport_message_processed_by_higher_layer(pdu);
 }
 
-int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address){
-    uint16_t i;
-    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
-        if (mesh_model->subscriptions[i] == address) return 1;
-    }
-    return 0;
-}
-
 // Mesh Model Publication
 static btstack_timer_source_t mesh_access_publication_timer;
 

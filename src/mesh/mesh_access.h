@@ -347,9 +347,6 @@ uint16_t mesh_pdu_appkey_index(mesh_pdu_t * pdu);
 uint16_t mesh_pdu_len(mesh_pdu_t * pdu);
 uint8_t * mesh_pdu_data(mesh_pdu_t * pdu);
 
-// Mesh Model Subscriptions
-int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address);
-
 // Mesh Access Parser
 int mesh_access_pdu_get_opcode(mesh_pdu_t * pdu, uint32_t * opcode, uint16_t * opcode_size);
 int  mesh_access_parser_init(mesh_access_parser_state_t * state, mesh_pdu_t * pdu);
