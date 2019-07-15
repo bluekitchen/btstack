@@ -42,6 +42,7 @@
 #include "mesh/provisioning.h"
 #include "mesh/mesh_keys.h"
 #include "mesh/mesh_access.h"
+#include "mesh/mesh_virtual_addresses.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -57,6 +58,12 @@ void mesh_init(void);
  * @param packet_handler
  */
 void mesh_register_provisioning_device_packet_handler(btstack_packet_handler_t packet_handler);
+
+// Mesh Virtual Address Management
+void mesh_load_virtual_addresses(void);
+void mesh_delete_virtual_addresses(void);
+void mesh_virtual_address_decrease_refcount(mesh_virtual_address_t * virtual_address);
+void mesh_virtual_address_increase_refcount(mesh_virtual_address_t * virtual_address);
 
 // Foundation state
 void mesh_foundation_state_load(void);

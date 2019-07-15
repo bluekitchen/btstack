@@ -47,6 +47,7 @@
 #include "btstack_event.h"
 #include "btstack_tlv.h"
 #include "btstack_memory.h"
+#include "btstack_debug.h"
 
 #include "mesh/adv_bearer.h"
 #include "mesh/beacon.h"
@@ -68,6 +69,11 @@
 #include "mesh/provisioning_device.h"
 
 // Persistent storage structures
+
+typedef struct {
+    uint16_t  hash;
+    uint8_t   label_uuid[16];
+} mesh_persistent_virtual_address_t;
 
 typedef struct {
     uint16_t netkey_index;
@@ -297,6 +303,76 @@ void mesh_foundation_state_store(void){
     data.relay            = mesh_foundation_relay_get();
     data.relay_retransmit = mesh_foundation_relay_retransmit_get();
     btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_foundation_state_tag, (uint8_t *) &data, sizeof(data));
+}
+
+// Mesh Virtual Address Management
+static uint32_t mesh_virtual_address_tag_for_pseudo_dst(uint16_t pseudo_dst){
+    return ((uint32_t) 'M' << 24) | ((uint32_t) 'V' << 16) | ((uint32_t) pseudo_dst);
+}
+
+static void mesh_store_virtual_address(uint16_t pseudo_dest, uint16_t hash, const uint8_t * label_uuid){
+    mesh_persistent_virtual_address_t data;
+    uint32_t tag = mesh_virtual_address_tag_for_pseudo_dst(pseudo_dest);
+    data.hash = hash;
+    memcpy(data.label_uuid, label_uuid, 16);
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+}
+
+static void mesh_delete_virtual_address(uint16_t pseudo_dest){
+    uint32_t tag = mesh_virtual_address_tag_for_pseudo_dst(pseudo_dest);
+    btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, tag);
+}
+
+void mesh_load_virtual_addresses(void){
+    uint16_t pseudo_dst;
+    for (pseudo_dst = 0x8000; pseudo_dst < (0x8000 + MAX_NR_MESH_VIRTUAL_ADDRESSES); pseudo_dst++){
+        mesh_virtual_address_tag_for_pseudo_dst(pseudo_dst);
+        mesh_persistent_virtual_address_t data;
+        uint32_t tag = mesh_virtual_address_tag_for_pseudo_dst(pseudo_dst);
+        int virtual_address_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+        if (virtual_address_len == 0) return;
+        
+        mesh_virtual_address_t * virtual_address = btstack_memory_mesh_virtual_address_get();
+        if (virtual_address == NULL) return;
+
+        virtual_address->pseudo_dst = pseudo_dst;
+        virtual_address->hash = data.hash;
+        memcpy(virtual_address->label_uuid, data.label_uuid, 16);
+        mesh_virtual_address_add(virtual_address);
+    }
+}
+
+void mesh_delete_virtual_addresses(void){
+    uint16_t pseudo_dest;
+    for (pseudo_dest = 0x8000; pseudo_dest < (0x8000 + MAX_NR_MESH_VIRTUAL_ADDRESSES); pseudo_dest++){
+        mesh_delete_virtual_address(pseudo_dest);
+    }
+}
+
+void mesh_virtual_address_decrease_refcount(mesh_virtual_address_t * virtual_address){
+    if (virtual_address == NULL){
+        log_error("virtual_address == NULL");
+    }
+    // decrease refcount
+    virtual_address->ref_count--;
+    // Free virtual address if ref count reaches zero
+    if (virtual_address->ref_count > 0) return;
+    // delete from TLV
+    mesh_delete_virtual_address(virtual_address->pseudo_dst);
+    // remove from list
+    mesh_virtual_address_remove(virtual_address);
+    // free memory
+    btstack_memory_mesh_virtual_address_free(virtual_address);
+}
+
+void mesh_virtual_address_increase_refcount(mesh_virtual_address_t * virtual_address){
+    if (virtual_address == NULL){
+        log_error("virtual_address == NULL");
+    }
+    virtual_address->ref_count++;
+    if (virtual_address->ref_count > 1) return;
+    // store in TLV
+    mesh_store_virtual_address(virtual_address->pseudo_dst, virtual_address->hash, virtual_address->label_uuid);
 }
 
 // Mesh Network Keys
