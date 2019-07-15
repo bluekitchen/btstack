@@ -57,6 +57,39 @@ static mesh_model_t                 mesh_vendor_model;
 static mesh_model_t                 mesh_generic_on_off_server_model;
 static mesh_generic_on_off_state_t  mesh_generic_on_off_state;
 
+static char gap_name_buffer[30];
+static char gap_name_prefix[] = "Mesh ";
+
+static btstack_packet_callback_registration_t hci_event_callback_registration;
+
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
+    bd_addr_t addr;
+    switch (packet_type) {
+        case HCI_EVENT_PACKET:
+            switch (hci_event_packet_get_type(packet)) {
+                case BTSTACK_EVENT_STATE:
+                    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
+                    // setup gap name
+                    gap_local_bd_addr(addr);
+                    strcpy(gap_name_buffer, gap_name_prefix);
+                    strcat(gap_name_buffer, bd_addr_to_str(addr));
+                    break;
+                default:
+                    break;
+            }
+            break;
+    }
+}
+
+static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    UNUSED(connection_handle);
+    if (att_handle == ATT_CHARACTERISTIC_GAP_DEVICE_NAME_01_VALUE_HANDLE){
+        return att_read_callback_handle_blob((const uint8_t *)gap_name_buffer, strlen(gap_name_buffer), offset, buffer, buffer_size);
+    }
+    return 0;
+}
 
 static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);
@@ -160,11 +193,14 @@ int btstack_main(void)
     le_device_db_init();
 
     // setup ATT server
-    att_server_init(profile_data, NULL, NULL);    
+    att_server_init(profile_data, &att_read_callback, NULL);    
 
     // 
     sm_init();
 
+    // register for HCI events
+    hci_event_callback_registration.callback = &packet_handler;
+    hci_add_event_handler(&hci_event_callback_registration);
 
     // mesh
     mesh_init();
