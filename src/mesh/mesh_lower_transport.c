@@ -571,6 +571,18 @@ static void mesh_lower_transport_network_pdu_sent(mesh_network_pdu_t *network_pd
     higher_layer_handler(MESH_TRANSPORT_PDU_SENT, MESH_TRANSPORT_STATUS_SUCCESS, (mesh_pdu_t *) network_pdu);
 }
 
+static void mesh_lower_transport_setup_block_ack(mesh_transport_pdu_t *transport_pdu){
+    // setup block ack - set bit for segment to send, will be cleared on ack
+    int      ctl = mesh_transport_ctl(transport_pdu);
+    uint16_t max_segment_len = ctl ? 8 : 12;    // control 8 bytes (64 bit NetMic), access 12 bytes (32 bit NetMIC)
+    uint8_t  seg_n = (transport_pdu->len - 1) / max_segment_len;
+    if (seg_n < 31){
+        transport_pdu->block_ack = (1 << (seg_n+1)) - 1;
+    } else {
+        transport_pdu->block_ack = 0xffffffff;
+    }
+}
+
 static void mesh_lower_transport_send_segmented_pdu_once(mesh_transport_pdu_t *transport_pdu){
 
     if (lower_transport_retry_count == 0){
@@ -586,16 +598,6 @@ static void mesh_lower_transport_send_segmented_pdu_once(mesh_transport_pdu_t *t
     // setup
     lower_transport_outgoing_pdu     = transport_pdu;
     lower_transport_outgoing_seg_o   = 0;
-
-    // setup block ack - set bit for segment to send, clear on ack
-    int      ctl = mesh_transport_ctl(lower_transport_outgoing_pdu);
-    uint16_t max_segment_len = ctl ? 8 : 12;    // control 8 bytes (64 bit NetMic), access 12 bytes (32 bit NetMIC)
-    uint8_t  seg_n = (lower_transport_outgoing_pdu->len - 1) / max_segment_len;
-    if (seg_n < 31){
-        transport_pdu->block_ack = (1 << (seg_n+1)) - 1;
-    } else {
-        transport_pdu->block_ack = 0xffffffff;
-    }
 
     // start sending
     mesh_lower_transport_send_next_segment();
@@ -663,6 +665,7 @@ static void mesh_lower_transport_run(void){
                 transport_pdu = (mesh_transport_pdu_t *) pdu;
                 // start sending segmented pdu
                 lower_transport_retry_count = 2;
+                mesh_lower_transport_setup_block_ack(transport_pdu);
                 mesh_lower_transport_send_segmented_pdu_once(transport_pdu);
                 break;
             default:
