@@ -351,13 +351,6 @@ uint16_t mesh_pdu_len(mesh_pdu_t * pdu);
 uint8_t * mesh_pdu_data(mesh_pdu_t * pdu);
 
 void mesh_access_netkey_finalize(mesh_network_key_t * network_key);
-
-// Mesh Appkeys
-void mesh_store_app_key(mesh_transport_key_t * app_key);
-void mesh_delete_app_key(uint16_t internal_index);
-void mesh_delete_app_keys(void);
-void mesh_load_app_keys(void);
-
 void mesh_access_appkey_finalize(mesh_transport_key_t * transport_key);
 
 // Mesh Model Subscriptions

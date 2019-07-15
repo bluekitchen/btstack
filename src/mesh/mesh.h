@@ -63,6 +63,12 @@ void mesh_delete_network_key(uint16_t internal_index);
 void mesh_delete_network_keys(void);
 void mesh_load_network_keys(void);
 
+// Mesh Appkeys
+void mesh_store_app_key(mesh_transport_key_t * app_key);
+void mesh_delete_app_key(uint16_t internal_index);
+void mesh_delete_app_keys(void);
+void mesh_load_app_keys(void);
+
 // temp
 void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data);
 void mesh_access_setup_without_provisiong_data(void);
