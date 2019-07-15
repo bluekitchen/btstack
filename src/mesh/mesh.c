@@ -181,30 +181,6 @@ static void mesh_access_setup_from_provisioning_data(const mesh_provisioning_dat
 #endif
 }
 
-static void mesh_access_setup_unprovisioned_device(void * arg){
-    // set random value
-    if (arg == NULL){
-        mesh_node_set_device_uuid(random_device_uuid);
-    }
-
-#ifdef ENABLE_MESH_PB_ADV
-    // PB-ADV    
-    beacon_unprovisioned_device_start(mesh_node_get_device_uuid(), 0);
-#endif
-#ifdef ENABLE_MESH_PB_GATT
-    mesh_proxy_start_advertising_unprovisioned_device();
-#endif
-}
-
-static void mesh_access_setup_without_provisiong_data(void){
-    const uint8_t * device_uuid = mesh_node_get_device_uuid();
-    if (device_uuid){
-        mesh_access_setup_unprovisioned_device((void *)device_uuid);
-    } else{
-        btstack_crypto_random_generate(&mesh_access_crypto_random, random_device_uuid, 16, &mesh_access_setup_unprovisioned_device, NULL);
-    }
-}
-
 static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     mesh_provisioning_data_t provisioning_data;
 
@@ -251,7 +227,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     // get TLV instance
                     btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
 
-                    // startup fromstatic  provisioning data stored in TLV
+                    // startup from static provisioning data stored in TLV
                     provisioned = mesh_node_startup_from_tlv();
                     break;
                 
@@ -842,15 +818,39 @@ static void mesh_node_store_provisioning_data(mesh_provisioning_data_t * provisi
     mesh_store_network_key(provisioning_data->network_key);
 }
 
-static int mesh_node_startup_from_tlv(void){
+static void mesh_access_setup_unprovisioned_device(const uint8_t * device_uuid){
+#ifdef ENABLE_MESH_PB_ADV
+    // PB-ADV
+    beacon_unprovisioned_device_start(mesh_node_get_device_uuid(), 0);
+#endif
+#ifdef ENABLE_MESH_PB_GATT
+    mesh_proxy_start_advertising_unprovisioned_device();
+#endif
+}
 
+static void mesh_access_setup_without_provisiong_data_random(void * arg){
+    UNUSED(arg);
+    // set random value
+    mesh_node_set_device_uuid(random_device_uuid);
+    mesh_access_setup_unprovisioned_device(random_device_uuid);
+}
+
+static void mesh_access_setup_with_provisiong_data_random(void * arg){
+    UNUSED(arg);
+    // set random value
+    mesh_node_set_device_uuid(random_device_uuid);
+}
+
+static int mesh_node_startup_from_tlv(void){
+    
     mesh_persistent_provisioning_data_t persistent_provisioning_data;
     btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
 
     // load provisioning data
     uint32_t prov_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, mesh_tag_for_prov_data(), (uint8_t *) &persistent_provisioning_data, sizeof(mesh_persistent_provisioning_data_t));
     printf("Provisioning data available: %u\n", prov_len ? 1 : 0);
-    if (prov_len){
+    int prov_data_valid = prov_len == sizeof(mesh_persistent_provisioning_data_t);
+    if (prov_data_valid){
 
         // copy into mesh_provisioning_data
         mesh_provisioning_data_t provisioning_data;
@@ -896,11 +896,23 @@ static int mesh_node_startup_from_tlv(void){
             beacon_secure_network_start(subnet);
         }
 #endif
-        return 1;
+        // create random uuid if not already set
+        if (mesh_node_get_device_uuid() == NULL){
+            btstack_crypto_random_generate(&mesh_access_crypto_random, random_device_uuid, 16, &mesh_access_setup_with_provisiong_data_random, NULL);
+        }
+
     } else {
-        mesh_access_setup_without_provisiong_data();
-        return 0;
+
+        const uint8_t * device_uuid = mesh_node_get_device_uuid();
+        if (device_uuid){
+            mesh_access_setup_unprovisioned_device(device_uuid);
+        } else{
+            btstack_crypto_random_generate(&mesh_access_crypto_random, random_device_uuid, 16, &mesh_access_setup_without_provisiong_data_random, NULL);
+        }
+
     }
+    
+    return prov_data_valid;
 }
 
 
