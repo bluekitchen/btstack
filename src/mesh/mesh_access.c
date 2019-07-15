@@ -61,7 +61,6 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu);
 static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size);
 static void mesh_access_upper_transport_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
 static const mesh_operation_t * mesh_model_lookup_operation_by_opcode(mesh_model_t * model, uint32_t opcode);
-static void mesh_persist_iv_index_and_sequence_number(void);
 
 // acknowledged messages
 static btstack_linked_list_t  mesh_access_acknowledged_messages;
@@ -69,19 +68,11 @@ static btstack_timer_source_t mesh_access_acknowledged_timer;
 
 static uint16_t mid_counter;
 
-static const btstack_tlv_t * btstack_tlv_singleton_impl;
-static void *                btstack_tlv_singleton_context;
-
 // Transitions
 static btstack_linked_list_t  transitions;
 static btstack_timer_source_t transitions_timer;
 static uint32_t transition_step_min_ms;
 static uint8_t mesh_transaction_id_counter = 0;
-
-static void mesh_access_setup_tlv(void){
-    if (btstack_tlv_singleton_impl) return;
-    btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
-}
 
 void mesh_access_init(void){
     // register with upper transport
@@ -90,9 +81,6 @@ void mesh_access_init(void){
 
     // register for secure network beacons
     beacon_register_for_secure_network_beacons(&mesh_access_secure_network_beacon_handler);
-
-    // register for seq number updates
-    mesh_sequence_number_set_update_callback(&mesh_persist_iv_index_and_sequence_number);
 }
 
 void mesh_access_emit_state_update_bool(btstack_packet_handler_t event_handler, uint8_t element_index, uint32_t model_identifier,
@@ -996,64 +984,6 @@ int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address
     return 0;
 }
 
-// Mesh IV Index
-static uint32_t mesh_tag_for_iv_index_and_seq_number(void){
-    return ((uint32_t) 'M' << 24) | ((uint32_t) 'F' << 16) | ((uint32_t) 'I' << 9) | ((uint32_t) 'S');
-}
-
-typedef struct {
-    uint32_t iv_index;
-    uint32_t seq_number;
-} iv_index_and_sequence_number_t;
-
-static uint32_t sequence_number_last_stored;
-static uint32_t sequence_number_storage_trigger;
-
-void mesh_store_iv_index_after_provisioning(uint32_t iv_index){
-    iv_index_and_sequence_number_t data;
-    mesh_access_setup_tlv();
-    uint32_t tag = mesh_tag_for_iv_index_and_seq_number();
-    data.iv_index   = iv_index;
-    data.seq_number = 0;
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
-
-    sequence_number_last_stored = data.seq_number;
-    sequence_number_storage_trigger = sequence_number_last_stored + MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
-}
-
-void mesh_store_iv_index_and_sequence_number(void){
-    iv_index_and_sequence_number_t data;
-    mesh_access_setup_tlv();
-    uint32_t tag = mesh_tag_for_iv_index_and_seq_number();
-    data.iv_index   = mesh_get_iv_index();
-    data.seq_number = mesh_sequence_number_peek();
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
-
-    sequence_number_last_stored = data.seq_number;
-    sequence_number_storage_trigger = sequence_number_last_stored + MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
-}
-
-int mesh_load_iv_index_and_sequence_number(uint32_t * iv_index, uint32_t * sequence_number){
-    iv_index_and_sequence_number_t data;
-    mesh_access_setup_tlv();
-    uint32_t tag = mesh_tag_for_iv_index_and_seq_number();
-    uint32_t len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
-    if (len == sizeof(iv_index_and_sequence_number_t)){
-        *iv_index = data.iv_index;
-        *sequence_number = data.seq_number;
-        return 1;
-    }
-    return 0;
-}
-
-// higher layer
-static void mesh_persist_iv_index_and_sequence_number(void){
-    if (mesh_sequence_number_peek() >= sequence_number_storage_trigger){
-        mesh_store_iv_index_and_sequence_number();
-    }
-}
-
-
 // Mesh Model Publication
 static btstack_timer_source_t mesh_access_publication_timer;
 
@@ -1232,34 +1162,6 @@ void mesh_access_state_changed(mesh_model_t * mesh_model){
     if (publication_model == NULL) return;
     publication_model->publish_now = 1;
     mesh_model_publication_run(NULL);
-}
-
-void mesh_access_netkey_finalize(mesh_network_key_t * network_key){
-    mesh_network_key_remove(network_key);
-    mesh_delete_network_key(network_key->internal_index);
-    btstack_memory_mesh_network_key_free(network_key);
-}
-
-void mesh_access_appkey_finalize(mesh_transport_key_t * transport_key){
-    mesh_transport_key_remove(transport_key);
-    mesh_delete_app_key(transport_key->appkey_index);
-    btstack_memory_mesh_transport_key_free(transport_key);
-}
-
-void mesh_access_key_refresh_revoke_keys(mesh_subnet_t * subnet){
-    // delete old netkey index
-    mesh_access_netkey_finalize(subnet->old_key);
-    subnet->old_key = subnet->new_key;
-    subnet->new_key = NULL;
-
-    // delete old appkeys, if any
-    mesh_transport_key_iterator_t it;
-    mesh_transport_key_iterator_init(&it, subnet->netkey_index);
-    while (mesh_transport_key_iterator_has_more(&it)){
-        mesh_transport_key_t * transport_key = mesh_transport_key_iterator_get_next(&it);
-        if (transport_key->old_key == 0) continue;
-        mesh_access_appkey_finalize(transport_key);
-    }
 }
 
 static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){

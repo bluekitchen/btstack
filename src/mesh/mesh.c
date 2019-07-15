@@ -110,6 +110,11 @@ typedef struct {
     uint8_t friend;
 } mesh_persistent_foundation_t;
 
+typedef struct {
+    uint32_t iv_index;
+    uint32_t seq_number;
+} iv_index_and_sequence_number_t;
+
 static btstack_packet_handler_t provisioning_device_packet_handler;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static int provisioned;
@@ -128,6 +133,11 @@ static uint8_t random_device_uuid[16];
 // TLV
 static const btstack_tlv_t * btstack_tlv_singleton_impl;
 static void *                btstack_tlv_singleton_context;
+
+// IV Index persistence
+static uint32_t sequence_number_last_stored;
+static uint32_t sequence_number_storage_trigger;
+
 
 void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
 
@@ -514,6 +524,81 @@ int mesh_model_contains_appkey(mesh_model_t * mesh_model, uint16_t appkey_index)
     return 0;
 }
 
+void mesh_access_netkey_finalize(mesh_network_key_t * network_key){
+    mesh_network_key_remove(network_key);
+    mesh_delete_network_key(network_key->internal_index);
+    btstack_memory_mesh_network_key_free(network_key);
+}
+
+void mesh_access_appkey_finalize(mesh_transport_key_t * transport_key){
+    mesh_transport_key_remove(transport_key);
+    mesh_delete_app_key(transport_key->appkey_index);
+    btstack_memory_mesh_transport_key_free(transport_key);
+}
+
+void mesh_access_key_refresh_revoke_keys(mesh_subnet_t * subnet){
+    // delete old netkey index
+    mesh_access_netkey_finalize(subnet->old_key);
+    subnet->old_key = subnet->new_key;
+    subnet->new_key = NULL;
+
+    // delete old appkeys, if any
+    mesh_transport_key_iterator_t it;
+    mesh_transport_key_iterator_init(&it, subnet->netkey_index);
+    while (mesh_transport_key_iterator_has_more(&it)){
+        mesh_transport_key_t * transport_key = mesh_transport_key_iterator_get_next(&it);
+        if (transport_key->old_key == 0) continue;
+        mesh_access_appkey_finalize(transport_key);
+    }
+}
+
+// Mesh IV Index
+static uint32_t mesh_tag_for_iv_index_and_seq_number(void){
+    return ((uint32_t) 'M' << 24) | ((uint32_t) 'F' << 16) | ((uint32_t) 'I' << 9) | ((uint32_t) 'S');
+}
+
+void mesh_store_iv_index_after_provisioning(uint32_t iv_index){
+    iv_index_and_sequence_number_t data;
+    uint32_t tag = mesh_tag_for_iv_index_and_seq_number();
+    data.iv_index   = iv_index;
+    data.seq_number = 0;
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+
+    sequence_number_last_stored = data.seq_number;
+    sequence_number_storage_trigger = sequence_number_last_stored + MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
+}
+
+void mesh_store_iv_index_and_sequence_number(void){
+    iv_index_and_sequence_number_t data;
+    uint32_t tag = mesh_tag_for_iv_index_and_seq_number();
+    data.iv_index   = mesh_get_iv_index();
+    data.seq_number = mesh_sequence_number_peek();
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+
+    sequence_number_last_stored = data.seq_number;
+    sequence_number_storage_trigger = sequence_number_last_stored + MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
+}
+
+int mesh_load_iv_index_and_sequence_number(uint32_t * iv_index, uint32_t * sequence_number){
+    iv_index_and_sequence_number_t data;
+    uint32_t tag = mesh_tag_for_iv_index_and_seq_number();
+    uint32_t len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+    if (len == sizeof(iv_index_and_sequence_number_t)){
+        *iv_index = data.iv_index;
+        *sequence_number = data.seq_number;
+        return 1;
+    }
+    return 0;
+}
+
+// higher layer
+static void mesh_persist_iv_index_and_sequence_number(void){
+    if (mesh_sequence_number_peek() >= sequence_number_storage_trigger){
+        mesh_store_iv_index_and_sequence_number();
+    }
+}
+
+
 static void mesh_node_setup_default_models(void){
     // configure Config Server
     mesh_configuration_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_CONFIGURATION_SERVER);
@@ -560,7 +645,11 @@ void mesh_init(void){
     // Access layer
     mesh_access_init();
 
+    // Add mandatory models: Config Server and Health Server
     mesh_node_setup_default_models();
+
+    // register for seq number updates
+    mesh_sequence_number_set_update_callback(&mesh_persist_iv_index_and_sequence_number);
 }
 
 /**

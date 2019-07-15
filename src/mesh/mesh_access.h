@@ -319,9 +319,6 @@ void mesh_access_transitions_add(mesh_transition_t * transition);
 void mesh_access_transitions_remove(mesh_transition_t * transition);
 uint8_t mesh_access_transactions_get_next_transaction_id(void);
 
-// Key Refresh
-void mesh_access_key_refresh_revoke_keys(mesh_subnet_t * subnet);
-
 // Mesh Model Publicaation
 
 /**
@@ -350,16 +347,8 @@ uint16_t mesh_pdu_appkey_index(mesh_pdu_t * pdu);
 uint16_t mesh_pdu_len(mesh_pdu_t * pdu);
 uint8_t * mesh_pdu_data(mesh_pdu_t * pdu);
 
-void mesh_access_netkey_finalize(mesh_network_key_t * network_key);
-void mesh_access_appkey_finalize(mesh_transport_key_t * transport_key);
-
 // Mesh Model Subscriptions
 int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address);
-
-// Mesh IV Index and sequence number
-void mesh_store_iv_index_after_provisioning(uint32_t iv_index);
-void mesh_store_iv_index_and_sequence_number(void);
-int mesh_load_iv_index_and_sequence_number(uint32_t * iv_index, uint32_t * sequence_number);
 
 // Mesh Access Parser
 int mesh_access_pdu_get_opcode(mesh_pdu_t * pdu, uint32_t * opcode, uint16_t * opcode_size);

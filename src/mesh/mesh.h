@@ -62,6 +62,11 @@ void mesh_register_provisioning_device_packet_handler(btstack_packet_handler_t p
 void mesh_foundation_state_load(void);
 void mesh_foundation_state_store(void);
 
+// Mesh IV Index and sequence number
+void mesh_store_iv_index_after_provisioning(uint32_t iv_index);
+void mesh_store_iv_index_and_sequence_number(void);
+int mesh_load_iv_index_and_sequence_number(uint32_t * iv_index, uint32_t * sequence_number);
+
 // Mesh NetKey List
 void mesh_store_network_key(mesh_network_key_t * network_key);
 void mesh_delete_network_key(uint16_t internal_index);
@@ -85,6 +90,9 @@ int mesh_model_contains_appkey(mesh_model_t * mesh_model, uint16_t appkey_index)
 // temp
 void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data);
 void mesh_access_setup_without_provisiong_data(void);
+void mesh_access_key_refresh_revoke_keys(mesh_subnet_t * subnet);
+void mesh_access_netkey_finalize(mesh_network_key_t * network_key);
+void mesh_access_appkey_finalize(mesh_transport_key_t * transport_key);
 
 #if defined __cplusplus
 }
