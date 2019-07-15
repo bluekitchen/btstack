@@ -41,6 +41,7 @@
 #include "btstack_defines.h"
 #include "mesh/provisioning.h"
 #include "mesh/mesh_keys.h"
+#include "mesh/mesh_access.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -68,6 +69,14 @@ void mesh_store_app_key(mesh_transport_key_t * app_key);
 void mesh_delete_app_key(uint16_t internal_index);
 void mesh_delete_app_keys(void);
 void mesh_load_app_keys(void);
+
+// Mesh Model to Appkey List
+void mesh_load_appkey_lists(void);
+void mesh_delete_appkey_lists(void);
+void mesh_model_reset_appkeys(mesh_model_t * mesh_model);
+uint8_t mesh_model_bind_appkey(mesh_model_t * mesh_model, uint16_t appkey_index);
+void mesh_model_unbind_appkey(mesh_model_t * mesh_model, uint16_t appkey_index);
+int mesh_model_contains_appkey(mesh_model_t * mesh_model, uint16_t appkey_index);
 
 // temp
 void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data);

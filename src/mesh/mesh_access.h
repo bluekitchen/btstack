@@ -356,14 +356,6 @@ void mesh_access_appkey_finalize(mesh_transport_key_t * transport_key);
 // Mesh Model Subscriptions
 int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address);
 
-// Mesh Model to Appkey List
-void mesh_load_appkey_lists(void);
-void mesh_delete_appkey_lists(void);
-void mesh_model_reset_appkeys(mesh_model_t * mesh_model);
-uint8_t mesh_model_bind_appkey(mesh_model_t * mesh_model, uint16_t appkey_index);
-void mesh_model_unbind_appkey(mesh_model_t * mesh_model, uint16_t appkey_index);
-int mesh_model_contains_appkey(mesh_model_t * mesh_model, uint16_t appkey_index);
-
 // Mesh IV Index and sequence number
 void mesh_store_iv_index_after_provisioning(uint32_t iv_index);
 void mesh_store_iv_index_and_sequence_number(void);
