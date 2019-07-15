@@ -375,10 +375,6 @@ void mesh_access_parser_get_label_uuid(mesh_access_parser_state_t * state, uint8
 void mesh_access_parser_get_key(mesh_access_parser_state_t * state, uint8_t * dest);
 uint32_t mesh_access_parser_get_model_identifier(mesh_access_parser_state_t * parser);
 
-// Foundation state
-void mesh_foundation_state_load(void);
-void mesh_foundation_state_store(void);
-
 // message builder transport
 mesh_transport_pdu_t * mesh_access_transport_init(uint32_t opcode);
 void mesh_access_transport_add_uint8(mesh_transport_pdu_t * pdu, uint8_t value);

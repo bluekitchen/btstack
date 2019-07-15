@@ -58,6 +58,10 @@ void mesh_init(void);
  */
 void mesh_register_provisioning_device_packet_handler(btstack_packet_handler_t packet_handler);
 
+// Foundation state
+void mesh_foundation_state_load(void);
+void mesh_foundation_state_store(void);
+
 // Mesh NetKey List
 void mesh_store_network_key(mesh_network_key_t * network_key);
 void mesh_delete_network_key(uint16_t internal_index);
