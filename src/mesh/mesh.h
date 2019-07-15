@@ -74,6 +74,11 @@ void mesh_store_iv_index_after_provisioning(uint32_t iv_index);
 void mesh_store_iv_index_and_sequence_number(void);
 int mesh_load_iv_index_and_sequence_number(uint32_t * iv_index, uint32_t * sequence_number);
 
+// Mesh Model Subscriptions
+void mesh_load_subscriptions(void);
+void mesh_model_store_subscriptions(mesh_model_t * model);
+void mesh_delete_subscriptions(void);
+
 // Mesh NetKey List
 void mesh_store_network_key(mesh_network_key_t * network_key);
 void mesh_delete_network_key(uint16_t internal_index);

@@ -375,6 +375,69 @@ void mesh_virtual_address_increase_refcount(mesh_virtual_address_t * virtual_add
     mesh_store_virtual_address(virtual_address->pseudo_dst, virtual_address->hash, virtual_address->label_uuid);
 }
 
+// Mesh Subscriptions
+static uint32_t mesh_model_subscription_tag_for_index(uint16_t internal_model_id){
+    return ((uint32_t) 'M' << 24) | ((uint32_t) 'S' << 16) | ((uint32_t) internal_model_id);
+}
+
+static void mesh_model_load_subscriptions(mesh_model_t * mesh_model){
+    uint32_t tag = mesh_model_subscription_tag_for_index(mesh_model->mid);
+    btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &mesh_model->subscriptions, sizeof(mesh_model->subscriptions));
+    // update ref count
+
+    // increase ref counts for virtual subscriptions
+    uint16_t i;
+    for (i = 0; i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL ; i++){
+        uint16_t src = mesh_model->subscriptions[i];
+        if (mesh_network_address_virtual(src)){
+            mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_pseudo_dst(src);
+            mesh_virtual_address_increase_refcount(virtual_address);
+        }
+    }
+}
+
+void mesh_model_store_subscriptions(mesh_model_t * model){
+    uint32_t tag = mesh_model_subscription_tag_for_index(model->mid);
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &model->subscriptions, sizeof(model->subscriptions));
+}
+
+static void mesh_model_delete_subscriptions(mesh_model_t * model){
+    uint32_t tag = mesh_model_subscription_tag_for_index(model->mid);
+    btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, tag);
+}
+
+void mesh_load_subscriptions(void){
+    printf("Load Model Subscription Lists\n");
+    // iterate over elements and models
+    mesh_element_iterator_t element_it;
+    mesh_element_iterator_init(&element_it);
+    while (mesh_element_iterator_has_next(&element_it)){
+        mesh_element_t * element = mesh_element_iterator_next(&element_it);
+        mesh_model_iterator_t model_it;
+        mesh_model_iterator_init(&model_it, element);
+        while (mesh_model_iterator_has_next(&model_it)){
+            mesh_model_t * model = mesh_model_iterator_next(&model_it);
+            mesh_model_load_subscriptions(model);
+        }
+    }
+}
+
+void mesh_delete_subscriptions(void){
+    printf("Delete Model Subscription Lists\n");
+    // iterate over elements and models
+    mesh_element_iterator_t element_it;
+    mesh_element_iterator_init(&element_it);
+    while (mesh_element_iterator_has_next(&element_it)){
+        mesh_element_t * element = mesh_element_iterator_next(&element_it);
+        mesh_model_iterator_t model_it;
+        mesh_model_iterator_init(&model_it, element);
+        while (mesh_model_iterator_has_next(&model_it)){
+            mesh_model_t * model = mesh_model_iterator_next(&model_it);
+            mesh_model_delete_subscriptions(model);
+        }
+    }
+}
+
 // Mesh Network Keys
 static uint32_t mesh_network_key_tag_for_internal_index(uint16_t internal_index){
     return ((uint32_t) 'M' << 24) | ((uint32_t) 'N' << 16) | ((uint32_t) internal_index);
