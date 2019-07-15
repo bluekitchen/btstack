@@ -40,6 +40,7 @@
 
 #include "btstack_defines.h"
 #include "mesh/provisioning.h"
+#include "mesh/mesh_keys.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -55,6 +56,12 @@ void mesh_init(void);
  * @param packet_handler
  */
 void mesh_register_provisioning_device_packet_handler(btstack_packet_handler_t packet_handler);
+
+// Mesh NetKey List
+void mesh_store_network_key(mesh_network_key_t * network_key);
+void mesh_delete_network_key(uint16_t internal_index);
+void mesh_delete_network_keys(void);
+void mesh_load_network_keys(void);
 
 // temp
 void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data);

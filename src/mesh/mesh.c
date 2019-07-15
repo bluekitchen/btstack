@@ -45,6 +45,8 @@
 #include "btstack_util.h"
 #include "btstack_config.h"
 #include "btstack_event.h"
+#include "btstack_tlv.h"
+#include "btstack_memory.h"
 
 #include "mesh/adv_bearer.h"
 #include "mesh/beacon.h"
@@ -65,6 +67,32 @@
 #include "mesh/provisioning.h"
 #include "mesh/provisioning_device.h"
 
+// Persistent storage structures
+
+typedef struct {
+    uint16_t netkey_index;
+
+    uint8_t  version;
+
+    // net_key from provisioner or Config Model Client
+    uint8_t net_key[16];
+
+    // derived data
+
+    // k1
+    uint8_t identity_key[16];
+    uint8_t beacon_key[16];
+
+    // k3
+    uint8_t network_id[8];
+
+    // k2
+    uint8_t nid;
+    uint8_t encryption_key[16];
+    uint8_t privacy_key[16];
+} mesh_persistent_net_key_t;
+
+
 static btstack_packet_handler_t provisioning_device_packet_handler;
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static int provisioned;
@@ -79,6 +107,10 @@ static mesh_configuration_server_model_context_t mesh_configuration_server_model
 // Random UUID on start
 static btstack_crypto_random_t mesh_access_crypto_random;
 static uint8_t random_device_uuid[16];
+
+// TLV
+static const btstack_tlv_t * btstack_tlv_singleton_impl;
+static void *                btstack_tlv_singleton_context;
 
 void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
 
@@ -180,6 +212,9 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
             switch (hci_event_packet_get_type(packet)) {
                 case BTSTACK_EVENT_STATE:
                     if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) break;
+                    // get TLV instance
+                    btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
+
                     // startup from provisioning data stored in TLV
                     provisioned = mesh_node_startup_from_tlv();
                     break;
@@ -204,6 +239,80 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
             }
             break;
+    }
+}
+
+
+// Mesh Network Keys
+static uint32_t mesh_network_key_tag_for_internal_index(uint16_t internal_index){
+    return ((uint32_t) 'M' << 24) | ((uint32_t) 'N' << 16) | ((uint32_t) internal_index);
+}
+
+void mesh_store_network_key(mesh_network_key_t * network_key){
+    mesh_persistent_net_key_t data;
+    printf("Store NetKey: internal index 0x%x, NetKey Index 0x%06x, NID %02x: ", network_key->internal_index, network_key->netkey_index, network_key->nid);
+    printf_hexdump(network_key->net_key, 16);
+    uint32_t tag = mesh_network_key_tag_for_internal_index(network_key->internal_index);
+    data.netkey_index = network_key->netkey_index;
+    memcpy(data.net_key, network_key->net_key, 16);
+    memcpy(data.identity_key, network_key->identity_key, 16);
+    memcpy(data.beacon_key, network_key->beacon_key, 16);
+    memcpy(data.network_id, network_key->network_id, 8);
+    data.nid = network_key->nid;
+    data.version = network_key->version;
+    memcpy(data.encryption_key, network_key->encryption_key, 16);
+    memcpy(data.privacy_key, network_key->privacy_key, 16);
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(mesh_persistent_net_key_t));
+}
+
+void mesh_delete_network_key(uint16_t internal_index){
+    uint32_t tag = mesh_network_key_tag_for_internal_index(internal_index);
+    btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, tag);
+}
+
+
+void mesh_load_network_keys(void){
+    printf("Load Network Keys\n");
+    uint16_t internal_index;
+    for (internal_index = 0; internal_index < MAX_NR_MESH_NETWORK_KEYS; internal_index++){
+        mesh_persistent_net_key_t data;
+        uint32_t tag = mesh_network_key_tag_for_internal_index(internal_index);
+        int netkey_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+        if (netkey_len != sizeof(mesh_persistent_net_key_t)) continue;
+        
+        mesh_network_key_t * network_key = btstack_memory_mesh_network_key_get();
+        if (network_key == NULL) return;
+
+        network_key->netkey_index = data.netkey_index;
+        memcpy(network_key->net_key, data.net_key, 16);
+        memcpy(network_key->identity_key, data.identity_key, 16);
+        memcpy(network_key->beacon_key, data.beacon_key, 16);
+        memcpy(network_key->network_id, data.network_id, 8);
+        network_key->nid = data.nid;
+        network_key->version = data.version;
+        memcpy(network_key->encryption_key, data.encryption_key, 16);
+        memcpy(network_key->privacy_key, data.privacy_key, 16);
+
+#ifdef ENABLE_GATT_BEARER
+        // setup advertisement with network id
+        network_key->advertisement_with_network_id.adv_length = mesh_proxy_setup_advertising_with_network_id(network_key->advertisement_with_network_id.adv_data, network_key->network_id);
+#endif
+
+        mesh_network_key_add(network_key);
+
+        mesh_subnet_setup_for_netkey_index(network_key->netkey_index);
+
+        printf("- internal index 0x%x, NetKey Index 0x%06x, NID %02x: ", network_key->internal_index, network_key->netkey_index, network_key->nid);
+        printf_hexdump(network_key->net_key, 16);
+    }
+}
+
+void mesh_delete_network_keys(void){
+    printf("Delete Network Keys\n");
+    
+    uint16_t internal_index;
+    for (internal_index = 0; internal_index < MAX_NR_MESH_NETWORK_KEYS; internal_index++){
+        mesh_delete_network_key(internal_index);
     }
 }
 

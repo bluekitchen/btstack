@@ -350,12 +350,6 @@ uint16_t mesh_pdu_appkey_index(mesh_pdu_t * pdu);
 uint16_t mesh_pdu_len(mesh_pdu_t * pdu);
 uint8_t * mesh_pdu_data(mesh_pdu_t * pdu);
 
-// Mesh NetKey List
-void mesh_store_network_key(mesh_network_key_t * network_key);
-void mesh_delete_network_key(uint16_t internal_index);
-void mesh_delete_network_keys(void);
-void mesh_load_network_keys(void);
-
 void mesh_access_netkey_finalize(mesh_network_key_t * network_key);
 
 // Mesh Appkeys
