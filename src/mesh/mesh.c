@@ -68,6 +68,9 @@
 #include "mesh/provisioning.h"
 #include "mesh/provisioning_device.h"
 
+static void mesh_node_store_provisioning_data(mesh_provisioning_data_t * provisioning_data);
+static int mesh_node_startup_from_tlv(void);
+
 // Persistent storage structures
 
 typedef struct {
@@ -145,7 +148,7 @@ static uint32_t sequence_number_last_stored;
 static uint32_t sequence_number_storage_trigger;
 
 
-void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
+static void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
 
     // set iv_index and iv index update active
     int iv_index_update_active = (provisioning_data->flags & 2) >> 1;
@@ -193,7 +196,7 @@ static void mesh_access_setup_unprovisioned_device(void * arg){
 #endif
 }
 
-void mesh_access_setup_without_provisiong_data(void){
+static void mesh_access_setup_without_provisiong_data(void){
     const uint8_t * device_uuid = mesh_node_get_device_uuid();
     if (device_uuid){
         mesh_access_setup_unprovisioned_device((void *)device_uuid);
@@ -248,7 +251,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     // get TLV instance
                     btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
 
-                    // startup from provisioning data stored in TLV
+                    // startup fromstatic  provisioning data stored in TLV
                     provisioned = mesh_node_startup_from_tlv();
                     break;
                 
@@ -820,7 +823,7 @@ typedef struct {
 
 } mesh_persistent_provisioning_data_t;
 
-void mesh_node_store_provisioning_data(mesh_provisioning_data_t * provisioning_data){
+static void mesh_node_store_provisioning_data(mesh_provisioning_data_t * provisioning_data){
 
     // fill persistent prov data
     mesh_persistent_provisioning_data_t persistent_provisioning_data;
@@ -839,7 +842,7 @@ void mesh_node_store_provisioning_data(mesh_provisioning_data_t * provisioning_d
     mesh_store_network_key(provisioning_data->network_key);
 }
 
-int mesh_node_startup_from_tlv(void){
+static int mesh_node_startup_from_tlv(void){
 
     mesh_persistent_provisioning_data_t persistent_provisioning_data;
     btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);

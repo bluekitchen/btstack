@@ -104,15 +104,10 @@ uint8_t mesh_model_bind_appkey(mesh_model_t * mesh_model, uint16_t appkey_index)
 void mesh_model_unbind_appkey(mesh_model_t * mesh_model, uint16_t appkey_index);
 int mesh_model_contains_appkey(mesh_model_t * mesh_model, uint16_t appkey_index);
 
+// Mesh Node Reset
 void mesh_node_reset(void);
 
-int mesh_node_startup_from_tlv(void);
-
-void mesh_node_store_provisioning_data(mesh_provisioning_data_t * provisioning_data);
-
 // temp
-void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data);
-void mesh_access_setup_without_provisiong_data(void);
 void mesh_access_key_refresh_revoke_keys(mesh_subnet_t * subnet);
 void mesh_access_netkey_finalize(mesh_network_key_t * network_key);
 void mesh_access_appkey_finalize(mesh_transport_key_t * transport_key);
