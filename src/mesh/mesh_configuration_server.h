@@ -83,10 +83,6 @@ typedef struct {
 const mesh_operation_t * mesh_configuration_server_get_operations(void);
 
 void mesh_configuration_server_feature_changed(void);
-
-void mesh_load_publications(void);
-
-void mesh_delete_publications(void);
 //
 void mesh_node_reset(void);
 

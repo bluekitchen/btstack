@@ -79,6 +79,11 @@ void mesh_load_subscriptions(void);
 void mesh_model_store_subscriptions(mesh_model_t * model);
 void mesh_delete_subscriptions(void);
 
+// Mesh Model Publication
+void mesh_load_publications(void);
+void mesh_delete_publications(void);
+void mesh_model_store_publication(mesh_model_t * mesh_model);
+
 // Mesh NetKey List
 void mesh_store_network_key(mesh_network_key_t * network_key);
 void mesh_delete_network_key(uint16_t internal_index);
