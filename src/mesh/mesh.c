@@ -484,13 +484,6 @@ void mesh_delete_appkey_lists(void){
     }
 }
 
-void mesh_model_reset_appkeys(mesh_model_t * mesh_model){
-    uint16_t i;
-    for (i=0;i<MAX_NR_MESH_APPKEYS_PER_MODEL;i++){
-        mesh_model->appkey_indices[i] = MESH_APPKEY_INVALID;
-    }
-}
-
 uint8_t mesh_model_bind_appkey(mesh_model_t * mesh_model, uint16_t appkey_index){
     uint16_t i;
     for (i=0;i<MAX_NR_MESH_APPKEYS_PER_MODEL;i++){
@@ -550,15 +543,6 @@ void mesh_access_key_refresh_revoke_keys(mesh_subnet_t * subnet){
         if (transport_key->old_key == 0) continue;
         mesh_access_appkey_finalize(transport_key);
     }
-}
-
-// Mesh Model Subscription
-int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address){
-    uint16_t i;
-    for (i=0;i<MAX_NR_MESH_SUBSCRIPTION_PER_MODEL;i++){
-        if (mesh_model->subscriptions[i] == address) return 1;
-    }
-    return 0;
 }
 
 // Mesh IV Index

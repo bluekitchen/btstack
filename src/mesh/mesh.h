@@ -87,9 +87,6 @@ uint8_t mesh_model_bind_appkey(mesh_model_t * mesh_model, uint16_t appkey_index)
 void mesh_model_unbind_appkey(mesh_model_t * mesh_model, uint16_t appkey_index);
 int mesh_model_contains_appkey(mesh_model_t * mesh_model, uint16_t appkey_index);
 
-// Mesh Model Subscriptions
-int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address);
-
 // temp
 void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data);
 void mesh_access_setup_without_provisiong_data(void);

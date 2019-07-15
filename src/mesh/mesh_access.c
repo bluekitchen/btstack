@@ -66,8 +66,6 @@ static const mesh_operation_t * mesh_model_lookup_operation_by_opcode(mesh_model
 static btstack_linked_list_t  mesh_access_acknowledged_messages;
 static btstack_timer_source_t mesh_access_acknowledged_timer;
 
-static uint16_t mid_counter;
-
 // Transitions
 static btstack_linked_list_t  transitions;
 static btstack_timer_source_t transitions_timer;
@@ -383,93 +381,6 @@ uint8_t mesh_access_transactions_get_next_transaction_id(void){
     }
     return mesh_transaction_id_counter;
 }   
-
-// Mesh Node Element functions
-uint8_t mesh_access_get_element_index(mesh_model_t * mesh_model){
-    return mesh_model->element->element_index;
-}
-
-uint16_t mesh_access_get_element_address(mesh_model_t * mesh_model){
-    return mesh_node_get_primary_element_address() + mesh_model->element->element_index;
-}
-
-// Model Identifier utilities
-
-uint32_t mesh_model_get_model_identifier(uint16_t vendor_id, uint16_t model_id){
-    return (vendor_id << 16) | model_id;
-}
-
-uint32_t mesh_model_get_model_identifier_bluetooth_sig(uint16_t model_id){
-    return (BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC << 16) | model_id;
-}
-
-uint16_t mesh_model_get_model_id(uint32_t model_identifier){
-    return model_identifier & 0xFFFFu;
-}
-
-uint16_t mesh_model_get_vendor_id(uint32_t model_identifier){
-    return model_identifier >> 16;
-}
-
-int mesh_model_is_bluetooth_sig(uint32_t model_identifier){
-    return mesh_model_get_vendor_id(model_identifier) == BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC;
-}
-
-mesh_model_t * mesh_model_get_configuration_server(void){
-    return mesh_model_get_by_identifier(mesh_node_get_primary_element(), mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_CONFIGURATION_SERVER));
-}
-
-void mesh_element_add_model(mesh_element_t * element, mesh_model_t * mesh_model){
-    // reset app keys
-    mesh_model_reset_appkeys(mesh_model);
-
-    if (mesh_model_is_bluetooth_sig(mesh_model->model_identifier)){
-        element->models_count_sig++;
-    } else {
-        element->models_count_vendor++;
-    }
-    mesh_model->mid = mid_counter++;
-    mesh_model->element = element;
-    btstack_linked_list_add_tail(&element->models, (btstack_linked_item_t *) mesh_model);
-}
-
-void mesh_model_iterator_init(mesh_model_iterator_t * iterator, mesh_element_t * element){
-    btstack_linked_list_iterator_init(&iterator->it, &element->models);
-}
-
-int mesh_model_iterator_has_next(mesh_model_iterator_t * iterator){
-    return btstack_linked_list_iterator_has_next(&iterator->it);
-}
-
-mesh_model_t * mesh_model_iterator_next(mesh_model_iterator_t * iterator){
-    return (mesh_model_t *) btstack_linked_list_iterator_next(&iterator->it);
-}
-
-mesh_model_t * mesh_model_get_by_identifier(mesh_element_t * element, uint32_t model_identifier){
-    mesh_model_iterator_t it;
-    mesh_model_iterator_init(&it, element);
-    while (mesh_model_iterator_has_next(&it)){
-        mesh_model_t * model = mesh_model_iterator_next(&it);
-        if (model->model_identifier != model_identifier) continue;
-        return model;
-    }
-    return NULL;
-}
-
-mesh_model_t * mesh_access_model_for_address_and_model_identifier(uint16_t element_address, uint32_t model_identifier, uint8_t * status){
-    mesh_element_t * element = mesh_node_element_for_unicast_address(element_address);
-    if (element == NULL){
-        *status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
-        return NULL;
-    }
-    mesh_model_t * model = mesh_model_get_by_identifier(element, model_identifier);
-    if (model == NULL) {
-        *status = MESH_FOUNDATION_STATUS_INVALID_MODEL;
-    } else {
-        *status = MESH_FOUNDATION_STATUS_SUCCESS;
-    }
-    return model;
-}
 
 uint16_t mesh_pdu_src(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){

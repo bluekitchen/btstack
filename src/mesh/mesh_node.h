@@ -41,10 +41,91 @@
 #include <stdint.h>
 
 #include "btstack_linked_list.h"
+#include "mesh/mesh_network.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
+
+#define MESH_APPKEY_INVALID                     0xffffu
+
+#define MAX_NR_MESH_APPKEYS_PER_MODEL           3u
+#define MAX_NR_MESH_SUBSCRIPTION_PER_MODEL      3u
+
+struct mesh_model;
+struct mesh_element;
+
+// function to handle model operation message
+typedef void (*mesh_operation_handler)(struct mesh_model * mesh_model, mesh_pdu_t * pdu);
+
+// function to publish the current state of a model
+// @param mesh_model to publish
+// @returns mesh_pdu with status message
+typedef mesh_pdu_t * (*mesh_publish_state_t)(struct mesh_model * mesh_model);
+
+typedef enum {
+    MESH_MODEL_PUBLICATION_STATE_IDLE,
+    MESH_MODEL_PUBLICATION_STATE_W4_PUBLICATION_MS,
+    MESH_MODEL_PUBLICATION_STATE_W4_RETRANSMIT_MS,
+} mesh_model_publication_state_t;
+
+typedef struct {
+    mesh_publish_state_t publish_state_fn;
+    mesh_model_publication_state_t state;
+    uint32_t next_publication_ms;
+    uint32_t next_retransmit_ms;
+    uint8_t  retransmit_count;
+    uint8_t  publish_now;
+
+    uint16_t address;
+    uint16_t appkey_index;
+    uint8_t  friendship_credential_flag;
+    uint8_t  period;
+    uint8_t  ttl;
+    uint8_t  retransmit;
+} mesh_publication_model_t;
+
+typedef struct {
+    uint32_t opcode;
+    uint16_t minimum_length;
+    mesh_operation_handler handler;
+} mesh_operation_t;
+
+typedef struct mesh_model {
+    // linked list item
+    btstack_linked_item_t item;
+
+    // element
+    struct mesh_element * element;
+
+    // internal model enumeration
+    uint16_t mid;
+
+    // vendor_id << 16 | model id, use BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC for SIG models
+    uint32_t model_identifier;
+
+    // model operations
+    const mesh_operation_t * operations;
+
+    // publication model if supported
+    mesh_publication_model_t * publication_model;
+
+    // data
+    void * model_data;
+
+    // bound appkeys
+    uint16_t appkey_indices[MAX_NR_MESH_APPKEYS_PER_MODEL];
+
+    // subscription list
+    uint16_t subscriptions[MAX_NR_MESH_SUBSCRIPTION_PER_MODEL];
+
+    // packet handler for transition events in server, event callback handler in client
+    btstack_packet_handler_t model_packet_handler;
+} mesh_model_t;
+
+typedef struct {
+    btstack_linked_list_iterator_t it;
+} mesh_model_iterator_t;
 
 typedef struct mesh_element {
     // linked list item
@@ -124,14 +205,60 @@ mesh_element_t * mesh_node_element_for_unicast_address(uint16_t unicast_address)
  */
 mesh_element_t * mesh_node_element_for_index(uint16_t element_index);
 
+/**
+ * @brief Get element index for give model
+ * @param mesh_model
+ */
+uint8_t mesh_access_get_element_index(mesh_model_t * mesh_model);
+
+/**
+ * @brief Get unicast address for give model
+ * @param mesh_model
+ */
+uint16_t mesh_access_get_element_address(mesh_model_t * mesh_model);
+
+/**
+ * @brief Add model to element
+ * @param element
+ * @param mesh_model
+ */
+void mesh_element_add_model(mesh_element_t * element, mesh_model_t * mesh_model);
 
 // Mesh Element Iterator
-
 void mesh_element_iterator_init(mesh_element_iterator_t * iterator);
 
 int mesh_element_iterator_has_next(mesh_element_iterator_t * iterator);
 
 mesh_element_t * mesh_element_iterator_next(mesh_element_iterator_t * iterator);
+
+// Mesh Model Iterator
+
+void mesh_model_iterator_init(mesh_model_iterator_t * iterator, mesh_element_t * element);
+
+int mesh_model_iterator_has_next(mesh_model_iterator_t * iterator);
+
+mesh_model_t * mesh_model_iterator_next(mesh_model_iterator_t * iterator);
+
+// Mesh Model Utility
+
+mesh_model_t * mesh_model_get_by_identifier(mesh_element_t * element, uint32_t model_identifier);
+
+uint32_t mesh_model_get_model_identifier_bluetooth_sig(uint16_t model_id);
+
+int mesh_model_is_bluetooth_sig(uint32_t model_identifier);
+
+uint16_t mesh_model_get_model_id(uint32_t model_identifier);
+
+uint32_t mesh_model_get_model_identifier(uint16_t vendor_id, uint16_t model_id);
+
+uint16_t mesh_model_get_vendor_id(uint32_t model_identifier);
+
+mesh_model_t * mesh_model_get_configuration_server(void);
+
+mesh_model_t * mesh_access_model_for_address_and_model_identifier(uint16_t element_address, uint32_t model_identifier, uint8_t * status);
+
+// Mesh Model Subscriptions
+int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address);
 
 /**
  * @brief Set Device UUID
