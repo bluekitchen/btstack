@@ -7505,6 +7505,16 @@ static inline uint16_t mesh_subevent_pb_prov_complete_get_pb_transport_cid(const
 }
 
 /**
+ * @brief Get field attention_time from event MESH_SUBEVENT_ATTENTION_TIMER
+ * @param event packet
+ * @return attention_time
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_attention_timer_get_attention_time(const uint8_t * event){
+    return event[3];
+}
+
+/**
  * @brief Get field status from event MESH_SUBEVENT_PROXY_CONNECTED
  * @param event packet
  * @return status

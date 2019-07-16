@@ -2465,6 +2465,13 @@ typedef uint8_t sm_key_t[16];
 #define MESH_SUBEVENT_PB_PROV_COMPLETE                                               0x1d
 
 /**
+ * @format 11
+ * @param subevent_code
+ * @param attention_time in seconds
+ */
+#define MESH_SUBEVENT_ATTENTION_TIMER                                                0x1e
+
+/**
  * @format 11H
  * @param subevent_code
  * @param status
