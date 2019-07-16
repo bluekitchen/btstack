@@ -1509,7 +1509,7 @@ static void hci_initializing_run(void){
         case HCI_INIT_LE_SET_SCAN_PARAMETERS:
             // LE Scan Parameters: active scanning, 300 ms interval, 30 ms window, own address type, accept all advs
             hci_stack->substate = HCI_INIT_W4_LE_SET_SCAN_PARAMETERS;
-            hci_send_cmd(&hci_le_set_scan_parameters, 1, 0x1e0, 0x30, hci_stack->le_own_addr_type, 0);
+            hci_send_cmd(&hci_le_set_scan_parameters, 1, hci_stack->le_scan_interval, hci_stack->le_scan_window, hci_stack->le_own_addr_type, 0);
             break;
 #endif
         default:
