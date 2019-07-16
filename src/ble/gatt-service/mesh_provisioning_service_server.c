@@ -93,7 +93,7 @@ static void mesh_provisioning_service_emit_link_close(hci_con_handle_t con_handl
 
 static mesh_provisioning_t * mesh_provisioning_service_get_instance_for_con_handle(hci_con_handle_t con_handle){
     mesh_provisioning_t * instance = &mesh_provisioning;
-    log_info("mesh_provisioning_service_get_instance_for_con_handle, handle %x (instance %x)", con_handle, instance->con_handle);
+    log_debug("mesh_provisioning_service_get_instance_for_con_handle, handle %x (instance %x)", con_handle, instance->con_handle);
     if (instance->con_handle != HCI_CON_HANDLE_INVALID && instance->con_handle != con_handle) return NULL;
     instance->con_handle = con_handle;
     return instance;
@@ -184,6 +184,7 @@ static void mesh_provisioning_service_server_packet_handler(uint8_t packet_type,
         // emit close, free instance
         instance->link_open = 0;
         instance->con_handle = HCI_CON_HANDLE_INVALID;
+        instance->data_out_client_configuration_descriptor_value = 0;
         mesh_provisioning_service_emit_link_close(con_handle, 0);
     }
 }
