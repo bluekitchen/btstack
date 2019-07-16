@@ -50,7 +50,6 @@
 #include "mesh/pb_gatt.h"
 #include "mesh/provisioning.h"
 
-static void provisioning_attention_timer_set(void);
 static void prov_key_generated(void * arg);
 
 // remote ecc
@@ -88,7 +87,6 @@ static uint8_t   prov_error_code;
 static uint8_t   prov_waiting_for_outgoing_complete;
 
 static uint8_t                      prov_attention_timer_timeout;
-static btstack_timer_source_t       prov_attention_timer;
 
 static btstack_timer_source_t       prov_protocol_timer;
 
@@ -214,21 +212,6 @@ static void provisioning_timer_stop(void){
     btstack_run_loop_remove_timer(&prov_protocol_timer);
 }
 
-static void provisioning_attention_timer_timeout(btstack_timer_source_t * ts){
-    UNUSED(ts);
-    if (prov_attention_timer_timeout == 0) return;
-    prov_attention_timer_timeout--;
-    provisioning_attention_timer_set();
-}
-
-static void provisioning_attention_timer_set(void){
-    provisioning_emit_attention_timer_event(1, prov_attention_timer_timeout);
-    if (prov_attention_timer_timeout){
-        btstack_run_loop_set_timer_handler(&prov_attention_timer, &provisioning_attention_timer_timeout);
-        btstack_run_loop_set_timer(&prov_attention_timer, 1000);
-        btstack_run_loop_add_timer(&prov_attention_timer);
-    }
-}
 
 // Outgoing Provisioning PDUs
 static void provisioning_send_provisioning_error(void){
@@ -449,7 +432,9 @@ static void provisioning_handle_invite(uint8_t *packet, uint16_t size){
 
     // handle invite message
     prov_attention_timer_timeout = packet[0];
-    provisioning_attention_timer_set();
+    if (prov_attention_timer_timeout){
+        provisioning_emit_attention_timer_event(pb_transport_cid, prov_attention_timer_timeout);
+    }
 
     device_state = DEVICE_SEND_CAPABILITIES;
     provisioning_run();
