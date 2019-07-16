@@ -44,6 +44,7 @@
 #include "bluetooth.h"
 #include "bluetooth_gatt.h"
 #include "btstack_debug.h"
+#include "btstack_event.h"
 #include "btstack_defines.h"
 #include "btstack_event.h"
 #include "btstack_util.h"
@@ -56,6 +57,7 @@ typedef struct {
 
     uint16_t data_in_client_value_handle;
     uint8_t  data_in_proxy_pdu[MESH_PROV_MAX_PROXY_PDU];
+    uint8_t  link_open;
     
     // Mesh Provisioning Data Out
     uint16_t data_out_client_value_handle;
@@ -68,6 +70,7 @@ typedef struct {
     btstack_context_callback_registration_t data_out_notify_callback;
 
     btstack_context_callback_registration_t  pdu_response_callback;
+
 } mesh_provisioning_t;
 
 static btstack_packet_handler_t mesh_provisioning_service_packet_handler;
@@ -90,7 +93,8 @@ static void mesh_provisioning_service_emit_link_close(hci_con_handle_t con_handl
 
 static mesh_provisioning_t * mesh_provisioning_service_get_instance_for_con_handle(hci_con_handle_t con_handle){
     mesh_provisioning_t * instance = &mesh_provisioning;
-    if (con_handle == HCI_CON_HANDLE_INVALID) return NULL;
+    log_info("mesh_provisioning_service_get_instance_for_con_handle, handle %x (instance %x)", con_handle, instance->con_handle);
+    if (instance->con_handle != HCI_CON_HANDLE_INVALID && instance->con_handle != con_handle) return NULL;
     instance->con_handle = con_handle;
     return instance;
 }
@@ -155,10 +159,12 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
         if (enable_data_out_notify){
             if (instance->data_out_client_configuration_descriptor_value) return 0;
             instance->data_out_client_configuration_descriptor_value = enable_data_out_notify;
+            instance->link_open = 1;
             mesh_provisioning_service_emit_link_open(con_handle, 0);
         } else {
             if (!instance->data_out_client_configuration_descriptor_value) return 0;
             instance->data_out_client_configuration_descriptor_value = enable_data_out_notify;
+            instance->link_open = 1;
             mesh_provisioning_service_emit_link_open(con_handle, 0);
         }
         log_info("mesh_provisioning_service_write_callback: enable_data_out_notify %d, con handle 0x%02x", enable_data_out_notify, con_handle);
@@ -168,12 +174,23 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
     return 0;
 }
 
+static void mesh_provisioning_service_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    if (packet_type != HCI_EVENT_PACKET) return;
+    if (hci_event_packet_get_type(packet) != HCI_EVENT_DISCONNECTION_COMPLETE) return;
+    hci_con_handle_t con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
+    mesh_provisioning_t * instance = mesh_provisioning_service_get_instance_for_con_handle(con_handle);
+    if (!instance) return;
+    if (instance->link_open){
+        // emit close, free instance
+        instance->link_open = 0;
+        instance->con_handle = HCI_CON_HANDLE_INVALID;
+        mesh_provisioning_service_emit_link_close(con_handle, 0);
+    }
+}
+
 void mesh_provisioning_service_server_init(void){
     mesh_provisioning_t * instance = &mesh_provisioning;
-    if (!instance){
-        log_error("mesh_provisioning_service_server_init: instance is null");
-        return;
-    }
+    instance->con_handle = HCI_CON_HANDLE_INVALID;
 
     // get service handle range
     uint16_t start_handle = 0;
@@ -194,6 +211,7 @@ void mesh_provisioning_service_server_init(void){
     mesh_provisioning_service.end_handle     = end_handle;
     mesh_provisioning_service.read_callback  = &mesh_provisioning_service_read_callback;
     mesh_provisioning_service.write_callback = &mesh_provisioning_service_write_callback;
+    mesh_provisioning_service.packet_handler = &mesh_provisioning_service_server_packet_handler;
     
     att_server_register_service_handler(&mesh_provisioning_service);
 }
