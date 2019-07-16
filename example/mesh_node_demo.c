@@ -108,7 +108,7 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                     printf("Provisioner link close");
                     break;
                 case MESH_SUBEVENT_PB_PROV_ATTENTION_TIMER:
-                    printf("Attention Timer: %u\n", packet[3]);
+                    printf("Attention Timer: %u\n", mesh_subevent_pb_prov_attention_timer_get_attention_time(packet));
                     break;
                 case MESH_SUBEVENT_PB_PROV_COMPLETE:
                     printf("Provisioning complete\n");
