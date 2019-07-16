@@ -883,23 +883,6 @@ void provisioning_device_input_oob_complete_alphanumeric(uint16_t pb_adv_cid, co
     provisioning_run();
 }
 
-
-uint8_t provisioning_device_data_get_flags(void){
-    return flags;
-}
-uint16_t provisioning_device_data_get_unicast_address(void){
-    return unicast_address;
-}
-const uint8_t * provisioning_device_data_get_device_key(void){
-    return device_key;
-}
-uint32_t provisioning_device_data_get_iv_index(void){
-    return iv_index;
-}
-mesh_network_key_t * provisioning_device_data_get_network_key(void){
-    return network_key;
-}
-
 void provisioning_device_data_get(mesh_provisioning_data_t * the_provisioning_data){
     the_provisioning_data->unicast_address = unicast_address;
     the_provisioning_data->iv_index = iv_index;

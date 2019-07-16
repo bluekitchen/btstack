@@ -115,12 +115,6 @@ void provisioning_device_input_oob_complete_alphanumeric(uint16_t pb_adv_cid, co
  */
 void provisioning_device_data_get(mesh_provisioning_data_t * provisioning_data);
 
-uint16_t        provisioning_device_data_get_unicast_address(void);
-uint8_t         provisioning_device_data_get_flags(void);
-const uint8_t * provisioning_device_data_get_device_key(void);
-uint32_t        provisioning_device_data_get_iv_index(void);
-mesh_network_key_t * provisioning_device_data_get_network_key(void);
-
 #ifdef __cplusplus
 } /* end of extern "C" */
 #endif
