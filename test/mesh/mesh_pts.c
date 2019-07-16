@@ -91,6 +91,7 @@ static void mesh_provisioning_dump(const mesh_provisioning_data_t * data){
     mesh_network_key_t * key = data->network_key;
     printf("UnicastAddr:   0x%02x\n", data->unicast_address);
     printf("DevKey:        "); printf_hexdump(data->device_key, 16);
+    printf("IV Index:      0x%08x\n", data->iv_index);
     printf("Flags:               0x%02x\n", data->flags);
     printf("NetKey:        "); printf_hexdump(key->net_key, 16);
     printf("-- Derived from NetKey --\n");
