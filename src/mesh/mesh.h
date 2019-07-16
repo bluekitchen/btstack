@@ -107,6 +107,10 @@ int mesh_model_contains_appkey(mesh_model_t * mesh_model, uint16_t appkey_index)
 // Mesh Node Reset
 void mesh_node_reset(void);
 
+// Attention Timer
+void    mesh_attention_timer_set(uint8_t timer_s);
+uint8_t mesh_attention_timer_get(void);
+
 // temp
 void mesh_access_key_refresh_revoke_keys(mesh_subnet_t * subnet);
 void mesh_access_netkey_finalize(mesh_network_key_t * network_key);

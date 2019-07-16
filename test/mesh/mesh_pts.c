@@ -148,8 +148,8 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                 case MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED:
                     printf("Provisioner link close");
                     break;
-                case MESH_SUBEVENT_PB_PROV_ATTENTION_TIMER:
-                    printf("Attention Timer: %u\n", mesh_subevent_pb_prov_attention_timer_get_attention_time(packet));
+                case MESH_SUBEVENT_ATTENTION_TIMER:
+                    printf("Attention Timer: %u\n", mesh_subevent_attention_timer_get_attention_time(packet));
                     break;
                 case MESH_SUBEVENT_PB_PROV_INPUT_OOB_REQUEST:
                     printf("Enter passphrase: ");

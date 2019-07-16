@@ -147,6 +147,9 @@ static void *                btstack_tlv_singleton_context;
 static uint32_t sequence_number_last_stored;
 static uint32_t sequence_number_storage_trigger;
 
+// Attention Timer
+static uint8_t                attention_timer_timeout_s;
+static btstack_timer_source_t attention_timer_timer;
 
 static void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
 
@@ -181,12 +184,52 @@ static void mesh_access_setup_from_provisioning_data(const mesh_provisioning_dat
 #endif
 }
 
+// Attention Timer state
+static void mesh_emit_attention_timer_event(uint8_t timer_s){
+    if (!provisioning_device_packet_handler) return;
+    uint8_t event[4] = { HCI_EVENT_MESH_META, 4, MESH_SUBEVENT_ATTENTION_TIMER};
+    event[3] = timer_s;
+    provisioning_device_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+static void mesh_attention_timer_handler(btstack_timer_source_t * ts){
+    UNUSED(ts);
+    attention_timer_timeout_s--;
+    mesh_emit_attention_timer_event(attention_timer_timeout_s);
+    if (attention_timer_timeout_s == 0) return;
+
+    btstack_run_loop_set_timer(&attention_timer_timer, 1000);
+    btstack_run_loop_add_timer(&attention_timer_timer);
+}
+
+void mesh_attention_timer_set(uint8_t timer_s){
+    // stop old timer if running
+    if (attention_timer_timeout_s){
+        btstack_run_loop_remove_timer(&attention_timer_timer);
+    }
+
+    attention_timer_timeout_s = timer_s;
+    mesh_emit_attention_timer_event(attention_timer_timeout_s);
+
+    if (attention_timer_timeout_s){
+        btstack_run_loop_set_timer_handler(&attention_timer_timer, &mesh_attention_timer_handler);
+        btstack_run_loop_set_timer(&attention_timer_timer, 1000);
+        btstack_run_loop_add_timer(&attention_timer_timer);
+    }
+}
+
+uint8_t mesh_attention_timer_get(void){
+    return attention_timer_timeout_s;
+}
+
 static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     mesh_provisioning_data_t provisioning_data;
-
     switch(packet[0]){
         case HCI_EVENT_MESH_META:
             switch(packet[2]){
+                case MESH_SUBEVENT_PB_PROV_ATTENTION_TIMER:
+                    mesh_attention_timer_set(mesh_subevent_pb_prov_attention_timer_get_attention_time(packet));
+                    break;
                 case MESH_SUBEVENT_PB_PROV_COMPLETE:
                     // get provisioning data
                     provisioning_device_data_get(&provisioning_data);
@@ -948,6 +991,7 @@ void mesh_init(void){
 #endif
 
     provisioning_device_init();
+    provisioning_device_register_packet_handler(&mesh_provisioning_message_handler);
 
     // Node Configuration
     mesh_node_init();
@@ -975,5 +1019,4 @@ void mesh_init(void){
  */
 void mesh_register_provisioning_device_packet_handler(btstack_packet_handler_t packet_handler){
     provisioning_device_packet_handler = packet_handler;
-    provisioning_device_register_packet_handler(&mesh_provisioning_message_handler);
 }
