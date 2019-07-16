@@ -167,9 +167,9 @@ void mesh_proxy_service_server_init(void){
     instance->data_out_client_value_handle = gatt_server_get_value_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROXY_DATA_OUT);
     instance->data_out_client_configuration_descriptor_handle = gatt_server_get_client_configuration_handle_for_characteristic_with_uuid16(start_handle, end_handle, ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROXY_DATA_OUT);
     
-    printf("DataIn     value handle 0x%02x\n", instance->data_in_client_value_handle);
-    printf("DataOut    value handle 0x%02x\n", instance->data_out_client_value_handle);
-    printf("DataOut CC value handle 0x%02x\n", instance->data_out_client_configuration_descriptor_handle);
+    log_info("DataIn     value handle 0x%02x", instance->data_in_client_value_handle);
+    log_info("DataOut    value handle 0x%02x", instance->data_out_client_value_handle);
+    log_info("DataOut CC value handle 0x%02x", instance->data_out_client_configuration_descriptor_handle);
     
     mesh_proxy_service.start_handle   = start_handle;
     mesh_proxy_service.end_handle     = end_handle;

@@ -116,7 +116,6 @@ static uint16_t mesh_provisioning_service_read_callback(hci_con_handle_t con_han
         }
         return 2;
     }
-    printf("mesh_provisioning_service_read_callback: not handled read on handle 0x%02x\n", attribute_handle);
     log_info("mesh_provisioning_service_read_callback: not handled read on handle 0x%02x", attribute_handle);
     return 0;
 }
@@ -131,8 +130,6 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
         log_error("mesh_provisioning_service_write_callback: instance is null");
         return 0;
     }
-    printf("mesh_provisioning_service_write_callback: handle 0x%02x, buffer size %d: ", attribute_handle, buffer_size);
-    printf_hexdump(buffer, buffer_size);
 
     if (attribute_handle == instance->data_in_client_value_handle){
         if (!mesh_provisioning_service_packet_handler) return 0;
