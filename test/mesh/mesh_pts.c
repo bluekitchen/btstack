@@ -87,6 +87,7 @@ static int ui_chars_for_pin;
 static uint8_t ui_pin[17];
 static int ui_pin_offset;
 
+static mesh_publication_model_t generic_on_off_server_publication;
 
 static void mesh_provisioning_dump(const mesh_provisioning_data_t * data){
     mesh_network_key_t * key = data->network_key;
@@ -588,6 +589,7 @@ int btstack_main(void)
     mesh_generic_on_off_server_model.operations = mesh_generic_on_off_server_get_operations();    
     mesh_generic_on_off_server_model.model_data = (void *) &mesh_generic_on_off_state;
     mesh_generic_on_off_server_register_packet_handler(&mesh_generic_on_off_server_model, &mesh_state_update_message_handler);
+    mesh_generic_on_off_server_set_publication_model(&mesh_generic_on_off_server_model, &generic_on_off_server_publication);
     mesh_element_add_model(mesh_node_get_primary_element(), &mesh_generic_on_off_server_model);
 
     // Setup our custom model
@@ -624,6 +626,8 @@ int btstack_main(void)
     uint8_t label_uuid[16];
     btstack_parse_hex("001BDC0810210B0E0A0C000B0E0A0C00", 16, label_uuid);
     pts_virtual_addresss = mesh_virtual_address_register(label_uuid, 0x9779);
+
+    printf("TSPX_iut_model_id_used 0x1000 (Generic OnOff Server)\n"); 
 
     // turn on!
 	hci_power_control(HCI_POWER_ON);
