@@ -330,6 +330,11 @@ static void mesh_network_send_a(mesh_network_pdu_t * network_pdu){
     // get network key to use for sending
     current_network_key = mesh_subnet_get_outgoing_network_key(subnet);
 
+#ifdef LOG_NETWORK
+    printf("TX-A-NetworkPDU (%p): ", network_pdu);
+    printf_hexdump(network_pdu->data, network_pdu->len);
+#endif
+
     // get network nonce
     if (network_pdu->flags & MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION){
         mesh_proxy_create_nonce(network_nonce, network_pdu, iv_index); 
@@ -886,7 +891,7 @@ void mesh_network_process_proxy_configuration_message(const uint8_t * pdu_data, 
 
 void mesh_network_send_pdu(mesh_network_pdu_t * network_pdu){
 #ifdef LOG_NETWORK
-    printf("TX-A-NetworkPDU (%p): ", network_pdu);
+    printf("TX-NetworkPDU (%p):   ", network_pdu);
     printf_hexdump(network_pdu->data, network_pdu->len);
 #endif
 
