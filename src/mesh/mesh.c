@@ -789,7 +789,7 @@ static int mesh_load_iv_index_and_sequence_number(uint32_t * iv_index, uint32_t 
 static void mesh_store_iv_index_and_sequence_number(uint32_t iv_index, uint32_t sequence_number){
     iv_index_and_sequence_number_t data;
     data.iv_index   = iv_index;
-    data.seq_number = 0;
+    data.seq_number = sequence_number;
     btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_tag_for_iv_index_and_seq_number, (uint8_t *) &data, sizeof(data));
 
     sequence_number_last_stored = data.seq_number;
@@ -1043,7 +1043,10 @@ static int mesh_node_startup_from_tlv(void){
         sequence_number = mesh_sequence_number_peek() + MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
         iv_index = mesh_get_iv_index();
         mesh_store_iv_index_and_sequence_number(iv_index, sequence_number);
+        mesh_sequence_number_set(sequence_number);
         log_info("IV Index: %08x, Sequence Number %08x", (int) iv_index, (int) sequence_number);
+
+        printf("IV Index: %08x, Sequence Number %08x\n", (int) iv_index, (int) sequence_number);
 
 #if defined(ENABLE_MESH_ADV_BEARER) || defined(ENABLE_MESH_PB_ADV)
         // start sending Secure Network Beacon
