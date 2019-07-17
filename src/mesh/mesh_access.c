@@ -58,7 +58,6 @@
 #define MEST_TRANSACTION_TIMEOUT_MS  6000
 
 static void mesh_access_message_process_handler(mesh_pdu_t * pdu);
-static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size);
 static void mesh_access_upper_transport_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
 static const mesh_operation_t * mesh_model_lookup_operation_by_opcode(mesh_model_t * model, uint32_t opcode);
 
@@ -76,9 +75,6 @@ void mesh_access_init(void){
     // register with upper transport
     mesh_upper_transport_register_access_message_handler(&mesh_access_message_process_handler);
     mesh_upper_transport_set_higher_layer_handler(&mesh_access_upper_transport_handler);
-
-    // register for secure network beacons
-    beacon_register_for_secure_network_beacons(&mesh_access_secure_network_beacon_handler);
 }
 
 void mesh_access_emit_state_update_bool(btstack_packet_handler_t event_handler, uint8_t element_index, uint32_t model_identifier,
@@ -1067,123 +1063,3 @@ void mesh_access_state_changed(mesh_model_t * mesh_model){
     mesh_model_publication_run(NULL);
 }
 
-static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint16_t channel, uint8_t * packet, uint16_t size){
-    UNUSED(channel);
-    UNUSED(size);
-
-    if (packet_type != MESH_BEACON_PACKET) return;
-
-    // lookup subnet and netkey by network id
-    uint8_t * beacon_network_id = &packet[2];
-    mesh_subnet_iterator_t it;
-    mesh_subnet_iterator_init(&it);
-    mesh_subnet_t * subnet = NULL;
-    uint8_t new_key = 0;
-    while (mesh_subnet_iterator_has_more(&it)){
-        mesh_subnet_t * item = mesh_subnet_iterator_get_next(&it);
-        if (memcmp(item->old_key->network_id, beacon_network_id, 8) == 0 ) {
-            subnet = item;
-        }
-        if (item->new_key != NULL && memcmp(item->new_key->network_id, beacon_network_id, 8) == 0 ) {
-            subnet = item;
-            new_key = 1;
-        }
-        break;
-    }
-    if (subnet == NULL) return;
-
-    uint8_t flags = packet[1];
-
-    // Key refresh via secure network beacons that are authenticated with new netkey
-    if (new_key){
-        // either first or second phase (in phase 0, new key is not set)
-        int key_refresh_flag = flags & 1;
-        if (key_refresh_flag){
-            //  transition to phase 3 from either phase 1 or 2
-            switch (subnet->key_refresh){
-                case MESH_KEY_REFRESH_FIRST_PHASE:
-                case MESH_KEY_REFRESH_SECOND_PHASE:
-                    mesh_access_key_refresh_revoke_keys(subnet);
-                    subnet->key_refresh = MESH_KEY_REFRESH_NOT_ACTIVE;
-                    break;
-                default:
-                    break;
-            }
-        } else {
-            //  transition to phase 2 from either phase 1
-            switch (subnet->key_refresh){
-                case MESH_KEY_REFRESH_FIRST_PHASE:
-                    // -- update state
-                    subnet->key_refresh = MESH_KEY_REFRESH_SECOND_PHASE;
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
-    // IV Update
-
-    int     beacon_iv_update_active = flags & 2;
-    int     local_iv_update_active = mesh_iv_update_active();
-    uint32_t beacon_iv_index = big_endian_read_32(packet, 10);
-    uint32_t local_iv_index = mesh_get_iv_index();
-
-    int32_t iv_index_delta = (int32_t)(beacon_iv_index - local_iv_index);
-
-    // "If a node in Normal Operation receives a Secure Network beacon with an IV index less than the last known IV Index or greater than
-    //  the last known IV Index + 42, the Secure Network beacon shall be ignored."
-    if (iv_index_delta < 0 || iv_index_delta > 42){
-        return;
-    }
-
-    // "If a node in Normal Operation receives a Secure Network beacon with an IV index equal to the last known IV index+1 and
-    //  the IV Update Flag set to 0, the node may update its IV without going to the IV Update in Progress state, or it may initiate
-    //  an IV Index Recovery procedure (Section 3.10.6), or it may ignore the Secure Network beacon. The node makes the choice depending
-    //  on the time since last IV update and the likelihood that the node has missed the Secure Network beacons with the IV update Flag set to 1.""
-    if (local_iv_update_active == 0 && beacon_iv_update_active == 0 && iv_index_delta == 1){
-        // instant iv update
-        mesh_set_iv_index( beacon_iv_index );
-        // store updated iv index
-        mesh_store_iv_index_and_sequence_number();
-        return;
-    }
-
-    // "If this node is a member of a primary subnet and receives a Secure Network beacon on a secondary subnet with an IV Index greater than
-    //  the last known IV Index of the primary subnet, the Secure Network beacon shall be ignored."
-    int member_of_primary_subnet = mesh_subnet_get_by_netkey_index(0) != NULL;
-    int beacon_on_secondary_subnet = subnet->netkey_index != 0;
-    if (member_of_primary_subnet && beacon_on_secondary_subnet && iv_index_delta > 0){
-        return;
-    }
-
-    // "If a node in Normal Operation receives a Secure Network beacon with an IV index greater than the last known IV Index + 1..."
-    // "... it may initiate an IV Index Recovery procedure, see Section 3.10.6."
-    if (local_iv_update_active == 0 && iv_index_delta > 1){
-        // "Upon receiving and successfully authenticating a Secure Network beacon for a primary subnet... "
-        int beacon_on_primary_subnet = subnet->netkey_index == 0;
-        if (!beacon_on_primary_subnet) return;
-        // "... whose IV Index is 1 or more higher than the current known IV Index, the node shall "
-        // " set its current IV Index and its current IV Update procedure state from the values in this Secure Network beacon."
-        mesh_iv_index_recovered(beacon_iv_update_active, beacon_iv_index);
-        // store updated iv index if in normal mode
-        if (beacon_iv_update_active == 0){
-            mesh_store_iv_index_and_sequence_number();
-        }
-        return;
-    }
-
-    if (local_iv_update_active == 0){
-        if (beacon_iv_update_active){
-            mesh_trigger_iv_update();
-        }
-    } else {
-        if (beacon_iv_update_active == 0){
-            // " At the point of transition, the node shall reset the sequence number to 0x000000."
-            mesh_sequence_number_set(0);
-            mesh_iv_update_completed();
-            // store updated iv index 
-            mesh_store_iv_index_and_sequence_number();
-        }
-    }
-}
