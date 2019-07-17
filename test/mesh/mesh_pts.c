@@ -450,6 +450,7 @@ static void show_usage(void){
     printf("o      - Enable Output OOB \n");
     printf("i      - Input  Output OOB \n");
     printf("s      - Static Output OOB \n");
+    printf("b      - Set Secure Network Beacon %s\n", mesh_foundation_beacon_get() ? "Off" : "On");
     printf("g      - Generic ON/OFF Server Toggle Value\n");
     printf("\n");
 }
@@ -519,6 +520,11 @@ static void stdin_process(char cmd){
         case 'g':
             printf("Generic ON/OFF Server Toggle Value\n");
             mesh_generic_on_off_server_set(&mesh_generic_on_off_server_model, 1-mesh_generic_on_off_server_get(&mesh_generic_on_off_server_model), 0, 0);
+            break;
+        case 'b':
+            printf("Turn Secure Network Beacon %s\n", mesh_foundation_beacon_get() ? "Off" : "On");
+            mesh_foundation_beacon_set(1 - mesh_foundation_beacon_get());
+            mesh_foundation_state_store();
             break;
         case ' ':
             show_usage();
