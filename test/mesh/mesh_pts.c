@@ -322,7 +322,7 @@ static void load_pts_app_key(void){
 static void send_pts_network_messsage(int type){
     uint8_t lower_transport_pdu_data[16];
 
-    uint16_t src = 0x0028;
+    uint16_t src = mesh_node_get_primary_element_address();
     uint16_t dst = 0x0001;
     uint32_t seq = 0x00;
     uint8_t ttl = 0;
