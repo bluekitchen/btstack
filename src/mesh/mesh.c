@@ -775,26 +775,6 @@ void mesh_access_key_refresh_revoke_keys(mesh_subnet_t * subnet){
 // Mesh IV Index
 static const uint32_t mesh_tag_for_iv_index_and_seq_number = ((uint32_t) 'M' << 24) | ((uint32_t) 'F' << 16) | ((uint32_t) 'I' << 9) | ((uint32_t) 'S');
 
-static void mesh_store_iv_index_after_provisioning(uint32_t iv_index){
-    iv_index_and_sequence_number_t data;
-    data.iv_index   = iv_index;
-    data.seq_number = 0;
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_tag_for_iv_index_and_seq_number, (uint8_t *) &data, sizeof(data));
-
-    sequence_number_last_stored = data.seq_number;
-    sequence_number_storage_trigger = sequence_number_last_stored + MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
-}
-
-static void mesh_store_iv_index_and_sequence_number(void){
-    iv_index_and_sequence_number_t data;
-    data.iv_index   = mesh_get_iv_index();
-    data.seq_number = mesh_sequence_number_peek();
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_tag_for_iv_index_and_seq_number, (uint8_t *) &data, sizeof(data));
-
-    sequence_number_last_stored = data.seq_number;
-    sequence_number_storage_trigger = sequence_number_last_stored + MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
-}
-
 static int mesh_load_iv_index_and_sequence_number(uint32_t * iv_index, uint32_t * sequence_number){
     iv_index_and_sequence_number_t data;
     uint32_t len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, mesh_tag_for_iv_index_and_seq_number, (uint8_t *) &data, sizeof(data));
@@ -806,10 +786,25 @@ static int mesh_load_iv_index_and_sequence_number(uint32_t * iv_index, uint32_t 
     return 0;
 }
 
-// higher layer
+static void mesh_store_iv_index_and_sequence_number(uint32_t iv_index, uint32_t sequence_number){
+    iv_index_and_sequence_number_t data;
+    data.iv_index   = iv_index;
+    data.seq_number = 0;
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_tag_for_iv_index_and_seq_number, (uint8_t *) &data, sizeof(data));
+
+    sequence_number_last_stored = data.seq_number;
+    sequence_number_storage_trigger = sequence_number_last_stored + MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
+}
+
 static void mesh_persist_iv_index_and_sequence_number(void){
+    mesh_store_iv_index_and_sequence_number(mesh_get_iv_index(), mesh_sequence_number_peek());
+}
+
+
+// higher layer - only store if sequence number is higher than trigger
+static void mesh_persist_iv_index_and_sequence_number_if_needed(void){
     if (mesh_sequence_number_peek() >= sequence_number_storage_trigger){
-        mesh_store_iv_index_and_sequence_number();
+        mesh_persist_iv_index_and_sequence_number();
     }
 }
 
@@ -891,7 +886,7 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
         // instant iv update
         mesh_set_iv_index( beacon_iv_index );
         // store updated iv index
-        mesh_store_iv_index_and_sequence_number();
+        mesh_persist_iv_index_and_sequence_number();
         return;
     }
 
@@ -914,7 +909,7 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
         mesh_iv_index_recovered(beacon_iv_update_active, beacon_iv_index);
         // store updated iv index if in normal mode
         if (beacon_iv_update_active == 0){
-            mesh_store_iv_index_and_sequence_number();
+            mesh_persist_iv_index_and_sequence_number();
         }
         return;
     }
@@ -929,7 +924,7 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
             mesh_sequence_number_set(0);
             mesh_iv_update_completed();
             // store updated iv index 
-            mesh_store_iv_index_and_sequence_number();
+            mesh_persist_iv_index_and_sequence_number();
         }
     }
 }
@@ -970,7 +965,7 @@ static void mesh_node_store_provisioning_data(mesh_provisioning_data_t * provisi
     btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_tag_for_prov_data(), (uint8_t *) &persistent_provisioning_data, sizeof(mesh_persistent_provisioning_data_t));
 
     // store IV Index and sequence number
-    mesh_store_iv_index_after_provisioning(provisioning_data->iv_index);
+    mesh_store_iv_index_and_sequence_number(provisioning_data->iv_index, 0);
 
     // store primary network key
     mesh_store_network_key(provisioning_data->network_key);
@@ -1025,7 +1020,7 @@ static int mesh_node_startup_from_tlv(void){
             // bump sequence number to account for interval updates
             sequence_number += MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
             mesh_sequence_number_set(sequence_number);
-            mesh_store_iv_index_and_sequence_number();
+            mesh_persist_iv_index_and_sequence_number();
             log_info("IV Index: %08x, Sequence Number %08x", (int) iv_index, (int) sequence_number);
             provisioning_data.iv_index = iv_index;
         }
@@ -1128,7 +1123,7 @@ void mesh_init(void){
     beacon_register_for_secure_network_beacons(&mesh_access_secure_network_beacon_handler);
 
     // register for seq number updates
-    mesh_sequence_number_set_update_callback(&mesh_persist_iv_index_and_sequence_number);
+    mesh_sequence_number_set_update_callback(&mesh_persist_iv_index_and_sequence_number_if_needed);
 }
 
 /**
