@@ -773,36 +773,31 @@ void mesh_access_key_refresh_revoke_keys(mesh_subnet_t * subnet){
 }
 
 // Mesh IV Index
-static uint32_t mesh_tag_for_iv_index_and_seq_number(void){
-    return ((uint32_t) 'M' << 24) | ((uint32_t) 'F' << 16) | ((uint32_t) 'I' << 9) | ((uint32_t) 'S');
-}
+static const uint32_t mesh_tag_for_iv_index_and_seq_number = ((uint32_t) 'M' << 24) | ((uint32_t) 'F' << 16) | ((uint32_t) 'I' << 9) | ((uint32_t) 'S');
 
-void mesh_store_iv_index_after_provisioning(uint32_t iv_index){
+static void mesh_store_iv_index_after_provisioning(uint32_t iv_index){
     iv_index_and_sequence_number_t data;
-    uint32_t tag = mesh_tag_for_iv_index_and_seq_number();
     data.iv_index   = iv_index;
     data.seq_number = 0;
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_tag_for_iv_index_and_seq_number, (uint8_t *) &data, sizeof(data));
 
     sequence_number_last_stored = data.seq_number;
     sequence_number_storage_trigger = sequence_number_last_stored + MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
 }
 
-void mesh_store_iv_index_and_sequence_number(void){
+static void mesh_store_iv_index_and_sequence_number(void){
     iv_index_and_sequence_number_t data;
-    uint32_t tag = mesh_tag_for_iv_index_and_seq_number();
     data.iv_index   = mesh_get_iv_index();
     data.seq_number = mesh_sequence_number_peek();
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_tag_for_iv_index_and_seq_number, (uint8_t *) &data, sizeof(data));
 
     sequence_number_last_stored = data.seq_number;
     sequence_number_storage_trigger = sequence_number_last_stored + MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
 }
 
-int mesh_load_iv_index_and_sequence_number(uint32_t * iv_index, uint32_t * sequence_number){
+static int mesh_load_iv_index_and_sequence_number(uint32_t * iv_index, uint32_t * sequence_number){
     iv_index_and_sequence_number_t data;
-    uint32_t tag = mesh_tag_for_iv_index_and_seq_number();
-    uint32_t len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
+    uint32_t len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, mesh_tag_for_iv_index_and_seq_number, (uint8_t *) &data, sizeof(data));
     if (len == sizeof(iv_index_and_sequence_number_t)){
         *iv_index = data.iv_index;
         *sequence_number = data.seq_number;

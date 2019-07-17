@@ -69,11 +69,6 @@ void mesh_virtual_address_increase_refcount(mesh_virtual_address_t * virtual_add
 void mesh_foundation_state_load(void);
 void mesh_foundation_state_store(void);
 
-// Mesh IV Index and sequence number
-void mesh_store_iv_index_after_provisioning(uint32_t iv_index);
-void mesh_store_iv_index_and_sequence_number(void);
-int mesh_load_iv_index_and_sequence_number(uint32_t * iv_index, uint32_t * sequence_number);
-
 // Mesh Model Subscriptions
 void mesh_load_subscriptions(void);
 void mesh_model_store_subscriptions(mesh_model_t * model);
