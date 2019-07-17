@@ -1012,18 +1012,14 @@ static int mesh_node_startup_from_tlv(void){
         provisioning_data.flags = persistent_provisioning_data.flags;
         provisioning_data.network_key = NULL;
         
-        // load iv index
+        // load iv index and sequence number
         uint32_t iv_index;
         uint32_t sequence_number;
         int ok = mesh_load_iv_index_and_sequence_number(&iv_index, &sequence_number);
         if (ok){
-            // bump sequence number to account for interval updates
-            sequence_number += MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
             mesh_sequence_number_set(sequence_number);
-            mesh_persist_iv_index_and_sequence_number();
-            log_info("IV Index: %08x, Sequence Number %08x", (int) iv_index, (int) sequence_number);
             provisioning_data.iv_index = iv_index;
-        }
+        }            
 
         // load network keys
         mesh_load_network_keys();
@@ -1041,6 +1037,12 @@ static int mesh_node_startup_from_tlv(void){
         mesh_foundation_state_load();
 
         mesh_access_setup_from_provisioning_data(&provisioning_data);
+
+        // bump sequence number to account for interval updates
+        sequence_number = mesh_sequence_number_peek() + MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
+        iv_index = mesh_get_iv_index();
+        mesh_store_iv_index_and_sequence_number(iv_index, sequence_number);
+        log_info("IV Index: %08x, Sequence Number %08x", (int) iv_index, (int) sequence_number);
 
 #if defined(ENABLE_MESH_ADV_BEARER) || defined(ENABLE_MESH_PB_ADV)
         // start sending Secure Network Beacon
