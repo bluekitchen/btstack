@@ -66,8 +66,9 @@ static char gap_name_prefix[] = "Mesh ";
 // pts add-on
 #define PTS_DEFAULT_TTL 10
 
-static uint16_t pts_proxy_dst;
 static int      pts_type;
+
+static mesh_virtual_address_t * pts_virtual_addresss;
 
 const char * pts_device_uuid_string = "001BDC0810210B0E0A0C000B0E0A0C00";
 
@@ -199,7 +200,12 @@ static void mesh_state_update_message_handler(uint8_t packet_type, uint16_t chan
 // PTS
 
 // helper network layer, temp
-static uint8_t mesh_network_send(uint16_t netkey_index, uint8_t ctl, uint8_t ttl, uint32_t seq, uint16_t src, uint16_t dest, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len){
+static uint8_t mesh_network_send(uint8_t ttl, uint16_t dest, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len){
+
+    uint16_t netkey_index = 0;
+    uint8_t  ctl = 0;
+    uint16_t src = mesh_node_get_primary_element_address();
+    uint32_t seq = mesh_sequence_number_next();
 
     // "3.4.5.2: The output filter of the interface connected to advertising or GATT bearers shall drop all messages with TTL value set to 1."
     // if (ttl <= 1) return 0;
@@ -319,55 +325,46 @@ static void load_pts_app_key(void){
     printf_hexdump(pts_application_key.key, 16);
 }
 
-static void send_pts_network_messsage(int type){
+static void send_pts_network_messsage_unicast(int type){
     uint8_t lower_transport_pdu_data[16];
-
-    uint16_t src = mesh_node_get_primary_element_address();
     uint16_t dst = 0x0001;
-    uint32_t seq = 0x00;
     uint8_t ttl = 0;
-    uint8_t ctl = 0;
-
     switch (type){
         case 0:
             ttl = 0;
-            dst = 0x001;
-            printf("unicast ttl=0\n");
             break;
         case 1:
-            dst = 0x001;
             ttl = PTS_DEFAULT_TTL;
-            printf("unicast ttl=10\n");
-            break;
-        case 2:
-            dst = 0x001;
-            ttl = 0x7f;
-            printf("unicast ttl=0x7f\n");
-            break;
-        case 3:
-            printf("virtual\n");
-            break;
-        case 4:
-            printf("group\n");
-            break;
-        case 5:
-            printf("all-proxies\n");
-            break;
-        case 6:
-            printf("all-friends\n");
-            break;
-        case 7:
-            printf("all-relays\n");
-            break;
-        case 8:
-            printf("all-nodes\n");
             break;
         default:
-            return;
+            ttl = 0x7f;
+            break;
     }
+    printf("Unicast dst %04x, ttl %u\n", dst, ttl);
     int lower_transport_pdu_len = 16;
     memset(lower_transport_pdu_data, 0x55, lower_transport_pdu_len);
-    mesh_network_send(0, ctl, ttl, seq, src, dst, lower_transport_pdu_data, lower_transport_pdu_len);
+    mesh_network_send(ttl, dst, lower_transport_pdu_data, lower_transport_pdu_len);
+}
+
+static void send_pts_network_messsage_virtual(int type){
+    uint8_t lower_transport_pdu_data[16];
+    uint16_t dst = pts_virtual_addresss->hash;
+    uint8_t ttl = 0;
+    switch (type){
+        case 0:
+            ttl = 0;
+            break;
+        case 1:
+            ttl = PTS_DEFAULT_TTL;
+            break;
+        default:
+            ttl = 0x7f;
+            break;
+    }
+    printf("Virtual dst %04x, ttl %u\n", dst, ttl);
+    int lower_transport_pdu_len = 16;
+    memset(lower_transport_pdu_data, 0x55, lower_transport_pdu_len);
+    mesh_network_send(ttl, dst, lower_transport_pdu_data, lower_transport_pdu_len);
 }
 
 static void send_pts_unsegmented_access_messsage(void){
@@ -439,7 +436,7 @@ static void send_pts_segmented_access_messsage_virtual(void){
     load_pts_app_key();
 
     uint16_t src = mesh_node_get_primary_element_address();
-    uint16_t dest = pts_proxy_dst;
+    uint16_t dest = pts_virtual_addresss->pseudo_dst;
     uint8_t  ttl = PTS_DEFAULT_TTL;
 
     int access_pdu_len = 20;
@@ -458,8 +455,9 @@ static void show_usage(void){
     bd_addr_t      iut_address;
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth Mesh Console at %s ---\n", bd_addr_to_str(iut_address));
-    printf("0      - Send Network Message\n");
-    printf("1      - Send Unsegmented Access Message\n");
+    printf("0      - Send Network Message Unicast\n");
+    printf("1      - Send Network Message Virtual\n");
+    printf("?      - Send Unsegmented Access Message\n");
     printf("2      - Send Segmented Access Message - Unicast\n");
     printf("3      - Send Segmented Access Message - Group   D000\n");
     printf("4      - Send Segmented Access Message - Virtual 9779\n");
@@ -489,10 +487,10 @@ static void stdin_process(char cmd){
     }
     switch (cmd){
         case '0':
-            send_pts_network_messsage(pts_type++);
+            send_pts_network_messsage_unicast(pts_type++);
             break;
         case '1':
-            send_pts_unsegmented_access_messsage();
+            send_pts_network_messsage_virtual(pts_type++);
             break;
         case '2':
             send_pts_segmented_access_messsage_unicast();
@@ -635,8 +633,7 @@ int btstack_main(void)
     // PTS Virtual Address Label UUID - without Config Model, PTS uses our device uuid
     uint8_t label_uuid[16];
     btstack_parse_hex("001BDC0810210B0E0A0C000B0E0A0C00", 16, label_uuid);
-    mesh_virtual_address_t * virtual_addresss = mesh_virtual_address_register(label_uuid, 0x9779);
-    pts_proxy_dst = virtual_addresss->pseudo_dst;
+    pts_virtual_addresss = mesh_virtual_address_register(label_uuid, 0x9779);
 
     // turn on!
 	hci_power_control(HCI_POWER_ON);
