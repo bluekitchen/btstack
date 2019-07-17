@@ -324,6 +324,25 @@ static void load_pts_app_key(void){
     printf("PTS Application Key (AID %02x): ", 0x38);
     printf_hexdump(pts_application_key.key, 16);
 }
+static void send_pts_network_messsage(const char * dst_type, uint16_t dst_addr, int ttl_type){
+    uint8_t ttl;
+    switch (ttl_type){
+        case 0:
+            ttl = 0;
+            break;
+        case 1:
+            ttl = PTS_DEFAULT_TTL;
+            break;
+        default:
+            ttl = 0x7f;
+            break;
+    }
+    printf("%s dst %04x, ttl %u\n", dst_type, dst_addr, ttl);
+    int lower_transport_pdu_len = 16;
+    uint8_t lower_transport_pdu_data[16];
+    memset(lower_transport_pdu_data, 0x55, lower_transport_pdu_len);
+    mesh_network_send(ttl, dst_addr, lower_transport_pdu_data, lower_transport_pdu_len);
+}
 
 static void send_pts_network_messsage_unicast(int type){
     uint8_t lower_transport_pdu_data[16];
@@ -366,6 +385,28 @@ static void send_pts_network_messsage_virtual(int type){
     memset(lower_transport_pdu_data, 0x55, lower_transport_pdu_len);
     mesh_network_send(ttl, dst, lower_transport_pdu_data, lower_transport_pdu_len);
 }
+
+static void send_pts_network_messsage_group(int type){
+    uint8_t lower_transport_pdu_data[16];
+    uint16_t dst = 0xd000;
+    uint8_t ttl = 0;
+    switch (type){
+        case 0:
+            ttl = 0;
+            break;
+        case 1:
+            ttl = PTS_DEFAULT_TTL;
+            break;
+        default:
+            ttl = 0x7f;
+            break;
+    }
+    printf("Virtual dst %04x, ttl %u\n", dst, ttl);
+    int lower_transport_pdu_len = 16;
+    memset(lower_transport_pdu_data, 0x55, lower_transport_pdu_len);
+    mesh_network_send(ttl, dst, lower_transport_pdu_data, lower_transport_pdu_len);
+}
+
 
 static void send_pts_unsegmented_access_messsage(void){
     uint8_t access_pdu_data[16];
@@ -456,12 +497,17 @@ static void show_usage(void){
     gap_local_bd_addr(iut_address);
     printf("\n--- Bluetooth Mesh Console at %s ---\n", bd_addr_to_str(iut_address));
     printf("0      - Send Network Message Unicast\n");
-    printf("1      - Send Network Message Virtual\n");
+    printf("1      - Send Network Message Virtual 9779\n");
+    printf("2      - Send Network Message Group   D000\n");
+    printf("3      - Send Network Message All Proxies\n");
+    printf("4      - Send Network Message All Friends\n");
+    printf("5      - Send Network Message All Relays\n");
+    printf("6      - Send Network Message Nodes\n");
     printf("?      - Send Unsegmented Access Message\n");
-    printf("2      - Send Segmented Access Message - Unicast\n");
-    printf("3      - Send Segmented Access Message - Group   D000\n");
-    printf("4      - Send Segmented Access Message - Virtual 9779\n");
-    printf("6      - Clear Replay Protection List\n");
+    printf("?      - Send Segmented Access Message - Unicast\n");
+    printf("?      - Send Segmented Access Message - Group   D000\n");
+    printf("?      - Send Segmented Access Message - Virtual 9779\n");
+    printf("?      - Clear Replay Protection List\n");
     printf("7      - Load PTS App key\n");
     printf("8      - Delete provisioning data\n");
     printf("p      - Enable Public Key OOB \n");
@@ -487,23 +533,25 @@ static void stdin_process(char cmd){
     }
     switch (cmd){
         case '0':
-            send_pts_network_messsage_unicast(pts_type++);
+            send_pts_network_messsage("Unicast", 0x0001, pts_type++);
             break;
         case '1':
-            send_pts_network_messsage_virtual(pts_type++);
+            send_pts_network_messsage("Virtual", pts_virtual_addresss->hash, pts_type++);
             break;
         case '2':
-            send_pts_segmented_access_messsage_unicast();
+            send_pts_network_messsage("Group", 0xd000, pts_type++);
             break;
         case '3':
-            send_pts_segmented_access_messsage_group();
+            send_pts_network_messsage("All Proxies", MESH_ADDRESS_ALL_PROXIES, pts_type++);
             break;
         case '4':
-            send_pts_segmented_access_messsage_virtual();
+            send_pts_network_messsage("All Friends", MESH_ADDRESS_ALL_FRIENDS, pts_type++);
+            break;
+        case '5':
+            send_pts_network_messsage("All Relays", MESH_ADDRESS_ALL_RELAYS, pts_type++);
             break;
         case '6':
-            printf("Clearing Replay Protection List\n");
-            mesh_seq_auth_reset();
+            send_pts_network_messsage("All Nodes", MESH_ADDRESS_ALL_NODES, pts_type++);
             break;
         case '7':
             load_pts_app_key();
