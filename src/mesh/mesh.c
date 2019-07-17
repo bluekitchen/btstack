@@ -929,13 +929,11 @@ static void mesh_access_secure_network_beacon_handler(uint8_t packet_type, uint1
     }
 }
 
-static uint32_t mesh_tag_for_prov_data(void){
-    return ((uint32_t) 'P' << 24) | ((uint32_t) 'R' << 16) | ((uint32_t) 'O' <<  8) | (uint32_t)'V';
-}
+static const uint32_t mesh_tag_for_prov_data = ((uint32_t) 'P' << 24) | ((uint32_t) 'R' << 16) | ((uint32_t) 'O' <<  8) | (uint32_t)'V';
 
 void mesh_node_reset(void){
     // PROV
-    btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, mesh_tag_for_prov_data());
+    btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, mesh_tag_for_prov_data);
     // everything else
     mesh_delete_network_keys();
     mesh_delete_app_keys();
@@ -958,11 +956,12 @@ static void mesh_node_store_provisioning_data(mesh_provisioning_data_t * provisi
     mesh_persistent_provisioning_data_t persistent_provisioning_data;
 
     persistent_provisioning_data.unicast_address = provisioning_data->unicast_address;
+    persistent_provisioning_data.flags = provisioning_data->flags;
     memcpy(persistent_provisioning_data.device_key, provisioning_data->device_key, 16);
 
     // store in tlv
     btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_tag_for_prov_data(), (uint8_t *) &persistent_provisioning_data, sizeof(mesh_persistent_provisioning_data_t));
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, mesh_tag_for_prov_data, (uint8_t *) &persistent_provisioning_data, sizeof(mesh_persistent_provisioning_data_t));
 
     // store IV Index and sequence number
     mesh_store_iv_index_and_sequence_number(provisioning_data->iv_index, 0);
@@ -1000,7 +999,7 @@ static int mesh_node_startup_from_tlv(void){
     btstack_tlv_get_instance(&btstack_tlv_singleton_impl, &btstack_tlv_singleton_context);
 
     // load provisioning data
-    uint32_t prov_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, mesh_tag_for_prov_data(), (uint8_t *) &persistent_provisioning_data, sizeof(mesh_persistent_provisioning_data_t));
+    uint32_t prov_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, mesh_tag_for_prov_data, (uint8_t *) &persistent_provisioning_data, sizeof(mesh_persistent_provisioning_data_t));
     printf("Provisioning data available: %u\n", prov_len ? 1 : 0);
     int prov_data_valid = prov_len == sizeof(mesh_persistent_provisioning_data_t);
     if (prov_data_valid){
@@ -1011,6 +1010,8 @@ static int mesh_node_startup_from_tlv(void){
         provisioning_data.unicast_address = persistent_provisioning_data.unicast_address;
         provisioning_data.flags = persistent_provisioning_data.flags;
         provisioning_data.network_key = NULL;
+
+        printf("Flags %x, unicast_address %04x\n", persistent_provisioning_data.flags, provisioning_data.unicast_address);
         
         // load iv index and sequence number
         uint32_t iv_index;
