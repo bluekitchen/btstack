@@ -646,7 +646,7 @@ static void config_netkey_add_handler(mesh_model_t * mesh_model, mesh_pdu_t * pd
 
                 // derive other keys
                 access_pdu_in_process = pdu;
-                mesh_network_key_derive(&configuration_server_cmac_request, new_network_key, config_netkey_add_derived, new_network_key);
+                mesh_network_key_derive(&configuration_server_cmac_request, new_network_key, config_netkey_add_derived, new_subnet);
                 return;
             }
         }
