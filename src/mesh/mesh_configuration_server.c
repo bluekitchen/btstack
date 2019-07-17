@@ -335,14 +335,14 @@ static void config_beacon_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     uint8_t beacon_enabled = mesh_access_parser_get_u8(&parser);
 
     // beacon valid
-    if (beacon_enabled >= MESH_FOUNDATION_STATE_NOT_SUPPORTED) return;
+    if (beacon_enabled < MESH_FOUNDATION_STATE_NOT_SUPPORTED) {
+        // set and store new value
+        mesh_foundation_beacon_set(beacon_enabled);
+        mesh_foundation_state_store();
 
-    // store
-    mesh_foundation_beacon_set(beacon_enabled);
-    mesh_foundation_state_store();
-
-    //
-    config_model_beacon_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
+        // send status
+        config_model_beacon_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
+    }
 
     mesh_access_message_processed(pdu);
 }
@@ -370,14 +370,16 @@ static void config_default_ttl_set_handler(mesh_model_t *mesh_model, mesh_pdu_t 
 
     uint8_t new_ttl = mesh_access_parser_get_u8(&parser);
 
-    // ttl valid
-    if (new_ttl > 0x7f || new_ttl == 0x01) return;
-    // store
-    mesh_foundation_default_ttl_set(new_ttl);
-    mesh_foundation_state_store();
+    // validate (0x01 and > 0x7f are prohibited)
+    if (new_ttl <= 0x7f && new_ttl != 0x01) {
 
-    //
-    config_model_default_ttl_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
+        // set and store
+        mesh_foundation_default_ttl_set(new_ttl);
+        mesh_foundation_state_store();
+
+        // send status
+        config_model_default_ttl_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
+    }
 
     mesh_access_message_processed(pdu);
 }
@@ -407,16 +409,17 @@ static void config_friend_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     uint8_t new_friend_state = mesh_access_parser_get_u8(&parser);
 
     // validate
-    if (new_friend_state >= MESH_FOUNDATION_STATE_NOT_SUPPORTED) return;
+    if (new_friend_state < MESH_FOUNDATION_STATE_NOT_SUPPORTED) {
 
-    // store if supported
-    if (mesh_foundation_friend_get() != MESH_FOUNDATION_STATE_NOT_SUPPORTED){
-        mesh_foundation_friend_set(new_friend_state);
-        mesh_foundation_state_store();
+        // set and store
+        if (mesh_foundation_friend_get() != MESH_FOUNDATION_STATE_NOT_SUPPORTED){
+            mesh_foundation_friend_set(new_friend_state);
+            mesh_foundation_state_store();
+        }
+
+        // send status
+        config_friend_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
     }
-
-    //
-    config_friend_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 
     mesh_access_message_processed(pdu);
 }
@@ -424,8 +427,7 @@ static void config_friend_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
 static void config_model_gatt_proxy_status(mesh_model_t * mesh_model, uint16_t netkey_index, uint16_t dest){
     UNUSED(mesh_model);
     // setup message
-    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
-            &mesh_foundation_config_gatt_proxy_status, mesh_foundation_gatt_proxy_get());
+    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_config_gatt_proxy_status, mesh_foundation_gatt_proxy_get());
     if (!transport_pdu) return;
 
     // send as segmented access pdu
@@ -444,14 +446,15 @@ static void config_gatt_proxy_set_handler(mesh_model_t *mesh_model, mesh_pdu_t *
 
     uint8_t enabled = mesh_access_parser_get_u8(&parser);
 
-    // ttl valid
-    if (enabled > 1) return;
-    // store
-    mesh_foundation_gatt_proxy_set(enabled);
-    mesh_foundation_state_store();
+    // validate
+    if (enabled <  MESH_FOUNDATION_STATE_NOT_SUPPORTED) {
+        // set and store
+        mesh_foundation_gatt_proxy_set(enabled);
+        mesh_foundation_state_store();
 
-    //
-    config_model_gatt_proxy_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
+        // send status
+        config_model_gatt_proxy_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
+    }
 
     mesh_access_message_processed(pdu);
 
@@ -488,17 +491,17 @@ static void config_relay_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
     uint8_t relay_retransmit = mesh_access_parser_get_u8(&parser);
 
     // check if valid
-    if (relay > 1) return;
+    if (relay <= 1) {
+        // only update if supported
+        if (mesh_foundation_relay_get() != MESH_FOUNDATION_STATE_NOT_SUPPORTED){
+            mesh_foundation_relay_set(relay);
+            mesh_foundation_relay_retransmit_set(relay_retransmit);
+            mesh_foundation_state_store();
+        }
 
-    // only update if supported
-    if (mesh_foundation_relay_get() != MESH_FOUNDATION_STATE_NOT_SUPPORTED){
-        mesh_foundation_relay_set(relay);
-        mesh_foundation_relay_retransmit_set(relay_retransmit);
-        mesh_foundation_state_store();
+        // send status
+        config_model_relay_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
     }
-
-    //
-    config_model_relay_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu));
 
     mesh_access_message_processed(pdu);
 
@@ -1668,6 +1671,7 @@ void mesh_configuration_server_feature_changed(void){
     // active features
     uint16_t active_features = mesh_foundation_get_features();
     if (mesh_heartbeat_publication->active_features == active_features) return;
+
     config_heartbeat_publication_emit(mesh_heartbeat_publication);
 }
 
@@ -1703,6 +1707,7 @@ static void config_heartbeat_publication_status(mesh_model_t *mesh_model, uint16
             mesh_heartbeat_publication->features,
             mesh_heartbeat_publication->netkey_index);
     if (!transport_pdu) return;
+
     printf("MESH config_heartbeat_publication_status count = %u => count_log = %u\n", mesh_heartbeat_publication->count, count_log);
 
     // send as segmented access pdu
@@ -1981,6 +1986,7 @@ static void config_low_power_node_poll_timeout_get_handler(mesh_model_t *mesh_mo
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     printf("TODO: implement get the current value of PollTimeout timer of the Low Power node within a Friend node\n");
     low_power_node_poll_timeout_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), MESH_FOUNDATION_STATUS_SUCCESS);
+
     mesh_access_message_processed(pdu);
 }
 
@@ -2009,6 +2015,7 @@ static void config_node_identity_get_handler(mesh_model_t *mesh_model, mesh_pdu_
     uint8_t status = mesh_proxy_get_advertising_with_node_id_status(netkey_index, &node_identity_state);
        
     config_node_identity_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, netkey_index, node_identity_state);
+
     mesh_access_message_processed(pdu);
 }
 
@@ -2021,6 +2028,7 @@ static void config_node_identity_set_handler(mesh_model_t *mesh_model, mesh_pdu_
     uint8_t status = mesh_proxy_set_advertising_with_node_id(netkey_index, node_identity_state);
 
     config_node_identity_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, netkey_index, node_identity_state);
+    
     mesh_access_message_processed(pdu);
 }
 
