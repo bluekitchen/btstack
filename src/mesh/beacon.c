@@ -125,6 +125,7 @@ static void mesh_secure_network_beacon_auth_value_calculated(void * arg){
     printf("- ");
     printf_hexdump(mesh_beacon_data, mesh_beacon_len);
 
+    mesh_secure_network_beacon_active = 0;
     mesh_subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_AUTH_VALUE;
 
     mesh_secure_network_beacon_run(NULL);
