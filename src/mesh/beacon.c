@@ -193,6 +193,14 @@ static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts){
                 // update beacon interval
                 mesh_secure_network_beacon_update_interval(subnet);
 
+                if (mesh_foundation_beacon_get() == 0){
+                    // beacon off, continue observing
+                    if (next_timeout_ms == 0 || next_timeout_ms > subnet->beacon_interval_ms){
+                        next_timeout_ms = subnet->beacon_interval_ms;
+                    }
+                    break;
+                }
+
                 // send new beacon
                 subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_W2_AUTH_VALUE;
 
@@ -470,9 +478,13 @@ void beacon_unprovisioned_device_stop(void){
 void beacon_secure_network_start(mesh_subnet_t * mesh_subnet){
     // default interval
     mesh_subnet->beacon_interval_ms = SECURE_NETWORK_BEACON_INTERVAL_MIN_MS;
-    mesh_subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_W2_AUTH_VALUE;
     mesh_subnet->beacon_observation_start_ms = btstack_run_loop_get_time_ms();
     mesh_subnet->beacon_observation_counter = 0;
+    if (mesh_foundation_beacon_get()){
+        mesh_subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_W2_AUTH_VALUE;        
+    } else {
+        mesh_subnet->beacon_state = MESH_SECURE_NETWORK_BEACON_GATT_SENT;        
+    }
 
     // start sending
     mesh_secure_network_beacon_run(NULL);
