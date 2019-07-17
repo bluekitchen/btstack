@@ -225,7 +225,7 @@ const mesh_access_message_t mesh_foundation_config_heartbeat_publication_status 
         MESH_FOUNDATION_OPERATION_HEARTBEAT_PUBLICATION_STATUS, "1211122"
 };
 const mesh_access_message_t mesh_foundation_config_network_transmit_status = {
-        MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_STATUS, "11"
+        MESH_FOUNDATION_OPERATION_NETWORK_TRANSMIT_STATUS, "1"
 };
 const mesh_access_message_t mesh_foundation_node_identity_status = {
         MESH_FOUNDATION_OPERATION_NODE_IDENTITY_STATUS, "121"
