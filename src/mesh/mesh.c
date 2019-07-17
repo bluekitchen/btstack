@@ -470,13 +470,15 @@ static void mesh_model_load_publication(mesh_model_t * mesh_model){
     if (mesh_model->publication_model == NULL) return;
 
     uint32_t tag = mesh_model_publication_tag_for_index(mesh_model->mid);
-    btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &mesh_model->publication_model, sizeof(mesh_publication_model_t));
+    btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) mesh_model->publication_model, sizeof(mesh_publication_model_t));
 
     // increase ref counts for current virtual publicataion address
     uint16_t src = mesh_model->publication_model->address;
     if (mesh_network_address_virtual(src)){
         mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_pseudo_dst(src);
-        mesh_virtual_address_increase_refcount(virtual_address);
+        if (virtual_address){
+            mesh_virtual_address_increase_refcount(virtual_address);
+        }
     }
 
     mesh_model_publication_start(mesh_model);
@@ -485,7 +487,7 @@ static void mesh_model_load_publication(mesh_model_t * mesh_model){
 void mesh_model_store_publication(mesh_model_t * mesh_model){
     if (mesh_model->publication_model == NULL) return;
     uint32_t tag = mesh_model_publication_tag_for_index(mesh_model->mid);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &mesh_model->subscriptions, sizeof(mesh_publication_model_t));
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) mesh_model->publication_model, sizeof(mesh_publication_model_t));
 }
 
 static void mesh_model_delete_publication(mesh_model_t * mesh_model){
