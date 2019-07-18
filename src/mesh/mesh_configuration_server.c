@@ -1436,8 +1436,23 @@ static void config_model_publication_changed(mesh_model_t *mesh_model, mesh_publ
     // stop publication
     mesh_model_publication_stop(mesh_model);
 
-    // update model publication state
-    memcpy(mesh_model->publication_model, new_publication_model, sizeof(mesh_publication_model_t));
+    if (new_publication_model->address == MESH_ADDRESS_UNSASSIGNED) {
+        // "When the PublishAddress is set to the unassigned address, the values of the AppKeyIndex, CredentialFlag, PublishTTL, PublishPeriod, PublishRetransmitCount, and PublishRetransmitIntervalSteps fields shall be set to 0x00.
+        mesh_model->publication_model->address = MESH_ADDRESS_UNSASSIGNED;
+        mesh_model->publication_model->appkey_index = 0;
+        mesh_model->publication_model->friendship_credential_flag = 0;
+        mesh_model->publication_model->period = 0;
+        mesh_model->publication_model->ttl = 0;
+        mesh_model->publication_model->retransmit = 0;
+    } else {
+        // update model publication state
+        mesh_model->publication_model->address = new_publication_model->address;
+        mesh_model->publication_model->appkey_index = new_publication_model->appkey_index;
+        mesh_model->publication_model->friendship_credential_flag = new_publication_model->friendship_credential_flag;
+        mesh_model->publication_model->period = new_publication_model->period;
+        mesh_model->publication_model->ttl = new_publication_model->ttl;
+        mesh_model->publication_model->retransmit = new_publication_model->retransmit;
+    }
 
     // store
     mesh_model_store_publication(mesh_model);
