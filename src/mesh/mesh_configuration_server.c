@@ -672,7 +672,7 @@ static void config_netkey_add_handler(mesh_model_t * mesh_model, mesh_pdu_t * pd
 
     // report status    
     config_netkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, new_netkey_index);
-    mesh_access_message_processed(access_pdu_in_process);
+    mesh_access_message_processed(pdu);
 }
 
 static void config_netkey_update_derived(void * arg){
