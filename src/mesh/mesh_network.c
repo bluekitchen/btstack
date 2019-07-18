@@ -715,7 +715,7 @@ static void mesh_adv_bearer_handle_network_event(uint8_t packet_type, uint16_t c
                             printf("TX-E-NetworkPDU (%p): ", adv_bearer_network_pdu);
                             printf_hexdump(adv_bearer_network_pdu->data, adv_bearer_network_pdu->len);
 #endif
-                            adv_bearer_send_network_pdu(adv_bearer_network_pdu->data, adv_bearer_network_pdu->len);
+                            adv_bearer_send_network_pdu(adv_bearer_network_pdu->data, adv_bearer_network_pdu->len, 3, 100);
                             network_pdu = adv_bearer_network_pdu;
                             adv_bearer_network_pdu = NULL;
 

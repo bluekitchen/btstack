@@ -42,7 +42,9 @@ void adv_bearer_request_can_send_now_for_network_pdu(void){
     event[2] = MESH_SUBEVENT_CAN_SEND_NOW;
     (*adv_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
-void adv_bearer_send_network_pdu(const uint8_t * network_pdu, uint16_t size){
+void adv_bearer_send_network_pdu(const uint8_t * network_pdu, uint16_t size, uint8_t count, uint16_t interval){
+    (void) count;
+    (void) interval;
     printf_hexdump(network_pdu, size);
     memcpy(sent_network_pdu_data, network_pdu, size);
     sent_network_pdu_len = size;

@@ -115,12 +115,20 @@ void adv_bearer_request_can_send_now_for_beacon(void);
 void adv_bearer_request_can_send_now_for_provisioning_pdu(void);
 
 /**
- * Send particular message type: Mesh Message, Mesh Beacon, PB-ADV
- * @param data to send 
+ * Send Mesh Message
+ * @param data to send
+ * @param data_len max 29 bytes
+ * @param count number of transmissions
+ * @param interval between transmission
+ */
+void adv_bearer_send_network_pdu(const uint8_t * network_pdu, uint16_t size, uint8_t count, uint16_t interval);
+
+/**
+ * Send particular message type:Mesh Beacon, PB-ADV
+ * @param data to send
  * @param data_len max 29 bytes
  */
-void adv_bearer_send_network_pdu(const uint8_t * network_pdu, uint16_t size); 
-void adv_bearer_send_beacon(const uint8_t * beacon_update, uint16_t size); 
+void adv_bearer_send_beacon(const uint8_t * beacon_update, uint16_t size);
 void adv_bearer_send_provisioning_pdu(const uint8_t * pb_adv_pdu, uint16_t size); 
  
 
