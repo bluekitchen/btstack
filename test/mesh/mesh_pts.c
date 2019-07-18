@@ -201,6 +201,19 @@ static void mesh_state_update_message_handler(uint8_t packet_type, uint16_t chan
 // PTS
 
 // helper network layer, temp
+static void mesh_pts_received_network_message(mesh_network_callback_type_t callback_type, mesh_network_pdu_t *network_pdu){
+    switch (callback_type){
+        case MESH_NETWORK_PDU_RECEIVED:
+            printf("Received network message. SRC %04x, DST %04x, SEQ %04x\n",
+                   mesh_network_src(network_pdu), mesh_network_dst(network_pdu),  mesh_network_seq(network_pdu));
+            printf_hexdump(mesh_network_pdu_data(network_pdu), mesh_network_pdu_len(network_pdu));
+            mesh_network_message_processed_by_higher_layer(network_pdu);
+            break;
+        default:
+            break;
+    }
+}
+
 static uint8_t mesh_network_send(uint8_t ttl, uint16_t dest, const uint8_t * transport_pdu_data, uint8_t transport_pdu_len){
 
     uint16_t netkey_index = 0;
@@ -440,12 +453,13 @@ static void show_usage(void){
     printf("4      - Send Network Message All Friends\n");
     printf("5      - Send Network Message All Relays\n");
     printf("6      - Send Network Message Nodes\n");
+    printf("7      - Dump Network Messages\n");
     printf("?      - Send Unsegmented Access Message\n");
     printf("?      - Send Segmented Access Message - Unicast\n");
     printf("?      - Send Segmented Access Message - Group   D000\n");
     printf("?      - Send Segmented Access Message - Virtual 9779\n");
     printf("?      - Clear Replay Protection List\n");
-    printf("7      - Load PTS App key\n");
+    printf("?      - Load PTS App key\n");
     printf("8      - Delete provisioning data\n");
     printf("p      - Enable Public Key OOB \n");
     printf("o      - Enable Output OOB \n");
@@ -492,7 +506,8 @@ static void stdin_process(char cmd){
             send_pts_network_messsage("All Nodes", MESH_ADDRESS_ALL_NODES, pts_type++);
             break;
         case '7':
-            load_pts_app_key();
+            printf("Dump Network packets\n");
+            mesh_network_set_higher_layer_handler(&mesh_pts_received_network_message);
             break;
         case '8':
             mesh_node_reset();
