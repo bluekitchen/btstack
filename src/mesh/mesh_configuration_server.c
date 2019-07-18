@@ -1430,7 +1430,6 @@ static void config_model_app_get_handler(mesh_model_t *config_server_model, mesh
 }
 
 // Model Publication
-
 static void config_model_publication_changed(mesh_model_t *mesh_model, mesh_publication_model_t * new_publication_model){
 
     // stop publication
@@ -1471,19 +1470,29 @@ config_model_publication_status(mesh_model_t *mesh_model, uint16_t netkey_index,
     UNUSED(mesh_model);
 
     // setup message
-    uint16_t app_key_index_and_credential_flag = (publication_model->friendship_credential_flag << 12) | publication_model->appkey_index;
-    uint16_t publish_address = publication_model->address;
-    
-    if (mesh_network_address_virtual(publish_address)){
-        mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_pseudo_dst(publish_address);
-        if (virtual_address){
-            publish_address = virtual_address->hash;
+    uint16_t app_key_index_and_credential_flag = 0;
+    uint16_t publish_address = 0;
+    uint8_t ttl = 0;
+    uint8_t period = 0;
+    uint8_t retransmit = 0;
+    if (status == MESH_FOUNDATION_STATUS_SUCCESS){
+        app_key_index_and_credential_flag = (publication_model->friendship_credential_flag << 12) | publication_model->appkey_index;
+        ttl = publication_model->ttl;
+        period = publication_model->period;
+        retransmit = publication_model->retransmit;
+
+        publish_address = publication_model->address;
+        if (mesh_network_address_virtual(publish_address)){
+            mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_pseudo_dst(publish_address);
+            if (virtual_address){
+                publish_address = virtual_address->hash;
+            }
         }
     }
+
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
             &mesh_foundation_config_model_publication_status, status, element_address, publish_address,
-            app_key_index_and_credential_flag,
-            publication_model->ttl, publication_model->period, publication_model->retransmit, model_identifier);
+            app_key_index_and_credential_flag, ttl, period, retransmit, model_identifier);
     if (!transport_pdu) return;
 
     // send as segmented access pdu
