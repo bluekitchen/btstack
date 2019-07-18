@@ -568,6 +568,7 @@ void mesh_load_network_keys(void){
         mesh_network_key_t * network_key = btstack_memory_mesh_network_key_get();
         if (network_key == NULL) return;
 
+        network_key->internal_index = internal_index;
         network_key->netkey_index = data.netkey_index;
         memcpy(network_key->net_key, data.net_key, 16);
         memcpy(network_key->identity_key, data.identity_key, 16);
