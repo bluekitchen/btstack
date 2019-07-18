@@ -1508,7 +1508,7 @@ config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
-    // ElementAddress - Address of the element - should be us
+    // ElementAddress
     uint16_t element_address = mesh_access_parser_get_u16(&parser);
 
     // PublishAddress, 16 bit
@@ -1530,25 +1530,37 @@ config_model_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
 
     // Model Identifier
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
+
+    // Get Model for Element + Model Identifier
     uint8_t status;
     mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
 
-    // TODO validate params
-
-    if (target_model){
+    // Check if publicatation model struct provided
+    if (status == MESH_FOUNDATION_STATUS_SUCCESS) {
         if (target_model->publication_model == NULL){
             status = MESH_FOUNDATION_STATUS_CANNOT_SET;
-        } else {
-
-            // decrease ref count if old virtual address
-            if (mesh_network_address_virtual(configuration_server_publication_model.address)) {
-                mesh_virtual_address_t * current_virtual_address = mesh_virtual_address_for_pseudo_dst(configuration_server_publication_model.address);
-                mesh_virtual_address_decrease_refcount(current_virtual_address);
-            }
-            
-            // restart publication
-            config_model_publication_changed(target_model, &configuration_server_publication_model);
         }
+    }
+
+    // Check AppKey
+    if (status == MESH_FOUNDATION_STATUS_SUCCESS){
+        // check if appkey already exists
+        mesh_transport_key_t * app_key = mesh_transport_key_get(configuration_server_publication_model.appkey_index);
+        if (app_key == NULL) {
+            status = MESH_FOUNDATION_STATUS_INVALID_APPKEY_INDEX;
+        }
+    }
+
+    // Accept set
+    if (status == MESH_FOUNDATION_STATUS_SUCCESS){
+        // decrease ref count if old virtual address
+        if (mesh_network_address_virtual(configuration_server_publication_model.address)) {
+            mesh_virtual_address_t * current_virtual_address = mesh_virtual_address_for_pseudo_dst(configuration_server_publication_model.address);
+            mesh_virtual_address_decrease_refcount(current_virtual_address);
+        }
+        
+        // restart publication
+        config_model_publication_changed(target_model, &configuration_server_publication_model);
     }
 
     // send status
@@ -1621,13 +1633,25 @@ config_model_publication_virtual_address_set_handler(mesh_model_t *mesh_model,
     // Model Identifier
     configuration_server_model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
+    // Get Model for Element + Model Identifier
     uint8_t status;
     configuration_server_target_model = mesh_access_model_for_address_and_model_identifier(configuration_server_element_address, configuration_server_model_identifier, &status);
 
-    // model exists, but no publication model
-    if (configuration_server_target_model != NULL && configuration_server_target_model->publication_model == NULL){
-        status = MESH_FOUNDATION_STATUS_CANNOT_SET;
-    }
+     // Check if publicatation model struct provided
+     if (status == MESH_FOUNDATION_STATUS_SUCCESS) {
+        if (configuration_server_target_model->publication_model == NULL){
+            status = MESH_FOUNDATION_STATUS_CANNOT_SET;
+        }
+     }
+     
+     // Check AppKey
+     if (status == MESH_FOUNDATION_STATUS_SUCCESS){
+         // check if appkey already exists
+         mesh_transport_key_t * app_key = mesh_transport_key_get(configuration_server_publication_model.appkey_index);
+         if (app_key == NULL) {
+             status = MESH_FOUNDATION_STATUS_INVALID_APPKEY_INDEX;
+         }
+     }
 
     // on error, no need to calculate virtual address hash
     if (status != MESH_FOUNDATION_STATUS_SUCCESS){
@@ -1653,11 +1677,11 @@ config_model_publication_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu)
     // Model Identifier
     uint32_t model_identifier = mesh_access_parser_get_model_identifier(&parser);
 
+    // Get Model for Element + Model Identifier
     uint8_t status;
     mesh_model_t * target_model = mesh_access_model_for_address_and_model_identifier(element_address, model_identifier, &status);
 
     mesh_publication_model_t * publication_model;
-
     if (target_model == NULL){
         // use defaults
         memset(&configuration_server_publication_model, 0, sizeof(mesh_publication_model_t));
