@@ -746,7 +746,8 @@ static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t *
     mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(netkey_index);
     if (subnet != NULL){
         // A NetKey shall not be deleted from the NetKey List using a message secured with this NetKey.
-        if (mesh_subnet_list_count() > 1 && subnet->netkey_index != netkey_index){
+        // Also prevents deleting the last network key
+        if (netkey_index != mesh_pdu_netkey_index(pdu)){
 
             // remove all appkeys for this netkey
             mesh_transport_key_iterator_t it;
@@ -771,7 +772,6 @@ static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t *
             btstack_memory_mesh_subnet_free(subnet);
 
         } else {
-            // we cannot remove the last network key
             status = MESH_FOUNDATION_STATUS_CANNOT_REMOVE;
         }
     }
