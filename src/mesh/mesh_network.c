@@ -692,7 +692,10 @@ static void mesh_network_run(void){
 static void mesh_adv_bearer_handle_network_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     mesh_network_pdu_t * network_pdu;
-
+    uint8_t  transmission_count;
+    uint16_t transmission_interval;
+    uint8_t  transmit_config;
+    
     switch (packet_type){
         case MESH_NETWORK_PACKET:
             // check len. minimal transport PDU len = 1, 32 bit NetMIC -> 13 bytes
@@ -711,11 +714,22 @@ static void mesh_adv_bearer_handle_network_event(uint8_t packet_type, uint16_t c
                     switch(packet[2]){
                         case MESH_SUBEVENT_CAN_SEND_NOW:
                             if (adv_bearer_network_pdu == NULL) break;
+
+                            // Get Transmission config depending on relay flag
+                            if (adv_bearer_network_pdu->flags & MESH_NETWORK_PDU_FLAGS_RELAY){
+                                transmit_config = mesh_foundation_relay_get();
+                            } else {
+                                transmit_config = mesh_foundation_network_transmit_get();
+                            }
+                            transmission_count     = (transmit_config & 0x07) + 1;
+                            transmission_interval = (transmit_config >> 3) * 10;
+
 #ifdef LOG_NETWORK
-                            printf("TX-E-NetworkPDU (%p): ", adv_bearer_network_pdu);
+                            printf("TX-E-NetworkPDU count %u, interval %u ms (%p): ", adv_bearer_network_pdu, transmission_count, transmission_interval);
                             printf_hexdump(adv_bearer_network_pdu->data, adv_bearer_network_pdu->len);
 #endif
-                            adv_bearer_send_network_pdu(adv_bearer_network_pdu->data, adv_bearer_network_pdu->len, 3, 100);
+
+                            adv_bearer_send_network_pdu(adv_bearer_network_pdu->data, adv_bearer_network_pdu->len, transmission_count, transmission_interval);
                             network_pdu = adv_bearer_network_pdu;
                             adv_bearer_network_pdu = NULL;
 
