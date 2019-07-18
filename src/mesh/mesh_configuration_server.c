@@ -153,6 +153,21 @@ static void mesh_subcription_decrease_virtual_address_ref_count(mesh_model_t *me
         }
     }
 }
+static void mesh_configuration_server_stop_publishing_using_appkey(mesh_model_t * mesh_model, uint16_t appkey_index){
+    // stop publishing if this AppKey was used
+    if (mesh_model->publication_model != NULL){
+        mesh_publication_model_t * publication_model = mesh_model->publication_model;
+        if (publication_model->appkey_index == appkey_index){
+            publication_model->address = MESH_ADDRESS_UNSASSIGNED;
+            publication_model->appkey_index = 0;
+            publication_model->period = 0;
+            publication_model->ttl = 0;
+            publication_model->retransmit = 0;
+
+            mesh_model_store_publication(mesh_model);
+        }
+    }
+}
 
 // AppKeys Helper
 static void mesh_configuration_server_delete_appkey(mesh_transport_key_t * transport_key){
@@ -171,15 +186,8 @@ static void mesh_configuration_server_delete_appkey(mesh_transport_key_t * trans
             // remove from Model to AppKey List
             mesh_model_unbind_appkey(mesh_model, appkey_index);
 
-            // stop publishing if this AppKey was used
-            if (mesh_model->publication_model != NULL){
-                mesh_publication_model_t * publication_model = mesh_model->publication_model;
-                if (publication_model->appkey_index == appkey_index){
-                    publication_model->address = MESH_ADDRESS_UNSASSIGNED;
-                    publication_model->appkey_index = MESH_APPKEY_INVALID;
-                    mesh_model_store_publication(mesh_model);
-                }
-            }
+            // stop publishing if this appkey is used
+            mesh_configuration_server_stop_publishing_using_appkey(mesh_model, appkey_index);
         }
     }
 
@@ -1408,7 +1416,13 @@ static void config_model_app_unbind_handler(mesh_model_t *config_server_model, m
             status = MESH_FOUNDATION_STATUS_INVALID_APPKEY_INDEX;
             break;
         }
+
+        // stop publishing
+        mesh_configuration_server_stop_publishing_using_appkey(target_model, appkey_index);
+
+        // unbind appkey
         mesh_model_unbind_appkey(target_model, appkey_index);
+
         status = MESH_FOUNDATION_STATUS_SUCCESS;
     } while (0);
 
