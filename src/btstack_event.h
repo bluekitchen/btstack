@@ -7784,6 +7784,89 @@ static inline uint32_t mesh_subevent_generic_level_status_get_remaining_time_ms(
     return little_endian_read_32(event, 12);
 }
 
+/**
+ * @brief Get field element_index from event MESH_SUBEVENT_HEALTH_CLEAR_REGISTERED_FAULTS
+ * @param event packet
+ * @return element_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_health_clear_registered_faults_get_element_index(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field company_id from event MESH_SUBEVENT_HEALTH_CLEAR_REGISTERED_FAULTS
+ * @param event packet
+ * @return company_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_health_clear_registered_faults_get_company_id(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+
+/**
+ * @brief Get field element_index from event MESH_SUBEVENT_HEALTH_PERFORM_TEST
+ * @param event packet
+ * @return element_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_health_perform_test_get_element_index(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field model_identifier from event MESH_SUBEVENT_HEALTH_PERFORM_TEST
+ * @param event packet
+ * @return model_identifier
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_health_perform_test_get_model_identifier(const uint8_t * event){
+    return little_endian_read_32(event, 4);
+}
+/**
+ * @brief Get field dest from event MESH_SUBEVENT_HEALTH_PERFORM_TEST
+ * @param event packet
+ * @return dest
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_health_perform_test_get_dest(const uint8_t * event){
+    return little_endian_read_16(event, 8);
+}
+/**
+ * @brief Get field netkey_index from event MESH_SUBEVENT_HEALTH_PERFORM_TEST
+ * @param event packet
+ * @return netkey_index
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_health_perform_test_get_netkey_index(const uint8_t * event){
+    return little_endian_read_16(event, 10);
+}
+/**
+ * @brief Get field appkey_index from event MESH_SUBEVENT_HEALTH_PERFORM_TEST
+ * @param event packet
+ * @return appkey_index
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_health_perform_test_get_appkey_index(const uint8_t * event){
+    return little_endian_read_16(event, 12);
+}
+/**
+ * @brief Get field company_id from event MESH_SUBEVENT_HEALTH_PERFORM_TEST
+ * @param event packet
+ * @return company_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_health_perform_test_get_company_id(const uint8_t * event){
+    return little_endian_read_16(event, 14);
+}
+/**
+ * @brief Get field test_id from event MESH_SUBEVENT_HEALTH_PERFORM_TEST
+ * @param event packet
+ * @return test_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_health_perform_test_get_test_id(const uint8_t * event){
+    return event[16];
+}
+
 
 
 /* API_END */

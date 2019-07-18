@@ -2555,4 +2555,28 @@ typedef uint8_t sm_key_t[16];
  */
 #define MESH_SUBEVENT_GENERIC_LEVEL_STATUS                                           0x32
 
+
+/**
+ * @format 112
+ * @param subevent_code
+ * @param element_index
+ * @param company_id
+ */
+#define MESH_SUBEVENT_HEALTH_CLEAR_REGISTERED_FAULTS                                 0x33
+
+/**
+ * @format 11422221
+ * @param subevent_code
+ * @param element_index
+ * @param model_identifier
+ * @param dest
+ * @param netkey_index
+ * @param appkey_index
+ * @param company_id
+ * @param test_id
+ */
+#define MESH_SUBEVENT_HEALTH_PERFORM_TEST                                            0x34
+
+
+
 #endif
