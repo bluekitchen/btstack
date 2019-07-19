@@ -640,33 +640,46 @@ static void process_network_pdu(mesh_network_pdu_t * network_pdu){
 
 static void mesh_network_run(void){
     if (!btstack_linked_list_empty(&network_pdus_outgoing)){
-        mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing);
+        // peek at element
+        mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_get_first_item(&network_pdus_outgoing);
+
+        printf("mesh_network_run: pdu %p, proxy %u, con handle %4x, num packets %u\n", network_pdu, mesh_foundation_gatt_proxy_get(), gatt_bearer_con_handle, btstack_linked_list_count(&network_pdus_outgoing));
 
 #ifdef ENABLE_MESH_GATT_BEARER
         // request to send via gatt if:
+        // proxy ready
         // proxy active and connected
         // packet wasn't received via gatt bearer
-        printf("mesh_network_run: pdu %p, proxy %u, con handle %4x\n", network_pdu, mesh_foundation_gatt_proxy_get(), gatt_bearer_con_handle);
         if (network_pdu != NULL &&
             (mesh_foundation_gatt_proxy_get() != 0) &&
             (gatt_bearer_con_handle != HCI_CON_HANDLE_INVALID) &&
             ((network_pdu->flags & MESH_NETWORK_PDU_FLAGS_GATT_BEARER) == 0)
         ){
-            gatt_bearer_network_pdu = network_pdu;
+            // ready for gatt bearer, gatt bearer ready, too?
+            if (gatt_bearer_network_pdu == NULL){
+                (void) btstack_linked_list_pop(&network_pdus_outgoing);
+                gatt_bearer_network_pdu = network_pdu;
+                gatt_bearer_request_can_send_now_for_network_pdu();
+            }
             network_pdu = NULL;
-            gatt_bearer_request_can_send_now_for_network_pdu();
         }
 #endif
 #ifdef ENABLE_MESH_ADV_BEARER        
-         // request to send via adv
+        // request to send via adv if:
+        // adv bearer ready
         if (network_pdu != NULL){
-            adv_bearer_network_pdu = network_pdu;
+            // ready for adv bearer, adv ready, too?
+            if (adv_bearer_network_pdu == NULL){
+                (void) btstack_linked_list_pop(&network_pdus_outgoing);
+                adv_bearer_network_pdu = network_pdu;
+                adv_bearer_request_can_send_now_for_network_pdu();
+            }
             network_pdu = NULL;
-            adv_bearer_request_can_send_now_for_network_pdu();
         }
 #endif
         if (network_pdu !=  NULL){
             // notify upper layer
+            (void) btstack_linked_list_pop(&network_pdus_outgoing);
             (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_SENT, network_pdu);
         }
     }
