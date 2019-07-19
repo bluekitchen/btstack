@@ -89,6 +89,8 @@ typedef struct {
 typedef struct {
     btstack_linked_list_t current_faults;
     btstack_linked_list_t registered_faults;
+
+    uint8_t fast_period_divisor;
 } mesh_health_state_t;
 
 #ifdef __cplusplus

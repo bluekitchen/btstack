@@ -121,6 +121,8 @@ typedef struct mesh_model {
 
     // packet handler for transition events in server, event callback handler in client
     btstack_packet_handler_t model_packet_handler;
+    // used for asynchronous calls in the done command to unblock the message queue
+    mesh_pdu_t * processed_pdu;
 } mesh_model_t;
 
 typedef struct {
