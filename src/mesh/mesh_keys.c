@@ -70,7 +70,7 @@ void mesh_network_key_add(mesh_network_key_t * network_key){
 }
 
 int mesh_network_key_remove(mesh_network_key_t * network_key){
-    mesh_network_key_used[network_key->internal_index] = 1;
+    mesh_network_key_used[network_key->internal_index] = 0;
     return btstack_linked_list_remove(&network_keys, (btstack_linked_item_t *) network_key);
 }
 
