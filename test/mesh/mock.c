@@ -167,3 +167,6 @@ void btstack_run_loop_set_timer_context(btstack_timer_source_t * ts, void * cont
 void * btstack_run_loop_get_timer_context(btstack_timer_source_t * ts){
 	return timer_context;
 }
+void hci_halting_defer(void){
+}
+
