@@ -1870,7 +1870,11 @@ static void config_heartbeat_subscription_status(mesh_model_t *mesh_model, uint1
     UNUSED(mesh_model);
 
     // setup message
-    uint8_t count_log = heartbeat_count_log(mesh_heartbeat_subscription->count_log);
+    uint8_t count_log = heartbeat_count_log(mesh_heartbeat_subscription->count);
+    // if no heartbeats have been received, update min_hops
+    if (mesh_heartbeat_subscription->count == 0){
+        mesh_heartbeat_subscription->min_hops = 0;
+    }
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
             &mesh_foundation_config_heartbeat_subscription_status,
             status,
@@ -1881,7 +1885,7 @@ static void config_heartbeat_subscription_status(mesh_model_t *mesh_model, uint1
             mesh_heartbeat_subscription->min_hops,
             mesh_heartbeat_subscription->max_hops);
     if (!transport_pdu) return;
-    printf("MESH config_heartbeat_subscription_status count = %u => count_log = %u\n", mesh_heartbeat_subscription->count_log, count_log);
+    printf("MESH config_heartbeat_subscription_status count = %u => count_log = %u\n", mesh_heartbeat_subscription->count, count_log);
 
     // send as segmented access pdu
     config_server_send_message(netkey_index, dest, (mesh_pdu_t *) transport_pdu);
@@ -1924,24 +1928,21 @@ static void config_heartbeat_subscription_set_handler(mesh_model_t *mesh_model, 
 
     mesh_heartbeat_subscription_t * mesh_heartbeat_subscription = &((mesh_configuration_server_model_context_t*) mesh_model->model_data)->heartbeat_subscription;
 
-    if (config_heartbeat_subscription_enabled(mesh_heartbeat_subscription)){
-        requested_subscription.count_log  = 0u;
-        requested_subscription.min_hops   = 0x7Fu;
-        requested_subscription.max_hops   = 0u;
+    if (config_heartbeat_subscription_enabled(&requested_subscription)){
+        mesh_heartbeat_subscription->source      = requested_subscription.source;
+        mesh_heartbeat_subscription->destination = requested_subscription.destination;
+        mesh_heartbeat_subscription->period_log  = requested_subscription.period_log;
+        mesh_heartbeat_subscription->count       = 0;
+        mesh_heartbeat_subscription->min_hops    = 0x7Fu;
+        mesh_heartbeat_subscription->max_hops    = 0u;
     } else {
-        requested_subscription.source = MESH_ADDRESS_UNSASSIGNED;
-        requested_subscription.destination = MESH_ADDRESS_UNSASSIGNED;
-        requested_subscription.period_log = 0u;
-        requested_subscription.count_log  = 0u;
-        requested_subscription.min_hops   = 0u;
-        requested_subscription.max_hops   = 0u;
+        mesh_heartbeat_subscription->source      = MESH_ADDRESS_UNSASSIGNED;
+        mesh_heartbeat_subscription->destination = MESH_ADDRESS_UNSASSIGNED;
+        mesh_heartbeat_subscription->period_log  = 0u;
     }
-    
-    // accept request
-    memcpy(mesh_heartbeat_subscription, &requested_subscription, sizeof(mesh_heartbeat_subscription_t));
 
-    printf("MESH config_heartbeat_subscription_set, destination %x, count = %x, period = %u s\n",
-            mesh_heartbeat_subscription->destination, mesh_heartbeat_subscription->count_log, heartbeat_pwr2(mesh_heartbeat_subscription->period_log));
+    printf("MESH config_heartbeat_subscription_set, source %x destination %x, period = %u s\n", mesh_heartbeat_subscription->source,
+            mesh_heartbeat_subscription->destination, heartbeat_pwr2(mesh_heartbeat_subscription->period_log));
 
     config_heartbeat_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, mesh_heartbeat_subscription);
     mesh_access_message_processed(pdu);

@@ -67,7 +67,7 @@ typedef struct  {
     uint16_t source;
     uint16_t destination;
     uint8_t  period_log;
-    uint8_t  count_log;
+    uint8_t  count;
     uint8_t  min_hops;
     uint8_t  max_hops;
 } mesh_heartbeat_subscription_t;
