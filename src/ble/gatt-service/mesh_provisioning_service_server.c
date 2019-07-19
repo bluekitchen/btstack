@@ -86,9 +86,9 @@ static void mesh_provisioning_service_emit_link_open(hci_con_handle_t con_handle
 }
 
 static void mesh_provisioning_service_emit_link_close(hci_con_handle_t con_handle, uint8_t reason){
-    uint8_t event[5] = { HCI_EVENT_MESH_META, 3, MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED};
+    uint8_t event[6] = { HCI_EVENT_MESH_META, 3, MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED};
     little_endian_store_16(event, 3, con_handle);
-    event[4] = reason;
+    event[5] = reason;
     mesh_provisioning_service_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
