@@ -642,8 +642,8 @@ int btstack_main(void)
     btstack_parse_hex("001BDC0810210B0E0A0C000B0E0A0C00", 16, label_uuid);
     pts_virtual_addresss = mesh_virtual_address_register(label_uuid, 0x9779);
 
-    printf("TSPX_iut_model_id_used 0x1000 (Generic OnOff Server)\n"); 
-
+    printf("TSPX_iut_model_id    0x1000 (Generic OnOff Server)\n"); 
+    printf("TSPX_vendor_model_id 0x%08x\n", mesh_vendor_model.model_identifier);
     // turn on!
 	hci_power_control(HCI_POWER_ON);
 	    
