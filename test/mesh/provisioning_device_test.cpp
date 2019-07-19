@@ -140,6 +140,9 @@ void pb_adv_send_pdu(uint16_t pb_transport_cid, const uint8_t * pdu, uint16_t si
 }
 void pb_gatt_send_pdu(uint16_t con_handle, const uint8_t * pdu, uint16_t pdu_size){}
  
+uint16_t mesh_network_key_get_free_index(void){
+    return 0;
+}
 
 static mesh_network_key_t network_key; 
 extern "C" mesh_network_key_t * btstack_memory_mesh_network_key_get(void){

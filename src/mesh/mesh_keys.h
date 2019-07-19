@@ -49,6 +49,8 @@ extern "C"
 {
 #endif
 
+#define MESH_KEYS_INVALID_INDEX 0xffff
+
 typedef struct {
     btstack_linked_item_t item;
 
@@ -134,7 +136,7 @@ void mesh_network_key_init(void);
 /**
  * @brief Get internal index of free network key storage entry
  * @note index 0 is reserved for primary network key
- * @returns index or 0u if none found
+ * @returns index or MESH_KEYS_INVALID_INDEX if none found
  */
 uint16_t mesh_network_key_get_free_index(void);
 

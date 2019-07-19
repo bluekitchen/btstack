@@ -623,7 +623,7 @@ static void config_netkey_add_handler(mesh_model_t * mesh_model, mesh_pdu_t * pd
 
         // check limit for pts
         uint16_t internal_index = mesh_network_key_get_free_index();
-        if (internal_index == 0 || (config_netkey_list_max && mesh_network_key_list_count() >= config_netkey_list_max)){
+        if (internal_index == MESH_KEYS_INVALID_INDEX || (config_netkey_list_max && mesh_network_key_list_count() >= config_netkey_list_max)){
             status = MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
         } else {
 
@@ -709,10 +709,17 @@ static void config_netkey_update_handler(mesh_model_t * mesh_model, mesh_pdu_t *
         return;
     }
 
-    // setup new key
+    // get index for new key
     uint16_t internal_index = mesh_network_key_get_free_index();
+    if (internal_index == MESH_KEYS_INVALID_INDEX){
+        config_netkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES, netkey_index);
+        mesh_access_message_processed(access_pdu_in_process);
+        return;
+    }
+
+    // get new key
     mesh_network_key_t * new_network_key = btstack_memory_mesh_network_key_get();
-    if (internal_index == 0 || new_network_key == NULL){
+    if (new_network_key == NULL){
         config_netkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES, netkey_index);
         mesh_access_message_processed(access_pdu_in_process);
         return;

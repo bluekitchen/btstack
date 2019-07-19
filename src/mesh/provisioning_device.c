@@ -704,7 +704,8 @@ static void provisioning_handle_data_ccm(void * arg){
     // sort provisoning data
     memcpy(network_key->net_key, provisioning_data, 16);
     network_key->netkey_index = big_endian_read_16(provisioning_data, 16);
-    network_key->internal_index = 0;
+    // assume free index available for very first network key
+    network_key->internal_index = mesh_network_key_get_free_index();
     flags = provisioning_data[18];
     iv_index = big_endian_read_32(provisioning_data, 19);
     unicast_address = big_endian_read_16(provisioning_data, 23);

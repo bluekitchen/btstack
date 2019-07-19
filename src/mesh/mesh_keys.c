@@ -55,14 +55,13 @@ void mesh_network_key_init(void){
 }
 
 uint16_t mesh_network_key_get_free_index(void){
-    // find empty slot, skip slot #0 reserved for primary network key
     uint16_t i;
-    for (i=1;i < MAX_NR_MESH_NETWORK_KEYS ; i++){
+    for (i=0;i < MAX_NR_MESH_NETWORK_KEYS ; i++){
         if (mesh_network_key_used[i] == 0){
             return i;
         }
     }
-    return 0;
+    return MESH_KEYS_INVALID_INDEX;
 }
 
 void mesh_network_key_add(mesh_network_key_t * network_key){
