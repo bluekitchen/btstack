@@ -257,6 +257,8 @@ mesh_model_t * mesh_model_get_configuration_server(void);
 
 mesh_model_t * mesh_access_model_for_address_and_model_identifier(uint16_t element_address, uint32_t model_identifier, uint8_t * status);
 
+void mesh_model_reset_appkeys(mesh_model_t * mesh_model);
+
 // Mesh Model Subscriptions
 int mesh_model_contains_subscription(mesh_model_t * mesh_model, uint16_t address);
 

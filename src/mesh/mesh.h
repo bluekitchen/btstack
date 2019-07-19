@@ -94,7 +94,6 @@ void mesh_load_app_keys(void);
 // Mesh Model to Appkey List
 void mesh_load_appkey_lists(void);
 void mesh_delete_appkey_lists(void);
-void mesh_model_reset_appkeys(mesh_model_t * mesh_model);
 uint8_t mesh_model_bind_appkey(mesh_model_t * mesh_model, uint16_t appkey_index);
 void mesh_model_unbind_appkey(mesh_model_t * mesh_model, uint16_t appkey_index);
 int mesh_model_contains_appkey(mesh_model_t * mesh_model, uint16_t appkey_index);

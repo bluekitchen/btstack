@@ -725,7 +725,7 @@ static void mesh_adv_bearer_handle_network_event(uint8_t packet_type, uint16_t c
                             transmission_interval = (transmit_config >> 3) * 10;
 
 #ifdef LOG_NETWORK
-                            printf("TX-E-NetworkPDU count %u, interval %u ms (%p): ", adv_bearer_network_pdu, transmission_count, transmission_interval);
+                            printf("TX-E-NetworkPDU (%p) count %u, interval %u ms (%p): ", adv_bearer_network_pdu, transmission_count, transmission_interval);
                             printf_hexdump(adv_bearer_network_pdu->data, adv_bearer_network_pdu->len);
 #endif
 
