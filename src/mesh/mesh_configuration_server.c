@@ -1908,12 +1908,16 @@ static void config_heartbeat_subscription_set_handler(mesh_model_t *mesh_model, 
     //  Period for sending Heartbeat messages
     requested_subscription.period_log = mesh_access_parser_get_u8(&parser);
     
+    // ignore messages from non-unicast sources
+    if ( ((requested_subscription.source != MESH_ADDRESS_UNSASSIGNED)       && 
+               !mesh_network_address_unicast(requested_subscription.source))){
+        mesh_access_message_processed(pdu);
+        return;
+    }
+
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
     if (requested_subscription.period_log > 0x11u){
         status = MESH_FOUNDATION_STATUS_CANNOT_SET;
-    } else if ((requested_subscription.source != MESH_ADDRESS_UNSASSIGNED)       && 
-               !mesh_network_address_unicast(requested_subscription.source)){
-        status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
     } else if ((requested_subscription.destination != MESH_ADDRESS_UNSASSIGNED)  && 
                !mesh_network_address_unicast(requested_subscription.destination) &&
                !mesh_network_address_group(requested_subscription.destination)){
