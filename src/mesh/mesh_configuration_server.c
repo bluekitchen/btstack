@@ -1181,8 +1181,8 @@ static void config_model_subscription_overwrite_handler(mesh_model_t *mesh_model
     if (target_model != NULL){
         if (mesh_network_address_group(address) && !mesh_network_address_all_nodes(address)){
             mesh_subcription_decrease_virtual_address_ref_count(target_model);
-            mesh_model_delete_all_subscriptions(mesh_model);
-            mesh_model_add_subscription(mesh_model, address);
+            mesh_model_delete_all_subscriptions(target_model);
+            mesh_model_add_subscription(target_model, address);
             mesh_model_store_subscriptions(target_model);
         } else {
             status = MESH_FOUNDATION_STATUS_INVALID_ADDRESS;
