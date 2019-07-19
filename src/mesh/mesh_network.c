@@ -64,7 +64,6 @@
 
 // configuration
 #define MESH_NETWORK_CACHE_SIZE 2
-// #define ENABLE_MESH_RELAY
 
 // debug config
 // #define LOG_NETWORK
@@ -364,13 +363,17 @@ static void mesh_network_send_a(mesh_network_pdu_t * network_pdu){
 
 #if defined(ENABLE_MESH_RELAY) || defined (ENABLE_MESH_PROXY_SERVER)
 static void mesh_network_relay_message(mesh_network_pdu_t * network_pdu){
+
     uint8_t ctl_ttl     = network_pdu->data[1];
     uint8_t ctl         = ctl_ttl & 0x80;
     uint8_t ttl         = ctl_ttl & 0x7f;
-    uint8_t net_mic_len = ctl ? 8 : 4;
+
+#ifdef LOG_NETWORK
+    printf("TX-Relay-NetworkPDU (%p): ", network_pdu);
+    printf_hexdump(network_pdu->data, network_pdu->len);
+#endif
 
     // prepare pdu for resending
-    network_pdu->len    -= net_mic_len;
     network_pdu->data[1] = (ctl << 7) | (ttl - 1);
     network_pdu->flags |= MESH_NETWORK_PDU_FLAGS_RELAY;
 
