@@ -74,17 +74,14 @@ const mesh_access_message_t mesh_foundation_health_attention_status = {
         MESH_FOUNDATION_OPERATION_HEALTH_ATTENTION_STATUS, "1"
 };
 
-static mesh_pdu_t * health_period_status(mesh_model_t * mesh_model, uint32_t opcode){
+static mesh_pdu_t * health_period_status(mesh_model_t * mesh_model){
     mesh_health_state_t * state = (mesh_health_state_t *) mesh_model->model_data;
-    if (state == NULL){
-        log_error("health_period_status state ==  NULL");
-    }
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_health_period_status, state->fast_period_divisor); 
     return (mesh_pdu_t *) transport_pdu;
 }
 
-static mesh_pdu_t * health_attention_status(mesh_model_t * mesh_model, uint32_t opcode){
+static mesh_pdu_t * health_attention_status(void){
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_health_attention_status, mesh_attention_timer_get()); 
     return (mesh_pdu_t *) transport_pdu;
@@ -255,7 +252,7 @@ static void health_fault_test_unacknowledged_handler(mesh_model_t * mesh_model, 
 }
 
 static void health_period_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
-    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_period_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_PERIOD_STATUS);
+    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_period_status(mesh_model);
     if (!transport_pdu) return;
     health_server_send_message(mesh_access_get_element_address(mesh_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu);
     mesh_access_message_processed(pdu);
@@ -291,7 +288,7 @@ static void process_message_period_set(mesh_model_t *mesh_model, mesh_pdu_t * pd
 static void health_period_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     process_message_period_set(mesh_model, pdu);
     
-    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_period_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_PERIOD_STATUS);
+    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_period_status(mesh_model);
     if (!transport_pdu) return;
     health_server_send_message(mesh_access_get_element_address(mesh_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu);
     mesh_access_message_processed(pdu);
@@ -303,7 +300,7 @@ static void health_period_set_unacknowledged_handler(mesh_model_t *mesh_model, m
 }
 
 static void health_attention_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
-    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_attention_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_ATTENTION_STATUS);
+    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_attention_status();
     if (!transport_pdu) return;
     health_server_send_message(mesh_access_get_element_address(mesh_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu);
     mesh_access_message_processed(pdu);
@@ -331,7 +328,7 @@ static void process_message_attention_set(mesh_model_t *mesh_model, mesh_pdu_t *
 static void health_attention_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     process_message_attention_set(mesh_model, pdu);
     
-    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_attention_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_ATTENTION_STATUS);
+    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_attention_status();
     if (!transport_pdu) return;
     health_server_send_message(mesh_access_get_element_address(mesh_model), mesh_pdu_src(pdu), mesh_pdu_netkey_index(pdu), mesh_pdu_appkey_index(pdu),(mesh_pdu_t *) transport_pdu);
     mesh_access_message_processed(pdu);
