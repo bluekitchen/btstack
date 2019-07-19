@@ -87,7 +87,8 @@ static void mesh_provisioning_service_emit_link_open(hci_con_handle_t con_handle
 
 static void mesh_provisioning_service_emit_link_close(hci_con_handle_t con_handle, uint8_t reason){
     uint8_t event[5] = { HCI_EVENT_MESH_META, 3, MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED};
-    little_endian_store_16(event, 4, con_handle);
+    little_endian_store_16(event, 3, con_handle);
+    event[4] = reason;
     mesh_provisioning_service_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -172,6 +173,8 @@ static int mesh_provisioning_service_write_callback(hci_con_handle_t con_handle,
 }
 
 static void mesh_provisioning_service_server_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(channel);
+    UNUSED(size);
     if (packet_type != HCI_EVENT_PACKET) return;
     if (hci_event_packet_get_type(packet) != HCI_EVENT_DISCONNECTION_COMPLETE) return;
     hci_con_handle_t con_handle = hci_event_disconnection_complete_get_connection_handle(packet);
