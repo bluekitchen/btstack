@@ -219,6 +219,7 @@ static void mesh_access_acknowledged_received(uint16_t rx_src, uint32_t opcode){
 }
 
 static void mesh_access_upper_transport_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu){
+    UNUSED(status);
     switch (callback_type){
         case MESH_TRANSPORT_PDU_SENT:
             // unacknowledged -> free

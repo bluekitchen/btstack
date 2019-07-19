@@ -149,7 +149,7 @@ static inline uint8_t mesh_generic_level_client_set_value(mesh_model_t * mesh_mo
 
 // Level
 
-uint8_t mesh_generic_level_client_get(mesh_model_t *mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index){
+uint8_t mesh_generic_level_client_level_get(mesh_model_t *mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index){
     // setup message
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_level_get);
     if (!transport_pdu) return BTSTACK_MEMORY_ALLOC_FAILED;

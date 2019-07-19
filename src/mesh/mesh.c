@@ -976,7 +976,9 @@ static void mesh_node_store_provisioning_data(mesh_provisioning_data_t * provisi
 static void mesh_access_setup_unprovisioned_device(const uint8_t * device_uuid){
 #ifdef ENABLE_MESH_PB_ADV
     // PB-ADV
-    beacon_unprovisioned_device_start(mesh_node_get_device_uuid(), 0);
+    beacon_unprovisioned_device_start(device_uuid, 0);
+#else
+    UNUSED(device_uuid);;
 #endif
 #ifdef ENABLE_MESH_PB_GATT
     mesh_proxy_start_advertising_unprovisioned_device();
