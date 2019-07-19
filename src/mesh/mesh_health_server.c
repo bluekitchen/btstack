@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_generic_server.c"
+#define __BTSTACK_FILE__ "mesh_health_server.c"
 
 #include <string.h>
 #include <stdio.h>
@@ -48,9 +48,10 @@
 #include "btstack_util.h"
 
 #include "mesh/mesh_access.h"
+#include "mesh/mesh_node.h"
 #include "mesh/mesh_foundation.h"
 #include "mesh/mesh_generic_model.h"
-#include "mesh/mesh_generic_server.h"
+#include "mesh/mesh_generic_on_off_server.h"
 #include "mesh/mesh_keys.h"
 #include "mesh/mesh_network.h"
 #include "mesh/mesh_upper_transport.h"
@@ -206,7 +207,7 @@ static mesh_pdu_t * health_fault_status(btstack_linked_list_t * faults, uint32_t
 }
 
 void mesh_health_server_report_test_done(uint16_t element_index, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t test_id, uint16_t company_id){
-    mesh_element_t * element = mesh_element_for_index(element_index);
+    mesh_element_t * element = mesh_node_element_for_index(element_index);
     if (element == NULL) return;
     
     mesh_model_t * mesh_model = mesh_model_get_by_identifier(element, mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_HEALTH_SERVER));
@@ -248,5 +249,5 @@ void  mesh_health_server_register_packet_handler(mesh_model_t *mesh_model, btsta
         log_error(" mesh_health_server_register_packet_handler called with NULL mesh_model");
         return;
     }
-    mesh_model->model_packet_handler = &events_packet_handler;
+    mesh_model->model_packet_handler = events_packet_handler;
 }

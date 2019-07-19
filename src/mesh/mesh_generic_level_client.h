@@ -102,7 +102,7 @@ uint8_t mesh_generic_level_client_level_get(mesh_model_t *mesh_model, uint16_t d
  * @param  transaction_id
  * @return status    0 if successful 
  */
-void mesh_generic_level_client_publish_level(mesh_model_t * mesh_model, int16_t level_value, uint8_t transaction_id);
+uint8_t mesh_generic_level_client_publish_level(mesh_model_t * mesh_model, int16_t level_value, uint8_t transaction_id);
 
 /**
  * @brief Set Level value

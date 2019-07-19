@@ -56,7 +56,7 @@
 #include "mesh/mesh_configuration_server.h"
 #include "mesh/mesh_foundation.h"
 #include "mesh/mesh_generic_model.h"
-#include "mesh/mesh_generic_server.h"
+#include "mesh/mesh_generic_on_off_server.h"
 #include "mesh/mesh_iv_index_seq_number.h"
 #include "mesh/mesh_lower_transport.h"
 #include "mesh/mesh_peer.h"

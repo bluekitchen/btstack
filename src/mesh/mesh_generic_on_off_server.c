@@ -35,7 +35,9 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_generic_server.c"
+#define __BTSTACK_FILE__ "mesh_generic_on_off_server.c"
+
+#include "mesh/mesh_generic_on_off_server.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -48,7 +50,6 @@
 #include "mesh/mesh_access.h"
 #include "mesh/mesh_foundation.h"
 #include "mesh/mesh_generic_model.h"
-#include "mesh/mesh_generic_server.h"
 #include "mesh/mesh_keys.h"
 #include "mesh/mesh_network.h"
 #include "mesh/mesh_upper_transport.h"

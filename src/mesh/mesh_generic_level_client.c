@@ -35,12 +35,12 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_generic_client.c"
+#define __BTSTACK_FILE__ "mesh_generic_level_client.c"
 
 #include <string.h>
 #include <stdio.h>
 
-#include "mesh/mesh_generic_client.h"
+#include "mesh/mesh_generic_level_client.h"
 
 #include "bluetooth_company_id.h"
 #include "btstack_debug.h"
@@ -183,14 +183,14 @@ uint8_t mesh_generic_level_client_publish_level(mesh_model_t * mesh_model, int16
 
 // Delta
 uint8_t mesh_generic_level_client_delta_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
-    uint16_t delta_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
+    int16_t delta_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
     
     return mesh_generic_level_client_set_value(mesh_model, &mesh_generic_delta_set_with_transition, &mesh_generic_delta_set_instantaneous, 
         dest, netkey_index, appkey_index, delta_value, transition_time_gdtt, delay_time_gdtt, transaction_id, 1);
 }
 
 uint8_t mesh_generic_level_client_delta_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
-    uint16_t delta_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
+    int16_t delta_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
 
     return mesh_generic_level_client_set_value(mesh_model, &mesh_generic_delta_set_unacknowledged_with_transition, &mesh_generic_delta_set_unacknowledged_instantaneous, 
         dest, netkey_index, appkey_index, delta_value, transition_time_gdtt, delay_time_gdtt, transaction_id, 0);
@@ -198,14 +198,14 @@ uint8_t mesh_generic_level_client_delta_set_unacknowledged(mesh_model_t * mesh_m
 
 // Move
 uint8_t mesh_generic_level_client_move_set(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
-    uint16_t delta_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
+    int16_t delta_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
     
     return mesh_generic_level_client_set_value(mesh_model, &mesh_generic_move_set_with_transition, &mesh_generic_move_set_instantaneous, 
         dest, netkey_index, appkey_index, delta_value, transition_time_gdtt, delay_time_gdtt, transaction_id, 1);
 }
 
 uint8_t mesh_generic_level_client_move_set_unacknowledged(mesh_model_t * mesh_model, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, 
-    uint16_t delta_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
+    int16_t delta_value, uint8_t transition_time_gdtt, uint8_t delay_time_gdtt, uint8_t transaction_id){
 
     return mesh_generic_level_client_set_value(mesh_model, &mesh_generic_move_set_unacknowledged_with_transition, &mesh_generic_move_set_unacknowledged_instantaneous, 
         dest, netkey_index, appkey_index, delta_value, transition_time_gdtt, delay_time_gdtt, transaction_id, 0);

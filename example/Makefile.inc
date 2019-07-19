@@ -134,31 +134,35 @@ HXCMOD_PLAYER = \
 	nao-deceased_by_disease.c 	\
 
 MESH = \
-	mesh.c \
-	mesh_access.c \
-	mesh_configuration_server.c \
-	mesh_foundation.c \
-	mesh_keys.c \
-	mesh_virtual_addresses.c \
-	mesh_peer.c \
-	mesh_proxy.c \
-	provisioning.c \
-	provisioning_device.c \
-	provisioning_provisioner.c \
-	mesh_generic_server.c \
-	mesh_iv_index_seq_number.c \
 	adv_bearer.c \
 	beacon.c \
 	gatt_bearer.c \
+	mesh.c \
+	mesh_access.c \
+	mesh_configuration_server.c \
 	mesh_crypto.c \
+	mesh_foundation.c \
+	mesh_generic_level_client.c \
+	mesh_generic_level_server.c \
+	mesh_generic_on_off_client.c \
+	mesh_generic_on_off_server.c \
+	mesh_health_server.c \
+	mesh_iv_index_seq_number.c \
+	mesh_keys.c \
 	mesh_lower_transport.c \
 	mesh_network.c \
 	mesh_node.c \
+	mesh_peer.c \
+	mesh_provisioning_service_server.c \
+	mesh_proxy.c \
+	mesh_proxy_service_server.c \
 	mesh_upper_transport.c \
+	mesh_virtual_addresses.c \
 	pb_adv.c \
 	pb_gatt.c \
-	mesh_provisioning_service_server.c \
-	mesh_proxy_service_server.c \
+	provisioning.c \
+	provisioning_device.c \
+	provisioning_provisioner.c \
 
 # List of General Examples without Bluetooth
 

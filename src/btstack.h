@@ -131,6 +131,8 @@
 #endif
 
 #ifdef ENABLE_MESH
+#include "ble/gatt-service/mesh_provisioning_service_server.h"
+#include "ble/gatt-service/mesh_proxy_service_server.h"
 #include "mesh/adv_bearer.h"
 #include "mesh/beacon.h"
 #include "mesh/gatt_bearer.h"
@@ -139,11 +141,12 @@
 #include "mesh/mesh_configuration_server.h"
 #include "mesh/mesh_crypto.h"
 #include "mesh/mesh_foundation.h"
+#include "mesh/mesh_generic_level_client.h"
+#include "mesh/mesh_generic_level_server.h"
 #include "mesh/mesh_generic_model.h"
-#include "mesh/mesh_generic_server.h"
-#include "mesh/mesh_iv_index_seq_number.h"
-#include "mesh/mesh_lower_transport.h"
-#include "mesh/mesh_peer.h"
+#include "mesh/mesh_generic_on_off_client.h"
+#include "mesh/mesh_generic_on_off_server.h"
+#include "mesh/mesh_health_server.h"
 #include "mesh/mesh_proxy.h"
 #include "mesh/mesh_upper_transport.h"
 #include "mesh/mesh_virtual_addresses.h"
@@ -151,6 +154,7 @@
 #include "mesh/pb_gatt.h"
 #include "mesh/provisioning.h"
 #include "mesh/provisioning_device.h"
+#include "mesh/provisioning_provisioner.h"
 #endif
 
 #endif  // __BTSTACK_H 
