@@ -252,7 +252,7 @@ static void printf_hex(const uint8_t * data, uint16_t len){
 }
 
 static void mesh_pts_dump_mesh_options(void){
-    printf("\nMeshOptions.ini\n");
+    printf("\nMeshOptions.ini - into 'My Decoders' of Bluetooth Protocol Viewer\n");
 
     printf("[mesh]\n");
 
