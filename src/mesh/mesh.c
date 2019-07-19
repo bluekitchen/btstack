@@ -352,7 +352,7 @@ void mesh_load_virtual_addresses(void){
         mesh_persistent_virtual_address_t data;
         uint32_t tag = mesh_virtual_address_tag_for_pseudo_dst(pseudo_dst);
         int virtual_address_len = btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(data));
-        if (virtual_address_len == 0) return;
+        if (virtual_address_len == 0) continue;
         
         mesh_virtual_address_t * virtual_address = btstack_memory_mesh_virtual_address_get();
         if (virtual_address == NULL) return;
