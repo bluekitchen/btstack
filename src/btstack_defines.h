@@ -2577,6 +2577,19 @@ typedef uint8_t sm_key_t[16];
  */
 #define MESH_SUBEVENT_HEALTH_PERFORM_TEST                                            0x34
 
+/**
+ * @format 111
+ * @param subevent_code
+ * @param element_index
+ * @param fast_period_divisor
+ */
+#define MESH_SUBEVENT_HEALTH_FAST_PERIOD_DIVISOR_CHANGED                             0x35
 
+/**
+ * @format 11
+ * @param subevent_code
+ * @param element_index
+ */
+#define MESH_SUBEVENT_HEALTH_ATTENTION_TIMER_CHANGED                                 0x36
 
 #endif

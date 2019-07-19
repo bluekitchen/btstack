@@ -70,10 +70,10 @@ extern "C"
 #define MESH_FOUNDATION_OPERATION_APPKEY_GET                                    0x8001
 #define MESH_FOUNDATION_OPERATION_APPKEY_LIST                                   0x8002
 #define MESH_FOUNDATION_OPERATION_APPKEY_STATUS                                 0x8003
-#define MESH_FOUNDATION_OPERATION_ATTENTION_GET                                 0x8004
-#define MESH_FOUNDATION_OPERATION_ATTENTION_SET                                 0x8005
-#define MESH_FOUNDATION_OPERATION_ATTENTION_SET_UNACKNOWLEDGED                  0x8006
-#define MESH_FOUNDATION_OPERATION_ATTENTION_STATUS                              0x8007
+#define MESH_FOUNDATION_OPERATION_HEALTH_ATTENTION_GET                          0x8004
+#define MESH_FOUNDATION_OPERATION_HEALTH_ATTENTION_SET                          0x8005
+#define MESH_FOUNDATION_OPERATION_HEALTH_ATTENTION_SET_UNACKNOWLEDGED           0x8006
+#define MESH_FOUNDATION_OPERATION_HEALTH_ATTENTION_STATUS                       0x8007
 #define MESH_FOUNDATION_OPERATION_COMPOSITION_DATA_GET                          0x8008
 #define MESH_FOUNDATION_OPERATION_BEACON_GET                                    0x8009
 #define MESH_FOUNDATION_OPERATION_BEACON_SET                                    0x800a

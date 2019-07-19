@@ -58,6 +58,8 @@ void mesh_health_server_register_packet_handler(mesh_model_t *mesh_model, btstac
 
 void mesh_health_server_report_test_done(uint16_t element_index, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t test_id, uint16_t company_id);
 
+void health_server_clear_faults(btstack_linked_list_t * faults, uint16_t company_id);
+
 #ifdef __cplusplus
 } /* end of extern "C" */
 #endif
