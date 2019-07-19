@@ -1209,10 +1209,11 @@ static void config_model_subscription_virtual_address_overwrite_hash(void *arg){
     }
 
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
-    uint16_t pseudo_dst = MESH_ADDRESS_UNSASSIGNED;
+    uint16_t address = MESH_ADDRESS_UNSASSIGNED;;
     if (virtual_address == NULL){
         status = MESH_FOUNDATION_STATUS_INSUFFICIENT_RESOURCES;
     } else {
+        address = configuration_server_hash;
 
         // increase refcount first to avoid flash delete + add in a row
         mesh_virtual_address_increase_refcount(virtual_address);
@@ -1224,13 +1225,12 @@ static void config_model_subscription_virtual_address_overwrite_hash(void *arg){
         mesh_model_delete_all_subscriptions(target_model);
 
         // add new subscription (successfull if MAX_NR_MESH_SUBSCRIPTION_PER_MODEL > 0)
-        pseudo_dst = virtual_address->pseudo_dst;
-        mesh_model_add_subscription(target_model, pseudo_dst);
+        mesh_model_add_subscription(target_model, virtual_address->pseudo_dst);
 
         mesh_model_store_subscriptions(target_model);
     }
 
-    config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), status, configuration_server_element_address, pseudo_dst, target_model->model_identifier);
+    config_model_subscription_status(mesh_model, mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), status, configuration_server_element_address, address, target_model->model_identifier);
     mesh_access_message_processed(access_pdu_in_process);
     return;
 }
