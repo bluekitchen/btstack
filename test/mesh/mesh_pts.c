@@ -512,7 +512,9 @@ static void stdin_process(char cmd){
         case '8':
             mesh_node_reset();
             printf("Mesh Node Reset!\n");
+#ifdef ENABLE_MESH_PROXY_SERVER
             mesh_proxy_start_advertising_unprovisioned_device();
+#endif
             break;
         case 'p':
             printf("+ Public Key OOB Enabled\n");

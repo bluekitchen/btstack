@@ -240,9 +240,11 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                     // setup node after provisioned
                     mesh_access_setup_from_provisioning_data(&provisioning_data);
 
+#ifdef ENABLE_MESH_PROXY_SERVER
                     // start advertising with node id after provisioning
                     mesh_proxy_set_advertising_with_node_id(provisioning_data.network_key->netkey_index, MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING);
-
+#endif
+                    
                     provisioned = 1;
                     break;
                 default:
@@ -274,14 +276,13 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     provisioned = mesh_node_startup_from_tlv();
                     break;
                 
+#ifdef ENABLE_MESH_PROXY_SERVER
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     // enable PB_GATT
                     if (provisioned == 0){
                         mesh_proxy_start_advertising_unprovisioned_device();
                     } else {
-#ifdef ENABLE_MESH_PROXY_SERVER
                         mesh_proxy_start_advertising_with_network_id();
-#endif
                     }
                     break;
                     
@@ -290,6 +291,7 @@ static void hci_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     // disable PB_GATT
                     mesh_proxy_stop_advertising_unprovisioned_device();
                     break;
+#endif
                 default:
                     break;
             }

@@ -2098,8 +2098,10 @@ static void config_node_identity_get_handler(mesh_model_t *mesh_model, mesh_pdu_
     uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
 
     mesh_node_identity_state_t node_identity_state = MESH_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED;
-    uint8_t status = mesh_proxy_get_advertising_with_node_id_status(netkey_index, &node_identity_state);
-       
+    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
+#ifdef ENABLE_MESH_PROXY_SERVER
+    status = mesh_proxy_get_advertising_with_node_id_status(netkey_index, &node_identity_state);
+#endif
     config_node_identity_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, netkey_index, node_identity_state);
 
     mesh_access_message_processed(pdu);
@@ -2111,8 +2113,11 @@ static void config_node_identity_set_handler(mesh_model_t *mesh_model, mesh_pdu_
     uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
     mesh_node_identity_state_t node_identity_state = (mesh_node_identity_state_t) mesh_access_parser_get_u8(&parser);
 
-    uint8_t status = mesh_proxy_set_advertising_with_node_id(netkey_index, node_identity_state);
-
+    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
+#ifdef ENABLE_MESH_PROXY_SERVER
+    status = mesh_proxy_set_advertising_with_node_id(netkey_index, node_identity_state);
+#endif
+    
     config_node_identity_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, netkey_index, node_identity_state);
     
     mesh_access_message_processed(pdu);
