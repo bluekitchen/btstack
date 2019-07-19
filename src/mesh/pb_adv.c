@@ -156,6 +156,9 @@ static void pb_adv_emit_link_close(uint16_t pb_transport_cid, uint8_t reason){
 }
 
 static void pb_adv_handle_bearer_control(uint32_t link_id, uint8_t transaction_nr, const uint8_t * pdu, uint16_t size){
+    UNUSED(transaction_nr);
+    UNUSED(size);
+
     uint8_t bearer_opcode = pdu[0] >> 2;
     uint8_t reason;
     const uint8_t * own_device_uuid;
@@ -356,6 +359,8 @@ static void pb_adv_outgoing_transation_complete(uint8_t status){
 }
 
 static void pb_adv_handle_transaction_ack(uint8_t transaction_nr, const uint8_t * pdu, uint16_t size){
+    UNUSED(pdu);    
+    UNUSED(size);
     if (transaction_nr == pb_adv_msg_out_transaction_nr){
         printf("PB-ADV: %02x ACK received\n", transaction_nr);
         pb_adv_outgoing_transation_complete(ERROR_CODE_SUCCESS);
@@ -401,10 +406,14 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     uint8_t  generic_provisioning_control;
     switch(packet[0]){
         case GAP_EVENT_ADVERTISING_REPORT:
-
-            data = gap_event_advertising_report_get_data(packet);
+            // data starts at offset 12
+            data = &packet[12];
             // PDB ADV PDU
             length = data[0];
+
+            // validate length field
+            if ((12 + length) > size) return;
+
             link_id = big_endian_read_32(data, 2);
             transaction_nr = data[6];
             // generic provision PDU
