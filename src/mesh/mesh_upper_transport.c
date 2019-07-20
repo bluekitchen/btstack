@@ -941,17 +941,3 @@ static void mesh_transport_run(void){
         }
     }
 }
-
-// buffer pool
-mesh_transport_pdu_t * mesh_transport_pdu_get(void){
-    mesh_transport_pdu_t * transport_pdu = btstack_memory_mesh_transport_pdu_get();
-    if (transport_pdu) {
-        memset(transport_pdu, 0, sizeof(mesh_transport_pdu_t));
-        transport_pdu->pdu_header.pdu_type = MESH_PDU_TYPE_TRANSPORT;
-    }
-    return transport_pdu;
-}
-
-void mesh_transport_pdu_free(mesh_transport_pdu_t * transport_pdu){
-    btstack_memory_mesh_transport_pdu_free(transport_pdu);
-}

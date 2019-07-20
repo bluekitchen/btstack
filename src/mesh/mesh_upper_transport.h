@@ -79,10 +79,6 @@ void mesh_upper_transport_send_access_pdu(mesh_pdu_t * pdu);
 
 void mesh_upper_transport_pdu_free(mesh_pdu_t * pdu);
 
-// allocator
-mesh_transport_pdu_t * mesh_transport_pdu_get(void);
-void mesh_transport_pdu_free(mesh_transport_pdu_t * transport_pdu);
-
 #ifdef __cplusplus
 } /* end of extern "C" */
 #endif
