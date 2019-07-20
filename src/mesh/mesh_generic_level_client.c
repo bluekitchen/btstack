@@ -245,7 +245,7 @@ static void generic_level_status_handler(mesh_model_t *mesh_model, mesh_pdu_t * 
     
     little_endian_store_16(event, pos, present_value);
     pos += 2;
-    little_endian_store_16(event, pos, present_value);
+    little_endian_store_16(event, pos, target_value);
     pos += 2;
     
     little_endian_store_32(event, pos, (uint32_t) mesh_access_time_gdtt2ms(remaining_time_gdtt));
