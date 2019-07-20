@@ -1211,6 +1211,9 @@ void btstack_crypto_ecc_p256_set_key(const uint8_t * public_key, const uint8_t *
     memcpy(btstack_crypto_ecc_p256_d, private_key, 32);
     memcpy(btstack_crypto_ecc_p256_public_key, public_key, 64);
     btstack_crypto_ecc_p256_key_generation_state = ECC_P256_KEY_GENERATION_DONE;
+#else
+    UNUSED(public_key);
+    UNUSED(private_key);
 #endif
 }
 // Unit testing
