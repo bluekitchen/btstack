@@ -197,7 +197,6 @@ EXAMPLES_CLASSIC_ONLY =     \
 	spp_streamer            \
 	spp_streamer_client     \
 	ublox_spp_le_counter    \
-	mesh_node_demo          \
 
 # List of Examples that only use Bluetooth LE
 
@@ -214,6 +213,7 @@ EXAMPLES_LE_ONLY=           \
 	le_data_channel_client  \
 	le_data_channel_server  \
 	le_streamer_client      \
+	mesh_node_demo          \
 	nordic_spp_le_counter   \
 	nordic_spp_le_streamer  \
 	sm_pairing_central      \
