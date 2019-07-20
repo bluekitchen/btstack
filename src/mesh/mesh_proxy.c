@@ -317,14 +317,11 @@ static void proxy_configuration_message_handler(mesh_network_callback_type_t cal
     uint8_t data[4];
     mesh_network_pdu_t * network_pdu;
     uint8_t * network_pdu_data;
-    uint8_t   network_pdu_len;
 
     switch (callback_type){
         case MESH_NETWORK_PDU_RECEIVED:
             printf("proxy_configuration_message_handler: MESH_PROXY_PDU_RECEIVED\n");
-            network_pdu_len = mesh_network_pdu_len(received_network_pdu);
             network_pdu_data = mesh_network_pdu_data(received_network_pdu);
-            // printf_hexdump(network_pdu_data, network_pdu_len);
             opcode = network_pdu_data[0];
             switch (opcode){
                 case MESH_PROXY_CONFIGURATION_MESSAGE_OPCODE_SET_FILTER_TYPE:{
