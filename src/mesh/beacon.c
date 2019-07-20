@@ -94,7 +94,9 @@ static btstack_crypto_aes128_cmac_t        mesh_secure_network_beacon_cmac_reque
 static uint8_t                             mesh_secure_network_beacon_auth_value[16];
 static btstack_packet_handler_t            mesh_secure_network_beacon_handler;
 static int                                 mesh_secure_network_beacon_active;
+#ifdef ENABLE_MESH_ADV_BEARER
 static uint8_t                             mesh_secure_network_beacon_validate_buffer[SECURE_NETWORK_BEACON_LEN];
+#endif
 
 #ifdef ENABLE_MESH_ADV_BEARER
 static void beacon_timer_handler(btstack_timer_source_t * ts){
@@ -263,6 +265,7 @@ static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts){
     btstack_run_loop_add_timer(&beacon_timer);
 }
 
+#ifdef ENABLE_MESH_ADV_BEARER
 static void beacon_handle_secure_beacon_auth_value_calculated(void * arg){
     UNUSED(arg);
 
@@ -336,7 +339,6 @@ static void beacon_handle_beacon_packet(uint8_t packet_type, uint16_t channel, u
     }
 }
 
-#ifdef ENABLE_MESH_ADV_BEARER
 static void beacon_adv_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     mesh_subnet_iterator_t it;
     switch (packet_type){
