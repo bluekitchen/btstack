@@ -814,6 +814,7 @@ typedef struct {
         const char * gap_pairing_pin;
         uint32_t     gap_pairing_passkey;
     } gap_pairing_input;
+    uint16_t  gap_pairing_pin_len;
     
     uint16_t  sco_voice_setting;
     uint16_t  sco_voice_setting_active;

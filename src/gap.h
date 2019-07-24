@@ -538,6 +538,15 @@ int gap_remote_name_request(bd_addr_t addr, uint8_t page_scan_repetition_mode, u
 int gap_pin_code_response(bd_addr_t addr, const char * pin);
 
 /**
+ * @brief Legacy Pairing Pin Code Response
+ * @param addr
+ * @param pin
+ * @param pin_len
+ * @return 0 if ok
+ */
+int gap_pin_code_response_with_len(bd_addr_t addr, const char * pin, uint16_t pin_len);
+
+/**
  * @brief Abort Legacy Pairing
  * @param addr
  * @param pin
