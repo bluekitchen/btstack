@@ -9,12 +9,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Fixed
+- RFCOMM: accept incoming L2CAP connection in Basic mode if ERTM is enabled but not requested for this connection
+
+---
+
+## Changes July 2019
+
+### Fixed
 - SM: Fixed regression introduced in f3582630
 
 ### Changed
 - SM: Start encryption upon receiving slave securiy request if bonded
 
 ### Added
+
+---
 
 ## Changes June 2019
 

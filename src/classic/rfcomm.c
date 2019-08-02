@@ -1015,8 +1015,8 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
             if (request.ertm_config && request.ertm_buffer && request.ertm_buffer_size){
                 multiplexer->ertm_id = request.ertm_id;
                 l2cap_accept_ertm_connection(l2cap_cid, request.ertm_config, request.ertm_buffer, request.ertm_buffer_size);
+                return 1;
             }
-            return 1;
 #endif
 
             l2cap_accept_connection(l2cap_cid);
