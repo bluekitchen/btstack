@@ -43,19 +43,16 @@
  *  Created by Matthias Ringwald on 6/6/09.
  */
 
-#include "btstack_run_loop.h"
 #include "btstack_run_loop_posix.h"
+
+#include "btstack_run_loop.h"
+#include "btstack_util.h"
 #include "btstack_linked_list.h"
 #include "btstack_debug.h"
 
-#ifdef _WIN32
-#include "Winsock2.h"
-#else
-#include <sys/select.h>
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/select.h>
 #include <sys/time.h>
 
 static void btstack_run_loop_posix_dump_timer(void);
@@ -96,9 +93,9 @@ static void btstack_run_loop_posix_add_timer(btstack_timer_source_t *ts){
             log_error( "btstack_run_loop_timer_add error: timer to add already in list!");
             return;
         }
-        if (next->timeout > ts->timeout) {
-            break;
-        }
+        // exit if new timeout before list timeout
+        int32_t delta = btstack_time_delta(ts->timeout, next->timeout);
+        if (delta < 0) break;
     }
     ts->item.next = it->next;
     it->next = (btstack_linked_item_t *) ts;
@@ -186,8 +183,9 @@ static void btstack_run_loop_posix_execute(void) {
         if (timers) {
             ts = (btstack_timer_source_t *) timers;
             timeout = &tv;
+            uint32_t list_timeout  = ts->timeout;
             now_ms = btstack_run_loop_posix_get_time_ms();
-            int delta = ts->timeout - now_ms;
+            int32_t delta = btstack_time_delta(list_timeout, now_ms);
             if (delta < 0){
                 delta = 0;
             }
@@ -221,7 +219,8 @@ static void btstack_run_loop_posix_execute(void) {
         now_ms = btstack_run_loop_posix_get_time_ms();
         while (timers) {
             ts = (btstack_timer_source_t *) timers;
-            if (ts->timeout > now_ms) break;
+            int32_t delta = btstack_time_delta(ts->timeout, now_ms);
+            if (delta > 0) break;
             log_debug("btstack_run_loop_posix_execute: process timer %p\n", ts);
             
             // remove timer before processing it to allow handler to re-register with run loop
