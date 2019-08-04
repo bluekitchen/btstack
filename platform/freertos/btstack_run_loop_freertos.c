@@ -47,9 +47,11 @@
 
 #include <stddef.h> // NULL
 
+#include "btstack_run_loop_freertos.h"
+
 #include "btstack_linked_list.h"
 #include "btstack_debug.h"
-#include "btstack_run_loop_freertos.h"
+#include "btstack_util.h"
 #include "hal_time_ms.h"
 
 // some SDKs, e.g. esp-idf, place FreeRTOS headers into an 'freertos' folder to avoid name collisions (e.g. list.h, queue.h, ..)
@@ -104,13 +106,14 @@ static void btstack_run_loop_freertos_add_timer(btstack_timer_source_t *ts){
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) &timers; it->next ; it = it->next){
         // don't add timer that's already in there
-        if ((btstack_timer_source_t *) it->next == ts){
+        btstack_timer_source_t * next = (btstack_timer_source_t *) it->next;
+        if (next == ts){
             log_error( "btstack_run_loop_timer_add error: timer to add already in list!");
             return;
         }
-        if (ts->timeout < ((btstack_timer_source_t *) it->next)->timeout) {
-            break;
-        }
+        // exit if new timeout before list timeout
+        int32_t delta = btstack_time_delta(ts->timeout, next->timeout);
+        if (delta < 0) break;
     }
     ts->item.next = it->next;
     it->next = (btstack_linked_item_t *) ts;
@@ -216,15 +219,16 @@ static void btstack_run_loop_freertos_execute(void) {
             }
         }
 
-        // process timers and get et next timeout
+        // process timers and get next timeout
         uint32_t timeout_ms = portMAX_DELAY;
         log_debug("RL: portMAX_DELAY %u", portMAX_DELAY);
         while (timers) {
             btstack_timer_source_t * ts = (btstack_timer_source_t *) timers;
             uint32_t now = btstack_run_loop_freertos_get_time_ms();
-            log_debug("RL: now %u, expires %u", now, ts->timeout);
-            if (ts->timeout > now){
-                timeout_ms = ts->timeout - now;
+            int32_t delta_ms = btstack_time_delta(ts->timeout, now);
+            log_debug("RL: now %u, expires %u -> delta %d", now, ts->timeout, delta_ms);
+            if (delta_ms > 0){
+                timeout_ms = delta_ms;
                 break;
             }
             // remove timer before processing it to allow handler to re-register with run loop
