@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - RFCOMM: accept incoming L2CAP connection in Basic mode if ERTM is enabled but not requested for this connection
+- POSIX, WICED, Windows, FreeRTOS: handle time_ms overrun after 49 days
 
 ### Added
 - btstack_run_loop_base: portable implementation of timer and data source managment as base for platform specific implementations
