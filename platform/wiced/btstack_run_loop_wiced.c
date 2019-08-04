@@ -85,7 +85,8 @@ static void btstack_run_loop_wiced_add_timer(btstack_timer_source_t *ts){
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) &timers; it->next ; it = it->next){
         // don't add timer that's already in there
-        if ((btstack_timer_source_t *) it->next == ts){
+        btstack_timer_source_t * next = (btstack_timer_source_t *) it->next;
+        if (next == ts){
             log_error( "btstack_run_loop_timer_add error: timer to add already in list!");
             return;
         }
