@@ -11,7 +11,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - RFCOMM: accept incoming L2CAP connection in Basic mode if ERTM is enabled but not requested for this connection
 
----
+### Added
+- btstack_run_loop_base: portable implementation of timer and data source managment as base for platform specific implementations
+
 
 ## Changes July 2019
 
@@ -20,8 +22,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - SM: Start encryption upon receiving slave securiy request if bonded
-
-### Added
 
 ---
 
