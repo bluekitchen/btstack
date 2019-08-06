@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - btstack_run_loop_base: portable implementation of timer and data source managment as base for platform specific implementations
 
+## Changed
+-- FreeRTOS: use xQueueCreateStatic (static variant of xQueueCreate) if available for static memory-only setups
 
 ## Changes July 2019
 
