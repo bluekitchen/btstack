@@ -1867,8 +1867,12 @@ static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t pac
 
 static void l2cap_free_channel_entry(l2cap_channel_t * channel){
     log_info("free channel %p, local_cid 0x%04x", channel, channel->local_cid);
-    // assert rts/ertx timers are stopped
+    // assert all timers are stopped
     l2cap_stop_rtx(channel);
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    l2cap_ertm_stop_retransmission_timer(channel);
+    l2cap_ertm_stop_monitor_timer(channel);
+#endif
     // free  memory
     btstack_memory_l2cap_channel_free(channel);
 }
