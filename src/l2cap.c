@@ -1467,7 +1467,6 @@ static void l2cap_run(void){
                 channel->state = L2CAP_STATE_INVALID;
                 l2cap_send_signaling_packet(channel->con_handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, channel->reason, 0);
                 // discard channel - l2cap_finialize_channel_close without sending l2cap close event
-                l2cap_stop_rtx(channel);
                 btstack_linked_list_iterator_remove(&it);
                 l2cap_free_channel_entry(channel); 
                 break;
@@ -1689,7 +1688,6 @@ static void l2cap_run(void){
                 channel->state = L2CAP_STATE_INVALID;
                 l2cap_send_le_signaling_packet(channel->con_handle, LE_CREDIT_BASED_CONNECTION_RESPONSE, channel->remote_sig_id, 0, 0, 0, 0, channel->reason);
                 // discard channel - l2cap_finialize_channel_close without sending l2cap close event
-                l2cap_stop_rtx(channel);
                 btstack_linked_list_iterator_remove(&it);
                 l2cap_free_channel_entry(channel);
                 break;
@@ -1869,6 +1867,9 @@ static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t pac
 
 static void l2cap_free_channel_entry(l2cap_channel_t * channel){
     log_info("free channel %p, local_cid 0x%04x", channel, channel->local_cid);
+    // assert rts/ertx timers are stopped
+    l2cap_stop_rtx(channel);
+    // free  memory
     btstack_memory_l2cap_channel_free(channel);
 }
 #endif
@@ -1965,7 +1966,6 @@ static void l2cap_handle_connection_failed_for_addr(bd_addr_t address, uint8_t s
                 // failure, forward error code
                 l2cap_handle_channel_open_failed(channel, status);
                 // discard channel
-                l2cap_stop_rtx(channel);
                 btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
                 l2cap_free_channel_entry(channel);
                 break;
@@ -2176,7 +2176,6 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
                 switch(channel->channel_type){
 #ifdef ENABLE_CLASSIC
                     case L2CAP_CHANNEL_TYPE_CLASSIC:
-                        l2cap_stop_rtx(channel);
                         l2cap_handle_hci_disconnect_event(channel);
                         break;
 #endif
@@ -3487,7 +3486,6 @@ void l2cap_finialize_channel_close(l2cap_channel_t * channel){
     channel->state = L2CAP_STATE_CLOSED;
     l2cap_handle_channel_closed(channel);
     // discard channel
-    l2cap_stop_rtx(channel);
     btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
     l2cap_free_channel_entry(channel);
 }
