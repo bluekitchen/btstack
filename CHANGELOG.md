@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - RFCOMM: accept incoming L2CAP connection in Basic mode if ERTM is enabled but not requested for this connection
+- RFCOMM: limit RFCOMM MTU by local L2CAP MTU for outgoing connections (revelvant only for ERTM)
 - POSIX, WICED, Windows, FreeRTOS: handle time_ms overrun after 49 days
 - L2CAP ERTM: stop timers on disconnect
 
