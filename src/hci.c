@@ -2798,6 +2798,10 @@ void hci_init(const hci_transport_t *transport, const void *config){
     hci_stack->le_supervision_timeout     = 0x0048;    // 720 ms
     hci_stack->le_minimum_ce_length       = 2;         // 1.25 ms
     hci_stack->le_maximum_ce_length       = 0x0030;    // 30 ms
+
+    // default LE Scanning
+    hci_stack->le_scan_interval = 0x1e0;
+    hci_stack->le_scan_window   =  0x30;
 #endif
 
 #ifdef ENABLE_LE_PERIPHERAL
