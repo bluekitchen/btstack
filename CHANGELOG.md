@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - RFCOMM: limit RFCOMM MTU by local L2CAP MTU for outgoing connections (revelvant only for ERTM)
 - POSIX, WICED, Windows, FreeRTOS: handle time_ms overrun after 49 days
 - L2CAP ERTM: stop timers on disconnect
+- L2CAP ERTM: fix sending of segmented SDUs
 
 ### Added
 - btstack_run_loop_base: portable implementation of timer and data source managment as base for platform specific implementations

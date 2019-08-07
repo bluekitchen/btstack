@@ -201,12 +201,13 @@ static int l2cap_ertm_can_store_packet_now(l2cap_channel_t * channel){
     int num_free_tx_buffers = channel->num_tx_buffers - channel->num_stored_tx_frames;
     // calculate num tx buffers for remote MTU
     int num_tx_buffers_for_max_remote_mtu;
-    if (channel->remote_mtu <= channel->remote_mps){
+    uint16_t effective_mps = btstack_min(channel->remote_mps, channel->local_mps);
+    if (channel->remote_mtu <= effective_mps){
         // MTU fits into single packet
         num_tx_buffers_for_max_remote_mtu = 1;
     } else {
         // include SDU Length
-        num_tx_buffers_for_max_remote_mtu = (channel->remote_mtu + 2 + (channel->remote_mps - 1)) / channel->remote_mps;
+        num_tx_buffers_for_max_remote_mtu = (channel->remote_mtu + 2 + (effective_mps - 1)) / effective_mps;
     }
     log_debug("num_free_tx_buffers %u, num_tx_buffers_for_max_remote_mtu %u", num_free_tx_buffers, num_tx_buffers_for_max_remote_mtu);
     return num_tx_buffers_for_max_remote_mtu <= num_free_tx_buffers;
@@ -322,18 +323,18 @@ static void l2cap_ertm_store_fragment(l2cap_channel_t * channel, l2cap_segmentat
 
     l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[index];
     tx_state->tx_seq = channel->next_tx_seq;
-    tx_state->len = len;
     tx_state->sar = sar;
     tx_state->retry_count = 0;
 
     uint8_t * tx_packet = &channel->tx_packets_data[index * channel->local_mps];
-    log_debug("index %u, mtu %u, packet tx %p", index, channel->local_mtu, tx_packet);
+    log_debug("index %u, local mps %u, remote mps %u, packet tx %p, len %u", index, channel->local_mps, channel->remote_mps, tx_packet, len);
     int pos = 0;
     if (sar == L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU){
         little_endian_store_16(tx_packet, 0, sdu_length);
         pos += 2;
     }
     memcpy(&tx_packet[pos], data, len);
+    tx_state->len = pos + len;
 
     // update
     channel->num_stored_tx_frames++;
@@ -356,20 +357,21 @@ static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t l
     }
 
     // check if it needs to get fragmented
-    if (len > channel->remote_mps){
+    uint16_t effective_mps = btstack_min(channel->remote_mps, channel->local_mps);
+    if (len > effective_mps){
         // fragmentation needed.
         l2cap_segmentation_and_reassembly_t sar =  L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU;
         int chunk_len;
         while (len){
             switch (sar){
                 case L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU:
-                    chunk_len = channel->remote_mps - 2;    // sdu_length
+                    chunk_len = effective_mps - 2;    // sdu_length
                     l2cap_ertm_store_fragment(channel, sar, len, data, chunk_len);
                     len -= chunk_len;
                     sar = L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU;
                     break;
                 case L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU:
-                    chunk_len = channel->remote_mps;
+                    chunk_len = effective_mps;
                     if (chunk_len >= len){
                         sar = L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU; 
                         chunk_len = len;                       
@@ -436,7 +438,8 @@ static uint16_t l2cap_setup_options_ertm_response(l2cap_channel_t * channel, uin
     little_endian_store_16( config_options, pos, channel->local_monitor_timeout_ms);
     pos += 2;
     // less or equal to remote mps
-    little_endian_store_16( config_options, pos, btstack_min(channel->local_mps, channel->remote_mps));
+    uint16_t effective_mps = btstack_min(channel->remote_mps, channel->local_mps);
+    little_endian_store_16( config_options, pos, effective_mps);
     pos += 2;
     //
     config_options[pos++] = L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT; // MTU
