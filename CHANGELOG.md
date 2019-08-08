@@ -14,12 +14,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - POSIX, WICED, Windows, FreeRTOS: handle time_ms overrun after 49 days
 - L2CAP ERTM: stop timers on disconnect
 - L2CAP ERTM: fix sending of segmented SDUs
+- L2CAP ERTM: handle unsupported Information Response
 
 ### Added
 - btstack_run_loop_base: portable implementation of timer and data source managment as base for platform specific implementations
 
 ## Changed
--- FreeRTOS: use xQueueCreateStatic (static variant of xQueueCreate) if available for static memory-only setups
+- FreeRTOS: use xQueueCreateStatic (static variant of xQueueCreate) if available for static memory-only setups
+- L2CAP ERTM: handle invalid Information Response (assume no extended features supported)
 
 ## Changes July 2019
 
