@@ -427,7 +427,8 @@ mesh_node_demo: mesh_node_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${MESH_OBJ} ${ATT_OBJ
 
 clean:
 	rm -f ${EXAMPLES} ${EXAMPLES_GATT_H_FILES}
-	rm -f  *.o *.out *.hex *.exe *.wav *.sbc *.dSYM
+	rm -f  *.o *.out *.hex *.exe *.wav *.sbc 
+	rm -rf *.dSYM
 	rm -rf ${BTSTACK_ROOT}/src/*.o
 	rm -rf ${BTSTACK_ROOT}/src/ble/*.o
 	rm -rf ${BTSTACK_ROOT}/src/ble/gatt-service/*.o
