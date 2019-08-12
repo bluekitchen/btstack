@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Changed
 - FreeRTOS: use xQueueCreateStatic (static variant of xQueueCreate) if available for static memory-only setups
 - L2CAP ERTM: handle invalid Information Response (assume no extended features supported)
+- POSIX: use monotonic clock as timebase if available
 
 ## Changes July 2019
 
