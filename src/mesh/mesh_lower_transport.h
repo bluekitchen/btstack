@@ -85,6 +85,7 @@ uint32_t mesh_transport_seq(mesh_transport_pdu_t * transport_pdu);
 uint32_t mesh_transport_seq_zero(mesh_transport_pdu_t * transport_pdu);
 uint16_t mesh_transport_src(mesh_transport_pdu_t * transport_pdu);
 uint16_t mesh_transport_dst(mesh_transport_pdu_t * transport_pdu);
+uint8_t  mesh_transport_control_opcode(mesh_transport_pdu_t * transport_pdu);
 
 void mesh_transport_set_nid_ivi(mesh_transport_pdu_t * transport_pdu, uint8_t nid_ivi);
 void mesh_transport_set_ctl_ttl(mesh_transport_pdu_t * transport_pdu, uint8_t ctl_ttl);

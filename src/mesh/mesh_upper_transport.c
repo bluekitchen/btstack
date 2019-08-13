@@ -317,7 +317,7 @@ static void mesh_upper_transport_validate_segmented_message_ccm(void * arg){
         printf("\n");
 
     } else {
-        uint8_t akf = transport_pdu->akf_aid & 0x40;
+        uint8_t akf = transport_pdu->akf_aid_control & 0x40;
         if (akf){
             printf("TransMIC does not match, try next key\n");
             mesh_upper_transport_validate_segmented_message(transport_pdu);
@@ -475,8 +475,8 @@ static void mesh_upper_transport_process_message(mesh_transport_pdu_t * transpor
     uint8_t   upper_transport_pdu_len =  transport_pdu->len - transport_pdu->transmic_len;
     mesh_print_hex("Upper Transport pdu", upper_transport_pdu, upper_transport_pdu_len);
 
-    uint8_t aid =  transport_pdu->akf_aid & 0x3f;
-    uint8_t akf = (transport_pdu->akf_aid & 0x40) >> 6;
+    uint8_t aid =  transport_pdu->akf_aid_control & 0x3f;
+    uint8_t akf = (transport_pdu->akf_aid_control & 0x40) >> 6;
 
     printf("AKF: %u\n",   akf);
     printf("AID: %02x\n", aid);
@@ -591,7 +591,7 @@ static uint8_t mesh_upper_transport_setup_segmented_control_pdu(mesh_transport_p
     memcpy(transport_pdu->data, control_pdu_data, control_pdu_len);
     transport_pdu->len = control_pdu_len;
     transport_pdu->netkey_index = netkey_index;
-    transport_pdu->akf_aid = opcode;
+    transport_pdu->akf_aid_control = opcode;
     transport_pdu->transmic_len = 0;    // no TransMIC for control
     mesh_transport_set_nid_ivi(transport_pdu, network_key->nid);
     mesh_transport_set_seq(transport_pdu, seq);
@@ -679,7 +679,7 @@ static uint8_t mesh_upper_transport_setup_segmented_access_pdu_header(mesh_trans
     transport_pdu->transmic_len = trans_mic_len;
     transport_pdu->netkey_index = netkey_index;
     transport_pdu->appkey_index = appkey_index;
-    transport_pdu->akf_aid = akf_aid;
+    transport_pdu->akf_aid_control = akf_aid;
     mesh_transport_set_nid_ivi(transport_pdu, network_key->nid | ((mesh_get_iv_index_for_tx() & 1) << 7));
     mesh_transport_set_seq(transport_pdu, seq);
     mesh_transport_set_src(transport_pdu, src);

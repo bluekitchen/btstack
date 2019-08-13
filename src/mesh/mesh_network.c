@@ -1022,6 +1022,9 @@ uint16_t mesh_network_dst(mesh_network_pdu_t * network_pdu){
 int mesh_network_segmented(mesh_network_pdu_t * network_pdu){
     return network_pdu->data[9] & 0x80;
 }
+uint8_t mesh_network_control_opcode(mesh_network_pdu_t * network_pdu){
+    return network_pdu->data[9] & 0x7f;
+}
 uint8_t * mesh_network_pdu_data(mesh_network_pdu_t * network_pdu){
     return &network_pdu->data[9];
 }

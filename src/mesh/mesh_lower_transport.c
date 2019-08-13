@@ -84,6 +84,9 @@ uint16_t mesh_transport_src(mesh_transport_pdu_t * transport_pdu){
 uint16_t mesh_transport_dst(mesh_transport_pdu_t * transport_pdu){
     return big_endian_read_16(transport_pdu->network_header, 7);
 }
+uint8_t  mesh_transport_control_opcode(mesh_transport_pdu_t * transport_pdu){
+    return transport_pdu->akf_aid_control & 0x7f;
+}
 void mesh_transport_set_nid_ivi(mesh_transport_pdu_t * transport_pdu, uint8_t nid_ivi){
     transport_pdu->network_header[0] = nid_ivi;
 }
@@ -370,8 +373,8 @@ static void mesh_lower_transport_process_segment( mesh_transport_pdu_t * transpo
     uint8_t   lower_transport_pdu_len = mesh_network_pdu_len(network_pdu);
 
     // get akf_aid & transmic
-    transport_pdu->akf_aid      = lower_transport_pdu[0];
-    transport_pdu->transmic_len = lower_transport_pdu[1] & 0x80 ? 8 : 4;
+    transport_pdu->akf_aid_control = lower_transport_pdu[0] & 0x7f;
+    transport_pdu->transmic_len    = lower_transport_pdu[1] & 0x80 ? 8 : 4;
 
     // get seq_zero
     uint16_t seq_zero =  ( big_endian_read_16(lower_transport_pdu, 1) >> 2) & 0x1fff;
@@ -486,7 +489,7 @@ static void mesh_lower_transport_setup_segment(mesh_transport_pdu_t *transport_p
     uint16_t seg_offset = seg_o * max_segment_len;
 
     uint8_t lower_transport_pdu_data[16];
-    lower_transport_pdu_data[0] = 0x80 |  transport_pdu->akf_aid;
+    lower_transport_pdu_data[0] = 0x80 |  transport_pdu->akf_aid_control;
     big_endian_store_24(lower_transport_pdu_data, 1, (szmic << 23) | (seq_zero << 10) | (seg_o << 5) | seg_n);
     uint16_t segment_len = btstack_min(transport_pdu->len - seg_offset, max_segment_len);
     memcpy(&lower_transport_pdu_data[4], &transport_pdu->data[seg_offset], segment_len);

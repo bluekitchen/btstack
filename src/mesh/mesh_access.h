@@ -220,6 +220,7 @@ uint16_t mesh_pdu_netkey_index(mesh_pdu_t * pdu);
 uint16_t mesh_pdu_appkey_index(mesh_pdu_t * pdu);
 uint16_t mesh_pdu_len(mesh_pdu_t * pdu);
 uint8_t * mesh_pdu_data(mesh_pdu_t * pdu);
+uint8_t  mesh_pdu_control_opcode(mesh_pdu_t * pdu);
 
 // Mesh Access Parser
 int mesh_access_pdu_get_opcode(mesh_pdu_t * pdu, uint32_t * opcode, uint16_t * opcode_size);

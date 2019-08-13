@@ -445,6 +445,17 @@ uint8_t * mesh_pdu_data(mesh_pdu_t * pdu){
     }
 }
 
+uint8_t mesh_pdu_control_opcode(mesh_pdu_t * pdu){
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            return mesh_transport_control_opcode((mesh_transport_pdu_t*) pdu);
+        case MESH_PDU_TYPE_NETWORK:
+            return mesh_network_control_opcode((mesh_network_pdu_t *) pdu);
+        default:
+            return 0xff;
+    }
+}
+
 // message parser
 
 static int mesh_access_get_opcode(uint8_t * buffer, uint16_t buffer_size, uint32_t * opcode, uint16_t * opcode_size){

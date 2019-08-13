@@ -121,8 +121,8 @@ typedef struct {
     uint16_t              appkey_index;
     // transmic size
     uint8_t               transmic_len;
-    // akf - aid
-    uint8_t               akf_aid;
+    // akf - aid for access, opcode for control
+    uint8_t               akf_aid_control;
     // network pdu header
     uint8_t               network_header[9];
     // acknowledgement timer active
@@ -371,6 +371,7 @@ uint32_t  mesh_network_seq(mesh_network_pdu_t * network_pdu);
 uint16_t  mesh_network_src(mesh_network_pdu_t * network_pdu);
 uint16_t  mesh_network_dst(mesh_network_pdu_t * network_pdu);
 int       mesh_network_segmented(mesh_network_pdu_t * network_pdu);
+uint8_t   mesh_network_control_opcode(mesh_network_pdu_t * network_pdu);
 uint8_t * mesh_network_pdu_data(mesh_network_pdu_t * network_pdu);
 uint8_t   mesh_network_pdu_len(mesh_network_pdu_t * network_pdu);
 
