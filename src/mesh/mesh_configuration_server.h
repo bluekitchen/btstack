@@ -84,6 +84,8 @@ const mesh_operation_t * mesh_configuration_server_get_operations(void);
 
 void mesh_configuration_server_feature_changed(void);
 
+void mesh_configuration_server_process_heartbeat(mesh_pdu_t * pdu);
+
 // PTS Testing
 void config_nekey_list_set_max(uint16_t max);
 

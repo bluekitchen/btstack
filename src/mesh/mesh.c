@@ -1081,6 +1081,19 @@ static int mesh_node_startup_from_tlv(void){
     return prov_data_valid;
 }
 
+static void mesh_control_message_handler(mesh_pdu_t * pdu){
+    // get opcode 
+    uint8_t opcode = mesh_pdu_control_opcode(pdu);
+    printf("Opcode: 0x%02x\n", opcode);
+    switch(opcode){
+        case 0x0a:
+            mesh_configuration_server_process_heartbeat(pdu);
+            break;
+        default:
+            break;
+    }
+    mesh_upper_transport_message_processed_by_higher_layer(pdu);
+}
 
 static void mesh_node_setup_default_models(void){
     // configure Config Server
@@ -1137,6 +1150,9 @@ void mesh_init(void){
 
     // register for seq number updates
     mesh_sequence_number_set_update_callback(&mesh_persist_iv_index_and_sequence_number_if_needed);
+
+    // register for control messages
+    mesh_upper_transport_register_control_message_handler(&mesh_control_message_handler);
 }
 
 /**
