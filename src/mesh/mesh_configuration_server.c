@@ -2202,6 +2202,6 @@ const mesh_operation_t * mesh_configuration_server_get_operations(void){
     return mesh_configuration_server_model_operations;
 }
 
-void mesh_configuration_server_process_heartbeat(mesh_pdu_t * pdu){
+void mesh_configuration_server_process_heartbeat(mesh_model_t * configuration_server_model, mesh_pdu_t * pdu){
     printf("HEARTBEAT\n");
 }

@@ -1087,7 +1087,7 @@ static void mesh_control_message_handler(mesh_pdu_t * pdu){
     printf("Opcode: 0x%02x\n", opcode);
     switch(opcode){
         case 0x0a:
-            mesh_configuration_server_process_heartbeat(pdu);
+            mesh_configuration_server_process_heartbeat(&mesh_configuration_server_model, pdu);
             break;
         default:
             break;
