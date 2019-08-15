@@ -2245,10 +2245,12 @@ const mesh_operation_t * mesh_configuration_server_get_operations(void){
     return mesh_configuration_server_model_operations;
 }
 
-void mesh_configuration_server_process_heartbeat(mesh_model_t * configuration_server_model, mesh_pdu_t * pdu){
+void mesh_configuration_server_process_heartbeat(mesh_model_t * configuration_server_model, uint16_t src, uint16_t dest, uint8_t hops, uint16_t features){
     mesh_heartbeat_subscription_t * mesh_heartbeat_subscription = &((mesh_configuration_server_model_context_t*) configuration_server_model->model_data)->heartbeat_subscription;
     if (config_heartbeat_subscription_get_period_remaining_s(mesh_heartbeat_subscription) == 0) return;
-    if (mesh_heartbeat_subscription->source != mesh_pdu_src(pdu)) return;
+    if (mesh_heartbeat_subscription->source != src) return;
+    if (mesh_heartbeat_subscription->destination != dest) return;
+    // update count
     if (mesh_heartbeat_subscription->count != 0xffff){
         mesh_heartbeat_subscription->count++;
     }

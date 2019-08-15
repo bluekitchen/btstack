@@ -1085,9 +1085,19 @@ static void mesh_control_message_handler(mesh_pdu_t * pdu){
     // get opcode 
     uint8_t opcode = mesh_pdu_control_opcode(pdu);
     printf("Opcode: 0x%02x\n", opcode);
+
+    uint8_t init_ttl;
+    uint8_t hops = 0;
+    uint16_t features = 0;
     switch(opcode){
         case 0x0a:
-            mesh_configuration_server_process_heartbeat(&mesh_configuration_server_model, pdu);
+            // read params
+            init_ttl = (*mesh_pdu_data(pdu)) & 0x7fu;
+            features = big_endian_read_16(mesh_pdu_data(pdu), 1);
+            // calculates hops
+            hops     = init_ttl - mesh_pdu_ttl(pdu) + 1;
+            // process heartbeat info
+            mesh_configuration_server_process_heartbeat(&mesh_configuration_server_model, mesh_pdu_src(pdu), mesh_pdu_dst(pdu), hops, features);
             break;
         default:
             break;
