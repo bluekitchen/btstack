@@ -379,6 +379,17 @@ uint8_t mesh_access_transactions_get_next_transaction_id(void){
     return mesh_transaction_id_counter;
 }   
 
+uint16_t mesh_pdu_ttl(mesh_pdu_t * pdu){
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            return mesh_transport_ttl((mesh_transport_pdu_t*) pdu);
+        case MESH_PDU_TYPE_NETWORK:
+            return mesh_network_ttl((mesh_network_pdu_t *) pdu);
+        default:
+            return 0;
+    }
+}
+
 uint16_t mesh_pdu_src(mesh_pdu_t * pdu){
     switch (pdu->pdu_type){
         case MESH_PDU_TYPE_TRANSPORT:
