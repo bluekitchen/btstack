@@ -63,6 +63,7 @@ static void em9304_spi_engine_run(void);
 
 // state
 static volatile enum {
+    SPI_EM9304_OFF,
     SPI_EM9304_READY_FOR_TX,
     SPI_EM9304_READY_FOR_TX_AND_RX,
     SPI_EM9304_RX_W4_READ_COMMAND_SENT,
@@ -324,6 +325,7 @@ static void em9304_spi_engine_init(void){
 }
 
 static void em9304_spi_engine_close(void){
+    em9304_spi_engine_state = SPI_EM9304_OFF;
     btstack_em9304_spi->close();
 }
 

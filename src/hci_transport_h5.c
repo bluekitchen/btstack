@@ -728,6 +728,7 @@ static void hci_transport_link_update_resend_timeout(uint32_t baudrate){
 /// H5 Interface
 
 static uint8_t hci_transport_link_read_byte;
+static int hci_transport_h5_active;
 
 static void hci_transport_h5_read_next_byte(void){
     btstack_uart->receive_block(&hci_transport_link_read_byte, 1);    
@@ -736,6 +737,8 @@ static void hci_transport_h5_read_next_byte(void){
 // track time receiving SLIP frame
 static uint32_t hci_transport_h5_receive_start;
 static void hci_transport_h5_block_received(){
+    if (hci_transport_h5_active == 0) return;
+
     // track start time when receiving first byte // a bit hackish
     if (hci_transport_h5_receive_start == 0 && hci_transport_link_read_byte != BTSTACK_SLIP_SOF){
         hci_transport_h5_receive_start = btstack_run_loop_get_time_ms();
@@ -757,6 +760,7 @@ static void hci_transport_h5_block_received(){
 }
 
 static void hci_transport_h5_block_sent(void){
+    if (hci_transport_h5_active == 0) return;
 
     // check if more data to send
     if (btstack_slip_encoder_has_data()){
@@ -792,6 +796,8 @@ static void hci_transport_h5_init(const void * transport_config){
         log_error("hci_transport_h5: config not of type != HCI_TRANSPORT_CONFIG_UART!");
         return;
     }
+
+    hci_transport_h5_active = 0;
 
     // extract UART config from transport config
     hci_transport_config_uart_t * hci_transport_config_uart = (hci_transport_config_uart_t*) transport_config;
@@ -840,12 +846,14 @@ static int hci_transport_h5_open(void){
     hci_transport_link_init();
 
     // start receiving
+    hci_transport_h5_active = 1;
     hci_transport_h5_read_next_byte();
 
     return 0;
 }
 
 static int hci_transport_h5_close(void){
+    hci_transport_h5_active = 0;
     return btstack_uart->close();
 }
 

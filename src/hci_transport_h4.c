@@ -106,6 +106,7 @@ static btstack_timer_source_t ehcill_sleep_ack_timer;
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
 
 typedef enum {
+    H4_OFF,
     H4_W4_PACKET_TYPE,
     H4_W4_EVENT_HEADER,
     H4_W4_ACL_HEADER,
@@ -114,7 +115,8 @@ typedef enum {
 } H4_STATE;
 
 typedef enum {
-    TX_IDLE = 1,
+    TX_OFF,
+    TX_IDLE,
     TX_W4_PACKET_SENT,
 #ifdef ENABLE_EHCILL
     TX_W4_WAKEUP, 
@@ -389,6 +391,10 @@ static void hci_transport_h4_init(const void * transport_config){
     uart_config.flowcontrol = hci_transport_config_uart->flowcontrol;
     uart_config.device_name = hci_transport_config_uart->device_name;
 
+    // set state to off
+    tx_state = TX_OFF;
+    h4_state = H4_OFF;
+
     // setup UART driver
     btstack_uart->init(&uart_config);
     btstack_uart->set_block_received(&hci_transport_h4_block_read);
@@ -396,13 +402,15 @@ static void hci_transport_h4_init(const void * transport_config){
 }
 
 static int hci_transport_h4_open(void){
+    // open uart driver
     int res = btstack_uart->open();
     if (res){
         return res;
     }
+
+    // init rx + tx state machines
     hci_transport_h4_reset_statemachine();
     hci_transport_h4_trigger_next_read();
-
     tx_state = TX_IDLE;
 
 #ifdef ENABLE_EHCILL
@@ -412,6 +420,11 @@ static int hci_transport_h4_open(void){
 }
 
 static int hci_transport_h4_close(void){
+    // set state to off
+    tx_state = TX_OFF;
+    h4_state = H4_OFF;
+
+    // close uart driver
     return btstack_uart->close();
 }
 
