@@ -1910,13 +1910,29 @@ static void config_heartbeat_subscription_set_handler(mesh_model_t *mesh_model, 
     //  Period for sending Heartbeat messages
     requested_subscription.period_log = mesh_access_parser_get_u8(&parser);
     
-    // ignore messages from non-unicast sources
-    if ( ((requested_subscription.source != MESH_ADDRESS_UNSASSIGNED)       && 
-               !mesh_network_address_unicast(requested_subscription.source))){
+
+    // Hearbeat Subscription Soure must be unassigned or a unicast address
+    int source_address_valid = 
+         (requested_subscription.source == MESH_ADDRESS_UNSASSIGNED)    || 
+         (mesh_network_address_unicast(requested_subscription.source));
+
+    // Heartbeat Subscription Destination must be unassigned, unicast (== our primary address), or a group address)
+    int destination_address_valid = 
+         (requested_subscription.destination == MESH_ADDRESS_UNSASSIGNED)  ||
+         (mesh_network_address_unicast(requested_subscription.destination) && requested_subscription.destination == mesh_node_get_primary_element_address()) ||
+         (mesh_network_address_group(requested_subscription.destination));
+
+    if (!source_address_valid || !destination_address_valid){
+        printf("MESH config_heartbeat_subscription_set, source %x or destination %x invalid\n", requested_subscription.source, requested_subscription.destination);
         mesh_access_message_processed(pdu);
         return;
     }
 
+    int subscription_enabled = config_heartbeat_subscription_enabled(&requested_subscription);
+    printf("MESH config_heartbeat_subscription_set, source %x destination %x, period = %u s => enabled %u \n", requested_subscription.source,
+            requested_subscription.destination, heartbeat_pwr2(requested_subscription.period_log), subscription_enabled);
+
+    // ignore messages 
     uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
     if (requested_subscription.period_log > 0x11u){
         status = MESH_FOUNDATION_STATUS_CANNOT_SET;
@@ -1933,11 +1949,6 @@ static void config_heartbeat_subscription_set_handler(mesh_model_t *mesh_model, 
     }
 
     mesh_heartbeat_subscription_t * mesh_heartbeat_subscription = &((mesh_configuration_server_model_context_t*) mesh_model->model_data)->heartbeat_subscription;
-
-    int subscription_enabled = config_heartbeat_subscription_enabled(&requested_subscription);
-
-    printf("MESH config_heartbeat_subscription_set, source %x destination %x, period = %u s => enabled %u \n", mesh_heartbeat_subscription->source,
-            mesh_heartbeat_subscription->destination, heartbeat_pwr2(mesh_heartbeat_subscription->period_log), subscription_enabled);
 
     if (config_heartbeat_subscription_enabled(&requested_subscription)){
         mesh_heartbeat_subscription->source          = requested_subscription.source;
@@ -1963,7 +1974,7 @@ static void config_heartbeat_subscription_set_handler(mesh_model_t *mesh_model, 
         mesh_heartbeat_subscription->destination     = MESH_ADDRESS_UNSASSIGNED;
 #else
         // code to satisfy MESH/NODE/CFG/HBS/BV-02-C from PTS 7.4.1 / Mesh TS 1.0.2
-        if (mesh_heartbeat_subscription->source == MESH_ADDRESS_UNSASSIGNED || mesh_heartbeat_subscription->destination == MESH_ADDRESS_UNSASSIGNED){
+        if (requested_subscription.source == MESH_ADDRESS_UNSASSIGNED || requested_subscription.destination == MESH_ADDRESS_UNSASSIGNED){
             mesh_heartbeat_subscription->source          = MESH_ADDRESS_UNSASSIGNED;
             mesh_heartbeat_subscription->destination     = MESH_ADDRESS_UNSASSIGNED;
         }
@@ -2246,6 +2257,7 @@ const mesh_operation_t * mesh_configuration_server_get_operations(void){
 }
 
 void mesh_configuration_server_process_heartbeat(mesh_model_t * configuration_server_model, uint16_t src, uint16_t dest, uint8_t hops, uint16_t features){
+    UNUSED(features);
     mesh_heartbeat_subscription_t * mesh_heartbeat_subscription = &((mesh_configuration_server_model_context_t*) configuration_server_model->model_data)->heartbeat_subscription;
     if (config_heartbeat_subscription_get_period_remaining_s(mesh_heartbeat_subscription) == 0) return;
     if (mesh_heartbeat_subscription->source != src) return;
@@ -2254,5 +2266,9 @@ void mesh_configuration_server_process_heartbeat(mesh_model_t * configuration_se
     if (mesh_heartbeat_subscription->count != 0xffff){
         mesh_heartbeat_subscription->count++;
     }
-    printf("HEARTBEAT, count %u\n", mesh_heartbeat_subscription->count);
+    // update min/max hops
+    mesh_heartbeat_subscription->min_hops = (uint8_t) btstack_min(mesh_heartbeat_subscription->min_hops, hops);
+    mesh_heartbeat_subscription->max_hops = (uint8_t) btstack_max(mesh_heartbeat_subscription->max_hops, hops);
+
+    printf("HEARTBEAT, count %u, min %u, max %u hops\n", mesh_heartbeat_subscription->count, mesh_heartbeat_subscription->min_hops, mesh_heartbeat_subscription->max_hops);
 }
