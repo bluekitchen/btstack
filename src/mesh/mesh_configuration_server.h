@@ -64,12 +64,14 @@ typedef struct  {
 } mesh_heartbeat_publication_t;
 
 typedef struct  {
+    // config
     uint16_t source;
     uint16_t destination;
     uint8_t  period_log;
-    uint8_t  count;
+    // data 
     uint8_t  min_hops;
     uint8_t  max_hops;
+    uint16_t count;
 } mesh_heartbeat_subscription_t;
 
 typedef struct {
@@ -84,7 +86,7 @@ const mesh_operation_t * mesh_configuration_server_get_operations(void);
 
 void mesh_configuration_server_feature_changed(void);
 
-void mesh_configuration_server_process_heartbeat(mesh_model_t * mesh_model, mesh_pdu_t * pdu);
+void mesh_configuration_server_process_heartbeat(mesh_model_t * configuration_server_model, mesh_pdu_t * pdu);
 
 // PTS Testing
 void config_nekey_list_set_max(uint16_t max);

@@ -1871,10 +1871,6 @@ static void config_heartbeat_subscription_status(mesh_model_t *mesh_model, uint1
 
     // setup message
     uint8_t count_log = heartbeat_count_log(mesh_heartbeat_subscription->count);
-    // if no heartbeats have been received, update min_hops
-    if (mesh_heartbeat_subscription->count == 0){
-        mesh_heartbeat_subscription->min_hops = 0;
-    }
     mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(
             &mesh_foundation_config_heartbeat_subscription_status,
             status,
@@ -1955,6 +1951,11 @@ static void config_heartbeat_subscription_set_handler(mesh_model_t *mesh_model, 
 
 static void config_heartbeat_subscription_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
     mesh_heartbeat_subscription_t * mesh_heartbeat_subscription = &((mesh_configuration_server_model_context_t*) mesh_model->model_data)->heartbeat_subscription;
+    mesh_heartbeat_subscription_t subscription;
+    if (mesh_heartbeat_subscription->source == MESH_ADDRESS_UNSASSIGNED || mesh_heartbeat_subscription->destination == MESH_ADDRESS_UNSASSIGNED){
+        memset(&subscription, 0, sizeof(subscription));
+        mesh_heartbeat_subscription = &subscription;
+    }
     config_heartbeat_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), MESH_FOUNDATION_STATUS_SUCCESS, mesh_heartbeat_subscription);
     mesh_access_message_processed(pdu);
 }
@@ -2203,5 +2204,10 @@ const mesh_operation_t * mesh_configuration_server_get_operations(void){
 }
 
 void mesh_configuration_server_process_heartbeat(mesh_model_t * configuration_server_model, mesh_pdu_t * pdu){
-    printf("HEARTBEAT\n");
+    mesh_heartbeat_subscription_t * mesh_heartbeat_subscription = &((mesh_configuration_server_model_context_t*) configuration_server_model->model_data)->heartbeat_subscription;
+    if (mesh_heartbeat_subscription->source != mesh_pdu_src(pdu)) return;
+    if (mesh_heartbeat_subscription->count != 0xffff){
+        mesh_heartbeat_subscription->count++;
+    }
+    printf("HEARTBEAT, count %u\n", mesh_heartbeat_subscription->count);
 }
