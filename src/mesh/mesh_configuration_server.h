@@ -68,7 +68,8 @@ typedef struct  {
     uint16_t source;
     uint16_t destination;
     uint8_t  period_log;
-    // data 
+    // data
+    uint32_t period_start_ms;
     uint8_t  min_hops;
     uint8_t  max_hops;
     uint16_t count;

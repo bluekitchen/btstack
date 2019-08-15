@@ -89,15 +89,21 @@ static int config_netkey_list_max = 0;
 
 // Heartbeat (helper)
 static uint16_t heartbeat_pwr2(uint8_t value){
-    if (!value)                         return 0x0000;
+    if (value == 0 )                    return 0x0000;
     if (value == 0xff || value == 0x11) return 0xffff;
     return 1 << (value-1);
 }
 
 static uint8_t heartbeat_count_log(uint16_t value){
-    if (!value)          return 0x00;
+    if (value == 0)      return 0x00;
     if (value == 0x01)   return 0x01;
     if (value == 0xffff) return 0xff;
+    // count leading zeros, supported by clang and gcc
+    return 32 - __builtin_clz(value - 1) + 1;
+}
+
+static uint8_t heartbeat_period_log(uint16_t value){
+    if (value == 0)      return 0x00;
     // count leading zeros, supported by clang and gcc
     return 32 - __builtin_clz(value - 1) + 1;
 }
@@ -1928,35 +1934,71 @@ static void config_heartbeat_subscription_set_handler(mesh_model_t *mesh_model, 
 
     mesh_heartbeat_subscription_t * mesh_heartbeat_subscription = &((mesh_configuration_server_model_context_t*) mesh_model->model_data)->heartbeat_subscription;
 
-    if (config_heartbeat_subscription_enabled(&requested_subscription)){
-        mesh_heartbeat_subscription->source      = requested_subscription.source;
-        mesh_heartbeat_subscription->destination = requested_subscription.destination;
-        mesh_heartbeat_subscription->period_log  = requested_subscription.period_log;
-        mesh_heartbeat_subscription->count       = 0;
-        mesh_heartbeat_subscription->min_hops    = 0x7Fu;
-        mesh_heartbeat_subscription->max_hops    = 0u;
-    } else {
-        mesh_heartbeat_subscription->source      = MESH_ADDRESS_UNSASSIGNED;
-        mesh_heartbeat_subscription->destination = MESH_ADDRESS_UNSASSIGNED;
-        mesh_heartbeat_subscription->period_log  = 0u;
-    }
+    int subscription_enabled = config_heartbeat_subscription_enabled(&requested_subscription);
 
-    printf("MESH config_heartbeat_subscription_set, source %x destination %x, period = %u s\n", mesh_heartbeat_subscription->source,
-            mesh_heartbeat_subscription->destination, heartbeat_pwr2(mesh_heartbeat_subscription->period_log));
+    printf("MESH config_heartbeat_subscription_set, source %x destination %x, period = %u s => enabled %u \n", mesh_heartbeat_subscription->source,
+            mesh_heartbeat_subscription->destination, heartbeat_pwr2(mesh_heartbeat_subscription->period_log), subscription_enabled);
+
+    if (config_heartbeat_subscription_enabled(&requested_subscription)){
+        mesh_heartbeat_subscription->source          = requested_subscription.source;
+        mesh_heartbeat_subscription->destination     = requested_subscription.destination;
+        mesh_heartbeat_subscription->period_log      = requested_subscription.period_log;
+        mesh_heartbeat_subscription->count           = 0;
+        mesh_heartbeat_subscription->min_hops        = 0x7Fu;
+        mesh_heartbeat_subscription->max_hops        = 0u;
+        mesh_heartbeat_subscription->period_start_ms = btstack_run_loop_get_time_ms();
+    } else {
+#if 0
+        // code according to Mesh Spec v1.0.1
+        // "When an element receives a Config Heartbeat Subscription Set message, it shall ... respond with a Config Heartbeat Subscription Status message, setting ...
+        //  If the Source or the Destination field is set to the unassigned address, or the PeriodLog field is set to 0x00, [then]
+        //  - the processing of received Heartbeat messages shall be disabled,
+        //  - the Heartbeat Subscription Source state shall be set to the unassigned address,
+        //  - the Heartbeat Subscription Destination state shall be set to the unassigned address, 
+        //  - the Heartbeat Subscription MinHops state shall be unchanged,
+        //  - the Heartbeat Subscription MaxHops state shall be unchanged, 
+        //  - and the Heartbeat Subscription Count state shall be unchanged."
+        // If period_log == 0, then set src + dest to unassigned. If src or dest are unsigned, get triggers status mit count_log == 0
+        mesh_heartbeat_subscription->source          = MESH_ADDRESS_UNSASSIGNED;
+        mesh_heartbeat_subscription->destination     = MESH_ADDRESS_UNSASSIGNED;
+#else
+        // code to satisfy MESH/NODE/CFG/HBS/BV-02-C from PTS 7.4.1 / Mesh TS 1.0.2
+        if (mesh_heartbeat_subscription->source == MESH_ADDRESS_UNSASSIGNED || mesh_heartbeat_subscription->destination == MESH_ADDRESS_UNSASSIGNED){
+            mesh_heartbeat_subscription->source          = MESH_ADDRESS_UNSASSIGNED;
+            mesh_heartbeat_subscription->destination     = MESH_ADDRESS_UNSASSIGNED;
+        }
+#endif
+        mesh_heartbeat_subscription->period_log      = 0u;
+    }
 
     config_heartbeat_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, mesh_heartbeat_subscription);
     mesh_access_message_processed(pdu);
 }
 
+static uint32_t config_heartbeat_subscription_get_period_remaining_s(mesh_heartbeat_subscription_t * heartbeat_subscription){
+    // calculate period_log
+    int32_t time_since_start_s = btstack_time_delta(btstack_run_loop_get_time_ms(), heartbeat_subscription->period_start_ms) / 1000;
+    int32_t period_s = heartbeat_pwr2(heartbeat_subscription->period_log);
+    uint32_t period_remaining_s = 0;
+    if (time_since_start_s < period_s){
+        period_remaining_s = period_s - time_since_start_s;
+    }
+    printf("Heartbeat: time since start %d s, period %u s, period remaining %u s\n", time_since_start_s, period_s, period_remaining_s);
+    return period_remaining_s;
+}
 
 static void config_heartbeat_subscription_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
     mesh_heartbeat_subscription_t * mesh_heartbeat_subscription = &((mesh_configuration_server_model_context_t*) mesh_model->model_data)->heartbeat_subscription;
     mesh_heartbeat_subscription_t subscription;
+    memcpy(&subscription, mesh_heartbeat_subscription, sizeof(subscription));
     if (mesh_heartbeat_subscription->source == MESH_ADDRESS_UNSASSIGNED || mesh_heartbeat_subscription->destination == MESH_ADDRESS_UNSASSIGNED){
         memset(&subscription, 0, sizeof(subscription));
-        mesh_heartbeat_subscription = &subscription;
+    } else {
+        // calculate period_log
+        uint32_t period_remaining_s = config_heartbeat_subscription_get_period_remaining_s(&subscription);
+        subscription.period_log = heartbeat_period_log(period_remaining_s);
     }
-    config_heartbeat_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), MESH_FOUNDATION_STATUS_SUCCESS, mesh_heartbeat_subscription);
+    config_heartbeat_subscription_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), MESH_FOUNDATION_STATUS_SUCCESS, &subscription);
     mesh_access_message_processed(pdu);
 }
 
@@ -2205,6 +2247,7 @@ const mesh_operation_t * mesh_configuration_server_get_operations(void){
 
 void mesh_configuration_server_process_heartbeat(mesh_model_t * configuration_server_model, mesh_pdu_t * pdu){
     mesh_heartbeat_subscription_t * mesh_heartbeat_subscription = &((mesh_configuration_server_model_context_t*) configuration_server_model->model_data)->heartbeat_subscription;
+    if (config_heartbeat_subscription_get_period_remaining_s(mesh_heartbeat_subscription) == 0) return;
     if (mesh_heartbeat_subscription->source != mesh_pdu_src(pdu)) return;
     if (mesh_heartbeat_subscription->count != 0xffff){
         mesh_heartbeat_subscription->count++;
