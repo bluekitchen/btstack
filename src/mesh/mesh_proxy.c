@@ -60,6 +60,9 @@
 #include "mesh/mesh_network.h"
 #include "mesh/mesh_node.h"
 
+static void mesh_proxy_start_advertising_with_node_id_next_subnet(void);
+static void mesh_proxy_start_advertising_with_node_id_for_subnet(mesh_subnet_t * mesh_subnet);
+
 #ifdef ENABLE_MESH_PROXY_SERVER
 
 // we only support a single active node id advertisement. when new one is started, an active one is stopped
@@ -72,13 +75,14 @@ static btstack_crypto_aes128_t                          mesh_proxy_node_id_crypt
 static uint8_t                                          mesh_proxy_node_id_plaintext[16];
 static uint8_t                                          mesh_proxy_node_id_hash[16];
 static uint8_t                                          mesh_proxy_node_id_random_value[8];
+static uint8_t                                          mesh_proxy_node_id_all_subnets;
 
 static uint16_t primary_element_address;
 
-// Mesh Proxy, advertise with node id
-static adv_bearer_connectable_advertisement_data_item_t connectable_advertisement;
+// Mesh Proxy, advertise unprovisioned device
+static adv_bearer_connectable_advertisement_data_item_t connectable_advertisement_unprovisioned_device;
 
-static const uint8_t adv_data_with_node_identity_template[] = {
+static const uint8_t adv_data_with_node_id_template[] = {
     // Flags general discoverable, BR/EDR not supported
     0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06, 
     // 16-bit Service UUIDs
@@ -129,9 +133,9 @@ static void mesh_proxy_setup_advertising_unprovisioned(adv_bearer_connectable_ad
 
 void mesh_proxy_start_advertising_unprovisioned_device(void){
     const uint8_t * device_uuid = mesh_node_get_device_uuid();
-    mesh_proxy_setup_advertising_unprovisioned(&connectable_advertisement, device_uuid);
+    mesh_proxy_setup_advertising_unprovisioned(&connectable_advertisement_unprovisioned_device, device_uuid);
     // setup advertisements
-    adv_bearer_advertisements_add_item(&connectable_advertisement);
+    adv_bearer_advertisements_add_item(&connectable_advertisement_unprovisioned_device);
     adv_bearer_advertisements_enable(1);
 }
 
@@ -140,7 +144,7 @@ void mesh_proxy_start_advertising_unprovisioned_device(void){
  * @param device_uuid
  */
 void mesh_proxy_stop_advertising_unprovisioned_device(void){
-    adv_bearer_advertisements_remove_item(&connectable_advertisement);
+    adv_bearer_advertisements_remove_item(&connectable_advertisement_unprovisioned_device);
 }
 
 #endif
@@ -151,17 +155,22 @@ static uint8_t mesh_proxy_setup_advertising_with_network_id(uint8_t * buffer, ui
     return 20;
 }
 
+static void mesh_proxy_stop_advertising_with_node_id_for_subnet(mesh_subnet_t * mesh_subnet){
+    if (mesh_subnet->node_id_advertisement_running != 0){
+        adv_bearer_advertisements_remove_item(&mesh_subnet->advertisement_with_node_id);
+        mesh_subnet->node_id_advertisement_running = 0;
+    }
+}
+
 static void mesh_proxy_stop_all_advertising_with_node_id(void){
-    adv_bearer_advertisements_remove_item(&connectable_advertisement);
     mesh_subnet_iterator_t it;
     mesh_subnet_iterator_init(&it);
     while (mesh_subnet_iterator_has_more(&it)){
-        mesh_subnet_t * network_key = mesh_subnet_iterator_get_next(&it);
-        if (network_key->node_id_advertisement_running != 0){
-            btstack_run_loop_remove_timer(&mesh_proxy_node_id_timer);
-            network_key->node_id_advertisement_running = 0;
-        }
+        mesh_subnet_t * mesh_subnet = mesh_subnet_iterator_get_next(&it);
+        mesh_proxy_stop_advertising_with_node_id_for_subnet(mesh_subnet);
     }
+    btstack_run_loop_remove_timer(&mesh_proxy_node_id_timer);
+    mesh_proxy_node_id_all_subnets = 0;
 }
 
 static void mesh_proxy_node_id_timeout_handler(btstack_timer_source_t * ts){
@@ -170,15 +179,15 @@ static void mesh_proxy_node_id_timeout_handler(btstack_timer_source_t * ts){
 }
 
 static void mesh_proxy_node_id_handle_get_aes128(void * arg){
-    mesh_subnet_t * network_key = (mesh_subnet_t *) arg;
+    mesh_subnet_t * mesh_subnet = (mesh_subnet_t *) arg;
 
-    memcpy(connectable_advertisement.adv_data, adv_data_with_node_identity_template, 12);
-    memcpy(&connectable_advertisement.adv_data[12], &mesh_proxy_node_id_hash[8], 8);
-    memcpy(&connectable_advertisement.adv_data[20], mesh_proxy_node_id_random_value, 8);
-    connectable_advertisement.adv_length = 28;
+    memcpy(mesh_subnet->advertisement_with_node_id.adv_data, adv_data_with_node_id_template, 12);
+    memcpy(&mesh_subnet->advertisement_with_node_id.adv_data[12], &mesh_proxy_node_id_hash[8], 8);
+    memcpy(&mesh_subnet->advertisement_with_node_id.adv_data[20], mesh_proxy_node_id_random_value, 8);
+    mesh_subnet->advertisement_with_node_id.adv_length = 28;
     
     // setup advertisements
-    adv_bearer_advertisements_add_item(&connectable_advertisement);
+    adv_bearer_advertisements_add_item(&mesh_subnet->advertisement_with_node_id);
     adv_bearer_advertisements_enable(1);
 
     // set timer
@@ -187,34 +196,29 @@ static void mesh_proxy_node_id_handle_get_aes128(void * arg){
     btstack_run_loop_add_timer(&mesh_proxy_node_id_timer);
 
     // mark as active
-    network_key->node_id_advertisement_running = 1;
+    mesh_subnet->node_id_advertisement_running = 1;
+
+    // next one
+    if (mesh_proxy_node_id_all_subnets == 0) return;
+    mesh_proxy_start_advertising_with_node_id_next_subnet();
 }
 
 static void mesh_proxy_node_id_handle_random(void * arg){
-    mesh_subnet_t * network_key = (mesh_subnet_t *) arg;
+    mesh_subnet_t * mesh_subnet = (mesh_subnet_t *) arg;
 
     // Hash = e(IdentityKey, Padding | Random | Address) mod 2^64
     memset(mesh_proxy_node_id_plaintext, 0, sizeof(mesh_proxy_node_id_plaintext));
     memcpy(&mesh_proxy_node_id_plaintext[6] , mesh_proxy_node_id_random_value, 8);
     big_endian_store_16(mesh_proxy_node_id_plaintext, 14, primary_element_address);
     // TODO: old vs. new key
-    btstack_crypto_aes128_encrypt(&mesh_proxy_node_id_crypto_request_aes128, network_key->old_key->identity_key, mesh_proxy_node_id_plaintext, mesh_proxy_node_id_hash, mesh_proxy_node_id_handle_get_aes128, network_key);
+    btstack_crypto_aes128_encrypt(&mesh_proxy_node_id_crypto_request_aes128, mesh_subnet->old_key->identity_key, mesh_proxy_node_id_plaintext, mesh_proxy_node_id_hash, mesh_proxy_node_id_handle_get_aes128, mesh_subnet);
 }
 
-static void mesh_proxy_start_advertising_with_node_id(uint16_t netkey_index){
-    mesh_proxy_stop_all_advertising_with_node_id();
-    // get network key
-    mesh_subnet_t * network_key = mesh_subnet_get_by_netkey_index(netkey_index);
-    if (network_key == NULL) return;
-    log_info("Proxy start advertising with node id, netkey index %04x", netkey_index);
+static void mesh_proxy_start_advertising_with_node_id_for_subnet(mesh_subnet_t * mesh_subnet){
+    if (mesh_subnet->node_id_advertisement_running) return;
+    log_info("Proxy start advertising with node id, netkey index %04x", mesh_subnet->netkey_index);
     // setup node id
-    btstack_crypto_random_generate(&mesh_proxy_node_id_crypto_request_random, mesh_proxy_node_id_random_value, sizeof(mesh_proxy_node_id_random_value), mesh_proxy_node_id_handle_random, network_key);
-}
-
-static void mesh_proxy_stop_advertising_with_node_id(uint16_t netkey_index){
-    UNUSED(netkey_index);
-    log_info("Proxy stop advertising with node id, netkey index %04x", netkey_index);
-    mesh_proxy_stop_all_advertising_with_node_id();
+    btstack_crypto_random_generate(&mesh_proxy_node_id_crypto_request_random, mesh_proxy_node_id_random_value, sizeof(mesh_proxy_node_id_random_value), mesh_proxy_node_id_handle_random, mesh_subnet);
 }
 
 // Public API
@@ -240,18 +244,18 @@ uint8_t mesh_proxy_get_advertising_with_node_id_status(uint16_t netkey_index, me
 }
 
 uint8_t mesh_proxy_set_advertising_with_node_id(uint16_t netkey_index, mesh_node_identity_state_t state){
-    mesh_subnet_t * network_key = mesh_subnet_get_by_netkey_index(netkey_index);
-    if (network_key == NULL){
+    mesh_subnet_t * mesh_subnet = mesh_subnet_get_by_netkey_index(netkey_index);
+    if (mesh_subnet == NULL){
         return  MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX;
     }
 
 #ifdef ENABLE_MESH_PROXY_SERVER
     switch (state){
         case MESH_NODE_IDENTITY_STATE_ADVERTISING_STOPPED:
-            mesh_proxy_stop_advertising_with_node_id(netkey_index);
+            mesh_proxy_stop_advertising_with_node_id_for_subnet(mesh_subnet);
             return MESH_FOUNDATION_STATUS_SUCCESS;
         case MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING:
-            mesh_proxy_start_advertising_with_node_id(netkey_index);
+            mesh_proxy_start_advertising_with_node_id_for_subnet(mesh_subnet);
             return MESH_FOUNDATION_STATUS_SUCCESS;
         default:
             break;
@@ -261,6 +265,29 @@ uint8_t mesh_proxy_set_advertising_with_node_id(uint16_t netkey_index, mesh_node
     return MESH_FOUNDATION_STATUS_FEATURE_NOT_SUPPORTED;
 }
 
+static void mesh_proxy_start_advertising_with_node_id_next_subnet(void){
+    mesh_subnet_iterator_t it;
+    mesh_subnet_iterator_init(&it);
+    while (mesh_subnet_iterator_has_more(&it)){
+        mesh_subnet_t * subnet = mesh_subnet_iterator_get_next(&it);
+        if (subnet->node_id_advertisement_running != 0) continue;
+
+        mesh_proxy_start_advertising_with_node_id_for_subnet(subnet);
+        return;
+    }
+}
+
+void mesh_proxy_start_advertising_with_node_id(void){
+    mesh_proxy_node_id_all_subnets = 1;
+    adv_bearer_advertisements_enable(1);
+    
+    // start advertising on first subnet that is not already advertising with node id    
+    mesh_proxy_start_advertising_with_node_id_next_subnet();
+}
+
+void mesh_proxy_stop_advertising_with_node_id(void){
+    mesh_proxy_stop_all_advertising_with_node_id();
+}
 
 void mesh_proxy_start_advertising_with_network_id(void){
     mesh_subnet_iterator_t it;

@@ -87,6 +87,16 @@ uint8_t mesh_proxy_set_advertising_with_node_id(uint16_t netkey_index, mesh_node
 uint8_t mesh_proxy_get_advertising_with_node_id_status(uint16_t netkey_index, mesh_node_identity_state_t * out_state );
 
 /**
+ * @brief Start Advertising with Node Identity (on all subnets)
+ */
+void mesh_proxy_start_advertising_with_node_id(void);
+
+/**
+ * @brief Stop Advertising with Node Identity (on all subnets)
+ */
+void mesh_proxy_stop_advertising_with_node_id(void);
+
+/**
  * @brief Start Advertising with Network ID (on all subnets)
  */
 void mesh_proxy_start_advertising_with_network_id(void);
