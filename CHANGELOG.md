@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Fixed
+- POSIX, WICED, Windows, FreeRTOS run loops: handle time_ms overrun after 49 days
 - RFCOMM: accept incoming L2CAP connection in Basic mode if ERTM is enabled but not requested for this connection
-- RFCOMM: limit RFCOMM MTU by local L2CAP MTU for outgoing connections (revelvant only for ERTM)
-- POSIX, WICED, Windows, FreeRTOS: handle time_ms overrun after 49 days
+- RFCOMM: limit RFCOMM MTU by local L2CAP MTU for outgoing connections (only revelvant for ERTM)
 - L2CAP ERTM: stop timers on disconnect
 - L2CAP ERTM: fix sending of segmented SDUs
 - L2CAP ERTM: handle unsupported Information Response
@@ -23,14 +23,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - FreeRTOS: use xQueueCreateStatic (static variant of xQueueCreate) if available for static memory-only setups
 - L2CAP ERTM: handle invalid Information Response (assume no extended features supported)
 - POSIX: use monotonic clock as timebase if available
+- HCI Transport H4/H5/EM9304 SPI: ignore block read/sent from UART driver when closed
 
 ## Changes July 2019
 
 ### Fixed
 - SM: Fixed regression introduced in f3582630
+- L2CAP: avoid reading l2cap signaling command len out of bounds
+- HCI Transport H4/H5/EM9304 SPI: fix payload size checks (also for 8/16-bit platforms)
 
 ### Changed
 - SM: Start encryption upon receiving slave securiy request if bonded
+- hci: use 2 as HCI_INCOMING_PRE_BUFFER_SIZE in LE-only configuration for GATT Client
 
 ---
 
@@ -40,10 +44,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - FreeRTOS: use freertos/.. prefix to include FreeRTOS headers if HAVE_FREERTOS_INCLUDE_PREFIX is defined
 - BNEP: add Connection Handle to BNEP_EVENT_CHANNEL_OPENED
 - Examples: renamed le_counter to gatt_counter and le_streamer to le_streamer_server to indicate suppport for GATT over BR/EDR
-- libusb: avoid use-after-free for SCO packets on disconnect
 
 ### Fixed
 - BNEP: Bluetooth address is stored in little-endian format for all BNEP_EVENT_*
+- libusb: avoid use-after-free for SCO packets on disconnect
 
 ### Added
 - example: pan_lwip_http_server using lwIP as network stack to implement PAN NAP service
