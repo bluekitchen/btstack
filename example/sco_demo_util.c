@@ -571,11 +571,13 @@ void sco_demo_send(hci_con_handle_t sco_handle){
                 audio_input_paused = 1;
             } else {
                 hfp_msbc_read_from_stream(sco_packet + 3, sco_payload_length);
+#ifdef ENABLE_HFP_WIDE_BAND_SPEECH
 #ifdef HAVE_POSIX_FILE_IO
                 if (msbc_file_out){
                     // log outgoing mSBC data for testing
                     fwrite(sco_packet + 3, sco_payload_length, 1, msbc_file_out);
                 }
+#endif
 #endif
             }
 

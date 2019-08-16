@@ -54,6 +54,7 @@
 #include "bluetooth_sdp.h"
 #include "btstack_audio.h"
 #include "btstack_control.h"
+#include "btstack_crypto.h"
 #include "btstack_debug.h"
 #include "btstack_defines.h"
 #include "btstack_event.h"
@@ -85,6 +86,10 @@
 #include "ble/gatt-service/device_information_service_server.h"
 #include "ble/gatt-service/heart_rate_service_server.h"
 #include "ble/gatt-service/hids_device.h"
+#ifdef ENABLE_MESH
+#include "ble/gatt-service/mesh_provisioning_service_server.h"
+#include "ble/gatt-service/mesh_proxy_service_server.h"
+#endif
 #include "ble/gatt_client.h"
 #include "ble/le_device_db.h"
 #include "ble/sm.h"
@@ -125,5 +130,31 @@
 #include "classic/spp_server.h"
 #endif
 
-#endif  // BTSTACK_H
- 
+#ifdef ENABLE_MESH
+#include "ble/gatt-service/mesh_provisioning_service_server.h"
+#include "ble/gatt-service/mesh_proxy_service_server.h"
+#include "mesh/adv_bearer.h"
+#include "mesh/beacon.h"
+#include "mesh/gatt_bearer.h"
+#include "mesh/mesh.h"
+#include "mesh/mesh_access.h"
+#include "mesh/mesh_configuration_server.h"
+#include "mesh/mesh_crypto.h"
+#include "mesh/mesh_foundation.h"
+#include "mesh/mesh_generic_level_client.h"
+#include "mesh/mesh_generic_level_server.h"
+#include "mesh/mesh_generic_model.h"
+#include "mesh/mesh_generic_on_off_client.h"
+#include "mesh/mesh_generic_on_off_server.h"
+#include "mesh/mesh_health_server.h"
+#include "mesh/mesh_proxy.h"
+#include "mesh/mesh_upper_transport.h"
+#include "mesh/mesh_virtual_addresses.h"
+#include "mesh/pb_adv.h"
+#include "mesh/pb_gatt.h"
+#include "mesh/provisioning.h"
+#include "mesh/provisioning_device.h"
+#include "mesh/provisioning_provisioner.h"
+#endif
+
+#endif  // __BTSTACK_H 

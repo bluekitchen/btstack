@@ -70,6 +70,12 @@ with open(gen_path, 'wt') as fout:
     scrape_page(fout, 'https://www.bluetooth.com/specifications/gatt/services')
     scrape_page(fout, 'https://www.bluetooth.com/specifications/gatt/characteristics')
     scrape_page(fout, 'https://www.bluetooth.com/specifications/gatt/descriptors')
+    fout.write("// START(manually added, missing on Bluetooth Website\n")
+    fout.write("#define %-80s %s // %s\n" %  ("ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROVISIONING_DATA_IN" , "0x2ADB", ''))
+    fout.write("#define %-80s %s // %s\n" %  ("ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROVISIONING_DATA_OUT", "0x2ADC", ''))
+    fout.write("#define %-80s %s // %s\n" %  ("ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROXY_DATA_IN"        , "0x2ADD", ''))
+    fout.write("#define %-80s %s // %s\n" %  ("ORG_BLUETOOTH_CHARACTERISTIC_MESH_PROXY_DATA_OUT"       , "0x2ADE", ''))
+    fout.write("// END(manualy added, missing on Bluetooth Website\n")
     fout.write(trailer)
 
 print('Scraping successful!\n')

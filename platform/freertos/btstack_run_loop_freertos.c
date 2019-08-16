@@ -47,9 +47,11 @@
 
 #include <stddef.h> // NULL
 
+#include "btstack_run_loop_freertos.h"
+
 #include "btstack_linked_list.h"
 #include "btstack_debug.h"
-#include "btstack_run_loop_freertos.h"
+#include "btstack_util.h"
 #include "hal_time_ms.h"
 
 // some SDKs, e.g. esp-idf, place FreeRTOS headers into an 'freertos' folder to avoid name collisions (e.g. list.h, queue.h, ..)
@@ -73,6 +75,24 @@ typedef struct function_call {
 } function_call_t;
 
 static const btstack_run_loop_t btstack_run_loop_freertos;
+
+// pick allocation style, prefer static
+#if( configSUPPORT_STATIC_ALLOCATION == 1 )
+#define USE_STATIC_ALLOC
+#elif( configSUPPORT_DYNAMIC_ALLOCATION == 1 )
+// ok, nothing to do
+#else
+#error "Either configSUPPORT_STATIC_ALLOCATION or configSUPPORT_DYNAMIC_ALLOCATION in FreeRTOSConfig.h must be 1"
+#endif
+
+// queue to receive events: up to 2 calls from transport, rest for app
+#define RUN_LOOP_QUEUE_LENGTH 20
+#define RUN_LOOP_QUEUE_ITEM_SIZE sizeof(function_call_t)
+
+#ifdef USE_STATIC_ALLOC
+static StaticQueue_t btstack_run_loop_queue_object;
+static uint8_t btstack_run_loop_queue_storage[ RUN_LOOP_QUEUE_LENGTH * RUN_LOOP_QUEUE_ITEM_SIZE ];
+#endif
 
 static QueueHandle_t        btstack_run_loop_queue;
 static TaskHandle_t         btstack_run_loop_task;
@@ -104,13 +124,14 @@ static void btstack_run_loop_freertos_add_timer(btstack_timer_source_t *ts){
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) &timers; it->next ; it = it->next){
         // don't add timer that's already in there
-        if ((btstack_timer_source_t *) it->next == ts){
+        btstack_timer_source_t * next = (btstack_timer_source_t *) it->next;
+        if (next == ts){
             log_error( "btstack_run_loop_timer_add error: timer to add already in list!");
             return;
         }
-        if (ts->timeout < ((btstack_timer_source_t *) it->next)->timeout) {
-            break;
-        }
+        // exit if new timeout before list timeout
+        int32_t delta = btstack_time_delta(ts->timeout, next->timeout);
+        if (delta < 0) break;
     }
     ts->item.next = it->next;
     it->next = (btstack_linked_item_t *) ts;
@@ -216,15 +237,16 @@ static void btstack_run_loop_freertos_execute(void) {
             }
         }
 
-        // process timers and get et next timeout
+        // process timers and get next timeout
         uint32_t timeout_ms = portMAX_DELAY;
         log_debug("RL: portMAX_DELAY %u", portMAX_DELAY);
         while (timers) {
             btstack_timer_source_t * ts = (btstack_timer_source_t *) timers;
             uint32_t now = btstack_run_loop_freertos_get_time_ms();
-            log_debug("RL: now %u, expires %u", now, ts->timeout);
-            if (ts->timeout > now){
-                timeout_ms = ts->timeout - now;
+            int32_t delta_ms = btstack_time_delta(ts->timeout, now);
+            log_debug("RL: now %u, expires %u -> delta %d", now, ts->timeout, delta_ms);
+            if (delta_ms > 0){
+                timeout_ms = delta_ms;
                 break;
             }
             // remove timer before processing it to allow handler to re-register with run loop
@@ -262,8 +284,11 @@ static void btstack_run_loop_freertos_disable_data_source_callbacks(btstack_data
 static void btstack_run_loop_freertos_init(void){
     timers = NULL;
 
-    // queue to receive events: up to 2 calls from transport, up to 3 for app
-    btstack_run_loop_queue = xQueueCreate(20, sizeof(function_call_t));
+#ifdef USE_STATIC_ALLOC
+    btstack_run_loop_queue = xQueueCreateStatic(RUN_LOOP_QUEUE_LENGTH, RUN_LOOP_QUEUE_ITEM_SIZE, btstack_run_loop_queue_storage, &btstack_run_loop_queue_object);
+#else
+    btstack_run_loop_queue = xQueueCreate(RUN_LOOP_QUEUE_LENGTH, RUN_LOOP_QUEUE_ITEM_SIZE);
+#endif
 
 #ifndef HAVE_FREERTOS_TASK_NOTIFICATIONS
     // event group to wake run loop

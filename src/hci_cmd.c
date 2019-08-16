@@ -619,10 +619,30 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x14), ""
 };
 
 /**
+ */ 
+const hci_cmd_t hci_read_page_timeout = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x17), ""
+};
+
+/**
  * @param page_timeout (* 0.625 ms)
  */
 const hci_cmd_t hci_write_page_timeout = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x18), "2"
+};
+
+/**
+ */ 
+const hci_cmd_t hci_read_page_scan_activity = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x1B), ""
+};
+
+/**
+ * @param page_scan_interval (* 0.625 ms)
+ * @param page_scan_window (* 0.625 ms, must be <= page_scan_interval)
+ */ 
+const hci_cmd_t hci_write_page_scan_activity = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x1C), "22"
 };
 
 /**

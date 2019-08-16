@@ -1015,8 +1015,8 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
             if (request.ertm_config && request.ertm_buffer && request.ertm_buffer_size){
                 multiplexer->ertm_id = request.ertm_id;
                 l2cap_accept_ertm_connection(l2cap_cid, request.ertm_config, request.ertm_buffer, request.ertm_buffer_size);
+                return 1;
             }
-            return 1;
 #endif
 
             l2cap_accept_connection(l2cap_cid);
@@ -1076,6 +1076,9 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
             
             // following could be: rfcom_multiplexer_state_machein(..., EVENT_L2CAP_OPENED)
 
+            // set max frame size based on l2cap MTU
+            multiplexer->max_frame_size = rfcomm_max_frame_size_for_l2cap_mtu(little_endian_read_16(packet, 17));
+
             if (multiplexer->state == RFCOMM_MULTIPLEXER_W4_CONNECT) {
                 log_info("L2CAP_EVENT_CHANNEL_OPENED: outgoing connection");
                 // wrong remote addr
@@ -1085,10 +1088,6 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
                 // send SABM #0
                 rfcomm_multiplexer_set_state_and_request_can_send_now_event(multiplexer, RFCOMM_MULTIPLEXER_SEND_SABM_0);
 
-            } else { // multiplexer->state == RFCOMM_MULTIPLEXER_W4_SABM_0
-                
-                // set max frame size based on l2cap MTU
-                multiplexer->max_frame_size = rfcomm_max_frame_size_for_l2cap_mtu(little_endian_read_16(packet, 17));
             }
             return 1;
             
@@ -1945,7 +1944,9 @@ static void rfcomm_channel_state_machine_with_channel(rfcomm_channel_t *channel,
         case RFCOMM_CHANNEL_SEND_UIH_PN:
             switch (event->type) {
                 case CH_EVT_READY_TO_SEND:
-                    log_info("Sending UIH Parameter Negotiation Command for #%u (channel 0x%p)", channel->dlci, channel );
+                    // update mtu
+                    channel->max_frame_size = btstack_min(multiplexer->max_frame_size, channel->max_frame_size);
+                    log_info("Sending UIH Parameter Negotiation Command for #%u (channel 0x%p) mtu %u", channel->dlci, channel, channel->max_frame_size );
                     channel->state = RFCOMM_CHANNEL_W4_PN_RSP;
                     rfcomm_send_uih_pn_command(multiplexer, channel->dlci, channel->max_frame_size);
                     break;

@@ -1509,7 +1509,7 @@ static void hci_initializing_run(void){
         case HCI_INIT_LE_SET_SCAN_PARAMETERS:
             // LE Scan Parameters: active scanning, 300 ms interval, 30 ms window, own address type, accept all advs
             hci_stack->substate = HCI_INIT_W4_LE_SET_SCAN_PARAMETERS;
-            hci_send_cmd(&hci_le_set_scan_parameters, 1, 0x1e0, 0x30, hci_stack->le_own_addr_type, 0);
+            hci_send_cmd(&hci_le_set_scan_parameters, 1, hci_stack->le_scan_interval, hci_stack->le_scan_window, hci_stack->le_own_addr_type, 0);
             break;
 #endif
         default:
@@ -2798,6 +2798,10 @@ void hci_init(const hci_transport_t *transport, const void *config){
     hci_stack->le_supervision_timeout     = 0x0048;    // 720 ms
     hci_stack->le_minimum_ce_length       = 2;         // 1.25 ms
     hci_stack->le_maximum_ce_length       = 0x0030;    // 30 ms
+
+    // default LE Scanning
+    hci_stack->le_scan_interval = 0x1e0;
+    hci_stack->le_scan_window   =  0x30;
 #endif
 
 #ifdef ENABLE_LE_PERIPHERAL

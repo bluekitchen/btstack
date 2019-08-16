@@ -33,4 +33,20 @@
 #define HCI_ACL_PAYLOAD_SIZE (1691 + 4)
 #define HCI_INCOMING_PRE_BUFFER_SIZE 14 // sizeof BNEP header, avoid memcpy
 
+// Mesh Configuration
+#define ENABLE_MESH
+#define ENABLE_MESH_ADV_BEARER
+#define ENABLE_MESH_GATT_BEARER
+#define ENABLE_MESH_PB_ADV
+#define ENABLE_MESH_PB_GATT
+#define ENABLE_MESH_PROXY_SERVER
+#define ENABLE_MESH_PROVISIONER
+
+#define MAX_NR_MESH_TRANSPORT_KEYS    16
+#define MAX_NR_MESH_VIRTUAL_ADDRESSES 16
+#define MAX_NR_MESH_SUBNETS            2
+
+// allow for one NetKey update
+#define MAX_NR_MESH_NETWORK_KEYS      (MAX_NR_MESH_SUBNETS+1)
+
 #endif

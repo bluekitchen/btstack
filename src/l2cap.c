@@ -108,6 +108,7 @@ static void l2cap_dispatch_to_channel(l2cap_channel_t *channel, uint8_t type, ui
 static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid);
 static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t packet_handler, l2cap_channel_type_t channel_type, bd_addr_t address, bd_addr_type_t address_type, 
         uint16_t psm, uint16_t local_mtu, gap_security_level_t security_level);
+static void l2cap_free_channel_entry(l2cap_channel_t * channel);
 #endif
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
 static void l2cap_ertm_notify_channel_can_send(l2cap_channel_t * channel);
@@ -200,12 +201,13 @@ static int l2cap_ertm_can_store_packet_now(l2cap_channel_t * channel){
     int num_free_tx_buffers = channel->num_tx_buffers - channel->num_stored_tx_frames;
     // calculate num tx buffers for remote MTU
     int num_tx_buffers_for_max_remote_mtu;
-    if (channel->remote_mtu <= channel->remote_mps){
+    uint16_t effective_mps = btstack_min(channel->remote_mps, channel->local_mps);
+    if (channel->remote_mtu <= effective_mps){
         // MTU fits into single packet
         num_tx_buffers_for_max_remote_mtu = 1;
     } else {
         // include SDU Length
-        num_tx_buffers_for_max_remote_mtu = (channel->remote_mtu + 2 + (channel->remote_mps - 1)) / channel->remote_mps;
+        num_tx_buffers_for_max_remote_mtu = (channel->remote_mtu + 2 + (effective_mps - 1)) / effective_mps;
     }
     log_debug("num_free_tx_buffers %u, num_tx_buffers_for_max_remote_mtu %u", num_free_tx_buffers, num_tx_buffers_for_max_remote_mtu);
     return num_tx_buffers_for_max_remote_mtu <= num_free_tx_buffers;
@@ -321,18 +323,18 @@ static void l2cap_ertm_store_fragment(l2cap_channel_t * channel, l2cap_segmentat
 
     l2cap_ertm_tx_packet_state_t * tx_state = &channel->tx_packets_state[index];
     tx_state->tx_seq = channel->next_tx_seq;
-    tx_state->len = len;
     tx_state->sar = sar;
     tx_state->retry_count = 0;
 
     uint8_t * tx_packet = &channel->tx_packets_data[index * channel->local_mps];
-    log_debug("index %u, mtu %u, packet tx %p", index, channel->local_mtu, tx_packet);
+    log_debug("index %u, local mps %u, remote mps %u, packet tx %p, len %u", index, channel->local_mps, channel->remote_mps, tx_packet, len);
     int pos = 0;
     if (sar == L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU){
         little_endian_store_16(tx_packet, 0, sdu_length);
         pos += 2;
     }
     memcpy(&tx_packet[pos], data, len);
+    tx_state->len = pos + len;
 
     // update
     channel->num_stored_tx_frames++;
@@ -355,20 +357,21 @@ static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t l
     }
 
     // check if it needs to get fragmented
-    if (len > channel->remote_mps){
+    uint16_t effective_mps = btstack_min(channel->remote_mps, channel->local_mps);
+    if (len > effective_mps){
         // fragmentation needed.
         l2cap_segmentation_and_reassembly_t sar =  L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU;
         int chunk_len;
         while (len){
             switch (sar){
                 case L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU:
-                    chunk_len = channel->remote_mps - 2;    // sdu_length
+                    chunk_len = effective_mps - 2;    // sdu_length
                     l2cap_ertm_store_fragment(channel, sar, len, data, chunk_len);
                     len -= chunk_len;
                     sar = L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU;
                     break;
                 case L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU:
-                    chunk_len = channel->remote_mps;
+                    chunk_len = effective_mps;
                     if (chunk_len >= len){
                         sar = L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU; 
                         chunk_len = len;                       
@@ -435,7 +438,8 @@ static uint16_t l2cap_setup_options_ertm_response(l2cap_channel_t * channel, uin
     little_endian_store_16( config_options, pos, channel->local_monitor_timeout_ms);
     pos += 2;
     // less or equal to remote mps
-    little_endian_store_16( config_options, pos, btstack_min(channel->local_mps, channel->remote_mps));
+    uint16_t effective_mps = btstack_min(channel->remote_mps, channel->local_mps);
+    little_endian_store_16( config_options, pos, effective_mps);
     pos += 2;
     //
     config_options[pos++] = L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT; // MTU
@@ -1090,7 +1094,7 @@ static void l2cap_rtx_timeout(btstack_timer_source_t * ts){
     // discard channel
     // no need to stop timer here, it is removed from list during timer callback
     btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
-    btstack_memory_l2cap_channel_free(channel);
+    l2cap_free_channel_entry(channel);
 }
 
 #endif
@@ -1466,9 +1470,8 @@ static void l2cap_run(void){
                 channel->state = L2CAP_STATE_INVALID;
                 l2cap_send_signaling_packet(channel->con_handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, channel->reason, 0);
                 // discard channel - l2cap_finialize_channel_close without sending l2cap close event
-                l2cap_stop_rtx(channel);
                 btstack_linked_list_iterator_remove(&it);
-                btstack_memory_l2cap_channel_free(channel); 
+                l2cap_free_channel_entry(channel); 
                 break;
                 
             case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT:
@@ -1688,9 +1691,8 @@ static void l2cap_run(void){
                 channel->state = L2CAP_STATE_INVALID;
                 l2cap_send_le_signaling_packet(channel->con_handle, LE_CREDIT_BASED_CONNECTION_RESPONSE, channel->remote_sig_id, 0, 0, 0, 0, channel->reason);
                 // discard channel - l2cap_finialize_channel_close without sending l2cap close event
-                l2cap_stop_rtx(channel);
                 btstack_linked_list_iterator_remove(&it);
-                btstack_memory_l2cap_channel_free(channel);
+                l2cap_free_channel_entry(channel);
                 break;
             case L2CAP_STATE_OPEN:
                 if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
@@ -1861,9 +1863,21 @@ static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t pac
     channel->remote_sig_id = L2CAP_SIG_ID_INVALID;
     channel->local_sig_id = L2CAP_SIG_ID_INVALID;
 
-    log_info("channel %p, local_cid 0x%04x", channel, channel->local_cid);
+    log_info("create channel %p, local_cid 0x%04x", channel, channel->local_cid);
 
     return channel;
+}
+
+static void l2cap_free_channel_entry(l2cap_channel_t * channel){
+    log_info("free channel %p, local_cid 0x%04x", channel, channel->local_cid);
+    // assert all timers are stopped
+    l2cap_stop_rtx(channel);
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+    l2cap_ertm_stop_retransmission_timer(channel);
+    l2cap_ertm_stop_monitor_timer(channel);
+#endif
+    // free  memory
+    btstack_memory_l2cap_channel_free(channel);
 }
 #endif
 
@@ -1959,9 +1973,8 @@ static void l2cap_handle_connection_failed_for_addr(bd_addr_t address, uint8_t s
                 // failure, forward error code
                 l2cap_handle_channel_open_failed(channel, status);
                 // discard channel
-                l2cap_stop_rtx(channel);
                 btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
-                btstack_memory_l2cap_channel_free(channel);
+                l2cap_free_channel_entry(channel);
                 break;
             }
         }
@@ -2074,7 +2087,7 @@ static void l2cap_handle_hci_disconnect_event(l2cap_channel_t * channel){
     } else {
         l2cap_handle_channel_closed(channel);
     }
-    btstack_memory_l2cap_channel_free(channel);
+    l2cap_free_channel_entry(channel);
 }
 #endif
 
@@ -2085,7 +2098,7 @@ static void l2cap_handle_hci_le_disconnect_event(l2cap_channel_t * channel){
     } else {
         l2cap_emit_le_channel_closed(channel);
     }
-    btstack_memory_l2cap_channel_free(channel);
+    l2cap_free_channel_entry(channel);
 }
 #endif
 
@@ -2170,7 +2183,6 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t cid, uint8_t *
                 switch(channel->channel_type){
 #ifdef ENABLE_CLASSIC
                     case L2CAP_CHANNEL_TYPE_CLASSIC:
-                        l2cap_stop_rtx(channel);
                         l2cap_handle_hci_disconnect_event(channel);
                         break;
 #endif
@@ -2603,7 +2615,7 @@ static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *c
                             
                             // discard channel
                             btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
-                            btstack_memory_l2cap_channel_free(channel);
+                            l2cap_free_channel_entry(channel);
                             break;
                     }
                     break;
@@ -2739,52 +2751,53 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
         case INFORMATION_RESPONSE: {
             hci_connection_t * connection = hci_connection_for_handle(handle);
             if (!connection) return;
-            if (cmd_len >= 4) {
+            if (connection->l2cap_state.information_state != L2CAP_INFORMATION_STATE_W4_EXTENDED_FEATURE_RESPONSE) return;
+
+            // get extended features from response if valid
+            connection->l2cap_state.extended_feature_mask = 0;
+            if (cmd_len >= 6) {
                 uint16_t info_type = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
-                uint16_t result =  little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+2);
-                if (result != 0) return;
-                if (info_type != L2CAP_INFO_TYPE_EXTENDED_FEATURES_SUPPORTED) return;
-                if (cmd_len >= 6) {
-                    connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_DONE; 
+                uint16_t result    = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+2);
+                if (result == 0 && info_type == L2CAP_INFO_TYPE_EXTENDED_FEATURES_SUPPORTED) {
                     connection->l2cap_state.extended_feature_mask = little_endian_read_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+4);
-                    log_info("extended features mask 0x%02x", connection->l2cap_state.extended_feature_mask);
-                    // trigger connection request
-                    btstack_linked_list_iterator_init(&it, &l2cap_channels);
-                    while (btstack_linked_list_iterator_has_next(&it)){
-                        l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-                        if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
-                        if (channel->con_handle != handle) continue;
-                        // bail if ERTM was requested but is not supported
-                        if ((channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) && ((connection->l2cap_state.extended_feature_mask & 0x08) == 0)){
-                            if (channel->ertm_mandatory){
-                                // channel closed
-                                channel->state = L2CAP_STATE_CLOSED;
-                                // map l2cap connection response result to BTstack status enumeration
-                                l2cap_handle_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_ERTM_NOT_SUPPORTED);
-                                // discard channel
-                                btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
-                                btstack_memory_l2cap_channel_free(channel);
-                                continue;
-                            } else {
-                                // fallback to Basic mode
-                                l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_ERTM_BUFFER_RELEASED);
-                                channel->mode = L2CAP_CHANNEL_MODE_BASIC;
-                            }
-                        }
-                        // start connecting
-                        if (channel->state == L2CAP_STATE_WAIT_OUTGOING_EXTENDED_FEATURES){
-                            channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST;
-                        }
-                        // respond to connection request
-                        if (channel->state == L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES){
-                            channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
-                            l2cap_emit_incoming_connection(channel);
-                        }
-                    }
-                    return; // cmd len valid
                 }
             }
-            l2cap_register_signaling_response(handle, COMMAND_REJECT, sig_id, 0, L2CAP_REJ_CMD_UNKNOWN);
+            connection->l2cap_state.information_state = L2CAP_INFORMATION_STATE_DONE; 
+            log_info("extended features mask 0x%02x", connection->l2cap_state.extended_feature_mask);
+
+            // trigger connection request
+            btstack_linked_list_iterator_init(&it, &l2cap_channels);
+            while (btstack_linked_list_iterator_has_next(&it)){
+                l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
+                if (!l2cap_is_dynamic_channel_type(channel->channel_type)) continue;
+                if (channel->con_handle != handle) continue;
+                // bail if ERTM was requested but is not supported
+                if ((channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) && ((connection->l2cap_state.extended_feature_mask & 0x08) == 0)){
+                    if (channel->ertm_mandatory){
+                        // channel closed
+                        channel->state = L2CAP_STATE_CLOSED;
+                        // map l2cap connection response result to BTstack status enumeration
+                        l2cap_handle_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_ERTM_NOT_SUPPORTED);
+                        // discard channel
+                        btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
+                        l2cap_free_channel_entry(channel);
+                        continue;
+                    } else {
+                        // fallback to Basic mode
+                        l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_ERTM_BUFFER_RELEASED);
+                        channel->mode = L2CAP_CHANNEL_MODE_BASIC;
+                    }
+                }
+                // start connecting
+                if (channel->state == L2CAP_STATE_WAIT_OUTGOING_EXTENDED_FEATURES){
+                    channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST;
+                }
+                // respond to connection request
+                if (channel->state == L2CAP_STATE_WAIT_INCOMING_EXTENDED_FEATURES){
+                    channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
+                    l2cap_emit_incoming_connection(channel);
+                }
+            }
             return;
         }
 #endif
@@ -2926,7 +2939,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                                 
                 // discard channel
                 btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
-                btstack_memory_l2cap_channel_free(channel);
+                l2cap_free_channel_entry(channel);
                 break;
             }
             break;
@@ -3054,7 +3067,7 @@ static int l2cap_le_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t 
                                 
                 // discard channel
                 btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
-                btstack_memory_l2cap_channel_free(channel);
+                l2cap_free_channel_entry(channel);
                 break;
             }
 
@@ -3128,11 +3141,11 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
     switch (channel_id) {
             
         case L2CAP_CID_SIGNALING: {
-            uint16_t command_offset = 8;
-            while (command_offset < size) {
+            uint32_t command_offset = 8;
+            while ((command_offset + L2CAP_SIGNALING_COMMAND_DATA_OFFSET) < size) {
                 // assert signaling command is fully inside packet
                 uint16_t data_len = little_endian_read_16(packet, command_offset + L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
-                uint32_t next_command_offset = ((uint32_t) command_offset) + L2CAP_SIGNALING_COMMAND_DATA_OFFSET + data_len;
+                uint32_t next_command_offset = command_offset + L2CAP_SIGNALING_COMMAND_DATA_OFFSET + data_len;
                 if (next_command_offset > size){
                     log_error("l2cap signaling command len invalid -> drop");
                     break;
@@ -3140,7 +3153,7 @@ static void l2cap_acl_classic_handler(hci_con_handle_t handle, uint8_t *packet, 
                 // handle signaling command
                 l2cap_signaling_handler_dispatch(handle, &packet[command_offset]);
                 // go to next command
-                command_offset = (uint16_t) next_command_offset;
+                command_offset = next_command_offset;
             }
             break;
         }
@@ -3482,9 +3495,8 @@ void l2cap_finialize_channel_close(l2cap_channel_t * channel){
     channel->state = L2CAP_STATE_CLOSED;
     l2cap_handle_channel_closed(channel);
     // discard channel
-    l2cap_stop_rtx(channel);
     btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
-    btstack_memory_l2cap_channel_free(channel);
+    l2cap_free_channel_entry(channel);
 }
 #endif
 
@@ -3623,7 +3635,7 @@ void l2cap_le_finialize_channel_close(l2cap_channel_t * channel){
     l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_CHANNEL_CLOSED);
     // discard channel
     btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
-    btstack_memory_l2cap_channel_free(channel);
+    l2cap_free_channel_entry(channel);
 }
 
 static inline l2cap_service_t * l2cap_le_get_service(uint16_t le_psm){

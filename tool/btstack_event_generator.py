@@ -21,6 +21,7 @@ meta_events = [
     'HSP',
     'LE',
     'MAP',
+    'MESH',
     'PBAP',
 ]
 

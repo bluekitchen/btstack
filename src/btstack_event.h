@@ -166,6 +166,14 @@ static inline uint8_t hci_event_map_meta_get_subevent_code(const uint8_t * event
     return event[2];
 }
 /***
+ * @brief Get subevent code for mesh event
+ * @param event packet
+ * @return subevent_code
+ */
+static inline uint8_t hci_event_mesh_meta_get_subevent_code(const uint8_t * event){
+    return event[2];
+}
+/***
  * @brief Get subevent code for pbap event
  * @param event packet
  * @return subevent_code
@@ -7207,6 +7215,685 @@ static inline const uint8_t * map_subevent_message_listing_item_get_handle(const
  */
 static inline uint16_t map_subevent_parsing_done_get_map_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
+}
+
+
+/**
+ * @brief Get field status from event MESH_SUBEVENT_PB_TRANSPORT_PDU_SENT
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_pb_transport_pdu_sent_get_status(const uint8_t * event){
+    return event[3];
+}
+
+/**
+ * @brief Get field status from event MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_pb_transport_link_open_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field pb_transport_cid from event MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN
+ * @param event packet
+ * @return pb_transport_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_pb_transport_link_open_get_pb_transport_cid(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+/**
+ * @brief Get field pb_type from event MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN
+ * @param event packet
+ * @return pb_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_pb_transport_link_open_get_pb_type(const uint8_t * event){
+    return event[6];
+}
+
+/**
+ * @brief Get field pb_transport_cid from event MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED
+ * @param event packet
+ * @return pb_transport_cid
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_pb_transport_link_closed_get_pb_transport_cid(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field reason from event MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED
+ * @param event packet
+ * @return reason
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_pb_transport_link_closed_get_reason(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+
+/**
+ * @brief Get field pb_transport_cid from event MESH_SUBEVENT_PB_PROV_ATTENTION_TIMER
+ * @param event packet
+ * @return pb_transport_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_pb_prov_attention_timer_get_pb_transport_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field attention_time from event MESH_SUBEVENT_PB_PROV_ATTENTION_TIMER
+ * @param event packet
+ * @return attention_time
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_pb_prov_attention_timer_get_attention_time(const uint8_t * event){
+    return event[5];
+}
+
+/**
+ * @brief Get field pb_transport_cid from event MESH_SUBEVENT_PB_PROV_START_EMIT_PUBLIC_KEY_OOB
+ * @param event packet
+ * @return pb_transport_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_pb_prov_start_emit_public_key_oob_get_pb_transport_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field pb_transport_cid from event MESH_SUBEVENT_PB_PROV_STOP_EMIT_PUBLIC_KEY_OOB
+ * @param event packet
+ * @return pb_transport_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_pb_prov_stop_emit_public_key_oob_get_pb_transport_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field pb_transport_cid from event MESH_SUBEVENT_PB_PROV_INPUT_OOB_REQUEST
+ * @param event packet
+ * @return pb_transport_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_pb_prov_input_oob_request_get_pb_transport_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field pb_transport_cid from event MESH_SUBEVENT_PB_PROV_START_EMIT_OUTPUT_OOB
+ * @param event packet
+ * @return pb_transport_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_pb_prov_start_emit_output_oob_get_pb_transport_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field output_oob from event MESH_SUBEVENT_PB_PROV_START_EMIT_OUTPUT_OOB
+ * @param event packet
+ * @return output_oob
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_pb_prov_start_emit_output_oob_get_output_oob(const uint8_t * event){
+    return little_endian_read_32(event, 5);
+}
+
+/**
+ * @brief Get field pb_transport_cid from event MESH_SUBEVENT_PB_PROV_STOP_EMIT_OUTPUT_OOB
+ * @param event packet
+ * @return pb_transport_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_pb_prov_stop_emit_output_oob_get_pb_transport_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field pb_transport_cid from event MESH_SUBEVENT_PB_PROV_START_RECEIVE_PUBLIC_KEY_OOB
+ * @param event packet
+ * @return pb_transport_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_pb_prov_start_receive_public_key_oob_get_pb_transport_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field pb_transport_cid from event MESH_SUBEVENT_PB_PROV_STOP_RECEIVE_PUBLIC_KEY_OOB
+ * @param event packet
+ * @return pb_transport_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_pb_prov_stop_receive_public_key_oob_get_pb_transport_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field pb_transport_cid from event MESH_SUBEVENT_PB_PROV_OUTPUT_OOB_REQUEST
+ * @param event packet
+ * @return pb_transport_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_pb_prov_output_oob_request_get_pb_transport_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field pb_transport_cid from event MESH_SUBEVENT_PB_PROV_START_EMIT_INPUT_OOB
+ * @param event packet
+ * @return pb_transport_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_pb_prov_start_emit_input_oob_get_pb_transport_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field output_oob from event MESH_SUBEVENT_PB_PROV_START_EMIT_INPUT_OOB
+ * @param event packet
+ * @return output_oob
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_pb_prov_start_emit_input_oob_get_output_oob(const uint8_t * event){
+    return little_endian_read_32(event, 5);
+}
+
+/**
+ * @brief Get field pb_transport_cid from event MESH_SUBEVENT_PB_PROV_STOP_EMIT_INPUT_OOB
+ * @param event packet
+ * @return pb_transport_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_pb_prov_stop_emit_input_oob_get_pb_transport_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field pb_transport_cid from event MESH_SUBEVENT_PB_PROV_CAPABILITIES
+ * @param event packet
+ * @return pb_transport_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_pb_prov_capabilities_get_pb_transport_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field num_elements from event MESH_SUBEVENT_PB_PROV_CAPABILITIES
+ * @param event packet
+ * @return num_elements
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_pb_prov_capabilities_get_num_elements(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field algorithms from event MESH_SUBEVENT_PB_PROV_CAPABILITIES
+ * @param event packet
+ * @return algorithms
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_pb_prov_capabilities_get_algorithms(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+/**
+ * @brief Get field public_key from event MESH_SUBEVENT_PB_PROV_CAPABILITIES
+ * @param event packet
+ * @return public_key
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_pb_prov_capabilities_get_public_key(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field static_oob_type from event MESH_SUBEVENT_PB_PROV_CAPABILITIES
+ * @param event packet
+ * @return static_oob_type
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_pb_prov_capabilities_get_static_oob_type(const uint8_t * event){
+    return event[9];
+}
+/**
+ * @brief Get field output_oob_size from event MESH_SUBEVENT_PB_PROV_CAPABILITIES
+ * @param event packet
+ * @return output_oob_size
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_pb_prov_capabilities_get_output_oob_size(const uint8_t * event){
+    return event[10];
+}
+/**
+ * @brief Get field output_oob_action from event MESH_SUBEVENT_PB_PROV_CAPABILITIES
+ * @param event packet
+ * @return output_oob_action
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_pb_prov_capabilities_get_output_oob_action(const uint8_t * event){
+    return little_endian_read_16(event, 11);
+}
+/**
+ * @brief Get field input_oob_size from event MESH_SUBEVENT_PB_PROV_CAPABILITIES
+ * @param event packet
+ * @return input_oob_size
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_pb_prov_capabilities_get_input_oob_size(const uint8_t * event){
+    return event[13];
+}
+/**
+ * @brief Get field input_oob_action from event MESH_SUBEVENT_PB_PROV_CAPABILITIES
+ * @param event packet
+ * @return input_oob_action
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_pb_prov_capabilities_get_input_oob_action(const uint8_t * event){
+    return little_endian_read_16(event, 14);
+}
+
+/**
+ * @brief Get field pb_transport_cid from event MESH_SUBEVENT_PB_PROV_COMPLETE
+ * @param event packet
+ * @return pb_transport_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_pb_prov_complete_get_pb_transport_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field attention_time from event MESH_SUBEVENT_ATTENTION_TIMER
+ * @param event packet
+ * @return attention_time
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_attention_timer_get_attention_time(const uint8_t * event){
+    return event[3];
+}
+
+/**
+ * @brief Get field status from event MESH_SUBEVENT_PROXY_CONNECTED
+ * @param event packet
+ * @return status
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_proxy_connected_get_status(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field con_handle from event MESH_SUBEVENT_PROXY_CONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t mesh_subevent_proxy_connected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+
+/**
+ * @brief Get field con_handle from event MESH_SUBEVENT_PROXY_PDU_SENT
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t mesh_subevent_proxy_pdu_sent_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field con_handle from event MESH_SUBEVENT_PROXY_DISCONNECTED
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t mesh_subevent_proxy_disconnected_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field con_handle from event MESH_SUBEVENT_MESSAGE_SENT
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t mesh_subevent_message_sent_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+
+/**
+ * @brief Get field element_index from event MESH_SUBEVENT_STATE_UPDATE_BOOL
+ * @param event packet
+ * @return element_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_state_update_bool_get_element_index(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field model_identifier from event MESH_SUBEVENT_STATE_UPDATE_BOOL
+ * @param event packet
+ * @return model_identifier
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_state_update_bool_get_model_identifier(const uint8_t * event){
+    return little_endian_read_32(event, 4);
+}
+/**
+ * @brief Get field state_identifier from event MESH_SUBEVENT_STATE_UPDATE_BOOL
+ * @param event packet
+ * @return state_identifier
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_state_update_bool_get_state_identifier(const uint8_t * event){
+    return little_endian_read_32(event, 8);
+}
+/**
+ * @brief Get field reason from event MESH_SUBEVENT_STATE_UPDATE_BOOL
+ * @param event packet
+ * @return reason
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_state_update_bool_get_reason(const uint8_t * event){
+    return event[12];
+}
+/**
+ * @brief Get field value from event MESH_SUBEVENT_STATE_UPDATE_BOOL
+ * @param event packet
+ * @return value
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_state_update_bool_get_value(const uint8_t * event){
+    return event[13];
+}
+
+/**
+ * @brief Get field element_index from event MESH_SUBEVENT_STATE_UPDATE_INT16
+ * @param event packet
+ * @return element_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_state_update_int16_get_element_index(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field model_identifier from event MESH_SUBEVENT_STATE_UPDATE_INT16
+ * @param event packet
+ * @return model_identifier
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_state_update_int16_get_model_identifier(const uint8_t * event){
+    return little_endian_read_32(event, 4);
+}
+/**
+ * @brief Get field state_identifier from event MESH_SUBEVENT_STATE_UPDATE_INT16
+ * @param event packet
+ * @return state_identifier
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_state_update_int16_get_state_identifier(const uint8_t * event){
+    return little_endian_read_32(event, 8);
+}
+/**
+ * @brief Get field reason from event MESH_SUBEVENT_STATE_UPDATE_INT16
+ * @param event packet
+ * @return reason
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_state_update_int16_get_reason(const uint8_t * event){
+    return event[12];
+}
+/**
+ * @brief Get field value from event MESH_SUBEVENT_STATE_UPDATE_INT16
+ * @param event packet
+ * @return value
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_state_update_int16_get_value(const uint8_t * event){
+    return little_endian_read_16(event, 13);
+}
+
+/**
+ * @brief Get field element_index from event MESH_SUBEVENT_MESSAGE_NOT_ACKNOWLEDGED
+ * @param event packet
+ * @return element_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_message_not_acknowledged_get_element_index(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field model_identifier from event MESH_SUBEVENT_MESSAGE_NOT_ACKNOWLEDGED
+ * @param event packet
+ * @return model_identifier
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_message_not_acknowledged_get_model_identifier(const uint8_t * event){
+    return little_endian_read_32(event, 4);
+}
+/**
+ * @brief Get field opcode from event MESH_SUBEVENT_MESSAGE_NOT_ACKNOWLEDGED
+ * @param event packet
+ * @return opcode
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_message_not_acknowledged_get_opcode(const uint8_t * event){
+    return little_endian_read_32(event, 8);
+}
+/**
+ * @brief Get field dest from event MESH_SUBEVENT_MESSAGE_NOT_ACKNOWLEDGED
+ * @param event packet
+ * @return dest
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_message_not_acknowledged_get_dest(const uint8_t * event){
+    return little_endian_read_16(event, 12);
+}
+
+/**
+ * @brief Get field element_index from event MESH_SUBEVENT_GENERIC_ON_OFF_STATUS
+ * @param event packet
+ * @return element_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_generic_on_off_status_get_element_index(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field model_identifier from event MESH_SUBEVENT_GENERIC_ON_OFF_STATUS
+ * @param event packet
+ * @return model_identifier
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_generic_on_off_status_get_model_identifier(const uint8_t * event){
+    return little_endian_read_32(event, 4);
+}
+/**
+ * @brief Get field present_value from event MESH_SUBEVENT_GENERIC_ON_OFF_STATUS
+ * @param event packet
+ * @return present_value
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_generic_on_off_status_get_present_value(const uint8_t * event){
+    return event[8];
+}
+/**
+ * @brief Get field target_value from event MESH_SUBEVENT_GENERIC_ON_OFF_STATUS
+ * @param event packet
+ * @return target_value
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_generic_on_off_status_get_target_value(const uint8_t * event){
+    return event[9];
+}
+/**
+ * @brief Get field remaining_time_ms from event MESH_SUBEVENT_GENERIC_ON_OFF_STATUS
+ * @param event packet
+ * @return remaining_time_ms
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_generic_on_off_status_get_remaining_time_ms(const uint8_t * event){
+    return little_endian_read_32(event, 10);
+}
+
+/**
+ * @brief Get field element_index from event MESH_SUBEVENT_GENERIC_LEVEL_STATUS
+ * @param event packet
+ * @return element_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_generic_level_status_get_element_index(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field model_identifier from event MESH_SUBEVENT_GENERIC_LEVEL_STATUS
+ * @param event packet
+ * @return model_identifier
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_generic_level_status_get_model_identifier(const uint8_t * event){
+    return little_endian_read_32(event, 4);
+}
+/**
+ * @brief Get field present_value from event MESH_SUBEVENT_GENERIC_LEVEL_STATUS
+ * @param event packet
+ * @return present_value
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_generic_level_status_get_present_value(const uint8_t * event){
+    return little_endian_read_16(event, 8);
+}
+/**
+ * @brief Get field target_value from event MESH_SUBEVENT_GENERIC_LEVEL_STATUS
+ * @param event packet
+ * @return target_value
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_generic_level_status_get_target_value(const uint8_t * event){
+    return little_endian_read_16(event, 10);
+}
+/**
+ * @brief Get field remaining_time_ms from event MESH_SUBEVENT_GENERIC_LEVEL_STATUS
+ * @param event packet
+ * @return remaining_time_ms
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_generic_level_status_get_remaining_time_ms(const uint8_t * event){
+    return little_endian_read_32(event, 12);
+}
+
+/**
+ * @brief Get field element_index from event MESH_SUBEVENT_HEALTH_CLEAR_REGISTERED_FAULTS
+ * @param event packet
+ * @return element_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_health_clear_registered_faults_get_element_index(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field company_id from event MESH_SUBEVENT_HEALTH_CLEAR_REGISTERED_FAULTS
+ * @param event packet
+ * @return company_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_health_clear_registered_faults_get_company_id(const uint8_t * event){
+    return little_endian_read_16(event, 4);
+}
+
+/**
+ * @brief Get field element_index from event MESH_SUBEVENT_HEALTH_PERFORM_TEST
+ * @param event packet
+ * @return element_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_health_perform_test_get_element_index(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field model_identifier from event MESH_SUBEVENT_HEALTH_PERFORM_TEST
+ * @param event packet
+ * @return model_identifier
+ * @note: btstack_type 4
+ */
+static inline uint32_t mesh_subevent_health_perform_test_get_model_identifier(const uint8_t * event){
+    return little_endian_read_32(event, 4);
+}
+/**
+ * @brief Get field dest from event MESH_SUBEVENT_HEALTH_PERFORM_TEST
+ * @param event packet
+ * @return dest
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_health_perform_test_get_dest(const uint8_t * event){
+    return little_endian_read_16(event, 8);
+}
+/**
+ * @brief Get field netkey_index from event MESH_SUBEVENT_HEALTH_PERFORM_TEST
+ * @param event packet
+ * @return netkey_index
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_health_perform_test_get_netkey_index(const uint8_t * event){
+    return little_endian_read_16(event, 10);
+}
+/**
+ * @brief Get field appkey_index from event MESH_SUBEVENT_HEALTH_PERFORM_TEST
+ * @param event packet
+ * @return appkey_index
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_health_perform_test_get_appkey_index(const uint8_t * event){
+    return little_endian_read_16(event, 12);
+}
+/**
+ * @brief Get field company_id from event MESH_SUBEVENT_HEALTH_PERFORM_TEST
+ * @param event packet
+ * @return company_id
+ * @note: btstack_type 2
+ */
+static inline uint16_t mesh_subevent_health_perform_test_get_company_id(const uint8_t * event){
+    return little_endian_read_16(event, 14);
+}
+/**
+ * @brief Get field test_id from event MESH_SUBEVENT_HEALTH_PERFORM_TEST
+ * @param event packet
+ * @return test_id
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_health_perform_test_get_test_id(const uint8_t * event){
+    return event[16];
+}
+
+/**
+ * @brief Get field element_index from event MESH_SUBEVENT_HEALTH_FAST_PERIOD_DIVISOR_CHANGED
+ * @param event packet
+ * @return element_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_health_fast_period_divisor_changed_get_element_index(const uint8_t * event){
+    return event[3];
+}
+/**
+ * @brief Get field fast_period_divisor from event MESH_SUBEVENT_HEALTH_FAST_PERIOD_DIVISOR_CHANGED
+ * @param event packet
+ * @return fast_period_divisor
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_health_fast_period_divisor_changed_get_fast_period_divisor(const uint8_t * event){
+    return event[4];
+}
+
+/**
+ * @brief Get field element_index from event MESH_SUBEVENT_HEALTH_ATTENTION_TIMER_CHANGED
+ * @param event packet
+ * @return element_index
+ * @note: btstack_type 1
+ */
+static inline uint8_t mesh_subevent_health_attention_timer_changed_get_element_index(const uint8_t * event){
+    return event[3];
 }
 
 

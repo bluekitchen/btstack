@@ -3,6 +3,7 @@ VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service
 VPATH += ${BTSTACK_ROOT}/src/classic
+VPATH += ${BTSTACK_ROOT}/src/mesh
 VPATH += ${BTSTACK_ROOT}/example
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/srce
 VPATH += ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/srce
@@ -25,6 +26,7 @@ VPATH += ${BTSTACK_ROOT}/platform/lwip/port
 CFLAGS += -I.
 CFLAGS += -I${BTSTACK_ROOT}/src/ble
 CFLAGS += -I${BTSTACK_ROOT}/src/classic
+CFLAGS += -I${BTSTACK_ROOT}/src/mesh
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
@@ -36,7 +38,6 @@ CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/yxml
 CFLAGS += -I${BTSTACK_ROOT}/platform/lwip
 CFLAGS += -I${BTSTACK_ROOT}/platform/lwip/port
-
 
 # for CVSD/SBC PLC
 LDFLAGS += -lm
@@ -132,6 +133,37 @@ HXCMOD_PLAYER = \
 	hxcmod.c                    \
 	nao-deceased_by_disease.c 	\
 
+MESH = \
+	adv_bearer.c \
+	beacon.c \
+	gatt_bearer.c \
+	mesh.c \
+	mesh_access.c \
+	mesh_configuration_server.c \
+	mesh_crypto.c \
+	mesh_foundation.c \
+	mesh_generic_level_client.c \
+	mesh_generic_level_server.c \
+	mesh_generic_on_off_client.c \
+	mesh_generic_on_off_server.c \
+	mesh_health_server.c \
+	mesh_iv_index_seq_number.c \
+	mesh_keys.c \
+	mesh_lower_transport.c \
+	mesh_network.c \
+	mesh_node.c \
+	mesh_peer.c \
+	mesh_provisioning_service_server.c \
+	mesh_proxy.c \
+	mesh_proxy_service_server.c \
+	mesh_upper_transport.c \
+	mesh_virtual_addresses.c \
+	pb_adv.c \
+	pb_gatt.c \
+	provisioning.c \
+	provisioning_device.c \
+	provisioning_provisioner.c \
+
 # List of General Examples without Bluetooth
 
 EXAMPLES_GENERAL =          \
@@ -164,6 +196,7 @@ EXAMPLES_CLASSIC_ONLY =     \
 	spp_counter             \
 	spp_streamer            \
 	spp_streamer_client     \
+	ublox_spp_le_counter    \
 
 # List of Examples that only use Bluetooth LE
 
@@ -180,6 +213,7 @@ EXAMPLES_LE_ONLY=           \
 	le_data_channel_client  \
 	le_data_channel_server  \
 	le_streamer_client      \
+	mesh_node_demo          \
 	nordic_spp_le_counter   \
 	nordic_spp_le_streamer  \
 	sm_pairing_central      \
@@ -232,6 +266,7 @@ CVSD_PLC_OBJ = $(CVSD_PLC:.c=.o)
 AVDTP_OBJ  = $(AVDTP:.c=.o)
 HXCMOD_PLAYER_OBJ = $(HXCMOD_PLAYER:.c=.o)
 LWIP_OBJ = $(LWIP_SRC:.c=.o)
+MESH_OBJ = $(MESH:.c=.o)
 
 default_target: all
 
@@ -387,9 +422,13 @@ nordic_spp_le_streamer: nordic_spp_le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT
 ublox_spp_le_counter: ublox_spp_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} device_information_service_server.o ublox_spp_service_server.o ublox_spp_le_counter.c
 	${CC} $(filter-out ublox_spp_le_counter.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
+mesh_node_demo: mesh_node_demo.h ${CORE_OBJ} ${COMMON_OBJ} ${MESH_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_OBJ} mesh_node_demo.o
+	${CC} $(filter-out mesh_node_demo.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
 clean:
 	rm -f ${EXAMPLES} ${EXAMPLES_GATT_H_FILES}
-	rm -f  *.o *.out *.hex *.exe *.wav *.sbc *.dSYM
+	rm -f  *.o *.out *.hex *.exe *.wav *.sbc 
+	rm -rf *.dSYM
 	rm -rf ${BTSTACK_ROOT}/src/*.o
 	rm -rf ${BTSTACK_ROOT}/src/ble/*.o
 	rm -rf ${BTSTACK_ROOT}/src/ble/gatt-service/*.o

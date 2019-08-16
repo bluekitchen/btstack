@@ -45,6 +45,8 @@
 #include "btstack_run_loop_windows.h"
 #include "btstack_linked_list.h"
 #include "btstack_debug.h"
+#include "btstack_util.h"
+
 #include <Windows.h>
 
 #include <stdio.h>
@@ -89,9 +91,10 @@ static void btstack_run_loop_windows_add_timer(btstack_timer_source_t *ts){
             log_error( "btstack_run_loop_timer_add error: timer to add already in list!");
             return;
         }
-        if (next->timeout > ts->timeout) {
-            break;
-        }
+        // exit if list timeout is after new timeout
+        uint32_t list_timeout = ((btstack_timer_source_t *) it->next)->timeout;
+        int32_t delta = btstack_time_delta(ts->timeout, list_timeout);
+        if (delta < 0) break;
     }
     ts->item.next = it->next;
     it->next = (btstack_linked_item_t *) ts;
@@ -171,7 +174,7 @@ static void btstack_run_loop_windows_execute(void) {
         if (timers) {
             ts = (btstack_timer_source_t *) timers;
             uint32_t now_ms = btstack_run_loop_windows_get_time_ms();
-            timeout_ms = ts->timeout - now_ms;
+            timeout_ms = btstack_time_delta(ts->timeout, now_ms);
             if (timeout_ms < 0){
                 timeout_ms = 0;
             }

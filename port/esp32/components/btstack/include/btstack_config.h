@@ -39,8 +39,26 @@
 #define HCI_HOST_ACL_PACKET_LEN 1024
 #define HCI_HOST_SCO_PACKET_NUM 10
 #define HCI_HOST_SCO_PACKET_LEN 60
-#endif
 
 // Link Key DB and LE Device DB using TLV on top of Flash Sector interface
 #define NVM_NUM_LINK_KEYS 16
 #define NVM_NUM_DEVICE_DB_ENTRIES 16
+
+
+// Mesh Configuration
+#define ENABLE_MESH
+#define ENABLE_MESH_ADV_BEARER
+#define ENABLE_MESH_GATT_BEARER
+#define ENABLE_MESH_PB_ADV
+#define ENABLE_MESH_PB_GATT
+#define ENABLE_MESH_PROXY_SERVER
+#define ENABLE_MESH_PROVISIONER
+
+#define MAX_NR_MESH_TRANSPORT_KEYS    16
+#define MAX_NR_MESH_VIRTUAL_ADDRESSES 16
+#define MAX_NR_MESH_SUBNETS            2
+
+// allow for one NetKey update
+#define MAX_NR_MESH_NETWORK_KEYS      (MAX_NR_MESH_SUBNETS+1)
+
+#endif

@@ -74,6 +74,12 @@ extern "C" {
 #include "ble/sm.h"
 #endif
 
+#ifdef ENABLE_MESH
+#include "mesh/mesh_network.h"
+#include "mesh/mesh_keys.h"
+#include "mesh/mesh_virtual_addresses.h"
+#endif
+
 /* API_START */
 
 /**
@@ -93,6 +99,7 @@ void   btstack_memory_l2cap_service_free(l2cap_service_t *l2cap_service);
 l2cap_channel_t * btstack_memory_l2cap_channel_get(void);
 void   btstack_memory_l2cap_channel_free(l2cap_channel_t *l2cap_channel);
 
+#ifdef ENABLE_CLASSIC
 // rfcomm_multiplexer, rfcomm_service, rfcomm_channel
 rfcomm_multiplexer_t * btstack_memory_rfcomm_multiplexer_get(void);
 void   btstack_memory_rfcomm_multiplexer_free(rfcomm_multiplexer_t *rfcomm_multiplexer);
@@ -135,6 +142,7 @@ void   btstack_memory_avrcp_connection_free(avrcp_connection_t *avrcp_connection
 avrcp_browsing_connection_t * btstack_memory_avrcp_browsing_connection_get(void);
 void   btstack_memory_avrcp_browsing_connection_free(avrcp_browsing_connection_t *avrcp_browsing_connection);
 
+#endif
 #ifdef ENABLE_BLE
 // gatt_client, whitelist_entry, sm_lookup_entry
 gatt_client_t * btstack_memory_gatt_client_get(void);
@@ -143,6 +151,21 @@ whitelist_entry_t * btstack_memory_whitelist_entry_get(void);
 void   btstack_memory_whitelist_entry_free(whitelist_entry_t *whitelist_entry);
 sm_lookup_entry_t * btstack_memory_sm_lookup_entry_get(void);
 void   btstack_memory_sm_lookup_entry_free(sm_lookup_entry_t *sm_lookup_entry);
+#endif
+#ifdef ENABLE_MESH
+// mesh_network_pdu, mesh_transport_pdu, mesh_network_key, mesh_transport_key, mesh_virtual_address, mesh_subnet
+mesh_network_pdu_t * btstack_memory_mesh_network_pdu_get(void);
+void   btstack_memory_mesh_network_pdu_free(mesh_network_pdu_t *mesh_network_pdu);
+mesh_transport_pdu_t * btstack_memory_mesh_transport_pdu_get(void);
+void   btstack_memory_mesh_transport_pdu_free(mesh_transport_pdu_t *mesh_transport_pdu);
+mesh_network_key_t * btstack_memory_mesh_network_key_get(void);
+void   btstack_memory_mesh_network_key_free(mesh_network_key_t *mesh_network_key);
+mesh_transport_key_t * btstack_memory_mesh_transport_key_get(void);
+void   btstack_memory_mesh_transport_key_free(mesh_transport_key_t *mesh_transport_key);
+mesh_virtual_address_t * btstack_memory_mesh_virtual_address_get(void);
+void   btstack_memory_mesh_virtual_address_free(mesh_virtual_address_t *mesh_virtual_address);
+mesh_subnet_t * btstack_memory_mesh_subnet_get(void);
+void   btstack_memory_mesh_subnet_free(mesh_subnet_t *mesh_subnet);
 #endif
 
 #if defined __cplusplus

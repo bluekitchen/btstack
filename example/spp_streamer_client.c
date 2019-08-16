@@ -350,7 +350,6 @@ int btstack_main(int argc, const char * argv[]){
     l2cap_init();
 
     rfcomm_init();
-    rfcomm_register_service(packet_handler, RFCOMM_SERVER_CHANNEL, 0xffff);
 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE_FOR_RFCOMM
     // setup ERTM management

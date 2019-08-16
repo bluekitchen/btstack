@@ -43,20 +43,22 @@
  *  Created by Matthias Ringwald on 6/6/09.
  */
 
-#include "btstack_run_loop.h"
+// enable POSIX functions (needed for -std=c99)
+#define _POSIX_C_SOURCE 200809
+
 #include "btstack_run_loop_posix.h"
+
+#include "btstack_run_loop.h"
+#include "btstack_util.h"
 #include "btstack_linked_list.h"
 #include "btstack_debug.h"
 
-#ifdef _WIN32
-#include "Winsock2.h"
-#else
-#include <sys/select.h>
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/select.h>
 #include <sys/time.h>
+#include <time.h>
+#include <unistd.h>
 
 static void btstack_run_loop_posix_dump_timer(void);
 
@@ -64,8 +66,15 @@ static void btstack_run_loop_posix_dump_timer(void);
 static btstack_linked_list_t data_sources;
 static int data_sources_modified;
 static btstack_linked_list_t timers;
-// start time. tv_usec = 0
+
+// start time. tv_usec/tv_nsec = 0
+#ifdef _POSIX_MONOTONIC_CLOCK
+// use monotonic clock if available
+static struct timespec init_ts;
+#else
+// fallback to gettimeofday
 static struct timeval init_tv;
+#endif
 
 /**
  * Add data_source to run_loop
@@ -96,9 +105,9 @@ static void btstack_run_loop_posix_add_timer(btstack_timer_source_t *ts){
             log_error( "btstack_run_loop_timer_add error: timer to add already in list!");
             return;
         }
-        if (next->timeout > ts->timeout) {
-            break;
-        }
+        // exit if new timeout before list timeout
+        int32_t delta = btstack_time_delta(ts->timeout, next->timeout);
+        if (delta < 0) break;
     }
     ts->item.next = it->next;
     it->next = (btstack_linked_item_t *) ts;
@@ -132,14 +141,56 @@ static void btstack_run_loop_posix_disable_data_source_callbacks(btstack_data_so
     ds->flags &= ~callback_types;
 }
 
+#ifdef _POSIX_MONOTONIC_CLOCK
+/**
+ * @brief Returns the timespec which represents the time(stop - start). It might be negative
+ */
+static void timespec_diff(struct timespec *start, struct timespec *stop, struct timespec *result){
+    result->tv_sec = stop->tv_sec - start->tv_sec;
+    if ((stop->tv_nsec - start->tv_nsec) < 0) {
+        result->tv_sec = stop->tv_sec - start->tv_sec - 1;
+        result->tv_nsec = stop->tv_nsec - start->tv_nsec + 1000000000;
+    } else {
+        result->tv_sec = stop->tv_sec - start->tv_sec;
+        result->tv_nsec = stop->tv_nsec - start->tv_nsec;
+    }
+}
+
+/**
+ * @brief Convert timespec to miliseconds, might overflow
+ */
+static uint64_t timespec_to_milliseconds(struct timespec *a){
+    uint64_t ret = 0;
+    uint64_t sec_val = (uint64_t)(a->tv_sec);
+    uint64_t nsec_val = (uint64_t)(a->tv_nsec);
+    ret = (sec_val*1000) + (nsec_val/1000000);
+    return ret;
+}
+
+/**
+ * @brief Returns the milisecond value of (stop - start). Might overflow
+ */
+static uint64_t timespec_diff_milis(struct timespec* start, struct timespec* stop){
+    struct timespec diff_ts;
+    timespec_diff(start, stop, &diff_ts);
+    return timespec_to_milliseconds(&diff_ts);
+}
+#endif
+
 /**
  * @brief Queries the current time in ms since start
  */
 static uint32_t btstack_run_loop_posix_get_time_ms(void){
+    uint32_t time_ms;
+#ifdef _POSIX_MONOTONIC_CLOCK
+    struct timespec now_ts;
+    clock_gettime(CLOCK_MONOTONIC, &now_ts);
+    time_ms = (uint32_t) timespec_diff_milis(&init_ts, &now_ts);
+#else
     struct timeval tv;
     gettimeofday(&tv, NULL);
-    uint32_t time_ms = (uint32_t)((tv.tv_sec  - init_tv.tv_sec) * 1000) + (tv.tv_usec / 1000);
-    log_debug("btstack_run_loop_posix_get_time_ms: %u <- %u / %u", time_ms, (int) tv.tv_sec, (int) tv.tv_usec);
+    time_ms = (uint32_t) ((tv.tv_sec  - init_tv.tv_sec) * 1000) + (tv.tv_usec / 1000);
+#endif
     return time_ms;
 }
 
@@ -155,6 +206,12 @@ static void btstack_run_loop_posix_execute(void) {
     struct timeval * timeout;
     struct timeval tv;
     uint32_t now_ms;
+
+#ifdef _POSIX_MONOTONIC_CLOCK
+    log_info("POSIX run loop with monotonic clock");
+#else
+    log_info("POSIX run loop using ettimeofday fallback.");
+#endif
 
     while (1) {
         // collect FDs
@@ -186,8 +243,9 @@ static void btstack_run_loop_posix_execute(void) {
         if (timers) {
             ts = (btstack_timer_source_t *) timers;
             timeout = &tv;
+            uint32_t list_timeout  = ts->timeout;
             now_ms = btstack_run_loop_posix_get_time_ms();
-            int delta = ts->timeout - now_ms;
+            int32_t delta = btstack_time_delta(list_timeout, now_ms);
             if (delta < 0){
                 delta = 0;
             }
@@ -221,7 +279,8 @@ static void btstack_run_loop_posix_execute(void) {
         now_ms = btstack_run_loop_posix_get_time_ms();
         while (timers) {
             ts = (btstack_timer_source_t *) timers;
-            if (ts->timeout > now_ms) break;
+            int32_t delta = btstack_time_delta(ts->timeout, now_ms);
+            if (delta > 0) break;
             log_debug("btstack_run_loop_posix_execute: process timer %p\n", ts);
             
             // remove timer before processing it to allow handler to re-register with run loop
@@ -241,10 +300,14 @@ static void btstack_run_loop_posix_set_timer(btstack_timer_source_t *a, uint32_t
 static void btstack_run_loop_posix_init(void){
     data_sources = NULL;
     timers = NULL;
+#ifdef _POSIX_MONOTONIC_CLOCK
+    clock_gettime(CLOCK_MONOTONIC, &init_ts);
+    init_ts.tv_nsec = 0;
+#else
     // just assume that we started at tv_usec == 0
     gettimeofday(&init_tv, NULL);
     init_tv.tv_usec = 0;
-    log_debug("btstack_run_loop_posix_init at %u/%u", (int) init_tv.tv_sec, 0);
+#endif
 }
 
 

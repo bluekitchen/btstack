@@ -50,6 +50,12 @@
 #include "btstack_run_loop_freertos.h"
 #include "hal_uart_dma.h"
 
+#ifdef HAVE_FREERTOS_INCLUDE_PREFIX
+#include "freertos/FreeRTOS.h"
+#else
+#include "FreeRTOS.h"
+#endif
+
 #if (INCLUDE_xEventGroupSetBitFromISR != 1) && !defined(HAVE_FREERTOS_TASK_NOTIFICATIONS)
 #error "The BTstack HAL UART Run Loop integration (btstack_uart_block_freertos) needs to trigger Run Loop iterations from ISR context," \
 "but neither 'INCLUDE_xEventGroupSetBitFromISR' is enabled in your FreeRTOS configuration nor HAVE_FREERTOS_TASK_NOTIFICATIONS is enabled in " \

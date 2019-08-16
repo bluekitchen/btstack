@@ -117,7 +117,18 @@ typedef uint8_t sm_key_t[16];
 // MAP data
 #define MAP_DATA_PACKET        0x10
 
- 
+// Mesh Provisioning PDU
+#define PROVISIONING_DATA_PACKET 0x11
+
+// Mesh Proxy PDU
+#define MESH_PROXY_DATA_PACKET   0x11
+
+// Mesh Network PDU
+#define MESH_NETWORK_PACKET      0x12
+
+// Mesh Network PDU
+#define MESH_BEACON_PACKET       0x13
+
 // debug log messages
 #define LOG_MESSAGE_PACKET      0xfc
 
@@ -195,6 +206,8 @@ typedef uint8_t sm_key_t[16];
 #define AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE               0xC3
 #define AVDTP_STREAM_ENDPOINT_DOES_NOT_EXIST               0xC4
 #define AVDTP_MEDIA_CONNECTION_DOES_NOT_EXIST              0xC5 
+
+#define MESH_ERROR_APPKEY_INDEX_INVALID                    0xD0
 /* ENUM_END */
 
 // DAEMON COMMANDS
@@ -1048,6 +1061,7 @@ typedef uint8_t sm_key_t[16];
 #define HCI_EVENT_GATTSERVICE_META                         0xF2
 #define HCI_EVENT_BIP_META                                 0xF3
 #define HCI_EVENT_MAP_META                                 0xF4
+#define HCI_EVENT_MESH_META                                0xF5
 
 // Potential other meta groups
 // #define HCI_EVENT_BNEP_META                                0xxx
@@ -2305,6 +2319,277 @@ typedef uint8_t sm_key_t[16];
 #define MAP_SUBEVENT_PARSING_DONE                                         0x06
 
 
+// MESH Meta Event Group
 
+/**
+ * @format 1
+ * @param subevent_code
+ */
+#define MESH_SUBEVENT_CAN_SEND_NOW                                          0x01
+
+/**
+ * @format 11
+ * @param subevent_code
+ * @param status
+ */
+#define MESH_SUBEVENT_PB_TRANSPORT_PDU_SENT                                          0x02
+
+/**
+ * @format 1121
+ * @param subevent_code
+ * @param status
+ * @param pb_transport_cid
+ * @param pb_type
+ */
+#define MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN                                         0x03
+
+/**
+ * @format 112
+ * @param subevent_code
+ * @param pb_transport_cid
+ * @param reason
+ */
+#define MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED                                       0x04
+
+/**
+ * @format 121
+ * @param subevent_code
+ * @param pb_transport_cid
+ * @param attention_time in seconds
+ */
+#define MESH_SUBEVENT_PB_PROV_ATTENTION_TIMER                                        0x10
+
+/**
+ * Device Role
+ * @format 12
+ * @param subevent_code
+ * @param pb_transport_cid
+ */
+#define MESH_SUBEVENT_PB_PROV_START_EMIT_PUBLIC_KEY_OOB                              0x11
+
+/**
+ * Device Role
+ * @format 12
+ * @param subevent_code
+ * @param pb_transport_cid
+ */
+#define MESH_SUBEVENT_PB_PROV_STOP_EMIT_PUBLIC_KEY_OOB                               0x12
+
+/**
+ * Device Role
+ * @format 12
+ * @param subevent_code
+ * @param pb_transport_cid
+ */
+#define MESH_SUBEVENT_PB_PROV_INPUT_OOB_REQUEST                                      0x13
+
+/**
+ * Device Role
+ * @format 124
+ * @param subevent_code
+ * @param pb_transport_cid
+ * @param output_oob number
+ */
+#define MESH_SUBEVENT_PB_PROV_START_EMIT_OUTPUT_OOB                                  0x15
+
+/**
+ * Device Role
+ * @format 12
+ * @param subevent_code
+ * @param pb_transport_cid
+ */
+#define MESH_SUBEVENT_PB_PROV_STOP_EMIT_OUTPUT_OOB                                   0x16
+
+/**
+ * Provisioner Role
+ * @format 12
+ * @param subevent_code
+ * @param pb_transport_cid
+ */
+#define MESH_SUBEVENT_PB_PROV_START_RECEIVE_PUBLIC_KEY_OOB                           0x17
+
+/**
+ * Provisioner Role
+ * @format 12
+ * @param subevent_code
+ * @param pb_transport_cid
+ */
+#define MESH_SUBEVENT_PB_PROV_STOP_RECEIVE_PUBLIC_KEY_OOB                            0x18
+
+/**
+ * Provisioner Role
+ * @format 12
+ * @param subevent_code
+ * @param pb_transport_cid
+ */
+#define MESH_SUBEVENT_PB_PROV_OUTPUT_OOB_REQUEST                                     0x19
+
+/**
+ * Provisioner Role
+ * @format 124
+ * @param subevent_code
+ * @param pb_transport_cid
+ * @param output_oob number
+ */
+#define MESH_SUBEVENT_PB_PROV_START_EMIT_INPUT_OOB                                   0x1a
+
+/**
+ * Provisioner Role
+ * @format 12
+ * @param subevent_code
+ * @param pb_transport_cid
+ */
+#define MESH_SUBEVENT_PB_PROV_STOP_EMIT_INPUT_OOB                                    0x1b
+
+/**
+ * Provisioner Role
+ * @format 1212111212
+ * @param subevent_code
+ * @param pb_transport_cid
+ * @param num_elements
+ * @param algorithms
+ * @param public_key
+ * @param static_oob_type
+ * @param output_oob_size
+ * @param output_oob_action
+ * @param input_oob_size
+ * @param input_oob_action
+ */
+#define MESH_SUBEVENT_PB_PROV_CAPABILITIES                                           0x1c
+
+/**
+ * @format 12
+ * @param subevent_code
+ * @param pb_transport_cid
+ */
+#define MESH_SUBEVENT_PB_PROV_COMPLETE                                               0x1d
+
+/**
+ * @format 11
+ * @param subevent_code
+ * @param attention_time in seconds
+ */
+#define MESH_SUBEVENT_ATTENTION_TIMER                                                0x1e
+
+/**
+ * @format 11H
+ * @param subevent_code
+ * @param status
+ * @param con_handle
+ */
+#define MESH_SUBEVENT_PROXY_CONNECTED                                                0x20
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+ */
+#define MESH_SUBEVENT_PROXY_PDU_SENT                                                 0x21
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+ */
+#define MESH_SUBEVENT_PROXY_DISCONNECTED                                             0x22
+
+/**
+ * @format 1H
+ * @param subevent_code
+ * @param con_handle
+ */
+#define MESH_SUBEVENT_MESSAGE_SENT                                                   0x23
+
+/**
+ * @format 114411
+ * @param subevent_code
+ * @param element_index
+ * @param model_identifier
+ * @param state_identifier
+ * @param reason
+ * @param value
+ */
+#define MESH_SUBEVENT_STATE_UPDATE_BOOL                                              0x24
+
+/**
+ * @format 114412
+ * @param subevent_code
+ * @param element_index
+ * @param model_identifier
+ * @param state_identifier
+ * @param reason
+ * @param value
+ */
+#define MESH_SUBEVENT_STATE_UPDATE_INT16                                              0x25
+
+// Mesh Client Events
+/**
+ * @format 11442
+ * @param subevent_code
+ * @param element_index
+ * @param model_identifier
+ * @param opcode
+ * @param dest
+ */
+#define MESH_SUBEVENT_MESSAGE_NOT_ACKNOWLEDGED                                        0x30
+
+/**
+ * @format 114114
+ * @param subevent_code
+ * @param element_index
+ * @param model_identifier
+ * @param present_value
+ * @param target_value       // optinal, if value > 0, than remaining_time_ms must be read
+ * @param remaining_time_ms  
+ */
+#define MESH_SUBEVENT_GENERIC_ON_OFF_STATUS                                           0x31
+
+/**
+ * @format 114224
+ * @param subevent_code
+ * @param element_index
+ * @param model_identifier
+ * @param present_value
+ * @param target_value       // optinal, if value > 0, than remaining_time_ms must be read
+ * @param remaining_time_ms  
+ */
+#define MESH_SUBEVENT_GENERIC_LEVEL_STATUS                                           0x32
+
+
+/**
+ * @format 112
+ * @param subevent_code
+ * @param element_index
+ * @param company_id
+ */
+#define MESH_SUBEVENT_HEALTH_CLEAR_REGISTERED_FAULTS                                 0x33
+
+/**
+ * @format 11422221
+ * @param subevent_code
+ * @param element_index
+ * @param model_identifier
+ * @param dest
+ * @param netkey_index
+ * @param appkey_index
+ * @param company_id
+ * @param test_id
+ */
+#define MESH_SUBEVENT_HEALTH_PERFORM_TEST                                            0x34
+
+/**
+ * @format 111
+ * @param subevent_code
+ * @param element_index
+ * @param fast_period_divisor
+ */
+#define MESH_SUBEVENT_HEALTH_FAST_PERIOD_DIVISOR_CHANGED                             0x35
+
+/**
+ * @format 11
+ * @param subevent_code
+ * @param element_index
+ */
+#define MESH_SUBEVENT_HEALTH_ATTENTION_TIMER_CHANGED                                 0x36
 
 #endif

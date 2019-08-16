@@ -132,12 +132,12 @@ extern "C" {
 #endif
 #endif
 
-// BNEP may uncompress the IP Header by 16 bytes
+// BNEP may uncompress the IP Header by 16 bytes, GATT Client requires two additional bytes for long characteristic reads
 #ifndef HCI_INCOMING_PRE_BUFFER_SIZE
 #ifdef ENABLE_CLASSIC
 #define HCI_INCOMING_PRE_BUFFER_SIZE (16 - HCI_ACL_HEADER_SIZE - 4)
 #else
-#define HCI_INCOMING_PRE_BUFFER_SIZE 0
+#define HCI_INCOMING_PRE_BUFFER_SIZE 2
 #endif
 #endif
 
