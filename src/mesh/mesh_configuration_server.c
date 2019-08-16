@@ -1751,7 +1751,7 @@ static void config_heartbeat_publication_emit(mesh_heartbeat_publication_t * mes
     }
 
     // forever
-    if (mesh_heartbeat_publication->count < 0xffffu) {
+    if (mesh_heartbeat_publication->count > 0 && mesh_heartbeat_publication->count < 0xffffu) {
         mesh_heartbeat_publication->count--;
     }
 }
@@ -1759,9 +1759,12 @@ void mesh_configuration_server_feature_changed(void){
     mesh_model_t * mesh_model = mesh_model_get_configuration_server();
     mesh_heartbeat_publication_t * mesh_heartbeat_publication = &((mesh_configuration_server_model_context_t*) mesh_model->model_data)->heartbeat_publication;
 
-    // active features
-    uint16_t active_features = mesh_foundation_get_features();
-    if (mesh_heartbeat_publication->active_features == active_features) return;
+    // filter features by observed features for heartbeats
+    uint16_t current_features  = mesh_foundation_get_features()              & mesh_heartbeat_publication->features;
+    uint16_t previous_features = mesh_heartbeat_publication->active_features & mesh_heartbeat_publication->features;
+
+    // changes?
+    if (current_features == previous_features) return;
 
     config_heartbeat_publication_emit(mesh_heartbeat_publication);
 }
@@ -1852,7 +1855,7 @@ static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, m
     // check if heartbeats should be disabled
     if (mesh_heartbeat_publication->destination == MESH_ADDRESS_UNSASSIGNED || mesh_heartbeat_publication->period_log == 0) {
         btstack_run_loop_remove_timer(&mesh_heartbeat_publication->timer);
-        printf("MESH config_heartbeat_publication_set, disable\n");
+        printf("MESH config_heartbeat_publication_set, disable periodic sending\n");
         return;
     }
 
