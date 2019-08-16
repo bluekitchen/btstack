@@ -25,6 +25,9 @@ set(COMPONENT_SRCDIRS "3rd-party/bluedroid/decoder/srce"
                       "platform/freertos"
                       ".")
 
-set(COMPONENT_REQUIRES "micro-ecc" "nvs_flash" "bt")
+set(PRIV_INCLUDE_DIRS "3rd-party/micro-ecc")
+set(PRIV_REQUIRES "micro-ecc")
+
+set(COMPONENT_REQUIRES "nvs_flash" "bt")
 register_component()
 
