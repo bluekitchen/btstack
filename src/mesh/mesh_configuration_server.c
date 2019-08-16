@@ -96,16 +96,15 @@ static uint16_t heartbeat_pwr2(uint8_t value){
 
 static uint8_t heartbeat_count_log(uint16_t value){
     if (value == 0)      return 0x00;
-    if (value == 0x01)   return 0x01;
     if (value == 0xffff) return 0xff;
     // count leading zeros, supported by clang and gcc
-    return 32 - __builtin_clz(value - 1) + 1;
+    return 32 - __builtin_clz(value);
 }
 
 static uint8_t heartbeat_period_log(uint16_t value){
     if (value == 0)      return 0x00;
     // count leading zeros, supported by clang and gcc
-    return 32 - __builtin_clz(value - 1) + 1;
+    return 32 - __builtin_clz(value);
 }
 
 // TLV
