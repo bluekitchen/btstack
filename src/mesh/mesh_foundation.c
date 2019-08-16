@@ -48,33 +48,44 @@ static uint8_t mesh_foundation_gatt_proxy = 0;
 static uint8_t mesh_foundation_beacon = 0;
 static uint8_t mesh_foundation_default_ttl = 7;
 static uint8_t mesh_foundation_network_transmit = (10 << 3) | 2; // step 300 ms, send 3 times
-static uint8_t mesh_foundation_relay = MESH_FOUNDATION_STATE_NOT_SUPPORTED;
+static uint8_t mesh_foundation_relay = 0;
 static uint8_t mesh_foundation_relay_retransmit = 0;
-static uint8_t mesh_foundation_friend    = MESH_FOUNDATION_STATE_NOT_SUPPORTED; // not supported
-static uint8_t mesh_foundation_low_power = MESH_FOUNDATION_STATE_NOT_SUPPORTED;
+static uint8_t mesh_foundation_friend    = 0; // not supported
+static uint8_t mesh_foundation_low_power = 0;
 
 void mesh_foundation_gatt_proxy_set(uint8_t value){
+    if (value >= MESH_FOUNDATION_STATE_NOT_SUPPORTED) return;
     mesh_foundation_gatt_proxy = value;
     printf("MESH: GATT PROXY %x\n", mesh_foundation_gatt_proxy);
 }
 uint8_t mesh_foundation_gatt_proxy_get(void){
+#ifdef ENABLE_MESH_GATT_PROXT
     return mesh_foundation_gatt_proxy;
+#else
+    return MESH_FOUNDATION_STATE_NOT_SUPPORTED;
+#endif
 }
 
 void mesh_foundation_low_power_set(uint8_t value){
+    if (value >= MESH_FOUNDATION_STATE_NOT_SUPPORTED) return;
     mesh_foundation_low_power = value;
     printf("MESH: LOW POWER %x\n", mesh_foundation_low_power);
 }
 uint8_t mesh_foundation_low_power_get(void){
-    return mesh_foundation_low_power;
+    return MESH_FOUNDATION_STATE_NOT_SUPPORTED;
 }
 
 void mesh_foundation_beacon_set(uint8_t value){
+    if (value >= MESH_FOUNDATION_STATE_NOT_SUPPORTED) return;
     mesh_foundation_beacon = value;
     printf("MESH: Secure Network Beacon %x\n", mesh_foundation_beacon);
 }
 uint8_t mesh_foundation_beacon_get(void){
+#ifdef ENABLE_MESH_ADV_BEARER
     return mesh_foundation_beacon;
+#else
+    return MESH_FOUNDATION_STATE_NOT_SUPPORTED;
+#endif
 }
 
 void mesh_foundation_default_ttl_set(uint8_t ttl){
@@ -86,11 +97,12 @@ uint8_t mesh_foundation_default_ttl_get(void){
 }
 
 void mesh_foundation_friend_set(uint8_t value){
+    if (value >= MESH_FOUNDATION_STATE_NOT_SUPPORTED) return;
     mesh_foundation_friend = value;
     printf("MESH: Friend = 0x%x\n", mesh_foundation_friend);
 }
 uint8_t mesh_foundation_friend_get(void){
-    return mesh_foundation_friend;
+    return MESH_FOUNDATION_STATE_NOT_SUPPORTED;
 }
 
 void mesh_foundation_network_transmit_set(uint8_t network_transmit){
@@ -102,12 +114,17 @@ uint8_t mesh_foundation_network_transmit_get(void){
     return mesh_foundation_network_transmit;
 }
 
-void mesh_foundation_relay_set(uint8_t relay){
-    mesh_foundation_relay = relay;
+void mesh_foundation_relay_set(uint8_t value){
+    if (value >= MESH_FOUNDATION_STATE_NOT_SUPPORTED) return;
+    mesh_foundation_relay = value;
     printf("MESH: Relay = 0x%02x\n", mesh_foundation_relay);
 }
 uint8_t mesh_foundation_relay_get(void){
+#ifdef ENABLE_MESH_RELAY
     return mesh_foundation_relay;
+#else
+    return MESH_FOUNDATION_STATE_NOT_SUPPORTED;
+#endif
 }
 
 void mesh_foundation_relay_retransmit_set(uint8_t relay_retransmit){
