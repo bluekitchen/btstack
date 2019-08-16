@@ -220,14 +220,14 @@ static void mesh_proxy_stop_advertising_with_node_id(uint16_t netkey_index){
 // Public API
 
 uint8_t mesh_proxy_get_advertising_with_node_id_status(uint16_t netkey_index, mesh_node_identity_state_t * out_state ){
-    mesh_subnet_t * network_key = mesh_subnet_get_by_netkey_index(netkey_index);
-    if (network_key == NULL){
-        *out_state = MESH_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED;
-        return MESH_FOUNDATION_STATUS_SUCCESS;
+    mesh_subnet_t * mesh_subnet = mesh_subnet_get_by_netkey_index(netkey_index);
+    if (mesh_subnet == NULL){
+        *out_state = MESH_NODE_IDENTITY_STATE_ADVERTISING_STOPPED;
+        return MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX;
     }
 
 #ifdef ENABLE_MESH_PROXY_SERVER
-    if (network_key->node_id_advertisement_running == 0){
+    if (mesh_subnet->node_id_advertisement_running == 0){
         *out_state = MESH_NODE_IDENTITY_STATE_ADVERTISING_STOPPED;
     } else {
         *out_state = MESH_NODE_IDENTITY_STATE_ADVERTISING_RUNNING;

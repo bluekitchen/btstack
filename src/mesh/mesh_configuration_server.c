@@ -2157,16 +2157,7 @@ static void config_node_identity_get_handler(mesh_model_t *mesh_model, mesh_pdu_
     uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
 
     mesh_node_identity_state_t node_identity_state = MESH_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED;
-    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
-#ifdef ENABLE_MESH_PROXY_SERVER
-    status = mesh_proxy_get_advertising_with_node_id_status(netkey_index, &node_identity_state);
-#else
-    mesh_subnet_t * network_key = mesh_subnet_get_by_netkey_index(netkey_index);
-    if (network_key == NULL){
-        status = MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX;
-        node_identity_state = MESH_NODE_IDENTITY_STATE_ADVERTISING_STOPPED;
-    }
-#endif
+    uint8_t status = mesh_proxy_get_advertising_with_node_id_status(netkey_index, &node_identity_state);
     config_node_identity_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, netkey_index, node_identity_state);
 
     mesh_access_message_processed(pdu);
