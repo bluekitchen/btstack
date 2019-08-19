@@ -2008,6 +2008,19 @@ static void event_handler(uint8_t *packet, int size){
                     hci_stack->synchronous_flow_control_enabled = 1;
                 }
             } 
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_encryption_key_size)){
+                uint8_t status = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE];
+                handle = little_endian_read_16(packet, OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1);
+                conn   = hci_connection_for_handle(handle);
+                if (!conn) break;
+                if (status == 0){
+                    uint8_t key_size = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+3];
+                    log_info("Handle %x04x key Size: %u", handle, key_size);
+                    conn->encryption_key_size = key_size;
+                }
+                conn->authentication_flags |= CONNECTION_ENCRYPTED;
+                hci_emit_security_level(handle, gap_security_level_for_connection(conn));
+            }
 #endif
             break;
             
@@ -2256,14 +2269,21 @@ static void event_handler(uint8_t *packet, int size){
             if (!conn) break;
             if (packet[2] == 0) {
                 if (packet[5]){
-                    conn->authentication_flags |= CONNECTION_ENCRYPTED;
+                    if (hci_is_le_connection(conn)){
+                        // For LE, we accept connection as encrypted
+                        conn->authentication_flags |= CONNECTION_ENCRYPTED;
+                    }
+#ifdef ENABLE_CLASSIC
+                    else {
+                        // For Classic, we need to validate encryption key size first
+                        conn->bonding_flags |= BONDING_SEND_READ_ENCRYPTION_KEY_SIZE;
+                    }
+#endif
                 } else {
                     conn->authentication_flags &= ~CONNECTION_ENCRYPTED;
                 }
             }
-#ifdef ENABLE_CLASSIC
-            hci_emit_security_level(handle, gap_security_level_for_connection(conn));
-#endif
+
             break;
 
 #ifdef ENABLE_CLASSIC
@@ -3615,6 +3635,11 @@ static void hci_run(void){
         if (connection->bonding_flags & BONDING_SEND_ENCRYPTION_REQUEST){
             connection->bonding_flags &= ~BONDING_SEND_ENCRYPTION_REQUEST;
             hci_send_cmd(&hci_set_connection_encryption, connection->con_handle, 1);
+            return;
+        }
+        if (connection->bonding_flags & BONDING_SEND_READ_ENCRYPTION_KEY_SIZE){
+            connection->bonding_flags &= ~BONDING_SEND_READ_ENCRYPTION_KEY_SIZE;
+            hci_send_cmd(&hci_read_encryption_key_size, connection->con_handle, 1);
             return;
         }
 #endif

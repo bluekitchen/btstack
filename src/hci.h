@@ -218,15 +218,16 @@ typedef enum {
 
 // bonding flags
 enum {
-    BONDING_REQUEST_REMOTE_FEATURES   = 0x01,
-    BONDING_RECEIVED_REMOTE_FEATURES  = 0x02,
-    BONDING_REMOTE_SUPPORTS_SSP       = 0x04,
-    BONDING_DISCONNECT_SECURITY_BLOCK = 0x08,
-    BONDING_DISCONNECT_DEDICATED_DONE = 0x10,
-    BONDING_SEND_AUTHENTICATE_REQUEST = 0x20,
-    BONDING_SEND_ENCRYPTION_REQUEST   = 0x40,
-    BONDING_DEDICATED                 = 0x80,
-    BONDING_EMIT_COMPLETE_ON_DISCONNECT = 0x100
+    BONDING_REQUEST_REMOTE_FEATURES       = 0x01,
+    BONDING_RECEIVED_REMOTE_FEATURES      = 0x02,
+    BONDING_REMOTE_SUPPORTS_SSP           = 0x04,
+    BONDING_DISCONNECT_SECURITY_BLOCK     = 0x08,
+    BONDING_DISCONNECT_DEDICATED_DONE     = 0x10,
+    BONDING_SEND_AUTHENTICATE_REQUEST     = 0x20,
+    BONDING_SEND_ENCRYPTION_REQUEST       = 0x40,
+    BONDING_SEND_READ_ENCRYPTION_KEY_SIZE = 0x80,
+    BONDING_DEDICATED                     = 0x100,
+    BONDING_EMIT_COMPLETE_ON_DISCONNECT   = 0x200
 };
 
 typedef enum {
@@ -481,9 +482,12 @@ typedef struct {
     uint16_t bonding_flags;
     uint8_t  bonding_status;
 
+    // encryption key size (in octets)
+    uint8_t encryption_key_size;
+
     // requested security level
     gap_security_level_t requested_security_level;
-
+    
     // 
     link_key_type_t link_key_type;
 
