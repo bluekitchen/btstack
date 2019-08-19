@@ -747,6 +747,10 @@ typedef struct {
     uint8_t            ssp_authentication_requirement;
     uint8_t            ssp_auto_accept;
     inquiry_mode_t     inquiry_mode;
+#ifdef ENABLE_CLASSIC
+    // Errata-11838 mandates 7 bytes for GAP Security Level 1-3, we use 16 as default
+    uint8_t             gap_required_encyrption_key_size;
+#endif
 
     // single buffer for HCI packet assembly + additional prebuffer for H4 drivers
     uint8_t   * hci_packet_buffer;
