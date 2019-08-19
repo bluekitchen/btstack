@@ -111,6 +111,7 @@ extern const hci_cmd_t hci_pin_code_request_reply;
 extern const hci_cmd_t hci_qos_setup;
 extern const hci_cmd_t hci_read_bd_addr;
 extern const hci_cmd_t hci_read_buffer_size;
+extern const hci_cmd_t hci_read_encryption_key_size;
 extern const hci_cmd_t hci_read_le_host_supported;
 extern const hci_cmd_t hci_read_link_policy_settings;
 extern const hci_cmd_t hci_read_link_supervision_timeout;

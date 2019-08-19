@@ -890,9 +890,14 @@ OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x09), ""
  */
 const hci_cmd_t hci_read_rssi = {
 OPCODE(OGF_STATUS_PARAMETERS, 0x05), "H"
-// no params
 };
 
+/**
+ * @param handle
+ */
+const hci_cmd_t hci_read_encryption_key_size = {
+OPCODE(OGF_STATUS_PARAMETERS, 0x08), "H"
+};
 
 
 #ifdef ENABLE_BLE
