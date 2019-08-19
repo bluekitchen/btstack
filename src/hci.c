@@ -4291,7 +4291,7 @@ static gap_security_level_t gap_security_level_for_connection(hci_connection_t *
     if (!connection) return LEVEL_0;
     if ((connection->authentication_flags & CONNECTION_ENCRYPTED) == 0) return LEVEL_0;
     if (connection->encryption_key_size < hci_stack->gap_required_encyrption_key_size) return LEVEL_0;
-    gap_security_level_t level_for_key_type = gap_security_level_for_link_key_type(connection->link_key_type);
+    gap_security_level_t security_level = gap_security_level_for_link_key_type(connection->link_key_type);
     // LEVEL 4 always requires 128 bit encrytion key size
     if (security_level == LEVEL_4 && connection->encryption_key_size < 16){
         security_level = LEVEL_3;
