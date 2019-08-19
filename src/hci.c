@@ -2008,6 +2008,22 @@ static void event_handler(uint8_t *packet, int size){
                     hci_stack->synchronous_flow_control_enabled = 1;
                 }
             } 
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_encryption_key_size)){
+                uint8_t status = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE];
+                handle = little_endian_read_16(packet, OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1);
+                conn   = hci_connection_for_handle(handle);
+                if (!conn) break;
+                if (status == 0){
+                    uint8_t key_size = packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+3];
+                    log_info("Handle %x04x key Size: %u", handle, key_size);
+                    conn->encryption_key_size = key_size;
+                } else {
+                    log_info("Read Encryption Key Size failed -> assuming insecure connection with key size of 1");
+                    conn->encryption_key_size = 1;
+                }
+                conn->authentication_flags |= CONNECTION_ENCRYPTED;
+                hci_emit_security_level(handle, gap_security_level_for_connection(conn));
+            }
 #endif
             break;
             
@@ -2256,14 +2272,21 @@ static void event_handler(uint8_t *packet, int size){
             if (!conn) break;
             if (packet[2] == 0) {
                 if (packet[5]){
-                    conn->authentication_flags |= CONNECTION_ENCRYPTED;
+                    if (hci_is_le_connection(conn)){
+                        // For LE, we accept connection as encrypted
+                        conn->authentication_flags |= CONNECTION_ENCRYPTED;
+                    }
+#ifdef ENABLE_CLASSIC
+                    else {
+                        // For Classic, we need to validate encryption key size first
+                        conn->bonding_flags |= BONDING_SEND_READ_ENCRYPTION_KEY_SIZE;
+                    }
+#endif
                 } else {
                     conn->authentication_flags &= ~CONNECTION_ENCRYPTED;
                 }
             }
-#ifdef ENABLE_CLASSIC
-            hci_emit_security_level(handle, gap_security_level_for_connection(conn));
-#endif
+
             break;
 
 #ifdef ENABLE_CLASSIC
@@ -2777,6 +2800,9 @@ void hci_init(const hci_transport_t *transport, const void *config){
 
     // Master slave policy
     hci_stack->master_slave_policy = 1;
+
+    // Errata-11838 mandates 7 bytes for GAP Security Level 1-3, we use 16 as default
+    hci_stack->gap_required_encyrption_key_size = 16;
 #endif
 
     // Secure Simple Pairing default: enable, no I/O capabilities, general bonding, mitm not required, auto accept 
@@ -2863,6 +2889,15 @@ void hci_close(void){
 #endif
     hci_stack = NULL;
 }
+
+#ifdef ENABLE_CLASSIC
+void gap_set_required_encryption_key_size(uint8_t encryption_key_size){
+    // validate ranage and set
+    if (encryption_key_size < 7)  return;
+    if (encryption_key_size > 16) return;
+    hci_stack->gap_required_encyrption_key_size = encryption_key_size;
+}
+#endif
 
 #ifdef ENABLE_CLASSIC
 void gap_set_class_of_device(uint32_t class_of_device){
@@ -3617,6 +3652,11 @@ static void hci_run(void){
             hci_send_cmd(&hci_set_connection_encryption, connection->con_handle, 1);
             return;
         }
+        if (connection->bonding_flags & BONDING_SEND_READ_ENCRYPTION_KEY_SIZE){
+            connection->bonding_flags &= ~BONDING_SEND_READ_ENCRYPTION_KEY_SIZE;
+            hci_send_cmd(&hci_read_encryption_key_size, connection->con_handle, 1);
+            return;
+        }
 #endif
 
         if (connection->bonding_flags & BONDING_DISCONNECT_SECURITY_BLOCK){
@@ -4250,7 +4290,13 @@ static void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_le
 static gap_security_level_t gap_security_level_for_connection(hci_connection_t * connection){
     if (!connection) return LEVEL_0;
     if ((connection->authentication_flags & CONNECTION_ENCRYPTED) == 0) return LEVEL_0;
-    return gap_security_level_for_link_key_type(connection->link_key_type);
+    if (connection->encryption_key_size < hci_stack->gap_required_encyrption_key_size) return LEVEL_0;
+    gap_security_level_t security_level = gap_security_level_for_link_key_type(connection->link_key_type);
+    // LEVEL 4 always requires 128 bit encrytion key size
+    if (security_level == LEVEL_4 && connection->encryption_key_size < 16){
+        security_level = LEVEL_3;
+    }
+    return security_level;
 }    
 
 static void hci_emit_discoverable_enabled(uint8_t enabled){

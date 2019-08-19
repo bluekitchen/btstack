@@ -680,6 +680,14 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x2a), "1"
 };
 
 /**
+ * @param connection_handle
+ * @param type 0 = current transmit level, 1 = max transmit level
+ */
+const hci_cmd_t hci_read_transmit_power_level = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x2D), "11"
+};
+
+/**
  * @param synchronous_flow_control_enable - if yes, num completed packet everts are sent for SCO packets
  */
 const hci_cmd_t hci_write_synchronous_flow_control_enable = {
@@ -882,9 +890,14 @@ OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x09), ""
  */
 const hci_cmd_t hci_read_rssi = {
 OPCODE(OGF_STATUS_PARAMETERS, 0x05), "H"
-// no params
 };
 
+/**
+ * @param handle
+ */
+const hci_cmd_t hci_read_encryption_key_size = {
+OPCODE(OGF_STATUS_PARAMETERS, 0x08), "H"
+};
 
 
 #ifdef ENABLE_BLE

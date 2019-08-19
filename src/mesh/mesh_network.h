@@ -173,8 +173,12 @@ typedef struct {
     // advertisement using node id active
     uint8_t node_id_advertisement_running;
 
+
     // advertisement using network id (used by proxy)
     adv_bearer_connectable_advertisement_data_item_t advertisement_with_network_id;
+
+    // advertising using node id (used by proxy)
+    adv_bearer_connectable_advertisement_data_item_t advertisement_with_node_id;
 
     // secure network beacons
     mesh_secure_network_beacon_state_t beacon_state;

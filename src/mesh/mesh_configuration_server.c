@@ -96,16 +96,15 @@ static uint16_t heartbeat_pwr2(uint8_t value){
 
 static uint8_t heartbeat_count_log(uint16_t value){
     if (value == 0)      return 0x00;
-    if (value == 0x01)   return 0x01;
     if (value == 0xffff) return 0xff;
     // count leading zeros, supported by clang and gcc
-    return 32 - __builtin_clz(value - 1) + 1;
+    return 32 - __builtin_clz(value);
 }
 
 static uint8_t heartbeat_period_log(uint16_t value){
     if (value == 0)      return 0x00;
     // count leading zeros, supported by clang and gcc
-    return 32 - __builtin_clz(value - 1) + 1;
+    return 32 - __builtin_clz(value);
 }
 
 // TLV
@@ -1752,7 +1751,7 @@ static void config_heartbeat_publication_emit(mesh_heartbeat_publication_t * mes
     }
 
     // forever
-    if (mesh_heartbeat_publication->count < 0xffffu) {
+    if (mesh_heartbeat_publication->count > 0 && mesh_heartbeat_publication->count < 0xffffu) {
         mesh_heartbeat_publication->count--;
     }
 }
@@ -1760,9 +1759,12 @@ void mesh_configuration_server_feature_changed(void){
     mesh_model_t * mesh_model = mesh_model_get_configuration_server();
     mesh_heartbeat_publication_t * mesh_heartbeat_publication = &((mesh_configuration_server_model_context_t*) mesh_model->model_data)->heartbeat_publication;
 
-    // active features
-    uint16_t active_features = mesh_foundation_get_features();
-    if (mesh_heartbeat_publication->active_features == active_features) return;
+    // filter features by observed features for heartbeats
+    uint16_t current_features  = mesh_foundation_get_features()              & mesh_heartbeat_publication->features;
+    uint16_t previous_features = mesh_heartbeat_publication->active_features & mesh_heartbeat_publication->features;
+
+    // changes?
+    if (current_features == previous_features) return;
 
     config_heartbeat_publication_emit(mesh_heartbeat_publication);
 }
@@ -1853,7 +1855,7 @@ static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, m
     // check if heartbeats should be disabled
     if (mesh_heartbeat_publication->destination == MESH_ADDRESS_UNSASSIGNED || mesh_heartbeat_publication->period_log == 0) {
         btstack_run_loop_remove_timer(&mesh_heartbeat_publication->timer);
-        printf("MESH config_heartbeat_publication_set, disable\n");
+        printf("MESH config_heartbeat_publication_set, disable periodic sending\n");
         return;
     }
 
@@ -2157,16 +2159,7 @@ static void config_node_identity_get_handler(mesh_model_t *mesh_model, mesh_pdu_
     uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
 
     mesh_node_identity_state_t node_identity_state = MESH_NODE_IDENTITY_STATE_ADVERTISING_NOT_SUPPORTED;
-    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
-#ifdef ENABLE_MESH_PROXY_SERVER
-    status = mesh_proxy_get_advertising_with_node_id_status(netkey_index, &node_identity_state);
-#else
-    mesh_subnet_t * network_key = mesh_subnet_get_by_netkey_index(netkey_index);
-    if (network_key == NULL){
-        status = MESH_FOUNDATION_STATUS_INVALID_NETKEY_INDEX;
-        node_identity_state = MESH_NODE_IDENTITY_STATE_ADVERTISING_STOPPED;
-    }
-#endif
+    uint8_t status = mesh_proxy_get_advertising_with_node_id_status(netkey_index, &node_identity_state);
     config_node_identity_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, netkey_index, node_identity_state);
 
     mesh_access_message_processed(pdu);

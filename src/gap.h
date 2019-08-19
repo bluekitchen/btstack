@@ -199,6 +199,12 @@ void gap_ssp_set_authentication_requirement(int authentication_requirement);
 void gap_ssp_set_auto_accept(int auto_accept);
 
 /**
+ * @brief Set required encryption key size for GAP Levels 1-3 on ccassic connections. Default: 16 bytes
+ * @param encryption_key_size in bytes. Valid 7..16
+ */
+void gap_set_required_encryption_key_size(uint8_t encryption_key_size);
+
+/**
  * @brief Start dedicated bonding with device. Disconnect after bonding.
  * @param device
  * @param request MITM protection

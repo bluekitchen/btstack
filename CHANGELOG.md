@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - L2CAP ERTM: handle invalid Information Response (assume no extended features supported)
 - POSIX: use monotonic clock as timebase if available
 - HCI Transport H4/H5/EM9304 SPI: ignore block read/sent from UART driver when closed
+- HCI: Read Encryption Key Size after encryption was enabled
+- Errata 11838:
+  - GAP: gap_set_required_encryption_key_size allows to set the required key size, default = 16 (max)
+  - GAP: validate encryption key size to emit GAP Security Levels
 
 ## Changes July 2019
 

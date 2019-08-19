@@ -466,6 +466,8 @@ static void show_usage(void){
     printf("i      - Input  Output OOB \n");
     printf("s      - Static Output OOB \n");
     printf("b      - Set Secure Network Beacon %s\n", mesh_foundation_beacon_get() ? "Off" : "On");
+    printf("n      - Start Advertising with Node Identity\n");
+    printf("N      - Stop Advertising with Node Identity\n");
     printf("g      - Generic ON/OFF Server Toggle Value\n");
     printf("\n");
 }
@@ -543,6 +545,14 @@ static void stdin_process(char cmd){
             printf("Turn Secure Network Beacon %s\n", mesh_foundation_beacon_get() ? "Off" : "On");
             mesh_foundation_beacon_set(1 - mesh_foundation_beacon_get());
             mesh_foundation_state_store();
+            break;
+        case 'n':
+            printf("Start Advertising with Node ID\n");
+            mesh_proxy_start_advertising_with_node_id();
+            break;
+        case 'N':
+            printf("Stop Advertising with Node ID\n");
+            mesh_proxy_start_advertising_with_node_id();
             break;
         case ' ':
             show_usage();
