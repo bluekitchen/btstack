@@ -5136,25 +5136,37 @@ static sm_connection_t * sm_get_connection_for_handle(hci_con_handle_t con_handl
 // without sm.c default values from create_connection_for_bd_addr_and_type() resulg in non-encrypted, not-authenticated
 
 int gap_encryption_key_size(hci_con_handle_t con_handle){
-    sm_connection_t * sm_conn = sm_get_connection_for_handle(con_handle);
-    if (!sm_conn) return 0;     // wrong connection
-    if (!sm_conn->sm_connection_encrypted) return 0;
-    return sm_conn->sm_actual_encryption_key_size;
+    hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
+    if (hci_connection == NULL) return 0;
+    if (hci_is_le_connection(hci_connection)){
+        sm_connection_t * sm_conn = &hci_connection->sm_connection;
+        if (sm_conn->sm_connection_encrypted) {
+            return sm_conn->sm_actual_encryption_key_size;
+        }
+    }
+#ifdef ENABLE_CLASSIC
+    else {
+        if ((hci_connection->authentication_flags & CONNECTION_ENCRYPTED)){
+            return hci_connection->encryption_key_size;
+        }
+    }
+#endif
+    return 0;
 }
 
 int gap_authenticated(hci_con_handle_t con_handle){
-    hci_connection_t * hci_connnection = hci_connection_for_handle(con_handle);
-    if (hci_connnection == NULL) return 0;
+    hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
+    if (hci_connection == NULL) return 0;
 
-    switch (hci_connnection->address_type){
+    switch (hci_connection->address_type){
         case BD_ADDR_TYPE_LE_PUBLIC:
         case BD_ADDR_TYPE_LE_RANDOM:
-            if (hci_connnection->sm_connection.sm_connection_encrypted == 0) return 0; // unencrypted connection cannot be authenticated
-            return hci_connnection->sm_connection.sm_connection_authenticated;
+            if (hci_connection->sm_connection.sm_connection_encrypted == 0) return 0; // unencrypted connection cannot be authenticated
+            return hci_connection->sm_connection.sm_connection_authenticated;
 #ifdef ENABLE_CLASSIC
         case BD_ADDR_TYPE_SCO:
         case BD_ADDR_TYPE_CLASSIC:
-            return gap_authenticated_for_link_key_type(hci_connnection->link_key_type);
+            return gap_authenticated_for_link_key_type(hci_connection->link_key_type);
 #endif
         default:
             return 0;
@@ -5162,18 +5174,18 @@ int gap_authenticated(hci_con_handle_t con_handle){
 }
 
 int gap_secure_connection(hci_con_handle_t con_handle){
-    hci_connection_t * hci_connnection = hci_connection_for_handle(con_handle);
-    if (hci_connnection == NULL) return 0;
+    hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
+    if (hci_connection == NULL) return 0;
 
-    switch (hci_connnection->address_type){
+    switch (hci_connection->address_type){
         case BD_ADDR_TYPE_LE_PUBLIC:
         case BD_ADDR_TYPE_LE_RANDOM:
-            if (hci_connnection->sm_connection.sm_connection_encrypted == 0) return 0; // unencrypted connection cannot be authenticated
-            return hci_connnection->sm_connection.sm_connection_sc;
+            if (hci_connection->sm_connection.sm_connection_encrypted == 0) return 0; // unencrypted connection cannot be authenticated
+            return hci_connection->sm_connection.sm_connection_sc;
 #ifdef ENABLE_CLASSIC
         case BD_ADDR_TYPE_SCO:
         case BD_ADDR_TYPE_CLASSIC:
-            return gap_secure_connection_for_link_key_type(hci_connnection->link_key_type);
+            return gap_secure_connection_for_link_key_type(hci_connection->link_key_type);
 #endif
         default:
             return 0;
