@@ -1102,9 +1102,11 @@ void mesh_network_reset(void){
     mesh_network_reset_network_pdus(&network_pdus_outgoing_adv);
     if (adv_bearer_network_pdu){
         mesh_network_pdu_free(adv_bearer_network_pdu);
+        adv_bearer_network_pdu = NULL;
     }
     if (gatt_bearer_network_pdu){
         mesh_network_pdu_free(gatt_bearer_network_pdu);
+        gatt_bearer_network_pdu = NULL;
     }
     mesh_crypto_active = 0;
 }
