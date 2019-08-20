@@ -891,7 +891,6 @@ void mesh_upper_transport_set_higher_layer_handler(void (*pdu_handler)( mesh_tra
 }
 
 void mesh_upper_transport_init(){
-    mesh_lower_transport_init();
     mesh_lower_transport_set_higher_layer_handler(&mesh_upper_transport_pdu_handler);
 }
 
