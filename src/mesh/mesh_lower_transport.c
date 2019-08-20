@@ -757,19 +757,17 @@ static void mesh_lower_transport_reset_network_pdus(btstack_linked_list_t *list)
 }
 
 void mesh_lower_transport_dump(void){
-    // static btstack_linked_list_t upper_transport_control;
-    // static btstack_linked_list_t upper_transport_access;
     mesh_lower_transport_dump_network_pdus("lower_transport_incoming", &lower_transport_incoming);
 }
 
 void mesh_lower_transport_reset(void){
-    // static btstack_linked_list_t upper_transport_control;
-    // static btstack_linked_list_t upper_transport_access;
     mesh_lower_transport_reset_network_pdus(&lower_transport_incoming);
     if (lower_transport_outgoing_pdu){
         mesh_transport_pdu_free(lower_transport_outgoing_pdu);
         lower_transport_outgoing_pdu = NULL;
     }
+    mesh_network_pdu_free(lower_transport_outgoing_segment);
+    lower_transport_outgoing_segment = NULL;
 }
 
 void mesh_lower_transport_init(){
