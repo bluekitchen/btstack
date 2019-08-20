@@ -23,8 +23,11 @@ extern "C" int mock_process_hci_cmd(void);
 static mesh_network_pdu_t * received_network_pdu;
 static mesh_network_pdu_t * received_proxy_pdu;
 
-static uint8_t sent_network_pdu_data[29];
-static uint8_t sent_network_pdu_len;
+static uint8_t outgoing_gatt_network_pdu_data[29];
+static uint8_t outgoing_gatt_network_pdu_len;
+
+static uint8_t outgoing_adv_network_pdu_data[29];
+static uint8_t outgoing_adv_network_pdu_len;
 
 static uint8_t  recv_upper_transport_pdu_data[100];
 static uint16_t recv_upper_transport_pdu_len;
@@ -46,8 +49,8 @@ void adv_bearer_send_network_pdu(const uint8_t * network_pdu, uint16_t size, uin
     (void) count;
     (void) interval;
     printf_hexdump(network_pdu, size);
-    memcpy(sent_network_pdu_data, network_pdu, size);
-    sent_network_pdu_len = size;
+    memcpy(outgoing_adv_network_pdu_data, network_pdu, size);
+    outgoing_adv_network_pdu_len = size;
 }
 static void adv_bearer_emit_sent(void){
     uint8_t event[3];
@@ -75,8 +78,8 @@ void gatt_bearer_request_can_send_now_for_network_pdu(void){
 }
 void gatt_bearer_send_network_pdu(const uint8_t * network_pdu, uint16_t size){
     printf_hexdump(network_pdu, size);
-    memcpy(sent_network_pdu_data, network_pdu, size);
-    sent_network_pdu_len = size;
+    memcpy(outgoing_gatt_network_pdu_data, network_pdu, size);
+    outgoing_gatt_network_pdu_len = size;
 }
 static void gatt_bearer_emit_sent(void){
     uint8_t event[3];
@@ -287,9 +290,10 @@ TEST_GROUP(MessageTest){
         mesh_foundation_gatt_proxy_set(1);
         gatt_bearer_emit_connected();
 #endif
+        outgoing_gatt_network_pdu_len = 0;
+        outgoing_adv_network_pdu_len = 0;
         received_network_pdu = NULL;
         recv_upper_transport_pdu_len =0;
-        sent_network_pdu_len = 0;
     }
     void teardown(void){
         // printf("-- teardown start --\n\n");
@@ -354,19 +358,36 @@ void test_receive_network_pdus(int count, char ** network_pdus, char ** lower_tr
     CHECK_EQUAL_ARRAY(transport_pdu_data, recv_upper_transport_pdu_data, transport_pdu_len);
 }
 
-static void get_next_network_pdu(void){
-        while (sent_network_pdu_len == 0) {
+static void expect_gatt_network_pdu(const uint8_t * data, uint16_t len){
+        while (outgoing_gatt_network_pdu_len == 0) {
             mock_process_hci_cmd();
         }
 
-        if (sent_network_pdu_len != test_network_pdu_len){
-            printf("Test Network PDU (%u): ", sent_network_pdu_len); printf_hexdump(sent_network_pdu_data, sent_network_pdu_len);
+        if (outgoing_gatt_network_pdu_len != test_network_pdu_len){
+            printf("Test Network PDU (%u): ", outgoing_gatt_network_pdu_len); printf_hexdump(outgoing_gatt_network_pdu_data, outgoing_gatt_network_pdu_len);
             printf("Expected     PDU (%u): ", test_network_pdu_len); printf_hexdump(test_network_pdu_data, test_network_pdu_len);
         }
-        CHECK_EQUAL( sent_network_pdu_len, test_network_pdu_len);
-        CHECK_EQUAL_ARRAY(test_network_pdu_data, sent_network_pdu_data, test_network_pdu_len);
+        CHECK_EQUAL( outgoing_gatt_network_pdu_len, test_network_pdu_len);
+        CHECK_EQUAL_ARRAY(test_network_pdu_data, outgoing_gatt_network_pdu_data, test_network_pdu_len);
 
-        sent_network_pdu_len = 0;
+        outgoing_gatt_network_pdu_len = 0;
+        gatt_bearer_emit_sent();
+}
+
+static void expect_adv_network_pdu(const uint8_t * data, uint16_t len){
+        while (outgoing_adv_network_pdu_len == 0) {
+            mock_process_hci_cmd();
+        }
+
+        if (outgoing_adv_network_pdu_len != test_network_pdu_len){
+            printf("Test Network PDU (%u): ", outgoing_adv_network_pdu_len); printf_hexdump(outgoing_adv_network_pdu_data, outgoing_adv_network_pdu_len);
+            printf("Expected     PDU (%u): ", test_network_pdu_len); printf_hexdump(test_network_pdu_data, test_network_pdu_len);
+        }
+        CHECK_EQUAL( outgoing_adv_network_pdu_len, test_network_pdu_len);
+        CHECK_EQUAL_ARRAY(test_network_pdu_data, outgoing_adv_network_pdu_data, test_network_pdu_len);
+
+        outgoing_adv_network_pdu_len = 0;
+        adv_bearer_emit_sent();
 }
 
 void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uint8_t ttl, uint16_t src, uint16_t dest, uint8_t szmic, char * control_pdu, int count, char ** lower_transport_pdus, char ** network_pdus){
@@ -393,23 +414,17 @@ void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uin
         btstack_parse_hex(network_pdus[i], test_network_pdu_len, test_network_pdu_data);
 
 #ifdef ENABLE_MESH_GATT_BEARER
-        printf("Wait for gatt pdu\n");
-        get_next_network_pdu();
-        gatt_bearer_emit_sent();
+        expect_gatt_network_pdu(test_network_pdu_data, test_network_pdu_len);
 #endif
 
 #ifdef ENABLE_MESH_ADV_BEARER
-        printf("Wait for adv pdu\n");
-        get_next_network_pdu();
-        adv_bearer_emit_sent();
+        expect_adv_network_pdu(test_network_pdu_data, test_network_pdu_len);
 #endif
 
     }
 }
 
 void test_send_control_message(uint16_t netkey_index, uint8_t ttl, uint16_t src, uint16_t dest, char * control_pdu, int count, char ** lower_transport_pdus, char ** network_pdus){
-
-    sent_network_pdu_len = 0;
 
     transport_pdu_len = strlen(control_pdu) / 2;
     btstack_parse_hex(control_pdu, transport_pdu_len, transport_pdu_data);
@@ -435,13 +450,11 @@ void test_send_control_message(uint16_t netkey_index, uint8_t ttl, uint16_t src,
         btstack_parse_hex(network_pdus[i], test_network_pdu_len, test_network_pdu_data);
 
 #ifdef ENABLE_MESH_GATT_BEARER
-        get_next_network_pdu();
-        gatt_bearer_emit_sent();
+        expect_gatt_network_pdu(test_network_pdu_data, test_network_pdu_len);
 #endif
 
 #ifdef ENABLE_MESH_ADV_BEARER
-        get_next_network_pdu();
-        adv_bearer_emit_sent();
+        expect_adv_network_pdu(test_network_pdu_data, test_network_pdu_len);
 #endif
 
     }
