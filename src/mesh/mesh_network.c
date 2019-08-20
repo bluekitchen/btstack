@@ -108,7 +108,8 @@ static uint8_t network_nonce[13];
 static btstack_linked_list_t        network_pdus_received;
 
 // in validation
-static mesh_network_pdu_t *         network_pdu_in_validation;
+static mesh_network_pdu_t *         incoming_pdu_raw;
+static mesh_network_pdu_t *         incoming_pdu_decoded;
 static mesh_network_key_iterator_t  validation_network_key_it;
 
 // OUTGOING //
@@ -139,7 +140,7 @@ static int      mesh_network_cache_index;
 // prototypes
 
 static void mesh_network_run(void);
-static void process_network_pdu_validate(mesh_network_pdu_t * network_pdu);
+static void process_network_pdu_validate(void);
 
 // network caching
 static uint32_t mesh_network_cache_hash(mesh_network_pdu_t * network_pdu){
@@ -447,17 +448,18 @@ void mesh_network_message_processed_by_higher_layer(mesh_network_pdu_t * network
 }
 
 static void process_network_pdu_done(void){
-    btstack_memory_mesh_network_pdu_free(network_pdu_in_validation);
-    network_pdu_in_validation = NULL;
+    btstack_memory_mesh_network_pdu_free(incoming_pdu_raw);
+    incoming_pdu_raw = NULL;
     mesh_crypto_active = 0;
 
     mesh_network_run();
 }
 
 static void process_network_pdu_validate_d(void * arg){
-    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
+    UNUSED(arg);
+    // mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
 
-    uint8_t ctl_ttl     = network_pdu->data[1];
+    uint8_t ctl_ttl     = incoming_pdu_decoded->data[1];
     uint8_t ctl         = ctl_ttl >> 7;
     uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
 
@@ -468,65 +470,70 @@ static void process_network_pdu_validate_d(void * arg){
     printf("RX-NetMIC: "); 
     printf_hexdump(net_mic, net_mic_len);
 #endif
-    // store in pdu
-    memcpy(&network_pdu->data[network_pdu->len-net_mic_len], net_mic, net_mic_len);
+    // store in decoded pdu
+    memcpy(&incoming_pdu_decoded->data[incoming_pdu_decoded->len-net_mic_len], net_mic, net_mic_len);
 
 #ifdef LOG_NETWORK
-    uint8_t cypher_len  = network_pdu->len - 9 - net_mic_len;
+    uint8_t cypher_len  = incoming_pdu_decoded->len - 9 - net_mic_len;
     printf("RX-Decrypted DST/TransportPDU: ");
-    printf_hexdump(&network_pdu->data[7], 2 + cypher_len);
+    printf_hexdump(&incoming_pdu_decoded->data[7], 2 + cypher_len);
 
     printf("RX-Decrypted: ");
-    printf_hexdump(network_pdu->data, network_pdu->len);
+    printf_hexdump(incoming_pdu_decoded->data, incoming_pdu_decoded->len);
 #endif
 
     // validate network mic
-    if (memcmp(net_mic, &network_pdu_in_validation->data[network_pdu->len-net_mic_len], net_mic_len) != 0){
+    if (memcmp(net_mic, &incoming_pdu_raw->data[incoming_pdu_decoded->len-net_mic_len], net_mic_len) != 0){
         // fail
         printf("RX-NetMIC mismatch, try next key\n");
-        process_network_pdu_validate(network_pdu);
+        process_network_pdu_validate();
         return;
     }    
 
     // remove NetMIC from payload
-    network_pdu->len -= net_mic_len;
+    incoming_pdu_decoded->len -= net_mic_len;
 
 #ifdef LOG_NETWORK
     // match
     printf("RX-NetMIC matches\n");
-    printf("RX-TTL: 0x%02x\n", network_pdu->data[1] & 0x7f);
+    printf("RX-TTL: 0x%02x\n", incoming_pdu_decoded->data[1] & 0x7f);
 #endif
 
     // set netkey_index
-    network_pdu->netkey_index = current_network_key->netkey_index;
+    incoming_pdu_decoded->netkey_index = current_network_key->netkey_index;
 
-    if (network_pdu->flags & MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION){
+    if (incoming_pdu_decoded->flags & MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION){
+
+        mesh_network_pdu_t * decoded_pdu = incoming_pdu_decoded;
+        incoming_pdu_decoded = NULL;
 
         // no additional checks for proxy messages
-        (*mesh_network_proxy_message_handler)(MESH_NETWORK_PDU_RECEIVED, network_pdu);
+        (*mesh_network_proxy_message_handler)(MESH_NETWORK_PDU_RECEIVED, decoded_pdu);
  
     } else {
 
         // validate src/dest addresses
-        uint16_t src = big_endian_read_16(network_pdu->data, 5);
-        uint16_t dst = big_endian_read_16(network_pdu->data, 7);
+        uint16_t src = big_endian_read_16(incoming_pdu_decoded->data, 5);
+        uint16_t dst = big_endian_read_16(incoming_pdu_decoded->data, 7);
         int valid = mesh_network_addresses_valid(ctl, src, dst);
         if (!valid){
             printf("RX Address invalid\n");
-            btstack_memory_mesh_network_pdu_free(network_pdu);
+            btstack_memory_mesh_network_pdu_free(incoming_pdu_decoded);
+            incoming_pdu_decoded = NULL;
             process_network_pdu_done();
             return;
         }
 
         // check cache
-        uint32_t hash = mesh_network_cache_hash(network_pdu);
+        uint32_t hash = mesh_network_cache_hash(incoming_pdu_decoded);
 #ifdef LOG_NETWORK
         printf("RX-Hash: %08x\n", hash);
 #endif
         if (mesh_network_cache_find(hash)){
             // found in cache, drop
             printf("Found in cache -> drop packet\n");
-            btstack_memory_mesh_network_pdu_free(network_pdu);
+            btstack_memory_mesh_network_pdu_free(incoming_pdu_decoded);
+            incoming_pdu_decoded = NULL;
             process_network_pdu_done();
             return;
         }
@@ -535,7 +542,9 @@ static void process_network_pdu_validate_d(void * arg){
         mesh_network_cache_add(hash);
 
         // forward to lower transport layer. message is freed by call to mesh_network_message_processed_by_upper_layer
-        (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_RECEIVED, network_pdu);
+        mesh_network_pdu_t * decoded_pdu = incoming_pdu_decoded;
+        incoming_pdu_decoded = NULL;
+        (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_RECEIVED, decoded_pdu);
     }
 
     // done
@@ -558,7 +567,7 @@ static uint32_t iv_index_for_pdu(const mesh_network_pdu_t * network_pdu){
 }
 
 static void process_network_pdu_validate_b(void * arg){
-    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
+    UNUSED(arg);
 
 #ifdef LOG_NETWORK
     printf("RX-PECB: ");
@@ -568,21 +577,21 @@ static void process_network_pdu_validate_b(void * arg){
     // de-obfuscate
     unsigned int i;
     for (i=0;i<6;i++){
-        network_pdu->data[1+i] = network_pdu_in_validation->data[1+i] ^ obfuscation_block[i];
+        incoming_pdu_decoded->data[1+i] = incoming_pdu_raw->data[1+i] ^ obfuscation_block[i];
     }
 
-    uint32_t iv_index = iv_index_for_pdu(network_pdu);
+    uint32_t iv_index = iv_index_for_pdu(incoming_pdu_raw);
 
-    if (network_pdu->flags & MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION){
+    if (incoming_pdu_decoded->flags & MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION){
         // create network nonce
-        mesh_proxy_create_nonce(network_nonce, network_pdu, iv_index);
+        mesh_proxy_create_nonce(network_nonce, incoming_pdu_decoded, iv_index);
 #ifdef LOG_NETWORK
         printf("RX-Proxy Nonce: ");
         printf_hexdump(network_nonce, 13);
 #endif
     } else {
         // create network nonce
-        mesh_network_create_nonce(network_nonce, network_pdu, iv_index);
+        mesh_network_create_nonce(network_nonce, incoming_pdu_decoded, iv_index);
 #ifdef LOG_NETWORK
         printf("RX-Network Nonce: ");
         printf_hexdump(network_nonce, 13);
@@ -590,9 +599,9 @@ static void process_network_pdu_validate_b(void * arg){
     }
 
     // 
-    uint8_t ctl_ttl     = network_pdu->data[1];
+    uint8_t ctl_ttl     = incoming_pdu_decoded->data[1];
     uint8_t net_mic_len = (ctl_ttl & 0x80) ? 8 : 4;
-    uint8_t cypher_len  = network_pdu->len - 7 - net_mic_len;
+    uint8_t cypher_len  = incoming_pdu_decoded->len - 7 - net_mic_len;
 
 #ifdef LOG_NETWORK
     printf("RX-Cyper len %u, mic len %u\n", cypher_len, net_mic_len);
@@ -603,13 +612,14 @@ static void process_network_pdu_validate_b(void * arg){
 #endif
 
     btstack_crypto_ccm_init(&mesh_network_crypto_request.ccm, current_network_key->encryption_key, network_nonce, cypher_len, 0, net_mic_len);
-    btstack_crypto_ccm_decrypt_block(&mesh_network_crypto_request.ccm, cypher_len, &network_pdu_in_validation->data[7], &network_pdu->data[7], &process_network_pdu_validate_d, network_pdu);
+    btstack_crypto_ccm_decrypt_block(&mesh_network_crypto_request.ccm, cypher_len, &incoming_pdu_raw->data[7], &incoming_pdu_decoded->data[7], &process_network_pdu_validate_d, incoming_pdu_decoded);
 }
 
-static void process_network_pdu_validate(mesh_network_pdu_t * network_pdu){
+static void process_network_pdu_validate(void){
     if (!mesh_network_key_nid_iterator_has_more(&validation_network_key_it)){
         printf("No valid network key found\n");
-        btstack_memory_mesh_network_pdu_free(network_pdu);
+        btstack_memory_mesh_network_pdu_free(incoming_pdu_decoded);
+        incoming_pdu_decoded = NULL;
         process_network_pdu_done();
         return;
     }
@@ -617,34 +627,30 @@ static void process_network_pdu_validate(mesh_network_pdu_t * network_pdu){
     current_network_key = mesh_network_key_nid_iterator_get_next(&validation_network_key_it);
 
     // calc PECB
-    uint32_t iv_index = iv_index_for_pdu(network_pdu);
+    uint32_t iv_index = iv_index_for_pdu(incoming_pdu_raw);
     memset(encryption_block, 0, 5);
     big_endian_store_32(encryption_block, 5, iv_index);
-    memcpy(&encryption_block[9], &network_pdu_in_validation->data[7], 7);
-    btstack_crypto_aes128_encrypt(&mesh_network_crypto_request.aes128, current_network_key->privacy_key, encryption_block, obfuscation_block, &process_network_pdu_validate_b, network_pdu);
+    memcpy(&encryption_block[9], &incoming_pdu_raw->data[7], 7);
+    btstack_crypto_aes128_encrypt(&mesh_network_crypto_request.aes128, current_network_key->privacy_key, encryption_block, obfuscation_block, &process_network_pdu_validate_b, NULL);
 }
 
 
-static void process_network_pdu(mesh_network_pdu_t * network_pdu){
+static void process_network_pdu(void){
     //
-    uint8_t nid_ivi = network_pdu_in_validation->data[0];
+    uint8_t nid_ivi = incoming_pdu_raw->data[0];
 
     // setup pdu object
-    network_pdu->data[0] = nid_ivi;
-    network_pdu->len     = network_pdu_in_validation->len;
-    network_pdu->flags   = network_pdu_in_validation->flags;
+    incoming_pdu_decoded->data[0] = nid_ivi;
+    incoming_pdu_decoded->len     = incoming_pdu_raw->len;
+    incoming_pdu_decoded->flags   = incoming_pdu_raw->flags;
 
     // init provisioning data iterator
     uint8_t nid = nid_ivi & 0x7f;
     // uint8_t iv_index = network_pdu_data[0] >> 7;
     mesh_network_key_nid_iterator_init(&validation_network_key_it, nid);
 
-    process_network_pdu_validate(network_pdu);
+    process_network_pdu_validate();
 }
-
-// static void mesh_network_encrypt_and_obfuscate(mesh_network_pdu_t * network_pdu, void (*callback)(mesh_network_pdu_t * network_pdu)){
-//     network_pdu->callback = callback;
-// }
 
 static void mesh_network_run(void){
     if (!btstack_linked_list_empty(&network_pdus_outgoing_gatt)){
@@ -711,12 +717,12 @@ static void mesh_network_run(void){
     if (mesh_crypto_active) return;
 
     if (!btstack_linked_list_empty(&network_pdus_received)){
-        mesh_network_pdu_t * decode_pdu = mesh_network_pdu_get();
-        if (!decode_pdu) return; 
+        incoming_pdu_decoded = mesh_network_pdu_get();
+        if (!incoming_pdu_decoded) return; 
         // get encoded network pdu and start processing
         mesh_crypto_active = 1;
-        network_pdu_in_validation = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_received);
-        process_network_pdu(decode_pdu);
+        incoming_pdu_raw = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_received);
+        process_network_pdu();
         return;
     }
 
@@ -1088,8 +1094,8 @@ void mesh_network_dump(void){
     mesh_network_dump_network_pdus("network_pdus_queued", &network_pdus_queued);
     mesh_network_dump_network_pdus("network_pdus_outgoing_gatt", &network_pdus_outgoing_gatt);
     mesh_network_dump_network_pdus("network_pdus_outgoing_adv", &network_pdus_outgoing_adv);
-    printf("network_pdu_in_validation: \n");
-    mesh_network_dump_network_pdu(network_pdu_in_validation);
+    printf("incoming_pdu_raw: \n");
+    mesh_network_dump_network_pdu(incoming_pdu_raw);
     printf("gatt_bearer_network_pdu: \n");
     mesh_network_dump_network_pdu(gatt_bearer_network_pdu);
     printf("adv_bearer_network_pdu: \n");
@@ -1107,6 +1113,14 @@ void mesh_network_reset(void){
     if (gatt_bearer_network_pdu){
         mesh_network_pdu_free(gatt_bearer_network_pdu);
         gatt_bearer_network_pdu = NULL;
+    }
+    if (incoming_pdu_raw){
+        mesh_network_pdu_free(incoming_pdu_raw);
+        incoming_pdu_raw = NULL;
+    }
+    if (incoming_pdu_decoded){
+        mesh_network_pdu_free(incoming_pdu_decoded);
+        incoming_pdu_decoded = NULL;
     }
     mesh_crypto_active = 0;
 }
