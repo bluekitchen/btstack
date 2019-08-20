@@ -236,12 +236,14 @@ static void test_upper_transport_access_message_handler(mesh_pdu_t * pdu){
     switch(pdu->pdu_type){
         case MESH_PDU_TYPE_TRANSPORT:
             transport_pdu = (mesh_transport_pdu_t *) pdu;
+            printf("test MESH_ACCESS_TRANSPORT_PDU_RECEIVED\n");
             recv_upper_transport_pdu_len = transport_pdu->len;
             memcpy(recv_upper_transport_pdu_data, transport_pdu->data, recv_upper_transport_pdu_len);
             mesh_upper_transport_message_processed_by_higher_layer(pdu);
             break;
         case MESH_PDU_TYPE_NETWORK:
             network_pdu = (mesh_network_pdu_t *) pdu;
+            printf("test MESH_ACCESS_NETWORK_PDU_RECEIVED\n");
             recv_upper_transport_pdu_len = mesh_network_pdu_len(network_pdu)  - 1;
             memcpy(recv_upper_transport_pdu_data, mesh_network_pdu_data(network_pdu) + 1, recv_upper_transport_pdu_len);
             mesh_upper_transport_message_processed_by_higher_layer(pdu);
@@ -257,12 +259,14 @@ static void test_upper_transport_control_message_handler(mesh_pdu_t * pdu){
     switch(pdu->pdu_type){
         case MESH_PDU_TYPE_TRANSPORT:
             transport_pdu = (mesh_transport_pdu_t *) pdu;
+            printf("test MESH_CONTROL_TRANSPORT_PDU_RECEIVED\n");
             recv_upper_transport_pdu_len = transport_pdu->len;
             memcpy(recv_upper_transport_pdu_data, transport_pdu->data, recv_upper_transport_pdu_len);
             mesh_upper_transport_message_processed_by_higher_layer(pdu);
             break;
         case MESH_PDU_TYPE_NETWORK:
             network_pdu = (mesh_network_pdu_t *) pdu;
+            printf("test MESH_CONTROL_NETWORK_PDU_RECEIVED\n");
             recv_upper_transport_pdu_len = mesh_network_pdu_len(network_pdu);
             memcpy(recv_upper_transport_pdu_data, mesh_network_pdu_data(network_pdu), recv_upper_transport_pdu_len);
             mesh_upper_transport_message_processed_by_higher_layer(pdu);
@@ -302,6 +306,8 @@ TEST_GROUP(MessageTest){
         btstack_crypto_reset();
         mesh_network_reset();
         mesh_lower_transport_reset();
+        mesh_upper_transport_dump();
+        mesh_upper_transport_reset();
         // mesh_network_dump();
         // mesh_transport_dump();
         printf("-- teardown complete --\n\n");
@@ -1085,6 +1091,8 @@ TEST(MessageTest, ProxyConfigSend){
     CHECK_EQUAL_ARRAY(transport_pdu_data+1, proxy_pdu_data, transport_pdu_len-1);
 
     received_proxy_pdu = NULL;
+
+    mesh_network_pdu_free(network_pdu);
 }
 
 static btstack_crypto_aes128_t crypto_request_aes128;
