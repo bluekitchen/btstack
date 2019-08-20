@@ -275,6 +275,7 @@ void btstack_crypto_ecc_p256_set_key(const uint8_t * public_key, const uint8_t *
 
 // Unit testing
 int btstack_crypto_idle(void);
+void btstack_crypto_reset(void);
 
 #if defined __cplusplus
 }

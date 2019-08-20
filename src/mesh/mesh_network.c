@@ -1090,12 +1090,23 @@ void mesh_network_dump(void){
     mesh_network_dump_network_pdus("network_pdus_outgoing_adv", &network_pdus_outgoing_adv);
     printf("network_pdu_in_validation: \n");
     mesh_network_dump_network_pdu(network_pdu_in_validation);
+    printf("gatt_bearer_network_pdu: \n");
+    mesh_network_dump_network_pdu(gatt_bearer_network_pdu);
+    printf("adv_bearer_network_pdu: \n");
+    mesh_network_dump_network_pdu(adv_bearer_network_pdu);
 }
 void mesh_network_reset(void){
     mesh_network_reset_network_pdus(&network_pdus_received);
     mesh_network_reset_network_pdus(&network_pdus_queued);
     mesh_network_reset_network_pdus(&network_pdus_outgoing_gatt);
     mesh_network_reset_network_pdus(&network_pdus_outgoing_adv);
+    if (adv_bearer_network_pdu){
+        mesh_network_pdu_free(adv_bearer_network_pdu);
+    }
+    if (gatt_bearer_network_pdu){
+        mesh_network_pdu_free(gatt_bearer_network_pdu);
+    }
+    mesh_crypto_active = 0;
 }
 
 // buffer pool
