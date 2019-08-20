@@ -48,7 +48,8 @@ void adv_bearer_request_can_send_now_for_network_pdu(void){
 void adv_bearer_send_network_pdu(const uint8_t * network_pdu, uint16_t size, uint8_t count, uint16_t interval){
     (void) count;
     (void) interval;
-    printf_hexdump(network_pdu, size);
+    // printf("ADV Network PDU: ");
+    // printf_hexdump(network_pdu, size);
     memcpy(outgoing_adv_network_pdu_data, network_pdu, size);
     outgoing_adv_network_pdu_len = size;
 }
@@ -77,7 +78,8 @@ void gatt_bearer_request_can_send_now_for_network_pdu(void){
     (*gatt_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 void gatt_bearer_send_network_pdu(const uint8_t * network_pdu, uint16_t size){
-    printf_hexdump(network_pdu, size);
+    // printf("ADV Network PDU: ");
+    // printf_hexdump(network_pdu, size);
     memcpy(outgoing_gatt_network_pdu_data, network_pdu, size);
     outgoing_gatt_network_pdu_len = size;
 }
@@ -297,10 +299,8 @@ TEST_GROUP(MessageTest){
     }
     void teardown(void){
         // printf("-- teardown start --\n\n");
-        while (!btstack_crypto_idle()){
-            mock_process_hci_cmd();
-        }
-        // mesh_network_reset();
+        btstack_crypto_reset();
+        mesh_network_reset();
         mesh_lower_transport_reset();
         // mesh_network_dump();
         // mesh_transport_dump();
@@ -420,7 +420,6 @@ void test_send_access_message(uint16_t netkey_index, uint16_t appkey_index,  uin
 #ifdef ENABLE_MESH_ADV_BEARER
         expect_adv_network_pdu(test_network_pdu_data, test_network_pdu_len);
 #endif
-
     }
 }
 
