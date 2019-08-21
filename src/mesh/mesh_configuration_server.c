@@ -1837,6 +1837,9 @@ static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, m
     // store period as ms
     requested_publication.period_ms = heartbeat_pwr2(requested_publication.period_log) * 1000;
 
+    // store current features
+    requested_publication.active_features = mesh_foundation_get_features();
+
     mesh_heartbeat_publication_t * mesh_heartbeat_publication = &((mesh_configuration_server_model_context_t*) mesh_model->model_data)->heartbeat_publication;
 
     // validate fields
