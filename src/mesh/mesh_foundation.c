@@ -59,7 +59,7 @@ void mesh_foundation_gatt_proxy_set(uint8_t value){
     printf("MESH: GATT PROXY %x\n", mesh_foundation_gatt_proxy);
 }
 uint8_t mesh_foundation_gatt_proxy_get(void){
-#ifdef ENABLE_MESH_GATT_PROXI
+#ifdef ENABLE_MESH_GATT_PROXY
     return mesh_foundation_gatt_proxy;
 #else
     return MESH_FOUNDATION_STATE_NOT_SUPPORTED;
