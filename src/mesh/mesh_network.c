@@ -117,6 +117,8 @@ static mesh_network_key_iterator_t  validation_network_key_it;
 // Network PDUs queued by mesh_network_send
 static btstack_linked_list_t network_pdus_queued;
 
+// Network PDU about to get send via all bearers when encrypted
+static mesh_network_pdu_t * outgoing_pdu;
 
 // Network PDUs ready to send via GATT Bearer
 static btstack_linked_list_t network_pdus_outgoing_gatt;
@@ -271,28 +273,30 @@ static void mesh_network_send_d(mesh_network_pdu_t * network_pdu){
 
 // new
 static void mesh_network_send_c(void *arg){
-    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
+    UNUSED(arg);
 
     // obfuscate
     unsigned int i;
     for (i=0;i<6;i++){
-        network_pdu->data[1+i] ^= obfuscation_block[i];
+        outgoing_pdu->data[1+i] ^= obfuscation_block[i];
     }
 
 #ifdef LOG_NETWORK
-    printf("TX-C-NetworkPDU (%p): ", network_pdu);
-    printf_hexdump(network_pdu->data, network_pdu->len);
+    printf("TX-C-NetworkPDU (%p): ", outgoing_pdu);
+    printf_hexdump(outgoing_pdu->data, outgoing_pdu->len);
 #endif
 
     // crypto done
     mesh_crypto_active = 0;
 
     // done
+    mesh_network_pdu_t * network_pdu = outgoing_pdu;
+    outgoing_pdu = NULL;
     (network_pdu->callback)(network_pdu);
 }
 
 static void mesh_network_send_b(void *arg){
-    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
+    UNUSED(arg);
 
     uint32_t iv_index = mesh_get_iv_index_for_tx();
 
@@ -301,33 +305,35 @@ static void mesh_network_send_b(void *arg){
     btstack_crypto_ccm_get_authentication_value(&mesh_network_crypto_request.ccm, net_mic);
 
     // store MIC
-    uint8_t net_mic_len = network_pdu->data[1] & 0x80 ? 8 : 4;
-    memcpy(&network_pdu->data[network_pdu->len], net_mic, net_mic_len);
-    network_pdu->len += net_mic_len;
+    uint8_t net_mic_len = outgoing_pdu->data[1] & 0x80 ? 8 : 4;
+    memcpy(&outgoing_pdu->data[outgoing_pdu->len], net_mic, net_mic_len);
+    outgoing_pdu->len += net_mic_len;
 
 #ifdef LOG_NETWORK
-    printf("TX-B-NetworkPDU (%p): ", network_pdu);
-    printf_hexdump(network_pdu->data, network_pdu->len);
+    printf("TX-B-NetworkPDU (%p): ", outgoing_pdu);
+    printf_hexdump(outgoing_pdu->data, outgoing_pdu->len);
 #endif
 
     // calc PECB
     memset(encryption_block, 0, 5);
     big_endian_store_32(encryption_block, 5, iv_index);
-    memcpy(&encryption_block[9], &network_pdu->data[7], 7);
-    btstack_crypto_aes128_encrypt(&mesh_network_crypto_request.aes128, current_network_key->privacy_key, encryption_block, obfuscation_block, &mesh_network_send_c, network_pdu);
+    memcpy(&encryption_block[9], &outgoing_pdu->data[7], 7);
+    btstack_crypto_aes128_encrypt(&mesh_network_crypto_request.aes128, current_network_key->privacy_key, encryption_block, obfuscation_block, &mesh_network_send_c, NULL);
 }
 
-static void mesh_network_send_a(mesh_network_pdu_t * network_pdu){
+static void mesh_network_send_a(void){
 
     mesh_crypto_active = 1;
 
     uint32_t iv_index = mesh_get_iv_index_for_tx();
 
     // lookup subnet by netkey_index
-    mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(network_pdu->netkey_index);
+    mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(outgoing_pdu->netkey_index);
     if (!subnet) {
         mesh_crypto_active = 0;
         // notify upper layer
+        mesh_network_pdu_t * network_pdu = outgoing_pdu;
+        outgoing_pdu = NULL;
         (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_SENT, network_pdu);
         // run again
         mesh_network_run();
@@ -338,19 +344,19 @@ static void mesh_network_send_a(mesh_network_pdu_t * network_pdu){
     current_network_key = mesh_subnet_get_outgoing_network_key(subnet);
 
 #ifdef LOG_NETWORK
-    printf("TX-A-NetworkPDU (%p): ", network_pdu);
-    printf_hexdump(network_pdu->data, network_pdu->len);
+    printf("TX-A-NetworkPDU (%p): ", outgoing_pdu);
+    printf_hexdump(outgoing_pdu->data, outgoing_pdu->len);
 #endif
 
     // get network nonce
-    if (network_pdu->flags & MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION){
-        mesh_proxy_create_nonce(network_nonce, network_pdu, iv_index); 
+    if (outgoing_pdu->flags & MESH_NETWORK_PDU_FLAGS_PROXY_CONFIGURATION){
+        mesh_proxy_create_nonce(network_nonce, outgoing_pdu, iv_index); 
 #ifdef LOG_NETWORK
         printf("TX-ProxyNonce:  ");
         printf_hexdump(network_nonce, 13);
 #endif
     } else {
-        mesh_network_create_nonce(network_nonce, network_pdu, iv_index); 
+        mesh_network_create_nonce(network_nonce, outgoing_pdu, iv_index); 
 #ifdef LOG_NETWORK
         printf("TX-NetworkNonce:  ");
         printf_hexdump(network_nonce, 13);
@@ -363,10 +369,10 @@ static void mesh_network_send_a(mesh_network_pdu_t * network_pdu){
 #endif
 
     // start ccm
-    uint8_t cypher_len  = network_pdu->len - 7;
-    uint8_t net_mic_len = network_pdu->data[1] & 0x80 ? 8 : 4;
+    uint8_t cypher_len  = outgoing_pdu->len - 7;
+    uint8_t net_mic_len = outgoing_pdu->data[1] & 0x80 ? 8 : 4;
     btstack_crypto_ccm_init(&mesh_network_crypto_request.ccm, current_network_key->encryption_key, network_nonce, cypher_len, 0, net_mic_len);
-    btstack_crypto_ccm_encrypt_block(&mesh_network_crypto_request.ccm, cypher_len, &network_pdu->data[7], &network_pdu->data[7], &mesh_network_send_b, network_pdu);
+    btstack_crypto_ccm_encrypt_block(&mesh_network_crypto_request.ccm, cypher_len, &outgoing_pdu->data[7], &outgoing_pdu->data[7], &mesh_network_send_b, NULL);
 }
 
 #if defined(ENABLE_MESH_RELAY) || defined (ENABLE_MESH_PROXY_SERVER)
@@ -731,12 +737,12 @@ static void mesh_network_run(void){
 #ifdef LOG_NETWORK
         mesh_network_dump_network_pdus("network_pdus_queued", &network_pdus_queued);
 #endif
-        mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_queued);
+        outgoing_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_queued);
 #ifdef LOG_NETWORK
-        printf("network run: pop %p from network_pdus_queued\n", network_pdu);
+        printf("network run: pop %p from network_pdus_queued\n", outgoing_pdu);
         mesh_network_dump_network_pdus("network_pdus_queued", &network_pdus_queued);
 #endif
-        mesh_network_send_a(network_pdu);
+        mesh_network_send_a();
         return;
     }
 }
@@ -1094,6 +1100,8 @@ void mesh_network_dump(void){
     mesh_network_dump_network_pdus("network_pdus_queued", &network_pdus_queued);
     mesh_network_dump_network_pdus("network_pdus_outgoing_gatt", &network_pdus_outgoing_gatt);
     mesh_network_dump_network_pdus("network_pdus_outgoing_adv", &network_pdus_outgoing_adv);
+    printf("outgoing_pdu: \n");
+    mesh_network_dump_network_pdu(outgoing_pdu);
     printf("incoming_pdu_raw: \n");
     mesh_network_dump_network_pdu(incoming_pdu_raw);
     printf("gatt_bearer_network_pdu: \n");
@@ -1113,6 +1121,10 @@ void mesh_network_reset(void){
     if (gatt_bearer_network_pdu){
         mesh_network_pdu_free(gatt_bearer_network_pdu);
         gatt_bearer_network_pdu = NULL;
+    }
+    if (outgoing_pdu){
+        mesh_network_pdu_free(outgoing_pdu);
+        outgoing_pdu = NULL;
     }
     if (incoming_pdu_raw){
         mesh_network_pdu_free(incoming_pdu_raw);
