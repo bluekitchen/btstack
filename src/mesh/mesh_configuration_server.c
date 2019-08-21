@@ -1744,10 +1744,16 @@ static void config_heartbeat_publication_emit(mesh_heartbeat_publication_t * mes
         uint8_t data[3];
         data[0] = mesh_heartbeat_publication->ttl;
         big_endian_store_16(data, 1, mesh_heartbeat_publication->active_features);
-        mesh_upper_transport_setup_control_pdu((mesh_pdu_t *) network_pdu, mesh_heartbeat_publication->netkey_index,
+        uint8_t status = mesh_upper_transport_setup_control_pdu((mesh_pdu_t *) network_pdu, mesh_heartbeat_publication->netkey_index,
                 mesh_heartbeat_publication->ttl, mesh_node_get_primary_element_address(), mesh_heartbeat_publication->destination,
                 MESH_TRANSPORT_OPCODE_HEARTBEAT, data, sizeof(data));
-        mesh_upper_transport_send_control_pdu((mesh_pdu_t *) network_pdu);
+        if (status){
+            // stop periodic emit on error (netkey got invalid)
+            mesh_heartbeat_publication->period_ms = 0;
+            mesh_network_pdu_free(network_pdu);
+        } else {
+            mesh_upper_transport_send_control_pdu((mesh_pdu_t *) network_pdu);
+        }
     }
 
     // forever
