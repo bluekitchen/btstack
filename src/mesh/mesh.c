@@ -309,7 +309,7 @@ void mesh_foundation_state_load(void){
     if (foundation_state_len != sizeof(data)) return;
 
     mesh_foundation_gatt_proxy_set(data.gatt_proxy);
-    mesh_foundation_beacon_set(data.gatt_proxy);
+    mesh_foundation_beacon_set(data.beacon);
     mesh_foundation_default_ttl_set(data.default_ttl);
     mesh_foundation_friend_set(data.friend);
     mesh_foundation_network_transmit_set(data.network_transmit);
@@ -320,7 +320,7 @@ void mesh_foundation_state_load(void){
 void mesh_foundation_state_store(void){
     mesh_persistent_foundation_t data;
     data.gatt_proxy       = mesh_foundation_gatt_proxy_get();
-    data.gatt_proxy       = mesh_foundation_beacon_get();
+    data.beacon           = mesh_foundation_beacon_get();
     data.default_ttl      = mesh_foundation_default_ttl_get();
     data.friend           = mesh_foundation_friend_get();
     data.network_transmit = mesh_foundation_network_transmit_get();
