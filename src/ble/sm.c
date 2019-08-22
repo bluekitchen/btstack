@@ -1364,10 +1364,10 @@ static int sm_passkey_used(stk_generation_method_t method);
 static int sm_just_works_or_numeric_comparison(stk_generation_method_t method);
 
 static void sm_sc_start_calculating_local_confirm(sm_connection_t * sm_conn){
-    if (sm_passkey_used(setup->sm_stk_generation_method)){
-        btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_next_w2_cmac_for_confirmation, (void *)(uintptr_t) sm_conn->sm_handle);
-    } else {
+    if (setup->sm_stk_generation_method == OOB){
         sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CONFIRMATION;
+    } else {
+        btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_next_w2_cmac_for_confirmation, (void *)(uintptr_t) sm_conn->sm_handle);
     }
 }
 
@@ -2296,8 +2296,8 @@ static void sm_run(void){
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 
             case SM_SC_SEND_PUBLIC_KEY_COMMAND: {
-                int trigger_user_response = 0;
-
+                int trigger_user_response   = 0;
+                int trigger_start_calculating_local_confirm = 0;
                 uint8_t buffer[65];
                 buffer[0] = SM_CODE_PAIRING_PUBLIC_KEY;
                 //
@@ -2319,7 +2319,8 @@ static void sm_run(void){
                     case NUMERIC_COMPARISON:
                         if (IS_RESPONDER(connection->sm_role)){
                             // responder
-                            sm_sc_start_calculating_local_confirm(connection);
+                            trigger_start_calculating_local_confirm = 1;
+                            connection->sm_engine_state = SM_SC_W4_LOCAL_NONCE;
                         } else {
                             // initiator
                             connection->sm_engine_state = SM_SC_W4_PUBLIC_KEY_COMMAND;
@@ -2356,9 +2357,12 @@ static void sm_run(void){
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                 sm_timeout_reset(connection);
 
-                // trigger user response after sending pdu
+                // trigger user response and calc confirm after sending pdu
                 if (trigger_user_response){
                     sm_trigger_user_response(connection);
+                }
+                if (trigger_start_calculating_local_confirm){
+                    sm_sc_start_calculating_local_confirm(connection);
                 }
                 break;
             }
