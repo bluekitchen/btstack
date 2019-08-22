@@ -668,6 +668,14 @@ static void mesh_lower_transport_send_segmented_pdu_once(mesh_transport_pdu_t *t
 }
 
 void mesh_lower_transport_send_pdu(mesh_pdu_t *pdu){
+    if (pdu->pdu_type == MESH_PDU_TYPE_NETWORK){
+        mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) pdu;
+        // network pdu without payload and minimal mic = 13 bytes
+        if (network_pdu->len <13){
+            printf("too short, %u\n", network_pdu->len);
+            while(1);
+        }
+    }
     btstack_linked_list_add_tail(&lower_transport_outgoing, (btstack_linked_item_t*) pdu);
     mesh_lower_transport_run();
 }
