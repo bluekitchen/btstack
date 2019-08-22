@@ -20,9 +20,17 @@ packet_types = [ "CMD =>", "EVT <=", "ACL =>", "ACL <="]
 
 def read_net_32(f):
     a = f.read(1)
+    if a == '':
+    	return -1
     b = f.read(1)
+    if b == '':
+    	return -1
     c = f.read(1)
+    if c == '':
+    	return -1
     d = f.read(1)
+    if d == '':
+    	return -1
     return ord(a) << 24 | ord(b) << 16 | ord(c) << 8 | ord(d)
 
 def as_hex(data):
@@ -45,6 +53,8 @@ with open (infile, 'rb') as fin:
 	try:
 		while True:
 			len     = read_net_32(fin)
+			if len < 0:
+				break
 			ts_sec  = read_net_32(fin)
 			ts_usec = read_net_32(fin)
 			type    = ord(fin.read(1))
