@@ -422,7 +422,8 @@ static void sm_handle_random_result_rau(void * arg);
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
 static void sm_cmac_message_start(const sm_key_t key, uint16_t message_len, const uint8_t * message, void (*done_callback)(uint8_t * hash));
 static void sm_ec_generate_new_key(void);
-static void sm_handle_random_result_sc_get_random(void * arg);
+static void sm_handle_random_result_sc_next_w2_cmac_for_confirmation(void * arg);
+static void sm_handle_random_result_sc_next_send_pairing_random(void * arg);
 static int sm_passkey_entry(stk_generation_method_t method);
 #endif
 static void sm_notify_client_status_reason(sm_connection_t * sm_conn, uint8_t status, uint8_t reason);
@@ -1364,7 +1365,7 @@ static int sm_just_works_or_numeric_comparison(stk_generation_method_t method);
 
 static void sm_sc_start_calculating_local_confirm(sm_connection_t * sm_conn){
     if (sm_passkey_used(setup->sm_stk_generation_method)){
-        btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_get_random, (void *)(uintptr_t) sm_conn->sm_handle);
+        btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_next_w2_cmac_for_confirmation, (void *)(uintptr_t) sm_conn->sm_handle);
     } else {
         sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CONFIRMATION;
     }
@@ -1376,7 +1377,7 @@ static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
         if (setup->sm_stk_generation_method == OOB){
             // generate Nb
             log_info("Generate Nb");
-            btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_get_random, (void *)(uintptr_t) sm_conn->sm_handle);
+            btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_next_send_pairing_random, (void *)(uintptr_t) sm_conn->sm_handle);
         } else {
             sm_conn->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;
         }
@@ -2903,24 +2904,21 @@ static void sm_handle_random_result_rau(void * arg){
 }
 
 #ifdef ENABLE_LE_SECURE_CONNECTIONS
-static void sm_handle_random_result_sc_get_random(void * arg){
+static void sm_handle_random_result_sc_next_send_pairing_random(void * arg){
     hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
     sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
     if (connection == NULL) return;
 
-    // OOB
-    if (setup->sm_stk_generation_method == OOB){
-        connection->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;
-        sm_run();
-        return;
-    } 
+    connection->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;
+    sm_run();
+}
 
-    // initiator & jw/nc -> send pairing random
-    if (connection->sm_role == 0 && sm_just_works_or_numeric_comparison(setup->sm_stk_generation_method)){
-        connection->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;
-    } else {
-        connection->sm_engine_state = SM_SC_W2_CMAC_FOR_CONFIRMATION;
-    }
+static void sm_handle_random_result_sc_next_w2_cmac_for_confirmation(void * arg){
+    hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
+    if (connection == NULL) return;
+
+    connection->sm_engine_state = SM_SC_W2_CMAC_FOR_CONFIRMATION;
     sm_run();
 }
 #endif
@@ -3638,7 +3636,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
                     case OOB:
                         // generate Nx
                         log_info("Generate Na");
-                        btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_get_random, (void*)(uintptr_t) sm_conn->sm_handle);
+                        btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_next_send_pairing_random, (void*)(uintptr_t) sm_conn->sm_handle);
                         break;
                 }
             }
@@ -3671,7 +3669,7 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             } else {
                 // initiator
                 if (sm_just_works_or_numeric_comparison(setup->sm_stk_generation_method)){
-                    btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_get_random, (void*)(uintptr_t) sm_conn->sm_handle);
+                    btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_next_send_pairing_random, (void*)(uintptr_t) sm_conn->sm_handle);
                 } else {
                     sm_conn->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;
                 }
