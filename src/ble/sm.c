@@ -1364,7 +1364,6 @@ static int sm_just_works_or_numeric_comparison(stk_generation_method_t method);
 
 static void sm_sc_start_calculating_local_confirm(sm_connection_t * sm_conn){
     if (sm_passkey_used(setup->sm_stk_generation_method)){
-        // sm_conn->sm_engine_state = SM_SC_W2_GET_RANDOM_A;
         btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_get_random, (void *)(uintptr_t) sm_conn->sm_handle);
     } else {
         sm_conn->sm_engine_state = SM_SC_W2_CMAC_FOR_CONFIRMATION;
@@ -1377,7 +1376,6 @@ static void sm_sc_state_after_receiving_random(sm_connection_t * sm_conn){
         if (setup->sm_stk_generation_method == OOB){
             // generate Nb
             log_info("Generate Nb");
-            // sm_conn->sm_engine_state = SM_SC_W2_GET_RANDOM_A;
             btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_get_random, (void *)(uintptr_t) sm_conn->sm_handle);
         } else {
             sm_conn->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;
@@ -3673,7 +3671,6 @@ static void sm_pdu_handler(uint8_t packet_type, hci_con_handle_t con_handle, uin
             } else {
                 // initiator
                 if (sm_just_works_or_numeric_comparison(setup->sm_stk_generation_method)){
-                    // sm_conn->sm_engine_state = SM_SC_W2_GET_RANDOM_A;
                     btstack_crypto_random_generate(&sm_crypto_random_request, setup->sm_local_nonce, 16, &sm_handle_random_result_sc_get_random, (void*)(uintptr_t) sm_conn->sm_handle);
                 } else {
                     sm_conn->sm_engine_state = SM_SC_SEND_PAIRING_RANDOM;
