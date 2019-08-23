@@ -125,12 +125,53 @@ static mesh_transport_pdu_t * lower_transport_outgoing_pdu;
 static mesh_network_pdu_t   * lower_transport_outgoing_segment;
 static uint16_t               lower_transport_outgoing_seg_o;
 
+static void mesh_lower_transport_process_segment_acknowledgement_message(mesh_network_pdu_t *network_pdu){
+    if (lower_transport_outgoing_pdu == NULL) return;
+
+    uint8_t * lower_transport_pdu     = mesh_network_pdu_data(network_pdu);
+    uint16_t seq_zero_pdu = big_endian_read_16(lower_transport_pdu, 1) >> 2;
+    uint16_t seq_zero_out = mesh_transport_seq(lower_transport_outgoing_pdu) & 0x1fff;
+    uint32_t block_ack = big_endian_read_32(lower_transport_pdu, 3);
+
+#ifdef LOG_LOWER_TRANSPORT
+    printf("[+] Segment Acknowledgment message with seq_zero %06x, block_ack %08x - outgoing seq %06x, block_ack %08x\n",
+           seq_zero_pdu, block_ack, seq_zero_out, lower_transport_outgoing_pdu->block_ack);
+#endif
+
+    if (block_ack == 0){
+        // If a Segment Acknowledgment message with the BlockAck field set to 0x00000000 is received,
+        // then the Upper Transport PDU shall be immediately cancelled and the higher layers shall be notified that
+        // the Upper Transport PDU has been cancelled.
+#ifdef LOG_LOWER_TRANSPORT
+        printf("[+] Block Ack == 0 => Abort\n");
+#endif
+        mesh_lower_transport_abort_transmission();
+        return;
+    }
+    if (seq_zero_pdu != seq_zero_out){
+
+#ifdef LOG_LOWER_TRANSPORT
+        printf("[!] Seq Zero doesn't match\n");
+#endif
+        return;
+    }
+
+    lower_transport_outgoing_pdu->block_ack &= ~block_ack;
+#ifdef LOG_LOWER_TRANSPORT
+    printf("[+] Updated block_ack %08x\n", lower_transport_outgoing_pdu->block_ack);
+#endif
+
+    if (lower_transport_outgoing_pdu->block_ack == 0){
+#ifdef LOG_LOWER_TRANSPORT
+        printf("[+] Sent complete\n");
+#endif
+        mesh_lower_transport_abort_transmission();
+    }
+}
+
 static void mesh_lower_transport_process_unsegmented_control_message(mesh_network_pdu_t *network_pdu){
     uint8_t * lower_transport_pdu     = mesh_network_pdu_data(network_pdu);
     uint8_t  opcode = lower_transport_pdu[0];
-    uint16_t seq_zero_pdu;
-    uint16_t seq_zero_out;
-    uint32_t block_ack;
 
 #ifdef LOG_LOWER_TRANSPORT
     printf("Unsegmented Control message, outgoing message %p, opcode %x\n", lower_transport_outgoing_pdu, opcode);
@@ -138,40 +179,7 @@ static void mesh_lower_transport_process_unsegmented_control_message(mesh_networ
 
     switch (opcode){
         case 0:
-            if (lower_transport_outgoing_pdu == NULL) break;
-            seq_zero_pdu = big_endian_read_16(lower_transport_pdu, 1) >> 2;
-            seq_zero_out = mesh_transport_seq(lower_transport_outgoing_pdu) & 0x1fff;
-            block_ack = big_endian_read_32(lower_transport_pdu, 3);
-#ifdef LOG_LOWER_TRANSPORT
-            printf("[+] Segment Acknowledgment message with seq_zero %06x, block_ack %08x - outgoing seq %06x, block_ack %08x\n",
-                   seq_zero_pdu, block_ack, seq_zero_out, lower_transport_outgoing_pdu->block_ack);
-#endif
-            if (block_ack == 0){
-                // If a Segment Acknowledgment message with the BlockAck field set to 0x00000000 is received,
-                // then the Upper Transport PDU shall be immediately cancelled and the higher layers shall be notified that
-                // the Upper Transport PDU has been cancelled.
-#ifdef LOG_LOWER_TRANSPORT
-                printf("[+] Block Ack == 0 => Abort\n");
-#endif
-                mesh_lower_transport_abort_transmission();
-                break;
-            }
-            if (seq_zero_pdu != seq_zero_out){
-#ifdef LOG_LOWER_TRANSPORT
-                printf("[!] Seq Zero doesn't match\n");
-#endif
-                break;
-            }
-            lower_transport_outgoing_pdu->block_ack &= ~block_ack;
-#ifdef LOG_LOWER_TRANSPORT
-            printf("[+] Updated block_ack %08x\n", lower_transport_outgoing_pdu->block_ack);
-#endif
-            if (lower_transport_outgoing_pdu->block_ack == 0){
-#ifdef LOG_LOWER_TRANSPORT
-                printf("[+] Sent complete\n");
-#endif
-                mesh_lower_transport_abort_transmission();
-            }
+            mesh_lower_transport_process_segment_acknowledgement_message(network_pdu);
             mesh_network_message_processed_by_higher_layer(network_pdu);
             break;
         default:
