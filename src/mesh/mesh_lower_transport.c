@@ -705,18 +705,17 @@ static void mesh_lower_transport_run(void){
         // segmented?
         if (mesh_network_segmented(network_pdu)){
             mesh_transport_pdu_t * transport_pdu = mesh_lower_transport_pdu_for_segmented_message(network_pdu);
-            if (!transport_pdu) return;
-            // start acknowledgment timer if inactive
-            if (transport_pdu->acknowledgement_timer_active == 0){
-                // - "The acknowledgment timer shall be set to a minimum of 150 + 50 * TTL milliseconds"
-                uint32_t timeout = 150 + 50 * mesh_network_ttl(network_pdu);
-                mesh_lower_transport_start_acknowledgment_timer(transport_pdu, timeout,
-                                                                &mesh_lower_transport_rx_ack_timeout);
+            if (transport_pdu) {
+                // start acknowledgment timer if inactive
+                if (transport_pdu->acknowledgement_timer_active == 0){
+                    // - "The acknowledgment timer shall be set to a minimum of 150 + 50 * TTL milliseconds"
+                    uint32_t timeout = 150 + 50 * mesh_network_ttl(network_pdu);
+                    mesh_lower_transport_start_acknowledgment_timer(transport_pdu, timeout, &mesh_lower_transport_rx_ack_timeout);
+                }
+                // restart incomplete timer
+                mesh_lower_transport_restart_incomplete_timer(transport_pdu, 10000, &mesh_lower_transport_rx_incomplete_timeout);
+                mesh_lower_transport_process_segment(transport_pdu, network_pdu);
             }
-            // restart incomplete timer
-            mesh_lower_transport_restart_incomplete_timer(transport_pdu, 10000,
-                                                          &mesh_lower_transport_rx_incomplete_timeout);
-            mesh_lower_transport_process_segment(transport_pdu, network_pdu);
             mesh_network_message_processed_by_higher_layer(network_pdu);
         } else {
             // control?
