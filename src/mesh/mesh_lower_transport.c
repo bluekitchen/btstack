@@ -110,7 +110,7 @@ void mesh_transport_set_dest(mesh_transport_pdu_t * transport_pdu, uint16_t dest
 // prototypes
 
 static void mesh_lower_transport_run(void);
-static void mesh_lower_transport_abort_transmission(void);
+static void mesh_lower_transport_outgoing_complete(void);
 
 // state
 static int                    lower_transport_retry_count;
@@ -145,7 +145,7 @@ static void mesh_lower_transport_process_segment_acknowledgement_message(mesh_ne
 #ifdef LOG_LOWER_TRANSPORT
         printf("[+] Block Ack == 0 => Abort\n");
 #endif
-        mesh_lower_transport_abort_transmission();
+        mesh_lower_transport_outgoing_complete();
         return;
     }
     if (seq_zero_pdu != seq_zero_out){
@@ -165,7 +165,7 @@ static void mesh_lower_transport_process_segment_acknowledgement_message(mesh_ne
 #ifdef LOG_LOWER_TRANSPORT
         printf("[+] Sent complete\n");
 #endif
-        mesh_lower_transport_abort_transmission();
+        mesh_lower_transport_outgoing_complete();
     }
 }
 
@@ -321,17 +321,12 @@ static void mesh_lower_transport_restart_incomplete_timer(mesh_transport_pdu_t *
 }
 
 static void mesh_lower_transport_outgoing_complete(void){
+    // stop ack timers
+    mesh_lower_transport_stop_acknowledgment_timer(lower_transport_outgoing_pdu);
+    // notify upper transport
     mesh_transport_pdu_t * pdu   = lower_transport_outgoing_pdu;
     lower_transport_outgoing_pdu = NULL;
     higher_layer_handler(MESH_TRANSPORT_PDU_SENT, MESH_TRANSPORT_STATUS_SEND_ABORT_BY_REMOTE, (mesh_pdu_t *) pdu);
-}
-
-static void mesh_lower_transport_abort_transmission(void){
-    // stop ack timers
-    mesh_lower_transport_stop_acknowledgment_timer(lower_transport_outgoing_pdu);
-
-    // notify upper transport
-    mesh_lower_transport_outgoing_complete();
 }
 
 static mesh_transport_pdu_t * mesh_lower_transport_pdu_for_segmented_message(mesh_network_pdu_t *network_pdu){
