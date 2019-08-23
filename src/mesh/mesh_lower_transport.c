@@ -668,6 +668,14 @@ static void mesh_lower_transport_send_segmented_pdu_once(mesh_transport_pdu_t *t
 }
 
 void mesh_lower_transport_send_pdu(mesh_pdu_t *pdu){
+    if (pdu->pdu_type == MESH_PDU_TYPE_NETWORK){
+        mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) pdu;
+        // network pdu without payload and minimal mic = 13 bytes
+        if (network_pdu->len <13){
+            printf("too short, %u\n", network_pdu->len);
+            while(1);
+        }
+    }
     btstack_linked_list_add_tail(&lower_transport_outgoing, (btstack_linked_item_t*) pdu);
     mesh_lower_transport_run();
 }
@@ -757,19 +765,17 @@ static void mesh_lower_transport_reset_network_pdus(btstack_linked_list_t *list)
 }
 
 void mesh_lower_transport_dump(void){
-    // static btstack_linked_list_t upper_transport_control;
-    // static btstack_linked_list_t upper_transport_access;
     mesh_lower_transport_dump_network_pdus("lower_transport_incoming", &lower_transport_incoming);
 }
 
 void mesh_lower_transport_reset(void){
-    // static btstack_linked_list_t upper_transport_control;
-    // static btstack_linked_list_t upper_transport_access;
     mesh_lower_transport_reset_network_pdus(&lower_transport_incoming);
     if (lower_transport_outgoing_pdu){
         mesh_transport_pdu_free(lower_transport_outgoing_pdu);
         lower_transport_outgoing_pdu = NULL;
     }
+    mesh_network_pdu_free(lower_transport_outgoing_segment);
+    lower_transport_outgoing_segment = NULL;
 }
 
 void mesh_lower_transport_init(){

@@ -1220,3 +1220,7 @@ void btstack_crypto_ecc_p256_set_key(const uint8_t * public_key, const uint8_t *
 int btstack_crypto_idle(void){
     return btstack_linked_list_empty(&btstack_crypto_operations);
 }
+void btstack_crypto_reset(void){
+    btstack_crypto_operations = NULL;
+    btstack_crypto_wait_for_hci_result = 0;
+}

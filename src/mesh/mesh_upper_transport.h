@@ -79,6 +79,10 @@ void mesh_upper_transport_send_access_pdu(mesh_pdu_t * pdu);
 
 void mesh_upper_transport_pdu_free(mesh_pdu_t * pdu);
 
+// test
+void mesh_upper_transport_dump(void);
+void mesh_upper_transport_reset(void);
+
 #ifdef __cplusplus
 } /* end of extern "C" */
 #endif
