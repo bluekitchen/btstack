@@ -257,6 +257,15 @@ static void mesh_proxy_create_nonce(uint8_t * nonce, const mesh_network_pdu_t * 
 
 // NID/IVI | obfuscated (CTL/TTL, SEQ (24), SRC (16) ), encrypted ( DST(16), TransportPDU), MIC(32 or 64)
 
+static void mesh_network_send_complete(mesh_network_pdu_t * network_pdu){
+#ifdef LOG_NETWORK
+    printf("TX-F-NetworkPDU (%p): ", network_pdu);
+    printf_hexdump(network_pdu->data, network_pdu->len);
+#endif
+    // notify higher layer
+    (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_SENT, network_pdu);
+}
+
 static void mesh_network_send_d(mesh_network_pdu_t * network_pdu){
 
 #ifdef LOG_NETWORK
@@ -331,10 +340,10 @@ static void mesh_network_send_a(void){
     mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(outgoing_pdu->netkey_index);
     if (!subnet) {
         mesh_crypto_active = 0;
-        // notify upper layer
         mesh_network_pdu_t * network_pdu = outgoing_pdu;
         outgoing_pdu = NULL;
-        (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_SENT, network_pdu);
+        // notify upper layer
+        mesh_network_send_complete(network_pdu);
         // run again
         mesh_network_run();
         return;
@@ -716,7 +725,7 @@ static void mesh_network_run(void){
         // done
         mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing_adv);
         // directly notify upper layer
-        (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_SENT, network_pdu);
+        mesh_network_send_complete(network_pdu);
 #endif
     }
 
@@ -793,7 +802,7 @@ static void mesh_adv_bearer_handle_network_event(uint8_t packet_type, uint16_t c
                             adv_bearer_network_pdu = NULL;
 
                             // notify upper layer
-                            (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_SENT, network_pdu);
+                            mesh_network_send_complete(network_pdu);
 
                             // check if more to send
                             mesh_network_run();
