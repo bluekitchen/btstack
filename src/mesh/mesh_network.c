@@ -550,7 +550,7 @@ static void process_network_pdu_validate_d(void * arg){
         // check cache
         uint32_t hash = mesh_network_cache_hash(incoming_pdu_decoded);
 #ifdef LOG_NETWORK
-        printf("RX-Hash (%p): %08x\n", incomding_pdu_decoded, hash);
+        printf("RX-Hash (%p): %08x\n", incoming_pdu_decoded, hash);
 #endif
         if (mesh_network_cache_find(hash)){
             // found in cache, drop
