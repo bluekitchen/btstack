@@ -669,15 +669,15 @@ void mesh_access_network_add_model_identifier(mesh_network_pdu_t * pdu, uint32_t
 
 // access message template
 
-mesh_network_pdu_t * mesh_access_setup_unsegmented_message(const mesh_access_message_t *template, ...){
-    mesh_network_pdu_t * network_pdu = mesh_access_network_init(template->opcode);
+mesh_network_pdu_t * mesh_access_setup_unsegmented_message(const mesh_access_message_t *message_template, ...){
+    mesh_network_pdu_t * network_pdu = mesh_access_network_init(message_template->opcode);
     if (!network_pdu) return NULL;
 
     va_list argptr;
-    va_start(argptr, template);
+    va_start(argptr, message_template);
 
     // add params
-    const char * format = template->format;
+    const char * format = message_template->format;
     uint16_t word;
     uint32_t longword;
     while (*format){
@@ -714,15 +714,15 @@ mesh_network_pdu_t * mesh_access_setup_unsegmented_message(const mesh_access_mes
     return network_pdu;
 }
 
-mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_message_t *template, ...){
-    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(template->opcode);
+mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_message_t *message_template, ...){
+    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(message_template->opcode);
     if (!transport_pdu) return NULL;
 
     va_list argptr;
-    va_start(argptr, template);
+    va_start(argptr, message_template);
 
     // add params
-    const char * format = template->format;
+    const char * format = message_template->format;
     uint16_t word;
     uint32_t longword;
     while (*format){

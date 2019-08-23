@@ -254,8 +254,8 @@ void mesh_access_network_add_uint32(mesh_network_pdu_t * pdu, uint16_t value);
 void mesh_access_network_add_model_identifier(mesh_network_pdu_t * pdu, uint32_t model_identifier);
 
 // message builder using template
-mesh_network_pdu_t * mesh_access_setup_unsegmented_message(const mesh_access_message_t *template, ...);
-mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_message_t *template, ...);
+mesh_network_pdu_t * mesh_access_setup_unsegmented_message(const mesh_access_message_t *message_template, ...);
+mesh_transport_pdu_t * mesh_access_setup_segmented_message(const mesh_access_message_t *message_template, ...);
 
 #ifdef __cplusplus
 } /* end of extern "C" */
