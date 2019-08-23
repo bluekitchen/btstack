@@ -488,7 +488,7 @@ static void process_network_pdu_validate_d(void * arg){
     uint8_t net_mic[8];
     btstack_crypto_ccm_get_authentication_value(&mesh_network_crypto_request.ccm, net_mic);
 #ifdef LOG_NETWORK
-    printf("RX-NetMIC: "); 
+    printf("RX-NetMIC (%p): ", incoming_pdu_decoded); 
     printf_hexdump(net_mic, net_mic_len);
 #endif
     // store in decoded pdu
@@ -496,7 +496,7 @@ static void process_network_pdu_validate_d(void * arg){
 
 #ifdef LOG_NETWORK
     uint8_t cypher_len  = incoming_pdu_decoded->len - 9 - net_mic_len;
-    printf("RX-Decrypted DST/TransportPDU: ");
+    printf("RX-Decrypted DST/TransportPDU (%p): ", incoming_pdu_decoded);
     printf_hexdump(&incoming_pdu_decoded->data[7], 2 + cypher_len);
 
     printf("RX-Decrypted: ");
@@ -506,7 +506,7 @@ static void process_network_pdu_validate_d(void * arg){
     // validate network mic
     if (memcmp(net_mic, &incoming_pdu_raw->data[incoming_pdu_decoded->len-net_mic_len], net_mic_len) != 0){
         // fail
-        printf("RX-NetMIC mismatch, try next key\n");
+        printf("RX-NetMIC mismatch, try next key (%p)\n", incoming_pdu_decoded);
         process_network_pdu_validate();
         return;
     }    
@@ -516,8 +516,8 @@ static void process_network_pdu_validate_d(void * arg){
 
 #ifdef LOG_NETWORK
     // match
-    printf("RX-NetMIC matches\n");
-    printf("RX-TTL: 0x%02x\n", incoming_pdu_decoded->data[1] & 0x7f);
+    printf("RX-NetMIC matches (%p)\n", incoming_pdu_decoded);
+    printf("RX-TTL (%p): 0x%02x\n", incoming_pdu_decoded, incoming_pdu_decoded->data[1] & 0x7f);
 #endif
 
     // set netkey_index
@@ -538,7 +538,9 @@ static void process_network_pdu_validate_d(void * arg){
         uint16_t dst = big_endian_read_16(incoming_pdu_decoded->data, 7);
         int valid = mesh_network_addresses_valid(ctl, src, dst);
         if (!valid){
-            printf("RX Address invalid\n");
+#ifdef LOG_NETWORK
+            printf("RX Address invalid (%p)\n", incoming_pdu_decoded);
+#endif
             btstack_memory_mesh_network_pdu_free(incoming_pdu_decoded);
             incoming_pdu_decoded = NULL;
             process_network_pdu_done();
@@ -548,11 +550,13 @@ static void process_network_pdu_validate_d(void * arg){
         // check cache
         uint32_t hash = mesh_network_cache_hash(incoming_pdu_decoded);
 #ifdef LOG_NETWORK
-        printf("RX-Hash: %08x\n", hash);
+        printf("RX-Hash (%p): %08x\n", incomding_pdu_decoded, hash);
 #endif
         if (mesh_network_cache_find(hash)){
             // found in cache, drop
-            printf("Found in cache -> drop packet\n");
+#ifdef LOG_NETWORK
+            printf("Found in cache -> drop packet (%p)\n", incoming_pdu_decoded);
+#endif
             btstack_memory_mesh_network_pdu_free(incoming_pdu_decoded);
             incoming_pdu_decoded = NULL;
             process_network_pdu_done();
@@ -561,6 +565,10 @@ static void process_network_pdu_validate_d(void * arg){
 
         // store in network cache
         mesh_network_cache_add(hash);
+
+#ifdef LOG_NETWORK
+            printf("RX-Validated (%p) - forward to lower transport\n", incoming_pdu_decoded);
+#endif
 
         // forward to lower transport layer. message is freed by call to mesh_network_message_processed_by_upper_layer
         mesh_network_pdu_t * decoded_pdu = incoming_pdu_decoded;
