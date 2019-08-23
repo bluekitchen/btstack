@@ -258,12 +258,18 @@ static void mesh_proxy_create_nonce(uint8_t * nonce, const mesh_network_pdu_t * 
 // NID/IVI | obfuscated (CTL/TTL, SEQ (24), SRC (16) ), encrypted ( DST(16), TransportPDU), MIC(32 or 64)
 
 static void mesh_network_send_complete(mesh_network_pdu_t * network_pdu){
+    if (network_pdu->flags & MESH_NETWORK_PDU_FLAGS_RELAY){
 #ifdef LOG_NETWORK
-    printf("TX-F-NetworkPDU (%p): ", network_pdu);
-    printf_hexdump(network_pdu->data, network_pdu->len);
+        printf("TX-F-NetworkPDU (%p): relay -> free packet\n", network_pdu);
 #endif
-    // notify higher layer
-    (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_SENT, network_pdu);
+        mesh_network_pdu_free(network_pdu);
+    } else {
+#ifdef LOG_NETWORK
+        printf("TX-F-NetworkPDU (%p): notify lower transport\n", network_pdu);
+#endif
+        // notify higher layer
+        (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_SENT, network_pdu);
+    }
 }
 
 static void mesh_network_send_d(mesh_network_pdu_t * network_pdu){
