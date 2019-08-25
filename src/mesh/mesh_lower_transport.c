@@ -658,23 +658,12 @@ static void mesh_lower_transport_setup_block_ack(mesh_transport_pdu_t *transport
     }
 }
 
-static void mesh_lower_transport_send_segmented_pdu_once(mesh_transport_pdu_t *transport_pdu){
-
-    if (lower_transport_retry_count == 0){
-        printf("[!] Upper transport, send segmented pdu failed, retries exhausted\n");
-        mesh_lower_transport_outgoing_complete();
-        return;
-    }
-
-    // chop into chunks
+static void mesh_lower_transport_send_current_segmented_pdu_once(void){
     printf("[+] Lower Transport, send segmented pdu (retry count %u)\n", lower_transport_retry_count);
     lower_transport_retry_count--;
 
-    // setup
-    lower_transport_outgoing_pdu     = transport_pdu;
-    lower_transport_outgoing_seg_o   = 0;
-
     // start sending
+    lower_transport_outgoing_seg_o   = 0;
     mesh_lower_transport_send_next_segment();
 }
 
@@ -697,8 +686,16 @@ static void mesh_lower_transport_segement_transmission_timeout(btstack_timer_sou
     printf("[+] Lower transport, segment transmission timer fired for %p\n", lower_transport_outgoing_pdu);
 #endif
     lower_transport_outgoing_pdu->acknowledgement_timer_active = 0;
+
+    // once more?
+    if (lower_transport_retry_count == 0){
+        printf("[!] Upper transport, send segmented pdu failed, retries exhausted\n");
+        mesh_lower_transport_outgoing_complete();
+        return;
+    }
+
     // send remaining segments again
-    mesh_lower_transport_send_segmented_pdu_once(lower_transport_outgoing_pdu);
+    mesh_lower_transport_send_current_segmented_pdu_once();
 }
 
 static void mesh_lower_transport_run(void){
@@ -749,8 +746,9 @@ static void mesh_lower_transport_run(void){
                 transport_pdu = (mesh_transport_pdu_t *) pdu;
                 // start sending segmented pdu
                 lower_transport_retry_count = 2;
+                lower_transport_outgoing_pdu = transport_pdu;
                 mesh_lower_transport_setup_block_ack(transport_pdu);
-                mesh_lower_transport_send_segmented_pdu_once(transport_pdu);
+                mesh_lower_transport_send_current_segmented_pdu_once();
                 break;
             default:
                 break;
