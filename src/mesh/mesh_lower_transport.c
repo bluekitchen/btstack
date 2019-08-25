@@ -263,7 +263,7 @@ static void mesh_lower_transport_stop_incomplete_timer(mesh_transport_pdu_t *tra
 }
 
 // stops timers and updates reassembly engine
-static void mesh_lower_transport_segmented_message_complete(mesh_transport_pdu_t *transport_pdu){
+static void mesh_lower_transport_rx_segmented_message_complete(mesh_transport_pdu_t *transport_pdu){
     // set flag
     transport_pdu->message_complete = 1;
     // stop timers
@@ -290,7 +290,7 @@ static void mesh_lower_transport_rx_incomplete_timeout(btstack_timer_source_t *t
 #ifdef LOG_LOWER_TRANSPORT
     printf("mesh_transport_rx_incomplete_timeout for %p - give up\n", transport_pdu);
 #endif
-    mesh_lower_transport_segmented_message_complete(transport_pdu);
+    mesh_lower_transport_rx_segmented_message_complete(transport_pdu);
     // free message
     btstack_memory_mesh_transport_pdu_free(transport_pdu);
 }
@@ -311,7 +311,7 @@ static void mesh_lower_transport_tx_restart_segment_transmission_timer(void){
     // - "This timer shall be set to a minimum of 200 + 50 * TTL milliseconds."
     uint32_t timeout = 200 + 50 * mesh_transport_ttl(lower_transport_outgoing_pdu);
     if (lower_transport_outgoing_pdu->acknowledgement_timer_active){
-        btstack_run_loop_remove_timer(&lower_transport_outgoing_pdu->incomplete_timer);
+        btstack_run_loop_remove_timer(&lower_transport_outgoing_pdu->acknowledgement_timer);
     }
 
 #ifdef LOG_LOWER_TRANSPORT
@@ -340,8 +340,9 @@ static void mesh_lower_transport_restart_incomplete_timer(mesh_transport_pdu_t *
 }
 
 static void mesh_lower_transport_outgoing_complete(void){
-    // stop ack timers
+    // stop timers
     mesh_lower_transport_stop_acknowledgment_timer(lower_transport_outgoing_pdu);
+    mesh_lower_transport_stop_incomplete_timer(lower_transport_outgoing_pdu);
     // notify upper transport
     mesh_transport_pdu_t * pdu   = lower_transport_outgoing_pdu;
     lower_transport_outgoing_pdu = NULL;
@@ -478,7 +479,7 @@ static void mesh_lower_transport_process_segment( mesh_transport_pdu_t * transpo
 #endif
 
     // mark as done
-    mesh_lower_transport_segmented_message_complete(transport_pdu);
+    mesh_lower_transport_rx_segmented_message_complete(transport_pdu);
 
     // store block ack in peer info
     mesh_peer_t * peer = mesh_peer_for_addr(mesh_transport_src(transport_pdu));
