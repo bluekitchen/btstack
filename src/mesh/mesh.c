@@ -120,6 +120,15 @@ typedef struct {
 } mesh_persistent_foundation_t;
 
 typedef struct {
+    uint16_t publish_address;
+    uint16_t appkey_index;
+    uint8_t  friendship_credential_flag;
+    uint8_t  publish_period;
+    uint8_t  publish_ttl;
+    uint8_t  publish_retransmit;
+} mesh_persistent_publication_t;
+
+typedef struct {
     uint32_t iv_index;
     uint32_t seq_number;
 } iv_index_and_sequence_number_t;
@@ -469,13 +478,22 @@ static uint32_t mesh_model_publication_tag_for_index(uint16_t internal_model_id)
 }
 
 static void mesh_model_load_publication(mesh_model_t * mesh_model){
-    if (mesh_model->publication_model == NULL) return;
+    mesh_publication_model_t * publication = mesh_model->publication_model;
+    if (publication == NULL) return;
 
+    mesh_persistent_publication_t data;
     uint32_t tag = mesh_model_publication_tag_for_index(mesh_model->mid);
-    btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) mesh_model->publication_model, sizeof(mesh_publication_model_t));
+    btstack_tlv_singleton_impl->get_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(mesh_persistent_publication_t));
+
+    publication->address                    = data.publish_address;
+    publication->appkey_index               = data.appkey_index;
+    publication->friendship_credential_flag = data.friendship_credential_flag;
+    publication->ttl                        = data.publish_ttl;
+    publication->period                     = data.publish_period;
+    publication->retransmit                 = data.publish_retransmit;
 
     // increase ref counts for current virtual publicataion address
-    uint16_t src = mesh_model->publication_model->address;
+    uint16_t src = publication->address;
     if (mesh_network_address_virtual(src)){
         mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_pseudo_dst(src);
         if (virtual_address){
@@ -487,9 +505,18 @@ static void mesh_model_load_publication(mesh_model_t * mesh_model){
 }
 
 void mesh_model_store_publication(mesh_model_t * mesh_model){
-    if (mesh_model->publication_model == NULL) return;
+    mesh_publication_model_t * publication = mesh_model->publication_model;
+    if (publication == NULL) return;
+
+    mesh_persistent_publication_t data;
+    data.publish_address            = publication->address;
+    data.appkey_index               = publication->appkey_index;
+    data.friendship_credential_flag = publication->friendship_credential_flag;
+    data.publish_ttl                = publication->ttl;
+    data.publish_period             = publication->period;
+    data.publish_retransmit         = publication->retransmit;
     uint32_t tag = mesh_model_publication_tag_for_index(mesh_model->mid);
-    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) mesh_model->publication_model, sizeof(mesh_publication_model_t));
+    btstack_tlv_singleton_impl->store_tag(btstack_tlv_singleton_context, tag, (uint8_t *) &data, sizeof(mesh_persistent_publication_t));
 }
 
 static void mesh_model_delete_publication(mesh_model_t * mesh_model){
