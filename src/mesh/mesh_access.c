@@ -932,9 +932,9 @@ static void mesh_model_publication_setup_publication(mesh_publication_model_t * 
     }
 }
 
+// assumes retransmit_count is valid
 static void mesh_model_publication_setup_retransmission(mesh_publication_model_t * publication_model, uint32_t now){
-    uint8_t num_retransmits = mesh_model_publication_retransmit_count(publication_model->retransmit);
-    if (num_retransmits == 0) return;
+    if (publication_model->retransmit_count == 0) return;
 
     // calc next retransmit time
     uint32_t retransmission_ms = now + mesh_model_publication_retransmission_period_ms(publication_model->retransmit);
