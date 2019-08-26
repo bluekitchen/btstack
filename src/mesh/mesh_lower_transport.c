@@ -112,7 +112,7 @@ void mesh_transport_set_dest(mesh_transport_pdu_t * transport_pdu, uint16_t dest
 static void mesh_lower_transport_run(void);
 static void mesh_lower_transport_outgoing_complete(void);
 static void mesh_lower_transport_network_pdu_sent(mesh_network_pdu_t *network_pdu);
-static void mesh_lower_transport_segement_transmission_timeout(btstack_timer_source_t * ts);
+static void mesh_lower_transport_segment_transmission_timeout(btstack_timer_source_t * ts);
 
 // state
 static int                    lower_transport_retry_count;
@@ -319,7 +319,7 @@ static void mesh_lower_transport_tx_restart_segment_transmission_timer(void){
 #endif
 
     btstack_run_loop_set_timer(&lower_transport_outgoing_pdu->acknowledgement_timer, timeout);
-    btstack_run_loop_set_timer_handler(&lower_transport_outgoing_pdu->acknowledgement_timer, &mesh_lower_transport_segement_transmission_timeout);
+    btstack_run_loop_set_timer_handler(&lower_transport_outgoing_pdu->acknowledgement_timer, &mesh_lower_transport_segment_transmission_timeout);
     btstack_run_loop_add_timer(&lower_transport_outgoing_pdu->acknowledgement_timer);
     lower_transport_outgoing_pdu->acknowledgement_timer_active = 1;
 }
@@ -340,6 +340,10 @@ static void mesh_lower_transport_restart_incomplete_timer(mesh_transport_pdu_t *
 }
 
 static void mesh_lower_transport_outgoing_complete(void){
+#ifdef LOG_LOWER_TRANSPORT
+    printf("mesh_lower_transport_outgoing_complete %p, ack timer active %u, incomplete active %u\n", lower_transport_outgoing_pdu,
+        lower_transport_outgoing_pdu->acknowledgement_timer_active, lower_transport_outgoing_pdu->incomplete_timer_active);
+#endif
     // stop timers
     mesh_lower_transport_stop_acknowledgment_timer(lower_transport_outgoing_pdu);
     mesh_lower_transport_stop_incomplete_timer(lower_transport_outgoing_pdu);
@@ -681,7 +685,7 @@ void mesh_lower_transport_send_pdu(mesh_pdu_t *pdu){
     mesh_lower_transport_run();
 }
 
-static void mesh_lower_transport_segement_transmission_timeout(btstack_timer_source_t * ts){
+static void mesh_lower_transport_segment_transmission_timeout(btstack_timer_source_t * ts){
     UNUSED(ts);
 #ifdef LOG_LOWER_TRANSPORT
     printf("[+] Lower transport, segment transmission timer fired for %p\n", lower_transport_outgoing_pdu);
@@ -690,7 +694,7 @@ static void mesh_lower_transport_segement_transmission_timeout(btstack_timer_sou
 
     // once more?
     if (lower_transport_retry_count == 0){
-        printf("[!] Upper transport, send segmented pdu failed, retries exhausted\n");
+        printf("[!] Lower transport, send segmented pdu failed, retries exhausted\n");
         mesh_lower_transport_outgoing_complete();
         return;
     }
