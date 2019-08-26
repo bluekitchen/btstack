@@ -981,7 +981,6 @@ static void mesh_model_publication_publish_now_model(mesh_model_t * mesh_model){
 }
 
 static void mesh_model_publication_run(btstack_timer_source_t * ts){
-    UNUSED(ts);
 
     uint32_t now = btstack_run_loop_get_time_ms();
 
@@ -1062,9 +1061,16 @@ static void mesh_model_publication_run(btstack_timer_source_t * ts){
         }
     }
 
-    // set timer
+    // remove current timer if active
+    if (ts == NULL){
+        btstack_run_loop_remove_timer(&mesh_access_publication_timer);
+
+    }
+
+    // new timeout?
     if (next_timeout_ms == 0) return;
 
+    // set timer
     btstack_run_loop_set_timer(&mesh_access_publication_timer, next_timeout_ms);
     btstack_run_loop_set_timer_handler(&mesh_access_publication_timer, mesh_model_publication_run);
     btstack_run_loop_add_timer(&mesh_access_publication_timer);
