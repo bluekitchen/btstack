@@ -923,7 +923,7 @@ static void mesh_model_publication_setup_publication(mesh_publication_model_t * 
     publication_model->retransmit_count = mesh_model_publication_retransmit_count(publication_model->retransmit);
 
     // schedule next publication or retransmission
-    uint32_t publication_period_ms = mesh_access_transitions_step_ms_from_gdtt(publication_model->period);
+    uint32_t publication_period_ms = mesh_access_time_gdtt2ms(publication_model->period);
 
     // set next publication
     if (publication_period_ms != 0){
