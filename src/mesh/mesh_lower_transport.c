@@ -754,7 +754,7 @@ static void mesh_lower_transport_run(void){
                 lower_transport_outgoing_pdu = transport_pdu;
                 mesh_lower_transport_setup_block_ack(transport_pdu);
                 mesh_lower_transport_send_current_segmented_pdu_once();
-                break;
+                return;
             default:
                 break;
         }
