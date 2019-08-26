@@ -3957,11 +3957,11 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
 #endif
 
 #ifdef ENABLE_BLE
-#ifdef ENABLE_LE_PERIPHERAL
     if (IS_COMMAND(packet, hci_le_set_random_address)){
         hci_stack->le_random_address_set = 1;
         reverse_bd_addr(&packet[3], hci_stack->le_random_address);
     }
+#ifdef ENABLE_LE_PERIPHERAL
     if (IS_COMMAND(packet, hci_le_set_advertise_enable)){
         hci_stack->le_advertisements_active = packet[3];
     }
