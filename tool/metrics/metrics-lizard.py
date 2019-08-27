@@ -19,12 +19,12 @@ targets = {}
 targets['CCN']   = 10
 targets['PARAM'] = 7
 
-def metric_count(name):
+def metric_sum(name, value):
     global metrics
-    value = 0
+    old = 0
     if name in metrics:
-        value = metrics[name]
-    metrics[name] = value + 1
+        old = metrics[name]
+    metrics[name] = old + value
 
 
 def metric_list(name, item):
@@ -42,17 +42,18 @@ def metric_max(name, max):
             return
     metrics[name] = max
 
-def metric_measure(metric_name, functino_name, actual):
+def metric_measure(metric_name, function_name, actual):
     metric_max(metric_name + '_MAX', actual)
     if metric_name in targets:
+        metric_sum(metric_name + '_SUM', actual)
         if actual > targets[metric_name]:
-            metric_count(metric_name + '_DEVIATIONS')
-            metric_list(metric_name + '_LIST', functino_name)
+            metric_sum(metric_name + '_DEVIATIONS', 1)
+            metric_list(metric_name + '_LIST', function_name)
 
 def analyze_file(path):
     l = lizard.analyze_file(path)
     for f in l.function_list:
-        metric_count('FUNC')
+        metric_sum('FUNC', 1)
         metric_measure('PARAM', f.name, f.parameter_count)
         metric_measure('CCN',   f.name, f.cyclomatic_complexity )
 
@@ -75,10 +76,16 @@ for path in folders:
 
 print ("\nResult:")
 
+num_funcs = metrics['FUNC']
 for key,value in sorted(metrics.items()):
     if key.endswith('LIST'):
         continue
-    print ('- %-20s: %4u' % (key, value))
+    if key.endswith('_SUM'):
+        average = 1.0 * value / num_funcs
+        metric = key.replace('_SUM','_AVERAGE')
+        print ('- %-20s: %4.3f' % (metric, average))
+    else:
+        print ('- %-20s: %5u' % (key, value))
 
 for key,value in sorted(metrics.items()):
     if not key.endswith('LIST'):
