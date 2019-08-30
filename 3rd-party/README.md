@@ -1,0 +1,14 @@
+# List of Third-Party Libaries
+
+This folder contains all third-party libarires used by BTstack. The following table lists their source, license type, and what it is used for.
+
+Library                                                                                                         | License       | Used             | Notes
+----------------------------------------------------------------------------------------------------------------|---------------|------------------|----------
+[Android SBC Codec](https://android.googlesource.com/platform/external/bluetooth/bluedroid/+/master/embdrv/sbc) | Apache 2.0    | HFP WBS, A2DP    | optimized audio codec
+[hxcmod-player](https://github.com/jfdelnero/HxCModPlayer)                                                      | Custom        | A2DP Source Demo | mod music player
+[lwIP](http://savannah.nongnu.org/projects/lwip/)                                                               | BSD 3-Clause  | PAN Demo         | complete network stack
+[md5](http://openwall.info/wiki/people/solar/software/public-domain-source-code/md5)                            | Public Domain | PBAP             | cryptographic hash function
+[micro-ecc](https://github.com/kmackay/micro-ecc)                                                                    | BSD 2-Clause  | LE SC, Mesh      | elliptic curve library
+[segger-rtt](https://www.segger.com/products/debug-probes/j-link/technology/about-real-time-transfer/)          | BSD 3-Clause  | HCI PacketLog    | high-speed logging with SEGGER J-Link debug probes (development)
+[tinydir](https://github.com/cxong/tinydir)                                                                     | BSD 2-Clause  | GAP Bonding      | get a directory listing on POSIX + Windwows systems
+[Yxml](https://dev.yorhel.nl/yxml)                                                                              | MIT           | PBAP             | minimal stream XML parser
