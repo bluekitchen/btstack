@@ -18,7 +18,7 @@ BTstack is free for non-commercial use. However, for commercial use, <a href="ma
 
 **Documentation:** [HTML](http://bluekitchen-gmbh.com/btstack/develop/), [PDF](http://bluekitchen-gmbh.com/btstack_develop.pdf)
 
-**Third-party libraries (FOSS):** [List of used libaries and their licenses](https://bluekitchen-gmbh.com/btstack/3rd-party/)
+**Third-party libraries (FOSS):** [List of used libraries and their licenses](https://github.com/bluekitchen/btstack/blob/develop/3rd-party/README.md)
 
 **Discussion and Community Support:** [BTstack Google Group](http://groups.google.com/group/btstack-dev)
 
