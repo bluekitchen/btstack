@@ -18,12 +18,15 @@ targets = {}
 
 targets['PATH']   = 1000
 targets['GOTO']   = 0
-targets['CCN']    = 10
+targets['CCN']    = 20
 targets['CALLS']  = 12
 targets['PARAM']  = 7
 targets['STMT']   = 100
 targets['LEVEL']  = 6
-targets['RETURN'] = 6
+targets['RETURN'] = 1
+
+excluded_functions = [
+]
 
 def metric_sum(name, value):
     global metrics
@@ -54,10 +57,13 @@ def metric_measure(metric_name, function_name, actual):
         metric_sum(metric_name + '_SUM', actual)
         if actual > targets[metric_name]:
             metric_sum(metric_name + '_DEVIATIONS', 1)
-            metric_list(metric_name + '_LIST', function_name + '(%u)' % actual)
+            # metric_list(metric_name + '_LIST', function_name + '(%u)' % actual)
+            metric_list(metric_name + '_LIST', function_name)
 
 
 def analyze_folders(btstack_root, folders):
+    global excluded_functions
+
     # File,Name,"'goto' keyword count (raw source)","Return points","Statement count (raw source)(local)",
     # "Statement count (raw source)(cumulative)","Comment density","McCabe complexity (raw source)",
     # "Number of paths through the function","No. different functions called","Function Parameters",
@@ -65,7 +71,7 @@ def analyze_folders(btstack_root, folders):
     fields = [ 'file','function','GOTO','RETURN','_','STMT' ,'_','CCN','PATH','CALLS','PARAM','LEVEL','_','_','_']
 
     # for now, just read the file
-    with open("btstack.tsv") as fd:
+    with open("metrics.tsv") as fd:
         rd = csv.reader(fd, delimiter="\t")
         last_function_name = ''
         for row in rd:
@@ -73,7 +79,7 @@ def analyze_folders(btstack_root, folders):
             function_metrics = {}
             for key, value in zip(fields, row):
                 if key == 'file':
-                    file = value
+                    file = value.replace('../../','')
                     continue
                 if key == 'function':
                     function_name = value
@@ -83,11 +89,15 @@ def analyze_folders(btstack_root, folders):
                 function_metrics[key] = value
             if file.endswith('.h'):
                 continue
-            if function_name != last_function_name:
-                last_function_name = function_name
+            qualified_function_name = file+':'+function_name
+            if qualified_function_name != last_function_name:
+                last_function_name = qualified_function_name
                 metric_sum('FUNC', 1)
+                # exclude functions
+                if qualified_function_name in excluded_functions:
+                    continue
             for key,value in function_metrics.items():
-                metric_measure(key, function_name, int(function_metrics[key]))
+                metric_measure(key, qualified_function_name, int(function_metrics[key]))
 
 def analyze(folders):
     # print ("\nAnalyzing:")
@@ -115,6 +125,22 @@ def list_metrics():
         else:
             print ('- %-20s: %5u' % (key, value))
 
+def list_metrics_table():
+    row = "%-11s |%11s |%11s |%11s"
+
+    print( row % ('Name', 'Target', 'Deviations', 'Max value'))
+    print("------------|------------|------------|------------")
+
+    ordered_metrics = [ 'PATH', 'GOTO', 'CCN', 'CALLS', 'PARAM', 'STMT', 'LEVEL', 'RETURN', 'FUNC'];
+    for metric_name in ordered_metrics:
+        if metric_name in targets:
+            target = targets[metric_name]
+            deviations = metrics[metric_name + '_DEVIATIONS']
+            max = metrics[metric_name + '_MAX']
+            print ( row % ( metric_name, target, deviations, max))
+        else:
+            print ( row % ( metric_name, '', '', ''))
+
 def list_deviations():
     global metrics
     for key,value in sorted(metrics.items()):
@@ -124,6 +150,7 @@ def list_deviations():
         print ('\n'.join(value))
  
 analyze(folders)
-list_targets()
-list_metrics()
-list_deviations()
+list_metrics_table()
+# list_targets()
+# list_metrics()
+# list_deviations()
