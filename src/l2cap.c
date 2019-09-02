@@ -752,7 +752,14 @@ static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l
 #endif
 
 static uint16_t l2cap_next_local_cid(void){
-    return local_source_cid++;
+    do {
+        if (local_source_cid == 0xffff) {
+            local_source_cid = 0x40;
+        } else {
+            local_source_cid++;
+        }
+    } while (l2cap_get_channel_for_local_cid(local_source_cid) != NULL);
+    return local_source_cid;
 }
 
 static uint8_t l2cap_next_sig_id(void){
