@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Fixed
+
+### Added
+- gap: allow to reject GAP classic connection via gap_register_classic_connection_filter
+
+## Changed
+
+
+## Changes August 2019
+
+### Fixed
 - POSIX, WICED, Windows, FreeRTOS run loops: handle time_ms overrun after 49 days
 - RFCOMM: accept incoming L2CAP connection in Basic mode if ERTM is enabled but not requested for this connection
 - RFCOMM: limit RFCOMM MTU by local L2CAP MTU for outgoing connections (only revelvant for ERTM)

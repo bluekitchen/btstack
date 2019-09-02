@@ -2106,7 +2106,7 @@ static void event_handler(uint8_t *packet, int size){
             reverse_bd_addr(&packet[2], addr);
             if (hci_stack->gap_classic_accept_callback != NULL){
                 if ((*hci_stack->gap_classic_accept_callback)(addr) == 0){
-                    hci_stack->decline_reason = 0x0d;
+                    hci_stack->decline_reason = ERROR_CODE_CONNECTION_REJECTED_DUE_TO_UNACCEPTABLE_BD_ADDR;
                     bd_addr_copy(hci_stack->decline_addr, addr);
                     break;
                 }
@@ -2122,7 +2122,7 @@ static void event_handler(uint8_t *packet, int size){
             }
             if (!conn) {
                 // CONNECTION REJECTED DUE TO LIMITED RESOURCES (0X0D)
-                hci_stack->decline_reason = 0x0d;
+                hci_stack->decline_reason = ERROR_CODE_CONNECTION_REJECTED_DUE_TO_LIMITED_RESOURCES;
                 bd_addr_copy(hci_stack->decline_addr, addr);
                 break;
             }
