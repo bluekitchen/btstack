@@ -305,6 +305,9 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t  addr, bd_addr_
     return NULL;
 }
 
+inline static void connectionClearAuthenticationFlags(hci_connection_t * conn, hci_authentication_flags_t flags){
+    conn->authentication_flags = (hci_authentication_flags_t)(conn->authentication_flags & ~flags);
+}
 
 #ifdef ENABLE_CLASSIC
 
@@ -347,11 +350,6 @@ static void hci_connection_timestamp(hci_connection_t *connection){
 
 inline static void connectionSetAuthenticationFlags(hci_connection_t * conn, hci_authentication_flags_t flags){
     conn->authentication_flags = (hci_authentication_flags_t)(conn->authentication_flags | flags);
-}
-
-
-inline static void connectionClearAuthenticationFlags(hci_connection_t * conn, hci_authentication_flags_t flags){
-    conn->authentication_flags = (hci_authentication_flags_t)(conn->authentication_flags & ~flags);
 }
 
 /**
