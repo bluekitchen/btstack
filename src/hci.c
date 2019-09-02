@@ -2104,6 +2104,14 @@ static void event_handler(uint8_t *packet, int size){
             break;
         case HCI_EVENT_CONNECTION_REQUEST:
             reverse_bd_addr(&packet[2], addr);
+            if (hci_stack->gap_classic_accept_callback != NULL){
+                if ((*hci_stack->gap_classic_accept_callback)(addr) == 0){
+                    hci_stack->decline_reason = 0x0d;
+                    bd_addr_copy(hci_stack->decline_addr, addr);
+                    break;
+                }
+            } 
+
             // TODO: eval COD 8-10
             link_type = packet[11];
             log_info("Connection_incoming: %s, type %u", bd_addr_to_str(addr), link_type);
@@ -5101,6 +5109,11 @@ HCI_STATE hci_get_state(void){
     return hci_stack->state;
 }
 
+#ifdef ENABLE_CLASSIC
+void gap_register_classic_connection_filter(int (*accept_callback)(bd_addr_t addr)){
+    hci_stack->gap_classic_accept_callback = accept_callback;
+}
+#endif
 
 /**
  * @brief Set callback for Bluetooth Hardware Error

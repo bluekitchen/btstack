@@ -176,6 +176,13 @@ void gap_set_bondable_mode(int enabled);
  */
 int gap_get_bondable_mode(void);
 
+/**
+ * @brief Register filter for rejecting classic connections. Callback will return 1 accept connection, 0 on reject.
+ */
+
+void gap_register_classic_connection_filter(int (*accept_callback)(bd_addr_t addr));
+
+
 /* Configure Secure Simple Pairing */
 
 /**

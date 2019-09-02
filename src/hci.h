@@ -730,6 +730,11 @@ typedef struct {
     /* callbacks for events */
     btstack_linked_list_t event_handlers;
 
+#ifdef ENABLE_CLASSIC
+    /* callback for reject classic connection */
+    int (*gap_classic_accept_callback)(bd_addr_t addr);
+#endif
+
     // hardware error callback
     void (*hardware_error_callback)(uint8_t error);
 
@@ -910,7 +915,6 @@ typedef struct {
     // address and address_type of active create connection command (ACL, SCO, LE)
     bd_addr_t      outgoing_addr;
     bd_addr_type_t outgoing_addr_type;
-
 } hci_stack_t;
 
 
