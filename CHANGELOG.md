@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 ### Added
-- gap: allow to reject GAP classic connection via gap_register_classic_connection_filter
+- GAP: allow to reject GAP classic connection via gap_register_classic_connection_filter
+- GAP: support reading RSSI for Classic+LE using gap_read_rssi. Emits GAP_EVENT_RSSI_MEASUREMENT
 
 ## Changed
 

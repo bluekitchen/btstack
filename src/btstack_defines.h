@@ -1046,6 +1046,14 @@ typedef uint8_t sm_key_t[16];
  */
 #define GAP_EVENT_INQUIRY_COMPLETE                            0xE4
 
+/**
+ * @format H1
+ * @param con_handle
+ * @param rssi (signed integer -127..127)
+ * @note Classic: rssi is in dB relative to Golden Receive Power Range
+ * @note LE: rssi is absolute dBm
+ */
+#define GAP_EVENT_RSSI_MEASUREMENT                            0xE5
 
 // Meta Events, see below for sub events
 #define HCI_EVENT_HSP_META                                 0xE8

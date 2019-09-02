@@ -554,6 +554,13 @@ int gap_inquiry_stop(void);
 int gap_remote_name_request(bd_addr_t addr, uint8_t page_scan_repetition_mode, uint16_t clock_offset);
 
 /**
+ * @brief Read RSSI
+ * @param con_handle
+ * @events: GAP_EVENT_RSSI_MEASUREMENT
+ */
+int gap_read_rssi(hci_con_handle_t con_handle);
+
+/**
  * @brief Legacy Pairing Pin Code Response
  * @param addr
  * @param pin

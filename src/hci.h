@@ -197,6 +197,9 @@ typedef enum {
 
     // connection status
     CONNECTION_ENCRYPTED           = 0x8000,
+
+    // errands
+    READ_RSSI                      = 0x10000,
 } hci_authentication_flags_t;
 
 /**
@@ -512,11 +515,11 @@ typedef struct {
     btstack_timer_source_t timeout_sco;
 #endif /* ENABLE_CLASSIC */
 
-    // errands
+    // authentication and other errands
     uint32_t authentication_flags;
 
     btstack_timer_source_t timeout;
-    
+
     // timeout in system ticks (HAVE_EMBEDDED_TICK) or milliseconds (HAVE_EMBEDDED_TIME_MS)
     uint32_t timestamp;
 

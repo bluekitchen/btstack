@@ -1916,6 +1916,15 @@ static void event_handler(uint8_t *packet, int size){
                              hci_stack->sco_data_packet_length, hci_stack->sco_packets_total_num); 
                 }
             }
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_rssi)){
+                if (packet[5] == 0){
+                    uint8_t event[5];
+                    event[0] = GAP_EVENT_RSSI_MEASUREMENT;
+                    event[1] = 3;
+                    memcpy(&event[2], &packet[6], 3);
+                    hci_emit_event(event, sizeof(event), 1);
+                }
+            }
 #ifdef ENABLE_BLE
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_read_buffer_size)){
                 hci_stack->le_data_packets_length = little_endian_read_16(packet, 6);
@@ -3581,6 +3590,12 @@ static void hci_run(void){
         // no further commands if connection is about to get shut down
         if (connection->state == SENT_DISCONNECT) continue;
 
+        if (connection->authentication_flags & READ_RSSI){
+            connectionClearAuthenticationFlags(connection, READ_RSSI);
+            hci_send_cmd(&hci_read_rssi, connection->con_handle);
+            return;
+        }
+
 #ifdef ENABLE_CLASSIC
         if (connection->authentication_flags & HANDLE_LINK_KEY_REQUEST){
             log_info("responding to link key request");
@@ -4955,6 +4970,14 @@ int gap_remote_name_request(bd_addr_t addr, uint8_t page_scan_repetition_mode, u
     hci_stack->remote_name_state = GAP_REMOTE_NAME_STATE_W2_SEND;
     hci_run();
     return 0;
+}
+
+int gap_read_rssi(hci_con_handle_t con_handle){
+    hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
+    if (hci_connection == NULL) return 0;
+    connectionSetAuthenticationFlags(hci_connection, READ_RSSI);
+    hci_run();
+    return 1;
 }
 
 static int gap_pairing_set_state_and_run(bd_addr_t addr, uint8_t state){
