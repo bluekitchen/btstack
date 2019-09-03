@@ -309,6 +309,10 @@ inline static void connectionClearAuthenticationFlags(hci_connection_t * conn, h
     conn->authentication_flags = (hci_authentication_flags_t)(conn->authentication_flags & ~flags);
 }
 
+inline static void connectionSetAuthenticationFlags(hci_connection_t * conn, hci_authentication_flags_t flags){
+    conn->authentication_flags = (hci_authentication_flags_t)(conn->authentication_flags | flags);
+}
+
 #ifdef ENABLE_CLASSIC
 
 #ifdef ENABLE_SCO_OVER_HCI
@@ -346,10 +350,6 @@ static void hci_connection_timestamp(hci_connection_t *connection){
 #else
     connection->timestamp = btstack_run_loop_get_time_ms();
 #endif
-}
-
-inline static void connectionSetAuthenticationFlags(hci_connection_t * conn, hci_authentication_flags_t flags){
-    conn->authentication_flags = (hci_authentication_flags_t)(conn->authentication_flags | flags);
 }
 
 /**
@@ -4791,6 +4791,14 @@ uint8_t gap_disconnect(hci_con_handle_t handle){
     return 0;
 }
 
+int gap_read_rssi(hci_con_handle_t con_handle){
+    hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
+    if (hci_connection == NULL) return 0;
+    connectionSetAuthenticationFlags(hci_connection, READ_RSSI);
+    hci_run();
+    return 1;
+}
+
 /**
  * @brief Get connection type
  * @param con_handle
@@ -4970,14 +4978,6 @@ int gap_remote_name_request(bd_addr_t addr, uint8_t page_scan_repetition_mode, u
     return 0;
 }
 
-int gap_read_rssi(hci_con_handle_t con_handle){
-    hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
-    if (hci_connection == NULL) return 0;
-    connectionSetAuthenticationFlags(hci_connection, READ_RSSI);
-    hci_run();
-    return 1;
-}
-
 static int gap_pairing_set_state_and_run(bd_addr_t addr, uint8_t state){
     hci_stack->gap_pairing_state = state;
     memcpy(hci_stack->gap_pairing_addr, addr, 6);
@@ -5076,14 +5076,12 @@ uint16_t hci_get_sco_voice_setting(void){
     return hci_stack->sco_voice_setting;
 }
 
-#ifdef ENABLE_CLASSIC
 static int hci_have_usb_transport(void){
     if (!hci_stack->hci_transport) return 0;
     const char * transport_name = hci_stack->hci_transport->name;
     if (!transport_name) return 0;
     return (transport_name[0] == 'H') && (transport_name[1] == '2');
 }
-#endif
 
 /** @brief Get SCO packet length for current SCO Voice setting
  *  @note  Using SCO packets of the exact length is required for USB transfer
@@ -5092,7 +5090,6 @@ static int hci_have_usb_transport(void){
 int hci_get_sco_packet_length(void){
     int sco_packet_length = 0;
 
-#ifdef ENABLE_CLASSIC
 #ifdef ENABLE_SCO_OVER_HCI
 
     // Transparent = mSBC => 1, CVSD with 16-bit samples requires twice as much bytes
@@ -5111,7 +5108,6 @@ int hci_get_sco_packet_length(void){
             sco_packet_length = 3 + 60;
         }
     }
-#endif
 #endif
     return sco_packet_length;
 }
