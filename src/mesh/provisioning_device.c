@@ -182,6 +182,7 @@ static void pb_close_link(uint16_t transport_cid, uint8_t reason){
             break;
 #endif
         default:
+            break;
     }
 }
 
