@@ -36,8 +36,8 @@
  */
 
 
-#ifndef ATT_H
-#define ATT_H
+#ifndef ATT_DB_H
+#define ATT_DB_H
 
 #include <stdint.h>
 #include "bluetooth.h"
