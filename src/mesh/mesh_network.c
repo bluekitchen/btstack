@@ -1133,24 +1133,33 @@ void mesh_network_dump(void){
     mesh_network_dump_network_pdu(outgoing_pdu);
     printf("incoming_pdu_raw: \n");
     mesh_network_dump_network_pdu(incoming_pdu_raw);
+#ifdef ENABLE_MESH_GATT_BEARER
     printf("gatt_bearer_network_pdu: \n");
     mesh_network_dump_network_pdu(gatt_bearer_network_pdu);
+#endif
+#ifdef ENABLE_MESH_ADV_BEARER
     printf("adv_bearer_network_pdu: \n");
     mesh_network_dump_network_pdu(adv_bearer_network_pdu);
+#endif
+
 }
 void mesh_network_reset(void){
     mesh_network_reset_network_pdus(&network_pdus_received);
     mesh_network_reset_network_pdus(&network_pdus_queued);
     mesh_network_reset_network_pdus(&network_pdus_outgoing_gatt);
     mesh_network_reset_network_pdus(&network_pdus_outgoing_adv);
+#ifdef ENABLE_MESH_ADV_BEARER
     if (adv_bearer_network_pdu){
         mesh_network_pdu_free(adv_bearer_network_pdu);
         adv_bearer_network_pdu = NULL;
     }
+#endif
+#ifdef ENABLE_MESH_GATT_BEARER
     if (gatt_bearer_network_pdu){
         mesh_network_pdu_free(gatt_bearer_network_pdu);
         gatt_bearer_network_pdu = NULL;
     }
+#endif
     if (outgoing_pdu){
         mesh_network_pdu_free(outgoing_pdu);
         outgoing_pdu = NULL;

@@ -46,8 +46,12 @@
 #include "btstack_memory.h"
 
 #include "mesh/mesh_crypto.h"
+#ifdef ENABLE_MESH_ADV_BEARER
 #include "mesh/pb_adv.h"
+#endif
+#ifdef ENABLE_MESH_GATT_BEARER
 #include "mesh/pb_gatt.h"
+#endif
 #include "mesh/provisioning.h"
 
 static void prov_key_generated(void * arg);
@@ -150,23 +154,34 @@ static pb_type_t pb_type;
 
 static void pb_send_pdu(uint16_t transport_cid, const uint8_t * buffer, uint16_t buffer_size){
     switch (pb_type){
+#ifdef ENABLE_MESH_ADV_BEARER
         case PB_TYPE_ADV:
             pb_adv_send_pdu(transport_cid, buffer, buffer_size);    
             break;
+#endif
+#ifdef ENABLE_MESH_GATT_BEARER
         case PB_TYPE_GATT:
             pb_gatt_send_pdu(transport_cid, buffer, buffer_size);    
             break;
-    }
+#endif
+        default:
+            break;
+     }
 }
 
 static void pb_close_link(uint16_t transport_cid, uint8_t reason){
     switch (pb_type){
+#ifdef ENABLE_MESH_ADV_BEARER
         case PB_TYPE_ADV:
             pb_adv_close_link(transport_cid, reason);    
             break;
+#endif
+#ifdef ENABLE_MESH_GATT_BEARER
         case PB_TYPE_GATT:
             pb_gatt_close_link(transport_cid, reason);    
             break;
+#endif
+        default:
     }
 }
 
@@ -819,12 +834,16 @@ static void prov_key_generated(void * arg){
 }
 
 void provisioning_device_init(void){
+#ifdef ENABLE_MESH_ADV_BEARER
     // setup PB ADV
     pb_adv_init();
     pb_adv_register_packet_handler(&provisioning_handle_pdu);
+#endif
+#ifdef ENABLE_MESH_GATT_BEARER
     // setup PB GATT
     pb_gatt_init();
     pb_gatt_register_packet_handler(&provisioning_handle_pdu);
+#endif
     
     pb_transport_cid = MESH_PB_TRANSPORT_INVALID_CID;
     

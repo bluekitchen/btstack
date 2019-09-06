@@ -62,6 +62,7 @@ static char gap_name_prefix[] = "Mesh ";
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
+#ifdef ENABLE_MESH_GATT_BEARER
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -90,6 +91,7 @@ static uint16_t att_read_callback(hci_con_handle_t connection_handle, uint16_t a
     }
     return 0;
 }
+#endif
 
 static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(packet_type);
@@ -180,12 +182,15 @@ static void stdin_process(char cmd){
 int btstack_main(void);
 int btstack_main(void)
 {
+#ifdef HAVE_BTSTACK_STDIN
     // console
     btstack_stdin_setup(stdin_process);
+#endif
 
     // crypto
     btstack_crypto_init();
 
+#ifdef ENABLE_GATT_BEARER
     // l2cap
     l2cap_init();
 
@@ -197,14 +202,18 @@ int btstack_main(void)
 
     // 
     sm_init();
+#endif
 
+#ifdef ENABLE_MESH_GATT_BEARER
     // register for HCI events
     hci_event_callback_registration.callback = &packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
+#endif
 
     // mesh
     mesh_init();
 
+#ifdef ENABLE_GATT_BEARER
     // setup connectable advertisments
     bd_addr_t null_addr;
     memset(null_addr, 0, 6);
@@ -212,6 +221,7 @@ int btstack_main(void)
     uint16_t adv_int_min = 0x0030;
     uint16_t adv_int_max = 0x0030;
     adv_bearer_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
+#endif
 
     // Track Provisioning as device role
     mesh_register_provisioning_device_packet_handler(&mesh_provisioning_message_handler);
