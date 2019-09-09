@@ -144,7 +144,7 @@ static void pb_adv_emit_pdu_sent(uint8_t status){
 static void pb_adv_emit_link_open(uint8_t status, uint16_t pb_transport_cid){
     uint8_t event[7] = { HCI_EVENT_MESH_META, 5, MESH_SUBEVENT_PB_TRANSPORT_LINK_OPEN, status};
     little_endian_store_16(event, 4, pb_transport_cid);
-    event[6] = PB_TYPE_ADV;
+    event[6] = MESH_PB_TYPE_ADV;
     pb_adv_packet_handler(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 

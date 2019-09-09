@@ -197,6 +197,9 @@ typedef enum {
 
     // connection status
     CONNECTION_ENCRYPTED           = 0x8000,
+
+    // errands
+    READ_RSSI                      = 0x10000,
 } hci_authentication_flags_t;
 
 /**
@@ -512,11 +515,11 @@ typedef struct {
     btstack_timer_source_t timeout_sco;
 #endif /* ENABLE_CLASSIC */
 
-    // errands
+    // authentication and other errands
     uint32_t authentication_flags;
 
     btstack_timer_source_t timeout;
-    
+
     // timeout in system ticks (HAVE_EMBEDDED_TICK) or milliseconds (HAVE_EMBEDDED_TIME_MS)
     uint32_t timestamp;
 
@@ -730,6 +733,11 @@ typedef struct {
     /* callbacks for events */
     btstack_linked_list_t event_handlers;
 
+#ifdef ENABLE_CLASSIC
+    /* callback for reject classic connection */
+    int (*gap_classic_accept_callback)(bd_addr_t addr);
+#endif
+
     // hardware error callback
     void (*hardware_error_callback)(uint8_t error);
 
@@ -910,7 +918,6 @@ typedef struct {
     // address and address_type of active create connection command (ACL, SCO, LE)
     bd_addr_t      outgoing_addr;
     bd_addr_type_t outgoing_addr_type;
-
 } hci_stack_t;
 
 

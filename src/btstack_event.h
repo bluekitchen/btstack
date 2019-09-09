@@ -3259,6 +3259,25 @@ static inline uint8_t gap_event_inquiry_complete_get_status(const uint8_t * even
 }
 
 /**
+ * @brief Get field con_handle from event GAP_EVENT_RSSI_MEASUREMENT
+ * @param event packet
+ * @return con_handle
+ * @note: btstack_type H
+ */
+static inline hci_con_handle_t gap_event_rssi_measurement_get_con_handle(const uint8_t * event){
+    return little_endian_read_16(event, 2);
+}
+/**
+ * @brief Get field rssi from event GAP_EVENT_RSSI_MEASUREMENT
+ * @param event packet
+ * @return rssi
+ * @note: btstack_type 1
+ */
+static inline uint8_t gap_event_rssi_measurement_get_rssi(const uint8_t * event){
+    return event[4];
+}
+
+/**
  * @brief Get field status from event HCI_SUBEVENT_LE_CONNECTION_COMPLETE
  * @param event packet
  * @return status

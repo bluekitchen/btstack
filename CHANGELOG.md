@@ -9,12 +9,24 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Fixed
+
+### Added
+- GAP: allow to reject GAP classic connection via gap_register_classic_connection_filter
+- GAP: support reading RSSI for Classic+LE using gap_read_rssi. Emits GAP_EVENT_RSSI_MEASUREMENT
+
+## Changed
+
+
+## Changes August 2019
+
+### Fixed
 - POSIX, WICED, Windows, FreeRTOS run loops: handle time_ms overrun after 49 days
 - RFCOMM: accept incoming L2CAP connection in Basic mode if ERTM is enabled but not requested for this connection
 - RFCOMM: limit RFCOMM MTU by local L2CAP MTU for outgoing connections (only revelvant for ERTM)
 - L2CAP ERTM: stop timers on disconnect
 - L2CAP ERTM: fix sending of segmented SDUs
 - L2CAP ERTM: handle unsupported Information Response
+- SM: generate local nonce for confirm value in JW+NC+PK in Secure Connections Responder role
 
 ### Added
 - btstack_run_loop_base: portable implementation of timer and data source managment as base for platform specific implementations

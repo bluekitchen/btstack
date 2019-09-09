@@ -636,7 +636,7 @@ static uint8_t mesh_upper_transport_setup_segmented_control_pdu(mesh_transport_p
     const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
     if (!network_key) return 1;
 
-    uint32_t seq = mesh_sequence_number_peek();
+    uint32_t seq = mesh_sequence_number_next();
 
     memcpy(transport_pdu->data, control_pdu_data, control_pdu_len);
     transport_pdu->len = control_pdu_len;
@@ -702,19 +702,14 @@ static uint8_t mesh_upper_transport_setup_unsegmented_access_pdu(mesh_network_pd
     return 0;
 }
 
-static uint8_t mesh_upper_transport_setup_segmented_access_pdu_header(mesh_transport_pdu_t * transport_pdu, uint16_t netkey_index, uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest,
-                                                        uint8_t szmic){
-    uint32_t seq = mesh_sequence_number_peek();
-
-    printf("[+] Upper transport, setup segmented Access PDU - seq %06x, szmic %u, iv_index %08x\n", seq, szmic,
-           mesh_get_iv_index_for_tx());
-    mesh_print_hex("Access Payload", transport_pdu->data, transport_pdu->len);
+static uint8_t mesh_upper_transport_setup_segmented_access_pdu_header(mesh_transport_pdu_t * transport_pdu, uint16_t netkey_index,
+    uint16_t appkey_index, uint8_t ttl, uint16_t src, uint16_t dest, uint8_t szmic){
 
     // get app or device key
     const mesh_transport_key_t *appkey;
     appkey = mesh_transport_key_get(appkey_index);
     if (appkey == NULL) {
-        printf("appkey_index %x unknown\n", appkey_index);
+        printf("[!] Upper transport, setup segmented Access PDU - appkey_index %x unknown\n", appkey_index);
         return 1;
     }
     uint8_t akf_aid = (appkey->akf << 6) | appkey->aid;
@@ -722,8 +717,16 @@ static uint8_t mesh_upper_transport_setup_segmented_access_pdu_header(mesh_trans
     // lookup network by netkey_index
     const mesh_network_key_t *network_key = mesh_network_key_list_get(netkey_index);
     if (!network_key) return 1;
+    if (network_key == NULL) {
+        printf("[!] Upper transport, setup segmented Access PDU - netkey_index %x unknown\n", appkey_index);
+        return 1;
+    }
 
     const uint8_t trans_mic_len = szmic ? 8 : 4;
+
+    uint32_t seq = mesh_sequence_number_next();
+    printf("[+] Upper transport, setup segmented Access PDU - seq %06x, szmic %u, iv_index %08x\n", seq, szmic, mesh_get_iv_index_for_tx());
+    mesh_print_hex("Access Payload", transport_pdu->data, transport_pdu->len);
 
     // store in transport pdu
     transport_pdu->transmic_len = trans_mic_len;

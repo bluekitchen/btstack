@@ -183,11 +183,11 @@ void mesh_generic_on_off_server_register_packet_handler(mesh_model_t *generic_on
 }
 
 const mesh_access_message_t mesh_generic_on_off_status_transition = {
-        MESH_GENERIC_ON_OFF_SET, "111"
+        MESH_GENERIC_ON_OFF_STATUS, "111"
 };
 
 const mesh_access_message_t mesh_generic_on_off_status_instantaneous = {
-        MESH_GENERIC_ON_OFF_SET, "1"
+        MESH_GENERIC_ON_OFF_STATUS, "1"
 };
 
 static mesh_pdu_t * mesh_generic_on_off_status_message(mesh_model_t *generic_on_off_server_model){

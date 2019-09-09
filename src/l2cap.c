@@ -84,6 +84,8 @@ static void l2cap_hci_event_handler(uint8_t packet_type, uint16_t channel, uint8
 static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size );
 static void l2cap_notify_channel_can_send(void);
 static void l2cap_emit_can_send_now(btstack_packet_handler_t packet_handler, uint16_t channel);
+static uint16_t l2cap_next_local_cid(void);
+static uint8_t  l2cap_next_sig_id(void);
 static l2cap_fixed_channel_t * l2cap_fixed_channel_for_channel_id(uint16_t local_cid);
 #ifdef ENABLE_CLASSIC
 static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * channel);
@@ -137,6 +139,10 @@ static btstack_linked_list_t l2cap_le_services;
 
 // single list of channels for Classic Channels, LE Data Channels, Classic Connectionless, ATT, and SM
 static btstack_linked_list_t l2cap_channels;
+// next channel id for new connections
+static uint16_t  local_source_cid  = 0x40;
+// next signaling sequence number
+static uint8_t   sig_seq_nr  = 0xff;
 
 // used to cache l2cap rejects, echo, and informational requests
 static l2cap_signaling_response_t signaling_responses[NR_PENDING_SIGNALING_RESPONSES];
@@ -744,6 +750,26 @@ static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l
 }
 
 #endif
+
+static uint16_t l2cap_next_local_cid(void){
+    do {
+        if (local_source_cid == 0xffff) {
+            local_source_cid = 0x40;
+        } else {
+            local_source_cid++;
+        }
+    } while (l2cap_get_channel_for_local_cid(local_source_cid) != NULL);
+    return local_source_cid;
+}
+
+static uint8_t l2cap_next_sig_id(void){
+    if (sig_seq_nr == 0xff) {
+        sig_seq_nr = 1;
+    } else {
+        sig_seq_nr++;
+    }
+    return sig_seq_nr;
+}
 
 void l2cap_init(void){
     signaling_responses_pending = 0;

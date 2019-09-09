@@ -176,6 +176,13 @@ void gap_set_bondable_mode(int enabled);
  */
 int gap_get_bondable_mode(void);
 
+/**
+ * @brief Register filter for rejecting classic connections. Callback will return 1 accept connection, 0 on reject.
+ */
+
+void gap_register_classic_connection_filter(int (*accept_callback)(bd_addr_t addr));
+
+
 /* Configure Secure Simple Pairing */
 
 /**
@@ -545,6 +552,13 @@ int gap_inquiry_stop(void);
  * @events: HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
  */
 int gap_remote_name_request(bd_addr_t addr, uint8_t page_scan_repetition_mode, uint16_t clock_offset);
+
+/**
+ * @brief Read RSSI
+ * @param con_handle
+ * @events: GAP_EVENT_RSSI_MEASUREMENT
+ */
+int gap_read_rssi(hci_con_handle_t con_handle);
 
 /**
  * @brief Legacy Pairing Pin Code Response

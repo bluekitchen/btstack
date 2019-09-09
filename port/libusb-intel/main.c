@@ -75,6 +75,7 @@ static bd_addr_t             local_addr;
 static int main_argc;
 static const char ** main_argv;
 static const hci_transport_t * transport;
+static int intel_firmware_loaded;
 
 int btstack_main(int argc, const char * argv[]);
 
@@ -109,9 +110,12 @@ static void sigint_handler(int param){
     // reset anyway
     btstack_stdin_reset();
 
-    // power down
-    hci_power_control(HCI_POWER_OFF);
-    hci_close();
+    // power off and close only if hci was initialized before
+    if (intel_firmware_loaded){
+        hci_power_control( HCI_POWER_OFF);
+        hci_close();
+    }
+
     log_info("Good bye, see you.\n");    
     exit(0);
 }
@@ -125,6 +129,8 @@ void hal_led_toggle(void){
 static void intel_firmware_done(int result){
 
     printf("Done %x\n", result);
+
+    intel_firmware_loaded = 1;
 
     // init HCI
     hci_init(transport, NULL);

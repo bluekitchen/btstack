@@ -3081,6 +3081,9 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_validate_er_ir();
                             dkg_state = DKG_CALC_IRK;
                         }
+
+                        // restart random address updates after power cycle
+                        gap_random_address_set_mode(gap_random_adress_type);
 					}
 					break;
 

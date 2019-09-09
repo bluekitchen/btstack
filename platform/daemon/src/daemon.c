@@ -1759,8 +1759,16 @@ static void daemon_sigint_handler(int param){
     
     log_info(" <= SIGINT received, shutting down..\n");    
 
-    hci_power_control( HCI_POWER_OFF);
-    hci_close();
+    int send_power_off = 1;
+#ifdef HAVE_INTEL_USB
+    // power off and close only if hci was initialized before
+    send_power_off = intel_firmware_loaded;
+#endif
+
+    if (send_power_off){
+        hci_power_control( HCI_POWER_OFF);
+        hci_close();
+    }
     
     log_info("Good bye, see you.\n");    
     

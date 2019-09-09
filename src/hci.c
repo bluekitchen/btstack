@@ -305,6 +305,13 @@ hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t  addr, bd_addr_
     return NULL;
 }
 
+inline static void connectionClearAuthenticationFlags(hci_connection_t * conn, hci_authentication_flags_t flags){
+    conn->authentication_flags = (hci_authentication_flags_t)(conn->authentication_flags & ~flags);
+}
+
+inline static void connectionSetAuthenticationFlags(hci_connection_t * conn, hci_authentication_flags_t flags){
+    conn->authentication_flags = (hci_authentication_flags_t)(conn->authentication_flags | flags);
+}
 
 #ifdef ENABLE_CLASSIC
 
@@ -343,15 +350,6 @@ static void hci_connection_timestamp(hci_connection_t *connection){
 #else
     connection->timestamp = btstack_run_loop_get_time_ms();
 #endif
-}
-
-inline static void connectionSetAuthenticationFlags(hci_connection_t * conn, hci_authentication_flags_t flags){
-    conn->authentication_flags = (hci_authentication_flags_t)(conn->authentication_flags | flags);
-}
-
-
-inline static void connectionClearAuthenticationFlags(hci_connection_t * conn, hci_authentication_flags_t flags){
-    conn->authentication_flags = (hci_authentication_flags_t)(conn->authentication_flags & ~flags);
 }
 
 /**
@@ -1916,6 +1914,15 @@ static void event_handler(uint8_t *packet, int size){
                              hci_stack->sco_data_packet_length, hci_stack->sco_packets_total_num); 
                 }
             }
+            if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_read_rssi)){
+                if (packet[5] == 0){
+                    uint8_t event[5];
+                    event[0] = GAP_EVENT_RSSI_MEASUREMENT;
+                    event[1] = 3;
+                    memcpy(&event[2], &packet[6], 3);
+                    hci_emit_event(event, sizeof(event), 1);
+                }
+            }
 #ifdef ENABLE_BLE
             if (HCI_EVENT_IS_COMMAND_COMPLETE(packet, hci_le_read_buffer_size)){
                 hci_stack->le_data_packets_length = little_endian_read_16(packet, 6);
@@ -2104,6 +2111,14 @@ static void event_handler(uint8_t *packet, int size){
             break;
         case HCI_EVENT_CONNECTION_REQUEST:
             reverse_bd_addr(&packet[2], addr);
+            if (hci_stack->gap_classic_accept_callback != NULL){
+                if ((*hci_stack->gap_classic_accept_callback)(addr) == 0){
+                    hci_stack->decline_reason = ERROR_CODE_CONNECTION_REJECTED_DUE_TO_UNACCEPTABLE_BD_ADDR;
+                    bd_addr_copy(hci_stack->decline_addr, addr);
+                    break;
+                }
+            } 
+
             // TODO: eval COD 8-10
             link_type = packet[11];
             log_info("Connection_incoming: %s, type %u", bd_addr_to_str(addr), link_type);
@@ -2114,7 +2129,7 @@ static void event_handler(uint8_t *packet, int size){
             }
             if (!conn) {
                 // CONNECTION REJECTED DUE TO LIMITED RESOURCES (0X0D)
-                hci_stack->decline_reason = 0x0d;
+                hci_stack->decline_reason = ERROR_CODE_CONNECTION_REJECTED_DUE_TO_LIMITED_RESOURCES;
                 bd_addr_copy(hci_stack->decline_addr, addr);
                 break;
             }
@@ -3573,6 +3588,12 @@ static void hci_run(void){
         // no further commands if connection is about to get shut down
         if (connection->state == SENT_DISCONNECT) continue;
 
+        if (connection->authentication_flags & READ_RSSI){
+            connectionClearAuthenticationFlags(connection, READ_RSSI);
+            hci_send_cmd(&hci_read_rssi, connection->con_handle);
+            return;
+        }
+
 #ifdef ENABLE_CLASSIC
         if (connection->authentication_flags & HANDLE_LINK_KEY_REQUEST){
             log_info("responding to link key request");
@@ -3957,11 +3978,11 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
 #endif
 
 #ifdef ENABLE_BLE
-#ifdef ENABLE_LE_PERIPHERAL
     if (IS_COMMAND(packet, hci_le_set_random_address)){
         hci_stack->le_random_address_set = 1;
         reverse_bd_addr(&packet[3], hci_stack->le_random_address);
     }
+#ifdef ENABLE_LE_PERIPHERAL
     if (IS_COMMAND(packet, hci_le_set_advertise_enable)){
         hci_stack->le_advertisements_active = packet[3];
     }
@@ -4770,6 +4791,14 @@ uint8_t gap_disconnect(hci_con_handle_t handle){
     return 0;
 }
 
+int gap_read_rssi(hci_con_handle_t con_handle){
+    hci_connection_t * hci_connection = hci_connection_for_handle(con_handle);
+    if (hci_connection == NULL) return 0;
+    connectionSetAuthenticationFlags(hci_connection, READ_RSSI);
+    hci_run();
+    return 1;
+}
+
 /**
  * @brief Get connection type
  * @param con_handle
@@ -5047,14 +5076,12 @@ uint16_t hci_get_sco_voice_setting(void){
     return hci_stack->sco_voice_setting;
 }
 
-#ifdef ENABLE_CLASSIC
 static int hci_have_usb_transport(void){
     if (!hci_stack->hci_transport) return 0;
     const char * transport_name = hci_stack->hci_transport->name;
     if (!transport_name) return 0;
     return (transport_name[0] == 'H') && (transport_name[1] == '2');
 }
-#endif
 
 /** @brief Get SCO packet length for current SCO Voice setting
  *  @note  Using SCO packets of the exact length is required for USB transfer
@@ -5063,7 +5090,6 @@ static int hci_have_usb_transport(void){
 int hci_get_sco_packet_length(void){
     int sco_packet_length = 0;
 
-#ifdef ENABLE_CLASSIC
 #ifdef ENABLE_SCO_OVER_HCI
 
     // Transparent = mSBC => 1, CVSD with 16-bit samples requires twice as much bytes
@@ -5083,7 +5109,6 @@ int hci_get_sco_packet_length(void){
         }
     }
 #endif
-#endif
     return sco_packet_length;
 }
 
@@ -5101,6 +5126,11 @@ HCI_STATE hci_get_state(void){
     return hci_stack->state;
 }
 
+#ifdef ENABLE_CLASSIC
+void gap_register_classic_connection_filter(int (*accept_callback)(bd_addr_t addr)){
+    hci_stack->gap_classic_accept_callback = accept_callback;
+}
+#endif
 
 /**
  * @brief Set callback for Bluetooth Hardware Error

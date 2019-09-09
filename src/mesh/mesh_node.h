@@ -66,7 +66,9 @@ typedef mesh_pdu_t * (*mesh_publish_state_t)(struct mesh_model * mesh_model);
 typedef enum {
     MESH_MODEL_PUBLICATION_STATE_IDLE,
     MESH_MODEL_PUBLICATION_STATE_W4_PUBLICATION_MS,
+    MESH_MODEL_PUBLICATION_STATE_PUBLICATION_READY,
     MESH_MODEL_PUBLICATION_STATE_W4_RETRANSMIT_MS,
+    MESH_MODEL_PUBLICATION_STATE_RETRANSMIT_READY,
 } mesh_model_publication_state_t;
 
 typedef struct {
@@ -75,7 +77,6 @@ typedef struct {
     uint32_t next_publication_ms;
     uint32_t next_retransmit_ms;
     uint8_t  retransmit_count;
-    uint8_t  publish_now;
 
     uint16_t address;
     uint16_t appkey_index;

@@ -18,7 +18,10 @@ BTstack is free for non-commercial use. However, for commercial use, <a href="ma
 
 **Documentation:** [HTML](http://bluekitchen-gmbh.com/btstack/), [PDF](http://bluekitchen-gmbh.com/btstack.pdf)
 
+**Third-party libraries (FOSS):** [List of used libraries and their licenses](https://github.com/bluekitchen/btstack/blob/develop/3rd-party/README.md)
+
 **Discussion and Community Support:** [BTstack Google Group](http://groups.google.com/group/btstack-dev)
+
 
 ### Supported Protocols and Profiles
 
@@ -32,7 +35,6 @@ BTstack is free for non-commercial use. However, for commercial use, <a href="ma
 
 It has been qualified with the Bluetooth SIG (QDID 110883) for GAP, IOP, HFP, HSP, SPP, PAN, A2DP, AVRCP profiles and
 GATT, SM of the Bluetooth 5 specification. For information on MFi/iAP2 support, please <a href="mailto:contact@bluekitchen-gmbh.com">contact us</a>.
-
 
 ## Evaluation Platforms
 

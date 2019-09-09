@@ -257,6 +257,21 @@ static void mesh_proxy_create_nonce(uint8_t * nonce, const mesh_network_pdu_t * 
 
 // NID/IVI | obfuscated (CTL/TTL, SEQ (24), SRC (16) ), encrypted ( DST(16), TransportPDU), MIC(32 or 64)
 
+static void mesh_network_send_complete(mesh_network_pdu_t * network_pdu){
+    if (network_pdu->flags & MESH_NETWORK_PDU_FLAGS_RELAY){
+#ifdef LOG_NETWORK
+        printf("TX-F-NetworkPDU (%p): relay -> free packet\n", network_pdu);
+#endif
+        mesh_network_pdu_free(network_pdu);
+    } else {
+#ifdef LOG_NETWORK
+        printf("TX-F-NetworkPDU (%p): notify lower transport\n", network_pdu);
+#endif
+        // notify higher layer
+        (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_SENT, network_pdu);
+    }
+}
+
 static void mesh_network_send_d(mesh_network_pdu_t * network_pdu){
 
 #ifdef LOG_NETWORK
@@ -331,10 +346,10 @@ static void mesh_network_send_a(void){
     mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(outgoing_pdu->netkey_index);
     if (!subnet) {
         mesh_crypto_active = 0;
-        // notify upper layer
         mesh_network_pdu_t * network_pdu = outgoing_pdu;
         outgoing_pdu = NULL;
-        (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_SENT, network_pdu);
+        // notify upper layer
+        mesh_network_send_complete(network_pdu);
         // run again
         mesh_network_run();
         return;
@@ -473,7 +488,7 @@ static void process_network_pdu_validate_d(void * arg){
     uint8_t net_mic[8];
     btstack_crypto_ccm_get_authentication_value(&mesh_network_crypto_request.ccm, net_mic);
 #ifdef LOG_NETWORK
-    printf("RX-NetMIC: "); 
+    printf("RX-NetMIC (%p): ", incoming_pdu_decoded); 
     printf_hexdump(net_mic, net_mic_len);
 #endif
     // store in decoded pdu
@@ -481,7 +496,7 @@ static void process_network_pdu_validate_d(void * arg){
 
 #ifdef LOG_NETWORK
     uint8_t cypher_len  = incoming_pdu_decoded->len - 9 - net_mic_len;
-    printf("RX-Decrypted DST/TransportPDU: ");
+    printf("RX-Decrypted DST/TransportPDU (%p): ", incoming_pdu_decoded);
     printf_hexdump(&incoming_pdu_decoded->data[7], 2 + cypher_len);
 
     printf("RX-Decrypted: ");
@@ -491,7 +506,7 @@ static void process_network_pdu_validate_d(void * arg){
     // validate network mic
     if (memcmp(net_mic, &incoming_pdu_raw->data[incoming_pdu_decoded->len-net_mic_len], net_mic_len) != 0){
         // fail
-        printf("RX-NetMIC mismatch, try next key\n");
+        printf("RX-NetMIC mismatch, try next key (%p)\n", incoming_pdu_decoded);
         process_network_pdu_validate();
         return;
     }    
@@ -501,8 +516,8 @@ static void process_network_pdu_validate_d(void * arg){
 
 #ifdef LOG_NETWORK
     // match
-    printf("RX-NetMIC matches\n");
-    printf("RX-TTL: 0x%02x\n", incoming_pdu_decoded->data[1] & 0x7f);
+    printf("RX-NetMIC matches (%p)\n", incoming_pdu_decoded);
+    printf("RX-TTL (%p): 0x%02x\n", incoming_pdu_decoded, incoming_pdu_decoded->data[1] & 0x7f);
 #endif
 
     // set netkey_index
@@ -523,7 +538,9 @@ static void process_network_pdu_validate_d(void * arg){
         uint16_t dst = big_endian_read_16(incoming_pdu_decoded->data, 7);
         int valid = mesh_network_addresses_valid(ctl, src, dst);
         if (!valid){
-            printf("RX Address invalid\n");
+#ifdef LOG_NETWORK
+            printf("RX Address invalid (%p)\n", incoming_pdu_decoded);
+#endif
             btstack_memory_mesh_network_pdu_free(incoming_pdu_decoded);
             incoming_pdu_decoded = NULL;
             process_network_pdu_done();
@@ -533,11 +550,13 @@ static void process_network_pdu_validate_d(void * arg){
         // check cache
         uint32_t hash = mesh_network_cache_hash(incoming_pdu_decoded);
 #ifdef LOG_NETWORK
-        printf("RX-Hash: %08x\n", hash);
+        printf("RX-Hash (%p): %08x\n", incoming_pdu_decoded, hash);
 #endif
         if (mesh_network_cache_find(hash)){
             // found in cache, drop
-            printf("Found in cache -> drop packet\n");
+#ifdef LOG_NETWORK
+            printf("Found in cache -> drop packet (%p)\n", incoming_pdu_decoded);
+#endif
             btstack_memory_mesh_network_pdu_free(incoming_pdu_decoded);
             incoming_pdu_decoded = NULL;
             process_network_pdu_done();
@@ -546,6 +565,10 @@ static void process_network_pdu_validate_d(void * arg){
 
         // store in network cache
         mesh_network_cache_add(hash);
+
+#ifdef LOG_NETWORK
+            printf("RX-Validated (%p) - forward to lower transport\n", incoming_pdu_decoded);
+#endif
 
         // forward to lower transport layer. message is freed by call to mesh_network_message_processed_by_upper_layer
         mesh_network_pdu_t * decoded_pdu = incoming_pdu_decoded;
@@ -716,7 +739,7 @@ static void mesh_network_run(void){
         // done
         mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing_adv);
         // directly notify upper layer
-        (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_SENT, network_pdu);
+        mesh_network_send_complete(network_pdu);
 #endif
     }
 
@@ -793,7 +816,7 @@ static void mesh_adv_bearer_handle_network_event(uint8_t packet_type, uint16_t c
                             adv_bearer_network_pdu = NULL;
 
                             // notify upper layer
-                            (*mesh_network_higher_layer_handler)(MESH_NETWORK_PDU_SENT, network_pdu);
+                            mesh_network_send_complete(network_pdu);
 
                             // check if more to send
                             mesh_network_run();
@@ -1110,24 +1133,33 @@ void mesh_network_dump(void){
     mesh_network_dump_network_pdu(outgoing_pdu);
     printf("incoming_pdu_raw: \n");
     mesh_network_dump_network_pdu(incoming_pdu_raw);
+#ifdef ENABLE_MESH_GATT_BEARER
     printf("gatt_bearer_network_pdu: \n");
     mesh_network_dump_network_pdu(gatt_bearer_network_pdu);
+#endif
+#ifdef ENABLE_MESH_ADV_BEARER
     printf("adv_bearer_network_pdu: \n");
     mesh_network_dump_network_pdu(adv_bearer_network_pdu);
+#endif
+
 }
 void mesh_network_reset(void){
     mesh_network_reset_network_pdus(&network_pdus_received);
     mesh_network_reset_network_pdus(&network_pdus_queued);
     mesh_network_reset_network_pdus(&network_pdus_outgoing_gatt);
     mesh_network_reset_network_pdus(&network_pdus_outgoing_adv);
+#ifdef ENABLE_MESH_ADV_BEARER
     if (adv_bearer_network_pdu){
         mesh_network_pdu_free(adv_bearer_network_pdu);
         adv_bearer_network_pdu = NULL;
     }
+#endif
+#ifdef ENABLE_MESH_GATT_BEARER
     if (gatt_bearer_network_pdu){
         mesh_network_pdu_free(gatt_bearer_network_pdu);
         gatt_bearer_network_pdu = NULL;
     }
+#endif
     if (outgoing_pdu){
         mesh_network_pdu_free(outgoing_pdu);
         outgoing_pdu = NULL;
