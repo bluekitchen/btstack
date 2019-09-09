@@ -85,9 +85,9 @@ extern "C"
 #define MESH_INPUT_OOB_STRING       0x08
 
 typedef enum {
-    PB_TYPE_ADV = 0,
-    PB_TYPE_GATT
-} pb_type_t;
+    MESH_PB_TYPE_ADV = 0,
+    MESH_PB_TYPE_GATT
+} mesh_pb_type_t;
 
 typedef enum {
     MESH_OOB_INFORMATION_INDEX_OTHER = 0,

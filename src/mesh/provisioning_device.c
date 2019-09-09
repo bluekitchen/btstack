@@ -150,17 +150,17 @@ typedef enum {
 
 static device_state_t device_state;
 static uint16_t pb_transport_cid;
-static pb_type_t pb_type;
+static mesh_pb_type_t pb_type;
 
 static void pb_send_pdu(uint16_t transport_cid, const uint8_t * buffer, uint16_t buffer_size){
     switch (pb_type){
 #ifdef ENABLE_MESH_ADV_BEARER
-        case PB_TYPE_ADV:
+        case MESH_PB_TYPE_ADV:
             pb_adv_send_pdu(transport_cid, buffer, buffer_size);    
             break;
 #endif
 #ifdef ENABLE_MESH_GATT_BEARER
-        case PB_TYPE_GATT:
+        case MESH_PB_TYPE_GATT:
             pb_gatt_send_pdu(transport_cid, buffer, buffer_size);    
             break;
 #endif
@@ -172,12 +172,12 @@ static void pb_send_pdu(uint16_t transport_cid, const uint8_t * buffer, uint16_t
 static void pb_close_link(uint16_t transport_cid, uint8_t reason){
     switch (pb_type){
 #ifdef ENABLE_MESH_ADV_BEARER
-        case PB_TYPE_ADV:
+        case MESH_PB_TYPE_ADV:
             pb_adv_close_link(transport_cid, reason);    
             break;
 #endif
 #ifdef ENABLE_MESH_GATT_BEARER
-        case PB_TYPE_GATT:
+        case MESH_PB_TYPE_GATT:
             pb_gatt_close_link(transport_cid, reason);    
             break;
 #endif
