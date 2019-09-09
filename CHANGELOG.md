@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - L2CAP ERTM: stop timers on disconnect
 - L2CAP ERTM: fix sending of segmented SDUs
 - L2CAP ERTM: handle unsupported Information Response
+- SM: generate local nonce for confirm value in JW+NC+PK in Secure Connections Responder role
 
 ### Added
 - btstack_run_loop_base: portable implementation of timer and data source managment as base for platform specific implementations
