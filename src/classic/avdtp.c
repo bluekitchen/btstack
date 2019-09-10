@@ -67,7 +67,7 @@ static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 // } avdtp_sdp_query_context_t;
 
 static avdtp_context_t * sdp_query_context;
-static uint16_t avdtp_cid_counter = 0x55;
+static uint16_t avdtp_cid_counter = 0;
 
 static void (*handle_media_data)(uint8_t local_seid, uint8_t *packet, uint16_t size);
 static void avdtp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -118,21 +118,42 @@ static uint16_t avdtp_get_next_initiator_transaction_label(avdtp_context_t * con
     return context->initiator_transaction_id_counter;
 }
 
-static uint16_t avdtp_get_next_avdtp_cid(void){
-    avdtp_cid_counter++;
-    if (avdtp_cid_counter == 0){
-        avdtp_cid_counter = 1;
-    }
+static uint16_t avdtp_get_next_avdtp_cid(avdtp_context_t * context){
+    do {
+        if (avdtp_cid_counter == 0xffff) {
+            avdtp_cid_counter = 1;
+        } else {
+            avdtp_cid_counter++;
+        }
+    } while (avdtp_connection_for_avdtp_cid(avdtp_cid_counter, context) !=  NULL) ;
     return avdtp_cid_counter;
 }
 
-static uint16_t avdtp_get_next_local_seid(avdtp_context_t * context){
-    context->stream_endpoints_id_counter++;
-    if (context->stream_endpoints_id_counter == 0){
-        context->stream_endpoints_id_counter = 1;
+static avdtp_stream_endpoint_t * avdtp_stream_endpoint_for_id(avdtp_context_t * context, uint16_t stream_endpoint_id) {
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) context->stream_endpoints; it ; it = it->next){
+        rfcomm_multiplexer_t * multiplexer = ((rfcomm_multiplexer_t *) it);
+        avdtp_stream_endpoint_t * stream_endpoint = ((avdtp_stream_endpoint_t *) it);
+
+        if (stream_endpoint->sep.seid == stream_endpoint_id) {
+            return stream_endpoint;
+        };
     }
-    return context->stream_endpoints_id_counter;
+    return NULL;
 }
+
+static uint16_t avdtp_get_next_local_seid(avdtp_context_t * context){
+    uint16_t stream_endpoint_id = context->stream_endpoints_id_counter;
+    do {
+        if (stream_endpoint_id == 0xffff) {
+            stream_endpoint_id = 1;
+        } else {
+            stream_endpoint_id++;
+        }
+    } while (avdtp_stream_endpoint_for_id(context, stream_endpoint_id) !=  NULL) ;
+    return stream_endpoint_id;
+}
+
 
 uint8_t avdtp_connect(bd_addr_t remote, avdtp_sep_type_t query_role, avdtp_context_t * avdtp_context, uint16_t * avdtp_cid){
     sdp_query_context = avdtp_context;
@@ -318,7 +339,7 @@ avdtp_connection_t * avdtp_create_connection(bd_addr_t remote_addr, avdtp_contex
     }
     connection->state = AVDTP_SIGNALING_CONNECTION_IDLE;
     connection->initiator_transaction_label = avdtp_get_next_initiator_transaction_label(context);
-    connection->avdtp_cid = avdtp_get_next_avdtp_cid();
+    connection->avdtp_cid = avdtp_get_next_avdtp_cid(context);
     context->avdtp_cid = connection->avdtp_cid;
     memcpy(connection->remote_addr, remote_addr, 6);
     btstack_linked_list_add(&context->connections, (btstack_linked_item_t *) connection);
