@@ -167,6 +167,29 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
 
 // MARK: RFCOMM CLIENT EVENTS
 
+static rfcomm_channel_t * rfcomm_channel_for_rfcomm_cid(uint16_t rfcomm_cid){
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) rfcomm_channels; it ; it = it->next){
+        rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
+        if (channel->rfcomm_cid == rfcomm_cid) {
+            return channel;
+        };
+    }
+    return NULL;
+}
+
+static uint16_t rfcomm_next_client_cid(void){
+    do {
+        if (rfcomm_client_cid_generator == 0xffff) {
+            // don't use 0 as channel id
+            rfcomm_client_cid_generator = 1;
+        } else {
+            rfcomm_client_cid_generator++;
+        }
+    } while (rfcomm_channel_for_rfcomm_cid(rfcomm_client_cid_generator) != NULL);
+    return rfcomm_client_cid_generator;
+}
+
 // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
 static void rfcomm_emit_connection_request(rfcomm_channel_t *channel) {
     log_info("RFCOMM_EVENT_INCOMING_CONNECTION addr %s channel #%u cid 0x%02x",
@@ -380,9 +403,6 @@ static void rfcomm_dump_channels(void){
 static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiplexer_t *multiplexer, 
                                rfcomm_service_t *service, uint8_t server_channel){
     
-    // don't use 0 as channel id
-    if (rfcomm_client_cid_generator == 0) ++rfcomm_client_cid_generator;
-        
     // set defaults for port configuration (even for services)
     rfcomm_rpn_data_set_defaults(&channel->rpn_data);
 
@@ -390,7 +410,7 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
     channel->state_var        = RFCOMM_CHANNEL_STATE_VAR_NONE;
     
     channel->multiplexer      = multiplexer;
-    channel->rfcomm_cid       = rfcomm_client_cid_generator++;
+    channel->rfcomm_cid       = rfcomm_next_client_cid();
     channel->max_frame_size   = multiplexer->max_frame_size;
 
     channel->credits_incoming = 0;
@@ -449,17 +469,6 @@ static void rfcomm_notify_channel_can_send(void){
         channel->waiting_for_can_send_now = 0;
         rfcomm_emit_can_send_now(channel);
     }
-}
-
-static rfcomm_channel_t * rfcomm_channel_for_rfcomm_cid(uint16_t rfcomm_cid){
-    btstack_linked_item_t *it;
-    for (it = (btstack_linked_item_t *) rfcomm_channels; it ; it = it->next){
-        rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
-        if (channel->rfcomm_cid == rfcomm_cid) {
-            return channel;
-        };
-    }
-    return NULL;
 }
 
 static rfcomm_channel_t * rfcomm_channel_for_multiplexer_and_dlci(rfcomm_multiplexer_t * multiplexer, uint8_t dlci){
