@@ -190,6 +190,32 @@ static uint16_t rfcomm_next_client_cid(void){
     return rfcomm_client_cid_generator;
 }
 
+#ifdef RFCOMM_USE_ERTM
+static rfcomm_multiplexer_t * rfcomm_multiplexer_for_ertm_id(uint16_t ertm_id) {
+    btstack_linked_item_t *it;
+    for (it = (btstack_linked_item_t *) rfcomm_multiplexers; it ; it = it->next){
+        rfcomm_multiplexer_t * multiplexer = ((rfcomm_multiplexer_t *) it);
+        if (multiplexer->ertm_id == l2cap_cid) {
+            return multiplexer;
+        };
+    }
+    return NULL;
+}
+
+static uint16_t rfcomm_next_ertm_id(void){
+    do {
+        if (ertm_id == 0xffff) {
+            // don't use 0 as channel id
+            ertm_id = 1;
+        } else {
+            ertm_id++;
+        }
+    } while (rfcomm_multiplexer_for_ertm_id(ertm_id) != NULL);
+    return ertm_id;
+}
+
+#endif
+
 // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
 static void rfcomm_emit_connection_request(rfcomm_channel_t *channel) {
     log_info("RFCOMM_EVENT_INCOMING_CONNECTION addr %s channel #%u cid 0x%02x",
@@ -1017,7 +1043,7 @@ static int rfcomm_hci_event_handler(uint8_t *packet, uint16_t size){
             rfcomm_ertm_request_t request;
             memset(&request, 0, sizeof(rfcomm_ertm_request_t));
             memcpy(request.addr, event_addr, 6);
-            request.ertm_id = ++ertm_id;
+            request.ertm_id = rfcomm_next_ertm_id();
             if (rfcomm_ertm_request_callback){
                 (*rfcomm_ertm_request_callback)(&request);
             }
@@ -2398,7 +2424,7 @@ static uint8_t rfcomm_channel_create_internal(btstack_packet_handler_t packet_ha
         rfcomm_ertm_request_t request;
         memset(&request, 0, sizeof(rfcomm_ertm_request_t));
         memcpy(request.addr, addr, 6);
-        request.ertm_id = ++ertm_id;
+        request.ertm_id = rfcomm_next_ertm_id();
         if (rfcomm_ertm_request_callback){
             (*rfcomm_ertm_request_callback)(&request);
         }
