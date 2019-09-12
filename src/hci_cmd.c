@@ -592,7 +592,21 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x03), ""
  * @param handle
  */
 const hci_cmd_t hci_flush = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x09), "H"
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x08), "H"
+};
+
+/**
+ * @param handle
+ */
+const hci_cmd_t hci_read_pin_type = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x09), ""
+};
+
+/**
+ * @param handle
+ */
+const hci_cmd_t hci_write_pin_type = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x0A), "1"
 };
 
 /**
