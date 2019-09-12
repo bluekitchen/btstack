@@ -54,6 +54,7 @@
 #include "mesh/gatt_bearer.h"
 #include "mesh/mesh_access.h"
 #include "mesh/mesh_configuration_server.h"
+#include "mesh/mesh_health_server.h"
 #include "mesh/mesh_foundation.h"
 #include "mesh/mesh_generic_model.h"
 #include "mesh/mesh_generic_on_off_server.h"
@@ -139,10 +140,11 @@ static int provisioned;
 
 // Mandatory Confiuration Server 
 static mesh_model_t                 mesh_configuration_server_model;
+static mesh_configuration_server_model_context_t mesh_configuration_server_model_context;
 
 // Mandatory Health Server
 static mesh_model_t                 mesh_health_server_model;
-static mesh_configuration_server_model_context_t mesh_configuration_server_model_context;
+static mesh_health_state_t  mesh_health_server_model_context;
 
 // Random UUID on start
 static btstack_crypto_random_t mesh_access_crypto_random;
@@ -1141,6 +1143,8 @@ static void mesh_node_setup_default_models(void){
 
     // Config Health Server
     mesh_health_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_HEALTH_SERVER);
+    mesh_health_server_model.model_data       = &mesh_health_server_model_context;
+    mesh_health_server_model.operations       = mesh_health_server_get_operations();    
     mesh_element_add_model(mesh_node_get_primary_element(), &mesh_health_server_model);
 }
 
