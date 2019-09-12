@@ -312,6 +312,8 @@ static void process_message_attention_set(mesh_model_t *mesh_model, mesh_pdu_t *
     uint8_t timer_s = mesh_access_parser_get_u8(&parser);
     mesh_attention_timer_set(timer_s);
     
+    if (mesh_model->model_packet_handler == NULL) return;
+    
     uint8_t event[4];
     int pos = 0;
     event[pos++] = HCI_EVENT_MESH_META;
@@ -360,14 +362,6 @@ const mesh_operation_t * mesh_health_server_get_operations(void){
 }
 
 void mesh_health_server_register_packet_handler(mesh_model_t *mesh_model, btstack_packet_handler_t events_packet_handler){
-    if (events_packet_handler == NULL){
-        log_error(" mesh_health_server_register_packet_handler called with NULL callback");
-        return;
-    }
-    if (mesh_model == NULL){
-        log_error(" mesh_health_server_register_packet_handler called with NULL mesh_model");
-        return;
-    }
     mesh_model->model_packet_handler = events_packet_handler;
 }
 
