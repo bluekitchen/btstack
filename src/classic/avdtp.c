@@ -132,7 +132,6 @@ static uint16_t avdtp_get_next_avdtp_cid(avdtp_context_t * context){
 static avdtp_stream_endpoint_t * avdtp_stream_endpoint_for_id(avdtp_context_t * context, uint16_t stream_endpoint_id) {
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) context->stream_endpoints; it ; it = it->next){
-        rfcomm_multiplexer_t * multiplexer = ((rfcomm_multiplexer_t *) it);
         avdtp_stream_endpoint_t * stream_endpoint = ((avdtp_stream_endpoint_t *) it);
 
         if (stream_endpoint->sep.seid == stream_endpoint_id) {
