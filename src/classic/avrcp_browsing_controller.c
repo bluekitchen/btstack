@@ -48,20 +48,20 @@
 
 #define PSM_AVCTP_BROWSING              0x001b
 
-static uint16_t avrcp_browsing_cid = 0;
+static uint16_t avrcp_browsing_cid_counter = 0;
 
 static void avrcp_browser_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size, avrcp_context_t * context);
 static void avrcp_browsing_controller_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static uint16_t avrcp_browsing_get_next_cid(avrcp_role_t role){
     do {
-        if (avrcp_browsing_cid == 0xffff) {
-            avrcp_browsing_cid = 1;
+        if (avrcp_browsing_cid_counter == 0xffff) {
+            avrcp_browsing_cid_counter = 1;
         } else {
-            avrcp_browsing_cid++;
+            avrcp_browsing_cid_counter++;
         }
-    } while (get_avrcp_connection_for_browsing_l2cap_cid(role, avrcp_browsing_cid) !=  NULL) ;
-    return avrcp_browsing_cid;
+    } while (get_avrcp_connection_for_browsing_l2cap_cid(role, avrcp_browsing_cid_counter) !=  NULL) ;
+    return avrcp_browsing_cid_counter;
 }
 
 static void avrcp_emit_browsing_connection_established(btstack_packet_handler_t callback, uint16_t browsing_cid, bd_addr_t addr, uint8_t status){
@@ -109,7 +109,7 @@ static avrcp_browsing_connection_t * avrcp_browsing_create_connection(avrcp_conn
     avrcp_browsing_connection_t * connection = btstack_memory_avrcp_browsing_connection_get();
     connection->state = AVCTP_CONNECTION_IDLE;
     connection->transaction_label = 0xFF;
-    avrcp_connection->avrcp_browsing_cid = avrcp_get_next_cid(avrcp_connection->role);
+    avrcp_connection->avrcp_browsing_cid = avrcp_browsing_get_next_cid(avrcp_connection->role);
     avrcp_connection->browsing_connection = connection;
     return connection;
 }
