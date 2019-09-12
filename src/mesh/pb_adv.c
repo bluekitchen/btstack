@@ -451,6 +451,7 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         case HCI_EVENT_MESH_META:
             switch(packet[2]){
                 case MESH_SUBEVENT_CAN_SEND_NOW:
+#ifdef ENABLE_MESH_PROVISIONER
                     if (link_state == LINK_STATE_W4_ACK){
                         // build packet
                         uint8_t buffer[22];
@@ -467,6 +468,7 @@ static void pb_adv_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         btstack_run_loop_add_timer(&pb_adv_random_delay_timer);
                         break;
                     }
+#endif
                     if (link_state == LINK_STATE_CLOSING){
                         log_info("link close %08x", pb_adv_link_id);
                         printf("PB-ADV: Sending Link Close\n");

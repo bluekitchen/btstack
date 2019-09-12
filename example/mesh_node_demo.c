@@ -190,7 +190,7 @@ int btstack_main(void)
     // crypto
     btstack_crypto_init();
 
-#ifdef ENABLE_GATT_BEARER
+#ifdef ENABLE_MESH_GATT_BEARER
     // l2cap
     l2cap_init();
 
@@ -213,7 +213,7 @@ int btstack_main(void)
     // mesh
     mesh_init();
 
-#ifdef ENABLE_GATT_BEARER
+#ifdef ENABLE_MESH_GATT_BEARER
     // setup connectable advertisments
     bd_addr_t null_addr;
     memset(null_addr, 0, 6);
