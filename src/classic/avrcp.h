@@ -561,7 +561,7 @@ avrcp_connection_t * get_avrcp_connection_for_browsing_l2cap_cid(avrcp_role_t ro
 avrcp_browsing_connection_t * get_avrcp_browsing_connection_for_l2cap_cid(avrcp_role_t role, uint16_t l2cap_cid);
 
 void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_cid);
-uint16_t avrcp_get_next_cid(void);
+uint16_t avrcp_get_next_cid(avrcp_role_t role);
 
 // SDP query
 void avrcp_handle_sdp_client_query_result(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);

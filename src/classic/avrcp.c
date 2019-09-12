@@ -372,13 +372,17 @@ void avrcp_request_can_send_now(avrcp_connection_t * connection, uint16_t l2cap_
 }
 
 
-uint16_t avrcp_get_next_cid(void){
-    avrcp_cid_counter++;
-    if (avrcp_cid_counter == 0){
-        avrcp_cid_counter = 1;
-    }
+uint16_t avrcp_get_next_cid(avrcp_role_t role){
+    do {
+        if (avrcp_cid_counter == 0xffff) {
+            avrcp_cid_counter = 1;
+        } else {
+            avrcp_cid_counter++;
+        }
+    } while (get_avrcp_connection_for_avrcp_cid(role, avrcp_cid_counter) !=  NULL) ;
     return avrcp_cid_counter;
 }
+
 
 static avrcp_connection_t * avrcp_create_connection(avrcp_role_t role, bd_addr_t remote_addr){
     avrcp_connection_t * connection = btstack_memory_avrcp_connection_get();
@@ -391,7 +395,7 @@ static avrcp_connection_t * avrcp_create_connection(avrcp_role_t role, bd_addr_t
     connection->role = role;
     connection->transaction_label = 0xFF;
     connection->max_num_fragments = 0xFF;
-    connection->avrcp_cid = avrcp_get_next_cid();
+    connection->avrcp_cid = avrcp_get_next_cid(role);
     log_info("avrcp_create_connection, role %d, avrcp cid 0x%02x", role, connection->avrcp_cid);
     memcpy(connection->remote_addr, remote_addr, 6);
     btstack_linked_list_add(&connections, (btstack_linked_item_t *) connection);
