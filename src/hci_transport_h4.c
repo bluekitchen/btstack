@@ -288,8 +288,10 @@ static void hci_transport_h4_block_read(void){
             packet_handler(hci_packet[0], &hci_packet[1], read_pos-1);
             hci_transport_h4_reset_statemachine();
             break;
-        default:
-            break;
+
+        case H4_OFF:
+            bytes_to_read = 0;
+            return;
     }
 
 #ifdef ENABLE_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
