@@ -291,7 +291,7 @@ static void hci_transport_h4_block_read(void){
 
         case H4_OFF:
             bytes_to_read = 0;
-            return;
+            break;
     }
 
 #ifdef ENABLE_BAUDRATE_CHANGE_FLOWCONTROL_BUG_WORKAROUND
@@ -303,7 +303,9 @@ static void hci_transport_h4_block_read(void){
     }
 #endif
 
-    hci_transport_h4_trigger_next_read();
+    if (h4_state != H4_OFF) {
+        hci_transport_h4_trigger_next_read();
+    }
 }
 
 static void hci_transport_h4_block_sent(void){
