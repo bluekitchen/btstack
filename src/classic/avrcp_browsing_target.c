@@ -167,7 +167,7 @@ static avrcp_browsing_connection_t * avrcp_browsing_create_connection(avrcp_conn
     avrcp_browsing_connection_t * connection = btstack_memory_avrcp_browsing_connection_get();
     connection->state = AVCTP_CONNECTION_IDLE;
     connection->transaction_label = 0xFF;
-    avrcp_connection->avrcp_browsing_cid = avrcp_get_next_cid();
+    avrcp_connection->avrcp_browsing_cid = avrcp_get_next_cid(avrcp_connection->role);
     avrcp_connection->browsing_connection = connection;
     return connection;
 }
