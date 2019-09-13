@@ -285,8 +285,9 @@ static void hci_transport_h4_block_read(void){
 #endif
             }
 #endif
-            packet_handler(hci_packet[0], &hci_packet[1], read_pos-1);
+            // reset state machine before delivering packet to stack as it might close the transport
             hci_transport_h4_reset_statemachine();
+            packet_handler(hci_packet[0], &hci_packet[1], read_pos-1);
             break;
 
         case H4_OFF:
