@@ -207,7 +207,7 @@ static inline uint8_t hci_event_inquiry_result_get_num_responses(const uint8_t *
  * @note: btstack_type B
  */
 static inline void hci_event_inquiry_result_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[3], bd_addr);
+    reverse_bytes(&event[3], bd_addr, 6);
 }
 /**
  * @brief Get field page_scan_repetition_mode from event HCI_EVENT_INQUIRY_RESULT
@@ -280,7 +280,7 @@ static inline uint16_t hci_event_connection_complete_get_connection_handle(const
  * @note: btstack_type B
  */
 static inline void hci_event_connection_complete_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[5], bd_addr);
+    reverse_bytes(&event[5], bd_addr, 6);
 }
 /**
  * @brief Get field link_type from event HCI_EVENT_CONNECTION_COMPLETE
@@ -308,7 +308,7 @@ static inline uint8_t hci_event_connection_complete_get_encryption_enabled(const
  * @note: btstack_type B
  */
 static inline void hci_event_connection_request_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[2], bd_addr);
+    reverse_bytes(&event[2], bd_addr, 6);
 }
 /**
  * @brief Get field class_of_device from event HCI_EVENT_CONNECTION_REQUEST
@@ -392,7 +392,7 @@ static inline uint8_t hci_event_remote_name_request_complete_get_status(const ui
  * @note: btstack_type B
  */
 static inline void hci_event_remote_name_request_complete_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[3], bd_addr);
+    reverse_bytes(&event[3], bd_addr, 6);
 }
 /**
  * @brief Get field remote_name from event HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
@@ -607,7 +607,7 @@ static inline uint8_t hci_event_role_change_get_status(const uint8_t * event){
  * @note: btstack_type B
  */
 static inline void hci_event_role_change_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[3], bd_addr);
+    reverse_bytes(&event[3], bd_addr, 6);
 }
 /**
  * @brief Get field role from event HCI_EVENT_ROLE_CHANGE
@@ -663,7 +663,7 @@ static inline uint16_t hci_event_mode_change_get_interval(const uint8_t * event)
  * @note: btstack_type B
  */
 static inline void hci_event_pin_code_request_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[2], bd_addr);
+    reverse_bytes(&event[2], bd_addr, 6);
 }
 
 /**
@@ -673,7 +673,7 @@ static inline void hci_event_pin_code_request_get_bd_addr(const uint8_t * event,
  * @note: btstack_type B
  */
 static inline void hci_event_link_key_request_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[2], bd_addr);
+    reverse_bytes(&event[2], bd_addr, 6);
 }
 
 /**
@@ -777,7 +777,7 @@ static inline uint8_t hci_event_inquiry_result_with_rssi_get_num_responses(const
  * @note: btstack_type B
  */
 static inline void hci_event_inquiry_result_with_rssi_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[3], bd_addr);
+    reverse_bytes(&event[3], bd_addr, 6);
 }
 /**
  * @brief Get field page_scan_repetition_mode from event HCI_EVENT_INQUIRY_RESULT_WITH_RSSI
@@ -850,7 +850,7 @@ static inline hci_con_handle_t hci_event_synchronous_connection_complete_get_han
  * @note: btstack_type B
  */
 static inline void hci_event_synchronous_connection_complete_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[5], bd_addr);
+    reverse_bytes(&event[5], bd_addr, 6);
 }
 /**
  * @brief Get field link_type from event HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE
@@ -923,7 +923,7 @@ static inline uint8_t hci_event_extended_inquiry_response_get_num_responses(cons
  * @note: btstack_type B
  */
 static inline void hci_event_extended_inquiry_response_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[3], bd_addr);
+    reverse_bytes(&event[3], bd_addr, 6);
 }
 /**
  * @brief Get field page_scan_repetition_mode from event HCI_EVENT_EXTENDED_INQUIRY_RESPONSE
@@ -997,7 +997,7 @@ static inline hci_con_handle_t hci_event_encryption_key_refresh_complete_get_han
  * @note: btstack_type B
  */
 static inline void hci_event_user_confirmation_request_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[2], bd_addr);
+    reverse_bytes(&event[2], bd_addr, 6);
 }
 /**
  * @brief Get field numeric_value from event HCI_EVENT_USER_CONFIRMATION_REQUEST
@@ -1016,7 +1016,7 @@ static inline uint32_t hci_event_user_confirmation_request_get_numeric_value(con
  * @note: btstack_type B
  */
 static inline void hci_event_user_passkey_request_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[2], bd_addr);
+    reverse_bytes(&event[2], bd_addr, 6);
 }
 
 /**
@@ -1026,7 +1026,7 @@ static inline void hci_event_user_passkey_request_get_bd_addr(const uint8_t * ev
  * @note: btstack_type B
  */
 static inline void hci_event_remote_oob_data_request_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[2], bd_addr);
+    reverse_bytes(&event[2], bd_addr, 6);
 }
 
 /**
@@ -1045,7 +1045,7 @@ static inline uint8_t hci_event_simple_pairing_complete_get_status(const uint8_t
  * @note: btstack_type B
  */
 static inline void hci_event_simple_pairing_complete_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[3], bd_addr);
+    reverse_bytes(&event[3], bd_addr, 6);
 }
 
 /**
@@ -1096,7 +1096,7 @@ static inline uint8_t hci_event_transport_sleep_mode_get_active(const uint8_t * 
  * @note: btstack_type B
  */
 static inline void hci_event_sco_can_send_now_get_handle(const uint8_t * event, bd_addr_t handle){
-    reverse_bd_addr(&event[2], handle);
+    reverse_bytes(&event[2], handle, 6);
 }
 
 /**
@@ -1115,7 +1115,7 @@ static inline uint8_t l2cap_event_channel_opened_get_status(const uint8_t * even
  * @note: btstack_type B
  */
 static inline void l2cap_event_channel_opened_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[3], address);
+    reverse_bytes(&event[3], address, 6);
 }
 /**
  * @brief Get field handle from event L2CAP_EVENT_CHANNEL_OPENED
@@ -1225,7 +1225,7 @@ static inline uint16_t l2cap_event_channel_closed_get_local_cid(const uint8_t * 
  * @note: btstack_type B
  */
 static inline void l2cap_event_incoming_connection_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[2], address);
+    reverse_bytes(&event[2], address, 6);
 }
 /**
  * @brief Get field handle from event L2CAP_EVENT_INCOMING_CONNECTION
@@ -1355,7 +1355,7 @@ static inline uint8_t l2cap_event_le_incoming_connection_get_address_type(const 
  * @note: btstack_type B
  */
 static inline void l2cap_event_le_incoming_connection_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[3], address);
+    reverse_bytes(&event[3], address, 6);
 }
 /**
  * @brief Get field handle from event L2CAP_EVENT_LE_INCOMING_CONNECTION
@@ -1428,7 +1428,7 @@ static inline uint8_t l2cap_event_le_channel_opened_get_address_type(const uint8
  * @note: btstack_type B
  */
 static inline void l2cap_event_le_channel_opened_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[4], address);
+    reverse_bytes(&event[4], address, 6);
 }
 /**
  * @brief Get field handle from event L2CAP_EVENT_LE_CHANNEL_OPENED
@@ -1550,7 +1550,7 @@ static inline uint8_t rfcomm_event_channel_opened_get_status(const uint8_t * eve
  * @note: btstack_type B
  */
 static inline void rfcomm_event_channel_opened_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[3], bd_addr);
+    reverse_bytes(&event[3], bd_addr, 6);
 }
 /**
  * @brief Get field con_handle from event RFCOMM_EVENT_CHANNEL_OPENED
@@ -1615,7 +1615,7 @@ static inline uint16_t rfcomm_event_channel_closed_get_rfcomm_cid(const uint8_t 
  * @note: btstack_type B
  */
 static inline void rfcomm_event_incoming_connection_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[2], bd_addr);
+    reverse_bytes(&event[2], bd_addr, 6);
 }
 /**
  * @brief Get field server_channel from event RFCOMM_EVENT_INCOMING_CONNECTION
@@ -2230,7 +2230,7 @@ static inline uint8_t att_event_connected_get_address_type(const uint8_t * event
  * @note: btstack_type B
  */
 static inline void att_event_connected_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[3], address);
+    reverse_bytes(&event[3], address, 6);
 }
 /**
  * @brief Get field handle from event ATT_EVENT_CONNECTED
@@ -2371,7 +2371,7 @@ static inline uint16_t bnep_event_channel_opened_get_mtu(const uint8_t * event){
  * @note: btstack_type B
  */
 static inline void bnep_event_channel_opened_get_remote_address(const uint8_t * event, bd_addr_t remote_address){
-    reverse_bd_addr(&event[11], remote_address);
+    reverse_bytes(&event[11], remote_address, 6);
 }
 /**
  * @brief Get field con_handle from event BNEP_EVENT_CHANNEL_OPENED
@@ -2417,7 +2417,7 @@ static inline uint16_t bnep_event_channel_closed_get_destination_uuid(const uint
  * @note: btstack_type B
  */
 static inline void bnep_event_channel_closed_get_remote_address(const uint8_t * event, bd_addr_t remote_address){
-    reverse_bd_addr(&event[8], remote_address);
+    reverse_bytes(&event[8], remote_address, 6);
 }
 
 /**
@@ -2454,7 +2454,7 @@ static inline uint16_t bnep_event_channel_timeout_get_destination_uuid(const uin
  * @note: btstack_type B
  */
 static inline void bnep_event_channel_timeout_get_remote_address(const uint8_t * event, bd_addr_t remote_address){
-    reverse_bd_addr(&event[8], remote_address);
+    reverse_bytes(&event[8], remote_address, 6);
 }
 /**
  * @brief Get field channel_state from event BNEP_EVENT_CHANNEL_TIMEOUT
@@ -2500,7 +2500,7 @@ static inline uint16_t bnep_event_can_send_now_get_destination_uuid(const uint8_
  * @note: btstack_type B
  */
 static inline void bnep_event_can_send_now_get_remote_address(const uint8_t * event, bd_addr_t remote_address){
-    reverse_bd_addr(&event[8], remote_address);
+    reverse_bytes(&event[8], remote_address, 6);
 }
 
 #ifdef ENABLE_BLE
@@ -2529,7 +2529,7 @@ static inline uint8_t sm_event_just_works_request_get_addr_type(const uint8_t * 
  * @note: btstack_type B
  */
 static inline void sm_event_just_works_request_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[5], address);
+    reverse_bytes(&event[5], address, 6);
 }
 #endif
 
@@ -2559,7 +2559,7 @@ static inline uint8_t sm_event_just_works_cancel_get_addr_type(const uint8_t * e
  * @note: btstack_type B
  */
 static inline void sm_event_just_works_cancel_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[5], address);
+    reverse_bytes(&event[5], address, 6);
 }
 #endif
 
@@ -2589,7 +2589,7 @@ static inline uint8_t sm_event_passkey_display_number_get_addr_type(const uint8_
  * @note: btstack_type B
  */
 static inline void sm_event_passkey_display_number_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[5], address);
+    reverse_bytes(&event[5], address, 6);
 }
 /**
  * @brief Get field passkey from event SM_EVENT_PASSKEY_DISPLAY_NUMBER
@@ -2628,7 +2628,7 @@ static inline uint8_t sm_event_passkey_display_cancel_get_addr_type(const uint8_
  * @note: btstack_type B
  */
 static inline void sm_event_passkey_display_cancel_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[5], address);
+    reverse_bytes(&event[5], address, 6);
 }
 #endif
 
@@ -2658,7 +2658,7 @@ static inline uint8_t sm_event_passkey_input_number_get_addr_type(const uint8_t 
  * @note: btstack_type B
  */
 static inline void sm_event_passkey_input_number_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[5], address);
+    reverse_bytes(&event[5], address, 6);
 }
 #endif
 
@@ -2688,7 +2688,7 @@ static inline uint8_t sm_event_passkey_input_cancel_get_addr_type(const uint8_t 
  * @note: btstack_type B
  */
 static inline void sm_event_passkey_input_cancel_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[5], address);
+    reverse_bytes(&event[5], address, 6);
 }
 #endif
 
@@ -2718,7 +2718,7 @@ static inline uint8_t sm_event_numeric_comparison_request_get_addr_type(const ui
  * @note: btstack_type B
  */
 static inline void sm_event_numeric_comparison_request_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[5], address);
+    reverse_bytes(&event[5], address, 6);
 }
 /**
  * @brief Get field passkey from event SM_EVENT_NUMERIC_COMPARISON_REQUEST
@@ -2757,7 +2757,7 @@ static inline uint8_t sm_event_numeric_comparison_cancel_get_addr_type(const uin
  * @note: btstack_type B
  */
 static inline void sm_event_numeric_comparison_cancel_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[5], address);
+    reverse_bytes(&event[5], address, 6);
 }
 #endif
 
@@ -2787,7 +2787,7 @@ static inline uint8_t sm_event_identity_resolving_started_get_addr_type(const ui
  * @note: btstack_type B
  */
 static inline void sm_event_identity_resolving_started_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[5], address);
+    reverse_bytes(&event[5], address, 6);
 }
 #endif
 
@@ -2817,7 +2817,7 @@ static inline uint8_t sm_event_identity_resolving_failed_get_addr_type(const uin
  * @note: btstack_type B
  */
 static inline void sm_event_identity_resolving_failed_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[5], address);
+    reverse_bytes(&event[5], address, 6);
 }
 #endif
 
@@ -2847,7 +2847,7 @@ static inline uint8_t sm_event_identity_resolving_succeeded_get_addr_type(const 
  * @note: btstack_type B
  */
 static inline void sm_event_identity_resolving_succeeded_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[5], address);
+    reverse_bytes(&event[5], address, 6);
 }
 /**
  * @brief Get field identity_addr_type from event SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED
@@ -2865,7 +2865,7 @@ static inline uint8_t sm_event_identity_resolving_succeeded_get_identity_addr_ty
  * @note: btstack_type B
  */
 static inline void sm_event_identity_resolving_succeeded_get_identity_address(const uint8_t * event, bd_addr_t identity_address){
-    reverse_bd_addr(&event[12], identity_address);
+    reverse_bytes(&event[12], identity_address, 6);
 }
 /**
  * @brief Get field index from event SM_EVENT_IDENTITY_RESOLVING_SUCCEEDED
@@ -2904,7 +2904,7 @@ static inline uint8_t sm_event_authorization_request_get_addr_type(const uint8_t
  * @note: btstack_type B
  */
 static inline void sm_event_authorization_request_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[5], address);
+    reverse_bytes(&event[5], address, 6);
 }
 #endif
 
@@ -2934,7 +2934,7 @@ static inline uint8_t sm_event_authorization_result_get_addr_type(const uint8_t 
  * @note: btstack_type B
  */
 static inline void sm_event_authorization_result_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[5], address);
+    reverse_bytes(&event[5], address, 6);
 }
 /**
  * @brief Get field authorization_result from event SM_EVENT_AUTHORIZATION_RESULT
@@ -2994,7 +2994,7 @@ static inline uint8_t sm_event_identity_created_get_addr_type(const uint8_t * ev
  * @note: btstack_type B
  */
 static inline void sm_event_identity_created_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[5], address);
+    reverse_bytes(&event[5], address, 6);
 }
 /**
  * @brief Get field identity_addr_type from event SM_EVENT_IDENTITY_CREATED
@@ -3012,7 +3012,7 @@ static inline uint8_t sm_event_identity_created_get_identity_addr_type(const uin
  * @note: btstack_type B
  */
 static inline void sm_event_identity_created_get_identity_address(const uint8_t * event, bd_addr_t identity_address){
-    reverse_bd_addr(&event[12], identity_address);
+    reverse_bytes(&event[12], identity_address, 6);
 }
 /**
  * @brief Get field index from event SM_EVENT_IDENTITY_CREATED
@@ -3051,7 +3051,7 @@ static inline uint8_t sm_event_pairing_complete_get_addr_type(const uint8_t * ev
  * @note: btstack_type B
  */
 static inline void sm_event_pairing_complete_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[5], address);
+    reverse_bytes(&event[5], address, 6);
 }
 /**
  * @brief Get field status from event SM_EVENT_PAIRING_COMPLETE
@@ -3108,7 +3108,7 @@ static inline uint8_t gap_event_dedicated_bonding_completed_get_status(const uin
  * @note: btstack_type B
  */
 static inline void gap_event_dedicated_bonding_completed_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[3], address);
+    reverse_bytes(&event[3], address, 6);
 }
 
 /**
@@ -3136,7 +3136,7 @@ static inline uint8_t gap_event_advertising_report_get_address_type(const uint8_
  * @note: btstack_type B
  */
 static inline void gap_event_advertising_report_get_address(const uint8_t * event, bd_addr_t address){
-    reverse_bd_addr(&event[4], address);
+    reverse_bytes(&event[4], address, 6);
 }
 /**
  * @brief Get field rssi from event GAP_EVENT_ADVERTISING_REPORT
@@ -3173,7 +3173,7 @@ static inline const uint8_t * gap_event_advertising_report_get_data(const uint8_
  * @note: btstack_type B
  */
 static inline void gap_event_inquiry_result_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[2], bd_addr);
+    reverse_bytes(&event[2], bd_addr, 6);
 }
 /**
  * @brief Get field page_scan_repetition_mode from event GAP_EVENT_INQUIRY_RESULT
@@ -3320,7 +3320,7 @@ static inline uint8_t hci_subevent_le_connection_complete_get_peer_address_type(
  * @note: btstack_type B
  */
 static inline void hci_subevent_le_connection_complete_get_peer_address(const uint8_t * event, bd_addr_t peer_address){
-    reverse_bd_addr(&event[8], peer_address);
+    reverse_bytes(&event[8], peer_address, 6);
 }
 /**
  * @brief Get field conn_interval from event HCI_SUBEVENT_LE_CONNECTION_COMPLETE
@@ -3643,7 +3643,7 @@ static inline uint8_t hci_subevent_le_enhanced_connection_complete_get_peer_addr
  * @note: btstack_type B
  */
 static inline void hci_subevent_le_enhanced_connection_complete_get_perr_addresss(const uint8_t * event, bd_addr_t perr_addresss){
-    reverse_bd_addr(&event[8], perr_addresss);
+    reverse_bytes(&event[8], perr_addresss, 6);
 }
 /**
  * @brief Get field local_resolvable_private_addres from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE
@@ -3652,7 +3652,7 @@ static inline void hci_subevent_le_enhanced_connection_complete_get_perr_address
  * @note: btstack_type B
  */
 static inline void hci_subevent_le_enhanced_connection_complete_get_local_resolvable_private_addres(const uint8_t * event, bd_addr_t local_resolvable_private_addres){
-    reverse_bd_addr(&event[14], local_resolvable_private_addres);
+    reverse_bytes(&event[14], local_resolvable_private_addres, 6);
 }
 /**
  * @brief Get field peer_resolvable_private_addres from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE
@@ -3661,7 +3661,7 @@ static inline void hci_subevent_le_enhanced_connection_complete_get_local_resolv
  * @note: btstack_type B
  */
 static inline void hci_subevent_le_enhanced_connection_complete_get_peer_resolvable_private_addres(const uint8_t * event, bd_addr_t peer_resolvable_private_addres){
-    reverse_bd_addr(&event[20], peer_resolvable_private_addres);
+    reverse_bytes(&event[20], peer_resolvable_private_addres, 6);
 }
 /**
  * @brief Get field conn_interval from event HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE
@@ -3833,7 +3833,7 @@ static inline hci_con_handle_t hfp_subevent_service_level_connection_established
  * @note: btstack_type B
  */
 static inline void hfp_subevent_service_level_connection_established_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[6], bd_addr);
+    reverse_bytes(&event[6], bd_addr, 6);
 }
 
 
@@ -3862,7 +3862,7 @@ static inline hci_con_handle_t hfp_subevent_audio_connection_established_get_han
  * @note: btstack_type B
  */
 static inline void hfp_subevent_audio_connection_established_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[6], bd_addr);
+    reverse_bytes(&event[6], bd_addr, 6);
 }
 /**
  * @brief Get field negotiated_codec from event HFP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED
@@ -4365,7 +4365,7 @@ static inline uint16_t avdtp_subevent_signaling_connection_established_get_avdtp
  * @note: btstack_type B
  */
 static inline void avdtp_subevent_signaling_connection_established_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[5], bd_addr);
+    reverse_bytes(&event[5], bd_addr, 6);
 }
 /**
  * @brief Get field status from event AVDTP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED
@@ -5153,7 +5153,7 @@ static inline uint16_t avdtp_subevent_streaming_connection_established_get_avdtp
  * @note: btstack_type B
  */
 static inline void avdtp_subevent_streaming_connection_established_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[5], bd_addr);
+    reverse_bytes(&event[5], bd_addr, 6);
 }
 /**
  * @brief Get field local_seid from event AVDTP_SUBEVENT_STREAMING_CONNECTION_ESTABLISHED
@@ -5494,7 +5494,7 @@ static inline uint16_t a2dp_subevent_stream_established_get_a2dp_cid(const uint8
  * @note: btstack_type B
  */
 static inline void a2dp_subevent_stream_established_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[5], bd_addr);
+    reverse_bytes(&event[5], bd_addr, 6);
 }
 /**
  * @brief Get field local_seid from event A2DP_SUBEVENT_STREAM_ESTABLISHED
@@ -5672,7 +5672,7 @@ static inline uint16_t a2dp_subevent_signaling_connection_established_get_a2dp_c
  * @note: btstack_type B
  */
 static inline void a2dp_subevent_signaling_connection_established_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[5], bd_addr);
+    reverse_bytes(&event[5], bd_addr, 6);
 }
 /**
  * @brief Get field status from event A2DP_SUBEVENT_SIGNALING_CONNECTION_ESTABLISHED
@@ -5738,7 +5738,7 @@ static inline uint8_t avrcp_subevent_connection_established_get_status(const uin
  * @note: btstack_type B
  */
 static inline void avrcp_subevent_connection_established_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[4], bd_addr);
+    reverse_bytes(&event[4], bd_addr, 6);
 }
 /**
  * @brief Get field avrcp_cid from event AVRCP_SUBEVENT_CONNECTION_ESTABLISHED
@@ -6421,7 +6421,7 @@ static inline uint8_t avrcp_subevent_now_playing_info_done_get_status(const uint
  * @note: btstack_type B
  */
 static inline void avrcp_subevent_incoming_browsing_connection_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[3], bd_addr);
+    reverse_bytes(&event[3], bd_addr, 6);
 }
 /**
  * @brief Get field browsing_cid from event AVRCP_SUBEVENT_INCOMING_BROWSING_CONNECTION
@@ -6449,7 +6449,7 @@ static inline uint8_t avrcp_subevent_browsing_connection_established_get_status(
  * @note: btstack_type B
  */
 static inline void avrcp_subevent_browsing_connection_established_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[4], bd_addr);
+    reverse_bytes(&event[4], bd_addr, 6);
 }
 /**
  * @brief Get field browsing_cid from event AVRCP_SUBEVENT_BROWSING_CONNECTION_ESTABLISHED
@@ -6608,7 +6608,7 @@ static inline uint8_t goep_subevent_connection_opened_get_status(const uint8_t *
  * @note: btstack_type B
  */
 static inline void goep_subevent_connection_opened_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[6], bd_addr);
+    reverse_bytes(&event[6], bd_addr, 6);
 }
 /**
  * @brief Get field con_handle from event GOEP_SUBEVENT_CONNECTION_OPENED
@@ -6674,7 +6674,7 @@ static inline uint8_t pbap_subevent_connection_opened_get_status(const uint8_t *
  * @note: btstack_type B
  */
 static inline void pbap_subevent_connection_opened_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[6], bd_addr);
+    reverse_bytes(&event[6], bd_addr, 6);
 }
 /**
  * @brief Get field con_handle from event PBAP_SUBEVENT_CONNECTION_OPENED
@@ -6851,7 +6851,7 @@ static inline uint8_t hid_subevent_connection_opened_get_status(const uint8_t * 
  * @note: btstack_type B
  */
 static inline void hid_subevent_connection_opened_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[6], bd_addr);
+    reverse_bytes(&event[6], bd_addr, 6);
 }
 /**
  * @brief Get field con_handle from event HID_SUBEVENT_CONNECTION_OPENED
@@ -7129,7 +7129,7 @@ static inline uint8_t map_subevent_connection_opened_get_status(const uint8_t * 
  * @note: btstack_type B
  */
 static inline void map_subevent_connection_opened_get_bd_addr(const uint8_t * event, bd_addr_t bd_addr){
-    reverse_bd_addr(&event[6], bd_addr);
+    reverse_bytes(&event[6], bd_addr, 6);
 }
 /**
  * @brief Get field con_handle from event MAP_SUBEVENT_CONNECTION_OPENED
