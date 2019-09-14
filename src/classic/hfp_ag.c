@@ -1111,6 +1111,21 @@ static int call_setup_state_machine(hfp_connection_t * hfp_connection){
     }
     return 0;
 }
+
+// functions extracted from hfp_ag_call_sm below
+static void hfp_ag_handle_reject_incoming_call(void){
+    hfp_connection_t * hfp_connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_INITIATED);
+    if (!hfp_connection){
+        log_info("hfp_ag_call_sm: did not find outgoing hfp_connection in initiated state");
+        return;
+    }
+    
+    hfp_gsm_handle_event(HFP_AG_OUTGOING_CALL_REJECTED);
+    hfp_connection->call_state = HFP_CALL_IDLE;
+    hfp_connection->send_error = 1;
+    hfp_ag_run_for_context(hfp_connection);
+}
+
 // hfp_connection is used to identify originating HF
 static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_connection){
     int indicator_index;
@@ -1423,21 +1438,12 @@ static void hfp_ag_call_sm(hfp_ag_call_event_t event, hfp_connection_t * hfp_con
                 hfp_emit_string_event(hfp_connection, HFP_SUBEVENT_PLACE_CALL_WITH_NUMBER, last_dialed_number);
             } else {
                 log_info("log_infoLast number missing: reject call");
-                hfp_ag_outgoing_call_rejected();
+                hfp_ag_handle_reject_incoming_call();
             }
             break;
         }
         case HFP_AG_OUTGOING_CALL_REJECTED:
-            hfp_connection = hfp_ag_connection_for_call_state(HFP_CALL_OUTGOING_INITIATED);
-            if (!hfp_connection){
-                log_info("hfp_ag_call_sm: did not find outgoing hfp_connection in initiated state");
-                break;
-            }
-            
-            hfp_gsm_handle_event(HFP_AG_OUTGOING_CALL_REJECTED);
-            hfp_connection->call_state = HFP_CALL_IDLE;
-            hfp_connection->send_error = 1;
-            hfp_ag_run_for_context(hfp_connection);
+            hfp_ag_handle_reject_incoming_call();
             break;
 
         case HFP_AG_OUTGOING_CALL_ACCEPTED:{
