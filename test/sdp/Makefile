@@ -51,7 +51,8 @@ COMMON = \
     pan.c \
     sdp_util.c \
     spp_server.c \
-
+    btstack_hid_parser.c \
+    
 COMMON_OBJ = $(COMMON:.c=.o)
 
 all: sdp_record_builder

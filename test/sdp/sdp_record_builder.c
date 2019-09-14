@@ -169,7 +169,7 @@ TEST(SDPRecordBuilder, AVRCP_TARGET){
     service_provider_name = "";
     descriptor_size = 0;
     expected_len = avrcp_target_record_size(browsing, service_name, service_provider_name);
-    avrcp_target_create_sdp_record(service_buffer, 0, browsing, 0, service_name, service_provider_name);
+    avrcp_target_create_sdp_record(service_buffer, 0, 0, service_name, service_provider_name);
     CHECK_EQUAL(de_get_len(service_buffer), expected_len);
 
     browsing = 1;
@@ -177,7 +177,7 @@ TEST(SDPRecordBuilder, AVRCP_TARGET){
     service_provider_name = "";
     descriptor_size = 0;
     expected_len = avrcp_target_record_size(browsing, service_name, service_provider_name);
-    avrcp_target_create_sdp_record(service_buffer, 0, browsing, 0, service_name, service_provider_name);
+    avrcp_target_create_sdp_record(service_buffer, 0, 0, service_name, service_provider_name);
     CHECK_EQUAL(de_get_len(service_buffer), expected_len);
 }
 
@@ -209,7 +209,7 @@ TEST(SDPRecordBuilder, AVRCP_CONTROLLER){
     service_provider_name = "";
     descriptor_size = 0;
     expected_len = avrcp_controller_record_size(browsing, service_name, service_provider_name);
-    avrcp_controller_create_sdp_record(service_buffer, 0, browsing, 0, service_name, service_provider_name);
+    avrcp_controller_create_sdp_record(service_buffer, 0, 0, service_name, service_provider_name);
     CHECK_EQUAL(de_get_len(service_buffer), expected_len);
 
     browsing = 1;
@@ -217,7 +217,7 @@ TEST(SDPRecordBuilder, AVRCP_CONTROLLER){
     service_provider_name = "";
     descriptor_size = 0;
     expected_len = avrcp_controller_record_size(browsing, service_name, service_provider_name);
-    avrcp_controller_create_sdp_record(service_buffer, 0, browsing, 0, service_name, service_provider_name);
+    avrcp_controller_create_sdp_record(service_buffer, 0, 0, service_name, service_provider_name);
     CHECK_EQUAL(de_get_len(service_buffer), expected_len);
 }
 
@@ -462,7 +462,7 @@ TEST(SDPRecordBuilder, GN){
     IPv4Subnet = NULL;
     IPv6Subnet = NULL;
     expected_len = pan_gn_sdp_record_size(network_packet_types, name, desc, IPv4Subnet, IPv6Subnet);
-    pan_create_gn_sdp_service(service_buffer, 0, network_packet_types, name, desc, BNEP_SECURITY_NONE, IPv4Subnet, IPv6Subnet);
+    pan_create_gn_sdp_record(service_buffer, 0, network_packet_types, name, desc, BNEP_SECURITY_NONE, IPv4Subnet, IPv6Subnet);
     CHECK_EQUAL(de_get_len(service_buffer), expected_len);
 
     // test ipv4 param
@@ -472,7 +472,7 @@ TEST(SDPRecordBuilder, GN){
     IPv4Subnet = NULL;
     IPv6Subnet = "";
     expected_len = pan_gn_sdp_record_size(network_packet_types, name, desc, IPv4Subnet, IPv6Subnet);
-    pan_create_gn_sdp_service(service_buffer, 0, network_packet_types, name, desc, BNEP_SECURITY_NONE, IPv4Subnet, IPv6Subnet);
+    pan_create_gn_sdp_record(service_buffer, 0, network_packet_types, name, desc, BNEP_SECURITY_NONE, IPv4Subnet, IPv6Subnet);
     CHECK_EQUAL(de_get_len(service_buffer), expected_len);
 
     // test ipv6 param
@@ -482,7 +482,7 @@ TEST(SDPRecordBuilder, GN){
     IPv4Subnet = "";
     IPv6Subnet = "";
     expected_len = pan_gn_sdp_record_size(network_packet_types, name, desc, IPv4Subnet, IPv6Subnet);
-    pan_create_gn_sdp_service(service_buffer, 0, network_packet_types, name, desc, BNEP_SECURITY_NONE, IPv4Subnet, IPv6Subnet);
+    pan_create_gn_sdp_record(service_buffer, 0, network_packet_types, name, desc, BNEP_SECURITY_NONE, IPv4Subnet, IPv6Subnet);
     CHECK_EQUAL(de_get_len(service_buffer), expected_len);
 }
 
