@@ -18,7 +18,7 @@ COMMON_OBJ = $(COMMON:.c=.o)
 all: hid_parser_test
 
 hid_parser_test: btstack_hid_parser.c btstack_util.c hid_parser_test.c hci_dump.c
-	${CC} ${CFLAGS} ${CPPFLAGS} ${LDFLAGS} $^  -o $@
+	${CC} ${CFLAGS} ${CPPFLAGS} $^ ${LDFLAGS} -o $@
 
 test: all
 	./hid_parser_test
