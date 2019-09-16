@@ -332,7 +332,7 @@ spp_streamer: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} spp_streame
 spp_flowcontrol: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} spp_flowcontrol.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-spp_streamer_client: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} spp_streamer_client.c
+spp_streamer_client: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} ${SDP_CLIENT} spp_streamer_client.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 gap_dedicated_bonding: ${CORE_OBJ} ${COMMON_OBJ} ${CLASSIC_OBJ} gap_dedicated_bonding.c
