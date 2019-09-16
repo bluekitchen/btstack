@@ -57,7 +57,10 @@
  
 #include "btstack.h"
 
-#define RFCOMM_SERVER_CHANNEL 1
+// prototypes
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
+static uint8_t rfcomm_server_channel;
 
 #define NUM_ROWS 25
 #define NUM_COLS 40
@@ -192,9 +195,38 @@ static void spp_send_packet(void){
 #endif
 
 /* 
- * @section Packet Handler
+ * @section SDP Query Packet Handler
  * 
- * @text The packet handler of the combined example is just the combination of the individual packet handlers.
+ * @text Store RFCOMM Channel for SPP service and initiates RFCOMM connection
+ */
+static void handle_query_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(channel);
+    UNUSED(size);
+
+    switch (packet[0]){
+        case SDP_EVENT_QUERY_RFCOMM_SERVICE:
+            rfcomm_server_channel = sdp_event_query_rfcomm_service_get_rfcomm_channel(packet);
+            break;
+        case SDP_EVENT_QUERY_COMPLETE:
+            if (sdp_event_query_complete_get_status(packet)){
+                printf("SDP query failed 0x%02x\n", sdp_event_query_complete_get_status(packet));
+                break;
+            } 
+            if (rfcomm_server_channel == 0){
+                printf("No SPP service found\n");
+                break;
+            }
+            printf("SDP query done, channel %u.\n", rfcomm_server_channel);
+            rfcomm_create_channel(packet_handler, peer_addr, rfcomm_server_channel, NULL); 
+            break;
+    }
+}
+
+/* 
+ * @section Gerenal Packet Handler
+ * 
+ * @text Handles startup (BTSTACK_EVENT_STATE), inquiry, pairing, starts SDP query for SPP service, and RFCOMM connection
  */
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -234,9 +266,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             start_scan();
                             break;                        
                         case W4_SCAN_COMPLETE:
-                            printf("Start to connect\n");
+                            printf("Start to connect and query for SPP service\n");
                             state = W4_RFCOMM_CHANNEL;
-                            rfcomm_create_channel(packet_handler, peer_addr, RFCOMM_SERVER_CHANNEL, NULL); 
+                            sdp_client_query_rfcomm_channel_and_name_for_uuid(&handle_query_rfcomm_event, peer_addr, BLUETOOTH_ATTRIBUTE_PUBLIC_BROWSE_ROOT);
                             break;
                         default:
                             break;
