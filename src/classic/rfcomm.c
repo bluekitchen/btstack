@@ -147,7 +147,7 @@ static btstack_linked_list_t rfcomm_services = NULL;
 static gap_security_level_t rfcomm_security_level;
 
 #ifdef RFCOMM_USE_ERTM
-static uint16_t ertm_id;
+static uint16_t rfcomm_ertm_id;
 void (*rfcomm_ertm_request_callback)(rfcomm_ertm_request_t * request);
 void (*rfcomm_ertm_released_callback)(uint16_t ertm_id);
 #endif
@@ -195,7 +195,7 @@ static rfcomm_multiplexer_t * rfcomm_multiplexer_for_ertm_id(uint16_t ertm_id) {
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) rfcomm_multiplexers; it ; it = it->next){
         rfcomm_multiplexer_t * multiplexer = ((rfcomm_multiplexer_t *) it);
-        if (multiplexer->ertm_id == l2cap_cid) {
+        if (multiplexer->ertm_id == ertm_id) {
             return multiplexer;
         };
     }
@@ -204,14 +204,14 @@ static rfcomm_multiplexer_t * rfcomm_multiplexer_for_ertm_id(uint16_t ertm_id) {
 
 static uint16_t rfcomm_next_ertm_id(void){
     do {
-        if (ertm_id == 0xffff) {
+        if (rfcomm_ertm_id == 0xffff) {
             // don't use 0 as channel id
-            ertm_id = 1;
+            rfcomm_ertm_id = 1;
         } else {
-            ertm_id++;
+            rfcomm_ertm_id++;
         }
-    } while (rfcomm_multiplexer_for_ertm_id(ertm_id) != NULL);
-    return ertm_id;
+    } while (rfcomm_multiplexer_for_ertm_id(rfcomm_ertm_id) != NULL);
+    return rfcomm_ertm_id;
 }
 
 #endif
