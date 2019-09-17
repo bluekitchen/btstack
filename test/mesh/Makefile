@@ -38,6 +38,8 @@ CFLAGS  += -g -DUNIT_TEST -Wall \
 	-I$(BTSTACK_ROOT)/3rd-party/tinydir \
 	-I$(BTSTACK_ROOT)/test/rijndael \
 
+CFLAGS += -fprofile-arcs -ftest-coverage
+
 VPATH += ${BTSTACK_ROOT}/test/rijndael
 VPATH += ${BTSTACK_ROOT}/src/mesh
 VPATH += ${BTSTACK_ROOT}/src/classic
@@ -85,4 +87,5 @@ clean:
 	rm -rf *.dSYM
 	rm -f ${EXAMPLES}
 	rm -f  mesh_provisioning_device.h
+	rm -f *.gcno *.gcda
 	

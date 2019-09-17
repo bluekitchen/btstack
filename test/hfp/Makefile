@@ -52,6 +52,7 @@ CFLAGS   = -g -Wall -Wmissing-prototypes -Wnarrowing
 # CFLAGS += -Werror
 CFLAGS  += -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/src/classic -I${POSIX_ROOT} -I${BTSTACK_ROOT}/include
 # CFLAGS  += -D OCTAVE_OUTPUT
+CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS_CPPUTEST += -lCppUTest -lCppUTestExt
 
 EXAMPLES = hfp_ag_parser_test hfp_ag_client_test hfp_hf_parser_test hfp_hf_client_test cvsd_plc_test pklg_cvsd_test
@@ -60,6 +61,7 @@ all: ${EXAMPLES}
 
 clean:
 	rm -rf *.o $(EXAMPLES) $(CLIENT_EXAMPLES) *.dSYM *.wav results/* pklg/*.wav
+	rm -f *.gcno *.gcda
 
 hfp_ag_parser_test: ${COMMON_OBJ} hfp_gsm_model.o hfp_ag.o hfp.o hfp_ag_parser_test.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS_CPPUTEST} -o $@

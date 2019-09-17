@@ -11,6 +11,7 @@ CFLAGS  = -g -Wall \
 		  -I${BTSTACK_ROOT}/src \
 		  -I${BTSTACK_ROOT}/platform/posix \
 		  -I${BTSTACK_ROOT}/3rd-party/tinydir
+CFLAGS += -fprofile-arcs -ftest-coverage
 
 LDFLAGS += -lCppUTest -lCppUTestExt
 
@@ -50,4 +51,5 @@ test: all
 clean:
 	rm -f btstack_link_key_db_memory_test btstack_link_key_db_fs_test  *.o ../src/*.o 
 	rm -rf *.dSYM
-	
+	rm -f *.gcno *.gcda
+

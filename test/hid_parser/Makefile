@@ -4,9 +4,11 @@ CC = g++
 
 BTSTACK_ROOT =  ../..
 
-CFLAGS  = -DUNIT_TEST -g
 CPPFLAGS =  -x c++ -Wall -Wno-unused
+
+CFLAGS  = -DUNIT_TEST -g
 CFLAGS += -I. -I.. -I${BTSTACK_ROOT}/src
+CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS +=  -lCppUTest -lCppUTestExt
 VPATH += ${BTSTACK_ROOT}/src
 
@@ -27,4 +29,5 @@ clean:
 	rm -f  hid_parser_test
 	rm -f  *.o
 	rm -rf *.dSYM
-	
+	rm -f *.gcno *.gcda
+

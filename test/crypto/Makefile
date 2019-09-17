@@ -10,6 +10,7 @@ CFLAGS += -I. -I.. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/platform/posix
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/mbedtls/include
 CFLAGS += -I${BTSTACK_ROOT}/3rd-party/micro-ecc
 CFLAGS += -I${BTSTACK_ROOT}/test/rijndael
+CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS +=  -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src
@@ -29,6 +30,7 @@ MICROECC = \
 all: aes_ccm_test aestest ecc_micro_ecc aes_cmac_test
 
 aes_ccm_test: aes_ccm.o aes_ccm_test.o btstack_crypto.o btstack_linked_list.o hci_cmd.o btstack_util.o hci_dump.o aes_cmac.o rijndael.o mock.o
+	${CC} ${CFLAGS} $^ -o $@
 
 aestest: aestest.o rijndael.o
 	${CC} ${CFLAGS} $^ -o $@
@@ -52,4 +54,5 @@ clean:
 	rm -f  aestest ecc_micro_ecc aes_cmac_test
 	rm -f  *.o
 	rm -rf *.dSYM
-	
+	rm -f *.gcno *.gcda
+

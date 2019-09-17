@@ -53,4 +53,5 @@ clean:
 	rm -f  map_client_test
 	rm -f  *.o
 	rm -rf *.dSYM
+	rm -f *.gcno *.gcda
 	

@@ -8,6 +8,8 @@ CFLAGS  = -g -Wall \
 		  -I.. \
 		  -I${BTSTACK_ROOT}/src
 		  
+CFLAGS += -fprofile-arcs -ftest-coverage
+
 LDFLAGS += -lCppUTest -lCppUTestExt 
 
 VPATH += ${BTSTACK_ROOT}/src
@@ -33,4 +35,5 @@ clean:
 	rm -f  att_db_util_test
 	rm -f  *.o
 	rm -rf *.dSYM
+	rm -f *.gcno *.gcda
 	

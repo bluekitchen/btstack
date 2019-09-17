@@ -53,4 +53,8 @@ test:
 	  $(MAKE) -C $$dir test; \
 	done
 
+coverage: 
+	lcov --capture --directory . --exclude "/Applications/*" --exclude "/usr/*" --exclude "*/3rd-party/tinydir/*" --exclude "*/platform/posix/*" --exclude "*/test/*" --output-file coverage.info
+	genhtml coverage.info --branch-coverage --output-directory coverage-html
+
 

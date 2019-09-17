@@ -5,6 +5,7 @@ CC = g++
 BTSTACK_ROOT =  ../..
 
 CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wnarrowing -Wconversion-null -I. -I../ -I${BTSTACK_ROOT}/src
+CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS +=  -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src
@@ -12,18 +13,18 @@ VPATH += ${BTSTACK_ROOT}/src/ble
 VPATH += ${BTSTACK_ROOT}/platform/posix
 
 COMMON = \
-    ad_parser.c                 \
-    att_db.c                    \
-    att_dispatch.c              \
-    btstack_linked_list.c       \
-    btstack_memory.c            \
-    btstack_memory_pool.c       \
-    btstack_util.c              \
-    gatt_client.c               \
-    hci_cmd.c                   \
-    hci_dump.c                  \
-    le_device_db_memory.c       \
-    mock.c                      \
+	ad_parser.c                 \
+	att_db.c                    \
+	att_dispatch.c              \
+	btstack_linked_list.c       \
+	btstack_memory.c            \
+	btstack_memory_pool.c       \
+	btstack_util.c              \
+	gatt_client.c               \
+	hci_cmd.c                   \
+	hci_dump.c                  \
+	le_device_db_memory.c       \
+	mock.c                      \
 
 COMMON_OBJ = $(COMMON:.c=.o)
 
@@ -47,4 +48,5 @@ clean:
 	rm -f  gatt_client_test le_central
 	rm -f  *.o
 	rm -rf *.dSYM
-	
+	rm -f *.gcno *.gcda
+

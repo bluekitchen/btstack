@@ -18,6 +18,8 @@ CFLAGS += -I${BTSTACK_ROOT}/3rd-party/yxml
 VPATH  += ${BTSTACK_ROOT}/test/map_client
 CFLAGS += -I${BTSTACK_ROOT}/test/map_client
 
+CFLAGS += -fprofile-arcs -ftest-coverage
+
 COMMON = \
     yxml.c \
     btstack_util.c \
@@ -38,4 +40,5 @@ test: all
 	
 clean:
 	rm -fr map_xml_test *.dSYM *.o ../src/*.o
+	rm -f *.gcno *.gcda
 	
