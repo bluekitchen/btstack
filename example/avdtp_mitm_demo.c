@@ -333,10 +333,17 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
     // sbc frame size
     sbc_frame_size = (size-pos)/ sbc_header.num_frames;
     
+    // log_info("IN: Ringbuffer: %u bytes free", btstack_ring_buffer_bytes_free(&ring_buffer));
+
     // store individual framees: { len_16, frame }
     int i;
     for (i=0;i<num_frames;i++){
         uint16_t frame_size = sbc_frame_size;
+        if (btstack_ring_buffer_bytes_free(&ring_buffer) < (2 + frame_size)){
+            log_info("RING: cannot store frame of size %u, only %u free", frame_size,
+                     btstack_ring_buffer_bytes_free(&ring_buffer));
+            break;
+        }
         // log_info("RING: store frame of size %u", frame_size);
         btstack_ring_buffer_write(&ring_buffer, (uint8_t*) &frame_size, 2);
         btstack_ring_buffer_write(&ring_buffer, packet+pos, sbc_frame_size);
@@ -345,7 +352,6 @@ static void handle_l2cap_media_data_packet(uint8_t seid, uint8_t *packet, uint16
 
     // printf("DEMO: Audio from smartphone, ringbuffer avail %u\n", btstack_ring_buffer_bytes_available(&ring_buffer));
 
-    log_info("IN: Ringbuffer: %u bytes available", btstack_ring_buffer_bytes_available(&ring_buffer));
 
     if (!forward_active && btstack_ring_buffer_bytes_available(&ring_buffer) > PREBUFFER_BYTES){
         forward_active = 1;
