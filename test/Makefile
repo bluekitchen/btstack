@@ -16,6 +16,7 @@ SUBDIRS =  \
 	hid_parser \
 	linked_list \
 	maths \
+	mesh \
 	obex \
 	ring_buffer \
 	sdp_client \
@@ -25,7 +26,6 @@ SUBDIRS =  \
 
 # test fails
 # map_test \
-# mesh \
 # sdp \
 
 # not unit-tests
