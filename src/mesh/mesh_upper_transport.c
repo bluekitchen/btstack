@@ -586,6 +586,7 @@ static void mesh_upper_transport_send_unsegmented_access_pdu_ccm(void * arg){
     btstack_crypto_ccm_get_authentication_value(&ccm, &upper_transport_pdu[upper_transport_pdu_len]);
     mesh_print_hex("TransMIC", &upper_transport_pdu[upper_transport_pdu_len], 4);
     network_pdu->len += 4;
+    mesh_print_hex("UpperTransportPDU", upper_transport_pdu, network_pdu->len);
     // send network pdu
     mesh_lower_transport_send_pdu((mesh_pdu_t*) network_pdu);
 }
@@ -599,6 +600,7 @@ static void mesh_upper_transport_send_segmented_access_pdu_ccm(void * arg){
     btstack_crypto_ccm_get_authentication_value(&ccm, &transport_pdu->data[transport_pdu->len]);
     mesh_print_hex("TransMIC", &transport_pdu->data[transport_pdu->len], transport_pdu->transmic_len);
     transport_pdu->len += transport_pdu->transmic_len;
+    mesh_print_hex("UpperTransportPDU", transport_pdu->data, transport_pdu->len);
     mesh_lower_transport_send_pdu((mesh_pdu_t*) transport_pdu);
 }
 
@@ -724,9 +726,8 @@ static uint8_t mesh_upper_transport_setup_segmented_access_pdu_header(mesh_trans
 
     const uint8_t trans_mic_len = szmic ? 8 : 4;
 
-    uint32_t seq = mesh_sequence_number_next();
-    printf("[+] Upper transport, setup segmented Access PDU - seq %06x, szmic %u, iv_index %08x\n", seq, szmic, mesh_get_iv_index_for_tx());
-    mesh_print_hex("Access Payload", transport_pdu->data, transport_pdu->len);
+    // lower transport will call next sequence number. Only peek here to use same seq for access payload encryption as well as for first network pdu (unit test)
+    uint32_t seq = mesh_sequence_number_peek();
 
     // store in transport pdu
     transport_pdu->transmic_len = trans_mic_len;
@@ -750,6 +751,9 @@ static uint8_t mesh_upper_transport_setup_segmented_access_pdu(mesh_transport_pd
     // store in transport pdu
     memcpy(transport_pdu->data, access_pdu_data, access_pdu_len);
     transport_pdu->len = access_pdu_len;
+
+    printf("[+] Upper transport, setup segmented Access PDU - seq %06x, szmic %u, iv_index %08x\n", mesh_transport_seq(transport_pdu), szmic, mesh_get_iv_index_for_tx());
+    mesh_print_hex("Access Payload", transport_pdu->data, transport_pdu->len);
     return 0;
 }
 uint8_t mesh_upper_transport_setup_access_pdu_header(mesh_pdu_t * pdu, uint16_t netkey_index, uint16_t appkey_index,
