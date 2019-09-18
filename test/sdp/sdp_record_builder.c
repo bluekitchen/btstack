@@ -150,11 +150,10 @@ static const char * default_avrcp_target_service_provider_name = "BTstack AVRCP 
 
 #define AVRCP_TARGET_RECORD_SIZE_MIN 84
 
-static uint16_t avrcp_target_record_size(int browsing, const char * service_name, const char * service_provider_name){
+static uint16_t avrcp_target_record_size(const char * service_name, const char * service_provider_name){
     int service_name_len           = service_name           ? strlen(service_name)          : strlen(default_avrcp_target_service_name);
     int service_provider_name_len  = service_provider_name  ? strlen(service_provider_name) : strlen(default_avrcp_target_service_provider_name);
-    int browsing_len               = browsing               ? 27 : 0;
-    return AVRCP_TARGET_RECORD_SIZE_MIN + service_name_len + service_provider_name_len + browsing_len;
+    return AVRCP_TARGET_RECORD_SIZE_MIN + service_name_len + service_provider_name_len;
 }
 
 TEST(SDPRecordBuilder, AVRCP_TARGET){
@@ -162,21 +161,11 @@ TEST(SDPRecordBuilder, AVRCP_TARGET){
     const char * service_provider_name;
     int expected_len;
     int descriptor_size;
-    int browsing ;
 
-    browsing = 0;
     service_name = "";
     service_provider_name = "";
     descriptor_size = 0;
-    expected_len = avrcp_target_record_size(browsing, service_name, service_provider_name);
-    avrcp_target_create_sdp_record(service_buffer, 0, 0, service_name, service_provider_name);
-    CHECK_EQUAL(de_get_len(service_buffer), expected_len);
-
-    browsing = 1;
-    service_name = "";
-    service_provider_name = "";
-    descriptor_size = 0;
-    expected_len = avrcp_target_record_size(browsing, service_name, service_provider_name);
+    expected_len = avrcp_target_record_size(service_name, service_provider_name);
     avrcp_target_create_sdp_record(service_buffer, 0, 0, service_name, service_provider_name);
     CHECK_EQUAL(de_get_len(service_buffer), expected_len);
 }
@@ -190,11 +179,10 @@ static const char * default_avrcp_controller_service_provider_name = "BTstack AV
 
 #define AVRCP_CONTROLLER_RECORD_SIZE_MIN 87
 
-static uint16_t avrcp_controller_record_size(int browsing, const char * service_name, const char * service_provider_name){
+static uint16_t avrcp_controller_record_size(const char * service_name, const char * service_provider_name){
     int service_name_len           = service_name           ? strlen(service_name)          : strlen(default_avrcp_controller_service_name);
     int service_provider_name_len  = service_provider_name  ? strlen(service_provider_name) : strlen(default_avrcp_controller_service_provider_name);
-    int browsing_len               = browsing               ? 27 : 0;
-    return AVRCP_CONTROLLER_RECORD_SIZE_MIN + service_name_len + service_provider_name_len + browsing_len;
+    return AVRCP_CONTROLLER_RECORD_SIZE_MIN + service_name_len + service_provider_name_len;
 }
 
 TEST(SDPRecordBuilder, AVRCP_CONTROLLER){
@@ -202,21 +190,11 @@ TEST(SDPRecordBuilder, AVRCP_CONTROLLER){
     const char * service_provider_name;
     int expected_len;
     int descriptor_size;
-    int browsing ;
 
-    browsing = 0;
     service_name = "";
     service_provider_name = "";
     descriptor_size = 0;
-    expected_len = avrcp_controller_record_size(browsing, service_name, service_provider_name);
-    avrcp_controller_create_sdp_record(service_buffer, 0, 0, service_name, service_provider_name);
-    CHECK_EQUAL(de_get_len(service_buffer), expected_len);
-
-    browsing = 1;
-    service_name = "";
-    service_provider_name = "";
-    descriptor_size = 0;
-    expected_len = avrcp_controller_record_size(browsing, service_name, service_provider_name);
+    expected_len = avrcp_controller_record_size(service_name, service_provider_name);
     avrcp_controller_create_sdp_record(service_buffer, 0, 0, service_name, service_provider_name);
     CHECK_EQUAL(de_get_len(service_buffer), expected_len);
 }
@@ -225,7 +203,7 @@ TEST(SDPRecordBuilder, AVRCP_CONTROLLER){
 // hid_device.h
 //
 
-#define HID_DEVICE_RECORD_SIZE_MIN 153
+#define HID_DEVICE_RECORD_SIZE_MIN 164
 
 static uint16_t hid_device_record_size(uint16_t descriptor_size, const char * name){
     return HID_DEVICE_RECORD_SIZE_MIN + descriptor_size + strlen(name);

@@ -19,6 +19,7 @@ SUBDIRS =  \
 	mesh \
 	obex \
 	ring_buffer \
+	sdp \
 	sdp_client \
 	security_manager \
 	tlv_posix \
@@ -26,7 +27,6 @@ SUBDIRS =  \
 
 # test fails
 # map_test \
-# sdp \
 
 # not unit-tests
 # map_client \
