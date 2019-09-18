@@ -1148,22 +1148,19 @@ void mesh_network_reset(void){
     mesh_network_reset_network_pdus(&network_pdus_queued);
     mesh_network_reset_network_pdus(&network_pdus_outgoing_gatt);
     mesh_network_reset_network_pdus(&network_pdus_outgoing_adv);
+    
+    // outgoing network pdus are owned by higher layer, so we don't free:
+    // - adv_bearer_network_pdu
+    // - gatt_bearer_network_pdu
+    // - outoing_pdu
 #ifdef ENABLE_MESH_ADV_BEARER
-    if (adv_bearer_network_pdu){
-        mesh_network_pdu_free(adv_bearer_network_pdu);
-        adv_bearer_network_pdu = NULL;
-    }
+    adv_bearer_network_pdu = NULL;
 #endif
 #ifdef ENABLE_MESH_GATT_BEARER
-    if (gatt_bearer_network_pdu){
-        mesh_network_pdu_free(gatt_bearer_network_pdu);
-        gatt_bearer_network_pdu = NULL;
-    }
+    gatt_bearer_network_pdu = NULL;
 #endif
-    if (outgoing_pdu){
-        mesh_network_pdu_free(outgoing_pdu);
-        outgoing_pdu = NULL;
-    }
+    outgoing_pdu = NULL;
+    
     if (incoming_pdu_raw){
         mesh_network_pdu_free(incoming_pdu_raw);
         incoming_pdu_raw = NULL;
