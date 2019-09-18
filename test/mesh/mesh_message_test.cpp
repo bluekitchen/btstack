@@ -16,7 +16,7 @@
 #include "mesh/mesh_network.h"
 #include "mesh/mesh_upper_transport.h"
 #include "mesh/provisioning.h"
-#include "mesh_peer.h"
+#include "mesh/mesh_peer.h"
 
 extern "C" int mock_process_hci_cmd(void);
 
