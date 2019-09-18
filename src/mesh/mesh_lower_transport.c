@@ -622,7 +622,7 @@ static void mesh_lower_transport_send_next_segment(void){
 
 #ifdef LOG_LOWER_TRANSPORT
     printf("[+] Lower Transport, send segmented pdu: seg_o %x, seg_n %x\n", lower_transport_outgoing_seg_o, seg_n);
-    mesh_print_hex("LowerTransportPDU", lower_transport_outgoing_segment->data, lower_transport_outgoing_segment->len);
+    mesh_print_hex("LowerTransportPDU", &lower_transport_outgoing_segment->data[9], lower_transport_outgoing_segment->len-9);
 #endif
 
     // next segment
