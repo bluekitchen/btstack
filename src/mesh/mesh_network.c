@@ -991,8 +991,8 @@ void mesh_network_send_pdu(mesh_network_pdu_t * network_pdu){
         while(1);
     }
 
-    // network pdu without payload and minimal mic = 13 bytes
-    if (network_pdu->len <13){
+    // network pdu without payload = 9 bytes
+    if (network_pdu->len < 9){
         printf("too short, %u\n", network_pdu->len);
         while(1);
     }
