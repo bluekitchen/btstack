@@ -10,6 +10,7 @@ SUBDIRS =  \
 	btstack_link_key_db \
 	crypto \
 	des_iterator \
+	flash_tlv \
 	gatt_client \
 	hfp \
 	hid_parser \
@@ -23,7 +24,6 @@ SUBDIRS =  \
 
 
 # test fails
-# flash_tlv \
 # map_test \
 # mesh \
 # sdp \

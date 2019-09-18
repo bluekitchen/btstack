@@ -68,50 +68,57 @@ TEST(LE_DEVICE_DB, Empty){
 }
 
 TEST(LE_DEVICE_DB, AddOne){
-    le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_aa, sm_key_aa);
+    int index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_aa, sm_key_aa);
+    CHECK_TRUE(index >= 0);
     CHECK_EQUAL(1, le_device_db_count());
 }
 
 TEST(LE_DEVICE_DB, RetrieveOne){
-    le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_aa, sm_key_aa);
+    int index = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_aa, sm_key_aa);
+    CHECK_TRUE(index >= 0);
     CHECK_EQUAL(1, le_device_db_count());
     bd_addr_t addr;
     sm_key_t sm_key;
     int addr_type;
-    le_device_db_info(0, &addr_type, addr, sm_key);
+    le_device_db_info((uint16_t) index, &addr_type, addr, sm_key);
     CHECK_EQUAL_ARRAY(sm_key_aa, sm_key, 16);
     CHECK_EQUAL_ARRAY(addr_aa, addr, 6);
 }
 
-TEST(LE_DEVICE_DB, AddOTwo){
+TEST(LE_DEVICE_DB, AddTwo){
     le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_aa, sm_key_aa);
     le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_bb, sm_key_bb);
     CHECK_EQUAL(2, le_device_db_count());
 }
 
 TEST(LE_DEVICE_DB, AddOTwoRemoveOne){
-    le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_aa, sm_key_aa);
-    le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_bb, sm_key_bb);
-    le_device_db_remove(0);
+    int index_a = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_aa, sm_key_aa);
+    CHECK_TRUE(index_a >= 0);
+    int index_b = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_bb, sm_key_bb);
+    CHECK_TRUE(index_b >= 0);
+    le_device_db_remove((uint16_t) index_a);
     CHECK_EQUAL(1, le_device_db_count());
     bd_addr_t addr;
     sm_key_t sm_key;
     int addr_type;
-    le_device_db_info(1, &addr_type, addr, sm_key);
+    le_device_db_info((uint16_t) index_b, &addr_type, addr, sm_key);
     CHECK_EQUAL_ARRAY(sm_key_bb, sm_key, 16);
     CHECK_EQUAL_ARRAY(addr_bb, addr, 6);
 }
 
-TEST(LE_DEVICE_DB, AddOTwoRemoveOneAddOne){
-    le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_aa, sm_key_aa);
-    le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_bb, sm_key_bb);
-    le_device_db_remove(0);
-    le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_cc, sm_key_cc);
+TEST(LE_DEVICE_DB, AddTwoRemoveOneAddOne){
+    int index_a = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_aa, sm_key_aa);
+    CHECK_TRUE(index_a >= 0);
+    int index_b = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_bb, sm_key_bb);
+    CHECK_TRUE(index_b >= 0);
+    le_device_db_remove((uint16_t) index_a);
+    int index_c = le_device_db_add(BD_ADDR_TYPE_LE_PUBLIC, addr_cc, sm_key_cc);
+    CHECK_TRUE(index_c >= 0);
     CHECK_EQUAL(2, le_device_db_count());
     bd_addr_t addr;
     sm_key_t sm_key;
     int addr_type;
-    le_device_db_info(0, &addr_type, addr, sm_key);
+    le_device_db_info((uint16_t) index_c, &addr_type, addr, sm_key);
     CHECK_EQUAL_ARRAY(sm_key_cc, sm_key, 16);
     CHECK_EQUAL_ARRAY(addr_cc, addr, 6);
 }
