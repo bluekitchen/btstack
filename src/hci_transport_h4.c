@@ -191,6 +191,8 @@ static void hci_transport_h4_trigger_next_read(void){
 
 static void hci_transport_h4_block_read(void){
 
+    uint16_t packet_len;
+
     read_pos += bytes_to_read;
 
     switch (h4_state) {
@@ -285,9 +287,11 @@ static void hci_transport_h4_block_read(void){
 #endif
             }
 #endif
+            packet_len = read_pos-1;
+
             // reset state machine before delivering packet to stack as it might close the transport
             hci_transport_h4_reset_statemachine();
-            packet_handler(hci_packet[0], &hci_packet[1], read_pos-1);
+            packet_handler(hci_packet[0], &hci_packet[1], packet_len);
             break;
 
         case H4_OFF:
