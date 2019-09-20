@@ -155,17 +155,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     stream_endpoint->remote_sep.configured_service_categories |= stream_endpoint->remote_configuration_bitmap;
                     stream_endpoint->remote_sep.configuration = stream_endpoint->remote_configuration;
                     memcpy(stream_endpoint->media_codec_sbc_info, stream_endpoint->remote_configuration.media_codec.media_codec_information, 4);
-                    stream_endpoint->remote_sep.configuration.media_codec.media_codec_information = stream_endpoint->media_codec_sbc_info;
-                    
-#if 0
-                    sep.configured_service_categories = avdtp_unpack_service_capabilities(connection, &sep.configuration, connection->signaling_packet.command+4, connection->signaling_packet.size-4);
-                    // TODO check if configuration is supported
-                    
-                    if (!is_avdtp_remote_seid_registered(stream_endpoint)){
-                        stream_endpoint->remote_sep = sep;
-                        log_info("INT: update seid %d, to %p", stream_endpoint->remote_sep.seid, stream_endpoint);
-                    } 
-#endif
+                    stream_endpoint->remote_sep.configuration.media_codec.media_codec_information = stream_endpoint->media_codec_sbc_info; 
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_OPENED;
                     break;
 
@@ -247,7 +237,6 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     }
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_ABORTING;
                     break;
-
                 default:
                     log_info("    AVDTP_RESPONSE_ACCEPT_MSG, signal %d not implemented", connection->signaling_packet.signal_identifier);
                     break;
