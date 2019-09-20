@@ -5269,6 +5269,34 @@ static inline uint16_t avdtp_subevent_signaling_sep_dicovery_done_get_avdtp_cid(
 }
 
 /**
+ * @brief Get field avdtp_cid from event AVDTP_SUBEVENT_SIGNALING_DELAY_REPORT
+ * @param event packet
+ * @return avdtp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t avdtp_subevent_signaling_delay_report_get_avdtp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field local_seid from event AVDTP_SUBEVENT_SIGNALING_DELAY_REPORT
+ * @param event packet
+ * @return local_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t avdtp_subevent_signaling_delay_report_get_local_seid(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field delay_100us from event AVDTP_SUBEVENT_SIGNALING_DELAY_REPORT
+ * @param event packet
+ * @return delay_100us
+ * @note: btstack_type 2
+ */
+static inline uint16_t avdtp_subevent_signaling_delay_report_get_delay_100us(const uint8_t * event){
+    return little_endian_read_16(event, 6);
+}
+
+/**
  * @brief Get field a2dp_cid from event A2DP_SUBEVENT_STREAMING_CAN_SEND_MEDIA_PACKET_NOW
  * @param event packet
  * @return a2dp_cid
@@ -5720,6 +5748,34 @@ static inline uint8_t a2dp_subevent_stream_reconfigured_get_local_seid(const uin
  */
 static inline uint8_t a2dp_subevent_stream_reconfigured_get_status(const uint8_t * event){
     return event[6];
+}
+
+/**
+ * @brief Get field avdtp_cid from event A2DP_SUBEVENT_SIGNALING_DELAY_REPORT
+ * @param event packet
+ * @return avdtp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t a2dp_subevent_signaling_delay_report_get_avdtp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field local_seid from event A2DP_SUBEVENT_SIGNALING_DELAY_REPORT
+ * @param event packet
+ * @return local_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_delay_report_get_local_seid(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field delay_100us from event A2DP_SUBEVENT_SIGNALING_DELAY_REPORT
+ * @param event packet
+ * @return delay_100us
+ * @note: btstack_type 2
+ */
+static inline uint16_t a2dp_subevent_signaling_delay_report_get_delay_100us(const uint8_t * event){
+    return little_endian_read_16(event, 6);
 }
 
 /**

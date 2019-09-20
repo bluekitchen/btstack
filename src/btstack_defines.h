@@ -1621,6 +1621,14 @@ typedef uint8_t sm_key_t[16];
  */
 #define AVDTP_SUBEVENT_SIGNALING_SEP_DICOVERY_DONE           0x16
 
+/**
+ * @format 1212
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param local_seid
+ * @param delay_100us
+ */
+#define AVDTP_SUBEVENT_SIGNALING_DELAY_REPORT               0x17
 
 /** A2DP Subevent */
 /* Stream goes through following states:
@@ -1760,6 +1768,16 @@ typedef uint8_t sm_key_t[16];
  * @param status
  */
 #define A2DP_SUBEVENT_STREAM_RECONFIGURED                            0x0D
+
+/**
+ * @format 1212
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param local_seid
+ * @param delay_100us
+ */
+#define A2DP_SUBEVENT_SIGNALING_DELAY_REPORT                         0x0E
+
 
 /** AVRCP Subevent */
 
