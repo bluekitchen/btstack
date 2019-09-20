@@ -4,6 +4,7 @@
 SUBDIRS =  \
 	att_db \
 	avdtp \
+	avdtp_util \
 	avrcp \
 	base64 \
 	ble_client \
