@@ -165,11 +165,11 @@ uint8_t avdtp_sink_stop_stream(uint16_t avdtp_cid, uint8_t local_seid);
 uint8_t avdtp_sink_suspend(uint16_t avdtp_cid, uint8_t local_seid);
 
 /**
- * @brief Suspend stream
+ * @brief Report delay
  * @param local_seid
- * @param delay_ms
+ * @param delay_100us
  */
-uint8_t avdtp_sink_delay_report(uint16_t avdtp_cid, uint8_t local_seid, uint16_t delay_ms);
+uint8_t avdtp_sink_delay_report(uint16_t avdtp_cid, uint8_t local_seid, uint16_t delay_100us);
 
 // AVDTP_SI_DELAYREPORT
 
