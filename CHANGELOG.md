@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Fixed
+- L2CAP ERTM: assert that packet can be stored in fragment buffers in ertm
 
 ### Added
 - GAP: allow to reject GAP classic connection via gap_register_classic_connection_filter

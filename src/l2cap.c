@@ -2700,6 +2700,18 @@ static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *c
                     break;
             }
             if (l2cap_channel_ready_for_open(channel)){
+
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+                // assert that packet can be stored in fragment buffers in ertm
+                if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
+                    uint16_t effective_mps = btstack_min(channel->remote_mps, channel->local_mps);
+                    uint16_t usable_mtu = channel->num_tx_buffers == 1 ? effective_mps : channel->num_tx_buffers * effective_mps - 2;
+                    if (usable_mtu < channel->remote_mtu){
+                        log_info("Remote MTU %u > max storable ERTM packet, only using MTU = %u", channel->remote_mtu, usable_mtu);
+                        channel->remote_mtu = usable_mtu;
+                    }
+                }
+#endif
                 // for open:
                 channel->state = L2CAP_STATE_OPEN;
                 l2cap_emit_channel_opened(channel, 0);
