@@ -161,10 +161,11 @@ static uint8_t companies[] = {
     0x00, 0x19, 0x58 //BT SIG registered CompanyID
 };
 #ifdef HAVE_BTSTACK_STDIN
-// pts: static bd_addr_t remote = {0x00, 0x1B, 0xDC, 0x08, 0x0A, 0xA5};
+// pts:         
+static const char * device_addr_string = "00:1B:DC:08:E2:72";
 // mac 2013: static const char * device_addr_string = "84:38:35:65:d1:15";
 // iPhone 5S: 
-static const char * device_addr_string = "54:E4:3A:26:A2:39";
+// static const char * device_addr_string = "54:E4:3A:26:A2:39";
 #endif
 
 static uint8_t  sdp_avdtp_sink_service_buffer[150];
@@ -234,13 +235,14 @@ static int a2dp_and_avrcp_setup(void){
     a2dp_sink_register_packet_handler(&a2dp_sink_packet_handler);
     a2dp_sink_register_media_handler(&handle_l2cap_media_data_packet);
 
-    uint8_t status = a2dp_sink_create_stream_endpoint(AVDTP_AUDIO, 
-        AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities),
-        media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration), &a2dp_local_seid);
-    if (status != ERROR_CODE_SUCCESS){
-        printf("A2DP  Sink      : not enough memory to create local stream endpoint\n");
+    avdtp_stream_endpoint_t * local_stream_endpoint = a2dp_sink_create_stream_endpoint(AVDTP_AUDIO, 
+        AVDTP_CODEC_SBC, media_sbc_codec_capabilities, sizeof(media_sbc_codec_capabilities), 
+        media_sbc_codec_configuration, sizeof(media_sbc_codec_configuration));
+    if (!local_stream_endpoint){
+        printf("A2DP Sink: not enough memory to create local stream endpoint\n");
         return 1;
     }
+    a2dp_local_seid = avdtp_local_seid(local_stream_endpoint);
     // Initialize AVRCP Controller
     avrcp_controller_init();
     avrcp_controller_register_packet_handler(&avrcp_controller_packet_handler);
@@ -934,6 +936,8 @@ static void show_usage(void){
     printf("d      - AVRCP Target create connection to addr %s\n", bd_addr_to_str(device_addr));
     printf("D      - AVRCP Target disconnect\n");
 
+    printf("w - delay report\n");
+
     printf("\n--- Bluetooth AVRCP Commands %s ---\n", bd_addr_to_str(iut_address));
     printf("O - get play status\n");
     printf("j - get now playing info\n");
@@ -998,6 +1002,10 @@ static void stdin_process(char cmd){
 
         case '\n':
         case '\r':
+            break;
+        case 'w':
+            printf("Send delay report\n");
+            avdtp_sink_delay_report(a2dp_cid, a2dp_local_seid, 100);
             break;
         // Volume Control
         case 't':

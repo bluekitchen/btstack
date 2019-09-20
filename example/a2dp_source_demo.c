@@ -139,10 +139,11 @@ typedef struct {
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 // pts:             static const char * device_addr_string = "00:1B:DC:08:0A:A5";
+// pts:         
+static const char * device_addr_string = "00:1B:DC:08:E2:72";
 // mac 2013:        static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:      static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
-// Minijambox:      
-static const char * device_addr_string = "00:21:3C:AC:F7:38";
+// Minijambox:      static const char * device_addr_string = "00:21:3C:AC:F7:38";
 // Philips SHB9100: static const char * device_addr_string = "00:22:37:05:FD:E8";
 // RT-B6:           static const char * device_addr_string = "00:75:58:FF:C9:7D";
 // BT dongle:       static const char * device_addr_string = "00:1A:7D:DA:71:0A";
@@ -252,7 +253,6 @@ static int a2dp_source_and_avrcp_services_init(void){
         return 1;
     }
     media_tracker.local_seid = avdtp_local_seid(local_stream_endpoint);
-
     // Initialize AVRCP Target.
     avrcp_target_init();
     avrcp_target_register_packet_handler(&avrcp_target_packet_handler);
@@ -502,6 +502,12 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             break;
         }  
 
+        case A2DP_SUBEVENT_SIGNALING_DELAY_REPORT:
+            printf("A2DP Source: received delay report of %d.%0d ms, local seid %d\n", 
+                avdtp_subevent_signaling_delay_report_get_delay_100us(packet)/10, avdtp_subevent_signaling_delay_report_get_delay_100us(packet)%10,
+                avdtp_subevent_signaling_delay_report_get_local_seid(packet));
+            break;
+       
         case A2DP_SUBEVENT_STREAM_ESTABLISHED:
             a2dp_subevent_stream_established_get_bd_addr(packet, address);
             status = a2dp_subevent_stream_established_get_status(packet);

@@ -213,6 +213,7 @@ static void a2dp_signaling_emit_reconfigured(btstack_packet_handler_t callback, 
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -267,6 +268,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             uint8_t max_bitpool_value = avdtp_choose_sbc_max_bitpool_value(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(packet));
             uint8_t min_bitpool_value = avdtp_choose_sbc_min_bitpool_value(sc.local_stream_endpoint, avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(packet));
 
+
             sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[0] = (sampling_frequency << 4) | channel_mode;
             sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[1] = (block_length << 4) | (subbands << 2) | allocation_method;
             sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_information[2] = min_bitpool_value;
@@ -275,6 +277,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             sc.local_stream_endpoint->remote_configuration_bitmap = store_bit16(sc.local_stream_endpoint->remote_configuration_bitmap, AVDTP_MEDIA_CODEC, 1);
             sc.local_stream_endpoint->remote_configuration.media_codec.media_type = AVDTP_AUDIO;
             sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
+
+            // printf("    - num_channels: %d\n", num_channels);
+            printf("    - sampling_frequency: %d\n", sampling_frequency);
+            printf("    - channel_mode: %d\n", channel_mode);
+            printf("    - block_length: %d\n", block_length);
+            printf("    - subbands: %d\n", subbands);
+            printf("    - allocation_method: %d\n", allocation_method);
+            printf("    - bitpool_value orig [%d, %d] \n", avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(packet), avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(packet));
+            printf("    - bitpool_value  [%d, %d] \n", min_bitpool_value, max_bitpool_value);
+            printf("\n");
 
             app_state = A2DP_W2_SET_CONFIGURATION;
             break;
@@ -307,6 +319,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         case AVDTP_SUBEVENT_SIGNALING_CAPABILITY_DONE:
             break;
 
+        case AVDTP_SUBEVENT_SIGNALING_DELAY_REPORT:
+            // forward packet:
+            packet[2] = A2DP_SUBEVENT_SIGNALING_DELAY_REPORT;
+            (*a2dp_source_context.a2dp_callback)(HCI_EVENT_PACKET, 0, packet, size);
+            break;
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
             // TODO check cid
             sc.sampling_frequency = avdtp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
@@ -472,9 +489,11 @@ avdtp_stream_endpoint_t * a2dp_source_create_stream_endpoint(avdtp_media_type_t 
     avdtp_source_register_media_transport_category(avdtp_stream_endpoint_seid(local_stream_endpoint));
     avdtp_source_register_media_codec_category(avdtp_stream_endpoint_seid(local_stream_endpoint), media_type, media_codec_type, 
         codec_capabilities, codec_capabilities_len);
+    
     local_stream_endpoint->remote_configuration.media_codec.media_codec_information     = media_codec_info;
     local_stream_endpoint->remote_configuration.media_codec.media_codec_information_len = media_codec_info_len;
     sc.local_stream_endpoint = local_stream_endpoint;                     
+    avdtp_source_register_delay_reporting_category(avdtp_stream_endpoint_seid(local_stream_endpoint));
     return local_stream_endpoint;
 }
 

@@ -193,27 +193,32 @@ uint8_t avdtp_sink_reconfigure(uint16_t avdtp_cid, uint8_t local_seid, uint8_t r
 }
 
 uint8_t avdtp_sink_delay_report(uint16_t avdtp_cid, uint8_t local_seid, uint16_t delay_ms){
+    printf("send delay_report\n");
     avdtp_connection_t * connection = avdtp_connection_for_avdtp_cid(avdtp_cid, avdtp_sink_context);
     if (!connection){
         log_error("delay_report: no connection for signaling cid 0x%02x found", avdtp_cid);
         return AVDTP_CONNECTION_DOES_NOT_EXIST;
     }
+    printf("send delay_report 1\n");
     if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED ||
         connection->initiator_connection_state != AVDTP_SIGNALING_CONNECTION_INITIATOR_IDLE) {
         log_error("delay_report: connection in wrong state, state %d, initiator state %d", connection->state, connection->initiator_connection_state);
         return AVDTP_CONNECTION_IN_WRONG_STATE;
     }
 
+    printf("send delay_report 2\n");
     avdtp_stream_endpoint_t * stream_endpoint = avdtp_stream_endpoint_with_seid(local_seid, avdtp_sink_context);
     if (!stream_endpoint) {
         log_error("delay_report: no stream_endpoint with seid %d found", local_seid);
         return AVDTP_SEID_DOES_NOT_EXIST;
     }
+    printf("send delay_report 3\n");
 
     if (stream_endpoint->state < AVDTP_STREAM_ENDPOINT_CONFIGURED){
         log_error("Stream endpoint seid %d in wrong state %d", local_seid, stream_endpoint->state);
         return AVDTP_STREAM_ENDPOINT_IN_WRONG_STATE;
     }
+    printf("send delay_report 4\n");
 
     connection->initiator_transaction_label++;
     connection->initiator_connection_state = AVDTP_SIGNALING_CONNECTION_INITIATOR_W2_SEND_DELAY_REPORT;
