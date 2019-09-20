@@ -91,6 +91,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
         return;
     }
     
+    // handle error cases
     switch (connection->signaling_packet.signal_identifier){
         case AVDTP_SI_DISCOVER:
             if (connection->state != AVDTP_SIGNALING_CONNECTION_OPENED) return;
@@ -107,6 +108,7 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
         case AVDTP_SI_ABORT:
         case AVDTP_SI_OPEN:
         case AVDTP_SI_RECONFIGURE:
+        case AVDTP_SI_DELAYREPORT:
             connection->local_seid  = packet[offset++] >> 2;
             stream_endpoint = avdtp_stream_endpoint_with_seid(connection->local_seid, context);
             if (!stream_endpoint){
@@ -184,6 +186,12 @@ void avdtp_acceptor_stream_config_subsm(avdtp_connection_t * connection, uint8_t
     switch (stream_endpoint->acceptor_config_state){
         case AVDTP_ACCEPTOR_STREAM_CONFIG_IDLE:
             switch (connection->signaling_packet.signal_identifier){
+                case AVDTP_SI_DELAYREPORT:
+                    log_info("ACP: AVDTP_ACCEPTOR_W2_ANSWER_DELAY_REPORT");
+                    stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_DELAY_REPORT;
+                    avdtp_signaling_emit_delay(context->avdtp_callback, connection->avdtp_cid, connection->local_seid, big_endian_read_16(packet, offset));
+                    break;
+                
                 case AVDTP_SI_GET_ALL_CAPABILITIES:
                     log_info("ACP: AVDTP_SI_GET_ALL_CAPABILITIES");
                     stream_endpoint->acceptor_config_state = AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES;
@@ -497,6 +505,10 @@ void avdtp_acceptor_stream_config_subsm_run(avdtp_connection_t * connection, avd
                 log_info("ACP:DONE");
             }
             l2cap_send_prepared(cid, pos);
+            break;
+        case AVDTP_ACCEPTOR_W2_ANSWER_DELAY_REPORT:
+            log_info("ACP: DONE ");
+            avdtp_acceptor_send_accept_response(cid, trid, AVDTP_SI_DELAYREPORT);
             break;
         case AVDTP_ACCEPTOR_W2_ANSWER_GET_ALL_CAPABILITIES:
             avdtp_prepare_capabilities(&connection->signaling_packet, trid, stream_endpoint->sep.registered_service_categories, stream_endpoint->sep.capabilities, AVDTP_SI_GET_ALL_CAPABILITIES);
