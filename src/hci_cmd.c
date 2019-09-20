@@ -1318,3 +1318,16 @@ OPCODE(0x3f, 0x1c), "11111"
 const hci_cmd_t hci_bcm_set_sleep_mode = {
 OPCODE(0x3f, 0x0027), "111111111111"
 };
+
+/**
+ * @brief Set TX Power Table
+ * @param is_le 0=classic, 1=LE
+ * @param chip_max_tx_pwr_db chip level max TX power in dBM 
+ */
+const hci_cmd_t hci_bcm_write_tx_power_table = {
+OPCODE(0x3f, 0x1C9), "11"
+};
+
+const hci_cmd_t hci_bcm_set_tx_pwr = {
+OPCODE(0x3f, 0x1A5), "11H"
+};

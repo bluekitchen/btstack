@@ -213,8 +213,9 @@ extern const hci_cmd_t hci_le_transmitter_test;
 extern const hci_cmd_t hci_le_write_suggested_default_data_length;
 
 // Broadcom / Cypress specific HCI commands
-extern const hci_cmd_t hci_bcm_write_sco_pcm_int;
 extern const hci_cmd_t hci_bcm_set_sleep_mode;
+extern const hci_cmd_t hci_bcm_write_sco_pcm_int;
+extern const hci_cmd_t hci_bcm_write_tx_power_table;
 
 /**
  * construct HCI Command based on template
