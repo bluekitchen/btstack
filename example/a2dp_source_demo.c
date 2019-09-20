@@ -436,6 +436,18 @@ static void a2dp_demo_timer_stop(a2dp_media_sending_context_t * context){
     btstack_run_loop_remove_timer(&context->audio_timer);
 } 
 
+static void dump_sbc_configuration(avdtp_media_codec_configuration_sbc_t * configuration){
+    printf("Received media codec configuration:\n");
+    printf("    - num_channels: %d\n", configuration->num_channels);
+    printf("    - sampling_frequency: %d\n", configuration->sampling_frequency);
+    printf("    - channel_mode: %d\n", configuration->channel_mode);
+    printf("    - block_length: %d\n", configuration->block_length);
+    printf("    - subbands: %d\n", configuration->subbands);
+    printf("    - allocation_method: %d\n", configuration->allocation_method);
+    printf("    - bitpool_value [%d, %d] \n", configuration->min_bitpool_value, configuration->max_bitpool_value);
+}
+
+
 static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -494,6 +506,26 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             sbc_configuration.frames_per_buffer = sbc_configuration.subbands * sbc_configuration.block_length;
             printf("A2DP Source: Received SBC codec configuration, sampling frequency %u.\n", sbc_configuration.sampling_frequency);
             
+            // Adapt Bluetooth spec definition to SBC Encoder expected input
+            sbc_configuration.allocation_method -= 1;
+            sbc_configuration.num_channels = 2;
+            switch (sbc_configuration.channel_mode){
+                case AVDTP_SBC_JOINT_STEREO:
+                    sbc_configuration.channel_mode = 3;
+                    break;
+                case AVDTP_SBC_STEREO:
+                    sbc_configuration.channel_mode = 2;
+                    break;
+                case AVDTP_SBC_DUAL_CHANNEL:
+                    sbc_configuration.channel_mode = 1;
+                    break;
+                case AVDTP_SBC_MONO:
+                    sbc_configuration.channel_mode = 0;
+                    sbc_configuration.num_channels = 1;
+                    break;
+            }
+            dump_sbc_configuration(&sbc_configuration);
+
             btstack_sbc_encoder_init(&sbc_encoder_state, SBC_MODE_STANDARD, 
                 sbc_configuration.block_length, sbc_configuration.subbands, 
                 sbc_configuration.allocation_method, sbc_configuration.sampling_frequency, 

@@ -213,7 +213,6 @@ static void a2dp_signaling_emit_reconfigured(btstack_packet_handler_t callback, 
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -278,16 +277,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             sc.local_stream_endpoint->remote_configuration.media_codec.media_type = AVDTP_AUDIO;
             sc.local_stream_endpoint->remote_configuration.media_codec.media_codec_type = AVDTP_CODEC_SBC;
 
-            // printf("    - num_channels: %d\n", num_channels);
-            printf("    - sampling_frequency: %d\n", sampling_frequency);
-            printf("    - channel_mode: %d\n", channel_mode);
-            printf("    - block_length: %d\n", block_length);
-            printf("    - subbands: %d\n", subbands);
-            printf("    - allocation_method: %d\n", allocation_method);
-            printf("    - bitpool_value orig [%d, %d] \n", avdtp_subevent_signaling_media_codec_sbc_capability_get_min_bitpool_value(packet), avdtp_subevent_signaling_media_codec_sbc_capability_get_max_bitpool_value(packet));
-            printf("    - bitpool_value  [%d, %d] \n", min_bitpool_value, max_bitpool_value);
-            printf("\n");
-
             app_state = A2DP_W2_SET_CONFIGURATION;
             break;
         }
@@ -327,12 +316,14 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
             // TODO check cid
             sc.sampling_frequency = avdtp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
+            sc.channel_mode = avdtp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
             sc.block_length = avdtp_subevent_signaling_media_codec_sbc_configuration_get_block_length(packet);
             sc.subbands = avdtp_subevent_signaling_media_codec_sbc_configuration_get_subbands(packet);
-            sc.allocation_method = avdtp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet) - 1;
+            sc.allocation_method = avdtp_subevent_signaling_media_codec_sbc_configuration_get_allocation_method(packet);
             sc.max_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_max_bitpool_value(packet);
-            sc.channel_mode = avdtp_subevent_signaling_media_codec_sbc_configuration_get_channel_mode(packet);
+            sc.min_bitpool_value = avdtp_subevent_signaling_media_codec_sbc_configuration_get_min_bitpool_value(packet);
             // TODO: deal with reconfigure: avdtp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
+            log_info("A2DP received SBC Config: sample rate %u, max bitpool %u.", sc.sampling_frequency, sc.max_bitpool_value);
             log_info("A2DP received SBC Config: sample rate %u, max bitpool %u.", sc.sampling_frequency, sc.max_bitpool_value);
             app_state = A2DP_W2_OPEN_STREAM_WITH_SEID;
             a2dp_signaling_emit_media_codec_sbc(a2dp_source_context.a2dp_callback, packet, size);
