@@ -966,7 +966,7 @@ static void avdtp_signaling_emit_capability_done(btstack_packet_handler_t callba
     int pos = 0;
     event[pos++] = HCI_EVENT_AVDTP_META;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = AVDTP_SUBEVENT_SIGNALING_CAPABILITY_DONE;
+    event[pos++] = AVDTP_SUBEVENT_SIGNALING_CAPABILITIES_DONE;
     little_endian_store_16(event, pos, avdtp_cid);
     pos += 2;
     event[pos++] = local_seid;
