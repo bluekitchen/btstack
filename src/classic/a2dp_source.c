@@ -155,6 +155,27 @@ static void a2dp_streaming_emit_can_send_media_packet_now(btstack_packet_handler
     (*callback)(HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static inline void a2dp_signaling_emit_delay_report_capability(btstack_packet_handler_t callback, uint8_t * event, uint16_t event_size){
+    if (!callback) return;
+    event[0] = HCI_EVENT_A2DP_META;
+    event[2] = A2DP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY;
+    (*callback)(HCI_EVENT_PACKET, 0, event, event_size);
+}
+
+static inline void a2dp_signaling_emit_capabilities_done(btstack_packet_handler_t callback, uint8_t * event, uint16_t event_size){
+    if (!callback) return;
+    event[0] = HCI_EVENT_A2DP_META;
+    event[2] = A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE;
+    (*callback)(HCI_EVENT_PACKET, 0, event, event_size);
+}
+
+static inline void a2dp_signaling_emit_delay_report(btstack_packet_handler_t callback, uint8_t * event, uint16_t event_size){
+    if (!callback) return;
+    event[0] = HCI_EVENT_A2DP_META;
+    event[2] = A2DP_SUBEVENT_SIGNALING_DELAY_REPORT;
+    (*callback)(HCI_EVENT_PACKET, 0, event, event_size);
+}
+
 static inline void a2dp_signaling_emit_media_codec_sbc(btstack_packet_handler_t callback, uint8_t * event, uint16_t event_size){
     if (!callback) return;
     if (event_size < 18) return;
@@ -285,33 +306,33 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
         
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY:
-            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY, remote seid %d\n", avdtp_subevent_signaling_media_transport_capability_get_remote_seid(packet));
+            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_MEDIA_TRANSPORT_CAPABILITY, remote seid %d", avdtp_subevent_signaling_media_transport_capability_get_remote_seid(packet));
             break;
         case AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY:
-            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY, remote seid %d\n", avdtp_subevent_signaling_reporting_capability_get_remote_seid(packet));
-            break;
-        case AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY:
-            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY, remote seid %d\n", avdtp_subevent_signaling_delay_reporting_capability_get_remote_seid(packet));
+            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_REPORTING_CAPABILITY, remote seid %d", avdtp_subevent_signaling_reporting_capability_get_remote_seid(packet));
             break;
         case AVDTP_SUBEVENT_SIGNALING_RECOVERY_CAPABILITY:
-            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_RECOVERY_CAPABILITY, remote seid %d\n", avdtp_subevent_signaling_recovery_capability_get_remote_seid(packet));
+            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_RECOVERY_CAPABILITY, remote seid %d", avdtp_subevent_signaling_recovery_capability_get_remote_seid(packet));
             break;
         case AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY:
-            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY, remote seid %d\n", avdtp_subevent_signaling_content_protection_capability_get_remote_seid(packet));
+            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_CONTENT_PROTECTION_CAPABILITY, remote seid %d", avdtp_subevent_signaling_content_protection_capability_get_remote_seid(packet));
             break;
         case AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY:
-            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY, remote seid %d\n", avdtp_subevent_signaling_header_compression_capability_get_remote_seid(packet));
+            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_HEADER_COMPRESSION_CAPABILITY, remote seid %d", avdtp_subevent_signaling_header_compression_capability_get_remote_seid(packet));
             break;
         case AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY:
-            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY, remote seid %d\n", avdtp_subevent_signaling_multiplexing_capability_get_remote_seid(packet));
+            log_info("received, but not forwarded: AVDTP_SUBEVENT_SIGNALING_MULTIPLEXING_CAPABILITY, remote seid %d", avdtp_subevent_signaling_multiplexing_capability_get_remote_seid(packet));
             break;
-        case AVDTP_SUBEVENT_SIGNALING_CAPABILITY_DONE:
+        case AVDTP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY:
+            a2dp_signaling_emit_delay_report_capability(a2dp_source_context.a2dp_callback, packet, size);
+            break;
+        case AVDTP_SUBEVENT_SIGNALING_CAPABILITIES_DONE:
+            a2dp_signaling_emit_capabilities_done(a2dp_source_context.a2dp_callback, packet, size);
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_DELAY_REPORT:
             // forward packet:
-            packet[2] = A2DP_SUBEVENT_SIGNALING_DELAY_REPORT;
-            (*a2dp_source_context.a2dp_callback)(HCI_EVENT_PACKET, 0, packet, size);
+            a2dp_signaling_emit_delay_report(a2dp_source_context.a2dp_callback, packet, size);
             break;
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
             // TODO check cid

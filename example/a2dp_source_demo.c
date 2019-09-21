@@ -139,15 +139,15 @@ typedef struct {
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 // pts:             static const char * device_addr_string = "00:1B:DC:08:0A:A5";
-// pts:         
-static const char * device_addr_string = "00:1B:DC:08:E2:72";
+// pts:             static const char * device_addr_string = "00:1B:DC:08:E2:72";
 // mac 2013:        static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:      static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
 // Minijambox:      static const char * device_addr_string = "00:21:3C:AC:F7:38";
 // Philips SHB9100: static const char * device_addr_string = "00:22:37:05:FD:E8";
 // RT-B6:           static const char * device_addr_string = "00:75:58:FF:C9:7D";
 // BT dongle:       static const char * device_addr_string = "00:1A:7D:DA:71:0A";
-// Sony MDR-ZX330BT static const char * device_addr_string = "00:18:09:28:50:18";
+// Sony MDR-ZX330BT 
+static const char * device_addr_string = "00:18:09:28:50:18";
 // Panda (BM6)      static const char * device_addr_string = "4F:3F:66:52:8B:E0";
 
 static bd_addr_t device_addr;
@@ -253,6 +253,8 @@ static int a2dp_source_and_avrcp_services_init(void){
         return 1;
     }
     media_tracker.local_seid = avdtp_local_seid(local_stream_endpoint);
+    avdtp_source_register_delay_reporting_category(media_tracker.local_seid);
+
     // Initialize AVRCP Target.
     avrcp_target_init();
     avrcp_target_register_packet_handler(&avrcp_target_packet_handler);
@@ -447,7 +449,6 @@ static void dump_sbc_configuration(avdtp_media_codec_configuration_sbc_t * confi
     printf("    - bitpool_value [%d, %d] \n", configuration->min_bitpool_value, configuration->max_bitpool_value);
 }
 
-
 static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
     UNUSED(size);
@@ -494,6 +495,9 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             break;
 
          case A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_SBC_CONFIGURATION:{
+            cid  = avdtp_subevent_signaling_media_codec_sbc_configuration_get_avdtp_cid(packet);
+            if (cid != media_tracker.a2dp_cid) return;
+            
             sbc_configuration.reconfigure = a2dp_subevent_signaling_media_codec_sbc_configuration_get_reconfigure(packet);
             sbc_configuration.num_channels = a2dp_subevent_signaling_media_codec_sbc_configuration_get_num_channels(packet);
             sbc_configuration.sampling_frequency = a2dp_subevent_signaling_media_codec_sbc_configuration_get_sampling_frequency(packet);
@@ -534,8 +538,15 @@ static void a2dp_source_packet_handler(uint8_t packet_type, uint16_t channel, ui
             break;
         }  
 
+        case A2DP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY:
+            printf("A2DP Source: remote supports delay report\n");
+            break;
+        case A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE:
+            printf("A2DP Source: All capabilities reported\n");
+            break;
+
         case A2DP_SUBEVENT_SIGNALING_DELAY_REPORT:
-            printf("A2DP Source: received delay report of %d.%0d ms, local seid %d\n", 
+            printf("A2DP Source: Received delay report of %d.%0d ms, local seid %d\n", 
                 avdtp_subevent_signaling_delay_report_get_delay_100us(packet)/10, avdtp_subevent_signaling_delay_report_get_delay_100us(packet)%10,
                 avdtp_subevent_signaling_delay_report_get_local_seid(packet));
             break;
