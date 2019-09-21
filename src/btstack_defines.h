@@ -1611,7 +1611,7 @@ typedef uint8_t sm_key_t[16];
  * @param local_seid
  * @param remote_seid
  */
-#define AVDTP_SUBEVENT_SIGNALING_CAPABILITY_DONE             0x15
+#define AVDTP_SUBEVENT_SIGNALING_CAPABILITIES_DONE           0x15
 
 
 /**
@@ -1770,14 +1770,32 @@ typedef uint8_t sm_key_t[16];
 #define A2DP_SUBEVENT_STREAM_RECONFIGURED                            0x0D
 
 /**
+ * @format 1211
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param local_seid
+ * @param remote_seid
+ */
+#define A2DP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY           0x0E
+
+
+/**
  * @format 1212
  * @param subevent_code
  * @param avdtp_cid
  * @param local_seid
  * @param delay_100us
  */
-#define A2DP_SUBEVENT_SIGNALING_DELAY_REPORT                         0x0E
+#define A2DP_SUBEVENT_SIGNALING_DELAY_REPORT                         0x0F
 
+/**
+ * @format 1211
+ * @param subevent_code
+ * @param avdtp_cid
+ * @param local_seid
+ * @param remote_seid
+ */
+#define A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE                    0x10
 
 /** AVRCP Subevent */
 

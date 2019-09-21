@@ -5231,30 +5231,30 @@ static inline uint16_t avdtp_subevent_streaming_can_send_media_packet_now_get_se
 }
 
 /**
- * @brief Get field avdtp_cid from event AVDTP_SUBEVENT_SIGNALING_CAPABILITY_DONE
+ * @brief Get field avdtp_cid from event AVDTP_SUBEVENT_SIGNALING_CAPABILITIES_DONE
  * @param event packet
  * @return avdtp_cid
  * @note: btstack_type 2
  */
-static inline uint16_t avdtp_subevent_signaling_capability_done_get_avdtp_cid(const uint8_t * event){
+static inline uint16_t avdtp_subevent_signaling_capabilities_done_get_avdtp_cid(const uint8_t * event){
     return little_endian_read_16(event, 3);
 }
 /**
- * @brief Get field local_seid from event AVDTP_SUBEVENT_SIGNALING_CAPABILITY_DONE
+ * @brief Get field local_seid from event AVDTP_SUBEVENT_SIGNALING_CAPABILITIES_DONE
  * @param event packet
  * @return local_seid
  * @note: btstack_type 1
  */
-static inline uint8_t avdtp_subevent_signaling_capability_done_get_local_seid(const uint8_t * event){
+static inline uint8_t avdtp_subevent_signaling_capabilities_done_get_local_seid(const uint8_t * event){
     return event[5];
 }
 /**
- * @brief Get field remote_seid from event AVDTP_SUBEVENT_SIGNALING_CAPABILITY_DONE
+ * @brief Get field remote_seid from event AVDTP_SUBEVENT_SIGNALING_CAPABILITIES_DONE
  * @param event packet
  * @return remote_seid
  * @note: btstack_type 1
  */
-static inline uint8_t avdtp_subevent_signaling_capability_done_get_remote_seid(const uint8_t * event){
+static inline uint8_t avdtp_subevent_signaling_capabilities_done_get_remote_seid(const uint8_t * event){
     return event[6];
 }
 
@@ -5751,6 +5751,34 @@ static inline uint8_t a2dp_subevent_stream_reconfigured_get_status(const uint8_t
 }
 
 /**
+ * @brief Get field avdtp_cid from event A2DP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY
+ * @param event packet
+ * @return avdtp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t a2dp_subevent_signaling_delay_reporting_capability_get_avdtp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field local_seid from event A2DP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY
+ * @param event packet
+ * @return local_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_delay_reporting_capability_get_local_seid(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field remote_seid from event A2DP_SUBEVENT_SIGNALING_DELAY_REPORTING_CAPABILITY
+ * @param event packet
+ * @return remote_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_delay_reporting_capability_get_remote_seid(const uint8_t * event){
+    return event[6];
+}
+
+/**
  * @brief Get field avdtp_cid from event A2DP_SUBEVENT_SIGNALING_DELAY_REPORT
  * @param event packet
  * @return avdtp_cid
@@ -5776,6 +5804,34 @@ static inline uint8_t a2dp_subevent_signaling_delay_report_get_local_seid(const 
  */
 static inline uint16_t a2dp_subevent_signaling_delay_report_get_delay_100us(const uint8_t * event){
     return little_endian_read_16(event, 6);
+}
+
+/**
+ * @brief Get field avdtp_cid from event A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE
+ * @param event packet
+ * @return avdtp_cid
+ * @note: btstack_type 2
+ */
+static inline uint16_t a2dp_subevent_signaling_capabilities_done_get_avdtp_cid(const uint8_t * event){
+    return little_endian_read_16(event, 3);
+}
+/**
+ * @brief Get field local_seid from event A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE
+ * @param event packet
+ * @return local_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_capabilities_done_get_local_seid(const uint8_t * event){
+    return event[5];
+}
+/**
+ * @brief Get field remote_seid from event A2DP_SUBEVENT_SIGNALING_CAPABILITIES_DONE
+ * @param event packet
+ * @return remote_seid
+ * @note: btstack_type 1
+ */
+static inline uint8_t a2dp_subevent_signaling_capabilities_done_get_remote_seid(const uint8_t * event){
+    return event[6];
 }
 
 /**
