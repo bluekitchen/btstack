@@ -36,7 +36,6 @@ COMMON = \
     btstack_ring_buffer.c \
     btstack_run_loop_base.c \
     btstack_slip.c \
-    btstack_tlv_none.c \
     btstack_util.c		  \
     hci_dump.c    \
     hci_transport_em9304_spi.c \
