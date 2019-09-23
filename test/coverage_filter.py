@@ -33,7 +33,7 @@ def list_category_table():
 
 filter = sys.argv[1:]
 
-print("Parsing HTML Coverage Report")
+print("\nParsing HTML Coverage Report")
 
 tree = html.parse(coverage_html_path)
 files = tree.xpath("//td[@class='coverFile']")

@@ -70,3 +70,6 @@ coverage:
 	lcov --capture --rc lcov_branch_coverage=1 --directory . --exclude "/Applications/*" --exclude "/Library/*" --exclude "/usr/*" --exclude "*/3rd-party/tinydir/*" --exclude "*/platform/posix/*" --exclude "*/test/*" --output-file coverage.info
 	# generate html output
 	genhtml coverage.info --branch-coverage --output-directory coverage-html
+
+coverage-freertos-ble:
+	./coverage_filter.py src/mesh src/classic
