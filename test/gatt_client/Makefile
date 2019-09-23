@@ -14,6 +14,7 @@ VPATH += ${BTSTACK_ROOT}/platform/posix
 
 COMMON = \
 	ad_parser.c                 \
+	ancs_client.c               \
 	att_db.c                    \
 	att_dispatch.c              \
 	btstack_linked_list.c       \
