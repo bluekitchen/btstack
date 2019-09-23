@@ -283,19 +283,19 @@ static uint16_t cycling_power_service_default_measurement_flags(void){
     cycling_power_t * instance = &cycling_power;
     uint16_t measurement_flags = 0;
     uint8_t flag[] = {
-        has_feature(CP_FEATURE_FLAG_PEDAL_POWER_BALANCE_SUPPORTED),
-        has_feature(CP_FEATURE_FLAG_PEDAL_POWER_BALANCE_SUPPORTED) && instance->pedal_power_balance_reference,
-        has_feature(CP_FEATURE_FLAG_ACCUMULATED_TORQUE_SUPPORTED),
-        has_feature(CP_FEATURE_FLAG_ACCUMULATED_TORQUE_SUPPORTED) && instance->torque_source,
-        has_feature(CP_FEATURE_FLAG_WHEEL_REVOLUTION_DATA_SUPPORTED),
-        has_feature(CP_FEATURE_FLAG_CRANK_REVOLUTION_DATA_SUPPORTED),
-        has_feature(CP_FEATURE_FLAG_EXTREME_MAGNITUDES_SUPPORTED) && (has_feature(CP_FEATURE_FLAG_SENSOR_MEASUREMENT_CONTEXT) == CP_SENSOR_MEASUREMENT_CONTEXT_FORCE),
-        has_feature(CP_FEATURE_FLAG_EXTREME_MAGNITUDES_SUPPORTED) && (has_feature(CP_FEATURE_FLAG_SENSOR_MEASUREMENT_CONTEXT) == CP_SENSOR_MEASUREMENT_CONTEXT_TORQUE),
-        has_feature(CP_FEATURE_FLAG_EXTREME_ANGLES_SUPPORTED),
-        has_feature(CP_FEATURE_FLAG_TOP_AND_BOTTOM_DEAD_SPOT_ANGLE_SUPPORTED),
-        has_feature(CP_FEATURE_FLAG_TOP_AND_BOTTOM_DEAD_SPOT_ANGLE_SUPPORTED),
-        has_feature(CP_FEATURE_FLAG_ACCUMULATED_ENERGY_SUPPORTED),
-        has_feature(CP_FEATURE_FLAG_OFFSET_COMPENSATION_INDICATOR_SUPPORTED)
+        (uint8_t) has_feature(CP_FEATURE_FLAG_PEDAL_POWER_BALANCE_SUPPORTED),
+        (uint8_t) has_feature(CP_FEATURE_FLAG_PEDAL_POWER_BALANCE_SUPPORTED) && instance->pedal_power_balance_reference,
+        (uint8_t) has_feature(CP_FEATURE_FLAG_ACCUMULATED_TORQUE_SUPPORTED),
+        (uint8_t) has_feature(CP_FEATURE_FLAG_ACCUMULATED_TORQUE_SUPPORTED) && instance->torque_source,
+        (uint8_t) has_feature(CP_FEATURE_FLAG_WHEEL_REVOLUTION_DATA_SUPPORTED),
+        (uint8_t) has_feature(CP_FEATURE_FLAG_CRANK_REVOLUTION_DATA_SUPPORTED),
+        (uint8_t) has_feature(CP_FEATURE_FLAG_EXTREME_MAGNITUDES_SUPPORTED) && (has_feature(CP_FEATURE_FLAG_SENSOR_MEASUREMENT_CONTEXT) == CP_SENSOR_MEASUREMENT_CONTEXT_FORCE),
+        (uint8_t) has_feature(CP_FEATURE_FLAG_EXTREME_MAGNITUDES_SUPPORTED) && (has_feature(CP_FEATURE_FLAG_SENSOR_MEASUREMENT_CONTEXT) == CP_SENSOR_MEASUREMENT_CONTEXT_TORQUE),
+        (uint8_t) has_feature(CP_FEATURE_FLAG_EXTREME_ANGLES_SUPPORTED),
+        (uint8_t) has_feature(CP_FEATURE_FLAG_TOP_AND_BOTTOM_DEAD_SPOT_ANGLE_SUPPORTED),
+        (uint8_t) has_feature(CP_FEATURE_FLAG_TOP_AND_BOTTOM_DEAD_SPOT_ANGLE_SUPPORTED),
+        (uint8_t) has_feature(CP_FEATURE_FLAG_ACCUMULATED_ENERGY_SUPPORTED),
+        (uint8_t) has_feature(CP_FEATURE_FLAG_OFFSET_COMPENSATION_INDICATOR_SUPPORTED)
     };
 
     int i;
@@ -326,11 +326,11 @@ uint16_t cycling_power_service_measurement_flags(void){
 uint8_t cycling_power_service_vector_flags(void){
     uint8_t vector_flags = 0;
     uint8_t flag[] = {
-        has_feature(CP_FEATURE_FLAG_CRANK_REVOLUTION_DATA_SUPPORTED),
-        has_feature(CP_FEATURE_FLAG_EXTREME_ANGLES_SUPPORTED),
-        has_feature(CP_FEATURE_FLAG_EXTREME_MAGNITUDES_SUPPORTED) && (has_feature(CP_FEATURE_FLAG_SENSOR_MEASUREMENT_CONTEXT) == CP_SENSOR_MEASUREMENT_CONTEXT_FORCE),
-        has_feature(CP_FEATURE_FLAG_EXTREME_MAGNITUDES_SUPPORTED) && (has_feature(CP_FEATURE_FLAG_SENSOR_MEASUREMENT_CONTEXT) == CP_SENSOR_MEASUREMENT_CONTEXT_TORQUE),
-        has_feature(CP_FEATURE_FLAG_INSTANTANEOUS_MEASUREMENT_DIRECTION_SUPPORTED) && cycling_power_vector_instantaneous_measurement_direction()
+        (uint8_t )has_feature(CP_FEATURE_FLAG_CRANK_REVOLUTION_DATA_SUPPORTED),
+        (uint8_t )has_feature(CP_FEATURE_FLAG_EXTREME_ANGLES_SUPPORTED),
+        (uint8_t )has_feature(CP_FEATURE_FLAG_EXTREME_MAGNITUDES_SUPPORTED) && (has_feature(CP_FEATURE_FLAG_SENSOR_MEASUREMENT_CONTEXT) == CP_SENSOR_MEASUREMENT_CONTEXT_FORCE),
+        (uint8_t )has_feature(CP_FEATURE_FLAG_EXTREME_MAGNITUDES_SUPPORTED) && (has_feature(CP_FEATURE_FLAG_SENSOR_MEASUREMENT_CONTEXT) == CP_SENSOR_MEASUREMENT_CONTEXT_TORQUE),
+        (uint8_t )has_feature(CP_FEATURE_FLAG_INSTANTANEOUS_MEASUREMENT_DIRECTION_SUPPORTED) && cycling_power_vector_instantaneous_measurement_direction()
     };
 
     int i;
@@ -498,11 +498,11 @@ static int cycling_power_store_measurement(cycling_power_t * instance, uint8_t *
     pos += 2;
     little_endian_store_16(value, 2, instance->instantaneous_power_watt);
     pos += 2;
-    int flag;
+    int flag_index;
     uint16_t bytes_left = max_value_size - pos;
-
-    for (flag = 0; flag < CP_MEASUREMENT_FLAG_RESERVED; flag++){
-        if ((measurement_flags & (1 << flag)) == 0) continue;
+    for (flag_index = 0; flag_index < CP_MEASUREMENT_FLAG_RESERVED; flag_index++){
+        if ((measurement_flags & (1 << flag_index)) == 0) continue;
+        cycling_power_measurement_flag_t flag = (cycling_power_measurement_flag_t) flag_index;
         uint16_t value_size = cycling_power_measurement_flag_value_size(flag);
         if (value_size > bytes_left ) return pos;
         cycling_power_store_measurement_flag_value(instance, flag, &value[pos]);
@@ -674,6 +674,8 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
     UNUSED(transaction_mode);
     UNUSED(offset);
     UNUSED(buffer_size);
+    int i;
+    cycling_power_sensor_location_t location;
     cycling_power_t * instance = &cycling_power;
 
     // printf("cycling_power_service_write_callback: attr handle 0x%02x\n", attribute_handle);
@@ -762,7 +764,7 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
             return CYCLING_POWER_ERROR_CODE_PROCEDURE_ALREADY_IN_PROGRESS;
         } 
         int pos = 0;
-        instance->request_opcode = buffer[pos++];
+        instance->request_opcode = (cycling_power_opcode_t) buffer[pos++];
         instance->response_value = CP_RESPONSE_VALUE_OP_CODE_NOT_SUPPORTED;
         
         switch (instance->request_opcode){
@@ -779,8 +781,7 @@ static int cycling_power_service_write_callback(hci_con_handle_t con_handle, uin
             
             case CP_OPCODE_UPDATE_SENSOR_LOCATION:
                 if (!has_feature(CP_FEATURE_FLAG_MULTIPLE_SENSOR_LOCATIONS_SUPPORTED)) break;
-                cycling_power_sensor_location_t location = buffer[pos];
-                int i;
+                location = (cycling_power_sensor_location_t) buffer[pos];
                 instance->response_value = CP_RESPONSE_VALUE_INVALID_PARAMETER;
                 for (i=0; i<instance->num_supported_sensor_locations; i++){
                     if (instance->supported_sensor_locations[i] == location){
