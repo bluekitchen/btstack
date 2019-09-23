@@ -74,8 +74,6 @@ typedef struct function_call {
     void * arg;
 } function_call_t;
 
-static const btstack_run_loop_t btstack_run_loop_freertos;
-
 // pick allocation style, prefer static
 #if( configSUPPORT_STATIC_ALLOCATION == 1 )
 #define USE_STATIC_ALLOC
@@ -304,9 +302,6 @@ static void btstack_run_loop_freertos_init(void){
 /**
  * @brief Provide btstack_run_loop_posix instance for use with btstack_run_loop_init
  */
-const btstack_run_loop_t * btstack_run_loop_freertos_get_instance(void){
-    return &btstack_run_loop_freertos;
-}
 
 static const btstack_run_loop_t btstack_run_loop_freertos = {
     &btstack_run_loop_freertos_init,
@@ -321,3 +316,7 @@ static const btstack_run_loop_t btstack_run_loop_freertos = {
     &btstack_run_loop_freertos_dump_timer,
     &btstack_run_loop_freertos_get_time_ms,
 };
+
+const btstack_run_loop_t * btstack_run_loop_freertos_get_instance(void){
+    return &btstack_run_loop_freertos;
+}
