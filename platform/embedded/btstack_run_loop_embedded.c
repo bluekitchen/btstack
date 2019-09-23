@@ -78,8 +78,6 @@
 #define TIMER_SUPPORT
 #endif
 
-static const btstack_run_loop_t btstack_run_loop_embedded;
-
 // the run loop
 static btstack_linked_list_t data_sources;
 
@@ -279,9 +277,6 @@ static void btstack_run_loop_embedded_init(void){
 /**
  * Provide btstack_run_loop_embedded instance 
  */
-const btstack_run_loop_t * btstack_run_loop_embedded_get_instance(void){
-    return &btstack_run_loop_embedded;
-}
 
 static const btstack_run_loop_t btstack_run_loop_embedded = {
     &btstack_run_loop_embedded_init,
@@ -296,3 +291,8 @@ static const btstack_run_loop_t btstack_run_loop_embedded = {
     &btstack_run_loop_embedded_dump_timer,
     &btstack_run_loop_embedded_get_time_ms,
 };
+
+const btstack_run_loop_t * btstack_run_loop_embedded_get_instance(void){
+    return &btstack_run_loop_embedded;
+}
+
