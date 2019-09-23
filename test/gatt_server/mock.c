@@ -199,6 +199,9 @@ void hci_connections_get_iterator(btstack_linked_list_iterator_t *it){
 void l2cap_run(void){
 }
 
+void l2cap_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
+}
+
 int gap_authenticated(hci_con_handle_t con_handle){
 	return 0;
 }
@@ -213,4 +216,8 @@ int gap_secure_connection(hci_con_handle_t con_handle){
 }
 gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle){
 	return GAP_CONNECTION_INVALID;
+}
+int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_t conn_interval_min,
+	uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout){
+	return 0;	
 }

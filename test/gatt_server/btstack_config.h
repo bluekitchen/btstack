@@ -25,6 +25,7 @@
 #define ENABLE_LE_CENTRAL
 #define ENABLE_SDP_EXTRA_QUERIES
 #define ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+#define ENABLE_ATT_DELAYED_RESPONSE
 
 // BTstack configuration. buffers, sizes, ...
 #define HCI_ACL_PAYLOAD_SIZE 52

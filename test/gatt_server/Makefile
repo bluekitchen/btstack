@@ -10,6 +10,7 @@ LDFLAGS +=  -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/src/ble 
+VPATH += ${BTSTACK_ROOT}/src/ble/gatt-service
 VPATH += ${BTSTACK_ROOT}/platform/posix
 
 COMMON = \
@@ -26,6 +27,14 @@ COMMON = \
 	le_device_db_memory.c       \
 	mock.c                      \
 	btstack_tlv.c               \
+	battery_service_server.c \
+	cycling_power_service_server.c \
+	cycling_speed_and_cadence_service_server.c \
+	device_information_service_server.c \
+	heart_rate_service_server.c \
+	hids_device.c \
+	nordic_spp_service_server.c \
+	ublox_spp_service_server.c \
 
 COMMON_OBJ = $(COMMON:.c=.o)
 
