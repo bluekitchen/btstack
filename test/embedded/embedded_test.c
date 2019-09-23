@@ -10,6 +10,7 @@
 #include "ble/att_db_util.h"
 #include "btstack_util.h"
 #include "bluetooth.h"
+#include "btstack_audio.h"
 
 #include "hal_audio.h"
 #include "hal_cpu.h"
@@ -59,6 +60,18 @@ void hal_uart_dma_set_sleep(uint8_t sleep){}
 int  hal_uart_dma_get_supported_sleep_modes(void){ return 0; }
 // void hal_uart_dma_set_sleep_mode(btstack_uart_sleep_mode_t sleep_mode){}
 
+// hal_audio_sink
+void hal_audio_sink_init(uint8_t channels, uint32_t sample_rate,void (*buffer_played_callback)(uint8_t buffer_index)){}
+uint16_t hal_audio_sink_get_num_output_buffers(void){ return 0; }
+uint16_t hal_audio_sink_get_num_output_buffer_samples(void){ return 0; }
+int16_t * hal_audio_sink_get_output_buffer(uint8_t buffer_index){ return NULL; }
+void hal_audio_sink_start(void){}
+void hal_audio_sink_stop(void){}
+void hal_audio_sink_close(void){}
+void hal_audio_source_init(uint8_t channels, uint32_t sample_rate, void (*buffer_recorded_callback)(const int16_t * buffer, uint16_t num_samples)){}
+void hal_audio_source_start(void){}
+void hal_audio_source_stop(void){}
+void hal_audio_source_close(void){}
 
 TEST_GROUP(Embedded){
     void setup(void){
