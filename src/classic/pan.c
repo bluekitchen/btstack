@@ -50,6 +50,7 @@
 
 #include "bluetooth_sdp.h"
 #include "btstack_config.h"
+#include "l2cap.h"
 #include "classic/core.h"
 #include "classic/sdp_util.h"
 

@@ -245,6 +245,7 @@ typedef enum {
 #define ERROR_CODE_COARSE_CLOCK_ADJUSTMENT_REJECTED_BUT_WILL_TRY_TO_ADJUST_USING_CLOCK_DRAGGING 0x40
 /* ENUM_END */
 
+
 /* ENUM_START: AVRCP_BROWSING_ERROR_CODE */
 #define AVRCP_BROWSING_ERROR_CODE_INVALID_COMMAND                     0x00  // Sent if TG received a PDU that it did not understand. Valid for All.
 #define AVRCP_BROWSING_ERROR_CODE_INVALID_PARAMETER                   0x01  // Sent if the TG received a PDU with a parameter ID that it did not understand. Sent if there is only one parameter ID in the PDU. Valid for All.
@@ -771,23 +772,9 @@ typedef enum {
 // Extended Response Timeout eXpired
 #define L2CAP_ERTX_TIMEOUT_MS 120000
 
-//
-// Fixed PSM numbers from https://www.bluetooth.com/specifications/assigned-numbers/logical-link-control 
-//
-#define PSM_SDP           BLUETOOTH_PROTOCOL_SDP
-#define PSM_RFCOMM        BLUETOOTH_PROTOCOL_RFCOMM
-#define PSM_BNEP          BLUETOOTH_PROTOCOL_BNEP
-// @TODO: scrape PSMs Bluetooth SIG site and put in bluetooth_psm.h or bluetooth_l2cap.h
-#define PSM_HID_CONTROL   0x11
-#define PSM_HID_INTERRUPT 0x13
-#define PSM_ATT           0x1f
-#define PSM_IPSP          0x23
 /**
  * SDP Protocol
  */
-
- // PDU Types
-
 
 // Device Vendor ID Sources
 #define DEVICE_ID_VENDOR_ID_SOURCE_BLUETOOTH 0x0001
