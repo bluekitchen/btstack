@@ -577,7 +577,14 @@ static void cycling_power_service_response_can_send_now(void * context){
     //     return;
     // }
 
-    uint8_t value[3 + btstack_max(CP_SENSOR_LOCATION_RESERVED, CYCLING_POWER_MANUFACTURER_SPECIFIC_DATA_MAX_SIZE + 5)];
+    // use preprocessor instead of btstack_max to get compile-time constant
+#if (CP_SENSOR_LOCATION_RESERVED > (CYCLING_POWER_MANUFACTURER_SPECIFIC_DATA_MAX_SIZE + 5))
+    #define MAX_RESPONSE_PAYLOAD CP_SENSOR_LOCATION_RESERVED
+#else
+    #define MAX_RESPONSE_PAYLOAD (CYCLING_POWER_MANUFACTURER_SPECIFIC_DATA_MAX_SIZE + 5)
+#endif
+
+    uint8_t value[3 + MAX_RESPONSE_PAYLOAD];
     int pos = 0;
     value[pos++] = CP_OPCODE_RESPONSE_CODE;
     value[pos++] = instance->request_opcode;
