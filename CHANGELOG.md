@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - GAP: support reading RSSI for Classic+LE using gap_read_rssi. Emits GAP_EVENT_RSSI_MEASUREMENT
 
 ## Changed
-
+- Bluetooth and BTstack Error Codes and Events: collect status codes in bluetooth.h and events in btstack_defines.h
 
 ## Changes August 2019
 
