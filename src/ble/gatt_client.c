@@ -72,7 +72,7 @@ static uint8_t mtu_exchange_enabled;
 
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
 static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8_t error_code);
+static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8_t att_error_code);
 
 #ifdef ENABLE_LE_SIGNED_WRITE
 static void att_signed_write_handle_cmac_result(uint8_t hash[8]);
@@ -118,7 +118,7 @@ static gatt_client_t * gatt_client_for_timer(btstack_timer_source_t * ts){
 
 static void gatt_client_timeout_handler(btstack_timer_source_t * timer){
     gatt_client_t * peripheral = gatt_client_for_timer(timer);
-    if (!peripheral) return;
+    if (peripheral == NULL) return;
     log_info("GATT client timeout handle, handle 0x%02x", peripheral->con_handle);
     gatt_client_report_error_if_pending(peripheral, ATT_ERROR_TIMEOUT);           
 }
@@ -176,7 +176,7 @@ static gatt_client_t * provide_context_for_conn_handle(hci_con_handle_t con_hand
 
 static gatt_client_t * provide_context_for_conn_handle_and_start_timer(hci_con_handle_t con_handle){
     gatt_client_t * context = provide_context_for_conn_handle(con_handle);
-    if (!context) return NULL;
+    if (context == NULL) return NULL;
     gatt_client_timeout_start(context);
     return context;
 }
@@ -187,7 +187,7 @@ static int is_ready(gatt_client_t * context){
 
 int gatt_client_is_ready(hci_con_handle_t con_handle){
     gatt_client_t * context = provide_context_for_conn_handle(con_handle);
-    if (!context) return 0;
+    if (context == NULL) return 0;
     return is_ready(context);
 }
 
@@ -197,9 +197,11 @@ void gatt_client_mtu_enable_auto_negotiation(uint8_t enabled){
 
 uint8_t gatt_client_get_mtu(hci_con_handle_t con_handle, uint16_t * mtu){
     gatt_client_t * context = provide_context_for_conn_handle(con_handle);
-    if (context && (context->mtu_state == MTU_EXCHANGED || context->mtu_state == MTU_AUTO_EXCHANGE_DISABLED)){
+    if (context == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
+
+    if (context->mtu_state == MTU_EXCHANGED || context->mtu_state == MTU_AUTO_EXCHANGE_DISABLED){
         *mtu = context->mtu;
-        return 0;
+        return ERROR_CODE_SUCCESS;
     } 
     *mtu = ATT_DEFAULT_MTU;
     return GATT_CLIENT_IN_WRONG_STATE;
@@ -503,13 +505,13 @@ static void emit_event_to_registered_listeners(hci_con_handle_t con_handle, uint
     } 
 }
 
-static void emit_gatt_complete_event(gatt_client_t * peripheral, uint8_t status){
+static void emit_gatt_complete_event(gatt_client_t * peripheral, uint8_t att_status){
     // @format H1
     uint8_t packet[5];
     packet[0] = GATT_EVENT_QUERY_COMPLETE;
     packet[1] = 3;
     little_endian_store_16(packet, 2, peripheral->con_handle);
-    packet[4] = status;
+    packet[4] = att_status;
     emit_event_new(peripheral->callback, packet, sizeof(packet));
 }
 
@@ -1086,10 +1088,10 @@ static void gatt_client_run(void){
     }
 }
 
-static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8_t error_code) {
-    if (is_ready(peripheral)) return;
+static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8_t att_error_code) {
+    if (is_ready(peripheral) == 1) return;
     gatt_client_handle_transaction_complete(peripheral);
-    emit_gatt_complete_event(peripheral, error_code);
+    emit_gatt_complete_event(peripheral, att_error_code);
 }
 
 static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -1105,7 +1107,7 @@ static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t chann
             log_info("GATT Client: HCI_EVENT_DISCONNECTION_COMPLETE");
             con_handle = little_endian_read_16(packet,3);
             peripheral = get_gatt_client_context_for_handle(con_handle);
-            if (!peripheral) break;
+            if (peripheral == NULL) break;
             
             gatt_client_report_error_if_pending(peripheral, ATT_ERROR_HCI_DISCONNECT_RECEIVED);
             gatt_client_timeout_stop(peripheral);
@@ -1118,7 +1120,7 @@ static void gatt_client_event_packet_handler(uint8_t packet_type, uint16_t chann
         case SM_EVENT_PAIRING_COMPLETE:
             con_handle = sm_event_pairing_complete_get_handle(packet);
             peripheral = get_gatt_client_context_for_handle(con_handle);
-            if (!peripheral) break;
+            if (peripheral == NULL) break;
 
             if (peripheral->wait_for_pairing_complete){
                 peripheral->wait_for_pairing_complete = 0;
@@ -1158,7 +1160,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             // att_server has negotiated the mtu for this connection, cache if context exists
             case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
                 peripheral = get_gatt_client_context_for_handle(handle);
-                if (!peripheral) break;
+                if (peripheral == NULL) break;
                 peripheral->mtu = little_endian_read_16(packet, 4);
                 break;
             default:
@@ -1182,7 +1184,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             break;
     }
 
-    if (!peripheral) return;
+    if (peripheral == NULL) return;
     
     switch (packet[0]){
         case ATT_EXCHANGE_MTU_RESPONSE:
@@ -1628,7 +1630,8 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
 
 uint8_t gatt_client_signed_write_without_response(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t handle, uint16_t message_len, uint8_t * message){
     gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
 
     peripheral->callback = callback;
     peripheral->attribute_handle = handle;
@@ -1643,8 +1646,8 @@ uint8_t gatt_client_signed_write_without_response(btstack_packet_handler_t callb
 
 uint8_t gatt_client_discover_primary_services(btstack_packet_handler_t callback, hci_con_handle_t con_handle){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
 
     peripheral->callback = callback;
     peripheral->start_group_handle = 0x0001;
@@ -1658,9 +1661,8 @@ uint8_t gatt_client_discover_primary_services(btstack_packet_handler_t callback,
 
 uint8_t gatt_client_discover_primary_services_by_uuid16(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t uuid16){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
 
     peripheral->callback = callback;
     peripheral->start_group_handle = 0x0001;
@@ -1674,9 +1676,8 @@ uint8_t gatt_client_discover_primary_services_by_uuid16(btstack_packet_handler_t
 
 uint8_t gatt_client_discover_primary_services_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, const uint8_t * uuid128){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
 
     peripheral->callback = callback;
     peripheral->start_group_handle = 0x0001;
@@ -1690,9 +1691,8 @@ uint8_t gatt_client_discover_primary_services_by_uuid128(btstack_packet_handler_
 
 uint8_t gatt_client_discover_characteristics_for_service(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t *service){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
 
     peripheral->callback = callback;
     peripheral->start_group_handle = service->start_group_handle;
@@ -1706,9 +1706,8 @@ uint8_t gatt_client_discover_characteristics_for_service(btstack_packet_handler_
 
 uint8_t gatt_client_find_included_services_for_service(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_service_t *service){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     peripheral->callback = callback;
     peripheral->start_group_handle = service->start_group_handle;
@@ -1721,9 +1720,8 @@ uint8_t gatt_client_find_included_services_for_service(btstack_packet_handler_t 
 
 uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid16(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     peripheral->callback = callback;
     peripheral->start_group_handle = start_handle;
@@ -1740,9 +1738,8 @@ uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid16(btstack_
 
 uint8_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, uint8_t * uuid128){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     peripheral->callback = callback;
     peripheral->start_group_handle = start_handle;
@@ -1768,9 +1765,8 @@ uint8_t gatt_client_discover_characteristics_for_service_by_uuid128(btstack_pack
 
 uint8_t gatt_client_discover_characteristic_descriptors(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t *characteristic){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     if (characteristic->value_handle == characteristic->end_handle){
         emit_gatt_complete_event(peripheral, ATT_ERROR_SUCCESS);
@@ -1787,9 +1783,8 @@ uint8_t gatt_client_discover_characteristic_descriptors(btstack_packet_handler_t
 
 uint8_t gatt_client_read_value_of_characteristic_using_value_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     peripheral->callback = callback;
     peripheral->attribute_handle = value_handle;
@@ -1801,9 +1796,8 @@ uint8_t gatt_client_read_value_of_characteristic_using_value_handle(btstack_pack
 
 uint8_t gatt_client_read_value_of_characteristics_by_uuid16(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     peripheral->callback = callback;
     peripheral->start_group_handle = start_handle;
@@ -1819,9 +1813,8 @@ uint8_t gatt_client_read_value_of_characteristics_by_uuid16(btstack_packet_handl
 
 uint8_t gatt_client_read_value_of_characteristics_by_uuid128(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t start_handle, uint16_t end_handle, uint8_t * uuid128){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     peripheral->callback = callback;
     peripheral->start_group_handle = start_handle;
@@ -1842,9 +1835,8 @@ uint8_t gatt_client_read_value_of_characteristic(btstack_packet_handler_t callba
 
 uint8_t gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t characteristic_value_handle, uint16_t offset){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     peripheral->callback = callback;
     peripheral->attribute_handle = characteristic_value_handle;
@@ -1864,9 +1856,8 @@ uint8_t gatt_client_read_long_value_of_characteristic(btstack_packet_handler_t c
 
 uint8_t gatt_client_read_multiple_characteristic_values(btstack_packet_handler_t callback, hci_con_handle_t con_handle, int num_value_handles, uint16_t * value_handles){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     peripheral->callback = callback;
     peripheral->read_multiple_handle_count = num_value_handles;
@@ -1879,8 +1870,8 @@ uint8_t gatt_client_read_multiple_characteristic_values(btstack_packet_handler_t
 uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
     gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
     
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     if (value_length > peripheral_mtu(peripheral) - 3) return GATT_CLIENT_VALUE_TOO_LONG;
     if (!att_dispatch_client_can_send_now(peripheral->con_handle)) return GATT_CLIENT_BUSY;
@@ -1891,9 +1882,8 @@ uint8_t gatt_client_write_value_of_characteristic_without_response(hci_con_handl
 
 uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * data){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     peripheral->callback = callback;
     peripheral->attribute_handle = value_handle;
@@ -1906,9 +1896,8 @@ uint8_t gatt_client_write_value_of_characteristic(btstack_packet_handler_t callb
 
 uint8_t gatt_client_write_long_value_of_characteristic_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t offset, uint16_t value_length, uint8_t  * data){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     peripheral->callback = callback;
     peripheral->attribute_handle = value_handle;
@@ -1926,9 +1915,8 @@ uint8_t gatt_client_write_long_value_of_characteristic(btstack_packet_handler_t 
 
 uint8_t gatt_client_reliable_write_long_value_of_characteristic(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     peripheral->callback = callback;
     peripheral->attribute_handle = value_handle;
@@ -1942,9 +1930,8 @@ uint8_t gatt_client_reliable_write_long_value_of_characteristic(btstack_packet_h
 
 uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic, uint16_t configuration){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     if ( (configuration & GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION) &&
         (characteristic->properties & ATT_PROPERTY_NOTIFY) == 0) {
@@ -1972,9 +1959,8 @@ uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_han
 
 uint8_t gatt_client_read_characteristic_descriptor_using_descriptor_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     peripheral->callback = callback;
     peripheral->attribute_handle = descriptor_handle;
@@ -1990,9 +1976,8 @@ uint8_t gatt_client_read_characteristic_descriptor(btstack_packet_handler_t call
 
 uint8_t gatt_client_read_long_characteristic_descriptor_using_descriptor_handle_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t offset){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     peripheral->callback = callback;
     peripheral->attribute_handle = descriptor_handle;
@@ -2012,9 +1997,8 @@ uint8_t gatt_client_read_long_characteristic_descriptor(btstack_packet_handler_t
 
 uint8_t gatt_client_write_characteristic_descriptor_using_descriptor_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t length, uint8_t  * data){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     peripheral->callback = callback;
     peripheral->attribute_handle = descriptor_handle;
@@ -2032,9 +2016,8 @@ uint8_t gatt_client_write_characteristic_descriptor(btstack_packet_handler_t cal
 
 uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle_with_offset(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle, uint16_t offset, uint16_t length, uint8_t  * data){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     peripheral->callback = callback;
     peripheral->attribute_handle = descriptor_handle;
@@ -2059,9 +2042,8 @@ uint8_t gatt_client_write_long_characteristic_descriptor(btstack_packet_handler_
  */
 uint8_t gatt_client_prepare_write(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t attribute_handle, uint16_t offset, uint16_t length, uint8_t * data){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     peripheral->callback = callback;
     peripheral->attribute_handle = attribute_handle;
@@ -2079,8 +2061,8 @@ uint8_t gatt_client_prepare_write(btstack_packet_handler_t callback, hci_con_han
 uint8_t gatt_client_execute_write(btstack_packet_handler_t callback, hci_con_handle_t con_handle){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
 
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     peripheral->callback = callback;
     peripheral->gatt_client_state = P_W2_EXECUTE_PREPARED_WRITE;
@@ -2093,14 +2075,13 @@ uint8_t gatt_client_execute_write(btstack_packet_handler_t callback, hci_con_han
  */
 uint8_t gatt_client_cancel_write(btstack_packet_handler_t callback, hci_con_handle_t con_handle){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
-    
-    if (!peripheral) return BTSTACK_MEMORY_ALLOC_FAILED; 
-    if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
+    if (peripheral == NULL) return BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (is_ready(peripheral) == 0) return GATT_CLIENT_IN_WRONG_STATE;
     
     peripheral->callback = callback;
     peripheral->gatt_client_state = P_W2_CANCEL_PREPARED_WRITE;
     gatt_client_run();
-    return 0;    
+    return ERROR_CODE_SUCCESS;    
 }
 
 void gatt_client_deserialize_service(const uint8_t *packet, int offset, gatt_client_service_t *service){
@@ -2133,7 +2114,7 @@ void gatt_client_deserialize_characteristic_descriptor(const uint8_t * packet, i
 
 void gatt_client_send_mtu_negotiation(btstack_packet_handler_t callback, hci_con_handle_t con_handle){
     gatt_client_t * context = provide_context_for_conn_handle(con_handle);
-    if (!context) return;
+    if (context == NULL) return;
     if (context->mtu_state == MTU_AUTO_EXCHANGE_DISABLED){
         context->callback = callback;
         context->mtu_state = SEND_MTU_EXCHANGE;
@@ -2143,9 +2124,9 @@ void gatt_client_send_mtu_negotiation(btstack_packet_handler_t callback, hci_con
 
 uint8_t gatt_client_request_can_write_without_response_event(btstack_packet_handler_t callback, hci_con_handle_t con_handle){
     gatt_client_t * context = provide_context_for_conn_handle(con_handle);
-    if (!context) return BTSTACK_MEMORY_ALLOC_FAILED;
-    if (context->write_without_response_callback) return GATT_CLIENT_IN_WRONG_STATE;
+    if (context == NULL) return BTSTACK_MEMORY_ALLOC_FAILED;
+    if (context->write_without_response_callback != NULL) return GATT_CLIENT_IN_WRONG_STATE;
     context->write_without_response_callback = callback;
     att_dispatch_client_request_can_send_now_event(context->con_handle);
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
