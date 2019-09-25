@@ -962,7 +962,7 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format H1
  * @param handle
- * @param status
+ * @param att_status  see ATT errors in bluetooth.h  
  */
 #define GATT_EVENT_QUERY_COMPLETE                                0xA0
 

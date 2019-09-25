@@ -758,7 +758,7 @@ static int is_query_done(gatt_client_t * peripheral, uint16_t last_result_handle
 static void trigger_next_query(gatt_client_t * peripheral, uint16_t last_result_handle, gatt_client_state_t next_query_state){
     if (is_query_done(peripheral, last_result_handle)){
         gatt_client_handle_transaction_complete(peripheral);
-        emit_gatt_complete_event(peripheral, 0);
+        emit_gatt_complete_event(peripheral, ATT_ERROR_SUCCESS);
         return;
     }
     // next
@@ -810,7 +810,7 @@ static void trigger_next_blob_query(gatt_client_t * peripheral, gatt_client_stat
     uint16_t max_blob_length = peripheral_mtu(peripheral) - 1;
     if (received_blob_length < max_blob_length){
         gatt_client_handle_transaction_complete(peripheral);
-        emit_gatt_complete_event(peripheral, 0);
+        emit_gatt_complete_event(peripheral, ATT_ERROR_SUCCESS);
         return;
     }
     
@@ -1042,7 +1042,7 @@ static int gatt_client_run_for_peripheral( gatt_client_t * peripheral){
             send_gatt_signed_write_request(peripheral, sign_counter);
             // finally, notifiy client that write is complete
             gatt_client_handle_transaction_complete(peripheral);
-            emit_gatt_complete_event(peripheral, 0);
+            emit_gatt_complete_event(peripheral, ATT_ERROR_SUCCESS);
             return 1;
         }
 #endif
@@ -1284,13 +1284,13 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 case P_W4_READ_CHARACTERISTIC_VALUE_RESULT:
                     gatt_client_handle_transaction_complete(peripheral);
                     report_gatt_characteristic_value(peripheral, peripheral->attribute_handle, &packet[1], size-1);
-                    emit_gatt_complete_event(peripheral, 0);
+                    emit_gatt_complete_event(peripheral, ATT_ERROR_SUCCESS);
                     break;
 
                 case P_W4_READ_CHARACTERISTIC_DESCRIPTOR_RESULT:{
                     gatt_client_handle_transaction_complete(peripheral);
                     report_gatt_characteristic_descriptor(peripheral, peripheral->attribute_handle, &packet[1], size-1, 0);
-                    emit_gatt_complete_event(peripheral, 0);
+                    emit_gatt_complete_event(peripheral, ATT_ERROR_SUCCESS);
                     break;
                 }
                 default:
@@ -1358,15 +1358,15 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             switch (peripheral->gatt_client_state){
                 case P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
                     gatt_client_handle_transaction_complete(peripheral);
-                    emit_gatt_complete_event(peripheral, 0);
+                    emit_gatt_complete_event(peripheral, ATT_ERROR_SUCCESS);
                     break;
                 case P_W4_CLIENT_CHARACTERISTIC_CONFIGURATION_RESULT:
                     gatt_client_handle_transaction_complete(peripheral);
-                    emit_gatt_complete_event(peripheral, 0);
+                    emit_gatt_complete_event(peripheral, ATT_ERROR_SUCCESS);
                     break;
                 case P_W4_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT:
                     gatt_client_handle_transaction_complete(peripheral);
-                    emit_gatt_complete_event(peripheral, 0);
+                    emit_gatt_complete_event(peripheral, ATT_ERROR_SUCCESS);
                     break;
                 default:
                     break;
@@ -1398,7 +1398,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 case P_W4_PREPARE_WRITE_SINGLE_RESULT:
                     gatt_client_handle_transaction_complete(peripheral);
                     if (is_value_valid(peripheral, packet, size)){
-                        emit_gatt_complete_event(peripheral, 0);
+                        emit_gatt_complete_event(peripheral, ATT_ERROR_SUCCESS);
                     } else {
                         emit_gatt_complete_event(peripheral, ATT_ERROR_DATA_MISMATCH);
                     }
@@ -1435,11 +1435,11 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             switch (peripheral->gatt_client_state){
                 case P_W4_EXECUTE_PREPARED_WRITE_RESULT:
                     gatt_client_handle_transaction_complete(peripheral);
-                    emit_gatt_complete_event(peripheral, 0);
+                    emit_gatt_complete_event(peripheral, ATT_ERROR_SUCCESS);
                     break;
                 case P_W4_CANCEL_PREPARED_WRITE_RESULT:
                     gatt_client_handle_transaction_complete(peripheral);
-                    emit_gatt_complete_event(peripheral, 0);
+                    emit_gatt_complete_event(peripheral, ATT_ERROR_SUCCESS);
                     break;
                 case P_W4_CANCEL_PREPARED_WRITE_DATA_MISMATCH_RESULT:
                     gatt_client_handle_transaction_complete(peripheral);
@@ -1447,7 +1447,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     break;
                 case P_W4_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT:
                     gatt_client_handle_transaction_complete(peripheral);
-                    emit_gatt_complete_event(peripheral, 0);
+                    emit_gatt_complete_event(peripheral, ATT_ERROR_SUCCESS);
                     break;
                 default:
                     break;
@@ -1460,7 +1460,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 case P_W4_READ_MULTIPLE_RESPONSE:
                     report_gatt_characteristic_value(peripheral, 0, &packet[1], size-1);
                     gatt_client_handle_transaction_complete(peripheral);
-                    emit_gatt_complete_event(peripheral, 0);
+                    emit_gatt_complete_event(peripheral, ATT_ERROR_SUCCESS);
                     break;
                 default:
                     break;
@@ -1477,20 +1477,20 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                         case P_W4_INCLUDED_SERVICE_QUERY_RESULT:
                         case P_W4_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
                             gatt_client_handle_transaction_complete(peripheral);
-                            emit_gatt_complete_event(peripheral, 0);
+                            emit_gatt_complete_event(peripheral, ATT_ERROR_SUCCESS);
                             break;
                         case P_W4_ALL_CHARACTERISTICS_OF_SERVICE_QUERY_RESULT:
                         case P_W4_CHARACTERISTIC_WITH_UUID_QUERY_RESULT:
                             characteristic_end_found(peripheral, peripheral->end_group_handle);
                             gatt_client_handle_transaction_complete(peripheral);
-                            emit_gatt_complete_event(peripheral, 0);
+                            emit_gatt_complete_event(peripheral, ATT_ERROR_SUCCESS);
                             break;
                         case P_W4_READ_BY_TYPE_RESPONSE:
                             gatt_client_handle_transaction_complete(peripheral);
                             if (peripheral->start_group_handle == peripheral->query_start_handle){
                                 emit_gatt_complete_event(peripheral, ATT_ERROR_ATTRIBUTE_NOT_FOUND);
                             } else {
-                                emit_gatt_complete_event(peripheral, 0);
+                                emit_gatt_complete_event(peripheral, ATT_ERROR_SUCCESS);
                             }
                             break;
                         default:
@@ -1773,7 +1773,7 @@ uint8_t gatt_client_discover_characteristic_descriptors(btstack_packet_handler_t
     if (!is_ready(peripheral)) return GATT_CLIENT_IN_WRONG_STATE;
     
     if (characteristic->value_handle == characteristic->end_handle){
-        emit_gatt_complete_event(peripheral, 0);
+        emit_gatt_complete_event(peripheral, ATT_ERROR_SUCCESS);
         return 0;
     }
     peripheral->callback = callback;
@@ -1967,7 +1967,7 @@ uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_han
     peripheral->gatt_client_state = P_W2_SEND_READ_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY;
 #endif
     gatt_client_run();
-    return 0;
+    return ERROR_CODE_SUCCESS;
 }
 
 uint8_t gatt_client_read_characteristic_descriptor_using_descriptor_handle(btstack_packet_handler_t callback, hci_con_handle_t con_handle, uint16_t descriptor_handle){

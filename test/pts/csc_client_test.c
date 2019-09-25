@@ -316,7 +316,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
         case TC_W4_ENABLE_NOTIFICATIONS_COMPLETE:
             switch(hci_event_packet_get_type(packet)){
                 case GATT_EVENT_QUERY_COMPLETE:
-                    printf("Notifications enabled, status %02x\n", gatt_event_query_complete_get_status(packet));
+                    printf("Notifications enabled, ATT status %02x\n", gatt_event_query_complete_get_att_status(packet));
                     state = TC_CONNECTED;
                     break;
                 default:
@@ -326,7 +326,7 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
         case TC_W4_ENABLE_INDICATIONS_COMPLETE:
             switch(hci_event_packet_get_type(packet)){
                 case GATT_EVENT_QUERY_COMPLETE:
-                    printf("Indications enabled, status %02x\n", gatt_event_query_complete_get_status(packet));
+                    printf("Indications enabled, ATT status %02x\n", gatt_event_query_complete_get_att_status(packet));
                     state = TC_CONNECTED;
                     break;
                 default:
@@ -337,8 +337,8 @@ static void handle_gatt_client_event(uint8_t packet_type, uint16_t channel, uint
         case TC_W4_WRITE_CHARACTERISTIC:
             switch(hci_event_packet_get_type(packet)){
                 case GATT_EVENT_QUERY_COMPLETE:
-                    printf("Command done, status %02x\n", gatt_event_query_complete_get_status(packet));
-                    if (gatt_event_query_complete_get_status(packet) == ERROR_CODE_SUCCESS){
+                    printf("Command done, ATT status %02x\n", gatt_event_query_complete_get_att_status(packet));
+                    if (gatt_event_query_complete_get_att_status(packet) == ATT_ERROR_SUCCESS){
                         csc_client_indication_timer_start();
                     }
                     state = TC_CONNECTED;

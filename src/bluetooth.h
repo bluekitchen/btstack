@@ -725,6 +725,7 @@ typedef enum {
 #define ATT_SIGNED_WRITE_COMMAND         0xD2
 
 // MARK: ATT Error Codes
+#define ATT_ERROR_SUCCESS                          0x00
 #define ATT_ERROR_INVALID_HANDLE                   0x01
 #define ATT_ERROR_READ_NOT_PERMITTED               0x02
 #define ATT_ERROR_WRITE_NOT_PERMITTED              0x03
