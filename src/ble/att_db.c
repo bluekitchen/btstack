@@ -347,7 +347,7 @@ static uint8_t att_validate_security(att_connection_t * att_connection, att_oper
         default:
             break;
     }
-    return 0;
+    return ATT_ERROR_SUCCESS;
 }
       
 //
@@ -965,7 +965,7 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
     if (!ok) {
         return setup_error_invalid_handle(response_buffer, request_type, handle);
     }
-    if (!att_write_callback) {
+    if (att_write_callback == NULL) {
         return setup_error_write_not_permitted(response_buffer, request_type, handle);
     }
     if ((it.flags & ATT_PROPERTY_WRITE) == 0) {
@@ -1004,12 +1004,11 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
 
     uint16_t handle = little_endian_read_16(request_buffer, 1);
     uint16_t offset = little_endian_read_16(request_buffer, 3);
-    if (!att_write_callback) {
+    if (att_write_callback == NULL) {
         return setup_error_write_not_permitted(response_buffer, request_type, handle);
     }
     att_iterator_t it;
-    int ok = att_find_handle(&it, handle);
-    if (!ok) {
+    if (att_find_handle(&it, handle) == 0) {
         return setup_error_invalid_handle(response_buffer, request_type, handle);
     }
     if ((it.flags & ATT_PROPERTY_WRITE) == 0) {
@@ -1093,7 +1092,7 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
 static void handle_write_command(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len, uint16_t required_flags){
 
     uint16_t handle = little_endian_read_16(request_buffer, 1);
-    if (!att_write_callback) return;
+    if (att_write_callback == NULL) return;
 
     att_iterator_t it;
     int ok = att_find_handle(&it, handle);
