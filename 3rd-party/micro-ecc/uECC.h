@@ -1,7 +1,7 @@
 /* Copyright 2014, Kenneth MacKay. Licensed under the BSD 2-clause license. */
 
-#ifndef _MICRO_ECC_H_
-#define _MICRO_ECC_H_
+#ifndef MICRO_ECC_H_
+#define MICRO_ECC_H_
 
 // BK
 #include "btstack_config_uECC.h"
