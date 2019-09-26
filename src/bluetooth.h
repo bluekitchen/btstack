@@ -558,44 +558,6 @@ typedef enum {
 // Minimum/default MTU
 #define ATT_DEFAULT_MTU               23
 
-// MARK: Attribute PDU Opcodes 
-#define ATT_ERROR_RESPONSE              0x01
-
-#define ATT_EXCHANGE_MTU_REQUEST        0x02
-#define ATT_EXCHANGE_MTU_RESPONSE       0x03
-
-#define ATT_FIND_INFORMATION_REQUEST    0x04
-#define ATT_FIND_INFORMATION_REPLY      0x05
-#define ATT_FIND_BY_TYPE_VALUE_REQUEST  0x06
-#define ATT_FIND_BY_TYPE_VALUE_RESPONSE 0x07
-
-#define ATT_READ_BY_TYPE_REQUEST        0x08
-#define ATT_READ_BY_TYPE_RESPONSE       0x09
-#define ATT_READ_REQUEST                0x0a
-#define ATT_READ_RESPONSE               0x0b
-#define ATT_READ_BLOB_REQUEST           0x0c
-#define ATT_READ_BLOB_RESPONSE          0x0d
-#define ATT_READ_MULTIPLE_REQUEST       0x0e
-#define ATT_READ_MULTIPLE_RESPONSE      0x0f
-#define ATT_READ_BY_GROUP_TYPE_REQUEST  0x10
-#define ATT_READ_BY_GROUP_TYPE_RESPONSE 0x11
-
-#define ATT_WRITE_REQUEST               0x12
-#define ATT_WRITE_RESPONSE              0x13
-
-#define ATT_PREPARE_WRITE_REQUEST       0x16
-#define ATT_PREPARE_WRITE_RESPONSE      0x17
-#define ATT_EXECUTE_WRITE_REQUEST       0x18
-#define ATT_EXECUTE_WRITE_RESPONSE      0x19
-
-#define ATT_HANDLE_VALUE_NOTIFICATION   0x1b
-#define ATT_HANDLE_VALUE_INDICATION     0x1d
-#define ATT_HANDLE_VALUE_CONFIRMATION   0x1e
-
-
-#define ATT_WRITE_COMMAND                0x52
-#define ATT_SIGNED_WRITE_COMMAND         0xD2
-
 // MARK: ATT Error Codes
 #define ATT_ERROR_SUCCESS                          0x00
 #define ATT_ERROR_INVALID_HANDLE                   0x01
@@ -616,16 +578,12 @@ typedef enum {
 #define ATT_ERROR_UNSUPPORTED_GROUP_TYPE           0x10
 #define ATT_ERROR_INSUFFICIENT_RESOURCES           0x11
 
-// custom BTstack error codes
+// MARK: ATT Error Codes used internally by BTstack
 #define ATT_ERROR_HCI_DISCONNECT_RECEIVED          0x1f
-
-// custom BTstack ATT error codes
+#define ATT_ERROR_BONDING_INFORMATION_MISSING      0x70
 #define ATT_ERROR_DATA_MISMATCH                    0x7e
 #define ATT_ERROR_TIMEOUT                          0x7F
 #define ATT_ERROR_WRITE_RESPONSE_PENDING           0x100
-
-// MARK: ATT Error Codes used internally by BTstack
-#define ATT_ERROR_BONDING_INFORMATION_MISSING      0x70
 
 // MARK: ATT Error Codes from Cycling Power Service spec
 #define CYCLING_POWER_ERROR_CODE_INAPPROPRIATE_CONNECTION_PARAMETERS                          0x80
@@ -657,18 +615,6 @@ typedef enum {
 #define ATT_SECURITY_AUTHENTICATED 2
 #define ATT_SECURITY_AUTHORIZED 3
 #define ATT_SECURITY_AUTHENTICATED_SC 4
-
-// internal additions
-// 128 bit UUID used
-#define ATT_PROPERTY_UUID128             0x200
-// Read/Write Permission bits
-#define ATT_PROPERTY_READ_PERMISSION_BIT_0  0x0400
-#define ATT_PROPERTY_READ_PERMISSION_BIT_1  0x0800
-#define ATT_PROPERTY_WRITE_PERMISSION_BIT_0 0x0001
-#define ATT_PROPERTY_WRITE_PERMISSION_BIT_1 0x0010
-#define ATT_PROPERTY_READ_PERMISSION_SC     0x0020
-#define ATT_PROPERTY_WRITE_PERMISSION_SC    0x0080
-
 
 // ATT Transaction Timeout of 30 seconds for Command/Response or Indication/Confirmation
 #define ATT_TRANSACTION_TIMEOUT_MS     30000
