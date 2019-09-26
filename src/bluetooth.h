@@ -121,12 +121,6 @@ typedef enum {
 #define HCI_SCO_DATA_PACKET     0x03
 #define HCI_EVENT_PACKET        0x04
 
-// packet header sizes
-#define HCI_CMD_HEADER_SIZE          3
-#define HCI_ACL_HEADER_SIZE          4
-#define HCI_SCO_HEADER_SIZE          3
-#define HCI_EVENT_HEADER_SIZE        2
-
 /** 
  * HCI Layer
  */
@@ -324,9 +318,6 @@ typedef enum {
 #define HCI_ACL_2DH5_SIZE          679
 #define HCI_ACL_3DH5_SIZE         1021
        
-#define HCI_EVENT_PAYLOAD_SIZE     255
-#define HCI_CMD_PAYLOAD_SIZE       255
-
 #define LE_ADVERTISING_DATA_SIZE    31
 
 // Link Policy Settings
