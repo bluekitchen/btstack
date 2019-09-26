@@ -109,48 +109,6 @@ typedef enum {
 } inquiry_mode_t;
 
 
-/*
- * @brief L2CAP Segmentation And Reassembly packet type in I-Frames
- */
-typedef enum {
-    L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU = 0,
-    L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU,
-    L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU,
-    L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU
-} l2cap_segmentation_and_reassembly_t;
-
-/*
- * @brief L2CAP Supervisory function in S-Frames
- */
-typedef enum {
-    L2CAP_SUPERVISORY_FUNCTION_RR_RECEIVER_READY = 0,
-    L2CAP_SUPERVISORY_FUNCTION_REJ_REJECT,
-    L2CAP_SUPERVISORY_FUNCTION_RNR_RECEIVER_NOT_READY,
-    L2CAP_SUPERVISORY_FUNCTION_SREJ_SELECTIVE_REJECT
-} l2cap_supervisory_function_t;
-
-/**
- * @brief L2CAP Information Types used in Information Request & Response
- */
-typedef enum {
-  L2CAP_INFO_TYPE_CONNECTIONLESS_MTU = 1,
-  L2CAP_INFO_TYPE_EXTENDED_FEATURES_SUPPORTED,
-  L2CAP_INFO_TYPE_FIXED_CHANNELS_SUPPORTED,
-} l2cap_info_type_t;
-
-/**
- * @brief L2CAP Configuration Option Types used in Configurateion Request & Response
- */
-typedef enum {
-  L2CAP_CONFIG_OPTION_TYPE_MAX_TRANSMISSION_UNIT = 1,
-  L2CAP_CONFIG_OPTION_TYPE_FLUSH_TIMEOUT,
-  L2CAP_CONFIG_OPTION_TYPE_QUALITY_OF_SERVICE,
-  L2CAP_CONFIG_OPTION_TYPE_RETRANSMISSION_AND_FLOW_CONTROL, 
-  L2CAP_CONFIG_OPTION_TYPE_FRAME_CHECK_SEQUENCE,
-  L2CAP_CONFIG_OPTION_TYPE_EXTENDED_FLOW_SPECIFICATION,
-  L2CAP_CONFIG_OPTION_TYPE_EXTENDED_WINDOW_SIZE,
-} l2cap_config_option_type_t;
-
 /**
  * HCI Transport 
  */
@@ -440,11 +398,6 @@ typedef enum {
 
 #define L2CAP_HEADER_SIZE 4
 
-#define L2CAP_SIG_ID_INVALID 0
-
-// size of HCI ACL + L2CAP Header for regular data packets (8)
-#define COMPLETE_L2CAP_HEADER (HCI_ACL_HEADER_SIZE + L2CAP_HEADER_SIZE)
-    
 // minimum signaling MTU
 #define L2CAP_MINIMAL_MTU 48
 #define L2CAP_DEFAULT_MTU 672
@@ -453,28 +406,11 @@ typedef enum {
 #define L2CAP_LE_DEFAULT_MTU  23
 
 // L2CAP Fixed Channel IDs    
-#define L2CAP_CID_SIGNALING                 0x0001
-#define L2CAP_CID_CONNECTIONLESS_CHANNEL    0x0002
-#define L2CAP_CID_ATTRIBUTE_PROTOCOL        0x0004
-#define L2CAP_CID_SIGNALING_LE              0x0005
-#define L2CAP_CID_SECURITY_MANAGER_PROTOCOL 0x0006
-
-// L2CAP Configuration Result Codes
-#define L2CAP_CONF_RESULT_SUCCESS                  0x0000
-#define L2CAP_CONF_RESULT_UNACCEPTABLE_PARAMETERS  0x0001
-#define L2CAP_CONF_RESULT_REJECT                   0x0002
-#define L2CAP_CONF_RESULT_UNKNOWN_OPTIONS          0x0003
-#define L2CAP_CONF_RESULT_PENDING                  0x0004
-#define L2CAP_CONF_RESULT_FLOW_SPEC_REJECTED       0x0005
-
-// L2CAP Reject Result Codes
-#define L2CAP_REJ_CMD_UNKNOWN               0x0000
-    
-// Response Timeout eXpired
-#define L2CAP_RTX_TIMEOUT_MS   10000
-
-// Extended Response Timeout eXpired
-#define L2CAP_ERTX_TIMEOUT_MS 120000
+#define L2CAP_CID_SIGNALING                        0x0001
+#define L2CAP_CID_CONNECTIONLESS_CHANNEL           0x0002
+#define L2CAP_CID_ATTRIBUTE_PROTOCOL               0x0004
+#define L2CAP_CID_SIGNALING_LE                     0x0005
+#define L2CAP_CID_SECURITY_MANAGER_PROTOCOL        0x0006
 
 /**
  * SDP Protocol

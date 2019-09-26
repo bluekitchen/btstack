@@ -123,6 +123,17 @@ typedef enum {
     L2CAP_CHANNEL_TYPE_LE_FIXED,        // LE ATT + SM
 } l2cap_channel_type_t;
 
+
+/*
+ * @brief L2CAP Segmentation And Reassembly packet type in I-Frames
+ */
+typedef enum {
+    L2CAP_SEGMENTATION_AND_REASSEMBLY_UNSEGMENTED_L2CAP_SDU = 0,
+    L2CAP_SEGMENTATION_AND_REASSEMBLY_START_OF_L2CAP_SDU,
+    L2CAP_SEGMENTATION_AND_REASSEMBLY_END_OF_L2CAP_SDU,
+    L2CAP_SEGMENTATION_AND_REASSEMBLY_CONTINUATION_OF_L2CAP_SDU
+} l2cap_segmentation_and_reassembly_t;
+
 typedef struct {
     l2cap_segmentation_and_reassembly_t sar;
     uint16_t len;
