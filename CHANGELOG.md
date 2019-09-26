@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Changed
 - Bluetooth and BTstack Error Codes and Events: collect status codes in bluetooth.h and events in btstack_defines.h
 - bluetooth.h: extract internal defintitions to respective protocol layers
+- Updated CC256x initscripts (CC256xB v1.8, CC256xC v1.2)
 
 ## Changes August 2019
 

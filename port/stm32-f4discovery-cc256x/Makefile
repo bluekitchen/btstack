@@ -148,7 +148,7 @@ ${BTSTACK_ROOT}/3rd-party/lwip/core/src/apps/http/httpd.c \
 ${BTSTACK_ROOT}/3rd-party/lwip/dhcp-server/dhserver.c \
 ${BTSTACK_ROOT}/platform/lwip/port/sys_arch.c \
 ${BTSTACK_ROOT}/platform/lwip/bnep_lwip.c \
-bluetooth_init_cc2564B_1.6_BT_Spec_4.1.c \
+bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c \
 bsp/audio.c \
 bsp/cs43l22.c \
 bsp/stm32f4_discovery.c \

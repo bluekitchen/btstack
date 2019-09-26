@@ -2,7 +2,7 @@
 BTSTACK_ROOT ?= ../..
 
 CORE += \
-	bluetooth_init_cc2564B_1.6_BT_Spec_4.1.c \
+	bluetooth_init_cc2564B_1.8_BT_Spec_4.1.c \
 	btstack_chipset_bcm.c \
 	btstack_chipset_cc256x.c \
 	btstack_chipset_csr.c \
