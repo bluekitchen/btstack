@@ -48,6 +48,7 @@
 
 #include "ad_parser.h"
 #include "bluetooth.h"
+#include "bluetooth_psm.h"
 #include "bluetooth_company_id.h"
 #include "bluetooth_data_types.h"
 #include "bluetooth_gatt.h"

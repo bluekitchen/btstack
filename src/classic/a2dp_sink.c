@@ -38,14 +38,16 @@
 #define BTSTACK_FILE__ "a2dp_sink.c"
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-#include "btstack.h"
-#include "classic/avdtp_util.h"
-#include "classic/avdtp_sink.h"
+#include "bluetooth_psm.h"
+#include "bluetooth_sdp.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
 #include "classic/a2dp_sink.h"
+#include "classic/avdtp_sink.h"
+#include "classic/avdtp_util.h"
+#include "classic/sdp_util.h"
 
 static const char * default_a2dp_sink_service_name = "BTstack A2DP Sink Service";
 static const char * default_a2dp_sink_service_provider_name = "BTstack A2DP Sink Service Provider";
@@ -82,7 +84,7 @@ void a2dp_sink_create_sdp_record(uint8_t * service,  uint32_t service_record_han
         uint8_t* l2cpProtocol = de_push_sequence(attribute);
         {
             de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
-            de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PROTOCOL_AVDTP);  
+            de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PSM_AVDTP);  
         }
         de_pop_sequence(attribute, l2cpProtocol);
         

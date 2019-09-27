@@ -38,16 +38,17 @@
 #define BTSTACK_FILE__ "avrcp.c"
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-#include "btstack.h"
+#include "bluetooth_psm.h"
+#include "bluetooth_sdp.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
+#include "btstack_memory.h"
+#include "classic/sdp_client.h"
+#include "classic/sdp_util.h"
 #include "classic/avrcp.h"
 #include "classic/avrcp_controller.h"
-
-#define PSM_AVCTP                       BLUETOOTH_PROTOCOL_AVCTP
-#define PSM_AVCTP_BROWSING              0x001b
 
 static void avrcp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -203,7 +204,7 @@ void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t ser
         uint8_t* l2cpProtocol = de_push_sequence(attribute);
         {
             de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
-            de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PROTOCOL_AVCTP);  
+            de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PSM_AVCTP);  
         }
         de_pop_sequence(attribute, l2cpProtocol);
         
@@ -247,7 +248,7 @@ void avrcp_create_sdp_record(uint8_t controller, uint8_t * service, uint32_t ser
                 uint8_t* browsing_l2cpProtocol = de_push_sequence(des);
                 {
                     de_add_number(browsing_l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
-                    de_add_number(browsing_l2cpProtocol,  DE_UINT, DE_SIZE_16, PSM_AVCTP_BROWSING);  
+                    de_add_number(browsing_l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PSM_AVCTP_BROWSING);  
                 }
                 de_pop_sequence(des, browsing_l2cpProtocol);
                 
@@ -797,7 +798,7 @@ void avrcp_init(void){
     connections = NULL;
     if (l2cap_service_registered) return;
 
-    int status = l2cap_register_service(&avrcp_packet_handler, BLUETOOTH_PROTOCOL_AVCTP, 0xffff, LEVEL_2);
+    int status = l2cap_register_service(&avrcp_packet_handler, BLUETOOTH_PSM_AVCTP, 0xffff, LEVEL_2);
     if (status != ERROR_CODE_SUCCESS) return;
     l2cap_service_registered = 1;
 }

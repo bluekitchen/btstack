@@ -39,14 +39,15 @@
 
 #include <string.h>
 
+#include "bluetooth.h"
+#include "bluetooth_psm.h"
+#include "bluetooth_sdp.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
+#include "btstack_hid_parser.h"
 #include "classic/hid_device.h"
 #include "classic/sdp_util.h"
-#include "bluetooth.h"
-#include "bluetooth_sdp.h"
 #include "l2cap.h"
-#include "btstack_event.h"
-#include "btstack_debug.h"
-#include "btstack_hid_parser.h"
 
 typedef enum {
     HID_DEVICE_IDLE,
@@ -184,7 +185,7 @@ void hid_create_sdp_record(
         uint8_t * l2cpProtocol = de_push_sequence(attribute);
         {
             de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
-            de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, PSM_HID_CONTROL);
+            de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PSM_HID_CONTROL);
         }
         de_pop_sequence(attribute, l2cpProtocol);
 
@@ -214,7 +215,7 @@ void hid_create_sdp_record(
             uint8_t * l2cpProtocol = de_push_sequence(additionalDescriptorAttribute);
             {
                 de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, BLUETOOTH_PROTOCOL_L2CAP);
-                de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, PSM_HID_INTERRUPT);
+                de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, BLUETOOTH_PSM_HID_INTERRUPT);
             }
             de_pop_sequence(additionalDescriptorAttribute, l2cpProtocol);
 

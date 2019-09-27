@@ -43,13 +43,12 @@
  *
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h> // memcpy
 #include <stdint.h>
+#include <string.h> // memcpy
 
-#include "bnep.h"
+#include "bluetooth_psm.h"
 #include "bluetooth_sdp.h"
+#include "bnep.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
@@ -1219,7 +1218,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
     
     switch (hci_event_packet_get_type(packet)) {
             
-        /* Accept an incoming L2CAP connection on BLUETOOTH_PROTOCOL_BNEP */
+        /* Accept an incoming L2CAP connection on BLUETOOTH_PSM_BNEP */
         case L2CAP_EVENT_INCOMING_CONNECTION:
             /* L2CAP event data: event(8), len(8), address(48), handle (16),  psm (16), source cid(16) dest cid(16) */
             reverse_bd_addr(&packet[2], event_addr);
@@ -1227,12 +1226,12 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
             psm        = little_endian_read_16(packet, 10); 
             l2cap_cid  = little_endian_read_16(packet, 12); 
 
-            if (psm != BLUETOOTH_PROTOCOL_BNEP) break;
+            if (psm != BLUETOOTH_PSM_BNEP) break;
 
             channel = bnep_channel_for_addr(event_addr);
 
             if (channel) {                
-                log_error("INCOMING_CONNECTION (l2cap_cid 0x%02x) for BLUETOOTH_PROTOCOL_BNEP => decline - channel already exists", l2cap_cid);
+                log_error("INCOMING_CONNECTION (l2cap_cid 0x%02x) for BLUETOOTH_PSM_BNEP => decline - channel already exists", l2cap_cid);
                 l2cap_decline_connection(l2cap_cid);
                 return 1;
             }
@@ -1241,7 +1240,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
             channel = bnep_channel_create_for_addr(event_addr);
 
             if (!channel) {
-                log_error("INCOMING_CONNECTION (l2cap_cid 0x%02x) for BLUETOOTH_PROTOCOL_BNEP => decline - no memory left", l2cap_cid);
+                log_error("INCOMING_CONNECTION (l2cap_cid 0x%02x) for BLUETOOTH_PSM_BNEP => decline - no memory left", l2cap_cid);
                 l2cap_decline_connection(l2cap_cid);
                 return 1;
             }
@@ -1256,19 +1255,14 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
             /* Start connection timeout timer */
             bnep_channel_start_timer(channel, BNEP_CONNECTION_TIMEOUT_MS);
             
-            log_info("L2CAP_EVENT_INCOMING_CONNECTION (l2cap_cid 0x%02x) for BLUETOOTH_PROTOCOL_BNEP => accept", l2cap_cid);
+            log_info("L2CAP_EVENT_INCOMING_CONNECTION (l2cap_cid 0x%02x) for BLUETOOTH_PSM_BNEP => accept", l2cap_cid);
             l2cap_accept_connection(l2cap_cid);
             return 1;
             
         /* Outgoing L2CAP connection has been opened -> store l2cap_cid, remote_addr */
         case L2CAP_EVENT_CHANNEL_OPENED: 
-            /* Check if the l2cap channel has been opened for BLUETOOTH_PROTOCOL_BNEP */ 
-            if (little_endian_read_16(packet, 11) != BLUETOOTH_PROTOCOL_BNEP) {
-                break;
-            }
-
             status = packet[2];
-            log_info("L2CAP_EVENT_CHANNEL_OPENED for BLUETOOTH_PROTOCOL_BNEP, status %u", status);
+            log_info("L2CAP_EVENT_CHANNEL_OPENED for BLUETOOTH_PSM_BNEP, status %u", status);
             
             /* Get the bnep channel fpr remote address */
             con_handle = little_endian_read_16(packet, 9);
@@ -1638,7 +1632,7 @@ uint8_t bnep_register_service(btstack_packet_handler_t packet_handler, uint16_t 
     }
 
     /* register with l2cap if not registered before, max MTU */
-    l2cap_register_service(bnep_packet_handler, BLUETOOTH_PROTOCOL_BNEP, 0xffff, bnep_security_level);
+    l2cap_register_service(bnep_packet_handler, BLUETOOTH_PSM_BNEP, 0xffff, bnep_security_level);
         
     /* Setup the service struct */
     service->max_frame_size = max_frame_size;
@@ -1665,6 +1659,6 @@ void bnep_unregister_service(uint16_t service_uuid)
     btstack_memory_bnep_service_free(service);
     service = NULL;
     
-    l2cap_unregister_service(BLUETOOTH_PROTOCOL_BNEP);
+    l2cap_unregister_service(BLUETOOTH_PSM_BNEP);
 }
 

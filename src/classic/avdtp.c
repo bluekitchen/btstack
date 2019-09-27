@@ -39,15 +39,19 @@
 
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-#include "btstack.h"
+#include "bluetooth_psm.h"
+#include "bluetooth_sdp.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
+#include "btstack_memory.h"
 #include "classic/avdtp.h"
-#include "classic/avdtp_util.h"
 #include "classic/avdtp_acceptor.h"
 #include "classic/avdtp_initiator.h"
+#include "classic/avdtp_util.h"
+#include "classic/sdp_client.h"
+#include "classic/sdp_util.h"
 
 #define CONFIGURATION_TIMEOUT_MS 300
 
@@ -636,7 +640,7 @@ void avdtp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet
                     
                 case L2CAP_EVENT_CHANNEL_OPENED:
                     psm = l2cap_event_channel_opened_get_psm(packet); 
-                    if (psm != BLUETOOTH_PROTOCOL_AVDTP){
+                    if (psm != BLUETOOTH_PSM_AVDTP){
                         log_info("Unexpected PSM - Not implemented yet, avdtp sink: L2CAP_EVENT_CHANNEL_OPENED ");
                         return;
                     }

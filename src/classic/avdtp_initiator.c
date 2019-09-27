@@ -38,11 +38,13 @@
 #define BTSTACK_FILE__ "avdtp_initiator.c"
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-#include "btstack.h"
+#include "bluetooth_psm.h"
+#include "bluetooth_sdp.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
+#include "l2cap.h"
 #include "classic/avdtp.h"
 #include "classic/avdtp_util.h"
 #include "classic/avdtp_initiator.h"
@@ -199,7 +201,7 @@ void avdtp_initiator_stream_config_subsm(avdtp_connection_t * connection, uint8_
                     }
                     stream_endpoint->state = AVDTP_STREAM_ENDPOINT_W4_L2CAP_FOR_MEDIA_CONNECTED;
                     connection->local_seid = stream_endpoint->sep.seid;
-                    l2cap_create_channel(context->packet_handler, connection->remote_addr, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, NULL);
+                    l2cap_create_channel(context->packet_handler, connection->remote_addr, BLUETOOTH_PSM_AVDTP, 0xffff, NULL);
                     return;
                 case AVDTP_SI_START:
                     if (!stream_endpoint){

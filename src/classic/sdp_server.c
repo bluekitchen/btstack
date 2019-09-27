@@ -45,6 +45,7 @@
 #include <string.h>
 
 #include "bluetooth.h"
+#include "bluetooth_psm.h"
 #include "bluetooth_sdp.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
@@ -52,8 +53,8 @@
 #include "classic/core.h"
 #include "classic/sdp_server.h"
 #include "classic/sdp_util.h"
-#include "hci_dump.h"
 #include "hci.h"
+#include "hci_dump.h"
 #include "l2cap.h"
 
 // max number of incoming l2cap connections that can be queued instead of getting rejected
@@ -86,7 +87,7 @@ static int      l2cap_waiting_list_count;
 
 void sdp_init(void){
     // register with l2cap psm sevices - max MTU
-    l2cap_register_service(sdp_packet_handler, BLUETOOTH_PROTOCOL_SDP, 0xffff, LEVEL_0);
+    l2cap_register_service(sdp_packet_handler, BLUETOOTH_PSM_SDP, 0xffff, LEVEL_0);
     l2cap_waiting_list_count = 0;
 }
 

@@ -38,16 +38,19 @@
 #define BTSTACK_FILE__ "avdtp_sink.c"
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-#include "btstack.h"
+#include "bluetooth_psm.h"
+#include "bluetooth_sdp.h"
+#include "btstack_debug.h"
+#include "btstack_event.h"
+#include "l2cap.h"
+
 #include "classic/avdtp.h"
+#include "classic/avdtp_acceptor.h"
+#include "classic/avdtp_initiator.h"
 #include "classic/avdtp_sink.h"
 #include "classic/avdtp_util.h"
-#include "classic/avdtp_initiator.h"
-#include "classic/avdtp_acceptor.h"
 
 static avdtp_context_t * avdtp_sink_context;
 
@@ -117,7 +120,7 @@ void avdtp_sink_init(avdtp_context_t * avdtp_context){
     avdtp_sink_context->stream_endpoints_id_counter = 0;
     avdtp_sink_context->packet_handler = packet_handler;
 
-    l2cap_register_service(&packet_handler, BLUETOOTH_PROTOCOL_AVDTP, 0xffff, LEVEL_2);
+    l2cap_register_service(&packet_handler, BLUETOOTH_PSM_AVDTP, 0xffff, LEVEL_2);
 }
 
 avdtp_stream_endpoint_t * avdtp_sink_create_stream_endpoint(avdtp_sep_type_t sep_type, avdtp_media_type_t media_type){

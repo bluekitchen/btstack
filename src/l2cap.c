@@ -49,6 +49,7 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "bluetooth_sdp.h"
+#include "bluetooth_psm.h"
 #include "btstack_debug.h"
 #include "btstack_event.h"
 #include "btstack_memory.h"
@@ -1210,7 +1211,7 @@ void l2cap_require_security_level_2_for_outgoing_sdp(void){
 }
 
 static int l2cap_security_level_0_allowed_for_PSM(uint16_t psm){
-    return (psm == BLUETOOTH_PROTOCOL_SDP) && (!require_security_level2_for_outgoing_sdp);
+    return (psm == BLUETOOTH_PSM_SDP) && (!require_security_level2_for_outgoing_sdp);
 }
 
 static int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, int identifier, ...){
