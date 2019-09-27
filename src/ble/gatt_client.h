@@ -682,6 +682,7 @@ uint8_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle
  *                GATT_CLIENT_IN_WRONG_STATE                                if GATT client is not ready
  *                GATT_CLIENT_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED     if configuring notification, but characteristic has no notification property set
  *                GATT_CLIENT_CHARACTERISTIC_INDICATION_NOT_SUPPORTED       if configuring indication, but characteristic has no indication property set
+ *                ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE         if configuration is invalid
  *                ERROR_CODE_SUCCESS                                        if query is successfully registered
  */
 uint8_t gatt_client_write_client_characteristic_configuration(btstack_packet_handler_t callback, hci_con_handle_t con_handle, gatt_client_characteristic_t * characteristic, uint16_t configuration);
