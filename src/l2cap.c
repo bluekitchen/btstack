@@ -162,6 +162,7 @@ static void l2cap_le_finialize_channel_close(l2cap_channel_t *channel);
 static inline l2cap_service_t * l2cap_le_get_service(uint16_t psm);
 #endif
 #ifdef L2CAP_USES_CHANNELS
+static void l2cap_emit_simple_event_with_cid(l2cap_channel_t * channel, uint8_t event_code);
 static void l2cap_dispatch_to_channel(l2cap_channel_t *channel, uint8_t type, uint8_t * data, uint16_t size);
 static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid);
 static l2cap_channel_t * l2cap_create_channel_entry(btstack_packet_handler_t packet_handler, l2cap_channel_type_t channel_type, bd_addr_t address, bd_addr_type_t address_type, 
@@ -656,8 +657,30 @@ uint8_t l2cap_accept_ertm_connection(uint16_t local_cid, l2cap_ertm_config_t * e
     // configure L2CAP ERTM
     l2cap_ertm_configure_channel(channel, ertm_config, buffer, size);
 
-    // continue
+    // default: continue
     channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT;
+
+    // assert ERTM is supported by remote if mandatory for us
+    hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
+    if (connection == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+
+    if ((channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) && ((connection->l2cap_state.extended_feature_mask & 0x08) == 0)){
+
+        // bail if ERTM was requested but is not supported
+        if (channel->ertm_mandatory){
+            // We chose 'no resources available' for "ERTM mandatory but you don't even know ERTM exists"
+            log_info("ERTM not supported by remote but mandatory -> reject connection");
+            channel->state  = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
+            channel->reason = 0x04; // no resources available
+        }        
+
+        // fallback to Basic mode
+        else {
+            log_info("ERTM not supported by remote -> fallback Basic mode");
+            l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_ERTM_BUFFER_RELEASED);
+            channel->mode = L2CAP_CHANNEL_MODE_BASIC;
+        }
+    }
 
     // process
     l2cap_run();
