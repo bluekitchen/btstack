@@ -660,26 +660,24 @@ uint8_t l2cap_accept_ertm_connection(uint16_t local_cid, l2cap_ertm_config_t * e
     // default: continue
     channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT;
 
-    // assert ERTM is supported by remote if mandatory for us
+    // verify remote ERTM support
     hci_connection_t * connection = hci_connection_for_handle(channel->con_handle);
     if (connection == NULL) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
 
     if ((channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) && ((connection->l2cap_state.extended_feature_mask & 0x08) == 0)){
+        // ERTM not possible, select basic mode and release buffer
+        channel->mode = L2CAP_CHANNEL_MODE_BASIC;
+        l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_ERTM_BUFFER_RELEASED);
 
-        // bail if ERTM was requested but is not supported
+        // bail if ERTM is mandatory
         if (channel->ertm_mandatory){
             // We chose 'no resources available' for "ERTM mandatory but you don't even know ERTM exists"
-            log_info("ERTM not supported by remote but mandatory -> reject connection");
+            log_info("ERTM mandatory -> reject connection");
             channel->state  = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
             channel->reason = 0x04; // no resources available
-        }        
-
-        // fallback to Basic mode
-        else {
-            log_info("ERTM not supported by remote -> fallback Basic mode");
-            l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_ERTM_BUFFER_RELEASED);
-            channel->mode = L2CAP_CHANNEL_MODE_BASIC;
-        }
+        }  else {
+            log_info("ERTM not supported by remote -> use Basic mode");
+        }      
     }
 
     // process
