@@ -54,9 +54,29 @@
 #include <avr/pgmspace.h>
 #endif
 
+#ifdef HAVE_ASSERT
+#include <assert.h>
+#endif
+
 // fallback to __FILE__ for untagged files
 #ifndef BTSTACK_FILE__
 #define BTSTACK_FILE__ __FILE__
+#endif
+
+#ifdef HAVE_ASSERT
+// map to libc assert
+#define btstack_assert(condition)  assert(condition)
+#else /* HAVE_ASSERT */
+#ifdef ENABLE_BTSTACK_ASSERT
+void btstack_assert_failed(const char * file, uint16_t line_nr);
+#ifndef btstack_assert
+// use btstack macro that calls btstack_assert_failed() - provided by port
+#define btstack_assert(condition)         if (condition) {} else { btstack_assert_failed(BTSTACK_FILE__, __LINE__);  }
+#endif
+#else /* btstack_assert */
+// asserts off
+#define btstack_assert(condition)         {}
+#endif
 #endif
 
 // Avoid complaints of unused arguments when log levels are disabled.
