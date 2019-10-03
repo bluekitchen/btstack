@@ -146,6 +146,7 @@ typedef enum {
     DEVICE_W4_DATA,
     DEVICE_SEND_COMPLETE,
     DEVICE_SEND_ERROR,
+    DEVICE_W4_DONE,
 } device_state_t;
 
 static device_state_t device_state;
@@ -388,9 +389,9 @@ static void provisioning_run(void){
     switch (device_state){
         case DEVICE_SEND_ERROR:
             start_timer = 0;    // game over
+            device_state = DEVICE_W4_DONE;
             prov_waiting_for_outgoing_complete = 1;
             provisioning_send_provisioning_error();
-            provisioning_done();
             break;
         case DEVICE_SEND_CAPABILITIES:
             device_state = DEVICE_W4_START;
@@ -419,9 +420,9 @@ static void provisioning_run(void){
             break;
         case DEVICE_SEND_COMPLETE:
             start_timer = 0;    // last message
+            device_state = DEVICE_W4_DONE;
             prov_waiting_for_outgoing_complete = 1;
             provisioning_send_complete();
-            provisioning_done();
             break;
         default:
             return;
@@ -765,6 +766,9 @@ static void provisioning_handle_pdu(uint8_t packet_type, uint16_t channel, uint8
                 case MESH_SUBEVENT_PB_TRANSPORT_PDU_SENT:
                     printf("Outgoing packet acked\n");
                     prov_waiting_for_outgoing_complete = 0;
+                    if (device_state == DEVICE_W4_DONE){
+                        provisioning_done();
+                    }
                     break;                    
                 case MESH_SUBEVENT_PB_TRANSPORT_LINK_CLOSED:
                     printf("Link close, reset state\n");
