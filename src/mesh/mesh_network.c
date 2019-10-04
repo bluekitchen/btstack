@@ -324,6 +324,8 @@ static void mesh_network_send_b(void *arg){
     memcpy(&outgoing_pdu->data[outgoing_pdu->len], net_mic, net_mic_len);
     outgoing_pdu->len += net_mic_len;
 
+    btstack_assert(outgoing_pdu->len <= 29);
+    
 #ifdef LOG_NETWORK
     printf("TX-B-NetworkPDU (%p): ", outgoing_pdu);
     printf_hexdump(outgoing_pdu->data, outgoing_pdu->len);
@@ -986,16 +988,9 @@ void mesh_network_send_pdu(mesh_network_pdu_t * network_pdu){
     printf("^^ into network_pdus_queued\n");
 #endif
 
-    if (network_pdu->len > 29){
-        printf("too long, %u\n", network_pdu->len);
-        while(1);
-    }
-
-    // network pdu without payload = 9 bytes
-    if (network_pdu->len < 9){
-        printf("too short, %u\n", network_pdu->len);
-        while(1);
-    }
+    uint8_t net_mic_len = network_pdu->data[1] & 0x80 ? 8 : 4;
+    btstack_assert((network_pdu->len + net_mic_len) <= 29);
+    btstack_assert(network_pdu->len >= 9);
 
     // setup callback
     network_pdu->callback = &mesh_network_send_d;

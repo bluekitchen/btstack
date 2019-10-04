@@ -281,6 +281,7 @@ static void adv_bearer_run(void){
 
 //
 static void adv_bearer_prepare_message(const uint8_t * data, uint16_t data_len, uint8_t type, uint8_t count, uint16_t interval){
+    btstack_assert(data_len <= (sizeof(adv_bearer_buffer)-2));
     log_debug("adv bearer message, type 0x%x\n", type);
     // prepare message
     adv_bearer_buffer[0] = data_len+1;
@@ -336,14 +337,17 @@ void adv_bearer_request_can_send_now_for_provisioning_pdu(void){
 // adv bearer send message
 
 void adv_bearer_send_network_pdu(const uint8_t * data, uint16_t data_len, uint8_t count, uint16_t interval){
+    btstack_assert(data_len <= (sizeof(adv_bearer_buffer)-2));
     adv_bearer_prepare_message(data, data_len, BLUETOOTH_DATA_TYPE_MESH_MESSAGE, count, interval);
     adv_bearer_run();
 }
 void adv_bearer_send_beacon(const uint8_t * data, uint16_t data_len){
+    btstack_assert(data_len <= (sizeof(adv_bearer_buffer)-2));
     adv_bearer_prepare_message(data, data_len, BLUETOOTH_DATA_TYPE_MESH_BEACON, 3, 100);
     adv_bearer_run();
 }
 void adv_bearer_send_provisioning_pdu(const uint8_t * data, uint16_t data_len){
+    btstack_assert(data_len <= (sizeof(adv_bearer_buffer)-2));
     adv_bearer_prepare_message(data, data_len, BLUETOOTH_DATA_TYPE_PB_ADV, 3, 100);
     adv_bearer_run();
 }
