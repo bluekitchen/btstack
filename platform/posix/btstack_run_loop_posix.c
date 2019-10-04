@@ -90,7 +90,7 @@ static void btstack_run_loop_posix_add_data_source(btstack_data_source_t *ds){
  */
 static int btstack_run_loop_posix_remove_data_source(btstack_data_source_t *ds){
     data_sources_modified = 1;
-    // log_info("btstack_run_loop_posix_remove_data_source %x\n", (int) ds);
+    log_debug("btstack_run_loop_posix_remove_data_source %x\n", (int) ds);
     return btstack_linked_list_remove(&data_sources, (btstack_linked_item_t *) ds);
 }
 
@@ -101,10 +101,7 @@ static void btstack_run_loop_posix_add_timer(btstack_timer_source_t *ts){
     btstack_linked_item_t *it;
     for (it = (btstack_linked_item_t *) &timers; it->next ; it = it->next){
         btstack_timer_source_t * next = (btstack_timer_source_t *) it->next;
-        if (next == ts){
-            log_error( "btstack_run_loop_timer_add error: timer to add already in list!");
-            return;
-        }
+        btstack_assert(next != ts);
         // exit if new timeout before list timeout
         int32_t delta = btstack_time_delta(ts->timeout, next->timeout);
         if (delta < 0) break;
