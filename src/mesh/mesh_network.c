@@ -988,8 +988,7 @@ void mesh_network_send_pdu(mesh_network_pdu_t * network_pdu){
     printf("^^ into network_pdus_queued\n");
 #endif
 
-    uint8_t net_mic_len = network_pdu->data[1] & 0x80 ? 8 : 4;
-    btstack_assert((network_pdu->len + net_mic_len) <= 29);
+    btstack_assert((network_pdu->len + (network_pdu->data[1] & 0x80 ? 8 : 4)) <= 29);
     btstack_assert(network_pdu->len >= 9);
 
     // setup callback

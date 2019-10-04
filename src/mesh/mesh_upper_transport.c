@@ -1008,9 +1008,9 @@ void mesh_upper_transport_init(){
 
 void mesh_upper_transport_send_access_pdu(mesh_pdu_t *pdu){
     if (pdu->pdu_type == MESH_PDU_TYPE_NETWORK){
-        mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) pdu;
-        btstack_assert(network_pdu->len >= 9);
+        btstack_assert(mesh_network_pdu_len((mesh_network_pdu_t *) pdu) >= 9);
     }
+
     btstack_linked_list_add_tail(&upper_transport_outgoing, (btstack_linked_item_t*) pdu);
     mesh_upper_transport_run();
 }
