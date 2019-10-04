@@ -64,6 +64,7 @@ static const mesh_operation_t * mesh_model_lookup_operation_by_opcode(mesh_model
 // acknowledged messages
 static btstack_linked_list_t  mesh_access_acknowledged_messages;
 static btstack_timer_source_t mesh_access_acknowledged_timer;
+static int                    mesh_access_acknowledged_timer_active;
 
 // Transitions
 static btstack_linked_list_t  transitions;
@@ -182,6 +183,8 @@ static void mesh_access_acknowledged_run(btstack_timer_source_t * ts){
         }
     }
 
+    if (mesh_access_acknowledged_timer_active) return;
+    
     // find earliest timeout and set timer
     btstack_linked_list_iterator_init(&ack_it, &mesh_access_acknowledged_messages);
     int32_t next_timeout_ms = 0;
@@ -199,6 +202,7 @@ static void mesh_access_acknowledged_run(btstack_timer_source_t * ts){
     btstack_run_loop_set_timer(&mesh_access_acknowledged_timer, next_timeout_ms);
     btstack_run_loop_set_timer_handler(&mesh_access_acknowledged_timer, mesh_access_acknowledged_run);
     btstack_run_loop_add_timer(&mesh_access_acknowledged_timer);
+    mesh_access_acknowledged_timer_active = 1;
 }
 
 static void mesh_access_acknowledged_received(uint16_t rx_src, uint32_t opcode){

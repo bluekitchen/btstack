@@ -98,13 +98,15 @@ static uint8_t heartbeat_count_log(uint16_t value){
     if (value == 0)      return 0x00;
     if (value == 0xffff) return 0xff;
     // count leading zeros, supported by clang and gcc
-    return 32 - __builtin_clz(value);
+    // note: CountLog(8) == CountLog(7) = 3
+    return 33 - __builtin_clz(value - 1);
 }
 
 static uint8_t heartbeat_period_log(uint16_t value){
     if (value == 0)      return 0x00;
     // count leading zeros, supported by clang and gcc
-    return 32 - __builtin_clz(value);
+    // note: PeriodLog(8) == PeriodLog(7) = 3
+    return 33 - __builtin_clz(value - 1);
 }
 
 // TLV
@@ -1778,6 +1780,7 @@ void mesh_configuration_server_feature_changed(void){
 static void config_heartbeat_publication_timeout_handler(btstack_timer_source_t * ts){
 
     mesh_heartbeat_publication_t * mesh_heartbeat_publication = (mesh_heartbeat_publication_t*) ts;
+    mesh_heartbeat_publication->timer_active = 0;
 
     // emit beat
     config_heartbeat_publication_emit(mesh_heartbeat_publication);
@@ -1790,6 +1793,7 @@ static void config_heartbeat_publication_timeout_handler(btstack_timer_source_t 
 
     btstack_run_loop_set_timer(ts, mesh_heartbeat_publication->period_ms);
     btstack_run_loop_add_timer(ts);
+    mesh_heartbeat_publication->timer_active = 1;
 }
 
 static void config_heartbeat_publication_status(mesh_model_t *mesh_model, uint16_t netkey_index, uint16_t dest, uint8_t status, mesh_heartbeat_publication_t * mesh_heartbeat_publication){
@@ -1817,7 +1821,8 @@ static void config_heartbeat_publication_status(mesh_model_t *mesh_model, uint16
 static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
 
     mesh_heartbeat_publication_t requested_publication;
-
+    memset(&requested_publication, 0, sizeof(requested_publication));
+    
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
 
@@ -1851,6 +1856,13 @@ static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, m
         printf("MESH config_heartbeat_publication_set, destination %x, count = %x, period = %u s\n",
             requested_publication.destination, requested_publication.count, requested_publication.period_ms);
 
+        // stop timer if active
+        // note: accept update below using memcpy overwwrite timer_active flag
+        if (mesh_heartbeat_publication->timer_active){
+            btstack_run_loop_remove_timer(&mesh_heartbeat_publication->timer);
+            mesh_heartbeat_publication->timer_active = 0;
+        }
+
         // accept update
         memcpy(mesh_heartbeat_publication, &requested_publication, sizeof(mesh_heartbeat_publication_t));
     }
@@ -1860,19 +1872,18 @@ static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, m
     mesh_access_message_processed(pdu);
 
     if (status != MESH_FOUNDATION_STATUS_SUCCESS) return;
-
+    
     // check if heartbeats should be disabled
     if (mesh_heartbeat_publication->destination == MESH_ADDRESS_UNSASSIGNED || mesh_heartbeat_publication->period_log == 0) {
-        btstack_run_loop_remove_timer(&mesh_heartbeat_publication->timer);
-        printf("MESH config_heartbeat_publication_set, disable periodic sending\n");
         return;
     }
-
-    // NOTE: defer first heartbeat to allow config status getting sent first
+    
+    // initial heartbeat in 100 ms
     btstack_run_loop_set_timer_handler(&mesh_heartbeat_publication->timer, config_heartbeat_publication_timeout_handler);
     btstack_run_loop_set_timer_context(&mesh_heartbeat_publication->timer, mesh_heartbeat_publication);
-    btstack_run_loop_set_timer(&mesh_heartbeat_publication->timer, 2000);
+    btstack_run_loop_set_timer(&mesh_heartbeat_publication->timer, 100);
     btstack_run_loop_add_timer(&mesh_heartbeat_publication->timer);
+    mesh_heartbeat_publication->timer_active = 1;
 }
 
 static void config_heartbeat_publication_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu) {
