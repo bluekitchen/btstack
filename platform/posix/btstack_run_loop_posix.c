@@ -90,7 +90,7 @@ static void btstack_run_loop_posix_add_data_source(btstack_data_source_t *ds){
  */
 static int btstack_run_loop_posix_remove_data_source(btstack_data_source_t *ds){
     data_sources_modified = 1;
-    log_debug("btstack_run_loop_posix_remove_data_source %x\n", (int) ds);
+    log_debug("btstack_run_loop_posix_remove_data_source %p\n", ds);
     return btstack_linked_list_remove(&data_sources, (btstack_linked_item_t *) ds);
 }
 
@@ -126,7 +126,7 @@ static void btstack_run_loop_posix_dump_timer(void){
     int i = 0;
     for (it = (btstack_linked_item_t *) timers; it ; it = it->next){
         btstack_timer_source_t *ts = (btstack_timer_source_t*) it;
-        log_info("timer %u, timeout %u\n", i, ts->timeout);
+        log_info("timer %u (%p): timeout %u\n", i, ts, ts->timeout);
     }
 }
 
