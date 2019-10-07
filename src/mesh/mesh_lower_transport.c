@@ -760,6 +760,7 @@ static void mesh_lower_transport_run(void){
         switch (pdu->pdu_type) {
             case MESH_PDU_TYPE_NETWORK:
                 network_pdu = (mesh_network_pdu_t *) pdu;
+                mesh_network_pdu_set_seq(network_pdu, mesh_sequence_number_next());
                 mesh_network_send_pdu(network_pdu);
                 break;
             case MESH_PDU_TYPE_TRANSPORT:

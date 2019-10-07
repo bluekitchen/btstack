@@ -625,7 +625,7 @@ static uint8_t mesh_upper_transport_setup_unsegmented_control_pdu(mesh_network_p
     uint16_t transport_pdu_len = control_pdu_len + 1;
 
     // setup network_pdu
-    mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, 1, ttl, mesh_sequence_number_next(), src, dest, transport_pdu_data, transport_pdu_len);
+    mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, 1, ttl, 0, src, dest, transport_pdu_data, transport_pdu_len);
 
     return 0;
 }
@@ -641,15 +641,12 @@ static uint8_t mesh_upper_transport_setup_segmented_control_pdu(mesh_transport_p
     const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
     if (!network_key) return 1;
 
-    uint32_t seq = mesh_sequence_number_next();
-
     memcpy(transport_pdu->data, control_pdu_data, control_pdu_len);
     transport_pdu->len = control_pdu_len;
     transport_pdu->netkey_index = netkey_index;
     transport_pdu->akf_aid_control = opcode;
     transport_pdu->transmic_len = 0;    // no TransMIC for control
     mesh_transport_set_nid_ivi(transport_pdu, network_key->nid);
-    mesh_transport_set_seq(transport_pdu, seq);
     mesh_transport_set_src(transport_pdu, src);
     mesh_transport_set_dest(transport_pdu, dest);
     mesh_transport_set_ctl_ttl(transport_pdu, 0x80 | ttl);
@@ -687,7 +684,7 @@ static uint8_t mesh_upper_transport_setup_unsegmented_access_pdu_header(mesh_net
 
     network_pdu->data[9] = akf_aid;
     // setup network_pdu
-    mesh_network_setup_pdu_header(network_pdu, netkey_index, network_key->nid, 0, ttl, mesh_sequence_number_next(), src, dest);
+    mesh_network_setup_pdu_header(network_pdu, netkey_index, network_key->nid, 0, ttl, 0, src, dest);
     network_pdu->appkey_index = appkey_index;
     return 0;
 }
