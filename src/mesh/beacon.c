@@ -78,6 +78,7 @@ static hci_con_handle_t gatt_bearer_con_handle;
 static uint8_t mesh_beacon_data[29];
 static uint8_t mesh_beacon_len;
 static btstack_timer_source_t   beacon_timer;
+static int                      beacon_timer_active;
 
 // unprovisioned device beacon
 #ifdef ENABLE_MESH_ADV_BEARER
@@ -103,7 +104,8 @@ static void beacon_timer_handler(btstack_timer_source_t * ts){
     // restart timer
     btstack_run_loop_set_timer(ts, UNPROVISIONED_BEACON_INTERVAL_MS);
     btstack_run_loop_add_timer(ts);
-
+    beacon_timer_active = 1;
+    
     // setup beacon
     mesh_beacon_len = UNPROVISIONED_BEACON_LEN;
     mesh_beacon_data[0] = BEACON_TYPE_UNPROVISIONED_DEVICE;
@@ -257,12 +259,18 @@ static void mesh_secure_network_beacon_run(btstack_timer_source_t * ts){
         }
     }
 
+    if (beacon_timer_active){
+        btstack_run_loop_remove_timer(&beacon_timer);
+        beacon_timer_active = 0;
+    }
+    
     // setup next run
     if (next_timeout_ms == 0) return;
 
     btstack_run_loop_set_timer(&beacon_timer, next_timeout_ms);
     btstack_run_loop_set_timer_handler(&beacon_timer, mesh_secure_network_beacon_run);
     btstack_run_loop_add_timer(&beacon_timer);
+    beacon_timer_active = 1;
 }
 
 #ifdef ENABLE_MESH_ADV_BEARER
@@ -472,6 +480,7 @@ void beacon_unprovisioned_device_start(const uint8_t * device_uuid, uint16_t oob
 void beacon_unprovisioned_device_stop(void){
 #ifdef ENABLE_MESH_ADV_BEARER
     btstack_run_loop_remove_timer(&beacon_timer);
+    beacon_timer_active = 0;
 #endif
 }
 
