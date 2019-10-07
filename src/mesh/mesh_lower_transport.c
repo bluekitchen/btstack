@@ -125,6 +125,7 @@ static btstack_linked_list_t lower_transport_outgoing;
 
 static mesh_transport_pdu_t * lower_transport_outgoing_pdu;
 static mesh_network_pdu_t   * lower_transport_outgoing_segment;
+static int                    lower_transport_outgoing_segment_queued;
 static uint16_t               lower_transport_outgoing_seg_o;
 
 static void mesh_lower_transport_process_segment_acknowledgement_message(mesh_network_pdu_t *network_pdu){
@@ -629,6 +630,7 @@ static void mesh_lower_transport_send_next_segment(void){
     lower_transport_outgoing_seg_o++;
 
     // send network pdu
+    lower_transport_outgoing_segment_queued = 1;
     mesh_network_send_pdu(lower_transport_outgoing_segment);
 }
 
@@ -637,6 +639,7 @@ static void mesh_lower_transport_network_pdu_sent(mesh_network_pdu_t *network_pd
 
     // single segment of segmented message?
     if (lower_transport_outgoing_segment == network_pdu){
+        lower_transport_outgoing_segment_queued = 0;
         mesh_lower_transport_send_next_segment();
         return;
     }
@@ -788,6 +791,7 @@ void mesh_lower_transport_reset(void){
         lower_transport_outgoing_pdu = NULL;
     }
     mesh_network_pdu_free(lower_transport_outgoing_segment);
+    lower_transport_outgoing_segment_queued = 0;
     lower_transport_outgoing_segment = NULL;
 }
 
@@ -795,6 +799,7 @@ void mesh_lower_transport_init(){
     // register with network layer
     mesh_network_set_higher_layer_handler(&mesh_lower_transport_received_message);
     // allocate network_pdu for segmentation
+    lower_transport_outgoing_segment_queued = 0;
     lower_transport_outgoing_segment = mesh_network_pdu_get();
 }
 
