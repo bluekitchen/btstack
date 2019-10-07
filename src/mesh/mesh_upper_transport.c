@@ -611,7 +611,7 @@ static void mesh_upper_transport_send_segmented_access_pdu_ccm(void * arg){
 static uint8_t mesh_upper_transport_setup_unsegmented_control_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode,
                           const uint8_t * control_pdu_data, uint16_t control_pdu_len){
 
-    printf("[+] Upper transport, setup unsegmented Control PDU (opcode %02x): \n", opcode);
+    printf("[+] Upper transport, setup unsegmented Control PDU %p (opcode %02x): ", network_pdu, opcode);
     printf_hexdump(control_pdu_data, control_pdu_len);
 
     if (control_pdu_len > 11) return 1;
@@ -624,7 +624,6 @@ static uint8_t mesh_upper_transport_setup_unsegmented_control_pdu(mesh_network_p
     memcpy(&transport_pdu_data[1], control_pdu_data, control_pdu_len);
     uint16_t transport_pdu_len = control_pdu_len + 1;
 
-    mesh_print_hex("LowerTransportPDU", transport_pdu_data, transport_pdu_len);
     // setup network_pdu
     mesh_network_setup_pdu(network_pdu, netkey_index, network_key->nid, 1, ttl, mesh_sequence_number_next(), src, dest, transport_pdu_data, transport_pdu_len);
 
