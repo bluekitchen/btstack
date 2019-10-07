@@ -2902,11 +2902,11 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
                 // outgoing connection
                 if (channel->state == L2CAP_STATE_WAIT_OUTGOING_EXTENDED_FEATURES){
 
-                    // verify ERTM requirements
+                    // if ERTM was requested, but is not listed in extended feature mask:
                     if ((channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) && ((connection->l2cap_state.extended_feature_mask & 0x08) == 0)){
-                        // bail if ERTM was requested but is not supported
+
                         if (channel->ertm_mandatory){
-                            // channel closed
+                            // bail if ERTM is mandatory
                             channel->state = L2CAP_STATE_CLOSED;
                             // map l2cap connection response result to BTstack status enumeration
                             l2cap_handle_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_ERTM_NOT_SUPPORTED);
@@ -2914,11 +2914,12 @@ static void l2cap_signaling_handler_dispatch(hci_con_handle_t handle, uint8_t * 
                             btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
                             l2cap_free_channel_entry(channel);
                             continue;
+
+                        } else {
+                            // fallback to Basic mode
+                            l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_ERTM_BUFFER_RELEASED);
+                            channel->mode = L2CAP_CHANNEL_MODE_BASIC;
                         }
-                    } else {
-                        // fallback to Basic mode
-                        l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_ERTM_BUFFER_RELEASED);
-                        channel->mode = L2CAP_CHANNEL_MODE_BASIC;
                     }
 
                     // respond to connection request
