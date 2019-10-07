@@ -1098,6 +1098,10 @@ uint8_t   mesh_network_pdu_len(mesh_network_pdu_t * network_pdu){
     return network_pdu->len - 9;
 }
 
+void mesh_network_pdu_set_seq(mesh_network_pdu_t * network_pdu, uint32_t seq){
+    big_endian_store_24(network_pdu->data, 2, seq);
+}
+
 static void mesh_network_dump_network_pdu(mesh_network_pdu_t * network_pdu){
     if (network_pdu){
         printf("- %p: ", network_pdu); printf_hexdump(network_pdu->data, network_pdu->len);

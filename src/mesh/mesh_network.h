@@ -379,6 +379,9 @@ uint8_t   mesh_network_control_opcode(mesh_network_pdu_t * network_pdu);
 uint8_t * mesh_network_pdu_data(mesh_network_pdu_t * network_pdu);
 uint8_t   mesh_network_pdu_len(mesh_network_pdu_t * network_pdu);
 
+// Mesh Network PDU Setter
+void mesh_network_pdu_set_seq(mesh_network_pdu_t * network_pdu, uint32_t seq);
+
 // Testing only
 void mesh_network_received_message(const uint8_t * pdu_data, uint8_t pdu_len, uint8_t flags);
 void mesh_network_process_proxy_configuration_message(const uint8_t * pdu_data, uint8_t pdu_len);
