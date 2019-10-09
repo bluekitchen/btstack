@@ -53,7 +53,8 @@
 
 #include "btstack_debug.h"
 #include "btstack_event.h"
-#include "btstack_link_key_db_fs.h"
+#include "ble/le_device_db_tlv.h"
+#include "classic/btstack_link_key_db_tlv.h"
 #include "btstack_memory.h"
 #include "btstack_run_loop.h"
 #include "btstack_run_loop_posix.h"
@@ -95,6 +96,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             strcat(tlv_db_path, TLV_DB_PATH_POSTFIX);
             tlv_impl = btstack_tlv_posix_init_instance(&tlv_context, tlv_db_path);
             btstack_tlv_set_instance(tlv_impl, &tlv_context);
+#ifdef ENABLE_CLASSIC
+            hci_set_link_key_db(btstack_link_key_db_tlv_get_instance(tlv_impl, &tlv_context));
+#endif    
+#ifdef ENABLE_BLE
+            le_device_db_tlv_configure(tlv_impl, &tlv_context);
+#endif
             break;
         default:
             break;
@@ -134,10 +141,6 @@ static void intel_firmware_done(int result){
 
     // init HCI
     hci_init(transport, NULL);
-
-#ifdef ENABLE_CLASSIC
-    hci_set_link_key_db(btstack_link_key_db_fs_instance());
-#endif    
 
 #ifdef HAVE_PORTAUDIO
     btstack_audio_set_instance(btstack_audio_portaudio_get_instance());

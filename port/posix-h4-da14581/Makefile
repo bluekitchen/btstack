@@ -4,12 +4,11 @@ BTSTACK_ROOT ?= ../..
 CORE += \
 	btstack_chipset_da14581.c \
 	hci_581_active_uart.c \
-	btstack_link_key_db_fs.c \
 	btstack_run_loop_posix.c \
 	btstack_tlv_posix.c \
 	btstack_uart_block_posix.c \
 	hci_transport_h4.c \
-	le_device_db_fs.c \
+	le_device_db_tlv.c \
 	main.c \
 	wav_util.c 					\
 	btstack_stdin_posix.c \
@@ -27,13 +26,6 @@ VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/chipset/da14581
 
 EXAMPLES = ${EXAMPLES_GENERAL} ${EXAMPLES_LE_ONLY}
-
-# use pkg-config for portaudio
-# CFLAGS  += $(shell pkg-config portaudio-2.0 --cflags) -DHAVE_PORTAUDIO
-# LDFLAGS += $(shell pkg-config portaudio-2.0 --libs)
-# hard coded flags for portaudio in /usr/local/lib
-# CFLAGS  += -I/usr/local/include -DHAVE_PORTAUDIO
-# LDFLAGS += -L/sw/lib -lportaudio -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-framework,AudioUnit -Wl,-framework,Carbon
 
 all: ${EXAMPLES}
 

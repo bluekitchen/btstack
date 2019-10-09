@@ -33,6 +33,8 @@
 #define HCI_ACL_PAYLOAD_SIZE (1691 + 4)
 #define HCI_INCOMING_PRE_BUFFER_SIZE 14 // sizeof BNEP header, avoid memcpy
 
+#define NVM_NUM_DEVICE_DB_ENTRIES      20
+
 // Mesh Configuration
 #define ENABLE_MESH
 #define ENABLE_MESH_ADV_BEARER
