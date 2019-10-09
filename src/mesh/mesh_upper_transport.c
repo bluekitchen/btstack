@@ -682,9 +682,12 @@ static uint8_t mesh_upper_transport_setup_unsegmented_access_pdu_header(mesh_net
     const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
     if (!network_key) return 1;
 
+    // Nonce for Access Payload based on Network Sequence number: needs to be fixed now and lower layers need to send packet in right order
+    uint32_t seq = mesh_sequence_number_next();
+
     network_pdu->data[9] = akf_aid;
     // setup network_pdu
-    mesh_network_setup_pdu_header(network_pdu, netkey_index, network_key->nid, 0, ttl, 0, src, dest);
+    mesh_network_setup_pdu_header(network_pdu, netkey_index, network_key->nid, 0, ttl, seq, src, dest);
     network_pdu->appkey_index = appkey_index;
     return 0;
 }
