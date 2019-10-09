@@ -111,11 +111,10 @@ static uint32_t le_device_db_tlv_tag_for_index(uint8_t index){
 // @returns success
 // @param index = entry_pos
 static int le_device_db_tlv_fetch(int index, le_device_db_entry_t * entry){
-    if (!le_device_db_tlv_btstack_tlv_impl) return 0;
-    if (index < 0 || index >= NVM_NUM_DEVICE_DB_ENTRIES){
-	    log_error("le_device_db_tlv_fetch called with invalid index %d", index);
-	    return 0;
-	}
+    btstack_assert(le_device_db_tlv_btstack_tlv_impl != NULL);
+    btstack_assert(index >= 0);
+    btstack_assert(index < NVM_NUM_DEVICE_DB_ENTRIES);
+
     uint32_t tag = le_device_db_tlv_tag_for_index(index);
     int size = le_device_db_tlv_btstack_tlv_impl->get_tag(le_device_db_tlv_btstack_tlv_context, tag, (uint8_t*) entry, sizeof(le_device_db_entry_t));
 	return size == sizeof(le_device_db_entry_t);
@@ -124,11 +123,10 @@ static int le_device_db_tlv_fetch(int index, le_device_db_entry_t * entry){
 // @returns success
 // @param index = entry_pos
 static int le_device_db_tlv_store(int index, le_device_db_entry_t * entry){
-    if (!le_device_db_tlv_btstack_tlv_impl) return 0;
-    if (index < 0 || index >= NVM_NUM_DEVICE_DB_ENTRIES){
-	    log_error("le_device_db_tlv_store called with invalid index %d", index);
-	    return 0;
-	}
+    btstack_assert(le_device_db_tlv_btstack_tlv_impl != NULL);
+    btstack_assert(index >= 0);
+    btstack_assert(index < NVM_NUM_DEVICE_DB_ENTRIES);
+
     uint32_t tag = le_device_db_tlv_tag_for_index(index);
     le_device_db_tlv_btstack_tlv_impl->store_tag(le_device_db_tlv_btstack_tlv_context, tag, (uint8_t*) entry, sizeof(le_device_db_entry_t));
 	return 1;
@@ -136,11 +134,10 @@ static int le_device_db_tlv_store(int index, le_device_db_entry_t * entry){
 
 // @param index = entry_pos
 static int le_device_db_tlv_delete(int index){
-    if (!le_device_db_tlv_btstack_tlv_impl) return 0;
-    if (index < 0 || index >= NVM_NUM_DEVICE_DB_ENTRIES){
-	    log_error("le_device_db_tlv_delete called with invalid index %d", index);
-	    return 0;
-	}
+    btstack_assert(le_device_db_tlv_btstack_tlv_impl != NULL);
+    btstack_assert(index >= 0);
+    btstack_assert(index < NVM_NUM_DEVICE_DB_ENTRIES);
+
     uint32_t tag = le_device_db_tlv_tag_for_index(index);
     le_device_db_tlv_btstack_tlv_impl->delete_tag(le_device_db_tlv_btstack_tlv_context, tag);
 	return 1;
