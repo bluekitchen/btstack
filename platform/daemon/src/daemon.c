@@ -941,9 +941,8 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
                     btstack_chipset_intel_download_firmware(transport, &btstack_server_intel_firmware_done);
                     break;
                 }
-#else
+#endif
                 hci_power_control(HCI_POWER_ON);
-#endif                
             }
             break;
         case BTSTACK_GET_VERSION:
