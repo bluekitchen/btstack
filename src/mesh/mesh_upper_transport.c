@@ -685,13 +685,10 @@ static uint8_t mesh_upper_transport_setup_unsegmented_access_pdu_header(mesh_net
     // lookup network by netkey_index
     const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
     if (!network_key) return 1;
-
-    // Nonce for Access Payload based on Network Sequence number: needs to be fixed now and lower layers need to send packet in right order
-    uint32_t seq = mesh_sequence_number_next();
-
+    
     network_pdu->data[9] = akf_aid;
     // setup network_pdu
-    mesh_network_setup_pdu_header(network_pdu, netkey_index, network_key->nid, 0, ttl, seq, src, dest);
+    mesh_network_setup_pdu_header(network_pdu, netkey_index, network_key->nid, 0, ttl, 0, src, dest);
     network_pdu->appkey_index = appkey_index;
     return 0;
 }
@@ -733,17 +730,12 @@ static uint8_t mesh_upper_transport_setup_segmented_access_pdu_header(mesh_trans
 
     const uint8_t trans_mic_len = szmic ? 8 : 4;
 
-    // reserve one sequence number, which is also used to encrypt access payload
-    uint32_t seq = mesh_sequence_number_next();
-    transport_pdu->flags |= MESH_TRANSPORT_FLAG_SEQ_RESERVED;
-    
     // store in transport pdu
     transport_pdu->transmic_len = trans_mic_len;
     transport_pdu->netkey_index = netkey_index;
     transport_pdu->appkey_index = appkey_index;
     transport_pdu->akf_aid_control = akf_aid;
     mesh_transport_set_nid_ivi(transport_pdu, network_key->nid | ((mesh_get_iv_index_for_tx() & 1) << 7));
-    mesh_transport_set_seq(transport_pdu, seq);
     mesh_transport_set_src(transport_pdu, src);
     mesh_transport_set_dest(transport_pdu, dest);
     mesh_transport_set_ctl_ttl(transport_pdu, ttl);
@@ -849,6 +841,13 @@ static void mesh_upper_transport_send_unsegmented_access_pdu(mesh_network_pdu_t 
         big_endian_store_16(network_pdu->data, 7, virtual_address->hash);
     }
 
+    // reserve slot
+    mesh_lower_transport_reserve_slot();
+
+    // Nonce for Access Payload based on Network Sequence number: needs to be fixed now and lower layers need to send packet in right order
+    uint32_t seq = mesh_sequence_number_next();
+    mesh_network_pdu_set_seq(network_pdu, seq);
+
     // setup nonce
     uint16_t appkey_index = network_pdu->appkey_index;
     if (appkey_index == MESH_DEVICE_KEY_INDEX){
@@ -904,6 +903,11 @@ static void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t 
     // reserve slot
     mesh_lower_transport_reserve_slot();
     
+    // reserve one sequence number, which is also used to encrypt access payload
+    uint32_t seq = mesh_sequence_number_next();
+    transport_pdu->flags |= MESH_TRANSPORT_FLAG_SEQ_RESERVED;
+    mesh_transport_set_seq(transport_pdu, seq);
+
     // setup nonce - uses dst, so after pseudo address translation
     uint16_t appkey_index = transport_pdu->appkey_index;
     if (appkey_index == MESH_DEVICE_KEY_INDEX){
@@ -927,6 +931,27 @@ static void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t 
     } else {
         mesh_upper_transport_send_segmented_access_pdu_digest(transport_pdu);
     }
+}
+
+static void mesh_upper_transport_send_unsegmented_control_pdu(mesh_network_pdu_t * network_pdu){
+    // reserve slot
+    mesh_lower_transport_reserve_slot();
+    // reserve sequence number
+    uint32_t seq = mesh_sequence_number_next();
+    mesh_network_pdu_set_seq(network_pdu, seq);
+    // send
+    mesh_lower_transport_send_pdu((mesh_pdu_t *) network_pdu);
+}
+
+static void mesh_upper_transport_send_segmented_control_pdu(mesh_transport_pdu_t * transport_pdu){
+    // reserve slot
+    mesh_lower_transport_reserve_slot();
+    // reserve sequence number
+    uint32_t seq = mesh_sequence_number_next();
+    transport_pdu->flags |= MESH_TRANSPORT_FLAG_SEQ_RESERVED;
+    mesh_transport_set_seq(transport_pdu, seq);
+    // send
+    mesh_lower_transport_send_pdu((mesh_pdu_t *) transport_pdu);
 }
 
 static void mesh_upper_transport_run(void){
@@ -984,20 +1009,27 @@ static void mesh_upper_transport_run(void){
         if (mesh_lower_transport_can_send_to_dest(mesh_pdu_dst(pdu)) == 0) break;
 
         if (mesh_pdu_ctl(pdu)){
-            mesh_lower_transport_reserve_slot();
-            mesh_lower_transport_send_pdu(pdu);
-            continue;
-        }
-        
-        switch (pdu->pdu_type){
-            case MESH_PDU_TYPE_NETWORK:
-                mesh_upper_transport_send_unsegmented_access_pdu((mesh_network_pdu_t *) pdu);
-                break;
-            case MESH_PDU_TYPE_TRANSPORT:
-                mesh_upper_transport_send_segmented_access_pdu((mesh_transport_pdu_t *) pdu);
-                break;
-            default:
-                break;
+            switch (pdu->pdu_type){
+                case MESH_PDU_TYPE_NETWORK:
+                    mesh_upper_transport_send_unsegmented_control_pdu((mesh_network_pdu_t *) pdu);
+                    break;
+                case MESH_PDU_TYPE_TRANSPORT:
+                    mesh_upper_transport_send_segmented_control_pdu((mesh_transport_pdu_t *) pdu);
+                    break;
+                default:
+                    break;
+            }
+        } else {
+            switch (pdu->pdu_type){
+                case MESH_PDU_TYPE_NETWORK:
+                    mesh_upper_transport_send_unsegmented_access_pdu((mesh_network_pdu_t *) pdu);
+                    break;
+                case MESH_PDU_TYPE_TRANSPORT:
+                    mesh_upper_transport_send_segmented_access_pdu((mesh_transport_pdu_t *) pdu);
+                    break;
+                default:
+                    break;
+            }
         }
     }
 }
