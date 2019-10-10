@@ -806,6 +806,13 @@ static void mesh_lower_transport_reset_network_pdus(btstack_linked_list_t *list)
     }
 }
 
+int  mesh_lower_transport_can_send_to_dest(uint16_t dest){
+    return 1;
+}
+
+void mesh_lower_transport_reserve_slot(void){
+}
+
 void mesh_lower_transport_dump(void){
     mesh_lower_transport_dump_network_pdus("lower_transport_incoming", &lower_transport_incoming);
 }

@@ -68,6 +68,7 @@ typedef enum {
 } mesh_transport_callback_type_t;
 
 typedef enum {
+    MESH_TRANSPORT_STATUS_PARTIALLY_SEND,
     MESH_TRANSPORT_STATUS_SUCCESS,
     MESH_TRANSPORT_STATUS_SEND_FAILED,
     MESH_TRANSPORT_STATUS_SEND_ABORT_BY_REMOTE,
@@ -99,6 +100,8 @@ void mesh_lower_transport_set_higher_layer_handler(void (*pdu_handler)( mesh_tra
 
 void mesh_lower_transport_message_processed_by_higher_layer(mesh_pdu_t * pdu);
 
+int  mesh_lower_transport_can_send_to_dest(uint16_t dest);
+void mesh_lower_transport_reserve_slot(void);
 void mesh_lower_transport_send_pdu(mesh_pdu_t * pdu);
 
 // test
