@@ -16,7 +16,9 @@ When everything is ready, you compile all examples with:
 
 	make
 
-## Environment
+## Environment Setup
+
+### Linux
 
 On Linux, the USB Bluetooth dongle is usually not accessible to a regular user. You can either:
 - run the examples as root
@@ -36,6 +38,7 @@ To add an udev rule, please create `/etc/udev/rules.d/btstack.rules` and add thi
 	# Match Laird BT860 / Cypress Semiconductor CYW20704A2
 	SUBSYSTEM=="usb", ATTRS{idVendor}=="04b4", ATTRS{device}=="f901", MODE="0666"
 
+### macOS
 
 On macOS, the OS will try to use a plugged-in Bluetooth Controller if one is available. 
 It's best to to tell the OS to always use the internal Bluetooth Contoller. 
@@ -45,6 +48,15 @@ For this, execute:
     sudo nvram bluetoothHostControllerSwitchBehavior=never
 
 and then reboot to activate the change. 
+
+Note: if you get this error,
+
+	libusb: warning [darwin_open] USBDeviceOpen: another process has device opened for exclusive access
+	libusb: error [darwin_reset_device] ResetDevice: device not opened for exclusive access
+
+and you didn't start another instance and you didn't assign the USB Controller to a virtual machine,
+macOS uses the plugged-in Bluetooth Controller. Please configure NVRAM as explained and try again after a reboot.
+
 
 ## Running the examples
 
