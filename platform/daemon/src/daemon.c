@@ -936,8 +936,11 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             } else if (!power_management_sleep) {
                 stop_power_off_timer();
 #ifdef HAVE_INTEL_USB
-                // before staring up the stack, load intel firmware
-                btstack_chipset_intel_download_firmware(transport, &btstack_server_intel_firmware_done);
+                if (!intel_firmware_loaded){
+                    // before staring up the stack, load intel firmware
+                    btstack_chipset_intel_download_firmware(transport, &btstack_server_intel_firmware_done);
+                    break;
+                }
 #else
                 hci_power_control(HCI_POWER_ON);
 #endif                
