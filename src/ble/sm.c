@@ -2688,19 +2688,23 @@ static void sm_run(void){
 // sm_aes128_state stays active
 static void sm_handle_encryption_result_enc_a(void *arg){
     hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_aes128_state = SM_AES128_IDLE;
+
     sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
     if (connection == NULL) return;
 
     sm_c1_t3(sm_aes128_ciphertext, setup->sm_m_address, setup->sm_s_address, setup->sm_c1_t3_value);
+    sm_aes128_state = SM_AES128_ACTIVE;
     btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, setup->sm_tk, setup->sm_c1_t3_value, setup->sm_local_confirm, sm_handle_encryption_result_enc_b, (void *)(uintptr_t) connection->sm_handle);
 }
 
 static void sm_handle_encryption_result_enc_b(void *arg){
     hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_aes128_state = SM_AES128_IDLE;
+
     sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
     if (connection == NULL) return;
 
-    sm_aes128_state = SM_AES128_IDLE;
     log_info_key("c1!", setup->sm_local_confirm);
     connection->sm_engine_state = SM_PH2_C1_SEND_PAIRING_CONFIRM;
     sm_run();
@@ -2709,19 +2713,23 @@ static void sm_handle_encryption_result_enc_b(void *arg){
 // sm_aes128_state stays active
 static void sm_handle_encryption_result_enc_c(void *arg){
     hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_aes128_state = SM_AES128_IDLE;
+
     sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
     if (connection == NULL) return;
 
     sm_c1_t3(sm_aes128_ciphertext, setup->sm_m_address, setup->sm_s_address, setup->sm_c1_t3_value);
+    sm_aes128_state = SM_AES128_ACTIVE;
     btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, setup->sm_tk, setup->sm_c1_t3_value, sm_aes128_ciphertext, sm_handle_encryption_result_enc_d, (void *)(uintptr_t) connection->sm_handle);
 }
 
 static void sm_handle_encryption_result_enc_d(void * arg){
     hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_aes128_state = SM_AES128_IDLE;
+
     sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
     if (connection == NULL) return;
 
-    sm_aes128_state = SM_AES128_IDLE;
     log_info_key("c1!", sm_aes128_ciphertext);
     if (memcmp(setup->sm_peer_confirm, sm_aes128_ciphertext, 16) != 0){
         setup->sm_pairing_failed_reason = SM_REASON_CONFIRM_VALUE_FAILED;
@@ -2740,11 +2748,12 @@ static void sm_handle_encryption_result_enc_d(void * arg){
 }
 
 static void sm_handle_encryption_result_enc_stk(void *arg){
+    sm_aes128_state = SM_AES128_IDLE;
     hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+
     sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
     if (connection == NULL) return;
 
-    sm_aes128_state = SM_AES128_IDLE;
     sm_truncate_key(setup->sm_ltk, connection->sm_actual_encryption_key_size);
     log_info_key("stk", setup->sm_ltk);
     if (IS_RESPONDER(connection->sm_role)){
@@ -2758,6 +2767,8 @@ static void sm_handle_encryption_result_enc_stk(void *arg){
 // sm_aes128_state stays active
 static void sm_handle_encryption_result_enc_ph3_y(void *arg){
     hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_aes128_state = SM_AES128_IDLE;
+
     sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
     if (connection == NULL) return;
 
@@ -2769,13 +2780,16 @@ static void sm_handle_encryption_result_enc_ph3_y(void *arg){
     // PH3B4 - calculate LTK         - enc
     // LTK = d1(ER, DIV, 0))
     sm_d1_d_prime(setup->sm_local_div, 0, sm_aes128_plaintext);
+    sm_aes128_state = SM_AES128_ACTIVE;
     btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_er, sm_aes128_plaintext, setup->sm_ltk, sm_handle_encryption_result_enc_ph3_ltk, (void *)(uintptr_t) connection->sm_handle);
 }
 
 #ifdef ENABLE_LE_PERIPHERAL
 // sm_aes128_state stays active
 static void sm_handle_encryption_result_enc_ph4_y(void *arg){
+    sm_aes128_state = SM_AES128_IDLE;
     hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+
     sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
     if (connection == NULL) return;
 
@@ -2788,6 +2802,7 @@ static void sm_handle_encryption_result_enc_ph4_y(void *arg){
     // PH3B4 - calculate LTK         - enc
     // LTK = d1(ER, DIV, 0))
     sm_d1_d_prime(setup->sm_local_div, 0, sm_aes128_plaintext);
+    sm_aes128_state = SM_AES128_ACTIVE;
     btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_er, sm_aes128_plaintext, setup->sm_ltk, sm_handle_encryption_result_enc_ph4_ltk, (void *)(uintptr_t) connection->sm_handle);
 }
 #endif
@@ -2795,17 +2810,22 @@ static void sm_handle_encryption_result_enc_ph4_y(void *arg){
 // sm_aes128_state stays active
 static void sm_handle_encryption_result_enc_ph3_ltk(void *arg){
     hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_aes128_state = SM_AES128_IDLE;
+
     sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
     if (connection == NULL) return;
 
     log_info_key("ltk", setup->sm_ltk);
     // calc CSRK next
     sm_d1_d_prime(setup->sm_local_div, 1, sm_aes128_plaintext);
+    sm_aes128_state = SM_AES128_ACTIVE;
     btstack_crypto_aes128_encrypt(&sm_crypto_aes128_request, sm_persistent_er, sm_aes128_plaintext, setup->sm_local_csrk, sm_handle_encryption_result_enc_csrk, (void *)(uintptr_t) connection->sm_handle);
 }
 
 static void sm_handle_encryption_result_enc_csrk(void *arg){
     hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_aes128_state = SM_AES128_IDLE;
+
     sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
     if (connection == NULL) return;
 
@@ -2834,10 +2854,11 @@ static void sm_handle_encryption_result_enc_csrk(void *arg){
 #ifdef ENABLE_LE_PERIPHERAL
 static void sm_handle_encryption_result_enc_ph4_ltk(void *arg){
     hci_con_handle_t con_handle = (hci_con_handle_t) (uintptr_t) arg;
+    sm_aes128_state = SM_AES128_IDLE;
+
     sm_connection_t * connection = sm_get_connection_for_handle(con_handle);
     if (connection == NULL) return;
 
-    sm_aes128_state = SM_AES128_IDLE;
     sm_truncate_key(setup->sm_ltk, connection->sm_actual_encryption_key_size);
     log_info_key("ltk", setup->sm_ltk);
     connection->sm_engine_state = SM_RESPONDER_PH4_SEND_LTK_REPLY;
@@ -2848,6 +2869,7 @@ static void sm_handle_encryption_result_enc_ph4_ltk(void *arg){
 static void sm_handle_encryption_result_address_resolution(void *arg){
     UNUSED(arg);
     sm_aes128_state = SM_AES128_IDLE;
+
     sm_address_resolution_ah_calculation_active = 0;
     // compare calulated address against connecting device
     uint8_t * hash = &sm_aes128_ciphertext[13];
@@ -2865,6 +2887,7 @@ static void sm_handle_encryption_result_address_resolution(void *arg){
 static void sm_handle_encryption_result_dkg_irk(void *arg){
     UNUSED(arg);
     sm_aes128_state = SM_AES128_IDLE;
+
     log_info_key("irk", sm_persistent_irk);
     dkg_state = DKG_CALC_DHK;
     sm_run();
@@ -2873,6 +2896,7 @@ static void sm_handle_encryption_result_dkg_irk(void *arg){
 static void sm_handle_encryption_result_dkg_dhk(void *arg){
     UNUSED(arg);
     sm_aes128_state = SM_AES128_IDLE;
+
     log_info_key("dhk", sm_persistent_dhk);
     dkg_state = DKG_READY;
     sm_run();
@@ -2881,6 +2905,7 @@ static void sm_handle_encryption_result_dkg_dhk(void *arg){
 static void sm_handle_encryption_result_rau(void *arg){
     UNUSED(arg);
     sm_aes128_state = SM_AES128_IDLE;
+
     memcpy(&sm_random_address[3], &sm_aes128_ciphertext[13], 3);
     rau_state = RAU_SET_ADDRESS;
     sm_run();
