@@ -577,6 +577,7 @@ static void mesh_upper_transport_pdu_handler(mesh_transport_callback_type_t call
             } else {
                 mesh_upper_transport_pdu_free(pdu);
             }
+            mesh_upper_transport_run();
             break;
         default:
             break;
@@ -955,6 +956,7 @@ static void mesh_upper_transport_send_segmented_control_pdu(mesh_transport_pdu_t
 }
 
 static void mesh_upper_transport_run(void){
+
     while(!btstack_linked_list_empty(&upper_transport_incoming)){
 
         if (crypto_active) return;
@@ -1004,9 +1006,10 @@ static void mesh_upper_transport_run(void){
 
         if (crypto_active) break;
 
-        mesh_pdu_t * pdu =  (mesh_pdu_t *) btstack_linked_list_pop(&upper_transport_outgoing);
-        
+        mesh_pdu_t * pdu =  (mesh_pdu_t *) btstack_linked_list_get_first_item(&upper_transport_outgoing);
         if (mesh_lower_transport_can_send_to_dest(mesh_pdu_dst(pdu)) == 0) break;
+
+        (void) btstack_linked_list_pop(&upper_transport_outgoing);
 
         if (mesh_pdu_ctl(pdu)){
             switch (pdu->pdu_type){
