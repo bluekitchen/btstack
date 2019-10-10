@@ -54,6 +54,9 @@
 #include "mesh/mesh_peer.h"
 #include "mesh/mesh_virtual_addresses.h"
 
+// TODO: extract mesh_pdu functions into lower transport or network
+#include "mesh/mesh_access.h"
+
 static void (*higher_layer_handler)( mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
 
 static void mesh_print_hex(const char * name, const uint8_t * data, uint16_t len){
@@ -786,10 +789,6 @@ uint8_t mesh_upper_transport_setup_access_pdu(mesh_pdu_t * pdu, uint16_t netkey_
     }
 }
 
-void mesh_upper_transport_send_control_pdu(mesh_pdu_t * pdu){
-    mesh_lower_transport_send_pdu((mesh_pdu_t*) pdu);
-}
-
 static void mesh_upper_transport_send_unsegmented_access_pdu_digest(void * arg){
     mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) arg;
     uint8_t * access_pdu_data = mesh_network_pdu_data(network_pdu) + 1;
@@ -902,6 +901,9 @@ static void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t 
         big_endian_store_16(transport_pdu->network_header, 7, virtual_address->hash);
     }
 
+    // reserve slot
+    mesh_lower_transport_reserve_slot();
+    
     // setup nonce - uses dst, so after pseudo address translation
     uint16_t appkey_index = transport_pdu->appkey_index;
     if (appkey_index == MESH_DEVICE_KEY_INDEX){
@@ -975,9 +977,18 @@ static void mesh_upper_transport_run(void){
 
     while (!btstack_linked_list_empty(&upper_transport_outgoing)){
 
-        if (crypto_active) return;
+        if (crypto_active) break;
 
         mesh_pdu_t * pdu =  (mesh_pdu_t *) btstack_linked_list_pop(&upper_transport_outgoing);
+        
+        if (mesh_lower_transport_can_send_to_dest(mesh_pdu_dst(pdu)) == 0) break;
+
+        if (mesh_pdu_ctl(pdu)){
+            mesh_lower_transport_reserve_slot();
+            mesh_lower_transport_send_pdu(pdu);
+            continue;
+        }
+        
         switch (pdu->pdu_type){
             case MESH_PDU_TYPE_NETWORK:
                 mesh_upper_transport_send_unsegmented_access_pdu((mesh_network_pdu_t *) pdu);
@@ -1008,6 +1019,15 @@ void mesh_upper_transport_init(){
 }
 
 void mesh_upper_transport_send_access_pdu(mesh_pdu_t *pdu){
+    if (pdu->pdu_type == MESH_PDU_TYPE_NETWORK){
+        btstack_assert( ((mesh_network_pdu_t *) pdu)->len >= 9);
+    }
+
+    btstack_linked_list_add_tail(&upper_transport_outgoing, (btstack_linked_item_t*) pdu);
+    mesh_upper_transport_run();
+}
+
+void mesh_upper_transport_send_control_pdu(mesh_pdu_t * pdu){
     if (pdu->pdu_type == MESH_PDU_TYPE_NETWORK){
         btstack_assert( ((mesh_network_pdu_t *) pdu)->len >= 9);
     }
