@@ -589,8 +589,9 @@ static void mesh_upper_transport_send_unsegmented_access_pdu_ccm(void * arg){
     // store TransMIC
     btstack_crypto_ccm_get_authentication_value(&ccm, &upper_transport_pdu[upper_transport_pdu_len]);
     mesh_print_hex("TransMIC", &upper_transport_pdu[upper_transport_pdu_len], 4);
-    network_pdu->len += 4;
-    mesh_print_hex("UpperTransportPDU", upper_transport_pdu, network_pdu->len);
+    network_pdu->len        += 4;
+    upper_transport_pdu_len += 4;
+    mesh_print_hex("UpperTransportPDU", upper_transport_pdu, upper_transport_pdu_len);
     // send network pdu
     mesh_lower_transport_send_pdu((mesh_pdu_t*) network_pdu);
 }
@@ -729,9 +730,10 @@ static uint8_t mesh_upper_transport_setup_segmented_access_pdu_header(mesh_trans
 
     const uint8_t trans_mic_len = szmic ? 8 : 4;
 
-    // lower transport will call next sequence number. Only peek here to use same seq for access payload encryption as well as for first network pdu (unit test)
-    uint32_t seq = mesh_sequence_number_peek();
-
+    // reserve one sequence number, which is also used to encrypt access payload
+    uint32_t seq = mesh_sequence_number_next();
+    transport_pdu->flags |= MESH_TRANSPORT_FLAG_SEQ_RESERVED;
+    
     // store in transport pdu
     transport_pdu->transmic_len = trans_mic_len;
     transport_pdu->netkey_index = netkey_index;
@@ -1007,7 +1009,8 @@ void mesh_upper_transport_init(){
 
 void mesh_upper_transport_send_access_pdu(mesh_pdu_t *pdu){
     if (pdu->pdu_type == MESH_PDU_TYPE_NETWORK){
-        btstack_assert(mesh_network_pdu_len((mesh_network_pdu_t *) pdu) >= 9);
+        mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) pdu;
+        btstack_assert(network_pdu->len >= 9);
     }
 
     btstack_linked_list_add_tail(&upper_transport_outgoing, (btstack_linked_item_t*) pdu);

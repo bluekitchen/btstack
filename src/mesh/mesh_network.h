@@ -98,13 +98,15 @@ typedef struct mesh_network_pdu {
     uint16_t              netkey_index;
     // meta data transport layer
     uint16_t              appkey_index;
-    // flags: bit 0 indicates Proxy PDU
+    // MESH_NETWORK_PDU_FLAGS
     uint16_t              flags;
 
     // pdu
     uint16_t              len;
     uint8_t               data[MESH_NETWORK_PAYLOAD_MAX];
 } mesh_network_pdu_t;
+
+#define MESH_TRANSPORT_FLAG_SEQ_RESERVED    1
 
 typedef struct {
     mesh_pdu_t pdu_header;
@@ -125,6 +127,8 @@ typedef struct {
     uint8_t               akf_aid_control;
     // network pdu header
     uint8_t               network_header[9];
+    // MESH_TRANSPORT_FLAG
+    uint16_t              flags;
     // acknowledgement timer active
     uint8_t               acknowledgement_timer_active;
     // incomplete timer active

@@ -554,7 +554,14 @@ static void mesh_lower_transport_setup_segment(mesh_transport_pdu_t *transport_p
     int ctl = mesh_transport_ctl(transport_pdu);
     uint16_t max_segment_len = ctl ? 8 : 12;    // control 8 bytes (64 bit NetMic), access 12 bytes (32 bit NetMIC)
 
-    uint32_t seq      = mesh_sequence_number_next();
+    // use seq number from transport pdu once if MESH_TRANSPORT_FLAG_SEQ_RESERVED (to allow reserving seq number in upper transport while using all seq numbers)
+    uint32_t seq;
+    if ((transport_pdu->flags & MESH_TRANSPORT_FLAG_SEQ_RESERVED) != 0){
+        transport_pdu->flags &= ~(MESH_TRANSPORT_FLAG_SEQ_RESERVED);
+        seq = mesh_transport_seq(transport_pdu);
+    } else {
+        seq = mesh_sequence_number_next();
+    }
     uint16_t seq_zero = mesh_transport_seq(transport_pdu) & 0x01fff;
     uint8_t  seg_n    = (transport_pdu->len - 1) / max_segment_len;
     uint8_t  szmic    = ((!ctl) && (transport_pdu->transmic_len == 8)) ? 1 : 0; // only 1 for access messages with 64 bit TransMIC
@@ -760,7 +767,10 @@ static void mesh_lower_transport_run(void){
         switch (pdu->pdu_type) {
             case MESH_PDU_TYPE_NETWORK:
                 network_pdu = (mesh_network_pdu_t *) pdu;
-                mesh_network_pdu_set_seq(network_pdu, mesh_sequence_number_next());
+                if (mesh_network_control(network_pdu)){
+                    // unsegmented access messages set seq before encyption
+                    mesh_network_pdu_set_seq(network_pdu, mesh_sequence_number_next());
+                }
                 mesh_network_send_pdu(network_pdu);
                 break;
             case MESH_PDU_TYPE_TRANSPORT:
