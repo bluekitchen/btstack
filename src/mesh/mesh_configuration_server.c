@@ -1878,10 +1878,10 @@ static void config_heartbeat_publication_set_handler(mesh_model_t *mesh_model, m
         return;
     }
     
-    // initial heartbeat in 100 ms
+    // initial heartbeat after 2000 ms
     btstack_run_loop_set_timer_handler(&mesh_heartbeat_publication->timer, config_heartbeat_publication_timeout_handler);
     btstack_run_loop_set_timer_context(&mesh_heartbeat_publication->timer, mesh_heartbeat_publication);
-    btstack_run_loop_set_timer(&mesh_heartbeat_publication->timer, 100);
+    btstack_run_loop_set_timer(&mesh_heartbeat_publication->timer, 2000);
     btstack_run_loop_add_timer(&mesh_heartbeat_publication->timer);
     mesh_heartbeat_publication->timer_active = 1;
 }
