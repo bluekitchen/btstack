@@ -9,6 +9,7 @@
 #include "btstack_util.h"
 #include "mesh/adv_bearer.h"
 #include "mesh/gatt_bearer.h"
+#include "mesh/mesh_access.h"
 #include "mesh/mesh_crypto.h"
 #include "mesh/mesh_foundation.h"
 #include "mesh/mesh_iv_index_seq_number.h"
@@ -99,6 +100,28 @@ static void gatt_bearer_emit_connected(void){
     (*gatt_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 #endif
+
+// copy from mesh_message.c for now
+uint16_t mesh_pdu_dst(mesh_pdu_t * pdu){
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            return mesh_transport_dst((mesh_transport_pdu_t*) pdu);
+        case MESH_PDU_TYPE_NETWORK:
+            return mesh_network_dst((mesh_network_pdu_t *) pdu);
+        default:
+            return MESH_ADDRESS_UNSASSIGNED;
+    }
+}
+uint16_t mesh_pdu_ctl(mesh_pdu_t * pdu){
+    switch (pdu->pdu_type){
+        case MESH_PDU_TYPE_TRANSPORT:
+            return mesh_transport_ctl((mesh_transport_pdu_t*) pdu);
+        case MESH_PDU_TYPE_NETWORK:
+            return mesh_network_control((mesh_network_pdu_t *) pdu);
+        default:
+            return 0;
+    }
+}
 
 void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
     int i;
