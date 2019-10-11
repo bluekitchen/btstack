@@ -751,21 +751,22 @@ static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t *
     mesh_access_parser_init(&parser, (mesh_pdu_t *) pdu);
 
     // get params
-    uint16_t netkey_index = mesh_access_parser_get_u16(&parser);
+    uint16_t netkey_index_to_remove = mesh_access_parser_get_u16(&parser);
 
-    // get existing network_key
-    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
+    // get message netkey
+    uint16_t netkey_index_pdu = mesh_pdu_netkey_index(pdu);
 
     // remove subnet
-    mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(netkey_index);
+    uint8_t status = MESH_FOUNDATION_STATUS_SUCCESS;
+    mesh_subnet_t * subnet = mesh_subnet_get_by_netkey_index(netkey_index_to_remove);
     if (subnet != NULL){
         // A NetKey shall not be deleted from the NetKey List using a message secured with this NetKey.
         // Also prevents deleting the last network key
-        if (netkey_index != mesh_pdu_netkey_index(pdu)){
+        if (netkey_index_to_remove != netkey_index_pdu){
 
             // remove all appkeys for this netkey
             mesh_transport_key_iterator_t it;
-            mesh_transport_key_iterator_init(&it, netkey_index);
+            mesh_transport_key_iterator_init(&it, netkey_index_to_remove);
             while (mesh_transport_key_iterator_has_more(&it)){
                 mesh_transport_key_t * transport_key = mesh_transport_key_iterator_get_next(&it);
                 mesh_configuration_server_delete_appkey(transport_key);
@@ -789,7 +790,8 @@ static void config_netkey_delete_handler(mesh_model_t * mesh_model, mesh_pdu_t *
             status = MESH_FOUNDATION_STATUS_CANNOT_REMOVE;
         }
     }
-    config_netkey_status(mesh_model, mesh_pdu_netkey_index(pdu), mesh_pdu_src(pdu), status, netkey_index);
+    config_netkey_status(mesh_model, netkey_index_pdu, mesh_pdu_src(pdu), status, netkey_index_to_remove);
+    mesh_access_message_processed(pdu);
 }
 
 static void config_netkey_get_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu){
