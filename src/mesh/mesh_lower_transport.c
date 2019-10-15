@@ -597,7 +597,7 @@ static void mesh_lower_transport_send_next_segment(void){
 
     if (lower_transport_outgoing_seg_o > seg_n){
 #ifdef LOG_LOWER_TRANSPORT
-        printf("[+] Lower Transport, send segmented pdu complete (dst %x)\n", mesh_transport_dst(lower_transport_outgoing_pdu));
+        printf("[+] Lower Transport, segmented pdu %p, seq %06x: send complete (dst %x)\n", lower_transport_outgoing_pdu, mesh_transport_seq(lower_transport_outgoing_pdu), mesh_transport_dst(lower_transport_outgoing_pdu));
 #endif
         lower_transport_outgoing_seg_o   = 0;
 
@@ -630,7 +630,7 @@ static void mesh_lower_transport_send_next_segment(void){
                                        lower_transport_outgoing_segment);
 
 #ifdef LOG_LOWER_TRANSPORT
-    printf("[+] Lower Transport, send segmented pdu: seg_o %x, seg_n %x\n", lower_transport_outgoing_seg_o, seg_n);
+    printf("[+] Lower Transport, segmented pdu %p, seq %06x: send seg_o %x, seg_n %x\n", lower_transport_outgoing_pdu, mesh_transport_seq(lower_transport_outgoing_pdu), lower_transport_outgoing_seg_o, seg_n);
     mesh_print_hex("LowerTransportPDU", &lower_transport_outgoing_segment->data[9], lower_transport_outgoing_segment->len-9);
 #endif
 
@@ -643,7 +643,7 @@ static void mesh_lower_transport_send_next_segment(void){
 }
 
 static void mesh_lower_transport_setup_sending_segmented_pdus(void){
-    printf("[+] Lower Transport, send segmented pdu (retry count %u)\n", lower_transport_retry_count);
+    printf("[+] Lower Transport, segmented pdu %p, seq %06x: send retry count %u\n", lower_transport_outgoing_pdu, mesh_transport_seq(lower_transport_outgoing_pdu), lower_transport_retry_count);
     lower_transport_retry_count--;
     lower_transport_outgoing_seg_o   = 0;
 }
@@ -651,7 +651,7 @@ static void mesh_lower_transport_setup_sending_segmented_pdus(void){
 static void mesh_lower_transport_segment_transmission_fired(void){
     // once more?
     if (lower_transport_retry_count == 0){
-        printf("[!] Lower transport, send segmented pdu failed, retries exhausted\n");
+        printf("[!] Lower transport, send segmented pdu %p, seq %06x failed, retries exhausted\n", lower_transport_outgoing_pdu, mesh_transport_seq(lower_transport_outgoing_pdu));
         mesh_lower_transport_outgoing_complete();
         return;
     }
@@ -714,7 +714,7 @@ void mesh_lower_transport_send_pdu(mesh_pdu_t *pdu){
 static void mesh_lower_transport_segment_transmission_timeout(btstack_timer_source_t * ts){
     UNUSED(ts);
 #ifdef LOG_LOWER_TRANSPORT
-    printf("[+] Lower transport, segment transmission timer fired for %p\n", lower_transport_outgoing_pdu);
+    printf("[+] Lower transport, segmented pdu %p, seq %06x: transmission timer fired\n", lower_transport_outgoing_pdu, mesh_transport_seq(lower_transport_outgoing_pdu));
 #endif
     lower_transport_outgoing_pdu->acknowledgement_timer_active = 0;
     
