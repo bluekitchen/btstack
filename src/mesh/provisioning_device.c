@@ -852,11 +852,8 @@ void provisioning_device_init(void){
     
     pb_transport_cid = MESH_PB_TRANSPORT_INVALID_CID;
     
-    // init provisioning state
+    // init provisioning state and generate ecc key
     provisioning_done();
-
-    // generate public key
-    btstack_crypto_ecc_p256_generate_key(&prov_ecc_p256_request, prov_ec_q, &prov_key_generated, NULL);
 }
 
 void provisioning_device_register_packet_handler(btstack_packet_handler_t packet_handler){
