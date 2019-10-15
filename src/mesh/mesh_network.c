@@ -693,7 +693,7 @@ static void mesh_network_run(void){
             mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing_gatt);
 
 #ifdef LOG_NETWORK
-        printf("network run: pop %p from network_pdus_outgoing_gatt\n", network_pdu);
+        printf("network run 1: pop %p from network_pdus_outgoing_gatt\n", network_pdu);
 #endif
             // request to send via gatt if:
             // proxy active and connected
@@ -704,7 +704,7 @@ static void mesh_network_run(void){
             if (send_via_gatt){
 
 #ifdef LOG_NETWORK
-                printf("network run: set %p as gatt_bearer_network_pdu\n", network_pdu);
+                printf("network run 2: set %p as gatt_bearer_network_pdu\n", network_pdu);
 #endif
                 gatt_bearer_network_pdu = network_pdu;
                 gatt_bearer_request_can_send_now_for_network_pdu();
@@ -712,12 +712,12 @@ static void mesh_network_run(void){
             } else {
 
 #ifdef LOG_NETWORK
-                printf("network run: push %p to network_pdus_outgoing_adv\n", network_pdu);
+                printf("network run 3: push %p to network_pdus_outgoing_adv\n", network_pdu);
 #endif
                 btstack_linked_list_add_tail(&network_pdus_outgoing_adv, (btstack_linked_item_t *) network_pdu);
 
 #ifdef LOG_NETWORK
-                mesh_network_dump_network_pdus("network_pdus_outgoing_adv", &network_pdus_outgoing_adv);
+                mesh_network_dump_network_pdus("network_pdus_outgoing_adv (1)", &network_pdus_outgoing_adv);
 #endif
             }
         }
@@ -733,12 +733,12 @@ static void mesh_network_run(void){
         if (adv_bearer_network_pdu == NULL){
             // move to 'adv bearer queue'
 #ifdef LOG_NETWORK
-            mesh_network_dump_network_pdus("network_pdus_outgoing_adv", &network_pdus_outgoing_adv);
+            mesh_network_dump_network_pdus("network_pdus_outgoing_adv (2)", &network_pdus_outgoing_adv);
 #endif
             mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing_adv);
 #ifdef LOG_NETWORK
-            printf("network run: pop %p from network_pdus_outgoing_adv\n", network_pdu);
-            mesh_network_dump_network_pdus("network_pdus_outgoing_adv", &network_pdus_outgoing_adv);
+            printf("network run 4: pop %p from network_pdus_outgoing_adv\n", network_pdu);
+            mesh_network_dump_network_pdus("network_pdus_outgoing_adv (3)", &network_pdus_outgoing_adv);
 #endif
             adv_bearer_network_pdu = network_pdu;
             adv_bearer_request_can_send_now_for_network_pdu();
@@ -766,12 +766,12 @@ static void mesh_network_run(void){
     if (!btstack_linked_list_empty(&network_pdus_queued)){
         // get queued network pdu and start processing
 #ifdef LOG_NETWORK
-        mesh_network_dump_network_pdus("network_pdus_queued", &network_pdus_queued);
+        mesh_network_dump_network_pdus("network_pdus_queued (1)", &network_pdus_queued);
 #endif
         outgoing_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_queued);
 #ifdef LOG_NETWORK
-        printf("network run: pop %p from network_pdus_queued\n", outgoing_pdu);
-        mesh_network_dump_network_pdus("network_pdus_queued", &network_pdus_queued);
+        printf("network run 5: pop %p from network_pdus_queued\n", outgoing_pdu);
+        mesh_network_dump_network_pdus("network_pdus_queued (2)", &network_pdus_queued);
 #endif
         mesh_network_send_a();
         return;
@@ -815,7 +815,7 @@ static void mesh_adv_bearer_handle_network_event(uint8_t packet_type, uint16_t c
                             transmission_interval = (transmit_config >> 3) * 10;
 
 #ifdef LOG_NETWORK
-                            printf("TX-E-NetworkPDU count %u, interval %u ms (%p): ", transmission_count, transmission_interval, adv_bearer_network_pdu);
+                            printf("TX-E-NetworkPDU (%p) count %u, interval %u ms: ", adv_bearer_network_pdu, transmission_count, transmission_interval);
                             printf_hexdump(adv_bearer_network_pdu->data, adv_bearer_network_pdu->len);
 #endif
 
