@@ -893,6 +893,15 @@ static void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t 
         big_endian_store_16(transport_pdu->network_header, 7, virtual_address->hash);
     }
 
+    // get app or device key
+    uint16_t appkey_index = transport_pdu->appkey_index;
+    const mesh_transport_key_t * appkey = mesh_upper_transport_get_outgoing_appkey(transport_pdu->netkey_index, appkey_index);
+    if (appkey == NULL){
+        printf("AppKey %04x not found, drop message\n", appkey_index);
+        btstack_memory_mesh_transport_pdu_free(transport_pdu);
+        return;
+    }
+
     // reserve slot
     mesh_lower_transport_reserve_slot();
     
@@ -906,15 +915,13 @@ static void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t 
     mesh_print_hex("Access Payload", transport_pdu->data, transport_pdu->len);
     
     // setup nonce - uses dst, so after pseudo address translation
-    uint16_t appkey_index = transport_pdu->appkey_index;
     if (appkey_index == MESH_DEVICE_KEY_INDEX){
         transport_segmented_setup_device_nonce(application_nonce, transport_pdu);
     } else {
         transport_segmented_setup_application_nonce(application_nonce, transport_pdu);
     }
 
-    // get app or device key
-    const mesh_transport_key_t * appkey = mesh_upper_transport_get_outgoing_appkey(transport_pdu->netkey_index, appkey_index);
+    // Dump key
     mesh_print_hex("AppOrDevKey", appkey->key, 16);
 
     // encrypt ccm
