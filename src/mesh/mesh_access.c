@@ -991,7 +991,13 @@ static void mesh_model_publication_publish_now_model(mesh_model_t * mesh_model){
     mesh_pdu_t * pdu = (*publication_model->publish_state_fn)(mesh_model);
     if (pdu == NULL) return;
 
-    mesh_upper_transport_setup_access_pdu_header(pdu, app_key->netkey_index, appkey_index, publication_model->ttl, mesh_access_get_element_address(mesh_model), dest, 0);
+    // handle ttl = default
+    uint8_t ttl = publication_model->ttl;
+    if (ttl == 0xff){
+        ttl = mesh_foundation_default_ttl_get();
+    }
+    
+    mesh_upper_transport_setup_access_pdu_header(pdu, app_key->netkey_index, appkey_index, ttl, mesh_access_get_element_address(mesh_model), dest, 0);
     mesh_upper_transport_send_access_pdu(pdu);
 }
 
