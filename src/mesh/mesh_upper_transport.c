@@ -616,9 +616,6 @@ static void mesh_upper_transport_send_segmented_access_pdu_ccm(void * arg){
 static uint8_t mesh_upper_transport_setup_unsegmented_control_pdu(mesh_network_pdu_t * network_pdu, uint16_t netkey_index, uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode,
                           const uint8_t * control_pdu_data, uint16_t control_pdu_len){
 
-    printf("[+] Upper transport, setup unsegmented Control PDU %p (opcode %02x): ", network_pdu, opcode);
-    printf_hexdump(control_pdu_data, control_pdu_len);
-
     if (control_pdu_len > 11) return 1;
 
     const mesh_network_key_t * network_key = mesh_network_key_list_get(netkey_index);
@@ -637,9 +634,6 @@ static uint8_t mesh_upper_transport_setup_unsegmented_control_pdu(mesh_network_p
 
 static uint8_t mesh_upper_transport_setup_segmented_control_pdu(mesh_transport_pdu_t * transport_pdu, uint16_t netkey_index, uint8_t ttl, uint16_t src, uint16_t dest, uint8_t opcode,
                           const uint8_t * control_pdu_data, uint16_t control_pdu_len){
-
-    printf("[+] Upper transport, setup segmented Control PDU (opcode %02x): \n", opcode);
-    printf_hexdump(control_pdu_data, control_pdu_len);
 
     if (control_pdu_len > 256) return 1;
 
@@ -700,9 +694,6 @@ static uint8_t mesh_upper_transport_setup_unsegmented_access_pdu(mesh_network_pd
     int status = mesh_upper_transport_setup_unsegmented_access_pdu_header(network_pdu, netkey_index, appkey_index, ttl, src, dest);
     if (status) return status;
 
-    printf("[+] Upper transport, setup unsegmented Access PDU - seq %06x\n", mesh_network_seq(network_pdu));
-    mesh_print_hex("Access Payload", access_pdu_data, access_pdu_len);
-
     // store in transport pdu
     memcpy(&network_pdu->data[10], access_pdu_data, access_pdu_len);
     network_pdu->len = 10 + access_pdu_len;
@@ -752,9 +743,6 @@ static uint8_t mesh_upper_transport_setup_segmented_access_pdu(mesh_transport_pd
     // store in transport pdu
     memcpy(transport_pdu->data, access_pdu_data, access_pdu_len);
     transport_pdu->len = access_pdu_len;
-
-    printf("[+] Upper transport, setup segmented Access PDU - seq %06x, szmic %u, iv_index %08x\n", mesh_transport_seq(transport_pdu), szmic, mesh_get_iv_index_for_tx());
-    mesh_print_hex("Access Payload", transport_pdu->data, transport_pdu->len);
     return 0;
 }
 uint8_t mesh_upper_transport_setup_access_pdu_header(mesh_pdu_t * pdu, uint16_t netkey_index, uint16_t appkey_index,
@@ -849,6 +837,10 @@ static void mesh_upper_transport_send_unsegmented_access_pdu(mesh_network_pdu_t 
     uint32_t seq = mesh_sequence_number_next();
     mesh_network_pdu_set_seq(network_pdu, seq);
 
+    // Dump PDU
+    printf("[+] Upper transport, send unsegmented Access PDU - seq %06x\n", mesh_network_seq(network_pdu));
+    mesh_print_hex("Access Payload", &network_pdu->data[10], network_pdu->len - 10);
+        
     // setup nonce
     uint16_t appkey_index = network_pdu->appkey_index;
     if (appkey_index == MESH_DEVICE_KEY_INDEX){
@@ -909,6 +901,10 @@ static void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t 
     transport_pdu->flags |= MESH_TRANSPORT_FLAG_SEQ_RESERVED;
     mesh_transport_set_seq(transport_pdu, seq);
 
+    // Dump PDU
+    printf("[+] Upper transport, send segmented Access PDU - seq %06x\n", mesh_transport_seq(transport_pdu));
+    mesh_print_hex("Access Payload", transport_pdu->data, transport_pdu->len);
+    
     // setup nonce - uses dst, so after pseudo address translation
     uint16_t appkey_index = transport_pdu->appkey_index;
     if (appkey_index == MESH_DEVICE_KEY_INDEX){
@@ -940,6 +936,10 @@ static void mesh_upper_transport_send_unsegmented_control_pdu(mesh_network_pdu_t
     // reserve sequence number
     uint32_t seq = mesh_sequence_number_next();
     mesh_network_pdu_set_seq(network_pdu, seq);
+    // Dump PDU
+    uint8_t opcode = network_pdu->data[9];
+    printf("[+] Upper transport, send unsegmented Control PDU %p - seq %06x opcode %02x\n", network_pdu, seq, opcode);
+    mesh_print_hex("Access Payload", &network_pdu->data[10], network_pdu->len - 10);
     // send
     mesh_lower_transport_send_pdu((mesh_pdu_t *) network_pdu);
 }
@@ -951,6 +951,10 @@ static void mesh_upper_transport_send_segmented_control_pdu(mesh_transport_pdu_t
     uint32_t seq = mesh_sequence_number_next();
     transport_pdu->flags |= MESH_TRANSPORT_FLAG_SEQ_RESERVED;
     mesh_transport_set_seq(transport_pdu, seq);
+    // Dump PDU
+    uint8_t opcode = transport_pdu->data[0];
+    printf("[+] Upper transport, send segmented Control PDU %p - seq %06x opcode %02x\n", transport_pdu, seq, opcode);
+    mesh_print_hex("Access Payload", &transport_pdu->data[1], transport_pdu->len - 1);
     // send
     mesh_lower_transport_send_pdu((mesh_pdu_t *) transport_pdu);
 }
