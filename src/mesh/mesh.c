@@ -162,6 +162,30 @@ static uint32_t sequence_number_storage_trigger;
 static uint8_t                attention_timer_timeout_s;
 static btstack_timer_source_t attention_timer_timer;
 
+// used to log all keys to packet log for log viewer
+// mesh-appkey-0xxx: 1234567890abcdef1234567890abcdef
+static void mesh_log_key(const char * prefix, uint16_t id, const uint8_t * key){
+    char line[60];
+    strcpy(line, prefix);
+    uint16_t pos = strlen(line);
+    if (id != 0xffff){
+        line[pos++] = '-';
+        line[pos++] = '0';
+        line[pos++] = char_for_nibble((id >> 8) & 0x0f);
+        line[pos++] = char_for_nibble((id >> 4) & 0x0f);
+        line[pos++] = char_for_nibble( id       & 0x0f);
+    }
+    line[pos++] = ':';
+    line[pos++] = ' ';
+    uint16_t i;
+    for (i=0;i<16;i++){
+        line[pos++] = char_for_nibble((key[i] >> 4) & 0x0f);
+        line[pos++] = char_for_nibble( key[i]       & 0x0f);
+    }
+    line[pos++] = 0;
+    hci_dump_log(HCI_DUMP_LOG_LEVEL_INFO, "%s", line);
+}
+
 static void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
 
     // set iv_index and iv index update active
@@ -586,7 +610,6 @@ void mesh_delete_network_key(uint16_t internal_index){
     btstack_tlv_singleton_impl->delete_tag(btstack_tlv_singleton_context, tag);
 }
 
-
 void mesh_load_network_keys(void){
     printf("Load Network Keys\n");
     uint16_t internal_index;
@@ -621,6 +644,9 @@ void mesh_load_network_keys(void){
 
         printf("- internal index 0x%x, NetKey Index 0x%06x, NID %02x: ", network_key->internal_index, network_key->netkey_index, network_key->nid);
         printf_hexdump(network_key->net_key, 16);
+
+        // dump into packet log
+        mesh_log_key("mesh-netkey",  network_key->netkey_index, network_key->net_key);
     }
 }
 
@@ -679,6 +705,9 @@ void mesh_load_app_keys(void){
         mesh_transport_key_add(key);
         printf("- internal index 0x%x, AppKey Index 0x%06x, AID %02x: ", key->internal_index, key->appkey_index, key->aid);
         printf_hexdump(key->key, 16);
+
+        // dump into packet log
+        mesh_log_key("mesh-appkey",  key->appkey_index, key->key);
     }
 }
 
@@ -1047,6 +1076,9 @@ static int mesh_node_startup_from_tlv(void){
         provisioning_data.flags = persistent_provisioning_data.flags;
         provisioning_data.network_key = NULL;
 
+        // dump into packet log
+        mesh_log_key("mesh-devkey",  0xffff, persistent_provisioning_data.device_key);
+        
         printf("Flags %x, unicast_address %04x\n", persistent_provisioning_data.flags, provisioning_data.unicast_address);
         
         // load iv index and sequence number
@@ -1057,6 +1089,9 @@ static int mesh_node_startup_from_tlv(void){
             mesh_sequence_number_set(sequence_number);
             provisioning_data.iv_index = iv_index;
         }            
+
+        // dump into packet log
+        hci_dump_log(HCI_DUMP_LOG_LEVEL_INFO, "mesh-iv-index: %08x",  iv_index);
 
         // load network keys
         mesh_load_network_keys();
