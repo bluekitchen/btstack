@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "pb_adv.c"
+#define BTSTACK_FILE__ "pb_adv.c"
 
 #include "pb_adv.h"
 

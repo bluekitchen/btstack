@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_access.c"
+#define BTSTACK_FILE__ "mesh_access.c"
 
 #include <string.h>
 #include <stdio.h>

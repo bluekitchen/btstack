@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_health_server.c"
+#define BTSTACK_FILE__ "mesh_health_server.c"
 
 #include <string.h>
 #include <stdio.h>

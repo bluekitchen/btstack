@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_generic_on_off_server.c"
+#define BTSTACK_FILE__ "mesh_generic_on_off_server.c"
 
 #include "mesh/mesh_generic_on_off_server.h"
 

@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_virtual_addresses.c"
+#define BTSTACK_FILE__ "mesh_virtual_addresses.c"
 
 #include "mesh/mesh_virtual_addresses.h"
 

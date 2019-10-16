@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_node.c"
+#define BTSTACK_FILE__ "mesh_node.c"
 
 #include "bluetooth_company_id.h"
 #include "mesh/mesh_foundation.h"

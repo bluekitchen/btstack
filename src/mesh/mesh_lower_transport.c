@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_lower_transport.c"
+#define BTSTACK_FILE__ "mesh_lower_transport.c"
 
 #include <stdio.h>
 #include <stdlib.h>

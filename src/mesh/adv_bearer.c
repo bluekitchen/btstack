@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "adv_bearer.c"
+#define BTSTACK_FILE__ "adv_bearer.c"
 
 #define ENABLE_LOG_DEBUG
 

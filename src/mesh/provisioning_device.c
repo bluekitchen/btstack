@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "provisioning_device.c"
+#define BTSTACK_FILE__ "provisioning_device.c"
 
 #include <stdint.h>
 #include <stdio.h>

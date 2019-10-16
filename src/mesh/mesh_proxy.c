@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_proxy.c"
+#define BTSTACK_FILE__ "mesh_proxy.c"
 
 #include "mesh/mesh_proxy.h"
 

@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_crypto.c"
+#define BTSTACK_FILE__ "mesh_crypto.c"
 
 #include <string.h>
 

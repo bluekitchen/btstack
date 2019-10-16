@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "pb_gatt.c"
+#define BTSTACK_FILE__ "pb_gatt.c"
 
 #include "mesh/pb_gatt.h"
 

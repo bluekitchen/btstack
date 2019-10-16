@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "beacon.c"
+#define BTSTACK_FILE__ "beacon.c"
 
 #include "mesh/beacon.h"
 

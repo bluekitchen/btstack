@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "gatt_bearer.c"
+#define BTSTACK_FILE__ "gatt_bearer.c"
 
 #include <string.h>
 

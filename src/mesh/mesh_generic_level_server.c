@@ -35,7 +35,7 @@
  *
  */
 
-#define __BTSTACK_FILE__ "mesh_generic_level_server.c"
+#define BTSTACK_FILE__ "mesh_generic_level_server.c"
 
 #include <string.h>
 #include <stdio.h>
