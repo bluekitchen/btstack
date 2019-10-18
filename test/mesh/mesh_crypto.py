@@ -76,15 +76,36 @@ def k4(n):
     t = aes_cmac(salt, n)
     return aes_cmac(t, b'id6' + b'\x01')[15] & 0x3f
 
-def network_pecb(network_pdu, iv_index, privacy_key):
-    privacy_random = network_pdu[7:14]
+def network_pecb(privacy_random, iv_index, privacy_key):
     privacy_plaintext = bytes(5) + iv_index + privacy_random
     return aes128(privacy_key, privacy_plaintext)[0:6]
 
 def network_decrypt(network_pdu, iv_index, encryption_key, privacy_key):
-    pecb = network_pecb(network_pdu, iv_index, privacy_key)
+    privacy_random = network_pdu[7:14]
+    pecb = network_pecb(privacy_random, iv_index, privacy_key)
     deobfuscated = bytes([(a ^ b) for (a,b) in zip(pecb, network_pdu[1:7])])
+    if deobfuscated[0] & 0x80:
+        net_mic_len = 8
+    else:
+        net_mic_len = 4
     nonce = bytes(1) + deobfuscated + bytes(2) + iv_index
-    decrypted = aes_ccm_decrypt(encryption_key, nonce, network_pdu[7:-8], b'', 8, network_pdu[-8:])
+    ciphertext = network_pdu[7:-net_mic_len]
+    net_mic = network_pdu[-net_mic_len:]
+    decrypted = aes_ccm_decrypt(encryption_key, nonce, ciphertext, b'', net_mic_len, net_mic)
+    if decrypted == None:
+        return None
     return network_pdu[0:1] + deobfuscated + decrypted
 
+def network_encrypt(network_pdu, iv_index, encryption_key, privacy_key):
+    nonce = bytes(1) + network_pdu[1:7] + bytes(2) + iv_index
+    if network_pdu[1] & 0x80:
+        net_mic_len = 8
+    else:
+        net_mic_len = 4
+    plaintext = network_pdu[7:]
+    (ciphertext, net_mic) = aes_ccm_encrypt(encryption_key, nonce, plaintext, b'', net_mic_len)
+    ciphertext_and_mic = ciphertext + net_mic
+    privacy_random = ciphertext_and_mic[0:7]
+    pecb = network_pecb(privacy_random, iv_index, privacy_key)
+    obfuscated = bytes([(a ^ b) for (a,b) in zip(pecb, network_pdu[1:7])])  
+    return network_pdu[0:1] + obfuscated + ciphertext_and_mic
