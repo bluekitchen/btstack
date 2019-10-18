@@ -8,8 +8,13 @@
 from Cryptodome.Cipher import AES
 from Cryptodome.Hash   import CMAC
 
-def aes_cmac(k, n):
-    cobj = CMAC.new(k, ciphermod=AES)
+def aes128(key, n):
+    cipher = AES.new(key, AES.MODE_ECB)
+    ciphertext = cipher.encrypt(n)
+    return ciphertext
+
+def aes_cmac(key, n):
+    cobj = CMAC.new(key, ciphermod=AES)
     cobj.update(n)
     return cobj.digest()
 
@@ -70,4 +75,16 @@ def k4(n):
     # T = AES-CMACSALT (N)
     t = aes_cmac(salt, n)
     return aes_cmac(t, b'id6' + b'\x01')[15] & 0x3f
+
+def network_pecb(network_pdu, iv_index, privacy_key):
+    privacy_random = network_pdu[7:14]
+    privacy_plaintext = bytes(5) + iv_index + privacy_random
+    return aes128(privacy_key, privacy_plaintext)[0:6]
+
+def network_decrypt(network_pdu, iv_index, encryption_key, privacy_key):
+    pecb = network_pecb(network_pdu, iv_index, privacy_key)
+    deobfuscated = bytes([(a ^ b) for (a,b) in zip(pecb, network_pdu[1:7])])
+    nonce = bytes(1) + deobfuscated + bytes(2) + iv_index
+    decrypted = aes_ccm_decrypt(encryption_key, nonce, network_pdu[7:-8], b'', 8, network_pdu[-8:])
+    return network_pdu[0:1] + deobfuscated + decrypted
 

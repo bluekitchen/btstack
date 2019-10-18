@@ -78,3 +78,33 @@ if message_1_plaintext_decrypted == None:
     print("aes_ccm_decrypt: digest validation failed")
 elif message_1_network_plaintext != message_1_plaintext_decrypted:
     print("aes_ccm: plaintext expected " + hex(message_1_network_plaintext) + ", but got " + hex(message_1_plaintext_decrypted))
+
+# aes128 encrypt
+aes_key = bytes(16)
+aes_n   = bytes(16)
+aes_actual = aes128(aes_key, aes_n)
+
+aes_expected = bytes.fromhex('66E94BD4EF8A2C3B884CFA59CA342B2E')
+if aes_expected != aes_actual:
+    print("aes128: expected " + aes_expected.hex() + ", but got " + aes_actual.hex())
+
+# network PECB
+iv_index = bytes.fromhex('12345678')
+privacy_key = bytes.fromhex('8b84eedec100067d670971dd2aa700cf')
+message_1_network_pdu = bytes.fromhex('68eca487516765b5e5bfdacbaf6cb7fb6bff871f035444ce83a670df')
+message_1_pecb = network_pecb(message_1_network_pdu, iv_index, privacy_key)
+
+message_1_pecb_expected = bytes.fromhex('6ca487507564')
+if message_1_pecb_expected != message_1_pecb:
+    print("network_pecb: expected " + message_1_pecb_expected.hex() + ", but got " + message_1_pecb.hex())
+
+# message 1
+iv_index                 = bytes.fromhex('12345678')
+privacy_key              = bytes.fromhex('8b84eedec100067d670971dd2aa700cf')
+message_1_network_pdu    = bytes.fromhex('68eca487516765b5e5bfdacbaf6cb7fb6bff871f035444ce83a670df')
+message_1_encryption_key = bytes.fromhex('0953fa93e7caac9638f58820220a398e')
+message_1_decrypted = network_decrypt(message_1_network_pdu, iv_index, message_1_encryption_key, privacy_key)
+
+message_1_decrypted_expected = bytes.fromhex('68800000011201fffd034b50057e400000010000')
+if message_1_decrypted_expected != message_1_decrypted:
+    print("network_pdu: expected " + message_1_decrypted_expected.hex() + ", but got " + message_1_decrypted.hex())
