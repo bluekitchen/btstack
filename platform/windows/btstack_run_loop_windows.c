@@ -51,7 +51,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
 
 static void btstack_run_loop_windows_dump_timer(void);
 
