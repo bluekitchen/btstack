@@ -1406,8 +1406,8 @@ static int l2cap_ertm_mode(l2cap_channel_t * channel){
 
 static uint16_t l2cap_setup_options_request(l2cap_channel_t * channel, uint8_t * config_options){
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-    // use ERTM options if supported
-    if (l2cap_ertm_mode(channel)){
+    // use ERTM options if supported by remote and channel ready to use it
+    if (l2cap_ertm_mode(channel) && channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
         return l2cap_setup_options_ertm_request(channel, config_options);
     }
 #endif
