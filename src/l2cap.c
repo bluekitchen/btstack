@@ -1415,13 +1415,7 @@ static uint16_t l2cap_setup_options_request(l2cap_channel_t * channel, uint8_t *
     return l2cap_setup_options_mtu(config_options, mtu);
 }
 
-static uint16_t l2cap_setup_options_response(l2cap_channel_t * channel, uint8_t * config_options){
-#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-    // use ERTM options if supported
-    if (l2cap_ertm_mode(channel)){
-        return l2cap_setup_options_ertm_response(channel, config_options);
-    }
-#endif
+static uint16_t l2cap_setup_options_mtu_response(l2cap_channel_t * channel, uint8_t * config_options){
     uint16_t mtu = btstack_min(channel->local_mtu, channel->remote_mtu);
     return l2cap_setup_options_mtu(config_options, mtu);
 }
@@ -1622,14 +1616,19 @@ static void l2cap_run(void){
                         l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_UNKNOWN_OPTIONS, 0, NULL);
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
                     } else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED){
-                        channelStateVarClearFlag(channel,L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED);
+                        channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_REJECTED);
                         channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP);
-                        uint16_t options_size = l2cap_setup_options_response(channel, config_options);
+                        uint16_t options_size = l2cap_setup_options_ertm_response(channel, config_options);
                         l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_UNACCEPTABLE_PARAMETERS, options_size, &config_options);
+                    } else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_ERTM){
+                        channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_ERTM);
+                        channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
+                        uint16_t options_size = l2cap_setup_options_ertm_response(channel, config_options);
+                        l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_SUCCESS, options_size, &config_options);
 #endif
                     } else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU){
                         channelStateVarClearFlag(channel,L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
-                        uint16_t options_size = l2cap_setup_options_response(channel, config_options);
+                        uint16_t options_size = l2cap_setup_options_mtu_response(channel, config_options);
                         l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_SUCCESS, options_size, &config_options);
                     } else {
                         l2cap_send_signaling_packet(channel->con_handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_SUCCESS, 0, NULL);
@@ -2553,7 +2552,7 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
                     if (channel->ertm_mandatory && mode != L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION){
                         channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
                     } else {
-                        channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
+                        channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_ERTM);
                     }
                     break;
                 case L2CAP_CHANNEL_MODE_BASIC:
@@ -2568,7 +2567,7 @@ static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, u
                             break;
                         default: // case L2CAP_CHANNEL_MODE_BASIC:
                             // TODO store and evaluate configuration
-                            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
+                            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_ERTM);
                             break;
                     }
                     break;
