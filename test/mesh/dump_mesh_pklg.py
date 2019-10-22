@@ -29,6 +29,94 @@ devkey = b''
 ivi = b'\x00'
 segmented_messages = {}
 
+access_messages = {
+0x0000: 'Config Appkey Add',
+0x0001: 'Config Appkey Update',
+0x0002: 'Config Composition Data Status',
+0x0003: 'Config Model Publication Set',
+0x0004: 'Config Health Current Status',
+0x0005: 'Config Health Fault Status',
+0x0006: 'Config Heartbeat Publication Status',
+0x8000: 'Config Appkey Delete',
+0x8001: 'Config Appkey Get',
+0x8002: 'Config Appkey List',
+0x8003: 'Config Appkey Status',
+0x8004: 'Config Health Attention Get',
+0x8005: 'Config Health Attention Set',
+0x8006: 'Config Health Attention Set Unacknowledged',
+0x8007: 'Config Health Attention Status',
+0x8008: 'Config Composition Data Get',
+0x8009: 'Config Beacon Get',
+0x800a: 'Config Beacon Set',
+0x800b: 'Config Beacon Status',
+0x800c: 'Config Default Ttl Get',
+0x800d: 'Config Default Ttl Set',
+0x800e: 'Config Default Ttl Status',
+0x800f: 'Config Friend Get',
+0x8010: 'Config Friend Set',
+0x8011: 'Config Friend Status',
+0x8012: 'Config Gatt Proxy Get',
+0x8013: 'Config Gatt Proxy Set',
+0x8014: 'Config Gatt Proxy Status',
+0x8015: 'Config Key Refresh Phase Get',
+0x8016: 'Config Key Refresh Phase Set',
+0x8017: 'Config Key Refresh Phase Status',
+0x8018: 'Config Model Publication Get',
+0x8019: 'Config Model Publication Status',
+0x801a: 'Config Model Publication Virtual Address Set',
+0x801b: 'Config Model Subscription Add',
+0x801c: 'Config Model Subscription Delete',
+0x801d: 'Config Model Subscription Delete All',
+0x801e: 'Config Model Subscription Overwrite',
+0x801f: 'Config Model Subscription Status',
+0x8020: 'Config Model Subscription Virtual Address Add',
+0x8021: 'Config Model Subscription Virtual Address Delete',
+0x8022: 'Config Model Subscription Virtual Address Overwrite',
+0x8023: 'Config Network Transmit Get',
+0x8024: 'Config Network Transmit Set',
+0x8025: 'Config Network Transmit Status',
+0x8026: 'Config Relay Get',
+0x8027: 'Config Relay Set',
+0x8028: 'Config Relay Status',
+0x8029: 'Config Sig Model Subscription Get',
+0x802a: 'Config Sig Model Subscription List',
+0x802b: 'Config Vendor Model Subscription Get',
+0x802c: 'Config Vendor Model Subscription List',
+0x802d: 'Config Low Power Node Poll Timeout Get',
+0x802e: 'Config Low Power Node Poll Timeout Status',
+0x802f: 'Config Health Fault Clear',
+0x8030: 'Config Health Fault Clear Unacknowledged',
+0x8031: 'Config Health Fault Get',
+0x8032: 'Config Health Fault Test',
+0x8033: 'Config Health Fault Test Unacknowledged',
+0x8034: 'Config Health Period Get',
+0x8035: 'Config Health Period Set',
+0x8036: 'Config Health Period Set Unacknowledged',
+0x8037: 'Config Health Period Status',
+0x8038: 'Config Heartbeat Publication Get',
+0x8039: 'Config Heartbeat Publication Set',
+0x803a: 'Config Heartbeat Subscription Get',
+0x803b: 'Config Heartbeat Subscription Set',
+0x803c: 'Config Heartbeat Subscription Status',
+0x803d: 'Config Model App Bind',
+0x803e: 'Config Model App Status',
+0x803f: 'Config Model App Unbind',
+0x8040: 'Config Netkey Add',
+0x8041: 'Config Netkey Delete',
+0x8042: 'Config Netkey Get',
+0x8043: 'Config Netkey List',
+0x8044: 'Config Netkey Status',
+0x8045: 'Config Netkey Update',
+0x8046: 'Config Node Identity Get',
+0x8047: 'Config Node Identity Set',
+0x8048: 'Config Node Identity Status',
+0x8049: 'Config Node Reset',
+0x804a: 'Config Node Reset Status',
+0x804b: 'Config Sig Model App Get',
+0x804c: 'Config Sig Model App List',
+0x804d: 'Config Vendor Model App Get',
+0x804e: 'Config Vendor Model App List',    
+}
 
 # helpers
 def read_net_32_from_file(f):
@@ -53,22 +141,20 @@ def read_net_24(data):
 max_indent = 0
 def log_pdu(pdu, indent = 0, hide_properties = []):
     spaces = '    ' * indent
-    print(spaces + pdu.type)
-    if len(pdu.status) > 0:
-        print (spaces + '|           status: ' + pdu.status)
+    print(spaces + "%-20s %s" % (pdu.type, pdu.summary))
+    if indent >= max_indent:
+        return
     for property in pdu.properties:
         if property.key in hide_properties:
             continue
         if isinstance( property.value, int):
-            print (spaces + "|%15s: 0x%x (%u)" % (property.key, property.value, property.value))
+            print (spaces + "|%20s: 0x%x (%u)" % (property.key, property.value, property.value))
         elif isinstance( property.value, bytes):
-            print (spaces + "|%15s: %s" % (property.key, as_hex(property.value)))
+            print (spaces + "|%20s: %s" % (property.key, as_hex(property.value)))
         else:
-            print (spaces + "|%15s: %s" % (property.key, str(property.value)))
+            print (spaces + "|%20s: %s" % (property.key, str(property.value)))
         hide_properties.append(property.key)
     print (spaces + '|           data: ' + as_hex(pdu.data))
-    if indent >= max_indent:
-        return
     print (spaces + '----')
     for origin in pdu.origins:
         log_pdu(origin, indent + 1, hide_properties)
@@ -100,7 +186,7 @@ class property(object):
 
 class layer_pdu(object):
     def __init__(self, pdu_type, pdu_data):
-        self.status = ''
+        self.summary = ''
         self.src = None
         self.dst = None
         self.type = pdu_type
@@ -252,6 +338,22 @@ class access_pdu(layer_pdu):
         self.add_property('aid', self.aid)
         self.add_property('seq_auth', self.seq_auth)
 
+        upper_bits = data[0] >> 6
+        if upper_bits == 0 or upper_bits == 1:
+            self.opcode = data[0]
+            self.opcode_len = 1
+        elif upper_bits == 2:
+            self.opcode = read_net_16(data[0:2])
+            self.opcode_len = 2
+        elif upper_bits == 3:
+            self.opcode = read_net_24(data[0:3])
+            self.opcode_len = 3
+        self.add_property('opcode', self.opcode)
+        self.params = data[self.opcode_len:]
+        self.add_property('params', self.params)
+        if self.opcode in access_messages:
+            self.summary = access_messages[self.opcode]
+
 def segmented_message_for_pdu(pdu):
     if pdu.src in segmented_messages:
         seg_message = segmented_messages[pdu.src]
@@ -342,7 +444,7 @@ def mesh_process_network_pdu_tx(network_pdu_encrypted):
         if network_pdu_decrypted_data != None:
             break
     if network_pdu_decrypted_data == None:
-        network_pdu_encrypted.status = 'No encryption key found'
+        network_pdu_encrypted.summary = 'No encryption key found'
         log_pdu(network_pdu_encrypted, 0, [])
         return
 
@@ -371,7 +473,7 @@ def mesh_process_network_pdu_tx(network_pdu_encrypted):
         else:
             access_payload = mesh_upper_transport_decrypt(message, message.data)
             if access_payload == None:
-                message.status = 'No encryption key found'
+                message.summary = 'No encryption key found'
                 log_pdu(message, 0, [])
             else:
                 access = access_pdu(message, access_payload)
@@ -387,7 +489,7 @@ def mesh_process_network_pdu_tx(network_pdu_encrypted):
         else:
             access_payload = mesh_upper_transport_decrypt(lower_transport, lower_transport.upper_transport)
             if access_payload == None:
-                lower_transport.status = 'No encryption key found'
+                lower_transport.summary = 'No encryption key found'
                 log_pdu(lower_transport, 0, [])
             else:
                 access = access_pdu(lower_transport, access_payload)
