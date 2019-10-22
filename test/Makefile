@@ -17,6 +17,7 @@ SUBDIRS =  \
 	hfp \
 	hid_parser \
 	linked_list \
+	map_test \
 	mesh \
 	obex \
 	ring_buffer \
@@ -29,7 +30,6 @@ SUBDIRS =  \
 #	maths \
 
 # test fails
-# map_test \
 
 # not unit-tests
 # avrcp \
