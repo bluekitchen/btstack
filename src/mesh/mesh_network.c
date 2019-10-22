@@ -395,9 +395,9 @@ static void mesh_network_send_a(void){
 #if defined(ENABLE_MESH_RELAY) || defined (ENABLE_MESH_PROXY_SERVER)
 static void mesh_network_relay_message(mesh_network_pdu_t * network_pdu){
 
-    uint8_t ctl_ttl     = network_pdu->data[1];
-    uint8_t ctl         = ctl_ttl & 0x80;
-    uint8_t ttl         = ctl_ttl & 0x7f;
+    uint8_t ctl_ttl      = network_pdu->data[1];
+    uint8_t ctl_in_bit_7 = ctl_ttl & 0x80;
+    uint8_t ttl          = ctl_ttl & 0x7f;
 
 #ifdef LOG_NETWORK
     printf("TX-Relay-NetworkPDU (%p): ", network_pdu);
@@ -406,7 +406,7 @@ static void mesh_network_relay_message(mesh_network_pdu_t * network_pdu){
 #endif
 
     // prepare pdu for resending
-    network_pdu->data[1] = (ctl << 7) | (ttl - 1);
+    network_pdu->data[1] = ctl_in_bit_7 | (ttl - 1);
     network_pdu->flags |= MESH_NETWORK_PDU_FLAGS_RELAY;
 
     // queue up
