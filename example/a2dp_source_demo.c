@@ -73,7 +73,6 @@
 //#define AVRCP_BROWSING_ENABLED
 
 #define NUM_CHANNELS                2
-#define A2DP_SAMPLE_RATE            44100
 #define BYTES_PER_AUDIO_SAMPLE      (2*NUM_CHANNELS)
 #define AUDIO_TIMEOUT_MS            10 
 #define TABLE_SIZE_441HZ            100
@@ -110,7 +109,8 @@ static  uint8_t media_sbc_codec_capabilities[] = {
     2, 53
 }; 
 
-static const int16_t sine_int16[] = {
+// input signal: pre-computed int16 sine wave, 44100 Hz at 441 Hz
+static const int16_t sine_int16_44100[] = {
      0,    2057,    4107,    6140,    8149,   10126,   12062,   13952,   15786,   17557,
  19260,   20886,   22431,   23886,   25247,   26509,   27666,   28714,   29648,   30466,
  31163,   31738,   32187,   32509,   32702,   32767,   32702,   32509,   32187,   31738,
@@ -122,6 +122,24 @@ static const int16_t sine_int16[] = {
 -31163,  -30466,  -29648,  -28714,  -27666,  -26509,  -25247,  -23886,  -22431,  -20886,
 -19260,  -17557,  -15786,  -13952,  -12062,  -10126,   -8149,   -6140,   -4107,   -2057,
 };
+
+static const int num_samples_sine_int16_44100 = sizeof(sine_int16_44100) / 2;
+
+// input signal: pre-computed int16 sine wave, 48000 Hz at 441 Hz
+static const int16_t sine_int16_48000[] = {
+     0,    1905,    3804,    5690,    7557,    9398,   11207,   12978,   14706,   16383,
+ 18006,   19567,   21062,   22486,   23834,   25101,   26283,   27376,   28377,   29282,
+ 30087,   30791,   31390,   31884,   32269,   32545,   32712,   32767,   32712,   32545,
+ 32269,   31884,   31390,   30791,   30087,   29282,   28377,   27376,   26283,   25101,
+ 23834,   22486,   21062,   19567,   18006,   16383,   14706,   12978,   11207,    9398,
+  7557,    5690,    3804,    1905,       0,   -1905,   -3804,   -5690,   -7557,   -9398,
+-11207,  -12978,  -14706,  -16384,  -18006,  -19567,  -21062,  -22486,  -23834,  -25101,
+-26283,  -27376,  -28377,  -29282,  -30087,  -30791,  -31390,  -31884,  -32269,  -32545,
+-32712,  -32767,  -32712,  -32545,  -32269,  -31884,  -31390,  -30791,  -30087,  -29282,
+-28377,  -27376,  -26283,  -25101,  -23834,  -22486,  -21062,  -19567,  -18006,  -16384,
+-14706,  -12978,  -11207,   -9398,   -7557,   -5690,   -3804,   -1905,  };
+
+static const int num_samples_sine_int16_48000 = sizeof(sine_int16_48000) / 2;
 
 typedef struct {
     int reconfigure;
@@ -142,12 +160,12 @@ static btstack_packet_callback_registration_t hci_event_callback_registration;
 // pts:             static const char * device_addr_string = "00:1B:DC:08:E2:72";
 // mac 2013:        static const char * device_addr_string = "84:38:35:65:d1:15";
 // phone 2013:      static const char * device_addr_string = "D8:BB:2C:DF:F0:F2";
-// Minijambox:      static const char * device_addr_string = "00:21:3C:AC:F7:38";
+// Minijambox:      
+static const char * device_addr_string = "00:21:3C:AC:F7:38";
 // Philips SHB9100: static const char * device_addr_string = "00:22:37:05:FD:E8";
 // RT-B6:           static const char * device_addr_string = "00:75:58:FF:C9:7D";
 // BT dongle:       static const char * device_addr_string = "00:1A:7D:DA:71:0A";
-// Sony MDR-ZX330BT 
-static const char * device_addr_string = "00:18:09:28:50:18";
+// Sony MDR-ZX330BT static const char * device_addr_string = "00:18:09:28:50:18";
 // Panda (BM6)      static const char * device_addr_string = "4F:3F:66:52:8B:E0";
 
 static bd_addr_t device_addr;
@@ -164,6 +182,7 @@ static a2dp_media_sending_context_t media_tracker;
 static stream_data_source_t data_source;
 
 static int sine_phase;
+static int sample_rate = 44100;
 
 static int hxcmod_initialized;
 static modcontext mod_context;
@@ -239,6 +258,22 @@ static void avrcp_controller_packet_handler(uint8_t packet_type, uint16_t channe
 static void stdin_process(char cmd);
 #endif
 
+static void a2dp_demo_reconfigure_sample_rate(int new_sample_rate){
+    if (!hxcmod_initialized){
+        hxcmod_initialized = hxcmod_init(&mod_context);
+        if (!hxcmod_initialized) {
+            printf("could not initialize hxcmod\n");
+            return;
+        }
+    }
+    sample_rate = new_sample_rate;
+    media_tracker.sbc_storage_count = 0;
+    media_tracker.samples_ready = 0;
+    hxcmod_unload(&mod_context);
+    hxcmod_setcfg(&mod_context, sample_rate, 16, 1, 1, 1);
+    hxcmod_load(&mod_context, (void *) &mod_data, mod_len);
+}
+
 static int a2dp_source_and_avrcp_services_init(void){
 
     l2cap_init();
@@ -296,12 +331,7 @@ static int a2dp_source_and_avrcp_services_init(void){
     hci_event_callback_registration.callback = &a2dp_source_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
-    hxcmod_initialized = hxcmod_init(&mod_context);
-    if (hxcmod_initialized){
-        hxcmod_setcfg(&mod_context, A2DP_SAMPLE_RATE, 16, 1, 1, 1);
-        hxcmod_load(&mod_context, (void *) &mod_data, mod_len);
-        printf("loaded mod '%s', size %u\n", mod_name, mod_len);
-    }
+    a2dp_demo_reconfigure_sample_rate(sample_rate);
     
     // Parse human readable Bluetooth address.
     sscanf_bd_addr(device_addr_string, device_addr);
@@ -325,12 +355,28 @@ static void a2dp_demo_send_media_packet(void){
 static void produce_sine_audio(int16_t * pcm_buffer, int num_samples_to_write){
     int count;
     for (count = 0; count < num_samples_to_write ; count++){
-        pcm_buffer[count * 2]     = sine_int16[sine_phase];
-        pcm_buffer[count * 2 + 1] = sine_int16[sine_phase];
-        sine_phase++;
-        if (sine_phase >= TABLE_SIZE_441HZ){
-            sine_phase -= TABLE_SIZE_441HZ;
+        switch (sample_rate){
+            case 44100:
+                pcm_buffer[count * 2]     = sine_int16_44100[sine_phase];
+                pcm_buffer[count * 2 + 1] = sine_int16_44100[sine_phase];
+                sine_phase++;
+                if (sine_phase >= num_samples_sine_int16_44100){
+                    sine_phase -= num_samples_sine_int16_44100;
+                }
+                break;
+            case 48000:
+                pcm_buffer[count * 2]     = sine_int16_48000[sine_phase];
+                pcm_buffer[count * 2 + 1] = sine_int16_48000[sine_phase];
+                sine_phase++;
+                if (sine_phase >= num_samples_sine_int16_48000){
+                    sine_phase -= num_samples_sine_int16_48000;
+                }
+                break;
+            default:
+                break;
         }
+        
+        
     }
 }
 
@@ -395,8 +441,8 @@ static void a2dp_demo_audio_timeout_handler(btstack_timer_source_t * timer){
         update_period_ms = now - context->time_audio_data_sent;
     } 
 
-    uint32_t num_samples = (update_period_ms * A2DP_SAMPLE_RATE) / 1000;
-    context->acc_num_missed_samples += (update_period_ms * A2DP_SAMPLE_RATE) % 1000;
+    uint32_t num_samples = (update_period_ms * sample_rate) / 1000;
+    context->acc_num_missed_samples += (update_period_ms * sample_rate) % 1000;
     
     while (context->acc_num_missed_samples >= 1000){
         num_samples++;
@@ -842,6 +888,9 @@ static void stdin_process(char cmd){
             data_source = STREAM_MOD;
             if (!media_tracker.stream_opened) break;
             status = a2dp_source_start_stream(media_tracker.a2dp_cid, media_tracker.local_seid);
+            if (status == ERROR_CODE_SUCCESS){
+                a2dp_demo_reconfigure_sample_rate(sample_rate);
+            }
             break;
         
         case 'p':
@@ -856,8 +905,11 @@ static void stdin_process(char cmd){
                 printf("Stream cannot be reconfigured while playing, please pause stream first\n");
                 break;
             }
-            printf("%c - Reconfigure for 44100 Hz.\n", cmd);
+            printf("%c - Reconfigure for %d Hz.\n", cmd, sample_rate);
             status = a2dp_source_reconfigure_stream_sampling_frequency(media_tracker.a2dp_cid, 44100);
+            if (status == ERROR_CODE_SUCCESS){
+                a2dp_demo_reconfigure_sample_rate(44100);
+            }
             break;
 
         case 'e':
@@ -866,8 +918,11 @@ static void stdin_process(char cmd){
                 printf("Stream cannot be reconfigured while playing, please pause stream first\n");
                 break;
             }
-            printf("%c - Reconfigure for 48000 Hz.\n", cmd);
+            printf("%c - Reconfigure for %d Hz.\n", cmd, sample_rate);
             status = a2dp_source_reconfigure_stream_sampling_frequency(media_tracker.a2dp_cid, 48000);
+            if (status == ERROR_CODE_SUCCESS){
+                a2dp_demo_reconfigure_sample_rate(48000);
+            }
             break;
 
         default:
