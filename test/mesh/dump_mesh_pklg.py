@@ -550,7 +550,7 @@ with open (infile, 'rb') as fin:
             if packet[1] != 0x20:
                 continue
             adv_data = packet[4:]
-            adv_pdu = layer_pdu("ADV", adv_data)
+            adv_pdu = layer_pdu("ADV(TX)", adv_data)
             mesh_process_adv(adv_pdu)
 
         elif type == 1:
@@ -559,10 +559,10 @@ with open (infile, 'rb') as fin:
             if event != 0x3e:
                 continue
             event_len = packet[1]
-            if event_len != 0x2b:
+            if event_len < 14:
                 continue
             adv_data = packet[13:-1]
-            adv_pdu = layer_pdu("ADV", adv_data)
+            adv_pdu = layer_pdu("ADV(RX)", adv_data)
             mesh_process_adv(adv_pdu)
 
         elif type == 0xfc:
