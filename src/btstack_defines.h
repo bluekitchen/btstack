@@ -52,6 +52,29 @@
 #define UNUSED(x) (void)(sizeof(x))
 #endif
 
+//
+// Check for C99
+// see: https://sourceforge.net/p/predef/wiki/Standards/
+//
+#if defined(__STDC__)
+#   if defined(__STDC_VERSION__)
+#     if (__STDC_VERSION__ >= 199901L)
+#       define PREDEF_STANDARD_C_1999
+#     endif
+#  endif
+#endif
+
+// define boolean type - required for MISRA-C 2012 Essential Type System
+#ifdef PREDEF_STANDARD_C_1999
+// use <stdbool.h> if C99 or higher
+#include <stdbool.h>
+#else
+// backport for pre-c99 compilers
+#define bool unsigned char
+#define false 0
+#define true 1
+#endif
+
 // TYPES
 
 // packet handler
