@@ -739,9 +739,30 @@ static void mesh_network_run(void){
 #ifdef LOG_NETWORK
             printf("network run 4: pop %p from network_pdus_outgoing_adv\n", network_pdu);
             mesh_network_dump_network_pdus("network_pdus_outgoing_adv (3)", &network_pdus_outgoing_adv);
+            printf("network run 5: %p -> flags 0x%02x, gatt_proxy %u, relay %u\n", network_pdu, network_pdu->flags, mesh_foundation_gatt_proxy_get(), mesh_foundation_relay_get());
 #endif
-            adv_bearer_network_pdu = network_pdu;
-            adv_bearer_request_can_send_now_for_network_pdu();
+
+            // send via adv if:
+            // packet was received via gatt bearer and proxy active, or,
+            // packet originated locally (== not relayed), or,
+            // packet was received via ADV bearer and relay is active, or,
+            int send_via_adv = (((network_pdu->flags & MESH_NETWORK_PDU_FLAGS_GATT_BEARER) != 0) && (mesh_foundation_gatt_proxy_get() == 1)) ||
+                               (((network_pdu->flags & MESH_NETWORK_PDU_FLAGS_GATT_BEARER) == 0) && (mesh_foundation_relay_get() == 1)) ||
+                                ((network_pdu->flags & MESH_NETWORK_PDU_FLAGS_RELAY) == 0);
+
+            if (send_via_adv){
+#ifdef LOG_NETWORK
+                printf("network run 6: set %p as to adv_bearer_network_pdu\n", network_pdu);
+#endif
+                adv_bearer_network_pdu = network_pdu;
+                adv_bearer_request_can_send_now_for_network_pdu();
+            } else {
+#ifdef LOG_NETWORK
+                printf("network run 7: skip sending %p via adv bearer\n", network_pdu);
+                #endif
+                // directly notify upper layer
+                mesh_network_send_complete(network_pdu);
+            }
         }
 #else
         // done
