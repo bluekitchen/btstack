@@ -52,6 +52,9 @@
 #define UNUSED(x) (void)(sizeof(x))
 #endif
 
+
+#if !defined(__cplusplus)
+
 //
 // Check for C99
 // see: https://sourceforge.net/p/predef/wiki/Standards/
@@ -73,6 +76,8 @@
 #define bool unsigned char
 #define false 0
 #define true 1
+#endif
+
 #endif
 
 // TYPES
