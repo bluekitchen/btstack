@@ -466,8 +466,10 @@ static void show_usage(void){
     printf("i      - Input  Output OOB \n");
     printf("s      - Static Output OOB \n");
     printf("b      - Set Secure Network Beacon %s\n", mesh_foundation_beacon_get() ? "Off" : "On");
+#ifdef ENABLE_MESH_PROXY_SERVER
     printf("n      - Start Advertising with Node Identity\n");
     printf("N      - Stop Advertising with Node Identity\n");
+#endif
     printf("g      - Generic ON/OFF Server Toggle Value\n");
     printf("\n");
 }
@@ -546,6 +548,7 @@ static void stdin_process(char cmd){
             mesh_foundation_beacon_set(1 - mesh_foundation_beacon_get());
             mesh_foundation_state_store();
             break;
+#ifdef ENABLE_MESH_PROXY_SERVER
         case 'n':
             printf("Start Advertising with Node ID\n");
             mesh_proxy_start_advertising_with_node_id();
@@ -554,6 +557,7 @@ static void stdin_process(char cmd){
             printf("Stop Advertising with Node ID\n");
             mesh_proxy_start_advertising_with_node_id();
             break;
+#endif
         case ' ':
             show_usage();
             break;
