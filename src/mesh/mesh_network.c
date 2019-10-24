@@ -683,119 +683,156 @@ static void process_network_pdu(void){
     process_network_pdu_validate();
 }
 
-static void mesh_network_run(void){
-    if (!btstack_linked_list_empty(&network_pdus_outgoing_gatt)){
-
+// returns true if done
+static bool mesh_network_run_gatt(void){
+    if (btstack_linked_list_empty(&network_pdus_outgoing_gatt)){
+        return true;
+    }
 
 #ifdef ENABLE_MESH_GATT_BEARER
-        if (gatt_bearer_network_pdu == NULL){
-            // move to 'gatt bearer queue'
-            mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing_gatt);
-
-#ifdef LOG_NETWORK
-        printf("network run 1: pop %p from network_pdus_outgoing_gatt\n", network_pdu);
-#endif
-            // request to send via gatt if:
-            // proxy active and connected
-            // packet wasn't received via gatt bearer
-            int send_via_gatt = ((mesh_foundation_gatt_proxy_get() != 0) &&
-                                (gatt_bearer_con_handle != HCI_CON_HANDLE_INVALID) &&
-                                ((network_pdu->flags & MESH_NETWORK_PDU_FLAGS_GATT_BEARER) == 0));
-            if (send_via_gatt){
-
-#ifdef LOG_NETWORK
-                printf("network run 2: set %p as gatt_bearer_network_pdu\n", network_pdu);
-#endif
-                gatt_bearer_network_pdu = network_pdu;
-                gatt_bearer_request_can_send_now_for_network_pdu();
-
-            } else {
-
-#ifdef LOG_NETWORK
-                printf("network run 3: push %p to network_pdus_outgoing_adv\n", network_pdu);
-#endif
-                btstack_linked_list_add_tail(&network_pdus_outgoing_adv, (btstack_linked_item_t *) network_pdu);
-
-#ifdef LOG_NETWORK
-                mesh_network_dump_network_pdus("network_pdus_outgoing_adv (1)", &network_pdus_outgoing_adv);
-#endif
-            }
-        }
-#else
-        // directly move to 'outgoing adv bearer queue'
-        mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing_gatt);
-        btstack_linked_list_add_tail(&network_pdus_outgoing_adv, (btstack_linked_item_t *) network_pdu);
-#endif
+    if (gatt_bearer_network_pdu != NULL){
+        return true;
     }
 
-    if (!btstack_linked_list_empty(&network_pdus_outgoing_adv)){
-#ifdef ENABLE_MESH_ADV_BEARER        
-        if (adv_bearer_network_pdu == NULL){
-            // move to 'adv bearer queue'
-#ifdef LOG_NETWORK
-            mesh_network_dump_network_pdus("network_pdus_outgoing_adv (2)", &network_pdus_outgoing_adv);
-#endif
-            mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing_adv);
-#ifdef LOG_NETWORK
-            printf("network run 4: pop %p from network_pdus_outgoing_adv\n", network_pdu);
-            mesh_network_dump_network_pdus("network_pdus_outgoing_adv (3)", &network_pdus_outgoing_adv);
-            printf("network run 5: %p -> flags 0x%02x, gatt_proxy %u, relay %u\n", network_pdu, network_pdu->flags, mesh_foundation_gatt_proxy_get(), mesh_foundation_relay_get());
-#endif
+    // move to 'gatt bearer queue'
+    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing_gatt);
 
-            // send via adv if:
-            // packet was received via gatt bearer and proxy active, or,
-            // packet originated locally (== not relayed), or,
-            // packet was received via ADV bearer and relay is active, or,
-            int send_via_adv = (((network_pdu->flags & MESH_NETWORK_PDU_FLAGS_GATT_BEARER) != 0) && (mesh_foundation_gatt_proxy_get() == 1)) ||
-                               (((network_pdu->flags & MESH_NETWORK_PDU_FLAGS_GATT_BEARER) == 0) && (mesh_foundation_relay_get() == 1)) ||
-                                ((network_pdu->flags & MESH_NETWORK_PDU_FLAGS_RELAY) == 0);
-
-            if (send_via_adv){
 #ifdef LOG_NETWORK
-                printf("network run 6: set %p as to adv_bearer_network_pdu\n", network_pdu);
+    printf("network run 1: pop %p from network_pdus_outgoing_gatt\n", network_pdu);
 #endif
-                adv_bearer_network_pdu = network_pdu;
-                adv_bearer_request_can_send_now_for_network_pdu();
-            } else {
+    // request to send via gatt if:
+    // proxy active and connected
+    // packet wasn't received via gatt bearer
+    int send_via_gatt = ((mesh_foundation_gatt_proxy_get() != 0) &&
+                        (gatt_bearer_con_handle != HCI_CON_HANDLE_INVALID) &&
+                        ((network_pdu->flags & MESH_NETWORK_PDU_FLAGS_GATT_BEARER) == 0));
+    if (send_via_gatt){
+
 #ifdef LOG_NETWORK
-                printf("network run 7: skip sending %p via adv bearer\n", network_pdu);
-                #endif
-                // directly notify upper layer
-                mesh_network_send_complete(network_pdu);
-            }
-        }
+        printf("network run 2: set %p as gatt_bearer_network_pdu\n", network_pdu);
+#endif
+        gatt_bearer_network_pdu = network_pdu;
+        gatt_bearer_request_can_send_now_for_network_pdu();
+
+    } else {
+
+#ifdef LOG_NETWORK
+        printf("network run 3: push %p to network_pdus_outgoing_adv\n", network_pdu);
+#endif
+        btstack_linked_list_add_tail(&network_pdus_outgoing_adv, (btstack_linked_item_t *) network_pdu);
+
+#ifdef LOG_NETWORK
+        mesh_network_dump_network_pdus("network_pdus_outgoing_adv (1)", &network_pdus_outgoing_adv);
+#endif
+    }
 #else
-        // done
-        mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing_adv);
+    // directly move to 'outgoing adv bearer queue'
+    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing_gatt);
+    btstack_linked_list_add_tail(&network_pdus_outgoing_adv, (btstack_linked_item_t *) network_pdu);
+#endif
+    return false;
+}
+
+// returns true if done
+static bool mesh_network_run_adv(void){
+
+    if (btstack_linked_list_empty(&network_pdus_outgoing_adv)){
+        return true;
+    }
+    
+#ifdef ENABLE_MESH_ADV_BEARER
+    if (adv_bearer_network_pdu != NULL){
+        return true;
+    }
+
+    // move to 'adv bearer queue'
+    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing_adv);
+
+#ifdef LOG_NETWORK
+    printf("network run 4: pop %p from network_pdus_outgoing_adv\n", network_pdu);
+    mesh_network_dump_network_pdus("network_pdus_outgoing_adv (3)", &network_pdus_outgoing_adv);
+    printf("network run 5: %p -> flags 0x%02x, gatt_proxy %u, relay %u\n", network_pdu, network_pdu->flags, mesh_foundation_gatt_proxy_get(), mesh_foundation_relay_get());
+#endif
+
+    // send via adv if:
+    // packet was received via gatt bearer and proxy active, or,
+    // packet originated locally (== not relayed), or,
+    // packet was received via ADV bearer and relay is active, or,
+    int send_via_adv = (((network_pdu->flags & MESH_NETWORK_PDU_FLAGS_GATT_BEARER) != 0) && (mesh_foundation_gatt_proxy_get() == 1)) ||
+                       (((network_pdu->flags & MESH_NETWORK_PDU_FLAGS_GATT_BEARER) == 0) && (mesh_foundation_relay_get() == 1)) ||
+                        ((network_pdu->flags & MESH_NETWORK_PDU_FLAGS_RELAY) == 0);
+
+    if (send_via_adv){
+#ifdef LOG_NETWORK
+        printf("network run 6: set %p as to adv_bearer_network_pdu\n", network_pdu);
+#endif
+        adv_bearer_network_pdu = network_pdu;
+        adv_bearer_request_can_send_now_for_network_pdu();
+    } else {
+#ifdef LOG_NETWORK
+        printf("network run 7: skip sending %p via adv bearer\n", network_pdu);
+        #endif
         // directly notify upper layer
         mesh_network_send_complete(network_pdu);
+    }
+#else
+    // done
+    mesh_network_pdu_t * network_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_outgoing_adv);
+    // directly notify upper layer
+    mesh_network_send_complete(network_pdu);
 #endif
+    return false;
+}
+
+// returns true if done
+static bool mesh_network_run_received(void){
+    if (mesh_crypto_active) {
+        return true;
     }
 
-    if (mesh_crypto_active) return;
-
-    if (!btstack_linked_list_empty(&network_pdus_received)){
-        incoming_pdu_decoded = mesh_network_pdu_get();
-        if (!incoming_pdu_decoded) return; 
-        // get encoded network pdu and start processing
-        mesh_crypto_active = 1;
-        incoming_pdu_raw = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_received);
-        process_network_pdu();
-        return;
+    if (btstack_linked_list_empty(&network_pdus_received)) {
+        return true;
     }
 
-    if (!btstack_linked_list_empty(&network_pdus_queued)){
-        // get queued network pdu and start processing
+    incoming_pdu_decoded = mesh_network_pdu_get();
+    if (incoming_pdu_decoded == NULL) return true;
+
+    // get encoded network pdu and start processing
+    mesh_crypto_active = 1;
+    incoming_pdu_raw = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_received);
+    process_network_pdu();
+    return true;
+}
+
+// returns true if done
+static bool mesh_network_run_queued(void){
+    if (mesh_crypto_active) {
+        return true;
+    }
+
+    if (btstack_linked_list_empty(&network_pdus_queued)){
+        return true;
+    }
+    
+    // get queued network pdu and start processing
+    outgoing_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_queued);
+
 #ifdef LOG_NETWORK
-        mesh_network_dump_network_pdus("network_pdus_queued (1)", &network_pdus_queued);
+    printf("network run 5: pop %p from network_pdus_queued\n", outgoing_pdu);
+    mesh_network_dump_network_pdus("network_pdus_queued (2)", &network_pdus_queued);
 #endif
-        outgoing_pdu = (mesh_network_pdu_t *) btstack_linked_list_pop(&network_pdus_queued);
-#ifdef LOG_NETWORK
-        printf("network run 5: pop %p from network_pdus_queued\n", outgoing_pdu);
-        mesh_network_dump_network_pdus("network_pdus_queued (2)", &network_pdus_queued);
-#endif
-        mesh_network_send_a();
-        return;
+    mesh_network_send_a();
+    return true;
+}
+
+static void mesh_network_run(void){
+    while (true){
+        bool done = true;
+        done &= mesh_network_run_gatt();
+        done &= mesh_network_run_adv();
+        done &= mesh_network_run_received();
+        done &= mesh_network_run_queued();
+        if (done) break;
     }
 }
 
