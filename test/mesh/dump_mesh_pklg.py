@@ -163,8 +163,9 @@ def read_net_32(data):
     return struct.unpack('>I', data)[0]
 
 # log engine - simple pretty printer
-max_indent = 0
-def log_pdu(pdu, indent = 0, hide_properties = []):
+max_indent = 10
+def log_pdu(pdu, indent = 0, in_hide_properties = []):
+    hide_properties = list(in_hide_properties)
     spaces = '    ' * indent
     print(spaces + "%-20s %s" % (pdu.type, pdu.summary))
     if indent >= max_indent:
@@ -588,6 +589,14 @@ def mesh_process_adv(adv_pdu):
         beacon_pdu.origins.append(adv_pdu)
         mesh_process_beacon_pdu(beacon_pdu)
 
+def mesh_log_completed():
+    # log left-overs
+    print("\n\nLOG COMPLETE - unfinished segmented messages:")
+    for tag in segmented_messages:
+        message = segmented_messages[tag]
+        if message.processed:
+            continue
+        log_pdu(message, 0, [])
 
 if len(sys.argv) == 1:
     print ('Dump Mesh PacketLogger file')
@@ -662,3 +671,4 @@ with open (infile, 'rb') as fin:
                 mesh_add_netkey(int(parts.groups()[0], 16), bytes.fromhex(parts.groups()[1]))
                 continue
 
+    mesh_log_completed()
