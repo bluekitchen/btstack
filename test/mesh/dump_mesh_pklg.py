@@ -342,6 +342,8 @@ class upper_transport_pdu(layer_pdu):
         self.data = bytearray(self.len)
         missing  = (1 << (self.seg_n+1)) - 1
         for pdu in self.origins:
+            if pdu.ctl:
+                continue
             # copy data
             pos = pdu.seg_o * self.segment_len
             self.data[pos:pos+len(pdu.segment)] = pdu.segment
@@ -548,6 +550,7 @@ def mesh_process_network_pdu_tx(network_pdu_encrypted):
             control.seq = lower_transport.seq
             control.src = lower_transport.src
             control.dst = lower_transport.dst
+            control.ctl = True
             control.add_property('seq', lower_transport.seq)
             control.add_property('src', lower_transport.src)
             control.add_property('dst', lower_transport.dst)
