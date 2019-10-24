@@ -246,7 +246,10 @@ static void adv_bearer_run(void){
             if (gap_advertising_enabled){
                 if ((int32_t)(now - gap_adv_next_ms) >= 0){
                     adv_bearer_connectable_advertisement_data_item_t * item = (adv_bearer_connectable_advertisement_data_item_t *) btstack_linked_list_pop(&gap_connectable_advertisements);
-                    if (item != NULL){
+                    if (item == NULL){
+                        gap_adv_next_ms += gap_adv_int_ms;
+                        log_debug("Next adv: %u", gap_adv_next_ms);
+                    } else {
                         // queue again
                         btstack_linked_list_add_tail(&gap_connectable_advertisements, (void*) item);                        
                         // time to advertise again
@@ -256,8 +259,8 @@ static void adv_bearer_run(void){
                         gap_advertisements_enable(1);
                         adv_bearer_state = STATE_GAP;
                         adv_bearer_set_timeout(ADVERTISING_INTERVAL_CONNECTABLE_MIN_MS);
+                        break;
                     }
-                    break;
                 }
             }
             if (adv_bearer_count > 0){
