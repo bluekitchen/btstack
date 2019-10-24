@@ -186,7 +186,7 @@ static void mesh_log_key(const char * prefix, uint16_t id, const uint8_t * key){
     hci_dump_log(HCI_DUMP_LOG_LEVEL_INFO, "%s", line);
 }
 
-static void mesh_access_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
+static void mesh_setup_from_provisioning_data(const mesh_provisioning_data_t * provisioning_data){
 
     // set iv_index and iv index update active
     int iv_index_update_active = (provisioning_data->flags & 2) >> 1;
@@ -273,7 +273,7 @@ static void mesh_provisioning_message_handler (uint8_t packet_type, uint16_t cha
                     mesh_node_store_provisioning_data(&provisioning_data);
 
                     // setup node after provisioned
-                    mesh_access_setup_from_provisioning_data(&provisioning_data);
+                    mesh_setup_from_provisioning_data(&provisioning_data);
 
 #ifdef ENABLE_MESH_PROXY_SERVER
                     // start advertising with node id after provisioning
@@ -1075,49 +1075,43 @@ static int mesh_node_startup_from_tlv(void){
         provisioning_data.unicast_address = persistent_provisioning_data.unicast_address;
         provisioning_data.flags = persistent_provisioning_data.flags;
         provisioning_data.network_key = NULL;
-
-        // dump into packet log
-        mesh_log_key("mesh-devkey",  0xffff, persistent_provisioning_data.device_key);
+        printf("Provisioning Data: Flags %x, unicast_address %04x\n", persistent_provisioning_data.flags, provisioning_data.unicast_address);
         
-        printf("Flags %x, unicast_address %04x\n", persistent_provisioning_data.flags, provisioning_data.unicast_address);
-        
-        // load iv index and sequence number
-        uint32_t iv_index;
-        uint32_t sequence_number;
-        int ok = mesh_load_iv_index_and_sequence_number(&iv_index, &sequence_number);
-        if (ok){
-            mesh_sequence_number_set(sequence_number);
-            provisioning_data.iv_index = iv_index;
-        }            
+        // try load iv index and sequence number
+        uint32_t iv_index        = 0;
+        uint32_t sequence_number = 0;
+        (void) mesh_load_iv_index_and_sequence_number(&iv_index, &sequence_number);
 
-        // dump into packet log
-        hci_dump_log(HCI_DUMP_LOG_LEVEL_INFO, "mesh-iv-index: %08x",  iv_index);
+        // bump sequence number to account for interval updates
+        sequence_number += MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
+        mesh_store_iv_index_and_sequence_number(iv_index, sequence_number);
+
+        mesh_set_iv_index(iv_index);
+        mesh_sequence_number_set(sequence_number);
+        provisioning_data.iv_index = iv_index;
+        printf("IV Index: %08x, Sequence Number %08x\n", (int) iv_index, (int) sequence_number);
+
+        // setup iv update, node address, device key ...
+        mesh_setup_from_provisioning_data(&provisioning_data);
+
+        // load network keys
+        mesh_load_network_keys();
+
+        // load app keys
+        mesh_load_app_keys();
 
         // load foundation state
         mesh_foundation_state_load();
 
-        // bump sequence number to account for interval updates
-        sequence_number = mesh_sequence_number_peek() + MESH_SEQUENCE_NUMBER_STORAGE_INTERVAL;
-        iv_index = mesh_get_iv_index();
-        mesh_store_iv_index_and_sequence_number(iv_index, sequence_number);
-        mesh_sequence_number_set(sequence_number);
-        log_info("IV Index: %08x, Sequence Number %08x", (int) iv_index, (int) sequence_number);
-
-        printf("IV Index: %08x, Sequence Number %08x\n", (int) iv_index, (int) sequence_number);
-
-        // load network keys
-        mesh_load_network_keys();
-        // load app keys
-        mesh_load_app_keys();
-
-        mesh_access_setup_from_provisioning_data(&provisioning_data);
-
         // load model to appkey bindings
         mesh_load_appkey_lists();
+
         // load virtual addresses
         mesh_load_virtual_addresses();
+
         // load model subscriptions
         mesh_load_subscriptions();
+
         // load model publications
         mesh_load_publications();
 
@@ -1132,6 +1126,10 @@ static int mesh_node_startup_from_tlv(void){
         if (mesh_node_get_device_uuid() == NULL){
             btstack_crypto_random_generate(&mesh_access_crypto_random, random_device_uuid, 16, &mesh_access_setup_with_provisiong_data_random, NULL);
         }
+
+        // dump into packet log
+        hci_dump_log(HCI_DUMP_LOG_LEVEL_INFO, "mesh-iv-index: %08x",  iv_index);
+        mesh_log_key("mesh-devkey",  0xffff, persistent_provisioning_data.device_key);
 
     } else {
 
