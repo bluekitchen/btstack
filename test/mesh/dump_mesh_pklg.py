@@ -30,6 +30,7 @@ ivi = b'\x00'
 segmented_messages = {}
 
 access_messages = {
+# Foundation
 0x0000: 'Config Appkey Add',
 0x0001: 'Config Appkey Update',
 0x0002: 'Config Composition Data Status',
@@ -116,7 +117,28 @@ access_messages = {
 0x804c: 'Config Sig Model App List',
 0x804d: 'Config Vendor Model App Get',
 0x804e: 'Config Vendor Model App List',    
+# Generic
+0x8201: 'Generic On Off Get',
+0x8202: 'Generic On Off Set',
+0x8203: 'Generic On Off Set Unacknowledged',
+0x8204: 'Generic On Off Status',
+0x8205: 'Generic Level Get',
+0x8206: 'Generic Level Set',
+0x8207: 'Generic Level Set Unacknowledged',
+0x8208: 'Generic Level Status',
+0x8209: 'Generic Delta Set',
+0x820A: 'Generic Delta Set Unacknowledged',
+0x820B: 'Generic Move Set',
+0x820C: 'Generic Move Set Unacknowledged',
 }
+
+# quick hack to convert Access message opcode + names
+tmp_messages =[ 
+# 'GENERIC_ON_OFF_GET                     :0x8201',
+]
+for message in tmp_messages:
+    parts = message.split(':')
+    print ("%s: '%s'," % (parts[1].strip(),parts[0].strip().title().replace('_',' ')))
 
 # helpers
 def read_net_32_from_file(f):
