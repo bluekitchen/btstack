@@ -207,6 +207,7 @@ EXAMPLES_LE_ONLY=           \
 	gatt_battery_query      \
 	gatt_browser            \
 	gatt_counter            \
+	gatt_heart_rate_client  \
 	gatt_streamer_server    \
 	hog_keyboard_demo       \
 	hog_mouse_demo          \
