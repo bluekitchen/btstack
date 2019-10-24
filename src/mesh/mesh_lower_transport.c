@@ -688,6 +688,11 @@ static void mesh_lower_transport_network_pdu_sent(mesh_network_pdu_t *network_pd
 
     // single segment of segmented message?
     if (lower_transport_outgoing_segment == network_pdu){
+
+#ifdef LOG_LOWER_TRANSPORT
+        printf("[+] Lower transport, segmented pdu %p, seq %06x: network pdu %p sent\n", lower_transport_outgoing_pdu, mesh_transport_seq(lower_transport_outgoing_pdu), network_pdu);
+#endif
+
         lower_transport_outgoing_segment_queued = 0;
         if (lower_transport_outgoing_trasnmission_complete){
             // handle complete
@@ -702,10 +707,8 @@ static void mesh_lower_transport_network_pdu_sent(mesh_network_pdu_t *network_pd
             mesh_lower_transport_segment_transmission_fired();
             return;
         }
+
         // send next segment
-#ifdef LOG_LOWER_TRANSPORT
-        printf("[+] Lower transport, segmented pdu %p, seq %06x: network pdu %p sent\n", lower_transport_outgoing_pdu, mesh_transport_seq(lower_transport_outgoing_pdu), network_pdu);
-#endif
         mesh_lower_transport_send_next_segment();
         return;
     }
