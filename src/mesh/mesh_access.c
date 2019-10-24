@@ -118,9 +118,10 @@ uint32_t mesh_access_acknowledged_message_timeout_ms(void){
 }
 
 #define MESH_ACCESS_OPCODE_INVALID 0xFFFFFFFFu
+#define MESH_ACCESS_OPCODE_NOT_SET 0xFFFFFFFEu
 
 void mesh_access_send_unacknowledged_pdu(mesh_pdu_t * pdu){
-    pdu->ack_opcode = MESH_ACCESS_OPCODE_INVALID;;
+    pdu->ack_opcode = MESH_ACCESS_OPCODE_INVALID;
     mesh_upper_transport_send_access_pdu(pdu);
 }
 
@@ -618,6 +619,7 @@ mesh_transport_pdu_t * mesh_access_transport_init(uint32_t opcode){
     if (!pdu) return NULL;
 
     pdu->len  = mesh_access_setup_opcode(pdu->data, opcode);
+    pdu->pdu_header.ack_opcode = MESH_ACCESS_OPCODE_NOT_SET;
     return pdu;
 }
 
@@ -652,6 +654,7 @@ mesh_network_pdu_t * mesh_access_network_init(uint32_t opcode){
     if (!pdu) return NULL;
 
     pdu->len  = mesh_access_setup_opcode(&pdu->data[10], opcode) + 10;
+    pdu->pdu_header.ack_opcode = MESH_ACCESS_OPCODE_NOT_SET;
     return pdu;
 }
 

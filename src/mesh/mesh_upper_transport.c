@@ -1064,7 +1064,12 @@ void mesh_upper_transport_init(){
     mesh_lower_transport_set_higher_layer_handler(&mesh_upper_transport_pdu_handler);
 }
 
+// TODO: higher layer define used for assert
+#define MESH_ACCESS_OPCODE_NOT_SET 0xFFFFFFFEu
+
 void mesh_upper_transport_send_access_pdu(mesh_pdu_t *pdu){
+    btstack_assert(pdu->ack_opcode != MESH_ACCESS_OPCODE_NOT_SET);
+    
     if (pdu->pdu_type == MESH_PDU_TYPE_NETWORK){
         btstack_assert( ((mesh_network_pdu_t *) pdu)->len >= 9);
     }
