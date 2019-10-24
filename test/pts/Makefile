@@ -25,8 +25,8 @@ COMMON += \
 	rfcomm.c                    \
 	hci_transport_h2_libusb.c 	\
 	btstack_run_loop_posix.c 	\
-	btstack_link_key_db_fs.c 	\
-	le_device_db_fs.c 			\
+	btstack_link_key_db_tlv.c 	\
+	le_device_db_tlv.c 			\
 	wav_util.c 					\
 	sdp_util.c	                \
 	sdp_server.c		        \
