@@ -278,7 +278,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     att_server = att_server_for_handle(con_handle);
                     if (!att_server) break;
                     // store connection info
-                    att_server->peer_addr_type = BD_ADDR_TYPE_CLASSIC;
+                    att_server->peer_addr_type = BD_ADDR_TYPE_ACL;
                     l2cap_event_channel_opened_get_address(packet, att_server->peer_address);
                     att_server->connection.con_handle = con_handle;
                     att_server->l2cap_cid = l2cap_event_channel_opened_get_local_cid(packet);

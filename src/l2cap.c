@@ -605,7 +605,7 @@ uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_ad
     uint8_t result = l2cap_ertm_validate_local_config(ertm_config);
     if (result) return result;
 
-    l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, address, BD_ADDR_TYPE_CLASSIC, psm, ertm_config->local_mtu, LEVEL_0);
+    l2cap_channel_t * channel = l2cap_create_channel_entry(packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, address, BD_ADDR_TYPE_ACL, psm, ertm_config->local_mtu, LEVEL_0);
     if (!channel) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
@@ -622,7 +622,7 @@ uint8_t l2cap_create_ertm_channel(btstack_packet_handler_t packet_handler, bd_ad
     }
 
     // check if hci connection is already usable
-    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(address, BD_ADDR_TYPE_CLASSIC);
+    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(address, BD_ADDR_TYPE_ACL);
     if (conn){
         log_info("l2cap_create_channel, hci connection already exists");
         l2cap_handle_connection_complete(conn->con_handle, channel);
@@ -2005,7 +2005,7 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
 
     log_info("L2CAP_CREATE_CHANNEL addr %s psm 0x%x mtu %u -> local mtu %u", bd_addr_to_str(address), psm, mtu, local_mtu);
 
-    l2cap_channel_t * channel = l2cap_create_channel_entry(channel_packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, address, BD_ADDR_TYPE_CLASSIC, psm, local_mtu, LEVEL_0);
+    l2cap_channel_t * channel = l2cap_create_channel_entry(channel_packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, address, BD_ADDR_TYPE_ACL, psm, local_mtu, LEVEL_0);
     if (!channel) {
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
@@ -2023,7 +2023,7 @@ uint8_t l2cap_create_channel(btstack_packet_handler_t channel_packet_handler, bd
     }
 
     // check if hci connection is already usable
-    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(address, BD_ADDR_TYPE_CLASSIC);
+    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(address, BD_ADDR_TYPE_ACL);
     if (conn){
         log_info("l2cap_create_channel, hci connection 0x%04x already exists", conn->con_handle);
         l2cap_handle_connection_complete(conn->con_handle, channel);
@@ -2432,7 +2432,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
 
     // alloc structure
     // log_info("l2cap_handle_connection_request register channel");
-    l2cap_channel_t * channel = l2cap_create_channel_entry(service->packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, hci_connection->address, BD_ADDR_TYPE_CLASSIC, 
+    l2cap_channel_t * channel = l2cap_create_channel_entry(service->packet_handler, L2CAP_CHANNEL_TYPE_CLASSIC, hci_connection->address, BD_ADDR_TYPE_ACL, 
     psm, service->mtu, service->required_security_level);
     if (!channel){
         // 0x0004 No resources available
@@ -3600,11 +3600,11 @@ static void l2cap_acl_handler(uint8_t packet_type, uint16_t channel, uint8_t *pa
     // Assert full L2CAP header present
     if (size < COMPLETE_L2CAP_HEADER) return;
 
-    // Dispatch to Classic or LE handler
+    // Dispatch to Classic or LE handler (SCO packets are not dispatched to L2CAP)
     hci_con_handle_t handle = READ_ACL_CONNECTION_HANDLE(packet);
     hci_connection_t *conn = hci_connection_for_handle(handle);
     if (!conn) return;
-    if (conn->address_type == BD_ADDR_TYPE_CLASSIC){
+    if (conn->address_type == BD_ADDR_TYPE_ACL){
         l2cap_acl_classic_handler(handle, packet, size);
     } else {
         l2cap_acl_le_handler(handle, packet, size);

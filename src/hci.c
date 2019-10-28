@@ -363,7 +363,7 @@ static void hci_connection_timestamp(hci_connection_t *connection){
 static void hci_add_connection_flags_for_flipped_bd_addr(uint8_t *bd_addr, hci_authentication_flags_t flags){
     bd_addr_t addr;
     reverse_bd_addr(bd_addr, addr);
-    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
+    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
     if (conn) {
         connectionSetAuthenticationFlags(conn, flags);
         hci_connection_timestamp(conn);
@@ -454,7 +454,7 @@ static int hci_number_free_acl_slots_for_connection_type(bd_addr_type_t address_
         if (hci_is_le_connection(connection)){
             num_packets_sent_le += connection->num_packets_sent;
         }
-        if (connection->address_type == BD_ADDR_TYPE_CLASSIC){
+        if (connection->address_type == BD_ADDR_TYPE_ACL){
             num_packets_sent_classic += connection->num_packets_sent;
         }
     }
@@ -488,7 +488,7 @@ static int hci_number_free_acl_slots_for_connection_type(bd_addr_type_t address_
             log_error("hci_number_free_acl_slots: unknown address type");
             return 0;
 
-        case BD_ADDR_TYPE_CLASSIC:
+        case BD_ADDR_TYPE_ACL:
             return free_slots_classic;
 
         default:
@@ -587,7 +587,7 @@ int hci_can_send_acl_packet_now(hci_con_handle_t con_handle){
 #ifdef ENABLE_CLASSIC
 int hci_can_send_acl_classic_packet_now(void){
     if (hci_stack->hci_packet_buffer_reserved) return 0;
-    return hci_can_send_prepared_acl_packet_for_address_type(BD_ADDR_TYPE_CLASSIC);
+    return hci_can_send_prepared_acl_packet_for_address_type(BD_ADDR_TYPE_ACL);
 }
 
 int hci_can_send_prepared_sco_packet_now(void){
@@ -2125,7 +2125,7 @@ static void event_handler(uint8_t *packet, int size){
             // TODO: eval COD 8-10
             link_type = packet[11];
             log_info("Connection_incoming: %s, type %u", bd_addr_to_str(addr), link_type);
-            addr_type = link_type == 1 ? BD_ADDR_TYPE_CLASSIC : BD_ADDR_TYPE_SCO;
+            addr_type = link_type == 1 ? BD_ADDR_TYPE_ACL : BD_ADDR_TYPE_SCO;
             conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
             if (!conn) {
                 conn = create_connection_for_bd_addr_and_type(addr, addr_type);
@@ -2149,7 +2149,7 @@ static void event_handler(uint8_t *packet, int size){
             // Connection management
             reverse_bd_addr(&packet[5], addr);
             log_info("Connection_complete (status=%u) %s", packet[2], bd_addr_to_str(addr));
-            addr_type = BD_ADDR_TYPE_CLASSIC;
+            addr_type = BD_ADDR_TYPE_ACL;
             conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
             if (conn) {
                 if (!packet[2]){
@@ -2232,7 +2232,7 @@ static void event_handler(uint8_t *packet, int size){
             
         case HCI_EVENT_LINK_KEY_NOTIFICATION: {
             reverse_bd_addr(&packet[2], addr);
-            conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
+            conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn) break;
             conn->authentication_flags |= RECV_LINK_KEY_NOTIFICATION;
             link_key_type_t link_key_type = (link_key_type_t)packet[24];
@@ -2378,7 +2378,7 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_ROLE_CHANGE:
             if (packet[2]) break;   // status != 0
             reverse_bd_addr(&packet[3], addr);
-            addr_type = BD_ADDR_TYPE_CLASSIC;
+            addr_type = BD_ADDR_TYPE_ACL;
             conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
             if (!conn) break;
             conn->role = packet[9];
@@ -3527,7 +3527,7 @@ static void hci_run(void){
             case SEND_CREATE_CONNECTION:
                 switch(connection->address_type){
 #ifdef ENABLE_CLASSIC
-                    case BD_ADDR_TYPE_CLASSIC:
+                    case BD_ADDR_TYPE_ACL:
                         log_info("sending hci_create_connection");
                         hci_send_cmd(&hci_create_connection, connection->address, hci_usable_acl_packet_types(), 0, 0, 0, 1);
                         break;
@@ -3563,7 +3563,7 @@ static void hci_run(void){
 #ifdef ENABLE_CLASSIC
             case RECEIVED_CONNECTION_REQUEST:
                 connection->role  = HCI_ROLE_SLAVE;
-                if (connection->address_type == BD_ADDR_TYPE_CLASSIC){
+                if (connection->address_type == BD_ADDR_TYPE_ACL){
                     log_info("sending hci_accept_connection_request, remote eSCO %u", connection->remote_supported_feature_eSCO);
                     connection->state = ACCEPTED_CONNECTION_REQUEST;
                     hci_send_cmd(&hci_accept_connection_request, connection->address, hci_stack->master_slave_policy);
@@ -3901,9 +3901,9 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
         reverse_bd_addr(&packet[3], addr);
         log_info("Create_connection to %s", bd_addr_to_str(addr));
 
-        conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
+        conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
         if (!conn){
-            conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
+            conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
             if (!conn){
                 // notify client that alloc failed
                 hci_emit_connection_complete(addr, 0, BTSTACK_MEMORY_ALLOC_FAILED);
@@ -3928,7 +3928,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
         conn->state = SENT_CREATE_CONNECTION;
 
         // track outgoing connection
-        hci_stack->outgoing_addr_type = BD_ADDR_TYPE_CLASSIC;
+        hci_stack->outgoing_addr_type = BD_ADDR_TYPE_ACL;
         memcpy(hci_stack->outgoing_addr, addr, 6);
     }
 
@@ -3949,7 +3949,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     if (IS_COMMAND(packet, hci_pin_code_request_negative_reply)
     ||  IS_COMMAND(packet, hci_pin_code_request_reply)){
         reverse_bd_addr(&packet[3], addr);
-        conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
+        conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
         if (conn){
             connectionClearAuthenticationFlags(conn, LEGACY_PAIRING_ACTIVE);
         }
@@ -3960,7 +3960,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     ||  IS_COMMAND(packet, hci_user_passkey_request_negative_reply)
     ||  IS_COMMAND(packet, hci_user_passkey_request_reply)) {
         reverse_bd_addr(&packet[3], addr);
-        conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
+        conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_ACL);
         if (conn){
             connectionClearAuthenticationFlags(conn, SSP_PAIRING_ACTIVE);
         }
@@ -4487,7 +4487,7 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
 int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required){
 
     // create connection state machine
-    hci_connection_t * connection = create_connection_for_bd_addr_and_type(device, BD_ADDR_TYPE_CLASSIC);
+    hci_connection_t * connection = create_connection_for_bd_addr_and_type(device, BD_ADDR_TYPE_ACL);
 
     if (!connection){
         return BTSTACK_MEMORY_ALLOC_FAILED;
@@ -4816,7 +4816,7 @@ gap_connection_type_t gap_get_connection_type(hci_con_handle_t connection_handle
             return GAP_CONNECTION_LE;
         case BD_ADDR_TYPE_SCO:
             return GAP_CONNECTION_SCO;
-        case BD_ADDR_TYPE_CLASSIC:
+        case BD_ADDR_TYPE_ACL:
             return GAP_CONNECTION_ACL;
         default:
             return GAP_CONNECTION_INVALID;
@@ -5198,7 +5198,7 @@ int gap_authenticated(hci_con_handle_t con_handle){
             return hci_connection->sm_connection.sm_connection_authenticated;
 #ifdef ENABLE_CLASSIC
         case BD_ADDR_TYPE_SCO:
-        case BD_ADDR_TYPE_CLASSIC:
+        case BD_ADDR_TYPE_ACL:
             return gap_authenticated_for_link_key_type(hci_connection->link_key_type);
 #endif
         default:
@@ -5217,7 +5217,7 @@ int gap_secure_connection(hci_con_handle_t con_handle){
             return hci_connection->sm_connection.sm_connection_sc;
 #ifdef ENABLE_CLASSIC
         case BD_ADDR_TYPE_SCO:
-        case BD_ADDR_TYPE_CLASSIC:
+        case BD_ADDR_TYPE_ACL:
             return gap_secure_connection_for_link_key_type(hci_connection->link_key_type);
 #endif
         default:
