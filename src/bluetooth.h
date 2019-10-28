@@ -70,9 +70,9 @@ typedef uint8_t bd_addr_t[BD_ADDR_LEN];
     BD_ADDR_TYPE_LE_RANDOM = 1,
     BD_ADDR_TYPE_LE_PRIVAT_FALLBACK_PUBLIC = 2,
     BD_ADDR_TYPE_LE_PRIVAT_FALLBACK_RANDOM = 3,
-    BD_ADDR_TYPE_SCO       = 0xfe,
-    BD_ADDR_TYPE_ACL       = 0xff,
-    BD_ADDR_TYPE_UNKNOWN   = 0xfe
+    BD_ADDR_TYPE_SCO       = 0xfc,
+    BD_ADDR_TYPE_ACL       = 0xfd,
+    BD_ADDR_TYPE_UNKNOWN   = 0xfe,  // also used as 'invalid'
 } bd_addr_type_t;
 
 
