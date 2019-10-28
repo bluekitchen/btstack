@@ -568,7 +568,7 @@ uint32_t mesh_access_parser_get_u24(mesh_access_parser_state_t * state){
 }
 
 uint32_t mesh_access_parser_get_u32(mesh_access_parser_state_t * state){
-    uint32_t value = little_endian_read_24(state->data, 0);
+    uint32_t value = little_endian_read_32(state->data, 0);
     mesh_access_parser_skip(state, 4);
     return value;
 }
@@ -589,11 +589,12 @@ void mesh_access_parser_get_key(mesh_access_parser_state_t * state, uint8_t * de
 }
 
 uint32_t mesh_access_parser_get_model_identifier(mesh_access_parser_state_t * parser){
+    uint16_t vendor_id = BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC;
     if (mesh_access_parser_available(parser) == 4){
-        return mesh_access_parser_get_u32(parser);
-    } else {
-        return (BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC << 16) | mesh_access_parser_get_u16(parser);
+        vendor_id = mesh_access_parser_get_u16(parser);
     }
+    uint16_t model_id = mesh_access_parser_get_u16(parser);
+    return mesh_model_get_model_identifier(vendor_id, model_id);
 }
 
 // Mesh Access Message Builder
@@ -642,11 +643,10 @@ void mesh_access_transport_add_uint32(mesh_transport_pdu_t * pdu, uint32_t value
     pdu->len += 4;
 }
 void mesh_access_transport_add_model_identifier(mesh_transport_pdu_t * pdu, uint32_t model_identifier){
-    if (mesh_model_is_bluetooth_sig(model_identifier)){
-        mesh_access_transport_add_uint16( pdu, mesh_model_get_model_id(model_identifier) );
-    } else {
-        mesh_access_transport_add_uint32( pdu, model_identifier );
+    if (!mesh_model_is_bluetooth_sig(model_identifier)){
+        mesh_access_transport_add_uint16( pdu, mesh_model_get_vendor_id(model_identifier) );
     }
+    mesh_access_transport_add_uint16( pdu, mesh_model_get_model_id(model_identifier) );
 }
 
 mesh_network_pdu_t * mesh_access_network_init(uint32_t opcode){
