@@ -1,0 +1,16 @@
+menu "Example Board Configuration"
+
+choice ESP32_BOARD
+    prompt "ESP32 board"
+    default ESP_CUSTOM_BOARD
+    help 
+        select an ESP32 board to use with BTstack.
+
+config ESP_LYRAT_V4_3_BOARD
+    bool "ESP32-Lyrat V4.3"
+config ESP_CUSTOM_BOARD
+    bool "ESP32 custom board"
+
+endchoice
+
+endmenu

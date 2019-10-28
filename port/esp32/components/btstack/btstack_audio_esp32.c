@@ -53,10 +53,30 @@
 #include "freertos/FreeRTOS.h"
 #include "driver/i2s.h"
 
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
+#include "driver/i2c.h"
+#include "driver/gpio.h"
+#include "es8388.h"
+
+
+#define IIC_DATA                    (GPIO_NUM_18)
+#define IIC_CLK                     (GPIO_NUM_23)
+
+static es8388_config_t es8388_i2c_cfg = AUDIO_CODEC_ES8388_DEFAULT();
+
+static void set_i2s0_mclk(void)
+{
+    PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
+    WRITE_PERI_REG(PIN_CTRL, 0xFFF0);
+}
+
+#endif
+
 #define DRIVER_POLL_INTERVAL_MS          5
 #define DMA_BUFFER_COUNT                 2
 #define DMA_BUFFER_SAMPLES               512
 #define BYTES_PER_SAMPLE_STEREO          4
+
 
 static int num_channels;
 static int bytes_per_sample;
@@ -110,6 +130,29 @@ static int btstack_audio_esp32_sink_init(
     num_channels       = channels;
     bytes_per_sample   = channels * 2;  // 16-bit
 
+
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
+    i2s_config_t config = 
+    {
+        .mode                 = I2S_MODE_MASTER | I2S_MODE_TX, // Playback only
+        .sample_rate          = samplerate,
+        .bits_per_sample      = I2S_BITS_PER_SAMPLE_16BIT,
+        .channel_format       = I2S_CHANNEL_FMT_RIGHT_LEFT,
+        .communication_format = I2S_COMM_FORMAT_I2S,
+        .dma_buf_count        = 3,              // Number of DMA buffers. Max 128.
+        .dma_buf_len          = 300,            // Size of each DMA buffer in samples. Max 1024.
+        .use_apll = 1,
+        .intr_alloc_flags     = ESP_INTR_FLAG_LEVEL1
+    };
+    i2s_pin_config_t pins = 
+    {
+        .bck_io_num           = GPIO_NUM_5,
+        .ws_io_num            = GPIO_NUM_25,
+        .data_out_num         = GPIO_NUM_26,
+        .data_in_num          = GPIO_NUM_35
+    };
+#else
+
     i2s_config_t config = 
     {
         .mode                 = I2S_MODE_MASTER | I2S_MODE_TX, // Playback only
@@ -121,6 +164,7 @@ static int btstack_audio_esp32_sink_init(
         .dma_buf_len          = DMA_BUFFER_SAMPLES,            // Size of each DMA buffer in samples. Max 1024.
         .intr_alloc_flags     = ESP_INTR_FLAG_LEVEL1
     };
+
     i2s_pin_config_t pins = 
     {
         .bck_io_num           = 26,
@@ -128,10 +172,26 @@ static int btstack_audio_esp32_sink_init(
         .data_out_num         = 22,
         .data_in_num          = I2S_PIN_NO_CHANGE
     };
+#endif
 
+
+
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
+    set_i2s0_mclk();
+#endif
     i2s_driver_install(i2s_num, &config, DMA_BUFFER_COUNT, &i2s_event_queue);
     i2s_set_pin(i2s_num, &pins);
     i2s_zero_dma_buffer(i2s_num);
+
+
+#ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
+    es8388_init(&es8388_i2c_cfg); 
+    es8388_config_fmt(ES_MODULE_ADC_DAC, ES_I2S_NORMAL);
+    es8388_set_bits_per_sample(ES_MODULE_ADC_DAC, BIT_LENGTH_16BITS);
+    es8388_set_volume(70);
+    es8388_start(ES_MODULE_ADC_DAC);
+    es8388_set_mute(false);
+#endif
 
     return 0;
 }
