@@ -304,14 +304,14 @@ static void config_composition_data_status(uint16_t netkey_index, uint16_t dest)
         while (mesh_model_iterator_has_next(&model_it)){
             mesh_model_t * model = mesh_model_iterator_next(&model_it);
             if (!mesh_model_is_bluetooth_sig(model->model_identifier)) continue;
-            mesh_access_transport_add_uint16(transport_pdu, model->model_identifier);
+            mesh_access_transport_add_model_identifier(transport_pdu, model->model_identifier);
         }
         // Vendor Models
         mesh_model_iterator_init(&model_it, element);
         while (mesh_model_iterator_has_next(&model_it)){
             mesh_model_t * model = mesh_model_iterator_next(&model_it);
             if (mesh_model_is_bluetooth_sig(model->model_identifier)) continue;
-            mesh_access_transport_add_uint32(transport_pdu, model->model_identifier);
+            mesh_access_transport_add_model_identifier(transport_pdu, model->model_identifier);
         }
     }
     
