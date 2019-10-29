@@ -617,7 +617,7 @@ static void config_netkey_add_derived(void * arg){
     mesh_proxy_start_advertising_with_network_id();
 #endif
 
-    config_netkey_status(mesh_model_get_configuration_server(), mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), MESH_FOUNDATION_STATUS_SUCCESS, subnet->netkey_index);
+    config_netkey_status(mesh_node_get_configuration_server(), mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), MESH_FOUNDATION_STATUS_SUCCESS, subnet->netkey_index);
     mesh_access_message_processed(access_pdu_in_process);
 }
 
@@ -702,7 +702,7 @@ static void config_netkey_update_derived(void * arg){
     subnet->key_refresh = MESH_KEY_REFRESH_FIRST_PHASE;
 
     // report status    
-    config_netkey_status(mesh_model_get_configuration_server(), mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), MESH_FOUNDATION_STATUS_SUCCESS, subnet->netkey_index);
+    config_netkey_status(mesh_node_get_configuration_server(), mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), MESH_FOUNDATION_STATUS_SUCCESS, subnet->netkey_index);
     mesh_access_message_processed(access_pdu_in_process);
 }
 
@@ -862,7 +862,7 @@ static void config_appkey_add_or_update_aid(void *arg){
     mesh_transport_key_add(transport_key);
 
     uint32_t netkey_and_appkey_index = (transport_key->appkey_index << 12) | transport_key->netkey_index;
-    config_appkey_status(mesh_model_get_configuration_server(),  mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_SUCCESS);
+    config_appkey_status(mesh_node_get_configuration_server(),  mesh_pdu_netkey_index(access_pdu_in_process), mesh_pdu_src(access_pdu_in_process), netkey_and_appkey_index, MESH_FOUNDATION_STATUS_SUCCESS);
 
     mesh_access_message_processed(access_pdu_in_process);
 }
@@ -1134,7 +1134,7 @@ static void config_model_subscription_add_handler(mesh_model_t *mesh_model, mesh
 
 static void config_model_subscription_virtual_address_add_hash(void *arg){
     mesh_model_t * target_model = (mesh_model_t*) arg;
-    mesh_model_t * mesh_model = mesh_model_get_configuration_server();
+    mesh_model_t * mesh_model = mesh_node_get_configuration_server();
 
     // add if not exists
     mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_label_uuid(configuration_server_label_uuid);
@@ -1216,7 +1216,7 @@ static void config_model_subscription_overwrite_handler(mesh_model_t *mesh_model
 
 static void config_model_subscription_virtual_address_overwrite_hash(void *arg){
     mesh_model_t * target_model = (mesh_model_t*) arg;
-    mesh_model_t * mesh_model = mesh_model_get_configuration_server();
+    mesh_model_t * mesh_model = mesh_node_get_configuration_server();
 
     // add if not exists
     mesh_virtual_address_t * virtual_address = mesh_virtual_address_for_label_uuid(configuration_server_label_uuid);
@@ -1773,7 +1773,7 @@ static void config_heartbeat_publication_emit(mesh_heartbeat_publication_t * mes
     }
 }
 void mesh_configuration_server_feature_changed(void){
-    mesh_model_t * mesh_model = mesh_model_get_configuration_server();
+    mesh_model_t * mesh_model = mesh_node_get_configuration_server();
     mesh_heartbeat_publication_t * mesh_heartbeat_publication = &((mesh_configuration_server_model_context_t*) mesh_model->model_data)->heartbeat_publication;
 
     // filter features by observed features for heartbeats
