@@ -65,6 +65,18 @@ static void health_server_send_message(uint16_t src, uint16_t dest, uint16_t net
     mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, 0);
     mesh_access_send_unacknowledged_pdu(pdu);
 }
+
+static mesh_health_fault_t * mesh_health_server_fault_for_company_id(mesh_model_t *mesh_model, uint16_t company_id){
+    mesh_health_state_t * state = (mesh_health_state_t *) mesh_model->model_data;
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, &state->faults);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        mesh_health_fault_t * fault = (mesh_health_fault_t *) btstack_linked_list_iterator_next(&it);
+        if (fault->company_id == company_id) return fault;
+    }
+    return NULL;
+}
+
 // Health State
 const mesh_access_message_t mesh_foundation_health_period_status = {
         MESH_FOUNDATION_OPERATION_HEALTH_PERIOD_STATUS, "1"
@@ -91,13 +103,9 @@ static mesh_pdu_t * health_attention_status(void){
 static mesh_pdu_t * health_fault_status(mesh_model_t * mesh_model, uint32_t opcode, uint16_t company_id, bool registered_faults){
     mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(opcode);
     if (!transport_pdu) return NULL;
-    
-    mesh_health_state_t * state = (mesh_health_state_t *) mesh_model->model_data;
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &state->faults);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        mesh_health_fault_t * fault = (mesh_health_fault_t *) btstack_linked_list_iterator_next(&it);
-        if (fault->company_id != company_id) continue;
+
+    mesh_health_fault_t * fault = mesh_health_server_fault_for_company_id(mesh_model, company_id);
+    if (fault != NULL){
         mesh_access_transport_add_uint8(transport_pdu, fault->test_id);
         mesh_access_transport_add_uint16(transport_pdu, fault->company_id);
         int i;
@@ -112,6 +120,7 @@ static mesh_pdu_t * health_fault_status(mesh_model_t * mesh_model, uint32_t opco
         }
         return (mesh_pdu_t *) transport_pdu;    
     }
+
     // no company with company_id found
     mesh_access_transport_add_uint8(transport_pdu, 0);
     mesh_access_transport_add_uint16(transport_pdu, company_id);
@@ -134,12 +143,8 @@ static uint16_t process_message_fault_clear(mesh_model_t *mesh_model, mesh_pdu_t
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     uint16_t company_id = mesh_access_parser_get_u16(&parser);
 
-    mesh_health_state_t * state = (mesh_health_state_t *) mesh_model->model_data;
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, &state->faults);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        mesh_health_fault_t * fault = (mesh_health_fault_t *) btstack_linked_list_iterator_next(&it);
-        if (fault->company_id != company_id) continue;
+    mesh_health_fault_t * fault = mesh_health_server_fault_for_company_id(mesh_model, company_id);
+    if (fault != NULL){
         fault->num_registered_faults = 0;
         memset(fault->registered_faults, 0, sizeof(fault->registered_faults));
     }
@@ -229,18 +234,7 @@ static void process_message_period_set(mesh_model_t *mesh_model, mesh_pdu_t * pd
     
     if (state->fast_period_divisor != fast_period_divisor){
         state->fast_period_divisor = fast_period_divisor;
-        uint8_t event[5];
-        int pos = 0;
-        event[pos++] = HCI_EVENT_MESH_META;
-        // reserve for size
-        pos++;
-        event[pos++] = MESH_SUBEVENT_HEALTH_FAST_PERIOD_DIVISOR_CHANGED;
-        // element index
-        event[pos++] = mesh_model->element->element_index; 
-        // element index
-        event[pos++] = fast_period_divisor;
-        event[1] = pos - 2;
-        (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
+        // TODO: update model publication
     }
 }
 
@@ -322,4 +316,78 @@ const mesh_operation_t * mesh_health_server_get_operations(void){
 
 void mesh_health_server_register_packet_handler(mesh_model_t *mesh_model, btstack_packet_handler_t events_packet_handler){
     mesh_model->model_packet_handler = events_packet_handler;
+}
+
+void mesh_health_server_add_fault_state(mesh_model_t *mesh_model, uint16_t company_id, mesh_fault_t * fault_state){
+    mesh_health_state_t * state = (mesh_health_state_t *) mesh_model->model_data;
+    mesh_health_fault_t * fault = mesh_health_server_fault_for_company_id(mesh_model, company_id);
+    btstack_assert(fault == NULL);
+    fault_state->company_id = company_id;
+    btstack_linked_list_add(&state->faults, (btstack_linked_item_t *) fault_state);
+}
+
+void mesh_health_server_set_fault(mesh_model_t *mesh_model, uint16_t company_id, uint8_t fault_code){
+    uint16_t i;
+    mesh_health_fault_t * fault = mesh_health_server_fault_for_company_id(mesh_model, company_id);
+    btstack_assert(fault != NULL);
+
+    // add to registered faults
+    bool add_registered_fault = true;
+    for (i = 0; i < fault->num_registered_faults; i++){
+        if (fault->registered_faults[i] == fault_code){
+            add_registered_fault = false;
+            break;
+        }
+    }
+    if (add_registered_fault && (fault->num_registered_faults < MESH_MAX_NUM_FAULTS)){
+        fault->registered_faults[fault->num_registered_faults] = fault_code;
+        fault->num_registered_faults++;
+    }
+
+    // add to current faults
+    bool add_current_fault = true;
+    for (i = 0; i < fault->num_current_faults; i++){
+        if (fault->registered_faults[i] == fault_code){
+            add_current_fault = false;
+            break;
+        }
+    }
+    if (add_current_fault && (fault->num_current_faults < MESH_MAX_NUM_FAULTS)){
+        fault->registered_faults[fault->num_current_faults] = fault_code;
+        fault->num_current_faults++;
+    }
+
+    // update model publication period
+    if (add_current_fault && (fault->num_current_faults == 1)){
+        // TODO:
+    }  
+}
+
+void mesh_health_server_clear_fault(mesh_model_t *mesh_model, uint16_t company_id, uint8_t fault_code){
+    mesh_health_fault_t * fault = mesh_health_server_fault_for_company_id(mesh_model, company_id);
+    btstack_assert(fault != NULL);
+
+    // remove from current faults
+    uint16_t i;
+    bool shift_faults = false;
+    for (i = 0; i < fault->num_current_faults; i++){
+        if (!shift_faults){
+            if (fault->registered_faults[i] == fault_code){
+                shift_faults = true;
+            }
+        }
+        if (i < (MESH_MAX_NUM_FAULTS - 1)){
+            fault->registered_faults[i] = fault->registered_faults[i+1];
+        }
+    }
+
+    // update count
+    if (shift_faults){
+        fault->num_current_faults--;
+    }
+
+    // update model publication period
+    if (shift_faults && (fault->num_current_faults == 0)){
+        // TODO:
+    }  
 }

@@ -51,7 +51,7 @@ const mesh_operation_t * mesh_health_server_get_operations(void);
 
 /**
  * @brief Register packet handler
- * @param generic_level_client_model
+ * @param mesh_model for health server
  * @param events_packet_handler
  */
 void mesh_health_server_register_packet_handler(mesh_model_t *mesh_model, btstack_packet_handler_t events_packet_handler);
@@ -60,6 +60,31 @@ void mesh_health_server_register_packet_handler(mesh_model_t *mesh_model, btstac
  * @brief Notify health server that test was perfomed
  */
 void mesh_health_server_report_test_done(uint16_t element_index, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t test_id, uint16_t company_id);
+
+/**
+ * @brief Provide fault state memory
+ * @param mesh_model for health server
+ * @param company_id
+ * @param fault_state
+ */
+void mesh_health_server_add_fault_state(mesh_model_t *mesh_model, uint16_t company_id, mesh_fault_t *  fault_state);
+
+/*
+ * @brief Set fault
+ * @param mesh_model for health server
+ * @param company_id
+ * @param fault_code
+ */
+void mesh_health_server_set_fault(mesh_model_t *mesh_model, uint16_t company_id, uint8_t fault_code);
+
+/*
+ * @brief Clear fault
+ * @param mesh_model for health server
+ * @param company_id
+ * @param fault_code
+ */
+void mesh_health_server_clear_fault(mesh_model_t *mesh_model, uint16_t company_id, uint8_t fault_code);
+
 
 #ifdef __cplusplus
 } /* end of extern "C" */
