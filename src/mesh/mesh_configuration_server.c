@@ -283,7 +283,14 @@ static void config_composition_data_status(uint16_t netkey_index, uint16_t dest)
     // CRPL - number of protection list entries
     mesh_access_transport_add_uint16(transport_pdu, 1);
     // Features - Relay, Proxy, Friend, Lower Power, ...
-    mesh_access_transport_add_uint16(transport_pdu, 0);
+    uint16_t features = 0;
+#ifdef ENABLE_MESH_RELAY
+    features |= 1;
+#endif
+#ifdef ENABLE_MESH_PROXY_SERVER
+    features |= 2;
+#endif
+    mesh_access_transport_add_uint16(transport_pdu, features);
 
     mesh_element_iterator_t element_it;
     mesh_element_iterator_init(&element_it);
