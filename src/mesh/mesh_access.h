@@ -88,7 +88,7 @@ typedef enum {
     MODEL_STATE_ID_GENERIC_LEVEL  = (BLUETOOTH_COMPANY_ID_BLUETOOTH_SIG_INC << 16) | 1u,
 } model_state_id_t;
 
-#define MESH_MAX_NUM_FAULTS 3
+#define MESH_MAX_NUM_FAULTS 5
 
 typedef struct {
     // linked list item
@@ -100,9 +100,19 @@ typedef struct {
 } mesh_fault_t;
 
 typedef struct {
-    btstack_linked_list_t current_faults;
-    btstack_linked_list_t registered_faults;
+    // linked list item
+    btstack_linked_item_t item;
+    uint8_t  test_id;
+    uint16_t company_id;
+    uint16_t num_current_faults;
+    uint16_t num_registered_faults;
+    uint8_t  current_faults[MESH_MAX_NUM_FAULTS];
+    uint8_t  registered_faults[MESH_MAX_NUM_FAULTS];
+} mesh_health_fault_t;
 
+typedef struct {
+    // linked list of mesh_health_fault items
+    btstack_linked_list_t faults;
     uint8_t fast_period_divisor;
 } mesh_health_state_t;
 
