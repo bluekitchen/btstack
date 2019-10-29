@@ -615,6 +615,9 @@ int btstack_main(void)
     // Loc - bottom - https://www.bluetooth.com/specifications/assigned-numbers/gatt-namespace-descriptors
     mesh_node_set_element_location(mesh_node_get_primary_element(), 0x103);
 
+    // Setup node info
+    mesh_node_set_info(BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 0, 0);
+
     // Setup Generic On/Off model
     mesh_generic_on_off_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_GENERIC_ON_OFF_SERVER);
     mesh_generic_on_off_server_model.operations = mesh_generic_on_off_server_get_operations();    

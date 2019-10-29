@@ -58,6 +58,10 @@ static uint16_t mid_counter;
 static uint8_t mesh_node_device_uuid[16];
 static int     mesh_node_have_device_uuid;
 
+static uint16_t mesh_node_company_id;
+static uint16_t mesh_node_product_id;
+static uint16_t mesh_node_product_version_id;
+
 void mesh_node_primary_element_address_set(uint16_t unicast_address){
     primary_element_address = unicast_address;
 }
@@ -69,6 +73,24 @@ uint16_t mesh_node_get_primary_element_address(void){
 void mesh_node_init(void){
     // dd Primary Element to list of elements
     mesh_node_add_element(&primary_element);
+}
+
+void mesh_node_set_info(uint16_t company_id, uint16_t product_id, uint16_t product_version_id){
+    mesh_node_company_id = company_id;
+    mesh_node_product_id = product_id;
+    mesh_node_product_version_id = product_version_id;
+}
+
+uint16_t mesh_node_get_company_id(void){
+    return mesh_node_company_id;
+}
+
+uint16_t mesh_node_get_product_id(void){
+    return mesh_node_product_id;
+}
+
+uint16_t mesh_node_get_product_version_id(void){
+    return mesh_node_product_version_id;
 }
 
 void mesh_node_add_element(mesh_element_t * element){

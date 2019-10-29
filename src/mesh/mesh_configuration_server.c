@@ -275,11 +275,11 @@ static void config_composition_data_status(uint16_t netkey_index, uint16_t dest)
     mesh_access_transport_add_uint8(transport_pdu, 0);
 
     // CID
-    mesh_access_transport_add_uint16(transport_pdu, BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH);
+    mesh_access_transport_add_uint16(transport_pdu, mesh_node_get_company_id());
     // PID
-    mesh_access_transport_add_uint16(transport_pdu, 0);
+    mesh_access_transport_add_uint16(transport_pdu, mesh_node_get_product_id());
     // VID
-    mesh_access_transport_add_uint16(transport_pdu, 0);
+    mesh_access_transport_add_uint16(transport_pdu, mesh_node_get_product_version_id());
     // CRPL - number of protection list entries
     mesh_access_transport_add_uint16(transport_pdu, 1);
     // Features - Relay, Proxy, Friend, Lower Power, ...

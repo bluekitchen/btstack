@@ -275,6 +275,32 @@ void mesh_node_set_device_uuid(const uint8_t * device_uuid);
  */
 const uint8_t * mesh_node_get_device_uuid(void);
 
+/**
+ * @brief Set node info reported in Composition Data Page 0
+ * @param company_id (cid)
+ * @param product_id (pid)
+ * @param product_version_id (vid)
+ */
+void mesh_node_set_info(uint16_t company_id, uint16_t product_id, uint16_t product_version_id);
+
+/**
+ * @brief Get node info: company_id
+ * @returns company_id
+ */
+uint16_t mesh_node_get_company_id(void);
+
+/**
+ * @brief Get node info: product_id
+ * @returns product_id
+ */
+uint16_t mesh_node_get_product_id(void);
+
+/**
+ * @brief Get node info: product_version_id
+ * @returns product_version_id
+ */
+uint16_t mesh_node_get_product_version_id(void);
+
 #if defined __cplusplus
 }
 #endif
