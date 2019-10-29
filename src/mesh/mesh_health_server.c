@@ -133,6 +133,16 @@ static uint16_t process_message_fault_clear(mesh_model_t *mesh_model, mesh_pdu_t
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     uint16_t company_id = mesh_access_parser_get_u16(&parser);
+
+    mesh_health_state_t * state = (mesh_health_state_t *) mesh_model->model_data;
+    btstack_linked_list_iterator_t it;    
+    btstack_linked_list_iterator_init(&it, &state->faults);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        mesh_health_fault_t * fault = (mesh_health_fault_t *) btstack_linked_list_iterator_next(&it);
+        if (fault->company_id != company_id) continue;
+        fault->num_registered_faults = 0;
+        memset(fault->registered_faults, 0, sizeof(fault->registered_faults));
+    }
     return company_id;
 }
 
@@ -146,7 +156,7 @@ static void health_fault_clear_handler(mesh_model_t * mesh_model, mesh_pdu_t * p
 }
 
 static void health_fault_clear_unacknowledged_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
-    process_message_fault_clear(mesh_model, pdu);
+    (void) process_message_fault_clear(mesh_model, pdu);
     mesh_access_message_processed(pdu);
 }
 
@@ -312,15 +322,4 @@ const mesh_operation_t * mesh_health_server_get_operations(void){
 
 void mesh_health_server_register_packet_handler(mesh_model_t *mesh_model, btstack_packet_handler_t events_packet_handler){
     mesh_model->model_packet_handler = events_packet_handler;
-}
-
-void health_server_clear_faults(btstack_linked_list_t * faults, uint16_t company_id){
-    btstack_linked_list_iterator_t it;    
-    btstack_linked_list_iterator_init(&it, faults);
-    while (btstack_linked_list_iterator_has_next(&it)){
-        mesh_fault_t * fault = (mesh_fault_t *) btstack_linked_list_iterator_next(&it);
-        if (fault->company_id != company_id) continue;
-        memset(fault->faults, 0, sizeof(fault->faults));
-        return;    
-    }
 }

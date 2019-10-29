@@ -7916,25 +7916,6 @@ static inline uint32_t mesh_subevent_generic_level_status_get_remaining_time_ms(
 }
 
 /**
- * @brief Get field element_index from event MESH_SUBEVENT_HEALTH_CLEAR_REGISTERED_FAULTS
- * @param event packet
- * @return element_index
- * @note: btstack_type 1
- */
-static inline uint8_t mesh_subevent_health_clear_registered_faults_get_element_index(const uint8_t * event){
-    return event[3];
-}
-/**
- * @brief Get field company_id from event MESH_SUBEVENT_HEALTH_CLEAR_REGISTERED_FAULTS
- * @param event packet
- * @return company_id
- * @note: btstack_type 2
- */
-static inline uint16_t mesh_subevent_health_clear_registered_faults_get_company_id(const uint8_t * event){
-    return little_endian_read_16(event, 4);
-}
-
-/**
  * @brief Get field element_index from event MESH_SUBEVENT_HEALTH_PERFORM_TEST
  * @param event packet
  * @return element_index
@@ -7996,25 +7977,6 @@ static inline uint16_t mesh_subevent_health_perform_test_get_company_id(const ui
  */
 static inline uint8_t mesh_subevent_health_perform_test_get_test_id(const uint8_t * event){
     return event[16];
-}
-
-/**
- * @brief Get field element_index from event MESH_SUBEVENT_HEALTH_FAST_PERIOD_DIVISOR_CHANGED
- * @param event packet
- * @return element_index
- * @note: btstack_type 1
- */
-static inline uint8_t mesh_subevent_health_fast_period_divisor_changed_get_element_index(const uint8_t * event){
-    return event[3];
-}
-/**
- * @brief Get field fast_period_divisor from event MESH_SUBEVENT_HEALTH_FAST_PERIOD_DIVISOR_CHANGED
- * @param event packet
- * @return fast_period_divisor
- * @note: btstack_type 1
- */
-static inline uint8_t mesh_subevent_health_fast_period_divisor_changed_get_fast_period_divisor(const uint8_t * event){
-    return event[4];
 }
 
 /**

@@ -2924,15 +2924,6 @@ typedef uint8_t sm_key_t[16];
  */
 #define MESH_SUBEVENT_GENERIC_LEVEL_STATUS                                           0x32
 
-
-/**
- * @format 112
- * @param subevent_code
- * @param element_index
- * @param company_id
- */
-#define MESH_SUBEVENT_HEALTH_CLEAR_REGISTERED_FAULTS                                 0x33
-
 /**
  * @format 11422221
  * @param subevent_code
@@ -2944,21 +2935,13 @@ typedef uint8_t sm_key_t[16];
  * @param company_id
  * @param test_id
  */
-#define MESH_SUBEVENT_HEALTH_PERFORM_TEST                                            0x34
-
-/**
- * @format 111
- * @param subevent_code
- * @param element_index
- * @param fast_period_divisor
- */
-#define MESH_SUBEVENT_HEALTH_FAST_PERIOD_DIVISOR_CHANGED                             0x35
+#define MESH_SUBEVENT_HEALTH_PERFORM_TEST                                            0x33
 
 /**
  * @format 11
  * @param subevent_code
  * @param element_index
  */
-#define MESH_SUBEVENT_HEALTH_ATTENTION_TIMER_CHANGED                                 0x36
+#define MESH_SUBEVENT_HEALTH_ATTENTION_TIMER_CHANGED                                 0x34
 
 #endif
