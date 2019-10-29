@@ -89,6 +89,8 @@ static int ui_pin_offset;
 
 static mesh_publication_model_t generic_on_off_server_publication;
 
+static mesh_health_fault_t health_fault;
+
 static void mesh_provisioning_dump(const mesh_provisioning_data_t * data){
     mesh_network_key_t * key = data->network_key;
     printf("UnicastAddr:   0x%02x\n", data->unicast_address);
@@ -471,6 +473,7 @@ static void show_usage(void){
     printf("N      - Stop Advertising with Node Identity\n");
 #endif
     printf("g      - Generic ON/OFF Server Toggle Value\n");
+    printf("f      - Register Battery Low warning\n");
     printf("\n");
 }
 
@@ -558,6 +561,9 @@ static void stdin_process(char cmd){
             mesh_proxy_start_advertising_with_node_id();
             break;
 #endif
+        case 'f':
+            // 0x01 = Battery Low
+            mesh_health_server_set_fault(mesh_node_get_health_server(), BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 1);
         case ' ':
             show_usage();
             break;
@@ -617,6 +623,9 @@ int btstack_main(void)
 
     // Setup node info
     mesh_node_set_info(BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, 0, 0);
+
+    // setup health server
+    mesh_health_server_add_fault_state(mesh_node_get_health_server(), BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, &health_fault);
 
     // Setup Generic On/Off model
     mesh_generic_on_off_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_GENERIC_ON_OFF_SERVER);
