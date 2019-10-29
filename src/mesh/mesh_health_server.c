@@ -174,6 +174,17 @@ static void health_fault_test_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     
     processed_pdu = pdu;
 
+    uint8_t element_index = mesh_model->element->element_index;
+    uint16_t dest = mesh_pdu_src(pdu);
+    uint16_t netkey_index = mesh_pdu_netkey_index(pdu);
+    uint16_t appkey_index = mesh_pdu_appkey_index(pdu);
+
+    // short-cut if not packet handler set
+    if (mesh_model->model_packet_handler == NULL){
+        mesh_health_server_report_test_done(element_index, dest, netkey_index, appkey_index, test_id, company_id);
+        return;
+    }
+
     uint8_t event[17];
     int pos = 0;
     event[pos++] = HCI_EVENT_MESH_META;
@@ -181,16 +192,16 @@ static void health_fault_test_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     pos++;
     event[pos++] = MESH_SUBEVENT_HEALTH_PERFORM_TEST;
     // element index
-    event[pos++] = mesh_model->element->element_index; 
+    event[pos++] = element_index; 
     // model_id
     little_endian_store_32(event, pos, mesh_model->model_identifier);
     pos += 4;
     
-    little_endian_store_16(event, pos, mesh_pdu_src(pdu));
+    little_endian_store_16(event, pos, dest);
     pos += 2;
-    little_endian_store_16(event, pos, mesh_pdu_netkey_index(pdu));
+    little_endian_store_16(event, pos, netkey_index);
     pos += 2;
-    little_endian_store_16(event, pos, mesh_pdu_appkey_index(pdu));
+    little_endian_store_16(event, pos, appkey_index);
     pos += 2;
     little_endian_store_16(event, pos, company_id);
     pos += 2;
