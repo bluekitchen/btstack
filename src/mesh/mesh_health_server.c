@@ -166,14 +166,12 @@ static void health_fault_clear_unacknowledged_handler(mesh_model_t *mesh_model, 
 }
 
 
-static void health_fault_test_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+static void health_fault_test_process_message(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     uint8_t  test_id    = mesh_access_parser_get_u8(&parser);
     uint16_t company_id = mesh_access_parser_get_u16(&parser);
     
-    processed_pdu = pdu;
-
     uint8_t element_index = mesh_model->element->element_index;
     uint16_t dest = mesh_pdu_src(pdu);
     uint16_t netkey_index = mesh_pdu_netkey_index(pdu);
@@ -211,6 +209,17 @@ static void health_fault_test_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu
     (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
 
+static void health_fault_test_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
+    processed_pdu = pdu;
+    health_fault_test_process_message(mesh_model, pdu);
+}
+
+static void health_fault_test_unacknowledged_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu){
+    processed_pdu = NULL;
+    health_fault_test_process_message(mesh_model, pdu);
+    mesh_access_message_processed(pdu);
+}
+
 void mesh_health_server_report_test_done(uint16_t element_index, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t test_id, uint16_t company_id){
     mesh_element_t * element = mesh_node_element_for_index(element_index);
     if (element == NULL) return;
@@ -220,16 +229,18 @@ void mesh_health_server_report_test_done(uint16_t element_index, uint16_t dest, 
     mesh_health_fault_t * fault = mesh_health_server_fault_for_company_id(mesh_model, company_id);
     fault->test_id = test_id;
 
-    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_fault_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS, company_id, company_id);
-    if (!transport_pdu) return;
-    health_server_send_message(mesh_node_get_primary_element_address() + element_index, dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);
-    mesh_access_message_processed(processed_pdu);
+    // response for acknowledged health fault test
+    if (processed_pdu != NULL){
+        mesh_access_message_processed(processed_pdu);
+        processed_pdu = NULL;
+
+        mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_fault_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS, company_id, company_id);
+        if (!transport_pdu) return;
+        health_server_send_message(mesh_node_get_primary_element_address() + element_index, dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);
+    }
 }
 
-static void health_fault_test_unacknowledged_handler(mesh_model_t * mesh_model, mesh_pdu_t * pdu){
-    health_fault_test_handler(mesh_model, pdu);
-    mesh_access_message_processed(pdu);
-}
+
 
 static void health_period_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_period_status(mesh_model);
