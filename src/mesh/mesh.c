@@ -143,6 +143,7 @@ static mesh_model_t                 mesh_configuration_server_model;
 static mesh_configuration_server_model_context_t mesh_configuration_server_model_context;
 
 // Mandatory Health Server
+static mesh_publication_model_t     mesh_health_server_publication;
 static mesh_model_t                 mesh_health_server_model;
 static mesh_health_state_t  mesh_health_server_model_context;
 
@@ -1179,8 +1180,10 @@ static void mesh_node_setup_default_models(void){
     // Config Health Server
     mesh_health_server_model.model_identifier = mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_HEALTH_SERVER);
     mesh_health_server_model.model_data       = &mesh_health_server_model_context;
-    mesh_health_server_model.operations       = mesh_health_server_get_operations();    
+    mesh_health_server_model.operations       = mesh_health_server_get_operations();
+    mesh_health_server_model.publication_model = &mesh_health_server_publication;
     mesh_element_add_model(mesh_node_get_primary_element(), &mesh_health_server_model);
+    mesh_health_server_set_publication_model(&mesh_health_server_model, &mesh_health_server_publication);
 }
 
 void mesh_init(void){

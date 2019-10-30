@@ -89,41 +89,40 @@ const mesh_access_message_t mesh_foundation_health_attention_status = {
 static mesh_pdu_t * health_period_status(mesh_model_t * mesh_model){
     mesh_health_state_t * state = (mesh_health_state_t *) mesh_model->model_data;
     // setup message
-    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_health_period_status, state->fast_period_divisor); 
+    mesh_network_pdu_t * transport_pdu = mesh_access_setup_unsegmented_message(&mesh_foundation_health_period_status, state->fast_period_divisor);
     return (mesh_pdu_t *) transport_pdu;
 }
 
 static mesh_pdu_t * health_attention_status(void){
     // setup message
-    mesh_transport_pdu_t * transport_pdu = mesh_access_setup_segmented_message(&mesh_foundation_health_attention_status, mesh_attention_timer_get()); 
+    mesh_network_pdu_t * transport_pdu = mesh_access_setup_unsegmented_message(&mesh_foundation_health_attention_status, mesh_attention_timer_get());
     return (mesh_pdu_t *) transport_pdu;
 }
 
 // report fault status - used for both current as well as registered faults, see registered_faults param
 static mesh_pdu_t * health_fault_status(mesh_model_t * mesh_model, uint32_t opcode, uint16_t company_id, bool registered_faults){
-    mesh_transport_pdu_t * transport_pdu = mesh_access_transport_init(opcode);
+    mesh_network_pdu_t * transport_pdu = mesh_access_network_init(opcode);
     if (!transport_pdu) return NULL;
 
     mesh_health_fault_t * fault = mesh_health_server_fault_for_company_id(mesh_model, company_id);
-    if (fault != NULL){
-        mesh_access_transport_add_uint8(transport_pdu, fault->test_id);
-        mesh_access_transport_add_uint16(transport_pdu, fault->company_id);
+    if (fault == NULL){
+        // no fault state with company_id found
+        mesh_access_network_add_uint8(transport_pdu, 0);
+        mesh_access_network_add_uint16(transport_pdu, company_id);
+    } else {
+        mesh_access_network_add_uint8(transport_pdu, fault->test_id);
+        mesh_access_network_add_uint16(transport_pdu, fault->company_id);
         int i;
         if (registered_faults){
             for (i = 0; i < fault->num_registered_faults; i++){
-                 mesh_access_transport_add_uint8(transport_pdu, fault->registered_faults[i]);
+                 mesh_access_network_add_uint8(transport_pdu, fault->registered_faults[i]);
             }
         }  else {
             for (i = 0; i < fault->num_current_faults; i++){
-                 mesh_access_transport_add_uint8(transport_pdu, fault->current_faults[i]);
+                 mesh_access_network_add_uint8(transport_pdu, fault->current_faults[i]);
             }
         }
-        return (mesh_pdu_t *) transport_pdu;    
     }
-
-    // no company with company_id found
-    mesh_access_transport_add_uint8(transport_pdu, 0);
-    mesh_access_transport_add_uint16(transport_pdu, company_id);
     return (mesh_pdu_t *) transport_pdu;
 }
 
@@ -345,6 +344,28 @@ static void health_attention_set_unacknowledged_handler(mesh_model_t *mesh_model
     mesh_access_message_processed(pdu);
 }
 
+static mesh_pdu_t * mesh_health_server_publish_state_fn(struct mesh_model * mesh_model){
+    // iterate over fault states and yield if fault state with current state that has fault registered
+    mesh_health_state_t * state = (mesh_health_state_t *) mesh_model->model_data;
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &state->faults);
+    uint16_t company_id = mesh_node_get_company_id();
+    bool active_fault = false;
+    while (btstack_linked_list_iterator_has_next(&it)){
+        mesh_health_fault_t * fault = (mesh_health_fault_t *) btstack_linked_list_iterator_next(&it);
+        if (fault->num_current_faults > 0){
+            active_fault = true;
+            company_id = fault->company_id;
+            break;
+        }
+    }
+    // TODO: update fast period
+    UNUSED(active_fault);
+    
+    // create current status
+    return health_fault_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_CURRENT_STATUS, company_id, false);
+}
+
 // Health Message
 const static mesh_operation_t mesh_health_model_operations[] = {
     { MESH_FOUNDATION_OPERATION_HEALTH_FAULT_GET,                                   2, health_fault_get_handler },
@@ -442,4 +463,11 @@ void mesh_health_server_clear_fault(mesh_model_t *mesh_model, uint16_t company_i
     if (shift_faults && (fault->num_current_faults == 0)){
         // TODO:
     }  
+}
+
+void mesh_health_server_set_publication_model(mesh_model_t * mesh_model, mesh_publication_model_t * publication_model){
+    btstack_assert(mesh_model != NULL);
+    btstack_assert(publication_model != NULL);
+    publication_model->publish_state_fn = &mesh_health_server_publish_state_fn;
+    mesh_model->publication_model = publication_model;
 }
