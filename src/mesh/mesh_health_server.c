@@ -222,7 +222,7 @@ void mesh_health_server_report_test_done(uint16_t element_index, uint16_t dest, 
 
     mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_fault_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS, company_id, company_id);
     if (!transport_pdu) return;
-    health_server_send_message(element_index, dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);
+    health_server_send_message(mesh_node_get_primary_element_address() + element_index, dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);
     mesh_access_message_processed(processed_pdu);
 }
 
