@@ -192,7 +192,7 @@ static void health_fault_test_process_message(mesh_model_t *mesh_model, mesh_pdu
         return;
     }
 
-    uint8_t event[17];
+    uint8_t event[13];
     int pos = 0;
     event[pos++] = HCI_EVENT_MESH_META;
     // reserve for size
@@ -200,9 +200,6 @@ static void health_fault_test_process_message(mesh_model_t *mesh_model, mesh_pdu
     event[pos++] = MESH_SUBEVENT_HEALTH_PERFORM_TEST;
     // element index
     event[pos++] = element_index; 
-    // model_id
-    little_endian_store_32(event, pos, mesh_model->model_identifier);
-    pos += 4;
     
     little_endian_store_16(event, pos, dest);
     pos += 2;
@@ -464,7 +461,7 @@ void mesh_health_server_clear_fault(mesh_model_t *mesh_model, uint16_t company_i
     if (shift_faults && (fault->num_current_faults == 0)){
         mesh_health_state_t * health_state = (mesh_health_state_t *) mesh_model->model_data;
         mesh_model->publication_model->period_divisor = health_state->fast_period_divisor;
-    }  
+    }
 }
 
 void mesh_health_server_set_publication_model(mesh_model_t * mesh_model, mesh_publication_model_t * publication_model){
