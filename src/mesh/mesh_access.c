@@ -941,7 +941,7 @@ static void mesh_model_publication_setup_publication(mesh_publication_model_t * 
     publication_model->retransmit_count = mesh_model_publication_retransmit_count(publication_model->retransmit);
 
     // schedule next publication or retransmission
-    uint32_t publication_period_ms = mesh_access_time_gdtt2ms(publication_model->period);
+    uint32_t publication_period_ms = mesh_access_time_gdtt2ms(publication_model->period) >> publication_model->period_divisor;
 
     // set next publication
     if (publication_period_ms != 0){
@@ -954,7 +954,7 @@ static void mesh_model_publication_setup_publication(mesh_publication_model_t * 
 
 // assumes retransmit_count is valid
 static void mesh_model_publication_setup_retransmission(mesh_publication_model_t * publication_model, uint32_t now){
-    uint32_t publication_period_ms = mesh_access_time_gdtt2ms(publication_model->period);
+    uint32_t publication_period_ms = mesh_access_time_gdtt2ms(publication_model->period) >> publication_model->period_divisor;
 
     // retransmission done
     if (publication_model->retransmit_count == 0) {
@@ -968,7 +968,8 @@ static void mesh_model_publication_setup_retransmission(mesh_publication_model_t
     }
 
     // calc next retransmit time
-    uint32_t retransmission_ms = now + mesh_model_publication_retransmission_period_ms(publication_model->retransmit);
+    uint32_t retransmission_period_ms = mesh_model_publication_retransmission_period_ms(publication_model->retransmit) >> publication_model->period_divisor;
+    uint32_t retransmission_ms = now + retransmission_period_ms;
 
     // check next publication timeout is before next retransmission
     if (publication_period_ms != 0){

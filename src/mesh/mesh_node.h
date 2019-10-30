@@ -82,6 +82,7 @@ typedef struct {
     uint16_t appkey_index;
     uint8_t  friendship_credential_flag;
     uint8_t  period;
+    uint8_t  period_divisor;  // divide period by 2 ^ period_divisor, default = 2^0 = 1, added for Health Server
     uint8_t  ttl;
     uint8_t  retransmit;
 } mesh_publication_model_t;
