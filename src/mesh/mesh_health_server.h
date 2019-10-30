@@ -72,7 +72,7 @@ void mesh_health_server_report_test_not_supported(uint16_t element_index, uint16
  * @param company_id
  * @param fault_state
  */
-void mesh_health_server_add_fault_state(mesh_model_t *mesh_model, uint16_t company_id, mesh_fault_t *  fault_state);
+void mesh_health_server_add_fault_state(mesh_model_t *mesh_model, uint16_t company_id, mesh_health_fault_t * fault_state);
 
 /*
  * @brief Set fault

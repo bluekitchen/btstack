@@ -369,7 +369,7 @@ void mesh_health_server_register_packet_handler(mesh_model_t *mesh_model, btstac
     mesh_model->model_packet_handler = events_packet_handler;
 }
 
-void mesh_health_server_add_fault_state(mesh_model_t *mesh_model, uint16_t company_id, mesh_fault_t * fault_state){
+void mesh_health_server_add_fault_state(mesh_model_t *mesh_model, uint16_t company_id, mesh_health_fault_t * fault_state){
     mesh_health_state_t * state = (mesh_health_state_t *) mesh_model->model_data;
     mesh_health_fault_t * fault = mesh_health_server_fault_for_company_id(mesh_model, company_id);
     btstack_assert(fault == NULL);

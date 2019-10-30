@@ -95,15 +95,6 @@ typedef struct {
     btstack_linked_item_t item;
     uint8_t  test_id;
     uint16_t company_id;
-    uint16_t num_faults;
-    uint8_t  faults[MESH_MAX_NUM_FAULTS];
-} mesh_fault_t;
-
-typedef struct {
-    // linked list item
-    btstack_linked_item_t item;
-    uint8_t  test_id;
-    uint16_t company_id;
     uint16_t num_current_faults;
     uint16_t num_registered_faults;
     uint8_t  current_faults[MESH_MAX_NUM_FAULTS];
