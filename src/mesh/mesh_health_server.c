@@ -177,9 +177,13 @@ static void health_fault_test_process_message(mesh_model_t *mesh_model, mesh_pdu
     uint16_t netkey_index = mesh_pdu_netkey_index(pdu);
     uint16_t appkey_index = mesh_pdu_appkey_index(pdu);
 
-    // short-cut if not packet handler set
+    // short-cut if not packet handler set, but only for standard test with our company id
     if (mesh_model->model_packet_handler == NULL){
-        mesh_health_server_report_test_done(element_index, dest, netkey_index, appkey_index, test_id, company_id);
+        if ((test_id == 0) && (company_id == mesh_node_get_company_id())) {
+            mesh_health_server_report_test_done(element_index, dest, netkey_index, appkey_index, test_id, company_id);
+        } else {
+            mesh_health_server_report_test_not_supported(element_index, dest, netkey_index, appkey_index, test_id, company_id);
+        }
         return;
     }
 
@@ -220,6 +224,22 @@ static void health_fault_test_unacknowledged_handler(mesh_model_t * mesh_model, 
     mesh_access_message_processed(pdu);
 }
 
+void mesh_health_server_report_test_not_supported(uint16_t element_index, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t test_id, uint16_t company_id){
+    UNUSED(element_index);
+    UNUSED(dest);
+    UNUSED(netkey_index);
+    UNUSED(appkey_index);
+    UNUSED(test_id);
+    UNUSED(company_id);
+    
+    // report acknowledged message processed
+    if (processed_pdu != NULL){
+        mesh_pdu_t * pdu = processed_pdu;
+        processed_pdu = NULL;
+        mesh_access_message_processed(pdu);
+    }
+}
+
 void mesh_health_server_report_test_done(uint16_t element_index, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t test_id, uint16_t company_id){
     mesh_element_t * element = mesh_node_element_for_index(element_index);
     if (element == NULL) return;
@@ -231,8 +251,9 @@ void mesh_health_server_report_test_done(uint16_t element_index, uint16_t dest, 
 
     // response for acknowledged health fault test
     if (processed_pdu != NULL){
-        mesh_access_message_processed(processed_pdu);
+        mesh_pdu_t * pdu = processed_pdu;
         processed_pdu = NULL;
+        mesh_access_message_processed(pdu);
 
         mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_fault_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS, company_id, company_id);
         if (!transport_pdu) return;
