@@ -30,6 +30,9 @@ CFLAGS  += -g -Wall -Werror \
 	-I$(BTSTACK_ROOT)/chipset/bcm \
 	-I${BTSTACK_ROOT}/3rd-party/tinydir
 
+# add 'real time' lib for clock_gettime
+LDFLAGS += -lrt
+
 VPATH += ${BTSTACK_ROOT}/platform/posix
 VPATH += ${BTSTACK_ROOT}/platform/embedded
 
