@@ -177,9 +177,15 @@ static void health_fault_test_process_message(mesh_model_t *mesh_model, mesh_pdu
     uint16_t netkey_index = mesh_pdu_netkey_index(pdu);
     uint16_t appkey_index = mesh_pdu_appkey_index(pdu);
 
-    // short-cut if not packet handler set, but only for standard test with our company id
+    // check if fault state exists for company id
+    mesh_health_fault_t * fault = mesh_health_server_fault_for_company_id(mesh_model, company_id);
+    if (fault == NULL){
+        mesh_health_server_report_test_not_supported(element_index, dest, netkey_index, appkey_index, test_id, company_id);
+    }
+
+    // short-cut if not packet handler set, but only for standard test
     if (mesh_model->model_packet_handler == NULL){
-        if ((test_id == 0) && (company_id == mesh_node_get_company_id())) {
+        if (test_id == 0) {
             mesh_health_server_report_test_done(element_index, dest, netkey_index, appkey_index, test_id, company_id);
         } else {
             mesh_health_server_report_test_not_supported(element_index, dest, netkey_index, appkey_index, test_id, company_id);
