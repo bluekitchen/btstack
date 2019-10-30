@@ -359,8 +359,6 @@ static mesh_pdu_t * mesh_health_server_publish_state_fn(struct mesh_model * mesh
             break;
         }
     }
-    // TODO: update fast period
-    UNUSED(active_fault);
     
     // create current status
     return health_fault_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_CURRENT_STATUS, company_id, false);
@@ -430,9 +428,12 @@ void mesh_health_server_set_fault(mesh_model_t *mesh_model, uint16_t company_id,
         fault->num_current_faults++;
     }
 
+    if (mesh_model->publication_model == NULL) return;
+    
     // update model publication period
     if (add_current_fault && (fault->num_current_faults == 1)){
-        // TODO:
+        mesh_health_state_t * health_state = (mesh_health_state_t *) mesh_model->model_data;
+        mesh_model->publication_model->period_divisor = health_state->fast_period_divisor;
     }  
 }
 
@@ -461,7 +462,8 @@ void mesh_health_server_clear_fault(mesh_model_t *mesh_model, uint16_t company_i
 
     // update model publication period
     if (shift_faults && (fault->num_current_faults == 0)){
-        // TODO:
+        mesh_health_state_t * health_state = (mesh_health_state_t *) mesh_model->model_data;
+        mesh_model->publication_model->period_divisor = health_state->fast_period_divisor;
     }  
 }
 
