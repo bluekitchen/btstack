@@ -2927,7 +2927,6 @@ typedef uint8_t sm_key_t[16];
 /**
  * @format 1122221
  * @param subevent_code
- * @param element_index
  * @param dest
  * @param netkey_index
  * @param appkey_index

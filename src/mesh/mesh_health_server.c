@@ -171,7 +171,6 @@ static void health_fault_test_process_message(mesh_model_t *mesh_model, mesh_pdu
     uint8_t  test_id    = mesh_access_parser_get_u8(&parser);
     uint16_t company_id = mesh_access_parser_get_u16(&parser);
     
-    uint8_t element_index = mesh_model->element->element_index;
     uint16_t dest = mesh_pdu_src(pdu);
     uint16_t netkey_index = mesh_pdu_netkey_index(pdu);
     uint16_t appkey_index = mesh_pdu_appkey_index(pdu);
@@ -179,27 +178,24 @@ static void health_fault_test_process_message(mesh_model_t *mesh_model, mesh_pdu
     // check if fault state exists for company id
     mesh_health_fault_t * fault = mesh_health_server_fault_for_company_id(mesh_model, company_id);
     if (fault == NULL){
-        mesh_health_server_report_test_not_supported(element_index, dest, netkey_index, appkey_index, test_id, company_id);
+        mesh_health_server_report_test_not_supported(dest, netkey_index, appkey_index, test_id, company_id);
     }
 
     // short-cut if not packet handler set, but only for standard test
     if (mesh_model->model_packet_handler == NULL){
         if (test_id == 0) {
-            mesh_health_server_report_test_done(element_index, dest, netkey_index, appkey_index, test_id, company_id);
+            mesh_health_server_report_test_done(dest, netkey_index, appkey_index, test_id, company_id);
         } else {
-            mesh_health_server_report_test_not_supported(element_index, dest, netkey_index, appkey_index, test_id, company_id);
+            mesh_health_server_report_test_not_supported(dest, netkey_index, appkey_index, test_id, company_id);
         }
         return;
     }
 
-    uint8_t event[13];
+    uint8_t event[12];
     int pos = 0;
     event[pos++] = HCI_EVENT_MESH_META;
-    // reserve for size
-    pos++;
+    event[pos++] = sizeof(event) - 2;
     event[pos++] = MESH_SUBEVENT_HEALTH_PERFORM_TEST;
-    // element index
-    event[pos++] = element_index; 
     
     little_endian_store_16(event, pos, dest);
     pos += 2;
@@ -210,7 +206,6 @@ static void health_fault_test_process_message(mesh_model_t *mesh_model, mesh_pdu
     little_endian_store_16(event, pos, company_id);
     pos += 2;
     event[pos++] = test_id; 
-    event[1] = pos - 2;
 
     (*mesh_model->model_packet_handler)(HCI_EVENT_PACKET, 0, event, pos);
 }
@@ -225,45 +220,6 @@ static void health_fault_test_unacknowledged_handler(mesh_model_t * mesh_model, 
     health_fault_test_process_message(mesh_model, pdu);
     mesh_access_message_processed(pdu);
 }
-
-void mesh_health_server_report_test_not_supported(uint16_t element_index, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t test_id, uint16_t company_id){
-    UNUSED(element_index);
-    UNUSED(dest);
-    UNUSED(netkey_index);
-    UNUSED(appkey_index);
-    UNUSED(test_id);
-    UNUSED(company_id);
-    
-    // report acknowledged message processed
-    if (processed_pdu != NULL){
-        mesh_pdu_t * pdu = processed_pdu;
-        processed_pdu = NULL;
-        mesh_access_message_processed(pdu);
-    }
-}
-
-void mesh_health_server_report_test_done(uint16_t element_index, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t test_id, uint16_t company_id){
-    mesh_element_t * element = mesh_node_element_for_index(element_index);
-    if (element == NULL) return;
-    
-    mesh_model_t * mesh_model = mesh_model_get_by_identifier(element, mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_HEALTH_SERVER));
-    if (mesh_model == NULL) return;
-    mesh_health_fault_t * fault = mesh_health_server_fault_for_company_id(mesh_model, company_id);
-    fault->test_id = test_id;
-
-    // response for acknowledged health fault test
-    if (processed_pdu != NULL){
-        mesh_pdu_t * pdu = processed_pdu;
-        processed_pdu = NULL;
-        mesh_access_message_processed(pdu);
-
-        mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_fault_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS, company_id, company_id);
-        if (!transport_pdu) return;
-        health_server_send_message(mesh_node_get_primary_element_address() + element_index, dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);
-    }
-}
-
-
 
 static void health_period_get_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
     mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_period_status(mesh_model);
@@ -469,4 +425,37 @@ void mesh_health_server_set_publication_model(mesh_model_t * mesh_model, mesh_pu
     btstack_assert(publication_model != NULL);
     publication_model->publish_state_fn = &mesh_health_server_publish_state_fn;
     mesh_model->publication_model = publication_model;
+}
+
+void mesh_health_server_report_test_not_supported(uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t test_id, uint16_t company_id){
+    UNUSED(dest);
+    UNUSED(netkey_index);
+    UNUSED(appkey_index);
+    UNUSED(test_id);
+    UNUSED(company_id);
+    
+    // report acknowledged message processed
+    if (processed_pdu != NULL){
+        mesh_pdu_t * pdu = processed_pdu;
+        processed_pdu = NULL;
+        mesh_access_message_processed(pdu);
+    }
+}
+
+void mesh_health_server_report_test_done(uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t test_id, uint16_t company_id){
+    mesh_model_t * mesh_model = mesh_node_get_health_server();
+    if (mesh_model == NULL) return;
+    mesh_health_fault_t * fault = mesh_health_server_fault_for_company_id(mesh_model, company_id);
+    fault->test_id = test_id;
+
+    // response for acknowledged health fault test
+    if (processed_pdu != NULL){
+        mesh_pdu_t * pdu = processed_pdu;
+        processed_pdu = NULL;
+        mesh_access_message_processed(pdu);
+
+        mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_fault_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS, company_id, company_id);
+        if (!transport_pdu) return;
+        health_server_send_message(mesh_node_get_primary_element_address(), dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);
+    }
 }

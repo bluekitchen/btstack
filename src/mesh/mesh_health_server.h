@@ -57,21 +57,31 @@ const mesh_operation_t * mesh_health_server_get_operations(void);
 void mesh_health_server_register_packet_handler(mesh_model_t *mesh_model, btstack_packet_handler_t events_packet_handler);
 
 /**
-  * @brief Setup model publication for health state
+ * @brief Setup model publication for health state
  * @param mesh_model for health server
  * @param publication_model
  */
 void mesh_health_server_set_publication_model(mesh_model_t * mesh_model, mesh_publication_model_t * publication_model);
 
 /**
- * @brief Notify health server that test was perfomed
+ * @brief Notify health server that test was perfomed, params are from MESH_SUBEVENT_HEALTH_PERFORM_TEST
+ * @param dest
+ * @param netkey_index
+ * @param appkey_index
+ * @param test_id
+ * @param company_id
  */
-void mesh_health_server_report_test_done(uint16_t element_index, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t test_id, uint16_t company_id);
+void mesh_health_server_report_test_done(uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t test_id, uint16_t company_id);
 
 /**
-* @brief Notify health server that test is not supported (wrong company or test id)
+* @brief Notify health server that test is not supported (wrong company or test id), params are from MESH_SUBEVENT_HEALTH_PERFORM_TEST
+* @param dest
+* @param netkey_index
+* @param appkey_index
+* @param test_id
+* @param company_id
 */
-void mesh_health_server_report_test_not_supported(uint16_t element_index, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t test_id, uint16_t company_id);
+void mesh_health_server_report_test_not_supported(uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t test_id, uint16_t company_id);
 
 /**
  * @brief Provide fault state memory
