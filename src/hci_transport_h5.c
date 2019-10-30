@@ -197,6 +197,7 @@ static uint16_t crc16_calc_for_slip_frame(const uint8_t * header, const uint8_t 
 
 // -----------------------------
 static void hci_transport_inactivity_timeout_handler(btstack_timer_source_t * ts){
+    UNUSED(ts);
     log_info("inactivity timeout. link state %d, peer asleep %u, actions 0x%02x, outgoing packet %u",
         link_state, link_peer_asleep, hci_transport_link_actions, hci_transport_link_have_outgoing_packet());
     if (hci_transport_link_have_outgoing_packet()) return;
@@ -440,7 +441,8 @@ static void hci_transport_link_set_timer(uint16_t timeout_ms){
     btstack_run_loop_add_timer(&link_timer);
 }
 
-static void hci_transport_link_timeout_handler(btstack_timer_source_t * timer){
+static void hci_transport_link_timeout_handler(btstack_timer_source_t * ts){
+    UNUSED(ts);
     switch (link_state){
         case LINK_UNINITIALIZED:
             hci_transport_link_actions |= HCI_TRANSPORT_LINK_SEND_SYNC;

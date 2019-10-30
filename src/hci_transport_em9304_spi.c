@@ -482,6 +482,7 @@ static void hci_transport_em9304_spi_block_sent(void){
 }
 
 static int hci_transport_em9304_spi_can_send_now(uint8_t packet_type){
+    UNUSED(packet_type);
     return tx_state == TX_IDLE;
 }
 
@@ -499,6 +500,7 @@ static int hci_transport_em9304_spi_send_packet(uint8_t packet_type, uint8_t * p
 }
 
 static void hci_transport_em9304_spi_init(const void * transport_config){
+    UNUSED(transport_config);
 }
 
 static int hci_transport_em9304_spi_open(void){
@@ -524,6 +526,9 @@ static void hci_transport_em9304_spi_register_packet_handler(void (*handler)(uin
 }
 
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(packet);
+    UNUSED(size);
 }
 
 // --- end of eHCILL implementation ---------

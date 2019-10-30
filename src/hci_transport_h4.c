@@ -343,6 +343,7 @@ static void hci_transport_h4_block_sent(void){
 }
 
 static int hci_transport_h4_can_send_now(uint8_t packet_type){
+    UNUSED(packet_type);
     return tx_state == TX_IDLE;
 }
 
@@ -442,6 +443,9 @@ static void hci_transport_h4_register_packet_handler(void (*handler)(uint8_t pac
 }
 
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    UNUSED(packet_type);
+    UNUSED(packet);
+    UNUSED(size);
 }
 
 //

@@ -107,7 +107,7 @@ typedef enum {
 
 static void btstack_crypto_run(void);
 
-const static uint8_t zero[16] = { 0 };
+static const uint8_t zero[16] = { 0 };
 
 static uint8_t btstack_crypto_initialized;
 static btstack_linked_list_t btstack_crypto_operations;
