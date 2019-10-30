@@ -217,8 +217,10 @@ void mesh_health_server_report_test_done(uint16_t element_index, uint16_t dest, 
     
     mesh_model_t * mesh_model = mesh_model_get_by_identifier(element, mesh_model_get_model_identifier_bluetooth_sig(MESH_SIG_MODEL_ID_HEALTH_SERVER));
     if (mesh_model == NULL) return;
+    mesh_health_fault_t * fault = mesh_health_server_fault_for_company_id(mesh_model, company_id);
+    fault->test_id = test_id;
 
-    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_fault_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS, test_id, company_id);
+    mesh_transport_pdu_t * transport_pdu = (mesh_transport_pdu_t *) health_fault_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_FAULT_STATUS, company_id, company_id);
     if (!transport_pdu) return;
     health_server_send_message(element_index, dest, netkey_index, appkey_index, (mesh_pdu_t *) transport_pdu);
     mesh_access_message_processed(processed_pdu);
