@@ -162,7 +162,7 @@ typedef enum {
     AVRCP_NOTIFICATION_EVENT_ADDRESSED_PLAYER_CHANGED = 0x0b,           // The Addressed Player has been changed, see 6.9.2.
     AVRCP_NOTIFICATION_EVENT_UIDS_CHANGED = 0x0c,                       // The UIDs have changed, see 6.10.3.3.
     AVRCP_NOTIFICATION_EVENT_VOLUME_CHANGED = 0x0d,                     // The volume has been changed locally on the TG, see 6.13.3.
-    AVRCP_NOTIFICATION_EVENT_COUNT = 0x0d
+    AVRCP_NOTIFICATION_EVENT_MAX_VALUE = 0x0d
 } avrcp_notification_event_id_t;
 
 
@@ -436,7 +436,7 @@ typedef struct {
     uint16_t notifications_enabled;
     uint16_t notifications_to_register;
     uint16_t notifications_to_deregister; 
-    uint8_t  notifications_transaction_label[AVRCP_NOTIFICATION_EVENT_COUNT];
+    uint8_t  notifications_transaction_label[AVRCP_NOTIFICATION_EVENT_MAX_VALUE+1];
 
     avrcp_subunit_type_t unit_type;
     uint32_t company_id;

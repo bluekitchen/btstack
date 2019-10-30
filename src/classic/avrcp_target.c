@@ -769,12 +769,12 @@ uint8_t avrcp_target_volume_changed(uint16_t avrcp_cid, uint8_t volume_percentag
 }
 
 static void avrcp_target_set_transaction_label_for_notification(avrcp_connection_t * connection, avrcp_notification_event_id_t notification, uint8_t transaction_label){
-    if (notification > AVRCP_NOTIFICATION_EVENT_COUNT) return;
+    if (notification > AVRCP_NOTIFICATION_EVENT_MAX_VALUE) return;
     connection->notifications_transaction_label[notification] = transaction_label;
 }
 
 static uint8_t avrcp_target_get_transaction_label_for_notification(avrcp_connection_t * connection, avrcp_notification_event_id_t notification){
-    if (notification > AVRCP_NOTIFICATION_EVENT_COUNT) return 0;
+    if (notification > AVRCP_NOTIFICATION_EVENT_MAX_VALUE) return 0;
     return connection->notifications_transaction_label[notification];
 }
 
