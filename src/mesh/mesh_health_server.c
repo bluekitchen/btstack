@@ -58,7 +58,7 @@
 #include "mesh/mesh_upper_transport.h"
 
 static void health_server_send_message(uint16_t src, uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, mesh_pdu_t *pdu){
-    uint8_t  ttl  = mesh_foundation_default_ttl_get();
+    uint8_t ttl = mesh_foundation_default_ttl_get();
     mesh_upper_transport_setup_access_pdu_header(pdu, netkey_index, appkey_index, ttl, src, dest, 0);
     mesh_access_send_unacknowledged_pdu(pdu);
 }
@@ -73,6 +73,28 @@ static mesh_health_fault_t * mesh_health_server_fault_for_company_id(mesh_model_
     }
     return NULL;
 }
+static mesh_health_fault_t * mesh_health_server_active_fault(mesh_model_t *mesh_model){
+    mesh_health_state_t * state = (mesh_health_state_t *) mesh_model->model_data;
+    btstack_linked_list_iterator_t it;
+    btstack_linked_list_iterator_init(&it, &state->faults);
+    while (btstack_linked_list_iterator_has_next(&it)){
+        mesh_health_fault_t * fault = (mesh_health_fault_t *) btstack_linked_list_iterator_next(&it);
+        if (fault->num_current_faults > 0) return fault;
+    }
+    return NULL;
+}
+
+static void mesh_health_server_update_publication_model_period_divisor(mesh_model_t * mesh_model){
+    if (mesh_model->publication_model == NULL) return;
+    mesh_health_fault_t * fault = mesh_health_server_active_fault(mesh_model);
+    mesh_health_state_t * health_state = (mesh_health_state_t *) mesh_model->model_data;
+    if (fault == NULL){
+        mesh_model->publication_model->period_divisor = health_state->fast_period_divisor;
+    } else {
+        mesh_model->publication_model->period_divisor = 0;
+    }
+}
+
 
 // Health State
 const mesh_access_message_t mesh_foundation_health_period_status = {
@@ -230,11 +252,9 @@ static void process_message_period_set(mesh_model_t *mesh_model, mesh_pdu_t * pd
     uint8_t fast_period_divisor = mesh_access_parser_get_u8(&parser);
 
     mesh_health_state_t * state = (mesh_health_state_t *) mesh_model->model_data;
-    
-    if (state->fast_period_divisor != fast_period_divisor){
-        state->fast_period_divisor = fast_period_divisor;
-        // TODO: update model publication
-    }
+    state->fast_period_divisor = fast_period_divisor;
+
+    mesh_health_server_update_publication_model_period_divisor(mesh_model);
 }
 
 static void health_period_set_handler(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
@@ -294,21 +314,11 @@ static void health_attention_set_unacknowledged_handler(mesh_model_t *mesh_model
 }
 
 static mesh_pdu_t * mesh_health_server_publish_state_fn(struct mesh_model * mesh_model){
-    // iterate over fault states and yield if fault state with current state that has fault registered
-    mesh_health_state_t * state = (mesh_health_state_t *) mesh_model->model_data;
-    btstack_linked_list_iterator_t it;
-    btstack_linked_list_iterator_init(&it, &state->faults);
     uint16_t company_id = mesh_node_get_company_id();
-    bool active_fault = false;
-    while (btstack_linked_list_iterator_has_next(&it)){
-        mesh_health_fault_t * fault = (mesh_health_fault_t *) btstack_linked_list_iterator_next(&it);
-        if (fault->num_current_faults > 0){
-            active_fault = true;
-            company_id = fault->company_id;
-            break;
-        }
+    mesh_health_fault_t * fault = mesh_health_server_active_fault(mesh_model);
+    if (fault != NULL){
+        company_id = fault->company_id;
     }
-    
     // create current status
     return health_fault_status(mesh_model, MESH_FOUNDATION_OPERATION_HEALTH_CURRENT_STATUS, company_id, false);
 }
@@ -377,13 +387,8 @@ void mesh_health_server_set_fault(mesh_model_t *mesh_model, uint16_t company_id,
         fault->num_current_faults++;
     }
 
-    if (mesh_model->publication_model == NULL) return;
-    
-    // update model publication period
-    if (add_current_fault && (fault->num_current_faults == 1)){
-        mesh_health_state_t * health_state = (mesh_health_state_t *) mesh_model->model_data;
-        mesh_model->publication_model->period_divisor = health_state->fast_period_divisor;
-    }  
+    // update publication model
+    mesh_health_server_update_publication_model_period_divisor(mesh_model);
 }
 
 void mesh_health_server_clear_fault(mesh_model_t *mesh_model, uint16_t company_id, uint8_t fault_code){
@@ -409,11 +414,8 @@ void mesh_health_server_clear_fault(mesh_model_t *mesh_model, uint16_t company_i
         fault->num_current_faults--;
     }
 
-    // update model publication period
-    if (shift_faults && (fault->num_current_faults == 0)){
-        mesh_health_state_t * health_state = (mesh_health_state_t *) mesh_model->model_data;
-        mesh_model->publication_model->period_divisor = health_state->fast_period_divisor;
-    }
+    // update publication model
+    mesh_health_server_update_publication_model_period_divisor(mesh_model);
 }
 
 void mesh_health_server_set_publication_model(mesh_model_t * mesh_model, mesh_publication_model_t * publication_model){
