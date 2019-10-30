@@ -2925,13 +2925,14 @@ typedef uint8_t sm_key_t[16];
 #define MESH_SUBEVENT_GENERIC_LEVEL_STATUS                                           0x32
 
 /**
- * @format 1122221
+ * @format 1222211
  * @param subevent_code
  * @param dest
  * @param netkey_index
  * @param appkey_index
  * @param company_id
  * @param test_id
+ * @param acknowledged
  */
 #define MESH_SUBEVENT_HEALTH_PERFORM_TEST                                            0x33
 

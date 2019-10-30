@@ -70,18 +70,9 @@ void mesh_health_server_set_publication_model(mesh_model_t * mesh_model, mesh_pu
  * @param appkey_index
  * @param test_id
  * @param company_id
+ * @param acknowledged
  */
-void mesh_health_server_report_test_done(uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t test_id, uint16_t company_id);
-
-/**
-* @brief Notify health server that test is not supported (wrong company or test id), params are from MESH_SUBEVENT_HEALTH_PERFORM_TEST
-* @param dest
-* @param netkey_index
-* @param appkey_index
-* @param test_id
-* @param company_id
-*/
-void mesh_health_server_report_test_not_supported(uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t test_id, uint16_t company_id);
+void mesh_health_server_report_test_done(uint16_t dest, uint16_t netkey_index, uint16_t appkey_index, uint8_t test_id, uint16_t company_id, bool acknowledged);
 
 /**
  * @brief Provide fault state memory
