@@ -346,6 +346,7 @@ void mesh_health_server_add_fault_state(mesh_model_t *mesh_model, uint16_t compa
     mesh_health_state_t * state = (mesh_health_state_t *) mesh_model->model_data;
     mesh_health_fault_t * fault = mesh_health_server_fault_for_company_id(mesh_model, company_id);
     btstack_assert(fault == NULL);
+    (void) fault;
     fault_state->company_id = company_id;
     btstack_linked_list_add(&state->faults, (btstack_linked_item_t *) fault_state);
 }
