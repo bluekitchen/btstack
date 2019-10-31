@@ -1200,7 +1200,6 @@ static void l2cap_rtx_timeout(btstack_timer_source_t * ts){
     l2cap_handle_channel_open_failed(channel, L2CAP_CONNECTION_RESPONSE_RESULT_RTX_TIMEOUT);
 
     // discard channel
-    // no need to stop timer here, it is removed from list during timer callback
     btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
     l2cap_free_channel_entry(channel);
 }
