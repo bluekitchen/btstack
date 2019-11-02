@@ -48,42 +48,51 @@
 #include <inttypes.h>
  
 #include "btstack.h"
+#include "btp_socket.h"
+
+#define AUTOPTS_SOCKET_NAME "/tmp/bt-stack-tester"
 
 int btstack_main(int argc, const char * argv[]);
 
+
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
-static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     UNUSED(channel);
-
-    bd_addr_t event_addr;
-    uint8_t   rfcomm_channel_nr;
-
 	switch (packet_type) {
 		case HCI_EVENT_PACKET:
 			switch (hci_event_packet_get_type(packet)) {
-
-                case HCI_EVENT_PIN_CODE_REQUEST:
-                    // inform about pin code request
-                    printf("Pin code request - using '0000'\n");
-                    hci_event_pin_code_request_get_bd_addr(packet, event_addr);
-                    gap_pin_code_response(event_addr, "0000");
-                    break;
-
-                case HCI_EVENT_USER_CONFIRMATION_REQUEST:
-                    // inform about user confirmation request
-                    printf("SSP User Confirmation Request with numeric value '%06"PRIu32"'\n", little_endian_read_32(packet, 8));
-                    printf("SSP User Confirmation Auto accept\n");
-                    break;
-
+                case BTSTACK_EVENT_STATE:
+                    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
+                    btp_socket_open_unix(AUTOPTS_SOCKET_NAME);
+                    log_info("BTP_CORE_SERVICE/BTP_EV_CORE_READY/BTP_INDEX_NON_CONTROLLER()");
+                    btp_socket_send_packet(BTP_CORE_SERVICE, BTP_EV_CORE_READY, BTP_INDEX_NON_CONTROLLER, 0, NULL);
                 default:
                     break;
 			}
             break;
-                        
         default:
             break;
 	}
+}
+
+static void btp_packet_handler(uint8_t service_id, uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data){
+    uint8_t status;
+    switch (service_id){
+        case BTP_CORE_SERVICE:
+            switch (opcode){
+                case BTP_OP_ERROR:
+                    status = data[0];
+                    if (status == BTP_ERROR_NOT_READY){
+                        // connection stopped, abort
+                        exit(10);
+                    }
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
 }
 
 int btstack_main(int argc, const char * argv[])
@@ -92,19 +101,19 @@ int btstack_main(int argc, const char * argv[])
     (void)argv;
 
     l2cap_init();
-
     rfcomm_init();
-
-    // init SDP, create record for SPP and register with SDP
     sdp_init();
 
     // register for HCI events
-    hci_event_callback_registration.callback = &packet_handler;
+    hci_event_callback_registration.callback = &btstack_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
 
     gap_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
     gap_set_local_name("iut 00:00:00:00:00:00");
     gap_discoverable_control(1);
+
+    btp_socket_register_packet_handler(&btp_packet_handler);
+    printf("auto-pts iut-btp-client started\n");
 
     // turn on!
 	hci_power_control(HCI_POWER_ON);

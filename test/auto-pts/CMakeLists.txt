@@ -58,17 +58,15 @@ set(SOURCES
 	${SOURCES_HXCMOD}
 	${SOURCES_ZEPHYR}
 )
-list(SORT SOURCES)
 
 # create static lib
 add_library(btstack STATIC ${SOURCES})
 
-# create targets for all examples
-file(GLOB EXAMPLE_FILE btpclient.c)
+# target
+set (EXAMPLE btpclient)
 
 # create targets
-get_filename_component(EXAMPLE ${EXAMPLE_FILE} NAME_WE)
-set (SOURCE_FILES ${EXAMPLE_FILE})
+set (SOURCE_FILES ${EXAMPLE}.c btp_socket.c)
 
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
@@ -76,5 +74,6 @@ add_custom_command(
 	ARGS ${CMAKE_SOURCE_DIR}/${EXAMPLE}.gatt ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h
 )
 list(APPEND SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.h)
+
 add_executable(${EXAMPLE} ${SOURCE_FILES} )
 target_link_libraries(${EXAMPLE} btstack)
