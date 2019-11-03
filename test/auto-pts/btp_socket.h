@@ -52,33 +52,6 @@
 extern "C" {
 #endif
 
-// BTP Defines
-#define BTP_INDEX_NON_CONTROLLER 0xff
-
-#define BTP_ERROR_FAIL          0x01
-#define BTP_ERROR_UNKNOWN_CMD   0x02
-#define BTP_ERROR_NOT_READY     0x03
-#define BTP_ERROR_INVALID_INDEX 0x04
-
-#define BTP_CORE_SERVICE        0
-#define BTP_GAP_SERVICE         1
-#define BTP_GATT_SERVICE        2
-#define BTP_L2CAP_SERVICE       3
-#define BTP_MESH_NODE_SERVICE   4
-
-/**
- * @format 1
- * @param status
- */ 
-#define BTP_OP_ERROR                        0x00
-
-#define BTP_OP_CORE_READ_SUPPORTED_COMMANDS 0x01
-#define BTP_OP_CORE_READ_SUPPORTED_SERVICES 0x02
-#define BTP_OP_CORE_REGISTER                0x03
-#define BTP_OP_CORE_UNREGISTER              0x04
-
-#define BTP_EV_CORE_READY                   0x80
-	
 /**
  * Init socket connection module
  */

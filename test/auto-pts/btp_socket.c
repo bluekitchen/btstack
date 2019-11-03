@@ -49,6 +49,7 @@
 #include "hci.h"
 #include "btstack_debug.h"
 #include "btstack_config.h"
+#include "btp.h"
  
 #include <arpa/inet.h>
 #include <errno.h>
@@ -101,7 +102,7 @@ static void btp_socket_init_statemachine(void){
 
 static void btp_socket_emit_connection_closed(void){
     const uint8_t status = BTP_ERROR_NOT_READY;
-    (*btp_socket_packet_callback)(BTP_CORE_SERVICE, BTP_OP_ERROR, BTP_INDEX_NON_CONTROLLER, 1, &status);
+    (*btp_socket_packet_callback)(BTP_SERVICE_ID_CORE, BTP_OP_ERROR, BTP_INDEX_NON_CONTROLLER, 1, &status);
 }
 
 void btp_socket_hci_process(btstack_data_source_t *socket_ds, btstack_data_source_callback_type_t callback_type) {

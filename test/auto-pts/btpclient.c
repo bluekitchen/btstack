@@ -48,6 +48,7 @@
 #include <inttypes.h>
  
 #include "btstack.h"
+#include "btp.h"
 #include "btp_socket.h"
 
 #define AUTOPTS_SOCKET_NAME "/tmp/bt-stack-tester"
@@ -63,10 +64,16 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
 		case HCI_EVENT_PACKET:
 			switch (hci_event_packet_get_type(packet)) {
                 case BTSTACK_EVENT_STATE:
-                    if (btstack_event_state_get_state(packet) != HCI_STATE_WORKING) return;
-                    btp_socket_open_unix(AUTOPTS_SOCKET_NAME);
-                    log_info("BTP_CORE_SERVICE/BTP_EV_CORE_READY/BTP_INDEX_NON_CONTROLLER()");
-                    btp_socket_send_packet(BTP_CORE_SERVICE, BTP_EV_CORE_READY, BTP_INDEX_NON_CONTROLLER, 0, NULL);
+                    switch (btstack_event_state_get_state(packet)){
+                        case HCI_STATE_WORKING:
+                            btp_socket_open_unix(AUTOPTS_SOCKET_NAME);
+                            log_info("BTP_CORE_SERVICE/BTP_EV_CORE_READY/BTP_INDEX_NON_CONTROLLER()");
+                            btp_socket_send_packet(BTP_SERVICE_ID_CORE, BTP_CORE_EV_READY, BTP_INDEX_NON_CONTROLLER, 0, NULL);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
                 default:
                     break;
 			}
@@ -78,8 +85,11 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
 
 static void btp_packet_handler(uint8_t service_id, uint8_t opcode, uint8_t controller_index, uint16_t length, const uint8_t *data){
     uint8_t status;
+    log_info("service id 0x%02x, opcode 0x%02x, controller_index 0x%0x, len %u", service_id, opcode, controller_index, length);
+    log_info_hexdump(data, length);
+
     switch (service_id){
-        case BTP_CORE_SERVICE:
+        case BTP_SERVICE_ID_CORE:
             switch (opcode){
                 case BTP_OP_ERROR:
                     status = data[0];
