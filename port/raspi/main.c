@@ -306,6 +306,7 @@ int main(int argc, const char * argv[]){
 
     // set UART config based on raspi Bluetooth UART type
     int bt_reg_en_pin = -1;
+    bool power_cycle = true;
     switch (raspi_get_bluetooth_uart_type()){
         case UART_INVALID:
             fprintf(stderr, "can't verify HW uart, %s\n", strerror( errno ) );
@@ -319,24 +320,37 @@ int main(int argc, const char * argv[]){
         case UART_HARDWARE_NO_FLOW:
             // Raspberry Pi 3 A
             // Raspberry Pi 3 B
+            // power up with H5 and without power cycle untested/unsupported
             bt_reg_en_pin = 128;
             transport_config.baudrate_main = 921600;
             transport_config.flowcontrol   = 0;
             break;
         case UART_HARDWARE_FLOW:
-            // Raspberry Pi Zero W gpio 45
+            // Raspberry Pi Zero W gpio 45, 3 mbps does not work (investigation pending)
             // Raspberry Pi 3A+ vgpio 129 but WLAN + BL
             // Raspberry Pi 3B+ vgpio 129 but WLAN + BL
-            transport_config.baudrate_main = 3000000;
             transport_config.flowcontrol = 1;
-
-            // 3 mbps does not work on Zero W (investigation pending)
-            if (raspi_get_model() == MODEL_ZERO_W){
-                transport_config.baudrate_main = 921600;
+            int model = raspi_get_model();
+            if (model == MODEL_ZERO_W){
+                bt_reg_en_pin =  45;
+                transport_config.baudrate_main =  921600;
+            } else {
+                bt_reg_en_pin = 129;
+                transport_config.baudrate_main = 3000000;
             }
+
+#ifdef ENABLE_CONTROLLER_WARM_BOOT
+            power_cycle = false;
+#else
+            // warn about power cycle on devices with shared reg_en pins
+            if (model == MODEL_3APLUS || model == MODEL_3BPLUS){
+                printf("Wifi and Bluetooth share a single RESET line and BTstack needs to reset Bluetooth -> SSH over Wifi will fail\n");
+                printf("Please add ENABLE_CONTROLLER_WARM_BOOT to btstack_config.h to enable startup without RESET\n");
+            }
+#endif
             break;
     }
-    printf("%s, %u, BT_REG_EN at GPIO %u\n", transport_config.flowcontrol ? "H4":"H5", transport_config.baudrate_main, bt_reg_en_pin);
+    printf("%s, %u, BT_REG_EN at GPIO %u, %s\n", transport_config.flowcontrol ? "H4":"H5", transport_config.baudrate_main, bt_reg_en_pin, power_cycle ? "Reset Controller" : "Warm Boot");
 
     // get BCM chipset driver
     const btstack_chipset_t * chipset = btstack_chipset_bcm_instance();
@@ -379,24 +393,27 @@ int main(int argc, const char * argv[]){
     main_argc = argc;
     main_argv = argv;
 
-    if (transport_config.flowcontrol){
-
-        // re-use current terminal speed
-        raspi_get_terminal_params( &transport_config );
-
-        // with flowcontrol, we use h4 and are done
-        btstack_main(main_argc, main_argv);
-
-    } else {
-
-        // power cycle Bluetooth controller on older models without flowcontrol
-        printf("Power Cycle Controller\n");
+    // power cycle Bluetooth controller on older models without flowcontrol
+    if (power_cycle){
         btstack_control_raspi_set_bt_reg_en_pin(bt_reg_en_pin);
         btstack_control_t *control = btstack_control_raspi_get_instance();
         control->init(NULL);
         control->off();
         usleep( 100000 );
         control->on();
+    }
+
+    if (transport_config.flowcontrol){
+
+        // re-use current terminal speed (if there was no power cycle)
+        if (!power_cycle){
+            raspi_get_terminal_params( &transport_config );
+        }
+
+        // with flowcontrol, we use h4 and are done
+        btstack_main(main_argc, main_argv);
+
+    } else {
 
         // assume BCM4343W used in Pi 3 A/B. Pi 3 A/B+ have a newer controller but support H4 with Flowcontrol
         btstack_chipset_bcm_set_device_name("BCM43430A1");

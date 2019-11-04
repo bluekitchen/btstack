@@ -26,6 +26,9 @@
 #define ENABLE_SCO_OVER_HCI
 #define ENABLE_SDP_DES_DUMP
 
+// Warm Boot needed if connected via Wifi on Raspberry Pi 3A+ or 3B+
+// #define ENABLE_CONTROLLER_WARM_BOOT
+
 // BTstack configuration. buffers, sizes, ...
 #define HCI_INCOMING_PRE_BUFFER_SIZE 14 // sizeof benep heade, avoid memcpy
 #define HCI_ACL_PAYLOAD_SIZE (1691 + 4)
