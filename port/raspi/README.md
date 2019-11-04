@@ -37,7 +37,7 @@ Create an empty file called 'ssh' in the root folder of the SD Card to enable SS
 
 ### Boot
 
-If everything was setup correctly, it should now boot up and join your Wifi network. You can reach it via mDSN as 'raspberrypi.local'.
+If everything was setup correctly, it should now boot up and join your Wifi network. You can reach it via mDSN as 'raspberrypi.local' and log in with user: pi, password: raspberry.
 
 ### Disable bluez
 
