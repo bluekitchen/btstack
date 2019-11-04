@@ -169,10 +169,10 @@ uint8_t avdtp_connect(bd_addr_t remote, avdtp_sep_type_t query_role, avdtp_conte
         }
     }
     
-    *avdtp_cid = connection->avdtp_cid;
     if (!avdtp_cid) {
         return L2CAP_LOCAL_CID_DOES_NOT_EXIST;
     }
+    *avdtp_cid = connection->avdtp_cid;
     avdtp_context->avdtp_cid = connection->avdtp_cid;
             
     uint8_t err;
