@@ -207,6 +207,7 @@ static inline void avdtp_signaling_emit_media_codec_other(btstack_packet_handler
     if (event_size < 113) return;
     event[0] = HCI_EVENT_A2DP_META;
     event[2] = A2DP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION;
+    (*callback)(HCI_EVENT_PACKET, 0, event, event_size);
 }
 
 static inline void a2dp_emit_stream_event(btstack_packet_handler_t callback, uint16_t a2dp_cid, uint8_t eventID, uint8_t local_seid){
@@ -284,7 +285,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             break;
 
         case AVDTP_SUBEVENT_SIGNALING_MEDIA_CODEC_OTHER_CONFIGURATION:
-            log_info("received non SBC codec. not implemented");
             avdtp_signaling_emit_media_codec_other(a2dp_sink_context.a2dp_callback, packet, size);
             break;
         
