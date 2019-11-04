@@ -78,10 +78,12 @@ typedef enum {
 } SOCKET_STATE;
 
 static btstack_data_source_t socket_ds;
+
 static uint8_t  buffer[6+BTP_PAYLOAD_LEN_MAX];
+
 static SOCKET_STATE state;
-static uint16_t bytes_read;
-static uint16_t bytes_to_read;
+static uint16_t packet_bytes_read;
+static uint16_t packet_bytes_to_read;
 
 /** client packet handler */
 
@@ -96,8 +98,8 @@ static void btp_socket_free_connection(){
 static void btp_socket_init_statemachine(void){
     // wait for next packet
     state = SOCKET_W4_HEADER;
-    bytes_read = 0;
-    bytes_to_read = BTP_HEADER_LEN;
+    packet_bytes_read = 0;
+    packet_bytes_to_read = BTP_HEADER_LEN;
 }
 
 static void btp_socket_emit_connection_closed(void){
@@ -105,13 +107,12 @@ static void btp_socket_emit_connection_closed(void){
     (*btp_socket_packet_callback)(BTP_SERVICE_ID_CORE, BTP_OP_ERROR, BTP_INDEX_NON_CONTROLLER, 1, &status);
 }
 
-void btp_socket_hci_process(btstack_data_source_t *socket_ds, btstack_data_source_callback_type_t callback_type) {
+void btp_socket_process(btstack_data_source_t *socket_ds, btstack_data_source_callback_type_t callback_type) {
     // get socket_fd
     int socket_fd = socket_ds->source.fd;
 
     // read from socket
-    int bytes_read = read(socket_fd, &buffer[bytes_read], bytes_to_read);
-
+    int bytes_read = read(socket_fd, &buffer[packet_bytes_read], packet_bytes_to_read);
     if (bytes_read <= 0){
         // free connection
         btp_socket_free_connection();
@@ -121,16 +122,16 @@ void btp_socket_hci_process(btstack_data_source_t *socket_ds, btstack_data_sourc
         return;
     }
 
-    bytes_read += bytes_read;
-    bytes_to_read -= bytes_read;
-    if (bytes_to_read > 0) return;
+    packet_bytes_read    += bytes_read;
+    packet_bytes_to_read -= bytes_read;
+    if (packet_bytes_to_read > 0) return;
     
     bool dispatch = false;
     switch (state){
         case SOCKET_W4_HEADER:
             state = SOCKET_W4_DATA;
-            bytes_to_read = little_endian_read_16( buffer, 3);
-            if (bytes_to_read == 0){
+            packet_bytes_to_read = little_endian_read_16( buffer, 3);
+            if (packet_bytes_to_read == 0){
                 dispatch = true;
             }
             break;
@@ -185,7 +186,7 @@ bool btp_socket_open_unix(const char * socket_name){
         return false;
     };
     
-    btstack_run_loop_set_data_source_handler(&socket_ds, &btp_socket_hci_process);
+    btstack_run_loop_set_data_source_handler(&socket_ds, &btp_socket_process);
     btstack_run_loop_set_data_source_fd(&socket_ds, btp_socket);
     btstack_run_loop_enable_data_source_callbacks(&socket_ds, DATA_SOURCE_CALLBACK_READ);
     
@@ -213,11 +214,13 @@ bool btp_socket_close_unix(void){
  * Init socket connection module
  */
 void btp_socket_init(void){
+#if 0
     // just ignore broken sockets - NO_SO_SIGPIPE
     sig_t result = signal(SIGPIPE, SIG_IGN);
     if (result){
         log_error("btp_socket_init: failed to ignore SIGPIPE, error: %s", strerror(errno));
     }
+#endif
 }
 
 /**
