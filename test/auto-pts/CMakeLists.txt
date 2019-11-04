@@ -41,8 +41,10 @@ file(GLOB SOURCES_LIBUSB    "../../port/libusb/*.c" "../../platform/libusb/*.c")
 file(GLOB SOURCES_ZEPHYR    "../../chipset/zephyr/*.c")
 
 # remove some
-file(GLOB SOURCES_OFF "../../src/ble/le_device_db_memory.c")
-list(REMOVE_ITEM SOURCES_BLE ${SOURCES_OFF})
+file(GLOB SOURCES_BLE_OFF "../../src/ble/le_device_db_memory.c")
+list(REMOVE_ITEM SOURCES_BLE ${SOURCES_BLE_OFF})
+file(GLOB SOURCES_POSIX_OFF "../../platform/posix/le_device_db_fs.c")
+list(REMOVE_ITEM SOURCES_POSIX ${SOURCES_POSIX_OFF})
 
 set(SOURCES 
 	${SOURCES_MD5}
