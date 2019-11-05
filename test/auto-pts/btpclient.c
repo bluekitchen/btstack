@@ -171,8 +171,8 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
         case BTP_GAP_OP_READ_CONTROLLER_INDEX_LIST:
             log_info("BTP_GAP_OP_READ_CONTROLLER_INDEX_LIST - not implemented");
             break;
-        case BTP_GAP_OP_READ_COTROLLER_INFO:
-            log_info("BTP_GAP_OP_READ_COTROLLER_INFO");
+        case BTP_GAP_OP_READ_CONTROLLER_INFO:
+            log_info("BTP_GAP_OP_READ_CONTROLLER_INFO");
             if (controller_index == 0){
                 uint8_t buffer[277];
                 bd_addr_t local_addr;

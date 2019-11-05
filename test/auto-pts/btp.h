@@ -102,7 +102,7 @@ extern "C" {
 #define BTP_GAP_SETTING_CONTROLLER_CONF         0x00004000
 #define BTP_GAP_SETTING_STATIC_ADDRESS          0x00008000
 
-#define BTP_GAP_OP_READ_COTROLLER_INFO          0x03
+#define BTP_GAP_OP_READ_CONTROLLER_INFO         0x03
 #define BTP_GAP_OP_RESET                        0x04
 #define BTP_GAP_OP_SET_POWERED                  0x05
 #define BTP_GAP_OP_SET_CONNECTABLE              0x06
