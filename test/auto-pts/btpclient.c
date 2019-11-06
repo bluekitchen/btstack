@@ -61,11 +61,14 @@ static bool gap_send_powered_state;
 static char gap_name[249];
 static char gap_short_name[11];
 static uint32_t gap_cod;
+static uint8_t gap_adv_data[31];
+static uint8_t gap_adv_data_len;
 
 static uint32_t current_settings;
 
 
 static void btp_send_gap_settings(uint8_t opcode){
+    log_info("BTP_GAP_SETTINGS opcode %02x: %08x", opcode, current_settings);
     uint8_t buffer[4];
     little_endian_store_32(buffer, 0, current_settings);
     btp_socket_send_packet(BTP_SERVICE_ID_GAP, opcode, 0, 4, buffer);
@@ -77,6 +80,7 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
 		case HCI_EVENT_PACKET:
 			switch (hci_event_packet_get_type(packet)) {
                 case BTSTACK_EVENT_STATE:
+                    log_info("BTSTACK_EVENT_STATE %x, gap_send_powered_state %u", btstack_event_state_get_state(packet), gap_send_powered_state);
                     switch (btstack_event_state_get_state(packet)){
                         case HCI_STATE_WORKING:
                             if (gap_send_powered_state){
@@ -88,6 +92,8 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                         case HCI_STATE_OFF:
                             if (gap_send_powered_state){
                                 gap_send_powered_state = false;
+                                // update settings
+                                current_settings &= ~BTP_GAP_SETTING_ADVERTISING;
                                 current_settings &= ~BTP_GAP_SETTING_POWERED;
                                 btp_send_gap_settings(BTP_GAP_OP_SET_POWERED);
                             }
@@ -212,13 +218,13 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
         case BTP_GAP_OP_SET_POWERED:
             log_info("BTP_GAP_OP_SET_POWERED");
             if (controller_index == 0){
+                gap_send_powered_state = true;
                 uint8_t powered = data[0];
                 if (powered){
                     hci_power_control(HCI_POWER_ON);
                 } else {
                     hci_power_control(HCI_POWER_OFF);
                 }
-                gap_send_powered_state = true;
             }
             break;
         case BTP_GAP_OP_SET_CONNECTABLE:
@@ -243,6 +249,14 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 const uint8_t * scan_response = &data[2 + adv_data_len];
                 // uint32_t duration = little_endian_read_32(data, 2 + adv_data_len + scan_response_len);
                 bool use_own_id_address = (bool) &data[6 + adv_data_len + scan_response_len];
+
+                // prefix adv_data with flags
+                gap_adv_data[0] = 0x02;
+                gap_adv_data[1] = 0x01;
+                gap_adv_data[2] = 0x04;
+                memcpy(&gap_adv_data[3], adv_data, adv_data_len);
+                gap_adv_data_len = 3 + adv_data_len;
+
                 // configure controller
                 if (use_own_id_address){
                     gap_random_address_set_mode(GAP_RANDOM_ADDRESS_TYPE_OFF);
@@ -257,10 +271,13 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 if (current_settings & BTP_GAP_SETTING_CONNECTABLE){
                     adv_type = 0;   // ADV_IND
                 } else {
+                    // min advertising interval 100 ms for non-connectable advertisements (pre 5.0 controllers)
                     adv_type = 3;   // ADV_NONCONN_IND
+                    adv_int_min = 0xa0;
+                    adv_int_max = 0xa0;
                 }
                 gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
-                gap_advertisements_set_data(adv_data_len, (uint8_t *) adv_data);
+                gap_advertisements_set_data(gap_adv_data_len, (uint8_t *) gap_adv_data);
                 gap_scan_response_set_data(scan_response_len, (uint8_t *) scan_response);
                 gap_advertisements_enable(1);
                 // update settings
