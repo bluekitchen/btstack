@@ -105,6 +105,7 @@ static void btp_socket_init_statemachine(void){
 }
 
 static void btp_socket_emit_connection_closed(void){
+    log_info("Connection closed, emit BTP_ERROR_NOT_READY");
     const uint8_t status = BTP_ERROR_NOT_READY;
     (*btp_socket_packet_callback)(BTP_SERVICE_ID_CORE, BTP_OP_ERROR, BTP_INDEX_NON_CONTROLLER, 1, &status);
 }
