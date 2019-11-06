@@ -542,6 +542,12 @@ int btstack_main(int argc, const char * argv[])
     le_device_db_init();
     sm_init();
 
+    // use fixed IRK
+    uint8_t test_irk[16] = { 0x01,0x23,0x45,0x67,0x89,0xAB,0xCD,0xEF,0x01,0x23,0x45,0x67,0x89,0xAB,0xCD,0xEF };
+    sm_test_set_irk(test_irk);
+    printf("TEST IRK: "); 
+    printf_hexdump(test_irk, 16);
+
     // register for HCI events
     hci_event_callback_registration.callback = &btstack_packet_handler;
     hci_add_event_handler(&hci_event_callback_registration);
