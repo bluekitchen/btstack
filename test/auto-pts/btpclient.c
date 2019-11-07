@@ -60,6 +60,8 @@
 #define BT_LE_AD_GENERAL  (1U << 1)
 #define BT_LE_AD_NO_BREDR (1U << 2)
 
+// #define TEST_POWER_CYCLE
+
 int btstack_main(int argc, const char * argv[]);
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
@@ -138,6 +140,9 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                                 current_settings |= BTP_GAP_SETTING_POWERED;
                                 btp_send_gap_settings(BTP_GAP_OP_SET_POWERED);
                             }
+#ifdef TEST_POWER_CYCLE
+                            hci_power_control(HCI_POWER_OFF);
+#endif
                             break;
                         case HCI_STATE_OFF:
                             if (gap_send_powered_state){
@@ -147,6 +152,9 @@ static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8
                                 current_settings &= ~BTP_GAP_SETTING_POWERED;
                                 btp_send_gap_settings(BTP_GAP_OP_SET_POWERED);
                             }
+#ifdef TEST_POWER_CYCLE
+                            hci_power_control(HCI_POWER_ON);
+#endif
                             break;
                         default:
                             break;
@@ -651,5 +659,10 @@ int btstack_main(int argc, const char * argv[])
     }
 #endif
 #endif
+
+#ifdef TEST_POWER_CYCLE
+    hci_power_control(HCI_POWER_ON);
+#endif
+
     return 0;
 }
