@@ -64,8 +64,12 @@ static bool gap_send_powered_state;
 static char gap_name[249];
 static char gap_short_name[11];
 static uint32_t gap_cod;
-static uint8_t gap_adv_data[31];
-static uint8_t gap_adv_data_len;
+
+// gap_adv_data_len/gap_scan_response is 16-bit to simplify bounds calculation
+static uint8_t  gap_adv_data[31];
+static uint16_t gap_adv_data_len;
+static uint8_t  gap_scan_response[31];
+static uint16_t gap_scan_response_len;
 static uint8_t gap_discovery_active;
 
 static uint32_t current_settings;
@@ -337,12 +341,40 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 // uint32_t duration = little_endian_read_32(data, 2 + adv_data_len + scan_response_len);
                 bool use_own_id_address = (bool) &data[6 + adv_data_len + scan_response_len];
 
-                // prefix adv_data with flags
-                gap_adv_data[0] = 0x02;
-                gap_adv_data[1] = 0x01;
-                gap_adv_data[2] = 0x04;
-                memcpy(&gap_adv_data[3], adv_data, adv_data_len);
-                gap_adv_data_len = 3 + adv_data_len;
+                // prefix adv_data with flags and append rest
+                gap_adv_data_len = 0;
+                gap_adv_data[gap_adv_data_len++] = 0x02;
+                gap_adv_data[gap_adv_data_len++] = 0x01;
+                // TODO: calculate flags from connectable/discoverable settings
+                gap_adv_data[gap_adv_data_len++] = 0x04;
+
+                uint8_t ad_pos = 0;
+                while ((ad_pos + 2) < adv_data_len){
+                    uint8_t ad_type = adv_data[ad_pos++];
+                    uint8_t ad_len  = adv_data[ad_pos++];
+                    if ((ad_type != BLUETOOTH_DATA_TYPE_FLAGS) && ((ad_pos + ad_len) < adv_data_len) && (gap_adv_data_len + 2 + ad_len < 31)) {
+                        gap_adv_data[gap_adv_data_len++] = ad_len + 1;
+                        gap_adv_data[gap_adv_data_len++] = ad_type;
+                        memcpy(&gap_adv_data[gap_adv_data_len], &adv_data[ad_pos], ad_len);
+                        gap_adv_data_len += ad_len;
+                    }
+                    ad_pos += ad_len;
+                }
+
+                // process scan data
+                uint8_t scan_pos = 0;
+                gap_scan_response_len = 0;
+                while ((scan_pos + 2) < scan_response_len){
+                    uint8_t ad_type = scan_response[scan_pos++];
+                    uint8_t ad_len  = scan_response[scan_pos++];
+                    if (((scan_pos + ad_len) < scan_response_len) && (gap_scan_response_len + 2 + ad_len < 31)) {
+                        gap_scan_response[gap_scan_response_len++] = ad_len + 1;
+                        gap_scan_response[gap_scan_response_len++] = ad_type;
+                        memcpy(&gap_scan_response[gap_scan_response_len], &scan_response[scan_pos], ad_len);
+                        gap_scan_response_len += ad_len;
+                    }
+                    scan_pos += ad_len;
+                }
 
                 // configure controller
                 if (use_own_id_address){
