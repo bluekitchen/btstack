@@ -107,6 +107,11 @@ extern "C" {
 #define BTP_GAP_OP_SET_POWERED                  0x05
 #define BTP_GAP_OP_SET_CONNECTABLE              0x06
 #define BTP_GAP_OP_SET_FAST_CONNECTABLE         0x07
+
+#define BTP_GAP_DISCOVERABLE_NON                0x00
+#define BTP_GAP_DISCOVERABLE_GENERAL            0x01
+#define BTP_GAP_DISCOVERABLE_LIMITED            0x02
+
 #define BTP_GAP_OP_SET_DISCOVERABLE             0x08
 #define BTP_GAP_OP_SET_BONDABLE                 0x09
 #define BTP_GAP_OP_START_ADVERTISING            0x0a

@@ -56,8 +56,11 @@
 
 #define AUTOPTS_SOCKET_NAME "/tmp/bt-stack-tester"
 
-int btstack_main(int argc, const char * argv[]);
+#define BT_LE_AD_LIMITED  (1U << 0)
+#define BT_LE_AD_GENERAL  (1U << 1)
+#define BT_LE_AD_NO_BREDR (1U << 2)
 
+int btstack_main(int argc, const char * argv[]);
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 static bool gap_send_powered_state;
@@ -66,6 +69,7 @@ static char gap_short_name[11];
 static uint32_t gap_cod;
 
 // gap_adv_data_len/gap_scan_response is 16-bit to simplify bounds calculation
+static uint8_t  ad_flags;
 static uint8_t  gap_adv_data[31];
 static uint16_t gap_adv_data_len;
 static uint8_t  gap_scan_response[31];
@@ -101,6 +105,24 @@ static void btp_send_gap_settings(uint8_t opcode){
     uint8_t buffer[4];
     little_endian_store_32(buffer, 0, current_settings);
     btp_send(BTP_SERVICE_ID_GAP, opcode, 0, 4, buffer);
+}
+
+static void reset_gap(void){
+    // current settings
+    current_settings |=  BTP_GAP_SETTING_SSP;
+    current_settings |=  BTP_GAP_SETTING_LE;
+    current_settings |=  BTP_GAP_SETTING_PRIVACY;
+#ifdef ENABLE_CLASSIC
+    current_settings |=  BTP_GAP_SETTING_BREDR;
+#endif
+#ifdef ENABLE_BLE
+#endif
+#ifdef ENABLE_LE_SECURE_CONNECTIONS
+    current_settings |=  BTP_GAP_SETTING_SC;
+#endif
+
+    // TODO: check ENABLE_CLASSIC / Controller features
+    ad_flags = BT_LE_AD_NO_BREDR;
 }
 
 static void btstack_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -307,12 +329,26 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
             MESSAGE("BTP_GAP_OP_SET_DISCOVERABLE");
             if (controller_index == 0){
                 uint8_t discoverable = data[0];
-                gap_discoverable_control(discoverable);
-                if (discoverable) {
-                    current_settings |= BTP_GAP_SETTING_DISCOVERABLE;
-                } else {
-                    current_settings &= ~BTP_GAP_SETTING_DISCOVERABLE;
+                // Classic
+                gap_discoverable_control(discoverable > 0);
 
+                switch (discoverable) {
+                    case BTP_GAP_DISCOVERABLE_NON:
+                        ad_flags &= ~(BT_LE_AD_GENERAL | BT_LE_AD_LIMITED);
+                        current_settings &= ~BTP_GAP_SETTING_DISCOVERABLE;
+                        break;
+                    case BTP_GAP_DISCOVERABLE_GENERAL:
+                        ad_flags &= ~BT_LE_AD_LIMITED;
+                        ad_flags |= BT_LE_AD_GENERAL;
+                        current_settings |= BTP_GAP_SETTING_DISCOVERABLE;
+                        break;
+                    case BTP_GAP_DISCOVERABLE_LIMITED:
+                        ad_flags &= ~BT_LE_AD_GENERAL;
+                        ad_flags |= BT_LE_AD_LIMITED;
+                        current_settings |= BTP_GAP_SETTING_DISCOVERABLE;
+                        break;
+                    default:
+                        return;
                 }
                 btp_send_gap_settings(opcode);
             }
@@ -345,8 +381,7 @@ static void btp_gap_handler(uint8_t opcode, uint8_t controller_index, uint16_t l
                 gap_adv_data_len = 0;
                 gap_adv_data[gap_adv_data_len++] = 0x02;
                 gap_adv_data[gap_adv_data_len++] = 0x01;
-                // TODO: calculate flags from connectable/discoverable settings
-                gap_adv_data[gap_adv_data_len++] = 0x04;
+                gap_adv_data[gap_adv_data_len++] = ad_flags;
 
                 uint8_t ad_pos = 0;
                 while ((ad_pos + 2) < adv_data_len){
@@ -595,18 +630,7 @@ int btstack_main(int argc, const char * argv[])
     gap_cod = 0x007a020c;   // smartphone
     gap_set_class_of_device(gap_cod);
 
-    // current settings
-    current_settings |=  BTP_GAP_SETTING_SSP;
-    current_settings |=  BTP_GAP_SETTING_LE;
-    current_settings |=  BTP_GAP_SETTING_PRIVACY;
-#ifdef ENABLE_CLASSIC
-    current_settings |=  BTP_GAP_SETTING_BREDR;
-#endif
-#ifdef ENABLE_BLE
-#endif
-#ifdef ENABLE_LE_SECURE_CONNECTIONS
-    current_settings |=  BTP_GAP_SETTING_SC;
-#endif
+    reset_gap();
 
     MESSAGE("auto-pts iut-btp-client started");
 
