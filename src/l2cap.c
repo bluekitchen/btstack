@@ -158,6 +158,7 @@ static void l2cap_emit_le_channel_closed(l2cap_channel_t * channel);
 static void l2cap_emit_le_incoming_connection(l2cap_channel_t *channel);
 static void l2cap_le_notify_channel_can_send(l2cap_channel_t *channel);
 static void l2cap_le_finialize_channel_close(l2cap_channel_t *channel);
+static void l2cap_le_send_pdu(l2cap_channel_t *channel);
 static inline l2cap_service_t * l2cap_le_get_service(uint16_t psm);
 #endif
 #ifdef L2CAP_USES_CHANNELS
@@ -1163,16 +1164,6 @@ static int l2cap_is_dynamic_channel_type(l2cap_channel_type_t channel_type){
 }
 #endif
 
-static int l2cap_is_le_channel_type(l2cap_channel_type_t channel_type){
-    switch (channel_type){
-        case L2CAP_CHANNEL_TYPE_LE_FIXED:
-        case L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL:
-            return 1;
-        default:
-            return 0;
-    }
-}
-
 #ifdef ENABLE_CLASSIC
 // RTX Timer only exist for dynamic channels
 static l2cap_channel_t * l2cap_channel_for_rtx_timer(btstack_timer_source_t * ts){
@@ -1760,10 +1751,6 @@ static void l2cap_run(void){
 #ifdef ENABLE_LE_DATA_CHANNELS
     btstack_linked_list_iterator_init(&it, &l2cap_channels);
     while (btstack_linked_list_iterator_has_next(&it)){
-        uint8_t  * acl_buffer;
-        uint8_t  * l2cap_payload;
-        uint16_t pos;
-        uint16_t payload_size;
         uint16_t mps;
         l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
 
@@ -1811,43 +1798,9 @@ static void l2cap_run(void){
                     channel->new_credits_incoming = 0;
                     channel->credits_incoming += new_credits;
                     l2cap_send_le_signaling_packet(channel->con_handle, LE_FLOW_CONTROL_CREDIT, channel->local_sig_id, channel->remote_cid, new_credits);
-                    break;
                 }
-
-                // send data
-                if (!channel->send_sdu_buffer) break;
-                if (!channel->credits_outgoing) break;
-
-                // send part of SDU
-                hci_reserve_packet_buffer();
-                acl_buffer = hci_get_outgoing_packet_buffer();
-                l2cap_payload = acl_buffer + 8;
-                pos = 0;
-                if (!channel->send_sdu_pos){
-                    // store SDU len
-                    channel->send_sdu_pos += 2;
-                    little_endian_store_16(l2cap_payload, pos, channel->send_sdu_len);
-                    pos += 2;
-                }
-                payload_size = btstack_min(channel->send_sdu_len + 2 - channel->send_sdu_pos, channel->remote_mps - pos);
-                log_info("len %u, pos %u => payload %u, credits %u", channel->send_sdu_len, channel->send_sdu_pos, payload_size, channel->credits_outgoing);
-                memcpy(&l2cap_payload[pos], &channel->send_sdu_buffer[channel->send_sdu_pos-2], payload_size); // -2 for virtual SDU len
-                pos += payload_size;
-                channel->send_sdu_pos += payload_size;
-                l2cap_setup_header(acl_buffer, channel->con_handle, 0, channel->remote_cid, pos);
-                // done
-
-                channel->credits_outgoing--;
-
-                if (channel->send_sdu_pos >= channel->send_sdu_len + 2){
-                    channel->send_sdu_buffer = NULL;
-                    // send done event
-                    l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_LE_PACKET_SENT);
-                    // inform about can send now
-                    l2cap_le_notify_channel_can_send(channel);
-                }
-                hci_send_acl_packet_buffer(8 + pos);
                 break;
+
             case L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST:
                 if (!hci_can_send_acl_packet_now(channel->con_handle)) break;
                 channel->local_sig_id = l2cap_next_sig_id();
@@ -2103,41 +2056,73 @@ static void l2cap_handle_connection_success_for_addr(bd_addr_t address, hci_con_
 }
 #endif
 
+static bool l2cap_channel_ready_to_send(l2cap_channel_t * channel){
+    switch (channel->channel_type){
+#ifdef ENABLE_CLASSIC
+        case L2CAP_CHANNEL_TYPE_CLASSIC:
+            if (!channel->waiting_for_can_send_now) return false;
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+            // skip ertm channels as they only depend on free buffers in storage
+            if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) return false;
+#endif /* ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE */
+            return hci_can_send_acl_classic_packet_now() != 0;
+        case L2CAP_CHANNEL_TYPE_CONNECTIONLESS:
+            if (!channel->waiting_for_can_send_now) return false;
+            return hci_can_send_acl_classic_packet_now() != 0;
+#endif
+#ifdef ENABLE_BLE
+        case L2CAP_CHANNEL_TYPE_LE_FIXED:
+            if (!channel->waiting_for_can_send_now) return false;
+            return hci_can_send_acl_le_packet_now() != 0;
+#ifdef ENABLE_LE_DATA_CHANNELS
+        case L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL:
+            if (channel->send_sdu_buffer == NULL) return false;
+            if (channel->credits_outgoing == 0) return false;
+            return hci_can_send_acl_le_packet_now() != 0;
+#endif
+#endif
+        default:
+            return false;
+    }
+}
+
+static void l2cap_channel_trigger_send(l2cap_channel_t * channel){
+    switch (channel->channel_type){
+#ifdef ENABLE_BLE
+#ifdef ENABLE_LE_DATA_CHANNELS
+        case L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL:
+            l2cap_le_send_pdu(channel);
+            break;
+#endif
+#endif
+        default:
+            // emit can send
+            channel->waiting_for_can_send_now = 0;
+            l2cap_emit_can_send_now(channel->packet_handler, channel->local_cid);
+            break;
+    }
+}
+
 static void l2cap_notify_channel_can_send(void){
-    int done = 0;
+    bool done = false;
     while (!done){
-        done = 1;
+        done = true;
         btstack_linked_list_iterator_t it;
         btstack_linked_list_iterator_init(&it, &l2cap_channels);
         while (btstack_linked_list_iterator_has_next(&it)){
             l2cap_channel_t * channel = (l2cap_channel_t *) btstack_linked_list_iterator_next(&it);
-            if (!channel->waiting_for_can_send_now) continue;
-            int can_send = 0;
-            if (l2cap_is_le_channel_type(channel->channel_type)){
-#ifdef ENABLE_BLE
-                can_send = hci_can_send_acl_le_packet_now();
-#endif
-            } else {
-#ifdef ENABLE_CLASSIC
-#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-                // skip ertm channels as they only depend on free buffers in storage
-                if (channel->mode == L2CAP_CHANNEL_MODE_BASIC){
-                    can_send = hci_can_send_acl_classic_packet_now();
-                }
-#else
-                can_send = hci_can_send_acl_classic_packet_now();
-#endif /* ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE */
-#endif /* ENABLE_CLASSIC */
-            }
-            if (!can_send) continue;
-            // requeue for fairness
+            bool ready = l2cap_channel_ready_to_send(channel);
+            if (!ready) continue;
+
+            // requeue channel for fairness
             btstack_linked_list_remove(&l2cap_channels, (btstack_linked_item_t *) channel);
             btstack_linked_list_add_tail(&l2cap_channels, (btstack_linked_item_t *) channel);
-            // emit can send
-            channel->waiting_for_can_send_now = 0;
-            l2cap_emit_can_send_now(channel->packet_handler, channel->local_cid);
+
+            // trigger sending
+            l2cap_channel_trigger_send(channel);
+
             // exit inner loop as we just broke the iterator, but try again
-            done = 0;
+            done = false;
             break;
         }
     }
@@ -3759,6 +3744,42 @@ static void l2cap_emit_le_channel_closed(l2cap_channel_t * channel){
     l2cap_dispatch_to_channel(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
+static void l2cap_le_send_pdu(l2cap_channel_t *channel){
+    btstack_assert(channel != NULL);
+    btstack_assert(channel->send_pdu_buffer != NULL);
+    btstack_assert(channel->credits_outgoing > 0);
+
+    // send part of SDU
+    hci_reserve_packet_buffer();
+    uint8_t * acl_buffer = hci_get_outgoing_packet_buffer();
+    uint8_t * l2cap_payload = acl_buffer + 8;
+    uint16_t pos = 0;
+    if (!channel->send_sdu_pos){
+        // store SDU len
+        channel->send_sdu_pos += 2;
+        little_endian_store_16(l2cap_payload, pos, channel->send_sdu_len);
+        pos += 2;
+    }
+    uint16_t payload_size = btstack_min(channel->send_sdu_len + 2 - channel->send_sdu_pos, channel->remote_mps - pos);
+    log_info("len %u, pos %u => payload %u, credits %u", channel->send_sdu_len, channel->send_sdu_pos, payload_size, channel->credits_outgoing);
+    memcpy(&l2cap_payload[pos], &channel->send_sdu_buffer[channel->send_sdu_pos-2], payload_size); // -2 for virtual SDU len
+    pos += payload_size;
+    channel->send_sdu_pos += payload_size;
+    l2cap_setup_header(acl_buffer, channel->con_handle, 0, channel->remote_cid, pos);
+
+    channel->credits_outgoing--;
+
+    hci_send_acl_packet_buffer(8 + pos);
+
+    if (channel->send_sdu_pos >= channel->send_sdu_len + 2){
+        channel->send_sdu_buffer = NULL;
+        // send done event
+        l2cap_emit_simple_event_with_cid(channel, L2CAP_EVENT_LE_PACKET_SENT);
+        // inform about can send now
+        l2cap_le_notify_channel_can_send(channel);
+    }
+}
+
 // finalize closed channel - l2cap_handle_disconnect_request & DISCONNECTION_RESPONSE
 void l2cap_le_finialize_channel_close(l2cap_channel_t * channel){
     channel->state = L2CAP_STATE_CLOSED;
@@ -4000,7 +4021,7 @@ uint8_t l2cap_le_send_data(uint16_t local_cid, uint8_t * data, uint16_t len){
     channel->send_sdu_len    = len;
     channel->send_sdu_pos    = 0;
 
-    l2cap_run();
+    l2cap_notify_channel_can_send();
     return 0;
 }
 
