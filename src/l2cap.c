@@ -456,7 +456,7 @@ static int l2cap_ertm_send(l2cap_channel_t * channel, uint8_t * data, uint16_t l
     }
 
     // try to send
-    l2cap_run();
+    l2cap_notify_channel_can_send();
     return 0;
 }
 
@@ -828,6 +828,16 @@ static void l2cap_ertm_handle_in_sequence_sdu(l2cap_channel_t * l2cap_channel, l
             l2cap_channel->reassembly_pos = 0;    
             break; 
     }
+}
+
+static void l2cap_ertm_channel_send_information_frame(l2cap_channel_t * channel){
+    channel->unacked_frames++;
+    int index = channel->tx_send_index;
+    channel->tx_send_index++;
+    if (channel->tx_send_index >= channel->num_tx_buffers){
+        channel->tx_send_index = 0;
+    }
+    l2cap_ertm_send_information_frame(channel, index, 0);   // final = 0
 }
 
 #endif
@@ -1658,7 +1668,6 @@ static void l2cap_run(void){
                 break;
         }
 
- 
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
 
         // handle channel finalize on L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE
@@ -1670,19 +1679,6 @@ static void l2cap_run(void){
             // check if we can still send
             if (channel->con_handle == HCI_CON_HANDLE_INVALID) continue;
             if (!hci_can_send_acl_packet_now(channel->con_handle)) continue;
-
-            // send if we have more data and remote windows isn't full yet
-            log_debug("unacked_frames %u < min( stored frames %u, remote tx window size %u)?", channel->unacked_frames, channel->num_stored_tx_frames, channel->remote_tx_window_size);
-            if (channel->unacked_frames < btstack_min(channel->num_stored_tx_frames, channel->remote_tx_window_size)){
-                channel->unacked_frames++;
-                int index = channel->tx_send_index;
-                channel->tx_send_index++;
-                if (channel->tx_send_index >= channel->num_tx_buffers){
-                    channel->tx_send_index = 0;
-                }
-                l2cap_ertm_send_information_frame(channel, index, 0);   // final = 0
-                continue;
-            }
 
             if (channel->send_supervisor_frame_receiver_ready){
                 channel->send_supervisor_frame_receiver_ready = 0;
@@ -2060,12 +2056,15 @@ static bool l2cap_channel_ready_to_send(l2cap_channel_t * channel){
     switch (channel->channel_type){
 #ifdef ENABLE_CLASSIC
         case L2CAP_CHANNEL_TYPE_CLASSIC:
-            if (!channel->waiting_for_can_send_now) return false;
 #ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
-            // skip ertm channels as they only depend on free buffers in storage
-            if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) return false;
-#endif /* ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE */
-            return hci_can_send_acl_classic_packet_now() != 0;
+            // send if we have more data and remote windows isn't full yet
+            if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) {
+                if (channel->unacked_frames >= btstack_min(channel->num_stored_tx_frames, channel->remote_tx_window_size)) return false;
+                return hci_can_send_acl_classic_packet_now() != 0;
+            }
+#endif
+            if (!channel->waiting_for_can_send_now) return false;
+            return (hci_can_send_acl_classic_packet_now() != 0);
         case L2CAP_CHANNEL_TYPE_CONNECTIONLESS:
             if (!channel->waiting_for_can_send_now) return false;
             return hci_can_send_acl_classic_packet_now() != 0;
@@ -2088,7 +2087,27 @@ static bool l2cap_channel_ready_to_send(l2cap_channel_t * channel){
 
 static void l2cap_channel_trigger_send(l2cap_channel_t * channel){
     switch (channel->channel_type){
+#ifdef ENABLE_CLASSIC
+        case L2CAP_CHANNEL_TYPE_CLASSIC:
+#ifdef ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
+            if (channel->mode == L2CAP_CHANNEL_MODE_ENHANCED_RETRANSMISSION) {
+                l2cap_ertm_channel_send_information_frame(channel);
+                return;
+            }
+#endif
+            channel->waiting_for_can_send_now = 0;
+            l2cap_emit_can_send_now(channel->packet_handler, channel->local_cid);
+            break;
+        case L2CAP_CHANNEL_TYPE_CONNECTIONLESS:
+            channel->waiting_for_can_send_now = 0;
+            l2cap_emit_can_send_now(channel->packet_handler, channel->local_cid);
+            break;
+#endif
 #ifdef ENABLE_BLE
+        case L2CAP_CHANNEL_TYPE_LE_FIXED:
+            channel->waiting_for_can_send_now = 0;
+            l2cap_emit_can_send_now(channel->packet_handler, channel->local_cid);
+            break;
 #ifdef ENABLE_LE_DATA_CHANNELS
         case L2CAP_CHANNEL_TYPE_LE_DATA_CHANNEL:
             l2cap_le_send_pdu(channel);
@@ -2096,9 +2115,6 @@ static void l2cap_channel_trigger_send(l2cap_channel_t * channel){
 #endif
 #endif
         default:
-            // emit can send
-            channel->waiting_for_can_send_now = 0;
-            l2cap_emit_can_send_now(channel->packet_handler, channel->local_cid);
             break;
     }
 }
