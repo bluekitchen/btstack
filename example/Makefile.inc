@@ -63,7 +63,6 @@ COMMON += \
 	sm.c                        \
 
 CLASSIC += \
-	btstack_link_key_db_memory.c   \
 	sdp_util.c	                \
 	gatt_sdp.c                  \
 	spp_server.c  				\
