@@ -61,6 +61,9 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu);
 static void mesh_access_upper_transport_handler(mesh_transport_callback_type_t callback_type, mesh_transport_status_t status, mesh_pdu_t * pdu);
 static const mesh_operation_t * mesh_model_lookup_operation_by_opcode(mesh_model_t * model, uint32_t opcode);
 
+// receive
+static uint16_t mesh_access_received_pdu_refcount;
+
 // acknowledged messages
 static btstack_linked_list_t  mesh_access_acknowledged_messages;
 static btstack_timer_source_t mesh_access_acknowledged_timer;
@@ -813,11 +816,24 @@ static int mesh_access_validate_appkey_index(mesh_model_t * model, uint16_t appk
     return mesh_model_contains_appkey(model, appkey_index);
 }
 
+// decrease use count and report as free if done
+void mesh_access_message_processed(mesh_pdu_t * pdu){
+    if (mesh_access_received_pdu_refcount > 0){
+        mesh_access_received_pdu_refcount--;
+    }
+    if (mesh_access_received_pdu_refcount == 0){
+        mesh_upper_transport_message_processed_by_higher_layer(pdu);
+    }
+}
+
 static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
+
+    // init use count
+    mesh_access_received_pdu_refcount = 1;
+    
     // get opcode and size
     uint32_t opcode = 0;
     uint16_t opcode_size = 0;
-
 
     int ok = mesh_access_pdu_get_opcode( pdu, &opcode, &opcode_size);
     if (!ok) {
@@ -846,8 +862,8 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
                 if (operation == NULL) continue;
                 if (mesh_access_validate_appkey_index(model, appkey_index) == 0) continue;
                 mesh_access_acknowledged_received(src, opcode);
+                mesh_access_received_pdu_refcount++;
                 operation->handler(model, pdu);
-                return;
             }
         }
     }
@@ -867,7 +883,7 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
                     break;
                 case MESH_ADDRESS_ALL_RELAYS:
                     if (mesh_foundation_relay_get() == 1){
-                        deliver_to_primary_element =1;
+                        deliver_to_primary_element = 1;
                     }
                     break;
                 case MESH_ADDRESS_ALL_NODES:
@@ -886,8 +902,8 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
                     if (operation == NULL) continue;
                     if (mesh_access_validate_appkey_index(model, appkey_index) == 0) continue;
                     mesh_access_acknowledged_received(src, opcode);
+                    mesh_access_received_pdu_refcount++;
                     operation->handler(model, pdu);
-                    return;
                 }
             }
         }
@@ -907,21 +923,16 @@ static void mesh_access_message_process_handler(mesh_pdu_t * pdu){
                         if (operation == NULL) continue;
                         if (mesh_access_validate_appkey_index(model, appkey_index) == 0) continue;
                         mesh_access_acknowledged_received(src, opcode);
+                        mesh_access_received_pdu_refcount++;
                         operation->handler(model, pdu);
-                        return;
                     }
                 }
             }
         }
     }
 
-    // operation not found -> done
-    printf("Message not handled\n");
+    // we're done
     mesh_access_message_processed(pdu);
-}
-
-void mesh_access_message_processed(mesh_pdu_t * pdu){
-    mesh_upper_transport_message_processed_by_higher_layer(pdu);
 }
 
 // Mesh Model Publication
