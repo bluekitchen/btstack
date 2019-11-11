@@ -838,7 +838,7 @@ static void mesh_upper_transport_send_unsegmented_access_pdu(mesh_network_pdu_t 
     mesh_network_pdu_set_seq(network_pdu, seq);
 
     // Dump PDU
-    printf("[+] Upper transport, send unsegmented Access PDU - seq %06x\n", mesh_network_seq(network_pdu));
+    printf("[+] Upper transport, send unsegmented Access PDU - dest %04x, seq %06x\n", dst, mesh_network_seq(network_pdu));
     mesh_print_hex("Access Payload", &network_pdu->data[10], network_pdu->len - 10);
         
     // setup nonce
@@ -911,7 +911,7 @@ static void mesh_upper_transport_send_segmented_access_pdu(mesh_transport_pdu_t 
     mesh_transport_set_seq(transport_pdu, seq);
 
     // Dump PDU
-    printf("[+] Upper transport, send segmented Access PDU - seq %06x\n", mesh_transport_seq(transport_pdu));
+    printf("[+] Upper transport, send segmented Access PDU - dest %04x, seq %06x\n", dst, mesh_transport_seq(transport_pdu));
     mesh_print_hex("Access Payload", transport_pdu->data, transport_pdu->len);
     
     // setup nonce - uses dst, so after pseudo address translation
