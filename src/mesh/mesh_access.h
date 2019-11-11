@@ -134,10 +134,10 @@ typedef struct mesh_transition {
     uint16_t src_address;
     uint16_t dst_address; 
 
-    mesh_default_transition_step_resolution_t step_duration_ms;
+    uint32_t step_duration_ms;
     uint32_t phase_start_ms;
-    uint32_t remaining_delay_time_ms;  
-    uint32_t remaining_transition_time_ms;      
+    uint32_t remaining_delay_time_ms;
+    uint32_t remaining_transition_time_ms;
     // to send events and/or publish changes
     mesh_model_t * mesh_model;
 
@@ -182,6 +182,7 @@ void mesh_access_send_acknowledged_pdu(mesh_pdu_t * pdu, uint8_t retransmissions
 
 uint8_t mesh_access_transitions_num_steps_from_gdtt(uint8_t time_gdtt);
 uint32_t mesh_access_time_gdtt2ms(uint8_t time_gdtt);
+uint8_t mesh_access_time_as_gdtt(uint32_t step_resolution_ms, uint32_t time_ms);
 
 void mesh_access_emit_state_update_bool(btstack_packet_handler_t event_handler, uint8_t element_index, uint32_t model_identifier,
     model_state_id_t state_identifier, model_state_update_reason_t reason, uint8_t value);

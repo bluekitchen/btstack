@@ -301,6 +301,29 @@ uint32_t mesh_access_time_gdtt2ms(uint8_t time_gdtt){
     return mesh_access_transitions_step_ms_from_gdtt(time_gdtt) * num_steps;
 }
 
+uint8_t mesh_access_time_as_gdtt(uint32_t step_resolution_ms, uint32_t time_ms){
+    uint8_t resolution;
+    switch (step_resolution_ms){
+        case 100:
+            resolution = MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_100ms;
+            break;
+        case 1000:
+            resolution = MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_1s;
+            break;
+        case 10000:
+            resolution = MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_10s;
+            break;
+        case 600000:
+            resolution = MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_10min;
+            break;
+        default:
+            resolution = MESH_DEFAULT_TRANSITION_STEP_RESOLUTION_100ms;
+            break;
+    }
+    uint8_t num_steps = time_ms / step_resolution_ms;
+    return (resolution << 6) | num_steps;
+}
+
 static void mesh_access_transitions_timeout_handler(btstack_timer_source_t * timer){
     btstack_linked_list_iterator_t it;    
     btstack_linked_list_iterator_init(&it, &transitions);
