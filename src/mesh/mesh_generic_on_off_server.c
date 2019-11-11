@@ -171,14 +171,8 @@ static void mesh_server_transition_setup_transition_or_instantaneous_update(mesh
 // Generic On Off State
 
 void mesh_generic_on_off_server_register_packet_handler(mesh_model_t *generic_on_off_server_model, btstack_packet_handler_t transition_events_packet_handler){
-    if (transition_events_packet_handler == NULL){
-        log_error("mesh_generic_on_off_server_register_packet_handler called with NULL callback");
-        return;
-    }
-    if (generic_on_off_server_model == NULL){
-        log_error("mesh_generic_on_off_server_register_packet_handler called with NULL generic_on_off_server_model");
-        return;
-    }
+    btstack_assert(generic_on_off_server_model != NULL);
+    btstack_assert(transition_events_packet_handler != NULL);
     generic_on_off_server_model->model_packet_handler = transition_events_packet_handler;
 }
 
@@ -191,14 +185,9 @@ const mesh_access_message_t mesh_generic_on_off_status_instantaneous = {
 };
 
 static mesh_pdu_t * mesh_generic_on_off_status_message(mesh_model_t *generic_on_off_server_model){
-    if (generic_on_off_server_model->element == NULL){
-        log_error("generic_on_off_server_model->element == NULL"); 
-    }
+    btstack_assert(generic_on_off_server_model->model_data != NULL);
 
     mesh_generic_on_off_state_t * state = (mesh_generic_on_off_state_t *) generic_on_off_server_model->model_data;
-    if (state == NULL){
-        log_error("generic_on_off_status ==  NULL");
-    }
     // setup message
     mesh_transport_pdu_t * transport_pdu = NULL; 
     if (state->transition_data.base_transition.remaining_transition_time_ms != 0) {
@@ -218,22 +207,17 @@ static void generic_on_off_get_handler(mesh_model_t *generic_on_off_server_model
 }
 
 static void generic_on_off_handle_set_message(mesh_model_t *mesh_model, mesh_pdu_t * pdu){
-    if (mesh_model == NULL){
-        log_error("mesh_model == NULL");
-    }
-    mesh_generic_on_off_state_t * generic_on_off_server_state = (mesh_generic_on_off_state_t *)mesh_model->model_data;
-    
-    if (generic_on_off_server_state == NULL){
-        log_error("generic_on_off_server_state == NULL");
-    }
-    
+    btstack_assert(mesh_model != NULL);
+    btstack_assert(mesh_model->model_data != NULL);
+
     mesh_access_parser_state_t parser;
     mesh_access_parser_init(&parser, (mesh_pdu_t*) pdu);
     uint8_t on_off_value = mesh_access_parser_get_u8(&parser);
 
     // The TID field is a transaction identifier indicating whether the message is 
     // a new message or a retransmission of a previously sent message
-    uint8_t tid = mesh_access_parser_get_u8(&parser); 
+    mesh_generic_on_off_state_t * generic_on_off_server_state = (mesh_generic_on_off_state_t *)mesh_model->model_data;
+    uint8_t tid = mesh_access_parser_get_u8(&parser);
     uint8_t transition_time_gdtt = 0;
     uint8_t delay_time_gdtt = 0;
             
@@ -268,6 +252,7 @@ static void generic_on_off_set_handler(mesh_model_t *generic_on_off_server_model
 
 static void generic_on_off_set_unacknowledged_handler(mesh_model_t *generic_on_off_server_model, mesh_pdu_t * pdu){
     generic_on_off_handle_set_message(generic_on_off_server_model, pdu);
+    mesh_access_message_processed(pdu);
 }
 
 // Generic On Off Message
