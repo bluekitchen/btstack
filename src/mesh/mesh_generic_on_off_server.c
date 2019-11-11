@@ -191,8 +191,9 @@ static mesh_pdu_t * mesh_generic_on_off_status_message(mesh_model_t *generic_on_
     // setup message
     mesh_transport_pdu_t * transport_pdu = NULL; 
     if (state->transition_data.base_transition.remaining_transition_time_ms != 0) {
+        uint8_t remaining_time = mesh_access_time_as_gdtt(state->transition_data.base_transition.step_duration_ms, state->transition_data.base_transition.remaining_transition_time_ms);
         transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_on_off_status_transition, state->transition_data.current_value, 
-            state->transition_data.target_value, state->transition_data.base_transition.remaining_transition_time_ms);
+            state->transition_data.target_value, remaining_time);
     } else {
         transport_pdu = mesh_access_setup_segmented_message(&mesh_generic_on_off_status_instantaneous, state->transition_data.current_value);
     }
